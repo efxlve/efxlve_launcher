@@ -228,6 +228,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_cancel_login` | `spotifyCancelLogin({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_control` | `spotifyControl({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_devices` | `spotifyDevices({ ... })` | `src-tauri/src/spotify/mod.rs` |
+| `spotify_library` | `spotifyLibrary({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_login` | `spotifyLogin({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_logout` | `spotifyLogout({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_now_playing` | `spotifyNowPlaying({ ... })` | `src-tauri/src/spotify/mod.rs` |
@@ -237,6 +238,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_playback_status` | `spotifyPlaybackStatus({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playback_stop` | `spotifyPlaybackStop({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_playlists` | `spotifyPlaylists({ ... })` | `src-tauri/src/spotify/mod.rs` |
+| `spotify_search` | `spotifySearch({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_set_client_id` | `spotifySetClientId({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_status` | `spotifyStatus({ ... })` | `src-tauri/src/spotify/mod.rs` |
 | `spotify_transfer` | `spotifyTransfer({ ... })` | `src-tauri/src/spotify/mod.rs` |

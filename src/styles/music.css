@@ -254,6 +254,145 @@
   margin-left: auto;
 }
 
+/* --- Search & library browse --- */
+.music-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.music-search-row .music-input {
+  flex: 1;
+}
+
+.music-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.music-tab {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-2);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.music-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.music-tab.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--line-strong);
+  font-weight: 600;
+}
+
+.music-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.music-section-title span {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.music-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.music-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.music-track:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.music-track img,
+.music-track-art {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.music-track-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.music-track-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-track-artist {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-track-time {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.music-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.music-artist-card img,
+.music-artist-card .music-playlist-fallback {
+  border-radius: 50%;
+}
+
 /* --- Playlists --- */
 .music-playlists-head {
   display: flex;

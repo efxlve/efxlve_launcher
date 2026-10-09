@@ -281,6 +281,33 @@ pub async fn spotify_playlists(app: AppHandle) -> Result<Vec<api::Playlist>, Str
         .map_err(|error| error.message)
 }
 
+/// Catalogue search: tracks, albums, artists and playlists.
+#[tauri::command]
+pub async fn spotify_search(app: AppHandle, query: String) -> Result<api::SearchResults, String> {
+    let trimmed = query.trim();
+    if trimmed.is_empty() {
+        return Ok(api::SearchResults {
+            tracks: Vec::new(),
+            albums: Vec::new(),
+            artists: Vec::new(),
+            playlists: Vec::new(),
+        });
+    }
+    let token = access_token(&app, false).await?;
+    api::search(http_client(), &token, trimmed)
+        .await
+        .map_err(|error| error.message)
+}
+
+/// Liked songs, playlists, saved albums and followed artists in one call.
+#[tauri::command]
+pub async fn spotify_library(app: AppHandle) -> Result<api::Library, String> {
+    let token = access_token(&app, false).await?;
+    api::library(http_client(), &token)
+        .await
+        .map_err(|error| error.message)
+}
+
 /// Transport and mode control. `action` is one of: play, pause, next,
 /// previous, seek, volume, shuffle, repeat.
 #[tauri::command]

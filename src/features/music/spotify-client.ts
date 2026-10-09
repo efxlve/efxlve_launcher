@@ -49,6 +49,48 @@ export interface SpotifyPlaylist {
   owner: string;
 }
 
+export interface SpotifyTrack {
+  id: string;
+  name: string;
+  artist: string;
+  album: string;
+  artUrl: string;
+  uri: string;
+  durationMs: number;
+  url: string;
+}
+
+export interface SpotifyAlbum {
+  id: string;
+  name: string;
+  artist: string;
+  artUrl: string;
+  uri: string;
+  url: string;
+}
+
+export interface SpotifyArtist {
+  id: string;
+  name: string;
+  imageUrl: string;
+  uri: string;
+  url: string;
+}
+
+export interface SpotifySearchResults {
+  tracks: SpotifyTrack[];
+  albums: SpotifyAlbum[];
+  artists: SpotifyArtist[];
+  playlists: SpotifyPlaylist[];
+}
+
+export interface SpotifyLibrary {
+  tracks: SpotifyTrack[];
+  playlists: SpotifyPlaylist[];
+  albums: SpotifyAlbum[];
+  artists: SpotifyArtist[];
+}
+
 export interface SpotifyPlaybackStatus {
   /** The one-time browser approval is stored. */
   paired: boolean;
@@ -73,6 +115,11 @@ export const spotifyNowPlaying = () => invoke<NowPlaying | null>("spotify_now_pl
 export const spotifyDevices = () => invoke<SpotifyDevice[]>("spotify_devices");
 
 export const spotifyPlaylists = () => invoke<SpotifyPlaylist[]>("spotify_playlists");
+
+export const spotifySearch = (query: string) =>
+  invoke<SpotifySearchResults>("spotify_search", { query });
+
+export const spotifyLibrary = () => invoke<SpotifyLibrary>("spotify_library");
 
 export const spotifyControl = (
   action: "play" | "pause" | "next" | "previous" | "seek" | "volume" | "shuffle" | "repeat",

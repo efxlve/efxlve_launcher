@@ -1957,5 +1957,19 @@
   "music.playbackPaired": "Çalma onaylı",
   "music.playbackWaiting": "Tarayıcı onayı bekleniyor…",
   "music.playbackReady": "Çalma motoru çalışıyor. Başlatmak için “Burada çal”a bas.",
-  "music.playHere": "Burada çal"
+  "music.playHere": "Burada çal",
+  "music.searchPlaceholder": "Spotify'da ara",
+  "music.search": "Ara",
+  "music.searchClear": "Temizle",
+  "music.noResults": "Sonuç yok.",
+  "music.loading": "Yükleniyor…",
+  "music.resultsTracks": "Şarkılar",
+  "music.resultsAlbums": "Albümler",
+  "music.resultsArtists": "Sanatçılar",
+  "music.resultsPlaylists": "Çalma listeleri",
+  "music.libraryLiked": "Beğenilen şarkılar",
+  "music.libraryPlaylists": "Çalma listeleri",
+  "music.libraryAlbums": "Albümler",
+  "music.libraryArtists": "Sanatçılar",
+  "music.play": "Çal"
 }

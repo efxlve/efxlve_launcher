@@ -19,6 +19,7 @@ import {
   spotifyCancelLogin,
   spotifyControl,
   spotifyDevices,
+  spotifyLibrary,
   spotifyLogin,
   spotifyLogout,
   spotifyNowPlaying,
@@ -27,15 +28,19 @@ import {
   spotifyPlaybackStart,
   spotifyPlaybackStatus,
   spotifyPlaybackStop,
-  spotifyPlaylists,
+  spotifySearch,
   spotifySetClientId,
   spotifyStatus,
   spotifyTransfer,
   type NowPlaying,
+  type SpotifyAlbum,
+  type SpotifyArtist,
   type SpotifyDevice,
+  type SpotifyLibrary,
   type SpotifyPlaybackStatus,
-  type SpotifyPlaylist,
+  type SpotifySearchResults,
   type SpotifyStatus,
+  type SpotifyTrack,
 } from "./spotify-client";
 
 interface Message {
@@ -48,17 +53,22 @@ interface MusicState {
   status: SpotifyStatus;
   now: NowPlaying | null;
   devices: SpotifyDevice[];
-  playlists: SpotifyPlaylist[];
   playback: SpotifyPlaybackStatus;
   playbackBusy: boolean;
+  /** Browse: search box, results and the library tabs. */
+  searchQuery: string;
+  searchBusy: boolean;
+  results: SpotifySearchResults | null;
+  library: SpotifyLibrary | null;
+  libraryTab: "liked" | "playlists" | "albums" | "artists";
   message: Message | null;
   loginBusy: boolean;
   /** Playback position anchor so the progress bar moves between polls. */
   progressBaseMs: number;
   progressBaseAt: number;
   lastDeviceKey: string;
-  lastPlaylistKey: string;
   lastPlaybackKey: string;
+  lastBrowseKey: string;
 }
 
 const state: MusicState = {
@@ -66,16 +76,20 @@ const state: MusicState = {
   status: { clientIdSet: false, connected: false, user: "", product: "", error: "" },
   now: null,
   devices: [],
-  playlists: [],
   playback: { paired: false, running: false, deviceName: "Efxlve Launcher" },
   playbackBusy: false,
+  searchQuery: "",
+  searchBusy: false,
+  results: null,
+  library: null,
+  libraryTab: "liked",
   message: null,
   loginBusy: false,
   progressBaseMs: 0,
   progressBaseAt: 0,
   lastDeviceKey: "",
-  lastPlaylistKey: "",
   lastPlaybackKey: "",
+  lastBrowseKey: "",
 };
 
 let pollTimer: number | null = null;
@@ -175,17 +189,122 @@ function renderPlayer(): string {
         </div>
       </div>
 
-      <div class="music-playlists">
-        <div class="music-playlists-head">
-          <h3>${esc(t("music.playlistsTitle"))}</h3>
-        </div>
-        <div class="music-playlist-grid" id="music-playlists"></div>
-      </div>
+      <div class="card music-browse" id="music-browse-card">${browseCardHtml()}</div>
 
       <div class="card music-playback" id="music-playback-card">${playbackCardHtml()}</div>
 
       ${state.message ? `<p class="music-note ${state.message.kind}">${esc(state.message.text)}</p>` : ""}
     </div>`;
+}
+
+/** Search box plus the results/library body. */
+function browseCardHtml(): string {
+  const searching = state.results !== null;
+  return `
+    <div class="music-search-row">
+      <input id="music-search" class="music-input" type="search" spellcheck="false"
+        placeholder="${esc(t("music.searchPlaceholder"))}" value="${esc(state.searchQuery)}" />
+      <button class="btn primary" data-music="search-go" ${state.searchBusy ? "disabled" : ""}>
+        ${icon("search", 14)} ${esc(state.searchBusy ? t("music.loading") : t("music.search"))}
+      </button>
+      ${searching ? `<button class="btn ghost small" data-music="search-clear">${esc(t("music.searchClear"))}</button>` : ""}
+    </div>
+    ${searching ? searchBodyHtml() : libraryBodyHtml()}`;
+}
+
+function sectionTitle(label: string, count: number): string {
+  return `<div class="music-section-title">${esc(label)} <span>${count}</span></div>`;
+}
+
+function searchBodyHtml(): string {
+  const results = state.results;
+  if (!results) return "";
+  const empty =
+    results.tracks.length === 0 &&
+    results.albums.length === 0 &&
+    results.artists.length === 0 &&
+    results.playlists.length === 0;
+  if (empty) return `<p class="music-note">${esc(t("music.noResults"))}</p>`;
+  return `
+    ${results.tracks.length ? sectionTitle(t("music.resultsTracks"), results.tracks.length) + `<div class="music-track-list">${results.tracks.map(trackRowHtml).join("")}</div>` : ""}
+    ${results.albums.length ? sectionTitle(t("music.resultsAlbums"), results.albums.length) + `<div class="music-card-grid">${results.albums.map(albumCardHtml).join("")}</div>` : ""}
+    ${results.artists.length ? sectionTitle(t("music.resultsArtists"), results.artists.length) + `<div class="music-card-grid">${results.artists.map(artistCardHtml).join("")}</div>` : ""}
+    ${results.playlists.length ? sectionTitle(t("music.resultsPlaylists"), results.playlists.length) + `<div class="music-card-grid">${results.playlists.map(playlistCardHtml).join("")}</div>` : ""}`;
+}
+
+function libraryBodyHtml(): string {
+  const library = state.library;
+  const tabs: { id: typeof state.libraryTab; key: string }[] = [
+    { id: "liked", key: "music.libraryLiked" },
+    { id: "playlists", key: "music.libraryPlaylists" },
+    { id: "albums", key: "music.libraryAlbums" },
+    { id: "artists", key: "music.libraryArtists" },
+  ];
+  const tabRow = `<div class="music-tabs">${tabs
+    .map(
+      (tab) =>
+        `<button class="music-tab${state.libraryTab === tab.id ? " active" : ""}" data-music="library-tab" data-tab="${tab.id}">${esc(t(tab.key))}</button>`,
+    )
+    .join("")}</div>`;
+  if (!library) return `${tabRow}<p class="music-note">${esc(t("music.loading"))}</p>`;
+  let body = "";
+  if (state.libraryTab === "liked") {
+    body = library.tracks.length
+      ? `<div class="music-track-list">${library.tracks.map(trackRowHtml).join("")}</div>`
+      : `<p class="music-note">${esc(t("music.noResults"))}</p>`;
+  } else if (state.libraryTab === "playlists") {
+    body = library.playlists.length
+      ? `<div class="music-card-grid">${library.playlists.map(playlistCardHtml).join("")}</div>`
+      : `<p class="music-note">${esc(t("music.noPlaylists"))}</p>`;
+  } else if (state.libraryTab === "albums") {
+    body = library.albums.length
+      ? `<div class="music-card-grid">${library.albums.map(albumCardHtml).join("")}</div>`
+      : `<p class="music-note">${esc(t("music.noResults"))}</p>`;
+  } else {
+    body = library.artists.length
+      ? `<div class="music-card-grid">${library.artists.map(artistCardHtml).join("")}</div>`
+      : `<p class="music-note">${esc(t("music.noResults"))}</p>`;
+  }
+  return `${tabRow}${body}`;
+}
+
+function trackRowHtml(track: SpotifyTrack): string {
+  return `
+    <button class="music-track" data-music="play-uri" data-uri="${esc(track.uri)}" title="${esc(t("music.play"))}">
+      ${track.artUrl ? `<img src="${esc(track.artUrl)}" alt="" loading="lazy" />` : `<span class="music-track-art">${icon("music", 16)}</span>`}
+      <span class="music-track-meta">
+        <span class="music-track-name">${esc(track.name)}</span>
+        <span class="music-track-artist">${esc(track.artist)}${track.album ? ` · ${esc(track.album)}` : ""}</span>
+      </span>
+      <span class="music-track-time">${formatTime(track.durationMs)}</span>
+    </button>`;
+}
+
+function playlistCardHtml(playlist: { id: string; name: string; uri: string; artUrl: string; trackCount: number }): string {
+  return `
+    <button class="music-playlist" data-music="play-uri" data-uri="${esc(playlist.uri)}" title="${esc(t("music.playPlaylist"))}">
+      ${playlist.artUrl ? `<img src="${esc(playlist.artUrl)}" alt="" loading="lazy" />` : `<span class="music-playlist-fallback">${icon("music", 22)}</span>`}
+      <span class="music-playlist-name">${esc(playlist.name)}</span>
+      <span class="music-playlist-meta">${esc(t("music.trackCount", { count: playlist.trackCount }))}</span>
+    </button>`;
+}
+
+function albumCardHtml(album: SpotifyAlbum): string {
+  return `
+    <button class="music-playlist" data-music="play-uri" data-uri="${esc(album.uri)}" title="${esc(t("music.play"))}">
+      ${album.artUrl ? `<img src="${esc(album.artUrl)}" alt="" loading="lazy" />` : `<span class="music-playlist-fallback">${icon("music", 22)}</span>`}
+      <span class="music-playlist-name">${esc(album.name)}</span>
+      <span class="music-playlist-meta">${esc(album.artist)}</span>
+    </button>`;
+}
+
+function artistCardHtml(artist: SpotifyArtist): string {
+  return `
+    <button class="music-playlist music-artist-card" data-music="open-url" data-url="${esc(artist.url)}" title="${esc(t("music.openSpotify"))}">
+      ${artist.imageUrl ? `<img src="${esc(artist.imageUrl)}" alt="" loading="lazy" />` : `<span class="music-playlist-fallback">${icon("user", 22)}</span>`}
+      <span class="music-playlist-name">${esc(artist.name)}</span>
+      <span class="music-playlist-meta">${esc(t("music.resultsArtists"))}</span>
+    </button>`;
 }
 
 /** "Play on this computer": librespot Connect receiver controls. */
@@ -262,8 +381,28 @@ function paintNow(): void {
   if (openButton) openButton.disabled = !now?.url;
   paintProgress();
   paintDevices();
-  paintPlaylists();
+  paintBrowse();
   paintPlayback();
+}
+
+/** Re-renders the search/library card when its state changes. */
+function paintBrowse(): void {
+  const card = document.getElementById("music-browse-card");
+  if (!card) return;
+  const key = [
+    state.results ? "search" : "library",
+    state.searchBusy ? "busy" : "",
+    state.libraryTab,
+    state.results
+      ? `${state.results.tracks.length}:${state.results.albums.length}:${state.results.artists.length}:${state.results.playlists.length}`
+      : "",
+    state.library
+      ? `${state.library.tracks.length}:${state.library.playlists.length}:${state.library.albums.length}:${state.library.artists.length}`
+      : "none",
+  ].join("|");
+  if (key === state.lastBrowseKey) return;
+  state.lastBrowseKey = key;
+  card.innerHTML = browseCardHtml();
 }
 
 /** Re-renders the playback card when its state changes (rare). */
@@ -304,26 +443,6 @@ function paintDevices(): void {
           .join("")
       : `<option value="">${esc(t("music.noDevices"))}</option>`;
   }
-}
-
-function paintPlaylists(): void {
-  const grid = document.getElementById("music-playlists");
-  if (!grid) return;
-  const key = state.playlists.map((playlist) => playlist.id).join("|");
-  if (key === state.lastPlaylistKey) return;
-  state.lastPlaylistKey = key;
-  grid.innerHTML = state.playlists.length
-    ? state.playlists
-        .map(
-          (playlist) => `
-        <button class="music-playlist" data-music="play-playlist" data-uri="${esc(playlist.uri)}" title="${esc(t("music.playPlaylist"))}">
-          ${playlist.artUrl ? `<img src="${esc(playlist.artUrl)}" alt="" loading="lazy" />` : `<span class="music-playlist-fallback">${icon("music", 22)}</span>`}
-          <span class="music-playlist-name">${esc(playlist.name)}</span>
-          <span class="music-playlist-meta">${esc(t("music.trackCount", { count: playlist.trackCount }))}</span>
-        </button>`,
-        )
-        .join("")
-    : `<p class="music-note">${esc(t("music.noPlaylists"))}</p>`;
 }
 
 /* ---------- Data refresh ---------- */
@@ -373,15 +492,22 @@ async function refresh(initial: boolean): Promise<void> {
     if (state.devices.length === 0 || tick % 4 === 0) {
       state.devices = await spotifyDevices().catch(() => state.devices);
     }
-    if (state.playlists.length === 0 || connectChanged) {
-      state.playlists = await spotifyPlaylists().catch(() => state.playlists);
+    if (state.library === null) {
+      try {
+        state.library = await spotifyLibrary();
+      } catch (error) {
+        // Fail once and keep the empty state so the poll does not spam.
+        state.library = { tracks: [], playlists: [], albums: [], artists: [] };
+        state.message = { text: messageFor(String(error)), kind: "error" };
+      }
     }
   } else {
     state.now = null;
     state.devices = [];
-    state.playlists = [];
+    state.library = null;
+    state.results = null;
     state.lastDeviceKey = "";
-    state.lastPlaylistKey = "";
+    state.lastBrowseKey = "";
   }
 
   if (initial || connectChanged) {
@@ -473,6 +599,29 @@ async function withControl(action: () => Promise<void>): Promise<void> {
   }
 }
 
+/** Runs a catalogue search and shows the results instead of the library. */
+async function runSearch(): Promise<void> {
+  const input = document.getElementById("music-search") as HTMLInputElement | null;
+  const query = (input?.value ?? state.searchQuery).trim();
+  state.searchQuery = query;
+  if (!query) {
+    state.results = null;
+    paintBrowse();
+    return;
+  }
+  state.searchBusy = true;
+  paintBrowse();
+  try {
+    state.results = await spotifySearch(query);
+  } catch (error) {
+    fail(error);
+    state.results = null;
+  }
+  state.searchBusy = false;
+  paintBrowse();
+  (document.getElementById("music-search") as HTMLInputElement | null)?.focus();
+}
+
 /** Starts the librespot receiver; the first run waits for browser approval. */
 async function playbackStart(): Promise<void> {
   state.playbackBusy = true;
@@ -539,6 +688,34 @@ document.addEventListener("click", (event) => {
   }
   if (action === "open-spotify") {
     if (state.now?.url) void openUrl(state.now.url);
+    return;
+  }
+  if (action === "search-go") {
+    void runSearch();
+    return;
+  }
+  if (action === "search-clear") {
+    state.results = null;
+    state.searchBusy = false;
+    paintBrowse();
+    return;
+  }
+  if (action === "library-tab") {
+    const tab = el.dataset.tab as typeof state.libraryTab | undefined;
+    if (tab) {
+      state.libraryTab = tab;
+      paintBrowse();
+    }
+    return;
+  }
+  if (action === "play-uri") {
+    const uri = el.dataset.uri ?? "";
+    if (uri) void withControl(() => spotifyPlay(uri, null));
+    return;
+  }
+  if (action === "open-url") {
+    const url = el.dataset.url ?? "";
+    if (url) void openUrl(url);
     return;
   }
   if (action === "playback-start") {
@@ -624,5 +801,16 @@ document.addEventListener("input", (event) => {
   const target = event.target as HTMLElement;
   if (target.id === "music-volume") {
     setText("music-volume-value", `${(target as HTMLInputElement).value}%`);
+  }
+  if (target.id === "music-search") {
+    state.searchQuery = (target as HTMLInputElement).value;
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  const target = event.target as HTMLElement | null;
+  if (target?.id === "music-search" && event.key === "Enter") {
+    event.preventDefault();
+    void runSearch();
   }
 });

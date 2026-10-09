@@ -903,6 +903,8 @@ fn main() {
             spotify::spotify_now_playing,
             spotify::spotify_devices,
             spotify::spotify_playlists,
+            spotify::spotify_search,
+            spotify::spotify_library,
             spotify::spotify_control,
             spotify::spotify_play,
             spotify::spotify_transfer,

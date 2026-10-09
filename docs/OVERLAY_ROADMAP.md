@@ -139,6 +139,13 @@ approval against Spotify's own desktop client (`streaming` scope, no developer a
 the device appears as "Efxlve Launcher" in every Spotify client, and the Web API
 controls it like any other device. Spotify requires Premium for librespot playback.
 
+**Browsing:** the launcher's Spotify page searches the catalogue (tracks, albums,
+artists, playlists) and browses the user's library (liked songs, playlists, saved
+albums, followed artists) through the Web API; clicking a row plays it on the active
+device. Spotify restricts apps created since Nov 2024 from Spotify-owned playlists,
+related artists, recommendations and audio features, so the page sticks to search,
+library and playback control.
+
 ### 2.5 Discord — presence + voice read
 
 - Rich Presence is already implemented in the launcher (`presence.rs`,

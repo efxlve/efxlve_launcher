@@ -75,6 +75,7 @@ struct PlayerState {
 
 #[derive(Deserialize)]
 struct TrackJson {
+    id: Option<String>,
     name: Option<String>,
     uri: Option<String>,
     duration_ms: Option<i64>,
@@ -90,8 +91,12 @@ struct Named {
 
 #[derive(Deserialize)]
 struct AlbumJson {
+    id: Option<String>,
     name: Option<String>,
+    uri: Option<String>,
+    artists: Option<Vec<Named>>,
     images: Option<Vec<ImageJson>>,
+    external_urls: Option<Urls>,
 }
 
 #[derive(Deserialize)]
@@ -263,23 +268,59 @@ pub struct Playlist {
     pub owner: String,
 }
 
+fn join_artists(artists: &Option<Vec<Named>>) -> String {
+    artists
+        .as_ref()
+        .map(|list| {
+            list.iter()
+                .filter_map(|artist| artist.name.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .unwrap_or_default()
+}
+
+fn first_image(images: Option<&Vec<ImageJson>>) -> String {
+    images
+        .and_then(|list| list.first())
+        .and_then(|image| image.url.clone())
+        .unwrap_or_default()
+}
+
+#[derive(Deserialize)]
+struct PlaylistEntryJson {
+    id: Option<String>,
+    name: Option<String>,
+    uri: Option<String>,
+    images: Option<Vec<ImageJson>>,
+    tracks: Option<TracksCountJson>,
+    owner: Option<Named>,
+}
+
+#[derive(Deserialize)]
+struct TracksCountJson {
+    total: Option<i64>,
+}
+
+fn playlist_from_json(entry: &PlaylistEntryJson) -> Playlist {
+    Playlist {
+        id: entry.id.clone().unwrap_or_default(),
+        name: entry.name.clone().unwrap_or_default(),
+        uri: entry.uri.clone().unwrap_or_default(),
+        art_url: first_image(entry.images.as_ref()),
+        track_count: entry.tracks.as_ref().and_then(|tracks| tracks.total).unwrap_or(0),
+        owner: entry
+            .owner
+            .as_ref()
+            .and_then(|owner| owner.name.clone())
+            .unwrap_or_default(),
+    }
+}
+
 pub async fn playlists(client: &reqwest::Client, token: &str) -> Result<Vec<Playlist>, ApiError> {
     #[derive(Deserialize)]
-    struct PlaylistEntry {
-        id: Option<String>,
-        name: Option<String>,
-        uri: Option<String>,
-        images: Option<Vec<ImageJson>>,
-        tracks: Option<TracksCount>,
-        owner: Option<Named>,
-    }
-    #[derive(Deserialize)]
-    struct TracksCount {
-        total: Option<i64>,
-    }
-    #[derive(Deserialize)]
     struct PlaylistsBody {
-        items: Option<Vec<PlaylistEntry>>,
+        items: Option<Vec<PlaylistEntryJson>>,
     }
     let response = client
         .get(format!("{API}/me/playlists?limit=50"))
@@ -294,23 +335,268 @@ pub async fn playlists(client: &reqwest::Client, token: &str) -> Result<Vec<Play
     Ok(body
         .items
         .unwrap_or_default()
-        .into_iter()
-        .filter_map(|entry| {
-            let uri = entry.uri?;
-            Some(Playlist {
-                id: entry.id.unwrap_or_default(),
-                name: entry.name.unwrap_or_default(),
-                uri,
-                art_url: entry
-                    .images
-                    .and_then(|images| images.into_iter().next())
-                    .and_then(|image| image.url)
-                    .unwrap_or_default(),
-                track_count: entry.tracks.and_then(|tracks| tracks.total).unwrap_or(0),
-                owner: entry.owner.and_then(|owner| owner.name).unwrap_or_default(),
-            })
-        })
+        .iter()
+        .filter(|entry| entry.uri.is_some())
+        .map(playlist_from_json)
         .collect())
+}
+
+/* ---------- Search & library browsing ---------- */
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Track {
+    pub id: String,
+    pub name: String,
+    pub artist: String,
+    pub album: String,
+    pub art_url: String,
+    pub uri: String,
+    pub duration_ms: i64,
+    pub url: String,
+}
+
+fn track_from_json(item: &TrackJson) -> Track {
+    Track {
+        id: item.id.clone().unwrap_or_default(),
+        name: item.name.clone().unwrap_or_default(),
+        artist: join_artists(&item.artists),
+        album: item
+            .album
+            .as_ref()
+            .and_then(|album| album.name.clone())
+            .unwrap_or_default(),
+        art_url: first_image(item.album.as_ref().and_then(|album| album.images.as_ref())),
+        uri: item.uri.clone().unwrap_or_default(),
+        duration_ms: item.duration_ms.unwrap_or(0),
+        url: item
+            .external_urls
+            .as_ref()
+            .and_then(|urls| urls.spotify.clone())
+            .unwrap_or_default(),
+    }
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Album {
+    pub id: String,
+    pub name: String,
+    pub artist: String,
+    pub art_url: String,
+    pub uri: String,
+    pub url: String,
+}
+
+fn album_from_json(item: &AlbumJson) -> Album {
+    Album {
+        id: item.id.clone().unwrap_or_default(),
+        name: item.name.clone().unwrap_or_default(),
+        artist: join_artists(&item.artists),
+        art_url: first_image(item.images.as_ref()),
+        uri: item.uri.clone().unwrap_or_default(),
+        url: item
+            .external_urls
+            .as_ref()
+            .and_then(|urls| urls.spotify.clone())
+            .unwrap_or_default(),
+    }
+}
+
+#[derive(Deserialize)]
+struct ArtistJson {
+    id: Option<String>,
+    name: Option<String>,
+    uri: Option<String>,
+    images: Option<Vec<ImageJson>>,
+    external_urls: Option<Urls>,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Artist {
+    pub id: String,
+    pub name: String,
+    pub image_url: String,
+    pub uri: String,
+    pub url: String,
+}
+
+fn artist_from_json(item: &ArtistJson) -> Artist {
+    Artist {
+        id: item.id.clone().unwrap_or_default(),
+        name: item.name.clone().unwrap_or_default(),
+        image_url: first_image(item.images.as_ref()),
+        uri: item.uri.clone().unwrap_or_default(),
+        url: item
+            .external_urls
+            .as_ref()
+            .and_then(|urls| urls.spotify.clone())
+            .unwrap_or_default(),
+    }
+}
+
+#[derive(Deserialize)]
+struct Page<T> {
+    items: Option<Vec<T>>,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResults {
+    pub tracks: Vec<Track>,
+    pub albums: Vec<Album>,
+    pub artists: Vec<Artist>,
+    pub playlists: Vec<Playlist>,
+}
+
+pub async fn search(
+    client: &reqwest::Client,
+    token: &str,
+    query: &str,
+) -> Result<SearchResults, ApiError> {
+    #[derive(Deserialize)]
+    struct SearchBody {
+        tracks: Option<Page<TrackJson>>,
+        albums: Option<Page<AlbumJson>>,
+        artists: Option<Page<ArtistJson>>,
+        playlists: Option<Page<PlaylistEntryJson>>,
+    }
+    let response = client
+        .get(format!("{API}/search"))
+        .bearer_auth(token)
+        .query(&[
+            ("q", query),
+            ("type", "track,album,artist,playlist"),
+            ("limit", "20"),
+        ])
+        .send()
+        .await
+        .map_err(network_error)?;
+    if !response.status().is_success() {
+        return Err(api_error(response).await);
+    }
+    let body: SearchBody = response.json().await.map_err(network_error)?;
+    Ok(SearchResults {
+        tracks: body
+            .tracks
+            .and_then(|page| page.items)
+            .unwrap_or_default()
+            .iter()
+            .map(track_from_json)
+            .collect(),
+        albums: body
+            .albums
+            .and_then(|page| page.items)
+            .unwrap_or_default()
+            .iter()
+            .map(album_from_json)
+            .collect(),
+        artists: body
+            .artists
+            .and_then(|page| page.items)
+            .unwrap_or_default()
+            .iter()
+            .map(artist_from_json)
+            .collect(),
+        playlists: body
+            .playlists
+            .and_then(|page| page.items)
+            .unwrap_or_default()
+            .iter()
+            .map(playlist_from_json)
+            .collect(),
+    })
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Library {
+    pub tracks: Vec<Track>,
+    pub playlists: Vec<Playlist>,
+    pub albums: Vec<Album>,
+    pub artists: Vec<Artist>,
+}
+
+pub async fn library(client: &reqwest::Client, token: &str) -> Result<Library, ApiError> {
+    #[derive(Deserialize)]
+    struct LikedItem {
+        track: Option<TrackJson>,
+    }
+    #[derive(Deserialize)]
+    struct LikedBody {
+        items: Option<Vec<LikedItem>>,
+    }
+    #[derive(Deserialize)]
+    struct SavedAlbumItem {
+        album: Option<AlbumJson>,
+    }
+    #[derive(Deserialize)]
+    struct SavedAlbumsBody {
+        items: Option<Vec<SavedAlbumItem>>,
+    }
+    #[derive(Deserialize)]
+    struct FollowedArtistsBody {
+        artists: Option<Page<ArtistJson>>,
+    }
+
+    let liked = client
+        .get(format!("{API}/me/tracks?limit=50"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(network_error)?;
+    if !liked.status().is_success() {
+        return Err(api_error(liked).await);
+    }
+    let liked: LikedBody = liked.json().await.map_err(network_error)?;
+
+    let saved = client
+        .get(format!("{API}/me/albums?limit=50"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(network_error)?;
+    if !saved.status().is_success() {
+        return Err(api_error(saved).await);
+    }
+    let saved: SavedAlbumsBody = saved.json().await.map_err(network_error)?;
+
+    let followed = client
+        .get(format!("{API}/me/following?type=artist&limit=50"))
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(network_error)?;
+    if !followed.status().is_success() {
+        return Err(api_error(followed).await);
+    }
+    let followed: FollowedArtistsBody = followed.json().await.map_err(network_error)?;
+
+    Ok(Library {
+        tracks: liked
+            .items
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|item| item.track.as_ref())
+            .map(track_from_json)
+            .collect(),
+        playlists: playlists(client, token).await.unwrap_or_default(),
+        albums: saved
+            .items
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|item| item.album.as_ref())
+            .map(album_from_json)
+            .collect(),
+        artists: followed
+            .artists
+            .and_then(|page| page.items)
+            .unwrap_or_default()
+            .iter()
+            .map(artist_from_json)
+            .collect(),
+    })
 }
 
 /// Returns the URL + HTTP method for a control action. Kept separate so the

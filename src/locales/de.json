@@ -1957,5 +1957,19 @@
   "music.playbackPaired": "Playback approved",
   "music.playbackWaiting": "Waiting for browser approval…",
   "music.playbackReady": "Playback engine is running. Press “Play here” to start.",
-  "music.playHere": "Play here"
+  "music.playHere": "Play here",
+  "music.searchPlaceholder": "Search Spotify",
+  "music.search": "Search",
+  "music.searchClear": "Clear",
+  "music.noResults": "No results.",
+  "music.loading": "Loading…",
+  "music.resultsTracks": "Tracks",
+  "music.resultsAlbums": "Albums",
+  "music.resultsArtists": "Artists",
+  "music.resultsPlaylists": "Playlists",
+  "music.libraryLiked": "Liked songs",
+  "music.libraryPlaylists": "Playlists",
+  "music.libraryAlbums": "Albums",
+  "music.libraryArtists": "Artists",
+  "music.play": "Play"
 }
