@@ -29,6 +29,11 @@ fn dir(app: &AppHandle) -> PathBuf {
     dir
 }
 
+/// Shared Spotify data directory (Web API session, playback tokens, cache).
+pub(crate) fn data_dir(app: &AppHandle) -> PathBuf {
+    dir(app)
+}
+
 fn session_path(app: &AppHandle) -> PathBuf {
     dir(app).join("session.json")
 }

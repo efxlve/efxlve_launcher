@@ -132,6 +132,13 @@ working when Spotify is not connected and covers every other player (browsers, l
 files). The launcher's Spotify page and the overlay Spotify tab show Spotify when
 connected and SMTC otherwise.
 
+**Playback inside the launcher (librespot):** the launcher can also run a Spotify
+Connect receiver through librespot, so it plays audio itself instead of only
+controlling other devices — the same model spotifast uses. Pairing is one browser
+approval against Spotify's own desktop client (`streaming` scope, no developer app),
+the device appears as "Efxlve Launcher" in every Spotify client, and the Web API
+controls it like any other device. Spotify requires Premium for librespot playback.
+
 ### 2.5 Discord — presence + voice read
 
 - Rich Presence is already implemented in the launcher (`presence.rs`,

@@ -49,6 +49,14 @@ export interface SpotifyPlaylist {
   owner: string;
 }
 
+export interface SpotifyPlaybackStatus {
+  /** The one-time browser approval is stored. */
+  paired: boolean;
+  /** The Connect receiver is running right now. */
+  running: boolean;
+  deviceName: string;
+}
+
 export const spotifyStatus = () => invoke<SpotifyStatus>("spotify_status");
 
 export const spotifySetClientId = (clientId: string) =>
@@ -77,6 +85,18 @@ export const spotifyPlay = (uri: string, deviceId?: string | null) =>
 
 export const spotifyTransfer = (deviceId: string) =>
   invoke<void>("spotify_transfer", { deviceId });
+
+/* ---------- In-launcher playback (librespot Connect receiver) ---------- */
+
+export const spotifyPlaybackStatus = () =>
+  invoke<SpotifyPlaybackStatus>("spotify_playback_status");
+
+export const spotifyPlaybackStart = () =>
+  invoke<SpotifyPlaybackStatus>("spotify_playback_start");
+
+export const spotifyPlaybackStop = () => invoke<void>("spotify_playback_stop");
+
+export const spotifyPlaybackForget = () => invoke<void>("spotify_playback_forget");
 
 /** mm:ss for a millisecond timeline position. */
 export function formatTime(ms: number): string {

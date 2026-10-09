@@ -232,6 +232,28 @@
   min-width: 34px;
 }
 
+/* --- Playback on this computer (librespot receiver) --- */
+.music-playback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.music-playback-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.music-playback-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 /* --- Playlists --- */
 .music-playlists-head {
   display: flex;

@@ -1946,5 +1946,16 @@
   "music.createApp": "Create app",
   "music.copyRedirect": "Copy",
   "music.copied": "Copied",
-  "music.smtcHint": "No setup? The in-game Spotify tab still controls your desktop Spotify through Windows media keys."
+  "music.smtcHint": "No setup? The in-game Spotify tab still controls your desktop Spotify through Windows media keys.",
+  "music.playbackTitle": "Play on this computer",
+  "music.playbackDesc": "The launcher becomes a Spotify device (librespot). One browser approval is needed once, and Spotify Premium is required.",
+  "music.playbackEnable": "Enable playback",
+  "music.playbackStart": "Start playback engine",
+  "music.playbackStop": "Stop engine",
+  "music.playbackForget": "Remove approval",
+  "music.playbackRunning": "Running as “{name}”",
+  "music.playbackPaired": "Playback approved",
+  "music.playbackWaiting": "Waiting for browser approval…",
+  "music.playbackReady": "Playback engine is running. Press “Play here” to start.",
+  "music.playHere": "Play here"
 }

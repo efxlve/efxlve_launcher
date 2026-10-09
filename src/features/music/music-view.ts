@@ -23,12 +23,17 @@ import {
   spotifyLogout,
   spotifyNowPlaying,
   spotifyPlay,
+  spotifyPlaybackForget,
+  spotifyPlaybackStart,
+  spotifyPlaybackStatus,
+  spotifyPlaybackStop,
   spotifyPlaylists,
   spotifySetClientId,
   spotifyStatus,
   spotifyTransfer,
   type NowPlaying,
   type SpotifyDevice,
+  type SpotifyPlaybackStatus,
   type SpotifyPlaylist,
   type SpotifyStatus,
 } from "./spotify-client";
@@ -44,6 +49,8 @@ interface MusicState {
   now: NowPlaying | null;
   devices: SpotifyDevice[];
   playlists: SpotifyPlaylist[];
+  playback: SpotifyPlaybackStatus;
+  playbackBusy: boolean;
   message: Message | null;
   loginBusy: boolean;
   /** Playback position anchor so the progress bar moves between polls. */
@@ -51,6 +58,7 @@ interface MusicState {
   progressBaseAt: number;
   lastDeviceKey: string;
   lastPlaylistKey: string;
+  lastPlaybackKey: string;
 }
 
 const state: MusicState = {
@@ -59,12 +67,15 @@ const state: MusicState = {
   now: null,
   devices: [],
   playlists: [],
+  playback: { paired: false, running: false, deviceName: "Efxlve Launcher" },
+  playbackBusy: false,
   message: null,
   loginBusy: false,
   progressBaseMs: 0,
   progressBaseAt: 0,
   lastDeviceKey: "",
   lastPlaylistKey: "",
+  lastPlaybackKey: "",
 };
 
 let pollTimer: number | null = null;
@@ -171,8 +182,38 @@ function renderPlayer(): string {
         <div class="music-playlist-grid" id="music-playlists"></div>
       </div>
 
+      <div class="card music-playback" id="music-playback-card">${playbackCardHtml()}</div>
+
       ${state.message ? `<p class="music-note ${state.message.kind}">${esc(state.message.text)}</p>` : ""}
     </div>`;
+}
+
+/** "Play on this computer": librespot Connect receiver controls. */
+function playbackCardHtml(): string {
+  const playback = state.playback;
+  const chip = playback.running
+    ? `<span class="chip ok">${esc(t("music.playbackRunning", { name: playback.deviceName }))}</span>`
+    : playback.paired
+    ? `<span class="chip">${esc(t("music.playbackPaired"))}</span>`
+    : "";
+  const actions = playback.running
+    ? `<button class="btn primary" data-music="playback-here">${icon("play", 14)} ${esc(t("music.playHere"))}</button>
+       <button class="btn ghost small" data-music="playback-stop">${esc(t("music.playbackStop"))}</button>`
+    : `<button class="btn primary" data-music="playback-start" ${state.playbackBusy ? "disabled" : ""}>${icon("monitor", 14)} ${esc(
+        state.playbackBusy
+          ? t("music.playbackWaiting")
+          : playback.paired
+          ? t("music.playbackStart")
+          : t("music.playbackEnable"),
+      )}</button>
+       ${playback.paired ? `<button class="btn ghost small" data-music="playback-forget">${esc(t("music.playbackForget"))}</button>` : ""}`;
+  return `
+    <div class="music-playback-head">
+      <div class="music-brand">${icon("monitor", 18)}<span>${esc(t("music.playbackTitle"))}</span></div>
+      ${chip}
+      <div class="music-playback-actions">${actions}</div>
+    </div>
+    <p class="music-note">${esc(t("music.playbackDesc"))}</p>`;
 }
 
 /** Rebuilds the whole page through the app render bus (connect changes). */
@@ -222,6 +263,17 @@ function paintNow(): void {
   paintProgress();
   paintDevices();
   paintPlaylists();
+  paintPlayback();
+}
+
+/** Re-renders the playback card when its state changes (rare). */
+function paintPlayback(): void {
+  const card = document.getElementById("music-playback-card");
+  if (!card) return;
+  const key = `${state.playback.paired}:${state.playback.running}:${state.playbackBusy}`;
+  if (key === state.lastPlaybackKey) return;
+  state.lastPlaybackKey = key;
+  card.innerHTML = playbackCardHtml();
 }
 
 function paintProgress(): void {
@@ -305,6 +357,8 @@ function ensurePolling(): void {
 async function refresh(initial: boolean): Promise<void> {
   const status = await spotifyStatus().catch(() => null);
   if (!status) return;
+  const playback = await spotifyPlaybackStatus().catch(() => null);
+  if (playback) state.playback = playback;
   const connectChanged = status.connected !== state.status.connected;
   state.status = status;
   state.loaded = true;
@@ -419,6 +473,42 @@ async function withControl(action: () => Promise<void>): Promise<void> {
   }
 }
 
+/** Starts the librespot receiver; the first run waits for browser approval. */
+async function playbackStart(): Promise<void> {
+  state.playbackBusy = true;
+  state.message = null;
+  rerender();
+  try {
+    state.playback = await spotifyPlaybackStart();
+    state.message = { text: t("music.playbackReady"), kind: "ok" };
+  } catch (error) {
+    fail(error);
+  }
+  state.playbackBusy = false;
+  await refresh(true);
+}
+
+/** Transfers playback to our own Connect device. */
+async function playbackHere(): Promise<void> {
+  try {
+    let target = state.devices.find((device) => device.name === state.playback.deviceName);
+    if (!target) {
+      state.devices = await spotifyDevices();
+      target = state.devices.find((device) => device.name === state.playback.deviceName);
+    }
+    if (!target) {
+      state.message = { text: t("music.errorNoDevice"), kind: "error" };
+      rerender();
+      return;
+    }
+    await spotifyTransfer(target.id);
+    await refresh(false);
+  } catch (error) {
+    fail(error);
+    rerender();
+  }
+}
+
 async function seekAt(clientX: number): Promise<void> {
   const bar = document.getElementById("music-progress");
   const now = state.now;
@@ -449,6 +539,28 @@ document.addEventListener("click", (event) => {
   }
   if (action === "open-spotify") {
     if (state.now?.url) void openUrl(state.now.url);
+    return;
+  }
+  if (action === "playback-start") {
+    void playbackStart();
+    return;
+  }
+  if (action === "playback-stop") {
+    void (async () => {
+      await spotifyPlaybackStop();
+      await refresh(true);
+    })();
+    return;
+  }
+  if (action === "playback-here") {
+    void playbackHere();
+    return;
+  }
+  if (action === "playback-forget") {
+    void (async () => {
+      await spotifyPlaybackForget();
+      await refresh(true);
+    })();
     return;
   }
   if (action === "connect") {

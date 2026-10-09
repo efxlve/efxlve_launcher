@@ -1946,5 +1946,16 @@
   "music.createApp": "Uygulama oluştur",
   "music.copyRedirect": "Kopyala",
   "music.copied": "Kopyalandı",
-  "music.smtcHint": "Kurulum istemiyorsan: oyun içi Spotify sekmesi, masaüstü Spotify'ı Windows medya tuşları üzerinden yönetmeye devam eder."
+  "music.smtcHint": "Kurulum istemiyorsan: oyun içi Spotify sekmesi, masaüstü Spotify'ı Windows medya tuşları üzerinden yönetmeye devam eder.",
+  "music.playbackTitle": "Bu bilgisayarda çal",
+  "music.playbackDesc": "Launcher bir Spotify cihazına dönüşür (librespot). Bir kez tarayıcı onayı gerekir; Spotify Premium şart.",
+  "music.playbackEnable": "Çalmayı etkinleştir",
+  "music.playbackStart": "Çalma motorunu başlat",
+  "music.playbackStop": "Motoru durdur",
+  "music.playbackForget": "Onayı kaldır",
+  "music.playbackRunning": "“{name}” olarak çalışıyor",
+  "music.playbackPaired": "Çalma onaylı",
+  "music.playbackWaiting": "Tarayıcı onayı bekleniyor…",
+  "music.playbackReady": "Çalma motoru çalışıyor. Başlatmak için “Burada çal”a bas.",
+  "music.playHere": "Burada çal"
 }

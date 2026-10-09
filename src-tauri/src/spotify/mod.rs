@@ -9,6 +9,7 @@
 
 pub mod api;
 pub mod auth;
+pub mod playback;
 pub mod session;
 
 use serde::Serialize;
