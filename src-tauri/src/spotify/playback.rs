@@ -335,6 +335,9 @@ mod imp {
     static TRACKS: Mutex<Option<(Instant, String, Vec<TrackSummary>)>> = Mutex::new(None);
     const TRACKS_TTL: Duration = Duration::from_secs(600);
     const TRACK_LIMIT: usize = 60;
+    /// Last context started from the overlay/sidebar, resumed when play is
+    /// pressed with nothing loaded.
+    static LAST_CONTEXT: Mutex<Option<String>> = Mutex::new(None);
 
     fn update(change: impl FnOnce(&mut NowState)) {
         if let Ok(mut guard) = NOW.lock() {
@@ -400,14 +403,37 @@ mod imp {
 
         let result = match action {
             "play" => {
-                let result = spirc.play();
-                if result.is_ok() {
-                    update(|state| {
-                        state.playing = true;
-                        state.updated_at = Some(Instant::now());
-                    });
+                // Nothing loaded yet (fresh receiver): resume the last context,
+                // or the account's Liked Songs.
+                let has_track = NOW
+                    .lock()
+                    .ok()
+                    .and_then(|guard| guard.as_ref().map(|state| state.item.is_some()))
+                    .unwrap_or(false);
+                if has_track {
+                    let result = spirc.play();
+                    if result.is_ok() {
+                        update(|state| {
+                            state.playing = true;
+                            state.updated_at = Some(Instant::now());
+                        });
+                    }
+                    result
+                } else {
+                    match resume_context() {
+                        Some(uri) => {
+                            let _ = spirc.activate();
+                            spirc.load(LoadRequest::from_context_uri(
+                                uri,
+                                LoadRequestOptions {
+                                    start_playing: true,
+                                    ..Default::default()
+                                },
+                            ))
+                        }
+                        None => Err(librespot::core::Error::unavailable("nothing_to_play")),
+                    }
                 }
-                result
             }
             "pause" => {
                 let result = spirc.pause();
@@ -669,6 +695,10 @@ mod imp {
             .map_err(|_| "state_poisoned".to_string())?
             .clone()
             .ok_or_else(|| "not_running".to_string())?;
+        // Remember it so a bare "play" resumes this context.
+        if let Ok(mut slot) = LAST_CONTEXT.lock() {
+            *slot = Some(uri.to_string());
+        }
         // Loading does nothing while another device is active; both commands
         // queue on the same channel, so activate lands first.
         let _ = spirc.activate();
@@ -681,6 +711,22 @@ mod imp {
             },
         );
         spirc.load(request).map_err(|error| error.to_string())
+    }
+
+    /// The context a bare "play" resumes: the last one started here, otherwise
+    /// the account's Liked Songs.
+    fn resume_context() -> Option<String> {
+        if let Ok(guard) = LAST_CONTEXT.lock() {
+            if let Some(uri) = guard.as_ref() {
+                return Some(uri.clone());
+            }
+        }
+        let session = SESSION.lock().ok()?.clone()?;
+        let username = session.username();
+        if username.is_empty() || username == "UNKNOWN" {
+            return None;
+        }
+        Some(format!("spotify:user:{username}:collection"))
     }
 
     /// Keeps `NOW` in sync with the player: metadata, position, volume, modes.
@@ -778,6 +824,9 @@ mod imp {
                 *slot = None;
             }
             if let Ok(mut slot) = TRACKS.lock() {
+                *slot = None;
+            }
+            if let Ok(mut slot) = LAST_CONTEXT.lock() {
                 *slot = None;
             }
         });

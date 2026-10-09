@@ -905,6 +905,7 @@ fn main() {
             spotify_host::spotify_player_hide,
             spotify_host::spotify_player_reload,
             spotify_host::spotify_player_back,
+            spotify_host::spotify_signed_in,
             spotify_host::spotify_open_in_launcher,
             legendary::commands::epic_get_system_drives,
             legendary::commands::epic_select_folder_dialog,

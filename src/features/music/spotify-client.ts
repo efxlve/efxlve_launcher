@@ -53,6 +53,9 @@ export interface TrackSummary {
 export const spotifyPlaybackStatus = () =>
   invoke<SpotifyPlaybackStatus>("spotify_playback_status");
 
+/** The embedded Spotify page has a signed-in account. */
+export const spotifySignedIn = () => invoke<boolean>("spotify_signed_in");
+
 export const spotifyPlaybackStart = () =>
   invoke<SpotifyPlaybackStatus>("spotify_playback_start");
 

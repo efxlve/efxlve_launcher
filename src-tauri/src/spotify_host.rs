@@ -120,7 +120,7 @@ pub fn spotify_player_back(app: AppHandle) {
 }
 
 /// True when the embedded page already has a signed-in Spotify session.
-fn has_spotify_session(app: &AppHandle) -> bool {
+pub(crate) fn has_spotify_session(app: &AppHandle) -> bool {
     let Ok(url) = HOME_URL.parse::<url::Url>() else {
         return false;
     };
@@ -150,6 +150,15 @@ fn spotify_web_url(url: &str) -> String {
         return url.to_string();
     }
     HOME_URL.to_string()
+}
+
+/// True when the embedded Spotify page is signed in (drives the sidebar
+/// player's visibility).
+#[tauri::command]
+pub async fn spotify_signed_in(app: AppHandle) -> bool {
+    tauri::async_runtime::spawn_blocking(move || has_spotify_session(&app))
+        .await
+        .unwrap_or(false)
 }
 
 /// Opens a Spotify link in the launcher's embedded player and brings the

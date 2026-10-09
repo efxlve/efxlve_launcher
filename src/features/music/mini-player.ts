@@ -13,7 +13,9 @@ import { t } from "../../i18n";
 import {
   spotifyPlaybackControl,
   spotifyPlaybackNow,
+  spotifyPlaybackStart,
   spotifyPlaybackStatus,
+  spotifySignedIn,
   type NowPlaying,
 } from "./spotify-client";
 
@@ -52,9 +54,14 @@ export function initMiniPlayer(): void {
   document.addEventListener("click", (event) => {
     const action = (event.target as HTMLElement).closest<HTMLElement>("[data-mini]")?.dataset.mini;
     if (!action) return;
-    if (action === "toggle") void control(current?.isPlaying ? "pause" : "play");
-    else if (action === "prev") void control("previous");
-    else if (action === "next") void control("next");
+    if (action === "toggle") {
+      if (current) void control(current.isPlaying ? "pause" : "play");
+      else void startAndPlay();
+    } else if (action === "prev") {
+      if (current) void control("previous");
+    } else if (action === "next") {
+      if (current) void control("next");
+    }
   });
 
   volume?.addEventListener("change", () => {
@@ -66,7 +73,27 @@ export function initMiniPlayer(): void {
   void refresh();
 }
 
+/** Nothing loaded: make sure the receiver runs, then start its last context. */
+async function startAndPlay(): Promise<void> {
+  const status = await spotifyPlaybackStatus().catch(() => null);
+  if (!status?.running) {
+    await spotifyPlaybackStart().catch(() => undefined);
+  }
+  await spotifyPlaybackControl("play").catch(() => undefined);
+  window.setTimeout(() => void refresh(), 900);
+}
+
 async function refresh(): Promise<void> {
+  // The player only exists for a signed-in Spotify account.
+  const signedIn = await spotifySignedIn().catch(() => false);
+  const mini = document.getElementById("sb-mini");
+  if (mini) mini.hidden = !signedIn;
+  if (!signedIn) {
+    current = null;
+    paint();
+    return;
+  }
+
   const status = await spotifyPlaybackStatus().catch(() => null);
   const engineOn = status?.running === true;
   const now = engineOn ? await spotifyPlaybackNow().catch(() => null) : null;
