@@ -83,16 +83,6 @@ interface ScreenshotItem {
   data_url: string;
 }
 
-interface MediaState {
-  available: boolean;
-  title: string;
-  artist: string;
-  playing: boolean;
-  source: string;
-  positionS: number;
-  durationS: number;
-}
-
 type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "settings";
 
 const TABS: { id: TabId; icon: IconName; key: string }[] = [
@@ -113,23 +103,12 @@ let context: OpenPayload = { appName: "", title: "" };
 let launcherMode = false;
 let metrics: MetricsSample | null = null;
 let fpsHistory: number[] = [];
-let mediaState: MediaState = {
-  available: false,
-  title: "",
-  artist: "",
-  playing: false,
-  source: "",
-  positionS: 0,
-  durationS: 0,
-};
-/** The launcher's Connect receiver (takes priority over the SMTC fallback). */
+/** The launcher's Connect receiver (the only source the overlay shows). */
 let spotifyEngineOn = false;
 let spotifyDeviceName = "";
 let spotifyNow: NowPlaying | null = null;
 let spotifyBaseMs = 0;
 let spotifyBaseAt = 0;
-let mediaBaseMs = 0;
-let mediaBaseAt = 0;
 let lastMediaActive = false;
 /** Library browser state (playlists + the open playlist's tracks). */
 let playlists: PlaylistSummary[] | null = null;
@@ -998,30 +977,6 @@ function getOverlayMedia(): OverlayMediaModel {
       url: spotifyNow.url,
     };
   }
-  if (mediaState.available) {
-    const source = mediaState.source.toLowerCase();
-    // The launcher's own embedded Spotify page reports as a WebView2 session.
-    const isSp = source.includes("spotify") || source.includes("webview");
-    return {
-      active: true,
-      isSpotify: isSp,
-      source: mediaState.source || "Media",
-      title: mediaState.title,
-      artist: mediaState.artist,
-      album: isSp ? "Spotify" : "",
-      artUrl: "",
-      isPlaying: mediaState.playing,
-      positionMs: Math.round(mediaState.positionS * 1000),
-      durationMs: Math.round(mediaState.durationS * 1000),
-      canSeek: false,
-      canShuffleRepeat: false,
-      shuffle: false,
-      repeat: "off",
-      volumePercent: null,
-      deviceName: "",
-      url: isSp ? "spotify:" : "",
-    };
-  }
   return {
     active: false,
     isSpotify: true,
@@ -1047,7 +1002,7 @@ function spotifyLogoSvg(size = 48): string {
   return `<svg class="ov-sp-logo-svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.208-2.35-1.435-5.308-1.76-8.793-.963-.335.077-.67-.133-.746-.468-.077-.334.132-.67.467-.746 3.808-.87 7.076-.505 9.72 1.11.295.18.388.563.209.858zm1.224-2.72c-.226.368-.71.482-1.077.256-2.69-1.653-6.79-2.132-9.97-1.167-.412.124-.852-.11-.977-.522-.124-.412.11-.852.522-.977 3.633-1.102 8.147-.568 11.246 1.332.367.227.48.71.256 1.078zm.105-2.835C14.692 8.92 9.375 8.745 6.297 9.68c-.495.15-1.02-.132-1.17-.626-.15-.494.133-1.02.627-1.17 3.535-1.073 9.404-.866 13.14 1.352.444.264.59.84.327 1.284-.264.444-.84.59-1.284.327z"/></svg>`;
 }
 
-/** The launcher receiver when it has a track, the Windows media session otherwise. */
+/** The launcher's Spotify receiver, or the idle state. */
 async function refreshMedia(): Promise<void> {
   const status = await spotifyPlaybackStatus().catch(() => null);
   spotifyEngineOn = status?.running === true;
@@ -1060,18 +1015,6 @@ async function refreshMedia(): Promise<void> {
   }
   spotifyNow = now;
 
-  if (!now) {
-    try {
-      mediaState = await invoke<MediaState>("overlay_media_state");
-      if (mediaState.available) {
-        mediaBaseMs = Math.round(mediaState.positionS * 1000);
-        mediaBaseAt = Date.now();
-      }
-    } catch {
-      mediaState = { available: false, title: "", artist: "", playing: false, source: "", positionS: 0, durationS: 0 };
-    }
-  }
-
   const m = getOverlayMedia();
   if (m.active !== lastMediaActive) {
     lastMediaActive = m.active;
@@ -1082,12 +1025,9 @@ async function refreshMedia(): Promise<void> {
   patchMediaSurfaces();
 }
 
-/** Home media card header: Spotify branding when the source is Spotify itself. */
+/** Home media card header (always the launcher's Spotify receiver). */
 function mediaCardTitleHtml(): string {
-  const m = getOverlayMedia();
-  return m.isSpotify
-    ? `${icon("spotify", 14)} <span class="title-text">${esc(t("overlay.tabSpotify"))}</span>`
-    : `${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.tabMusic"))}</span>`;
+  return `${icon("spotify", 14)} <span class="title-text">${esc(t("overlay.tabSpotify"))}</span>`;
 }
 
 /** Home dashboard media card content. */
@@ -1506,14 +1446,8 @@ function paintSpotifyProgress(): void {
   if (!fill) return;
   const m = getOverlayMedia();
   const duration = m.durationMs || 0;
-  let elapsed = 0;
-  if (spotifyEngineOn && spotifyNow) {
-    elapsed = spotifyBaseMs;
-    if (spotifyNow.isPlaying) elapsed += Date.now() - spotifyBaseAt;
-  } else if (mediaState.available) {
-    elapsed = mediaBaseMs;
-    if (mediaState.playing) elapsed += Date.now() - mediaBaseAt;
-  }
+  let elapsed = spotifyBaseMs;
+  if (spotifyNow?.isPlaying) elapsed += Date.now() - spotifyBaseAt;
   elapsed = Math.max(0, Math.min(elapsed, duration || elapsed));
   fill.style.width = duration > 0 ? `${Math.min(100, (elapsed / duration) * 100)}%` : "0%";
   setText("ov-sp-elapsed", formatSpotifyTime(elapsed));
@@ -1714,15 +1648,11 @@ function wireEvents(): void {
         renderSettings();
       }
     } else if (action === "media-toggle" || action === "sp-toggle") {
-      const m = getOverlayMedia();
-      if (spotifyEngineOn && spotifyNow) void overlaySpotifyControl(spotifyNow.isPlaying ? "pause" : "play");
-      else void mediaControl(m.isPlaying ? "pause" : "play");
+      if (spotifyNow) void overlaySpotifyControl(spotifyNow.isPlaying ? "pause" : "play");
     } else if (action === "media-prev" || action === "sp-prev") {
-      if (spotifyEngineOn && spotifyNow) void overlaySpotifyControl("previous");
-      else void mediaControl("previous");
+      if (spotifyNow) void overlaySpotifyControl("previous");
     } else if (action === "media-next" || action === "sp-next") {
-      if (spotifyEngineOn && spotifyNow) void overlaySpotifyControl("next");
-      else void mediaControl("next");
+      if (spotifyNow) void overlaySpotifyControl("next");
     } else if (action === "sp-shuffle") {
       void overlaySpotifyControl("shuffle", spotifyNow?.shuffle ? 0 : 1);
     } else if (action === "sp-repeat") {
@@ -1836,15 +1766,6 @@ function wireEvents(): void {
 function onMouseActivity(): void {
   document.body.classList.remove("ov-using-gamepad");
   removeGamepadFocus();
-}
-
-async function mediaControl(action: string): Promise<void> {
-  try {
-    await invoke("overlay_media_control", { action });
-  } catch {
-    // Media session gone
-  }
-  void refreshMedia();
 }
 
 /* ---------- Controller & Keyboard Navigation ---------- */
@@ -2162,8 +2083,6 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   spotifyNow = null;
   spotifyBaseMs = 0;
   spotifyBaseAt = 0;
-  mediaBaseMs = 0;
-  mediaBaseAt = 0;
   lastMediaActive = false;
   playlists = null;
   playlistsState = "idle";

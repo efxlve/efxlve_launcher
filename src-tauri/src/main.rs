@@ -894,8 +894,6 @@ fn main() {
             overlay::overlay_hide,
             overlay::overlay_show,
             overlay::overlay_show_launcher,
-            overlay::media::overlay_media_state,
-            overlay::media::overlay_media_control,
             spotify::playback::spotify_playback_status,
             spotify::playback::spotify_playback_start,
             spotify::playback::spotify_playback_now,

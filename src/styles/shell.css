@@ -322,7 +322,7 @@ body.sb-resizing iframe {
   width: 3px;
   height: 30%;
   border-radius: 2px;
-  background: var(--ok);
+  background: var(--text);
   animation: sb-eq 900ms ease-in-out infinite;
 }
 
@@ -441,7 +441,7 @@ html.sb-narrow .sb-eq {
   display: block;
   height: 100%;
   width: 0;
-  background: var(--ok);
+  background: var(--text);
   transition: width 400ms linear;
 }
 

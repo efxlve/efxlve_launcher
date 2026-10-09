@@ -10,7 +10,6 @@
 
 pub mod hotkey;
 pub mod hud;
-pub mod media;
 pub mod metrics;
 
 use serde::Serialize;
