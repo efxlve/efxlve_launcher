@@ -61,6 +61,8 @@ function scheduleRender(): void {
 function render(): void {
   // TV Mode is a full-screen shell state; a single place toggles its body class.
   document.body.classList.toggle("tv-mode", S.view === "tv");
+  // The Spotify page is an embedded web player: it owns the whole content area.
+  document.body.classList.toggle("spotify-page", S.view === "music");
 
   // When leaving the store, hard-hide the native webview to avoid overlap.
   // TV Mode keeps the child on screen while its store panel is open.

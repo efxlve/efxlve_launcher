@@ -9,7 +9,6 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
@@ -64,25 +63,10 @@ export function renderMusic(): string {
     </div>`;
 }
 
-function engineChipClass(): string {
-  if (playback.running) return "chip ok";
-  if (playback.paired) return "chip";
-  return "chip warn";
-}
-
-function engineChipText(): string {
-  if (playback.running) {
-    return t("music.playbackRunning", { name: playback.deviceName });
-  }
-  if (playback.paired) {
-    return t("music.playbackPaired");
-  }
-  return t("music.playbackEnable");
-}
-
 function engineActionsHtml(): string {
+  const hint = esc(t("music.playerHint", { name: playback.deviceName }));
   if (playback.running) {
-    return `<button class="btn primary" data-music="playback-stop">${esc(t("music.playbackStop"))}</button>
+    return `<button class="btn primary" data-music="playback-stop" title="${hint}">${esc(t("music.playbackStop"))}</button>
       <button class="btn ghost small" data-music="playback-forget">${esc(t("music.playbackForget"))}</button>`;
   }
   const label = busy
@@ -90,11 +74,11 @@ function engineActionsHtml(): string {
     : playback.paired
     ? t("music.playbackStart")
     : t("music.playbackEnable");
-  return `<button class="btn primary" data-music="playback-start" ${busy ? "disabled" : ""}>${icon("monitor", 14)} ${esc(label)}</button>
+  return `<button class="btn primary" data-music="playback-start" title="${hint}" ${busy ? "disabled" : ""}>${icon("monitor", 14)} ${esc(label)}</button>
     ${playback.paired ? `<button class="btn ghost small" data-music="playback-forget">${esc(t("music.playbackForget"))}</button>` : ""}`;
 }
 
-/** Header row: engine chip and controls, only while the Spotify page is open. */
+/** Header row: engine controls, only while the Spotify page is open. */
 function paintHeaderActions(): void {
   const host = document.getElementById("page-header-actions");
   if (!host) return;
@@ -107,16 +91,9 @@ function paintHeaderActions(): void {
   const key = `${playback.paired}:${playback.running}:${busy}`;
   if (host.dataset.key === key) return;
   host.dataset.key = key;
-  // The chip only adds information once an approval exists; before that the
-  // button already says "Enable playback".
-  const chip = playback.paired
-    ? `<span class="${engineChipClass()}" title="${esc(t("music.playerHint", { name: playback.deviceName }))}">${esc(engineChipText())}</span>`
-    : "";
   host.innerHTML = `
-    ${chip}
     ${engineActionsHtml()}
-    <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>
-    <button class="btn ghost small" data-music="open-external">${icon("external", 14)} ${esc(t("music.openInBrowser"))}</button>`;
+    <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>`;
   host.classList.add("has-actions");
 }
 
@@ -233,9 +210,5 @@ document.addEventListener("click", (event) => {
   }
   if (action === "player-reload") {
     void invoke("spotify_player_reload").catch(() => undefined);
-    return;
-  }
-  if (action === "open-external") {
-    void openUrl("https://open.spotify.com/");
   }
 });
