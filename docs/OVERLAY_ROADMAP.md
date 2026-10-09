@@ -119,9 +119,17 @@ Playback control needs **Premium**; free accounts can still see what is playing.
 `spotifast` (librespot-based) was reviewed as a reference; its separate playback
 approval is only needed when a client plays audio itself, which a launcher does not.
 
+An easier path exists for releases: register one app, build with
+`EFXLVE_SPOTIFY_CLIENT_ID` and users skip the setup entirely (development mode
+allows 5 authenticated users, so this suits the author and a few testers; Spotify
+grants more only to organizations). spotifast ships a community-shared client ID
+(shared with spotify-player/ncspot) for the same reason — this project does not use
+someone else's app. Without any setup, the SMTC fallback still controls the desktop
+Spotify client through Windows media keys.
+
 **Fallback: Windows SMTC** (`GlobalSystemMediaTransportControlsSessionManager`) keeps
 working when Spotify is not connected and covers every other player (browsers, local
-files). The launcher's Music page and the overlay music tab show Spotify when
+files). The launcher's Spotify page and the overlay Spotify tab show Spotify when
 connected and SMTC otherwise.
 
 ### 2.5 Discord — presence + voice read

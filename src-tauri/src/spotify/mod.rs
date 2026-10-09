@@ -109,7 +109,7 @@ fn status_of(app: &AppHandle) -> SpotifyStatus {
             error: String::new(),
         },
         None => SpotifyStatus {
-            client_id_set: session::load_client_id(app).is_some(),
+            client_id_set: configured_client_id(app).is_some(),
             connected: false,
             user: String::new(),
             product: String::new(),

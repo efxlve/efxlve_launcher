@@ -1914,7 +1914,6 @@
   "music.clientIdPlaceholder": "Spotify Client ID",
   "music.signIn": "Sign in with Spotify",
   "music.saveAndConnect": "Save and connect",
-  "music.openDashboard": "Open dashboard",
   "music.cancel": "Cancel",
   "music.waitingForBrowser": "Waiting for the browser… approve access there.",
   "music.connectedAs": "Connected as {user}",
@@ -1943,5 +1942,9 @@
   "music.errorPremium": "Spotify Premium is required for playback control.",
   "music.errorNoDevice": "Open Spotify on a device first.",
   "overlay.musicNoteSpotify": "Spotify Web API: transport, volume and shuffle control the device you pick on the launcher's Music page.",
-  "overlay.tabSpotify": "Spotify"
+  "overlay.tabSpotify": "Spotify",
+  "music.createApp": "Create app",
+  "music.copyRedirect": "Copy",
+  "music.copied": "Copied",
+  "music.smtcHint": "No setup? The in-game Spotify tab still controls your desktop Spotify through Windows media keys."
 }

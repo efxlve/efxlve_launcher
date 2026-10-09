@@ -95,7 +95,10 @@ function renderConnect(): string {
         <p class="music-note">${esc(t("music.connectDesc"))}</p>
         <ol class="music-steps">
           <li>${esc(t("music.step1"))}</li>
-          <li>${esc(t("music.step2"))} <code>http://127.0.0.1:8899/callback</code></li>
+          <li>
+            ${esc(t("music.step2"))} <code id="music-redirect-uri">http://127.0.0.1:8899/callback</code>
+            <button class="btn ghost small" data-music="copy-redirect" id="music-copy-redirect">${icon("clipboard", 13)} ${esc(t("music.copyRedirect"))}</button>
+          </li>
           <li>${esc(t("music.step3"))}</li>
         </ol>
         <div class="music-connect-row">
@@ -104,9 +107,10 @@ function renderConnect(): string {
           <button class="btn primary" data-music="connect" ${state.loginBusy ? "disabled" : ""}>
             ${icon("user", 14)} ${esc(withId ? t("music.signIn") : t("music.saveAndConnect"))}
           </button>
-          <button class="btn ghost small" data-music="dashboard">${icon("external", 14)} ${esc(t("music.openDashboard"))}</button>
+          <button class="btn ghost small" data-music="create-app">${icon("external", 14)} ${esc(t("music.createApp"))}</button>
           ${state.loginBusy ? `<button class="btn ghost small" data-music="cancel">${esc(t("music.cancel"))}</button>` : ""}
         </div>
+        <p class="music-note">${esc(t("music.smtcHint"))}</p>
         ${state.loginBusy ? `<p class="music-note">${esc(t("music.waitingForBrowser"))}</p>` : ""}
         ${state.message ? `<p class="music-note ${state.message.kind}">${esc(state.message.text)}</p>` : ""}
       </div>
@@ -351,6 +355,34 @@ function messageFor(raw: string): string {
   return raw.replace(/^Error: /, "");
 }
 
+/** Copies the loopback redirect URI, or selects it when the clipboard is off. */
+async function copyRedirect(): Promise<void> {
+  const uri = "http://127.0.0.1:8899/callback";
+  const button = document.getElementById("music-copy-redirect");
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(uri);
+    copied = true;
+  } catch {
+    // Clipboard blocked (window unfocused): select the text for Ctrl+C.
+    const code = document.getElementById("music-redirect-uri");
+    if (code) {
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }
+  if (copied && button) {
+    const original = `${icon("clipboard", 13)} ${esc(t("music.copyRedirect"))}`;
+    button.innerHTML = esc(t("music.copied"));
+    window.setTimeout(() => {
+      if (button.isConnected) button.innerHTML = original;
+    }, 2000);
+  }
+}
+
 async function connect(): Promise<void> {
   const input = document.getElementById("music-client-id") as HTMLInputElement | null;
   const clientId = input?.value.trim() ?? "";
@@ -407,8 +439,12 @@ document.addEventListener("click", (event) => {
     void seekAt(event.clientX);
     return;
   }
-  if (action === "dashboard") {
-    void openUrl("https://developer.spotify.com/dashboard");
+  if (action === "dashboard" || action === "create-app") {
+    void openUrl("https://developer.spotify.com/dashboard/create");
+    return;
+  }
+  if (action === "copy-redirect") {
+    void copyRedirect();
     return;
   }
   if (action === "open-spotify") {

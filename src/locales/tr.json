@@ -1914,7 +1914,6 @@
   "music.clientIdPlaceholder": "Spotify Client ID",
   "music.signIn": "Spotify ile giriş yap",
   "music.saveAndConnect": "Kaydet ve bağlan",
-  "music.openDashboard": "Paneli aç",
   "music.cancel": "İptal",
   "music.waitingForBrowser": "Tarayıcı bekleniyor… erişimi orada onayla.",
   "music.connectedAs": "{user} olarak bağlı",
@@ -1943,5 +1942,9 @@
   "music.errorPremium": "Oynatma kontrolü için Spotify Premium gerekiyor.",
   "music.errorNoDevice": "Önce bir cihazda Spotify'ı aç.",
   "overlay.musicNoteSpotify": "Spotify Web API: taşıma, ses ve karıştırma, launcher'daki Müzik sayfasında seçtiğin cihazı kontrol eder.",
-  "overlay.tabSpotify": "Spotify"
+  "overlay.tabSpotify": "Spotify",
+  "music.createApp": "Uygulama oluştur",
+  "music.copyRedirect": "Kopyala",
+  "music.copied": "Kopyalandı",
+  "music.smtcHint": "Kurulum istemiyorsan: oyun içi Spotify sekmesi, masaüstü Spotify'ı Windows medya tuşları üzerinden yönetmeye devam eder."
 }
