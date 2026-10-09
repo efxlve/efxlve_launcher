@@ -1900,6 +1900,7 @@
   "overlay.hintEnter": "Enter seçer",
   "overlay.fpsPermission": "FPS ölçümü için bir kerelik Windows izni gerekiyor.",
   "overlay.fpsEnable": "Etkinleştir",
-  "overlay.fpsEnabled": "Etkinleştirildi. Açılması için oturumu kapatıp yeniden aç.",
-  "overlay.fpsDenied": "İzin verilmedi."
+  "overlay.fpsEnabled": "Etkinleştirildi. FPS sayacının başlaması için Windows oturumunu kapatıp yeniden aç.",
+  "overlay.fpsDenied": "İzin verilmedi.",
+  "overlay.noFpsData": "FPS verisi bekleniyor…"
 }

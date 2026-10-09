@@ -311,9 +311,10 @@
 .ov-span-6 { grid-column: span 6; }
 .ov-span-5 { grid-column: span 5; }
 .ov-span-4 { grid-column: span 4; }
+.ov-span-3 { grid-column: span 3; }
 
 @media (max-width: 960px) {
-  .ov-span-8, .ov-span-7, .ov-span-6, .ov-span-5, .ov-span-4 {
+  .ov-span-8, .ov-span-7, .ov-span-6, .ov-span-5, .ov-span-4, .ov-span-3 {
     grid-column: span 12;
   }
 }
@@ -364,6 +365,7 @@
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: #fff;
 }
 
@@ -397,8 +399,27 @@
   height: 90px;
   border-radius: var(--r-sm);
   background: rgba(0, 0, 0, 0.2);
-  margin-bottom: 14px;
   display: block;
+}
+
+.ov-perf-canvas-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+/* Shown while no FPS samples exist, so the empty graph does not look broken. */
+.ov-perf-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.ov-perf-empty[hidden] {
+  display: none;
 }
 
 .ov-metrics-mini {
@@ -942,4 +963,9 @@
 .ov-fps-notice .btn {
   margin-left: auto;
   flex-shrink: 0;
+}
+
+.ov-fps-notice .btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }

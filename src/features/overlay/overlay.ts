@@ -357,6 +357,23 @@ function viewEl(tab: TabId): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-ov-view="${tab}"]`);
 }
 
+/** Frame-time canvas plus the "waiting for data" label over it. */
+function perfCanvasHtml(id: string, extraAttrs = ""): string {
+  return `
+    <div class="ov-perf-canvas-wrap">
+      <canvas class="ov-perf-canvas" id="${id}"${extraAttrs}></canvas>
+      <div class="ov-perf-empty">${esc(t("overlay.noFpsData"))}</div>
+    </div>`;
+}
+
+/** Hides the "waiting for data" label as soon as FPS samples exist. */
+function updatePerfEmptyStates(): void {
+  const hasData = metrics?.fps != null || fpsHistory.length > 0;
+  document.querySelectorAll<HTMLElement>(".ov-perf-empty").forEach((el) => {
+    el.hidden = hasData;
+  });
+}
+
 function setTab(tab: TabId): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
@@ -451,7 +468,7 @@ function renderHome(): void {
           <span class="ov-perf-unit">FPS</span>
           <span class="ov-perf-frame${m?.frameMs != null ? "" : " is-empty"}" id="ov-home-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : ""}</span>
         </div>
-        <canvas class="ov-perf-canvas" id="ov-home-perf-canvas"></canvas>
+        ${perfCanvasHtml("ov-home-perf-canvas")}
         <div class="ov-metrics-mini">
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.cpu"))}</span>
@@ -554,6 +571,7 @@ function renderHome(): void {
 
   wireNotesInput("ov-home-notes", "ov-home-notes-status");
   drawPerfCanvas();
+  updatePerfEmptyStates();
 }
 
 /** Re-renders home only when it is the visible tab and nothing is being typed. */
@@ -579,7 +597,7 @@ function renderPerf(): void {
         <span class="ov-perf-unit">FPS</span>
         <span class="ov-perf-frame${m?.frameMs != null ? "" : " is-empty"}" id="ov-perf-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : ""}</span>
       </div>
-      <canvas class="ov-perf-canvas" id="ov-perf-canvas" style="height:140px"></canvas>
+      ${perfCanvasHtml("ov-perf-canvas", ' style="height:140px"')}
     </div>
 
     <div class="ov-dashboard" style="margin-bottom:16px">
@@ -691,6 +709,7 @@ function setText(id: string, text: string, empty = false): void {
 function updateMetricsUi(): void {
   const m = metrics;
   updateFpsNotice();
+  updatePerfEmptyStates();
   if (activeTab === "home" && viewEl("home")?.querySelector(".ov-card")) {
     setText("ov-home-fps", m?.fps != null ? String(Math.round(m.fps)) : "—", m?.fps == null);
     setText("ov-home-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : "", m?.frameMs == null);
