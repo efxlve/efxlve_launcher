@@ -100,6 +100,7 @@ export function updatePageHeader(): void {
       settings: t("nav.settings"),
       profile: t("palette.cmdProfile"),
       accounts: t("accounts.title"),
+      music: t("overlay.tabSpotify"),
     };
     const next = game ?? titles[S.view] ?? "";
     if (title.textContent !== next) title.textContent = next;
