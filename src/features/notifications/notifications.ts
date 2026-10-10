@@ -15,7 +15,7 @@ import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
 import { esc, relativeTime } from "../../core/utils";
 import { t } from "../../i18n";
-import { embeddedStoreHeld, syncStoreViewSize } from "../store/store-view";
+import { embeddedContentShown, syncStoreViewSize } from "../store/store-view";
 
 const MAX = 50;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
@@ -157,7 +157,9 @@ let notifOverlayBound = false;
 
 /** True while a native store child would paint over an HTML dropdown. */
 function storeCoversUi(): boolean {
-  return isTauri && ((S.view === "store" && S.storeShown) || embeddedStoreHeld());
+  // The storefront and the Spotify page are native children: the dropdown goes
+  // into the child overlay for both, so it can paint above them.
+  return embeddedContentShown();
 }
 
 function panelMarkup(unread: number): string {

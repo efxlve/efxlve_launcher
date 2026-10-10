@@ -256,23 +256,27 @@ const ARM_STORE_CLICK: &str = r#"
 })()
 "#;
 
-fn store_children(window: &tauri::Window) -> Vec<tauri::Webview> {
+fn embedded_children(window: &tauri::Window) -> Vec<tauri::Webview> {
     window
         .webviews()
         .into_iter()
         .filter(|w| {
-            w.label().starts_with("store-view-") || w.label().starts_with("epic-store-view")
+            let label = w.label();
+            // The storefronts and the Spotify page all cover the content area.
+            label.starts_with("store-view-")
+                || label.starts_with("epic-store-view")
+                || label == "spotify-player"
         })
         .collect()
 }
 
-fn arm_store_clicks(window: &tauri::Window, armed: bool) {
+fn arm_embedded_clicks(window: &tauri::Window, armed: bool) {
     let script = if armed {
         ARM_STORE_CLICK
     } else {
         "window.__efxlveNotifAway = false;"
     };
-    for view in store_children(window) {
+    for view in embedded_children(window) {
         let _ = view.eval(script);
     }
 }
@@ -314,7 +318,7 @@ pub async fn show_notif_overlay(
         OVERLAY_OPEN.store(true, std::sync::atomic::Ordering::Relaxed);
         place_overlay(&window, &webview, x, y, width, height);
         publish_document(&webview, &document);
-        arm_store_clicks(&window, true);
+        arm_embedded_clicks(&window, true);
         return Ok(());
     }
 
@@ -360,7 +364,7 @@ pub async fn show_notif_overlay(
             OVERLAY_OPEN.store(true, std::sync::atomic::Ordering::Relaxed);
             if let Some(host) = app.get_window("main") {
                 place_overlay(&host, &webview, x, y, width, height);
-                arm_store_clicks(&host, true);
+                arm_embedded_clicks(&host, true);
             }
             Ok(())
         }
@@ -400,7 +404,7 @@ pub fn hide_notif_overlay(app: AppHandle) -> Result<(), String> {
     let Some(window) = app.get_window("main") else {
         return Ok(());
     };
-    arm_store_clicks(&window, false);
+    arm_embedded_clicks(&window, false);
     let Some(webview) = window.get_webview(LABEL) else {
         return Ok(());
     };
