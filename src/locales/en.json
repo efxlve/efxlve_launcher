@@ -1886,7 +1886,7 @@
   "overlay.disableTitle": "Disable for this game",
   "overlay.disableDesc": "The overlay never opens for this title.",
   "overlay.overlayLabel": "Overlay",
-  "overlay.startHint": "Start something on the Music page or use the Playlists button.",
+  "overlay.startHint": "Press Shift+Tab to open the overlay. Esc closes it.",
   "overlay.disabledListTitle": "Disabled games",
   "overlay.disabledListDesc": "The overlay never opens for these titles. Restore one to bring it back.",
   "overlay.restore": "Restore",

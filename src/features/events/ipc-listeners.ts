@@ -579,11 +579,15 @@ export async function initApp(hooks: {
         S.runningGames.add(id);
         toast(t("status.running", { title }), "ok");
         // Point at the Shift+Tab overlay on the first start of the title, unless
-        // the overlay is off globally or the user opted this game out.
+        // the overlay is off globally or the user opted this game out. The game
+        // gets a PS5-like card; the launcher keeps its own toast.
         if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
           toast(t("overlay.startHint"), "");
           void invoke("overlay_set_active_game", { appName: id, title }).catch(() => {});
-          void invoke("overlay_flash_hint", { text: t("overlay.startHint") }).catch(() => {});
+          void invoke("overlay_flash_hint", {
+            title: t("overlay.enabledTitle"),
+            body: t("overlay.startHint"),
+          }).catch(() => {});
         }
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
         // is a fullscreen couch UI and stays where it is.

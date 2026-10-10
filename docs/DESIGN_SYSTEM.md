@@ -77,6 +77,7 @@ Defined once, reused everywhere:
 - **List row** `.row` — 48–56px, hover surface-2; the only list pattern (downloads, queue, updates, settings rows).
 - **Modal** `.modal-backdrop > .modal` — surface-1, `--r-md`, 1 shadow level.
 - **Empty state** `.empty` — 36px muted icon, one title, one sentence, one button.
+- **In-game notification** (`src-tauri/src/overlay/hud.rs`) — the launcher's only native card, drawn by GDI over a running game at the top right of the game's monitor: a `#1e1e1e` plate with 12px corners, a white icon disc holding a black glyph, one bold 15px title and one 13px muted line. It slides in from the right, holds about five seconds, slides out, and never takes focus or input. Shown on game start ("Shift+Tab opens the overlay") because the Windows toast is invisible over many titles. Same black-and-white palette as the rest of the launcher: no brand colour, no gradient, one shadow-free surface.
 
 ## 5. Motion
 

@@ -84,14 +84,15 @@ pub fn overlay_set_hud(app: AppHandle, enabled: bool) {
     }
 }
 
-/// Shows a temporary hint over the game (game start: "Shift+Tab opens the
-/// overlay"). The Windows toast is invisible for many setups, this is not.
+/// Shows a temporary notification over the game (game start: "Shift+Tab opens
+/// the overlay"). The Windows toast is invisible for many setups, this card is
+/// not. `title` is the bold line, `body` the muted one.
 #[tauri::command]
-pub fn overlay_flash_hint(text: String) {
-    if text.trim().is_empty() {
+pub fn overlay_flash_hint(title: String, body: String) {
+    if title.trim().is_empty() && body.trim().is_empty() {
         return;
     }
-    hud::flash_hint(&text);
+    hud::notify(&title, &body);
 }
 
 /// One-time elevation: adds the current user to the "Performance Log Users"

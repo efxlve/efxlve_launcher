@@ -1886,7 +1886,7 @@
   "overlay.disableTitle": "Bu oyun için kapat",
   "overlay.disableDesc": "Bu oyunda overlay hiç açılmaz.",
   "overlay.overlayLabel": "Overlay",
-  "overlay.startHint": "Müzik sayfasından bir şey çal ya da Çalma listeleri düğmesini kullan.",
+  "overlay.startHint": "Arayüzü açmak için Shift+Tab'a bas. Esc kapatır.",
   "overlay.disabledListTitle": "Kapatılan oyunlar",
   "overlay.disabledListDesc": "Overlay bu oyunlarda hiç açılmaz. Geri açmak için listeden çıkar.",
   "overlay.restore": "Geri aç",
