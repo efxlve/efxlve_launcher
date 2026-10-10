@@ -17,7 +17,6 @@ import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibili
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { currentLanguage, initialLanguage, setLanguage, t } from "../../i18n";
-import { storeLogo } from "../store/store-logos";
 import {
   formatTime as formatSpotifyTime,
   spotifyPlaybackControl,
@@ -324,9 +323,9 @@ function shellHtml(): string {
           <div class="ov-controller-badge" id="ov-controller-badge" style="display:none">
             ${icon("gamepad-2", 14)} <span id="ov-controller-name">Controller</span>
           </div>
-          <button class="ov-btn-resume" data-ov="close" title="${esc(t("common.close"))}">
+          <button class="btn ov-btn-resume" data-ov="close" title="${esc(t("common.close"))}">
             <span>${esc(t("common.close"))}</span>
-            <kbd class="ov-kbd">Esc</kbd>
+            <kbd class="kbd">Esc</kbd>
             <span class="ov-pad-b">Ⓑ</span>
           </button>
         </div>
@@ -357,7 +356,7 @@ function shellHtml(): string {
       <footer class="ov-footer">
         <div class="ov-footer-left">
           <span class="keyboard-hints">
-            <kbd class="ov-kbd">Shift</kbd>+<kbd class="ov-kbd">Tab</kbd> ${esc(t("overlay.hotkeyHint"))}
+            <kbd class="kbd">Shift</kbd>+<kbd class="kbd">Tab</kbd> ${esc(t("overlay.hotkeyHint"))}
             · ${esc(t("overlay.hintArrows"))} · ${esc(t("overlay.hintEnter"))}
           </span>
           <span class="gamepad-hints" style="display:none">
@@ -507,7 +506,7 @@ function renderHome(): void {
           <div class="ov-hero-info">
             <div class="ov-hero-game">${esc(context.title || context.appName || "Game")}</div>
             <div class="ov-hero-status">
-              <span class="ov-badge-pill">${storeLogo(store, 14)} <span>${esc(storeLabel(store))}</span></span>
+              <span class="ov-badge-pill">${esc(storeLabel(store))}</span>
               <span>·</span>
               <span style="color:var(--ok)">● ${esc(t("overlay.running"))}</span>
             </div>
@@ -676,22 +675,22 @@ function renderPerf(): void {
     <div class="ov-dashboard" style="margin-bottom:16px">
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.cpu"))}</div>
-        <div class="ov-perf-val${m ? "" : " is-empty"}" id="ov-perf-cpu" style="font-size:32px">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</div>
+        <div class="ov-perf-val${m ? "" : " is-empty"}" id="ov-perf-cpu">${m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—"}</div>
         <span id="ov-perf-cpu-total" style="font-size:11px;color:var(--text-3)">Total: ${m ? `${Math.round(m.cpu)}%` : "—"}</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.gpu"))}</div>
-        <div class="ov-perf-val${m?.gpu != null ? "" : " is-empty"}" id="ov-perf-gpu" style="font-size:32px">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</div>
+        <div class="ov-perf-val${m?.gpu != null ? "" : " is-empty"}" id="ov-perf-gpu">${m?.gpu != null ? `${Math.round(m.gpu)}%` : "—"}</div>
         <span style="font-size:11px;color:var(--text-3)">GPU Utilization</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.vram"))}</div>
-        <div class="ov-perf-val${m?.vramUsedMb != null ? "" : " is-empty"}" id="ov-perf-vram" style="font-size:32px">${m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—"}</div>
+        <div class="ov-perf-val${m?.vramUsedMb != null ? "" : " is-empty"}" id="ov-perf-vram">${m?.vramUsedMb != null ? fmtMb(m.vramUsedMb) : "—"}</div>
         <span style="font-size:11px;color:var(--text-3)">Video Memory</span>
       </div>
       <div class="ov-card ov-span-3">
         <div class="ov-metric-label">${esc(t("overlay.ram"))}</div>
-        <div class="ov-perf-val${m ? "" : " is-empty"}" id="ov-perf-ram" style="font-size:32px">${m ? fmtMb(m.ramUsedMb) : "—"}</div>
+        <div class="ov-perf-val${m ? "" : " is-empty"}" id="ov-perf-ram">${m ? fmtMb(m.ramUsedMb) : "—"}</div>
         <span id="ov-perf-ram-total" style="font-size:11px;color:var(--text-3)">Total: ${m ? fmtMb(m.ramTotalMb) : "—"}</span>
       </div>
     </div>
@@ -757,14 +756,14 @@ function drawPerfCanvas(): void {
         ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
       }
       ctx.lineTo(points[points.length - 1][0], points[points.length - 1][1]);
-      ctx.strokeStyle = "#38bdf8";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
       ctx.lineWidth = 2;
       ctx.stroke();
 
       ctx.lineTo(width, height);
       ctx.lineTo(0, height);
       ctx.closePath();
-      ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
       ctx.fill();
     }
   }
@@ -855,7 +854,7 @@ async function loadAchievements(force = false): Promise<void> {
         <div class="ov-ach-row${item.unlocked ? " unlocked" : ""}" data-nav-row>
           ${item.icon_link ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:#fff">${esc(name)}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(name)}</div>
             <div style="font-size:12px;color:var(--text-3)">${esc(desc)}</div>
           </div>
           <span class="ov-ach-state">${item.unlocked ? `${icon("check", 14)} ${esc(t("ach.earned"))}` : "·"}</span>
@@ -1053,7 +1052,7 @@ function mediaCardInnerHtml(): string {
         ${m.artUrl
           ? `<img class="ov-media-art" id="ov-media-art" src="${esc(m.artUrl)}" alt="" />`
           : m.isSpotify
-          ? `<div class="ov-media-icon ov-badge-spotify-icon" id="ov-media-art">${icon("music", 20)}</div>`
+          ? `<div class="ov-media-icon" id="ov-media-art">${icon("music", 20)}</div>`
           : `<div class="ov-media-icon" id="ov-media-art">${icon("volume-2", 20)}</div>`}
         <div class="ov-media-details">
           <div class="ov-media-title" id="ov-media-title">${esc(m.title)}</div>
@@ -1069,7 +1068,7 @@ function mediaCardInnerHtml(): string {
   }
   return `
     <div class="ov-media-top" style="margin-bottom:8px">
-      <div class="ov-media-icon ov-badge-spotify-icon">${icon("music", 20)}</div>
+      <div class="ov-media-icon">${icon("music", 20)}</div>
       <div class="ov-media-details">
         <div class="ov-media-title" id="ov-media-title">${esc(t("overlay.noMedia"))}</div>
         <div class="ov-media-artist" id="ov-media-artist">${esc(t("overlay.openSpotify"))}</div>
@@ -1089,7 +1088,7 @@ function renderMusicTab(): void {
   el.innerHTML = `
     <div class="ov-page-title">
       ${icon("spotify", 20)} <span>${esc(t("overlay.tabSpotify"))}</span>
-      ${connected && spotifyDeviceName ? `<span class="ov-badge-pill ov-badge-spotify" style="margin-left:8px">${icon("monitor", 12)} <span>${esc(spotifyDeviceName)}</span></span>` : ""}
+      ${connected && spotifyDeviceName ? `<span class="ov-badge-pill" style="margin-left:8px">${icon("monitor", 12)} <span>${esc(spotifyDeviceName)}</span></span>` : ""}
     </div>
     ${unifiedPlayerHtml(m, connected)}
     ${connected ? libraryHtml() : ""}
@@ -1105,7 +1104,7 @@ function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
   if (!m.active) {
     return `
       <div class="ov-card ov-sp-player ov-sp-idle">
-        <div class="ov-sp-art ov-sp-art-spotify ov-sp-art-pulse" id="ov-sp-art">
+        <div class="ov-sp-art ov-sp-art-spotify" id="ov-sp-art">
           ${spotifyLogoSvg(56)}
         </div>
         <div class="ov-sp-info">
@@ -1130,7 +1129,7 @@ function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
       <div class="ov-sp-info">
         <div class="ov-sp-meta-row">
           <div class="ov-sp-title" id="ov-sp-title">${esc(m.title)}</div>
-          <span class="ov-badge-pill ${m.isSpotify ? "ov-badge-spotify" : ""}" id="ov-sp-source-badge">
+          <span class="ov-badge-pill" id="ov-sp-source-badge">
             ${m.isSpotify ? icon("spotify", 12) : icon("volume-2", 12)}
             <span>${esc(m.source)}</span>
           </span>
@@ -1407,7 +1406,7 @@ function patchMediaSurfaces(): void {
       "ov-media-art",
       m.artUrl,
       icon("music", 20),
-      m.isSpotify ? "ov-media-icon ov-badge-spotify-icon" : "ov-media-icon",
+      "ov-media-icon",
     );
   }
 
@@ -1423,7 +1422,7 @@ function patchMediaSurfaces(): void {
     const badge = document.getElementById("ov-sp-source-badge");
     if (badge) {
       badge.innerHTML = `${m.isSpotify ? icon("spotify", 12) : icon("volume-2", 12)} <span>${esc(m.source)}</span>`;
-      badge.className = `ov-badge-pill ${m.isSpotify ? "ov-badge-spotify" : ""}`;
+      badge.className = "ov-badge-pill";
     }
     const toggle = document.getElementById("ov-sp-toggle");
     if (toggle) toggle.innerHTML = icon(m.isPlaying ? "pause" : "play", 22);
@@ -1493,12 +1492,12 @@ function renderDiscord(): void {
     <div class="ov-page-title">${icon("discord", 20)} <span>${esc(t("overlay.tabDiscord"))}</span></div>
     <div class="ov-dashboard">
       <div class="ov-card ov-span-12">
-        <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">${esc(t("overlay.discordPresenceTitle"))}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">${esc(t("overlay.discordPresenceTitle"))}</div>
         <p style="font-size:13px;color:var(--text-2);margin:0 0 16px">${esc(t("overlay.discordPresenceDesc"))}</p>
         <button class="btn" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
       <div class="ov-card ov-span-12">
-        <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">${esc(t("overlay.discordVoiceTitle"))}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">${esc(t("overlay.discordVoiceTitle"))}</div>
         <p style="font-size:13px;color:var(--text-2);margin:0">${esc(t("overlay.discordVoiceDesc"))}</p>
       </div>
     </div>`;
@@ -1550,7 +1549,7 @@ function renderSettings(): void {
 
     ${disabledList.length > 0 ? `
       <div class="ov-card" style="margin-top:16px">
-        <div style="font-size:14px;font-weight:600;margin-bottom:4px">${esc(t("overlay.disabledListTitle"))}</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(t("overlay.disabledListTitle"))}</div>
         <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">${esc(t("overlay.disabledListDesc"))}</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           ${disabledList.map((g) => `
@@ -2130,8 +2129,8 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     if (!root) return;
     root.innerHTML = shellHtml();
     wireEvents();
-    applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
   }
+  applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
 
   hideLightbox();
 
@@ -2146,13 +2145,13 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   if (titleEl) titleEl.textContent = launcher ? "Efxlve Launcher" : context.title || context.appName;
   if (subEl) {
     subEl.innerHTML = launcher
-      ? `<span class="ov-badge-pill ov-badge-launcher">${icon("layers", 12)} <span>${esc(t("overlay.launcherLabel"))}</span></span>`
-      : `<span class="ov-badge-pill">${storeLogo(store, 12)} <span>${esc(storeLabel(store))}</span></span>`;
+      ? `<span class="ov-badge-pill">${icon("layers", 12)} <span>${esc(t("overlay.launcherLabel"))}</span></span>`
+      : `<span class="ov-badge-pill">${esc(storeLabel(store))}</span>`;
   }
   if (storeEl) {
     storeEl.innerHTML = launcher
-      ? `<span style="display:flex;align-items:center;gap:6px">${icon("layers", 12)} <span>${esc(t("overlay.launcherLabel"))}</span></span>`
-      : `<span style="display:flex;align-items:center;gap:6px">${storeLogo(store, 12)} <span>${esc(storeLabel(store))}</span></span>`;
+      ? `<span>${esc(t("overlay.launcherLabel"))}</span>`
+      : `<span>${esc(storeLabel(store))}</span>`;
   }
   // No game session to time when the overlay runs over the launcher.
   if (sessionPill) sessionPill.style.display = launcher ? "none" : "";
