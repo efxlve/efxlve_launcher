@@ -207,6 +207,7 @@
   "tray.quit": "Çıkış",
   "presence.playing": "{title} oynuyor",
   "presence.playingState": "Şu anda oyunda",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "Mağazada geziniyor",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "İndiriyor: {title}",

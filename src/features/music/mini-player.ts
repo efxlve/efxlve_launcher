@@ -12,6 +12,7 @@ import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { setPresenceMedia } from "../presence/presence";
 import {
   spotifyPlaybackControl,
   spotifyPlaybackNow,
@@ -136,6 +137,7 @@ async function refresh(): Promise<void> {
   if (!signedIn) {
     current = null;
     paint();
+    setPresenceMedia(null);
     return;
   }
 
@@ -148,6 +150,20 @@ async function refresh(): Promise<void> {
   }
   current = now;
   paint();
+  // Discord follows the same receiver, so the track shows up for friends.
+  setPresenceMedia(
+    now
+      ? {
+          title: now.title,
+          artist: now.artist,
+          album: now.album,
+          artUrl: now.artUrl,
+          isPlaying: now.isPlaying,
+          positionMs: now.progressMs,
+          durationMs: now.durationMs,
+        }
+      : null,
+  );
 }
 
 async function control(action: "play" | "pause" | "next" | "previous"): Promise<void> {

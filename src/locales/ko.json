@@ -193,6 +193,7 @@
   "tray.quit": "종료",
   "presence.playing": "{title} 플레이 중",
   "presence.playingState": "게임 중",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "스토어 둘러보는 중",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "다운로드 중: {title}",

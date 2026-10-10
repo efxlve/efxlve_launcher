@@ -207,6 +207,7 @@
   "tray.quit": "बाहर निकलें",
   "presence.playing": "{title} खेल रहे हैं",
   "presence.playingState": "गेम में",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "स्टोर ब्राउज़ कर रहे हैं",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "डाउनलोड हो रहा है: {title}",

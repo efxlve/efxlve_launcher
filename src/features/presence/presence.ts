@@ -27,6 +27,25 @@ export const DEFAULT_DISCORD_CLIENT_ID = "1551663205426794596";
 
 let lastKey = "";
 
+/** The Connect receiver's track, pushed in by the sidebar mini player. */
+interface PresenceMedia {
+  title: string;
+  artist: string;
+  album: string;
+  artUrl: string;
+  isPlaying: boolean;
+  positionMs: number;
+  durationMs: number;
+}
+
+let media: PresenceMedia | null = null;
+
+/** Keeps Discord in step with the receiver; the mini player calls it per poll. */
+export function setPresenceMedia(next: PresenceMedia | null): void {
+  media = next;
+  syncPresence();
+}
+
 /** Always the built-in Efxlve Discord application id. */
 export function effectivePresenceClientId(): string {
   return DEFAULT_DISCORD_CLIENT_ID;
@@ -63,22 +82,60 @@ function gameArt(appName: string): { image: string; title: string } {
 }
 
 /** Builds the localized activity for the current context, or null when idle. */
-function presenceContext(): { details: string; state: string; image: string; hover: string; small: string; start: number } | null {
+function presenceContext(): {
+  details: string;
+  state: string;
+  image: string;
+  hover: string;
+  small: string;
+  start: number;
+  /** Discord time bar needs both; only the receiver's track sets them. */
+  end?: number;
+  listening?: boolean;
+} | null {
   for (const id of playStarted.keys()) {
     if (!S.runningGames.has(id)) playStarted.delete(id);
   }
 
-  // A running game always wins over the browsing context.
+  // A running game always wins over the browsing context. While the receiver
+  // plays, the track rides along in its second line so music keeps showing.
   for (const id of S.runningGames) {
     const { image, title } = gameArt(id);
     if (!playStarted.has(id)) playStarted.set(id, Date.now());
+    const track = media?.isPlaying ? media.title : "";
+    const artist = media?.artist || media?.album || "";
     return {
       details: t("presence.playing", { title }),
-      state: t("presence.playingState"),
+      state: track
+        ? artist
+          ? t("presence.playingMusic", { title: track, artist })
+          : track
+        : t("presence.playingState"),
       image: image || LAUNCHER_ICON,
       hover: title,
       small: image ? LAUNCHER_ICON : "",
       start: playStarted.get(id) ?? 0,
+    };
+  }
+
+  // Nothing else running: the receiver's track is what friends should see,
+  // with Discord's progress bar and the "Listening to" verb.
+  if (media?.title) {
+    const now = Date.now();
+    const position = Math.max(0, media.positionMs);
+    const start = media.isPlaying ? now - position : 0;
+    const end = media.isPlaying && media.durationMs > position
+      ? now - position + media.durationMs
+      : 0;
+    return {
+      details: media.title,
+      state: media.artist || media.album || t("overlay.tabSpotify"),
+      image: httpsArt(media.artUrl) || LAUNCHER_ICON,
+      hover: media.album || media.artist || t("overlay.tabSpotify"),
+      small: httpsArt(media.artUrl) ? LAUNCHER_ICON : "",
+      start,
+      end,
+      listening: true,
     };
   }
 
@@ -164,8 +221,14 @@ export function syncPresence(): void {
     return;
   }
 
-  const key = `${ctx.details}\u001f${ctx.state}\u001f${ctx.image}\u001f${ctx.start}`;
+  const end = ctx.end ?? 0;
+  const listening = ctx.listening === true;
+  // A playing track keeps its start/end fixed (both follow the wall clock), so
+  // the key only moves on a seek — rounded to ten seconds.
+  const key = listening
+    ? `listen\u001f${ctx.details}\u001f${ctx.state}\u001f${ctx.image}\u001f${Math.floor(ctx.start / 10000)}\u001f${Math.floor(end / 10000)}`
+    : `${ctx.details}\u001f${ctx.state}\u001f${ctx.image}\u001f${ctx.start}`;
   if (key === lastKey) return;
   lastKey = key;
-  void epicPresenceUpdate(ctx.details, ctx.state, ctx.image, ctx.hover, ctx.small, ctx.start).catch(() => {});
+  void epicPresenceUpdate(ctx.details, ctx.state, ctx.image, ctx.hover, ctx.small, ctx.start, end, listening).catch(() => {});
 }

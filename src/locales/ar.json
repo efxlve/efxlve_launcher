@@ -193,6 +193,7 @@
   "tray.quit": "إنهاء",
   "presence.playing": "يلعب {title}",
   "presence.playingState": "داخل اللعبة",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "يتصفح المتجر",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "جارٍ التنزيل: {title}",

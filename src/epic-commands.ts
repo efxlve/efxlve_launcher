@@ -138,7 +138,8 @@ export const epicSetGogComet = (enabled: boolean) =>
 
 /** Pre-downloads the Comet binary so the first GOG launch is instant. */
 export const epicPrepareComet = () => invoke<boolean>("comet_prepare");
-/** Discord Rich Presence: push a localized activity (details + state). */
+/** Discord Rich Presence: push a localized activity (details + state).
+ *  `endMs` + `listening` draw the receiver's track with Discord's time bar. */
 export const epicPresenceUpdate = (
   details: string,
   state: string,
@@ -146,7 +147,9 @@ export const epicPresenceUpdate = (
   largeText = "",
   smallImage = "",
   startMs = 0,
-) => invoke<void>("epic_presence_update", { details, state, largeImage, largeText, smallImage, startMs });
+  endMs = 0,
+  listening = false,
+) => invoke<void>("epic_presence_update", { details, state, largeImage, largeText, smallImage, startMs, endMs, listening });
 /** Discord Rich Presence: clear the current activity. */
 export const epicPresenceClear = () => invoke<void>("epic_presence_clear");
 

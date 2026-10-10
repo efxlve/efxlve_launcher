@@ -193,6 +193,7 @@
   "tray.quit": "退出",
   "presence.playing": "正在玩 {title}",
   "presence.playingState": "游戏中",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "正在浏览商店",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "正在下载：{title}",

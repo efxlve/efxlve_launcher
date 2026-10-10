@@ -193,6 +193,7 @@
   "tray.quit": "ออก",
   "presence.playing": "กำลังเล่น {title}",
   "presence.playingState": "ในเกม",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "กำลังดูร้านค้า",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "กำลังดาวน์โหลด: {title}",

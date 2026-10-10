@@ -207,6 +207,7 @@
   "tray.quit": "Quit",
   "presence.playing": "Playing {title}",
   "presence.playingState": "In game",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "Browsing the store",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "Downloading: {title}",

@@ -193,6 +193,7 @@
   "tray.quit": "Выйти",
   "presence.playing": "Играет в {title}",
   "presence.playingState": "В игре",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "В магазине",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "Загрузка: {title}",

@@ -193,6 +193,7 @@
   "tray.quit": "Beenden",
   "presence.playing": "Spielt {title}",
   "presence.playingState": "Im Spiel",
+  "presence.playingMusic": "{title} — {artist}",
   "presence.store": "Im Shop unterwegs",
   "presence.storeState": "Epic Games Store",
   "presence.downloading": "Lädt herunter: {title}",

@@ -22,6 +22,10 @@ struct ActivityUpdate {
     small_image: String,
     /// Unix milliseconds. Zero means no elapsed timer.
     start_ms: i64,
+    /// Unix milliseconds. With `start_ms` this draws the time bar (Listening).
+    end_ms: i64,
+    /// "Listening to X" instead of "Playing X" (the receiver's track).
+    listening: bool,
 }
 
 enum Msg {
@@ -62,7 +66,8 @@ pub fn configure(enabled: bool, client_id: &str) {
 }
 
 /// Sends a localized activity update (de-duplicated inside the worker).
-/// Image fields are HTTPS URLs or empty. `start_ms` is unix milliseconds, or 0.
+/// Image fields are HTTPS URLs or empty. `start_ms`/`end_ms` are unix
+/// milliseconds, or 0; `listening` switches the verb to "Listening to".
 pub fn update(
     details: &str,
     state: &str,
@@ -70,6 +75,8 @@ pub fn update(
     large_text: &str,
     small_image: &str,
     start_ms: i64,
+    end_ms: i64,
+    listening: bool,
 ) {
     let guard = HANDLE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.as_ref() {
@@ -80,6 +87,8 @@ pub fn update(
             large_text: large_text.to_string(),
             small_image: small_image.to_string(),
             start_ms,
+            end_ms,
+            listening,
         }));
     }
 }
@@ -97,7 +106,7 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
     // What Discord is currently showing, and what it should show next. The
     // newest update is kept while the connection is down so a late-starting
     // Discord still receives the right activity.
-    let mut applied: Option<(String, String, String, String, i64)> = None;
+    let mut applied: Option<(String, String, String, String, i64, i64, bool)> = None;
     let mut pending: Option<ActivityUpdate> = None;
     let mut next_connect = Instant::now();
     // How often a pending update retries a failed connection while idle.
@@ -139,6 +148,8 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
             upd.large_image.clone(),
             upd.small_image.clone(),
             upd.start_ms,
+            upd.end_ms,
+            upd.listening,
         );
         // Already showing this exact activity.
         if client.is_some() && applied.as_ref() == Some(&signature) {
@@ -158,6 +169,9 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
         let mut payload = activity::Activity::new()
             .details(&upd.details)
             .state(&upd.state);
+        if upd.listening {
+            payload = payload.activity_type(activity::ActivityType::Listening);
+        }
         let mut assets = activity::Assets::new();
         let mut has_assets = false;
         if !upd.large_image.is_empty() {
@@ -179,7 +193,11 @@ fn worker(rx: Receiver<Msg>, client_id: String) {
             payload = payload.assets(assets);
         }
         if upd.start_ms > 0 {
-            payload = payload.timestamps(activity::Timestamps::new().start(upd.start_ms));
+            let mut stamps = activity::Timestamps::new().start(upd.start_ms);
+            if upd.end_ms > upd.start_ms {
+                stamps = stamps.end(upd.end_ms);
+            }
+            payload = payload.timestamps(stamps);
         }
         let ok = client
             .as_mut()
@@ -211,6 +229,8 @@ pub fn epic_presence_configure(app: tauri::AppHandle, enabled: bool, client_id: 
 }
 
 /// Pushes a localized activity update (`details` first line, `state` second).
+/// `listening` switches the verb to "Listening to" and shows the time bar when
+/// both timestamps are present (the receiver's track).
 #[tauri::command]
 pub fn epic_presence_update(
     details: String,
@@ -219,6 +239,8 @@ pub fn epic_presence_update(
     large_text: Option<String>,
     small_image: Option<String>,
     start_ms: Option<i64>,
+    end_ms: Option<i64>,
+    listening: Option<bool>,
 ) {
     update(
         &details,
@@ -227,6 +249,8 @@ pub fn epic_presence_update(
         large_text.as_deref().unwrap_or(""),
         small_image.as_deref().unwrap_or(""),
         start_ms.unwrap_or(0),
+        end_ms.unwrap_or(0),
+        listening.unwrap_or(false),
     );
 }
 
