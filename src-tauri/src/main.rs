@@ -8,6 +8,7 @@ mod controller;
 mod controller_bridge;
 mod eos;
 mod egl_removal;
+mod epic_shim;
 mod gogdl;
 mod launchers;
 mod legendary;
@@ -655,6 +656,14 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
 }
 
 fn main() {
+    // Rockstar's launcher only continues when a process named
+    // `EpicGamesLauncher.exe` is in its ancestor chain. This binary runs as
+    // that relay copy when `legendary launch --wrapper` starts it, so Rockstar
+    // titles work without the Epic Games Launcher. It has to run before the
+    // single-instance lock: the launcher itself is already running by design.
+    if let Some(args) = epic_shim::relay_arguments() {
+        std::process::exit(epic_shim::relay(&args));
+    }
     let _instance_mutex = acquire_single_instance_mutex();
     exit_when_cargo_parent_dies();
     // Desktop shortcuts start the launcher with `--launch <app>`; the app name is
@@ -793,6 +802,7 @@ fn main() {
             legendary::transfers::epic_default_install_dir,
             legendary::transfers::epic_set_install_dir,
             legendary::transfers::epic_launch_game,
+            legendary::transfers::epic_launch_support,
             legendary::transfers::epic_stop_game,
             store_host::show_store_view,
             store_host::resize_store_view,

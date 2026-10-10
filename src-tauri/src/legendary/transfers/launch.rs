@@ -557,6 +557,41 @@ pub(super) fn is_rockstar_stub(install_path: &Path, executable: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// True when the title can only start through the Epic Games Launcher: Rockstar
+/// refuses to continue without it being the parent process.
+pub(super) fn needs_epic_handoff(entry: &crate::legendary::models::InstalledGame) -> bool {
+    let install = Path::new(&entry.install_path);
+    direct_game_exe(install, &entry.executable).is_some()
+        || is_rockstar_stub(install, &entry.executable)
+}
+
+/// What the UI needs to know before a Play press. Rockstar's stubs cannot
+/// finish without the Epic Games Launcher, so the launcher says so instead of
+/// starting a chain that ends in Rockstar's "please try reinstalling" error.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EpicLaunchSupport {
+    /// This title needs the Epic Games Launcher to start.
+    pub needs_epic_launcher: bool,
+    /// The Epic Games Launcher was found on this PC (only meaningful with
+    /// `needs_epic_launcher`).
+    pub epic_launcher_installed: bool,
+}
+
+#[tauri::command]
+pub fn epic_launch_support(app_name: String) -> EpicLaunchSupport {
+    let config = crate::legendary::skip::default_config_dir();
+    let needs = crate::legendary::cache::read_installed(&config)
+        .iter()
+        .find(|g| g.app_name == app_name)
+        .is_some_and(needs_epic_handoff);
+    EpicLaunchSupport {
+        needs_epic_launcher: needs,
+        epic_launcher_installed: needs
+            && crate::legendary::import_installed::epic_launcher_executable().is_some(),
+    }
+}
+
 pub(super) async fn spawn_launched(
     app: &AppHandle,
     bin: &PathBuf,
@@ -583,23 +618,24 @@ pub(super) async fn spawn_launched(
         })
         .unwrap_or_else(|| app_name.to_string());
 
-    // Rockstar closes the game when its parent is not Epic. Ask the Epic Games
-    // Launcher to start the existing install instead of the raw game binary.
-    // Without it the chain cannot finish — Rockstar then shows a "please try
-    // reinstalling" error — so say what is actually missing.
-    let needs_epic = installed_entry.is_some_and(|entry| {
-        let install = Path::new(&entry.install_path);
-        direct_game_exe(install, &entry.executable).is_some()
-            || is_rockstar_stub(install, &entry.executable)
-    });
+    // Rockstar closes the game when its parent is not Epic. With the Epic Games
+    // Launcher installed, Epic starts the existing install; without it, the
+    // relay copy of this binary does the same job (see `epic_shim`). Only when
+    // neither is possible does the launcher say what is missing.
+    let needs_epic = installed_entry.is_some_and(needs_epic_handoff);
     let epic_handoff = if needs_epic {
-        match crate::legendary::import_installed::epic_launcher_executable() {
-            Some(exe) => Some(exe),
-            None => return Err(format!("@t:dl.needsEpicLauncher\u{1f}{game_title}")),
-        }
+        crate::legendary::import_installed::epic_launcher_executable()
     } else {
         None
     };
+    let relay = if needs_epic && epic_handoff.is_none() {
+        crate::epic_shim::ensure_wrapper_copy(&crate::legendary::paths::bin_dir(app))
+    } else {
+        None
+    };
+    if needs_epic && epic_handoff.is_none() && relay.is_none() {
+        return Err(format!("@t:dl.needsEpicLauncher\u{1f}{game_title}"));
+    }
 
     if let Some(epic_exe) = epic_handoff.as_ref() {
         if let Some(entry) = installed_entry {
@@ -627,20 +663,26 @@ pub(super) async fn spawn_launched(
     // launched game inherits them).
     let cfgs = crate::legendary::commands::load_all_game_custom_configs();
     if epic_handoff.is_none() {
-        if let Some(cfg) = cfgs.get(app_name) {
-            if let Some(wrapper) = cfg
-                .wrapper
-                .as_deref()
-                .map(str::trim)
-                .filter(|w| !w.is_empty())
-            {
-                cmd.arg("--wrapper").arg(wrapper);
-            }
-            if let Some(envs) = cfg.env_vars.as_ref() {
-                for (key, value) in envs {
-                    if !key.trim().is_empty() {
-                        cmd.env(key.trim(), value);
-                    }
+        let cfg = cfgs.get(app_name);
+        let custom_wrapper = cfg
+            .and_then(|c| c.wrapper.as_deref())
+            .map(str::trim)
+            .filter(|w| !w.is_empty());
+        if let Some(wrapper) = custom_wrapper {
+            cmd.arg("--wrapper").arg(wrapper);
+        } else if let Some(relay_exe) = relay.as_ref() {
+            // No wrapper of the user's own: the relay copy stands in for the
+            // Epic Games Launcher, which Rockstar wants in the parent chain.
+            // legendary passes the wrapper through `shlex`, which eats the
+            // backslashes of a bare Windows path ("C:UsersEfe..."), so it has
+            // to arrive quoted.
+            cmd.arg("--wrapper")
+                .arg(format!("\"{}\"", relay_exe.display()));
+        }
+        if let Some(envs) = cfg.and_then(|c| c.env_vars.as_ref()) {
+            for (key, value) in envs {
+                if !key.trim().is_empty() {
+                    cmd.env(key.trim(), value);
                 }
             }
         }
@@ -931,6 +973,31 @@ mod tests {
             direct_game_exe(&dir, "PlayRDR2.exe"),
             Some("RDR2.exe".to_string())
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    fn installed_game(
+        app_name: &str,
+        install_path: &Path,
+        executable: &str,
+    ) -> crate::legendary::models::InstalledGame {
+        serde_json::from_value(serde_json::json!({
+            "app_name": app_name,
+            "install_path": install_path.to_string_lossy(),
+            "title": "Test Title",
+            "executable": executable,
+        }))
+        .expect("installed game")
+    }
+
+    #[test]
+    fn rockstar_stub_titles_are_flagged_for_the_epic_handoff() {
+        let dir = stub_dir("handoff");
+        std::fs::write(dir.join("PlayGTA3.exe"), vec![0u8; 64]).expect("stub");
+        assert!(needs_epic_handoff(&installed_game("Sugar", &dir, "PlayGTA3.exe")));
+        // A title that starts its own binary never needs the handoff.
+        std::fs::write(dir.join("Game.exe"), vec![0u8; 64]).expect("exe");
+        assert!(!needs_epic_handoff(&installed_game("Other", &dir, "Game.exe")));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

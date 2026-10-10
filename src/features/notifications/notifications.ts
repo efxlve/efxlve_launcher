@@ -69,6 +69,8 @@ export interface NotifInput {
   appName?: string;
   /** Optional `data-act` routed when the entry is clicked. */
   action?: string;
+  /** Short label for that action, shown as a chip inside the entry. */
+  actionLabel?: string;
   toast?: boolean;
 }
 
@@ -87,6 +89,7 @@ export function pushNotification(input: NotifInput): void {
     existing.read = false;
     existing.body = input.body ?? existing.body;
     existing.action = input.action ?? existing.action;
+    existing.actionLabel = input.actionLabel ?? existing.actionLabel;
   } else {
     S.notifications.unshift({
       id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -95,6 +98,7 @@ export function pushNotification(input: NotifInput): void {
       body: input.body ?? "",
       appName: input.appName,
       action: input.action,
+      actionLabel: input.actionLabel,
       ts: now,
       read: false,
     });
@@ -170,6 +174,7 @@ function panelMarkup(unread: number): string {
           <span class="notif-item-body">
             <span class="notif-item-title">${esc(n.title)}</span>
             ${n.body ? `<span class="notif-item-text">${esc(n.body)}</span>` : ""}
+            ${n.actionLabel ? `<span class="notif-item-act">${esc(n.actionLabel)}${icon("external", 12)}</span>` : ""}
             <span class="notif-item-time">${esc(relativeTime(n.ts))}</span>
           </span>
         </button>`;

@@ -45,6 +45,8 @@ export interface AppNotification {
   appName?: string;
   /** Optional `data-act` routed when the entry is clicked (e.g. install an app update). */
   action?: string;
+  /** Short label for the action, shown as a chip inside the entry. */
+  actionLabel?: string;
   ts: number;
   read: boolean;
 }

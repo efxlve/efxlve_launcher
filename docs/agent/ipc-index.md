@@ -104,6 +104,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_install_game` | `epicInstallGame({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_install_with_options` | `epicInstallWithOptions({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_launch_game` | `epicLaunchGame({ ... })` | `src-tauri/src/legendary/transfers/launch.rs` |
+| `epic_launch_support` | `epicLaunchSupport({ ... })` | `src-tauri/src/legendary/transfers/launch.rs` |
 | `epic_list_backups` | `epicListBackups({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_list_games` | `epicListGames({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_list_installed` | `epicListInstalled({ ... })` | `src-tauri/src/legendary/commands/session.rs` |

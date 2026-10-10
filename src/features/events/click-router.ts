@@ -58,6 +58,7 @@ import { S, applyTabSort, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
+import { openEpicLauncherDownload } from "../epic-launcher/epic-launcher-notice";
 import { handleWindowResize, updateMaxIcon, appSetAutostart } from "../../core/window";
 import { setLanguage, t as i18nT } from "../../i18n";
 import {
@@ -708,6 +709,8 @@ document.addEventListener("click", (e) => {
     void refreshEosStatus();
   } else if (act === "install-eos") {
     void startEosInstall();
+  } else if (act === "install-epic-launcher") {
+    openEpicLauncherDownload();
   } else if (act === "open-eos-folder") {
     if (S.eosOverlay?.installed && S.eosOverlay.path) {
       void epicOpenFolderPath(S.eosOverlay.path).catch((e: unknown) => toast(String(e), "err"));

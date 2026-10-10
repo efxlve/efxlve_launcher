@@ -11,6 +11,7 @@ import {
   epicGetQueue,
   epicInstallGame,
   epicLaunchGame,
+  epicLaunchSupport,
   epicStopGame,
   epicListInstalled,
   epicListSkipped,
@@ -34,6 +35,11 @@ import { notify, render } from "./render";
 import { isCompanionKey, rawOf, setEpicSummaries } from "./selectors";
 import { S } from "./state";
 import { toast } from "./toast";
+import {
+  clearEpicLauncherNotice,
+  showEpicLauncherNotice,
+  showEpicRelayNoticeOnce,
+} from "../features/epic-launcher/epic-launcher-notice";
 import { syncLibraryHeadingCount } from "../features/library/library-view";
 
 /** Launch a game and record it in the recent list. */
@@ -94,14 +100,36 @@ export async function epicPlay(appName: string): Promise<void> {
     return;
   }
   pushRecent(appName);
+  if (appName.startsWith("gog::")) {
+    toast(t("dl.launching"), "");
+    try {
+      const msg = await gogLaunchGame(appName);
+      toast(msg, "ok");
+    } catch (e) {
+      toast(String(e), "err");
+    }
+    return;
+  }
+  const title = S.epicSummariesMap.get(appName)?.title || appName;
+  // Rockstar's Epic stubs only start when a process named Epic Games Launcher
+  // is in their parent chain: the launcher relays that itself. Say so once, and
+  // keep Epic's client as the fallback when the relay cannot be used.
+  const support = await epicLaunchSupport(appName).catch(() => null);
+  if (support?.needsEpicLauncher) {
+    if (support.epicLauncherInstalled) clearEpicLauncherNotice();
+    else showEpicRelayNoticeOnce(appName, title);
+  }
   toast(t("dl.launching"), "");
   try {
-    const msg = appName.startsWith("gog::")
-      ? await gogLaunchGame(appName)
-      : await epicLaunchGame(appName);
+    const msg = await epicLaunchGame(appName);
     toast(msg, "ok");
   } catch (e) {
-    toast(String(e), "err");
+    const raw = String(e);
+    if (raw.startsWith("@t:dl.needsEpicLauncher")) {
+      showEpicLauncherNotice(appName, title);
+      return;
+    }
+    toast(raw, "err");
   }
 }
 

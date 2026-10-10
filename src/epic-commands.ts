@@ -67,6 +67,14 @@ export const epicUninstallGame = (appName: string, keepFiles = false) =>
   invoke<string>("epic_uninstall_game", { appName, keepFiles });
 export const epicLaunchGame = (appName: string) =>
   invoke<string>("epic_launch_game", { appName });
+/** Whether a title can only start through the Epic Games Launcher, and whether
+ * that launcher is installed (Rockstar's Epic stubs need it as the parent). */
+export interface EpicLaunchSupport {
+  needsEpicLauncher: boolean;
+  epicLauncherInstalled: boolean;
+}
+export const epicLaunchSupport = (appName: string) =>
+  invoke<EpicLaunchSupport>("epic_launch_support", { appName });
 export const epicStopGame = (appName: string) =>
   invoke<string>("epic_stop_game", { appName });
 /** Game requested by a desktop shortcut (`--launch <app>`), consumed once. */
