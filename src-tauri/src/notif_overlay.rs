@@ -384,35 +384,6 @@ pub async fn show_notif_overlay(
     }
 }
 
-/// Creates the dropdown host ahead of time so the first open is instant. The
-/// host parks off-screen; a real open only has to move it and write the panel.
-pub fn prewarm(app: &AppHandle) {
-    let app = app.clone();
-    tauri::async_runtime::spawn(async move {
-        // Let the window settle first; this is not startup-critical.
-        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        if app
-            .get_window("main")
-            .and_then(|w| w.get_webview(LABEL))
-            .is_some()
-        {
-            return;
-        }
-        let ready = show_notif_overlay(
-            app.clone(),
-            -10000.0,
-            -10000.0,
-            360.0,
-            480.0,
-            String::new(),
-        )
-        .await;
-        if ready.is_ok() {
-            let _ = hide_notif_overlay(app);
-        }
-    });
-}
-
 /// Moves an open dropdown. Does not reload the list.
 #[tauri::command]
 pub fn move_notif_overlay(
