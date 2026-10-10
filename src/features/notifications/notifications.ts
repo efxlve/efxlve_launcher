@@ -221,7 +221,14 @@ async function presentStoreOverlay(panelHtml: string): Promise<void> {
   holder.remove();
   notifOverlayBox = { w: width, h: height };
   const { x, y } = overlayOrigin(width, height);
-  await invoke("show_notif_overlay", { x, y, width, height, html: panelHtml });
+  const payload = { x, y, width, height, html: panelHtml };
+  try {
+    await invoke("show_notif_overlay", payload);
+  } catch {
+    // The host webview is built on first use: a failed or slow first creation
+    // must not leave the dropdown invisible behind an embedded page.
+    await invoke("show_notif_overlay", payload);
+  }
 }
 
 function hideStoreOverlay(): void {

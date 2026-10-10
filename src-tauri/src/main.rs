@@ -693,6 +693,9 @@ fn main() {
             legendary::screenshots::start_f12_listener(app.handle().clone());
             // Shift+Tab overlay panel over the running game.
             overlay::start(app.handle().clone());
+            // The notifications dropdown paints in a child webview over the
+            // storefronts: build that host in the background, not on first click.
+            notif_overlay::prewarm(app.handle());
             // Keeps the GOG account visible as online while the launcher runs.
             gogdl::presence::spawn(app.handle().clone());
             // Refreshes linked companion accounts (today: Ubisoft) on a timer.

@@ -54,7 +54,23 @@ async fn create_player(
         .get_window("main")
         .ok_or_else(|| "no_main_window".to_string())?;
     // Never pass `additional_browser_args` to a child webview builder.
-    let builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url));
+    // Any navigation to the app's fake host is intercepted: the notifications
+    // dropdown arms a click-away on this child, and the page must never follow
+    // that URL for real.
+    let app_nav = app.clone();
+    let builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url)).on_navigation(move |target| {
+        if target.host_str() != Some("efxlve.local") {
+            return true;
+        }
+        if target.path() == "/notif-close" {
+            let _ = app_nav.emit("notif-overlay-act", serde_json::json!({ "act": "overlay-close" }));
+            return false;
+        }
+        if let Some((act, id)) = crate::notif_overlay::notif_act_from_url(target) {
+            let _ = app_nav.emit("notif-overlay-act", serde_json::json!({ "act": act, "id": id }));
+        }
+        false
+    });
     let position = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
 

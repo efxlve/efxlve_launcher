@@ -192,7 +192,7 @@ fn publish_document(webview: &tauri::Webview, document: &str) {
 
 fn overlay_document(panel_html: &str) -> String {
     const CSS: &str = r#"
-      html, body { margin: 0; height: 100%; background: #0a0a0a; color: #fff; overflow: hidden;
+      html, body { margin: 0; height: 100%; background: #000000; color: #fff; overflow: hidden;
         font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
       button { font-family: inherit; }
       .notif-panel { position: static; width: 100%; height: 100%; max-height: none; box-sizing: border-box;
@@ -325,7 +325,7 @@ pub async fn show_notif_overlay(
     let blank = url::Url::parse("about:blank").map_err(|e| e.to_string())?;
     let app_nav = app.clone();
     let builder = tauri::webview::WebviewBuilder::new(LABEL, tauri::WebviewUrl::External(blank))
-        .background_color(tauri::webview::Color(10, 10, 10, 255))
+        .background_color(tauri::webview::Color(0, 0, 0, 255))
         .on_page_load(move |webview, payload| {
             if payload.event() != tauri::webview::PageLoadEvent::Finished {
                 return;
@@ -366,12 +366,51 @@ pub async fn show_notif_overlay(
                 place_overlay(&host, &webview, x, y, width, height);
                 arm_embedded_clicks(&host, true);
             }
+            // `about:blank` can finish loading before an eval is possible, and
+            // the page-load write is the only other path: a freshly created host
+            // must get its document here or the first open shows a blank panel.
+            publish_document(&webview, &document);
+            let again = webview.clone();
+            let retry_doc = document.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+                publish_document(&again, &retry_doc);
+            });
             Ok(())
         }
         Ok(Ok(Err(e))) => Err(e.to_string()),
         Ok(Err(_)) => Err("@t:store.viewCreateFailed".into()),
         Err(_) => Err("@t:store.viewTimeout".into()),
     }
+}
+
+/// Creates the dropdown host ahead of time so the first open is instant. The
+/// host parks off-screen; a real open only has to move it and write the panel.
+pub fn prewarm(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        // Let the window settle first; this is not startup-critical.
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        if app
+            .get_window("main")
+            .and_then(|w| w.get_webview(LABEL))
+            .is_some()
+        {
+            return;
+        }
+        let ready = show_notif_overlay(
+            app.clone(),
+            -10000.0,
+            -10000.0,
+            360.0,
+            480.0,
+            String::new(),
+        )
+        .await;
+        if ready.is_ok() {
+            let _ = hide_notif_overlay(app);
+        }
+    });
 }
 
 /// Moves an open dropdown. Does not reload the list.
