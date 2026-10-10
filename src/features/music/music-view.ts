@@ -18,6 +18,7 @@ import { isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
+import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
@@ -43,7 +44,10 @@ if (isTauri) {
 }
 
 function onMusicView(): boolean {
-  return Boolean(viewEl?.querySelector(".music"));
+  // The view host can still hold the music markup after the page changed (the
+  // store page renders into the child webview), so the page state decides:
+  // only the current view may bring the embedded player back.
+  return S.view === "music" && Boolean(viewEl?.querySelector(".music"));
 }
 
 function coversOpen(): boolean {
