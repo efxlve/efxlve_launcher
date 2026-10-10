@@ -109,7 +109,7 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         };
     }
 
-    let ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    let ua = HLTB_UA;
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(8))
         .build()
@@ -215,7 +215,77 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         }
     }
 
-    // 3. Prepare the search request
+    // 3. Search, then retry with the store's version tag removed when nothing
+    // matched ("Grand Theft Auto V Enhanced" / "... Legacy" live in HLTB as
+    // "Grand Theft Auto V"; a real title ending in such a word, like
+    // "Hogwarts Legacy", already matched on the first try).
+    let mut result_data = search_hltb(
+        &client,
+        &search_endpoint,
+        &terms,
+        (&auth_token, &auth_key, &auth_val),
+        app_name,
+        title,
+    )
+    .await;
+    if !result_data.supported {
+        let loosened = loosen_hltb_search_term(&search_term);
+        let loose_terms: Vec<&str> = loosened.split_whitespace().collect();
+        if loosened != search_term && !loose_terms.is_empty() {
+            let retry = search_hltb(
+                &client,
+                &search_endpoint,
+                &loose_terms,
+                (&auth_token, &auth_key, &auth_val),
+                app_name,
+                title,
+            )
+            .await;
+            if retry.supported {
+                result_data = retry;
+            }
+        }
+    }
+
+    // Cache only results that contain valid duration data
+    if result_data.supported {
+        if let Ok(_) = tokio::fs::create_dir_all(hltb_cache_dir()).await {
+            if let Ok(json_str) = serde_json::to_string_pretty(&result_data) {
+                let _ = tokio::fs::write(&cache_file, json_str).await;
+            }
+        }
+    }
+
+    result_data
+}
+
+/// Browser UA for every HLTB request (their endpoint rejects bare clients).
+const HLTB_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+fn empty_hltb(app_name: &str, title: &str) -> HltbData {
+    HltbData {
+        app_name: app_name.to_string(),
+        title: title.to_string(),
+        supported: false,
+        main_story: None,
+        main_extra: None,
+        completionist: None,
+    }
+}
+
+/// One HLTB search: the payload, the session's dynamic auth headers, and the
+/// first (most popular) result parsed into durations.
+async fn search_hltb(
+    client: &reqwest::Client,
+    endpoint: &str,
+    terms: &[&str],
+    auth: (&str, &str, &str),
+    app_name: &str,
+    title: &str,
+) -> HltbData {
+    if terms.is_empty() {
+        return empty_hltb(app_name, title);
+    }
     let mut payload = serde_json::json!({
         "searchType": "games",
         "searchTerms": terms,
@@ -241,82 +311,66 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         "useCache": true
     });
 
-    if !auth_key.is_empty() && !auth_val.is_empty() {
+    if !auth.1.is_empty() && !auth.2.is_empty() {
         if let Some(m) = payload.as_object_mut() {
-            m.insert(
-                auth_key.clone(),
-                serde_json::Value::String(auth_val.clone()),
-            );
+            m.insert(auth.1.to_string(), serde_json::Value::String(auth.2.to_string()));
         }
     }
 
-    let search_url = format!("https://howlongtobeat.com{}", search_endpoint);
     let mut req = client
-        .post(&search_url)
-        .header("User-Agent", ua)
+        .post(format!("https://howlongtobeat.com{}", endpoint))
+        .header("User-Agent", HLTB_UA)
         .header("Referer", "https://howlongtobeat.com/")
         .header("Origin", "https://howlongtobeat.com")
         .header("Content-Type", "application/json")
         .header("Accept", "*/*");
 
-    if !auth_token.is_empty() {
-        req = req.header("x-auth-token", &auth_token);
+    if !auth.0.is_empty() {
+        req = req.header("x-auth-token", auth.0);
     }
-    if !auth_key.is_empty() {
-        req = req.header("x-hp-key", &auth_key);
+    if !auth.1.is_empty() {
+        req = req.header("x-hp-key", auth.1);
     }
-    if !auth_val.is_empty() {
-        req = req.header("x-hp-val", &auth_val);
+    if !auth.2.is_empty() {
+        req = req.header("x-hp-val", auth.2);
     }
 
-    let resp = req.json(&payload).send().await;
-
-    let result_data = match resp {
-        Ok(r) if r.status().is_success() => {
-            if let Ok(text) = r.text().await {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
-                    parse_hltb_response(app_name, title, &val)
-                } else {
-                    HltbData {
-                        app_name: app_name.to_string(),
-                        title: title.to_string(),
-                        supported: false,
-                        main_story: None,
-                        main_extra: None,
-                        completionist: None,
-                    }
-                }
-            } else {
-                HltbData {
-                    app_name: app_name.to_string(),
-                    title: title.to_string(),
-                    supported: false,
-                    main_story: None,
-                    main_extra: None,
-                    completionist: None,
-                }
-            }
-        }
-        _ => HltbData {
-            app_name: app_name.to_string(),
-            title: title.to_string(),
-            supported: false,
-            main_story: None,
-            main_extra: None,
-            completionist: None,
+    match req.json(&payload).send().await {
+        Ok(resp) if resp.status().is_success() => match resp.text().await {
+            Ok(text) => serde_json::from_str::<serde_json::Value>(&text)
+                .map(|val| parse_hltb_response(app_name, title, &val))
+                .unwrap_or_else(|_| empty_hltb(app_name, title)),
+            Err(_) => empty_hltb(app_name, title),
         },
-    };
-
-    // Cache only results that contain valid duration data
-    if result_data.supported {
-        if let Ok(_) = tokio::fs::create_dir_all(hltb_cache_dir()).await {
-            if let Ok(json_str) = serde_json::to_string_pretty(&result_data) {
-                let _ = tokio::fs::write(&cache_file, json_str).await;
-            }
-        }
+        _ => empty_hltb(app_name, title),
     }
+}
 
-    result_data
+/// Second attempt for store version tags that HLTB's own names do not carry:
+/// "Grand Theft Auto V Enhanced" and "... Legacy" are "Grand Theft Auto V"
+/// there. Only used when the exact cleaned title found nothing, so a real title
+/// ending in such a word ("Hogwarts Legacy") is never shortened.
+pub fn loosen_hltb_search_term(term: &str) -> String {
+    const TAGS: [&str; 14] = [
+        "Enhanced", "Legacy", "Remastered", "Definitive", "Edition", "Complete", "Ultimate",
+        "Premium", "Extended", "Deluxe", "Gold", "Standard", "Special", "GOTY",
+    ];
+    let trim = |s: &str| s.trim().trim_end_matches([':', '-', '\u{2013}']).trim().to_string();
+    let mut rest = trim(term);
+    for _ in 0..3 {
+        let Some(last) = rest.split_whitespace().last().map(str::to_string) else {
+            break;
+        };
+        let word = last.trim_end_matches(|c: char| !c.is_alphanumeric());
+        let is_tag = TAGS.iter().any(|tag| tag.eq_ignore_ascii_case(word))
+            || word.to_ascii_lowercase().ends_with("edition");
+        if !is_tag {
+            break;
+        }
+        let cut = rest.len() - last.len();
+        rest = trim(&rest[..cut]);
+    }
+    rest
 }
 
 fn parse_hltb_response(app_name: &str, title: &str, val: &serde_json::Value) -> HltbData {
@@ -380,6 +434,26 @@ mod tests {
             clean_hltb_search_term("The Witcher 3: Wild Hunt - Game of the Year Edition"),
             "The Witcher 3: Wild Hunt"
         );
+    }
+
+    #[test]
+    fn test_loosen_hltb_search_term() {
+        assert_eq!(
+            loosen_hltb_search_term("Grand Theft Auto V Enhanced"),
+            "Grand Theft Auto V"
+        );
+        assert_eq!(
+            loosen_hltb_search_term("Grand Theft Auto V Legacy"),
+            "Grand Theft Auto V"
+        );
+        assert_eq!(
+            loosen_hltb_search_term("The Witcher 3: Wild Hunt Complete Edition"),
+            "The Witcher 3: Wild Hunt"
+        );
+        assert_eq!(loosen_hltb_search_term("Grand Theft Auto III"), "Grand Theft Auto III");
+        // The loosened term is only a fallback: "Hogwarts Legacy" is searched
+        // with its full name first, so stripping the word cannot hurt it.
+        assert_eq!(loosen_hltb_search_term("Hogwarts Legacy"), "Hogwarts");
     }
 
     #[test]
