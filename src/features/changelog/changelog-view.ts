@@ -27,9 +27,73 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.28",
+    date: "2026-10-10",
+    isCurrent: true,
+    items: [
+      {
+        en: "The in-game overlay is here: Shift+Tab opens a panel over the game with live FPS, CPU, GPU and memory readings, achievements, screenshots and notes, Spotify and Discord tabs, plus controller and keyboard navigation. It now wears the launcher's own theme as well: flat surfaces and one white accent.",
+        tr: "Oyun içi arayüz geldi: Shift+Tab oyun üzerinde canlı FPS, CPU, GPU ve bellek okumaları, başarımlar, ekran görüntüleri ve notlar, Spotify ve Discord sekmeleri, ayrıca oyun kolu ve klavye gezinmesi olan bir panel açıyor. Panel artık launcher'ın kendi temasını da giyiyor: düz yüzeyler ve tek beyaz vurgu.",
+      },
+      {
+        en: "The game-start hint is a slim card in the top-right corner of the game's monitor: an icon disc, a bold title and one line, sliding in and out instead of the old banner.",
+        tr: "Oyun başlangıç ipucu, oyunun monitörünün sağ üstünde ince bir kart: ikon diski, kalın bir başlık ve tek satır. Eski banner yerine kayarak girip çıkıyor.",
+      },
+      {
+        en: "Spotify lives in the launcher: the Music page embeds the normal web player, a built-in receiver plays through your own account, and a sidebar mini player handles play/pause, skip, volume and timeline scrubbing while you use other pages.",
+        tr: "Spotify artık launcher'ın içinde: Müzik sayfası normal web oynatıcıyı gömüyor, launcher'ın kendi alıcısı kendi hesabınla çalıyor ve başka sayfalardayken kenar çubuğu mini oynatıcısı oynat/duraklat, atla, ses ve zaman çizelgesini üstleniyor.",
+      },
+      {
+        en: "Discord Rich Presence shows what the receiver plays: album art and a live time bar, and while a game runs the track joins the second line.",
+        tr: "Discord Rich Presence alıcının çaldığını gösteriyor: albüm kapağı ve canlı zaman çubuğu; bir oyun açıkken parça ikinci satıra katılıyor.",
+      },
+      {
+        en: "Rockstar's Epic titles (GTA III/VC/SA Definitive Edition, GTA V, RDR2) can start without the Epic Games Launcher: the launcher relays the start itself when Epic's client is missing, and says plainly when Rockstar still insists on it.",
+        tr: "Rockstar'ın Epic oyunları (GTA III/VC/SA Definitive Edition, GTA V, RDR2) Epic Games Launcher olmadan başlatılabiliyor: Epic istemcisi kurulu değilse launcher başlatmayı kendisi aktarıyor, Rockstar yine de onu isterse bunu açıkça söylüyor.",
+      },
+      {
+        en: "Settings can hide the Spotify and Discord pages, and the sidebar player steps aside by itself when it is idle or the window is small.",
+        tr: "Ayarlar Spotify ve Discord sayfalarını gizleyebiliyor; kenar çubuğu oynatıcısı boştayken ya da pencere küçükken kendiliğinden çekiliyor.",
+      },
+      {
+        en: "Settings → Launchers knows the Rockstar Games Launcher too: it is detected, offers its download when missing and an Open client button when it is installed.",
+        tr: "Ayarlar → Başlatıcılar artık Rockstar Games Launcher'ı da tanıyor: algılanıyor, eksikse indirme bağlantısı, kuruluysa \"İstemciyi aç\" düğmesi sunuyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The Completed list showed the installed game's folder size after an update; it now reports the size of the transfer itself.",
+        tr: "Completed listesi bir güncellemeden sonra kurulu oyunun klasör boyutunu gösteriyordu; artık transferin kendi boyutunu yazıyor.",
+      },
+      {
+        en: "A Rockstar title that cannot be relayed says what is missing instead of dropping into Rockstar's \"please try reinstalling\" error, and the Epic Games Launcher is found by its registry entry too, so installs moved out of the default folder work.",
+        tr: "Aktarılamayan bir Rockstar oyunu, Rockstar'ın \"please try reinstalling\" hatasına düşmek yerine neyin eksik olduğunu söylüyor; Epic Games Launcher varsayılan klasörden taşınmış olsa da kayıt defteri kaydından bulunuyor.",
+      },
+      {
+        en: "The Spotify session token stays fresh and the playlist library no longer breaks on a single odd entry, so metadata and artwork keep working.",
+        tr: "Spotify oturum anahtarı tazeleniyor ve çalma listesi kitaplığı tek bir bozuk kayıtta bozulmuyor; meta veri ve kapaklar çalışmaya devam ediyor.",
+      },
+      {
+        en: "The overlay's empty readings and empty FPS graph read quietly, and the one-time Windows permission notice stays in the view that needs it.",
+        tr: "Arayüzün boş okumaları ve boş FPS grafiği sakin görünüyor; tek seferlik Windows izni bildirimi yalnızca gereken görünümde kalıyor.",
+      },
+      {
+        en: "The profile banner picker no longer stretches store logos, opens wider and pages its grid; the Storage Manager keeps one stable size.",
+        tr: "Profil banner seçicisi mağaza logolarını artık esnetmiyor, daha geniş açılıyor ve ızgarasını sayfalıyor; Depolama Yöneticisi sabit boyutta kalıyor.",
+      },
+      {
+        en: "The feature list read the whole GTA family as single- and multiplayer; the Definitive trilogy is single-player, while GTA V and the Red Dead titles keep their online mode.",
+        tr: "Özellik listesi tüm GTA ailesini tek ve çok oyunculu sayıyordu; Definitive üçlemesi tek oyunculu, GTA V ve Red Dead oyunları ise çevrimiçi modunu koruyor.",
+      },
+      {
+        en: "HowLongToBeat also finds games whose store title carries a version tag: \"Grand Theft Auto V Enhanced\" and \"... Legacy\" look up the GTA V entry instead of staying empty.",
+        tr: "HowLongToBeat, mağaza adı sürüm etiketi taşıyan oyunları da buluyor: \"Grand Theft Auto V Enhanced\" ve \"... Legacy\" artık boş kalmak yerine GTA V kaydına bakıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.27",
     date: "2026-10-08",
-    isCurrent: true,
     items: [
       {
         en: "Hide-games and hide-achievements dialogs label every copy with its storefront, so a title owned on several stores is easy to tell apart.",
