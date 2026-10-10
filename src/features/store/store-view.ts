@@ -56,8 +56,12 @@ export function storeRect(): StoreRect {
   };
 }
 
-/** Launcher surfaces drawn in the main webview. The store child sits above them. */
-const COVERING_ROOT_IDS = [
+/**
+ * Launcher surfaces drawn in the main webview. The embedded children (the store
+ * child and the Spotify player) sit above them, so any of these being open
+ * parks the children.
+ */
+export const COVERING_ROOT_IDS = [
   "modal-root",
   "storage-root",
   "manage-root",

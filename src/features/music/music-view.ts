@@ -21,7 +21,7 @@ import { render } from "../../core/render";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
-import { setView } from "../store/store-view";
+import { COVERING_ROOT_IDS, setView } from "../store/store-view";
 import {
   spotifyPlaybackStart,
   spotifyPlaybackStatus,
@@ -42,26 +42,12 @@ if (isTauri) {
   });
 }
 
-/** Roots that paint above the content area: the child webview must hide then. */
-const COVER_ROOTS = [
-  "palette-root",
-  "modal-root",
-  "install-root",
-  "manage-root",
-  "storage-root",
-  "selective-root",
-  "playtime-root",
-  "collection-root",
-  "cover-modal-root",
-  "move-modal-root",
-];
-
 function onMusicView(): boolean {
   return Boolean(viewEl?.querySelector(".music"));
 }
 
 function coversOpen(): boolean {
-  return COVER_ROOTS.some((id) => document.getElementById(id)?.firstElementChild);
+  return COVERING_ROOT_IDS.some((id) => document.getElementById(id)?.firstElementChild);
 }
 
 /* ---------- Rendering ---------- */
@@ -178,10 +164,11 @@ function ensurePolling(): void {
   window.addEventListener("resize", () => {
     if (playerVisible) syncPlayer();
   });
+  // Any covering surface (the changelog, a dialog, the palette) parks the child.
   const observer = new MutationObserver(() => {
     if (onMusicView()) syncPlayer();
   });
-  for (const id of COVER_ROOTS) {
+  for (const id of COVERING_ROOT_IDS) {
     const el = document.getElementById(id);
     if (el) observer.observe(el, { childList: true });
   }
