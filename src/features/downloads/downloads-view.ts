@@ -8,7 +8,6 @@
  */
 
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
-import { measureFolders, measuredSize } from "../../core/folder-size";
 import { epicActionButtons } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
@@ -19,7 +18,7 @@ import type { DlMetrics } from "../../core/types";
 import { esc, fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { localizeMessage, formatSyncStamp, t } from "../../i18n";
 import { storeName } from "../profile/profile-view";
-import { getRecentDownloads } from "../../core/recent";
+import { getRecentDownloads, type RecentDownload } from "../../core/recent";
 import { epicPortrait, type EpicSummary } from "../../epic";
 import type { SteamGame } from "../../steam";
 import { steamDownloadLabel, steamDownloadWaiting } from "../library/steam-library";
@@ -213,50 +212,6 @@ function activeDownload(): DlMetrics | null {
     }
   }
   return null;
-}
-
-/** Installed games that are not already listed under Updates. Recent first. */
-function installedGames(): EpicSummary[] {
-  const recentIdx = new Map<string, number>();
-  S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
-  const collator = S.trCollator ?? new Intl.Collator(S.appLanguage || "en", { sensitivity: "base", numeric: true });
-  const gogInstalled = S.gogSummaries
-    .filter((g) => g.installed && !g.updateAvailable)
-    .map(gogToEpicSummary);
-  const amazonInstalled = S.amazonSummaries
-    .filter((g) => g.installed && !g.updateAvailable)
-    .map(libraryItemToSummary);
-  return [
-    ...S.epicSummaries.filter((s) => s.installed && !(s.updateAvailable || S.availableUpdates.has(s.appName))),
-    ...gogInstalled,
-    ...amazonInstalled,
-  ].sort((a, b) => {
-    const ra = recentIdx.get(a.appName);
-    const rb = recentIdx.get(b.appName);
-    if (ra !== undefined || rb !== undefined) return (ra ?? 9999) - (rb ?? 9999);
-    return collator.compare(a.title, b.title);
-  });
-}
-
-/** Metadata size, upgraded to the measured folder size once one lands. */
-function shownBytes(s: EpicSummary): number {
-  return measuredSize(s.appName) ?? (s.installSize || 0);
-}
-
-/** One background measurement pass for the installed list; patches rows in place. */
-let measuringInstalled = false;
-export function measureInstalledSizes(): void {
-  if (measuringInstalled) return;
-  measuringInstalled = true;
-  void measureFolders(
-    installedGames().map((s) => ({ key: s.appName, path: s.installPath ?? null })),
-    (key, bytes) => {
-      const el = document.querySelector<HTMLElement>(`[data-dl-size="${CSS.escape(key)}"]`);
-      if (el) el.textContent = fmtBytes(bytes);
-    },
-  ).finally(() => {
-    measuringInstalled = false;
-  });
 }
 
 function renderActiveCard(dl: DlMetrics): string {
@@ -477,13 +432,13 @@ export function renderDownloads(): string {
   // stale) is skipped instead of printing the raw app name.
   const completed = getRecentDownloads()
     .map((entry) => ({ ...entry, summary: summaryOf(entry.id) }))
-    .filter((entry): entry is { id: string; at: number; summary: EpicSummary } => Boolean(entry.summary))
+    .filter((entry): entry is RecentDownload & { summary: EpicSummary } => Boolean(entry.summary))
     .slice(0, 6);
-  const completedRows = completed.map(({ id, at, summary }) => {
+  const completedRows = completed.map(({ id, at, bytes, summary }) => {
     const metaParts = [esc(storeName(sourceOfKey(id)))];
-    if (shownBytes(summary) > 0) {
-      metaParts.push(`<span data-dl-size="${esc(id)}">${fmtBytes(shownBytes(summary))}</span>`);
-    }
+    // The size of the transfer itself: an update downloads a fraction of the
+    // install, so the game folder size is never shown here.
+    if (bytes > 0) metaParts.push(fmtBytes(bytes));
     if (at > 0) metaParts.push(esc(formatSyncStamp(String(at))));
     const removeBtn = `<button class="icon-btn" data-act="dl-completed-remove" data-id="${esc(id)}" title="${esc(t("downloads.completedRemove"))}">${icon("x", 15)}</button>`;
     return gameRow(

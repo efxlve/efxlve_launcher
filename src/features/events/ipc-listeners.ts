@@ -393,7 +393,12 @@ export async function initApp(hooks: {
 
       // Download completed
       S.downloads.set(id, { progress: 100, done: true, title });
-      pushRecentInstall(id);
+      // The Completed row shows what this transfer moved: an update downloads a
+      // fraction of the install, so the folder size would be misleading.
+      const movedBytes = S.activeDlMetrics?.id === id
+        ? Math.max(S.activeDlMetrics.downloadedBytes, S.activeDlMetrics.totalBytes)
+        : 0;
+      pushRecentInstall(id, movedBytes);
       lastDlSample = null;
       pushNotification({ kind: "download", title: t("notif.downloadDone", { title }), appName: id });
       // Per-install shortcut request from the install dialog (deferred until the

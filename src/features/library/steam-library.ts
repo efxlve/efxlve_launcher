@@ -414,8 +414,9 @@ export function applySteamInstalledSnapshot(games: SteamGame[]): boolean {
     if (finished || until <= now) {
       clearSteamAwait(prev.appId);
       steamKeepUntil.delete(prev.appId);
-      // Only a finished transfer joins the Downloads tab's completed list.
-      if (finished) pushRecentInstall(`steam::${prev.appId}`);
+      // Only a finished transfer joins the Downloads tab's completed list, with
+      // the size of that transfer (an update moves a fraction of the install).
+      if (finished) pushRecentInstall(`steam::${prev.appId}`, fresh.bytesToDownload);
       continue;
     }
     // Steam drops the row for a moment when an update starts. Keep it, and

@@ -18,7 +18,7 @@ import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
-import { drawSpeedCanvas, measureInstalledSizes, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
+import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
 import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
@@ -137,7 +137,6 @@ function render(): void {
   if (S.view === "downloads") {
     startSpeedChartTimer();
     drawSpeedCanvas();
-    measureInstalledSizes();
   }
   updateChrome();
   updateNavHistoryUi();
