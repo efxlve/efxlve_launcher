@@ -40,21 +40,12 @@ export function initMiniPlayer(): void {
   const next = mini.querySelector<HTMLElement>('[data-mini="next"]');
   const volumeIcon = mini.querySelector<HTMLElement>(".sb-mini-volume-icon");
   const volume = document.getElementById("sb-mini-volume") as HTMLInputElement | null;
-  if (prev) {
-    prev.innerHTML = icon("skip-back", 16);
-    prev.title = t("music.previous");
-  }
-  if (toggle) {
-    toggle.innerHTML = icon("play", 16);
-    toggle.title = t("music.playPause");
-  }
-  if (next) {
-    next.innerHTML = icon("skip-forward", 16);
-    next.title = t("music.next");
-  }
+  // The tooltips and labels live as `data-i18n-*` attributes on the static
+  // markup, so a language change refreshes them; nothing here sets them once.
+  if (prev) prev.innerHTML = icon("skip-back", 16);
+  if (toggle) toggle.innerHTML = icon("play", 16);
+  if (next) next.innerHTML = icon("skip-forward", 16);
   if (volumeIcon) volumeIcon.innerHTML = icon("volume-2", 13);
-  if (volume) volume.setAttribute("aria-label", t("mini.volume"));
-  mini.querySelector(".sb-mini-top")?.setAttribute("title", t("overlay.openSpotify"));
 
   document.addEventListener("click", (event) => {
     const action = (event.target as HTMLElement).closest<HTMLElement>("[data-mini]")?.dataset.mini;

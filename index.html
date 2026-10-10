@@ -81,7 +81,7 @@
           </nav>
           <div id="sb-games" class="sb-games"></div>
           <div id="sb-mini" class="sb-mini" hidden>
-            <div class="sb-mini-top" data-mini="open">
+            <div class="sb-mini-top" data-mini="open" data-i18n-title="overlay.openSpotify">
               <span class="sb-mini-art" id="sb-mini-art"></span>
               <span class="sb-mini-text">
                 <span class="sb-mini-title" id="sb-mini-title"></span>
@@ -90,13 +90,13 @@
             </div>
             <div class="sb-mini-progress"><span id="sb-mini-fill"></span></div>
             <div class="sb-mini-controls">
-              <button type="button" class="sb-mini-btn" data-mini="prev" title="Previous" aria-label="Previous"></button>
-              <button type="button" class="sb-mini-btn sb-mini-play" data-mini="toggle" title="Play/Pause" aria-label="Play/Pause"></button>
-              <button type="button" class="sb-mini-btn" data-mini="next" title="Next" aria-label="Next"></button>
+              <button type="button" class="sb-mini-btn" data-mini="prev" data-i18n-title="music.previous" data-i18n-aria-label="music.previous" title="Previous" aria-label="Previous"></button>
+              <button type="button" class="sb-mini-btn sb-mini-play" data-mini="toggle" data-i18n-title="music.playPause" data-i18n-aria-label="music.playPause" title="Play/Pause" aria-label="Play/Pause"></button>
+              <button type="button" class="sb-mini-btn" data-mini="next" data-i18n-title="music.next" data-i18n-aria-label="music.next" title="Next" aria-label="Next"></button>
             </div>
             <div class="sb-mini-volume">
               <span class="sb-mini-volume-icon"></span>
-              <input type="range" id="sb-mini-volume" min="0" max="100" value="100" aria-label="Volume" />
+              <input type="range" id="sb-mini-volume" min="0" max="100" value="100" data-i18n-aria-label="mini.volume" aria-label="Volume" />
             </div>
           </div>
           <button type="button" id="sb-toggle" class="sb-toggle" data-act="toggle-sidebar" aria-expanded="true" data-i18n-title="nav.collapseSidebar" title="Collapse sidebar">

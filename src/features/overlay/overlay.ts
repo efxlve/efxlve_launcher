@@ -2143,6 +2143,9 @@ function pollGamepadLoop(): void {
 /* ---------- Lifecycle ---------- */
 
 async function onOpen(payload: OpenPayload): Promise<void> {
+  // The overlay page outlives a Settings language change: pull the current
+  // language on every open so no widget shows the previous one.
+  await setLanguage(initialLanguage()).catch(() => undefined);
   context = payload;
   metrics = null;
   fpsHistory = [];

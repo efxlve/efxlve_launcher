@@ -152,7 +152,7 @@ function applyDir(lang: string): void {
   document.documentElement.dir = meta?.dir ?? "ltr";
 }
 
-/** Translates `data-i18n` / `data-i18n-title` elements in the static HTML. */
+/** Translates `data-i18n` / `data-i18n-title` / `data-i18n-aria-label` in the static HTML. */
 export function applyStaticTranslations(): void {
   document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
@@ -161,6 +161,10 @@ export function applyStaticTranslations(): void {
   document.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((el) => {
     const key = el.dataset.i18nTitle;
     if (key) el.title = t(key);
+  });
+  document.querySelectorAll<HTMLElement>("[data-i18n-aria-label]").forEach((el) => {
+    const key = el.dataset.i18nAriaLabel;
+    if (key) el.setAttribute("aria-label", t(key));
   });
   document.querySelectorAll<HTMLInputElement>("[data-i18n-placeholder]").forEach((el) => {
     const key = el.dataset.i18nPlaceholder;
