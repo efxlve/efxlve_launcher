@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "已通过 EA App 启动 {a1}",
   "dl.launchedUbisoft": "已通过 Ubisoft Connect 启动 {a1}",
   "dl.notInstalled": "游戏未安装",
+  "dl.needsEpicLauncher": "{a1} 需要 Epic Games Launcher 才能启动。请安装并登录后重试。",
   "dl.executableNotFound": "找不到游戏可执行文件。请检查安装或修复游戏文件。",
   "dl.launchFailedCode": "无法启动游戏（错误代码：{a1}）",
   "dl.cacheCleared": "已清除下载缓存",

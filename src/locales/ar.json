@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "شُغّلت {a1} عبر EA App",
   "dl.launchedUbisoft": "شُغّلت {a1} عبر Ubisoft Connect",
   "dl.notInstalled": "اللعبة غير مثبتة",
+  "dl.needsEpicLauncher": "{a1} يحتاج إلى Epic Games Launcher للتشغيل. ثبّته وسجّل الدخول ثم أعد المحاولة.",
   "dl.executableNotFound": "تعذّر العثور على الملف التنفيذي للعبة. تحقّق من التثبيت أو أصلح ملفات اللعبة.",
   "dl.launchFailedCode": "تعذر تشغيل اللعبة (رمز الخطأ: {a1})",
   "dl.cacheCleared": "مُسحت ذاكرة التخزين المؤقت للتنزيل",

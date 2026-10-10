@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "{a1} avviato tramite EA App",
   "dl.launchedUbisoft": "{a1} avviato tramite Ubisoft Connect",
   "dl.notInstalled": "Il gioco non è installato",
+  "dl.needsEpicLauncher": "{a1} richiede l'Epic Games Launcher per l'avvio. Installalo, accedi e riprova.",
   "dl.executableNotFound": "Impossibile trovare l'eseguibile del gioco. Verifica l'installazione o ripara i file di gioco.",
   "dl.launchFailedCode": "Impossibile avviare il gioco (codice di errore: {a1})",
   "dl.cacheCleared": "Cache dei download svuotata",

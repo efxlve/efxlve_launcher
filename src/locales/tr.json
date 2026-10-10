@@ -1176,6 +1176,7 @@
   "dl.launchedEa": "{a1} EA App üzerinden başlatıldı",
   "dl.launchedUbisoft": "{a1} Ubisoft Connect üzerinden başlatıldı",
   "dl.notInstalled": "Oyun kurulu değil",
+  "dl.needsEpicLauncher": "{a1} oyununu başlatmak için Epic Games Launcher gerekiyor. Kurup giriş yaptıktan sonra tekrar dene.",
   "dl.executableNotFound": "Oyunun çalıştırılabilir dosyası bulunamadı. Kurulumu doğrulayın veya oyun dosyalarını onarın.",
   "dl.launchFailedCode": "Oyun başlatılamadı (hata kodu: {a1})",
   "dl.cacheCleared": "İndirme önbelleği temizlendi",

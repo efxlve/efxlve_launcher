@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "{a1} を EA App 経由で起動しました",
   "dl.launchedUbisoft": "{a1} を Ubisoft Connect 経由で起動しました",
   "dl.notInstalled": "ゲームはインストールされていません",
+  "dl.needsEpicLauncher": "{a1} の起動には Epic Games Launcher が必要です。インストールしてサインインしてから再試行してください。",
   "dl.executableNotFound": "ゲームの実行ファイルが見つかりませんでした。インストールを確認するか、ゲームファイルを修復してください。",
   "dl.launchFailedCode": "ゲームを起動できませんでした（エラーコード: {a1}）",
   "dl.cacheCleared": "ダウンロードキャッシュをクリアしました",

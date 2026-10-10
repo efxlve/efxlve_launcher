@@ -1176,6 +1176,7 @@
   "dl.launchedEa": "{a1} EA App के माध्यम से लॉन्च किया गया",
   "dl.launchedUbisoft": "{a1} Ubisoft Connect के माध्यम से लॉन्च किया गया",
   "dl.notInstalled": "गेम इंस्टॉल नहीं है",
+  "dl.needsEpicLauncher": "{a1} को शुरू करने के लिए Epic Games Launcher चाहिए। इसे इंस्टॉल करके साइन इन करें और फिर कोशिश करें।",
   "dl.executableNotFound": "गेम एक्ज़ीक्यूटेबल नहीं मिला। इंस्टॉलेशन सत्यापित करें या गेम फ़ाइलों की मरम्मत करें।",
   "dl.launchFailedCode": "गेम लॉन्च नहीं किया जा सका (त्रुटि कोड: {a1})",
   "dl.cacheCleared": "डाउनलोड कैश साफ़ किया गया",

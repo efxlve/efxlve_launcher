@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "{a1} запущена через EA App",
   "dl.launchedUbisoft": "{a1} запущена через Ubisoft Connect",
   "dl.notInstalled": "Игра не установлена",
+  "dl.needsEpicLauncher": "Для запуска {a1} нужен Epic Games Launcher. Установите его, войдите в аккаунт и попробуйте снова.",
   "dl.executableNotFound": "Не удалось найти исполняемый файл игры. Проверьте установку или восстановите файлы игры.",
   "dl.launchFailedCode": "Не удалось запустить игру (код ошибки: {a1})",
   "dl.cacheCleared": "Кэш загрузок очищен",

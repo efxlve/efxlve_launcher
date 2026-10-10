@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "เปิด {a1} ผ่าน EA App แล้ว",
   "dl.launchedUbisoft": "เปิด {a1} ผ่าน Ubisoft Connect แล้ว",
   "dl.notInstalled": "เกมไม่ได้ติดตั้ง",
+  "dl.needsEpicLauncher": "{a1} ต้องใช้ Epic Games Launcher ในการเปิดเกม ติดตั้งและลงชื่อเข้าใช้แล้วลองใหม่",
   "dl.executableNotFound": "ไม่พบไฟล์เรียกทำงานของเกม ตรวจสอบการติดตั้งหรือซ่อมแซมไฟล์เกม",
   "dl.launchFailedCode": "เปิดเกมไม่ได้ (รหัสข้อผิดพลาด: {a1})",
   "dl.cacheCleared": "ล้างแคชการดาวน์โหลดแล้ว",

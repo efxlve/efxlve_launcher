@@ -452,7 +452,25 @@ pub fn retarget_item_text(text: &str, app_name: &str, install_path: &Path) -> Op
     Some(out)
 }
 
+/// Epic Games Launcher executable, or `None` when it is not installed.
+///
+/// The URI handler registration (`com.epicgames.launcher`) is checked first:
+/// it is the executable Windows would start for Rockstar's own handoff, and it
+/// also finds installs that were moved away from the default folder. A stale
+/// registration (folder deleted after an uninstall) falls through to the
+/// standard paths.
 pub fn epic_launcher_executable() -> Option<PathBuf> {
+    for key in [
+        r"HKCU\Software\Classes\com.epicgames.launcher\shell\open\command",
+        r"HKLM\SOFTWARE\Classes\com.epicgames.launcher\shell\open\command",
+    ] {
+        if let Some(output) = crate::winreg::query(key, None) {
+            let command = crate::winreg::parse_reg_sz(&output);
+            if let Some(path) = exe_from_open_command(&command) {
+                return Some(path);
+            }
+        }
+    }
     let candidates = [
         r"C:\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
         r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
@@ -464,9 +482,40 @@ pub fn epic_launcher_executable() -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
+/// The executable inside a shell `open` command (`"C:\...\Launcher.exe" %1`).
+/// Only existing files are returned, so a deleted install cannot be used.
+fn exe_from_open_command(command: &str) -> Option<PathBuf> {
+    let command = command.trim();
+    if command.is_empty() {
+        return None;
+    }
+    let path = if let Some(rest) = command.strip_prefix('"') {
+        rest.split('"').next()?
+    } else {
+        command.split_whitespace().next()?
+    };
+    let path = PathBuf::from(path);
+    path.is_file().then_some(path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A shell `open` command carries the executable in quotes followed by its
+    /// arguments; only paths that still exist may be used.
+    #[test]
+    fn open_commands_yield_their_executable() {
+        let exe = std::env::current_exe().expect("test binary");
+        let quoted = format!("\"{}\" %1", exe.display());
+        assert_eq!(exe_from_open_command(&quoted), Some(exe.clone()));
+        assert_eq!(
+            exe_from_open_command(r"C:\Windows\System32\cmd.exe /c"),
+            Some(PathBuf::from(r"C:\Windows\System32\cmd.exe"))
+        );
+        assert_eq!(exe_from_open_command("\"C:\\Gone\\Launcher.exe\" %1"), None);
+        assert_eq!(exe_from_open_command(""), None);
+    }
 
     #[test]
     fn retarget_points_pending_install_at_the_existing_folder() {

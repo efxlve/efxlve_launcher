@@ -67,6 +67,12 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
         match spawn_launched(&app, &bin, &app_name, &custom_refs).await {
             Ok(()) => Ok(format!("@t:dl.launched\u{1f}{title}")),
             Err(first) => {
+                // A missing companion launcher is not an offline problem: the
+                // start never reached the game, so the retry would only repeat
+                // the same message.
+                if first.starts_with("@t:dl.needsEpicLauncher") {
+                    return Err(first);
+                }
                 if entry.can_run_offline {
                     let mut offline_args = vec!["--offline"];
                     offline_args.extend(custom_refs.iter().copied());
@@ -527,6 +533,30 @@ pub(super) fn direct_game_exe(install_path: &Path, executable: &str) -> Option<S
     }
 }
 
+/// Epic's Rockstar stubs (`PlayGTA3.exe`, `PlayRDR2.exe`): a small launcher that
+/// only continues when the Epic Games Launcher is the parent process. The real
+/// binary is not always a sibling of the stub (GTA III ships `PlayGTA3.exe`
+/// above `Engine/`), so the known stub names are matched explicitly.
+const ROCKSTAR_STUBS: [&str; 5] = [
+    "playgta3.exe",
+    "playgtavc.exe",
+    "playgtasa.exe",
+    "playgtav.exe",
+    "playrdr2.exe",
+];
+
+pub(super) fn is_rockstar_stub(install_path: &Path, executable: &str) -> bool {
+    let Some(name) = Path::new(executable).file_name().and_then(|f| f.to_str()) else {
+        return false;
+    };
+    if !ROCKSTAR_STUBS.contains(&name.to_ascii_lowercase().as_str()) {
+        return false;
+    }
+    std::fs::metadata(install_path.join(name))
+        .map(|meta| meta.len() < 8 * 1024 * 1024)
+        .unwrap_or(false)
+}
+
 pub(super) async fn spawn_launched(
     app: &AppHandle,
     bin: &PathBuf,
@@ -537,13 +567,41 @@ pub(super) async fn spawn_launched(
     let installed_games = crate::legendary::cache::read_installed(&config);
     let installed_entry = installed_games.iter().find(|g| g.app_name == app_name);
 
-    // Rockstar closes the game when its parent is not Epic. Ask Epic to
-    // launch the existing install instead of starting the raw exe.
-    let via_epic = installed_entry.and_then(|entry| {
-        direct_game_exe(Path::new(&entry.install_path), &entry.executable)?;
-        crate::legendary::import_installed::epic_launcher_executable()
+    let meta_path = config.join("metadata").join(format!("{app_name}.json"));
+    let game_title = installed_entry
+        .map(|g| g.title.clone())
+        .filter(|t| !t.trim().is_empty())
+        .or_else(|| {
+            std::fs::read_to_string(&meta_path)
+                .ok()
+                .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+                .and_then(|v| {
+                    v.get("app_title")
+                        .and_then(|t| t.as_str())
+                        .map(|s| s.to_string())
+                })
+        })
+        .unwrap_or_else(|| app_name.to_string());
+
+    // Rockstar closes the game when its parent is not Epic. Ask the Epic Games
+    // Launcher to start the existing install instead of the raw game binary.
+    // Without it the chain cannot finish — Rockstar then shows a "please try
+    // reinstalling" error — so say what is actually missing.
+    let needs_epic = installed_entry.is_some_and(|entry| {
+        let install = Path::new(&entry.install_path);
+        direct_game_exe(install, &entry.executable).is_some()
+            || is_rockstar_stub(install, &entry.executable)
     });
-    if let Some(epic_exe) = via_epic.as_ref() {
+    let epic_handoff = if needs_epic {
+        match crate::legendary::import_installed::epic_launcher_executable() {
+            Some(exe) => Some(exe),
+            None => return Err(format!("@t:dl.needsEpicLauncher\u{1f}{game_title}")),
+        }
+    } else {
+        None
+    };
+
+    if let Some(epic_exe) = epic_handoff.as_ref() {
         if let Some(entry) = installed_entry {
             crate::legendary::import_installed::bind_existing_install(
                 app_name,
@@ -554,7 +612,7 @@ pub(super) async fn spawn_launched(
         let _ = tokio::process::Command::new(epic_exe).arg(uri).spawn();
     }
 
-    let mut cmd = if via_epic.is_some() {
+    let mut cmd = if epic_handoff.is_some() {
         // Epic stays open after the game exits, so it is not the process we wait on.
         let mut cmd = tokio::process::Command::new("cmd");
         cmd.args(["/C", "exit", "0"]);
@@ -568,7 +626,7 @@ pub(super) async fn spawn_launched(
     // Per-game wrapper + environment variables (applied to legendary so the
     // launched game inherits them).
     let cfgs = crate::legendary::commands::load_all_game_custom_configs();
-    if via_epic.is_none() {
+    if epic_handoff.is_none() {
         if let Some(cfg) = cfgs.get(app_name) {
             if let Some(wrapper) = cfg
                 .wrapper
@@ -603,22 +661,6 @@ pub(super) async fn spawn_launched(
         .filter(|p| p.exists());
 
     let main_executable = installed_entry.map(|g| g.executable.as_str());
-
-    let meta_path = config.join("metadata").join(format!("{app_name}.json"));
-    let game_title = installed_entry
-        .map(|g| g.title.clone())
-        .filter(|t| !t.trim().is_empty())
-        .or_else(|| {
-            std::fs::read_to_string(&meta_path)
-                .ok()
-                .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-                .and_then(|v| {
-                    v.get("app_title")
-                        .and_then(|t| t.as_str())
-                        .map(|s| s.to_string())
-                })
-        })
-        .unwrap_or_else(|| app_name.to_string());
 
     let candidate_exes = if let Some(ref ip) = install_path {
         discover_game_executables(ip, main_executable)
@@ -853,4 +895,42 @@ pub(super) async fn spawn_launched(
     });
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stub_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("efxlve-launch-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        dir
+    }
+
+    #[test]
+    fn rockstar_stubs_are_recognised_by_name_and_size() {
+        let dir = stub_dir("rockstar");
+        std::fs::write(dir.join("PlayGTA3.exe"), vec![0u8; 64]).expect("stub");
+        assert!(is_rockstar_stub(&dir, "PlayGTA3.exe"));
+        assert!(is_rockstar_stub(&dir, "playgta3.exe"));
+        // The real binary, a stub that is not on disk, and huge files are not stubs.
+        assert!(!is_rockstar_stub(&dir, "GTA3.exe"));
+        assert!(!is_rockstar_stub(&dir, "PlayGTAV.exe"));
+        let big = std::fs::File::create(dir.join("PlayGTASA.exe")).expect("big file");
+        big.set_len(16 * 1024 * 1024).expect("sparse file");
+        assert!(!is_rockstar_stub(&dir, "PlayGTASA.exe"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_sibling_stub_check_still_finds_the_real_binary() {
+        let dir = stub_dir("sibling");
+        std::fs::write(dir.join("PlayRDR2.exe"), vec![0u8; 64]).expect("stub");
+        std::fs::write(dir.join("RDR2.exe"), vec![0u8; 4096]).expect("real");
+        assert_eq!(
+            direct_game_exe(&dir, "PlayRDR2.exe"),
+            Some("RDR2.exe".to_string())
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

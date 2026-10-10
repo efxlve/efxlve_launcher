@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "Uruchomiono {a1} przez EA App",
   "dl.launchedUbisoft": "Uruchomiono {a1} przez Ubisoft Connect",
   "dl.notInstalled": "Gra nie jest zainstalowana",
+  "dl.needsEpicLauncher": "Do uruchomienia {a1} potrzebny jest Epic Games Launcher. Zainstaluj go, zaloguj się i spróbuj ponownie.",
   "dl.executableNotFound": "Nie znaleziono pliku wykonywalnego gry. Sprawdź instalację lub napraw pliki gry.",
   "dl.launchFailedCode": "Nie udało się uruchomić gry (kod błędu: {a1})",
   "dl.cacheCleared": "Wyczyszczono pamięć podręczną pobierania",

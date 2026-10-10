@@ -1115,6 +1115,7 @@
   "dl.launchedEa": "{a1} iniciado mediante EA App",
   "dl.launchedUbisoft": "{a1} iniciado mediante Ubisoft Connect",
   "dl.notInstalled": "El juego no está instalado",
+  "dl.needsEpicLauncher": "{a1} necesita el Epic Games Launcher para iniciarse. Instálalo, inicia sesión y vuelve a intentarlo.",
   "dl.executableNotFound": "No se encontró el ejecutable del juego. Verifica la instalación o repara los archivos del juego.",
   "dl.launchFailedCode": "No se pudo iniciar el juego (código de error: {a1})",
   "dl.cacheCleared": "Caché de descarga vaciada",
