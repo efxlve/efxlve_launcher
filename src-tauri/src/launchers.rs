@@ -21,7 +21,7 @@ pub struct LauncherStatus {
 }
 
 /// Store clients in the same order as the storefront header.
-const LAUNCHERS: [(&str, &str, &str); 8] = [
+const LAUNCHERS: [(&str, &str, &str); 9] = [
     ("epic", "Epic Games Launcher", "https://store.epicgames.com/download"),
     ("gog", "GOG Galaxy", "https://www.gog.com/galaxy"),
     ("steam", "Steam", "https://store.steampowered.com/about/"),
@@ -29,6 +29,11 @@ const LAUNCHERS: [(&str, &str, &str); 8] = [
     ("battlenet", "Battle.net", "https://www.blizzard.com/download"),
     ("ubisoft", "Ubisoft Connect", "https://ubisoftconnect.com/"),
     ("ea", "EA App", "https://www.ea.com/ea-app"),
+    (
+        "rockstar",
+        "Rockstar Games Launcher",
+        "https://socialclub.rockstargames.com/rockstar-games-launcher",
+    ),
     ("riot", "Riot Client", "https://www.leagueoflegends.com/download/"),
 ];
 

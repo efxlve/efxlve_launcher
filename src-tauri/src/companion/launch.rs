@@ -17,6 +17,7 @@ pub(crate) fn client_installed(store: &str) -> bool {
         "ea" => ea_exe().is_some(),
         "ubisoft" => ubi_exe().is_some(),
         "battlenet" => bnet_exe().is_some(),
+        "rockstar" => rockstar_exe().is_some(),
         "xbox" => xbox_present(),
         "riot" => super::riot::client_exe().is_some(),
         _ => false,
@@ -30,6 +31,7 @@ pub(crate) fn client_path(store: &str) -> Option<PathBuf> {
         "ea" => ea_exe(),
         "ubisoft" => ubi_exe(),
         "battlenet" => bnet_exe(),
+        "rockstar" => rockstar_exe(),
         "riot" => super::riot::client_exe(),
         _ => None,
     }
@@ -43,6 +45,7 @@ pub(crate) fn open_client(store: &str) -> Result<(), String> {
         "ea" => ea_exe(),
         "ubisoft" => ubi_exe(),
         "battlenet" => bnet_exe(),
+        "rockstar" => rockstar_exe(),
         "riot" => super::riot::client_exe(),
         _ => None,
     };
@@ -198,6 +201,15 @@ fn bnet_exe() -> Option<PathBuf> {
     client_exe(&[
         r"C:\Program Files (x86)\Battle.net\Battle.net.exe",
         r"C:\Program Files\Battle.net\Battle.net.exe",
+    ])
+}
+
+/// Rockstar's Epic titles hand the start to this client (or to our relay when
+/// it is missing), so the Launchers page reports it like the other clients.
+fn rockstar_exe() -> Option<PathBuf> {
+    client_exe(&[
+        r"C:\Program Files\Rockstar Games\Launcher\Launcher.exe",
+        r"C:\Program Files (x86)\Rockstar Games\Launcher\Launcher.exe",
     ])
 }
 

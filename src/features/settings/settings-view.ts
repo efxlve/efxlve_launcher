@@ -262,6 +262,7 @@ const LAUNCHER_OPEN: Record<string, { act: string; withId: boolean }> = {
   battlenet: { act: "companion-open", withId: true },
   ubisoft: { act: "companion-open", withId: true },
   ea: { act: "companion-open", withId: true },
+  rockstar: { act: "companion-open", withId: true },
   riot: { act: "companion-open", withId: true },
 };
 
@@ -312,7 +313,7 @@ function renderLaunchers(): string {
         : "";
     const rowHtml = `
       <div class="row settings-row">
-        <span class="acc-store-mark">${storeLogo(l.id, 24)}</span>
+        <span class="acc-store-mark">${storeLogo(l.id, 24) || icon("layers", 24)}</span>
         <div class="row-main">
           <div class="settings-row-title">${esc(l.name)}</div>
           ${l.path ? `<div class="settings-row-desc"><code>${esc(l.path)}</code></div>` : ""}
