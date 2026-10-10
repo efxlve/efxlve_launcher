@@ -8,7 +8,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
-import { holdStoreOverlay, releaseStoreOverlay } from "../store/store-view";
+import { embeddedContentShown, holdStoreOverlay, releaseStoreOverlay, storeRect } from "../store/store-view";
 
 export interface ChangelogText {
   en: string;
@@ -789,4 +789,19 @@ export function renderChangelogModal(): void {
         </div>
       </div>
     </div>`;
+
+  // A storefront or the Spotify page parks while a main-webview modal is up, so
+  // a floating card would sit on the empty space where the page was. There the
+  // dialog fills the content area instead and reads as the page it replaced.
+  const backdrop = changelogRoot.querySelector<HTMLElement>(".changelog-backdrop");
+  const dialog = changelogRoot.querySelector<HTMLElement>("[data-changelog-dialog]");
+  if (backdrop && dialog && embeddedContentShown()) {
+    const rect = storeRect();
+    backdrop.classList.add("is-sheet");
+    dialog.classList.add("is-sheet");
+    dialog.style.left = `${rect.x}px`;
+    dialog.style.top = `${rect.y}px`;
+    dialog.style.width = `${rect.width}px`;
+    dialog.style.height = `${rect.height}px`;
+  }
 }

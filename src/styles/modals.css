@@ -1069,6 +1069,18 @@
 
 /* --- Changelog Modal --- */
 .changelog-backdrop { z-index: 350; }
+/* Over a parked embedded page (storefront, Spotify) the dialog owns the content
+   area: no dim, no rounded floating card on the empty space the page left. */
+.changelog-backdrop.is-sheet { background: transparent; }
+.changelog-dialog.is-sheet {
+  position: fixed;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 .changelog-dialog {
   width: min(640px, 94vw); max-height: 84vh; display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
