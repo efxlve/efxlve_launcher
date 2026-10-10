@@ -450,8 +450,25 @@ export function detectGameMode(s: EpicSummary, reqData?: GameRequirementsRespons
   if (text.includes("battle royale")) return "battleRoyale";
   if (/\bmmo(rpg)?\b/.test(text)) return "mmo";
 
-  const knownSingleAndMulti = ["grand theft auto", "gta", "red dead", "battlefield", "call of duty", "halo", "forza"]
+  // Rockstar's Definitive trilogy is single-player only while GTA V and the
+  // Red Dead titles carry an online mode too; a bare "gta" match read the
+  // trilogy as multiplayer. The single-player families are checked first so
+  // "GTA Vice City" cannot fall into the "GTA V" pattern.
+  const singleOnly = ["vice city", "san andreas", "gta iii", "gta 3", "grand theft auto iii", "grand theft auto 3"]
     .some((name) => titleLower.includes(name));
+  if (singleOnly) return "singlePlayer";
+
+  const knownSingleAndMulti = [
+    "grand theft auto v",
+    "grand theft auto online",
+    "gta v",
+    "gta online",
+    "red dead",
+    "battlefield",
+    "call of duty",
+    "halo",
+    "forza",
+  ].some((name) => titleLower.includes(name));
   if (knownSingleAndMulti) return "singleMulti";
 
   const onlineOnly = isOnlineOnlyGame(s, undefined, reqData);
