@@ -88,6 +88,21 @@ A file past ~1,500 lines should be split on a one-way dependency. Do not cut a s
 
 `cargo test` is the backend check (account-vault path tests, Steam language path tests, store bounds tests). `npm.cmd run build` is the TypeScript check. The window itself is a Tauri app; the Vite bundle is not the product UI.
 
+## Release notes
+
+The workflow pushes a placeholder body (`releaseBody` in `.github/workflows/release.yml`).
+Replace it right after the tag publishes, before announcing anything:
+
+```powershell
+node scripts/release-notes.mjs 0.1.28 "$env:TEMP\notes.md"
+gh release edit v0.1.28 --notes-file "$env:TEMP\notes.md"
+```
+
+`scripts/release-notes.mjs <version> <out.md>` reads that version's entry from
+`src/features/changelog/changelog-view.ts` (the English `items` and `fixed`) and writes
+the `## version` / **New** / **Fixed** body, so the release page and the app's changelog
+never drift apart.
+
 ## Release tweets
 
 After every release, draft the announcement tweet and hand it to the user; they post it themselves. Rules:
