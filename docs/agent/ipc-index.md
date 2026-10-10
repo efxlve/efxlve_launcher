@@ -209,6 +209,15 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `nile_uninstall` | `nileUninstall({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_verify` | `nileVerify({ ... })` | `src-tauri/src/nile/manage.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |
+| `overlay_browser_action` | `overlayBrowserAction({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_activate_tab` | `overlayBrowserActivateTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_close` | `overlayBrowserClose({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_close_tab` | `overlayBrowserCloseTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_navigate` | `overlayBrowserNavigate({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_new_tab` | `overlayBrowserNewTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_open` | `overlayBrowserOpen({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_show` | `overlayBrowserShow({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_tabs` | `overlayBrowserTabs({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_clear_active_game` | `overlayClearActiveGame({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_enable_fps` | `overlayEnableFps({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_flash_hint` | `overlayFlashHint({ ... })` | `src-tauri/src/overlay/mod.rs` |

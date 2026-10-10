@@ -25,6 +25,8 @@ export default defineConfig({
         // The in-game overlay is its own webview entry so the launcher bundle
         // does not carry it (see docs/OVERLAY_ROADMAP.md).
         overlay: "overlay.html",
+        // The overlay's browser window (chrome bar over a native page webview).
+        browser: "browser.html",
       },
       output: {
         // Split third-party code out of the app chunk: it stays cacheable between

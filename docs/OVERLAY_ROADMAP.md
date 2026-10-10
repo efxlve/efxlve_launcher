@@ -266,6 +266,18 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - Per-game overlay profiles, opacity/scale, gamepad navigation (reuse TV-mode focus
   patterns), 16-locale strings, docs, blocklist curation, HDR/color notes.
 
+### M7 — In-game browser (built, hidden)
+
+- The window, its tab strip and the `overlay_browser_*` commands are done
+  (`src-tauri/src/overlay/browser.rs`, `browser.html`,
+  `src/features/overlay/browser-window.ts`); the dock tab stays out of 0.1.28 while the
+  panel/browser pairing settles.
+- Bring it back with `BROWSER_TAB_ENABLED` in `src/features/overlay/overlay.ts`.
+- Before it ships again, prove the pairing in the field: the panel keeps its place, one
+  surface is up at a time, closing the browser leaves the panel where it was. The first
+  attempt let the panel's open path re-enter the browser-open action and the two topmost
+  windows went into a show/hide loop, so opening must stay a real user gesture.
+
 ---
 
 ## 5. Risks & mitigations

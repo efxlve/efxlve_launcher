@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efxlve Browser</title>
+  </head>
+  <body class="ov-browser-page">
+    <!-- The strip, the tab strip and the bar are the window handles: dragging an
+         empty part of them moves the window (buttons, tabs and the input keep
+         their own clicks). -->
+    <div class="ov-browser-drag" data-tauri-drag-region></div>
+    <div class="ov-browser-tabs" id="ov-browser-tabs" data-tauri-drag-region></div>
+    <header class="ov-browser-chrome" id="ov-browser-chrome" data-tauri-drag-region></header>
+    <div class="ov-browser-frame" id="ov-browser-frame"></div>
+    <script type="module" src="/src/features/overlay/browser-window.ts"></script>
+  </body>
+</html>

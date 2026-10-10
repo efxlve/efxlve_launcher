@@ -16,7 +16,7 @@ import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPA
 import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
-import { currentLanguage, initialLanguage, setLanguage, t } from "../../i18n";
+import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
 import {
   formatTime as formatSpotifyTime,
   spotifyPlaybackControl,
@@ -83,7 +83,14 @@ interface ScreenshotItem {
   data_url: string;
 }
 
-type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "settings";
+type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "browser" | "settings";
+
+/**
+ * The Browser tab is built and working (window, tabs, commands), but it stays
+ * out of the dock for now: 0.1.28 ships without it while the panel/browser
+ * pairing settles. Bringing it back is this one flag — set it to true.
+ */
+const BROWSER_TAB_ENABLED = false;
 
 const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "home", icon: "layers", key: "overlay.tabHome" },
@@ -93,6 +100,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
+  { id: "browser", icon: "globe", key: "overlay.tabBrowser" },
   { id: "settings", icon: "settings", key: "overlay.tabSettings" },
 ];
 
@@ -100,6 +108,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
 function visibleTabs(): typeof TABS {
   return TABS.filter(
     (tab) =>
+      (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
       (tab.id !== "music" || spotifyPageVisible()) &&
       (tab.id !== "discord" || discordPageVisible()),
   );
@@ -340,6 +349,7 @@ function shellHtml(): string {
         <section class="ov-view" data-ov-view="notes"></section>
         <section class="ov-view" data-ov-view="music"></section>
         <section class="ov-view" data-ov-view="discord"></section>
+        <section class="ov-view" data-ov-view="browser"></section>
         <section class="ov-view" data-ov-view="settings"></section>
       </main>
 
@@ -403,7 +413,7 @@ function updatePerfEmptyStates(): void {
   });
 }
 
-function setTab(tab: TabId): void {
+function setTab(tab: TabId, fromOpen = false): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
 
@@ -431,6 +441,19 @@ function setTab(tab: TabId): void {
     renderMusicTab();
     void refreshMedia();
   } else if (tab === "discord") renderDiscord();
+  else if (tab === "browser") {
+    renderBrowser();
+    // Picking the tab is the gesture: the window opens over the game (Google
+    // for a fresh session, or the page that was open). A panel that is merely
+    // opening (`fromOpen`) never reopens it: that path re-entered here, so the
+    // panel and the browser kept triggering each other — a show/hide loop.
+    if (!fromOpen && !document.hidden) {
+      void invoke("overlay_browser_open", { url: null }).catch((e: unknown) => {
+        const desc = viewEl("browser")?.querySelector<HTMLElement>(".ov-empty-desc");
+        if (desc) desc.textContent = localizeMessage(String(e));
+      });
+    }
+  }
   else if (tab === "settings") renderSettings();
 
   if (tab === "perf" || tab === "home") drawPerfCanvas();
@@ -1484,7 +1507,26 @@ async function overlaySpotifyControl(
   window.setTimeout(() => void refreshMedia(), 400);
 }
 
-/* 7. Discord View */
+/* 7. Browser View */
+/**
+ * The panel cannot host pages itself, so this tab is only the doorway: the
+ * browser window floats over the game with its own tab strip and opens the
+ * moment the tab is picked (no second button to hunt for).
+ */
+function renderBrowser(): void {
+  const el = viewEl("browser");
+  if (!el) return;
+  el.innerHTML = `
+    <div class="ov-page-title">${icon("globe", 20)} <span>${esc(t("overlay.tabBrowser"))}</span></div>
+    <div class="ov-card">
+      <div class="ov-empty-block">
+        <div class="ov-empty-icon">${icon("globe", 26)}</div>
+        <div class="ov-empty-desc">${esc(t("overlay.browserDesc"))}</div>
+      </div>
+    </div>`;
+}
+
+/* 8. Discord View */
 function renderDiscord(): void {
   const el = viewEl("discord");
   if (!el) return;
@@ -1503,7 +1545,7 @@ function renderDiscord(): void {
     </div>`;
 }
 
-/* 8. Settings View */
+/* 9. Settings View */
 function renderSettings(): void {
   const el = viewEl("settings");
   if (!el) return;
@@ -1772,6 +1814,8 @@ function wireEvents(): void {
   // state (prevButtons) goes stale. Suppress input briefly on every re-show so
   // the button that opened the panel cannot close it on the first frame.
   document.addEventListener("visibilitychange", () => {
+    // The panel and the browser window never share the screen — Rust hides the
+    // browser whenever the panel hides or shows — so this only re-arms the pad.
     if (!document.hidden) gamepadSuppressUntil = performance.now() + 450;
   });
 }
@@ -2161,7 +2205,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   // and land on Home instead.
   refreshDock();
   const tabs = visibleTabs();
-  setTab(tabs.some((tab) => tab.id === activeTab) ? activeTab : "home");
+  setTab(tabs.some((tab) => tab.id === activeTab) ? activeTab : "home", true);
 
   // Fill the dashboard cards in the background; the loads re-render home when
   // they land (they do not block the open).

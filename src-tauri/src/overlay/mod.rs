@@ -8,6 +8,7 @@
 //! The panel is driven entirely from Rust: the hotkey thread shows/hides the
 //! window and emits `overlay-open` / `overlay-close` with the running game.
 
+pub mod browser;
 pub mod hotkey;
 pub mod hud;
 pub mod metrics;
@@ -234,6 +235,10 @@ pub fn overlay_show(app: AppHandle) {
 
 /// Shows the panel over the game monitor and announces the game context.
 pub(crate) fn show(app: &AppHandle) {
+    // The panel and the browser window share the screen (a WebView2 keeps a bad
+    // frame when another topmost window covers it), so exactly one of them is
+    // up: a shown panel sends the browser away, the Browser tab brings it back.
+    browser::hide_window(app);
     let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
         return;
     };
@@ -270,6 +275,8 @@ pub(crate) fn hide(app: &AppHandle) {
     let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
         return;
     };
+    // The browser window floats over the game like the panel does: it goes with it.
+    browser::hide_window(app);
     let _ = win.hide();
     let hwnd = match STATE.lock() {
         Ok(mut s) => {
