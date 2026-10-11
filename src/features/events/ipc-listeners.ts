@@ -82,7 +82,7 @@ import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
-import { openEpicModal } from "../drawer/drawer-view";
+import { openEpicModal, refreshAchievementsAfterSession } from "../drawer/drawer-view";
 import { rememberCloudSync } from "../drawer/drawer-widgets";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -622,6 +622,10 @@ export async function initApp(hooks: {
         pushRecent(id);
         hooks.scheduleRender();
       } else {
+        // The session may have unlocked achievements; refetch before the
+        // duplicate-event guard, because a manual stop already cleared the flag
+        // and its watcher event would otherwise return early.
+        refreshAchievementsAfterSession(id);
         // A duplicate stop event must not toast or resume downloads twice.
         if (!S.runningGames.delete(id)) return;
         void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});

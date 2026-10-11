@@ -1105,6 +1105,28 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     </div>`;
 }
 
+/**
+ * Last session-end achievement refresh per game: a stop can arrive twice (the
+ * stop command and the process watcher), and both must fold into one fetch.
+ */
+const sessionAchRefreshAt = new Map<string, number>();
+
+/**
+ * A finished session can unlock achievements in every store, but the caches
+ * keep the pre-session state: Epic's cache has no TTL and Steam's is TTL'd, so
+ * the ended game is refetched with a forced refresh (GOG and the companion
+ * stores always read live sources). Called on `game-status` end events; the
+ * cooldown makes duplicate stop events harmless.
+ */
+export function refreshAchievementsAfterSession(appName: string): void {
+  if (!isTauri) return;
+  const now = Date.now();
+  if (now - (sessionAchRefreshAt.get(appName) ?? 0) < 15_000) return;
+  sessionAchRefreshAt.set(appName, now);
+  S.loadedAchievements.delete(appName);
+  void fetchAndRenderAchievements(appName, true);
+}
+
 export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
   if (!isTauri || S.loadingAchFor === appName) return;
   S.loadingAchFor = appName;
