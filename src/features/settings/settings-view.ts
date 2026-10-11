@@ -10,7 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
-import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, miniPlayerVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -557,6 +557,7 @@ function renderAppearance(): string {
     ) +
     group(
       row(t("settings.showSpotifyTitle"), t("settings.showSpotifyDesc"), toggle("toggle-spotify-page", spotifyPageVisible())) +
+      row(t("settings.showMiniPlayerTitle"), t("settings.showMiniPlayerDesc"), toggle("toggle-mini-player", miniPlayerVisible())) +
       row(t("settings.showDiscordTitle"), t("settings.showDiscordDesc"), toggle("toggle-discord-page", discordPageVisible())),
       t("settings.secPages"),
       infoBox("settings.pagesNote"),

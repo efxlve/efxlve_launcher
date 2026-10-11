@@ -9,6 +9,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
+import { miniPlayerVisible } from "../../core/page-visibility";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
@@ -173,8 +174,8 @@ async function control(action: "play" | "pause" | "next" | "previous"): Promise<
 function paint(): void {
   const mini = document.getElementById("sb-mini");
   // Hidden until something actually plays: the recently played list is the
-  // sidebar's priority, Spotify is secondary.
-  if (mini) mini.hidden = !signedIn || !current;
+  // sidebar's priority, Spotify is secondary. Settings can turn it off.
+  if (mini) mini.hidden = !signedIn || !current || !miniPlayerVisible();
 
   const eq = document.getElementById("sb-eq");
   if (eq) {

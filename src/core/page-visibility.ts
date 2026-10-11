@@ -6,10 +6,15 @@
  * feature and is not affected.
  */
 
-import { SHOW_DISCORD_KEY, SHOW_SPOTIFY_KEY } from "./constants";
+import { SHOW_DISCORD_KEY, SHOW_MINI_PLAYER_KEY, SHOW_SPOTIFY_KEY } from "./constants";
 
 export function spotifyPageVisible(): boolean {
   return localStorage.getItem(SHOW_SPOTIFY_KEY) !== "false";
+}
+
+/** The sidebar mini player can be turned off entirely; shown by default. */
+export function miniPlayerVisible(): boolean {
+  return localStorage.getItem(SHOW_MINI_PLAYER_KEY) !== "false";
 }
 
 export function discordPageVisible(): boolean {

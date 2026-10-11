@@ -87,6 +87,7 @@ export const TV_AUTO_KEY = "efxlve-tv-auto";
 
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";
+export const SHOW_MINI_PLAYER_KEY = "efxlve-show-mini-player";
 export const SHOW_DISCORD_KEY = "efxlve-show-discord";
 
 /** Native Steam Deck LCD/OLED panel, or a WebView2 UA that names the device. */

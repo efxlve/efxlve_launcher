@@ -1948,6 +1948,8 @@
   "settings.secPages": "Sayfalar",
   "settings.showSpotifyTitle": "Spotify sayfası",
   "settings.showSpotifyDesc": "Spotify sayfasını ve kenar çubuğu girişini göster. Oyun içi arayüz de buna uyar.",
+  "settings.showMiniPlayerTitle": "Mini oynatıcı",
+  "settings.showMiniPlayerDesc": "Bir parça çalarken kenar çubuğu oynatıcısını göster.",
   "settings.showDiscordTitle": "Discord sayfası",
   "settings.showDiscordDesc": "Discord sayfasını ve kenar çubuğu girişini göster. Rich Presence etkilenmez.",
   "settings.pagesNote": "Bir sayfayı kapatınca hem burada hem oyun içi arayüzde gizlenir. Discord Rich Presence çalışmaya devam eder."

@@ -1948,6 +1948,8 @@
   "settings.secPages": "Pages",
   "settings.showSpotifyTitle": "Spotify page",
   "settings.showSpotifyDesc": "Show the Spotify page and its sidebar entry. The in-game overlay follows this.",
+  "settings.showMiniPlayerTitle": "मिनी प्लेयर",
+  "settings.showMiniPlayerDesc": "ट्रैक चलने के दौरान साइडबार प्लेयर दिखाएँ।",
   "settings.showDiscordTitle": "Discord page",
   "settings.showDiscordDesc": "Show the Discord page and its sidebar entry. Rich Presence is not affected.",
   "settings.pagesNote": "Turning a page off hides it here and in the in-game overlay. Discord Rich Presence keeps working."

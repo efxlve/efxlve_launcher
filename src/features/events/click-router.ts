@@ -28,6 +28,7 @@ import {
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
   SHOW_SHARED_LIBRARY_KEY,
+  SHOW_MINI_PLAYER_KEY,
   SHOW_SPOTIFY_KEY,
   SHOW_DISCORD_KEY,
   STORE_BADGE_KEY,
@@ -42,7 +43,7 @@ import {
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
-import { applySidebarPageVisibility, discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import {
@@ -761,6 +762,9 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
+    render();
+  } else if (act === "toggle-mini-player") {
+    localStorage.setItem(SHOW_MINI_PLAYER_KEY, String(!miniPlayerVisible()));
     render();
   } else if (act === "toggle-spotify-page") {
     localStorage.setItem(SHOW_SPOTIFY_KEY, String(!spotifyPageVisible()));
