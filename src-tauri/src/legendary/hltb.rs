@@ -431,7 +431,10 @@ pub fn pick_hltb_item<'a>(
         let mut score = if name == want {
             1000
         } else if name.contains(&want) || want.contains(&name) {
-            500
+            // A longer overlap is the more specific name: for "Marvel's
+            // Spider-Man Remastered" the 2018 "Marvel's Spider-Man" beats the
+            // 2000 "Spider-Man".
+            500 + (name.len() as i32) * 2
         } else {
             0
         };
@@ -490,6 +493,17 @@ mod pick_tests {
             "comp_main": 60000
         })];
         assert_eq!(pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).is_some(), true);
+    }
+
+    #[test]
+    fn the_most_specific_partial_name_wins() {
+        let items = vec![
+            json!({ "game_name": "Spider-Man", "release_world": 2000, "comp_main": 21600 }),
+            json!({ "game_name": "Marvel's Spider-Man", "release_world": 2018, "comp_main": 61200 }),
+        ];
+        // No year at hand: the 2018 game is the closer name, not the 2000 one.
+        let picked = pick_hltb_item(&items, "Marvel's Spider-Man Remastered", None).unwrap();
+        assert_eq!(picked["game_name"], "Marvel's Spider-Man");
     }
 
     #[test]
