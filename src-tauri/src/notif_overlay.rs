@@ -196,34 +196,38 @@ fn overlay_document(panel_html: &str) -> String {
         font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
       button { font-family: inherit; }
       .notif-panel { position: static; width: 100%; height: 100%; max-height: none; box-sizing: border-box;
-        display: flex; flex-direction: column; overflow: hidden; background: #0a0a0a;
-        border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; }
+        display: flex; flex-direction: column; overflow: hidden; background: var(--surface-1, #0a0a0a);
+        border: 1px solid var(--line-strong, rgba(255,255,255,0.12)); border-radius: var(--r-md, 10px); }
       .notif-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
-        padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        padding: 12px 14px; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06)); }
       .notif-title { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; }
       .notif-head-actions { display: flex; gap: 4px; }
-      .notif-action { border: none; background: transparent; color: #9a9a9a; font-size: 12px;
+      .notif-action { border: none; background: transparent; color: var(--text-2, #9a9a9a); font-size: 12px;
         padding: 4px 6px; border-radius: 4px; cursor: pointer; }
-      .notif-action:hover { background: #141414; color: #fff; }
+      .notif-action:hover { background: var(--surface-2, #141414); color: var(--text, #ffffff); }
       .notif-list { overflow-y: auto; display: flex; flex-direction: column; }
       .notif-item { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 14px;
-        text-align: left; border: none; border-bottom: 1px solid rgba(255,255,255,0.06);
-        background: transparent; color: #fff; cursor: pointer; }
-      .notif-item:hover { background: #141414; }
-      .notif-item.unread { background: rgba(255,255,255,0.08); }
+        text-align: left; border: none; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));
+        background: transparent; color: var(--text, #ffffff); cursor: pointer; }
+      .notif-item:hover { background: var(--surface-2, #141414); }
+      .notif-item.unread { background: var(--accent-tint, rgba(255,255,255,0.08)); }
       .notif-item-icon { width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
-        display: grid; place-items: center; background: #141414; color: #9a9a9a; }
-      .notif-item-icon.kind-download { color: #2fb36d; }
-      .notif-item-icon.kind-update { color: #e0a32e; }
-      .notif-item-icon.kind-error { color: #e5484d; }
-      .notif-item-icon.kind-social { color: #fff; }
+        display: grid; place-items: center; background: var(--surface-2, #141414); color: var(--text-2, #9a9a9a); }
+      .notif-item-icon.kind-download { color: var(--ok, #2fb36d); }
+      .notif-item-icon.kind-update { color: var(--warn, #e0a32e); }
+      .notif-item-icon.kind-error { color: var(--err, #e5484d); }
+      .notif-item-icon.kind-social { color: var(--accent, #ffffff); }
       .notif-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
       .notif-item-title { font-size: 13px; font-weight: 500; }
-      .notif-item-text { font-size: 12px; color: #9a9a9a; overflow: hidden;
+      .notif-item-text { font-size: 12px; color: var(--text-2, #9a9a9a); overflow: hidden;
         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-      .notif-item-time { font-size: 11px; color: #5c5c5c; font-variant-numeric: tabular-nums; }
+      .notif-item-act { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; margin-top: 2px;
+        height: 20px; padding: 0 7px; border-radius: 4px; background: var(--accent, #ffffff);
+        color: var(--on-accent, #000000); font-size: 11px; font-weight: 600; }
+      .notif-item-act svg { width: 12px; height: 12px; }
+      .notif-item-time { font-size: 11px; color: var(--text-3, #5c5c5c); font-variant-numeric: tabular-nums; }
       .notif-empty { display: flex; flex-direction: column; align-items: center; gap: 8px;
-        padding: 32px 0; color: #5c5c5c; font-size: 13px; }
+        padding: 32px 0; color: var(--text-3, #5c5c5c); font-size: 13px; }
       .notif-empty p { margin: 0; }
     "#;
     const SCRIPT: &str = r#"
