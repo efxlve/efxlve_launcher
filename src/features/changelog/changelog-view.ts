@@ -12,7 +12,7 @@ import { overlayThemeStyle } from "../../core/overlay-theme";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
-import { embeddedContentShown, holdStoreOverlay, releaseStoreOverlay, storeRect } from "../store/store-view";
+import { embeddedContentShown, holdStoreOverlay, releaseStoreOverlay } from "../store/store-view";
 
 export interface ChangelogText {
   en: string;
@@ -789,9 +789,9 @@ async function presentChangelogOverlay(): Promise<void> {
   const height = Math.min(card?.offsetHeight ?? 640, Math.round(window.innerHeight * 0.9));
   holder.remove();
 
-  const rect = storeRect();
-  const x = rect.x + Math.max(0, (rect.width - width) / 2);
-  const y = rect.y + Math.max(0, (rect.height - height) / 2);
+  // Centered on the launcher window, exactly where the in-page modal sits.
+  const x = Math.max(8, Math.round((window.innerWidth - width) / 2));
+  const y = Math.max(8, Math.round((window.innerHeight - height) / 2));
   changelogOverlayOn = true;
   try {
     await invoke("show_notif_overlay", {
