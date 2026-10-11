@@ -593,6 +593,18 @@ export function heroCloudStatus(
   if (partner?.type === "ubisoft") {
     return { label: i18nT("feat.ubiCloud"), tooltip: i18nT("feat.ubiCloudTip"), synced: false, neutral: true };
   }
+  // The Rockstar Games Launcher owns Social Club cloud saves for its titles;
+  // the launcher only relays the start and cannot observe the upload, so the
+  // chip names the provider instead of claiming a sync.
+  if (partner?.type === "rockstar") {
+    const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
+    return {
+      label: i18nT("feat.partnerCloud", { name: pName }),
+      tooltip: i18nT("feat.partnerCloudTip", { name: partner.name }),
+      synced: false,
+      neutral: true,
+    };
+  }
   const recorded = lastRecordedCloudSync(s.appName);
   if (recorded) {
     return {
