@@ -69,10 +69,12 @@ pub fn clean_hltb_search_term(title: &str) -> String {
 }
 
 fn hltb_cache_dir() -> PathBuf {
+    // The `-v2` marks the year-aware, most-specific-name matching: older files
+    // hold results from the first-match logic and must not be served again.
     if let Some(config_dir) = dirs_config_dir() {
-        config_dir.join("legendary").join("hltb")
+        config_dir.join("legendary").join("hltb-v2")
     } else {
-        PathBuf::from("hltb_cache")
+        PathBuf::from("hltb_cache_v2")
     }
 }
 

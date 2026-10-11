@@ -57,7 +57,127 @@ pub struct GoygoyRawItem {
     pub tags: Vec<String>,
 }
 
-const CRITIC_PARSER_VERSION: u32 = 6;
+const CRITIC_PARSER_VERSION: u32 = 7;
+
+/// Browser UA: metacritic.com serves the page (with its schema block) to normal
+/// browsers only.
+const METACRITIC_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+/// Metacritic's slug for a title: lowercased, apostrophes dropped, everything
+/// else that is not a letter or digit becomes one hyphen.
+/// "Marvel's Spider-Man Remastered" → "marvels-spider-man-remastered".
+pub fn metacritic_slug(title: &str) -> String {
+    let mut out = String::new();
+    let mut pending_dash = false;
+    for ch in title.chars() {
+        if ch.is_ascii_alphanumeric() {
+            if pending_dash && !out.is_empty() {
+                out.push('-');
+            }
+            pending_dash = false;
+            out.push(ch.to_ascii_lowercase());
+        } else if ch == '&' {
+            if pending_dash && !out.is_empty() {
+                out.push('-');
+            }
+            pending_dash = false;
+            out.push_str("and");
+        } else if ch == '\'' || ch == '\u{2019}' {
+            // "Marvel's" is "marvels" in the slug, not "marvel-s".
+        } else {
+            pending_dash = true;
+        }
+    }
+    out
+}
+
+/// The year in a schema.org date ("2022-08-12").
+fn schema_year(value: &serde_json::Value) -> Option<u32> {
+    let raw = ["datePublished", "dateCreated"]
+        .iter()
+        .find_map(|key| value.get(*key).and_then(|v| v.as_str()))?;
+    raw.get(..4)?.parse::<u32>().ok()
+}
+
+/// The metascore out of a Metacritic page: its schema.org `VideoGame` block also
+/// carries the game's own name and release date, so a page for another game is
+/// rejected instead of scored.
+pub fn parse_metacritic_page(html: &str, title: &str, year: Option<u32>) -> Option<u32> {
+    for chunk in html.split("<script type=\"application/ld+json\">").skip(1) {
+        let Some(end) = chunk.find("</script>") else {
+            continue;
+        };
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(&chunk[..end]) else {
+            continue;
+        };
+        if value.get("@type").and_then(|t| t.as_str()) != Some("VideoGame") {
+            continue;
+        }
+        let name = value.get("name").and_then(|n| n.as_str()).unwrap_or("");
+        if !name.is_empty()
+            && !title_matches_page(title, name)
+            && !title_matches_page(name, title)
+        {
+            continue;
+        }
+        if let (Some(page_year), Some(want)) = (schema_year(&value), year) {
+            if (page_year as i64 - want as i64).abs() > 1 {
+                continue;
+            }
+        }
+        let score = value
+            .get("aggregateRating")
+            .and_then(|rating| rating.get("ratingValue"))
+            .and_then(|v| v.as_f64());
+        if let Some(score) = score {
+            if score > 0.0 {
+                return Some(score.round() as u32);
+            }
+        }
+    }
+    None
+}
+
+/// Fetches the game's own Metacritic page: the score and the URL it came from.
+/// The slug is tried with the store tags first and without them after:
+/// "... Enhanced" lives under the base name.
+pub async fn fetch_metacritic(
+    client: &reqwest::Client,
+    title: &str,
+    year: Option<u32>,
+) -> Option<(u32, String)> {
+    let mut slugs = vec![metacritic_slug(title)];
+    let loosened = crate::legendary::hltb::loosen_hltb_search_term(title);
+    let loose_slug = metacritic_slug(&loosened);
+    if !loose_slug.is_empty() && loose_slug != slugs[0] {
+        slugs.push(loose_slug);
+    }
+    for slug in slugs {
+        if slug.is_empty() {
+            continue;
+        }
+        let url = format!("https://www.metacritic.com/game/{}/", slug);
+        let Ok(response) = client
+            .get(&url)
+            .header("User-Agent", METACRITIC_UA)
+            .header("Accept-Language", "en-US,en;q=0.9")
+            .send()
+            .await
+        else {
+            continue;
+        };
+        if !response.status().is_success() {
+            continue;
+        }
+        let Ok(html) = response.text().await else {
+            continue;
+        };
+        if let Some(score) = parse_metacritic_page(&html, title, year) {
+            return Some((score, url));
+        }
+    }
+    None
+}
 
 pub fn clean_critic_search_term(title: &str) -> String {
     let mut s = title
@@ -483,21 +603,37 @@ pub async fn get_critic_data(
         }
     }
 
+    // Direct Metacritic lookup first: a store field is often missing and the
+    // wiki can land on an older game with the same name. The page's own schema
+    // block carries the game, its release date and the metascore.
+    let (direct_score, direct_url) = match fetch_metacritic(&client, title, year).await {
+        Some((score, url)) => (Some(score), Some(url)),
+        None => (None, None),
+    };
+
     let search_terms = critic_search_terms(title);
     if search_terms.is_empty() {
-        return CriticData {
+        let supported = direct_score.is_some();
+        let result = CriticData {
             app_name: app_name.to_string(),
             title: title.to_string(),
-            supported: false,
+            supported,
             opencritic_score: None,
             opencritic_url: None,
-            metacritic_score: None,
-            metacritic_url: None,
+            metacritic_score: direct_score,
+            metacritic_url: direct_url,
             igdb_score: None,
-            tier: None,
+            tier: direct_score.map(|s| calculate_tier(s).to_string()),
             goygoy_review: None,
-            parser_version: 0,
+            parser_version: CRITIC_PARSER_VERSION,
         };
+        if supported {
+            let _ = tokio::fs::create_dir_all(&cache_dir).await;
+            if let Ok(json_str) = serde_json::to_string_pretty(&result) {
+                let _ = tokio::fs::write(&cache_file, json_str).await;
+            }
+        }
+        return result;
     }
 
     let mut oc_score: Option<u32> = None;
@@ -609,9 +745,13 @@ pub async fn get_critic_data(
     let goygoy_items = fetch_goygoy_reviews(&client).await;
     let goygoy_match = find_goygoy_review_match(title, &goygoy_items);
 
-    let supported =
-        oc_score.is_some() || mc_score.is_some() || igdb_score.is_some() || goygoy_match.is_some();
+    let supported = oc_score.is_some()
+        || direct_score.is_some()
+        || mc_score.is_some()
+        || igdb_score.is_some()
+        || goygoy_match.is_some();
     let effective_score = oc_score
+        .or(direct_score)
         .or(mc_score)
         .or_else(|| goygoy_match.as_ref().and_then(|g| g.score));
     let tier = effective_score.map(|s| calculate_tier(s).to_string());
@@ -622,8 +762,8 @@ pub async fn get_critic_data(
         supported,
         opencritic_score: oc_score,
         opencritic_url: oc_url,
-        metacritic_score: mc_score,
-        metacritic_url: mc_url,
+        metacritic_score: direct_score.or(mc_score),
+        metacritic_url: direct_url.or(mc_url),
         igdb_score,
         tier,
         goygoy_review: goygoy_match,
@@ -660,6 +800,38 @@ mod tests {
             "Marvel's Spider-Man Remastered",
             "Marvel's Spider-Man: Miles Morales"
         ));
+    }
+
+    #[test]
+    fn metacritic_slugs_follow_the_site() {
+        assert_eq!(
+            metacritic_slug("Marvel's Spider-Man Remastered"),
+            "marvels-spider-man-remastered"
+        );
+        assert_eq!(metacritic_slug("Cyberpunk 2077"), "cyberpunk-2077");
+        assert_eq!(
+            metacritic_slug("The Witcher 3: Wild Hunt"),
+            "the-witcher-3-wild-hunt"
+        );
+        assert_eq!(metacritic_slug("Portal 2"), "portal-2");
+    }
+
+    #[test]
+    fn metacritic_page_reads_its_own_schema_block() {
+        let html = r#"<html><head>
+        <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Old Game","datePublished":"2004-06-28","aggregateRating":{"ratingValue":42}}</script>
+        <script type="application/ld+json">{"@type":"VideoGame","name":"Marvel's Spider-Man Remastered","datePublished":"2022-08-12","aggregateRating":{"ratingValue":87}}</script>
+        </head></html>"#;
+        // The 2004 block is skipped: its name and year disagree with ours.
+        assert_eq!(
+            parse_metacritic_page(html, "Marvel's Spider-Man Remastered", Some(2022)),
+            Some(87)
+        );
+        let wrong = r#"<script type="application/ld+json">{"@type":"VideoGame","name":"Spider-Man 2","datePublished":"2004-06-28","aggregateRating":{"ratingValue":42}}</script>"#;
+        assert_eq!(
+            parse_metacritic_page(wrong, "Marvel's Spider-Man Remastered", Some(2022)),
+            None
+        );
     }
 
     #[test]
