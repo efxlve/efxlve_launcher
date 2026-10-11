@@ -457,6 +457,8 @@
   "auth.sourceNote": "स्रोत: github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "अपडेट उपलब्ध है",
   "drawer.partnerRequired": "{name} लॉन्चर आवश्यक है",
+  "drawer.familySharing": "पारिवारिक शेयरिंग",
+  "drawer.familySharingTip": "Steam Families के ज़रिए आपके साथ साझा किया गया।",
   "drawer.anticheatTitle": "एंटी-चीट: {name}",
   "drawer.favTitle": "पसंदीदा में जोड़ें / हटाएं",
   "drawer.storeTitle": "Epic Games Store पृष्ठ खोलें",

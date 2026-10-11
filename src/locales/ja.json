@@ -442,6 +442,8 @@
   "auth.sourceNote": "ソース: github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "アップデートあり",
   "drawer.partnerRequired": "{name} ランチャーが必要です",
+  "drawer.familySharing": "ファミリー共有",
+  "drawer.familySharingTip": "Steam ファミリーで共有されています。",
   "drawer.anticheatTitle": "アンチチート: {name}",
   "drawer.favTitle": "お気に入りに追加 / 削除",
   "drawer.storeTitle": "Epic Games Store のページを開く",

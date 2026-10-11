@@ -457,6 +457,8 @@
   "auth.sourceNote": "Kaynak: github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "Güncelleme var",
   "drawer.partnerRequired": "{name} başlatıcısı gereklidir",
+  "drawer.familySharing": "Aile paylaşımı",
+  "drawer.familySharingTip": "Steam Aile ile seninle paylaşıldı.",
   "drawer.anticheatTitle": "Hile Koruması: {name}",
   "drawer.favTitle": "Favorilere Ekle / Çıkar",
   "drawer.storeTitle": "Epic Games Store Sayfasını Aç",

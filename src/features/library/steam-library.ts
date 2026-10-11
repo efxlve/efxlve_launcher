@@ -237,6 +237,7 @@ export async function loadSteamLibrary(): Promise<string | null> {
 
   if (S.steamAuth?.state !== "signed_in") {
     S.steamOwnedCount = 0;
+    S.steamSharedIds = new Set();
     S.steamLibrarySyncing = false;
     return null;
   }
@@ -254,11 +255,13 @@ export async function loadSteamLibrary(): Promise<string | null> {
     }
     // Steam Families: games other members share with this account never appear
     // in the owned list, so they are merged here as "install through Steam".
+    S.steamSharedIds = new Set();
     const shared = await steamFamilySharedApps().catch(() => []);
     const ownedIds = new Set(result.games.map((g) => g.appId));
     for (const g of shared) {
       if (installedIds.has(g.appId) || ownedIds.has(g.appId)) continue;
       if (isSteamLibraryNoise(g.appId, g.name)) continue;
+      S.steamSharedIds.add(`steam::${g.appId}`);
       items.push(
         steamOwnedGameToItem({
           appId: g.appId,

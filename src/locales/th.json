@@ -442,6 +442,8 @@
   "auth.sourceNote": "แหล่งที่มา: github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "มีอัปเดต",
   "drawer.partnerRequired": "ต้องใช้ตัวเปิดเกม {name}",
+  "drawer.familySharing": "แชร์ในครอบครัว",
+  "drawer.familySharingTip": "แชร์ให้คุณผ่าน Steam Families",
   "drawer.anticheatTitle": "แอนตี้ชีต: {name}",
   "drawer.favTitle": "เพิ่ม / นำออกจากรายการโปรด",
   "drawer.storeTitle": "เปิดหน้าร้าน Epic Games Store",

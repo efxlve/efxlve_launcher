@@ -595,6 +595,8 @@ export const S = {
   /** Game page store selector: dropdown list open state. */
   isVersionDropdownOpen: false,
   steamOwnedCount: 0,
+  /** Keys (`steam::<id>`) of games Steam Families shares with this account. */
+  steamSharedIds: new Set<string>(),
   steamLibrarySyncing: false,
   /** Saved Steam accounts in the sealed vault (switcher rows). */
   steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],

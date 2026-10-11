@@ -442,6 +442,8 @@
   "auth.sourceNote": "출처: github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "업데이트 있음",
   "drawer.partnerRequired": "{name} 런처가 필요합니다",
+  "drawer.familySharing": "가족 공유",
+  "drawer.familySharingTip": "Steam 가족을 통해 공유되었습니다.",
   "drawer.anticheatTitle": "안티치트: {name}",
   "drawer.favTitle": "즐겨찾기 추가 / 제거",
   "drawer.storeTitle": "Epic Games Store 페이지 열기",

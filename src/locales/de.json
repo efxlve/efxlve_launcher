@@ -442,6 +442,8 @@
   "auth.sourceNote": "Quelle: github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "Update verfügbar",
   "drawer.partnerRequired": "{name}-Launcher erforderlich",
+  "drawer.familySharing": "Familienfreigabe",
+  "drawer.familySharingTip": "Über Steam-Familie mit dir geteilt.",
   "drawer.anticheatTitle": "Anti-Cheat: {name}",
   "drawer.favTitle": "Zu Favoriten hinzufügen / entfernen",
   "drawer.storeTitle": "Epic Games Store-Seite öffnen",

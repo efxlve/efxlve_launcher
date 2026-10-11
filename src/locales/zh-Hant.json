@@ -442,6 +442,8 @@
   "auth.sourceNote": "來源：github.com/legendary-gl/legendary (GPL-3.0)",
   "drawer.updateAvailable": "有可用更新",
   "drawer.partnerRequired": "需要 {name} 啟動器",
+  "drawer.familySharing": "家庭共享",
+  "drawer.familySharingTip": "透過 Steam 家庭與您分享。",
   "drawer.anticheatTitle": "反作弊：{name}",
   "drawer.favTitle": "加入 / 從我的最愛移除",
   "drawer.storeTitle": "開啟 Epic Games Store 頁面",
