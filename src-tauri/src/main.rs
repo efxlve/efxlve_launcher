@@ -876,6 +876,7 @@ fn main() {
             steam_auth::steam_switch_account,
             steam_auth::steam_remove_saved_account,
             steam_auth::steam_owned_games,
+            steam_auth::steam_family_shared_apps,
             epic_detect_eos,
             legendary::steamgrid::epic_get_steamgrid_key,
             legendary::steamgrid::epic_set_steamgrid_key,

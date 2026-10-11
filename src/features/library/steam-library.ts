@@ -24,6 +24,7 @@ import { fmtBytes } from "../../core/utils";
 import {
   steamAppMetadata,
   steamDownloadLive,
+  steamFamilySharedApps,
   steamListInstalled,
   steamLoginStatus,
   steamOwnedGames,
@@ -250,6 +251,23 @@ export async function loadSteamLibrary(): Promise<string | null> {
     for (const g of result.games) {
       if (installedIds.has(g.appId) || isSteamLibraryNoise(g.appId, g.name)) continue;
       items.push(steamOwnedGameToItem(g));
+    }
+    // Steam Families: games other members share with this account never appear
+    // in the owned list, so they are merged here as "install through Steam".
+    const shared = await steamFamilySharedApps().catch(() => []);
+    const ownedIds = new Set(result.games.map((g) => g.appId));
+    for (const g of shared) {
+      if (installedIds.has(g.appId) || ownedIds.has(g.appId)) continue;
+      if (isSteamLibraryNoise(g.appId, g.name)) continue;
+      items.push(
+        steamOwnedGameToItem({
+          appId: g.appId,
+          name: g.name,
+          playtimeForever: 0,
+          playtimeTwoWeeks: 0,
+          iconUrl: "",
+        }),
+      );
     }
     setSteamSummaries(items);
   } catch (e) {

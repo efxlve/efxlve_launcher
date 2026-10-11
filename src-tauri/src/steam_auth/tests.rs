@@ -4,6 +4,7 @@ use base64::Engine;
 use serde_json::Value;
 
 use super::vault::dpapi;
+use super::wire::{parse_family_group_id, parse_shared_apps};
 use super::*;
 
 fn begin_fixture() -> Value {
@@ -136,6 +137,35 @@ fn owned_games_payload_is_flattened() {
     assert_eq!(owned.games[1].app_id, "730");
     assert_eq!(owned.games[1].playtime_two_weeks, 12);
     assert!(parse_owned_games(&serde_json::json!({})).games.is_empty());
+}
+
+#[test]
+fn shared_library_payload_is_flattened() {
+    let response = serde_json::json!({
+        "apps": [
+            { "appid": "2651280", "name": "Marvel's Spider-Man 2", "owner_steamids": ["76561198000000001"] },
+            { "appId": 620, "app_name": "Portal 2", "owner_steamids": [76561198000000002i64], "owned": true },
+            { "appid": "", "name": "Broken" }
+        ]
+    });
+    let shared = parse_shared_apps(&response);
+    assert_eq!(shared.len(), 2);
+    assert_eq!(shared[0].app_id, "2651280");
+    assert_eq!(shared[0].name, "Marvel's Spider-Man 2");
+    assert_eq!(shared[0].owner_steam_ids, vec!["76561198000000001"]);
+    assert_eq!(shared[1].app_id, "620");
+    assert_eq!(shared[1].name, "Portal 2");
+    assert!(shared[1].owned);
+    assert!(parse_shared_apps(&serde_json::json!({})).is_empty());
+}
+
+#[test]
+fn family_group_id_is_read() {
+    assert_eq!(
+        parse_family_group_id(&serde_json::json!({ "family_groupid": "123456" })),
+        "123456"
+    );
+    assert!(parse_family_group_id(&serde_json::json!({})).is_empty());
 }
 
 #[test]

@@ -77,6 +77,10 @@ export const steamOpenClient = () => invoke<void>("steam_open_client");
 export const steamOpenDownloads = () => invoke<void>("steam_open_downloads");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
 
+/** Games family members share with the signed-in account (Steam Families). */
+export const steamFamilySharedApps = () =>
+  invoke<SteamSharedGame[]>("steam_family_shared_apps");
+
 /** One app's metadata, read from the Steam client's own `appcache/appinfo.vdf`. */
 export interface SteamAppMetadata {
   developer?: string;
@@ -195,6 +199,16 @@ export interface SteamOwnedGame {
 export interface SteamOwnedGames {
   gameCount: number;
   games: SteamOwnedGame[];
+}
+
+/** One game shared with the account through Steam Families. */
+export interface SteamSharedGame {
+  appId: string;
+  name: string;
+  /** True when this is the account's own copy inside the family group. */
+  owned: boolean;
+  /** Steam ids of the members whose copy is being shared. */
+  ownerSteamIds: string[];
 }
 
 /**

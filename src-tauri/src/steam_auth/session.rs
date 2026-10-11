@@ -636,6 +636,110 @@ pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames,
     }
 }
 
+/// Games family members share with the signed-in account. The caller's own
+/// copies are excluded (`include_own=false`): `GetOwnedGames` already lists
+/// them. Empty when the account is in no Steam family.
+#[tauri::command]
+pub async fn steam_family_shared_apps(
+    app: tauri::AppHandle,
+) -> Result<Vec<SteamSharedGame>, String> {
+    ensure_disk_checked(&app);
+
+    let cached = {
+        let state = lock();
+        let Some(session) = state.session.as_ref() else {
+            return Err("@t:steam.err.notSignedIn".to_string());
+        };
+        session.access_token_valid().map(str::to_string)
+    };
+
+    let client = http_client()?;
+    let token = match cached {
+        Some(token) => token,
+        None => refresh_access_token(&client).await?,
+    };
+
+    match family_shared_with(&client, &token).await {
+        Err(err) if err == "@t:steam.err.sessionExpired" => {
+            let fresh = refresh_access_token(&client).await?;
+            family_shared_with(&client, &fresh).await
+        }
+        other => other,
+    }
+}
+
+async fn family_shared_with(
+    client: &reqwest::Client,
+    access_token: &str,
+) -> Result<Vec<SteamSharedGame>, String> {
+    let group = fetch_family_group(client, access_token).await?;
+    if group.is_empty() {
+        return Ok(Vec::new());
+    }
+    fetch_shared_apps(client, access_token, &group).await
+}
+
+/// The caller's Steam Families group id (empty when they are in none).
+pub async fn fetch_family_group(
+    client: &reqwest::Client,
+    access_token: &str,
+) -> Result<String, String> {
+    let response = client
+        .get(FAMILY_GROUP_URL)
+        .query(&[("access_token", access_token), ("format", "json")])
+        .send()
+        .await
+        .map_err(|_| "@t:steam.err.network".to_string())?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(if status_ends_session(status) {
+            "@t:steam.err.sessionExpired".to_string()
+        } else {
+            "@t:steam.err.network".to_string()
+        });
+    }
+    let payload: Value = response
+        .json()
+        .await
+        .map_err(|_| "@t:steam.err.steam".to_string())?;
+    Ok(parse_family_group_id(
+        payload.get("response").unwrap_or(&Value::Null),
+    ))
+}
+
+/// Games other family members share with the account.
+pub async fn fetch_shared_apps(
+    client: &reqwest::Client,
+    access_token: &str,
+    family_group_id: &str,
+) -> Result<Vec<SteamSharedGame>, String> {
+    let response = client
+        .get(SHARED_LIBRARY_URL)
+        .query(&[
+            ("access_token", access_token),
+            ("family_groupid", family_group_id),
+            ("include_own", "false"),
+            ("include_excluded", "false"),
+            ("format", "json"),
+        ])
+        .send()
+        .await
+        .map_err(|_| "@t:steam.err.network".to_string())?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(if status_ends_session(status) {
+            "@t:steam.err.sessionExpired".to_string()
+        } else {
+            "@t:steam.err.network".to_string()
+        });
+    }
+    let payload: Value = response
+        .json()
+        .await
+        .map_err(|_| "@t:steam.err.steam".to_string())?;
+    Ok(parse_shared_apps(payload.get("response").unwrap_or(&Value::Null)))
+}
+
 /// Mints (and caches in memory) a new access token for the session. The sealed
 /// refresh token stays on disk untouched; access tokens are never persisted.
 pub async fn refresh_access_token(client: &reqwest::Client) -> Result<String, String> {

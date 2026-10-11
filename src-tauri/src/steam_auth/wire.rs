@@ -240,6 +240,57 @@ pub fn parse_poll_response(response: &Value, pending: &PendingLogin) -> PollOutc
     }
 }
 
+/// `GetFamilyGroupForUser` payload → the family group id (empty when none).
+pub fn parse_family_group_id(response: &Value) -> String {
+    field_str(response, "family_groupid", "familyGroupid")
+}
+
+/// `GetSharedLibraryApps` payload → the shared games. The name field is read
+/// tolerantly: the service has shipped it as `name`, `appName`, `app_name` and
+/// `sortAs` at different times.
+pub fn parse_shared_apps(response: &Value) -> Vec<SteamSharedGame> {
+    response
+        .get("apps")
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter_map(|g| {
+                    let app_id = field_str(g, "appid", "appId");
+                    if app_id.is_empty() {
+                        return None;
+                    }
+                    let mut name = field_str(g, "name", "appName");
+                    if name.is_empty() {
+                        name = field_str(g, "app_name", "sortAs");
+                    }
+                    let owner_steam_ids = g
+                        .get("owner_steamids")
+                        .or_else(|| g.get("ownerSteamids"))
+                        .or_else(|| g.get("owner_steam_ids"))
+                        .and_then(Value::as_array)
+                        .map(|ids| {
+                            ids.iter()
+                                .filter_map(|id| match id {
+                                    Value::String(text) => Some(text.clone()),
+                                    Value::Number(number) => Some(number.to_string()),
+                                    _ => None,
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    Some(SteamSharedGame {
+                        app_id,
+                        name,
+                        owned: g.get("owned").and_then(Value::as_bool).unwrap_or(false),
+                        owner_steam_ids,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// `GetOwnedGames` payload → flat game list (pure, unit tested).
 pub fn parse_owned_games(response: &Value) -> SteamOwnedGames {
     let games = response
