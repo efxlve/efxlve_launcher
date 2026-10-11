@@ -199,6 +199,7 @@ fn overlay_document(panel_html: &str) -> String {
     const CSS: &str = r#"
       html, body { margin: 0; height: 100%; background: #000000; color: #fff; overflow: hidden;
         font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+      * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.14) transparent; }
       button { font-family: inherit; }
       .notif-panel { position: static; width: 100%; height: 100%; max-height: none; box-sizing: border-box;
         display: flex; flex-direction: column; overflow: hidden; background: var(--surface-1, #0a0a0a);
@@ -247,7 +248,9 @@ fn overlay_document(panel_html: &str) -> String {
         event.preventDefault();
         var act = encodeURIComponent(node.getAttribute("data-act") || "");
         var id = encodeURIComponent(node.getAttribute("data-id") || "");
-        location.href = "https://efxlve.local/act?act=" + act + "&id=" + id;
+        // A unique tail per click: a repeated navigation to the same URL is
+        // dropped by the webview and the button would need several tries.
+        location.href = "https://efxlve.local/act?act=" + act + "&id=" + id + "&t=" + Date.now();
       });
     "#;
     format!(
@@ -265,7 +268,7 @@ const ARM_STORE_CLICK: &str = r#"
     window.__efxlveNotifAway = false;
     ev.preventDefault();
     ev.stopPropagation();
-    location.href = "https://efxlve.local/notif-close";
+    location.href = "https://efxlve.local/notif-close?t=" + Date.now();
   }, true);
 })()
 "#;
@@ -308,13 +311,17 @@ fn raise_covering_soon(window: &tauri::Window, x: f64, y: f64, width: f64, heigh
     });
 }
 
-fn place_overlay(window: &tauri::Window, webview: &tauri::Webview, x: f64, y: f64, width: f64, height: f64) {
+/// Sizes the host, waits a beat, then shows it: a visible child paints at its
+/// previous bounds for a frame (the "opens small, then jumps" flash). Callers
+/// hide the host first. Also re-raises it above the storefront/Spotify siblings.
+async fn present_overlay(webview: &tauri::Webview, window: &tauri::Window, x: f64, y: f64, width: f64, height: f64) {
     let width = width.max(160.0);
     let height = height.max(72.0);
     if let Ok(mut slot) = OVERLAY_RECT.lock() {
         *slot = (x, y, width, height);
     }
     let _ = webview.set_bounds(panel_rect(x, y, width, height));
+    tokio::time::sleep(std::time::Duration::from_millis(40)).await;
     let _ = webview.show();
     raise_child_covering(window, x, y, width, height);
     raise_covering_soon(window, x, y, width, height);
@@ -344,8 +351,9 @@ pub async fn show_notif_overlay(
             return Ok(());
         }
         OVERLAY_OPEN.store(true, std::sync::atomic::Ordering::Relaxed);
-        place_overlay(&window, &webview, x, y, width, height);
+        let _ = webview.hide();
         publish_document(&webview, &document);
+        present_overlay(&webview, &window, x, y, width, height).await;
         arm_embedded_clicks(&window, true);
         return Ok(());
     }
@@ -390,14 +398,15 @@ pub async fn show_notif_overlay(
                 return Ok(());
             }
             OVERLAY_OPEN.store(true, std::sync::atomic::Ordering::Relaxed);
-            if let Some(host) = app.get_window("main") {
-                place_overlay(&host, &webview, x, y, width, height);
-                arm_embedded_clicks(&host, true);
-            }
             // `about:blank` can finish loading before an eval is possible, and
             // the page-load write is the only other path: a freshly created host
             // must get its document here or the first open shows a blank panel.
+            let _ = webview.hide();
             publish_document(&webview, &document);
+            if let Some(host) = app.get_window("main") {
+                present_overlay(&webview, &host, x, y, width, height).await;
+                arm_embedded_clicks(&host, true);
+            }
             let again = webview.clone();
             let retry_doc = document.clone();
             tauri::async_runtime::spawn(async move {
@@ -430,7 +439,13 @@ pub fn move_notif_overlay(
     let Some(webview) = window.get_webview(LABEL) else {
         return Ok(());
     };
-    place_overlay(&window, &webview, x, y, width, height);
+    // A move while the host is open: no hide/show, that would flicker.
+    if let Ok(mut slot) = OVERLAY_RECT.lock() {
+        *slot = (x, y, width, height);
+    }
+    let _ = webview.set_bounds(panel_rect(x, y, width, height));
+    let _ = webview.show();
+    raise_child_covering(&window, x, y, width, height);
     Ok(())
 }
 
@@ -446,11 +461,13 @@ pub fn hide_notif_overlay(app: AppHandle) -> Result<(), String> {
     let Some(webview) = window.get_webview(LABEL) else {
         return Ok(());
     };
-    let parked = tauri::Rect {
-        position: tauri::Position::Logical(tauri::LogicalPosition::new(-10000.0, -10000.0)),
-        size: tauri::Size::Logical(tauri::LogicalSize::new(360.0, 480.0)),
-    };
-    let _ = webview.set_bounds(parked);
+    // Parked off-screen, but at its last size: shrinking it here made the next
+    // open paint a frame at that smaller size before the new bounds landed.
+    let (_, _, width, height) = OVERLAY_RECT
+        .lock()
+        .map(|slot| *slot)
+        .unwrap_or((-10000.0, -10000.0, 360.0, 480.0));
+    let _ = webview.set_bounds(panel_rect(-10000.0, -10000.0, width, height));
     let _ = webview.hide();
     Ok(())
 }
