@@ -1,13 +1,14 @@
 # Discord Entegrasyonu — Uygulama Planı
 
-Tarih: 11.10.2026 · Revizyon: Social SDK bağımlılığı kaldırıldı; gömülü web istemcisi + yerel RPC'ye geçildi.
+Tarih: 11.10.2026 · Revizyon: Social SDK bağımlılığı kaldırıldı; gömülü web istemcisi + yerel RPC ana yol oldu.
+Güncelleme (11.10.2026): Social SDK başvurusu **onaylandı**, uygulama etkinleştirildi. SDK, Faz 4 (native arkadaş listesi) için kayıtlı opsiyondur; ana yol webview olarak kalır.
 
-Fizibilite kaydı: `docs/ROADMAP.md` §8. Revizyonun nedeni:
+Fizibilite kaydı: `docs/ROADMAP.md` §8. Ana yolun gerekçesi:
 
-- Discord Social SDK fiilen **oyun geliştiricileri** için konumlanmış: başvuru formu oyun bilgisi istiyor ("Bize oyunun hakkında bilgi ver"); DM dahil iletişim özellikleri ayrı bir **Comms Access kapalı betasına** bağlı (oyun-içi Account Linking + Rich Presence + Game Invites + Unified Friends şartları).
-- Arkadaş verisine giden **tüm programatik yollar Discord onayına bağlı**: Social SDK, yerel RPC `relationships.read` ("requires Discord approval") ve Embedded (Activities) SDK.
+- **DM/metin/ses** SDK'da **İletişim Erişimi** (Comms Access) adlı ayrı ve kapalı bir betaya bağlı; minimumlar oyun-içi (Account Linking + Rich Presence + Game Invites + Unified Friends) → launcher için belirsiz. Webview'da DM bugün sorunsuz çalışır.
 - Onaysız çalışan tek tam yol: resmî web istemcisinin gömülmesi (`discord.com/app`) — Spotify sayfasının (`src-tauri/src/spotify_host.rs`) birebir aynı deseni.
-- Discord onayı ileride gelirse, native arkadaş listesi **RPC `GET_RELATIONSHIPS` + `RELATIONSHIP_UPDATE`** ile (DLL/FFI olmadan) bonus olarak eklenebilir.
+- SDK yolu DLL + FFI + token kasası + paketleme getirir (~2-3 gün ek); ana kazanımı native arkadaş listesidir. İstenirse webview sonrası eklenir (Faz 4).
+- Alternatif native yol: yerel RPC `GET_RELATIONSHIPS` + `RELATIONSHIP_UPDATE` — DLL'siz, ama `relationships.read` ayrıca Discord onayı ister; SDK erişimi varken tercih sırası SDK'dır.
 
 Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord.food` RPC referansı (11.10.2026).
 
@@ -17,7 +18,7 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 2. **Sunucu daveti girişi:** Ayarlar + Discord sayfasından Efxlve daveti.
 3. **Rich Presence zenginleştirme:** mevcut RPC worker'a başarım ilerlemesi vb. (bugünkü gibi onaysız).
 4. **Overlay Discord sekmesi:** presence anahtarı + yerel RPC ile ses kanalı/konuşan göstergesi (tester slotu; partner onayı gelmezse salt okunur).
-5. **(Park) Native arkadaş listesi:** Discord onayı gelirse RPC üzerinden; gelmezse yok.
+5. **(Park) Native arkadaş listesi:** SDK erişimi hazır; webview sonrası isteğe bağlı (bkz. Faz 4).
 
 ## Mevcut durum
 
@@ -39,11 +40,10 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - **ToS disiplini:** Discord sayfası kazınmaz/enjekte edilmez; webview yalnız gösterir (en fazla minimal CSS ile promosyon gizleme).
 - **i18n:** yeni metinler `src/locales/*.json` dosyalarının tamamına (16 dosya, aynı anahtarlar); sayaçlarda `tabular-nums`; renkler durum anlamı taşır.
 
-## Faz 0 — Discord formu (sen, ~15 dk, opsiyonel)
+## Faz 0 — Discord formu (TAMAM, 11.10.2026)
 
-- Formu gönder; amaç yalnızca Faz 4 bonusu. **Onay gelmemesi hiçbir şeyi bloke etmez.**
-- Öneri: "Tam Ad" alanına ürün adı değil **gerçek adın** yazılsın; launcher olduğunu açıklayabileceğin bir alan varsa dürüstçe yaz.
-- Bitti: form gönderildi (veya bilinçli atlandı).
+- Başvuru onaylandı; uygulama Social SDK için etkinleştirildi. SDK artık Faz 4 için hazır opsiyon.
+- **İletişim Erişimi'ne başvurulmadı**; DM hâlâ webview'da planlanıyor (istenirse sonra denenir).
 
 ## Faz 1 — Bağımsız küçük işler
 
@@ -101,11 +101,12 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - `renderDiscord()` gerçek içerik: presence anahtarı + kanal/katılımcılar/konuşan göstergesi; mute/deafen partner-only → yok; "Open in Discord" kalır.
 - **Bitti:** build; kanal yokken temiz boş durum. Commit: `feat: build the overlay Discord tab`.
 
-## Faz 4 — (Park) Native arkadaş listesi — Discord onayına bağlı
+## Faz 4 — (Park) Native arkadaş listesi — webview sonrası, isteğe bağlı
 
-- Koşul: `relationships.read` onayı (Faz 0 formu ya da ayrı başvuru).
-- Yol: RPC `GET_RELATIONSHIPS` + `RELATIONSHIP_UPDATE` (DLL/FFI yok). UI kararı o zaman verilir (Discord sayfasının yanında native panel ya da sidebar widget'ı).
-- Onay yoksa bu faz yok; arkadaşlar ve DM webview'da yaşamaya devam eder.
+- Durum: SDK erişimi etkin (11.10.2026) → yol açık; karar, webview yayında gerçek kullanım görüldükten sonra verilir.
+- Yol (tercih sırası): **(1) Social SDK** — hesap bağlama + Unified Friends; DLL + FFI + token kasası + paketleme (~2-3 gün). **(2) Yerel RPC** `GET_RELATIONSHIPS` — DLL'siz, ama `relationships.read` için ayrıca Discord onayı gerekir.
+- UI: Discord sayfasının yanında native panel veya sidebar widget'ı; webview'ın yerini almaz.
+- DM: İletişim Erişimi onaylanmadıkça SDK'dan gelmez; webview'da yaşamaya devam eder.
 
 ## Faz 5 — Yayın
 
@@ -126,7 +127,7 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 
 | Faz | Süre | Kim |
 |---|---|---|
-| 0 — Form | ~15 dk | Kullanıcı (opsiyonel) |
+| 0 — Form | Tamam (11.10.2026) | Kullanıcı |
 | 1 — Davet + presence | ~0.5-1 gün | Geliştirme |
 | 2 — Webview sayfası (spike dahil) | ~1.5-2 gün | Geliştirme |
 | 3 — Overlay RPC (spike dahil) | ~1 gün (engel çıkarsa ~0.5 gün + park) | Geliştirme |
@@ -135,6 +136,6 @@ Toplam: **~3-4 geliştirme günü** (SDK yolu: 5-6 gün + onay riski + DLL paket
 
 ## Açık kararlar
 
-1. Form onayı gelirse Faz 4 (RPC ile native arkadaş listesi) eklenecek mi?
+1. Faz 4 (native arkadaş listesi) webview sonrasında istenecek mi? SDK erişimi hazır; maliyet ~2-3 gün.
 2. DM native panel yapılmayacak; DM webview'da (Discord onayı gelmedikçe).
 3. Overlay'de ses yazma (mute/deafen) partner onayına bağlı; şimdilik yok.
