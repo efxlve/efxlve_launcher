@@ -31,9 +31,65 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.29",
+    date: "2026-10-11",
+    isCurrent: true,
+    items: [
+      {
+        en: "The library lists Steam family shared games: titles other members share appear next to your own, and the game page marks them with a Family sharing badge.",
+        tr: "Kütüphane artık Steam aile paylaşımındaki oyunları da listeliyor: diğer üyelerin paylaştığı oyunlar kendi oyunlarının yanında görünüyor ve oyun sayfası onları \"Aile paylaşımı\" rozetiyle işaretliyor.",
+      },
+      {
+        en: "The sidebar mini player is a proper card now — a larger cover, a play button in the launcher's white accent, a grab dot on the progress bar — and it shows the elapsed and the total time.",
+        tr: "Kenar çubuğu mini oynatıcısı artık düzgün bir kart: daha büyük kapak, launcher'ın beyaz vurgusuyla oynat düğmesi, ilerleme çubuğunda tutma noktası — ve hem geçen hem toplam süreyi gösteriyor.",
+      },
+      {
+        en: "Settings → Appearance can hide the sidebar player entirely.",
+        tr: "Ayarlar → Görünüm, kenar çubuğu oynatıcısını tamamen gizleyebiliyor.",
+      },
+      {
+        en: "The Spotify page keeps Back and Reload in the player's own bar, next to the logo, and the launcher header only keeps the Connect pairing hint.",
+        tr: "Spotify sayfası geri ve yenile düğmelerini oynatıcı çubuğunda, logonun yanında tutuyor; launcher başlığında yalnızca Connect eşleştirme ipucu kalıyor.",
+      },
+      {
+        en: "The embedded Spotify page hides the desktop app promos, and its right rail collapses when the promo was the only thing in it — the song and artist view still uses the rail.",
+        tr: "Gömülü Spotify sayfası masaüstü uygulaması promolarını gizliyor; sağ sütunda promodan başka içerik yoksa sütun toplanıyor — şarkı ve sanatçı görünümü sütunu yine kullanıyor.",
+      },
+      {
+        en: "HowLongToBeat and Metacritic find the game you are actually looking at: the release year counts, Metacritic is read from its own page, and a name that cannot be the same game yields no score instead of another title's.",
+        tr: "HowLongToBeat ve Metacritic artık gerçekten baktığın oyunu buluyor: çıkış yılı hesaba katılıyor, Metacritic kendi sayfasından okunuyor ve aynı oyun olamayacak bir ad eşleşirse başka oyunun puanı yerine puan gösterilmiyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The overlay's \"Disable for this game\" toggle stays out of the desktop/launcher context, and Settings → Appearance restores every blocked title — a block can no longer lock the overlay away.",
+        tr: "Arayüzün \"Bu oyun için açma\" anahtarı masaüstü/launcher bağlamında görünmüyor; Ayarlar → Görünüm engellenen tüm oyunları geri açıyor — bir engel arayüzü artık kilitleyemiyor.",
+      },
+      {
+        en: "The notifications dropdown opens on the first click over the storefront and Spotify pages, follows the selected surface theme, and closes when the page changes.",
+        tr: "Bildirim menüsü mağaza ve Spotify sayfalarında ilk tıklamada açılıyor, seçili yüzey temasını izliyor ve sayfa değişince kapanıyor.",
+      },
+      {
+        en: "The changelog floats as a card over the storefront and Spotify pages, centered on the window, and its buttons answer to a single press.",
+        tr: "Changelog, mağaza ve Spotify sayfalarının üzerinde pencereye ortalanmış bir kart olarak duruyor ve düğmeleri tek basışta çalışıyor.",
+      },
+      {
+        en: "The Spotify page no longer pauses a track while reporting what is playing, and the sidebar player follows whichever engine is actually making sound.",
+        tr: "Spotify sayfası çalan parçayı bildirirken müziği artık duraklatmıyor; kenar çubuğu oynatıcısı sesi gerçekten çıkaran motoru izliyor.",
+      },
+      {
+        en: "The Spotify receiver warms up while the page is open, so songs start without the cold start, and the mini player reacts within a second.",
+        tr: "Spotify alıcısı sayfa açıkken ısınıyor; şarkılar soğuk başlama beklemeden başlıyor ve mini oynatıcı bir saniye içinde tepki veriyor.",
+      },
+      {
+        en: "The HowLongToBeat card keeps its rows compact when a value is missing.",
+        tr: "HowLongToBeat kartı bir değer eksikken satırlarını kompakt tutuyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.28",
     date: "2026-10-10",
-    isCurrent: true,
     items: [
       {
         en: "The in-game overlay is here: Shift+Tab opens a panel over the game with live FPS, CPU, GPU and memory readings, achievements, screenshots and notes, Spotify and Discord tabs, plus controller and keyboard navigation. It now wears the launcher's own theme as well: flat surfaces and one white accent.",
