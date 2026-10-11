@@ -61,7 +61,7 @@ export function ensureGameHubData(s: EpicSummary): void {
   const appName = s.appName;
   if (!S.loadedHltb.has(appName) && S.loadingHltbFor !== appName) {
     S.loadingHltbFor = appName;
-    epicGetHltb(s.title, appName)
+    epicGetHltb(s.title, appName, false, s.releaseYear ?? null)
       .then((data: HltbData) => {
         S.loadedHltb.set(appName, data);
         refreshTvHubStats();
@@ -74,7 +74,7 @@ export function ensureGameHubData(s: EpicSummary): void {
 
   if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
     S.loadingCriticFor = appName;
-    epicGetCritic(s.title, appName)
+    epicGetCritic(s.title, appName, false, s.releaseYear ?? null)
       .then((data: CriticData) => {
         S.loadedCritic.set(appName, data);
         refreshTvHubStats();

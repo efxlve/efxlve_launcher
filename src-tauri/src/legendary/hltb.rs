@@ -82,9 +82,16 @@ fn dirs_config_dir() -> Option<PathBuf> {
         .map(|p| p.join(".config"))
 }
 
-pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> HltbData {
+pub async fn get_hltb_data(
+    title: &str,
+    app_name: &str,
+    force_refresh: bool,
+    year: Option<u32>,
+) -> HltbData {
     let clean_app = app_name.replace([':', '/', '\\', '*', '?', '"', '<', '>', '|'], "_");
-    let cache_file = hltb_cache_dir().join(format!("{}.json", clean_app));
+    // The release year is part of the cache key too: a name-only hit can be an
+    // older game with the same title ("Spider-Man 2" vs "Marvel's Spider-Man 2").
+    let cache_file = hltb_cache_dir().join(format!("{}-{}.json", clean_app, year.unwrap_or(0)));
 
     if !force_refresh && cache_file.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
@@ -226,6 +233,7 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
         (&auth_token, &auth_key, &auth_val),
         app_name,
         title,
+        year,
     )
     .await;
     if !result_data.supported {
@@ -239,6 +247,7 @@ pub async fn get_hltb_data(title: &str, app_name: &str, force_refresh: bool) -> 
                 (&auth_token, &auth_key, &auth_val),
                 app_name,
                 title,
+                year,
             )
             .await;
             if retry.supported {
@@ -274,7 +283,7 @@ fn empty_hltb(app_name: &str, title: &str) -> HltbData {
 }
 
 /// One HLTB search: the payload, the session's dynamic auth headers, and the
-/// first (most popular) result parsed into durations.
+/// best-matching result parsed into durations.
 async fn search_hltb(
     client: &reqwest::Client,
     endpoint: &str,
@@ -282,6 +291,7 @@ async fn search_hltb(
     auth: (&str, &str, &str),
     app_name: &str,
     title: &str,
+    year: Option<u32>,
 ) -> HltbData {
     if terms.is_empty() {
         return empty_hltb(app_name, title);
@@ -338,7 +348,7 @@ async fn search_hltb(
     match req.json(&payload).send().await {
         Ok(resp) if resp.status().is_success() => match resp.text().await {
             Ok(text) => serde_json::from_str::<serde_json::Value>(&text)
-                .map(|val| parse_hltb_response(app_name, title, &val))
+                .map(|val| parse_hltb_response(app_name, title, terms, &val, year))
                 .unwrap_or_else(|_| empty_hltb(app_name, title)),
             Err(_) => empty_hltb(app_name, title),
         },
@@ -373,9 +383,132 @@ pub fn loosen_hltb_search_term(term: &str) -> String {
     rest
 }
 
-fn parse_hltb_response(app_name: &str, title: &str, val: &serde_json::Value) -> HltbData {
+/// Letters and digits only, lowercased: "Marvel's Spider-Man 2" → "marvelsspiderman2".
+fn hltb_norm(text: &str) -> String {
+    text.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
+/// The year HLTB stores for an entry. The search API has shipped `release_world`
+/// both as a plain year and as a unix timestamp (seconds or milliseconds).
+pub fn hltb_entry_year(item: &serde_json::Value) -> Option<u32> {
+    let raw = ["release_world", "releaseYear", "release_year", "year"]
+        .iter()
+        .find_map(|key| item.get(*key))?;
+    let value = raw
+        .as_f64()
+        .or_else(|| raw.as_str().and_then(|text| text.parse::<f64>().ok()))?;
+    let year = if value >= 1_000_000_000_000.0 {
+        (value / 1000.0 / 31_557_600.0) as u32 + 1970
+    } else if value >= 1_000_000_000.0 {
+        (value / 31_557_600.0) as u32 + 1970
+    } else {
+        value as u32
+    };
+    (1900..=2100).contains(&year).then_some(year)
+}
+
+/// Picks the entry whose name (and, when known, release year) matches. A
+/// name-only hit is an older game with the same title, so with a year in hand a
+/// non-matching entry is dropped instead of guessed.
+pub fn pick_hltb_item<'a>(
+    items: &'a [serde_json::Value],
+    term: &str,
+    year: Option<u32>,
+) -> Option<&'a serde_json::Value> {
+    let want = hltb_norm(term);
+    if want.is_empty() {
+        return items.first();
+    }
+    let mut best: Option<(i32, &serde_json::Value)> = None;
+    for item in items {
+        let name = hltb_norm(item.get("game_name").and_then(|v| v.as_str()).unwrap_or(""));
+        if name.len() < 3 {
+            continue;
+        }
+        let mut score = if name == want {
+            1000
+        } else if name.contains(&want) || want.contains(&name) {
+            500
+        } else {
+            0
+        };
+        if score == 0 {
+            continue;
+        }
+        match (hltb_entry_year(item), year) {
+            (Some(entry_year), Some(want_year)) => {
+                let delta = (entry_year as i64 - want_year as i64).abs();
+                if delta == 0 {
+                    score += 400;
+                } else if delta <= 1 {
+                    score += 150;
+                } else {
+                    score -= 400;
+                }
+            }
+            (None, Some(_)) => score -= 200,
+            _ => {}
+        }
+        if best.as_ref().map(|(top, _)| score > *top).unwrap_or(true) {
+            best = Some((score, item));
+        }
+    }
+    match best {
+        Some((score, item)) if score > 0 => Some(item),
+        // No year to check against: keep HLTB's old behaviour (most popular).
+        _ if year.is_none() => items.first(),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod pick_tests {
+    use super::pick_hltb_item;
+    use serde_json::json;
+
+    #[test]
+    fn older_game_with_the_same_name_is_rejected() {
+        let items = vec![
+            json!({ "game_name": "Spider-Man 2", "release_world": 2004, "comp_main": 25000 }),
+            json!({ "game_name": "Marvel's Spider-Man 2", "release_world": 2023, "comp_main": 60000 }),
+        ];
+        let picked = pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).unwrap();
+        assert_eq!(picked["release_world"], 2023);
+        // Without a year the exact name still wins.
+        let picked = pick_hltb_item(&items, "Marvel's Spider-Man 2", None).unwrap();
+        assert_eq!(picked["release_world"], 2023);
+    }
+
+    #[test]
+    fn timestamp_years_are_read() {
+        let items = vec![json!({
+            "game_name": "Marvel's Spider-Man 2",
+            "release_world": 1698710400,
+            "comp_main": 60000
+        })];
+        assert_eq!(pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).is_some(), true);
+    }
+
+    #[test]
+    fn nothing_matching_a_known_year_yields_none() {
+        let items = vec![json!({ "game_name": "Some Other Game", "release_world": 2015 })];
+        assert!(pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).is_none());
+    }
+}
+
+fn parse_hltb_response(
+    app_name: &str,
+    title: &str,
+    terms: &[&str],
+    val: &serde_json::Value,
+    year: Option<u32>,
+) -> HltbData {
     if let Some(items) = val.get("data").and_then(|d| d.as_array()) {
-        if let Some(first) = items.first() {
+        let term = terms.join(" ");
+        if let Some(first) = pick_hltb_item(items, &term, year) {
             let sec_to_hours = |k: &str| -> Option<f64> {
                 let s = first.get(k)?.as_f64()?;
                 if s <= 0.0 {
@@ -468,7 +601,7 @@ mod tests {
             }]
         });
 
-        let data = parse_hltb_response("Ginger", "Cyberpunk 2077", &json);
+        let data = parse_hltb_response("Ginger", "Cyberpunk 2077", &["Cyberpunk", "2077"], &json, None);
         assert!(data.supported);
         assert_eq!(data.main_story, Some(25.0));
         assert_eq!(data.main_extra, Some(60.0));

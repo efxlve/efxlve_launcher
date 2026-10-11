@@ -115,6 +115,9 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
   return [
     dev ? `<span>${esc(dev)}</span>` : "",
     s.appName.startsWith("gog::") ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
+    S.steamSharedIds.has(s.appName)
+      ? `<span class="gp-meta-item" title="${esc(t("drawer.familySharingTip"))}">${icon("users", 13)} ${esc(t("drawer.familySharing"))}</span>`
+      : "",
     partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
     antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");
@@ -159,9 +162,12 @@ function ensureCloudSyncStamp(s: EpicSummary): void {
 }
 
 function mergeSteamCritic(data: CriticData, appName: string): CriticData {
-  if (data.metacritic_score || !appName.startsWith("steam::")) return data;
+  if (!appName.startsWith("steam::")) return data;
   const details = S.steamDetails.get(appName);
   if (!details?.metacriticScore) return data;
+  // Steam's own block is per app id, so it beats the wiki lookup — that one can
+  // land on an older game with the same name (that is how "Marvel's Spider-Man
+  // 2" picked up a 42 from the 2004 game).
   return {
     ...data,
     supported: true,
@@ -510,7 +516,7 @@ function ensureOverviewData(s: EpicSummary): void {
   if (S.activeDrawerTab !== "overview") return;
   if (!S.loadedHltb.has(appName) && S.loadingHltbFor !== appName) {
     S.loadingHltbFor = appName;
-    epicGetHltb(s.title, appName)
+    epicGetHltb(s.title, appName, false, s.releaseYear ?? null)
       .then((data) => {
         S.loadedHltb.set(appName, data);
         if (S.currentModalAppName === appName) updateHltbUI(appName, data);
@@ -522,7 +528,7 @@ function ensureOverviewData(s: EpicSummary): void {
   }
   if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
     S.loadingCriticFor = appName;
-    epicGetCritic(s.title, appName)
+    epicGetCritic(s.title, appName, false, s.releaseYear ?? null)
       .then((data) => {
         const merged = mergeSteamCritic(data, appName);
         S.loadedCritic.set(appName, merged);

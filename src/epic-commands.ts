@@ -584,8 +584,12 @@ export interface HltbData {
   completionist?: number | null;
 }
 
-export const epicGetHltb = (title: string, appName: string, forceRefresh = false) =>
-  invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh });
+export const epicGetHltb = (
+  title: string,
+  appName: string,
+  forceRefresh = false,
+  year: number | null = null,
+) => invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh, year });
 
 /* ---------- Critic & review scores (OpenCritic / Metacritic / Goygoy Engine) ---------- */
 
@@ -612,8 +616,12 @@ export interface CriticData {
   goygoy_review?: GoygoyReview | null;
 }
 
-export const epicGetCritic = (title: string, appName: string, forceRefresh = false) =>
-  invoke<CriticData>("epic_get_critic", { title, appName, forceRefresh });
+export const epicGetCritic = (
+  title: string,
+  appName: string,
+  forceRefresh = false,
+  year: number | null = null,
+) => invoke<CriticData>("epic_get_critic", { title, appName, forceRefresh, year });
 
 /** Wikipedia fallback text; `supported: false` means "checked, nothing found". */
 export interface WikiAbout {

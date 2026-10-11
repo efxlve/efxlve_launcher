@@ -31,7 +31,7 @@ pub struct CriticData {
     pub parser_version: u32,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct GoygoyRawItem {
     #[serde(default)]
     pub title: Option<String>,
@@ -57,7 +57,7 @@ pub struct GoygoyRawItem {
     pub tags: Vec<String>,
 }
 
-const CRITIC_PARSER_VERSION: u32 = 3;
+const CRITIC_PARSER_VERSION: u32 = 4;
 
 pub fn clean_critic_search_term(title: &str) -> String {
     let mut s = title
@@ -317,13 +317,17 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
         }
     }
 
-    // Stage 2: substring match (for game names of at least 5 characters)
+    // Stage 2: substring match (for game names of at least 5 characters). The
+    // shorter name must cover most of the title: a bare "Spider-Man 2" is not a
+    // match for a longer, different game of the same family.
     if norm_title.len() >= 5 {
         for item in items {
             if let Some(ref gn) = item.game_name {
                 let norm_gn = normalize_for_match(gn);
                 if norm_gn.len() >= 5
-                    && (norm_title.contains(&norm_gn) || norm_gn.contains(&norm_title))
+                    && (norm_gn.contains(&norm_title)
+                        || (norm_title.contains(&norm_gn)
+                            && norm_gn.len() * 100 >= norm_title.len() * 65))
                 {
                     return make_goygoy_review(item);
                 }
@@ -331,7 +335,9 @@ pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<
             if let Some(ref g) = item.game {
                 let norm_g = normalize_for_match(g);
                 if norm_g.len() >= 5
-                    && (norm_title.contains(&norm_g) || norm_g.contains(&norm_title))
+                    && (norm_g.contains(&norm_title)
+                        || (norm_title.contains(&norm_g)
+                            && norm_g.len() * 100 >= norm_title.len() * 65))
                 {
                     return make_goygoy_review(item);
                 }
@@ -408,10 +414,17 @@ async fn fetch_goygoy_reviews(client: &reqwest::Client) -> Vec<GoygoyRawItem> {
     Vec::new()
 }
 
-pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -> CriticData {
+pub async fn get_critic_data(
+    title: &str,
+    app_name: &str,
+    force_refresh: bool,
+    year: Option<u32>,
+) -> CriticData {
     let clean_app = app_name.replace([':', '/', '\\', '*', '?', '"', '<', '>', '|'], "_");
     let cache_dir = critic_cache_dir();
-    let cache_file = cache_dir.join(format!("{}.json", clean_app));
+    // The year is part of the cache key: the same title can be two different
+    // games ("Spider-Man 2" and "Marvel's Spider-Man 2").
+    let cache_file = cache_dir.join(format!("{}-{}.json", clean_app, year.unwrap_or(0)));
 
     let ua = "EfxlveLauncher/1.0 (https://github.com/efxlve/launcher)";
     let client = match reqwest::Client::builder()
@@ -480,6 +493,13 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
     let mut mc_url: Option<String> = None;
     let mut igdb_score: Option<f64> = None;
 
+    let mut fallback: Option<(
+        Option<u32>,
+        Option<String>,
+        Option<u32>,
+        Option<String>,
+        Option<f64>,
+    )> = None;
     'terms: for term in search_terms.iter().take(3) {
         let search_url = format!(
             "https://www.pcgamingwiki.com/w/api.php?action=opensearch&search={}&limit=3&format=json",
@@ -526,12 +546,23 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
                                         let (o_sc, o_u, m_sc, m_u, i_sc) =
                                             parse_reception_data(content_str);
                                         if o_sc.is_some() || m_sc.is_some() || i_sc.is_some() {
-                                            oc_score = o_sc;
-                                            oc_url = o_u;
-                                            mc_score = m_sc;
-                                            mc_url = m_u;
-                                            igdb_score = i_sc;
-                                            break 'terms;
+                                            // Prefer the page for the requested release
+                                            // year: the wiki also hosts older games that
+                                            // share the name (Spider-Man 2, 2004).
+                                            let year_hit = year
+                                                .map(|y| content_str.contains(&y.to_string()))
+                                                .unwrap_or(true);
+                                            if year_hit {
+                                                oc_score = o_sc;
+                                                oc_url = o_u;
+                                                mc_score = m_sc;
+                                                mc_url = m_u;
+                                                igdb_score = i_sc;
+                                                break 'terms;
+                                            }
+                                            if fallback.is_none() {
+                                                fallback = Some((o_sc, o_u, m_sc, m_u, i_sc));
+                                            }
                                         }
                                     }
                                 }
@@ -540,6 +571,17 @@ pub async fn get_critic_data(title: &str, app_name: &str, force_refresh: bool) -
                     }
                 }
             }
+        }
+    }
+
+    // Page picked but no release year in its text: keep it only as a fallback.
+    if oc_score.is_none() && mc_score.is_none() && igdb_score.is_none() {
+        if let Some((o_sc, o_u, m_sc, m_u, i_sc)) = fallback {
+            oc_score = o_sc;
+            oc_url = o_u;
+            mc_score = m_sc;
+            mc_url = m_u;
+            igdb_score = i_sc;
         }
     }
 

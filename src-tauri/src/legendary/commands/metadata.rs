@@ -162,9 +162,10 @@ pub async fn epic_get_hltb(
     title: String,
     app_name: String,
     force_refresh: Option<bool>,
+    year: Option<u32>,
 ) -> Result<crate::legendary::hltb::HltbData, String> {
     let force = force_refresh.unwrap_or(false);
-    Ok(crate::legendary::hltb::get_hltb_data(&title, &app_name, force).await)
+    Ok(crate::legendary::hltb::get_hltb_data(&title, &app_name, force, year).await)
 }
 
 /// Fetches and returns critic and review data (OpenCritic, Metacritic, IGDB).
@@ -173,9 +174,10 @@ pub async fn epic_get_critic(
     title: String,
     app_name: String,
     force_refresh: Option<bool>,
+    year: Option<u32>,
 ) -> Result<crate::legendary::critic::CriticData, String> {
     let force = force_refresh.unwrap_or(false);
-    Ok(crate::legendary::critic::get_critic_data(&title, &app_name, force).await)
+    Ok(crate::legendary::critic::get_critic_data(&title, &app_name, force, year).await)
 }
 
 /// Fetches system requirements from the Epic Games Store content API and caches them to disk.
