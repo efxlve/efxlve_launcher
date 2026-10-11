@@ -110,7 +110,8 @@ export function initMiniPlayer(): void {
     window.addEventListener("pointerup", up);
   });
 
-  window.setInterval(() => void refresh(), 2500);
+  window.setInterval(() => void quickRefresh(), 1000);
+  window.setInterval(() => void refresh(), 10000);
   window.setInterval(paintProgress, 1000);
   void refresh();
 }
@@ -135,20 +136,54 @@ async function startAndPlay(): Promise<void> {
     await spotifyPlaybackStart().catch(() => undefined);
   }
   await spotifyPlaybackControl("play").catch(() => undefined);
-  window.setTimeout(() => void refresh(), 900);
+  window.setTimeout(() => void quickRefresh(), 900);
 }
 
-async function refresh(): Promise<void> {
-  // The player only exists for a signed-in Spotify account, and it stays out
-  // of the way (recently played keeps the room) until something plays.
-  signedIn = await spotifySignedIn().catch(() => false);
-  if (!signedIn) {
-    current = null;
-    paint();
-    setPresenceMedia(null);
-    return;
-  }
+/** Key of what the card shows; the Discord presence only fires on change. */
+let lastShownKey = "";
 
+function shownKey(): string {
+  if (pageIsPlaying() && pageNow) return `page|${pageNow.title}|${pageNow.artist}|${pageNow.playing}`;
+  if (current) return `recv|${current.title}|${current.artist}|${current.isPlaying}`;
+  return "";
+}
+
+/** Discord follows whichever engine is actually playing: the page first. */
+function syncPresence(): void {
+  const key = shownKey();
+  if (key === lastShownKey) return;
+  lastShownKey = key;
+  if (pageIsPlaying() && pageNow) {
+    setPresenceMedia({
+      title: pageNow.title,
+      artist: pageNow.artist,
+      album: pageNow.album,
+      artUrl: pageNow.art,
+      isPlaying: true,
+      positionMs: pageNow.positionMs,
+      durationMs: pageNow.durationMs,
+    });
+  } else if (current) {
+    setPresenceMedia({
+      title: current.title,
+      artist: current.artist,
+      album: current.album,
+      artUrl: current.artUrl,
+      isPlaying: current.isPlaying,
+      positionMs: current.progressMs,
+      durationMs: current.durationMs,
+    });
+  } else {
+    setPresenceMedia(null);
+  }
+}
+
+/**
+ * Cheap pass, every second: only the playback state the card shows. The
+ * session check is expensive and stays on the slow pass.
+ */
+async function quickRefresh(): Promise<void> {
+  if (!signedIn) return;
   const status = await spotifyPlaybackStatus().catch(() => null);
   const engineOn = status?.running === true;
   const now = engineOn ? await spotifyPlaybackNow().catch(() => null) : null;
@@ -164,32 +199,23 @@ async function refresh(): Promise<void> {
     pageBaseAt = Date.now();
   }
   paint();
-  // Discord follows whichever engine is actually playing: the page first.
-  if (pageIsPlaying() && pageNow) {
-    setPresenceMedia({
-      title: pageNow.title,
-      artist: pageNow.artist,
-      album: pageNow.album,
-      artUrl: pageNow.art,
-      isPlaying: true,
-      positionMs: pageNow.positionMs,
-      durationMs: pageNow.durationMs,
-    });
-  } else {
-    setPresenceMedia(
-      now
-        ? {
-            title: now.title,
-            artist: now.artist,
-            album: now.album,
-            artUrl: now.artUrl,
-            isPlaying: now.isPlaying,
-            positionMs: now.progressMs,
-            durationMs: now.durationMs,
-          }
-        : null,
-    );
+  syncPresence();
+}
+
+/** Slow pass: the session check that gates the player, plus a safety refresh. */
+async function refresh(): Promise<void> {
+  // The player only exists for a signed-in Spotify account, and it stays out
+  // of the way (recently played keeps the room) until something plays.
+  signedIn = await spotifySignedIn().catch(() => false);
+  if (!signedIn) {
+    current = null;
+    pageNow = null;
+    lastShownKey = "";
+    paint();
+    setPresenceMedia(null);
+    return;
   }
+  await quickRefresh();
 }
 
 async function control(action: "play" | "pause" | "next" | "previous"): Promise<void> {
@@ -197,7 +223,7 @@ async function control(action: "play" | "pause" | "next" | "previous"): Promise<
   if (pageIsPlaying()) {
     const pageAction = action === "next" ? "next" : action === "previous" ? "previous" : "playpause";
     await invoke("spotify_page_control", { action: pageAction }).catch(() => undefined);
-    window.setTimeout(() => void refresh(), 500);
+    window.setTimeout(() => void quickRefresh(), 500);
     return;
   }
   if ((action === "play" || action === "pause") && current) {
@@ -209,7 +235,7 @@ async function control(action: "play" | "pause" | "next" | "previous"): Promise<
   } catch {
     // The next poll re-syncs.
   }
-  window.setTimeout(() => void refresh(), 400);
+  window.setTimeout(() => void quickRefresh(), 400);
 }
 
 function paint(): void {

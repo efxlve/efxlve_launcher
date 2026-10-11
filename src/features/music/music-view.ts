@@ -87,12 +87,18 @@ function paintHeaderActions(): void {
 
 /* ---------- Embedded player placement ---------- */
 
+/** Wires the Spotify page once it is on screen. */
 export function hydrateMusic(): void {
   ensurePolling();
   observeSlot();
   void refreshStatus();
   paintHeaderActions();
   syncPlayer();
+  // Warm the receiver while the page is open: a song click then skips the cold
+  // start and only waits for the Connect round-trip.
+  void spotifyPlaybackStatus()
+    .then((status) => (status.paired && !status.running ? spotifyPlaybackStart() : null))
+    .catch(() => undefined);
   // The page-enter animation slides the view for a moment; re-apply the
   // rectangle afterwards so the webview sits flush under the header.
   window.setTimeout(() => {
