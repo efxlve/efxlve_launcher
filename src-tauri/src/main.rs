@@ -6,6 +6,7 @@ mod comet;
 mod companion;
 mod controller;
 mod controller_bridge;
+mod discord_host;
 mod eos;
 mod egl_removal;
 mod epic_shim;
@@ -809,6 +810,10 @@ fn main() {
             store_host::hide_store_view,
             store_host::set_store_palette_hold,
             store_host::destroy_store_view,
+            discord_host::discord_view_show,
+            discord_host::discord_view_hide,
+            discord_host::discord_view_reload,
+            discord_host::discord_view_destroy,
             notif_overlay::show_notif_overlay,
             notif_overlay::move_notif_overlay,
             notif_overlay::hide_notif_overlay,

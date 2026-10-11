@@ -1,0 +1,140 @@
+/**
+ * Launcher Discord page: the normal `discord.com/app` web client in an embedded
+ * child webview. Friends, direct messages and servers are the real Discord UI;
+ * the launcher only places the child, parks it under covering surfaces and
+ * destroys it when the page is left.
+ *
+ * A full Discord client is a heavy renderer, so it is not kept warm next to the
+ * store/Spotify children. The WebView2 profile preserves the session, so the
+ * next visit stays signed in.
+ */
+
+import { invoke } from "@tauri-apps/api/core";
+import { isTauri } from "../../core/constants";
+import { viewEl } from "../../core/dom";
+import { S } from "../../core/state";
+import { t } from "../../i18n";
+import { toast } from "../../core/toast";
+import { esc } from "../../core/utils";
+import { COVERING_ROOT_IDS } from "../store/store-view";
+
+let viewVisible = false;
+let hydrated = false;
+let showErrorToasted = false;
+let slotObserver: ResizeObserver | null = null;
+let listenersReady = false;
+let syncRaf: number | null = null;
+let settleTimer: number | null = null;
+
+function onDiscordView(): boolean {
+  // The view host can hold stale markup after a page change; only the current
+  // view may bring the child webview back.
+  return S.view === "discord" && Boolean(viewEl?.querySelector(".discord-page"));
+}
+
+function coversOpen(): boolean {
+  return COVERING_ROOT_IDS.some((id) => document.getElementById(id)?.firstElementChild);
+}
+
+/** Discord page markup: one slot that the child webview fills. */
+export function renderDiscordPage(): string {
+  if (!isTauri) {
+    return `<div class="discord-page"><div class="discord-note-box"><h2>Discord</h2><p class="discord-note">${esc(t("lib.desktopOnly"))}</p></div></div>`;
+  }
+  return `
+    <div class="discord-page">
+      <div class="discord-webview-slot" id="discord-webview-slot"></div>
+    </div>`;
+}
+
+/** Wires the Discord page once it is on screen. */
+export function hydrateDiscordPage(): void {
+  hydrated = true;
+  showErrorToasted = false;
+  ensureListeners();
+  observeSlot();
+  syncDiscordPage();
+  // The page-enter animation slides the view for a moment; re-apply the
+  // rectangle afterwards so the webview sits flush under the header.
+  window.setTimeout(() => {
+    if (viewVisible) syncDiscordPage();
+  }, 450);
+}
+
+/** Destroys the child webview when another page takes over. */
+export function destroyDiscordPage(): void {
+  if (!hydrated) return;
+  hydrated = false;
+  viewVisible = false;
+  void invoke("discord_view_destroy").catch(() => undefined);
+}
+
+function syncDiscordPage(): void {
+  const slot = document.getElementById("discord-webview-slot");
+  if (!slot || !onDiscordView() || coversOpen()) {
+    if (viewVisible) {
+      viewVisible = false;
+      void invoke("discord_view_hide").catch(() => undefined);
+    }
+    return;
+  }
+  const rect = slot.getBoundingClientRect();
+  if (rect.width < 50 || rect.height < 50) return;
+  viewVisible = true;
+  void invoke("discord_view_show", {
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+  }).catch((error) => {
+    viewVisible = false;
+    if (showErrorToasted) return;
+    showErrorToasted = true;
+    toast(String(error).replace(/^Error: /, ""), "err");
+  });
+}
+
+/** rAF-throttled reposition: the sidebar drag/drawer moves the slot each frame. */
+function scheduleSync(): void {
+  if (syncRaf !== null) return;
+  syncRaf = window.requestAnimationFrame(() => {
+    syncRaf = null;
+    syncDiscordPage();
+  });
+  // A trailing pass lands on the final rectangle once the transition ends.
+  if (settleTimer !== null) window.clearTimeout(settleTimer);
+  settleTimer = window.setTimeout(() => {
+    settleTimer = null;
+    if (viewVisible) syncDiscordPage();
+  }, 340);
+}
+
+/**
+ * The slot's rectangle changes when the sidebar resizes or drawers open/close
+ * (no window resize event fires for those), so follow its size directly.
+ */
+function observeSlot(): void {
+  const slot = document.getElementById("discord-webview-slot");
+  if (!slot || typeof ResizeObserver === "undefined") return;
+  slotObserver?.disconnect();
+  slotObserver = new ResizeObserver(() => {
+    if (onDiscordView()) scheduleSync();
+  });
+  slotObserver.observe(slot);
+}
+
+function ensureListeners(): void {
+  if (listenersReady) return;
+  listenersReady = true;
+  window.addEventListener("resize", () => {
+    if (viewVisible) syncDiscordPage();
+  });
+  // Any covering surface (the changelog, a dialog, the palette) parks the child.
+  const observer = new MutationObserver(() => {
+    if (onDiscordView()) syncDiscordPage();
+  });
+  for (const id of COVERING_ROOT_IDS) {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el, { childList: true });
+  }
+}

@@ -17,6 +17,7 @@ import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
+import { destroyDiscordPage, hydrateDiscordPage, renderDiscordPage } from "./features/discord/discord-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
 import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
 import "./features/events/click-router";
@@ -67,6 +68,8 @@ function render(): void {
   document.body.classList.toggle("tv-mode", S.view === "tv");
   // The Spotify page is an embedded web player: it owns the whole content area.
   document.body.classList.toggle("spotify-page", S.view === "music");
+  // The Discord page is an embedded web client: it owns the whole content area.
+  document.body.classList.toggle("discord-page", S.view === "discord");
 
   // When leaving the store, hard-hide the native webview to avoid overlap.
   // TV Mode keeps the child on screen while its store panel is open.
@@ -76,6 +79,10 @@ function render(): void {
   // below: the store and patched-library branches would otherwise skip it and
   // leave the web player painted over the next page.
   if (S.view !== "music") hideSpotifyPlayer();
+
+  // The Discord child is a full client renderer: it is destroyed on leave, not
+  // kept warm. This must also run before the early returns below.
+  if (S.view !== "discord") destroyDiscordPage();
 
   // Page-enter animation only on a real view change. The class is dropped
   // first: a re-render landing while the previous animation still runs would
@@ -125,6 +132,7 @@ function render(): void {
     : S.view === "profile" ? renderProfile()
     : S.view === "accounts" ? renderAccounts()
     : S.view === "music" ? renderMusic()
+    : S.view === "discord" ? renderDiscordPage()
     : S.view === "tv" ? renderTvMode()
     : renderSettings();
   if (S.view === "library") {
@@ -140,6 +148,9 @@ function render(): void {
   }
   if (S.view === "music") {
     hydrateMusic();
+  }
+  if (S.view === "discord") {
+    hydrateDiscordPage();
   }
   if (S.view === "downloads") {
     startSpeedChartTimer();

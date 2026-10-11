@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Discord page: the embedded discord.com web client (child WebView2).
+   ========================================================================== */
+
+/* The Discord client owns the whole content area: edge-to-edge, no page scroll. */
+body.discord-page #view {
+  padding: 0;
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.discord-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+}
+
+.discord-webview-slot {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  min-height: 200px;
+  background: transparent;
+}
+
+/* Non-Tauri preview: the web client only runs in the desktop app. */
+.discord-note-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+}
+
+.discord-note-box h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.discord-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-3);
+}
