@@ -43,6 +43,8 @@ export interface SpotifyPageNow {
   playing: boolean;
   positionMs: number;
   durationMs: number;
+  /** A button press from the page bar, waiting for the launcher. */
+  command?: { name: string; id: number } | null;
 }
 
 export interface PlaylistSummary {

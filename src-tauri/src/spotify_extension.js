@@ -144,19 +144,38 @@
   // act is taken on the document in the capture phase and fired on pointerdown:
   // one press is enough and the button reacts instantly.
   let lastActAt = 0;
-  const forward = (act) => {
-    if (!act) return;
-    const now = Date.now();
-    if (now - lastActAt < 350) return;
-    lastActAt = now;
-    location.href = "https://efxlve.local/act?act=" + act + "&t=" + now;
-  };
+
   const onPointerPress = (event) => {
     const target = event.target;
     const button = target && target.closest ? target.closest("[data-efxlve-act]") : null;
     if (!button) return;
-    forward(button.getAttribute("data-efxlve-act") || "");
+    const act = button.getAttribute("data-efxlve-act") || "";
+    if (!act) return;
+    const now = Date.now();
+    if (now - lastActAt < 350) return;
+    lastActAt = now;
+    command(act);
   };
+
+  // --- Commands for the launcher --------------------------------------------
+  // Published in the fragment like the playback state: no navigation, so the
+  // audio is never interrupted and one press is always enough. `id` lets the
+  // launcher run each press once.
+  let pendingCommand = null;
+  let commandTimer = 0;
+
+  const command = (name) => {
+    pendingCommand = { name, id: Date.now() };
+    if (commandTimer) window.clearTimeout(commandTimer);
+    commandTimer = window.setTimeout(() => {
+      pendingCommand = null;
+      commandTimer = 0;
+      postPageState(true);
+    }, 4000);
+    postPageState(true);
+  };
+
+  window.__efxlveCommand = command;
 
   // --- What the page itself is playing --------------------------------------
   // The page can play through its own engine instead of the Connect receiver;
@@ -169,7 +188,7 @@
     return parts.reduce((total, part) => total * 60 + part, 0) * 1000;
   };
 
-  const postPageState = () => {
+  const postPageState = (force) => {
     const session = navigator.mediaSession;
     const meta = session && session.metadata;
     if (!meta) return;
@@ -188,8 +207,9 @@
       playing: state === "playing",
       positionMs: clockMs(position && position.textContent),
       durationMs: clockMs(duration && duration.textContent),
+      command: pendingCommand,
     });
-    if (payload === lastPageState) return;
+    if (!force && payload === lastPageState) return;
     lastPageState = payload;
     // Fragment-only replace: no navigation, so the audio keeps playing, and the
     // launcher reads it back on its own poll. (A `location.href` push here

@@ -159,6 +159,15 @@ pub struct SpotifyPageNow {
     playing: bool,
     position_ms: u32,
     duration_ms: u32,
+    /// A button press waiting for the launcher (its `id` runs each press once).
+    command: Option<PageCommand>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageCommand {
+    name: String,
+    id: u64,
 }
 
 #[tauri::command]

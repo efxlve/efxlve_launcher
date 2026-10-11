@@ -14,6 +14,8 @@ import { miniPlayerVisible } from "../../core/page-visibility";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { closeChangelogModal } from "../changelog/changelog-view";
+import { closeNotifPanel } from "../notifications/notifications";
 import { setPresenceMedia } from "../presence/presence";
 import {
   formatTime,
@@ -42,6 +44,20 @@ let pageNow: SpotifyPageNow | null = null;
 /** True while the page, not the Connect receiver, is the one making sound. */
 function pageIsPlaying(): boolean {
   return Boolean(pageNow?.playing);
+}
+
+/** Runs a press from the page bar once; the id makes repeats idempotent. */
+let lastCommandId = 0;
+
+function runPageCommand(command: { name: string; id: number } | null | undefined): void {
+  if (!command || !command.id || command.id === lastCommandId) return;
+  lastCommandId = command.id;
+  if (command.name === "music-back") void invoke("spotify_player_back").catch(() => undefined);
+  else if (command.name === "music-reload") void invoke("spotify_player_reload").catch(() => undefined);
+  else if (command.name === "notif-close") {
+    closeNotifPanel();
+    closeChangelogModal();
+  }
 }
 
 /** Wires the sidebar player once; safe to call on every boot. */
@@ -198,6 +214,7 @@ async function quickRefresh(): Promise<void> {
     pageBaseMs = pageNow.positionMs;
     pageBaseAt = Date.now();
   }
+  runPageCommand(pageNow?.command);
   paint();
   syncPresence();
 }

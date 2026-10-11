@@ -268,6 +268,10 @@ const ARM_STORE_CLICK: &str = r#"
     window.__efxlveNotifAway = false;
     ev.preventDefault();
     ev.stopPropagation();
+    if (typeof window.__efxlveCommand === "function") {
+      window.__efxlveCommand("notif-close");
+      return;
+    }
     location.href = "https://efxlve.local/notif-close?t=" + Date.now();
   }, true);
 })()
