@@ -3,8 +3,12 @@
  * Displays release history, newly added features, improvements, and bug fixes.
  */
 
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { isTauri } from "../../core/constants";
 import { changelogRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
+import { overlayThemeStyle } from "../../core/overlay-theme";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
@@ -739,19 +743,81 @@ function renderGroup(title: string | undefined, items: ChangelogText[] | undefin
     </div>`;
 }
 
+/**
+ * The storefront and the Spotify page are native children: there the card goes
+ * into the same child host the notifications dropdown uses, so the page stays
+ * visible behind it. Everywhere else the plain in-page modal is used.
+ */
 export function openChangelogModal(): void {
+  if (embeddedContentShown()) {
+    void presentChangelogOverlay();
+    return;
+  }
   void holdStoreOverlay("changelog");
   renderChangelogModal();
 }
 
 export function closeChangelogModal(): void {
   if (changelogRoot) changelogRoot.innerHTML = "";
+  if (changelogOverlayOn) {
+    changelogOverlayOn = false;
+    // The host is shared with the notifications dropdown.
+    if (isTauri) void invoke("hide_notif_overlay").catch(() => undefined);
+  }
   releaseStoreOverlay("changelog");
 }
 
-export function renderChangelogModal(): void {
-  if (!changelogRoot) return;
+/** True while the card floats in the child host instead of the DOM. */
+let changelogOverlayOn = false;
 
+/** Sizes the host to the card and centers it over the embedded page. */
+async function presentChangelogOverlay(): Promise<void> {
+  if (!isTauri) {
+    void holdStoreOverlay("changelog");
+    renderChangelogModal();
+    return;
+  }
+
+  // Measure the real card first: the host is sized to it and carries the same
+  // stylesheet, so both render at the same size.
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:-4000px;top:0;width:720px;visibility:hidden;";
+  holder.innerHTML = changelogModalHtml();
+  document.body.appendChild(holder);
+  const card = holder.querySelector<HTMLElement>(".changelog-dialog");
+  const width = Math.min(card?.offsetWidth ?? 640, window.innerWidth - 16);
+  const height = Math.min(card?.offsetHeight ?? 640, Math.round(window.innerHeight * 0.9));
+  holder.remove();
+
+  const rect = storeRect();
+  const x = rect.x + Math.max(0, (rect.width - width) / 2);
+  const y = rect.y + Math.max(0, (rect.height - height) / 2);
+  changelogOverlayOn = true;
+  try {
+    await invoke("show_notif_overlay", {
+      x,
+      y,
+      width,
+      height,
+      html: overlayThemeStyle() + changelogModalHtml(),
+    });
+  } catch {
+    // No child host available: fall back to the in-page modal.
+    changelogOverlayOn = false;
+    void holdStoreOverlay("changelog");
+    renderChangelogModal();
+  }
+}
+
+/** Clicking the page behind the card closes it, like any modal. */
+if (isTauri) {
+  void listen<{ act?: string }>("notif-overlay-act", (event) => {
+    if (event.payload?.act === "overlay-close" && changelogOverlayOn) closeChangelogModal();
+  });
+}
+
+/** The card markup: one source for the DOM modal and the child host. */
+function changelogModalHtml(): string {
   const currentVersion = S.appVersion || "0.1.16";
 
   const releasesHtml = CHANGELOG_DATA.map((rel) => {
@@ -772,7 +838,7 @@ export function renderChangelogModal(): void {
       </div>`;
   }).join("");
 
-  changelogRoot.innerHTML = `
+  return `
     <div class="modal-backdrop changelog-backdrop" data-act="changelog-backdrop">
       <div class="modal-box changelog-dialog" role="dialog" aria-modal="true" data-changelog-dialog>
         <div class="changelog-head">
@@ -789,19 +855,9 @@ export function renderChangelogModal(): void {
         </div>
       </div>
     </div>`;
+}
 
-  // A storefront or the Spotify page parks while a main-webview modal is up, so
-  // a floating card would sit on the empty space where the page was. There the
-  // dialog fills the content area instead and reads as the page it replaced.
-  const backdrop = changelogRoot.querySelector<HTMLElement>(".changelog-backdrop");
-  const dialog = changelogRoot.querySelector<HTMLElement>("[data-changelog-dialog]");
-  if (backdrop && dialog && embeddedContentShown()) {
-    const rect = storeRect();
-    backdrop.classList.add("is-sheet");
-    dialog.classList.add("is-sheet");
-    dialog.style.left = `${rect.x}px`;
-    dialog.style.top = `${rect.y}px`;
-    dialog.style.width = `${rect.width}px`;
-    dialog.style.height = `${rect.height}px`;
-  }
+export function renderChangelogModal(): void {
+  if (!changelogRoot) return;
+  changelogRoot.innerHTML = changelogModalHtml();
 }

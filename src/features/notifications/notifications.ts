@@ -16,6 +16,7 @@ import type { AppNotification, NotifKind } from "../../core/types";
 import { esc, relativeTime } from "../../core/utils";
 import { t } from "../../i18n";
 import { embeddedContentShown, syncStoreViewSize } from "../store/store-view";
+import { overlayThemeStyle } from "../../core/overlay-theme";
 
 const MAX = 50;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
@@ -209,37 +210,6 @@ function overlayOrigin(width: number, height: number): { x: number; y: number } 
   return { x, y };
 }
 
-/// The child host has no stylesheet of its own: hand it the surface tokens the
-/// launcher is currently using (the soft-black theme included).
-function notifOverlayTheme(): string {
-  const root = getComputedStyle(document.documentElement);
-  const tokens = [
-    "--bg",
-    "--surface-1",
-    "--surface-2",
-    "--text",
-    "--text-2",
-    "--text-3",
-    "--line",
-    "--line-strong",
-    "--accent",
-    "--on-accent",
-    "--accent-tint",
-    "--ok",
-    "--warn",
-    "--err",
-    "--r-sm",
-    "--r-md",
-  ];
-  const css = tokens
-    .map((name) => {
-      const value = root.getPropertyValue(name).trim();
-      return value ? `${name}: ${value};` : "";
-    })
-    .join("");
-  return `<style>:root{${css}}</style>`;
-}
-
 /** Shows the list in a child webview that paints above the store. */
 async function presentStoreOverlay(panelHtml: string): Promise<void> {
   const holder = document.createElement("div");
@@ -252,7 +222,7 @@ async function presentStoreOverlay(panelHtml: string): Promise<void> {
   holder.remove();
   notifOverlayBox = { w: width, h: height };
   const { x, y } = overlayOrigin(width, height);
-  const payload = { x, y, width, height, html: notifOverlayTheme() + panelHtml };
+  const payload = { x, y, width, height, html: overlayThemeStyle() + panelHtml };
   try {
     await invoke("show_notif_overlay", payload);
   } catch {

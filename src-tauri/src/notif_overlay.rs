@@ -190,6 +190,11 @@ fn publish_document(webview: &tauri::Webview, document: &str) {
     let _ = webview.eval(&write_document_js(document));
 }
 
+/// The changelog card shares its stylesheet with the app: `modals.css` imports
+/// `src/styles/changelog.css` and this host embeds the same file, so both paint
+/// one card.
+const CHANGELOG_CSS: &str = include_str!("../../src/styles/changelog.css");
+
 fn overlay_document(panel_html: &str) -> String {
     const CSS: &str = r#"
       html, body { margin: 0; height: 100%; background: #000000; color: #fff; overflow: hidden;
@@ -230,6 +235,11 @@ fn overlay_document(panel_html: &str) -> String {
         padding: 32px 0; color: var(--text-3, #5c5c5c); font-size: 13px; }
       .notif-empty p { margin: 0; }
     "#;
+    // The changelog card fills a host that is already sized to it.
+    const FRAME: &str = r#"
+      .changelog-backdrop { position: absolute; inset: 0; display: flex; padding: 0; background: transparent; }
+      .changelog-dialog { width: 100%; height: 100%; max-width: none; max-height: none; }
+    "#;
     const SCRIPT: &str = r#"
       document.addEventListener("click", function (event) {
         var node = event.target && event.target.closest ? event.target.closest("[data-act]") : null;
@@ -241,7 +251,7 @@ fn overlay_document(panel_html: &str) -> String {
       });
     "#;
     format!(
-        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>{CSS}</style></head><body>{panel_html}<script>{SCRIPT}</script></body></html>"
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>{CSS}\n{CHANGELOG_CSS}\n{FRAME}</style></head><body>{panel_html}<script>{SCRIPT}</script></body></html>"
     )
 }
 
