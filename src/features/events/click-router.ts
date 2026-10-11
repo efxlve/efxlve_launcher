@@ -763,6 +763,10 @@ document.addEventListener("click", (e) => {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
     render();
+  } else if (act === "music-back") {
+    void invoke("spotify_player_back").catch(() => undefined);
+  } else if (act === "music-reload") {
+    void invoke("spotify_player_reload").catch(() => undefined);
   } else if (act === "toggle-mini-player") {
     localStorage.setItem(SHOW_MINI_PLAYER_KEY, String(!miniPlayerVisible()));
     render();

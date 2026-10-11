@@ -79,11 +79,10 @@ function paintHeaderActions(): void {
   const pairBtn = !playback.paired
     ? `<button class="btn ghost small" data-music="player-pair" title="${esc(t("music.playbackPairingToast"))}">${icon("music", 14)} ${esc(t("accounts.openMusic"))}</button>`
     : "";
-  host.innerHTML = `
-    <button class="btn ghost small" data-music="player-back">${icon("arrow-left", 14)} ${esc(t("music.back"))}</button>
-    <button class="btn ghost small" data-music="player-reload">${icon("refresh", 14)} ${esc(t("music.reload"))}</button>
-    ${pairBtn}`;
-  host.classList.add("has-actions");
+  // Back and Reload live in the player's own bar now (spotify_extension.js
+  // injects them there); only the pairing hint stays in the launcher header.
+  host.innerHTML = pairBtn;
+  host.classList.toggle("has-actions", Boolean(pairBtn));
 }
 
 /* ---------- Embedded player placement ---------- */

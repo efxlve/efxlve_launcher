@@ -1,12 +1,18 @@
 // Page script for the embedded Spotify player (`spotify_host.rs`).
 //
-// Spotify pushes its desktop app in two places: a header button and a card in
-// the right rail. Whoever is reading this inside the launcher already *has* a
-// player, so both promos are hidden. Everything is selector- or label-based
-// (no exact copy matching) so it keeps working in every language.
+// 1. Hides the desktop-app promos Spotify pushes in the header and the right
+//    rail, and collapses the rail while the promo was its only content (some
+//    views fill it with the song and artist info again — then it comes back).
+// 2. Puts the launcher's Back / Reload controls into the player's own top bar
+//    instead of the launcher header. Clicks go through
+//    `https://efxlve.local/act?...`, which `spotify_host.rs` turns into acts.
+//
+// Everything is selector- or label-based (no exact copy matching) so it keeps
+// working in every language.
 
 (() => {
   const STYLE_ID = "efxlve-spotify-cleanup";
+  const CONTROLS_ID = "efxlve-spotify-controls";
   const CSS = `
     a[href="/download"],
     a[href*="spotify.com/download"] { display: none !important; }
@@ -14,6 +20,11 @@
     [data-testid="download-app-card"],
     [data-testid="download-app-banner"],
     [data-testid="customer-referral-card"] { display: none !important; }
+    #${CONTROLS_ID} { display: none; gap: 6px; }
+    #${CONTROLS_ID} button { display: grid; place-items: center; width: 30px; height: 30px;
+      border: none; border-radius: 999px; background: rgba(255, 255, 255, 0.08);
+      color: #ffffff; cursor: pointer; }
+    #${CONTROLS_ID} button:hover { background: rgba(255, 255, 255, 0.18); }
   `;
 
   const addStyle = () => {
@@ -36,6 +47,14 @@
 
   const seen = new WeakSet();
 
+  /** True when nothing in the subtree is actually painted. */
+  const isEmpty = (el) => {
+    for (const child of el.querySelectorAll("img, svg, a, button, h1, h2, h3, p")) {
+      if (child.getClientRects().length > 0) return false;
+    }
+    return true;
+  };
+
   const hidePromos = () => {
     for (const control of document.querySelectorAll("a, button")) {
       if (seen.has(control)) continue;
@@ -45,6 +64,7 @@
       // The header install button is a bare link: the stylesheet hides it and a
       // walk up from here would take the header's own controls with it.
       if (control.closest("header, nav")) continue;
+
       let card = null;
       let node = control;
       for (let depth = 0; depth < 6 && node.parentElement; depth += 1) {
@@ -55,8 +75,77 @@
         if ((node.textContent || "").length > 400) break;
         card = node;
       }
-      if (card) card.style.display = "none";
+      if (!card) continue;
+      card.style.display = "none";
+
+      // The promo was the rail's only content in some views: collapse the rail
+      // instead of leaving an empty column. It is restored below once Spotify
+      // paints something else into it.
+      let rail = null;
+      let up = card.parentElement;
+      for (let depth = 0; depth < 6 && up; depth += 1) {
+        if (up.clientWidth > CARD_MAX_WIDTH) break;
+        if (!isEmpty(up)) break;
+        rail = up;
+        up = up.parentElement;
+      }
+      if (rail && !rail.hasAttribute("data-efxlve-collapsed")) {
+        rail.style.display = "none";
+        rail.setAttribute("data-efxlve-collapsed", "1");
+      }
     }
+
+    for (const rail of document.querySelectorAll("[data-efxlve-collapsed]")) {
+      if (!isEmpty(rail)) {
+        rail.style.display = "";
+        rail.removeAttribute("data-efxlve-collapsed");
+      }
+    }
+  };
+
+  const iconButton = (label, act, path) =>
+    `<button type="button" data-efxlve-act="${act}" aria-label="${label}" title="${label}">${path}</button>`;
+
+  const BACK_ICON =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>';
+  const RELOAD_ICON =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+
+  /** Back / Reload in the player's bar, right of the Spotify logo. */
+  const placeControls = () => {
+    let host = document.getElementById(CONTROLS_ID);
+    if (!host) {
+      host = document.createElement("div");
+      host.id = CONTROLS_ID;
+      host.innerHTML =
+        iconButton("Back", "music-back", BACK_ICON) +
+        iconButton("Reload", "music-reload", RELOAD_ICON);
+      host.addEventListener("click", (event) => {
+        const target = event.target;
+        const button = target && target.closest ? target.closest("[data-efxlve-act]") : null;
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const act = button.getAttribute("data-efxlve-act") || "";
+        location.href = "https://efxlve.local/act?act=" + act + "&t=" + Date.now();
+      });
+      document.body.appendChild(host);
+    }
+    const logo = document.querySelector('a[href="/"] svg, img[alt="Spotify"], a[aria-label="Spotify"]');
+    if (!logo) {
+      host.style.display = "none";
+      return;
+    }
+    const rect = logo.getBoundingClientRect();
+    if (rect.width < 4) {
+      host.style.display = "none";
+      return;
+    }
+    host.style.display = "flex";
+    host.style.position = "fixed";
+    host.style.left = `${Math.round(rect.right + 12)}px`;
+    host.style.top = `${Math.round(rect.top + rect.height / 2 - 15)}px`;
+    host.style.zIndex = "10";
   };
 
   // The web player is a single-page app: new cards appear without a reload.
@@ -67,12 +156,15 @@
     setTimeout(() => {
       queued = false;
       hidePromos();
+      placeControls();
     }, 400);
   };
 
   const boot = () => {
     addStyle();
     hidePromos();
+    placeControls();
+    window.addEventListener("resize", queueCleanup);
     const root = document.body || document.documentElement;
     if (root) new MutationObserver(queueCleanup).observe(root, { childList: true, subtree: true });
   };
