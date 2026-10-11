@@ -72,6 +72,11 @@ function render(): void {
   // TV Mode keeps the child on screen while its store panel is open.
   if (S.view !== "store" && S.storeShown && !embeddedStoreHeld()) hideStore();
 
+  // Same for the Spotify child, and this must run before the early returns
+  // below: the store and patched-library branches would otherwise skip it and
+  // leave the web player painted over the next page.
+  if (S.view !== "music") hideSpotifyPlayer();
+
   // Page-enter animation only on a real view change. The class is dropped
   // first: a re-render landing while the previous animation still runs would
   // otherwise replay it on the new children (a detached node's cancel event
@@ -131,8 +136,6 @@ function render(): void {
   }
   if (S.view === "music") {
     hydrateMusic();
-  } else {
-    hideSpotifyPlayer();
   }
   if (S.view === "downloads") {
     startSpeedChartTimer();
