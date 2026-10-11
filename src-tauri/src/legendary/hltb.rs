@@ -17,23 +17,10 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         .replace(['\u{2018}', '\u{2019}', '\u{00B4}', '`'], "'")
         .replace(['™', '®', '\u{00A0}'], " ");
 
-    // Common series / publisher prefixes
-    let prefixes = [
-        "Tom Clancy's ",
-        "Marvel's ",
-        "Sid Meier's ",
-        "Disney's ",
-        "EA SPORTS ",
-        "Star Wars ",
-        "STAR WARS ",
-        "Warhammer 40,000: ",
-        "Warhammer: ",
-    ];
-    for p in prefixes {
-        if s.starts_with(p) {
-            s = s[p.len()..].to_string();
-        }
-    }
+    // Series and publisher prefixes stay: HowLongToBeat names carry them too
+    // ("Marvel's Spider-Man Remastered" and "Tom Clancy's The Division 2" are the
+    // site's own titles). Dropping them turned the search into "Spider-Man" and
+    // matched the 2000 game.
 
     // Strip editions after a colon or dash
     if let Some(pos) = s.find(" - ") {
@@ -46,7 +33,8 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         }
     }
 
-    // Common version suffixes
+    // Store tags that are not part of HowLongToBeat's own names. "Remastered" is
+    // deliberately absent: the site carries it as a title of its own.
     let edition_suffixes = [
         " Standard Edition",
         " Enhanced Edition",
@@ -57,7 +45,6 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         " Game of the Year Edition",
         " GOTY Edition",
         " Special Edition",
-        " Remastered",
     ];
     for suffix in edition_suffixes {
         if let Some(pos) = s.to_lowercase().find(&suffix.to_lowercase()) {
@@ -69,12 +56,12 @@ pub fn clean_hltb_search_term(title: &str) -> String {
 }
 
 fn hltb_cache_dir() -> PathBuf {
-    // The `-v3` marks the exact-match pass order: older files hold results from
-    // the first-match logic and must not be served again.
+    // The `-v4` marks the untouched-prefix search terms: older files hold results
+    // from the stripped-title logic and must not be served again.
     if let Some(config_dir) = dirs_config_dir() {
-        config_dir.join("legendary").join("hltb-v3")
+        config_dir.join("legendary").join("hltb-v4")
     } else {
-        PathBuf::from("hltb_cache_v3")
+        PathBuf::from("hltb_cache_v4")
     }
 }
 
@@ -577,13 +564,15 @@ mod tests {
             clean_hltb_search_term("Cyberpunk 2077 - Standard Edition"),
             "Cyberpunk 2077"
         );
+        // The site's own names carry the prefixes and the "Remastered" tag: the
+        // term must stay exactly what the store title says.
         assert_eq!(
             clean_hltb_search_term("Tom Clancy's Rainbow Six Siege"),
-            "Rainbow Six Siege"
+            "Tom Clancy's Rainbow Six Siege"
         );
         assert_eq!(
             clean_hltb_search_term("Marvel's Spider-Man Remastered"),
-            "Spider-Man"
+            "Marvel's Spider-Man Remastered"
         );
         assert_eq!(
             clean_hltb_search_term("The Witcher 3: Wild Hunt - Game of the Year Edition"),

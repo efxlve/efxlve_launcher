@@ -521,10 +521,14 @@ function paintAboutText(s: EpicSummary): void {
 function ensureOverviewData(s: EpicSummary): void {
   const appName = s.appName;
   if (S.activeDrawerTab !== "overview") return;
+  // A store catalog entry can carry another game's text (an Epic DLC in place
+  // of the main title). The library item's own title is what the page header
+  // shows, so the score lookups use that one.
+  const lookupTitle = S.allGamesMap.get(appName)?.title ?? s.title;
   const year = gameReleaseYear(s);
   if (!S.loadedHltb.has(appName) && S.loadingHltbFor !== appName) {
     S.loadingHltbFor = appName;
-    epicGetHltb(s.title, appName, false, year)
+    epicGetHltb(lookupTitle, appName, false, year)
       .then((data) => {
         S.loadedHltb.set(appName, data);
         if (S.currentModalAppName === appName) updateHltbUI(appName, data);
@@ -536,7 +540,7 @@ function ensureOverviewData(s: EpicSummary): void {
   }
   if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
     S.loadingCriticFor = appName;
-    epicGetCritic(s.title, appName, false, year)
+    epicGetCritic(lookupTitle, appName, false, year)
       .then((data) => {
         const merged = mergeSteamCritic(data, appName);
         S.loadedCritic.set(appName, merged);
@@ -1382,8 +1386,7 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
       S.loadedHltb.delete(appName);
       S.loadedCritic.delete(appName);
       ensureOverviewData(s);
-    }
-    if (S.currentModalAppName === appName) {
+    }    if (S.currentModalAppName === appName) {
       if (details.description || details.shortDescription) {
         s.description = details.description || details.shortDescription;
         paintAboutText(s);
