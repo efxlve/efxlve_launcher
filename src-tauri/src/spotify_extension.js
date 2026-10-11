@@ -47,9 +47,12 @@
       if (control.closest("header, nav")) continue;
       let card = null;
       let node = control;
-      for (let depth = 0; depth < 8 && node.parentElement; depth += 1) {
+      for (let depth = 0; depth < 6 && node.parentElement; depth += 1) {
         node = node.parentElement;
         if (node.clientWidth > CARD_MAX_WIDTH) break;
+        // Stay inside the promo block: the rail's now-playing info (song and
+        // artist) sits above it and must survive.
+        if ((node.textContent || "").length > 400) break;
         card = node;
       }
       if (card) card.style.display = "none";
