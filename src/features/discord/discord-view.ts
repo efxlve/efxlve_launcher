@@ -78,6 +78,9 @@ function syncDiscordPage(): void {
     }
     return;
   }
+  // A minimize/restore reports a shrinking viewport for a moment; pushing that
+  // rectangle would leave the child tiny until the next real resize.
+  if (document.hidden) return;
   const rect = slot.getBoundingClientRect();
   if (rect.width < 50 || rect.height < 50) return;
   viewVisible = true;
