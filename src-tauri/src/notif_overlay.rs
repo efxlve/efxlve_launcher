@@ -281,6 +281,19 @@ fn arm_embedded_clicks(window: &tauri::Window, armed: bool) {
     }
 }
 
+/// Re-runs the covering match once the fresh bounds have landed: on the first
+/// placement the child still reports its old rect, so the immediate match can
+/// miss and the panel stays below the storefront/Spotify child.
+fn raise_covering_soon(window: &tauri::Window, x: f64, y: f64, width: f64, height: f64) {
+    let host = window.clone();
+    tauri::async_runtime::spawn(async move {
+        for delay in [180u64, 520] {
+            tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+            raise_child_covering(&host, x, y, width, height);
+        }
+    });
+}
+
 fn place_overlay(window: &tauri::Window, webview: &tauri::Webview, x: f64, y: f64, width: f64, height: f64) {
     let width = width.max(160.0);
     let height = height.max(72.0);
@@ -290,6 +303,7 @@ fn place_overlay(window: &tauri::Window, webview: &tauri::Webview, x: f64, y: f6
     let _ = webview.set_bounds(panel_rect(x, y, width, height));
     let _ = webview.show();
     raise_child_covering(window, x, y, width, height);
+    raise_covering_soon(window, x, y, width, height);
 }
 
 /// Opens the dropdown above the store. `html` is the `.notif-panel` markup.
