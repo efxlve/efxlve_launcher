@@ -133,6 +133,20 @@ pub fn spotify_player_reload(app: AppHandle) {
     }
 }
 
+/// Drives the page's own player, for when it plays through its own engine
+/// instead of the Connect receiver (`playpause` | `next` | `previous`).
+#[tauri::command]
+pub fn spotify_page_control(app: AppHandle, action: String) {
+    let Some(view) = player(&app) else {
+        return;
+    };
+    let js = format!(
+        "window.__efxlveControl && window.__efxlveControl({})",
+        serde_json::to_string(&action).unwrap_or_else(|_| "\"\"".to_string())
+    );
+    let _ = view.eval(&js);
+}
+
 /// Goes back one step in the player's own history (album -> artist -> search).
 #[tauri::command]
 pub fn spotify_player_back(app: AppHandle) {

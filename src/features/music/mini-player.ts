@@ -1,12 +1,14 @@
 /**
  * Sidebar mini player and the playing equalizer next to the Spotify row.
  *
- * Both follow the launcher's own Connect receiver only — nothing that plays
- * elsewhere on Windows shows up here. The collapsed rail keeps just the
- * transport buttons (CSS handles the layout via `html.sb-narrow`).
+ * Both follow the launcher's own Connect receiver, and the page's own engine
+ * while that is the one making sound — nothing else on Windows shows up here.
+ * The collapsed rail keeps just the transport buttons (CSS handles the layout
+ * via `html.sb-narrow`).
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { miniPlayerVisible } from "../../core/page-visibility";
@@ -27,6 +29,22 @@ let current: NowPlaying | null = null;
 let signedIn = false;
 let baseMs = 0;
 let baseAt = 0;
+
+/** What the page itself reports through its Media Session (its own engine). */
+interface PageNow {
+  title: string;
+  artist: string;
+  album: string;
+  art: string;
+  playing: boolean;
+}
+
+let pageNow: PageNow | null = null;
+
+/** True while the page, not the Connect receiver, is the one making sound. */
+function pageIsPlaying(): boolean {
+  return Boolean(pageNow?.playing);
+}
 
 /** Wires the sidebar player once; safe to call on every boot. */
 export function initMiniPlayer(): void {
@@ -52,12 +70,12 @@ export function initMiniPlayer(): void {
     const action = (event.target as HTMLElement).closest<HTMLElement>("[data-mini]")?.dataset.mini;
     if (!action) return;
     if (action === "toggle") {
-      if (current) void control(current.isPlaying ? "pause" : "play");
+      if (current || pageIsPlaying()) void control(current?.isPlaying ? "pause" : "play");
       else void startAndPlay();
     } else if (action === "prev") {
-      if (current) void control("previous");
+      if (current || pageIsPlaying()) void control("previous");
     } else if (action === "next") {
-      if (current) void control("next");
+      if (current || pageIsPlaying()) void control("next");
     } else if (action === "open") {
       void openCurrent();
     }
@@ -70,7 +88,7 @@ export function initMiniPlayer(): void {
   // Scrub the timeline: click or drag, then one seek on release.
   const progress = mini.querySelector<HTMLElement>(".sb-mini-progress");
   progress?.addEventListener("pointerdown", (event) => {
-    if (!current?.durationMs) return;
+    if (pageIsPlaying() || !current?.durationMs) return;
     const rect = progress.getBoundingClientRect();
     // The collapsed rail hides the bar; nothing to scrub then.
     if (rect.width < 8) return;
@@ -93,6 +111,19 @@ export function initMiniPlayer(): void {
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
   });
+
+  // The page posts its own playback through the act channel; while it plays it
+  // is the truth, because the receiver may still hold an older session.
+  void listen<{ act?: string; id?: string }>("notif-overlay-act", (event) => {
+    const payload = event.payload;
+    if (!payload || payload.act !== "page-now" || !payload.id) return;
+    try {
+      pageNow = JSON.parse(payload.id) as PageNow;
+    } catch {
+      return;
+    }
+    paint();
+  }).catch(() => undefined);
 
   window.setInterval(() => void refresh(), 2500);
   window.setInterval(paintProgress, 1000);
@@ -142,23 +173,42 @@ async function refresh(): Promise<void> {
   }
   current = now;
   paint();
-  // Discord follows the same receiver, so the track shows up for friends.
-  setPresenceMedia(
-    now
-      ? {
-          title: now.title,
-          artist: now.artist,
-          album: now.album,
-          artUrl: now.artUrl,
-          isPlaying: now.isPlaying,
-          positionMs: now.progressMs,
-          durationMs: now.durationMs,
-        }
-      : null,
-  );
+  // Discord follows whichever engine is actually playing: the page first.
+  if (pageIsPlaying() && pageNow) {
+    setPresenceMedia({
+      title: pageNow.title,
+      artist: pageNow.artist,
+      album: pageNow.album,
+      artUrl: pageNow.art,
+      isPlaying: true,
+      positionMs: 0,
+      durationMs: 0,
+    });
+  } else {
+    setPresenceMedia(
+      now
+        ? {
+            title: now.title,
+            artist: now.artist,
+            album: now.album,
+            artUrl: now.artUrl,
+            isPlaying: now.isPlaying,
+            positionMs: now.progressMs,
+            durationMs: now.durationMs,
+          }
+        : null,
+    );
+  }
 }
 
 async function control(action: "play" | "pause" | "next" | "previous"): Promise<void> {
+  // While the page plays through its own engine, the transport belongs to it.
+  if (pageIsPlaying()) {
+    const pageAction = action === "next" ? "next" : action === "previous" ? "previous" : "playpause";
+    await invoke("spotify_page_control", { action: pageAction }).catch(() => undefined);
+    window.setTimeout(() => void refresh(), 500);
+    return;
+  }
   if ((action === "play" || action === "pause") && current) {
     current = { ...current, isPlaying: action === "play" };
     paint();
@@ -172,15 +222,16 @@ async function control(action: "play" | "pause" | "next" | "previous"): Promise<
 }
 
 function paint(): void {
+  const pageMode = pageIsPlaying();
   const mini = document.getElementById("sb-mini");
   // Hidden until something actually plays: the recently played list is the
   // sidebar's priority, Spotify is secondary. Settings can turn it off.
-  if (mini) mini.hidden = !signedIn || !current || !miniPlayerVisible();
+  if (mini) mini.hidden = !signedIn || !miniPlayerVisible() || (!current && !pageMode);
 
   const eq = document.getElementById("sb-eq");
   if (eq) {
-    eq.classList.toggle("playing", Boolean(current?.isPlaying));
-    eq.classList.toggle("paused", Boolean(current && !current.isPlaying));
+    eq.classList.toggle("playing", pageMode || Boolean(current?.isPlaying));
+    eq.classList.toggle("paused", pageMode ? false : Boolean(current && !current.isPlaying));
   }
 
   const title = document.getElementById("sb-mini-title");
@@ -190,7 +241,13 @@ function paint(): void {
   const volumeRow = document.querySelector<HTMLElement>(".sb-mini-volume");
   if (!title || !artist || !art || !toggle) return;
 
-  if (!current) {
+  if (pageMode && pageNow) {
+    // The page is the source: its track and its transport, no receiver timeline.
+    title.textContent = pageNow.title || t("mini.nothing");
+    artist.textContent = pageNow.artist;
+    art.innerHTML = pageNow.art ? `<img src="${esc(pageNow.art)}" alt="" />` : icon("spotify", 18);
+    toggle.innerHTML = icon("pause", 16);
+  } else if (!current) {
     title.textContent = t("mini.nothing");
     artist.textContent = "";
     art.innerHTML = icon("spotify", 18);
@@ -202,8 +259,9 @@ function paint(): void {
     toggle.innerHTML = icon(current.isPlaying ? "pause" : "play", 16);
   }
 
-  // The volume slider only makes sense while the receiver is live.
-  if (volumeRow) volumeRow.hidden = current?.volumePercent == null;
+  // The volume slider only makes sense while the receiver is live; the page
+  // has its own volume control in its bar.
+  if (volumeRow) volumeRow.hidden = pageMode || current?.volumePercent == null;
   const volume = document.getElementById("sb-mini-volume") as HTMLInputElement | null;
   if (volume && current?.volumePercent != null && document.activeElement !== volume) {
     volume.value = String(current.volumePercent);
@@ -214,6 +272,11 @@ function paint(): void {
 function paintProgress(): void {
   const fill = document.getElementById("sb-mini-fill");
   if (!fill) return;
+  if (pageIsPlaying()) {
+    // The page owns its own timeline: no estimate from the receiver.
+    fill.style.width = "0%";
+    return;
+  }
   const duration = current?.durationMs ?? 0;
   let elapsed = baseMs;
   if (current?.isPlaying) elapsed += Date.now() - baseAt;

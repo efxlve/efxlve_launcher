@@ -158,6 +158,47 @@
     forward(button.getAttribute("data-efxlve-act") || "");
   };
 
+  // --- What the page itself is playing --------------------------------------
+  // The page can play through its own engine instead of the Connect receiver;
+  // the launcher's sidebar player reads this through the same act channel and
+  // prefers it while the page is the one making sound.
+  let lastPageState = "";
+
+  const postPageState = () => {
+    const session = navigator.mediaSession;
+    const meta = session && session.metadata;
+    if (!meta) return;
+    const state = session.playbackState || "none";
+    const art =
+      meta.artwork && meta.artwork.length
+        ? meta.artwork[meta.artwork.length - 1].src || ""
+        : "";
+    const payload = JSON.stringify({
+      title: meta.title || "",
+      artist: meta.artist || "",
+      album: meta.album || "",
+      art,
+      playing: state === "playing",
+      paused: state === "paused",
+    });
+    if (payload === lastPageState) return;
+    lastPageState = payload;
+    location.href =
+      "https://efxlve.local/act?act=page-now&id=" + encodeURIComponent(payload) + "&t=" + Date.now();
+  };
+
+  /** Transport from the launcher's sidebar player, straight on the page. */
+  window.__efxlveControl = (action) => {
+    const testId =
+      action === "next"
+        ? "control-button-skip-forward"
+        : action === "previous"
+          ? "control-button-skip-back"
+          : "control-button-playpause";
+    const button = document.querySelector('[data-testid="' + testId + '"]');
+    if (button) button.click();
+  };
+
   // The web player is a single-page app: new cards appear without a reload.
   let queued = false;
   const queueCleanup = () => {
@@ -167,6 +208,7 @@
       queued = false;
       hidePromos();
       placeControls();
+      postPageState();
     }, 400);
   };
 
@@ -174,8 +216,10 @@
     addStyle();
     hidePromos();
     placeControls();
+    postPageState();
     document.addEventListener("pointerdown", onPointerPress, true);
     window.addEventListener("resize", queueCleanup);
+    window.setInterval(postPageState, 1500);
     const root = document.body || document.documentElement;
     if (root) new MutationObserver(queueCleanup).observe(root, { childList: true, subtree: true });
   };

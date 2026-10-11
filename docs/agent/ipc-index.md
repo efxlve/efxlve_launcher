@@ -243,6 +243,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_playback_status` | `spotifyPlaybackStatus({ ... })` | `src-tauri/src/spotify/playback.rs` |
 | `spotify_player_back` | `spotifyPlayerBack({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_player_hide` | `spotifyPlayerHide({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `spotify_page_control` | `spotifyPageControl({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_player_reload` | `spotifyPlayerReload({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_player_show` | `spotifyPlayerShow({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_signed_in` | `spotifySignedIn({ ... })` | `src-tauri/src/spotify_host.rs` |
