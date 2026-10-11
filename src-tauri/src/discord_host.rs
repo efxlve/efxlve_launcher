@@ -19,7 +19,14 @@ const HOME_URL: &str = "https://discord.com/app";
 /// The Discord web client stays inside its own family of hosts. Anything else
 /// (help pages, external links) is denied; the system-browser handoff for those
 /// links can come with the lifecycle hardening pass.
+///
+/// Every non-http(s) URL is allowed: internal pages such as `about:blank` and
+/// Chromium's network-error page must never be blocked, or a failed load would
+/// leave the child blank with nothing to show the user.
 fn is_discord_host(url: &url::Url) -> bool {
+    if url.scheme() != "http" && url.scheme() != "https" {
+        return true;
+    }
     let host = url.host_str().unwrap_or("").to_ascii_lowercase();
     host == "discord.com"
         || host.ends_with(".discord.com")
@@ -55,6 +62,12 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
         // Discord's dark surface, so the first paint has no white flash.
         .background_color(tauri::webview::Color(49, 51, 56, 255))
         .on_navigation(is_discord_host)
+        // Load diagnostics: the terminal that runs `tauri dev` shows whether the
+        // page ever reaches a finished load, which separates a network problem
+        // (blocked host, no `Finished`) from a rendering problem.
+        .on_page_load(|_webview, payload| {
+            eprintln!("[discord-view] {:?} {}", payload.event(), payload.url());
+        })
         .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Deny);
     let position = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
