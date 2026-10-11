@@ -29,6 +29,14 @@ const PROBE_SCRIPT: &str = if cfg!(debug_assertions) {
     function probe(tag) {
         try {
             var mount = document.getElementById('app-mount');
+            var ls = 'n/a';
+            try {
+                localStorage.setItem('__efxlve_probe', '1');
+                localStorage.removeItem('__efxlve_probe');
+                ls = 'ok';
+            } catch (e) {
+                ls = String(e);
+            }
             var info = {
                 tag: tag,
                 ready: document.readyState,
@@ -36,8 +44,13 @@ const PROBE_SCRIPT: &str = if cfg!(debug_assertions) {
                 kids: document.body ? document.body.childElementCount : -1,
                 mount: mount ? mount.childElementCount : -1,
                 html: document.documentElement ? document.documentElement.outerHTML.length : -1,
+                txt: document.body ? document.body.innerText.replace(/\s+/g, ' ').slice(0, 100) : '',
                 bg: document.body ? getComputedStyle(document.body).backgroundColor : '',
                 vis: document.visibilityState,
+                ck: 'cookieEnabled' in navigator ? navigator.cookieEnabled : null,
+                ls: ls,
+                sc: document.querySelectorAll('script').length,
+                rs: performance.getEntriesByType ? performance.getEntriesByType('resource').length : -1,
                 iw: window.innerWidth,
                 ih: window.innerHeight,
                 dpr: window.devicePixelRatio
@@ -49,6 +62,47 @@ const PROBE_SCRIPT: &str = if cfg!(debug_assertions) {
     }
     setTimeout(function () { probe('t2'); }, 2000);
     setTimeout(function () { probe('t8'); }, 8000);
+})();
+"#
+} else {
+    ""
+};
+
+/// Dev-only hooks installed before any page script runs: boot failures (thrown
+/// errors, rejected promises, failed resource loads, `console.error`) are
+/// reported through the same cancelled probe navigation. Empty in release.
+const PROBE_HOOKS_SCRIPT: &str = if cfg!(debug_assertions) {
+    r#"
+(function () {
+    if (window.__efxlveProbeHooked) { return; }
+    window.__efxlveProbeHooked = true;
+    var sent = 0;
+    function send(kind, text) {
+        if (sent > 25) { return; }
+        sent += 1;
+        try {
+            location.assign('https://efxlve.local/probe?' + kind + '=' + encodeURIComponent(String(text).slice(0, 600)));
+        } catch (e) {}
+    }
+    window.addEventListener('error', function (e) {
+        var el = e.target;
+        if (el && el.tagName) {
+            send('res', el.tagName + ' ' + (el.src || el.href || ''));
+            return;
+        }
+        send('err', (e.message || 'error') + ' @ ' + (e.filename || '') + ':' + (e.lineno || 0));
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        send('rej', (r && (r.stack || r.message)) || r);
+    });
+    var orig = console.error;
+    console.error = function () {
+        try {
+            send('cerr', Array.prototype.map.call(arguments, function (a) { return String(a); }).join(' '));
+        } catch (e) {}
+        return orig.apply(console, arguments);
+    };
 })();
 "#
 } else {
@@ -97,7 +151,7 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
         .map_err(|_| "bad_url".to_string())?;
     // Never pass `additional_browser_args` to a child webview builder; it
     // silently blanks the child.
-    let builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url))
+    let mut builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url))
         // Discord's dark surface, so the first paint has no white flash.
         .background_color(tauri::webview::Color(49, 51, 56, 255))
         .on_navigation(|target| {
@@ -119,6 +173,11 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
             }
         })
         .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Deny);
+    // Dev-only hooks: boot errors and failed resource loads report back so a
+    // page that loads but never mounts can be explained from the terminal.
+    if !PROBE_HOOKS_SCRIPT.is_empty() {
+        builder = builder.initialization_script(PROBE_HOOKS_SCRIPT);
+    }
     let position = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
 
@@ -183,5 +242,22 @@ pub fn discord_view_destroy(app: AppHandle) {
     if let Some(view) = view(&app) {
         eprintln!("[discord-view] destroy");
         let _ = view.close();
+    }
+}
+
+/// Opens the child webview's devtools so the page's console and network can be
+/// read directly while the spike is under test. Dev builds only: the devtools
+/// API does not exist in release builds, so this is a no-op there.
+#[tauri::command]
+pub fn discord_open_devtools(app: AppHandle) {
+    #[cfg(debug_assertions)]
+    {
+        if let Some(view) = view(&app) {
+            view.open_devtools();
+        }
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = app;
     }
 }

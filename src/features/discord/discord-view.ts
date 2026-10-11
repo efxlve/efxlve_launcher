@@ -129,6 +129,13 @@ function ensureListeners(): void {
   window.addEventListener("resize", () => {
     if (viewVisible) syncDiscordPage();
   });
+  // Dev diagnostic: F12 opens the child webview's devtools while the Discord
+  // page is on screen (a no-op in release builds).
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "F12" && onDiscordView()) {
+      void invoke("discord_open_devtools").catch(() => undefined);
+    }
+  });
   // Any covering surface (the changelog, a dialog, the palette) parks the child.
   const observer = new MutationObserver(() => {
     if (onDiscordView()) syncDiscordPage();

@@ -814,6 +814,7 @@ fn main() {
             discord_host::discord_view_hide,
             discord_host::discord_view_reload,
             discord_host::discord_view_destroy,
+            discord_host::discord_open_devtools,
             notif_overlay::show_notif_overlay,
             notif_overlay::move_notif_overlay,
             notif_overlay::hide_notif_overlay,
