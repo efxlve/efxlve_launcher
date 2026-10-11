@@ -16,6 +16,45 @@ use tauri::{
 const LABEL: &str = "discord-view";
 const HOME_URL: &str = "https://discord.com/app";
 
+/// Fake host the dev page probe reports through; the navigation is cancelled.
+const PROBE_HOST: &str = "efxlve.local";
+
+/// Dev-only page probe. After the document finishes, the page reports its own
+/// render state (title, viewport, app-mount children) through a navigation to
+/// `PROBE_HOST`; that navigation is cancelled and logged, so a blank child can
+/// be told apart from a loaded-but-unpainted page. Empty in release builds.
+const PROBE_SCRIPT: &str = if cfg!(debug_assertions) {
+    r#"
+(function () {
+    function probe(tag) {
+        try {
+            var mount = document.getElementById('app-mount');
+            var info = {
+                tag: tag,
+                ready: document.readyState,
+                title: document.title,
+                kids: document.body ? document.body.childElementCount : -1,
+                mount: mount ? mount.childElementCount : -1,
+                html: document.documentElement ? document.documentElement.outerHTML.length : -1,
+                bg: document.body ? getComputedStyle(document.body).backgroundColor : '',
+                vis: document.visibilityState,
+                iw: window.innerWidth,
+                ih: window.innerHeight,
+                dpr: window.devicePixelRatio
+            };
+            location.assign('https://efxlve.local/probe?d=' + encodeURIComponent(JSON.stringify(info)));
+        } catch (e) {
+            location.assign('https://efxlve.local/probe?err=' + encodeURIComponent(String(e)));
+        }
+    }
+    setTimeout(function () { probe('t2'); }, 2000);
+    setTimeout(function () { probe('t8'); }, 8000);
+})();
+"#
+} else {
+    ""
+};
+
 /// The Discord web client stays inside its own family of hosts. Anything else
 /// (help pages, external links) is denied; the system-browser handoff for those
 /// links can come with the lifecycle hardening pass.
@@ -61,12 +100,23 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     let builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url))
         // Discord's dark surface, so the first paint has no white flash.
         .background_color(tauri::webview::Color(49, 51, 56, 255))
-        .on_navigation(is_discord_host)
+        .on_navigation(|target| {
+            // Dev probe report: logged, then cancelled so the child stays on
+            // Discord. Any other non-Discord host is denied outright.
+            if target.host_str() == Some(PROBE_HOST) {
+                eprintln!("[discord-view] probe {}", target);
+                return false;
+            }
+            is_discord_host(target)
+        })
         // Load diagnostics: the terminal that runs `tauri dev` shows whether the
         // page ever reaches a finished load, which separates a network problem
         // (blocked host, no `Finished`) from a rendering problem.
-        .on_page_load(|_webview, payload| {
+        .on_page_load(|webview, payload| {
             eprintln!("[discord-view] {:?} {}", payload.event(), payload.url());
+            if payload.event() == tauri::webview::PageLoadEvent::Finished && !PROBE_SCRIPT.is_empty() {
+                let _ = webview.eval(PROBE_SCRIPT);
+            }
         })
         .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Deny);
     let position = Position::Logical(LogicalPosition::new(x, y));
@@ -92,7 +142,12 @@ pub async fn discord_view_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    if let Some(view) = view(&app) {
+    let existing = view(&app);
+    eprintln!(
+        "[discord-view] show rect=({x:.0},{y:.0},{width:.0}x{height:.0}) existing={}",
+        existing.is_some()
+    );
+    if let Some(view) = existing {
         view.set_bounds(rect_of(x, y, width, height))
             .map_err(|error| error.to_string())?;
         view.show().map_err(|error| error.to_string())?;
@@ -126,6 +181,7 @@ pub fn discord_view_reload(app: AppHandle) {
 #[tauri::command]
 pub fn discord_view_destroy(app: AppHandle) {
     if let Some(view) = view(&app) {
+        eprintln!("[discord-view] destroy");
         let _ = view.close();
     }
 }
