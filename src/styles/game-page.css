@@ -194,12 +194,18 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* HLTB */
 #drawer-hltb-container:empty, #drawer-critic-container:empty { display: none; }
 .hltb-list { display: flex; flex-direction: column; gap: 6px; }
+/* Rows are fixed-size: a row without a value kept stretching into a tall empty
+   box when a flexible ancestor asked for space. */
+.hltb-list > * { flex: 0 0 auto; }
 .hltb-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  min-height: 38px;
+  max-height: 44px;
+  overflow: hidden;
+  padding: 8px 12px;
   border-radius: var(--r-sm);
   background: var(--surface-2);
 }
