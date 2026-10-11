@@ -86,6 +86,10 @@ function render(): void {
     lastRenderedView = S.view;
     viewEl.classList.add("view-enter");
     viewEl.scrollTop = 0;
+    // Cards and dropdowns do not survive a page change: on the storefront and
+    // Spotify pages their child host would paint over them.
+    closeNotifPanel();
+    closeChangelogModal();
   }
 
   if (S.view === "store") {
