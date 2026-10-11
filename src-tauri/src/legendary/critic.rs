@@ -57,7 +57,7 @@ pub struct GoygoyRawItem {
     pub tags: Vec<String>,
 }
 
-const CRITIC_PARSER_VERSION: u32 = 5;
+const CRITIC_PARSER_VERSION: u32 = 6;
 
 pub fn clean_critic_search_term(title: &str) -> String {
     let mut s = title
@@ -289,6 +289,19 @@ fn normalize_for_match(s: &str) -> String {
         }
     }
     out
+}
+
+/// True when a wiki page can be about the game we searched for: its own name
+/// must be a shortened form of the title ("Marvel's Spider-Man" for "Marvel's
+/// Spider-Man Remastered"). "Spider-Man (2000)" and "... Miles Morales" are not,
+/// so an older or sibling game can no longer answer for it.
+pub fn title_matches_page(raw_title: &str, page: &str) -> bool {
+    let want = normalize_for_match(raw_title);
+    let candidate = normalize_for_match(page);
+    if want.is_empty() || candidate.len() < 5 {
+        return false;
+    }
+    want.contains(&candidate)
 }
 
 pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<GoygoyReview> {
@@ -526,6 +539,11 @@ pub async fn get_critic_data(
             pages.push(term.clone());
         }
         for target_page in pages.into_iter().take(3) {
+            // A page about a different game (older entry, sibling title) is not
+            // a source: skipping it beats showing the wrong score.
+            if !title_matches_page(title, &target_page) {
+                continue;
+            }
             let query_url = format!(
                 "https://www.pcgamingwiki.com/w/api.php?action=query&titles={}&prop=revisions&rvprop=content&format=json&redirects=1",
                 url::form_urlencoded::byte_serialize(target_page.as_bytes()).collect::<String>()
@@ -626,6 +644,23 @@ pub async fn get_critic_data(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn page_titles_must_shorten_the_game_title() {
+        assert!(title_matches_page(
+            "Marvel's Spider-Man Remastered",
+            "Marvel's Spider-Man"
+        ));
+        assert!(title_matches_page("Cyberpunk 2077", "Cyberpunk 2077"));
+        assert!(!title_matches_page(
+            "Marvel's Spider-Man Remastered",
+            "Spider-Man (2000)"
+        ));
+        assert!(!title_matches_page(
+            "Marvel's Spider-Man Remastered",
+            "Marvel's Spider-Man: Miles Morales"
+        ));
+    }
 
     #[test]
     fn test_clean_critic_search_term() {
