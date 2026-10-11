@@ -23,6 +23,10 @@ use tauri::{
 const LABEL: &str = "spotify-player";
 const HOME_URL: &str = "https://open.spotify.com/";
 
+/// Page script for the embedded player (`spotify_extension.js`): hides the
+/// desktop-app promos Spotify puts in the header and the right rail.
+const SPOTIFY_EXTENSION_SCRIPT: &str = include_str!("spotify_extension.js");
+
 /// Initial URL for the next player creation (`spotify_open_in_launcher` on a
 /// not-yet-created player).
 static PENDING_URL: Mutex<Option<String>> = Mutex::new(None);
@@ -58,7 +62,9 @@ async fn create_player(
     // dropdown arms a click-away on this child, and the page must never follow
     // that URL for real.
     let app_nav = app.clone();
-    let builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url)).on_navigation(move |target| {
+    let builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url))
+        .initialization_script(SPOTIFY_EXTENSION_SCRIPT)
+        .on_navigation(move |target| {
         if target.host_str() != Some("efxlve.local") {
             return true;
         }
