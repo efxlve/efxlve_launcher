@@ -69,12 +69,12 @@ pub fn clean_hltb_search_term(title: &str) -> String {
 }
 
 fn hltb_cache_dir() -> PathBuf {
-    // The `-v2` marks the year-aware, most-specific-name matching: older files
-    // hold results from the first-match logic and must not be served again.
+    // The `-v3` marks the exact-match pass order: older files hold results from
+    // the first-match logic and must not be served again.
     if let Some(config_dir) = dirs_config_dir() {
-        config_dir.join("legendary").join("hltb-v2")
+        config_dir.join("legendary").join("hltb-v3")
     } else {
-        PathBuf::from("hltb_cache_v2")
+        PathBuf::from("hltb_cache_v3")
     }
 }
 
@@ -228,7 +228,7 @@ pub async fn get_hltb_data(
     // matched ("Grand Theft Auto V Enhanced" / "... Legacy" live in HLTB as
     // "Grand Theft Auto V"; a real title ending in such a word, like
     // "Hogwarts Legacy", already matched on the first try).
-    let mut result_data = search_hltb(
+    let (mut result_data, first_exact) = search_hltb(
         &client,
         &search_endpoint,
         &terms,
@@ -238,11 +238,15 @@ pub async fn get_hltb_data(
         year,
     )
     .await;
-    if !result_data.supported {
+    // The store tag is only dropped after a full-title pass, but that pass can
+    // also match the wrong game ("Marvel's Spider-Man Remastered" → an entry
+    // named "Spider-Man"). When it was not an exact hit, the loosened search
+    // gets its turn, and an exact hit there wins.
+    if !first_exact {
         let loosened = loosen_hltb_search_term(&search_term);
         let loose_terms: Vec<&str> = loosened.split_whitespace().collect();
         if loosened != search_term && !loose_terms.is_empty() {
-            let retry = search_hltb(
+            let (retry, retry_exact) = search_hltb(
                 &client,
                 &search_endpoint,
                 &loose_terms,
@@ -252,7 +256,7 @@ pub async fn get_hltb_data(
                 year,
             )
             .await;
-            if retry.supported {
+            if retry_exact || !result_data.supported {
                 result_data = retry;
             }
         }
@@ -285,7 +289,8 @@ fn empty_hltb(app_name: &str, title: &str) -> HltbData {
 }
 
 /// One HLTB search: the payload, the session's dynamic auth headers, and the
-/// best-matching result parsed into durations.
+/// best-matching result parsed into durations (plus whether it was an exact
+/// name match).
 async fn search_hltb(
     client: &reqwest::Client,
     endpoint: &str,
@@ -294,9 +299,9 @@ async fn search_hltb(
     app_name: &str,
     title: &str,
     year: Option<u32>,
-) -> HltbData {
+) -> (HltbData, bool) {
     if terms.is_empty() {
-        return empty_hltb(app_name, title);
+        return (empty_hltb(app_name, title), false);
     }
     let mut payload = serde_json::json!({
         "searchType": "games",
@@ -351,10 +356,10 @@ async fn search_hltb(
         Ok(resp) if resp.status().is_success() => match resp.text().await {
             Ok(text) => serde_json::from_str::<serde_json::Value>(&text)
                 .map(|val| parse_hltb_response(app_name, title, terms, &val, year))
-                .unwrap_or_else(|_| empty_hltb(app_name, title)),
-            Err(_) => empty_hltb(app_name, title),
+                .unwrap_or_else(|_| (empty_hltb(app_name, title), false)),
+            Err(_) => (empty_hltb(app_name, title), false),
         },
-        _ => empty_hltb(app_name, title),
+        _ => (empty_hltb(app_name, title), false),
     }
 }
 
@@ -515,16 +520,21 @@ mod pick_tests {
     }
 }
 
+/// Parses a search response into durations. The flag says whether the picked
+/// entry's name equals the search term — the strongest possible hit, and the one
+/// the caller prefers over a looser search's result.
 fn parse_hltb_response(
     app_name: &str,
     title: &str,
     terms: &[&str],
     val: &serde_json::Value,
     year: Option<u32>,
-) -> HltbData {
+) -> (HltbData, bool) {
     if let Some(items) = val.get("data").and_then(|d| d.as_array()) {
         let term = terms.join(" ");
         if let Some(first) = pick_hltb_item(items, &term, year) {
+            let exact = hltb_norm(first.get("game_name").and_then(|v| v.as_str()).unwrap_or(""))
+                == hltb_norm(&term);
             let sec_to_hours = |k: &str| -> Option<f64> {
                 let s = first.get(k)?.as_f64()?;
                 if s <= 0.0 {
@@ -540,25 +550,21 @@ fn parse_hltb_response(
 
             let supported = main_story.is_some() || main_extra.is_some() || completionist.is_some();
 
-            return HltbData {
-                app_name: app_name.to_string(),
-                title: title.to_string(),
-                supported,
-                main_story,
-                main_extra,
-                completionist,
-            };
+            return (
+                HltbData {
+                    app_name: app_name.to_string(),
+                    title: title.to_string(),
+                    supported,
+                    main_story,
+                    main_extra,
+                    completionist,
+                },
+                exact,
+            );
         }
     }
 
-    HltbData {
-        app_name: app_name.to_string(),
-        title: title.to_string(),
-        supported: false,
-        main_story: None,
-        main_extra: None,
-        completionist: None,
-    }
+    (empty_hltb(app_name, title), false)
 }
 
 #[cfg(test)]
@@ -617,7 +623,8 @@ mod tests {
             }]
         });
 
-        let data = parse_hltb_response("Ginger", "Cyberpunk 2077", &["Cyberpunk", "2077"], &json, None);
+        let (data, exact) = parse_hltb_response("Ginger", "Cyberpunk 2077", &["Cyberpunk", "2077"], &json, None);
+        assert!(exact);
         assert!(data.supported);
         assert_eq!(data.main_story, Some(25.0));
         assert_eq!(data.main_extra, Some(60.0));
