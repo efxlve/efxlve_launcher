@@ -525,6 +525,15 @@ html.sb-narrow .sb-eq {
   transform: translateY(-50%) scale(1);
 }
 
+.sb-mini-times {
+  display: flex;
+  justify-content: space-between;
+  margin: -2px 1px 0;
+  font-size: 10px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
 .sb-mini-controls {
   display: flex;
   align-items: center;
@@ -596,6 +605,7 @@ html.sb-narrow .sb-mini {
 
 html.sb-narrow .sb-mini-top,
 html.sb-narrow .sb-mini-progress,
+html.sb-narrow .sb-mini-times,
 html.sb-narrow .sb-mini-volume {
   display: none;
 }

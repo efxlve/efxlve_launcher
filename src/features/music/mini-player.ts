@@ -16,6 +16,7 @@ import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { setPresenceMedia } from "../presence/presence";
 import {
+  formatTime,
   spotifyPageNow,
   spotifyPlaybackControl,
   spotifyPlaybackNow,
@@ -30,6 +31,10 @@ let current: NowPlaying | null = null;
 let signedIn = false;
 let baseMs = 0;
 let baseAt = 0;
+
+/** The page's position at the last poll, so its label keeps ticking too. */
+let pageBaseMs = 0;
+let pageBaseAt = 0;
 
 /** What the page reports through its Media Session (its own engine). */
 let pageNow: SpotifyPageNow | null = null;
@@ -154,6 +159,10 @@ async function refresh(): Promise<void> {
   current = now;
   // The page publishes its own playback in its URL fragment (no navigation).
   pageNow = await spotifyPageNow().catch(() => null);
+  if (pageNow) {
+    pageBaseMs = pageNow.positionMs;
+    pageBaseAt = Date.now();
+  }
   paint();
   // Discord follows whichever engine is actually playing: the page first.
   if (pageIsPlaying() && pageNow) {
@@ -251,13 +260,26 @@ function paint(): void {
   paintProgress();
 }
 
+/** Elapsed / total under the bar; `--:--` until a duration is known. */
+function paintTimes(elapsedMs: number, totalMs: number): void {
+  const elapsed = document.getElementById("sb-mini-elapsed");
+  const total = document.getElementById("sb-mini-total");
+  if (elapsed) elapsed.textContent = formatTime(Math.max(0, elapsedMs));
+  if (total) total.textContent = totalMs > 0 ? formatTime(totalMs) : "--:--";
+}
+
 function paintProgress(): void {
   const fill = document.getElementById("sb-mini-fill");
   if (!fill) return;
   if (pageIsPlaying() && pageNow) {
-    // The page publishes its own position: no estimate from the receiver.
+    // The page publishes its own position; keep it ticking between polls.
     const total = pageNow.durationMs;
-    fill.style.width = total > 0 ? `${Math.min(100, (pageNow.positionMs / total) * 100)}%` : "0%";
+    const elapsed = Math.min(
+      pageBaseMs + (Date.now() - pageBaseAt),
+      total > 0 ? total : Number.MAX_SAFE_INTEGER,
+    );
+    fill.style.width = total > 0 ? `${Math.min(100, (elapsed / total) * 100)}%` : "0%";
+    paintTimes(elapsed, total);
     return;
   }
   const duration = current?.durationMs ?? 0;
@@ -265,4 +287,5 @@ function paintProgress(): void {
   if (current?.isPlaying) elapsed += Date.now() - baseAt;
   elapsed = Math.max(0, Math.min(elapsed, duration || elapsed));
   fill.style.width = duration > 0 ? `${Math.min(100, (elapsed / duration) * 100)}%` : "0%";
+  paintTimes(current ? elapsed : 0, duration);
 }
