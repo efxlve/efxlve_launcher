@@ -20,11 +20,12 @@
     [data-testid="download-app-card"],
     [data-testid="download-app-banner"],
     [data-testid="customer-referral-card"] { display: none !important; }
-    #${CONTROLS_ID} { display: none; gap: 6px; }
-    #${CONTROLS_ID} button { display: grid; place-items: center; width: 30px; height: 30px;
-      border: none; border-radius: 999px; background: rgba(255, 255, 255, 0.08);
-      color: #ffffff; cursor: pointer; }
-    #${CONTROLS_ID} button:hover { background: rgba(255, 255, 255, 0.18); }
+    #${CONTROLS_ID} { display: none; gap: 8px; align-items: center; }
+    #${CONTROLS_ID} button { display: grid; place-items: center; width: 32px; height: 32px;
+      border: none; border-radius: 999px; background: hsla(0, 0%, 100%, 0.07); color: #b3b3b3;
+      cursor: pointer; transition: background .15s ease, color .15s ease, transform .15s ease; }
+    #${CONTROLS_ID} button:hover { background: hsla(0, 0%, 100%, 0.14); color: #ffffff; transform: scale(1.04); }
+    #${CONTROLS_ID} button:active { background: hsla(0, 0%, 100%, 0.22); color: #ffffff; transform: scale(0.94); }
   `;
 
   const addStyle = () => {
@@ -120,15 +121,6 @@
       host.innerHTML =
         iconButton("Back", "music-back", BACK_ICON) +
         iconButton("Reload", "music-reload", RELOAD_ICON);
-      host.addEventListener("click", (event) => {
-        const target = event.target;
-        const button = target && target.closest ? target.closest("[data-efxlve-act]") : null;
-        if (!button) return;
-        event.preventDefault();
-        event.stopPropagation();
-        const act = button.getAttribute("data-efxlve-act") || "";
-        location.href = "https://efxlve.local/act?act=" + act + "&t=" + Date.now();
-      });
       document.body.appendChild(host);
     }
     const logo = document.querySelector('a[href="/"] svg, img[alt="Spotify"], a[aria-label="Spotify"]');
@@ -143,9 +135,27 @@
     }
     host.style.display = "flex";
     host.style.position = "fixed";
-    host.style.left = `${Math.round(rect.right + 12)}px`;
-    host.style.top = `${Math.round(rect.top + rect.height / 2 - 15)}px`;
-    host.style.zIndex = "10";
+    host.style.left = `${Math.round(rect.right + 14)}px`;
+    host.style.top = `${Math.round(rect.top + rect.height / 2 - 16)}px`;
+    host.style.zIndex = "60";
+  };
+
+  // The player swallows page-level clicks in its own capture handlers, so the
+  // act is taken on the document in the capture phase and fired on pointerdown:
+  // one press is enough and the button reacts instantly.
+  let lastActAt = 0;
+  const forward = (act) => {
+    if (!act) return;
+    const now = Date.now();
+    if (now - lastActAt < 350) return;
+    lastActAt = now;
+    location.href = "https://efxlve.local/act?act=" + act + "&t=" + now;
+  };
+  const onPointerPress = (event) => {
+    const target = event.target;
+    const button = target && target.closest ? target.closest("[data-efxlve-act]") : null;
+    if (!button) return;
+    forward(button.getAttribute("data-efxlve-act") || "");
   };
 
   // The web player is a single-page app: new cards appear without a reload.
@@ -164,6 +174,7 @@
     addStyle();
     hidePromos();
     placeControls();
+    document.addEventListener("pointerdown", onPointerPress, true);
     window.addEventListener("resize", queueCleanup);
     const root = document.body || document.documentElement;
     if (root) new MutationObserver(queueCleanup).observe(root, { childList: true, subtree: true });
