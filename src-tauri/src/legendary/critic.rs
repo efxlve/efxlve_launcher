@@ -57,7 +57,7 @@ pub struct GoygoyRawItem {
     pub tags: Vec<String>,
 }
 
-const CRITIC_PARSER_VERSION: u32 = 4;
+const CRITIC_PARSER_VERSION: u32 = 5;
 
 pub fn clean_critic_search_term(title: &str) -> String {
     let mut s = title
@@ -574,8 +574,10 @@ pub async fn get_critic_data(
         }
     }
 
-    // Page picked but no release year in its text: keep it only as a fallback.
-    if oc_score.is_none() && mc_score.is_none() && igdb_score.is_none() {
+    // Page picked but no release year in its text: with a known year this is
+    // another game with the same name, so it is dropped (no score beats a wrong
+    // score). Without a year the old fallback stays.
+    if year.is_none() && oc_score.is_none() && mc_score.is_none() && igdb_score.is_none() {
         if let Some((o_sc, o_u, m_sc, m_u, i_sc)) = fallback {
             oc_score = o_sc;
             oc_url = o_u;

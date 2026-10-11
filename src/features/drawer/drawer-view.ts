@@ -176,6 +176,13 @@ function mergeSteamCritic(data: CriticData, appName: string): CriticData {
   };
 }
 
+/** Release year for the lookups: the summary's, or the Steam store date. */
+function gameReleaseYear(s: EpicSummary): number | null {
+  if (s.releaseYear) return s.releaseYear;
+  const match = /(19|20)\d{2}/.exec(S.steamDetails.get(s.appName)?.releaseDate ?? "");
+  return match ? Number(match[0]) : null;
+}
+
 function paintGameMeta(s: EpicSummary): void {
   const el = document.getElementById("gp-meta");
   if (!el) return;
@@ -514,9 +521,10 @@ function paintAboutText(s: EpicSummary): void {
 function ensureOverviewData(s: EpicSummary): void {
   const appName = s.appName;
   if (S.activeDrawerTab !== "overview") return;
+  const year = gameReleaseYear(s);
   if (!S.loadedHltb.has(appName) && S.loadingHltbFor !== appName) {
     S.loadingHltbFor = appName;
-    epicGetHltb(s.title, appName, false, s.releaseYear ?? null)
+    epicGetHltb(s.title, appName, false, year)
       .then((data) => {
         S.loadedHltb.set(appName, data);
         if (S.currentModalAppName === appName) updateHltbUI(appName, data);
@@ -528,7 +536,7 @@ function ensureOverviewData(s: EpicSummary): void {
   }
   if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
     S.loadingCriticFor = appName;
-    epicGetCritic(s.title, appName, false, s.releaseYear ?? null)
+    epicGetCritic(s.title, appName, false, year)
       .then((data) => {
         const merged = mergeSteamCritic(data, appName);
         S.loadedCritic.set(appName, merged);
@@ -1367,6 +1375,14 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
     const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage), force);
     S.steamDetails.set(appName, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
+    // Family-shared games have no local appinfo, so their release year only
+    // arrives here: redo the lookups that ran without one, or they keep the
+    // older game of the same name.
+    if (!s.releaseYear && gameReleaseYear(s) && (S.loadedHltb.has(appName) || S.loadedCritic.has(appName))) {
+      S.loadedHltb.delete(appName);
+      S.loadedCritic.delete(appName);
+      ensureOverviewData(s);
+    }
     if (S.currentModalAppName === appName) {
       if (details.description || details.shortDescription) {
         s.description = details.description || details.shortDescription;
