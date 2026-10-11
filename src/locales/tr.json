@@ -1903,6 +1903,7 @@
   "overlay.disabledListTitle": "Kapatılan oyunlar",
   "overlay.disabledListDesc": "Overlay bu oyunlarda hiç açılmaz. Geri açmak için listeden çıkar.",
   "overlay.restore": "Geri aç",
+  "overlay.restoreAll": "Tümünü geri aç",
   "overlay.running": "Çalışıyor",
   "overlay.gameLabel": "Oyun",
   "overlay.padSelect": "Seç",

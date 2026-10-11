@@ -1581,13 +1581,14 @@ function renderSettings(): void {
       <input type="range" min="60" max="100" step="1" value="${opacity}" data-ov-opacity style="width:160px" />
     </div>
 
+    ${launcherMode ? "" : `
     <div class="ov-setting-item">
       <div class="ov-setting-info">
         <div class="ov-setting-name">${esc(t("overlay.disableTitle"))}</div>
         <div class="ov-setting-desc">${esc(t("overlay.disableDesc"))}</div>
       </div>
       <label class="switch"><input type="checkbox" data-ov-toggle="disable-game" ${disabled ? "checked" : ""} /><span class="track"></span></label>
-    </div>
+    </div>`}
 
     ${disabledList.length > 0 ? `
       <div class="ov-card" style="margin-top:16px">
@@ -1749,6 +1750,12 @@ function wireEvents(): void {
         chk.checked = input.checked;
       });
     } else if (toggle === "disable-game") {
+      // The panel over the launcher/desktop is not a game: blocking it would
+      // hide the overlay from the only place its blocklist can be edited.
+      if (launcherMode) {
+        input.checked = false;
+        return;
+      }
       const next = input.checked
         ? [...disabledGames().filter((i) => i.key !== context.appName), { key: context.appName, title: context.title || context.appName }]
         : disabledGames().filter((i) => i.key !== context.appName);
@@ -2166,7 +2173,9 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   sessionStartEpoch = Date.now();
   gamepadSuppressUntil = performance.now() + 450;
 
-  if (context.appName && isDisabledGame(context.appName)) {
+  // A block keeps the panel away from a game; the launcher/desktop is never
+  // blocked, so a stale entry cannot lock the overlay away for good.
+  if (context.appName && !isLauncherContext(context) && isDisabledGame(context.appName)) {
     void invoke("overlay_hide");
     return;
   }

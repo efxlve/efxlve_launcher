@@ -27,6 +27,7 @@ import {
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
+  OVERLAY_DISABLED_KEY,
   SHOW_SHARED_LIBRARY_KEY,
   SHOW_MINI_PLAYER_KEY,
   SHOW_SPOTIFY_KEY,
@@ -762,6 +763,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
+    render();
+  } else if (act === "overlay-restore-disabled") {
+    // The overlay can block itself away from a context; this is the way back.
+    localStorage.removeItem(OVERLAY_DISABLED_KEY);
     render();
   } else if (act === "music-back") {
     void invoke("spotify_player_back").catch(() => undefined);

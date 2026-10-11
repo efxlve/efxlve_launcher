@@ -10,7 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
-import { discordPageVisible, miniPlayerVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, miniPlayerVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -552,6 +552,13 @@ function renderAppearance(): string {
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
       row(t("tv.open"), t("controller.tvModeDesc"), `<button class="btn ghost small" data-act="open-tv-mode">${icon("gamepad-2", 14)} ${t("tv.open")}</button>`) +
       row(t("overlay.overlayLabel"), t("overlay.startHint"), `<button class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>`) +
+      (overlayBlockedGames().length > 0
+        ? row(
+            `${t("overlay.disabledListTitle")} (${overlayBlockedGames().length})`,
+            t("overlay.disabledListDesc"),
+            `<button class="btn ghost small" data-act="overlay-restore-disabled">${icon("refresh", 13)} ${t("overlay.restoreAll")}</button>`,
+          )
+        : "") +
       row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
       (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
     ) +
