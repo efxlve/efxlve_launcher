@@ -147,6 +147,31 @@ pub fn spotify_page_control(app: AppHandle, action: String) {
     let _ = view.eval(&js);
 }
 
+/// The page's own playback, published in its URL fragment by
+/// `spotify_extension.js` (a fragment change so the audio is never interrupted).
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotifyPageNow {
+    title: String,
+    artist: String,
+    album: String,
+    art: String,
+    playing: bool,
+    position_ms: u32,
+    duration_ms: u32,
+}
+
+#[tauri::command]
+pub fn spotify_page_now(app: AppHandle) -> Option<SpotifyPageNow> {
+    let view = player(&app)?;
+    let url = view.url().ok()?;
+    let fragment = url.fragment()?;
+    let raw = url::form_urlencoded::parse(fragment.as_bytes())
+        .find(|(key, _)| key == "efxlve")
+        .map(|(_, value)| value.into_owned())?;
+    serde_json::from_str(&raw).ok()
+}
+
 /// Goes back one step in the player's own history (album -> artist -> search).
 #[tauri::command]
 pub fn spotify_player_back(app: AppHandle) {

@@ -34,6 +34,17 @@ export interface SpotifyPlaybackStatus {
   deviceName: string;
 }
 
+/** The page's own playback, published in its URL fragment. */
+export interface SpotifyPageNow {
+  title: string;
+  artist: string;
+  album: string;
+  art: string;
+  playing: boolean;
+  positionMs: number;
+  durationMs: number;
+}
+
 export interface PlaylistSummary {
   uri: string;
   name: string;
@@ -62,6 +73,9 @@ export const spotifyPlaybackStart = () =>
 /** The track the receiver is on right now; null before the first track. */
 export const spotifyPlaybackNow = () =>
   invoke<NowPlaying | null>("spotify_playback_now");
+
+/** The page's own player, read from the fragment `spotify_extension.js` keeps. */
+export const spotifyPageNow = () => invoke<SpotifyPageNow | null>("spotify_page_now");
 
 export const spotifyPlaybackControl = (
   action: "play" | "pause" | "next" | "previous" | "seek" | "volume" | "shuffle" | "repeat",

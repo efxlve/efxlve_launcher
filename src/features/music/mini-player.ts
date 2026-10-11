@@ -8,7 +8,6 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { miniPlayerVisible } from "../../core/page-visibility";
@@ -17,12 +16,14 @@ import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { setPresenceMedia } from "../presence/presence";
 import {
+  spotifyPageNow,
   spotifyPlaybackControl,
   spotifyPlaybackNow,
   spotifyPlaybackStart,
   spotifyPlaybackStatus,
   spotifySignedIn,
   type NowPlaying,
+  type SpotifyPageNow,
 } from "./spotify-client";
 
 let current: NowPlaying | null = null;
@@ -30,16 +31,8 @@ let signedIn = false;
 let baseMs = 0;
 let baseAt = 0;
 
-/** What the page itself reports through its Media Session (its own engine). */
-interface PageNow {
-  title: string;
-  artist: string;
-  album: string;
-  art: string;
-  playing: boolean;
-}
-
-let pageNow: PageNow | null = null;
+/** What the page reports through its Media Session (its own engine). */
+let pageNow: SpotifyPageNow | null = null;
 
 /** True while the page, not the Connect receiver, is the one making sound. */
 function pageIsPlaying(): boolean {
@@ -112,19 +105,6 @@ export function initMiniPlayer(): void {
     window.addEventListener("pointerup", up);
   });
 
-  // The page posts its own playback through the act channel; while it plays it
-  // is the truth, because the receiver may still hold an older session.
-  void listen<{ act?: string; id?: string }>("notif-overlay-act", (event) => {
-    const payload = event.payload;
-    if (!payload || payload.act !== "page-now" || !payload.id) return;
-    try {
-      pageNow = JSON.parse(payload.id) as PageNow;
-    } catch {
-      return;
-    }
-    paint();
-  }).catch(() => undefined);
-
   window.setInterval(() => void refresh(), 2500);
   window.setInterval(paintProgress, 1000);
   void refresh();
@@ -172,6 +152,8 @@ async function refresh(): Promise<void> {
     baseAt = Date.now();
   }
   current = now;
+  // The page publishes its own playback in its URL fragment (no navigation).
+  pageNow = await spotifyPageNow().catch(() => null);
   paint();
   // Discord follows whichever engine is actually playing: the page first.
   if (pageIsPlaying() && pageNow) {
@@ -181,8 +163,8 @@ async function refresh(): Promise<void> {
       album: pageNow.album,
       artUrl: pageNow.art,
       isPlaying: true,
-      positionMs: 0,
-      durationMs: 0,
+      positionMs: pageNow.positionMs,
+      durationMs: pageNow.durationMs,
     });
   } else {
     setPresenceMedia(
@@ -272,9 +254,10 @@ function paint(): void {
 function paintProgress(): void {
   const fill = document.getElementById("sb-mini-fill");
   if (!fill) return;
-  if (pageIsPlaying()) {
-    // The page owns its own timeline: no estimate from the receiver.
-    fill.style.width = "0%";
+  if (pageIsPlaying() && pageNow) {
+    // The page publishes its own position: no estimate from the receiver.
+    const total = pageNow.durationMs;
+    fill.style.width = total > 0 ? `${Math.min(100, (pageNow.positionMs / total) * 100)}%` : "0%";
     return;
   }
   const duration = current?.durationMs ?? 0;

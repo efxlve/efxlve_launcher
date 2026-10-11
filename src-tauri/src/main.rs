@@ -917,6 +917,7 @@ fn main() {
             spotify::playback::spotify_playback_start,
             spotify::playback::spotify_playback_now,
             spotify_host::spotify_page_control,
+            spotify_host::spotify_page_now,
             spotify::playback::spotify_playback_control,
             spotify::playback::spotify_playback_playlists,
             spotify::playback::spotify_playback_playlist_tracks,

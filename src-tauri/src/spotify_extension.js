@@ -164,6 +164,11 @@
   // prefers it while the page is the one making sound.
   let lastPageState = "";
 
+  const clockMs = (text) => {
+    const parts = (text || "").split(":").map((part) => parseInt(part, 10) || 0);
+    return parts.reduce((total, part) => total * 60 + part, 0) * 1000;
+  };
+
   const postPageState = () => {
     const session = navigator.mediaSession;
     const meta = session && session.metadata;
@@ -173,18 +178,23 @@
       meta.artwork && meta.artwork.length
         ? meta.artwork[meta.artwork.length - 1].src || ""
         : "";
+    const position = document.querySelector('[data-testid="playback-position"]');
+    const duration = document.querySelector('[data-testid="playback-duration"]');
     const payload = JSON.stringify({
       title: meta.title || "",
       artist: meta.artist || "",
       album: meta.album || "",
       art,
       playing: state === "playing",
-      paused: state === "paused",
+      positionMs: clockMs(position && position.textContent),
+      durationMs: clockMs(duration && duration.textContent),
     });
     if (payload === lastPageState) return;
     lastPageState = payload;
-    location.href =
-      "https://efxlve.local/act?act=page-now&id=" + encodeURIComponent(payload) + "&t=" + Date.now();
+    // Fragment-only replace: no navigation, so the audio keeps playing, and the
+    // launcher reads it back on its own poll. (A `location.href` push here
+    // paused the track about a second in.)
+    location.replace(location.pathname + location.search + "#efxlve=" + encodeURIComponent(payload));
   };
 
   /** Transport from the launcher's sidebar player, straight on the page. */
