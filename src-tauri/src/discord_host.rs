@@ -162,6 +162,7 @@ const VOICE_SCRIPT: &str = r#"(function () {
                     if (names.indexOf(prop) < 0 && names.length < 30) { names.push(prop); }
                 }
             }
+            var mount = document.getElementById('app-mount');
             return {
                 ok: false,
                 why: 'no-stores m=' + keys.length
@@ -169,6 +170,10 @@ const VOICE_SCRIPT: &str = r#"(function () {
                     + ' ch=' + (stores.channels ? 1 : 0)
                     + ' vs=' + (stores.voice ? 1 : 0)
                     + ' u=' + (stores.users ? 1 : 0)
+                    + ' top=' + (window.top === window ? 1 : 0)
+                    + ' iframes=' + document.querySelectorAll('iframe').length
+                    + ' mount=' + (mount ? mount.childElementCount : -1)
+                    + ' href=' + location.href
                     + ' names=[' + names.join(',') + ']'
             };
         }
