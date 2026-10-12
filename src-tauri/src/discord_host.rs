@@ -147,7 +147,30 @@ const VOICE_SCRIPT: &str = r#"(function () {
             guilds: byProps(['getGuild'])
         };
         if (!stores.selected || !stores.channels || !stores.voice || !stores.users) {
-            return { ok: false, why: 'no-stores' };
+            // Bounded look at what the registry actually holds, so a renamed
+            // store can be fixed from the log alone.
+            var mods = req.c || {};
+            var keys = Object.keys(mods);
+            var names = [];
+            for (var i = 0; i < keys.length; i++) {
+                var exp = null;
+                try { exp = mods[keys[i]] && mods[keys[i]].exports; } catch (e) { continue; }
+                if (!exp || typeof exp !== 'object') { continue; }
+                for (var prop in exp) {
+                    if (typeof exp[prop] !== 'function') { continue; }
+                    if (prop.indexOf('Voice') < 0 && prop.indexOf('Channel') < 0 && prop.indexOf('User') < 0) { continue; }
+                    if (names.indexOf(prop) < 0 && names.length < 30) { names.push(prop); }
+                }
+            }
+            return {
+                ok: false,
+                why: 'no-stores m=' + keys.length
+                    + ' sel=' + (stores.selected ? 1 : 0)
+                    + ' ch=' + (stores.channels ? 1 : 0)
+                    + ' vs=' + (stores.voice ? 1 : 0)
+                    + ' u=' + (stores.users ? 1 : 0)
+                    + ' names=[' + names.join(',') + ']'
+            };
         }
         window.__efxlveVoiceStores = stores;
         var channelId = stores.selected.getVoiceChannelId();
