@@ -100,7 +100,9 @@ function syncDiscordPage(): void {
   // rectangle would leave the child tiny until the next real resize.
   if (document.hidden) return;
   const rect = slot.getBoundingClientRect();
-  if (rect.width < 50 || rect.height < 50) return;
+  // The main window has a hard minimum (1024x640), so a slot this small is a
+  // mid-animation measurement, never real layout: keep the previous rectangle.
+  if (rect.width < 360 || rect.height < 240) return;
   viewVisible = true;
   void invoke("discord_view_show", {
     x: rect.left,
@@ -149,6 +151,15 @@ function ensureListeners(): void {
   listenersReady = true;
   window.addEventListener("resize", () => {
     if (viewVisible) syncDiscordPage();
+  });
+  // Restoring from a minimize can end with no further resize event (the last
+  // one lands while the document is still hidden). Re-sync once the window is
+  // visible again, or the child would stay at the shrunken restore rectangle.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && onDiscordView()) syncDiscordPage();
+  });
+  window.addEventListener("focus", () => {
+    if (onDiscordView()) syncDiscordPage();
   });
   // Dev diagnostic: F12 opens the child webview's devtools while the Discord
   // page is on screen (a no-op in release builds).
