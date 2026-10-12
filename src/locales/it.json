@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "Il canale vocale in cui ti trovi e chi sta parlando.",
   "overlay.discordConnecting": "Connessione a Discord…",
-  "overlay.discordApprove": "In attesa della tua approvazione su Discord…",
+  "overlay.discordApprove": "Approva la richiesta su Discord — puoi chiudere questo pannello, la richiesta resta aperta.",
   "overlay.discordNoChannel": "Non sei in un canale vocale",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

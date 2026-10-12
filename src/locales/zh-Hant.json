@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "你所在的語音頻道以及正在說話的人。",
   "overlay.discordConnecting": "正在連接 Discord…",
-  "overlay.discordApprove": "等待你在 Discord 中核准…",
+  "overlay.discordApprove": "請在 Discord 中核准請求——你可以關閉此面板，請求會保持開啟。",
   "overlay.discordNoChannel": "未加入語音頻道",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

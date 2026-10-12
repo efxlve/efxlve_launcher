@@ -166,8 +166,15 @@ fn session(app: &AppHandle) -> Result<(), String> {
     conn.wait_for(
         &|frame| frame.get("evt").and_then(Value::as_str) == Some("READY"),
         Duration::from_secs(10),
+        true,
     )?;
     let access = access_token(app, &mut conn)?;
+    // The consent prompt can outlive the panel: if the user approved after
+    // closing it, the token is already stored and the next open is silent.
+    if !WATCH_WANTED.load(Ordering::SeqCst) {
+        plog("overlay closed during authorization; token stored for next time");
+        return Ok(());
+    }
     conn.send(&json!({
         "cmd": "AUTHENTICATE",
         "args": { "access_token": access },
@@ -176,6 +183,7 @@ fn session(app: &AppHandle) -> Result<(), String> {
     let answer = conn.wait_for(
         &|frame| frame.get("cmd").and_then(Value::as_str) == Some("AUTHENTICATE"),
         Duration::from_secs(15),
+        true,
     )?;
     if answer.get("evt").and_then(Value::as_str) == Some("ERROR") {
         return Err(format!(
@@ -262,6 +270,7 @@ fn refresh_voice(
     let response = conn.wait_for(
         &|frame| frame.get("cmd").and_then(Value::as_str) == Some("GET_SELECTED_VOICE_CHANNEL"),
         Duration::from_secs(15),
+        true,
     )?;
 
     match voice_channel_from(&response) {
@@ -529,6 +538,7 @@ fn authorize(app: &AppHandle, conn: &mut Pipe) -> Result<StoredToken, String> {
         let response = conn.wait_for(
             &|frame| frame.get("cmd").and_then(Value::as_str) == Some("AUTHORIZE"),
             CONSENT_TIMEOUT,
+            false,
         )?;
         let message = response
             .pointer("/data/message")
@@ -691,10 +701,13 @@ impl Pipe {
     }
 
     /// Polls frames until `wanted` matches or the timeout/watch ends.
+    /// `abort_on_stop` is false only for the consent prompt: the user has to
+    /// leave the panel to approve, so closing it must not cancel the request.
     fn wait_for(
         &mut self,
         wanted: &dyn Fn(&Value) -> bool,
         timeout: Duration,
+        abort_on_stop: bool,
     ) -> Result<Value, String> {
         let deadline = Instant::now() + timeout;
         loop {
@@ -706,7 +719,7 @@ impl Pipe {
             if Instant::now() >= deadline {
                 return Err("timed out waiting for Discord".into());
             }
-            if !WATCH_WANTED.load(Ordering::SeqCst) {
+            if abort_on_stop && !WATCH_WANTED.load(Ordering::SeqCst) {
                 return Err("cancelled".into());
             }
             std::thread::sleep(READ_TICK);

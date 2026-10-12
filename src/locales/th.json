@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "ช่องเสียงที่คุณอยู่และใครกำลังพูด",
   "overlay.discordConnecting": "กำลังเชื่อมต่อ Discord…",
-  "overlay.discordApprove": "กำลังรอการอนุมัติใน Discord…",
+  "overlay.discordApprove": "อนุมัติคำขอใน Discord — ปิดแผงนี้ได้เลย คำขอจะยังเปิดอยู่",
   "overlay.discordNoChannel": "คุณไม่ได้อยู่ในช่องเสียง",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Ses kanalı",
   "overlay.discordVoiceDesc": "Bulunduğun ses kanalı ve kimin konuştuğu.",
   "overlay.discordConnecting": "Discord'a bağlanılıyor…",
-  "overlay.discordApprove": "Discord'daki onayın bekleniyor…",
+  "overlay.discordApprove": "İsteği Discord'da onayla — paneli kapatabilirsin, istek açık kalır.",
   "overlay.discordNoChannel": "Sesli kanalda değilsin",
   "overlay.openDiscord": "Discord'u aç",
   "overlay.enabledTitle": "Shift+Tab overlay",

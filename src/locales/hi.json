@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "आप जिस वॉइस चैनल में हैं और कौन बोल रहा है।",
   "overlay.discordConnecting": "Discord से कनेक्ट हो रहा है…",
-  "overlay.discordApprove": "Discord में आपकी मंज़ूरी का इंतज़ार…",
+  "overlay.discordApprove": "Discord में अनुरोध मंज़ूर करें — आप यह पैनल बंद कर सकते हैं, अनुरोध खुला रहेगा।",
   "overlay.discordNoChannel": "आप किसी वॉइस चैनल में नहीं हैं",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "참여 중인 음성 채널과 말하는 사람.",
   "overlay.discordConnecting": "Discord에 연결 중…",
-  "overlay.discordApprove": "Discord에서 승인을 기다리는 중…",
+  "overlay.discordApprove": "Discord에서 요청을 승인하세요 — 이 패널을 닫아도 요청은 유지됩니다.",
   "overlay.discordNoChannel": "음성 채널에 없습니다",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

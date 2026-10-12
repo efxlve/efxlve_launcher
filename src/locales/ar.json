@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "قناة الصوت التي أنت فيها ومن يتحدث.",
   "overlay.discordConnecting": "جارٍ الاتصال بـ Discord…",
-  "overlay.discordApprove": "بانتظار موافقتك في Discord…",
+  "overlay.discordApprove": "وافق على الطلب في Discord — يمكنك إغلاق هذه اللوحة، سيبقى الطلب مفتوحًا.",
   "overlay.discordNoChannel": "لست في قناة صوتية",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

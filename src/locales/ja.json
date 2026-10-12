@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "参加中のボイスチャンネルと、話している人。",
   "overlay.discordConnecting": "Discordに接続中…",
-  "overlay.discordApprove": "Discordでの承認を待っています…",
+  "overlay.discordApprove": "Discordでリクエストを承認してください — このパネルは閉じても構いません。",
   "overlay.discordNoChannel": "ボイスチャンネルに参加していません",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",

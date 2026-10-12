@@ -1895,7 +1895,7 @@
   "overlay.discordVoiceTitle": "Voice channel",
   "overlay.discordVoiceDesc": "Голосовой канал, в котором вы находитесь, и кто говорит.",
   "overlay.discordConnecting": "Подключение к Discord…",
-  "overlay.discordApprove": "Ожидание подтверждения в Discord…",
+  "overlay.discordApprove": "Подтвердите запрос в Discord — панель можно закрыть, запрос останется активным.",
   "overlay.discordNoChannel": "Вы не в голосовом канале",
   "overlay.openDiscord": "Open Discord",
   "overlay.enabledTitle": "Shift+Tab overlay",
