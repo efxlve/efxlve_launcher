@@ -31,8 +31,8 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - **Faz 3.1** — tamam (`2402d4a3`): akış kanıtlandı — `AUTHORIZE` yalnız `pkce + response_type: "code"` ile kod veriyor, token takası 200, `GET_SELECTED_VOICE_CHANNEL` katılımcıları getiriyor, `SPEAKING_START/STOP` akıyor (log: `%APPDATA%\com.efxlve.launcher\logs\discord-rpc.log`).
 - **Faz 3.2** — tamam (`2804005d`): kalıcı okuyucu worker; token'lar DPAPI ile `<appdata>/discord/token.bin`'de, süresi dolunca sessizce yenilenir; tek bağlantı, ≥30 sn backoff.
 - **Faz 3.3** — tamam (`f9880d71`, `e16d22d2`, bu commit): overlay Discord sekmesi canlı kanal + katılımcılar + konuşma halkası gösteriyor; onay isteği panel kapanınca iptal olmuyor; panel kapanınca worker 90 sn sıcak kalıyor (hızlı Shift+Tab aynı bağlantıyı kullanır) ve (yeniden) bağlanırken son bilinen kanal soluk gösteriliyor.
-- **Faz 4** — başladı, yol doğrulandı (`48dcf57e`): F10 probu `relationships.read` kapsamını aldı (`scope: rpc rpc.voice.read relationships.read`) ve `GET_RELATIONSHIPS` 54 ilişki (47 arkadaş, 6 istek, 1 engel) döndürdü → DLL'siz RPC yolu; worker okuması bu commit'te, sırada arayüz.
-- **Kalan:** Faz 4 arayüzü (arkadaş listesi yüzeyi), kullanıcı testi sonrası polisaj, Faz 5 (yayın notu + duyuru).
+- **Faz 4** — **tamam** (`48dcf57e`, `65d68275`, `120b793c`): F10 probu `relationships.read` kapsamını aldı; worker kapsam farkındalıklı token'la arkadaş listesini okuyor (`RELATIONSHIP_UPDATE` + 45 sn tazeleme); overlay Discord sekmesindeki Arkadaşlar kartı doğrulandı (7 çevrimiçi · 6 bekleyen istek · 12 satır + "+35 kişi daha"). Presence gerçek: log `presence [activity,status]`.
+- **Kalan:** polisaj (hata metinlerinin yerelleştirilmesi, ses kaynağının masaüstü istemci olduğu notu), isteğe bağlı launcher tarafı arkadaş yüzeyi, Faz 5 (yayın notu + duyuru).
 
 ## Mevcut durum
 
@@ -119,8 +119,9 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 
 - Sıra: **(1) Yerel RPC `GET_RELATIONSHIPS`** — `relationships.read` kapsamı OAuth2 listesine göre Social SDK erişiminin parçası; SDK onayı verildiği için denenebilir. DLL/FFI yok, mevcut pipe + token altyapısı kullanılır. **(2) Social SDK** — (1) reddedilirse: portal → Social SDK → Downloads'tan C++ paketi (Windows: `discord_partner_sdk.dll` + `.lib`; C++20 header-only wrapper `discordpp.h`, Rust için C API'ye FFI), DLL paketleme + token kasası (~2-3 gün).
 - Adım 1 (spike) — **tamam** (`48dcf57e`): F10 probu kapsamı aldı ve `GET_RELATIONSHIPS` 54 ilişki döndürdü; DLL'siz RPC yolu seçildi.
-- Adım 2 — worker okuması tamam: kapsam farkındalıklı token (`relationships.read` eksikse yeniden onay), `RELATIONSHIP_UPDATE` takibi ve 45 sn'de bir tazeleme; olay: `discord-friends-state`. Sırada arayüz: overlay Discord sekmesinde arkadaş kartı (çevrimiçi önce, istek sayacı).
-- UI: Discord sayfasının yanında native panel veya sidebar widget'ı; webview'ın yerini almaz.
+- Adım 2 — **tamam** (`65d68275`, `120b793c`): kapsam farkındalıklı token (`relationships.read` eksikse yeniden onay), `RELATIONSHIP_UPDATE` takibi ve 45 sn'de bir tazeleme; olay: `discord-friends-state`.
+- Doğrulama (kullanıcı, 12.10.2026): kart "7 çevrimiçi · 6 bekleyen istek" + 12 satır + "+35 kişi daha"; log `relationships shape: [presence,type,user] presence [activity,status]` → presence gerçek, durum noktaları doğru.
+- UI kararı: overlay Discord sekmesindeki Arkadaşlar kartı (çevrimiçi önce, durum noktası, "+N kişi daha"); launcher tarafında ayrı yüzey (Discord sayfası yanında panel/sidebar widget) isteğe bağlı sonraki adım.
 - DM: İletişim Erişimi onaylanmadıkça SDK'dan gelmez; webview'da yaşamaya devam eder.
 
 ## Faz 5 — Yayın
