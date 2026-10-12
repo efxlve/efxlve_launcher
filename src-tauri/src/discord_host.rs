@@ -10,6 +10,10 @@
 //! A full Discord client is a heavy renderer, so the view is destroyed when the
 //! user leaves the page; the WebView2 profile keeps the session, so the next
 //! visit stays signed in.
+//!
+//! Voice chat works through the web client itself: the child answers WebView2's
+//! microphone and camera permission requests (a host app must, or WebView2
+//! denies them) and Windows records them through its normal privacy gate.
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
@@ -183,6 +187,53 @@ fn rect_of(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
     }
 }
 
+/// WebView2 denies media permissions unless the host app answers the request,
+/// so the embedded Discord client could not unmute. Microphone and camera are
+/// allowed for this child; nothing else loads in it (external links open in the
+/// system browser) and Windows' own privacy switch still applies.
+#[cfg(windows)]
+fn allow_media_permissions(view: &tauri::Webview) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        ICoreWebView2, ICoreWebView2PermissionRequestedEventArgs,
+        COREWEBVIEW2_PERMISSION_KIND, COREWEBVIEW2_PERMISSION_KIND_CAMERA,
+        COREWEBVIEW2_PERMISSION_KIND_MICROPHONE, COREWEBVIEW2_PERMISSION_STATE_ALLOW,
+    };
+    use webview2_com::PermissionRequestedEventHandler;
+
+    let registration = view.with_webview(|platform| {
+        let controller = platform.controller();
+        let core = match unsafe { controller.CoreWebView2() } {
+            Ok(core) => core,
+            Err(error) => {
+                eprintln!("[discord-view] media permission setup failed: {error}");
+                return;
+            }
+        };
+        let handler = PermissionRequestedEventHandler::create(Box::new(
+            |_sender: Option<ICoreWebView2>,
+             args: Option<ICoreWebView2PermissionRequestedEventArgs>| {
+                if let Some(args) = args {
+                    let mut kind = COREWEBVIEW2_PERMISSION_KIND(0);
+                    if unsafe { args.PermissionKind(&mut kind) }.is_ok()
+                        && (kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE
+                            || kind == COREWEBVIEW2_PERMISSION_KIND_CAMERA)
+                    {
+                        let _ = unsafe { args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW) };
+                    }
+                }
+                Ok(())
+            },
+        ));
+        let mut token = 0i64;
+        if let Err(error) = unsafe { core.add_PermissionRequested(&handler, &mut token) } {
+            eprintln!("[discord-view] media permission registration failed: {error}");
+        }
+    });
+    if let Err(error) = registration {
+        eprintln!("[discord-view] media permission bridge failed: {error}");
+    }
+}
+
 /// Creates the child webview inside the main window.
 async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
     let window = app
@@ -272,10 +323,14 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     // runtime so the UI never blocks on creation.
     let target = window.clone();
     let created = tokio::task::spawn_blocking(move || target.add_child(builder, position, size));
-    created
+    let child = created
         .await
         .map_err(|error| error.to_string())?
         .map_err(|error| error.to_string())?;
+    // Register before the page can ask: WebView2 denies media permissions when
+    // the host app has no handler, so the embedded client could not unmute.
+    #[cfg(windows)]
+    allow_media_permissions(&child);
 
     // The document can finish loading while the web client is still blank (its
     // assets trickle in on a slow network), so the child stays hidden behind
