@@ -296,8 +296,12 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         note_voice(
             app,
             format!(
-                "web voice: in call \"{name}\" ({} people, {via})",
-                people.len()
+                "web voice: in call \"{name}\" ({} people, {via}){}",
+                people.len(),
+                match report.get("debug").and_then(serde_json::Value::as_str) {
+                    Some(debug) => format!(" [{debug}]"),
+                    None => String::new(),
+                }
             ),
         );
     } else {

@@ -193,13 +193,21 @@
 
   function channelOf(stores, channelId) {
     var channel = stores.channels.getChannel(channelId) || {};
+    var name = channel.name || "";
+    if (!name) {
+      try {
+        if (typeof stores.channels.getName === "function") {
+          name = stores.channels.getName(channelId) || "";
+        }
+      } catch (e) {}
+    }
     var guild = "";
     try {
       var guildId = channel.guild_id;
       var guildStore = guildId && stores.guilds ? stores.guilds.getGuild(guildId) : null;
       guild = guildStore && guildStore.name ? guildStore.name : "";
     } catch (e) {}
-    return { id: String(channelId), name: channel.name || "", guild: guild };
+    return { id: String(channelId), name: name, guild: guild };
   }
 
   function participantsOf(stores, channelId) {
@@ -310,13 +318,39 @@
 
     var channelId = stores.selected.getVoiceChannelId();
     if (!channelId) return { ok: true, inCall: false, via: via };
-    return {
+    var channel = channelOf(stores, channelId);
+    var participants = participantsOf(stores, channelId);
+    var payload = {
       ok: true,
       inCall: true,
       via: via,
-      channel: channelOf(stores, channelId),
-      participants: participantsOf(stores, channelId)
+      channel: channel,
+      participants: participants
     };
+    // While the name or the first participant still comes back empty, say what
+    // the raw objects actually hold so the extraction can be fixed from the
+    // log alone.
+    if (!channel.name || (participants[0] && !participants[0].name)) {
+      var bits = [];
+      try {
+        var rawChannel = stores.channels.getChannel(channelId) || {};
+        bits.push("ch=[" + Object.keys(rawChannel).slice(0, 12).join("|") + "]");
+        bits.push("chName=" + typeof rawChannel.name);
+      } catch (e) {
+        bits.push("ch=err");
+      }
+      try {
+        if (participants[0]) {
+          var rawUser = stores.users.getUser(participants[0].id) || {};
+          bits.push("u=[" + Object.keys(rawUser).slice(0, 12).join("|") + "]");
+          bits.push("uName=" + typeof rawUser.username);
+        }
+      } catch (e) {
+        bits.push("u=err");
+      }
+      payload.debug = bits.join(" ");
+    }
+    return payload;
   } catch (e) {
     return { ok: false, why: String(e) };
   }
