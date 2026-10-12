@@ -8,6 +8,8 @@ import { pushNavHistory } from "../../../core/nav";
 import { setView } from "../../store/store-view";
 import { S } from "../../../core/state";
 import { toast } from "../../../core/toast";
+import { askConfirm } from "../../../core/confirm-dialog";
+import { summaryOf } from "../../../core/selectors";
 import { t as i18nT } from "../../../i18n";
 import { steamGameAction, steamOpenClient, steamOpenDownloads, steamSetApiKey, steamWatchSession } from "../../../steam";
 import {
@@ -45,27 +47,42 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
         ? target.dataset.mode
         : "launch";
       if (id) {
-        void steamGameAction(id, mode)
-          .then(() => {
-            toast(i18nT("steam.opening"), "");
-            if (mode === "launch" && S.steamExitAfterPlay) {
-              void steamWatchSession(id).catch(() => {});
-            }
-            if (mode === "update") {
-              setTimeout(() => {
-                void steamOpenDownloads().catch(() => {});
-              }, 1000);
-            }
-            if (mode === "update" || mode === "install") {
-              setTimeout(() => {
-                void refreshSteamInstalled().then(() => checkAndPollSteamDownloads());
-              }, 1200);
-            }
-            // Install/uninstall/validate finish inside the Steam client, so the
-            // grid is re-read once instead of trusting the instant hand-off.
-            if (mode !== "launch") scheduleSteamLibraryResync(mode === "update" ? 2500 : 6000);
-          })
-          .catch((e: unknown) => toast(String(e), "err"));
+        const run = () =>
+          void steamGameAction(id, mode)
+            .then(() => {
+              toast(i18nT("steam.opening"), "");
+              if (mode === "launch" && S.steamExitAfterPlay) {
+                void steamWatchSession(id).catch(() => {});
+              }
+              if (mode === "update") {
+                setTimeout(() => {
+                  void steamOpenDownloads().catch(() => {});
+                }, 1000);
+              }
+              if (mode === "update" || mode === "install") {
+                setTimeout(() => {
+                  void refreshSteamInstalled().then(() => checkAndPollSteamDownloads());
+                }, 1200);
+              }
+              // Install/uninstall/validate finish inside the Steam client, so the
+              // grid is re-read once instead of trusting the instant hand-off.
+              if (mode !== "launch") scheduleSteamLibraryResync(mode === "update" ? 2500 : 6000);
+            })
+            .catch((e: unknown) => toast(String(e), "err"));
+        // Uninstall asks first: Steam's own flow then removes the files.
+        if (mode === "uninstall") {
+          void askConfirm({
+            title: i18nT("manage.uninstallTitle"),
+            subject: summaryOf(`steam::${id}`)?.title || id,
+            body: i18nT("confirm.uninstallBody"),
+            confirm: i18nT("common.uninstall"),
+            cancel: i18nT("common.cancel"),
+          }).then((ok) => {
+            if (ok) run();
+          });
+        } else {
+          run();
+        }
       }
       return true;
     }

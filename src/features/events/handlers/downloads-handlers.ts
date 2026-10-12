@@ -4,6 +4,7 @@
  */
 
 import { toast } from "../../../core/toast";
+import { askConfirm } from "../../../core/confirm-dialog";
 import { localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { closeAllModals, render } from "../../../core/render";
@@ -134,8 +135,17 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
 
     case "epic-uninstall":
       if (id) {
-        closeManagePopup();
-        void epicUninstall(id);
+        void askConfirm({
+          title: i18nT("manage.uninstallTitle"),
+          subject: summaryOf(id)?.title || id,
+          body: i18nT("confirm.uninstallBody"),
+          confirm: i18nT("common.uninstall"),
+          cancel: i18nT("common.cancel"),
+        }).then((ok) => {
+          if (!ok) return;
+          closeManagePopup();
+          void epicUninstall(id);
+        });
       }
       return true;
 
@@ -471,17 +481,26 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
 
     case "storage-uninstall":
       if (id) {
-        closeStorageManager();
-        if (id.startsWith("amazon::")) {
-          void uninstallAmazonGame(id.slice(8));
-        } else if (id.startsWith("steam::")) {
-          void steamGameAction(id.slice(7), "uninstall").catch((e: unknown) => toast(String(e), "err"));
-        } else if (isCompanionKey(id)) {
-          const store = sourceOfKey(id) as CompanionStore;
-          void companionGameAction(store, id.slice(id.indexOf("::") + 2), "uninstall").catch((e: unknown) => toast(String(e), "err"));
-        } else {
-          void epicUninstall(id);
-        }
+        void askConfirm({
+          title: i18nT("manage.uninstallTitle"),
+          subject: summaryOf(id)?.title || id,
+          body: i18nT("confirm.uninstallBody"),
+          confirm: i18nT("common.uninstall"),
+          cancel: i18nT("common.cancel"),
+        }).then((ok) => {
+          if (!ok) return;
+          closeStorageManager();
+          if (id.startsWith("amazon::")) {
+            void uninstallAmazonGame(id.slice(8));
+          } else if (id.startsWith("steam::")) {
+            void steamGameAction(id.slice(7), "uninstall").catch((e: unknown) => toast(String(e), "err"));
+          } else if (isCompanionKey(id)) {
+            const store = sourceOfKey(id) as CompanionStore;
+            void companionGameAction(store, id.slice(id.indexOf("::") + 2), "uninstall").catch((e: unknown) => toast(String(e), "err"));
+          } else {
+            void epicUninstall(id);
+          }
+        });
       }
       return true;
 

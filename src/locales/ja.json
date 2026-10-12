@@ -361,6 +361,7 @@
   "common.install": "インストール",
   "common.manage": "プロパティと管理",
   "common.uninstall": "アンインストール",
+  "confirm.uninstallBody": "このコンピューターからインストールを削除します。ゲームはライブラリに残りますが、後で遊ぶにはもう一度ダウンロードする必要があります。",
   "common.cancel": "キャンセル",
   "common.save": "保存",
   "common.edit": "編集",

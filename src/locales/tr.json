@@ -377,6 +377,7 @@
   "common.install": "Yükle",
   "common.manage": "Özellikler & Yönet",
   "common.uninstall": "Kaldır",
+  "confirm.uninstallBody": "Oyun bu bilgisayardan kaldırılacak. Kitaplığında kalmaya devam eder; ileride oynamak istersen yeniden indirmen gerekir.",
   "common.cancel": "İptal Et",
   "common.save": "Kaydet",
   "common.edit": "Düzenle",

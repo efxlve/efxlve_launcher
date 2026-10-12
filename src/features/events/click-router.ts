@@ -44,6 +44,7 @@ import {
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
+import { answerConfirm, askConfirm } from "../../core/confirm-dialog";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -94,7 +95,7 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxLoginOpen, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
-import { rebuildAllGamesMap } from "../../core/selectors";
+import { rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
@@ -265,6 +266,16 @@ document.addEventListener("click", (e) => {
   // Dialog containers carry this marker so a click on their body never closes
   // the modal they live in. Handle it before any domain handler.
   if (act === "prevent-modal-close") return;
+
+  // The shared confirm dialog answers here, before any domain handler.
+  if (act === "confirm-yes") {
+    answerConfirm(true);
+    return;
+  }
+  if (act === "confirm-cancel") {
+    answerConfirm(false);
+    return;
+  }
 
   // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
@@ -636,7 +647,18 @@ document.addEventListener("click", (e) => {
     void companionGameAction(store, id, "install").catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-uninstall" && id) {
     const store = (t.dataset.store as CompanionStore) || "ubisoft";
-    void companionGameAction(store, id, "uninstall").catch((e: unknown) => toast(String(e), "err"));
+    // Ask first: the client's own uninstaller then runs without this app in
+    // the loop, so a stray click would be final.
+    void askConfirm({
+      title: i18nT("manage.uninstallTitle"),
+      subject: summaryOf(id)?.title || id,
+      body: i18nT("confirm.uninstallBody"),
+      confirm: i18nT("common.uninstall"),
+      cancel: i18nT("common.cancel"),
+    }).then((ok) => {
+      if (!ok) return;
+      void companionGameAction(store, id, "uninstall").catch((e: unknown) => toast(String(e), "err"));
+    });
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

@@ -7,6 +7,7 @@ import { summaryOf } from "../../core/selectors";
 import { AUTO_UPDATE_TIME_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
+import { cancelConfirm } from "../../core/confirm-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
@@ -188,6 +189,8 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if (e.key === "Escape") {
+    // The shared confirm dialog owns Escape while it is open.
+    if (cancelConfirm()) return;
     if (S.notifOpen) {
       closeNotifPanel();
       return;

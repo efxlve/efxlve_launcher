@@ -361,6 +361,7 @@
   "common.install": "Zainstaluj",
   "common.manage": "Właściwości i zarządzanie",
   "common.uninstall": "Odinstaluj",
+  "confirm.uninstallBody": "Instalacja zostanie usunięta z tego komputera. Gra pozostanie w bibliotece; aby zagrać później, pobierz ją ponownie.",
   "common.cancel": "Anuluj",
   "common.save": "Zapisz",
   "common.edit": "Edytuj",
