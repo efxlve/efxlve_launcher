@@ -1855,7 +1855,11 @@ async function sendDiscordReply(): Promise<void> {
   try {
     await invoke("discord_sdk_send_dm", { userId: target.id, text });
     replyDraft = "";
-    if (input) input.value = "";
+    if (input) {
+      input.value = "";
+      // Keep the caret where it was: replying usually means a second message.
+      input.focus();
+    }
   } catch (error) {
     replySending = false;
     if (sendButton) sendButton.disabled = false;
@@ -1865,6 +1869,14 @@ async function sendDiscordReply(): Promise<void> {
       note.textContent = t("overlay.discordSendFailed", { error: String(error) });
     }
   }
+}
+
+/** Puts the caret in the composer. After picking a friend the keyboard belongs
+ * to the text box, not to the focus ring (Enter/Space would re-fire the row). */
+function focusReplyInput(): void {
+  requestAnimationFrame(() => {
+    document.getElementById("ov-discord-reply-input")?.focus();
+  });
 }
 
 /** Fetches the web page's last voice report, so the card paints immediately. */
@@ -2115,6 +2127,7 @@ function wireEvents(): void {
         replyTarget = { id: friendId, name: row?.dataset.name || friendId };
         replyDraft = "";
         renderDiscord();
+        focusReplyInput();
       }
     } else if (action === "discord-send") {
       void sendDiscordReply();
@@ -2508,6 +2521,20 @@ function pollGamepadLoop(): void {
   // Swallow input right after the panel opened: the shortcut that opened it
   // (Guide, Start+Back) is usually still held on the first frames.
   if (performance.now() < gamepadSuppressUntil) {
+    prevButtons = buttons;
+    return;
+  }
+
+  // A focused text box owns the pad too: replying must not be interrupted by a
+  // drifting stick or a stray button press.
+  if (isTextEntryFocused()) {
+    prevButtons = buttons;
+    return;
+  }
+
+  // A focused text box owns the pad too: replying must not be interrupted by a
+  // drifting stick or a stray button press.
+  if (isTextEntryFocused()) {
     prevButtons = buttons;
     return;
   }
