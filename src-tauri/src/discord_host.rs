@@ -12,6 +12,7 @@
 use tauri::{
     AppHandle, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder, WebviewUrl,
 };
+use tauri_plugin_opener::OpenerExt;
 
 const LABEL: &str = "discord-view";
 const HOME_URL: &str = "https://discord.com/app";
@@ -116,22 +117,22 @@ const PROBE_HOOKS_SCRIPT: &str = if cfg!(debug_assertions) {
     ""
 };
 
-/// The Discord web client stays inside its own family of hosts. Anything else
-/// (help pages, external links) is denied; the system-browser handoff for those
-/// links can come with the lifecycle hardening pass.
-///
-/// Every non-http(s) URL is allowed: internal pages such as `about:blank` and
-/// Chromium's network-error page must never be blocked, or a failed load would
-/// leave the child blank with nothing to show the user.
+/// The Discord host family the embedded page may navigate to.
 fn is_discord_host(url: &url::Url) -> bool {
-    if url.scheme() != "http" && url.scheme() != "https" {
-        return true;
-    }
     let host = url.host_str().unwrap_or("").to_ascii_lowercase();
     host == "discord.com"
         || host.ends_with(".discord.com")
         || host == "discordapp.com"
         || host.ends_with(".discordapp.com")
+}
+
+/// Chromium's own pages (`about:blank`, the network-error page): they must
+/// never be blocked, or a failed load would leave the child blank.
+fn is_internal_scheme(scheme: &str) -> bool {
+    matches!(
+        scheme,
+        "about" | "blob" | "data" | "chrome" | "chrome-error" | "edge"
+    )
 }
 
 fn view(app: &AppHandle) -> Option<tauri::Webview> {
@@ -158,17 +159,34 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
         .map_err(|_| "bad_url".to_string())?;
     // Never pass `additional_browser_args` to a child webview builder; it
     // silently blanks the child.
+    let nav_app = app.clone();
     let mut builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url))
         // Discord's dark surface, so the first paint has no white flash.
         .background_color(tauri::webview::Color(49, 51, 56, 255))
-        .on_navigation(|target| {
+        .on_navigation(move |target| {
             // Dev probe report: logged, then cancelled so the child stays on
-            // Discord. Any other non-Discord host is denied outright.
+            // Discord.
             if target.host_str() == Some(PROBE_HOST) {
                 eprintln!("[discord-view] probe {}", target);
                 return false;
             }
-            is_discord_host(target)
+            match target.scheme() {
+                "http" | "https" => {
+                    if is_discord_host(target) {
+                        return true;
+                    }
+                    // A web link outside Discord belongs to the system browser;
+                    // it must not navigate the embedded client away.
+                    let _ = nav_app.opener().open_url(target.as_str(), None::<&str>);
+                    false
+                }
+                scheme if is_internal_scheme(scheme) => true,
+                _ => {
+                    // mailto:, discord:, spotify: … hand over to the OS handler.
+                    let _ = nav_app.opener().open_url(target.as_str(), None::<&str>);
+                    false
+                }
+            }
         })
         // Load diagnostics: the terminal that runs `tauri dev` shows whether the
         // page ever reaches a finished load, which separates a network problem
