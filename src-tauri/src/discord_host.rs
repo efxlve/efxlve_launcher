@@ -460,6 +460,56 @@ fn poll_voice_script(app: &AppHandle) {
     }
 }
 
+/// One synchronous voice read, for the moment just before a destructive
+/// decision (leaving the page). The periodic poll runs every few seconds, so a
+/// call that started in between would otherwise be missed and the renderer
+/// closed with the call inside it. Returns `None` when the page cannot answer.
+#[cfg(windows)]
+fn read_voice_now(app: &AppHandle) -> Option<serde_json::Value> {
+    use webview2_com::ExecuteScriptCompletedHandler;
+    use windows::core::PCWSTR;
+
+    let view = view(app)?;
+    let (tx, rx) = std::sync::mpsc::channel::<Option<serde_json::Value>>();
+    let registration = view.with_webview(move |platform| {
+        let controller = platform.controller();
+        let core = match unsafe { controller.CoreWebView2() } {
+            Ok(core) => core,
+            Err(_) => {
+                let _ = tx.send(None);
+                return;
+            }
+        };
+        let handler_tx = tx.clone();
+        let handler = ExecuteScriptCompletedHandler::create(Box::new(
+            move |result: windows::core::Result<()>, text: String| {
+                let value = if result.is_ok() {
+                    serde_json::from_str::<serde_json::Value>(&text)
+                        .ok()
+                        .and_then(|parsed| match parsed {
+                            serde_json::Value::String(inner) => {
+                                serde_json::from_str::<serde_json::Value>(&inner).ok()
+                            }
+                            other => Some(other),
+                        })
+                } else {
+                    None
+                };
+                let _ = handler_tx.send(value);
+                Ok(())
+            },
+        ));
+        let script: Vec<u16> = VOICE_SCRIPT.encode_utf16().chain(std::iter::once(0)).collect();
+        if unsafe { core.ExecuteScript(PCWSTR(script.as_ptr()), &handler) }.is_err() {
+            let _ = tx.send(None);
+        }
+    });
+    if registration.is_err() {
+        return None;
+    }
+    rx.recv_timeout(Duration::from_millis(2500)).ok().flatten()
+}
+
 /// The Discord host family the embedded page may navigate to.
 fn is_discord_host(url: &url::Url) -> bool {
     let host = url.host_str().unwrap_or("").to_ascii_lowercase();
@@ -800,10 +850,18 @@ pub fn discord_view_reload(app: AppHandle) {
 /// client renderer is too heavy to keep alive next to the store/Spotify
 /// children; the WebView2 profile preserves the session for the next visit.
 /// One exception: a running voice call lives in that renderer (no desktop app
-/// involved), so it is kept alive as a 1x1 sliver until the call ends.
+/// involved), so it is kept alive off-screen until the call ends, and the state
+/// is read once more right before the decision: the periodic poll is a few
+/// seconds behind, so a call that started a moment ago would otherwise be
+/// missed and closed along with the renderer.
 #[tauri::command]
-pub fn discord_view_destroy(app: AppHandle) {
+pub async fn discord_view_destroy(app: AppHandle) {
     WANT_VISIBLE.store(false, Ordering::SeqCst);
+    if !IN_CALL.load(Ordering::SeqCst) {
+        if let Some(report) = read_voice_now(&app) {
+            handle_voice_report(&app, report);
+        }
+    }
     if IN_CALL.load(Ordering::SeqCst) {
         PARKED.store(true, Ordering::SeqCst);
         web_log(
