@@ -41,7 +41,9 @@ pub fn parse_speed(line: &str, keys: &[&str]) -> Option<(String, u64)> {
         if let Some(idx) = line.find(key) {
             let rest = line[idx + key.len()..]
                 .trim_start()
-                .trim_start_matches([':', '\t'])
+                // The table style separates the label with a dash before the
+                // value (`+ Download\t- 3.00 MiB/s`); it is not a sign.
+                .trim_start_matches([':', '\t', '-'])
                 .trim_start();
             let Some(num_end) = rest.find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ','))
             else {

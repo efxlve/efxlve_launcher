@@ -91,6 +91,18 @@ fn test_parse_speed() {
         parse_speed(tabbed, &["Write:", "Write"]),
         Some(("24.5 MiB/s".to_string(), 25690112))
     );
+
+    // The table style marks the value with a dash (`+ Download\t- 3.00 MiB/s`).
+    let table = "[DLManager] INFO:  + Download\t- 3.00 MiB/s (raw) / 3.00 MiB/s (decompressed)";
+    assert_eq!(
+        parse_speed(table, &["Download:", "Download"]),
+        Some(("3.0 MiB/s".to_string(), 3145728))
+    );
+    let table_disk = "[DLManager] INFO:  + Disk\t- 0.00 MiB/s (write) / 0.00 MiB/s (read)";
+    assert_eq!(
+        parse_speed(table_disk, &["Disk:", "Disk"]),
+        Some(("0.0 MiB/s".to_string(), 0))
+    );
 }
 
 #[tokio::test]
