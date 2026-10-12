@@ -83,132 +83,11 @@ const READY_SCRIPT: &str = r#"
 })();
 "#;
 
-/// Reads the web client's own voice state. The stores are found through the
-/// page's webpack registry; nothing here touches Discord's DOM, so a visual
-/// redesign cannot break the card. The value is returned straight to WebView2's
-/// native `ExecuteScript`; every step is defensive and a failed lookup returns
-/// `ok: false`, which leaves the overlay on the RPC source.
-const VOICE_SCRIPT: &str = r#"(function () {
-    try {
-        var cached = window.__efxlveVoiceStores;
-        if (cached && typeof cached.selected.getVoiceChannelId === 'function') {
-            var channelId = cached.selected.getVoiceChannelId();
-            var channel = channelId ? (cached.channels.getChannel(channelId) || {}) : null;
-            var states = channelId ? (cached.voice.getVoiceStatesForChannel(channelId) || {}) : {};
-            if (!channelId) { return { ok: true, inCall: false }; }
-            var guildName = '';
-            try {
-                var guild = channel.guild_id && cached.guilds ? cached.guilds.getGuild(channel.guild_id) : null;
-                guildName = guild && guild.name ? guild.name : '';
-            } catch (e) {}
-            var people = [];
-            for (var userId in states) {
-                var state = states[userId] || {};
-                var user = cached.users.getUser(userId) || {};
-                people.push({
-                    id: String(userId),
-                    name: user.globalName || user.username || state.nick || '',
-                    avatar: user.avatar || '',
-                    muted: !!(state.selfMute || state.mute)
-                });
-            }
-            return {
-                ok: true,
-                inCall: true,
-                channel: { id: String(channelId), name: channel.name || '', guild: guildName },
-                participants: people
-            };
-        }
-        var chunk = window.webpackChunkdiscord_app;
-        if (!chunk || !chunk.push) { return { ok: false, why: 'no-webpack' }; }
-        var req = null;
-        chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { req = r; }]);
-        chunk.pop();
-        if (!req) { return { ok: false, why: 'no-require' }; }
-        function byProps(names) {
-            var mods = req.c || {};
-            for (var key in mods) {
-                var exp = null;
-                try { exp = mods[key] && mods[key].exports; } catch (e) { continue; }
-                if (!exp) { continue; }
-                var hit = true;
-                for (var i = 0; i < names.length; i++) {
-                    if (typeof exp[names[i]] !== 'function') { hit = false; break; }
-                }
-                if (hit) { return exp; }
-            }
-            return null;
-        }
-        var stores = {
-            selected: byProps(['getVoiceChannelId']),
-            channels: byProps(['getChannel']),
-            voice: byProps(['getVoiceStatesForChannel']),
-            users: byProps(['getUser']),
-            guilds: byProps(['getGuild'])
-        };
-        if (!stores.selected || !stores.channels || !stores.voice || !stores.users) {
-            // Bounded look at what the registry actually holds, so a renamed
-            // store can be fixed from the log alone.
-            var mods = req.c || {};
-            var keys = Object.keys(mods);
-            var names = [];
-            for (var i = 0; i < keys.length; i++) {
-                var exp = null;
-                try { exp = mods[keys[i]] && mods[keys[i]].exports; } catch (e) { continue; }
-                if (!exp || typeof exp !== 'object') { continue; }
-                for (var prop in exp) {
-                    if (typeof exp[prop] !== 'function') { continue; }
-                    if (prop.indexOf('Voice') < 0 && prop.indexOf('Channel') < 0 && prop.indexOf('User') < 0) { continue; }
-                    if (names.indexOf(prop) < 0 && names.length < 30) { names.push(prop); }
-                }
-            }
-            var mount = document.getElementById('app-mount');
-            return {
-                ok: false,
-                why: 'no-stores m=' + keys.length
-                    + ' sel=' + (stores.selected ? 1 : 0)
-                    + ' ch=' + (stores.channels ? 1 : 0)
-                    + ' vs=' + (stores.voice ? 1 : 0)
-                    + ' u=' + (stores.users ? 1 : 0)
-                    + ' top=' + (window.top === window ? 1 : 0)
-                    + ' iframes=' + document.querySelectorAll('iframe').length
-                    + ' mount=' + (mount ? mount.childElementCount : -1)
-                    + ' href=' + location.href
-                    + ' names=[' + names.join(',') + ']'
-            };
-        }
-        window.__efxlveVoiceStores = stores;
-        var channelId = stores.selected.getVoiceChannelId();
-        if (!channelId) { return { ok: true, inCall: false }; }
-        var channel = stores.channels.getChannel(channelId) || {};
-        var guildName = '';
-        try {
-            var guild = channel.guild_id && stores.guilds ? stores.guilds.getGuild(channel.guild_id) : null;
-            guildName = guild && guild.name ? guild.name : '';
-        } catch (e) {}
-        var states = stores.voice.getVoiceStatesForChannel(channelId) || {};
-        var people = [];
-        for (var userId in states) {
-            var state = states[userId] || {};
-            var user = stores.users.getUser(userId) || {};
-            people.push({
-                id: String(userId),
-                name: user.globalName || user.username || state.nick || '',
-                avatar: user.avatar || '',
-                muted: !!(state.selfMute || state.mute)
-            });
-        }
-        return {
-            ok: true,
-            inCall: true,
-            channel: { id: String(channelId), name: channel.name || '', guild: guildName },
-            participants: people
-        };
-    } catch (e) {
-        return { ok: false, why: String(e) };
-    }
-})();
-"#;
+/// Reads the web client's own voice state (`discord_voice_probe.js`, injected
+/// through WebView2's native `ExecuteScript`). Every step is defensive and a
+/// failed lookup returns `ok: false`, which leaves the overlay on the RPC
+/// source.
+const VOICE_SCRIPT: &str = include_str!("discord_voice_probe.js");
 
 /// Dev-only page probe. After the document finishes, the page reports its own
 /// render state (title, viewport, app-mount children) through a navigation to
@@ -369,6 +248,10 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         .get("inCall")
         .and_then(serde_json::Value::as_bool)
         .unwrap_or(false);
+    let via = report
+        .get("via")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("?");
     let mut channel = serde_json::Value::Null;
     let mut people = Vec::new();
     if in_call {
@@ -408,10 +291,13 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
             .unwrap_or("");
         note_voice(
             app,
-            format!("web voice: in call \"{name}\" ({} people)", people.len()),
+            format!(
+                "web voice: in call \"{name}\" ({} people, {via})",
+                people.len()
+            ),
         );
     } else {
-        note_voice(app, "web voice: not in a call".to_string());
+        note_voice(app, format!("web voice: not in a call ({via})"));
     }
     IN_CALL.store(in_call, Ordering::SeqCst);
     if let Ok(mut guard) = LAST_REPORT.lock() {
