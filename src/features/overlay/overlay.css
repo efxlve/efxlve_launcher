@@ -1676,6 +1676,54 @@
   margin: 8px 0 0;
 }
 
+/* --- Discord reply composer (Social SDK) --- */
+
+/* The row the composer writes to: same surface as a hovered row, kept. */
+.ov-friend.selected {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.ov-reply-to {
+  margin-bottom: 8px;
+}
+
+.ov-reply-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.ov-reply-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.ov-reply-input:focus {
+  outline: none;
+  border-color: var(--text-3);
+}
+
+.ov-reply-send {
+  flex: none;
+}
+
+/* The outcome line reserves its height: the panel must not jump on send. */
+.ov-reply-note {
+  margin: 8px 0 0;
+  min-height: 18px;
+}
+
 /* ==========================================================================
    Music tab (revision): sections instead of stacked cards — a title row, then
    hairline separated rows inside one panel per group. Colour is state only.

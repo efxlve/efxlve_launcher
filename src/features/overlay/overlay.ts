@@ -200,6 +200,30 @@ let friendsState: DiscordFriendsState = { status: "idle", friends: [], pending: 
 let lastFriends: FriendEntry[] = [];
 let lastFriendsPending = 0;
 
+/* ---------- Discord Social SDK (the reply path) ---------- */
+
+interface SdkMe {
+  id: string;
+  name: string;
+  avatarUrl: string;
+}
+
+interface SdkState {
+  /** "idle" | "starting" | "authorizing" | "connecting" | "ready" | "error" */
+  status: string;
+  error: string | null;
+  me: SdkMe | null;
+}
+
+let sdkState: SdkState = { status: "idle", error: null, me: null };
+/** The SDK's own relationship list: the source that also works with no page. */
+let sdkFriends: DiscordFriendsState = { status: "idle", friends: [], pending: 0, error: null };
+/** The friend the composer writes to. */
+let replyTarget: { id: string; name: string } | null = null;
+/** The typed draft survives repaints (voice and friends events rerender). */
+let replyDraft = "";
+let replySending = false;
+
 /** The launcher's own Discord page call (no desktop app involved). */
 interface WebVoiceParticipant {
   id: string;
@@ -500,6 +524,7 @@ function setTab(tab: TabId, fromOpen = false): void {
   if (tab === "discord") {
     void invoke("discord_voice_watch_start").catch(() => undefined);
     void refreshWebVoice();
+    void refreshSdkState();
   } else {
     void invoke("discord_voice_watch_stop").catch(() => undefined);
   }
@@ -1671,6 +1696,10 @@ function renderDiscord(): void {
       <div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b></div>
       <div class="ov-panel-body">${friendsBodyHtml()}</div>
     </div>
+    <div class="ov-panel">
+      <div class="ov-panel-head">${icon("edit", 13)} <b>${esc(t("overlay.discordReplyTitle"))}</b>${sdkAccountLabel()}${replyOpenButton()}</div>
+      <div class="ov-panel-body">${replyBodyHtml()}</div>
+    </div>
     ${channelsPanelHtml()}`;
 }
 
@@ -1709,14 +1738,17 @@ function friendsBodyHtml(): string {
   const state = friendsState;
   const web = webVoice && webVoice.friends && webVoice.friends.length ? webVoice.friends : null;
   const live = state.status === "ready" && state.friends.length ? state.friends : null;
-  const friends = live ?? web ?? lastFriends;
+  // The SDK list is the last resort: it also works with no page and no desktop
+  // client, but the other two sources know the richer presence.
+  const sdk = sdkFriends.status === "ready" && sdkFriends.friends.length ? sdkFriends.friends : null;
+  const friends = live ?? web ?? sdk ?? lastFriends;
   const total = live ? friends.length : web ? webVoice?.friendsTotal ?? friends.length : friends.length;
-  const pending = live ? state.pending : web ? webVoice?.pending ?? 0 : lastFriendsPending;
+  const pending = live ? state.pending : web ? webVoice?.pending ?? 0 : sdk ? sdkFriends.pending : lastFriendsPending;
   if (!friends.length) {
-    if (!live && !web && state.status === "error") {
+    if (!live && !web && !sdk && state.status === "error") {
       return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
     }
-    if (!live && !web && state.status === "connecting") {
+    if (!live && !web && !sdk && state.status === "connecting") {
       return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
     }
     return `<p class="ov-voice-desc">${esc(t("overlay.discordFriendsEmpty"))}</p>`;
@@ -1726,7 +1758,7 @@ function friendsBodyHtml(): string {
   const rows = shown
     .map(
       (friend) => `
-        <button class="ov-friend${friend.status === "offline" ? " offline" : ""}" data-ov="discord-open-dm" data-id="${esc(friend.id)}" title="${esc(t("overlay.discordOpenDm"))}">
+        <button class="ov-friend${friend.status === "offline" ? " offline" : ""}${replyTarget && replyTarget.id === friend.id ? " selected" : ""}" data-ov="discord-reply" data-id="${esc(friend.id)}" data-name="${esc(friend.name)}" title="${esc(t("overlay.discordReplyTitle"))}">
           <span class="ov-friend-avatar">
             <img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />
             <span class="ov-friend-dot ov-status-${esc(friend.status)}"></span>
@@ -1741,6 +1773,98 @@ function friendsBodyHtml(): string {
     <p class="ov-voice-desc">${esc(t("overlay.discordFriendsOnline", { count: online }) + pendingNote)}</p>
     <div class="ov-voice-people">${rows}</div>
     ${hidden > 0 ? `<p class="ov-voice-desc ov-friends-more">${esc(t("overlay.discordFriendsMore", { count: hidden }))}</p>` : ""}`;
+}
+
+/* --- Reply composer (Discord Social SDK) --- */
+
+/** " · name" while the SDK session is signed in, like the voice card's channel. */
+function sdkAccountLabel(): string {
+  const me = sdkState.status === "ready" ? sdkState.me : null;
+  return me ? ` · ${esc(me.name)}` : "";
+}
+
+function replyOpenButton(): string {
+  if (!replyTarget) return "";
+  return `<button class="btn ghost small ov-panel-head-action" data-ov="discord-open-dm" data-id="${esc(replyTarget.id)}">${icon("external", 13)} ${esc(t("overlay.discordOpenDm"))}</button>`;
+}
+
+function connectButtonHtml(): string {
+  return `<button class="btn small" data-ov="discord-sdk-start">${icon("discord", 13)} ${esc(t("overlay.discordConnect"))}</button>`;
+}
+
+/** The composer body: a connect prompt, the flow's progress, or the text box.
+ * Writing goes through the official SDK, so a row selection is all it needs. */
+function replyBodyHtml(): string {
+  const status = sdkState.status;
+  if (status === "error") {
+    return `<p class="ov-voice-desc ov-voice-error">${esc(sdkState.error || t("common.unknownError"))}</p>${connectButtonHtml()}`;
+  }
+  if (status === "idle") {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordSdkDesc"))}</p>${connectButtonHtml()}`;
+  }
+  if (status !== "ready") {
+    const note = status === "authorizing" ? t("overlay.discordApprove") : t("overlay.discordConnecting");
+    return `<p class="ov-voice-desc">${esc(note)}</p>`;
+  }
+  if (!replyTarget) {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordReplyPick"))}</p>`;
+  }
+  return `
+    <p class="ov-voice-desc ov-reply-to">${esc(t("overlay.discordReplyTo", { name: replyTarget.name }))}</p>
+    <div class="ov-reply-row">
+      <textarea id="ov-discord-reply-input" class="ov-reply-input" rows="2" placeholder="${esc(t("overlay.discordReplyPlaceholder"))}">${esc(replyDraft)}</textarea>
+      <button class="btn small ov-reply-send" data-ov="discord-send"${replySending ? " disabled" : ""}>${icon("arrow-right", 13)} ${esc(t("overlay.discordSend"))}</button>
+    </div>
+    <p class="ov-voice-desc ov-reply-note" id="ov-discord-reply-note"></p>`;
+}
+
+/** Fetches the SDK session and its relationship list, so the panel paints at once. */
+async function refreshSdkState(): Promise<void> {
+  try {
+    const state = await invoke<SdkState>("discord_sdk_state");
+    if (state) sdkState = state;
+    const friends = await invoke<DiscordFriendsState>("discord_sdk_friends");
+    if (friends) sdkFriends = friends;
+    if (activeTab === "discord" && !document.hidden) renderDiscord();
+  } catch {
+    // Older hosts have no Social SDK commands; the other sources stay.
+  }
+}
+
+async function startDiscordSdk(): Promise<void> {
+  sdkState = { ...sdkState, status: "starting", error: null };
+  renderDiscord();
+  try {
+    await invoke("discord_sdk_start");
+  } catch (error) {
+    sdkState = { ...sdkState, status: "error", error: String(error) };
+    renderDiscord();
+  }
+}
+
+/** Sends the draft. The outcome arrives on `discord-sdk-dm`, so the typed text
+ * is only cleared once the host accepted the call. */
+async function sendDiscordReply(): Promise<void> {
+  const target = replyTarget;
+  const input = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
+  const text = (input?.value ?? replyDraft).trim();
+  if (!target || !text || replySending) return;
+  replySending = true;
+  const sendButton = document.querySelector<HTMLButtonElement>('[data-ov="discord-send"]');
+  if (sendButton) sendButton.disabled = true;
+  try {
+    await invoke("discord_sdk_send_dm", { userId: target.id, text });
+    replyDraft = "";
+    if (input) input.value = "";
+  } catch (error) {
+    replySending = false;
+    if (sendButton) sendButton.disabled = false;
+    const note = document.getElementById("ov-discord-reply-note");
+    if (note) {
+      note.classList.add("ov-voice-error");
+      note.textContent = t("overlay.discordSendFailed", { error: String(error) });
+    }
+  }
 }
 
 /** Fetches the web page's last voice report, so the card paints immediately. */
@@ -1982,6 +2106,18 @@ function wireEvents(): void {
     else if (action === "enable-fps") void enableFps();
     else if (action === "open-discord" || action === "discord-open-launcher") {
       void openDiscordInLauncher("https://discord.com/channels/@me");
+    } else if (action === "discord-sdk-start") {
+      void startDiscordSdk();
+    } else if (action === "discord-reply") {
+      const row = target.closest<HTMLElement>("[data-ov]");
+      const friendId = row?.dataset.id;
+      if (friendId) {
+        replyTarget = { id: friendId, name: row?.dataset.name || friendId };
+        replyDraft = "";
+        renderDiscord();
+      }
+    } else if (action === "discord-send") {
+      void sendDiscordReply();
     } else if (action === "discord-open-dm") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
@@ -2060,6 +2196,11 @@ function wireEvents(): void {
   });
 
   document.addEventListener("input", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {
+      replyDraft = target.value;
+      return;
+    }
     const input = event.target as HTMLInputElement | null;
     if (input?.dataset.ovOpacity === undefined) return;
     const val = Number(input.value);
@@ -2080,6 +2221,15 @@ function wireEvents(): void {
     if (event.key === "Tab") {
       event.preventDefault();
       return;
+    }
+    // Enter sends the reply; Shift+Enter stays a newline.
+    if (event.key === "Enter" && !event.shiftKey) {
+      const target = event.target;
+      if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {
+        event.preventDefault();
+        void sendDiscordReply();
+        return;
+      }
     }
     if (isTextEntryFocused()) {
       if (event.key === "Escape") (document.activeElement as HTMLElement | null)?.blur();
@@ -2595,6 +2745,30 @@ async function boot(): Promise<void> {
   await listen<WebVoiceState>("discord-web-voice", (event) => {
     webVoice = event.payload;
     if (activeTab === "discord" && !document.hidden) renderDiscord();
+  });
+
+  await listen<SdkState>("discord-sdk-state", (event) => {
+    sdkState = event.payload;
+    if (activeTab === "discord" && !document.hidden) renderDiscord();
+  });
+
+  await listen<DiscordFriendsState>("discord-sdk-friends", (event) => {
+    sdkFriends = event.payload;
+    if (activeTab === "discord" && !document.hidden) renderDiscord();
+  });
+
+  // The send outcome: the note under the composer is patched in place, so a
+  // failed send never drops the typed text.
+  await listen<{ userId: string; ok: boolean; messageId?: string; error?: string }>("discord-sdk-dm", (event) => {
+    replySending = false;
+    const sendButton = document.querySelector<HTMLButtonElement>('[data-ov="discord-send"]');
+    if (sendButton) sendButton.disabled = false;
+    const note = document.getElementById("ov-discord-reply-note");
+    if (!note) return;
+    note.classList.toggle("ov-voice-error", !event.payload.ok);
+    note.textContent = event.payload.ok
+      ? t("overlay.discordSent")
+      : t("overlay.discordSendFailed", { error: event.payload.error || t("common.unknownError") });
   });
 
   try {
