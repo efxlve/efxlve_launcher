@@ -75,6 +75,10 @@ const PARK_RECT: (f64, f64, f64, f64) = (-400.0, -400.0, 1.0, 1.0);
 /// create loads it instead of the home URL.
 static PENDING_URL: Mutex<Option<String>> = Mutex::new(None);
 
+/// The rectangle the frontend last asked for, re-applied when the child comes
+/// back from a navigation: a re-shown child otherwise keeps its old frame.
+static LAST_RECT: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
+
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
 
@@ -644,9 +648,26 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                     if kids > 0 {
                         PAINTED.store(true, Ordering::SeqCst);
                         if WANT_VISIBLE.load(Ordering::SeqCst) {
-                            if let Some(view) = view(&nav_app) {
+                            // Give the first real frame a moment and re-apply
+                            // the rectangle: a child that was hidden for a
+                            // navigation otherwise keeps its old frame.
+                            let show_app = nav_app.clone();
+                            tauri::async_runtime::spawn(async move {
+                                tokio::time::sleep(Duration::from_millis(260)).await;
+                                if !WANT_VISIBLE.load(Ordering::SeqCst) {
+                                    return;
+                                }
+                                let Some(view) = view(&show_app) else {
+                                    return;
+                                };
+                                if let Some((x, y, w, h)) =
+                                    LAST_RECT.lock().ok().and_then(|guard| *guard)
+                                {
+                                    let _ = view.set_bounds(rect_of(x, y, w, h));
+                                }
                                 let _ = view.show();
-                            }
+                                web_log(&show_app, "page painted; child shown");
+                            });
                         }
                     }
                     return false;
@@ -819,6 +840,9 @@ pub async fn discord_view_show(
     WANT_VISIBLE.store(true, Ordering::SeqCst);
     // The user is back on the page; a parked keep-alive is over.
     PARKED.store(false, Ordering::SeqCst);
+    if let Ok(mut guard) = LAST_RECT.lock() {
+        *guard = Some((x, y, width, height));
+    }
     let existing = view(&app);
     eprintln!(
         "[discord-view] show rect=({x:.0},{y:.0},{width:.0}x{height:.0}) existing={}",
@@ -895,22 +919,33 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
         return Err("not_a_conversation".to_string());
     }
     let clean = target.to_string();
+    // Navigating is only safe on a page that is up and healthy: a navigation
+    // during a boot (or during a call) is how the blank page and the dropped
+    // call happened before. Otherwise the launcher simply comes forward on its
+    // Discord page and the person picks the conversation there.
+    let healthy = LAST_REPORT
+        .lock()
+        .ok()
+        .and_then(|guard| *guard)
+        .map(|at| at.elapsed() < Duration::from_secs(15))
+        .unwrap_or(false);
     match view(&app) {
-        Some(view) => {
-            if IN_CALL.load(Ordering::SeqCst) {
-                // A real navigation reloads the client and would drop the call;
-                // in a call the person navigates inside the client itself.
-                web_log(
-                    &app,
-                    "conversation asked while in a call; the client stays where it is",
-                );
-            } else {
-                PAINTED.store(false, Ordering::SeqCst);
-                let _ = view.hide();
-                let _ = view.navigate(target);
-                watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
-                web_log(&app, "opening a conversation in the launcher client");
-            }
+        Some(view) if !IN_CALL.load(Ordering::SeqCst) && healthy => {
+            PAINTED.store(false, Ordering::SeqCst);
+            let _ = view.hide();
+            let _ = view.navigate(target);
+            watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
+            web_log(&app, "opening a conversation in the launcher client");
+        }
+        Some(_) => {
+            web_log(
+                &app,
+                if IN_CALL.load(Ordering::SeqCst) {
+                    "conversation asked while in a call; the client stays where it is"
+                } else {
+                    "page still starting; only bringing the launcher forward"
+                },
+            );
         }
         None => {
             if let Ok(mut guard) = PENDING_URL.lock() {
