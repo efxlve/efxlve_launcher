@@ -174,6 +174,9 @@ interface DiscordVoiceState {
 }
 
 let voiceState: DiscordVoiceState = { status: "idle", channel: null, participants: [], error: null };
+/** Last channel with its people, kept so a reconnect does not blank the card. */
+let lastVoiceChannel: VoiceChannel | null = null;
+let lastVoiceParticipants: VoiceParticipant[] = [];
 
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
@@ -1573,23 +1576,32 @@ function renderDiscord(): void {
     </div>`;
 }
 
-/** Voice card body: a status line, or the channel with its people. */
+/** Voice card body: a status line, or the channel with its people. While the
+ * worker is (re)connecting the last known channel stays on screen, dimmed. */
 function voiceBodyHtml(): string {
   const state = voiceState;
-  if (state.status === "connecting") {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
-  }
   if (state.status === "authorizing") {
     return `<p class="ov-voice-desc">${esc(t("overlay.discordApprove"))}</p>`;
   }
-  if (state.status === "error") {
-    return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
-  }
-  const channel = state.channel;
+  const busy = state.status === "connecting" || state.status === "error";
+  const channel = state.channel ?? (busy ? lastVoiceChannel : null);
+  const people = state.channel ? state.participants : lastVoiceParticipants;
+  const note =
+    state.status === "connecting"
+      ? t("overlay.discordConnecting")
+      : state.status === "error"
+        ? state.error || t("common.unknownError")
+        : "";
+  const noteHtml = note
+    ? `<p class="ov-voice-desc${state.status === "error" ? " ov-voice-error" : ""}">${esc(note)}</p>`
+    : "";
   if (!channel) {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}<br />${esc(t("overlay.discordVoiceDesc"))}</p>`;
+    return (
+      noteHtml ||
+      `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}<br />${esc(t("overlay.discordVoiceDesc"))}</p>`
+    );
   }
-  const people = state.participants
+  const rows = people
     .map(
       (person) => `
         <div class="ov-voice-person${person.speaking ? " speaking" : ""}">
@@ -1599,9 +1611,11 @@ function voiceBodyHtml(): string {
         </div>`,
     )
     .join("");
+  const stale = state.channel ? "" : " ov-voice-stale";
   return `
-    <div class="ov-voice-channel">${icon("volume-2", 13)} <span>${esc(channel.name)}</span></div>
-    <div class="ov-voice-people">${people}</div>`;
+    ${noteHtml}
+    <div class="ov-voice-channel${stale}">${icon("volume-2", 13)} <span>${esc(channel.name)}</span></div>
+    <div class="ov-voice-people${stale}">${rows}</div>`;
 }
 
 /* 9. Settings View */
@@ -2334,7 +2348,14 @@ async function boot(): Promise<void> {
 
   await listen<DiscordVoiceState>("discord-voice-state", (event) => {
     voiceState = event.payload;
-    if (activeTab === "discord") renderDiscord();
+    if (voiceState.status === "ready" && voiceState.channel) {
+      lastVoiceChannel = voiceState.channel;
+      lastVoiceParticipants = voiceState.participants;
+    } else if (voiceState.status === "idle") {
+      lastVoiceChannel = null;
+      lastVoiceParticipants = [];
+    }
+    if (activeTab === "discord" && !document.hidden) renderDiscord();
   });
 
   try {

@@ -28,8 +28,10 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - **Faz 2.1** — tamam (`85a662f`, `f969a7c`): child WebView2 host + spike. Sayfa açılıyor, giriş yapılabiliyor.
 - **Faz 2.2/2.3** — büyük ölçüde tamam: yükleme notu + yenile düğmesi (`fbb6f58d`), web istemcisi boyayana kadar gizli + 45 sn emniyet (`dc1df706`), minimize "sliver" koruması (`c575823a`) ve görünürlük/odak yeniden senkronu, dış bağlantılar sistem tarayıcısında (`8a1d969f`), gömülü web'e mikrofon/kamera izni (`897b3ad4`) — **sesli sohbet web istemcisinde çalışıyor**.
 - **Faz 2.4** — tamam (`4fb50e21`, 1.1 ile birlikte): Ayarlar kartı.
-- **Faz 3.1** — ilerledi (`91cf64e9`, `85dfab3a`, `0618cb22`): spike Discord IPC'ye bağlanıyor (READY alınıyor); AUTHORIZE `redirect_uri` istedi, eklendi. Portalda `http://127.0.0.1/callback` kayıtlıysa bir F9 koşusuyla akışın tamamı doğrulanacak (log: `%APPDATA%\com.efxlve.launcher\logs\discord-rpc.log`).
-- **Kalan:** Faz 3.2/3.3 (RPC doğrulamasından sonra okuma worker'ı + overlay sekmesi), Faz 4 (park: native arkadaş listesi), Faz 5 (yayın notu).
+- **Faz 3.1** — tamam (`2402d4a3`): akış kanıtlandı — `AUTHORIZE` yalnız `pkce + response_type: "code"` ile kod veriyor, token takası 200, `GET_SELECTED_VOICE_CHANNEL` katılımcıları getiriyor, `SPEAKING_START/STOP` akıyor (log: `%APPDATA%\com.efxlve.launcher\logs\discord-rpc.log`).
+- **Faz 3.2** — tamam (`2804005d`): kalıcı okuyucu worker; token'lar DPAPI ile `<appdata>/discord/token.bin`'de, süresi dolunca sessizce yenilenir; tek bağlantı, ≥30 sn backoff.
+- **Faz 3.3** — tamam (`f9880d71`, `e16d22d2`, bu commit): overlay Discord sekmesi canlı kanal + katılımcılar + konuşma halkası gösteriyor; onay isteği panel kapanınca iptal olmuyor; panel kapanınca worker 90 sn sıcak kalıyor (hızlı Shift+Tab aynı bağlantıyı kullanır) ve (yeniden) bağlanırken son bilinen kanal soluk gösteriliyor.
+- **Kalan:** kullanıcı testi sonrası polisaj, Faz 4 (park: native arkadaş listesi), Faz 5 (yayın notu + duyuru).
 
 ## Mevcut durum
 
@@ -38,16 +40,16 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 | Gömme deseni (kopyalanacak) | `src-tauri/src/spotify_host.rs`, `spotify_extension.js` | Child WebView2, frontend slot dikdörtgeni, çıkışta gizleme; `efxlve.local` sahte host'la navigasyon yakalama |
 | Webview yaşam döngüsü + bellek bütçesi | `src-tauri/src/store_host.rs` | Park/hide/show/destroy; `MAX_WARM_STORES = 1` (her webview ayrı renderer, ~60-260 MB) |
 | Rich Presence worker | `src-tauri/src/presence.rs` | Varsayılan kapalı; `rpc.local` sayesinde onaysız çalışıyor |
-| Presence bağlamı | `src/features/presence/presence.ts` | `LAUNCHER_ICON` bir commit hash'ine sabit (`@b371b6b`) — düzeltilecek |
+| Presence bağlamı | `src/features/presence/presence.ts` | `LAUNCHER_ICON` artık `@main` (commit sabitlemesi kaldırıldı) |
 | Sidebar / görünürlük / ayar | `index.html`, `src/core/page-visibility.ts`, `settings-view.ts` | `data-act="coming-soon"`, `SHOW_DISCORD_KEY`, `toggle-discord-page` hazır |
-| Overlay iskeleti | `src/features/overlay/overlay.ts` | `discord` sekmesi + `renderDiscord()` placeholder var |
-| View tipi | `src/core/types.ts` | `"discord"` yok |
+| Overlay iskeleti | `src/features/overlay/overlay.ts` | `discord` sekmesi canlı ses kanalı kartıyla çalışıyor |
+| View tipi | `src/core/types.ts` | `"discord"` eklendi |
 
 ## Uygulama kuralları
 
 - **Bitti ölçütü:** TS → `npm.cmd run build`; Rust → ayrıca `cargo test --manifest-path src-tauri/Cargo.toml`; locale → ayrıca `npm.cmd run locales`. Bir görev = bir commit (`type: why`).
 - **Child webview:** `additional_browser_args` asla; tek Discord webview; **sayfadan çıkınca destroy** (bellek bütçesi); komut paleti/modallerde `store_host` deseniyle park; yeniden açılışta gereksiz reload yok.
-- **RPC:** istemci başına dakikada 2 yeni bağlantı limiti → yeniden bağlanma ≥30 sn backoff; RPC okuyucusu yalnız ilgili yüzey açıkken çalışır.
+- **RPC:** istemci başına dakikada 2 yeni bağlantı limiti → yeniden bağlanma ≥30 sn backoff; RPC okuyucusu yalnız ilgili yüzey açıkken çalışır, kapanınca 90 sn sıcak kalır (hızlı aç/kapa yeni bağlantı harcamasın).
 - **ToS disiplini:** Discord sayfası kazınmaz/enjekte edilmez; webview yalnız gösterir (en fazla minimal CSS ile promosyon gizleme).
 - **i18n:** yeni metinler `src/locales/*.json` dosyalarının tamamına (16 dosya, aynı anahtarlar); sayaçlarda `tabular-nums`; renkler durum anlamı taşır.
 

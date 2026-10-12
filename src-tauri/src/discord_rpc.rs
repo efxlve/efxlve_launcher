@@ -36,15 +36,22 @@ const SCOPES: [&str; 2] = ["rpc", "rpc.voice.read"];
 const READ_TICK: Duration = Duration::from_millis(150);
 /// Minimum wait between connection attempts (two connections a minute limit).
 const RECONNECT_WAIT: Duration = Duration::from_secs(30);
+/// How long the worker keeps its connection after its tab closes: a quick
+/// close/reopen reuses it instead of spending a fresh connection.
+const GRACE: Duration = Duration::from_secs(90);
 /// How long the consent prompt may stay unanswered.
 const CONSENT_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// The overlay wants the voice state (its Discord tab is visible).
 static WATCH_WANTED: AtomicBool = AtomicBool::new(false);
+/// When the overlay last let go; the worker stays warm for `GRACE` after that.
+static STOPPED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 /// One worker thread at a time.
 static WORKER_RUNNING: AtomicBool = AtomicBool::new(false);
 /// Debug mirror of the worker log (`<app_data>/logs/discord-rpc.log`).
 static LOG_FILE: Mutex<Option<std::fs::File>> = Mutex::new(None);
+/// Base instant for log timestamps, reset on every watch start.
+static LOG_EPOCH: Mutex<Option<Instant>> = Mutex::new(None);
 
 /// One voice participant as the overlay renders it.
 #[derive(Clone, Serialize)]
@@ -84,6 +91,9 @@ pub fn discord_voice_watch_start(app: AppHandle) {
     #[cfg(windows)]
     {
         WATCH_WANTED.store(true, Ordering::SeqCst);
+        if let Ok(mut guard) = STOPPED_AT.lock() {
+            *guard = None;
+        }
         if WORKER_RUNNING.swap(true, Ordering::SeqCst) {
             return;
         }
@@ -104,33 +114,69 @@ pub fn discord_voice_watch_start(app: AppHandle) {
     let _ = app;
 }
 
-/// Asks the worker to stop; it notices within one read tick and disconnects.
+/// Asks the worker to let go; it keeps the connection for `GRACE` so the next
+/// open is instant, then disconnects.
 #[tauri::command]
 pub fn discord_voice_watch_stop() {
     WATCH_WANTED.store(false, Ordering::SeqCst);
+    if let Ok(mut guard) = STOPPED_AT.lock() {
+        *guard = Some(Instant::now());
+    }
 }
 
-/// Writes one worker line to the terminal and the log file.
+/// True while the worker should keep its connection: the overlay wants it, or
+/// it let go less than `GRACE` ago.
+fn still_alive() -> bool {
+    if WATCH_WANTED.load(Ordering::SeqCst) {
+        return true;
+    }
+    match STOPPED_AT.lock() {
+        Ok(guard) => matches!(*guard, Some(at) if at.elapsed() < GRACE),
+        Err(_) => false,
+    }
+}
+
+/// Writes one worker line to the terminal and the log file, stamped with the
+/// time since the watch started so a slow step is easy to spot.
 fn plog(line: &str) {
-    eprintln!("[discord-rpc] {line}");
+    let stamp = LOG_EPOCH
+        .lock()
+        .ok()
+        .and_then(|guard| *guard)
+        .map(|epoch| format!("+{:>5.1}s ", epoch.elapsed().as_secs_f64()))
+        .unwrap_or_default();
+    eprintln!("[discord-rpc] {stamp}{line}");
     if let Ok(mut guard) = LOG_FILE.lock() {
         if let Some(file) = guard.as_mut() {
-            let _ = writeln!(file, "[discord-rpc] {line}");
+            let _ = writeln!(file, "[discord-rpc] {stamp}{line}");
             let _ = file.flush();
         }
     }
 }
 
-/// A fresh log per watch start; the previous run's outcome stays readable.
+/// Opens the shared worker log (appended, so the earlier attempts of a session
+/// stay visible) and resets the timestamp base. Rotates past ~512 KB.
 fn open_log(app: &AppHandle) {
     if let Ok(dir) = app.path().app_data_dir() {
         let path = dir.join("logs").join("discord-rpc.log");
         let _ = std::fs::create_dir_all(dir.join("logs"));
-        if let Ok(file) = std::fs::File::create(&path) {
-            plog(&format!("log file: {}", path.display()));
-            if let Ok(mut guard) = LOG_FILE.lock() {
-                *guard = Some(file);
+        if std::fs::metadata(&path)
+            .map(|meta| meta.len() > 512 * 1024)
+            .unwrap_or(false)
+        {
+            let _ = std::fs::remove_file(&path);
+        }
+        match std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+            Ok(file) => {
+                if let Ok(mut guard) = LOG_FILE.lock() {
+                    *guard = Some(file);
+                }
+                if let Ok(mut guard) = LOG_EPOCH.lock() {
+                    *guard = Some(Instant::now());
+                }
+                plog(&format!("--- watch start --- {}", path.display()));
             }
+            Err(error) => eprintln!("[discord-rpc] log file could not open: {error}"),
         }
     }
 }
@@ -139,18 +185,18 @@ fn open_log(app: &AppHandle) {
 #[cfg(windows)]
 fn worker(app: &AppHandle) {
     plog("worker started");
-    while WATCH_WANTED.load(Ordering::SeqCst) {
+    while still_alive() {
         emit_voice(app, "connecting", None, Vec::new(), None);
         if let Err(error) = session(app) {
             plog(&format!("session ended: {error}"));
             emit_voice(app, "error", None, Vec::new(), Some(error));
         }
-        if !WATCH_WANTED.load(Ordering::SeqCst) {
+        if !still_alive() {
             break;
         }
         plog(&format!("reconnecting in {}s", RECONNECT_WAIT.as_secs()));
         let deadline = Instant::now() + RECONNECT_WAIT;
-        while Instant::now() < deadline && WATCH_WANTED.load(Ordering::SeqCst) {
+        while Instant::now() < deadline && still_alive() {
             std::thread::sleep(Duration::from_millis(250));
         }
     }
@@ -171,8 +217,8 @@ fn session(app: &AppHandle) -> Result<(), String> {
     let access = access_token(app, &mut conn)?;
     // The consent prompt can outlive the panel: if the user approved after
     // closing it, the token is already stored and the next open is silent.
-    if !WATCH_WANTED.load(Ordering::SeqCst) {
-        plog("overlay closed during authorization; token stored for next time");
+    if !still_alive() {
+        plog("overlay let go during authorization; token stored for next time");
         return Ok(());
     }
     conn.send(&json!({
@@ -213,7 +259,7 @@ fn session(app: &AppHandle) -> Result<(), String> {
     )?;
 
     loop {
-        if !WATCH_WANTED.load(Ordering::SeqCst) {
+        if !still_alive() {
             return Ok(());
         }
         for frame in conn.read_now()? {
@@ -703,6 +749,8 @@ impl Pipe {
     /// Polls frames until `wanted` matches or the timeout/watch ends.
     /// `abort_on_stop` is false only for the consent prompt: the user has to
     /// leave the panel to approve, so closing it must not cancel the request.
+    /// A non-matching ERROR frame ends control-flow waits at once and is
+    /// always logged, so a refused step never hides behind a bare timeout.
     fn wait_for(
         &mut self,
         wanted: &dyn Fn(&Value) -> bool,
@@ -715,11 +763,21 @@ impl Pipe {
                 if wanted(&frame) {
                     return Ok(frame);
                 }
+                if frame.get("evt").and_then(Value::as_str) == Some("ERROR") {
+                    plog(&format!("ERROR frame while waiting: {}", compact(&frame)));
+                    if abort_on_stop {
+                        let message = frame
+                            .pointer("/data/message")
+                            .and_then(Value::as_str)
+                            .unwrap_or("Discord returned an error");
+                        return Err(message.to_string());
+                    }
+                }
             }
             if Instant::now() >= deadline {
                 return Err("timed out waiting for Discord".into());
             }
-            if abort_on_stop && !WATCH_WANTED.load(Ordering::SeqCst) {
+            if abort_on_stop && !still_alive() {
                 return Err("cancelled".into());
             }
             std::thread::sleep(READ_TICK);

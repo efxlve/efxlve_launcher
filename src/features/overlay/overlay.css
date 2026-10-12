@@ -1603,3 +1603,8 @@
   display: inline-flex;
   color: var(--text-3);
 }
+
+/* The last known channel while the worker is reconnecting. */
+.ov-voice-stale {
+  opacity: 0.6;
+}
