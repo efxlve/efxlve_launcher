@@ -114,10 +114,11 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - `renderDiscord()` gerçek içerik: presence anahtarı + kanal/katılımcılar/konuşan göstergesi; mute/deafen partner-only → yok; "Open in Discord" kalır.
 - **Bitti:** build; kanal yokken temiz boş durum. Commit: `feat: build the overlay Discord tab`.
 
-## Faz 4 — (Park) Native arkadaş listesi — webview sonrası, isteğe bağlı
+## Faz 4 — Arkadaş listesi (12.10.2026: başlandı)
 
-- Durum: SDK erişimi etkin (11.10.2026) → yol açık; karar, webview yayında gerçek kullanım görüldükten sonra verilir.
-- Yol (tercih sırası): **(1) Social SDK** — hesap bağlama + Unified Friends; DLL + FFI + token kasası + paketleme (~2-3 gün). **(2) Yerel RPC** `GET_RELATIONSHIPS` — DLL'siz, ama `relationships.read` için ayrıca Discord onayı gerekir.
+- Sıra: **(1) Yerel RPC `GET_RELATIONSHIPS`** — `relationships.read` kapsamı OAuth2 listesine göre Social SDK erişiminin parçası; SDK onayı verildiği için denenebilir. DLL/FFI yok, mevcut pipe + token altyapısı kullanılır. **(2) Social SDK** — (1) reddedilirse: portal → Social SDK → Downloads'tan C++ paketi (Windows: `discord_partner_sdk.dll` + `.lib`; C++20 header-only wrapper `discordpp.h`, Rust için C API'ye FFI), DLL paketleme + token kasası (~2-3 gün).
+- Adım 1 (spike): F10 dev probu — `rpc + relationships.read` onayı, token yanıtındaki **granted scope** ve `GET_RELATIONSHIPS` sayımı; log: `%APPDATA%\com.efxlve.launcher\logs\discord-rpc.log`.
+- Adım 2 (kapsam verilirse): worker'a ilişki okuma + `RELATIONSHIP_UPDATE` takibi; launcher/overlay'de arkadaş listesi yüzeyi (~1 gün).
 - UI: Discord sayfasının yanında native panel veya sidebar widget'ı; webview'ın yerini almaz.
 - DM: İletişim Erişimi onaylanmadıkça SDK'dan gelmez; webview'da yaşamaya devam eder.
 

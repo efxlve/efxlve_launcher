@@ -819,6 +819,7 @@ fn main() {
             discord_host::discord_open_devtools,
             discord_rpc::discord_voice_watch_start,
             discord_rpc::discord_voice_watch_stop,
+            discord_rpc::discord_relationships_probe,
             notif_overlay::show_notif_overlay,
             notif_overlay::move_notif_overlay,
             notif_overlay::hide_notif_overlay,

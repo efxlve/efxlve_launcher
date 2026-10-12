@@ -124,6 +124,44 @@ pub fn discord_voice_watch_stop() {
     }
 }
 
+/// Dev-only probe for the Faz 4 friends list (F10 on the Discord page): asks
+/// Discord for the `relationships.read` scope and calls `GET_RELATIONSHIPS`.
+/// The result lands in the worker log. The worker's stored token stays
+/// untouched; this is a separate, throwaway authorization. One probe per app
+/// launch (restart to retry).
+#[tauri::command]
+pub fn discord_relationships_probe(app: AppHandle) {
+    #[cfg(debug_assertions)]
+    {
+        #[cfg(windows)]
+        {
+            static PROBE_RUNNING: AtomicBool = AtomicBool::new(false);
+            if PROBE_RUNNING.swap(true, Ordering::SeqCst) {
+                return;
+            }
+            open_log(&app);
+            let spawned = std::thread::Builder::new()
+                .name("discord-relationships".to_string())
+                .spawn(|| {
+                    plog("--- relationships probe (one per launch) ---");
+                    match probe_relationships() {
+                        Ok(()) => plog("relationships probe done"),
+                        Err(error) => plog(&format!("relationships probe failed: {error}")),
+                    }
+                });
+            if spawned.is_err() {
+                plog("relationships probe could not start");
+            }
+        }
+        #[cfg(not(windows))]
+        let _ = &app;
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = app;
+    }
+}
+
 /// True while the worker should keep its connection: the overlay wants it, or
 /// it let go less than `GRACE` ago.
 fn still_alive() -> bool {
@@ -670,6 +708,130 @@ fn post_token(form: &[(&str, &str)]) -> Result<StoredToken, String> {
     })
 }
 
+/// Faz 4 spike: can this app read the friends list over local RPC? Logs the
+/// scopes Discord actually granted with the token and the relationship counts.
+/// Names stay masked: the log is local, but a friends list is personal data.
+/// The probe is not tied to the overlay, so none of its waits abort on watch
+/// state (the last argument to `wait_for` is always false here).
+#[cfg(windows)]
+fn probe_relationships() -> Result<(), String> {
+    let mut conn = Pipe::connect()?;
+    conn.wait_for(
+        &|frame| frame.get("evt").and_then(Value::as_str) == Some("READY"),
+        Duration::from_secs(10),
+        false,
+    )?;
+    plog("probe: READY");
+
+    let verifier = pkce_verifier();
+    plog("probe: asking for consent [rpc + relationships.read] — approve the prompt in Discord");
+    conn.send(&json!({
+        "cmd": "AUTHORIZE",
+        "args": {
+            "client_id": CLIENT_ID,
+            "scopes": ["rpc", "relationships.read"],
+            "response_type": "code",
+            "code_challenge": pkce_challenge(&verifier),
+            "code_challenge_method": "S256"
+        },
+        "nonce": nonce()
+    }))?;
+    let response = conn.wait_for(
+        &|frame| frame.get("cmd").and_then(Value::as_str) == Some("AUTHORIZE"),
+        CONSENT_TIMEOUT,
+        false,
+    )?;
+    let message = response
+        .pointer("/data/message")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let code = response
+        .pointer("/data/code")
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("no authorization code: {message}"))?;
+    plog("probe: authorization code received");
+
+    // The token response (logged masked by `post_token`) carries the granted
+    // scope list — the answer to "did Discord allow relationships.read?".
+    let token = post_token(&[
+        ("client_id", CLIENT_ID),
+        ("grant_type", "authorization_code"),
+        ("code", code),
+        ("code_verifier", &verifier),
+    ])?;
+
+    conn.send(&json!({
+        "cmd": "AUTHENTICATE",
+        "args": { "access_token": token.access_token },
+        "nonce": nonce()
+    }))?;
+    let auth = conn.wait_for(
+        &|frame| frame.get("cmd").and_then(Value::as_str) == Some("AUTHENTICATE"),
+        Duration::from_secs(15),
+        false,
+    )?;
+    if auth.get("evt").and_then(Value::as_str) == Some("ERROR") {
+        return Err(format!("AUTHENTICATE refused: {}", compact(&auth)));
+    }
+    let scopes = auth.pointer("/data/scopes").cloned().unwrap_or(Value::Null);
+    plog(&format!("probe: authenticated, scopes {}", compact(&scopes)));
+
+    conn.send(&json!({ "cmd": "GET_RELATIONSHIPS", "args": {}, "nonce": nonce() }))?;
+    let relationships = conn.wait_for(
+        &|frame| frame.get("cmd").and_then(Value::as_str) == Some("GET_RELATIONSHIPS"),
+        Duration::from_secs(20),
+        false,
+    )?;
+    if relationships.get("evt").and_then(Value::as_str) == Some("ERROR") {
+        return Err(format!(
+            "GET_RELATIONSHIPS refused: {}",
+            compact(&relationships)
+        ));
+    }
+
+    let items = relationships
+        .pointer("/data/relationships")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut friends = 0usize;
+    let mut pending = 0usize;
+    let mut blocked = 0usize;
+    let mut sample = String::new();
+    for item in &items {
+        match item.get("type").and_then(Value::as_u64).unwrap_or(255) {
+            1 => {
+                friends += 1;
+                if sample.is_empty() {
+                    if let Some(user) = item.get("user") {
+                        let name = user
+                            .get("global_name")
+                            .and_then(Value::as_str)
+                            .or_else(|| user.get("username").and_then(Value::as_str))
+                            .unwrap_or("");
+                        let id = user.get("id").and_then(Value::as_str).unwrap_or("");
+                        sample = format!("first friend: {} ({id})", mask_name(name));
+                    }
+                }
+            }
+            2 => blocked += 1,
+            3 | 4 => pending += 1,
+            _ => {}
+        }
+    }
+    plog(&format!(
+        "probe: GET_RELATIONSHIPS ok — {} relationships ({} friends, {} pending, {} blocked)",
+        items.len(),
+        friends,
+        pending,
+        blocked
+    ));
+    if !sample.is_empty() {
+        plog(&format!("probe: {sample}"));
+    }
+    Ok(())
+}
+
 /* ---------- pipe ---------- */
 
 /// One Discord IPC connection with polled reads.
@@ -862,6 +1024,17 @@ fn mask(value: &Value) -> Value {
         ),
         Value::Array(items) => Value::Array(items.iter().map(mask).collect()),
         other => other.clone(),
+    }
+}
+
+/// Keeps a couple of characters so the log identifies an account without
+/// spilling the full display name.
+fn mask_name(name: &str) -> String {
+    let mut chars = name.chars();
+    match (chars.next(), chars.next()) {
+        (Some(first), Some(second)) => format!("{first}{second}…"),
+        (Some(first), None) => format!("{first}…"),
+        _ => "…".to_string(),
     }
 }
 
