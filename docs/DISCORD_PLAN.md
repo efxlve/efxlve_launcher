@@ -26,9 +26,10 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - **Faz 1.1** — tamam (`4fb50e21`): Ayarlar > Entegrasyonlar > Sosyal'de Discord kartı ("Launcher'da Aç" + "Sunucuya katıl"); Discord sayfası başlığında davet düğmesi. Davet sabiti `core/constants.ts` → `DISCORD_INVITE_URL`.
 - **Faz 1.2** — tamam (`f614a6e5`): oyundayken ikinci satırda kupa ilerlemesi (`presence.trophies`); `LAUNCHER_ICON` artık `@main` (commit sabitlemesi kaldırıldı).
 - **Faz 2.1** — tamam (`85a662f`, `f969a7c`): child WebView2 host + spike. Sayfa açılıyor, giriş yapılabiliyor.
-- **Faz 2.2/2.3** — büyük ölçüde tamam: yükleme notu + yenile düğmesi (`fbb6f58d`), web istemcisi boyayana kadar gizli + 45 sn emniyet (`dc1df706`), minimize "sliver" koruması (`c575823a`) ve görünürlük/odak yeniden senkronu, dış bağlantılar sistem tarayıcısında (`8a1d969f`).
+- **Faz 2.2/2.3** — büyük ölçüde tamam: yükleme notu + yenile düğmesi (`fbb6f58d`), web istemcisi boyayana kadar gizli + 45 sn emniyet (`dc1df706`), minimize "sliver" koruması (`c575823a`) ve görünürlük/odak yeniden senkronu, dış bağlantılar sistem tarayıcısında (`8a1d969f`), gömülü web'e mikrofon/kamera izni (`897b3ad4`) — **sesli sohbet web istemcisinde çalışıyor**.
 - **Faz 2.4** — tamam (`4fb50e21`, 1.1 ile birlikte): Ayarlar kartı.
-- **Kalan:** Faz 3 (overlay Discord sekmesi: yerel RPC spike + okuma), Faz 4 (park: native arkadaş listesi — SDK/RPC onayı), Faz 5 (yayın notu). Ayrıca gerçek kullanımda oturum kalıcılığının bir kez doğrulanması.
+- **Faz 3.1** — ilerledi (`91cf64e9`, `85dfab3a`, `0618cb22`): spike Discord IPC'ye bağlanıyor (READY alınıyor); AUTHORIZE `redirect_uri` istedi, eklendi. Portalda `http://127.0.0.1/callback` kayıtlıysa bir F9 koşusuyla akışın tamamı doğrulanacak (log: `%APPDATA%\com.efxlve.launcher\logs\discord-rpc.log`).
+- **Kalan:** Faz 3.2/3.3 (RPC doğrulamasından sonra okuma worker'ı + overlay sekmesi), Faz 4 (park: native arkadaş listesi), Faz 5 (yayın notu).
 
 ## Mevcut durum
 
