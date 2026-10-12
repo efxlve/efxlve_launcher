@@ -1,18 +1,16 @@
 // Discord web voice probe.
 //
 // Injected by `discord_host.rs` through WebView2's own `ExecuteScript`; the
-// returned value comes back as JSON. This client keeps most modules as
-// un-evaluated factories (`require.m`) with minified, getter-based exports, and
-// several unrelated modules expose same-named helpers — so candidates are
-// verified by behaviour (a channel lookup must return the channel for the id,
-// a user lookup the user, voice-state keys must be numeric ids) before a store
-// is accepted. Every property access is guarded: out-of-order materialisation
-// can throw Temporal-Dead-Zone errors. Nothing touches Discord's DOM. Failures
-// return `ok: false` with a bounded diagnostic line and the overlay stays on
-// the RPC source.
+// returned value comes back as JSON. This client build keeps modules lazy,
+// wraps exports in minified layers, and exposes several unrelated modules with
+// same-named helpers. So candidates are (a) unwrapped up to three levels,
+// (b) scored by how many extra store methods they expose, and (c) verified by
+// behaviour (a channel lookup must return the channel for the id, a user
+// lookup the user, voice-state keys must be numeric ids). Every property
+// access is guarded: out-of-order materialisation can throw
+// Temporal-Dead-Zone errors. Failures return `ok: false` with a bounded
+// diagnostic line and the overlay stays on the RPC source.
 (function () {
-  // Store lookups are cached per page; a failed sweep is retried at most every
-  // 10 seconds.
   var cache = window.__efxlveVoiceProbe;
   if (!cache) {
     cache = window.__efxlveVoiceProbe = { at: 0, stores: null, via: "", why: "" };
@@ -20,15 +18,22 @@
 
   var ID = /^\d{5,}$/;
 
+  // Extra names a real store of this kind tends to carry, used for scoring.
+  var ROLES = [
+    { key: "selected", need: "getVoiceChannelId", extras: ["getChannelId", "getLastSelectedChannelId"] },
+    { key: "channels", need: "getChannel", extras: ["getChannels", "hasChannel", "getDMFromUserId", "getGuildId"] },
+    { key: "voice", need: "getVoiceStatesForChannel", extras: ["getVoiceStates", "getVoiceState", "getVoiceChannelId"] },
+    { key: "users", need: "getUser", extras: ["getUsers", "getCurrentUser"] },
+    { key: "guilds", need: "getGuild", extras: ["getGuilds", "getGuildCount"] }
+  ];
+
   function registryOf(win) {
-    // The hook captures the app's require before its runtime can replace or
-    // drop the global; prefer it and fall back to a live lookup.
     try {
       if (win.__efxlveVoiceRequire) return win.__efxlveVoiceRequire;
     } catch (e) {}
     var chunk = null;
     try {
-      chunk = win.webpackChunkdiscord_app;
+      chunk = win.webpackChunkDiscord_app;
     } catch (e) {
       return { error: "get:" + String(e).slice(0, 50) };
     }
@@ -46,19 +51,21 @@
     return req || null;
   }
 
-  // The object on which `prop` is callable: the export itself, or a wrapped
-  // value one level in. `null` when nothing matches.
-  function findCallable(exp, prop) {
+  // The object on which `prop` is callable, unwrapping up to `depth` layers of
+  // minified wrappers. `null` when nothing matches.
+  function findDeep(exp, prop, depth) {
+    if (!exp || depth < 0) return null;
     try {
-      if (exp && typeof exp[prop] === "function") return exp;
+      if (typeof exp[prop] === "function") return exp;
     } catch (e) {}
+    if (depth === 0) return null;
     var keys = [];
     try {
       keys = Object.keys(exp);
     } catch (e) {
       return null;
     }
-    for (var i = 0; i < keys.length && i < 12; i++) {
+    for (var i = 0; i < keys.length && i < 10; i++) {
       var inner = null;
       try {
         inner = exp[keys[i]];
@@ -66,11 +73,76 @@
         continue;
       }
       if (!inner || (typeof inner !== "object" && typeof inner !== "function")) continue;
-      try {
-        if (typeof inner[prop] === "function") return inner;
-      } catch (e) {}
+      var hit = findDeep(inner, prop, depth - 1);
+      if (hit) return hit;
     }
     return null;
+  }
+
+  function score(candidate, extras) {
+    var hits = 0;
+    for (var i = 0; i < extras.length; i++) {
+      try {
+        if (typeof candidate[extras[i]] === "function") hits += 1;
+      } catch (e) {}
+    }
+    return hits;
+  }
+
+  function pushCandidate(found, candidate, extras) {
+    if (!candidate) return;
+    for (var i = 0; i < found.length; i++) {
+      if (found[i].candidate === candidate) return;
+    }
+    found.push({ candidate: candidate, score: score(candidate, extras) });
+  }
+
+  // Candidates for one role: instance cache first (deep unwrap), then factory
+  // sources that mention the name (materialised, deep unwrap).
+  function collect(req, role, report) {
+    var found = [];
+    var limit = 24;
+    var mods = (req && req.c) || {};
+    for (var key in mods) {
+      if (found.length >= limit) break;
+      var exp = null;
+      try {
+        exp = mods[key] && mods[key].exports;
+      } catch (e) {
+        continue;
+      }
+      pushCandidate(found, findDeep(exp, role.need, 3), role.extras);
+    }
+    if (found.length) {
+      found.sort(function (a, b) { return b.score - a.score; });
+      return found;
+    }
+    var m = (req && req.m) || {};
+    var ids = Object.keys(m);
+    for (var i = 0; i < ids.length && found.length < limit; i++) {
+      var src = "";
+      try {
+        src = String(m[ids[i]]);
+      } catch (e) {
+        continue;
+      }
+      if (src.indexOf(role.need) < 0) continue;
+      var mod = null;
+      try {
+        mod = req(ids[i]);
+        report.materialised += 1;
+      } catch (e) {
+        report.threw += 1;
+        continue;
+      }
+      var hit = findDeep(mod, role.need, 3);
+      if (report.shapes.length < 6 && hit) {
+        report.shapes.push(ids[i] + ":" + shapeOf(hit));
+      }
+      pushCandidate(found, hit, role.extras);
+    }
+    found.sort(function (a, b) { return b.score - a.score; });
+    return found;
   }
 
   function shapeOf(exp) {
@@ -81,100 +153,44 @@
     }
   }
 
-  // Up to `limit` distinct objects exposing `prop`, instance cache first, then
-  // factories whose source mentions the name.
-  function collect(req, prop, limit, report) {
-    var out = [];
-    var mods = (req && req.c) || {};
-    for (var key in mods) {
-      var exp = null;
-      try {
-        exp = mods[key] && mods[key].exports;
-      } catch (e) {
-        continue;
-      }
-      var hit = findCallable(exp, prop);
-      if (hit && out.indexOf(hit) < 0) {
-        out.push(hit);
-        if (out.length >= limit) return out;
-      }
-    }
-    var m = (req && req.m) || {};
-    var ids = Object.keys(m);
-    var materialised = 0;
-    for (var i = 0; i < ids.length && out.length < limit; i++) {
-      var src = "";
-      try {
-        src = String(m[ids[i]]);
-      } catch (e) {
-        continue;
-      }
-      if (src.indexOf(prop) < 0) continue;
-      var exp2 = null;
-      try {
-        exp2 = req(ids[i]);
-        materialised += 1;
-      } catch (e) {
-        if (report) report.threw += 1;
-        continue;
-      }
-      var hit2 = findCallable(exp2, prop);
-      if (report && report.shapes.length < 6 && hit2) {
-        report.shapes.push(ids[i] + ":" + shapeOf(hit2));
-      }
-      if (hit2 && out.indexOf(hit2) < 0) out.push(hit2);
-    }
-    if (report) report.materialised += materialised;
-    return out;
-  }
-
-  // Picks the stores that actually behave like the client's stores.
+  // Picks the stores that behave like the client's own stores.
   function resolveStores(req, report) {
-    var out = {
-      selected: null,
-      channels: null,
-      voice: null,
-      users: null,
-      guilds: null,
-      channelId: null
-    };
+    var out = { selected: null, channels: null, voice: null, users: null, guilds: null, channelId: null };
 
-    var selected = collect(req, "getVoiceChannelId", 8, report);
+    var selected = collect(req, ROLES[0], report);
     for (var i = 0; i < selected.length; i++) {
       try {
-        var id = selected[i].getVoiceChannelId();
+        var id = selected[i].candidate.getVoiceChannelId();
         if (id === null || id === undefined || typeof id === "string") {
-          out.selected = selected[i];
+          out.selected = selected[i].candidate;
           out.channelId = typeof id === "string" ? id : null;
           break;
         }
       } catch (e) {}
     }
-    if (!out.selected && selected.length) out.selected = selected[0];
 
-    var channelId = out.channelId;
-    var channels = collect(req, "getChannel", 24, report);
+    var channels = collect(req, ROLES[1], report);
     for (var c = 0; c < channels.length; c++) {
       try {
-        var channel = channelId ? channels[c].getChannel(channelId) : null;
+        var channel = out.channelId ? channels[c].candidate.getChannel(out.channelId) : null;
         if (
           channel &&
           typeof channel === "object" &&
-          (String(channel.id) === String(channelId) || typeof channel.name === "string")
+          (String(channel.id) === String(out.channelId) || typeof channel.name === "string")
         ) {
-          out.channels = channels[c];
+          out.channels = channels[c].candidate;
           break;
         }
       } catch (e) {}
     }
 
-    var voice = collect(req, "getVoiceStatesForChannel", 12, report);
+    var voice = collect(req, ROLES[2], report);
     var states = null;
     for (var v = 0; v < voice.length; v++) {
       try {
-        var map = channelId ? voice[v].getVoiceStatesForChannel(channelId) : null;
+        var map = out.channelId ? voice[v].candidate.getVoiceStatesForChannel(out.channelId) : null;
         if (map && typeof map === "object" && !Array.isArray(map)) {
-          out.voice = voice[v];
+          out.voice = voice[v].candidate;
           states = map;
           break;
         }
@@ -183,41 +199,31 @@
 
     var userId = null;
     if (states) {
-      for (var key in states) {
-        if (ID.test(key)) {
-          userId = key;
+      for (var key2 in states) {
+        if (ID.test(key2)) {
+          userId = key2;
           break;
         }
       }
     }
-    var users = collect(req, "getUser", 24, report);
+    var users = collect(req, ROLES[3], report);
     for (var u = 0; u < users.length; u++) {
       try {
-        var person = userId ? users[u].getUser(userId) : null;
+        var person = userId ? users[u].candidate.getUser(userId) : null;
         if (!userId || (person && typeof person === "object" && String(person.id) === String(userId))) {
-          out.users = users[u];
+          out.users = users[u].candidate;
           break;
         }
       } catch (e) {}
     }
 
-    var guilds = collect(req, "getGuild", 12, report);
-    for (var g = 0; g < guilds.length; g++) {
-      try {
-        var probe = guilds[g].getGuild ? guilds[g].getGuild("0") : null;
-        if (probe === null || probe === undefined || typeof probe === "object") {
-          out.guilds = guilds[g];
-          break;
-        }
-      } catch (e) {}
-    }
+    var guilds = collect(req, ROLES[4], report);
+    if (guilds.length) out.guilds = guilds[0].candidate;
 
     if (out.selected && out.channels && out.voice && out.users) return out;
     return out;
   }
 
-  // Which store-like method names the factory sources carry. Bounded, only run
-  // when everything else failed.
   function sourceInventory(req) {
     var m = (req && req.m) || {};
     var ids = Object.keys(m);
@@ -240,6 +246,21 @@
       if (tokens.length >= 40) break;
     }
     return tokens;
+  }
+
+  function domFacts() {
+    var bits = [];
+    try {
+      bits.push("rtc=" + (document.querySelector('[class*="rtcConnection"]') ? 1 : 0));
+      bits.push("chanRows=" + document.querySelectorAll('[data-list-item-id^="channels___"]').length);
+      bits.push(
+        "avatars=" +
+          document.querySelectorAll('img[src*="/avatars/"], img[src*="/embed/avatars/"]').length
+      );
+    } catch (e) {
+      bits.push("dom=err");
+    }
+    return bits.join(" ");
   }
 
   function channelOf(stores, channelId) {
@@ -349,30 +370,27 @@
             kids = -9;
           }
           try {
-            href = String(candidates[m2].location.href).slice(0, 90);
+            href = String(candidates[m2].location.href).slice(0, 80);
           } catch (e) {
             href = "x";
           }
           mounts.push(kids);
           hrefs.push(href);
         }
-        var shape = "";
-        if (best) {
-          shape = " m=" + Object.keys(best.m || {}).length;
-        }
+        var shape = best ? " m=" + Object.keys(best.m || {}).length : "";
         cache.at = Date.now();
         cache.why = "no-stores wins=" + candidates.length
           + " bestIdx=" + bestIndex
           + " bestM=" + bestCount
           + " chunks=[" + chunkInfo.join(" | ") + "]"
           + " mounts=[" + mounts.join(",") + "]"
-          + " top=" + (window.top === window ? 1 : 0)
           + " ready=" + document.readyState
           + " hrefs=[" + hrefs.join(" | ") + "]"
           + shape
           + " mat=" + report.materialised
           + " threw=" + report.threw
           + " shapes=[" + report.shapes.join(" ") + "]"
+          + " dom=[" + domFacts() + "]"
           + " names=[" + sourceInventory(best).join(",") + "]";
         return { ok: false, why: cache.why };
       }
@@ -389,9 +407,6 @@
       channel: channel,
       participants: participants
     };
-    // While the name or the first participant still comes back empty, say what
-    // the raw objects actually hold so the extraction can be fixed from the
-    // log alone.
     if (!channel.name || (participants[0] && !participants[0].name)) {
       var bits = [];
       try {
