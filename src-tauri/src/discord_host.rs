@@ -773,9 +773,16 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
 
     // The document can finish loading while the web client is still blank (its
     // assets trickle in on a slow network), so the child stays hidden behind
-    // the loading note until `#app-mount` actually has children. A destroy
-    // bumps the generation, so a stale poll is inert; the timeout shows the
-    // child anyway so an error page is never hidden forever.
+    // the loading note until `#app-mount` actually has children.
+    watch_first_paint(app, generation);
+
+    Ok(())
+}
+
+/// Keeps a fresh document hidden behind the loading note until the web client
+/// really painted. A destroy bumps the generation, so a stale poll is inert;
+/// the timeout shows the child anyway so an error page is never hidden forever.
+fn watch_first_paint(app: &AppHandle, generation: u64) {
     let ready_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let deadline = std::time::Instant::now() + FIRST_PAINT_TIMEOUT;
@@ -798,7 +805,6 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
             }
         }
     });
-    Ok(())
 }
 
 /// Creates the Discord page on first use, then positions and shows it.
@@ -874,6 +880,7 @@ pub fn discord_view_reload(app: AppHandle) {
         if let Ok(url) = HOME_URL.parse::<url::Url>() {
             let _ = view.navigate(url);
         }
+        watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
         web_log(&app, "page reload requested");
     }
 }
@@ -890,12 +897,26 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
     let clean = target.to_string();
     match view(&app) {
         Some(view) => {
-            let _ = view.navigate(target);
+            if IN_CALL.load(Ordering::SeqCst) {
+                // A real navigation reloads the client and would drop the call;
+                // in a call the person navigates inside the client itself.
+                web_log(
+                    &app,
+                    "conversation asked while in a call; the client stays where it is",
+                );
+            } else {
+                PAINTED.store(false, Ordering::SeqCst);
+                let _ = view.hide();
+                let _ = view.navigate(target);
+                watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
+                web_log(&app, "opening a conversation in the launcher client");
+            }
         }
         None => {
             if let Ok(mut guard) = PENDING_URL.lock() {
                 *guard = Some(clean);
             }
+            web_log(&app, "conversation queued for the next page load");
         }
     }
     // The main window's frontend switches to its Discord page on this event.
@@ -904,7 +925,6 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
         let _ = window.show();
         let _ = window.set_focus();
     }
-    web_log(&app, "opening a conversation in the launcher client");
     Ok(())
 }
 
