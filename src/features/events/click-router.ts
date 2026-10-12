@@ -651,8 +651,7 @@ document.addEventListener("click", (e) => {
     // the loop, so a stray click would be final.
     void askConfirm({
       title: i18nT("manage.uninstallTitle"),
-      subject: summaryOf(id)?.title || id,
-      icon: "trash",
+      name: summaryOf(id)?.title || id,
       body: i18nT("confirm.uninstallBody"),
       confirm: i18nT("common.uninstall"),
       cancel: i18nT("common.cancel"),

@@ -73,8 +73,7 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
         if (mode === "uninstall") {
           void askConfirm({
             title: i18nT("manage.uninstallTitle"),
-            subject: summaryOf(`steam::${id}`)?.title || id,
-            icon: "trash",
+            name: summaryOf(`steam::${id}`)?.title || id,
             body: i18nT("confirm.uninstallBody"),
             confirm: i18nT("common.uninstall"),
             cancel: i18nT("common.cancel"),

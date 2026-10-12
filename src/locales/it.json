@@ -361,7 +361,7 @@
   "common.install": "Installa",
   "common.manage": "Proprietà e gestione",
   "common.uninstall": "Disinstalla",
-  "confirm.uninstallBody": "L'installazione verrà rimossa da questo computer. Il gioco resta nella tua libreria; per rigiocarlo in futuro dovrai scaricarlo di nuovo.",
+  "confirm.uninstallBody": "Disinstallare {name} da questo computer? Il gioco resta nella tua libreria; per rigiocarlo in futuro dovrai scaricarlo di nuovo.",
   "common.cancel": "Annulla",
   "common.save": "Salva",
   "common.edit": "Modifica",

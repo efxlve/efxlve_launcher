@@ -361,7 +361,7 @@
   "common.install": "安裝",
   "common.manage": "內容與管理",
   "common.uninstall": "解除安裝",
-  "confirm.uninstallBody": "將從這台電腦移除安裝。遊戲仍會保留在媒體庫中；之後想玩需要重新下載。",
+  "confirm.uninstallBody": "要從這台電腦解除安裝 {name} 嗎？遊戲仍會保留在媒體庫中；之後想玩需要重新下載。",
   "common.cancel": "取消",
   "common.save": "儲存",
   "common.edit": "編輯",

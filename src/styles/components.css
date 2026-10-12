@@ -294,28 +294,11 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2); cursor: pointer;
 }
 .manage-head-close:hover { background: var(--surface-2); color: var(--text); }
-/* --- Confirm dialog (destructive asks) --- */
+/* --- Confirm dialog (destructive asks): the shared modal frame, text first --- */
 .confirm-layer { position: fixed; inset: 0; z-index: 600; }
-.confirm-dialog {
-  width: min(440px, 100%); padding: 22px;
-  display: flex; flex-direction: column; gap: 16px;
-}
-.confirm-head { display: flex; align-items: flex-start; gap: 14px; }
-.confirm-icon {
-  display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 11px; background: var(--err-tint); color: var(--err);
-}
-.confirm-dialog .modal-title { font-size: 15px; }
-.confirm-head-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.confirm-subject {
-  margin: 0; align-self: flex-start; max-width: 100%;
-  padding: 3px 10px; border-radius: 999px;
-  background: var(--surface-2); border: 1px solid var(--line-strong);
-  font-size: 12.5px; font-weight: 500; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.confirm-body { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-2); max-width: 52ch; }
-.confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.confirm-dialog { width: min(420px, 100%); padding: 18px 20px 16px; }
+.confirm-body { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+.confirm-body strong { color: var(--text); font-weight: 600; }
 .confirm-go { border-color: rgba(229, 72, 77, 0.35); font-weight: 600; }
 /* --- Context menu --- */
 .ps5-context-menu {

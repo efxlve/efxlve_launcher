@@ -377,7 +377,7 @@
   "common.install": "Install",
   "common.manage": "Properties & Manage",
   "common.uninstall": "Uninstall",
-  "confirm.uninstallBody": "This removes the installation from this computer. The game stays in your library; you will need to download it again to play it later.",
+  "confirm.uninstallBody": "Uninstall {name} from this computer? It stays in your library; you will need to download it again to play it later.",
   "common.cancel": "Cancel",
   "common.save": "Save",
   "common.edit": "Edit",

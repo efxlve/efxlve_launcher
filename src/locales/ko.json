@@ -361,7 +361,7 @@
   "common.install": "설치",
   "common.manage": "속성 및 관리",
   "common.uninstall": "제거",
-  "confirm.uninstallBody": "이 컴퓨터에서 설치를 제거합니다. 게임은 라이브러리에 남지만, 나중에 플레이하려면 다시 다운로드해야 합니다.",
+  "confirm.uninstallBody": "{name}을(를) 이 컴퓨터에서 제거할까요? 게임은 라이브러리에 남지만, 나중에 플레이하려면 다시 다운로드해야 합니다.",
   "common.cancel": "취소",
   "common.save": "저장",
   "common.edit": "편집",

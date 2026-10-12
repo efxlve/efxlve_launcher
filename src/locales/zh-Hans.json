@@ -361,7 +361,7 @@
   "common.install": "安装",
   "common.manage": "属性与管理",
   "common.uninstall": "卸载",
-  "confirm.uninstallBody": "将从这台电脑移除安装。游戏仍会保留在库中；之后想玩需要重新下载。",
+  "confirm.uninstallBody": "要从这台电脑卸载 {name} 吗？游戏仍会保留在库中；之后想玩需要重新下载。",
   "common.cancel": "取消",
   "common.save": "保存",
   "common.edit": "编辑",
