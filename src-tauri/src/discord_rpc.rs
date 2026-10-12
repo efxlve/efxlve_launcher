@@ -23,11 +23,6 @@ use tauri::{AppHandle, Manager};
 /// uses (`DEFAULT_DISCORD_CLIENT_ID` in `src/features/presence/presence.ts`).
 const CLIENT_ID: &str = "1551663205426794596";
 
-/// Registered OAuth2 redirect for the launcher's Discord application (Developer
-/// Portal → OAuth2). The local RPC AUTHORIZE requires one even though nothing
-/// actually redirects; the token exchange must send the same value.
-const REDIRECT_URI: &str = "http://127.0.0.1/callback";
-
 /// One probe per app run: a second connection would walk into Discord's
 /// two-connections-per-minute IPC limit.
 static PROBE_RUNNING: AtomicBool = AtomicBool::new(false);
@@ -53,7 +48,11 @@ pub fn discord_voice_probe(app: AppHandle) {
     #[cfg(debug_assertions)]
     {
         if PROBE_RUNNING.swap(true, Ordering::SeqCst) {
-            plog("probe already ran or is running; restart the app to retry");
+            // Repeated key presses are common; say it once, not per press.
+            static WARNED: AtomicBool = AtomicBool::new(false);
+            if !WARNED.swap(true, Ordering::SeqCst) {
+                plog("probe already ran or is running; restart the app to retry");
+            }
             return;
         }
         // A fresh log per run: the previous run's outcome is not mixed in.
@@ -105,44 +104,89 @@ fn run_probe() -> std::io::Result<()> {
     let (_, pre) = next_frame(&mut pipe)?;
     plog(&format!("pre-auth GET_SELECTED_VOICE_CHANNEL: {}", compact(&pre)));
 
-    // AUTHORIZE with PKCE. The user sees Discord's consent prompt; the answer
-    // arrives on this same pipe.
+    // Discord's RPC OAuth2 authorize is picky about the argument shape and the
+    // validation errors contradict each other (a redirect_uri is demanded with
+    // one shape and refused with the next). Walk the documented shapes in
+    // order; the first one that validates triggers the consent prompt, so at
+    // most one prompt appears. The variant decides the exchange shape.
     let verifier = pkce_verifier();
     let challenge = pkce_challenge(&verifier);
-    plog("asking for consent (scopes: rpc, rpc.voice.read) — approve the prompt in Discord");
-    send(&mut pipe, &json!({
-        "cmd": "AUTHORIZE",
-        "args": {
-            "client_id": CLIENT_ID,
-            "scopes": ["rpc", "rpc.voice.read"],
-            "redirect_uri": REDIRECT_URI,
-            "code_challenge": challenge,
-            "code_challenge_method": "S256"
-        },
-        "nonce": nonce()
-    }))?;
+    let scopes = json!(["rpc", "rpc.voice.read"]);
+    let variants: [(&str, Value, Option<&str>); 3] = [
+        (
+            "bare",
+            json!({ "client_id": CLIENT_ID, "scopes": scopes }),
+            None,
+        ),
+        (
+            "response_type",
+            json!({
+                "client_id": CLIENT_ID,
+                "scopes": scopes,
+                "response_type": "code"
+            }),
+            None,
+        ),
+        (
+            "pkce",
+            json!({
+                "client_id": CLIENT_ID,
+                "scopes": scopes,
+                "code_challenge": challenge,
+                "code_challenge_method": "S256"
+            }),
+            Some(verifier.as_str()),
+        ),
+    ];
 
-    let code = loop {
-        let (_, frame) = next_frame(&mut pipe)?;
-        let cmd = frame.get("cmd").and_then(Value::as_str).unwrap_or("");
-        plog(&format!("frame cmd={cmd}: {}", compact(&frame)));
-        if cmd == "AUTHORIZE" {
-            match frame.pointer("/data/code").and_then(Value::as_str) {
-                Some(code) => break code.to_string(),
-                None => {
-                    plog("AUTHORIZE returned no code; stopping");
+    let mut authorized: Option<(String, Option<String>)> = None;
+    for (name, args, exchange_verifier) in &variants {
+        plog(&format!(
+            "asking for consent [{name}] — approve the prompt in Discord if it appears"
+        ));
+        send(&mut pipe, &json!({ "cmd": "AUTHORIZE", "args": args, "nonce": nonce() }))?;
+        let mut next_variant = false;
+        loop {
+            let (_, frame) = next_frame(&mut pipe)?;
+            let cmd = frame.get("cmd").and_then(Value::as_str).unwrap_or("");
+            plog(&format!("frame cmd={cmd}: {}", compact(&frame)));
+            if cmd == "AUTHORIZE" {
+                let message = frame
+                    .pointer("/data/message")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+                if message.contains("denied") || message.contains("cancel") {
+                    plog("authorization was declined; stopping");
                     return Ok(());
                 }
+                if let Some(code) = frame.pointer("/data/code").and_then(Value::as_str) {
+                    authorized = Some((
+                        code.to_string(),
+                        exchange_verifier.map(str::to_string),
+                    ));
+                    break;
+                }
+                // A code-less AUTHORIZE answer is a validation failure: next shape.
+                next_variant = true;
+                break;
+            }
+            if cmd == "ERROR" {
+                next_variant = true;
+                break;
             }
         }
-        if cmd == "ERROR" {
-            plog("Discord refused AUTHORIZE; stopping (approval or tester list)");
-            return Ok(());
+        if !next_variant {
+            break;
         }
+    }
+    let Some((code, exchange_verifier)) = authorized else {
+        plog("no AUTHORIZE shape was accepted; stopping (approval or tester list)");
+        return Ok(());
     };
 
-    // Exchange the code (PKCE, no redirect URI: nothing was redirected).
-    let Some(access_token) = exchange_code(&code, &verifier) else {
+    // Exchange the code; the variant decides whether PKCE goes along.
+    let Some(access_token) = exchange_code(&code, exchange_verifier.as_deref()) else {
         plog("token exchange failed; stopping");
         return Ok(());
     };
@@ -270,10 +314,10 @@ fn base64_url(bytes: &[u8]) -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
-/// `authorization_code` + PKCE against Discord's token endpoint. Tries without
-/// a redirect URI first; the response text is logged either way so a rejected
-/// variant is visible in the log.
-fn exchange_code(code: &str, verifier: &str) -> Option<String> {
+/// `authorization_code` grant against Discord's token endpoint. The verifier
+/// rides along only for the PKCE authorize variant; the response text is logged
+/// either way so a rejected shape is visible in the log.
+fn exchange_code(code: &str, verifier: Option<&str>) -> Option<String> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -282,16 +326,18 @@ fn exchange_code(code: &str, verifier: &str) -> Option<String> {
         .timeout(Duration::from_secs(20))
         .build()
         .ok()?;
+    let mut form: Vec<(&str, &str)> = vec![
+        ("client_id", CLIENT_ID),
+        ("grant_type", "authorization_code"),
+        ("code", code),
+    ];
+    if let Some(verifier) = verifier {
+        form.push(("code_verifier", verifier));
+    }
     let response = runtime.block_on(async {
         client
             .post("https://discord.com/api/v10/oauth2/token")
-            .form(&[
-                ("client_id", CLIENT_ID),
-                ("grant_type", "authorization_code"),
-                ("code", code),
-                ("code_verifier", verifier),
-                ("redirect_uri", REDIRECT_URI),
-            ])
+            .form(&form)
             .send()
             .await
     });
