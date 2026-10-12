@@ -5,16 +5,19 @@
 //! the `rpc` + `rpc.voice.read` scopes, PKCE token exchange, AUTHENTICATE),
 //! then reads the selected voice channel and listens for speaking events.
 //!
-//! Everything is logged to the terminal that runs `tauri dev`, so the
-//! approval/limit story can be verified before the overlay tab is built on
-//! this. Token-ish fields are masked in the log. Trigger: F9 on the Discord
-//! page (dev builds only).
+//! Because the dev terminal is noisy, the probe writes to
+//! `<app_data>/logs/discord-rpc.log` (fresh per run) as well as stderr, so the
+//! run can be read back without copying from the terminal. Token-ish fields
+//! are masked before they are written. Trigger: F9 on the Discord page (dev
+//! builds only).
 
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 use std::time::Duration;
 
 use serde_json::{json, Value};
+use tauri::{AppHandle, Manager};
 
 /// The launcher's Discord application; the same id the Rich Presence worker
 /// uses (`DEFAULT_DISCORD_CLIENT_ID` in `src/features/presence/presence.ts`).
@@ -24,38 +27,68 @@ const CLIENT_ID: &str = "1551663205426794596";
 /// two-connections-per-minute IPC limit.
 static PROBE_RUNNING: AtomicBool = AtomicBool::new(false);
 
+/// Mirror of the probe log (`<app_data>/logs/discord-rpc.log`), one run per
+/// file. Opened by the command before the probe thread starts.
+static LOG_FILE: Mutex<Option<std::fs::File>> = Mutex::new(None);
+
+/// Writes one probe line to the terminal and the log file.
+fn plog(line: &str) {
+    eprintln!("[discord-rpc] {line}");
+    if let Ok(mut guard) = LOG_FILE.lock() {
+        if let Some(file) = guard.as_mut() {
+            let _ = writeln!(file, "[discord-rpc] {line}");
+            let _ = file.flush();
+        }
+    }
+}
+
 /// Spawns the probe thread. Dev builds only; release is a no-op.
 #[tauri::command]
-pub fn discord_voice_probe() {
+pub fn discord_voice_probe(app: AppHandle) {
     #[cfg(debug_assertions)]
     {
         if PROBE_RUNNING.swap(true, Ordering::SeqCst) {
-            eprintln!("[discord-rpc] probe already ran or is running; restart the app to retry");
+            plog("probe already ran or is running; restart the app to retry");
             return;
+        }
+        // A fresh log per run: the previous run's outcome is not mixed in.
+        if let Ok(dir) = app.path().app_data_dir() {
+            let path = dir.join("logs").join("discord-rpc.log");
+            let _ = std::fs::create_dir_all(dir.join("logs"));
+            if let Ok(file) = std::fs::File::create(&path) {
+                plog(&format!("log file: {}", path.display()));
+                if let Ok(mut guard) = LOG_FILE.lock() {
+                    *guard = Some(file);
+                }
+            }
         }
         let spawned = std::thread::Builder::new()
             .name("discord-voice-probe".to_string())
             .spawn(|| {
                 if let Err(error) = run_probe() {
-                    eprintln!("[discord-rpc] probe stopped: {error}");
+                    plog(&format!("probe stopped: {error}"));
                 }
             });
         if spawned.is_err() {
-            eprintln!("[discord-rpc] probe thread could not start");
+            plog("probe thread could not start");
         }
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = app;
     }
 }
 
 fn run_probe() -> std::io::Result<()> {
     let Some(mut pipe) = connect() else {
-        eprintln!("[discord-rpc] no Discord IPC pipe found; is the desktop client running?");
+        plog("no Discord IPC pipe found; is the desktop client running?");
         return Ok(());
     };
 
     // Handshake, then READY carries the own user object.
     write_frame(&mut pipe, 0, &json!({ "v": 1, "client_id": CLIENT_ID }))?;
     let (_, ready) = next_frame(&mut pipe)?;
-    eprintln!("[discord-rpc] READY: {}", compact(&ready));
+    plog(&format!("READY: {}", compact(&ready)));
 
     // Baseline: this command needs the `rpc` scope, so before authorizing it
     // should answer with a scope error. Documents the unauthenticated state.
@@ -65,13 +98,13 @@ fn run_probe() -> std::io::Result<()> {
         "nonce": nonce()
     }))?;
     let (_, pre) = next_frame(&mut pipe)?;
-    eprintln!("[discord-rpc] pre-auth GET_SELECTED_VOICE_CHANNEL: {}", compact(&pre));
+    plog(&format!("pre-auth GET_SELECTED_VOICE_CHANNEL: {}", compact(&pre)));
 
     // AUTHORIZE with PKCE. The user sees Discord's consent prompt; the answer
     // arrives on this same pipe.
     let verifier = pkce_verifier();
     let challenge = pkce_challenge(&verifier);
-    eprintln!("[discord-rpc] asking for consent (scopes: rpc, rpc.voice.read) — approve the prompt in Discord");
+    plog("asking for consent (scopes: rpc, rpc.voice.read) — approve the prompt in Discord");
     send(&mut pipe, &json!({
         "cmd": "AUTHORIZE",
         "args": {
@@ -86,25 +119,25 @@ fn run_probe() -> std::io::Result<()> {
     let code = loop {
         let (_, frame) = next_frame(&mut pipe)?;
         let cmd = frame.get("cmd").and_then(Value::as_str).unwrap_or("");
-        eprintln!("[discord-rpc] frame cmd={cmd}: {}", compact(&frame));
+        plog(&format!("frame cmd={cmd}: {}", compact(&frame)));
         if cmd == "AUTHORIZE" {
             match frame.pointer("/data/code").and_then(Value::as_str) {
                 Some(code) => break code.to_string(),
                 None => {
-                    eprintln!("[discord-rpc] AUTHORIZE returned no code; stopping");
+                    plog("AUTHORIZE returned no code; stopping");
                     return Ok(());
                 }
             }
         }
         if cmd == "ERROR" {
-            eprintln!("[discord-rpc] Discord refused AUTHORIZE; stopping (approval or tester list)");
+            plog("Discord refused AUTHORIZE; stopping (approval or tester list)");
             return Ok(());
         }
     };
 
     // Exchange the code (PKCE, no redirect URI: nothing was redirected).
     let Some(access_token) = exchange_code(&code, &verifier) else {
-        eprintln!("[discord-rpc] token exchange failed; stopping");
+        plog("token exchange failed; stopping");
         return Ok(());
     };
 
@@ -114,7 +147,7 @@ fn run_probe() -> std::io::Result<()> {
         "nonce": nonce()
     }))?;
     let (_, auth) = next_frame(&mut pipe)?;
-    eprintln!("[discord-rpc] AUTHENTICATE: {}", compact(&auth));
+    plog(&format!("AUTHENTICATE: {}", compact(&auth)));
 
     // With `rpc` granted, the selected voice channel now answers.
     send(&mut pipe, &json!({
@@ -123,7 +156,7 @@ fn run_probe() -> std::io::Result<()> {
         "nonce": nonce()
     }))?;
     let (_, channel) = next_frame(&mut pipe)?;
-    eprintln!("[discord-rpc] selected voice channel: {}", compact(&channel));
+    plog(&format!("selected voice channel: {}", compact(&channel)));
     let channel_id = channel
         .pointer("/data/id")
         .and_then(Value::as_str)
@@ -139,11 +172,11 @@ fn run_probe() -> std::io::Result<()> {
                 "nonce": nonce()
             }))?;
             let (_, ack) = next_frame(&mut pipe)?;
-            eprintln!("[discord-rpc] subscribe {event}: {}", compact(&ack));
+            plog(&format!("subscribe {event}: {}", compact(&ack)));
         }
     }
 
-    eprintln!("[discord-rpc] listening — talk in the voice channel to see SPEAKING events");
+    plog("listening — talk in the voice channel to see SPEAKING events");
     loop {
         let (_, frame) = next_frame(&mut pipe)?;
         let event = frame.get("evt").and_then(Value::as_str).unwrap_or("");
@@ -156,7 +189,7 @@ fn run_probe() -> std::io::Result<()> {
                 | "VOICE_STATE_DELETE"
                 | "VOICE_CHANNEL_SELECT"
         ) {
-            eprintln!("[discord-rpc] event {event}: {}", compact(&frame));
+            plog(&format!("event {event}: {}", compact(&frame)));
         }
     }
 }
@@ -167,7 +200,7 @@ fn connect() -> Option<std::fs::File> {
     for index in 0..10 {
         let path = format!(r"\\.\pipe\discord-ipc-{index}");
         if let Ok(file) = std::fs::OpenOptions::new().read(true).write(true).open(&path) {
-            eprintln!("[discord-rpc] connected to {path}");
+            plog(&format!("connected to {path}"));
             return Some(file);
         }
     }
@@ -233,7 +266,7 @@ fn base64_url(bytes: &[u8]) -> String {
 
 /// `authorization_code` + PKCE against Discord's token endpoint. Tries without
 /// a redirect URI first; the response text is logged either way so a rejected
-/// variant is visible in the terminal.
+/// variant is visible in the log.
 fn exchange_code(code: &str, verifier: &str) -> Option<String> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -260,7 +293,7 @@ fn exchange_code(code: &str, verifier: &str) -> Option<String> {
             let status = response.status();
             let text = runtime.block_on(response.text()).unwrap_or_default();
             let parsed = serde_json::from_str::<Value>(&text).unwrap_or(Value::Null);
-            eprintln!("[discord-rpc] token exchange HTTP {status}: {}", compact(&parsed));
+            plog(&format!("token exchange HTTP {status}: {}", compact(&parsed)));
             if status.is_success() {
                 parsed.get("access_token")?.as_str().map(str::to_string)
             } else {
@@ -268,13 +301,13 @@ fn exchange_code(code: &str, verifier: &str) -> Option<String> {
             }
         }
         Err(error) => {
-            eprintln!("[discord-rpc] token exchange error: {error}");
+            plog(&format!("token exchange error: {error}"));
             None
         }
     }
 }
 
-/// Token-ish fields are masked before anything reaches the terminal.
+/// Token-ish fields are masked before they are written anywhere.
 fn mask(value: &Value) -> Value {
     match value {
         Value::Object(map) => Value::Object(
@@ -295,7 +328,7 @@ fn mask(value: &Value) -> Value {
     }
 }
 
-/// One-line JSON for the terminal, masked and capped.
+/// One-line JSON for the log, masked and capped.
 fn compact(value: &Value) -> String {
     let text = mask(value).to_string();
     if text.chars().count() > 400 {
