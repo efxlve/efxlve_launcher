@@ -83,6 +83,10 @@ const READY_SCRIPT: &str = r#"
 })();
 "#;
 
+/// Captures the client's webpack require before its runtime can replace or
+/// drop the global (`discord_voice_hook.js`, an initialization script).
+const VOICE_HOOK_SCRIPT: &str = include_str!("discord_voice_hook.js");
+
 /// Reads the web client's own voice state (`discord_voice_probe.js`, injected
 /// through WebView2's native `ExecuteScript`). Every step is defensive and a
 /// failed lookup returns `ok: false`, which leaves the overlay on the RPC
@@ -565,6 +569,9 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     if !PROBE_HOOKS_SCRIPT.is_empty() {
         builder = builder.initialization_script(PROBE_HOOKS_SCRIPT);
     }
+    // Always installed: the client's webpack require is captured before its
+    // runtime can replace or drop the global.
+    builder = builder.initialization_script(VOICE_HOOK_SCRIPT);
     let position = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
 

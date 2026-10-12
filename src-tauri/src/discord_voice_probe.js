@@ -18,6 +18,11 @@
   }
 
   function registryOf(win) {
+    // The hook captures the app's require before its runtime can replace or
+    // drop the global; prefer it and fall back to a live lookup.
+    try {
+      if (win.__efxlveVoiceRequire) return win.__efxlveVoiceRequire;
+    } catch (e) {}
     var chunk = null;
     try {
       chunk = win.webpackChunkdiscord_app;
