@@ -20,6 +20,16 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 4. **Overlay Discord sekmesi:** presence anahtarı + yerel RPC ile ses kanalı/konuşan göstergesi (tester slotu; partner onayı gelmezse salt okunur).
 5. **(Park) Native arkadaş listesi:** SDK erişimi hazır; webview sonrası isteğe bağlı (bkz. Faz 4).
 
+## İlerleme (12.10.2026)
+
+- **Faz 0** — tamam: SDK başvurusu onaylandı (kayıtlı opsiyon).
+- **Faz 1.1** — tamam (`4fb50e21`): Ayarlar > Entegrasyonlar > Sosyal'de Discord kartı ("Launcher'da Aç" + "Sunucuya katıl"); Discord sayfası başlığında davet düğmesi. Davet sabiti `core/constants.ts` → `DISCORD_INVITE_URL`.
+- **Faz 1.2** — tamam (`f614a6e5`): oyundayken ikinci satırda kupa ilerlemesi (`presence.trophies`); `LAUNCHER_ICON` artık `@main` (commit sabitlemesi kaldırıldı).
+- **Faz 2.1** — tamam (`85a662f`, `f969a7c`): child WebView2 host + spike. Sayfa açılıyor, giriş yapılabiliyor.
+- **Faz 2.2/2.3** — büyük ölçüde tamam: yükleme notu + yenile düğmesi (`fbb6f58d`), web istemcisi boyayana kadar gizli + 45 sn emniyet (`dc1df706`), minimize "sliver" koruması (`c575823a`) ve görünürlük/odak yeniden senkronu, dış bağlantılar sistem tarayıcısında (`8a1d969f`).
+- **Faz 2.4** — tamam (`4fb50e21`, 1.1 ile birlikte): Ayarlar kartı.
+- **Kalan:** Faz 3 (overlay Discord sekmesi: yerel RPC spike + okuma), Faz 4 (park: native arkadaş listesi — SDK/RPC onayı), Faz 5 (yayın notu). Ayrıca gerçek kullanımda oturum kalıcılığının bir kez doğrulanması.
+
 ## Mevcut durum
 
 | Parça | Yer | Not |
