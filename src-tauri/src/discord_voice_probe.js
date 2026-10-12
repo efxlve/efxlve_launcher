@@ -18,16 +18,24 @@
   }
 
   function registryOf(win) {
+    var chunk = null;
     try {
-      var chunk = win.webpackChunkDiscord_app;
-      if (!chunk || !chunk.push) return null;
-      var req = null;
+      chunk = win.webpackChunkdiscord_app;
+    } catch (e) {
+      return { error: "get:" + String(e).slice(0, 50) };
+    }
+    if (!chunk) return null;
+    if (typeof chunk.push !== "function") {
+      return { error: "push-not-fn:" + typeof chunk.push };
+    }
+    var req = null;
+    try {
       chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { req = r; }]);
       chunk.pop();
-      return req || null;
     } catch (e) {
-      return null;
+      return { error: "push:" + String(e).slice(0, 60) };
     }
+    return req || null;
   }
 
   // The object on which `prop` is callable: the export itself, or a wrapped
@@ -223,9 +231,16 @@
       var found = null;
       var foundIndex = 0;
       var report = { shapes: [], threw: 0 };
+      var chunkInfo = [];
       for (var c = 0; c < candidates.length; c++) {
-        var req = registryOf(candidates[c]);
+        var reg = registryOf(candidates[c]);
+        if (reg && reg.error) {
+          chunkInfo.push(c + ":" + reg.error);
+          continue;
+        }
+        var req = reg || null;
         var count = req ? Object.keys(req.c || {}).length : -1;
+        chunkInfo.push(c + ":" + (req ? "ok" + count : "none"));
         if (count > bestCount) {
           bestCount = count;
           best = req;
@@ -275,8 +290,10 @@
         cache.why = "no-stores wins=" + candidates.length
           + " bestIdx=" + bestIndex
           + " bestM=" + bestCount
+          + " chunks=[" + chunkInfo.join(" | ") + "]"
           + " mounts=[" + mounts.join(",") + "]"
           + " top=" + (window.top === window ? 1 : 0)
+          + " ready=" + document.readyState
           + " hrefs=[" + hrefs.join(" | ") + "]"
           + shape
           + " threw=" + report.threw
