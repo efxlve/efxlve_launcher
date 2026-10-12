@@ -10,14 +10,17 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { DISCORD_INVITE_URL, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
+import { pushNavHistory } from "../../core/nav";
+import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
-import { COVERING_ROOT_IDS } from "../store/store-view";
+import { COVERING_ROOT_IDS, setView } from "../store/store-view";
 
 let viewVisible = false;
 let hydrated = false;
@@ -194,4 +197,12 @@ document.addEventListener("click", (event) => {
   if (action === "reload") {
     void invoke("discord_view_reload").catch(() => undefined);
   }
+});
+
+// The overlay can ask for one conversation (a friend's DM or a voice channel);
+// the child already navigated there, this only brings its page forward.
+void listen("overlay-focus-discord", () => {
+  setView("discord");
+  pushNavHistory({ view: "discord" });
+  render();
 });

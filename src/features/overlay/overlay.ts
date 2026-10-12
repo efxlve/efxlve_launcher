@@ -224,6 +224,8 @@ interface WebVoiceState {
   friends?: WebFriend[];
   friendsTotal?: number;
   pending?: number;
+  /** Voice channels to jump to (the client opens them; joining stays there). */
+  channels?: { id: string; name: string; guild: string; guildId: string }[];
 }
 
 let webVoice: WebVoiceState | null = null;
@@ -1495,6 +1497,20 @@ async function openSpotifyLink(): Promise<void> {
   void openUrl(url).catch(() => undefined);
 }
 
+/**
+ * Opens a conversation in the launcher's own Discord client and brings the
+ * launcher forward: typing and joining stay in the real client, so the overlay
+ * never writes anything by itself.
+ */
+async function openDiscordInLauncher(url: string): Promise<void> {
+  try {
+    await invoke("discord_open_conversation", { url });
+  } catch {
+    // Older hosts have no such command; the launcher still comes forward.
+  }
+  void invoke("overlay_show_launcher").catch(() => undefined);
+}
+
 /** Forces a library refresh (the Rust caches are bypassed). */
 async function refreshLibrary(): Promise<void> {
   selectedPlaylist = null;
@@ -1655,12 +1671,34 @@ function renderDiscord(): void {
       <div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b></div>
       <div class="ov-panel-body">${friendsBodyHtml()}</div>
     </div>
+    ${channelsPanelHtml()}`;
+}
+
+/**
+ * Voice channels the person can jump to. The row opens the channel in the
+ * launcher's own client; joining and typing stay there, so the overlay never
+ * writes anything on its own.
+ */
+function channelsPanelHtml(): string {
+  const channels = webVoice && webVoice.channels ? webVoice.channels : [];
+  if (!channels.length) return "";
+  const rows = channels
+    .map(
+      (channel) => `
+      <button class="ov-voice-person" data-ov="discord-open-channel" data-guild="${esc(channel.guildId)}" data-channel="${esc(channel.id)}" title="${esc(t("overlay.discordOpenChannel"))}">
+        <span class="ov-channel-glyph">${icon("volume-2", 13)}</span>
+        <span class="ov-voice-name">${esc(channel.name)}</span>
+        <span class="ov-sub">${esc(channel.guild)}</span>
+      </button>`,
+    )
+    .join("");
+  return `
     <div class="ov-panel">
-      <div class="ov-panel-head">${icon("sparkles", 13)} <b>${esc(t("overlay.discordPresenceTitle"))}</b></div>
-      <div class="ov-panel-body">
-        <p class="ov-voice-desc">${esc(t("overlay.discordPresenceDesc"))}</p>
-        <button class="btn ghost small" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
+      <div class="ov-panel-head">
+        ${icon("list", 13)} <b>${esc(t("overlay.discordChannels"))}</b>
+        <button class="btn ghost small ov-panel-head-action" data-ov="discord-open-launcher">${icon("external", 13)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
+      <div class="ov-panel-body"><div class="ov-voice-people">${rows}</div></div>
     </div>`;
 }
 
@@ -1688,13 +1726,13 @@ function friendsBodyHtml(): string {
   const rows = shown
     .map(
       (friend) => `
-        <div class="ov-friend${friend.status === "offline" ? " offline" : ""}">
+        <button class="ov-friend${friend.status === "offline" ? " offline" : ""}" data-ov="discord-open-dm" data-id="${esc(friend.id)}" title="${esc(t("overlay.discordOpenDm"))}">
           <span class="ov-friend-avatar">
             <img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />
             <span class="ov-friend-dot ov-status-${esc(friend.status)}"></span>
           </span>
           <span class="ov-friend-name">${esc(friend.name)}</span>
-        </div>`,
+        </button>`,
     )
     .join("");
   const hidden = Math.max(0, total - shown.length);
@@ -1942,8 +1980,17 @@ function wireEvents(): void {
     else if (action === "lightbox-prev") stepLightbox(-1);
     else if (action === "lightbox-next") stepLightbox(1);
     else if (action === "enable-fps") void enableFps();
-    else if (action === "open-discord") void openUrl("discord://");
-    else if (action === "restore-game") {
+    else if (action === "open-discord" || action === "discord-open-launcher") {
+      void openDiscordInLauncher("https://discord.com/channels/@me");
+    } else if (action === "discord-open-dm") {
+      const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
+      if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
+    } else if (action === "discord-open-channel") {
+      const row = target.closest<HTMLElement>("[data-ov]");
+      if (row?.dataset.guild && row.dataset.channel) {
+        void openDiscordInLauncher(`https://discord.com/channels/${row.dataset.guild}/${row.dataset.channel}`);
+      }
+    } else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
       if (key) {
         saveDisabled(disabledGames().filter((g) => g.key !== key));

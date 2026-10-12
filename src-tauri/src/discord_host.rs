@@ -71,6 +71,10 @@ static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 /// stays visible and the page (and its call) keeps running.
 const PARK_RECT: (f64, f64, f64, f64) = (-400.0, -400.0, 1.0, 1.0);
 
+/// A conversation the overlay asked for while the page was gone; the next
+/// create loads it instead of the home URL.
+static PENDING_URL: Mutex<Option<String>> = Mutex::new(None);
+
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
 
@@ -293,6 +297,22 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         .get("pending")
         .and_then(serde_json::Value::as_u64)
         .unwrap_or(0);
+    // Voice channels the overlay can jump to, grouped by guild in the client's
+    // own order (read-only; joining stays in the real client).
+    let mut channels = Vec::new();
+    if let Some(items) = report
+        .get("channels")
+        .and_then(serde_json::Value::as_array)
+    {
+        for item in items.iter().take(24) {
+            channels.push(serde_json::json!({
+                "id": item.get("id").and_then(serde_json::Value::as_str).unwrap_or(""),
+                "name": item.get("name").and_then(serde_json::Value::as_str).unwrap_or(""),
+                "guild": item.get("guild").and_then(serde_json::Value::as_str).unwrap_or(""),
+                "guildId": item.get("guildId").and_then(serde_json::Value::as_str).unwrap_or(""),
+            }));
+        }
+    }
     let mut channel = serde_json::Value::Null;
     let mut people = Vec::new();
     if in_call {
@@ -358,6 +378,7 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         "friends": friends,
         "friendsTotal": friends_total,
         "pending": pending,
+        "channels": channels,
     });
     if let Ok(mut guard) = WEB_VOICE.lock() {
         *guard = Some(payload.clone());
@@ -594,9 +615,15 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     let window = app
         .get_window("main")
         .ok_or_else(|| "no_main_window".to_string())?;
-    let url = HOME_URL
-        .parse::<url::Url>()
-        .map_err(|_| "bad_url".to_string())?;
+    let url = match PENDING_URL.lock().ok().and_then(|mut guard| guard.take()) {
+        // The overlay asked for a conversation before the page existed.
+        Some(pending) => pending
+            .parse::<url::Url>()
+            .map_err(|_| "bad_url".to_string())?,
+        None => HOME_URL
+            .parse::<url::Url>()
+            .map_err(|_| "bad_url".to_string())?,
+    };
     // Never pass `additional_browser_args` to a child webview builder; it
     // silently blanks the child.
     let nav_app = app.clone();
@@ -849,6 +876,36 @@ pub fn discord_view_reload(app: AppHandle) {
         }
         web_log(&app, "page reload requested");
     }
+}
+
+/// Brings a conversation forward: the overlay asks for a DM or a voice channel
+/// and the launcher's own client opens it. Only the client's own channel URLs
+/// are accepted; writing stays the person's job in the real client.
+#[tauri::command]
+pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), String> {
+    let target = url.parse::<url::Url>().map_err(|_| "bad_url".to_string())?;
+    if !is_discord_host(&target) || !target.path().starts_with("/channels/") {
+        return Err("not_a_conversation".to_string());
+    }
+    let clean = target.to_string();
+    match view(&app) {
+        Some(view) => {
+            let _ = view.navigate(target);
+        }
+        None => {
+            if let Ok(mut guard) = PENDING_URL.lock() {
+                *guard = Some(clean);
+            }
+        }
+    }
+    // The main window's frontend switches to its Discord page on this event.
+    let _ = app.emit("overlay-focus-discord", ());
+    if let Some(window) = app.get_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+    web_log(&app, "opening a conversation in the launcher client");
+    Ok(())
 }
 
 /// Destroys the child webview when the user leaves the page. A full Discord

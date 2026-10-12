@@ -1847,3 +1847,39 @@
 .ov-panel-body .ov-friend:first-child {
   border-top: none;
 }
+
+/* Rows that act: friends and channels open in the client, so they are buttons. */
+.ov-panel-body .ov-friend,
+.ov-panel-body .ov-voice-person {
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ov-panel-body .ov-friend:hover,
+.ov-panel-body .ov-friend.ov-controller-focus,
+.ov-panel-body .ov-voice-person:hover,
+.ov-panel-body .ov-voice-person.ov-controller-focus {
+  background: var(--surface-2);
+}
+
+.ov-panel-head-action {
+  margin-left: auto;
+}
+
+.ov-channel-glyph {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+}

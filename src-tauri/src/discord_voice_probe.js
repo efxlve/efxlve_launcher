@@ -492,6 +492,53 @@
   var friendTotal = friends.length;
   if (friends.length > 300) friends = friends.slice(0, 300);
 
+  // Voice channels the user can jump to, grouped by guild in the client's own
+  // order (read-only: joining happens in the real client).
+  var channels = [];
+  try {
+    var guildStore = stores.GuildStore;
+    var channelStore = stores.ChannelStore;
+    var guilds = null;
+    try {
+      guilds = guildStore && guildStore.getSortedGuilds
+        ? guildStore.getSortedGuilds()
+        : guildStore && guildStore.getGuilds
+          ? valuesOf(guildStore.getGuilds()).sort(function (a, b) {
+              return String(a && a.name).localeCompare(String(b && b.name));
+            })
+          : null;
+    } catch (e) {}
+    for (var gi = 0; guilds && gi < guilds.length && channels.length < 24; gi++) {
+      var guild = guilds[gi] || {};
+      if (!guild.id) continue;
+      var raw = null;
+      try {
+        raw = channelStore && channelStore.getChannels ? channelStore.getChannels(guild.id) : null;
+      } catch (e) {}
+      var pool = [];
+      if (raw && typeof raw === "object") {
+        var grouped = false;
+        for (var group in raw) {
+          if (Array.isArray(raw[group])) {
+            grouped = true;
+            pool = pool.concat(raw[group]);
+          }
+        }
+        if (!grouped) pool = valuesOf(raw);
+      }
+      for (var ci = 0; ci < pool.length && channels.length < 24; ci++) {
+        var channel = pool[ci];
+        if (!channel || Number(channel.type) !== 2) continue;
+        channels.push({
+          id: String(channel.id),
+          name: channel.name || "",
+          guild: guild.name || "",
+          guildId: String(guild.id),
+        });
+      }
+    }
+  } catch (e) {}
+
   return {
     ok: true,
     inCall: !!voice,
@@ -501,6 +548,7 @@
     friends: friends,
     friendsTotal: friendTotal,
     pending: pending,
+    channels: channels,
     me: { id: me.id, name: displayName(me, null) || me.username || "", avatar: me.avatar || "" },
     diag: diag,
   };

@@ -818,6 +818,7 @@ fn main() {
             discord_host::discord_view_destroy,
             discord_host::discord_open_devtools,
             discord_host::discord_web_voice_state,
+            discord_host::discord_open_conversation,
             discord_rpc::discord_voice_watch_start,
             discord_rpc::discord_voice_watch_stop,
             discord_rpc::discord_relationships_probe,
