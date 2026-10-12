@@ -195,6 +195,7 @@
   "tray.quit": "Sair",
   "presence.playing": "Jogando {title}",
   "presence.playingState": "No jogo",
+  "presence.trophies": "Troféus {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "Na loja",
   "presence.storeState": "Epic Games Store",

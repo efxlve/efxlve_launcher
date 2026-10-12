@@ -211,6 +211,7 @@
   "tray.quit": "बाहर निकलें",
   "presence.playing": "{title} खेल रहे हैं",
   "presence.playingState": "गेम में",
+  "presence.trophies": "ट्रॉफ़ियाँ {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "स्टोर ब्राउज़ कर रहे हैं",
   "presence.storeState": "Epic Games Store",

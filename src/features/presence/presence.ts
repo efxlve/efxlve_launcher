@@ -7,14 +7,17 @@
  * without spamming the IPC channel.
  */
 
+import { achSummaryOf } from "../../core/game-view";
 import { summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { epicGetSettings, epicPresenceClear, epicPresenceConfigure, epicPresenceUpdate } from "../../epic";
 import { t } from "../../i18n";
 
-/** Public PNG of the launcher icon. Discord fetches this over HTTPS. */
+/** Public PNG of the launcher icon. Discord fetches this over HTTPS. A branch
+ *  ref is used on purpose: a pinned commit breaks the moment history is
+ *  rewritten. */
 const LAUNCHER_ICON =
-  "https://cdn.jsdelivr.net/gh/efxlve/efxlve_launcher@b371b6b/src-tauri/icons/icon.png";
+  "https://cdn.jsdelivr.net/gh/efxlve/efxlve_launcher@main/src-tauri/icons/icon.png";
 
 /** Game start times so Discord's elapsed clock survives re-renders. */
 const playStarted = new Map<string, number>();
@@ -104,13 +107,19 @@ function presenceContext(): {
     if (!playStarted.has(id)) playStarted.set(id, Date.now());
     const track = media?.isPlaying ? media.title : "";
     const artist = media?.artist || media?.album || "";
+    // The achievement sums the launcher already knows ride along on the second
+    // line whenever a playing track is not using it.
+    const ach = achSummaryOf(id);
+    const trophies = ach && ach.total_achievements > 0
+      ? t("presence.trophies", { unlocked: ach.user_unlocked, total: ach.total_achievements })
+      : "";
     return {
       details: t("presence.playing", { title }),
       state: track
         ? artist
           ? t("presence.playingMusic", { title: track, artist })
           : track
-        : t("presence.playingState"),
+        : trophies || t("presence.playingState"),
       image: image || LAUNCHER_ICON,
       hover: title,
       small: image ? LAUNCHER_ICON : "",

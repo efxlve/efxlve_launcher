@@ -195,6 +195,7 @@
   "tray.quit": "Quitter",
   "presence.playing": "Joue à {title}",
   "presence.playingState": "En jeu",
+  "presence.trophies": "Trophées {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "Parcourt la boutique",
   "presence.storeState": "Epic Games Store",

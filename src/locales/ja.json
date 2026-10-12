@@ -195,6 +195,7 @@
   "tray.quit": "終了",
   "presence.playing": "{title} をプレイ中",
   "presence.playingState": "ゲーム中",
+  "presence.trophies": "トロフィー {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "ストアを閲覧中",
   "presence.storeState": "Epic Games Store",

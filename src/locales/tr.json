@@ -211,6 +211,7 @@
   "tray.quit": "Çıkış",
   "presence.playing": "{title} oynuyor",
   "presence.playingState": "Şu anda oyunda",
+  "presence.trophies": "Kupa {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "Mağazada geziniyor",
   "presence.storeState": "Epic Games Store",

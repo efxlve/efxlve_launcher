@@ -195,6 +195,7 @@
   "tray.quit": "結束",
   "presence.playing": "正在玩 {title}",
   "presence.playingState": "遊戲中",
+  "presence.trophies": "獎盃 {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "正在瀏覽商店",
   "presence.storeState": "Epic Games Store",

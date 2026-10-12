@@ -195,6 +195,7 @@
   "tray.quit": "Выйти",
   "presence.playing": "Играет в {title}",
   "presence.playingState": "В игре",
+  "presence.trophies": "Трофеи {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "В магазине",
   "presence.storeState": "Epic Games Store",

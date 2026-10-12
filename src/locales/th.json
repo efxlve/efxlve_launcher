@@ -195,6 +195,7 @@
   "tray.quit": "ออก",
   "presence.playing": "กำลังเล่น {title}",
   "presence.playingState": "ในเกม",
+  "presence.trophies": "ถ้วยรางวัล {unlocked}/{total}",
   "presence.playingMusic": "{title} — {artist}",
   "presence.store": "กำลังดูร้านค้า",
   "presence.storeState": "Epic Games Store",
