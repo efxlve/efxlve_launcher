@@ -23,7 +23,7 @@
 use std::io::Write;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder,
@@ -55,6 +55,9 @@ static IN_CALL: AtomicBool = AtomicBool::new(false);
 static PARKED: AtomicBool = AtomicBool::new(false);
 /// Last web voice report, so a late overlay can pull it while it starts up.
 static WEB_VOICE: Mutex<Option<serde_json::Value>> = Mutex::new(None);
+/// When the last report arrived; a parked page whose reports stop (a broken
+/// probe, a Discord update) is closed instead of leaking a renderer.
+static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);
 /// Last logged web-voice note; only transitions reach the log.
 static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 
@@ -75,26 +78,19 @@ const READY_SCRIPT: &str = r#"
 })();
 "#;
 
-/// Reads the web client's own voice state and reports it through the cancelled
-/// `efxlve.local/voice` navigation (the same channel the readiness check uses).
-/// The stores are found through the page's webpack registry; nothing here
-/// touches Discord's DOM, so a visual redesign cannot break the card. Every
-/// step is defensive: a failed lookup reports `ok: false` and the overlay keeps
-/// using the RPC source.
-const VOICE_SCRIPT: &str = r#"
-(function () {
-    function report(payload) {
-        try {
-            location.assign('https://efxlve.local/voice?d=' + encodeURIComponent(JSON.stringify(payload)));
-        } catch (e) {}
-    }
+/// Reads the web client's own voice state. The stores are found through the
+/// page's webpack registry; nothing here touches Discord's DOM, so a visual
+/// redesign cannot break the card. The value is returned straight to WebView2's
+/// native `ExecuteScript`; every step is defensive and a failed lookup returns
+/// `ok: false`, which leaves the overlay on the RPC source.
+const VOICE_SCRIPT: &str = r#"(function () {
     try {
         var cached = window.__efxlveVoiceStores;
         if (cached && typeof cached.selected.getVoiceChannelId === 'function') {
             var channelId = cached.selected.getVoiceChannelId();
             var channel = channelId ? (cached.channels.getChannel(channelId) || {}) : null;
             var states = channelId ? (cached.voice.getVoiceStatesForChannel(channelId) || {}) : {};
-            if (!channelId) { report({ ok: true, inCall: false }); return; }
+            if (!channelId) { return { ok: true, inCall: false }; }
             var guildName = '';
             try {
                 var guild = channel.guild_id && cached.guilds ? cached.guilds.getGuild(channel.guild_id) : null;
@@ -111,20 +107,19 @@ const VOICE_SCRIPT: &str = r#"
                     muted: !!(state.selfMute || state.mute)
                 });
             }
-            report({
+            return {
                 ok: true,
                 inCall: true,
                 channel: { id: String(channelId), name: channel.name || '', guild: guildName },
                 participants: people
-            });
-            return;
+            };
         }
         var chunk = window.webpackChunkdiscord_app;
-        if (!chunk || !chunk.push) { report({ ok: false, why: 'no-webpack' }); return; }
+        if (!chunk || !chunk.push) { return { ok: false, why: 'no-webpack' }; }
         var req = null;
         chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { req = r; }]);
         chunk.pop();
-        if (!req) { report({ ok: false, why: 'no-require' }); return; }
+        if (!req) { return { ok: false, why: 'no-require' }; }
         function byProps(names) {
             var mods = req.c || {};
             for (var key in mods) {
@@ -147,12 +142,11 @@ const VOICE_SCRIPT: &str = r#"
             guilds: byProps(['getGuild'])
         };
         if (!stores.selected || !stores.channels || !stores.voice || !stores.users) {
-            report({ ok: false, why: 'no-stores' });
-            return;
+            return { ok: false, why: 'no-stores' };
         }
         window.__efxlveVoiceStores = stores;
         var channelId = stores.selected.getVoiceChannelId();
-        if (!channelId) { report({ ok: true, inCall: false }); return; }
+        if (!channelId) { return { ok: true, inCall: false }; }
         var channel = stores.channels.getChannel(channelId) || {};
         var guildName = '';
         try {
@@ -171,14 +165,14 @@ const VOICE_SCRIPT: &str = r#"
                 muted: !!(state.selfMute || state.mute)
             });
         }
-        report({
+        return {
             ok: true,
             inCall: true,
             channel: { id: String(channelId), name: channel.name || '', guild: guildName },
             participants: people
-        });
+        };
     } catch (e) {
-        report({ ok: false, why: String(e) });
+        return { ok: false, why: String(e) };
     }
 })();
 "#;
@@ -317,14 +311,7 @@ fn note_voice(app: &AppHandle, note: String) {
 
 /// A web voice report from the child page: normalizes it, tells the overlay and
 /// tracks whether a call is running (that keeps the renderer alive).
-fn handle_voice_report(app: &AppHandle, raw: &str) {
-    let report = match serde_json::from_str::<serde_json::Value>(raw) {
-        Ok(report) => report,
-        Err(_) => {
-            note_voice(app, "web voice: unreadable report".to_string());
-            return;
-        }
-    };
+fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
     if report.get("ok").and_then(serde_json::Value::as_bool) != Some(true) {
         let why = report
             .get("why")
@@ -383,6 +370,9 @@ fn handle_voice_report(app: &AppHandle, raw: &str) {
         note_voice(app, "web voice: not in a call".to_string());
     }
     IN_CALL.store(in_call, Ordering::SeqCst);
+    if let Ok(mut guard) = LAST_REPORT.lock() {
+        *guard = Some(Instant::now());
+    }
 
     let payload = serde_json::json!({
         "inCall": in_call,
@@ -416,6 +406,68 @@ fn destroy_view(app: &AppHandle) {
     if let Some(view) = view(app) {
         eprintln!("[discord-view] destroy");
         let _ = view.close();
+    }
+}
+
+/// Runs the voice read inside the child page through WebView2's own
+/// `ExecuteScript` and feeds the returned value to the report handler. This is
+/// the same bridge the microphone permission handler uses: the Tauri `eval`
+/// wrapper never reached this child, and the native call reports back through
+/// its completion handler instead of a navigation.
+#[cfg(windows)]
+fn poll_voice_script(app: &AppHandle) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2ExecuteScriptCompletedHandler;
+    use webview2_com::ExecuteScriptCompletedHandler;
+    use windows::core::PCWSTR;
+
+    let Some(view) = view(app) else {
+        return;
+    };
+    let report_app = app.clone();
+    let registration = view.with_webview(move |platform| {
+        let controller = platform.controller();
+        let core = match unsafe { controller.CoreWebView2() } {
+            Ok(core) => core,
+            Err(error) => {
+                note_voice(
+                    &report_app,
+                    format!("web voice: script bridge failed ({error})"),
+                );
+                return;
+            }
+        };
+        let handler_app = report_app.clone();
+        let handler = ExecuteScriptCompletedHandler::create(Box::new(
+            move |result: windows::core::Result<()>, text: String| {
+                if let Err(error) = result {
+                    note_voice(
+                        &handler_app,
+                        format!("web voice: script error ({error})"),
+                    );
+                    return Ok(());
+                }
+                let value = serde_json::from_str::<serde_json::Value>(&text)
+                    .ok()
+                    .and_then(|parsed| match parsed {
+                        serde_json::Value::String(inner) => {
+                            serde_json::from_str::<serde_json::Value>(&inner).ok()
+                        }
+                        other => Some(other),
+                    });
+                match value {
+                    Some(value) => handle_voice_report(&handler_app, value),
+                    None => note_voice(&handler_app, "web voice: unreadable result".to_string()),
+                }
+                Ok(())
+            },
+        ));
+        let script: Vec<u16> = VOICE_SCRIPT.encode_utf16().chain(std::iter::once(0)).collect();
+        if let Err(error) = unsafe { core.ExecuteScript(PCWSTR(script.as_ptr()), &handler) } {
+            eprintln!("[discord-view] web voice: ExecuteScript failed: {error}");
+        }
+    });
+    if let Err(error) = registration {
+        eprintln!("[discord-view] web voice: with_webview failed: {error}");
     }
 }
 
@@ -533,17 +585,6 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                     }
                     return false;
                 }
-                // Web voice report: the page's own call state, consumed by the
-                // overlay and by the keep-alive rule.
-                if target.path() == "/voice" {
-                    let raw = target
-                        .query_pairs()
-                        .find(|(key, _)| key == "d")
-                        .map(|(_, value)| value.into_owned())
-                        .unwrap_or_default();
-                    handle_voice_report(&nav_app, &raw);
-                    return false;
-                }
                 // Dev probe report: logged, then cancelled so the child stays
                 // on Discord.
                 eprintln!("[discord-view] probe {}", target);
@@ -607,9 +648,11 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     #[cfg(windows)]
     allow_media_permissions(&child);
 
-    // Follows the web client's voice state while this view lives; the report
-    // arrives through the navigation handler above. A generation bump (a
-    // destroy, a park-close) ends the loop.
+    // Follows the web client's voice state while this view lives: the page is
+    // polled through WebView2's own script bridge and every report lands in
+    // `handle_voice_report`. A generation bump (a destroy, a park-close) ends
+    // the loop.
+    web_log(app, "web voice: tracker online");
     let track_app = app.clone();
     tauri::async_runtime::spawn(async move {
         loop {
@@ -617,14 +660,21 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
             if GENERATION.load(Ordering::SeqCst) != generation {
                 return;
             }
-            let Some(view) = view(&track_app) else {
-                return;
-            };
-            let _ = view.eval(VOICE_SCRIPT);
-            // Act outside the webview's own event: closing the child from
-            // inside the navigation callback could disturb the page.
-            tokio::time::sleep(Duration::from_millis(250)).await;
-            if !IN_CALL.load(Ordering::SeqCst) && PARKED.load(Ordering::SeqCst) {
+            poll_voice_script(&track_app);
+            // The script's result arrives through its completion handler; give
+            // it a moment before the park check reads the flags.
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            let report_age = LAST_REPORT
+                .lock()
+                .ok()
+                .and_then(|guard| *guard)
+                .map(|at| at.elapsed());
+            let quiet = report_age
+                .map(|age| age > Duration::from_secs(90))
+                .unwrap_or(false);
+            if PARKED.load(Ordering::SeqCst)
+                && (!IN_CALL.load(Ordering::SeqCst) || quiet)
+            {
                 web_log(
                     &track_app,
                     "web voice: the call ended; closing the parked page",
@@ -701,6 +751,13 @@ pub async fn discord_view_show(
 pub fn discord_view_hide(app: AppHandle) {
     WANT_VISIBLE.store(false, Ordering::SeqCst);
     if let Some(view) = view(&app) {
+        // A call lives in this renderer and a hide can suspend it, so a call
+        // keeps the same 1x1 sliver the leave path uses.
+        if IN_CALL.load(Ordering::SeqCst) {
+            let _ = view.set_bounds(rect_of(0.0, 0.0, 1.0, 1.0));
+            let _ = view.show();
+            return;
+        }
         let _ = view.hide();
     }
 }
@@ -730,7 +787,10 @@ pub fn discord_view_destroy(app: AppHandle) {
             "web voice: in a call; the page stays alive while it lasts",
         );
         if let Some(view) = view(&app) {
+            // A sliver, not a hide: the controller must stay visible or the
+            // renderer (and with it the call) can be suspended.
             let _ = view.set_bounds(rect_of(0.0, 0.0, 1.0, 1.0));
+            let _ = view.show();
         }
         return;
     }
