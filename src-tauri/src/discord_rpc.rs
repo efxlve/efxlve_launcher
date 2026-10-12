@@ -104,38 +104,34 @@ fn run_probe() -> std::io::Result<()> {
     let (_, pre) = next_frame(&mut pipe)?;
     plog(&format!("pre-auth GET_SELECTED_VOICE_CHANNEL: {}", compact(&pre)));
 
-    // Discord's RPC OAuth2 authorize is picky about the argument shape and the
-    // validation errors contradict each other (a redirect_uri is demanded with
-    // one shape and refused with the next). Walk the documented shapes in
-    // order; the first one that validates triggers the consent prompt, so at
-    // most one prompt appears. The variant decides the exchange shape.
+    // Discord's RPC OAuth2 authorize is picky about the argument shape:
+    //   - PKCE alone           → "Missing redirect_uri in request"
+    //   - PKCE + redirect_uri  → "Redirect URI cannot be used in the RPC flow"
+    //   - bare                 → a code, but the token endpoint then refuses the
+    //                            exchange with invalid_client (no client auth).
+    // The remaining combination is PKCE plus response_type, which tells the
+    // client this is a code grant and lets it handle the redirect internally.
+    // The bare shape stays as the fallback; the first shape that validates
+    // triggers the consent prompt, so at most one prompt appears.
     let verifier = pkce_verifier();
     let challenge = pkce_challenge(&verifier);
     let scopes = json!(["rpc", "rpc.voice.read"]);
-    let variants: [(&str, Value, Option<&str>); 3] = [
+    let variants: [(&str, Value, Option<&str>); 2] = [
         (
-            "bare",
-            json!({ "client_id": CLIENT_ID, "scopes": scopes }),
-            None,
-        ),
-        (
-            "response_type",
+            "pkce+response_type",
             json!({
                 "client_id": CLIENT_ID,
                 "scopes": scopes,
-                "response_type": "code"
-            }),
-            None,
-        ),
-        (
-            "pkce",
-            json!({
-                "client_id": CLIENT_ID,
-                "scopes": scopes,
+                "response_type": "code",
                 "code_challenge": challenge,
                 "code_challenge_method": "S256"
             }),
             Some(verifier.as_str()),
+        ),
+        (
+            "bare",
+            json!({ "client_id": CLIENT_ID, "scopes": scopes }),
+            None,
         ),
     ];
 
