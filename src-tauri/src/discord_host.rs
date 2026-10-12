@@ -3,8 +3,9 @@
 //! The page loads the normal `discord.com/app` interface: friends, direct
 //! messages and servers are the real Discord UI, no custom social layer. The
 //! child webview is positioned by the frontend (slot rectangle), stays hidden
-//! until its first finished load (the page's loading note shows instead) and is
-//! parked while a covering surface (modal, command palette) is open.
+//! until the web client has actually painted (the page's loading note shows
+//! instead) and is parked while a covering surface (modal, command palette) is
+//! open.
 //!
 //! A full Discord client is a heavy renderer, so the view is destroyed when the
 //! user leaves the page; the WebView2 profile keeps the session, so the next
@@ -21,12 +22,14 @@ use tauri_plugin_opener::OpenerExt;
 const LABEL: &str = "discord-view";
 const HOME_URL: &str = "https://discord.com/app";
 
-/// How long a fresh child may stay hidden without a finished load. After this
-/// the child is shown anyway: a stuck load then reveals the error page, and the
-/// header's reload button becomes useful.
-const FIRST_PAINT_TIMEOUT: Duration = Duration::from_secs(15);
+/// How long a fresh child may stay hidden while it boots. The finished load is
+/// not enough: on a slow network the document arrives long before Discord's
+/// client paints. After this the child is shown anyway, so a stuck page (an
+/// error page included) is never hidden forever.
+const FIRST_PAINT_TIMEOUT: Duration = Duration::from_secs(45);
 
-/// True after the current child reported its first finished load.
+/// True once the web client reported that it painted; only then may the child
+/// take over from the loading note.
 static PAINTED: AtomicBool = AtomicBool::new(false);
 /// The frontend still wants the page on screen (it hides the child under modals).
 static WANT_VISIBLE: AtomicBool = AtomicBool::new(false);
@@ -36,6 +39,20 @@ static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
+
+/// Read-only readiness check: Discord's client-side root gains children only
+/// when the web client has actually painted. The report navigation is
+/// cancelled, so the page itself never changes; the loading note stays visible
+/// until the report arrives. Small and idempotent on purpose.
+const READY_SCRIPT: &str = r#"
+(function () {
+    var mount = document.getElementById('app-mount');
+    var kids = mount ? mount.childElementCount : -1;
+    try {
+        location.assign('https://efxlve.local/ready?m=' + kids);
+    } catch (e) {}
+})();
+"#;
 
 /// Dev-only page probe. After the document finishes, the page reports its own
 /// render state (title, viewport, app-mount children) through a navigation to
@@ -178,12 +195,31 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     // silently blanks the child.
     let nav_app = app.clone();
     let mut builder = WebviewBuilder::new(LABEL, WebviewUrl::External(url))
-        // Discord's dark surface, so the first paint has no white flash.
-        .background_color(tauri::webview::Color(49, 51, 56, 255))
+        // The app's obsidian void, so a frame painted before Discord's own
+        // background never flashes the gray of Discord's dark theme.
+        .background_color(tauri::webview::Color(14, 15, 18, 255))
         .on_navigation(move |target| {
-            // Dev probe report: logged, then cancelled so the child stays on
-            // Discord.
             if target.host_str() == Some(PROBE_HOST) {
+                // Readiness report: the web client painted, so the child may
+                // take over from the loading note.
+                if target.path() == "/ready" {
+                    let kids = target
+                        .query_pairs()
+                        .find(|(key, _)| key == "m")
+                        .and_then(|(_, value)| value.parse::<i64>().ok())
+                        .unwrap_or(-1);
+                    if kids > 0 {
+                        PAINTED.store(true, Ordering::SeqCst);
+                        if WANT_VISIBLE.load(Ordering::SeqCst) {
+                            if let Some(view) = view(&nav_app) {
+                                let _ = view.show();
+                            }
+                        }
+                    }
+                    return false;
+                }
+                // Dev probe report: logged, then cancelled so the child stays
+                // on Discord.
                 eprintln!("[discord-view] probe {}", target);
                 return false;
             }
@@ -213,11 +249,9 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
             if payload.event() != tauri::webview::PageLoadEvent::Finished {
                 return;
             }
-            // First finished load: the child takes over from the loading note.
-            PAINTED.store(true, Ordering::SeqCst);
-            if WANT_VISIBLE.load(Ordering::SeqCst) {
-                let _ = webview.show();
-            }
+            // The finished load only means the document arrived; the readiness
+            // report decides when the child may show.
+            let _ = webview.eval(READY_SCRIPT);
             if !PROBE_SCRIPT.is_empty() {
                 let _ = webview.eval(PROBE_SCRIPT);
             }
@@ -243,18 +277,29 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
         .map_err(|error| error.to_string())?
         .map_err(|error| error.to_string())?;
 
-    // A slow network can postpone the finished load for minutes; the loading
-    // note must not stay forever. A destroy bumps the generation, so a stale
-    // timer is inert.
-    let show_app = app.clone();
+    // The document can finish loading while the web client is still blank (its
+    // assets trickle in on a slow network), so the child stays hidden behind
+    // the loading note until `#app-mount` actually has children. A destroy
+    // bumps the generation, so a stale poll is inert; the timeout shows the
+    // child anyway so an error page is never hidden forever.
+    let ready_app = app.clone();
     tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(FIRST_PAINT_TIMEOUT).await;
-        if GENERATION.load(Ordering::SeqCst) != generation {
-            return;
+        let deadline = std::time::Instant::now() + FIRST_PAINT_TIMEOUT;
+        while std::time::Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(700)).await;
+            if GENERATION.load(Ordering::SeqCst) != generation || PAINTED.load(Ordering::SeqCst) {
+                return;
+            }
+            if let Some(view) = view(&ready_app) {
+                let _ = view.eval(READY_SCRIPT);
+            }
         }
-        if !PAINTED.load(Ordering::SeqCst) && WANT_VISIBLE.load(Ordering::SeqCst) {
-            eprintln!("[discord-view] first-paint timeout; showing the child anyway");
-            if let Some(view) = view(&show_app) {
+        if GENERATION.load(Ordering::SeqCst) == generation
+            && !PAINTED.load(Ordering::SeqCst)
+            && WANT_VISIBLE.load(Ordering::SeqCst)
+        {
+            eprintln!("[discord-view] readiness timeout; showing the child anyway");
+            if let Some(view) = view(&ready_app) {
                 let _ = view.show();
             }
         }
@@ -280,8 +325,8 @@ pub async fn discord_view_show(
     if let Some(view) = existing {
         view.set_bounds(rect_of(x, y, width, height))
             .map_err(|error| error.to_string())?;
-        // A child that has not finished its first load stays hidden; the
-        // loading note shows in its place.
+        // A child that has not painted yet stays hidden; the loading note
+        // shows in its place.
         if PAINTED.load(Ordering::SeqCst) {
             view.show().map_err(|error| error.to_string())?;
         }
