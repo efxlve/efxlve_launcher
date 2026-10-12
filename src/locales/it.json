@@ -91,6 +91,8 @@
   "settings.defaultKey": "Predefinito",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "Mostra su Discord cosa stai facendo, con la copertina del gioco e l'icona del launcher.",
+  "settings.discordDesc": "Discord nel launcher: amici, messaggi diretti e server nel vero client web.",
+  "settings.discordJoin": "Entra nel server",
   "settings.secAccount": "Account",
   "settings.secDownloads": "Download",
   "settings.secCloud": "Salvataggi cloud",

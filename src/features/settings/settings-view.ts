@@ -7,7 +7,7 @@
  */
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
-import { LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
@@ -404,6 +404,15 @@ function renderIntegrations(): string {
      <button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`,
   );
 
+  // Discord lives in the launcher: the real web client opens as a page, and
+  // the community server stays one click away.
+  const discord = row(
+    t("settings.aboutDiscord"),
+    t("settings.discordDesc"),
+    `<button class="btn ghost small" data-view="discord">${icon("discord", 13)} ${t("overlay.openDiscord")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="${DISCORD_INVITE_URL}">${icon("external", 13)} ${t("settings.discordJoin")}</button>`,
+  );
+
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
   // Opt-in per client: quit it once the game it launched closes. Steam keeps
@@ -428,7 +437,7 @@ function renderIntegrations(): string {
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
-    group(presence, t("settings.secSocial"))
+    group(discord + presence, t("settings.secSocial"))
   );
 }
 
@@ -698,7 +707,7 @@ function renderAbout(): string {
       link("https://x.com/efxlve", icon("twitter", 14), t("settings.aboutTwitter"), "x.com/efxlve") +
       link("https://github.com/efxlve/efxlve_launcher", icon("github", 14), t("settings.aboutGithub"), "github.com/efxlve/efxlve_launcher") +
       link("https://efxlve.com/", icon("globe", 14), t("settings.aboutWebsite"), "efxlve.com") +
-      link("https://discord.gg/3TY8hNTx5M", storeLogo("discord", 14, "about-link-logo"), t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
+      link(DISCORD_INVITE_URL, storeLogo("discord", 14, "about-link-logo"), t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
       t("settings.aboutLinksTitle"),
     )}
     <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>

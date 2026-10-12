@@ -91,6 +91,8 @@
   "settings.defaultKey": "افتراضي",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "يعرض ما تفعله على Discord، مع غلاف اللعبة وأيقونة المشغّل.",
+  "settings.discordDesc": "Discord داخل المشغّل: الأصدقاء والرسائل الخاصة والخوادم عبر عميل الويب الحقيقي.",
+  "settings.discordJoin": "انضم إلى الخادم",
   "settings.secAccount": "الحساب",
   "settings.secDownloads": "التنزيلات",
   "settings.secCloud": "الحفظ السحابي",

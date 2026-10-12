@@ -91,6 +91,8 @@
   "settings.defaultKey": "預設",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "在 Discord 上顯示你正在進行的內容，以及遊戲封面和啟動器圖示。",
+  "settings.discordDesc": "啟動器內的 Discord：好友、私訊和伺服器，使用真正的網頁客戶端。",
+  "settings.discordJoin": "加入伺服器",
   "settings.secAccount": "帳號",
   "settings.secDownloads": "下載",
   "settings.secCloud": "雲端存檔",

@@ -91,6 +91,8 @@
   "settings.defaultKey": "デフォルト",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "プレイ中の内容を、ゲームのカバーとランチャーのアイコンとともに Discord に表示します。",
+  "settings.discordDesc": "ランチャー内のDiscord：フレンド、DM、サーバーを本物のWebクライアントで。",
+  "settings.discordJoin": "サーバーに参加",
   "settings.secAccount": "アカウント",
   "settings.secDownloads": "ダウンロード",
   "settings.secCloud": "クラウドセーブ",

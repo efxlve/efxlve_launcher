@@ -90,6 +90,10 @@ export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";
 export const SHOW_MINI_PLAYER_KEY = "efxlve-show-mini-player";
 export const SHOW_DISCORD_KEY = "efxlve-show-discord";
 
+/** The Efxlve community server. The About page, the settings card and the
+ *  Discord page's header all link to it. */
+export const DISCORD_INVITE_URL = "https://discord.gg/3TY8hNTx5M";
+
 /** Native Steam Deck LCD/OLED panel, or a WebView2 UA that names the device. */
 export function isSteamDeckDevice(): boolean {
   if (typeof window === "undefined") return false;

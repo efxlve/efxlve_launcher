@@ -91,6 +91,8 @@
   "settings.defaultKey": "기본값",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "게임 커버와 런처 아이콘과 함께 Discord에 현재 상태를 표시합니다.",
+  "settings.discordDesc": "런처 안의 Discord: 친구, DM, 서버를 실제 웹 클라이언트에서.",
+  "settings.discordJoin": "서버 참가",
   "settings.secAccount": "계정",
   "settings.secDownloads": "다운로드",
   "settings.secCloud": "클라우드 저장",

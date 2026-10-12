@@ -10,7 +10,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "../../core/constants";
+import { DISCORD_INVITE_URL, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
@@ -59,7 +59,9 @@ function paintHeaderActions(): void {
     host.classList.remove("has-actions");
     return;
   }
-  host.innerHTML = `<button class="icon-btn" data-discord-act="reload" title="${esc(t("discord.reload"))}">${icon("refresh", 14)}</button>`;
+  host.innerHTML =
+    `<button class="icon-btn" data-act="open-external-url" data-url="${DISCORD_INVITE_URL}" title="${esc(t("settings.discordJoin"))}">${icon("discord", 14)}</button>` +
+    `<button class="icon-btn" data-discord-act="reload" title="${esc(t("discord.reload"))}">${icon("refresh", 14)}</button>`;
   host.classList.add("has-actions");
 }
 

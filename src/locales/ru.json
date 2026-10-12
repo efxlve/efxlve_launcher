@@ -91,6 +91,8 @@
   "settings.defaultKey": "По умолчанию",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "Показывает в Discord, чем вы заняты, вместе с обложкой игры и значком лаунчера.",
+  "settings.discordDesc": "Discord в лаунчере: друзья, личные сообщения и серверы в настоящем веб-клиенте.",
+  "settings.discordJoin": "Вступить в сервер",
   "settings.secAccount": "Аккаунт",
   "settings.secDownloads": "Загрузки",
   "settings.secCloud": "Облачные сохранения",

@@ -91,6 +91,8 @@
   "settings.defaultKey": "默认",
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.presenceDesc": "在 Discord 上显示你正在进行的内容，以及游戏封面和启动器图标。",
+  "settings.discordDesc": "启动器内的 Discord：好友、私信和服务器，使用真正的网页客户端。",
+  "settings.discordJoin": "加入服务器",
   "settings.secAccount": "账户",
   "settings.secDownloads": "下载",
   "settings.secCloud": "云存档",
