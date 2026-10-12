@@ -66,6 +66,11 @@ static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);
 /// Last logged web-voice note; only transitions reach the log.
 static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 
+/// Where a kept-alive child parks: far outside the client area, so nothing of
+/// it can show even if the platform rounds the size up, while the controller
+/// stays visible and the page (and its call) keeps running.
+const PARK_RECT: (f64, f64, f64, f64) = (-400.0, -400.0, 1.0, 1.0);
+
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
 
@@ -731,9 +736,9 @@ pub fn discord_view_hide(app: AppHandle) {
     WANT_VISIBLE.store(false, Ordering::SeqCst);
     if let Some(view) = view(&app) {
         // A call lives in this renderer and a hide can suspend it, so a call
-        // keeps the same 1x1 sliver the leave path uses.
+        // keeps the same off-screen sliver the leave path uses.
         if IN_CALL.load(Ordering::SeqCst) {
-            let _ = view.set_bounds(rect_of(0.0, 0.0, 1.0, 1.0));
+            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
             let _ = view.show();
             return;
         }
@@ -766,9 +771,9 @@ pub fn discord_view_destroy(app: AppHandle) {
             "web voice: in a call; the page stays alive while it lasts",
         );
         if let Some(view) = view(&app) {
-            // A sliver, not a hide: the controller must stay visible or the
+            // Off-screen, not a hide: the controller must stay visible or the
             // renderer (and with it the call) can be suspended.
-            let _ = view.set_bounds(rect_of(0.0, 0.0, 1.0, 1.0));
+            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
             let _ = view.show();
         }
         return;

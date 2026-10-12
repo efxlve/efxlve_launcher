@@ -2,13 +2,14 @@
 //
 // Injected by `discord_host.rs` through WebView2's own `ExecuteScript`; the
 // returned value comes back as JSON. This client keeps most modules as
-// un-evaluated factories (`require.m`) with minified, getter-based exports, so
-// the probe (a) checks the instance cache, (b) materialises only the factories
-// whose source mentions a wanted store method, and (c) looks one level into
-// wrapped exports. Every property access is guarded: out-of-order
-// materialisation can throw Temporal-Dead-Zone errors. Nothing touches
-// Discord's DOM. Failures return `ok: false` with a bounded diagnostic line
-// (module shapes included) and the overlay stays on the RPC source.
+// un-evaluated factories (`require.m`) with minified, getter-based exports, and
+// several unrelated modules expose same-named helpers — so candidates are
+// verified by behaviour (a channel lookup must return the channel for the id,
+// a user lookup the user, voice-state keys must be numeric ids) before a store
+// is accepted. Every property access is guarded: out-of-order materialisation
+// can throw Temporal-Dead-Zone errors. Nothing touches Discord's DOM. Failures
+// return `ok: false` with a bounded diagnostic line and the overlay stays on
+// the RPC source.
 (function () {
   // Store lookups are cached per page; a failed sweep is retried at most every
   // 10 seconds.
@@ -16,6 +17,8 @@
   if (!cache) {
     cache = window.__efxlveVoiceProbe = { at: 0, stores: null, via: "", why: "" };
   }
+
+  var ID = /^\d{5,}$/;
 
   function registryOf(win) {
     // The hook captures the app's require before its runtime can replace or
@@ -72,13 +75,16 @@
 
   function shapeOf(exp) {
     try {
-      return (typeof exp) + "{" + Object.keys(exp).slice(0, 6).join("|") + "}";
+      return typeof exp + "{" + Object.keys(exp).slice(0, 6).join("|") + "}";
     } catch (e) {
       return "?" + typeof exp;
     }
   }
 
-  function byProps(req, prop) {
+  // Up to `limit` distinct objects exposing `prop`, instance cache first, then
+  // factories whose source mentions the name.
+  function collect(req, prop, limit, report) {
+    var out = [];
     var mods = (req && req.c) || {};
     for (var key in mods) {
       var exp = null;
@@ -88,81 +94,126 @@
         continue;
       }
       var hit = findCallable(exp, prop);
-      if (hit) return hit;
+      if (hit && out.indexOf(hit) < 0) {
+        out.push(hit);
+        if (out.length >= limit) return out;
+      }
     }
-    return null;
-  }
-
-  var WANTED = [
-    ["selected", "getVoiceChannelId"],
-    ["channels", "getChannel"],
-    ["voice", "getVoiceStatesForChannel"],
-    ["users", "getUser"],
-    ["guilds", "getGuild"]
-  ];
-
-  // One pass over the factories: materialise only the ones whose source
-  // mentions a method we still need. `report` collects bounded shapes so a
-  // failed sweep is still diagnosable from the log.
-  function fillStores(req, stores, report) {
     var m = (req && req.m) || {};
     var ids = Object.keys(m);
-    for (var i = 0; i < ids.length; i++) {
-      var missing = [];
-      for (var w = 0; w < WANTED.length; w++) {
-        if (!stores[WANTED[w][0]]) missing.push(w);
-      }
-      if (!missing.length) return stores;
+    var materialised = 0;
+    for (var i = 0; i < ids.length && out.length < limit; i++) {
       var src = "";
       try {
         src = String(m[ids[i]]);
       } catch (e) {
         continue;
       }
-      var relevant = false;
-      for (var n = 0; n < missing.length; n++) {
-        if (src.indexOf(WANTED[missing[n]][1]) >= 0) {
-          relevant = true;
+      if (src.indexOf(prop) < 0) continue;
+      var exp2 = null;
+      try {
+        exp2 = req(ids[i]);
+        materialised += 1;
+      } catch (e) {
+        if (report) report.threw += 1;
+        continue;
+      }
+      var hit2 = findCallable(exp2, prop);
+      if (report && report.shapes.length < 6 && hit2) {
+        report.shapes.push(ids[i] + ":" + shapeOf(hit2));
+      }
+      if (hit2 && out.indexOf(hit2) < 0) out.push(hit2);
+    }
+    if (report) report.materialised += materialised;
+    return out;
+  }
+
+  // Picks the stores that actually behave like the client's stores.
+  function resolveStores(req, report) {
+    var out = {
+      selected: null,
+      channels: null,
+      voice: null,
+      users: null,
+      guilds: null,
+      channelId: null
+    };
+
+    var selected = collect(req, "getVoiceChannelId", 8, report);
+    for (var i = 0; i < selected.length; i++) {
+      try {
+        var id = selected[i].getVoiceChannelId();
+        if (id === null || id === undefined || typeof id === "string") {
+          out.selected = selected[i];
+          out.channelId = typeof id === "string" ? id : null;
+          break;
+        }
+      } catch (e) {}
+    }
+    if (!out.selected && selected.length) out.selected = selected[0];
+
+    var channelId = out.channelId;
+    var channels = collect(req, "getChannel", 24, report);
+    for (var c = 0; c < channels.length; c++) {
+      try {
+        var channel = channelId ? channels[c].getChannel(channelId) : null;
+        if (
+          channel &&
+          typeof channel === "object" &&
+          (String(channel.id) === String(channelId) || typeof channel.name === "string")
+        ) {
+          out.channels = channels[c];
+          break;
+        }
+      } catch (e) {}
+    }
+
+    var voice = collect(req, "getVoiceStatesForChannel", 12, report);
+    var states = null;
+    for (var v = 0; v < voice.length; v++) {
+      try {
+        var map = channelId ? voice[v].getVoiceStatesForChannel(channelId) : null;
+        if (map && typeof map === "object" && !Array.isArray(map)) {
+          out.voice = voice[v];
+          states = map;
+          break;
+        }
+      } catch (e) {}
+    }
+
+    var userId = null;
+    if (states) {
+      for (var key in states) {
+        if (ID.test(key)) {
+          userId = key;
           break;
         }
       }
-      if (!relevant) continue;
-      var exp = null;
+    }
+    var users = collect(req, "getUser", 24, report);
+    for (var u = 0; u < users.length; u++) {
       try {
-        exp = req(ids[i]);
-      } catch (e) {
-        report.threw += 1;
-        continue;
-      }
-      if (exp && report.shapes.length < 8) {
-        report.shapes.push(ids[i] + ":" + shapeOf(exp));
-      }
-      for (var k = 0; k < missing.length; k++) {
-        var key = WANTED[missing[k]][0];
-        if (stores[key]) continue;
-        var hit = findCallable(exp, WANTED[missing[k]][1]);
-        if (hit) stores[key] = hit;
-      }
+        var person = userId ? users[u].getUser(userId) : null;
+        if (!userId || (person && typeof person === "object" && String(person.id) === String(userId))) {
+          out.users = users[u];
+          break;
+        }
+      } catch (e) {}
     }
-    return stores;
-  }
 
-  function storesOf(req) {
-    if (!req) return null;
-    var stores = {
-      selected: byProps(req, "getVoiceChannelId"),
-      channels: byProps(req, "getChannel"),
-      voice: byProps(req, "getVoiceStatesForChannel"),
-      users: byProps(req, "getUser"),
-      guilds: byProps(req, "getGuild")
-    };
-    if (stores.selected && stores.channels && stores.voice && stores.users) return stores;
-    var report = { shapes: [], threw: 0 };
-    stores = fillStores(req, stores, report);
-    if (stores.selected && stores.channels && stores.voice && stores.users) {
-      return stores;
+    var guilds = collect(req, "getGuild", 12, report);
+    for (var g = 0; g < guilds.length; g++) {
+      try {
+        var probe = guilds[g].getGuild ? guilds[g].getGuild("0") : null;
+        if (probe === null || probe === undefined || typeof probe === "object") {
+          out.guilds = guilds[g];
+          break;
+        }
+      } catch (e) {}
     }
-    return { report: report };
+
+    if (out.selected && out.channels && out.voice && out.users) return out;
+    return out;
   }
 
   // Which store-like method names the factory sources carry. Bounded, only run
@@ -192,7 +243,10 @@
   }
 
   function channelOf(stores, channelId) {
-    var channel = stores.channels.getChannel(channelId) || {};
+    var channel = {};
+    try {
+      channel = stores.channels.getChannel(channelId) || {};
+    } catch (e) {}
     var name = channel.name || "";
     if (!name) {
       try {
@@ -212,10 +266,18 @@
 
   function participantsOf(stores, channelId) {
     var people = [];
-    var states = stores.voice.getVoiceStatesForChannel(channelId) || {};
+    var states = {};
+    try {
+      states = stores.voice.getVoiceStatesForChannel(channelId) || {};
+    } catch (e) {}
     for (var userId in states) {
+      // Only snowflakes are people; wrapper objects leak other keys.
+      if (!ID.test(userId)) continue;
       var state = states[userId] || {};
-      var user = stores.users.getUser(userId) || {};
+      var user = {};
+      try {
+        user = stores.users.getUser(userId) || {};
+      } catch (e) {}
       people.push({
         id: String(userId),
         name: user.globalName || user.username || state.nick || "",
@@ -243,29 +305,29 @@
       var bestCount = -1;
       var found = null;
       var foundIndex = 0;
-      var report = { shapes: [], threw: 0 };
+      var report = { shapes: [], threw: 0, materialised: 0 };
       var chunkInfo = [];
-      for (var c = 0; c < candidates.length; c++) {
-        var reg = registryOf(candidates[c]);
+      for (var c2 = 0; c2 < candidates.length; c2++) {
+        var reg = registryOf(candidates[c2]);
         if (reg && reg.error) {
-          chunkInfo.push(c + ":" + reg.error);
+          chunkInfo.push(c2 + ":" + reg.error);
           continue;
         }
         var req = reg || null;
         var count = req ? Object.keys(req.c || {}).length : -1;
-        chunkInfo.push(c + ":" + (req ? "ok" + count : "none"));
+        chunkInfo.push(c2 + ":" + (req ? "ok" + count : "none"));
         if (count > bestCount) {
           bestCount = count;
           best = req;
-          bestIndex = c;
+          bestIndex = c2;
         }
-        var probe = storesOf(req);
-        if (probe && probe.selected) {
-          found = probe;
-          foundIndex = c;
+        if (!req) continue;
+        var resolved = resolveStores(req, report);
+        if (resolved.selected && resolved.channels && resolved.voice && resolved.users) {
+          found = resolved;
+          foundIndex = c2;
           break;
         }
-        if (probe && probe.report) report = probe.report;
       }
 
       if (found) {
@@ -296,8 +358,7 @@
         }
         var shape = "";
         if (best) {
-          shape = " rk=[" + Object.keys(best).slice(0, 10).join("|") + "]"
-            + " m=" + Object.keys(best.m || {}).length;
+          shape = " m=" + Object.keys(best.m || {}).length;
         }
         cache.at = Date.now();
         cache.why = "no-stores wins=" + candidates.length
@@ -309,6 +370,7 @@
           + " ready=" + document.readyState
           + " hrefs=[" + hrefs.join(" | ") + "]"
           + shape
+          + " mat=" + report.materialised
           + " threw=" + report.threw
           + " shapes=[" + report.shapes.join(" ") + "]"
           + " names=[" + sourceInventory(best).join(",") + "]";
