@@ -296,9 +296,20 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .manage-head-close:hover { background: var(--surface-2); color: var(--text); }
 /* --- Confirm dialog (destructive asks): the shared modal frame, text first --- */
 .confirm-layer { position: fixed; inset: 0; z-index: 600; }
-.confirm-dialog { width: min(420px, 100%); padding: 18px 20px 16px; }
-.confirm-body { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+/* The launcher's own structure: thin separators between head, copy and
+   actions, with the copy taking the extra breathing room. */
+.confirm-dialog { width: min(420px, 100%); padding: 0; }
+.confirm-dialog .modal-head {
+  margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--line);
+}
+.confirm-body {
+  margin: 0; padding: 16px 18px;
+  font-size: 13px; line-height: 1.6; color: var(--text-2);
+}
 .confirm-body strong { color: var(--text); font-weight: 600; }
+.confirm-dialog .modal-foot {
+  margin: 0; padding: 12px 18px; border-top: 1px solid var(--line);
+}
 .confirm-go { border-color: rgba(229, 72, 77, 0.35); font-weight: 600; }
 /* --- Context menu --- */
 .ps5-context-menu {
