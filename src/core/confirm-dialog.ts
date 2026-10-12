@@ -4,7 +4,7 @@
  * stray click cannot remove a game.
  */
 
-import { modalRoot } from "./dom";
+import { confirmRoot } from "./dom";
 import { esc } from "./utils";
 import { t } from "../i18n";
 
@@ -22,6 +22,12 @@ export interface ConfirmRequest {
 }
 
 let pending: ((answer: boolean) => void) | null = null;
+let layer: HTMLElement | null = null;
+
+function closeLayer(): void {
+  layer?.remove();
+  layer = null;
+}
 
 /** Opens the dialog; true when the user confirms, false on cancel/Escape. */
 export function askConfirm(request: ConfirmRequest): Promise<boolean> {
@@ -31,7 +37,10 @@ export function askConfirm(request: ConfirmRequest): Promise<boolean> {
     pending = null;
     resolve(false);
   }
-  modalRoot.innerHTML = `
+  closeLayer();
+  const el = document.createElement("div");
+  el.className = "confirm-layer";
+  el.innerHTML = `
     <div class="modal-backdrop" data-act="confirm-cancel">
       <div class="modal confirm-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
         <h3 class="modal-title">${esc(request.title)}</h3>
@@ -45,6 +54,8 @@ export function askConfirm(request: ConfirmRequest): Promise<boolean> {
         </div>
       </div>
     </div>`;
+  confirmRoot.appendChild(el);
+  layer = el;
   return new Promise((resolve) => {
     pending = resolve;
   });
@@ -54,7 +65,7 @@ export function askConfirm(request: ConfirmRequest): Promise<boolean> {
 export function answerConfirm(ok: boolean): void {
   const resolve = pending;
   pending = null;
-  modalRoot.innerHTML = "";
+  closeLayer();
   resolve?.(ok);
 }
 

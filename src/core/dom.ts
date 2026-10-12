@@ -36,6 +36,9 @@ export const collectionRoot = document.getElementById("collection-root");
 export const storageRoot = document.getElementById("storage-root");
 /** Changelog modal root. */
 export const changelogRoot = document.getElementById("changelog-root");
+/** Confirmation dialog root. Owns its own high layer so an ask always paints
+ * above whichever modal opened it (the manage popup included). */
+export const confirmRoot = document.getElementById("confirm-root") as HTMLElement;
 
 /** Mark the sidebar game entry that matches the open game page. */
 export function syncSidebarGameActive(): void {

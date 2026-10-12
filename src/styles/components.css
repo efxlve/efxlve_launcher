@@ -295,6 +295,7 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 }
 .manage-head-close:hover { background: var(--surface-2); color: var(--text); }
 /* --- Confirm dialog (destructive asks) --- */
+.confirm-layer { position: fixed; inset: 0; z-index: 600; }
 .confirm-dialog { width: min(460px, 100%); }
 .confirm-copy { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .confirm-subject { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
