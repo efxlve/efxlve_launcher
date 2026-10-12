@@ -1,5 +1,6 @@
-//! Discord voice worker: reads the local Discord client's voice channel and
-//! streams it to the overlay as `discord-voice-state` events.
+//! Discord RPC worker: streams the local Discord client's voice channel
+//! (`discord-voice-state`) and friends list (`discord-friends-state`) to the
+//! overlay.
 //!
 //! One IPC connection at a time, alive only while the overlay has asked for
 //! `discord_voice_watch_start` (its Discord tab is open); `.._stop` ends the
@@ -30,8 +31,10 @@ use tauri::{AppHandle, Emitter, Manager};
 /// The launcher's Discord application; the same id the Rich Presence worker
 /// uses (`DEFAULT_DISCORD_CLIENT_ID` in `src/features/presence/presence.ts`).
 const CLIENT_ID: &str = "1551663205426794596";
-/// Scopes the voice read needs: the RPC surface itself plus voice reading.
-const SCOPES: [&str; 2] = ["rpc", "rpc.voice.read"];
+/// What the worker asks for: the RPC surface, the voice read and the friends
+/// list (`relationships.read` — part of the Social SDK scope set the app was
+/// granted). A stored token missing any of these triggers a fresh authorize.
+const SCOPES: [&str; 3] = ["rpc", "rpc.voice.read", "relationships.read"];
 /// How often the worker checks the pipe and the stop flag.
 const READ_TICK: Duration = Duration::from_millis(150);
 /// Minimum wait between connection attempts (two connections a minute limit).
@@ -41,6 +44,9 @@ const RECONNECT_WAIT: Duration = Duration::from_secs(30);
 const GRACE: Duration = Duration::from_secs(90);
 /// How long the consent prompt may stay unanswered.
 const CONSENT_TIMEOUT: Duration = Duration::from_secs(300);
+/// Presence changes push no event over RPC, so the friends list is re-read on
+/// this cadence while the worker is alive.
+const FRIENDS_POLL: Duration = Duration::from_secs(45);
 
 /// The overlay wants the voice state (its Discord tab is visible).
 static WATCH_WANTED: AtomicBool = AtomicBool::new(false);
@@ -81,6 +87,28 @@ pub struct DiscordVoiceState {
     status: String,
     channel: Option<VoiceChannelInfo>,
     participants: Vec<VoiceParticipant>,
+    error: Option<String>,
+}
+
+/// One friend row as the overlay draws it.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FriendEntry {
+    id: String,
+    name: String,
+    avatar_url: String,
+    /// "online" | "idle" | "dnd" | "offline"
+    status: String,
+}
+
+/// Payload of the `discord-friends-state` event. Status mirrors the voice
+/// payload: "connecting" | "ready" | "error" | "idle".
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscordFriendsState {
+    status: String,
+    friends: Vec<FriendEntry>,
+    pending: usize,
     error: Option<String>,
 }
 
@@ -225,9 +253,11 @@ fn worker(app: &AppHandle) {
     plog("worker started");
     while still_alive() {
         emit_voice(app, "connecting", None, Vec::new(), None);
+        emit_friends(app, "connecting", Vec::new(), 0, None);
         if let Err(error) = session(app) {
             plog(&format!("session ended: {error}"));
-            emit_voice(app, "error", None, Vec::new(), Some(error));
+            emit_voice(app, "error", None, Vec::new(), Some(error.clone()));
+            emit_friends(app, "error", Vec::new(), 0, Some(error));
         }
         if !still_alive() {
             break;
@@ -240,6 +270,7 @@ fn worker(app: &AppHandle) {
     }
     plog("worker stopped");
     emit_voice(app, "idle", None, Vec::new(), None);
+    emit_friends(app, "idle", Vec::new(), 0, None);
 }
 
 /// One connection's lifetime: handshake, auth, then stream until the watch
@@ -282,6 +313,8 @@ fn session(app: &AppHandle) -> Result<(), String> {
 
     // Tells the worker whenever the user moves between voice channels.
     conn.send(&json!({ "cmd": "SUBSCRIBE", "evt": "VOICE_CHANNEL_SELECT", "nonce": nonce() }))?;
+    // Relationship changes (new friend, request, block) re-read the list.
+    conn.send(&json!({ "cmd": "SUBSCRIBE", "evt": "RELATIONSHIP_UPDATE", "nonce": nonce() }))?;
 
     let mut speaking: HashSet<String> = HashSet::new();
     let mut subscribed_channel = String::new();
@@ -295,6 +328,14 @@ fn session(app: &AppHandle) -> Result<(), String> {
         &mut participants,
         &mut speaking,
     )?;
+
+    let mut friends_shape_logged = false;
+    let mut next_friends_poll = Instant::now() + FRIENDS_POLL;
+    if let Err(error) = refresh_friends(app, &mut conn, &mut friends_shape_logged) {
+        // Voice keeps working even when the friends read is refused.
+        plog(&format!("relationships unavailable: {error}"));
+        emit_friends(app, "error", Vec::new(), 0, Some(error));
+    }
 
     loop {
         if !still_alive() {
@@ -311,6 +352,11 @@ fn session(app: &AppHandle) -> Result<(), String> {
                             speaking.remove(user_id);
                         }
                         emit_participants(app, &channel, &participants, &speaking);
+                    }
+                }
+                "RELATIONSHIP_UPDATE" => {
+                    if let Err(error) = refresh_friends(app, &mut conn, &mut friends_shape_logged) {
+                        plog(&format!("relationships refresh failed: {error}"));
                     }
                 }
                 // Any voice-structure change simply re-reads the channel; the
@@ -330,6 +376,12 @@ fn session(app: &AppHandle) -> Result<(), String> {
                 }
                 _ => {}
             }
+        }
+        if Instant::now() >= next_friends_poll {
+            if let Err(error) = refresh_friends(app, &mut conn, &mut friends_shape_logged) {
+                plog(&format!("relationships refresh failed: {error}"));
+            }
+            next_friends_poll = Instant::now() + FRIENDS_POLL;
         }
         std::thread::sleep(READ_TICK);
     }
@@ -512,12 +564,139 @@ fn emit_participants(
     emit_voice(app, "ready", channel.clone(), people, None);
 }
 
+/// Re-reads the friends list, emits it and (once per session) notes the wire
+/// shape in the log so parsing stays honest.
+#[cfg(windows)]
+fn refresh_friends(app: &AppHandle, conn: &mut Pipe, shape_logged: &mut bool) -> Result<(), String> {
+    conn.send(&json!({ "cmd": "GET_RELATIONSHIPS", "args": {}, "nonce": nonce() }))?;
+    let response = conn.wait_for(
+        &|frame| frame.get("cmd").and_then(Value::as_str) == Some("GET_RELATIONSHIPS"),
+        Duration::from_secs(20),
+        true,
+    )?;
+    if response.get("evt").and_then(Value::as_str) == Some("ERROR") {
+        return Err(format!(
+            "GET_RELATIONSHIPS refused: {}",
+            compact(&response)
+        ));
+    }
+
+    if !*shape_logged {
+        *shape_logged = true;
+        if let Some(first) = response
+            .pointer("/data/relationships")
+            .and_then(Value::as_array)
+            .and_then(|items| items.first())
+            .and_then(Value::as_object)
+        {
+            let mut keys: Vec<&str> = first.keys().map(String::as_str).collect();
+            keys.sort_unstable();
+            let presence = first
+                .get("presence")
+                .and_then(Value::as_object)
+                .map(|map| {
+                    let mut inner: Vec<&str> = map.keys().map(String::as_str).collect();
+                    inner.sort_unstable();
+                    inner.join(",")
+                })
+                .unwrap_or_default();
+            plog(&format!(
+                "relationships shape: [{}] presence [{}]",
+                keys.join(","),
+                presence
+            ));
+        }
+    }
+
+    let (friends, pending) = relationships_from(&response);
+    emit_friends(app, "ready", friends, pending, None);
+    Ok(())
+}
+
+/// Friends with their presence from a `GET_RELATIONSHIPS` response, online
+/// first and then by name. Relationship types: 1 friend, 2 blocked, 3 incoming
+/// request, 4 outgoing request.
+fn relationships_from(response: &Value) -> (Vec<FriendEntry>, usize) {
+    let mut friends = Vec::new();
+    let mut pending = 0usize;
+    if let Some(items) = response
+        .pointer("/data/relationships")
+        .and_then(Value::as_array)
+    {
+        for item in items {
+            match item.get("type").and_then(Value::as_u64).unwrap_or(0) {
+                1 => {
+                    let Some(user) = item.get("user") else {
+                        continue;
+                    };
+                    let Some(id) = user.get("id").and_then(Value::as_str) else {
+                        continue;
+                    };
+                    let name = user
+                        .get("global_name")
+                        .and_then(Value::as_str)
+                        .or_else(|| user.get("username").and_then(Value::as_str))
+                        .unwrap_or("")
+                        .to_string();
+                    let avatar = user.get("avatar").and_then(Value::as_str).unwrap_or("");
+                    let status = item
+                        .pointer("/presence/status")
+                        .and_then(Value::as_str)
+                        .unwrap_or("offline")
+                        .to_string();
+                    friends.push(FriendEntry {
+                        avatar_url: avatar_url(id, avatar),
+                        id: id.to_string(),
+                        name,
+                        status,
+                    });
+                }
+                3 | 4 => pending += 1,
+                _ => {}
+            }
+        }
+    }
+    let rank = |status: &str| match status {
+        "online" => 0,
+        "idle" | "dnd" => 1,
+        _ => 2,
+    };
+    friends.sort_by(|a, b| {
+        rank(&a.status)
+            .cmp(&rank(&b.status))
+            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+    (friends, pending)
+}
+
+fn emit_friends(
+    app: &AppHandle,
+    status: &str,
+    friends: Vec<FriendEntry>,
+    pending: usize,
+    error: Option<String>,
+) {
+    let _ = app.emit(
+        "discord-friends-state",
+        DiscordFriendsState {
+            status: status.to_string(),
+            friends,
+            pending,
+            error,
+        },
+    );
+}
+
 /* ---------- tokens ---------- */
 
 #[derive(Serialize, Deserialize)]
 struct StoredToken {
     access_token: String,
     refresh_token: String,
+    /// Scopes Discord granted with this token; an authorize is redone when a
+    /// needed scope is missing (`relationships.read` arrived after voice).
+    #[serde(default)]
+    scopes: Vec<String>,
     /// Unix seconds; refreshed early so an expired token never leaves the app.
     expires_at: u64,
 }
@@ -563,29 +742,39 @@ fn clear_token(app: &AppHandle) {
     }
 }
 
-/// Stored token when fresh, a refresh when possible, and the consent prompt
-/// when neither works.
+/// Stored token when fresh and complete, a refresh when possible, and the
+/// consent prompt when neither works.
 fn access_token(app: &AppHandle, conn: &mut Pipe) -> Result<String, String> {
     if let Some(stored) = load_token(app) {
-        if stored.expires_at > now_secs() + 60 {
+        if stored.expires_at > now_secs() + 60 && token_covers(&stored) {
             plog("using the stored token");
             return Ok(stored.access_token);
         }
-        plog("refreshing the stored token");
-        match refresh_stored(&stored.refresh_token) {
-            Ok(fresh) => {
-                save_token(app, &fresh);
-                return Ok(fresh.access_token);
-            }
-            Err(error) => {
-                plog(&format!("refresh failed: {error}; asking again"));
-                clear_token(app);
+        if stored.expires_at > now_secs() + 60 {
+            plog("stored token is missing scopes; asking again");
+        } else {
+            plog("refreshing the stored token");
+            match refresh_stored(&stored.refresh_token) {
+                Ok(fresh) if token_covers(&fresh) => {
+                    save_token(app, &fresh);
+                    return Ok(fresh.access_token);
+                }
+                Ok(_) => plog("refreshed token is missing scopes; asking again"),
+                Err(error) => plog(&format!("refresh failed: {error}; asking again")),
             }
         }
+        clear_token(app);
     }
     let fresh = authorize(app, conn)?;
     save_token(app, &fresh);
     Ok(fresh.access_token)
+}
+
+/// True when the token carries every scope the worker asks for.
+fn token_covers(token: &StoredToken) -> bool {
+    SCOPES
+        .iter()
+        .all(|needed| token.scopes.iter().any(|granted| granted == needed))
 }
 
 /// The AUTHORIZE walk: PKCE + response_type first (the shape that exchanges),
@@ -701,9 +890,15 @@ fn post_token(form: &[(&str, &str)]) -> Result<StoredToken, String> {
         .get("expires_in")
         .and_then(Value::as_u64)
         .unwrap_or(3600);
+    let scopes = parsed
+        .get("scope")
+        .and_then(Value::as_str)
+        .map(|scope| scope.split_whitespace().map(str::to_string).collect())
+        .unwrap_or_default();
     Ok(StoredToken {
         access_token,
         refresh_token,
+        scopes,
         expires_at: now_secs() + expires_in.saturating_sub(60),
     })
 }
