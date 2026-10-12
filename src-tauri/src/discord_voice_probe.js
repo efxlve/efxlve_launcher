@@ -29,32 +29,40 @@
     };
   }
 
-  // 1) The runtimes: the client may live in another same-origin realm (the
-  //    empty iframe Discord keeps), so every realm is searched and the runtime
-  //    with the most loaded modules wins. A live push only works while the
-  //    chunk global still exists; the init hook's collector covers the rest.
-  function realms() {
-    var list = [window];
+  // 1) The main webpack runtime. The client keeps several of them in this
+  //    realm (its own, plus sentry/libdiscore/fast-connect), they all share the
+  //    chunk global and a helper can look identical (`p === "/assets/"`) while
+  //    carrying only boot modules. One push is answered by every runtime in the
+  //    chain, and `discord_voice_hook.js` also remembered them at document
+  //    start. The client's own instance is the one with the most loaded modules
+  //    among those with `/assets/` and a real chunk-name function.
+  function collectRuntimes() {
     try {
-      for (var i = 0; i < window.frames.length; i++) {
-        try {
-          var frame = window.frames[i];
-          if (frame && frame.document) list.push(frame);
-        } catch (e) {}
-      }
-    } catch (e) {}
-    return list;
-  }
-  function liveRequire(space) {
-    try {
-      var chunk = space.webpackChunkDiscord_app;
-      if (!chunk || typeof chunk.push !== "function") return null;
-      var captured = null;
-      chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { captured = r; }]);
-      chunk.pop();
-      return captured;
+      var chunk = window.webpackChunkDiscord_app;
+      if (!chunk || typeof chunk.push !== "function") return [];
+      var found = [];
+      var entry = [
+        [Math.random().toString(36).slice(2)],
+        {},
+        function (r) {
+          if (found.indexOf(r) < 0) found.push(r);
+        },
+      ];
+      chunk.push(entry);
+      try {
+        if (chunk[chunk.length - 1] === entry) chunk.pop();
+      } catch (e) {}
+      return found;
     } catch (e) {
-      return null;
+      return [];
+    }
+  }
+  // A constant chunk-name function marks the libdiscore helper runtime.
+  function constantChunkName(runtime) {
+    try {
+      return /(?:=>|{return)"[^"]+?"[^=]/.test(String(runtime.u));
+    } catch (e) {
+      return true;
     }
   }
   function loadedCount(candidate) {
@@ -65,57 +73,50 @@
     }
   }
   function pickRequire() {
+    var candidates = [];
+    try {
+      var remembered = window.__efxlveRuntimes || [];
+      for (var i = 0; i < remembered.length; i++) candidates.push(remembered[i]);
+    } catch (e) {}
+    var live = collectRuntimes();
+    for (var j = 0; j < live.length; j++) candidates.push(live[j]);
+    candidates.push(S.req);
     var best = null;
     var bestLoaded = -1;
-    var bestSource = "none";
-    var bestRealm = -1;
-    var runs = 0;
-    var spaces = realms();
-    for (var s = 0; s < spaces.length; s++) {
-      var space = spaces[s];
-      var candidates = [];
-      try {
-        var collected = space.__efxlveRequires || null;
-        if (collected) {
-          runs += collected.length;
-          for (var i = 0; i < collected.length; i++) candidates.push([collected[i], "collect" + i]);
-        }
-      } catch (e) {}
-      try {
-        if (space.__efxlveVoiceRequire) candidates.push([space.__efxlveVoiceRequire, "hook"]);
-      } catch (e) {}
-      candidates.push([liveRequire(space), "live"]);
-      for (var c = 0; c < candidates.length; c++) {
-        var value = candidates[c][0];
-        if (!value || !value.c || !value.m) continue;
-        var loaded = loadedCount(value);
-        if (loaded > bestLoaded) {
-          best = value;
-          bestLoaded = loaded;
-          bestSource = candidates[c][1];
-          bestRealm = s;
-        }
+    var fallback = null;
+    var fallbackLoaded = -1;
+    var counts = [];
+    for (var c = 0; c < candidates.length; c++) {
+      var value = candidates[c];
+      if (!value || !value.c || !value.m) continue;
+      var loaded = loadedCount(value);
+      var usable = String(value.p || "") === "/assets/" && !constantChunkName(value);
+      counts.push(loaded + (usable ? "" : "*"));
+      if (loaded > fallbackLoaded) {
+        fallback = value;
+        fallbackLoaded = loaded;
+      }
+      if (usable && loaded > bestLoaded) {
+        best = value;
+        bestLoaded = loaded;
       }
     }
-    if (loadedCount(S.req) > bestLoaded) {
-      best = S.req;
-      bestLoaded = loadedCount(S.req);
-      bestSource = "cache";
-      bestRealm = -1;
-    }
-    return { req: best, realm: bestRealm, source: bestSource, runs: runs, spaces: spaces.length };
+    return {
+      req: best || fallback,
+      loaded: best ? bestLoaded : fallbackLoaded,
+      runs: candidates.length,
+      counts: counts.join("/"),
+    };
   }
   var picked = pickRequire();
   var req = picked.req;
   if (!req || !req.c || !req.m) return { ok: false, why: "no-require" };
   S.req = req;
 
-  var diag = "src=" + picked.source
-    + " realm=" + picked.realm
-    + " spaces=" + picked.spaces
-    + " runs=" + picked.runs
+  var diag = "runs=" + picked.runs
+    + " c=" + picked.loaded
+    + " all=[" + picked.counts + "]"
     + " m=" + Object.keys(req.m).length
-    + " c=" + Object.keys(req.c).length
     + " p=" + String(req.p || "");
 
   // 2) Walk only loaded modules, at most two levels deep and only into plain
