@@ -23,6 +23,11 @@ use tauri::{AppHandle, Manager};
 /// uses (`DEFAULT_DISCORD_CLIENT_ID` in `src/features/presence/presence.ts`).
 const CLIENT_ID: &str = "1551663205426794596";
 
+/// Registered OAuth2 redirect for the launcher's Discord application (Developer
+/// Portal → OAuth2). The local RPC AUTHORIZE requires one even though nothing
+/// actually redirects; the token exchange must send the same value.
+const REDIRECT_URI: &str = "http://127.0.0.1/callback";
+
 /// One probe per app run: a second connection would walk into Discord's
 /// two-connections-per-minute IPC limit.
 static PROBE_RUNNING: AtomicBool = AtomicBool::new(false);
@@ -110,6 +115,7 @@ fn run_probe() -> std::io::Result<()> {
         "args": {
             "client_id": CLIENT_ID,
             "scopes": ["rpc", "rpc.voice.read"],
+            "redirect_uri": REDIRECT_URI,
             "code_challenge": challenge,
             "code_challenge_method": "S256"
         },
@@ -284,6 +290,7 @@ fn exchange_code(code: &str, verifier: &str) -> Option<String> {
                 ("grant_type", "authorization_code"),
                 ("code", code),
                 ("code_verifier", verifier),
+                ("redirect_uri", REDIRECT_URI),
             ])
             .send()
             .await
