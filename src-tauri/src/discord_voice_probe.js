@@ -29,51 +29,105 @@
     };
   }
 
-  // 1) Main webpack require.
-  var req = S.req || window.__efxlveVoiceRequire || null;
-  if (!req) {
+  // 1) Main webpack require. Several runtimes share the chunk global (the boot
+  //    shell, the client, sentry, libdiscore…): a live push is answered by the
+  //    newest runtime in the chain, while an early capture lands on the shell
+  //    (a hundred loaded modules and no Flux stores). Live first, the
+  //    init-hook capture only as a fallback.
+  function liveRequire() {
     try {
-      var chunk = window.webpackChunkdiscord_app;
-      if (chunk && typeof chunk.push === "function") {
-        chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { req = r; }]);
-        chunk.pop();
-      }
-    } catch (e) {}
+      var chunk = window.webpackChunkDiscord_app;
+      if (!chunk || typeof chunk.push !== "function") return null;
+      var captured = null;
+      chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { captured = r; }]);
+      chunk.pop();
+      return captured;
+    } catch (e) {
+      return null;
+    }
   }
+  function loadedCount(candidate) {
+    try {
+      return candidate && candidate.c ? Object.keys(candidate.c).length : -1;
+    } catch (e) {
+      return -1;
+    }
+  }
+  var req = liveRequire();
+  var source = "live";
+  if (loadedCount(req) < 200 && loadedCount(window.__efxlveVoiceRequire) > loadedCount(req)) {
+    req = window.__efxlveVoiceRequire;
+    source = "hook";
+  }
+  if (loadedCount(req) < 200 && loadedCount(S.req) > loadedCount(req)) {
+    req = S.req;
+    source = "cache";
+  }
+  // The hook collects every webpack runtime the client built; the one with the
+  // most loaded modules is the client itself, not the boot shell.
+  var collected = 0;
+  try {
+    var list = window.__efxlveRequires || [];
+    collected = list.length;
+    for (var i = 0; i < list.length; i++) {
+      if (loadedCount(list[i]) > loadedCount(req)) {
+        req = list[i];
+        source = "collect" + i;
+      }
+    }
+  } catch (e) {}
   if (!req || !req.c || !req.m) return { ok: false, why: "no-require" };
   S.req = req;
 
-  var diag = "m=" + Object.keys(req.m).length
+  var diag = "src=" + source
+    + " runs=" + collected
+    + " m=" + Object.keys(req.m).length
     + " c=" + Object.keys(req.c).length
     + " p=" + String(req.p || "");
 
   // 2) Walk only loaded modules, at most two levels deep and only into plain
-  //    namespace objects; every read is guarded.
+  //    namespace objects. Getters are read at the top level only ("the module
+  //    is already evaluated", so its own bindings are safe), never deeper: a
+  //    nested getter is a re-export that would run another module early and a
+  //    factory that throws leaves a half-built module in the cache. A node
+  //    budget keeps the sweep from ever becoming a stall.
   var PROBE_KEY = "__efxlve_key_probe__";
+  var NODE_BUDGET = 6000;
   function usable(value) {
     if (value == null || value === window || value === document) return false;
     var kind = typeof value;
     if (kind !== "object" && kind !== "function") return false;
     try {
+      var tag = value[Symbol.toStringTag];
+      if (tag === "IntlMessagesProxy" || tag === "DOMTokenList") return false;
       if (value[PROBE_KEY] !== undefined) return false;
       if (ArrayBuffer.isView(value)) return false;
     } catch (e) {
-      return false;
+      return true;
     }
     return true;
   }
   function* walk(maxDepth) {
     var seen = new Set();
+    var budget = NODE_BUDGET;
     for (var id in req.c) {
+      if (budget <= 0) return;
       var mod = req.c[id];
       if (!mod || mod.loaded === false) continue;
-      var stack = [[mod.exports, 0]];
-      while (stack.length) {
+      var root = null;
+      try {
+        root = mod.exports;
+      } catch (e) {
+        continue;
+      }
+      var stack = [[root, 0]];
+      while (stack.length && budget > 0) {
         var item = stack.pop();
         var value = item[0];
         var depth = item[1];
         if (!usable(value) || seen.has(value)) continue;
         seen.add(value);
+        budget -= 1;
         yield value;
         if (depth >= maxDepth || typeof value !== "object") continue;
         var proto = Object.getPrototypeOf(value);
@@ -85,9 +139,17 @@
           continue;
         }
         for (var i = 0; i < keys.length; i++) {
-          var inner;
+          if (budget <= 0) break;
+          var inner = null;
           try {
-            inner = value[keys[i]];
+            var descriptor = Object.getOwnPropertyDescriptor(value, keys[i]);
+            if (!descriptor) continue;
+            if (descriptor.get) {
+              if (depth > 0) continue;
+              inner = value[keys[i]];
+            } else {
+              inner = descriptor.value;
+            }
           } catch (e) {
             continue;
           }
@@ -134,7 +196,16 @@
     }
   }
 
-  if (!S.Base) S.Base = findStoreBase();
+  if (!S.Base) {
+    // One sweep at a time: while the base class has not been found yet, the
+    // probe must not re-walk every call.
+    var now = Date.now();
+    if (S.lastBaseScan && now - S.lastBaseScan < 10000) {
+      return { ok: false, why: "store-base pending " + diag };
+    }
+    S.lastBaseScan = now;
+    S.Base = findStoreBase();
+  }
   if (!S.Base) return { ok: false, why: "no-store-base " + diag };
 
   var stores = {};
@@ -149,7 +220,7 @@
   }
   // The fallback Vencord keeps for stores that are exported but not registered.
   var missing = ["SpeakingStore", "RTCConnectionStore", "MediaEngineStore"];
-  if (Date.now() - S.lastScan > 5000) {
+  if (Date.now() - S.lastScan > 30000) {
     var need = [];
     for (var m = 0; m < missing.length; m++) {
       if (!stores[missing[m]]) need.push(missing[m]);
