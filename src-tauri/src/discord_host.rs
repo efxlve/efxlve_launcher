@@ -261,6 +261,38 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         .get("via")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("?");
+    // Relationships come from the same stores, so the launcher's own client can
+    // feed the friends card without the desktop app.
+    let mut friends = Vec::new();
+    if let Some(items) = report
+        .get("friends")
+        .and_then(serde_json::Value::as_array)
+    {
+        for item in items.iter().take(300) {
+            let id = item
+                .get("id")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
+            let avatar = item
+                .get("avatar")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
+            friends.push(serde_json::json!({
+                "id": id,
+                "name": item.get("name").and_then(serde_json::Value::as_str).unwrap_or(""),
+                "avatarUrl": crate::discord_rpc::avatar_url(id, avatar),
+                "status": item.get("status").and_then(serde_json::Value::as_str).unwrap_or("offline"),
+            }));
+        }
+    }
+    let friends_total = report
+        .get("friendsTotal")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(friends.len() as u64);
+    let pending = report
+        .get("pending")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
     let mut channel = serde_json::Value::Null;
     let mut people = Vec::new();
     if in_call {
@@ -289,8 +321,7 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
                     "name": item.get("name").and_then(serde_json::Value::as_str).unwrap_or(""),
                     "avatarUrl": crate::discord_rpc::avatar_url(id, avatar),
                     "muted": item.get("muted").and_then(serde_json::Value::as_bool).unwrap_or(false),
-                    // The web stores do not expose who is talking (yet).
-                    "speaking": false,
+                    "speaking": item.get("speaking").and_then(serde_json::Value::as_bool).unwrap_or(false),
                 }));
             }
         }
@@ -301,7 +332,7 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         note_voice(
             app,
             format!(
-                "web voice: in call \"{name}\" ({} people, {via}){}",
+                "web voice: in call \"{name}\" ({} people, {via}, {friends_total} friends){}",
                 people.len(),
                 match report.get("debug").and_then(serde_json::Value::as_str) {
                     Some(debug) => format!(" [{debug}]"),
@@ -310,7 +341,10 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
             ),
         );
     } else {
-        note_voice(app, format!("web voice: not in a call ({via})"));
+        note_voice(
+            app,
+            format!("web voice: not in a call ({via}, {friends_total} friends)"),
+        );
     }
     IN_CALL.store(in_call, Ordering::SeqCst);
     if let Ok(mut guard) = LAST_REPORT.lock() {
@@ -321,6 +355,9 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         "inCall": in_call,
         "channel": channel,
         "participants": people,
+        "friends": friends,
+        "friendsTotal": friends_total,
+        "pending": pending,
     });
     if let Ok(mut guard) = WEB_VOICE.lock() {
         *guard = Some(payload.clone());
@@ -343,7 +380,10 @@ fn destroy_view(app: &AppHandle) {
         serde_json::json!({
             "inCall": false,
             "channel": serde_json::Value::Null,
-            "participants": []
+            "participants": [],
+            "friends": [],
+            "friendsTotal": 0,
+            "pending": 0
         }),
     );
     if let Some(view) = view(app) {

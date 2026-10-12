@@ -207,10 +207,21 @@ interface WebVoiceParticipant {
   speaking: boolean;
 }
 
+interface WebFriend {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  status: string;
+}
+
 interface WebVoiceState {
   inCall: boolean;
   channel: { id: string; name: string; guild: string } | null;
   participants: WebVoiceParticipant[];
+  /** Relationships read from the same stores. */
+  friends?: WebFriend[];
+  friendsTotal?: number;
+  pending?: number;
 }
 
 let webVoice: WebVoiceState | null = null;
@@ -1621,19 +1632,23 @@ function renderDiscord(): void {
     </div>`;
 }
 
-/** Friends card body: presence counts and the first rows, online first. */
+/** Friends card body: presence counts and the first rows, online first.
+ * Sources in order: the live desktop read, the launcher's own web client, then
+ * the last known list while (re)connecting. */
 function friendsBodyHtml(): string {
   const state = friendsState;
-  if (state.status === "connecting") {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
-  }
-  if (state.status === "error") {
-    return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
-  }
-  const fresh = state.status === "ready";
-  const friends = fresh ? state.friends : lastFriends;
-  const pending = fresh ? state.pending : lastFriendsPending;
+  const web = webVoice && webVoice.friends && webVoice.friends.length ? webVoice.friends : null;
+  const live = state.status === "ready" && state.friends.length ? state.friends : null;
+  const friends = live ?? web ?? lastFriends;
+  const total = live ? friends.length : web ? webVoice?.friendsTotal ?? friends.length : friends.length;
+  const pending = live ? state.pending : web ? webVoice?.pending ?? 0 : lastFriendsPending;
   if (!friends.length) {
+    if (!live && !web && state.status === "error") {
+      return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
+    }
+    if (!live && !web && state.status === "connecting") {
+      return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
+    }
     return `<p class="ov-voice-desc">${esc(t("overlay.discordFriendsEmpty"))}</p>`;
   }
   const online = friends.filter((friend) => friend.status !== "offline").length;
@@ -1650,7 +1665,7 @@ function friendsBodyHtml(): string {
         </div>`,
     )
     .join("");
-  const hidden = friends.length - shown.length;
+  const hidden = Math.max(0, total - shown.length);
   const pendingNote = pending > 0 ? ` · ${t("overlay.discordFriendsPending", { count: pending })}` : "";
   return `
     <p class="ov-voice-desc">${esc(t("overlay.discordFriendsOnline", { count: online }) + pendingNote)}</p>
