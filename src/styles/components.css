@@ -308,7 +308,7 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 }
 .confirm-body strong { color: var(--text); font-weight: 600; }
 .confirm-dialog .modal-foot {
-  margin: 0; padding: 12px 18px; border-top: 1px solid var(--line);
+  margin: 0; padding: 12px 18px;
 }
 .confirm-go { border-color: rgba(229, 72, 77, 0.35); font-weight: 600; }
 /* --- Context menu --- */
