@@ -33,6 +33,8 @@ const REDIRECT_HINT: &str = "http://127.0.0.1/callback";
 static STARTED: AtomicBool = AtomicBool::new(false);
 /// The command queue into the worker (the client lives on that thread).
 static COMMANDS: Mutex<Option<Sender<SdkCommand>>> = Mutex::new(None);
+/// The app handle for logging; set before the worker starts.
+static APP_HANDLE: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
 
 #[cfg(discord_sdk)]
 static CLIENT_PTR: std::sync::atomic::AtomicPtr<ffi::Client> =
@@ -43,10 +45,14 @@ enum SdkCommand {
 }
 
 /// Appends one line to the shared Discord log (the file the RPC worker and the
-/// page host also write).
-fn sdk_log(app: &AppHandle, line: &str) {
+/// page host also write). Every SDK callback logs through here, so the whole
+/// flow reads from one place.
+fn sdk_log(line: &str) {
     use std::io::Write;
     eprintln!("[discord-sdk] {line}");
+    let Some(app) = APP_HANDLE.get() else {
+        return;
+    };
     if let Ok(dir) = {
         use tauri::Manager;
         app.path().app_data_dir()
@@ -71,6 +77,7 @@ pub fn discord_sdk_spike(app: AppHandle) {
         if STARTED.swap(true, Ordering::SeqCst) {
             return;
         }
+        let _ = APP_HANDLE.set(app.clone());
         let (tx, rx) = channel::<SdkCommand>();
         if let Ok(mut guard) = COMMANDS.lock() {
             *guard = Some(tx);
@@ -79,17 +86,11 @@ pub fn discord_sdk_spike(app: AppHandle) {
             .name("discord-sdk".to_string())
             .spawn(move || worker(app, rx));
         if spawned.is_err() {
-            sdk_log_placeholder();
+            sdk_log("worker could not start");
         }
     }
     #[cfg(not(debug_assertions))]
     let _ = app;
-}
-
-/// The worker could not start; the app handle has moved by then, so a terminal
-/// line is all that is left.
-fn sdk_log_placeholder() {
-    eprintln!("[discord-sdk] worker could not start");
 }
 
 /// Sends a direct message through the SDK (the composer's path). The `user_id`
@@ -271,6 +272,14 @@ mod imp {
     use std::ffi::c_void;
     use std::ptr;
 
+    /// The callbacks log through the shared Discord log (the prefix comes from
+    /// `sdk_log`), so the whole flow reads from one file.
+    macro_rules! sdk_note {
+        ($($arg:tt)*) => {
+            super::sdk_log(&format!($($arg)*))
+        };
+    }
+
     /// What the authorize chain needs while the SDK calls us back.
     struct Flow {
         client: *mut Client,
@@ -305,14 +314,14 @@ mod imp {
     unsafe extern "C" fn on_log(message: StringValue, severity: i32, _user: *mut c_void) {
         let text = string_of(message);
         if !text.is_empty() {
-            eprintln!("[discord-sdk][sdk:{severity}] {text}");
+            sdk_note!("[sdk:{severity}] {text}");
         }
     }
 
     /// Ready means the client is connected and authenticated; that is when the
     /// relationships are worth reading.
     unsafe extern "C" fn on_status(status: i32, error: i32, detail: i32, _user: *mut c_void) {
-        eprintln!("[discord-sdk] status {status} (error {error}/{detail})");
+        sdk_note!("status {status} (error {error}/{detail})");
         if status == 3 {
             dump_relationships();
         }
@@ -326,7 +335,7 @@ mod imp {
     ) {
         let flow = &mut *(user as *mut Flow);
         if !Discord_ClientResult_Successful(result) {
-            eprintln!("[discord-sdk] authorize failed: {}", result_error(result));
+            sdk_note!("authorize failed: {}", result_error(result));
             return;
         }
         let code_text = string_of(code);
@@ -335,7 +344,7 @@ mod imp {
         } else {
             REDIRECT_HINT.to_string()
         };
-        eprintln!("[discord-sdk] authorization code received");
+        sdk_note!("authorization code received");
         // The SDK calls its callbacks from the pump thread, so nesting the
         // token exchange here is the documented pattern.
         Discord_Client_GetToken(
@@ -361,12 +370,12 @@ mod imp {
     ) {
         let flow = &mut *(user as *mut Flow);
         if !Discord_ClientResult_Successful(result) {
-            eprintln!("[discord-sdk] token exchange failed: {}", result_error(result));
+            sdk_note!("token exchange failed: {}", result_error(result));
             return;
         }
         let access_text = string_of(access);
-        eprintln!(
-            "[discord-sdk] token received ({} bytes, refresh {} bytes, {expires_in}s, scope {})",
+        sdk_note!(
+            "token received ({} bytes, refresh {} bytes, {expires_in}s, scope {})",
             access_text.len(),
             string_of(refresh).len(),
             string_of(scope)
@@ -384,10 +393,10 @@ mod imp {
     unsafe extern "C" fn on_token_updated(result: *mut ClientResult, user: *mut c_void) {
         let flow = &mut *(user as *mut Flow);
         if !Discord_ClientResult_Successful(result) {
-            eprintln!("[discord-sdk] update token failed: {}", result_error(result));
+            sdk_note!("update token failed: {}", result_error(result));
             return;
         }
-        eprintln!("[discord-sdk] token set; connecting");
+        sdk_note!("token set; connecting");
         Discord_Client_Connect(flow.client);
     }
 
@@ -397,9 +406,9 @@ mod imp {
         _user: *mut c_void,
     ) {
         if Discord_ClientResult_Successful(result) {
-            eprintln!("[discord-sdk] direct message sent (id {message_id})");
+            sdk_note!("direct message sent (id {message_id})");
         } else {
-            eprintln!("[discord-sdk] send failed: {}", result_error(result));
+            sdk_note!("send failed: {}", result_error(result));
         }
     }
 
@@ -416,7 +425,7 @@ mod imp {
         };
         Discord_Client_GetRelationships(client, &mut span);
         if span.ptr.is_null() || span.size == 0 {
-            eprintln!("[discord-sdk] relationships: none");
+            sdk_note!("relationships: none");
             return;
         }
         let handles = span.ptr;
@@ -452,23 +461,23 @@ mod imp {
                 _ => {}
             }
         }
-        eprintln!(
-            "[discord-sdk] relationships: {friends} friends, {pending} pending, {blocked} blocked"
+        sdk_note!(
+            "relationships: {friends} friends, {pending} pending, {blocked} blocked"
         );
         if !sample.is_empty() {
-            eprintln!("[discord-sdk] {sample}");
+            sdk_note!("{sample}");
         }
     }
 
     /// Owns the client for the whole app run: authorize once, then pump the
     /// SDK's callbacks and serve the command queue.
-    pub fn run(app: AppHandle, rx: Receiver<SdkCommand>) {
+    pub fn run(_app: AppHandle, rx: Receiver<SdkCommand>) {
         unsafe {
             let mut client: Client = std::mem::zeroed();
             Discord_Client_Init(&mut client);
             let client_ptr = &mut client as *mut Client;
             super::CLIENT_PTR.store(client_ptr, Ordering::SeqCst);
-            super::sdk_log(&app, "client initialized");
+            sdk_note!("client initialized");
 
             Discord_Client_AddLogCallback(&mut client, on_log, None, ptr::null_mut(), 2);
             Discord_Client_SetStatusChangedCallback(
@@ -484,7 +493,7 @@ mod imp {
             };
             Discord_Client_GetDefaultCommunicationScopes(&mut scopes);
             let scopes_text = string_of(scopes);
-            super::sdk_log(&app, &format!("communication scopes: {scopes_text}"));
+            sdk_note!("communication scopes: {scopes_text}");
 
             let mut verifier: CodeVerifier = std::mem::zeroed();
             Discord_Client_CreateAuthorizationCodeVerifier(&mut client, &mut verifier);
@@ -507,7 +516,7 @@ mod imp {
                 client: client_ptr,
                 verifier: verifier_string,
             }));
-            super::sdk_log(&app, "asking for authorization (approve the prompt)");
+            sdk_note!("asking for authorization (approve the prompt)");
             Discord_Client_Authorize(
                 &mut client,
                 &mut args,
@@ -526,7 +535,7 @@ mod imp {
                     match rx.try_recv() {
                         Ok(SdkCommand::SendDm { user_id, text }) => {
                             if super::CLIENT_PTR.load(Ordering::SeqCst).is_null() {
-                                eprintln!("[discord-sdk] send ignored: client gone");
+                                sdk_note!("send ignored: client gone");
                             } else {
                                 Discord_Client_SendUserMessage(
                                     client_ptr,
@@ -547,7 +556,7 @@ mod imp {
                 }
                 std::thread::sleep(Duration::from_millis(15));
             }
-            super::sdk_log(&app, "spike window closed");
+            sdk_note!("spike window closed");
         }
     }
 }
@@ -559,5 +568,5 @@ fn worker(app: AppHandle, rx: Receiver<SdkCommand>) {
 
 #[cfg(not(discord_sdk))]
 fn worker(_app: AppHandle, _rx: Receiver<SdkCommand>) {
-    eprintln!("[discord-sdk] SDK not vendored; nothing to run");
+    sdk_log("SDK not vendored; nothing to run");
 }
