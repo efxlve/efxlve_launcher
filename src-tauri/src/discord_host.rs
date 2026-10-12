@@ -416,7 +416,6 @@ fn destroy_view(app: &AppHandle) {
 /// its completion handler instead of a navigation.
 #[cfg(windows)]
 fn poll_voice_script(app: &AppHandle) {
-    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2ExecuteScriptCompletedHandler;
     use webview2_com::ExecuteScriptCompletedHandler;
     use windows::core::PCWSTR;
 
@@ -463,11 +462,17 @@ fn poll_voice_script(app: &AppHandle) {
         ));
         let script: Vec<u16> = VOICE_SCRIPT.encode_utf16().chain(std::iter::once(0)).collect();
         if let Err(error) = unsafe { core.ExecuteScript(PCWSTR(script.as_ptr()), &handler) } {
-            eprintln!("[discord-view] web voice: ExecuteScript failed: {error}");
+            note_voice(
+                &report_app,
+                format!("web voice: ExecuteScript failed ({error})"),
+            );
         }
     });
     if let Err(error) = registration {
-        eprintln!("[discord-view] web voice: with_webview failed: {error}");
+        note_voice(
+            app,
+            format!("web voice: with_webview failed ({error})"),
+        );
     }
 }
 
@@ -650,40 +655,51 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
 
     // Follows the web client's voice state while this view lives: the page is
     // polled through WebView2's own script bridge and every report lands in
-    // `handle_voice_report`. A generation bump (a destroy, a park-close) ends
-    // the loop.
-    web_log(app, "web voice: tracker online");
+    // `handle_voice_report`. A plain thread, not an async task: the RPC worker
+    // shape is proven here, and a task that dies inside the runtime would fail
+    // silently. A generation bump (a destroy, a park-close) ends the loop.
     let track_app = app.clone();
-    tauri::async_runtime::spawn(async move {
-        loop {
-            tokio::time::sleep(Duration::from_secs(3)).await;
-            if GENERATION.load(Ordering::SeqCst) != generation {
-                return;
+    let spawned = std::thread::Builder::new()
+        .name("discord-voice-tracker".to_string())
+        .spawn(move || {
+            let mut ticks: u64 = 0;
+            loop {
+                std::thread::sleep(Duration::from_secs(3));
+                if GENERATION.load(Ordering::SeqCst) != generation {
+                    web_log(&track_app, "web voice: tracker done (view replaced)");
+                    return;
+                }
+                ticks += 1;
+                if ticks == 1 {
+                    web_log(&track_app, "web voice: first tick");
+                }
+                poll_voice_script(&track_app);
+                // The script's result arrives through its completion handler;
+                // give it a moment before the park check reads the flags.
+                std::thread::sleep(Duration::from_millis(300));
+                let report_age = LAST_REPORT
+                    .lock()
+                    .ok()
+                    .and_then(|guard| *guard)
+                    .map(|at| at.elapsed());
+                let quiet = report_age
+                    .map(|age| age > Duration::from_secs(90))
+                    .unwrap_or(false);
+                if PARKED.load(Ordering::SeqCst)
+                    && (!IN_CALL.load(Ordering::SeqCst) || quiet)
+                {
+                    web_log(
+                        &track_app,
+                        "web voice: the call ended; closing the parked page",
+                    );
+                    destroy_view(&track_app);
+                    return;
+                }
             }
-            poll_voice_script(&track_app);
-            // The script's result arrives through its completion handler; give
-            // it a moment before the park check reads the flags.
-            tokio::time::sleep(Duration::from_millis(300)).await;
-            let report_age = LAST_REPORT
-                .lock()
-                .ok()
-                .and_then(|guard| *guard)
-                .map(|at| at.elapsed());
-            let quiet = report_age
-                .map(|age| age > Duration::from_secs(90))
-                .unwrap_or(false);
-            if PARKED.load(Ordering::SeqCst)
-                && (!IN_CALL.load(Ordering::SeqCst) || quiet)
-            {
-                web_log(
-                    &track_app,
-                    "web voice: the call ended; closing the parked page",
-                );
-                destroy_view(&track_app);
-                return;
-            }
-        }
-    });
+        });
+    if spawned.is_err() {
+        web_log(app, "web voice: tracker could not start");
+    }
 
     // The document can finish loading while the web client is still blank (its
     // assets trickle in on a slow network), so the child stays hidden behind
