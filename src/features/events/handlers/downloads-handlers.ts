@@ -138,6 +138,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         void askConfirm({
           title: i18nT("manage.uninstallTitle"),
           subject: summaryOf(id)?.title || id,
+          icon: "trash",
           body: i18nT("confirm.uninstallBody"),
           confirm: i18nT("common.uninstall"),
           cancel: i18nT("common.cancel"),
@@ -484,6 +485,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         void askConfirm({
           title: i18nT("manage.uninstallTitle"),
           subject: summaryOf(id)?.title || id,
+          icon: "trash",
           body: i18nT("confirm.uninstallBody"),
           confirm: i18nT("common.uninstall"),
           cancel: i18nT("common.cancel"),

@@ -224,6 +224,7 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
         void askConfirm({
           title: i18nT("manage.uninstallTitle"),
           subject: summaryOf(id)?.title || summaryOf(`amazon::${id}`)?.title || id,
+          icon: "trash",
           body: i18nT("confirm.uninstallBody"),
           confirm: i18nT("common.uninstall"),
           cancel: i18nT("common.cancel"),

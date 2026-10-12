@@ -5,6 +5,7 @@
  */
 
 import { confirmRoot } from "./dom";
+import { icon } from "./icons";
 import { esc } from "./utils";
 import { t } from "../i18n";
 
@@ -19,6 +20,8 @@ export interface ConfirmRequest {
   confirm: string;
   /** Label of the cancel button. */
   cancel: string;
+  /** Icon in the tinted medallion; a warning triangle by default. */
+  icon?: string;
 }
 
 let pending: ((answer: boolean) => void) | null = null;
@@ -43,19 +46,24 @@ export function askConfirm(request: ConfirmRequest): Promise<boolean> {
   el.innerHTML = `
     <div class="modal-backdrop" data-act="confirm-cancel">
       <div class="modal confirm-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
-        <h3 class="modal-title">${esc(request.title)}</h3>
-        <div class="confirm-copy">
-          ${request.subject ? `<p class="confirm-subject">${esc(request.subject)}</p>` : ""}
-          <p class="confirm-body">${esc(request.body)}</p>
+        <div class="confirm-head">
+          <span class="confirm-icon">${icon((request.icon || "alert-triangle") as Parameters<typeof icon>[0], 19)}</span>
+          <div class="confirm-head-text">
+            <h3 class="modal-title">${esc(request.title)}</h3>
+            ${request.subject ? `<p class="confirm-subject" title="${esc(request.subject)}">${esc(request.subject)}</p>` : ""}
+          </div>
         </div>
+        <p class="confirm-body">${esc(request.body)}</p>
         <div class="confirm-actions">
-          <button type="button" class="btn ghost" data-act="confirm-cancel">${esc(request.cancel)}</button>
-          <button type="button" class="btn danger" data-act="confirm-yes">${esc(request.confirm)}</button>
+          <button type="button" class="btn ghost confirm-cancel" data-act="confirm-cancel">${esc(request.cancel)}</button>
+          <button type="button" class="btn danger confirm-go" data-act="confirm-yes">${esc(request.confirm)}</button>
         </div>
       </div>
     </div>`;
   confirmRoot.appendChild(el);
   layer = el;
+  // The safe action owns the keyboard: Enter cancels, Escape cancels.
+  el.querySelector<HTMLButtonElement>('[data-act="confirm-cancel"]')?.focus();
   return new Promise((resolve) => {
     pending = resolve;
   });
