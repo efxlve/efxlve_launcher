@@ -7,6 +7,8 @@ mod companion;
 mod controller;
 mod controller_bridge;
 mod discord_host;
+#[cfg_attr(not(debug_assertions), allow(dead_code))]
+mod discord_rpc;
 mod eos;
 mod egl_removal;
 mod epic_shim;
@@ -815,6 +817,7 @@ fn main() {
             discord_host::discord_view_reload,
             discord_host::discord_view_destroy,
             discord_host::discord_open_devtools,
+            discord_rpc::discord_voice_probe,
             notif_overlay::show_notif_overlay,
             notif_overlay::move_notif_overlay,
             notif_overlay::hide_notif_overlay,
