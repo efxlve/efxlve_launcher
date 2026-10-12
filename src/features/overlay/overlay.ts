@@ -178,6 +178,26 @@ let voiceState: DiscordVoiceState = { status: "idle", channel: null, participant
 let lastVoiceChannel: VoiceChannel | null = null;
 let lastVoiceParticipants: VoiceParticipant[] = [];
 
+interface FriendEntry {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  /** "online" | "idle" | "dnd" | "offline" */
+  status: string;
+}
+
+interface DiscordFriendsState {
+  status: string;
+  friends: FriendEntry[];
+  pending: number;
+  error: string | null;
+}
+
+let friendsState: DiscordFriendsState = { status: "idle", friends: [], pending: 0, error: null };
+/** Last list, kept so a reconnect does not blank the card. */
+let lastFriends: FriendEntry[] = [];
+let lastFriendsPending = 0;
+
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
 let notesSaveTimer: number | null = null;
@@ -1573,7 +1593,48 @@ function renderDiscord(): void {
         <p class="ov-voice-desc">${esc(t("overlay.discordPresenceDesc"))}</p>
         <button class="btn" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
+      <div class="ov-card ov-span-12">
+        <div class="ov-card-title">${icon("users", 14)} <span class="title-text">${esc(t("overlay.discordFriendsTitle"))}</span></div>
+        ${friendsBodyHtml()}
+      </div>
     </div>`;
+}
+
+/** Friends card body: presence counts and the first rows, online first. */
+function friendsBodyHtml(): string {
+  const state = friendsState;
+  if (state.status === "connecting") {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
+  }
+  if (state.status === "error") {
+    return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
+  }
+  const fresh = state.status === "ready";
+  const friends = fresh ? state.friends : lastFriends;
+  const pending = fresh ? state.pending : lastFriendsPending;
+  if (!friends.length) {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordFriendsEmpty"))}</p>`;
+  }
+  const online = friends.filter((friend) => friend.status !== "offline").length;
+  const shown = friends.slice(0, 12);
+  const rows = shown
+    .map(
+      (friend) => `
+        <div class="ov-friend${friend.status === "offline" ? " offline" : ""}">
+          <span class="ov-friend-avatar">
+            <img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />
+            <span class="ov-friend-dot ov-status-${esc(friend.status)}"></span>
+          </span>
+          <span class="ov-friend-name">${esc(friend.name)}</span>
+        </div>`,
+    )
+    .join("");
+  const hidden = friends.length - shown.length;
+  const pendingNote = pending > 0 ? ` · ${t("overlay.discordFriendsPending", { count: pending })}` : "";
+  return `
+    <p class="ov-voice-desc">${esc(t("overlay.discordFriendsOnline", { count: online }) + pendingNote)}</p>
+    <div class="ov-voice-people">${rows}</div>
+    ${hidden > 0 ? `<p class="ov-voice-desc ov-friends-more">${esc(t("overlay.discordFriendsMore", { count: hidden }))}</p>` : ""}`;
 }
 
 /** Voice card body: a status line, or the channel with its people. While the
@@ -2354,6 +2415,18 @@ async function boot(): Promise<void> {
     } else if (voiceState.status === "idle") {
       lastVoiceChannel = null;
       lastVoiceParticipants = [];
+    }
+    if (activeTab === "discord" && !document.hidden) renderDiscord();
+  });
+
+  await listen<DiscordFriendsState>("discord-friends-state", (event) => {
+    friendsState = event.payload;
+    if (friendsState.status === "ready") {
+      lastFriends = friendsState.friends;
+      lastFriendsPending = friendsState.pending;
+    } else if (friendsState.status === "idle") {
+      lastFriends = [];
+      lastFriendsPending = 0;
     }
     if (activeTab === "discord" && !document.hidden) renderDiscord();
   });
