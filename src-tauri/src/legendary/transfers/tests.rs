@@ -105,6 +105,20 @@ fn test_parse_speed() {
     );
 }
 
+#[test]
+fn a_logged_error_beats_a_zero_exit() {
+    // Legendary can log an error and still exit 0; the monitor must not record
+    // that as a completed install.
+    assert!(has_hard_error("[EPCAPI] ERROR: Login to EGS API failed"));
+    assert!(has_hard_error("Traceback (most recent call last):"));
+    assert!(!has_hard_error(
+        "[DLManager] INFO: = Progress: 50.00% (5/10), Running for 00:00:01, ETA: 00:00:01"
+    ));
+    assert!(!has_hard_error(
+        "[Core] WARNING: Chunk download failed, retrying"
+    ));
+}
+
 #[tokio::test]
 async fn crlf_lines_splits_on_carriage_return() {
     // Legendary overwrites progress with `\r`; the reader must split on both \r and \n.

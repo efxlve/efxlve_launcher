@@ -802,6 +802,12 @@ pub(super) async fn monitor_download(
         let _ = out_task.await;
         let err_text: String = tail.iter().cloned().collect::<Vec<_>>().join("\n");
         if status.is_some_and(|s| s.success()) {
+            // A zero exit alone is not success: legendary can log a hard error
+            // (locked game files, permission denied) and still exit 0, which
+            // would record an unapplied update as completed.
+            if has_hard_error(&err_text) {
+                break Err(short_error(&err_text));
+            }
             break Ok(());
         }
         // Heroic pattern: on a memory error, raise the limit and retry once.

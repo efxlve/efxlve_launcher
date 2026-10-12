@@ -186,6 +186,19 @@ pub(super) fn parse_progress_percent(line: &str) -> Option<i32> {
     Some((v.round() as i32).clamp(0, 100))
 }
 
+/// True when legendary's own log shows a hard error. Legendary can log a hard
+/// error (locked game files, permission denied) and still exit with code 0, so
+/// a zero exit alone must not be treated as a completed install.
+pub(super) fn has_hard_error(err_text: &str) -> bool {
+    err_text.lines().any(|line| {
+        let line = line.trim();
+        line.starts_with("Traceback")
+            || line.contains("ERROR:")
+            || line.contains("CRITICAL:")
+            || line.contains("Exception:")
+    })
+}
+
 pub(crate) fn short_error(err_text: &str) -> String {
     let low = err_text.to_lowercase();
     if low.contains("429") || low.contains("too many requests") {
