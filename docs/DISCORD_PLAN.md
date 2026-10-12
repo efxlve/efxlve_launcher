@@ -125,6 +125,16 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - UI kararı: overlay Discord sekmesindeki Arkadaşlar kartı (çevrimiçi önce, durum noktası, "+N kişi daha"); launcher tarafında ayrı yüzey (Discord sayfası yanında panel/sidebar widget) isteğe bağlı sonraki adım.
 - DM: İletişim Erişimi onaylanmadıkça SDK'dan gelmez; webview'da yaşamaya devam eder.
 
+### Faz 4b — Social SDK (yazma yolu) — 13.10.2026: çalışıyor
+
+- SDK indirildi, Windows alt kümesi `src-tauri/vendor/discord-sdk/` altında (git dışı). `build.rs` klasör varsa link eder, DLL'i exe'nin yanına kopyalar ve `discord_sdk` cfg'sini yayar; klasör yoksa kod derlemeden çıkar, yani build hiçbir zaman 745 MB'a bağlı değil.
+- FFI elle yazıldı (`discord_sdk.rs`): tek worker thread istemciye sahip, `Discord_RunCallbacks` pompalıyor ve komut kuyruğunu işliyor (presence.rs ile aynı şekil).
+- Akış: ilk çalıştırmada Authorize (PKCE) → GetToken → UpdateToken → Connect; oturum DPAPI ile `discord/sdk-session.bin`'e yazılıyor, sonraki açılışlarda `RefreshToken` ile sessizce yenileniyor (yenileme düşerse onay akışına geri döner).
+- Doğrulama (kullanıcı, 13.10.2026): onay → `status 1→2→3` → `relationships: 47 friends, 6 pending, 1 blocked`. Commit: spike `901a141a`, log birleştirme `275489ab`.
+- Durum olayları: `discord-sdk-state`, `discord-sdk-friends`, `discord-sdk-dm`; komutlar: `discord_sdk_start`, `discord_sdk_state`, `discord_sdk_friends`, `discord_sdk_send_dm`.
+- Overlay: Arkadaşlar satırı artık seçilebilir; besteci paneli `discord_sdk_send_dm` ile DM yazar (Enter gönderir, Shift+Enter satır atlar). Web ve masaüstü okumaları duruyor; SDK ilişki listesi son yedek kaynak.
+- Kalan: yazma yolunun kullanıcıyla doğrulanması; isteğe bağlı ses katılımı (partner onayı) ve mesaj geçmişi.
+
 ## Faz 5 — Yayın
 
 - Sürüm notu/changelog girdisi (`src/features/changelog/changelog-view.ts` + release akışı).
@@ -154,5 +164,5 @@ Toplam: **~3-4 geliştirme günü** (SDK yolu: 5-6 gün + onay riski + DLL paket
 ## Açık kararlar
 
 1. Faz 4 (native arkadaş listesi) webview sonrasında istenecek mi? SDK erişimi hazır; maliyet ~2-3 gün.
-2. DM native panel yapılmayacak; DM webview'da (Discord onayı gelmedikçe).
+2. DM artık Social SDK ile overlay'den yazılıyor; webview okuma yüzeyi olarak kalıyor.
 3. Overlay'de ses yazma (mute/deafen) partner onayına bağlı; şimdilik yok.
