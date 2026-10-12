@@ -516,8 +516,8 @@ fn voice_channel_from(response: &Value) -> Option<(VoiceChannelInfo, Vec<VoicePa
 }
 
 /// Discord CDN avatar for a user; the default embed avatar covers hash-less
-/// accounts.
-fn avatar_url(user_id: &str, avatar_hash: &str) -> String {
+/// accounts. Shared with the webview host, which reads the same field shape.
+pub(crate) fn avatar_url(user_id: &str, avatar_hash: &str) -> String {
     if avatar_hash.is_empty() {
         let index = user_id
             .parse::<u64>()

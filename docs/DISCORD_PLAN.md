@@ -32,7 +32,8 @@ Kaynak: Discord developer docs (RPC, OAuth2 scopes, Social SDK) ve `docs.discord
 - **Faz 3.2** — tamam (`2804005d`): kalıcı okuyucu worker; token'lar DPAPI ile `<appdata>/discord/token.bin`'de, süresi dolunca sessizce yenilenir; tek bağlantı, ≥30 sn backoff.
 - **Faz 3.3** — tamam (`f9880d71`, `e16d22d2`, bu commit): overlay Discord sekmesi canlı kanal + katılımcılar + konuşma halkası gösteriyor; onay isteği panel kapanınca iptal olmuyor; panel kapanınca worker 90 sn sıcak kalıyor (hızlı Shift+Tab aynı bağlantıyı kullanır) ve (yeniden) bağlanırken son bilinen kanal soluk gösteriliyor.
 - **Faz 4** — **tamam** (`48dcf57e`, `65d68275`, `120b793c`): F10 probu `relationships.read` kapsamını aldı; worker kapsam farkındalıklı token'la arkadaş listesini okuyor (`RELATIONSHIP_UPDATE` + 45 sn tazeleme); overlay Discord sekmesindeki Arkadaşlar kartı doğrulandı (7 çevrimiçi · 6 bekleyen istek · 12 satır + "+35 kişi daha"). Presence gerçek: log `presence [activity,status]`.
-- **Kalan:** polisaj (hata metinlerinin yerelleştirilmesi, ses kaynağının masaüstü istemci olduğu notu), isteğe bağlı launcher tarafı arkadaş yüzeyi, Faz 5 (yayın notu + duyuru).
+- **Masaüstüsüz ses** — tamam (bu commit): gömülü Discord sayfasının araması (kanal + katılımcılar + mute) sayfanın kendi store'larından 3 sn'de bir okunur ve `discord-web-voice` olayıyla overlay'e gider; **aramadayken sayfa 1x1 sliver olarak sıcak kalır**, arama bitince kapanır — masaüstü uygulaması gerekmez. Karttaki kaynak sırası: masaüstü RPC → web araması → son bilinen (soluk). Bilinen eksik: web modunda **konuşma halkası yok** (store'lar konuşma bilgisini vermiyor; DOM'dan okuma sonraki adım olabilir).
+- **Kalan:** polisaj (hata metinlerinin yerelleştirilmesi), Faz 5 (yayın notu + duyuru) ve **oyun içi arayüz revizyonu** (Spotify/Discord in-game kullanılabilirlik + estetik; sıradaki büyük iş).
 
 ## Mevcut durum
 

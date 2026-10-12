@@ -198,6 +198,23 @@ let friendsState: DiscordFriendsState = { status: "idle", friends: [], pending: 
 let lastFriends: FriendEntry[] = [];
 let lastFriendsPending = 0;
 
+/** The launcher's own Discord page call (no desktop app involved). */
+interface WebVoiceParticipant {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  muted: boolean;
+  speaking: boolean;
+}
+
+interface WebVoiceState {
+  inCall: boolean;
+  channel: { id: string; name: string; guild: string } | null;
+  participants: WebVoiceParticipant[];
+}
+
+let webVoice: WebVoiceState | null = null;
+
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
 let notesSaveTimer: number | null = null;
@@ -465,8 +482,12 @@ function setTab(tab: TabId, fromOpen = false): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
   // The voice worker lives only while its tab is visible (idle zero cost).
-  if (tab === "discord") void invoke("discord_voice_watch_start").catch(() => undefined);
-  else void invoke("discord_voice_watch_stop").catch(() => undefined);
+  if (tab === "discord") {
+    void invoke("discord_voice_watch_start").catch(() => undefined);
+    void refreshWebVoice();
+  } else {
+    void invoke("discord_voice_watch_stop").catch(() => undefined);
+  }
 
   document.querySelectorAll<HTMLElement>("[data-ov-tab]").forEach((el) => {
     el.classList.toggle("active", el.dataset.ovTab === tab);
@@ -1637,32 +1658,69 @@ function friendsBodyHtml(): string {
     ${hidden > 0 ? `<p class="ov-voice-desc ov-friends-more">${esc(t("overlay.discordFriendsMore", { count: hidden }))}</p>` : ""}`;
 }
 
-/** Voice card body: a status line, or the channel with its people. While the
- * worker is (re)connecting the last known channel stays on screen, dimmed. */
+/** Fetches the web page's last voice report, so the card paints immediately. */
+async function refreshWebVoice(): Promise<void> {
+  try {
+    const state = await invoke<WebVoiceState | null>("discord_web_voice_state");
+    if (state) {
+      webVoice = state;
+      if (activeTab === "discord" && !document.hidden) renderDiscord();
+    }
+  } catch {
+    // Older hosts have no web voice bridge; the RPC source stays.
+  }
+}
+
+/** The web client's call, shaped like an RPC read. */
+function webVoiceAsState(): { channel: VoiceChannel; people: VoiceParticipant[] } | null {
+  const web = webVoice;
+  if (!web || !web.inCall || !web.channel) return null;
+  return {
+    channel: { id: web.channel.id, name: web.channel.name, guildId: web.channel.guild || null },
+    people: web.participants.map((person) => ({
+      id: person.id,
+      name: person.name,
+      avatarUrl: person.avatarUrl,
+      speaking: person.speaking,
+      muted: person.muted,
+    })),
+  };
+}
+
+/** Voice card body: a status line, or the channel with its people. Sources in
+ * order: the live desktop read, the launcher's own web client, then the last
+ * known channel while (re)connecting (dimmed). */
 function voiceBodyHtml(): string {
   const state = voiceState;
   if (state.status === "authorizing") {
     return `<p class="ov-voice-desc">${esc(t("overlay.discordApprove"))}</p>`;
   }
   const busy = state.status === "connecting" || state.status === "error";
-  const channel = state.channel ?? (busy ? lastVoiceChannel : null);
-  const people = state.channel ? state.participants : lastVoiceParticipants;
+  const web = webVoiceAsState();
+  const live = state.channel ? { channel: state.channel, people: state.participants } : null;
+  const display =
+    live ??
+    web ??
+    (busy && lastVoiceChannel ? { channel: lastVoiceChannel, people: lastVoiceParticipants } : null);
+  const stale = !live && !web && display !== null;
   const note =
     state.status === "connecting"
       ? t("overlay.discordConnecting")
       : state.status === "error"
         ? state.error || t("common.unknownError")
         : "";
-  const noteHtml = note
-    ? `<p class="ov-voice-desc${state.status === "error" ? " ov-voice-error" : ""}">${esc(note)}</p>`
-    : "";
-  if (!channel) {
+  // A live web call speaks for itself; the RPC note would only be noise.
+  const noteHtml =
+    note && !web
+      ? `<p class="ov-voice-desc${state.status === "error" ? " ov-voice-error" : ""}">${esc(note)}</p>`
+      : "";
+  if (!display) {
     return (
       noteHtml ||
       `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}<br />${esc(t("overlay.discordVoiceDesc"))}</p>`
     );
   }
-  const rows = people
+  const rows = display.people
     .map(
       (person) => `
         <div class="ov-voice-person${person.speaking ? " speaking" : ""}">
@@ -1672,11 +1730,11 @@ function voiceBodyHtml(): string {
         </div>`,
     )
     .join("");
-  const stale = state.channel ? "" : " ov-voice-stale";
+  const dim = stale ? " ov-voice-stale" : "";
   return `
     ${noteHtml}
-    <div class="ov-voice-channel${stale}">${icon("volume-2", 13)} <span>${esc(channel.name)}</span></div>
-    <div class="ov-voice-people${stale}">${rows}</div>`;
+    <div class="ov-voice-channel${dim}">${icon("volume-2", 13)} <span>${esc(display.channel.name)}</span></div>
+    <div class="ov-voice-people${dim}">${rows}</div>`;
 }
 
 /* 9. Settings View */
@@ -2428,6 +2486,11 @@ async function boot(): Promise<void> {
       lastFriends = [];
       lastFriendsPending = 0;
     }
+    if (activeTab === "discord" && !document.hidden) renderDiscord();
+  });
+
+  await listen<WebVoiceState>("discord-web-voice", (event) => {
+    webVoice = event.payload;
     if (activeTab === "discord" && !document.hidden) renderDiscord();
   });
 
