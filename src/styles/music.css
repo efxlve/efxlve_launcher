@@ -53,6 +53,34 @@ body.spotify-page #view {
   white-space: nowrap;
 }
 
+/* Header buttons carry their name: an icon alone leaves the action unclear. */
+.page-header-actions .page-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.page-header-actions .page-action-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.page-header-actions .page-action-btn svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
 .music-brand {
   display: flex;
   align-items: center;

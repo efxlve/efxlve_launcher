@@ -836,13 +836,18 @@ pub fn discord_view_hide(app: AppHandle) {
     }
 }
 
-/// Reloads the page (a stuck sign-in or a stale session).
+/// Reloads the page (a stuck sign-in or a stale session). The paint gate is
+/// lowered first so the loading note comes back: a Discord reload repaints in
+/// place and would otherwise look like nothing happened.
 #[tauri::command]
 pub fn discord_view_reload(app: AppHandle) {
     if let Some(view) = view(&app) {
+        PAINTED.store(false, Ordering::SeqCst);
+        let _ = view.hide();
         if let Ok(url) = HOME_URL.parse::<url::Url>() {
             let _ = view.navigate(url);
         }
+        web_log(&app, "page reload requested");
     }
 }
 

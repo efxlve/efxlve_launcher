@@ -1692,6 +1692,7 @@
   "coming.discord": "¡Discord llega pronto! Hasta entonces, decir «una partida más» sigue siendo un proceso manual.",
   "discord.loading": "Cargando Discord…",
   "discord.reload": "Recargar",
+  "discord.title": "Discord",
   "coming.soon": "Pronto",
   "nav.resizeSidebar": "Cambiar el ancho de la barra (doble clic para restablecer)",
   "nav.collapseSidebar": "Contraer la barra lateral",

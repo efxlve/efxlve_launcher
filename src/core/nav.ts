@@ -101,6 +101,7 @@ export function updatePageHeader(): void {
       profile: t("palette.cmdProfile"),
       accounts: t("accounts.title"),
       music: t("overlay.tabSpotify"),
+      discord: t("discord.title"),
     };
     const next = game ?? titles[S.view] ?? "";
     if (title.textContent !== next) title.textContent = next;
