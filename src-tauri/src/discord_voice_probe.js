@@ -29,14 +29,25 @@
     };
   }
 
-  // 1) Main webpack require. Several runtimes share the chunk global (the boot
-  //    shell, the client, sentry, libdiscore…): a live push is answered by the
-  //    newest runtime in the chain, while an early capture lands on the shell
-  //    (a hundred loaded modules and no Flux stores). Live first, the
-  //    init-hook capture only as a fallback.
-  function liveRequire() {
+  // 1) The runtimes: the client may live in another same-origin realm (the
+  //    empty iframe Discord keeps), so every realm is searched and the runtime
+  //    with the most loaded modules wins. A live push only works while the
+  //    chunk global still exists; the init hook's collector covers the rest.
+  function realms() {
+    var list = [window];
     try {
-      var chunk = window.webpackChunkDiscord_app;
+      for (var i = 0; i < window.frames.length; i++) {
+        try {
+          var frame = window.frames[i];
+          if (frame && frame.document) list.push(frame);
+        } catch (e) {}
+      }
+    } catch (e) {}
+    return list;
+  }
+  function liveRequire(space) {
+    try {
+      var chunk = space.webpackChunkDiscord_app;
       if (!chunk || typeof chunk.push !== "function") return null;
       var captured = null;
       chunk.push([[Math.random().toString(36).slice(2)], {}, function (r) { captured = r; }]);
@@ -53,34 +64,56 @@
       return -1;
     }
   }
-  var req = liveRequire();
-  var source = "live";
-  if (loadedCount(req) < 200 && loadedCount(window.__efxlveVoiceRequire) > loadedCount(req)) {
-    req = window.__efxlveVoiceRequire;
-    source = "hook";
-  }
-  if (loadedCount(req) < 200 && loadedCount(S.req) > loadedCount(req)) {
-    req = S.req;
-    source = "cache";
-  }
-  // The hook collects every webpack runtime the client built; the one with the
-  // most loaded modules is the client itself, not the boot shell.
-  var collected = 0;
-  try {
-    var list = window.__efxlveRequires || [];
-    collected = list.length;
-    for (var i = 0; i < list.length; i++) {
-      if (loadedCount(list[i]) > loadedCount(req)) {
-        req = list[i];
-        source = "collect" + i;
+  function pickRequire() {
+    var best = null;
+    var bestLoaded = -1;
+    var bestSource = "none";
+    var bestRealm = -1;
+    var runs = 0;
+    var spaces = realms();
+    for (var s = 0; s < spaces.length; s++) {
+      var space = spaces[s];
+      var candidates = [];
+      try {
+        var collected = space.__efxlveRequires || null;
+        if (collected) {
+          runs += collected.length;
+          for (var i = 0; i < collected.length; i++) candidates.push([collected[i], "collect" + i]);
+        }
+      } catch (e) {}
+      try {
+        if (space.__efxlveVoiceRequire) candidates.push([space.__efxlveVoiceRequire, "hook"]);
+      } catch (e) {}
+      candidates.push([liveRequire(space), "live"]);
+      for (var c = 0; c < candidates.length; c++) {
+        var value = candidates[c][0];
+        if (!value || !value.c || !value.m) continue;
+        var loaded = loadedCount(value);
+        if (loaded > bestLoaded) {
+          best = value;
+          bestLoaded = loaded;
+          bestSource = candidates[c][1];
+          bestRealm = s;
+        }
       }
     }
-  } catch (e) {}
+    if (loadedCount(S.req) > bestLoaded) {
+      best = S.req;
+      bestLoaded = loadedCount(S.req);
+      bestSource = "cache";
+      bestRealm = -1;
+    }
+    return { req: best, realm: bestRealm, source: bestSource, runs: runs, spaces: spaces.length };
+  }
+  var picked = pickRequire();
+  var req = picked.req;
   if (!req || !req.c || !req.m) return { ok: false, why: "no-require" };
   S.req = req;
 
-  var diag = "src=" + source
-    + " runs=" + collected
+  var diag = "src=" + picked.source
+    + " realm=" + picked.realm
+    + " spaces=" + picked.spaces
+    + " runs=" + picked.runs
     + " m=" + Object.keys(req.m).length
     + " c=" + Object.keys(req.c).length
     + " p=" + String(req.p || "");
@@ -130,8 +163,11 @@
         budget -= 1;
         yield value;
         if (depth >= maxDepth || typeof value !== "object") continue;
+        // Descend into plain objects only. The runtime may sit in another
+        // same-origin realm, so its Object.prototype is not ours: a plain
+        // object's prototype has no further prototype.
         var proto = Object.getPrototypeOf(value);
-        if (proto !== Object.prototype && proto !== null) continue;
+        if (proto !== null && Object.getPrototypeOf(proto) !== null) continue;
         var keys;
         try {
           keys = Object.keys(value);
@@ -316,13 +352,25 @@
     return !!S.speaking[userId];
   }
 
+  // Map-like values may come from another realm, so `instanceof Map` is not
+  // enough: duck-type instead.
+  function isMapLike(value) {
+    return (
+      value &&
+      typeof value === "object" &&
+      typeof value.get === "function" &&
+      typeof value.entries === "function" &&
+      typeof value.keys === "function"
+    );
+  }
+
   function valuesOf(collection) {
-    if (collection instanceof Map) return Array.from(collection.values());
+    if (isMapLike(collection)) return Array.from(collection.values());
     return Object.values(collection || {});
   }
 
   function entriesOf(collection) {
-    if (collection instanceof Map) return Array.from(collection.entries());
+    if (isMapLike(collection)) return Array.from(collection.entries());
     return Object.entries(collection || {});
   }
 
