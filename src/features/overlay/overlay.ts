@@ -150,6 +150,31 @@ let cachedScreenshots: ScreenshotItem[] = [];
 let sessionStartEpoch = Date.now();
 let activeTab: TabId = (localStorage.getItem("efxlve-overlay-tab") as TabId) || "home";
 
+/* ---------- Discord voice (streamed by the Rust worker) ---------- */
+
+interface VoiceParticipant {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  speaking: boolean;
+  muted: boolean;
+}
+
+interface VoiceChannel {
+  id: string;
+  name: string;
+  guildId: string | null;
+}
+
+interface DiscordVoiceState {
+  status: string;
+  channel: VoiceChannel | null;
+  participants: VoiceParticipant[];
+  error: string | null;
+}
+
+let voiceState: DiscordVoiceState = { status: "idle", channel: null, participants: [], error: null };
+
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
 let notesSaveTimer: number | null = null;
@@ -416,6 +441,9 @@ function updatePerfEmptyStates(): void {
 function setTab(tab: TabId, fromOpen = false): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
+  // The voice worker lives only while its tab is visible (idle zero cost).
+  if (tab === "discord") void invoke("discord_voice_watch_start").catch(() => undefined);
+  else void invoke("discord_voice_watch_stop").catch(() => undefined);
 
   document.querySelectorAll<HTMLElement>("[data-ov-tab]").forEach((el) => {
     el.classList.toggle("active", el.dataset.ovTab === tab);
@@ -1534,15 +1562,46 @@ function renderDiscord(): void {
     <div class="ov-page-title">${icon("discord", 20)} <span>${esc(t("overlay.tabDiscord"))}</span></div>
     <div class="ov-dashboard">
       <div class="ov-card ov-span-12">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">${esc(t("overlay.discordPresenceTitle"))}</div>
-        <p style="font-size:13px;color:var(--text-2);margin:0 0 16px">${esc(t("overlay.discordPresenceDesc"))}</p>
-        <button class="btn" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
+        <div class="ov-card-title">${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.discordVoiceTitle"))}</span></div>
+        ${voiceBodyHtml()}
       </div>
       <div class="ov-card ov-span-12">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">${esc(t("overlay.discordVoiceTitle"))}</div>
-        <p style="font-size:13px;color:var(--text-2);margin:0">${esc(t("overlay.discordVoiceDesc"))}</p>
+        <div class="ov-card-title">${icon("sparkles", 14)} <span class="title-text">${esc(t("overlay.discordPresenceTitle"))}</span></div>
+        <p class="ov-voice-desc">${esc(t("overlay.discordPresenceDesc"))}</p>
+        <button class="btn" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
     </div>`;
+}
+
+/** Voice card body: a status line, or the channel with its people. */
+function voiceBodyHtml(): string {
+  const state = voiceState;
+  if (state.status === "connecting") {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
+  }
+  if (state.status === "authorizing") {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordApprove"))}</p>`;
+  }
+  if (state.status === "error") {
+    return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
+  }
+  const channel = state.channel;
+  if (!channel) {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}<br />${esc(t("overlay.discordVoiceDesc"))}</p>`;
+  }
+  const people = state.participants
+    .map(
+      (person) => `
+        <div class="ov-voice-person${person.speaking ? " speaking" : ""}">
+          <span class="ov-voice-avatar"><img src="${esc(person.avatarUrl)}" alt="" loading="lazy" /></span>
+          <span class="ov-voice-name">${esc(person.name)}</span>
+          ${person.muted ? `<span class="ov-voice-muted">${icon("mic-off", 12)}</span>` : ""}
+        </div>`,
+    )
+    .join("");
+  return `
+    <div class="ov-voice-channel">${icon("volume-2", 13)} <span>${esc(channel.name)}</span></div>
+    <div class="ov-voice-people">${people}</div>`;
 }
 
 /* 9. Settings View */
@@ -2260,6 +2319,8 @@ async function boot(): Promise<void> {
     hideLightbox();
     removeGamepadFocus();
     document.body.classList.remove("ov-using-gamepad");
+    // The voice worker is only meant to run while its tab is visible.
+    void invoke("discord_voice_watch_stop").catch(() => undefined);
   });
 
   await listen<MetricsSample>("overlay-metrics", (event) => {
@@ -2269,6 +2330,11 @@ async function boot(): Promise<void> {
       if (fpsHistory.length > 60) fpsHistory.shift();
     }
     updateMetricsUi();
+  });
+
+  await listen<DiscordVoiceState>("discord-voice-state", (event) => {
+    voiceState = event.payload;
+    if (activeTab === "discord") renderDiscord();
   });
 
   try {

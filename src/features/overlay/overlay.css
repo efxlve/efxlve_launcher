@@ -1532,3 +1532,74 @@
   min-height: 0;
   background: var(--surface-1);
 }
+
+/* --- Discord voice card (live state streamed by the Rust worker) --- */
+
+.ov-voice-desc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.ov-voice-error {
+  color: var(--err, #ed4245);
+}
+
+.ov-voice-channel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ov-voice-people {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ov-voice-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.ov-voice-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+  background: var(--surface-3);
+}
+
+.ov-voice-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Green means live: the same speech ring Discord draws around a speaker. */
+.ov-voice-person.speaking .ov-voice-avatar {
+  border-color: var(--ok);
+}
+
+.ov-voice-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-voice-muted {
+  display: inline-flex;
+  color: var(--text-3);
+}
