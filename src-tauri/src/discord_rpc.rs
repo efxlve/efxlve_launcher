@@ -1224,7 +1224,7 @@ fn mask(value: &Value) -> Value {
 
 /// Keeps a couple of characters so the log identifies an account without
 /// spilling the full display name.
-fn mask_name(name: &str) -> String {
+pub(crate) fn mask_name(name: &str) -> String {
     let mut chars = name.chars();
     match (chars.next(), chars.next()) {
         (Some(first), Some(second)) => format!("{first}{second}…"),

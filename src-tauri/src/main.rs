@@ -9,6 +9,7 @@ mod controller_bridge;
 mod discord_host;
 #[cfg_attr(not(debug_assertions), allow(dead_code))]
 mod discord_rpc;
+mod discord_sdk;
 mod eos;
 mod egl_removal;
 mod epic_shim;
@@ -819,6 +820,8 @@ fn main() {
             discord_host::discord_open_devtools,
             discord_host::discord_web_voice_state,
             discord_host::discord_open_conversation,
+            discord_sdk::discord_sdk_spike,
+            discord_sdk::discord_sdk_send_dm,
             discord_rpc::discord_voice_watch_start,
             discord_rpc::discord_voice_watch_stop,
             discord_rpc::discord_relationships_probe,

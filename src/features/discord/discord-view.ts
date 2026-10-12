@@ -167,8 +167,9 @@ function ensureListeners(): void {
     if (onDiscordView()) syncDiscordPage();
   });
   // Dev diagnostics: F12 opens the child webview's devtools, F9 starts the
-  // voice watch (a dev shortcut until the overlay's Discord tab wires it) and
-  // F10 probes the friends-list scope for Faz 4 (one run per app launch).
+  // voice watch (a dev shortcut until the overlay's Discord tab wires it),
+  // F10 probes the friends-list scope and F11 starts the Social SDK spike
+  // (one run per app launch).
   window.addEventListener("keydown", (event) => {
     if (!onDiscordView()) return;
     if (event.key === "F12") {
@@ -177,6 +178,8 @@ function ensureListeners(): void {
       void invoke("discord_voice_watch_start").catch(() => undefined);
     } else if (event.key === "F10") {
       void invoke("discord_relationships_probe").catch(() => undefined);
+    } else if (event.key === "F11") {
+      void invoke("discord_sdk_spike").catch(() => undefined);
     }
   });
   // Any covering surface (the changelog, a dialog, the palette) parks the child.
