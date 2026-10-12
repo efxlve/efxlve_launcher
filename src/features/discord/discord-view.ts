@@ -12,6 +12,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
+import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { toast } from "../../core/toast";
@@ -36,7 +37,8 @@ function coversOpen(): boolean {
   return COVERING_ROOT_IDS.some((id) => document.getElementById(id)?.firstElementChild);
 }
 
-/** Discord page markup: one slot that the child webview fills. */
+/** Discord page markup: one slot that the child webview fills, with a loading
+ * note underneath until the child has painted its first load. */
 export function renderDiscordPage(): string {
   if (!isTauri) {
     return `<div class="discord-page"><div class="discord-note-box"><h2>Discord</h2><p class="discord-note">${esc(t("lib.desktopOnly"))}</p></div></div>`;
@@ -44,7 +46,21 @@ export function renderDiscordPage(): string {
   return `
     <div class="discord-page">
       <div class="discord-webview-slot" id="discord-webview-slot"></div>
+      <div class="discord-loading" id="discord-loading"><span class="spinner"></span><p>${esc(t("discord.loading"))}</p></div>
     </div>`;
+}
+
+/** Header actions for the Discord page: reload a stuck or erroring page. */
+function paintHeaderActions(): void {
+  const host = document.getElementById("page-header-actions");
+  if (!host) return;
+  if (!onDiscordView()) {
+    if (host.childElementCount > 0) host.innerHTML = "";
+    host.classList.remove("has-actions");
+    return;
+  }
+  host.innerHTML = `<button class="icon-btn" data-discord-act="reload" title="${esc(t("discord.reload"))}">${icon("refresh", 14)}</button>`;
+  host.classList.add("has-actions");
 }
 
 /** Wires the Discord page once it is on screen. */
@@ -52,6 +68,7 @@ export function hydrateDiscordPage(): void {
   hydrated = true;
   showErrorToasted = false;
   ensureListeners();
+  paintHeaderActions();
   observeSlot();
   syncDiscordPage();
   // The page-enter animation slides the view for a moment; re-apply the
@@ -66,6 +83,7 @@ export function destroyDiscordPage(): void {
   if (!hydrated) return;
   hydrated = false;
   viewVisible = false;
+  paintHeaderActions();
   void invoke("discord_view_destroy").catch(() => undefined);
 }
 
@@ -148,3 +166,13 @@ function ensureListeners(): void {
     if (el) observer.observe(el, { childList: true });
   }
 }
+
+// Page actions (reload). The header button lives in the shared header host, so
+// the one document listener picks it up like the other feature listeners.
+document.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement;
+  const action = target.closest<HTMLElement>("[data-discord-act]")?.dataset.discordAct;
+  if (action === "reload") {
+    void invoke("discord_view_reload").catch(() => undefined);
+  }
+});

@@ -14,6 +14,7 @@ body.discord-page #view {
   flex-direction: column;
   height: 100%;
   margin: 0;
+  position: relative;
 }
 
 .discord-webview-slot {
@@ -22,6 +23,24 @@ body.discord-page #view {
   height: 100%;
   min-height: 200px;
   background: transparent;
+}
+
+/* Shown until the child webview has painted its first load; the native child
+   covers it afterwards. */
+.discord-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.discord-loading p {
+  margin: 0;
 }
 
 /* Non-Tauri preview: the web client only runs in the desktop app. */

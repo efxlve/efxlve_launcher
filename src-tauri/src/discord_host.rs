@@ -2,12 +2,16 @@
 //!
 //! The page loads the normal `discord.com/app` interface: friends, direct
 //! messages and servers are the real Discord UI, no custom social layer. The
-//! child webview is positioned by the frontend (slot rectangle) and parked
-//! while a covering surface (modal, command palette) is open.
+//! child webview is positioned by the frontend (slot rectangle), stays hidden
+//! until its first finished load (the page's loading note shows instead) and is
+//! parked while a covering surface (modal, command palette) is open.
 //!
 //! A full Discord client is a heavy renderer, so the view is destroyed when the
 //! user leaves the page; the WebView2 profile keeps the session, so the next
 //! visit stays signed in.
+
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::Duration;
 
 use tauri::{
     AppHandle, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder, WebviewUrl,
@@ -16,6 +20,19 @@ use tauri_plugin_opener::OpenerExt;
 
 const LABEL: &str = "discord-view";
 const HOME_URL: &str = "https://discord.com/app";
+
+/// How long a fresh child may stay hidden without a finished load. After this
+/// the child is shown anyway: a stuck load then reveals the error page, and the
+/// header's reload button becomes useful.
+const FIRST_PAINT_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// True after the current child reported its first finished load.
+static PAINTED: AtomicBool = AtomicBool::new(false);
+/// The frontend still wants the page on screen (it hides the child under modals).
+static WANT_VISIBLE: AtomicBool = AtomicBool::new(false);
+/// Bumped on every create/destroy, so a stale first-paint timer cannot show a
+/// newer child.
+static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
@@ -193,7 +210,15 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
         // (blocked host, no `Finished`) from a rendering problem.
         .on_page_load(|webview, payload| {
             eprintln!("[discord-view] {:?} {}", payload.event(), payload.url());
-            if payload.event() == tauri::webview::PageLoadEvent::Finished && !PROBE_SCRIPT.is_empty() {
+            if payload.event() != tauri::webview::PageLoadEvent::Finished {
+                return;
+            }
+            // First finished load: the child takes over from the loading note.
+            PAINTED.store(true, Ordering::SeqCst);
+            if WANT_VISIBLE.load(Ordering::SeqCst) {
+                let _ = webview.show();
+            }
+            if !PROBE_SCRIPT.is_empty() {
                 let _ = webview.eval(PROBE_SCRIPT);
             }
         })
@@ -206,6 +231,9 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     let position = Position::Logical(LogicalPosition::new(x, y));
     let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
 
+    PAINTED.store(false, Ordering::SeqCst);
+    let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+
     // `add_child` posts to the main thread and waits; run it off the async
     // runtime so the UI never blocks on creation.
     let target = window.clone();
@@ -214,6 +242,23 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
         .await
         .map_err(|error| error.to_string())?
         .map_err(|error| error.to_string())?;
+
+    // A slow network can postpone the finished load for minutes; the loading
+    // note must not stay forever. A destroy bumps the generation, so a stale
+    // timer is inert.
+    let show_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(FIRST_PAINT_TIMEOUT).await;
+        if GENERATION.load(Ordering::SeqCst) != generation {
+            return;
+        }
+        if !PAINTED.load(Ordering::SeqCst) && WANT_VISIBLE.load(Ordering::SeqCst) {
+            eprintln!("[discord-view] first-paint timeout; showing the child anyway");
+            if let Some(view) = view(&show_app) {
+                let _ = view.show();
+            }
+        }
+    });
     Ok(())
 }
 
@@ -226,6 +271,7 @@ pub async fn discord_view_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
+    WANT_VISIBLE.store(true, Ordering::SeqCst);
     let existing = view(&app);
     eprintln!(
         "[discord-view] show rect=({x:.0},{y:.0},{width:.0}x{height:.0}) existing={}",
@@ -234,7 +280,11 @@ pub async fn discord_view_show(
     if let Some(view) = existing {
         view.set_bounds(rect_of(x, y, width, height))
             .map_err(|error| error.to_string())?;
-        view.show().map_err(|error| error.to_string())?;
+        // A child that has not finished its first load stays hidden; the
+        // loading note shows in its place.
+        if PAINTED.load(Ordering::SeqCst) {
+            view.show().map_err(|error| error.to_string())?;
+        }
         return Ok(());
     }
     create_view(&app, x, y, width, height).await
@@ -244,6 +294,7 @@ pub async fn discord_view_show(
 /// The state stays warm for the next show.
 #[tauri::command]
 pub fn discord_view_hide(app: AppHandle) {
+    WANT_VISIBLE.store(false, Ordering::SeqCst);
     if let Some(view) = view(&app) {
         let _ = view.hide();
     }
@@ -264,6 +315,9 @@ pub fn discord_view_reload(app: AppHandle) {
 /// children; the WebView2 profile preserves the session for the next visit.
 #[tauri::command]
 pub fn discord_view_destroy(app: AppHandle) {
+    WANT_VISIBLE.store(false, Ordering::SeqCst);
+    PAINTED.store(false, Ordering::SeqCst);
+    GENERATION.fetch_add(1, Ordering::SeqCst);
     if let Some(view) = view(&app) {
         eprintln!("[discord-view] destroy");
         let _ = view.close();
