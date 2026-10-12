@@ -1533,106 +1533,226 @@
   background: var(--surface-1);
 }
 
-/* --- Discord voice card (live state streamed by the Rust worker) --- */
+/* --- Discord tab: friends are the picker (left), conversation (right) --- */
 
-.ov-voice-desc {
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: var(--text-2);
+/* The tab owns the full content area: no page padding, no outer scroll, and a
+   bottom gap so the floating dock never covers the composer. */
+.ov[data-ov-tab="discord"] .ov-main {
+  padding: 0 0 76px;
+  overflow: hidden;
 }
 
-.ov-voice-error {
-  color: var(--err, #ed4245);
-}
-
-.ov-voice-channel {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.ov-voice-people {
+/* The tab speaks the row language, not the card language: a panel is a head
+   row plus hairline rows, with no border or fill of its own. It is a flex
+   column, which is what lets the log stretch and pin the composer. */
+.ov[data-ov-tab="discord"] .ov-panel {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  margin-top: 0;
+  overflow: visible;
 }
 
-.ov-voice-person {
+/* The split fills the content area (a view has no intrinsic height). */
+.ov[data-ov-tab="discord"] .ov-view[data-ov-view="discord"].active {
+  height: 100%;
+  min-height: 0;
+}
+
+.dc-split {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: 100%;
+  min-height: 0;
+}
+
+.dc-col {
   display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.dc-col + .dc-col {
+  border-left: 1px solid var(--line);
+}
+
+.ov-panel.fill {
+  flex: 1;
+  min-height: 0;
+}
+
+.dc-meta {
+  margin-left: auto;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text-2);
 }
 
-.ov-voice-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid transparent;
-  flex-shrink: 0;
-  background: var(--surface-3);
+/* Rows: hairline separated, never cards-inside-cards. */
+.dc-rows {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.ov-voice-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Green means live: the same speech ring Discord draws around a speaker. */
-.ov-voice-person.speaking .ov-voice-avatar {
-  border-color: var(--ok);
-}
-
-.ov-voice-name {
+.dc-rows.dc-scroll {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-y: auto;
 }
 
-.ov-voice-muted {
-  display: inline-flex;
-  color: var(--text-3);
-}
-
-/* The last known channel while the worker is reconnecting. */
-.ov-voice-stale {
+.dc-stale {
   opacity: 0.6;
 }
 
-/* --- Discord friends card --- */
-
-.ov-friend {
+.dc-row {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-top: 1px solid var(--line);
+  flex: none;
+  width: 100%;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+button.dc-row {
+  cursor: pointer;
+}
+
+.dc-row:first-child {
+  border-top: none;
+}
+
+.dc-row:hover,
+.dc-row.ov-controller-focus {
+  background: var(--surface-2);
+}
+
+.dc-row:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+/* Selected = the friend the composer writes to. */
+.dc-row.is-selected {
+  background: var(--surface-3);
+  box-shadow: inset 2px 0 0 var(--text);
+}
+
+.dc-row.is-offline {
   color: var(--text-2);
 }
 
-.ov-friend.offline {
-  opacity: 0.55;
+.dc-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.ov-friend-avatar {
+.dc-row-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  flex: none;
+  font-size: 12px;
+}
+
+/* The row action only appears when the row is live: hover or pad focus. */
+.dc-row-act {
+  display: none;
+}
+
+.dc-row:hover .dc-row-act,
+.dc-row.ov-controller-focus .dc-row-act {
+  display: flex;
+}
+
+.dc-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dc-note {
+  margin: 12px 16px;
+  color: var(--text-2);
+}
+
+.dc-state .dc-note {
+  margin: 0;
+}
+
+.dc-error {
+  color: var(--err);
+}
+
+.dc-glyph {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.dc-sec {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 16px;
+  border-top: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  flex: none;
+}
+
+.dc-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Avatars + presence */
+.dc-av {
   position: relative;
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--surface-3);
+  flex: none;
 }
 
-.ov-friend-avatar img {
+.dc-av img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -1640,88 +1760,239 @@
   display: block;
 }
 
-.ov-friend-dot {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 10px;
-  height: 10px;
+.dc-av-lg {
+  width: 32px;
+  height: 32px;
+}
+
+.dc-av.is-empty {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+}
+
+/* Green ring means live speech, the same way Discord draws it. */
+.dc-av.is-speaking {
+  box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--ok);
+}
+
+.dc-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  border: 2px solid var(--surface-1);
+  flex: none;
   background: var(--text-3);
 }
 
-/* Status colors: green online, amber idle, red do-not-disturb, gray offline. */
-.ov-status-online {
-  background: var(--ok);
+.dc-av .dc-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border: 3px solid var(--surface-1);
 }
 
-.ov-status-idle {
-  background: var(--warn);
+.dc-row:hover .dc-av .dc-dot,
+.dc-row.ov-controller-focus .dc-av .dc-dot {
+  border-color: var(--surface-2);
 }
 
-.ov-status-dnd {
-  background: var(--err);
+.dc-row.is-selected .dc-av .dc-dot {
+  border-color: var(--surface-3);
 }
 
-.ov-friend-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.dc-online { background: var(--ok); }
+.dc-idle { background: var(--warn); }
+.dc-dnd { background: var(--err); }
+.dc-offline { background: var(--text-3); }
+
+/* Sign-in and progress states */
+.dc-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
 }
 
-.ov-friends-more {
-  margin: 8px 0 0;
-}
-
-/* --- Discord reply composer (Social SDK) --- */
-
-/* The row the composer writes to: same surface as a hovered row, kept. */
-.ov-friend.selected {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.ov-reply-to {
-  margin-bottom: 8px;
-}
-
-.ov-reply-row {
+.dc-state-actions {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
 }
 
-.ov-reply-input {
-  flex: 1;
-  min-width: 0;
-  min-height: 40px;
-  padding: 8px 10px;
-  resize: vertical;
-  font: inherit;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-}
-
-.ov-reply-input:focus {
-  outline: none;
-  border-color: var(--text-3);
-}
-
-.ov-reply-send {
+/* Recipient row, log, composer (right column) */
+.dc-recip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 16px;
+  border-top: 1px solid var(--line);
   flex: none;
 }
 
-/* The outcome line reserves its height: the panel must not jump on send. */
-.ov-reply-note {
-  margin: 8px 0 0;
-  min-height: 18px;
+.dc-recip-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dc-log {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+}
+
+.dc-log-note {
+  padding: 10px 16px;
+  color: var(--text-2);
+}
+
+.dc-msg {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.dc-msg-time {
+  width: 40px;
+  flex: none;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.dc-msg-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dc-msg.is-sending .dc-msg-text {
+  color: var(--text-2);
+}
+
+.dc-msg-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  flex: none;
+}
+
+.dc-msg-error {
+  display: block;
+  margin-top: 2px;
+  color: var(--err);
+  font-size: 12px;
+}
+
+.dc-dim {
+  color: var(--text-2);
+}
+
+.dc-spin {
+  animation: dc-spin 1s linear infinite;
+}
+
+@keyframes dc-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The composer band is the only filled surface in the tab, which is why the
+   eye lands on it. */
+.dc-composer {
+  flex: none;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--line-strong);
+  background: var(--surface-2);
+}
+
+.dc-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.dc-field-label b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dc-field {
+  display: block;
+  width: 100%;
+  min-height: 88px;
+  max-height: 132px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  line-height: 22px;
+  resize: none;
+  overflow-y: auto;
+}
+
+.dc-field::placeholder {
+  color: var(--text-2);
+}
+
+.dc-field:focus {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+  border-color: var(--text-3);
+}
+
+.dc-field.is-disabled {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text-2);
+  min-height: 64px;
+}
+
+.dc-composer-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.dc-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dc-composer-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dc-ctx {
+  color: var(--text);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-spin { animation: none; }
 }
 
 /* ==========================================================================

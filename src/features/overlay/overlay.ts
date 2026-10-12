@@ -220,8 +220,7 @@ let sdkState: SdkState = { status: "idle", error: null, me: null };
 let sdkFriends: DiscordFriendsState = { status: "idle", friends: [], pending: 0, error: null };
 /** The friend the composer writes to. */
 let replyTarget: { id: string; name: string } | null = null;
-/** The typed draft survives repaints (voice and friends events rerender). */
-let replyDraft = "";
+/** True while a send is in flight: the button stays disabled until the SDK reports. */
 let replySending = false;
 
 /** The launcher's own Discord page call (no desktop app involved). */
@@ -520,6 +519,10 @@ function updatePerfEmptyStates(): void {
 function setTab(tab: TabId, fromOpen = false): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
+  // The Discord tab owns the full content area (no page padding, no outer
+  // scroll), so the shell carries the active tab; the hint bar follows it.
+  document.getElementById("ov-shell")?.setAttribute("data-ov-tab", tab);
+  refreshFooterHints();
   // The voice worker lives only while its tab is visible (idle zero cost).
   if (tab === "discord") {
     void invoke("discord_voice_watch_start").catch(() => undefined);
@@ -1681,141 +1684,303 @@ function renderBrowser(): void {
 }
 
 /* 8. Discord View */
+/**
+ * Friends are the picker (left column), the conversation is the work surface
+ * (right column), and the composer is pinned to the bottom edge so it never
+ * scrolls away. Writing goes through the Social SDK: picking a row and typing
+ * is the whole flow, and the row shows the shortcut so nobody has to guess.
+ */
+
+/** One message this session sent from the overlay, with its state. */
+interface ReplyLogEntry {
+  id: number;
+  friendId: string;
+  time: string;
+  text: string;
+  state: "sending" | "sent" | "error";
+  error?: string;
+}
+
+let replyLog: ReplyLogEntry[] = [];
+let replyLogSeq = 0;
+/** Per-friend drafts, so switching targets never loses what was typed. */
+const replyDrafts = new Map<string, string>();
+const LAST_FRIEND_KEY = "efxlve-overlay-dm";
+
+/** The friend rows the tab shows: the live desktop read, the launcher's own web
+ * client, the SDK's own list, then the last known list. Online first. */
+function friendEntries(): FriendEntry[] {
+  const state = friendsState;
+  const live = state.status === "ready" && state.friends.length ? state.friends : null;
+  const web = webVoice && webVoice.friends && webVoice.friends.length ? webVoice.friends : null;
+  const sdk = sdkFriends.status === "ready" && sdkFriends.friends.length ? sdkFriends.friends : null;
+  const friends = live ?? web ?? sdk ?? lastFriends;
+  return [...friends].sort(
+    (a, b) =>
+      Number(a.status === "offline") - Number(b.status === "offline") ||
+      a.name.localeCompare(b.name),
+  );
+}
+
 function renderDiscord(): void {
   const el = viewEl("discord");
   if (!el) return;
-  const voice = voiceDisplay();
-  const channel = voice && voice.channel.name ? ` · ${esc(voice.channel.name)}` : "";
+  // The last person written to is preselected, so the tab opens ready to type.
+  if (sdkState.status === "ready" && !replyTarget) {
+    const stored = localStorage.getItem(LAST_FRIEND_KEY);
+    const pick = friendEntries().find((friend) => friend.id === stored);
+    if (pick) replyTarget = { id: pick.id, name: pick.name };
+  }
   el.innerHTML = `
-    <div class="ov-page-title">${icon("discord", 20)} <span>${esc(t("overlay.tabDiscord"))}</span></div>
-    <div class="ov-panel">
-      <div class="ov-panel-head">${icon("volume-2", 13)} <b>${esc(t("overlay.discordVoiceTitle"))}</b>${channel}</div>
-      <div class="ov-panel-body">${voiceBodyHtml()}</div>
-    </div>
-    <div class="ov-panel">
-      <div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b></div>
-      <div class="ov-panel-body">${friendsBodyHtml()}</div>
-    </div>
-    <div class="ov-panel">
-      <div class="ov-panel-head">${icon("edit", 13)} <b>${esc(t("overlay.discordReplyTitle"))}</b>${sdkAccountLabel()}${replyOpenButton()}</div>
-      <div class="ov-panel-body">${replyBodyHtml()}</div>
-    </div>
-    ${channelsPanelHtml()}`;
+    <div class="dc-split">
+      <div class="dc-col">${voicePanelHtml()}${friendsPanelHtml()}</div>
+      <div class="dc-col">${messagePanelHtml()}</div>
+    </div>`;
+  const box = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
+  if (box && box.value) {
+    box.style.height = "auto";
+    box.style.height = `${Math.min(132, Math.max(88, box.scrollHeight))}px`;
+  }
 }
 
-/**
- * Voice channels the person can jump to. The row opens the channel in the
- * launcher's own client; joining and typing stay there, so the overlay never
- * writes anything on its own.
- */
-function channelsPanelHtml(): string {
-  const channels = webVoice && webVoice.channels ? webVoice.channels : [];
-  if (!channels.length) return "";
-  const rows = channels
-    .map(
-      (channel) => `
-      <button class="ov-voice-person" data-ov="discord-open-channel" data-guild="${esc(channel.guildId)}" data-channel="${esc(channel.id)}" title="${esc(t("overlay.discordOpenChannel"))}">
-        <span class="ov-channel-glyph">${icon("volume-2", 13)}</span>
-        <span class="ov-voice-name">${esc(channel.name)}</span>
-        <span class="ov-sub">${esc(channel.guild)}</span>
-      </button>`,
-    )
-    .join("");
+/** Repaints while keeping the caret where it was: friend and voice events
+ * arrive while a message is being typed. */
+function repaintDiscord(): void {
+  const box = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
+  const wasFocused = box !== null && document.activeElement === box;
+  const caret = box ? box.selectionStart : 0;
+  renderDiscord();
+  if (!wasFocused) return;
+  const fresh = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
+  if (!fresh) return;
+  fresh.focus();
+  fresh.setSelectionRange(caret, caret);
+}
+
+/** Puts the caret in the composer: after picking a friend the keyboard belongs
+ * to the text box, not to the focus ring (Enter/Space would re-fire the row). */
+function focusReplyInput(): void {
+  requestAnimationFrame(() => {
+    document.getElementById("ov-discord-reply-input")?.focus();
+  });
+}
+
+/** Selects a friend for the composer; a typed letter can seed the draft. */
+function selectReplyTarget(id: string, name: string, seed = ""): void {
+  replyTarget = { id, name };
+  if (seed) replyDrafts.set(id, seed);
+  localStorage.setItem(LAST_FRIEND_KEY, id);
+  renderDiscord();
+  focusReplyInput();
+  refreshFooterHints();
+}
+
+/** Ctrl+Up/Down inside the box: walk the friend list without losing the draft. */
+function stepReplyTarget(direction: number): void {
+  const friends = friendEntries();
+  if (friends.length < 2) return;
+  const index = friends.findIndex((friend) => friend.id === replyTarget?.id);
+  const next = friends[(index < 0 ? 0 : index + direction + friends.length) % friends.length];
+  const box = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
+  if (box && replyTarget) replyDrafts.set(replyTarget.id, box.value);
+  selectReplyTarget(next.id, next.name);
+}
+
+/** Esc leaves the box back to the selected row; a second Esc closes the panel. */
+function focusSelectedFriendRow(): void {
+  const row =
+    document.querySelector<HTMLElement>('.dc-row[data-ov="discord-reply"].is-selected') ??
+    document.querySelector<HTMLElement>('.dc-row[data-ov="discord-reply"]');
+  row?.focus();
+}
+
+/* --- Left column: voice, then the friends picker --- */
+
+function voicePanelHtml(): string {
+  const display = voiceDisplay();
+  const state = voiceState;
+  const rows: string[] = [];
+  if (display) {
+    rows.push(`
+      <div class="dc-row">
+        <span class="dc-glyph">${icon("volume-2", 14)}</span>
+        <span class="dc-row-main"><span class="dc-name">${esc(display.channel.name)}</span></span>
+      </div>`);
+    rows.push(
+      ...display.people.map(
+        (person) => `
+      <div class="dc-row">
+        <span class="dc-av${person.speaking ? " is-speaking" : ""}"><img src="${esc(person.avatarUrl)}" alt="" loading="lazy" /></span>
+        <span class="dc-row-main"><span class="dc-name">${esc(person.name)}</span></span>
+        ${person.muted ? `<span class="dc-row-end">${icon("mic-off", 14)}</span>` : ""}
+      </div>`,
+      ),
+    );
+  }
+  const note = display
+    ? ""
+    : state.status === "error"
+      ? `<p class="dc-note dc-error">${esc(state.error || t("common.unknownError"))}</p>`
+      : state.status === "connecting"
+        ? `<p class="dc-note">${esc(t("overlay.discordConnecting"))}</p>`
+        : `<p class="dc-note">${esc(t("overlay.discordNoChannel"))}</p>`;
   return `
     <div class="ov-panel">
       <div class="ov-panel-head">
-        ${icon("list", 13)} <b>${esc(t("overlay.discordChannels"))}</b>
+        ${icon("volume-2", 13)} <b>${esc(t("overlay.discordVoiceTitle"))}</b>
         <button class="btn ghost small ov-panel-head-action" data-ov="discord-open-launcher">${icon("external", 13)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
-      <div class="ov-panel-body"><div class="ov-voice-people">${rows}</div></div>
+      <div class="dc-rows${display && display.stale ? " dc-stale" : ""}">${rows.join("")}${note}</div>
     </div>`;
 }
 
-/** Friends card body: presence counts and the first rows, online first.
- * Sources in order: the live desktop read, the launcher's own web client, then
- * the last known list while (re)connecting. */
-function friendsBodyHtml(): string {
+function friendsPanelHtml(): string {
+  const friends = friendEntries();
   const state = friendsState;
-  const web = webVoice && webVoice.friends && webVoice.friends.length ? webVoice.friends : null;
-  const live = state.status === "ready" && state.friends.length ? state.friends : null;
-  // The SDK list is the last resort: it also works with no page and no desktop
-  // client, but the other two sources know the richer presence.
-  const sdk = sdkFriends.status === "ready" && sdkFriends.friends.length ? sdkFriends.friends : null;
-  const friends = live ?? web ?? sdk ?? lastFriends;
-  const total = live ? friends.length : web ? webVoice?.friendsTotal ?? friends.length : friends.length;
-  const pending = live ? state.pending : web ? webVoice?.pending ?? 0 : sdk ? sdkFriends.pending : lastFriendsPending;
+  const head = `<div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b></div>`;
   if (!friends.length) {
-    if (!live && !web && !sdk && state.status === "error") {
-      return `<p class="ov-voice-desc ov-voice-error">${esc(state.error || t("common.unknownError"))}</p>`;
-    }
-    if (!live && !web && !sdk && state.status === "connecting") {
-      return `<p class="ov-voice-desc">${esc(t("overlay.discordConnecting"))}</p>`;
-    }
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordFriendsEmpty"))}</p>`;
+    const note =
+      state.status === "error"
+        ? `<p class="dc-note dc-error">${esc(state.error || t("common.unknownError"))}</p>`
+        : state.status === "connecting"
+          ? `<p class="dc-note">${esc(t("overlay.discordConnecting"))}</p>`
+          : `<p class="dc-note">${esc(t("overlay.discordFriendsEmpty"))}</p>`;
+    return `<div class="ov-panel fill">${head}${note}</div>`;
   }
-  const online = friends.filter((friend) => friend.status !== "offline").length;
-  const shown = friends.slice(0, 12);
-  const rows = shown
-    .map(
-      (friend) => `
-        <button class="ov-friend${friend.status === "offline" ? " offline" : ""}${replyTarget && replyTarget.id === friend.id ? " selected" : ""}" data-ov="discord-reply" data-id="${esc(friend.id)}" data-name="${esc(friend.name)}" title="${esc(t("overlay.discordReplyTitle"))}">
-          <span class="ov-friend-avatar">
-            <img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />
-            <span class="ov-friend-dot ov-status-${esc(friend.status)}"></span>
-          </span>
-          <span class="ov-friend-name">${esc(friend.name)}</span>
-        </button>`,
-    )
-    .join("");
-  const hidden = Math.max(0, total - shown.length);
-  const pendingNote = pending > 0 ? ` · ${t("overlay.discordFriendsPending", { count: pending })}` : "";
+  const online = friends.filter((friend) => friend.status !== "offline");
+  const offline = friends.filter((friend) => friend.status === "offline");
+  const section = (label: string, rows: FriendEntry[]): string =>
+    rows.length ? `<div class="dc-sec">${esc(label)}</div>${rows.map(friendRowHtml).join("")}` : "";
   return `
-    <p class="ov-voice-desc">${esc(t("overlay.discordFriendsOnline", { count: online }) + pendingNote)}</p>
-    <div class="ov-voice-people">${rows}</div>
-    ${hidden > 0 ? `<p class="ov-voice-desc ov-friends-more">${esc(t("overlay.discordFriendsMore", { count: hidden }))}</p>` : ""}`;
+    <div class="ov-panel fill">
+      ${head}
+      <div class="dc-rows dc-scroll">
+        ${section(t("overlay.discordFriendsOnline", { count: online.length }), online)}
+        ${section(t("overlay.discordFriendsOffline", { count: offline.length }), offline)}
+      </div>
+    </div>`;
 }
 
-/* --- Reply composer (Discord Social SDK) --- */
-
-/** " · name" while the SDK session is signed in, like the voice card's channel. */
-function sdkAccountLabel(): string {
-  const me = sdkState.status === "ready" ? sdkState.me : null;
-  return me ? ` · ${esc(me.name)}` : "";
+function friendRowHtml(friend: FriendEntry): string {
+  const selected = replyTarget?.id === friend.id;
+  return `
+    <button class="dc-row dc-friend${selected ? " is-selected" : ""}${friend.status === "offline" ? " is-offline" : ""}" data-ov="discord-reply" data-id="${esc(friend.id)}" data-name="${esc(friend.name)}" title="${esc(t("overlay.discordReplyTitle"))}">
+      <span class="dc-av"><img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" /><span class="dc-dot dc-${esc(friend.status)}"></span></span>
+      <span class="dc-row-main"><span class="dc-name">${esc(friend.name)}</span></span>
+      <span class="dc-row-end dc-row-act">${esc(t("overlay.discordReplyTitle"))} <kbd class="kbd">Enter</kbd></span>
+    </button>`;
 }
 
-function replyOpenButton(): string {
-  if (!replyTarget) return "";
-  return `<button class="btn ghost small ov-panel-head-action" data-ov="discord-open-dm" data-id="${esc(replyTarget.id)}">${icon("external", 13)} ${esc(t("overlay.discordOpenDm"))}</button>`;
+/* --- Right column: the conversation --- */
+
+function messagePanelHtml(): string {
+  const status = sdkState.status;
+  const meta =
+    status === "ready"
+      ? `<span class="dc-dot dc-online"></span>${esc(t("overlay.discordConnectedAs", { name: sdkState.me?.name ?? "" }))}`
+      : status === "idle" || status === "error"
+        ? `<span class="dc-dot dc-offline"></span>${esc(t("overlay.discordNotConnected"))}`
+        : `<span class="dc-dot dc-idle"></span>${esc(t("overlay.discordConnecting"))}`;
+  return `
+    <div class="ov-panel fill">
+      <div class="ov-panel-head">${icon("edit", 13)} <b>${esc(t("overlay.discordReplyTitle"))}</b><span class="dc-meta">${meta}</span></div>
+      ${status === "ready" ? conversationHtml() : signInHtml()}
+    </div>`;
+}
+
+/** Before the session exists: one button, plus the state it is in. */
+function signInHtml(): string {
+  if (sdkState.status === "idle") {
+    return `
+      <div class="dc-state">
+        <p class="dc-note">${esc(t("overlay.discordSdkDesc"))}</p>
+        <div class="dc-state-actions">${connectButtonHtml()}</div>
+      </div>`;
+  }
+  if (sdkState.status === "error") {
+    return `
+      <div class="dc-state">
+        <p class="dc-note dc-error">${esc(sdkState.error || t("common.unknownError"))}</p>
+        <div class="dc-state-actions">${connectButtonHtml()}</div>
+      </div>`;
+  }
+  return `<div class="dc-state"><p class="dc-note">${esc(t("overlay.discordApprove"))}</p></div>`;
 }
 
 function connectButtonHtml(): string {
-  return `<button class="btn small" data-ov="discord-sdk-start">${icon("discord", 13)} ${esc(t("overlay.discordConnect"))}</button>`;
+  return `<button class="btn primary" data-ov="discord-sdk-start">${icon("discord", 14)} ${esc(t("overlay.discordConnect"))}</button>`;
 }
 
-/** The composer body: a connect prompt, the flow's progress, or the text box.
- * Writing goes through the official SDK, so a row selection is all it needs. */
-function replyBodyHtml(): string {
-  const status = sdkState.status;
-  if (status === "error") {
-    return `<p class="ov-voice-desc ov-voice-error">${esc(sdkState.error || t("common.unknownError"))}</p>${connectButtonHtml()}`;
+function conversationHtml(): string {
+  const target = replyTarget;
+  if (!target) {
+    return `
+      <div class="dc-recip">
+        <span class="dc-av dc-av-lg is-empty"></span>
+        <span class="dc-row-main"><span class="dc-recip-name dc-dim">${esc(t("overlay.discordReplyPick"))}</span></span>
+      </div>
+      <div class="dc-log"></div>
+      <div class="dc-composer">
+        <div class="dc-field-label">${esc(t("overlay.discordReplyTitle"))}</div>
+        <div class="dc-field is-disabled">${esc(t("overlay.discordReplyPlaceholder"))}</div>
+        <div class="dc-composer-foot">
+          <span class="dc-hint"><kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordBackToFriends"))}</span>
+          <span class="dc-composer-end"><button class="btn small" disabled>${icon("arrow-right", 13)} ${esc(t("overlay.discordSend"))}</button></span>
+        </div>
+      </div>`;
   }
-  if (status === "idle") {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordSdkDesc"))}</p>${connectButtonHtml()}`;
-  }
-  if (status !== "ready") {
-    const note = status === "authorizing" ? t("overlay.discordApprove") : t("overlay.discordConnecting");
-    return `<p class="ov-voice-desc">${esc(note)}</p>`;
-  }
-  if (!replyTarget) {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordReplyPick"))}</p>`;
-  }
+  const friend = friendEntries().find((item) => item.id === target.id);
+  const draft = replyDrafts.get(target.id) ?? "";
   return `
-    <p class="ov-voice-desc ov-reply-to">${esc(t("overlay.discordReplyTo", { name: replyTarget.name }))}</p>
-    <div class="ov-reply-row">
-      <textarea id="ov-discord-reply-input" class="ov-reply-input" rows="2" placeholder="${esc(t("overlay.discordReplyPlaceholder"))}">${esc(replyDraft)}</textarea>
-      <button class="btn small ov-reply-send" data-ov="discord-send"${replySending ? " disabled" : ""}>${icon("arrow-right", 13)} ${esc(t("overlay.discordSend"))}</button>
+    <div class="dc-recip">
+      <span class="dc-av dc-av-lg">${friend ? `<img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />` : ""}<span class="dc-dot dc-${esc(friend?.status ?? "offline")}"></span></span>
+      <span class="dc-row-main"><span class="dc-recip-name">${esc(target.name)}</span></span>
+      <span class="dc-row-end dc-hint"><kbd class="kbd">Ctrl</kbd> <kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> ${esc(t("overlay.discordSwitchFriend"))}</span>
     </div>
-    <p class="ov-voice-desc ov-reply-note" id="ov-discord-reply-note"></p>`;
+    ${logHtml(target)}
+    <div class="dc-composer">
+      <div class="dc-field-label">${esc(t("overlay.discordReplyTo", { name: target.name }))}</div>
+      <textarea id="ov-discord-reply-input" class="dc-field" rows="3" maxlength="2000" placeholder="${esc(t("overlay.discordReplyPlaceholder"))}">${esc(draft)}</textarea>
+      <div class="dc-composer-foot">
+        <span class="dc-hint"><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))}</span>
+        <span class="dc-hint"><kbd class="kbd">Shift</kbd>+<kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordNewLine"))}</span>
+        <span class="dc-hint"><kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordBackToFriends"))}</span>
+        <span class="dc-composer-end">
+          <span class="dc-count num" id="ov-discord-count">${draft.length} / 2000</span>
+          <button class="btn primary small" data-ov="discord-send"${replySending ? " disabled" : ""}>${icon("arrow-right", 13)} ${esc(t("overlay.discordSend"))}</button>
+        </span>
+      </div>
+    </div>`;
+}
+
+/** Messages sent from here this session, oldest first, newest at the bottom. */
+function logHtml(target: { id: string }): string {
+  const entries = replyLog.filter((entry) => entry.friendId === target.id).slice(-8);
+  const rows = entries
+    .map((entry) => {
+      const state =
+        entry.state === "sending"
+          ? `<span class="dc-msg-state">${icon("refresh", 13, "dc-spin")} ${esc(t("overlay.discordSending"))}</span>`
+          : entry.state === "sent"
+            ? `<span class="dc-msg-state">${icon("check-circle", 13)} ${esc(t("overlay.discordSent"))}</span>`
+            : `<button class="btn ghost small" data-ov="discord-retry" data-entry="${entry.id}">${esc(t("overlay.discordRetry"))}</button>`;
+      const error =
+        entry.state === "error"
+          ? `<span class="dc-msg-error">${esc(t("overlay.discordSendFailed", { error: entry.error || "" }))}</span>`
+          : "";
+      return `
+        <div class="dc-msg${entry.state === "sending" ? " is-sending" : ""}">
+          <span class="dc-msg-time num">${esc(entry.time)}</span>
+          <span class="dc-msg-text">${esc(entry.text)}${error}</span>
+          ${state}
+        </div>`;
+    })
+    .join("");
+  return `
+    <div class="dc-log">
+      <div class="dc-log-note">${esc(t("overlay.discordLogNote"))}</div>
+      ${rows}
+    </div>`;
 }
 
 /** Fetches the SDK session and its relationship list, so the panel paints at once. */
@@ -1825,7 +1990,8 @@ async function refreshSdkState(): Promise<void> {
     if (state) sdkState = state;
     const friends = await invoke<DiscordFriendsState>("discord_sdk_friends");
     if (friends) sdkFriends = friends;
-    if (activeTab === "discord" && !document.hidden) renderDiscord();
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    refreshFooterHints();
   } catch {
     // Older hosts have no Social SDK commands; the other sources stay.
   }
@@ -1842,41 +2008,73 @@ async function startDiscordSdk(): Promise<void> {
   }
 }
 
-/** Sends the draft. The outcome arrives on `discord-sdk-dm`, so the typed text
- * is only cleared once the host accepted the call. */
+/** Sends the draft. The outcome arrives on `discord-sdk-dm` and lands in the
+ * log, so the typed text is only cleared once the host accepted the call. */
 async function sendDiscordReply(): Promise<void> {
   const target = replyTarget;
   const input = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
-  const text = (input?.value ?? replyDraft).trim();
+  const text = (input?.value ?? (target ? replyDrafts.get(target.id) ?? "" : "")).trim();
   if (!target || !text || replySending) return;
   replySending = true;
-  const sendButton = document.querySelector<HTMLButtonElement>('[data-ov="discord-send"]');
-  if (sendButton) sendButton.disabled = true;
+  replyDrafts.set(target.id, "");
+  replyLog.push({
+    id: ++replyLogSeq,
+    friendId: target.id,
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    text,
+    state: "sending",
+  });
+  if (replyLog.length > 200) replyLog.splice(0, replyLog.length - 200);
+  renderDiscord();
+  focusReplyInput();
   try {
     await invoke("discord_sdk_send_dm", { userId: target.id, text });
-    replyDraft = "";
-    if (input) {
-      input.value = "";
-      // Keep the caret where it was: replying usually means a second message.
-      input.focus();
-    }
   } catch (error) {
-    replySending = false;
-    if (sendButton) sendButton.disabled = false;
-    const note = document.getElementById("ov-discord-reply-note");
-    if (note) {
-      note.classList.add("ov-voice-error");
-      note.textContent = t("overlay.discordSendFailed", { error: String(error) });
+    const entry = [...replyLog].reverse().find((item) => item.state === "sending");
+    if (entry) {
+      entry.state = "error";
+      entry.error = String(error);
     }
+    replySending = false;
+    repaintDiscord();
   }
 }
 
-/** Puts the caret in the composer. After picking a friend the keyboard belongs
- * to the text box, not to the focus ring (Enter/Space would re-fire the row). */
-function focusReplyInput(): void {
-  requestAnimationFrame(() => {
-    document.getElementById("ov-discord-reply-input")?.focus();
-  });
+/** Retries a failed log row in place. */
+async function retryReply(entryId: number): Promise<void> {
+  const entry = replyLog.find((item) => item.id === entryId);
+  if (!entry || entry.state !== "error") return;
+  entry.state = "sending";
+  entry.error = undefined;
+  repaintDiscord();
+  try {
+    await invoke("discord_sdk_send_dm", { userId: entry.friendId, text: entry.text });
+  } catch (error) {
+    entry.state = "error";
+    entry.error = String(error);
+    repaintDiscord();
+  }
+}
+
+/** The hint bar follows the focus: typing gets its own line of keys. */
+let defaultHintsHtml = "";
+
+function captureDefaultHints(): void {
+  const left = document.querySelector<HTMLElement>(".ov-footer .keyboard-hints");
+  if (left) defaultHintsHtml = left.innerHTML;
+}
+
+function refreshFooterHints(): void {
+  const left = document.querySelector<HTMLElement>(".ov-footer .keyboard-hints");
+  if (!left) return;
+  if (activeTab === "discord" && replyTarget && sdkState.status === "ready") {
+    left.innerHTML =
+      `<span class="dc-ctx">${esc(t("overlay.discordTypingTo", { name: replyTarget.name }))}</span>` +
+      ` · <kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))}` +
+      ` · <kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordBackToFriends"))}`;
+    return;
+  }
+  if (defaultHintsHtml) left.innerHTML = defaultHintsHtml;
 }
 
 /** Fetches the web page's last voice report, so the card paints immediately. */
@@ -1885,7 +2083,7 @@ async function refreshWebVoice(): Promise<void> {
     const state = await invoke<WebVoiceState | null>("discord_web_voice_state");
     if (state) {
       webVoice = state;
-      if (activeTab === "discord" && !document.hidden) renderDiscord();
+      if (activeTab === "discord" && !document.hidden) repaintDiscord();
     }
   } catch {
     // Older hosts have no web voice bridge; the RPC source stays.
@@ -1921,48 +2119,6 @@ function voiceDisplay(): { channel: VoiceChannel; people: VoiceParticipant[]; st
     (busy && lastVoiceChannel ? { channel: lastVoiceChannel, people: lastVoiceParticipants } : null);
   if (!display) return null;
   return { channel: display.channel, people: display.people, stale: !live && !web };
-}
-
-/** Voice panel body: the people, or the state line. The channel name lives in
- * the panel head. */
-function voiceBodyHtml(): string {
-  const state = voiceState;
-  if (state.status === "authorizing") {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordApprove"))}</p>`;
-  }
-  const web = webVoiceAsState();
-  const display = voiceDisplay();
-  const note =
-    state.status === "connecting"
-      ? t("overlay.discordConnecting")
-      : state.status === "error"
-        ? state.error || t("common.unknownError")
-        : "";
-  // A live web call speaks for itself; the RPC note would only be noise.
-  const noteHtml =
-    note && !web
-      ? `<p class="ov-voice-desc${state.status === "error" ? " ov-voice-error" : ""}">${esc(note)}</p>`
-      : "";
-  if (!display) {
-    return (
-      noteHtml ||
-      `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}<br />${esc(t("overlay.discordVoiceDesc"))}</p>`
-    );
-  }
-  const rows = display.people
-    .map(
-      (person) => `
-        <div class="ov-voice-person${person.speaking ? " speaking" : ""}">
-          <span class="ov-voice-avatar"><img src="${esc(person.avatarUrl)}" alt="" loading="lazy" /></span>
-          <span class="ov-voice-name">${esc(person.name)}</span>
-          ${person.muted ? `<span class="ov-voice-muted">${icon("mic-off", 12)}</span>` : ""}
-        </div>`,
-    )
-    .join("");
-  if (!rows) {
-    return noteHtml || `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}</p>`;
-  }
-  return `${noteHtml}<div class="ov-voice-people${display.stale ? " ov-voice-stale" : ""}">${rows}</div>`;
 }
 
 /* 9. Settings View */
@@ -2123,22 +2279,12 @@ function wireEvents(): void {
     } else if (action === "discord-reply") {
       const row = target.closest<HTMLElement>("[data-ov]");
       const friendId = row?.dataset.id;
-      if (friendId) {
-        replyTarget = { id: friendId, name: row?.dataset.name || friendId };
-        replyDraft = "";
-        renderDiscord();
-        focusReplyInput();
-      }
+      if (friendId) selectReplyTarget(friendId, row?.dataset.name || friendId);
     } else if (action === "discord-send") {
       void sendDiscordReply();
-    } else if (action === "discord-open-dm") {
-      const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
-      if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
-    } else if (action === "discord-open-channel") {
-      const row = target.closest<HTMLElement>("[data-ov]");
-      if (row?.dataset.guild && row.dataset.channel) {
-        void openDiscordInLauncher(`https://discord.com/channels/${row.dataset.guild}/${row.dataset.channel}`);
-      }
+    } else if (action === "discord-retry") {
+      const entryId = Number(target.closest<HTMLElement>("[data-ov]")?.dataset.entry);
+      if (Number.isFinite(entryId)) void retryReply(entryId);
     } else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
       if (key) {
@@ -2211,7 +2357,12 @@ function wireEvents(): void {
   document.addEventListener("input", (event) => {
     const target = event.target;
     if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {
-      replyDraft = target.value;
+      if (replyTarget) replyDrafts.set(replyTarget.id, target.value);
+      // The field grows to six lines, then scrolls.
+      target.style.height = "auto";
+      target.style.height = `${Math.min(132, Math.max(88, target.scrollHeight))}px`;
+      const count = document.getElementById("ov-discord-count");
+      if (count) count.textContent = `${target.value.length} / 2000`;
       return;
     }
     const input = event.target as HTMLInputElement | null;
@@ -2235,17 +2386,35 @@ function wireEvents(): void {
       event.preventDefault();
       return;
     }
-    // Enter sends the reply; Shift+Enter stays a newline.
-    if (event.key === "Enter" && !event.shiftKey) {
-      const target = event.target;
-      if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {
+    // Composer keys: Enter sends, Shift+Enter adds a line, Ctrl+Up/Down walks
+    // the friend list without leaving the box.
+    const typed = event.target;
+    const inComposer = typed instanceof HTMLTextAreaElement && typed.id === "ov-discord-reply-input";
+    if (inComposer && event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendDiscordReply();
+      return;
+    }
+    if (inComposer && (event.ctrlKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.preventDefault();
+      stepReplyTarget(event.key === "ArrowUp" ? -1 : 1);
+      return;
+    }
+    // Typing on a focused friend row jumps into the box with that letter.
+    if (!isTextEntryFocused() && event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      const row = document.activeElement as HTMLElement | null;
+      if (row?.dataset.ov === "discord-reply" && row.dataset.id) {
         event.preventDefault();
-        void sendDiscordReply();
+        selectReplyTarget(row.dataset.id, row.dataset.name || row.dataset.id, event.key);
         return;
       }
     }
     if (isTextEntryFocused()) {
-      if (event.key === "Escape") (document.activeElement as HTMLElement | null)?.blur();
+      // Esc leaves the box back to the friend row first; the next Esc closes.
+      if (event.key === "Escape") {
+        (document.activeElement as HTMLElement | null)?.blur();
+        focusSelectedFriendRow();
+      }
       return;
     }
     const dirs: Record<string, Dir> = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" };
@@ -2754,7 +2923,7 @@ async function boot(): Promise<void> {
       lastVoiceChannel = null;
       lastVoiceParticipants = [];
     }
-    if (activeTab === "discord" && !document.hidden) renderDiscord();
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
 
   await listen<DiscordFriendsState>("discord-friends-state", (event) => {
@@ -2766,37 +2935,41 @@ async function boot(): Promise<void> {
       lastFriends = [];
       lastFriendsPending = 0;
     }
-    if (activeTab === "discord" && !document.hidden) renderDiscord();
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
 
   await listen<WebVoiceState>("discord-web-voice", (event) => {
     webVoice = event.payload;
-    if (activeTab === "discord" && !document.hidden) renderDiscord();
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
 
   await listen<SdkState>("discord-sdk-state", (event) => {
     sdkState = event.payload;
-    if (activeTab === "discord" && !document.hidden) renderDiscord();
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    refreshFooterHints();
   });
 
   await listen<DiscordFriendsState>("discord-sdk-friends", (event) => {
     sdkFriends = event.payload;
-    if (activeTab === "discord" && !document.hidden) renderDiscord();
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
 
-  // The send outcome: the note under the composer is patched in place, so a
-  // failed send never drops the typed text.
+  // The send outcome lands in the log row: "Sending…" becomes "Sent", or the
+  // row turns into a retry, so a failed message is never silently lost.
   await listen<{ userId: string; ok: boolean; messageId?: string; error?: string }>("discord-sdk-dm", (event) => {
     replySending = false;
-    const sendButton = document.querySelector<HTMLButtonElement>('[data-ov="discord-send"]');
-    if (sendButton) sendButton.disabled = false;
-    const note = document.getElementById("ov-discord-reply-note");
-    if (!note) return;
-    note.classList.toggle("ov-voice-error", !event.payload.ok);
-    note.textContent = event.payload.ok
-      ? t("overlay.discordSent")
-      : t("overlay.discordSendFailed", { error: event.payload.error || t("common.unknownError") });
+    const entry = [...replyLog]
+      .reverse()
+      .find((item) => item.friendId === event.payload.userId && item.state === "sending");
+    if (entry) {
+      entry.state = event.payload.ok ? "sent" : "error";
+      entry.error = event.payload.error;
+    }
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
+
+  // The default hint line is restored whenever the context line goes away.
+  captureDefaultHints();
 
   try {
     const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
