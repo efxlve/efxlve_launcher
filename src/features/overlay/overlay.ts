@@ -1643,21 +1643,23 @@ function renderBrowser(): void {
 function renderDiscord(): void {
   const el = viewEl("discord");
   if (!el) return;
+  const voice = voiceDisplay();
+  const channel = voice && voice.channel.name ? ` · ${esc(voice.channel.name)}` : "";
   el.innerHTML = `
     <div class="ov-page-title">${icon("discord", 20)} <span>${esc(t("overlay.tabDiscord"))}</span></div>
-    <div class="ov-dashboard">
-      <div class="ov-card ov-span-12">
-        <div class="ov-card-title">${icon("volume-2", 14)} <span class="title-text">${esc(t("overlay.discordVoiceTitle"))}</span></div>
-        ${voiceBodyHtml()}
-      </div>
-      <div class="ov-card ov-span-12">
-        <div class="ov-card-title">${icon("sparkles", 14)} <span class="title-text">${esc(t("overlay.discordPresenceTitle"))}</span></div>
+    <div class="ov-panel">
+      <div class="ov-panel-head">${icon("volume-2", 13)} <b>${esc(t("overlay.discordVoiceTitle"))}</b>${channel}</div>
+      <div class="ov-panel-body">${voiceBodyHtml()}</div>
+    </div>
+    <div class="ov-panel">
+      <div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b></div>
+      <div class="ov-panel-body">${friendsBodyHtml()}</div>
+    </div>
+    <div class="ov-panel">
+      <div class="ov-panel-head">${icon("sparkles", 13)} <b>${esc(t("overlay.discordPresenceTitle"))}</b></div>
+      <div class="ov-panel-body">
         <p class="ov-voice-desc">${esc(t("overlay.discordPresenceDesc"))}</p>
-        <button class="btn" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
-      </div>
-      <div class="ov-card ov-span-12">
-        <div class="ov-card-title">${icon("users", 14)} <span class="title-text">${esc(t("overlay.discordFriendsTitle"))}</span></div>
-        ${friendsBodyHtml()}
+        <button class="btn ghost small" data-ov="open-discord">${icon("external", 14)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
     </div>`;
 }
@@ -1732,14 +1734,10 @@ function webVoiceAsState(): { channel: VoiceChannel; people: VoiceParticipant[] 
   };
 }
 
-/** Voice card body: a status line, or the channel with its people. Sources in
- * order: the live desktop read, the launcher's own web client, then the last
- * known channel while (re)connecting (dimmed). */
-function voiceBodyHtml(): string {
+/** The voice state the tab shows: the live desktop read, the launcher's own
+ * web client, then the last known channel while (re)connecting. */
+function voiceDisplay(): { channel: VoiceChannel; people: VoiceParticipant[]; stale: boolean } | null {
   const state = voiceState;
-  if (state.status === "authorizing") {
-    return `<p class="ov-voice-desc">${esc(t("overlay.discordApprove"))}</p>`;
-  }
   const busy = state.status === "connecting" || state.status === "error";
   const web = webVoiceAsState();
   const live = state.channel ? { channel: state.channel, people: state.participants } : null;
@@ -1747,7 +1745,19 @@ function voiceBodyHtml(): string {
     live ??
     web ??
     (busy && lastVoiceChannel ? { channel: lastVoiceChannel, people: lastVoiceParticipants } : null);
-  const stale = !live && !web && display !== null;
+  if (!display) return null;
+  return { channel: display.channel, people: display.people, stale: !live && !web };
+}
+
+/** Voice panel body: the people, or the state line. The channel name lives in
+ * the panel head. */
+function voiceBodyHtml(): string {
+  const state = voiceState;
+  if (state.status === "authorizing") {
+    return `<p class="ov-voice-desc">${esc(t("overlay.discordApprove"))}</p>`;
+  }
+  const web = webVoiceAsState();
+  const display = voiceDisplay();
   const note =
     state.status === "connecting"
       ? t("overlay.discordConnecting")
@@ -1775,11 +1785,10 @@ function voiceBodyHtml(): string {
         </div>`,
     )
     .join("");
-  const dim = stale ? " ov-voice-stale" : "";
-  return `
-    ${noteHtml}
-    <div class="ov-voice-channel${dim}">${icon("volume-2", 13)} <span>${esc(display.channel.name)}</span></div>
-    <div class="ov-voice-people${dim}">${rows}</div>`;
+  if (!rows) {
+    return noteHtml || `<p class="ov-voice-desc">${esc(t("overlay.discordNoChannel"))}</p>`;
+  }
+  return `${noteHtml}<div class="ov-voice-people${display.stale ? " ov-voice-stale" : ""}">${rows}</div>`;
 }
 
 /* 9. Settings View */

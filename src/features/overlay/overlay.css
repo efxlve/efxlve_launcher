@@ -1794,3 +1794,56 @@
   color: var(--text);
   font-weight: 600;
 }
+
+/* ==========================================================================
+   Panels: one hairline box per group, rows separated by rules inside it.
+   ========================================================================== */
+
+.ov-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.ov-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.ov-panel-head b {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.ov-panel-body {
+  padding: 12px 14px;
+}
+
+.ov-panel-body .ov-voice-desc:last-child,
+.ov-panel-body .ov-voice-people:last-child {
+  margin-bottom: 0;
+}
+
+/* People and friends read as hairline rows inside a panel. */
+.ov-panel-body .ov-voice-people {
+  gap: 0;
+}
+
+.ov-panel-body .ov-voice-person,
+.ov-panel-body .ov-friend {
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ov-panel-body .ov-voice-person:first-child,
+.ov-panel-body .ov-friend:first-child {
+  border-top: none;
+}
