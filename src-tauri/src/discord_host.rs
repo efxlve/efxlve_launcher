@@ -48,6 +48,11 @@ static WANT_VISIBLE: AtomicBool = AtomicBool::new(false);
 /// Bumped on every create/destroy, so a stale first-paint timer cannot show a
 /// newer child.
 static GENERATION: AtomicU64 = AtomicU64::new(0);
+/// True while a child is being built. The frontend asks for the page several
+/// times during its entry animation; a second create would bump the generation
+/// and orphan the running poller (and the call it guards), so only the first
+/// caller builds the child.
+static CREATING: AtomicBool = AtomicBool::new(false);
 /// True while the web client is in a voice call, straight from the page probe.
 static IN_CALL: AtomicBool = AtomicBool::new(false);
 /// The user left the page while a call was running: the renderer is kept alive
@@ -275,8 +280,19 @@ const PROBE_HOOKS_SCRIPT: &str = if cfg!(debug_assertions) {
 };
 
 /// Appends one web-side line to the shared Discord log (the file the RPC
-/// worker also writes) so page diagnostics land in the same place.
+/// worker also writes) so page diagnostics land in the same place. Lines carry
+/// a UTC stamp: the ordering of create/destroy/park is what matters.
 fn web_log(app: &AppHandle, line: &str) {
+    let seconds = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|age| age.as_secs())
+        .unwrap_or(0);
+    let stamp = format!(
+        "{:02}:{:02}:{:02}Z",
+        (seconds / 3600) % 24,
+        (seconds / 60) % 60,
+        seconds % 60
+    );
     eprintln!("[discord-view] {line}");
     if let Ok(dir) = app.path().app_data_dir() {
         let path = dir.join("logs").join("discord-rpc.log");
@@ -285,7 +301,7 @@ fn web_log(app: &AppHandle, line: &str) {
             .append(true)
             .open(&path)
         {
-            let _ = writeln!(file, "[discord-web] {line}");
+            let _ = writeln!(file, "[discord-web] {stamp} {line}");
         }
     }
 }
@@ -405,6 +421,7 @@ fn destroy_view(app: &AppHandle) {
     );
     if let Some(view) = view(app) {
         eprintln!("[discord-view] destroy");
+        web_log(app, "view destroy");
         let _ = view.close();
     }
 }
@@ -639,6 +656,7 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
 
     PAINTED.store(false, Ordering::SeqCst);
     let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    web_log(app, &format!("view create (gen {generation})"));
 
     // `add_child` posts to the main thread and waits; run it off the async
     // runtime so the UI never blocks on creation.
@@ -662,11 +680,16 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     let spawned = std::thread::Builder::new()
         .name("discord-voice-tracker".to_string())
         .spawn(move || {
+            web_log(&track_app, &format!("tracker started (gen {generation})"));
             let mut ticks: u64 = 0;
             loop {
                 std::thread::sleep(Duration::from_secs(3));
-                if GENERATION.load(Ordering::SeqCst) != generation {
-                    web_log(&track_app, "web voice: tracker done (view replaced)");
+                let now = GENERATION.load(Ordering::SeqCst);
+                if now != generation {
+                    web_log(
+                        &track_app,
+                        &format!("tracker done (gen {generation} -> {now})"),
+                    );
                     return;
                 }
                 ticks += 1;
@@ -758,7 +781,22 @@ pub async fn discord_view_show(
         }
         return Ok(());
     }
-    create_view(&app, x, y, width, height).await
+    // Only the first caller builds the child; the others return and let the
+    // slot observer settle the final rectangle.
+    if CREATING.swap(true, Ordering::SeqCst) {
+        return Ok(());
+    }
+    let result = create_view(&app, x, y, width, height).await;
+    CREATING.store(false, Ordering::SeqCst);
+    if result.is_ok() {
+        if let Some(view) = view(&app) {
+            let _ = view.set_bounds(rect_of(x, y, width, height));
+            if PAINTED.load(Ordering::SeqCst) {
+                let _ = view.show();
+            }
+        }
+    }
+    result
 }
 
 /// Hides the page while a covering surface (modal, command palette) is open.
