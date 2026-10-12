@@ -24,11 +24,13 @@ import {
   spotifyPlaybackPlay,
   spotifyPlaybackPlaylistTracks,
   spotifyPlaybackPlaylists,
+  spotifyPlaybackStart,
   spotifyPlaybackStatus,
   type NowPlaying,
   type PlaylistSummary,
   type TrackSummary,
 } from "../music/spotify-client";
+import { toast } from "../../core/toast";
 import "../../styles/tokens.css";
 import "../../styles/components.css";
 import "./overlay.css";
@@ -1190,20 +1192,48 @@ function renderMusicTab(): void {
   const el = viewEl("music");
   if (!el) return;
   const connected = spotifyEngineOn;
-  const m = getOverlayMedia();
   el.innerHTML = `
-    <div class="ov-page-title">
-      ${icon("spotify", 20)} <span>${esc(t("overlay.tabSpotify"))}</span>
-      ${connected && spotifyDeviceName ? `<span class="ov-badge-pill" style="margin-left:8px">${icon("monitor", 12)} <span>${esc(spotifyDeviceName)}</span></span>` : ""}
+    <div class="ov-page-title">${icon("spotify", 20)} <span>${esc(t("overlay.tabSpotify"))}</span></div>
+    <div class="ov-section-head">
+      <span class="ov-section-title">${esc(t("overlay.nowPlaying"))}</span>
+      <span class="ov-status-chip ${connected ? "is-ok" : "is-warn"}"><span class="ov-dot"></span>${esc(connected ? t("overlay.engineOn") : t("overlay.engineOff"))}</span>
+      ${connected && spotifyDeviceName ? `<span class="ov-sub">${esc(spotifyDeviceName)}</span>` : ""}
     </div>
-    ${unifiedPlayerHtml(m, connected)}
-    ${connected ? libraryHtml() : ""}
-    <p class="ov-note" style="text-align:center;margin-top:16px">${esc(connected ? t("overlay.musicNoteSpotify") : t("overlay.musicNote"))}</p>`;
+    ${connected ? unifiedPlayerHtml(getOverlayMedia(), true) : engineOffHtml()}
+    ${connected ? libraryHtml() : ""}`;
   if (connected) {
     renderPlaylistList();
     renderTrackList();
     void ensurePlaylists();
   }
+}
+
+/**
+ * Engine off: the whole point of the tab is that Spotify starts from here, so
+ * the game never has to be left. Playback, playlists and tracks all live in
+ * this panel.
+ */
+function engineOffHtml(): string {
+  return `
+    <div class="ov-off">
+      <div class="ov-off-title">${esc(t("overlay.engineOffTitle"))}</div>
+      <p class="ov-off-desc">${esc(t("overlay.engineOffDesc"))}</p>
+      <div class="ov-off-actions">
+        <button class="btn primary" data-ov="sp-engine-start">${icon("play", 15)} <span>${esc(t("overlay.engineStart"))}</span></button>
+        <button class="btn ghost" data-ov="sp-open">${icon("external", 14)} <span>${esc(t("overlay.openSpotify"))}</span></button>
+      </div>
+    </div>`;
+}
+
+/** Starts the launcher's Spotify engine without leaving the game. */
+async function startSpotifyEngine(): Promise<void> {
+  try {
+    await spotifyPlaybackStart();
+    toast(t("overlay.engineStarting"), "");
+  } catch (error) {
+    toast(String(error).replace(/^Error: /, ""), "err");
+  }
+  window.setTimeout(() => void refreshMedia(), 1200);
 }
 
 function unifiedPlayerHtml(m: OverlayMediaModel, connected: boolean): string {
@@ -1929,6 +1959,8 @@ function wireEvents(): void {
         const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
         void overlaySpotifyControl("seek", Math.round(ratio * m.durationMs));
       }
+    } else if (action === "sp-engine-start") {
+      void startSpotifyEngine();
     } else if (action === "sp-select-playlist") {
       const uri = target.closest<HTMLElement>("[data-ov]")?.dataset.uri;
       if (uri) void selectPlaylist(uri);

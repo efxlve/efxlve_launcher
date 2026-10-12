@@ -1675,3 +1675,122 @@
 .ov-friends-more {
   margin: 8px 0 0;
 }
+
+/* ==========================================================================
+   Music tab (revision): sections instead of stacked cards — a title row, then
+   hairline separated rows inside one panel per group. Colour is state only.
+   ========================================================================== */
+
+.ov-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 2px 0 12px;
+}
+
+.ov-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.005em;
+}
+
+.ov-sub {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.ov-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.ov-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex: none;
+}
+
+.ov-status-chip.is-ok .ov-dot { background: var(--ok); }
+.ov-status-chip.is-warn .ov-dot { background: var(--warn); }
+.ov-status-chip.is-err .ov-dot { background: var(--err); }
+
+/* Engine off: one calm block whose action starts Spotify from the panel. */
+.ov-off {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ov-off-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ov-off-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+  max-width: 62ch;
+}
+
+.ov-off-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* Now playing: a compact row, not a hero card. */
+.ov-sp-player {
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.ov-sp-art {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--r-sm);
+}
+
+.ov-sp-title { font-size: 16px; }
+.ov-sp-artist { font-size: 13px; }
+
+/* Library panes: rows run edge to edge, separated by hairline rules. */
+.ov-sp-pane {
+  padding: 0;
+}
+
+.ov-sp-row {
+  padding: 9px 12px;
+  border-radius: 0;
+  border-top: 1px solid var(--line);
+}
+
+.ov-sp-row:first-child {
+  border-top: none;
+}
+
+.ov-sp-pl-row.selected {
+  background: var(--surface-2);
+}
+
+.ov-sp-pl-row.selected .ov-sp-row-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ov-sp-track.playing .ov-sp-row-name {
+  color: var(--text);
+  font-weight: 600;
+}
