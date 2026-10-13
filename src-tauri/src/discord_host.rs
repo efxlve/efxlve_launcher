@@ -71,6 +71,12 @@ static LAST_NAV: Mutex<Option<Instant>> = Mutex::new(None);
 /// refuses to paint must not loop reloads forever.
 static RECOVERED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// When the current child was created. A page that has had half a minute and
+/// never painted is wedged (a navigation can do that), and rebuilding it is
+/// the only way back — but a page that is merely still warming up must be
+/// left alone.
+static CREATED_AT: Mutex<Option<Instant>> = Mutex::new(None);
+
 static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);/// Last logged web-voice note; only transitions reach the log.
 static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 
@@ -405,6 +411,9 @@ fn destroy_view(app: &AppHandle) {
     IN_CALL.store(false, Ordering::SeqCst);
     PARKED.store(false, Ordering::SeqCst);
     GENERATION.fetch_add(1, Ordering::SeqCst);
+    if let Ok(mut guard) = CREATED_AT.lock() {
+        *guard = None;
+    }
     if let Ok(mut guard) = WEB_VOICE.lock() {
         *guard = None;
     }
@@ -733,6 +742,9 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     PAINTED.store(false, Ordering::SeqCst);
     let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     web_log(app, &format!("view create (gen {generation})"));
+    if let Ok(mut guard) = CREATED_AT.lock() {
+        *guard = Some(Instant::now());
+    }
 
     // `add_child` posts to the main thread and waits; run it off the async
     // runtime so the UI never blocks on creation.
@@ -825,19 +837,23 @@ fn watch_first_paint(app: &AppHandle, generation: u64) {
             }
         }
         if GENERATION.load(Ordering::SeqCst) == generation && !PAINTED.load(Ordering::SeqCst) {
-            // A navigation can leave the client on its loading screen forever.
-            // Recover once per generation with a reload, then leave the rest to
-            // the Reload button: a page that refuses to paint must not loop.
+            // A navigation can wedge the client: a reload does not revive it,
+            // so rebuild the child once per generation and let the fresh page
+            // arm its own watchdog.
             if RECOVERED.load(Ordering::SeqCst) != generation {
                 RECOVERED.store(generation, Ordering::SeqCst);
-                if let Some(view) = view(&ready_app) {
-                    web_log(&ready_app, "the client never painted; reloading once");
-                    if let Ok(url) = HOME_URL.parse::<url::Url>() {
-                        let _ = view.navigate(url);
-                    }
-                    watch_first_paint(&ready_app, generation);
-                    return;
-                }
+                let (x, y, width, height) = LAST_RECT
+                    .lock()
+                    .ok()
+                    .and_then(|guard| *guard)
+                    .unwrap_or((0.0, 0.0, 100.0, 100.0));
+                web_log(&ready_app, "the client never painted; rebuilding the page");
+                let rebuild_app = ready_app.clone();
+                tauri::async_runtime::spawn(async move {
+                    destroy_view(&rebuild_app);
+                    let _ = create_view(&rebuild_app, x, y, width, height).await;
+                });
+                return;
             }
             if WANT_VISIBLE.load(Ordering::SeqCst) {
                 eprintln!("[discord-view] readiness timeout; showing the child anyway");
@@ -876,6 +892,22 @@ pub async fn discord_view_show(
         // shows in its place.
         if PAINTED.load(Ordering::SeqCst) {
             view.show().map_err(|error| error.to_string())?;
+        } else {
+            // A page that never painted (a navigation can wedge the client) is
+            // rebuilt, not reloaded: a reload does not revive it, and the
+            // person would stare at the loading note forever. A page that is
+            // merely still warming up is left alone.
+            let wedged = CREATED_AT
+                .lock()
+                .ok()
+                .and_then(|guard| *guard)
+                .map(|at| at.elapsed() > Duration::from_secs(30))
+                .unwrap_or(false);
+            if wedged {
+                web_log(&app, "page is wedged on show; rebuilding the client");
+                destroy_view(&app);
+                let _ = create_view(&app, x, y, width, height).await;
+            }
         }
         return Ok(());
     }
