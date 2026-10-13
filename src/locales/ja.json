@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "保留中のリクエスト {count}件",
   "overlay.discordFriendsEmpty": "フレンドはまだいません",
   "overlay.discordFriendsMore": "他に{count}人",
+  "overlay.discordAccept": "承認",
+  "overlay.discordReject": "拒否",
   "overlay.discordEdit": "編集",
   "overlay.discordSave": "保存",
   "overlay.discordCancel": "キャンセル",

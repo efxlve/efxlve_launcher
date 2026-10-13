@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} طلبات معلّقة",
   "overlay.discordFriendsEmpty": "لا أصدقاء بعد",
   "overlay.discordFriendsMore": "{count} آخرون",
+  "overlay.discordAccept": "قبول",
+  "overlay.discordReject": "رفض",
   "overlay.discordEdit": "تعديل",
   "overlay.discordSave": "حفظ",
   "overlay.discordCancel": "إلغاء",

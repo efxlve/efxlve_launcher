@@ -50,6 +50,7 @@ enum SdkCommand {
     SendDm { user_id: u64, text: String },
     EditDm { user_id: u64, message_id: u64, text: String },
     DeleteDm { user_id: u64, message_id: u64 },
+    FriendRequest { user_id: u64, accept: bool },
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -78,6 +79,8 @@ struct SdkState {
     error: Option<String>,
     me: Option<SdkMe>,
     friends: Vec<SdkFriend>,
+    /// Incoming friend requests, ready to accept or reject.
+    pending_users: Vec<SdkFriend>,
     pending: u32,
 }
 
@@ -88,6 +91,7 @@ impl SdkState {
             error: None,
             me: None,
             friends: Vec::new(),
+            pending_users: Vec::new(),
             pending: 0,
         }
     }
@@ -121,6 +125,12 @@ fn friends_json(state: &SdkState) -> serde_json::Value {
     serde_json::json!({
         "status": status,
         "friends": state.friends.iter().map(|friend| serde_json::json!({
+            "id": friend.id,
+            "name": friend.name,
+            "avatarUrl": friend.avatar_url,
+            "status": friend.status,
+        })).collect::<Vec<_>>(),
+        "pendingUsers": state.pending_users.iter().map(|friend| serde_json::json!({
             "id": friend.id,
             "name": friend.name,
             "avatarUrl": friend.avatar_url,
@@ -311,6 +321,30 @@ pub fn discord_sdk_edit_dm(user_id: String, message_id: String, text: String) ->
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Accepts or rejects an incoming friend request; the outcome arrives on
+/// `discord-sdk-request-done`.
+#[tauri::command]
+pub fn discord_sdk_friend_request(user_id: String, accept: bool) -> Result<(), String> {
+    let id = user_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_user_id".to_string())?;
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::FriendRequest {
+            user_id: id,
+            accept,
+        })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -437,6 +471,8 @@ mod ffi {
     pub type MessageCreatedCallback = unsafe extern "C" fn(u64, *mut c_void);
     pub type MessageDeletedCallback = unsafe extern "C" fn(u64, u64, *mut c_void);
     pub type TokenExpirationCallback = unsafe extern "C" fn(*mut c_void);
+    /// `void(uint64_t userId, bool isDiscordRelationshipUpdate, void*)`.
+    pub type RelationshipCallback = unsafe extern "C" fn(u64, bool, *mut c_void);
     /// `void(Discord_ClientResult*, void*)`: edit, delete and friends share it.
     pub type ResultCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
     pub type UserMessageSummariesCallback =
@@ -475,6 +511,32 @@ mod ffi {
         pub fn Discord_Client_SetTokenExpirationCallback(
             client: *mut Client,
             callback: TokenExpirationCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_SetRelationshipCreatedCallback(
+            client: *mut Client,
+            callback: RelationshipCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_SetRelationshipDeletedCallback(
+            client: *mut Client,
+            callback: RelationshipCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_AcceptDiscordFriendRequest(
+            client: *mut Client,
+            user_id: u64,
+            callback: ResultCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_RejectDiscordFriendRequest(
+            client: *mut Client,
+            user_id: u64,
+            callback: ResultCallback,
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
@@ -634,6 +696,12 @@ mod imp {
         text: String,
     }
 
+    /// A friend request being accepted or rejected.
+    struct RequestCtx {
+        user_id: u64,
+        accept: bool,
+    }
+
     unsafe extern "C" fn free_flow(user: *mut c_void) {
         drop(Box::from_raw(user as *mut Flow));
     }
@@ -644,6 +712,10 @@ mod imp {
 
     unsafe extern "C" fn free_edit(user: *mut c_void) {
         drop(Box::from_raw(user as *mut EditCtx));
+    }
+
+    unsafe extern "C" fn free_request(user: *mut c_void) {
+        drop(Box::from_raw(user as *mut RequestCtx));
     }
 
     fn string_of(value: StringValue) -> String {
@@ -990,6 +1062,45 @@ mod imp {
         }
     }
 
+    /// The relationship list changed (a request accepted, a friend removed):
+    /// re-read it so the panel matches Discord.
+    unsafe extern "C" fn on_relationship_changed(
+        _user_id: u64,
+        _is_discord: bool,
+        _user: *mut c_void,
+    ) {
+        read_social();
+    }
+
+    /// The outcome of accepting or rejecting a friend request.
+    unsafe extern "C" fn on_relationship_result(result: *mut ClientResult, user: *mut c_void) {
+        let ctx = &*(user as *mut RequestCtx);
+        let payload = if Discord_ClientResult_Successful(result) {
+            sdk_note!(
+                "friend request from {} {}",
+                ctx.user_id,
+                if ctx.accept { "accepted" } else { "rejected" }
+            );
+            serde_json::json!({
+                "userId": ctx.user_id.to_string(),
+                "accept": ctx.accept,
+                "ok": true,
+            })
+        } else {
+            let error = result_error(result);
+            sdk_note!("friend request failed: {error}");
+            serde_json::json!({
+                "userId": ctx.user_id.to_string(),
+                "accept": ctx.accept,
+                "ok": false,
+                "error": error,
+            })
+        };
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit("discord-sdk-request-done", payload);
+        }
+    }
+
     /// The outcome of an edit the overlay asked for.
     unsafe extern "C" fn on_message_edit_result(result: *mut ClientResult, user: *mut c_void) {
         let ctx = &*(user as *mut EditCtx);
@@ -1170,6 +1281,7 @@ mod imp {
         };
         Discord_Client_GetRelationships(client, &mut span);
         let mut friends: Vec<SdkFriend> = Vec::new();
+        let mut pending_users: Vec<SdkFriend> = Vec::new();
         let mut pending = 0u32;
         let mut blocked = 0u32;
         if !span.ptr.is_null() {
@@ -1177,7 +1289,9 @@ mod imp {
                 let mut handle = *span.ptr.add(index);
                 let kind = Discord_RelationshipHandle_DiscordRelationshipType(&mut handle);
                 match kind {
-                    1 => {
+                    // 1 = friend, 3 = an incoming request: both carry a user we
+                    // show, and the request is what the panel can accept.
+                    1 | 3 => {
                         let user_id = Discord_RelationshipHandle_Id(&mut handle);
                         let mut user: UserHandle = std::mem::zeroed();
                         if Discord_Client_GetUser(client, user_id, &mut user) {
@@ -1188,11 +1302,16 @@ mod imp {
                                 status: status_word(Discord_UserHandle_Status(&mut user)).to_string(),
                             };
                             Discord_UserHandle_Drop(&mut user);
-                            friends.push(entry);
+                            if kind == 1 {
+                                friends.push(entry);
+                            } else {
+                                pending += 1;
+                                pending_users.push(entry);
+                            }
                         }
                     }
                     2 => blocked += 1,
-                    3 | 4 => pending += 1,
+                    4 => pending += 1,
                     _ => {}
                 }
             }
@@ -1220,6 +1339,7 @@ mod imp {
         with_state(|state| {
             state.me = me;
             state.friends = friends;
+            state.pending_users = pending_users;
             state.pending = pending;
         });
         emit_state();
@@ -1253,6 +1373,18 @@ mod imp {
             Discord_Client_SetTokenExpirationCallback(
                 &mut client,
                 on_token_expiring,
+                None,
+                ptr::null_mut(),
+            );
+            Discord_Client_SetRelationshipCreatedCallback(
+                &mut client,
+                on_relationship_changed,
+                None,
+                ptr::null_mut(),
+            );
+            Discord_Client_SetRelationshipDeletedCallback(
+                &mut client,
+                on_relationship_changed,
                 None,
                 ptr::null_mut(),
             );
@@ -1328,6 +1460,33 @@ mod imp {
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
                             );
+                        }
+                        Ok(SdkCommand::FriendRequest { user_id, accept }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("friend request ignored: not connected");
+                                continue;
+                            }
+                            let ctx = Box::into_raw(Box::new(RequestCtx { user_id, accept }));
+                            let user_data = ctx as *mut RequestCtx as *mut c_void;
+                            if accept {
+                                Discord_Client_AcceptDiscordFriendRequest(
+                                    client_ptr,
+                                    user_id,
+                                    on_relationship_result,
+                                    Some(free_request),
+                                    user_data,
+                                );
+                            } else {
+                                Discord_Client_RejectDiscordFriendRequest(
+                                    client_ptr,
+                                    user_id,
+                                    on_relationship_result,
+                                    Some(free_request),
+                                    user_data,
+                                );
+                            }
                         }
                         Ok(SdkCommand::EditDm {
                             user_id,

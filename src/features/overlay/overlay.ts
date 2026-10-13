@@ -191,6 +191,8 @@ interface FriendEntry {
 interface DiscordFriendsState {
   status: string;
   friends: FriendEntry[];
+  /** Incoming requests, straight from the SDK's relationship list. */
+  pendingUsers?: FriendEntry[];
   pending: number;
   error: string | null;
 }
@@ -1889,15 +1891,34 @@ function friendsPanelHtml(): string {
   }
   const online = friends.filter((friend) => friend.status !== "offline");
   const offline = friends.filter((friend) => friend.status === "offline");
+  const requests = sdkFriends.pendingUsers ?? [];
   const section = (label: string, rows: FriendEntry[]): string =>
     rows.length ? `<div class="dc-sec">${esc(label)}</div>${rows.map(friendRowHtml).join("")}` : "";
+  // Requests first: they are the only rows that wait for an answer.
+  const requestSection = requests.length
+    ? `<div class="dc-sec">${esc(t("overlay.discordFriendsPending", { count: requests.length }))}</div>${requests.map(requestRowHtml).join("")}`
+    : "";
   return `
     <div class="ov-panel fill">
       ${head}
       <div class="dc-rows dc-scroll">
+        ${requestSection}
         ${section(t("overlay.discordFriendsOnline", { count: online.length }), online)}
         ${section(t("overlay.discordFriendsOffline", { count: offline.length }), offline)}
       </div>
+    </div>`;
+}
+
+/** An incoming friend request: accept or reject, right from the list. */
+function requestRowHtml(friend: FriendEntry): string {
+  return `
+    <div class="dc-row">
+      <span class="dc-av"><img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" /></span>
+      <span class="dc-row-main"><span class="dc-name">${esc(friend.name)}</span></span>
+      <span class="dc-row-end">
+        <button class="btn ghost small" data-ov="discord-accept" data-id="${esc(friend.id)}" title="${esc(t("overlay.discordAccept"))}">${icon("check-circle", 13)}</button>
+        <button class="btn ghost small" data-ov="discord-reject" data-id="${esc(friend.id)}" title="${esc(t("overlay.discordReject"))}">${icon("x", 13)}</button>
+      </span>
     </div>`;
 }
 
@@ -2130,6 +2151,16 @@ async function retryReply(entryId: number): Promise<void> {
     entry.state = "error";
     entry.error = String(error);
     repaintDiscord();
+  }
+}
+
+/** Accepts or rejects an incoming friend request; the list refreshes itself
+ * when the SDK reports the relationship change. */
+async function answerFriendRequest(friendId: string, accept: boolean): Promise<void> {
+  try {
+    await invoke("discord_sdk_friend_request", { userId: friendId, accept });
+  } catch (error) {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
   }
 }
 
@@ -2435,6 +2466,9 @@ function wireEvents(): void {
       void saveEdit();
     } else if (action === "discord-edit-cancel") {
       cancelEdit();
+    } else if (action === "discord-accept" || action === "discord-reject") {
+      const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
+      if (friendId) void answerFriendRequest(friendId, action === "discord-accept");
     } else if (action === "discord-open-dm") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
@@ -3165,6 +3199,26 @@ async function boot(): Promise<void> {
         '[data-ov="discord-delete"]',
       );
       if (button) button.disabled = false;
+    },
+  );
+
+  // A friend request answered: the row goes at once, and the relationship
+  // callback re-reads the list from Discord shortly after.
+  await listen<{ userId: string; accept: boolean; ok: boolean; error?: string }>(
+    "discord-sdk-request-done",
+    (event) => {
+      if (!event.payload.ok) {
+        toast(t("overlay.discordSendFailed", { error: event.payload.error || "" }), "err");
+        return;
+      }
+      sdkFriends = {
+        ...sdkFriends,
+        pendingUsers: (sdkFriends.pendingUsers ?? []).filter(
+          (item) => item.id !== event.payload.userId,
+        ),
+        pending: Math.max(0, sdkFriends.pending - 1),
+      };
+      if (activeTab === "discord" && !document.hidden) repaintDiscord();
     },
   );
 

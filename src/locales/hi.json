@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} लंबित अनुरोध",
   "overlay.discordFriendsEmpty": "अभी कोई मित्र नहीं",
   "overlay.discordFriendsMore": "{count} और",
+  "overlay.discordAccept": "स्वीकारें",
+  "overlay.discordReject": "अस्वीकार करें",
   "overlay.discordEdit": "संपादित करें",
   "overlay.discordSave": "सहेजें",
   "overlay.discordCancel": "रद्द करें",

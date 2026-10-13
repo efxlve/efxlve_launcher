@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} richieste in sospeso",
   "overlay.discordFriendsEmpty": "Ancora nessun amico",
   "overlay.discordFriendsMore": "altri {count}",
+  "overlay.discordAccept": "Accetta",
+  "overlay.discordReject": "Rifiuta",
   "overlay.discordEdit": "Modifica",
   "overlay.discordSave": "Salva",
   "overlay.discordCancel": "Annulla",

@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} 個待處理請求",
   "overlay.discordFriendsEmpty": "還沒有好友",
   "overlay.discordFriendsMore": "還有 {count} 人",
+  "overlay.discordAccept": "接受",
+  "overlay.discordReject": "拒絕",
   "overlay.discordEdit": "編輯",
   "overlay.discordSave": "儲存",
   "overlay.discordCancel": "取消",

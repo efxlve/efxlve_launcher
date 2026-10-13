@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} bekleyen istek",
   "overlay.discordFriendsEmpty": "Henüz arkadaş yok",
   "overlay.discordFriendsMore": "{count} kişi daha",
+  "overlay.discordAccept": "Kabul et",
+  "overlay.discordReject": "Reddet",
   "overlay.discordEdit": "Düzenle",
   "overlay.discordSave": "Kaydet",
   "overlay.discordCancel": "Vazgeç",

@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} 个待处理请求",
   "overlay.discordFriendsEmpty": "还没有好友",
   "overlay.discordFriendsMore": "还有 {count} 人",
+  "overlay.discordAccept": "接受",
+  "overlay.discordReject": "拒绝",
   "overlay.discordEdit": "编辑",
   "overlay.discordSave": "保存",
   "overlay.discordCancel": "取消",

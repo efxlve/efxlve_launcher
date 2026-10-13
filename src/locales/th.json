@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "คำขอที่รออยู่ {count} รายการ",
   "overlay.discordFriendsEmpty": "ยังไม่มีเพื่อน",
   "overlay.discordFriendsMore": "อีก {count} คน",
+  "overlay.discordAccept": "ยอมรับ",
+  "overlay.discordReject": "ปฏิเสธ",
   "overlay.discordEdit": "แก้ไข",
   "overlay.discordSave": "บันทึก",
   "overlay.discordCancel": "ยกเลิก",

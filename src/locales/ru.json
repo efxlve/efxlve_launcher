@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} заявок в ожидании",
   "overlay.discordFriendsEmpty": "Пока нет друзей",
   "overlay.discordFriendsMore": "ещё {count}",
+  "overlay.discordAccept": "Принять",
+  "overlay.discordReject": "Отклонить",
   "overlay.discordEdit": "Изменить",
   "overlay.discordSave": "Сохранить",
   "overlay.discordCancel": "Отмена",

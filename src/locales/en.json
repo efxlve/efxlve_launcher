@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "{count} pending requests",
   "overlay.discordFriendsEmpty": "No friends yet",
   "overlay.discordFriendsMore": "{count} more",
+  "overlay.discordAccept": "Accept",
+  "overlay.discordReject": "Reject",
   "overlay.discordEdit": "Edit",
   "overlay.discordSave": "Save",
   "overlay.discordCancel": "Cancel",

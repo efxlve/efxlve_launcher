@@ -1907,6 +1907,8 @@
   "overlay.discordFriendsPending": "대기 중인 요청 {count}개",
   "overlay.discordFriendsEmpty": "아직 친구가 없습니다",
   "overlay.discordFriendsMore": "{count}명 더",
+  "overlay.discordAccept": "수락",
+  "overlay.discordReject": "거절",
   "overlay.discordEdit": "수정",
   "overlay.discordSave": "저장",
   "overlay.discordCancel": "취소",
