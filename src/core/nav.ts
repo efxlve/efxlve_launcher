@@ -7,6 +7,7 @@
  */
 
 import { CircleUserRound, createIcons } from "lucide";
+import { invoke } from "@tauri-apps/api/core";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf, totalLibraryGamesCount } from "./selectors";
@@ -82,6 +83,45 @@ export function updateBadge(scope: "full" | "progress" = "full"): void {
   if (count > 0) dlBadge.title = label;
   else dlBadge.removeAttribute("title");
   if (scope === "full") updateSidebarGames();
+}
+
+/* ---------- Discord sidebar badge ---------- */
+
+/** Unread Discord messages and a live call, shown on the sidebar item. */
+let discordUnread = 0;
+let discordInCall = false;
+
+/** One message arrived while the launcher was not showing the conversation. */
+export function noteDiscordMessage(): void {
+  discordUnread += 1;
+  paintDiscordBadge();
+}
+
+/** The overlay's own DM call went active or idle. */
+export function setDiscordInCall(active: boolean): void {
+  discordInCall = active;
+  paintDiscordBadge();
+}
+
+/** Opening the Discord page clears the count, the way Discord itself does. */
+export function clearDiscordUnread(): void {
+  if (discordUnread === 0) return;
+  discordUnread = 0;
+  paintDiscordBadge();
+}
+
+/** The sidebar badge and the in-call dot, plus the taskbar overlay icon. */
+function paintDiscordBadge(): void {
+  const badge = document.getElementById("dc-badge");
+  if (badge) {
+    badge.textContent = discordUnread > 99 ? "99+" : String(discordUnread);
+    badge.classList.toggle("hidden", discordUnread === 0);
+    if (discordUnread > 0) badge.title = String(discordUnread);
+    else badge.removeAttribute("title");
+  }
+  const dot = document.getElementById("dc-call");
+  if (dot) dot.classList.toggle("hidden", !discordInCall);
+  void invoke("app_set_taskbar_badge", { count: discordUnread }).catch(() => undefined);
 }
 
 /** Page header: window version, back button state and a title for the current view or open game page. */

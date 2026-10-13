@@ -24,6 +24,7 @@ mod shared_library;
 mod steam;
 mod steam_art;
 mod steam_auth;
+mod taskbar_badge;
 mod steam_running;
 mod steam_session;
 mod steam_watch;
@@ -825,6 +826,7 @@ fn main() {
             discord_host::discord_web_voice_state,
             discord_host::discord_open_conversation,
             discord_host::discord_view_prewarm,
+            taskbar_badge::app_set_taskbar_badge,
             discord_sdk::discord_sdk_start,
             discord_sdk::discord_sdk_state,
             discord_sdk::discord_sdk_friends,

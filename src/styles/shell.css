@@ -1071,3 +1071,22 @@ html.win-compact .page-search span { display: none; }
   animation: fade-in var(--ease-in) both;
 }
 .store-loading-title { font-size: 13px; color: var(--text-3); }
+
+/* A live Discord call, shown as a dot on the sidebar item. */
+.sb-call-dot {
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+}
+
+.sb-call-dot.hidden {
+  display: none;
+}
+
+/* The count sits after the dot when a call is running. */
+.sb-call-dot:not(.hidden) + .sb-count {
+  margin-left: 8px;
+}

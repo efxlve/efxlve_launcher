@@ -19,6 +19,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_decorations` | `appSetDecorations({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_fullscreen` | `appSetFullscreen({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_minimize_to_tray` | `appSetMinimizeToTray({ ... })` | `src-tauri/src/main.rs` |
+| `app_set_taskbar_badge` | `appSetTaskbarBadge({ ... })` | `src-tauri/src/taskbar_badge.rs` |
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
 | `cloud_backup_delete_remote` | `cloudBackupDeleteRemote({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |

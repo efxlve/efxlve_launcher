@@ -37,6 +37,7 @@ import {
   type VerifyProgressEvent,
 } from "../../epic";
 import { localizeMessage, formatSyncStamp, setLanguage, t } from "../../i18n";
+import { noteDiscordMessage, setDiscordInCall } from "../../core/nav";
 import { eglLauncherPresent } from "../../egl-removal";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
@@ -800,7 +801,16 @@ export async function initApp(hooks: {
       if (title) pushNotification({ kind: "error", title: t("notif.cloudSyncFailed", { title }), body: detail, appName: event.payload.id });
     });
 
-    await listen("steam-library-changed", () => {
+    // Discord: a message raises the sidebar count, and the overlay's own call
+  // raises a dot; opening the page clears the count (like the real client).
+  await listen("discord-sdk-message", () => {
+    noteDiscordMessage();
+  });
+  await listen<{ state: string }>("discord-sdk-call", (event) => {
+    setDiscordInCall(event.payload.state === "active");
+  });
+
+  await listen("steam-library-changed", () => {
       void refreshSteamInstalled();
     });
 

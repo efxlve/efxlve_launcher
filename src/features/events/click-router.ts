@@ -49,6 +49,7 @@ import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, spot
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import {
+  clearDiscordUnread,
   navGoBack,
   pushNavHistory,
   updateNavHistoryUi,
@@ -227,6 +228,7 @@ document.addEventListener("click", (e) => {
     // Re-clicking Library while the grid is already on screen must not rebuild
     // it: a full render re-requests every cover and drops the scroll position.
     if (targetView === "library" && S.view === "library") return;
+    if (targetView === "discord") clearDiscordUnread();
     const settingsSection = targetView === "settings"
       ? ((t.dataset.settingsSection as import("../../core/types").SettingsSection | undefined) || "account")
       : undefined;
