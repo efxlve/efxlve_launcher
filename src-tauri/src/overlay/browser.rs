@@ -80,7 +80,9 @@ fn emit_tabs(app: &AppHandle) {
             active: id == active,
         })
         .collect();
-    let _ = app.emit_to(WINDOW_LABEL, "overlay-browser-tabs", TabListPayload { tabs });
+    let payload = TabListPayload { tabs };
+    let _ = app.emit_to(WINDOW_LABEL, "overlay-browser-tabs", payload.clone());
+    let _ = app.emit("overlay-browser-tabs", payload);
 }
 
 fn remember_url(id: u32, url: &str) {
@@ -223,12 +225,12 @@ pub async fn overlay_browser_new_tab(
             if let Some(tab) = tab {
                 remember_url(tab, url.as_str());
             }
-            let _ = app_nav.emit_to(
-                WINDOW_LABEL,
-                "overlay-browser-url",
-                serde_json::json!({ "id": tab.unwrap_or(0), "url": url.as_str() }),
-            );
-            let _ = app_nav.emit_to(WINDOW_LABEL, "overlay-browser-tabs", tab_list_payload());
+            let payload_url = serde_json::json!({ "id": tab.unwrap_or(0), "url": url.as_str() });
+            let _ = app_nav.emit_to(WINDOW_LABEL, "overlay-browser-url", payload_url.clone());
+            let _ = app_nav.emit("overlay-browser-url", payload_url);
+            let payload_tabs = tab_list_payload();
+            let _ = app_nav.emit_to(WINDOW_LABEL, "overlay-browser-tabs", payload_tabs.clone());
+            let _ = app_nav.emit("overlay-browser-tabs", payload_tabs);
             true
         })        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny);
 
@@ -295,6 +297,7 @@ pub fn overlay_browser_close_tab(app: AppHandle, id: u32, x: f64, y: f64, width:
     if remaining.is_empty() {
         set_active(0);
         overlay_browser_close(app.clone());
+        emit_tabs(&app);
         return;
     }
     if active_id() == id {

@@ -96,14 +96,13 @@ type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" |
 const BROWSER_TAB_ENABLED = true;
 
 const TABS: { id: TabId; icon: IconName; key: string }[] = [
-  { id: "home", icon: "layers", key: "overlay.tabHome" },
   { id: "perf", icon: "cpu", key: "overlay.tabPerformance" },
-  { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
-  { id: "notes", icon: "edit", key: "overlay.tabNotes" },
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
+  { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "browser", icon: "globe", key: "overlay.tabBrowser" },
+  { id: "notes", icon: "edit", key: "overlay.tabNotes" },
   { id: "settings", icon: "settings", key: "overlay.tabSettings" },
 ];
 
@@ -115,14 +114,6 @@ function visibleTabs(): typeof TABS {
       (tab.id !== "music" || spotifyPageVisible()) &&
       (tab.id !== "discord" || discordPageVisible()),
   );
-}
-
-function dockButtonHtml(tab: (typeof TABS)[number]): string {
-  return `
-    <button class="ov-dock-btn" data-ov-tab="${tab.id}" title="${esc(t(tab.key))}">
-      ${icon(tab.icon, 16)}
-      <span>${esc(t(tab.key))}</span>
-    </button>`;
 }
 
 /* ---------- State ---------- */
@@ -386,8 +377,7 @@ function updateFpsNotice(): void {
   if (notices.length === 0) {
     // The view rendered before the first sample; re-render it so the notice
     // exists. Notices in other (hidden) views never block the active one.
-    if (activeTab === "home") renderHomeSafe();
-    else if (activeTab === "perf") renderPerf();
+    if (isWidgetOpen("perf")) renderPerf();
     return;
   }
   notices.forEach((el) => {
@@ -406,85 +396,317 @@ async function enableFps(): Promise<void> {
   refreshFpsNotices();
 }
 
+/* ---------- Xbox Game Bar Floating Widget System ---------- */
+
+const DEFAULT_WIDGETS: TabId[] = ["perf", "shots", "music"];
+let openWidgets = new Set<TabId>();
+
+function loadOpenWidgets(): Set<TabId> {
+  try {
+    const raw = localStorage.getItem("efxlve-overlay-widgets");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return new Set(parsed.filter((id) => TABS.some((t) => t.id === id)) as TabId[]);
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return new Set(DEFAULT_WIDGETS);
+}
+
+function saveOpenWidgets(): void {
+  localStorage.setItem("efxlve-overlay-widgets", JSON.stringify([...openWidgets]));
+}
+
+function isWidgetOpen(tab: TabId): boolean {
+  return openWidgets.has(tab);
+}
+
+interface WidgetPos {
+  x: number;
+  y: number;
+}
+
+function getDefaultWidgetPos(tab: TabId): WidgetPos {
+  const winW = typeof window !== "undefined" ? window.innerWidth || 1920 : 1920;
+  const winH = typeof window !== "undefined" ? window.innerHeight || 1080 : 1080;
+  switch (tab) {
+    case "perf":
+      return { x: 24, y: 72 };
+    case "shots":
+      return { x: 24, y: Math.min(480, winH - 360) };
+    case "music":
+      return { x: Math.max(24, winW - 390), y: 72 };
+    case "discord":
+      return { x: Math.max(24, winW - 440), y: 72 };
+    case "ach":
+      return { x: Math.max(24, Math.min(380, winW - 420)), y: 72 };
+    case "browser":
+      return { x: Math.max(24, Math.floor((winW - 500) / 2)), y: 80 };
+    case "notes":
+      return { x: Math.max(24, winW - 360), y: Math.min(480, winH - 380) };
+    case "settings":
+      return { x: Math.max(24, Math.floor((winW - 440) / 2)), y: 90 };
+    default:
+      return { x: 100, y: 100 };
+  }
+}
+
+function loadWidgetPos(tab: TabId): WidgetPos {
+  try {
+    const raw = localStorage.getItem(`efxlve-ov-pos-${tab}`);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { x?: number; y?: number };
+      if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+        const winW = window.innerWidth || 1920;
+        const winH = window.innerHeight || 1080;
+        const clampedX = Math.max(8, Math.min(winW - 120, parsed.x));
+        const clampedY = Math.max(8, Math.min(winH - 60, parsed.y));
+        return { x: clampedX, y: clampedY };
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return getDefaultWidgetPos(tab);
+}
+
+function saveWidgetPos(tab: TabId, pos: WidgetPos): void {
+  localStorage.setItem(`efxlve-ov-pos-${tab}`, JSON.stringify(pos));
+}
+
+let highestZIndex = 100;
+
+function bringToFront(tab: TabId): void {
+  activeTab = tab;
+  const widget = document.getElementById(`ov-widget-${tab}`);
+  if (widget) {
+    highestZIndex += 1;
+    widget.style.zIndex = String(highestZIndex);
+  }
+}
+
+function renderWidgetContent(tab: TabId): void {
+  if (launcherMode && GAME_ONLY_TABS.includes(tab)) {
+    const el = viewEl(tab);
+    if (el) el.innerHTML = noGameStateHtml(tab);
+    return;
+  }
+  if (tab === "perf") renderPerf();
+  else if (tab === "ach") void loadAchievements();
+  else if (tab === "shots") void loadScreenshots();
+  else if (tab === "notes") renderNotes();
+  else if (tab === "music") {
+    renderMusicTab();
+    void refreshMedia();
+  } else if (tab === "discord") {
+    renderDiscord();
+    void invoke("discord_voice_watch_start").catch(() => undefined);
+    void refreshWebVoice();
+    void refreshSdkState();
+  } else if (tab === "browser") {
+    renderBrowser();
+  } else if (tab === "settings") {
+    renderSettings();
+  }
+}
+
+function openWidget(tab: TabId, render = true): void {
+  openWidgets.add(tab);
+  saveOpenWidgets();
+
+  const widget = document.getElementById(`ov-widget-${tab}`);
+  if (widget) {
+    widget.style.display = "flex";
+    bringToFront(tab);
+  }
+
+  const toggleBtn = document.querySelector<HTMLElement>(`[data-ov-widget-toggle="${tab}"]`);
+  if (toggleBtn) toggleBtn.classList.add("active");
+
+  if (render) renderWidgetContent(tab);
+
+  if (tab === "discord") {
+    void invoke("discord_voice_watch_start").catch(() => undefined);
+    void refreshWebVoice();
+    void refreshSdkState();
+  } else if (tab === "music" && !spotifyEngineOn) {
+    void startSpotifyEngine(false);
+  }
+}
+
+function closeWidget(tab: TabId): void {
+  openWidgets.delete(tab);
+  saveOpenWidgets();
+
+  const widget = document.getElementById(`ov-widget-${tab}`);
+  if (widget) widget.style.display = "none";
+
+  const toggleBtn = document.querySelector<HTMLElement>(`[data-ov-widget-toggle="${tab}"]`);
+  if (toggleBtn) toggleBtn.classList.remove("active");
+
+  if (tab === "discord" && !isWidgetOpen("discord")) {
+    void invoke("discord_voice_watch_stop").catch(() => undefined);
+  }
+}
+
+function toggleWidget(tab: TabId): void {
+  if (isWidgetOpen(tab)) {
+    closeWidget(tab);
+  } else {
+    openWidget(tab);
+  }
+}
+
+let draggingTab: TabId | null = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let widgetStartLeft = 0;
+let widgetStartTop = 0;
+let draggingInitialized = false;
+
+function initWidgetDragging(): void {
+  if (draggingInitialized) return;
+  draggingInitialized = true;
+
+  document.addEventListener("mousedown", (e) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    const widget = target.closest<HTMLElement>(".ov-widget");
+    if (widget && widget.dataset.widgetId) {
+      bringToFront(widget.dataset.widgetId as TabId);
+    }
+
+    const header = target.closest<HTMLElement>("[data-widget-drag]");
+    if (!header) return;
+
+    if (target.closest("button, input, [data-ov-toggle], [data-ov-widget-close], a")) return;
+
+    const tabId = header.dataset.widgetDrag as TabId | undefined;
+    if (!tabId) return;
+
+    const el = document.getElementById(`ov-widget-${tabId}`);
+    if (!el) return;
+
+    draggingTab = tabId;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    widgetStartLeft = el.offsetLeft;
+    widgetStartTop = el.offsetTop;
+    header.style.cursor = "grabbing";
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!draggingTab) return;
+    const el = document.getElementById(`ov-widget-${draggingTab}`);
+    if (!el) return;
+
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+
+    const winW = window.innerWidth || 1920;
+    const winH = window.innerHeight || 1080;
+    const width = el.offsetWidth || 320;
+
+    const newX = Math.max(8, Math.min(winW - width - 8, widgetStartLeft + dx));
+    const newY = Math.max(8, Math.min(winH - 44, widgetStartTop + dy));
+
+    el.style.left = `${newX}px`;
+    el.style.top = `${newY}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!draggingTab) return;
+    const el = document.getElementById(`ov-widget-${draggingTab}`);
+    if (el) {
+      const header = el.querySelector<HTMLElement>("[data-widget-drag]");
+      if (header) header.style.cursor = "grab";
+      saveWidgetPos(draggingTab, { x: el.offsetLeft, y: el.offsetTop });
+    }
+    draggingTab = null;
+  });
+}
+
 /* ---------- Shell HTML Template ---------- */
 
 function shellHtml(): string {
+  const hudActive = localStorage.getItem(HUD_KEY) === "true";
+  const tabs = visibleTabs();
   return `
     <div class="ov" id="ov-shell">
-      <!-- Top Header -->
-      <header class="ov-header">
-        <div class="ov-header-left">
-          <div class="ov-game-cover" id="ov-game-cover">
-            ${icon("gamepad-2", 20)}
+      <!-- Floating Top Widget Bar (Xbox Game Bar style) -->
+      <header class="ov-topbar" id="ov-topbar">
+        <div class="ov-topbar-game" id="ov-topbar-game">
+          <div class="ov-topbar-badge" id="ov-topbar-badge">
+            ${icon("gamepad-2", 15)}
           </div>
-          <div class="ov-game-meta">
-            <h1 class="ov-game-title" id="ov-game-title">—</h1>
-            <div class="ov-game-sub" id="ov-game-sub"></div>
-          </div>
+          <span class="ov-topbar-title" id="ov-game-title">—</span>
         </div>
 
-        <div class="ov-header-center">
-          <div class="ov-clock">
-            <span id="ov-clock-time">00:00</span><span class="ov-clock-sec" id="ov-clock-sec">:00</span>
-          </div>
-          <div class="ov-session-pill">
-            ${icon("clock", 12)} <span id="ov-session-text">0m</span>
-          </div>
+        <div class="ov-topbar-divider"></div>
+
+        <div class="ov-topbar-widgets" id="ov-topbar-widgets">
+          ${tabs.map((tab) => `
+            <button class="ov-topbar-btn ${isWidgetOpen(tab.id) ? "active" : ""}" data-ov-widget-toggle="${tab.id}" title="${esc(t(tab.key))}">
+              ${icon(tab.icon, 15)}
+              <span class="ov-topbar-btn-label">${esc(t(tab.key))}</span>
+            </button>
+          `).join("")}
         </div>
 
-        <div class="ov-header-right">
-          <div class="ov-controller-badge" id="ov-controller-badge" style="display:none">
-            ${icon("gamepad-2", 14)} <span id="ov-controller-name">Controller</span>
-          </div>
-          <button class="btn ghost small" data-ov="browser-open" title="${esc(t("overlay.tabBrowser"))}">
-            ${icon("globe", 14)}
-            <span>${esc(t("overlay.tabBrowser"))}</span>
-          </button>
-          <button class="btn ov-btn-resume" data-ov="close" title="${esc(t("common.close"))}">
-            <span>${esc(t("common.close"))}</span>
-            <kbd class="kbd">Esc</kbd>
-            <span class="ov-pad-b">Ⓑ</span>
-          </button>
+        <div class="ov-topbar-divider"></div>
+
+        <div class="ov-topbar-clock">
+          <span id="ov-clock-time">00:00</span><span class="ov-clock-sec" id="ov-clock-sec">:00</span>
         </div>
+
+        <div class="ov-topbar-divider"></div>
+
+        <button class="ov-topbar-btn ov-topbar-close" data-ov="close" title="${esc(t("common.close"))}">
+          ${icon("x", 15)}
+        </button>
       </header>
 
-      <!-- Main Content Area -->
-      <main class="ov-main" id="ov-main">
-        <section class="ov-view" data-ov-view="home"></section>
-        <section class="ov-view" data-ov-view="perf"></section>
-        <section class="ov-view" data-ov-view="ach"></section>
-        <section class="ov-view" data-ov-view="shots"></section>
-        <section class="ov-view" data-ov-view="notes"></section>
-        <section class="ov-view" data-ov-view="music"></section>
-        <section class="ov-view" data-ov-view="discord"></section>
-        <section class="ov-view" data-ov-view="browser"></section>
-        <section class="ov-view" data-ov-view="settings"></section>
-      </main>
-
-      <!-- Floating Quick-Access Dock -->
-      <nav class="ov-dock">
-        <span class="ov-bumper-hint ov-bumper-lb">LB</span>
-        <div class="ov-dock-items" id="ov-dock-items">
-          ${visibleTabs().map(dockButtonHtml).join("")}
-        </div>
-        <span class="ov-bumper-hint ov-bumper-rb">RB</span>
-      </nav>
+      <!-- Floating Widgets Container -->
+      <div class="ov-widgets-container" id="ov-widgets-container">
+        ${TABS.map((tab) => `
+          <section class="ov-widget" id="ov-widget-${tab.id}" data-widget-id="${tab.id}">
+            <header class="ov-widget-header" data-widget-drag="${tab.id}">
+              <div class="ov-widget-title">
+                ${icon(tab.icon, 14)}
+                <span>${esc(t(tab.key))}</span>
+              </div>
+              <div class="ov-widget-header-actions">
+                ${tab.id === "perf" ? `
+                  <button class="ov-widget-tool-btn${hudActive ? " is-pinned" : ""}" data-ov-toggle="hud-btn" title="${esc(t("overlay.hudTitle"))}">
+                    ${icon("monitor", 13)}
+                  </button>
+                ` : ""}
+                <button class="ov-widget-tool-btn ov-widget-close-btn" data-ov-widget-close="${tab.id}" title="${esc(t("common.close"))}">
+                  ${icon("x", 13)}
+                </button>
+              </div>
+            </header>
+            <div class="ov-widget-body" id="ov-widget-${tab.id}-body" data-ov-view="${tab.id}"></div>
+          </section>
+        `).join("")}
+      </div>
 
       <!-- Bottom Status & Hints -->
-      <footer class="ov-footer">
-        <div class="ov-footer-left">
-          <span class="keyboard-hints">
-            <kbd class="kbd">Shift</kbd>+<kbd class="kbd">Tab</kbd> ${esc(t("overlay.hotkeyHint"))}
-            · ${esc(t("overlay.hintArrows"))} · ${esc(t("overlay.hintEnter"))}
-          </span>
-          <span class="gamepad-hints" style="display:none">
-            <span class="ov-glyph-pill">Ⓐ ${esc(t("overlay.padSelect"))}</span>
-            <span class="ov-glyph-pill">Ⓑ ${esc(t("overlay.padBack"))}</span>
-            <span class="ov-glyph-pill">LB/RB ${esc(t("overlay.padTabs"))}</span>
-            <span class="ov-glyph-pill">☰ ${esc(t("overlay.padClose"))}</span>
-          </span>
-        </div>
-        <div class="ov-footer-right" id="ov-foot-store"></div>
+      <footer class="ov-footer" id="ov-footer">
+        <span class="keyboard-hints">
+          <kbd class="kbd">Shift</kbd>+<kbd class="kbd">Tab</kbd> ${esc(t("overlay.hotkeyHint"))} · <kbd class="kbd">Esc</kbd> ${esc(t("common.close"))}
+        </span>
+        <span class="gamepad-hints" style="display:none">
+          <span class="ov-glyph-pill">Ⓐ ${esc(t("overlay.padSelect"))}</span>
+          <span class="ov-glyph-pill">Ⓑ ${esc(t("overlay.padBack"))}</span>
+          <span class="ov-glyph-pill">LB/RB ${esc(t("overlay.padTabs"))}</span>
+          <span class="ov-glyph-pill">☰ ${esc(t("overlay.padClose"))}</span>
+        </span>
       </footer>
 
       <!-- Screenshot Lightbox Modal -->
@@ -501,7 +723,10 @@ function shellHtml(): string {
 }
 
 function viewEl(tab: TabId): HTMLElement | null {
-  return document.querySelector<HTMLElement>(`[data-ov-view="${tab}"]`);
+  return (
+    document.getElementById(`ov-widget-${tab}-body`) ||
+    document.querySelector<HTMLElement>(`[data-ov-view="${tab}"]`)
+  );
 }
 
 /** Frame-time canvas plus the "waiting for data" label over it. */
@@ -524,63 +749,12 @@ function updatePerfEmptyStates(): void {
 function setTab(tab: TabId, fromOpen = false): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
-  // The Discord tab owns the full content area (no page padding, no outer
-  // scroll), so the shell carries the active tab; the hint bar follows it.
-  // The attribute must not be `data-ov-tab`: the click handler looks that up
-  // for the dock buttons, and a shell-level match would swallow every click.
-  document.getElementById("ov-shell")?.setAttribute("data-ov-active-tab", tab);
-  refreshFooterHints();
-  // The voice worker lives only while its tab is visible (idle zero cost).
-  if (tab === "discord") {
-    void invoke("discord_voice_watch_start").catch(() => undefined);
-    void refreshWebVoice();
-    void refreshSdkState();
-  } else {
-    void invoke("discord_voice_watch_stop").catch(() => undefined);
-  }
-  // The music tab exists to control playback: connect instead of asking first.
-  if (tab === "music" && !spotifyEngineOn) void startSpotifyEngine(false);
-
-  document.querySelectorAll<HTMLElement>("[data-ov-tab]").forEach((el) => {
-    el.classList.toggle("active", el.dataset.ovTab === tab);
-  });
-  document.querySelectorAll<HTMLElement>("[data-ov-view]").forEach((el) => {
-    el.classList.toggle("active", el.dataset.ovView === tab);
-  });
-
-  // Without a running game these tabs have nothing to show: a single friendly
-  // empty state replaces the game-only surfaces.
-  if (launcherMode && GAME_ONLY_TABS.includes(tab)) {
-    const el = viewEl(tab);
-    if (el) el.innerHTML = noGameStateHtml(tab);
+  if (tab === "home") {
+    for (const t of DEFAULT_WIDGETS) openWidget(t);
     return;
   }
-
-  if (tab === "home") renderHome();
-  else if (tab === "perf") renderPerf();
-  else if (tab === "ach") void loadAchievements();
-  else if (tab === "shots") void loadScreenshots();
-  else if (tab === "notes") renderNotes();
-  else if (tab === "music") {
-    renderMusicTab();
-    void refreshMedia();
-  } else if (tab === "discord") renderDiscord();
-  else if (tab === "browser") {
-    renderBrowser();
-    // Picking the tab is the gesture: the window opens over the game (Google
-    // for a fresh session, or the page that was open). A panel that is merely
-    // opening (`fromOpen`) never reopens it: that path re-entered here, so the
-    // panel and the browser kept triggering each other — a show/hide loop.
-    if (!fromOpen && !document.hidden) {
-      void invoke("overlay_browser_open", { url: null }).catch((e: unknown) => {
-        const desc = viewEl("browser")?.querySelector<HTMLElement>(".ov-empty-desc");
-        if (desc) desc.textContent = localizeMessage(String(e));
-      });
-    }
-  }
-  else if (tab === "settings") renderSettings();
-
-  if (tab === "perf" || tab === "home") drawPerfCanvas();
+  openWidget(tab);
+  bringToFront(tab);
 }
 
 /** Tabs that only make sense with a running game. */
@@ -614,7 +788,7 @@ function updateClock(): void {
   if (timeEl) timeEl.textContent = `${hours}:${mins}`;
   if (secEl) secEl.textContent = `:${secs}`;
   if (sessionEl) sessionEl.textContent = formatSessionTime(Date.now() - sessionStartEpoch);
-  if (activeTab === "music") paintSpotifyProgress();
+  if (isWidgetOpen("music")) paintSpotifyProgress();
 }
 
 /* ---------- Views Rendering ---------- */
@@ -971,14 +1145,7 @@ function updateMetricsUi(): void {
   const m = metrics;
   updateFpsNotice();
   updatePerfEmptyStates();
-  if (activeTab === "home" && viewEl("home")?.querySelector(".ov-card")) {
-    setText("ov-home-fps", m?.fps != null ? String(Math.round(m.fps)) : "—", m?.fps == null);
-    setText("ov-home-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : "", m?.frameMs == null);
-    setText("ov-home-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—", !m);
-    setText("ov-home-gpu", m?.gpu != null ? `${Math.round(m.gpu)}%` : "—", m?.gpu == null);
-    setText("ov-home-ram", m ? fmtMb(m.ramUsedMb) : "—", !m);
-    drawPerfCanvas();
-  } else if (activeTab === "perf" && document.getElementById("ov-perf-fps")) {
+  if (isWidgetOpen("perf") && document.getElementById("ov-perf-fps")) {
     setText("ov-perf-fps", m?.fps != null ? String(Math.round(m.fps)) : "—", m?.fps == null);
     setText("ov-perf-frame", m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms frame time` : "", m?.frameMs == null);
     setText("ov-perf-cpu", m ? `${Math.round(m.gameCpu ?? m.cpu)}%` : "—", !m);
@@ -1220,7 +1387,7 @@ async function refreshMedia(): Promise<void> {
   const m = getOverlayMedia();
   if (m.active !== lastMediaActive) {
     lastMediaActive = m.active;
-    if (activeTab === "music") renderMusicTab();
+    if (isWidgetOpen("music")) renderMusicTab();
     else renderHomeSafe();
     return;
   }
@@ -1993,7 +2160,7 @@ function noteIncoming(
     replyUnread.set(friendId, (replyUnread.get(friendId) ?? 0) + 1);
   }
   void notifyMessage(friendId, text);
-  if (activeTab === "discord" && !document.hidden) repaintDiscord();
+  if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
 }
 
 /** A desktop notification for a message that arrived while the panel was not
@@ -2003,7 +2170,7 @@ function noteIncoming(
  * mobile-only), so the sender is preselected instead: opening the panel lands
  * straight in their conversation. */
 async function notifyMessage(friendId: string, text: string): Promise<void> {
-  const showing = activeTab === "discord" && !document.hidden && replyTarget?.id === friendId;
+  const showing = isWidgetOpen("discord") && !document.hidden && replyTarget?.id === friendId;
   if (showing) return;
   try {
     let granted = await isPermissionGranted();
@@ -2134,7 +2301,7 @@ function mergeHistory(friendId: string, messages: HistoryMessage[]): void {
   }
   if (!added) return;
   if (replyLog.length > 400) replyLog.splice(0, replyLog.length - 400);
-  if (activeTab === "discord" && !document.hidden) repaintDiscord();
+  if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
 }
 
 /* --- Area 1: the picker column (friends, or one takeover) --- */
@@ -2399,7 +2566,7 @@ async function refreshSdkState(): Promise<void> {
     if (state) sdkState = state;
     const friends = await invoke<DiscordFriendsState>("discord_sdk_friends");
     if (friends) sdkFriends = friends;
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
     refreshFooterHints();
   } catch {
     // Older hosts have no Social SDK commands; the other sources stay.
@@ -2607,7 +2774,7 @@ function captureDefaultHints(): void {
 function refreshFooterHints(): void {
   const left = document.querySelector<HTMLElement>(".ov-footer .keyboard-hints");
   if (!left) return;
-  if (activeTab === "discord" && replyTarget && sdkState.status === "ready") {
+  if (isWidgetOpen("discord") && replyTarget && sdkState.status === "ready") {
     left.innerHTML =
       `<span class="dc-ctx">${esc(t("overlay.discordTypingTo", { name: replyTarget.name }))}</span>` +
       ` · <kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))}` +
@@ -2623,7 +2790,7 @@ async function refreshWebVoice(): Promise<void> {
     const state = await invoke<WebVoiceState | null>("discord_web_voice_state");
     if (state) {
       webVoice = state;
-      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
     }
   } catch {
     // Older hosts have no web voice bridge; the RPC source stays.
@@ -2776,6 +2943,42 @@ function wireEvents(): void {
     const lightbox = document.getElementById("ov-lightbox");
     if (lightbox && target === lightbox) {
       hideLightbox();
+      return;
+    }
+
+    // Backdrop click outside any widget and topbar closes the overlay
+    if (target.id === "ov-shell" || target.id === "ov-widgets-container") {
+      void invoke("overlay_hide");
+      return;
+    }
+
+    // Topbar widget toggle button
+    const widgetToggleBtn = target.closest<HTMLElement>("[data-ov-widget-toggle]");
+    if (widgetToggleBtn?.dataset.ovWidgetToggle) {
+      toggleWidget(widgetToggleBtn.dataset.ovWidgetToggle as TabId);
+      return;
+    }
+
+    // Widget header close button
+    const widgetCloseBtn = target.closest<HTMLElement>("[data-ov-widget-close]");
+    if (widgetCloseBtn?.dataset.ovWidgetClose) {
+      closeWidget(widgetCloseBtn.dataset.ovWidgetClose as TabId);
+      return;
+    }
+
+    // HUD Pin button
+    const hudBtn = target.closest<HTMLElement>('[data-ov-toggle="hud-btn"]');
+    if (hudBtn) {
+      const current = localStorage.getItem(HUD_KEY) === "true";
+      const next = !current;
+      localStorage.setItem(HUD_KEY, String(next));
+      void invoke("overlay_set_hud", { enabled: next });
+      document.querySelectorAll<HTMLElement>('[data-ov-toggle="hud-btn"]').forEach((b) => {
+        b.classList.toggle("is-pinned", next);
+      });
+      document.querySelectorAll<HTMLInputElement>('input[data-ov-toggle="hud"]').forEach((chk) => {
+        chk.checked = next;
+      });
       return;
     }
 
@@ -3121,18 +3324,21 @@ function getFocusableElements(): HTMLElement[] {
     items.push(node);
   };
 
-  document.querySelectorAll(".ov-dock-btn").forEach(push);
-  push(document.querySelector(".ov-btn-resume"));
+  document.querySelectorAll(".ov-topbar-btn").forEach(push);
+  push(document.querySelector(".ov-topbar-close"));
 
-  const activeView = document.querySelector<HTMLElement>(".ov-view.active");
-  activeView?.querySelectorAll<HTMLElement>(
-    "button, [data-ov-preview], [data-nav-row], .ov-card[data-nav-target], textarea, input",
-  ).forEach((el) => {
-    // Toggle switches hide their checkbox: the ring belongs on the label.
-    if (el instanceof HTMLInputElement && el.type === "checkbox") {
-      push(el.closest(".switch") ?? el);
-    } else {
-      push(el);
+  document.querySelectorAll<HTMLElement>(".ov-widget").forEach((w) => {
+    if (w.style.display !== "none") {
+      w.querySelectorAll<HTMLElement>(
+        "button, [data-ov-preview], [data-nav-row], .ov-card[data-nav-target], textarea, input",
+      ).forEach((el) => {
+        // Toggle switches hide their checkbox: the ring belongs on the label.
+        if (el instanceof HTMLInputElement && el.type === "checkbox") {
+          push(el.closest(".switch") ?? el);
+        } else {
+          push(el);
+        }
+      });
     }
   });
 
@@ -3148,7 +3354,7 @@ function focusElement(el: HTMLElement | null): void {
 }
 
 function dockTabButton(tab: TabId): HTMLElement | null {
-  return document.querySelector<HTMLElement>(`.ov-dock-btn[data-ov-tab="${tab}"]`);
+  return document.querySelector<HTMLElement>(`.ov-topbar-btn[data-ov-widget-toggle="${tab}"]`);
 }
 
 function focusDefault(): void {
@@ -3223,7 +3429,7 @@ function activateFocused(): void {
     el.focus();
     return;
   }
-  const switchesTab = el.matches("[data-nav-target], [data-ov-tab]");
+  const switchesTab = el.matches("[data-nav-target], [data-ov-tab], [data-ov-widget-toggle]");
   el.click();
   // A card or chevron that switched tabs hides the old view: the ring moves
   // to the new active dock button right away.
@@ -3240,16 +3446,17 @@ function cycleTab(delta: number): void {
   focusElement(dockTabButton(tabs[nextIdx].id));
 }
 
-/** Rebuilds the dock when the launcher's page visibility changed. */
+/** Rebuilds the topbar widgets when page visibility changed. */
 function refreshDock(): void {
-  const host = document.getElementById("ov-dock-items");
+  const host = document.getElementById("ov-topbar-widgets");
   if (!host) return;
   const tabs = visibleTabs();
-  const rendered = [...host.querySelectorAll<HTMLElement>("[data-ov-tab]")]
-    .map((el) => el.dataset.ovTab)
-    .join(",");
-  if (rendered === tabs.map((tab) => tab.id).join(",")) return;
-  host.innerHTML = tabs.map(dockButtonHtml).join("");
+  host.innerHTML = tabs.map((tab) => `
+    <button class="ov-topbar-btn ${isWidgetOpen(tab.id) ? "active" : ""}" data-ov-widget-toggle="${tab.id}" title="${esc(t(tab.key))}">
+      ${icon(tab.icon, 15)}
+      <span class="ov-topbar-btn-label">${esc(t(tab.key))}</span>
+    </button>
+  `).join("");
 }
 
 /** B / Esc: close the lightbox, leave the text box, go home, then close. */
@@ -3442,45 +3649,46 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     if (!root) return;
     root.innerHTML = shellHtml();
     wireEvents();
+    initWidgetDragging();
   }
   applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
 
   hideLightbox();
 
-  const { store } = splitKey(context.appName);
-  const titleEl = document.getElementById("ov-game-title");
-  const subEl = document.getElementById("ov-game-sub");
-  const storeEl = document.getElementById("ov-foot-store");
-  const sessionPill = document.querySelector<HTMLElement>(".ov-session-pill");
   const launcher = isLauncherContext(context);
   launcherMode = launcher;
 
+  const titleEl = document.getElementById("ov-game-title");
   if (titleEl) titleEl.textContent = launcher ? "Efxlve Launcher" : context.title || context.appName;
-  if (subEl) {
-    subEl.innerHTML = launcher
-      ? `<span class="ov-badge-pill">${icon("layers", 12)} <span>${esc(t("overlay.launcherLabel"))}</span></span>`
-      : `<span class="ov-badge-pill">${esc(storeLabel(store))}</span>`;
-  }
-  if (storeEl) {
-    storeEl.innerHTML = launcher
-      ? `<span>${esc(t("overlay.launcherLabel"))}</span>`
-      : `<span>${esc(storeLabel(store))}</span>`;
-  }
-  // No game session to time when the overlay runs over the launcher.
-  if (sessionPill) sessionPill.style.display = launcher ? "none" : "";
 
   updateClock();
-  // A page turned off in Settings since the last open: drop it from the dock
-  // and land on Home instead.
   refreshDock();
-  const tabs = visibleTabs();
-  setTab(tabs.some((tab) => tab.id === activeTab) ? activeTab : "home", true);
 
-  // Fill the dashboard cards in the background; the loads re-render home when
-  // they land (they do not block the open).
+  // Load and position open widgets
+  openWidgets = loadOpenWidgets();
+  for (const tab of TABS) {
+    const widget = document.getElementById(`ov-widget-${tab.id}`);
+    const toggleBtn = document.querySelector<HTMLElement>(`[data-ov-widget-toggle="${tab.id}"]`);
+    if (!widget) continue;
+
+    const pos = loadWidgetPos(tab.id);
+    widget.style.left = `${pos.x}px`;
+    widget.style.top = `${pos.y}px`;
+
+    const isOpen = openWidgets.has(tab.id);
+    widget.style.display = isOpen ? "flex" : "none";
+    if (toggleBtn) toggleBtn.classList.toggle("active", isOpen);
+
+    if (isOpen) {
+      renderWidgetContent(tab.id);
+    }
+  }
+
+  // Preload achievements and screenshots
+  const { store } = splitKey(context.appName);
   if (context.appName && store !== "game") {
-    void loadAchievements();
-    void loadScreenshots();
+    if (openWidgets.has("ach")) void loadAchievements();
+    if (openWidgets.has("shots")) void loadScreenshots();
   }
 
   void refreshMedia();
@@ -3500,6 +3708,7 @@ async function boot(): Promise<void> {
   if (root && !document.getElementById("ov-shell")) {
     root.innerHTML = shellHtml();
     wireEvents();
+    initWidgetDragging();
   }
 
   clockTimer = window.setInterval(updateClock, 1000);
@@ -3539,7 +3748,7 @@ async function boot(): Promise<void> {
       lastVoiceChannel = null;
       lastVoiceParticipants = [];
     }
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   await listen<DiscordFriendsState>("discord-friends-state", (event) => {
@@ -3551,23 +3760,23 @@ async function boot(): Promise<void> {
       lastFriends = [];
       lastFriendsPending = 0;
     }
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   await listen<WebVoiceState>("discord-web-voice", (event) => {
     webVoice = event.payload;
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   await listen<SdkState>("discord-sdk-state", (event) => {
     sdkState = event.payload;
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
     refreshFooterHints();
   });
 
   await listen<DiscordFriendsState>("discord-sdk-friends", (event) => {
     sdkFriends = event.payload;
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   // The send outcome lands in the log row: "Sending…" becomes "Sent", or the
@@ -3583,7 +3792,7 @@ async function boot(): Promise<void> {
       entry.error = event.payload.error;
       if (event.payload.messageId) entry.messageId = event.payload.messageId;
     }
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   // Messages the other side sends while the overlay is open, straight from the
@@ -3620,7 +3829,7 @@ async function boot(): Promise<void> {
   await listen<{ messageId: string }>("discord-sdk-message-deleted", (event) => {
     const before = replyLog.length;
     replyLog = replyLog.filter((item) => item.messageId !== event.payload.messageId);
-    if (replyLog.length !== before && activeTab === "discord" && !document.hidden) {
+    if (replyLog.length !== before && isWidgetOpen("discord") && !document.hidden) {
       repaintDiscord();
     }
   });
@@ -3652,7 +3861,7 @@ async function boot(): Promise<void> {
       if (!active && event.payload.error) {
         toast(t("overlay.discordSendFailed", { error: event.payload.error }), "err");
       }
-      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
     },
   );
 
@@ -3664,7 +3873,7 @@ async function boot(): Promise<void> {
       return;
     }
     pickerMode = "friends";
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   // The add-friend search: results, and the request outcome.
@@ -3674,7 +3883,7 @@ async function boot(): Promise<void> {
       if (event.payload.query !== searchQuery) return;
       searchResults = event.payload.users;
       searchRan = true;
-      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
     },
   );
 
@@ -3686,7 +3895,7 @@ async function boot(): Promise<void> {
     toast(t("overlay.discordRequestSent"), "");
     // Keep the row and mark it: a row that vanishes reads as "nothing happened".
     sentRequests.add(event.payload.username);
-    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
   });
 
   // A friend request answered: the row goes at once, and the relationship
@@ -3705,7 +3914,7 @@ async function boot(): Promise<void> {
         ),
         pending: Math.max(0, sdkFriends.pending - 1),
       };
-      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
     },
   );
 
@@ -3729,7 +3938,7 @@ async function boot(): Promise<void> {
           editStash.delete(entry.friendId);
         }
       }
-      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
       refreshFooterHints();
     },
   );

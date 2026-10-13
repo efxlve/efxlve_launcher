@@ -21,6 +21,7 @@
 }
 
 /* --- Backdrop: a flat scrim; the game stays visible through it. --- */
+/* --- Backdrop: a flat translucent scrim; the game stays clearly visible through it. --- */
 .ov {
   position: fixed;
   inset: 0;
@@ -28,178 +29,310 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(0, 0, 0, 0.82);
+  background: rgba(0, 0, 0, 0.42);
   overflow: hidden;
   animation: fade-in 140ms ease-out;
 }
 
-.ov.ov-opacity-90 { background: rgba(0, 0, 0, 0.84); }
-.ov.ov-opacity-75 { background: rgba(0, 0, 0, 0.72); }
-.ov.ov-opacity-60 { background: rgba(0, 0, 0, 0.58); }
+.ov.ov-opacity-90 { background: rgba(0, 0, 0, 0.54); }
+.ov.ov-opacity-75 { background: rgba(0, 0, 0, 0.36); }
+.ov.ov-opacity-60 { background: rgba(0, 0, 0, 0.22); }
 
-/* --- Top Header --- */
-.ov-header {
-  height: 56px;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--line);
+/* --- Top Floating Widget Bar (Xbox Game Bar style) --- */
+.ov-topbar {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 42px;
+  border-radius: 21px;
   background: var(--surface-1);
-  flex-shrink: 0;
-  z-index: 50;
-}
-
-.ov-header-left {
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
-  flex: 1;
+  padding: 0 8px;
+  gap: 6px;
+  z-index: 1000;
+  user-select: none;
 }
 
-.ov-game-cover {
-  width: 34px;
-  height: 44px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.ov-game-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.ov-game-meta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ov-game-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text);
-}
-
-.ov-game-sub {
+.ov-topbar-game {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: var(--text-2);
+  padding: 0 8px 0 4px;
+  max-width: 180px;
 }
 
-/* Same shape as the launcher's .chip. */
-.ov-badge-pill {
-  display: inline-flex;
+.ov-topbar-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.ov-topbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+.ov-topbar-widgets {
+  display: flex;
   align-items: center;
   gap: 4px;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: 4px;
-  background: var(--surface-2);
+}
+
+.ov-topbar-btn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 15px;
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-2);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ov-header-center {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
 }
 
-.ov-clock {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.02em;
+.ov-topbar-btn:hover {
+  background: var(--surface-2);
   color: var(--text);
 }
 
-.ov-clock-sec {
+.ov-topbar-btn.active {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ov-topbar-btn-label {
   font-size: 12px;
+  white-space: nowrap;
+}
+
+.ov-topbar-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 0 8px;
+  display: flex;
+  align-items: baseline;
+}
+
+.ov-topbar-clock .ov-clock-sec {
+  font-size: 11px;
   color: var(--text-3);
   font-weight: 500;
 }
 
-.ov-session-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-3);
+.ov-topbar-close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
 }
 
-.ov-header-right {
+.ov-topbar-close:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* --- Floating Widgets Container & Window Box --- */
+.ov-widgets-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.ov-widget {
+  position: absolute;
+  pointer-events: auto;
+  display: none;
+  flex-direction: column;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  user-select: none;
+}
+
+.ov-widget-header {
+  height: 36px;
+  padding: 0 10px 0 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
-  justify-content: flex-end;
+  justify-content: space-between;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  cursor: grab;
+  flex-shrink: 0;
+  border-radius: var(--r-md) var(--r-md) 0 0;
 }
 
-/* Green means online: a controller is connected right now. */
-.ov-controller-badge {
-  display: inline-flex;
+.ov-widget-title {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: 4px;
-  background: var(--ok-tint);
-  color: var(--ok);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.ov-btn-resume {
-  height: 32px;
-}
-
-.ov-pad-b {
-  display: none;
+  gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--text);
 }
 
-/* --- Main Viewport --- */
-.ov-main {
-  flex: 1;
+.ov-widget-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ov-widget-tool-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+
+.ov-widget-tool-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ov-widget-tool-btn.is-pinned {
+  color: var(--ok);
+  background: var(--ok-tint);
+}
+
+.ov-widget-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.ov-widget-body {
+  padding: 12px 14px;
   overflow-y: auto;
-  padding: 24px 32px 96px;
-  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.ov-view {
+/* Hide redundant page title inside widget body since widget header has it */
+.ov-widget-body .ov-page-title {
   display: none;
-  max-width: 1280px;
-  margin: 0 auto;
 }
 
-.ov-view.active {
-  display: block;
-  animation: fade-in 140ms ease-out;
+/* Widget Dimensions */
+#ov-widget-perf {
+  width: 340px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-shots {
+  width: 340px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-music {
+  width: 360px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-discord {
+  width: 420px;
+  height: 520px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-ach {
+  width: 380px;
+  height: 480px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-browser {
+  width: 480px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-notes {
+  width: 340px;
+  height: 360px;
+  max-height: calc(100vh - 100px);
+}
+
+#ov-widget-settings {
+  width: 400px;
+  max-height: calc(100vh - 100px);
+}
+
+/* Widget Layout Adaptations */
+#ov-widget-perf-body .ov-dashboard {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+#ov-widget-perf-body .ov-card.ov-span-3 {
+  padding: 8px 10px !important;
+}
+
+#ov-widget-perf-body .ov-perf-hero {
+  margin-bottom: 8px !important;
+}
+
+#ov-widget-perf-body .ov-perf-val {
+  font-size: 26px !important;
+}
+
+#ov-widget-perf-body .ov-perf-canvas {
+  height: 70px !important;
+}
+
+#ov-widget-shots-body .ov-shots-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+}
+
+#ov-widget-notes-body .ov-notes-area {
+  height: 240px !important;
+  resize: none !important;
+}
+
+#ov-widget-browser-body .ov-browser-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
 }
 
 /* --- Modular Dashboard (Overview) --- */
@@ -740,19 +873,23 @@
 /* --- Footer Legend --- */
 .ov-footer {
   position: fixed;
-  bottom: 6px;
-  left: 0;
-  right: 0;
-  height: 18px;
-  padding: 0 20px;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
   font-size: 11px;
-  color: var(--text-3);
+  color: var(--text-2);
   pointer-events: none;
-  z-index: 40;
+  z-index: 1000;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  user-select: none;
 }
 
 .ov-footer-left,

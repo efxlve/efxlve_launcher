@@ -96,6 +96,7 @@ function closeTab(id: number): void {
 
 /** Hides the browser; the panel it was opened from is still there behind it. */
 function closeWindow(): void {
+  void getCurrentWindow().hide().catch(() => undefined);
   void invoke("overlay_browser_close").catch(() => undefined);
 }
 
@@ -145,13 +146,13 @@ function wire(): void {
     void invoke("overlay_browser_action", { action: act }).catch(() => undefined);
   });
 
-  // Belt and braces for the drag handles: the native attribute plus an explicit
-  // startDragging, so the window moves on every setup. Only the handle itself
-  // counts as a hit, exactly like the native check, so tabs stay clickable.
+  // Start window dragging on empty parts of chrome, drag strip or tab strip.
   document.addEventListener("mousedown", (event) => {
     const el = event.target as HTMLElement | null;
-    if (!el || !el.hasAttribute("data-tauri-drag-region") || el.closest("button, input, a")) return;
-    void getCurrentWindow().startDragging().catch(() => undefined);
+    if (!el || el.closest("button, input, a, .ov-browser-tab, .ov-browser-tab-new, .ov-browser-tab-x")) return;
+    if (el.closest(".ov-browser-drag, #ov-browser-chrome, #ov-browser-tabs")) {
+      void getCurrentWindow().startDragging().catch(() => undefined);
+    }
   });
 
   const input = addressInput();
