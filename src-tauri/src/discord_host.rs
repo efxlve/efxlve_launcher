@@ -89,6 +89,11 @@ static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 /// what raises the incoming-call notification.
 static CALL_RINGING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+/// The call-store report is a one-shot: it only matters while the reader is
+/// being built, and it would otherwise flood the log every tick.
+static CALL_DIAG_LOGGED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 /// Where a kept-alive child parks: far outside the client area, so nothing of
 /// it can show even if the platform rounds the size up, while the controller
 /// stays visible and the page (and its call) keeps running.
@@ -308,6 +313,15 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         let _ = app.emit("discord-web-call", serde_json::json!({ "from": caller }));
     } else if ringing == 0 && was_ringing {
         note_voice(app, "web call: stopped ringing".to_string());
+    }
+    // One line naming the call stores the client exposes, so the reader can be
+    // corrected without waiting for someone to ring.
+    if !CALL_DIAG_LOGGED.swap(true, Ordering::SeqCst) {
+        if let Some(diag) = report.get("callDiag").and_then(serde_json::Value::as_str) {
+            if !diag.is_empty() {
+                web_log(app, &format!("web call stores: {diag}"));
+            }
+        }
     }
     let via = report
         .get("via")

@@ -567,6 +567,32 @@
     }
   } catch (e) {}
 
+  // 7) Discovery: which call-ish stores exist and what they expose, logged
+  //    once per page load so the reader can be corrected without a live call.
+  if (!S.CallDiag) {
+    var storeNames = [];
+    try {
+      for (var storeKey in stores) {
+        if (!/call|ring/i.test(storeKey)) continue;
+        var probeStore = stores[storeKey];
+        var methods = [];
+        try {
+          var proto = Object.getPrototypeOf(probeStore) || {};
+          for (var methodName in proto) {
+            if (
+              /ring|call|incoming/i.test(methodName) &&
+              typeof probeStore[methodName] === "function"
+            ) {
+              methods.push(methodName);
+            }
+          }
+        } catch (e) {}
+        storeNames.push(storeKey + "[" + methods.slice(0, 8).join(",") + "]");
+      }
+    } catch (e) {}
+    S.CallDiag = storeNames.join(" ") || "none";
+  }
+
   return {
     ok: true,
     inCall: !!voice,
@@ -578,6 +604,7 @@
     pending: pending,
     channels: channels,
     call: call,
+    callDiag: S.CallDiag,
     me: { id: me.id, name: displayName(me, null) || me.username || "", avatar: me.avatar || "" },
     diag: diag,
   };
