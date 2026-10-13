@@ -2173,18 +2173,7 @@ function conversationColumnHtml(): string {
         }
       </div>
       <div class="conv-actions">
-        ${
-          callState.active
-            ? `<span class="conv-target-state">${icon("volume-2", 12)} ${esc(t("overlay.discordCallActive"))}</span>
-               <button class="action-btn" data-ov="discord-call-mute">${esc(callState.muted ? t("overlay.discordCallUnmute") : t("overlay.discordCallMute"))}</button>
-               <button class="action-btn" style="border-color:var(--err);color:var(--err)" data-ov="discord-call-end">${esc(t("overlay.discordCallEnd"))}</button>`
-            : `${
-                target
-                  ? `<button class="action-btn" data-ov="discord-call-start" data-id="${esc(target.id)}">${icon("volume-2", 12)} ${esc(t("overlay.discordCall"))}</button>`
-                  : ""
-              }
-               <button class="action-btn" data-ov="discord-picker" data-mode="status">${esc(t("overlay.discordStatusLabel"))}: ${esc(presenceWord(me?.status ?? "online"))}</button>`
-        }
+        <button class="action-btn" data-ov="discord-picker" data-mode="status">${esc(t("overlay.discordStatusLabel"))}: ${esc(presenceWord(me?.status ?? "online"))}</button>
       </div>
     </div>`;
   const log = target

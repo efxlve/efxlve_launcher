@@ -1284,20 +1284,6 @@ mod imp {
         }
     }
 
-    /// A rejected scope must not cost the whole connection: the first failure
-    /// retries with the SDK's own defaults.
-    static EXTRA_SCOPES_DROPPED: std::sync::atomic::AtomicBool =
-        std::sync::atomic::AtomicBool::new(false);
-    /// A stored session from before the voice-write request is refreshed once
-    /// interactively, so the call endpoint stops refusing without the person
-    /// having to clear anything by hand. The pump does it, never a callback.
-    static REAUTHORIZED_FOR_SCOPES: std::sync::atomic::AtomicBool =
-        std::sync::atomic::AtomicBool::new(false);
-    /// Set by the token callback when the session came back without the call
-    /// scope; the pump turns it into one authorization prompt.
-    static WANT_AUTHORIZE: std::sync::atomic::AtomicBool =
-        std::sync::atomic::AtomicBool::new(false);
-
     /// Starts (or restarts) the interactive flow: PKCE challenge, then the
     /// authorize prompt in the Discord client — or the browser when it is not
     /// running. Used on the first run and when a refresh fails.
@@ -1307,15 +1293,12 @@ mod imp {
             ptr: ptr::null_mut(),
             size: 0,
         };
+        // The SDK's own communication scopes: friends, messages and voice
+        // reads. The DM call endpoint wants a write scope this application may
+        // not request, and asking caused an extra prompt for nothing, so the
+        // call button stays out of the overlay.
         Discord_Client_GetDefaultCommunicationScopes(&mut scopes);
-        // The defaults cover friends, messages and voice reads; the DM call
-        // endpoint wants the write side too, and asking is the only way to know
-        // whether this application may have it.
-        let scopes_text = if EXTRA_SCOPES_DROPPED.load(Ordering::SeqCst) {
-            string_of(scopes)
-        } else {
-            format!("{} rpc.voice.write", string_of(scopes))
-        };
+        let scopes_text = string_of(scopes);
         sdk_note!("requesting scopes: {scopes_text}");
 
         let mut verifier: CodeVerifier = std::mem::zeroed();
@@ -1358,15 +1341,6 @@ mod imp {
         if !Discord_ClientResult_Successful(result) {
             let error = result_error(result);
             sdk_note!("authorize failed: {error}");
-            // A scope this application may not request would block everything:
-            // drop it once and ask again with the SDK's defaults.
-            if !EXTRA_SCOPES_DROPPED.swap(true, Ordering::SeqCst) {
-                sdk_note!("retrying the authorization without the extra scope");
-                let client = flow.client;
-                free_flow(user);
-                begin_authorize(client);
-                return;
-            }
             set_state("error", Some(error));
             free_flow(user);
             return;
@@ -1417,23 +1391,12 @@ mod imp {
         }
         let access_text = string_of(access);
         let refresh_text = string_of(refresh);
-        let scope_text = string_of(scope);
         sdk_note!(
-            "token received ({} bytes, refresh {} bytes, {expires_in}s, scope {scope_text})",
+            "token received ({} bytes, refresh {} bytes, {expires_in}s, scope {})",
             access_text.len(),
             refresh_text.len(),
+            string_of(scope)
         );
-        // A session from before the voice-write request comes back without it:
-        // ask once, so calls stop being refused — but never from inside the
-        // SDK's own callback, which the pump does instead.
-        let has_voice_write = scope_text.split_whitespace().any(|item| item == "rpc.voice.write");
-        if !has_voice_write
-            && !EXTRA_SCOPES_DROPPED.load(Ordering::SeqCst)
-            && !REAUTHORIZED_FOR_SCOPES.swap(true, Ordering::SeqCst)
-        {
-            sdk_note!("stored session lacks rpc.voice.write; approval will be asked once");
-            WANT_AUTHORIZE.store(true, Ordering::SeqCst);
-        }
         if !refresh_text.is_empty() {
             let expires_at = now_secs() + expires_in.max(0) as u64;
             save_session(&SdkSession {
@@ -2468,12 +2431,6 @@ mod imp {
                             ptr::null_mut(),
                         );
                     }
-                }
-                // A missing call scope is fixed here, between callbacks: asking
-                // for approval from inside one would nest the SDK's own call.
-                if WANT_AUTHORIZE.swap(false, Ordering::SeqCst) {
-                    sdk_note!("asking for the call scope now");
-                    begin_authorize(client_ptr);
                 }
                 // A call waiting for its channel starts as soon as the history
                 // fetch has handed the id over.
