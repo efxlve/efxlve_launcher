@@ -2214,7 +2214,9 @@ mod imp {
                                 continue;
                             };
                             // One call at a time: a second one replaces the
-                            // first instead of leaking its handle.
+                            // first instead of leaking its handle. The handle is
+                            // not dropped — the SDK still owns the call object
+                            // until the end callback lands.
                             if let Some(mut previous) = active_call.take() {
                                 let previous_channel = Discord_Call_GetChannelId(&mut previous);
                                 Discord_Client_EndCall(
@@ -2224,7 +2226,6 @@ mod imp {
                                     None,
                                     ptr::null_mut(),
                                 );
-                                Discord_Call_Drop(&mut previous);
                                 sdk_note!("call: ended the previous call in channel {previous_channel}");
                             }
                             let mut call: Call = std::mem::zeroed();
@@ -2248,7 +2249,6 @@ mod imp {
                                     None,
                                     ptr::null_mut(),
                                 );
-                                Discord_Call_Drop(&mut call);
                                 sdk_note!("call ended in channel {channel}");
                                 emit_call("idle", call_friend, false, None);
                                 call_friend = 0;
@@ -2490,7 +2490,6 @@ mod imp {
                                 None,
                                 ptr::null_mut(),
                             );
-                            Discord_Call_Drop(&mut previous);
                         }
                         let mut call: Call = std::mem::zeroed();
                         if Discord_Client_StartCall(client_ptr, channel, &mut call) {
