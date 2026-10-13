@@ -1007,6 +1007,51 @@ mod imp {
         drop(Box::from_raw(user as *mut StatusCtx));
     }
 
+    /// Last automatic reconnect attempt, so a dead session does not spin.
+    static LAST_RECONNECT: Mutex<Option<Instant>> = Mutex::new(None);
+
+    /// The gateway dropped us (a rejected token is the usual cause): refresh
+    /// from the sealed session and come back, at most once every half minute,
+    /// so an expired session heals itself instead of showing the sign-in card.
+    unsafe fn reconnect_after_drop() {
+        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+        if client.is_null() {
+            return;
+        }
+        let now = Instant::now();
+        let too_soon = LAST_RECONNECT
+            .lock()
+            .ok()
+            .and_then(|guard| *guard)
+            .map(|at| now.duration_since(at) < Duration::from_secs(30))
+            .unwrap_or(false);
+        if too_soon {
+            return;
+        }
+        if let Ok(mut guard) = LAST_RECONNECT.lock() {
+            *guard = Some(now);
+        }
+        let Some(session) = APP_HANDLE.get().and_then(load_session) else {
+            sdk_note!("connection dropped and no stored session to recover with");
+            set_state("idle", None);
+            return;
+        };
+        sdk_note!("connection dropped; refreshing the stored session");
+        set_state("connecting", None);
+        let flow = Box::into_raw(Box::new(Flow {
+            client,
+            verifier: String::new(),
+        }));
+        Discord_Client_RefreshToken(
+            client,
+            CLIENT_ID,
+            borrow_str(&session.refresh_token),
+            on_token,
+            None,
+            flow as *mut Flow as *mut c_void,
+        );
+    }
+
     /// Tells the UI where the call stands.
     fn emit_call(state: &str, friend_id: u64, muted: bool, error: Option<String>) {
         if let Some(app) = APP_HANDLE.get() {
@@ -1229,6 +1274,9 @@ mod imp {
             _ => {
                 if error != 0 {
                     set_state("error", Some(format!("connection {error}/{detail}")));
+                    // An expired token closes the gateway; the sealed session is
+                    // the way back without asking the person again.
+                    reconnect_after_drop();
                 } else {
                     set_state("idle", None);
                 }
