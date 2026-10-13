@@ -1533,30 +1533,13 @@
   background: var(--surface-1);
 }
 
-/* --- Discord tab: friends are the picker (left), conversation (right) --- */
-
-/* The tab owns the full content area: no page padding, no outer scroll, and a
-   bottom gap so the floating dock never covers the composer. */
+/* --- Discord tab: context on the left (320px), the conversation on the right.
+   The tab owns the full content area, so the shell carries the active tab. --- */
 .ov[data-ov-active-tab="discord"] .ov-main {
   padding: 0 0 76px;
   overflow: hidden;
 }
 
-/* The tab speaks the row language, not the card language: a panel is a head
-   row plus hairline rows, with no border or fill of its own. It is a flex
-   column, which is what lets the log stretch and pin the composer. */
-.ov[data-ov-active-tab="discord"] .ov-panel {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border: none;
-  border-radius: 0;
-  background: none;
-  margin-top: 0;
-  overflow: visible;
-}
-
-/* The split fills the content area (a view has no intrinsic height). */
 .ov[data-ov-active-tab="discord"] .ov-view[data-ov-view="discord"].active {
   height: 100%;
   min-height: 0;
@@ -1564,7 +1547,7 @@
 
 .dc-split {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 320px 1fr;
   height: 100%;
   min-height: 0;
 }
@@ -1580,46 +1563,93 @@
   border-left: 1px solid var(--line);
 }
 
-.ov-panel.fill {
-  flex: 1;
-  min-height: 0;
-}
-
-.dc-meta {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-2);
-}
-
-/* Rows: hairline separated, never cards-inside-cards. */
-.dc-rows {
+/* Flat panels: a head row, then hairline rows. No cards inside the tab. */
+.dc-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
-.dc-rows.dc-scroll {
+.dc-panel.fill {
+  flex: 1;
+  min-height: 0;
+}
+
+.dc-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.dc-panel-head-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.dc-panel-head-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dc-panel-head-action:hover {
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+
+.dc-sec {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 16px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.dc-sec:not(:first-child) {
+  border-top: 1px solid var(--line);
+}
+
+.dc-scroll {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
-.dc-stale {
-  opacity: 0.6;
-}
-
+/* --- List rows --- */
 .dc-row {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 0 16px;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 16px;
   border: none;
   border-top: 1px solid var(--line);
-  flex: none;
   width: 100%;
   background: none;
   font: inherit;
@@ -1646,7 +1676,6 @@ button.dc-row {
   outline-offset: -2px;
 }
 
-/* Selected = the friend the composer writes to. */
 .dc-row.is-selected {
   background: var(--surface-3);
   box-shadow: inset 2px 0 0 var(--text);
@@ -1661,95 +1690,43 @@ button.dc-row {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .dc-row-end {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--text-2);
-  flex: none;
+  gap: 6px;
+  color: var(--text-3);
+  flex-shrink: 0;
   font-size: 12px;
 }
 
-/* The row action only appears when the row is live: hover or pad focus. */
-.dc-row-act {
-  display: none;
-}
-
-.dc-row:hover .dc-row-act,
-.dc-row.ov-controller-focus .dc-row-act {
-  display: flex;
-}
-
 .dc-name {
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dc-note {
-  margin: 12px 16px;
-  color: var(--text-2);
-}
-
-.dc-state .dc-note {
-  margin: 0;
-}
-
-.dc-error {
-  color: var(--err);
-}
-
-.dc-glyph {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: none;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  color: var(--text-2);
-}
-
-.dc-sec {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 16px;
-  border-top: 1px solid var(--line);
-  color: var(--text-2);
+.dc-sub {
   font-size: 12px;
-  font-weight: 600;
-  flex: none;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dc-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Avatars + presence */
+/* --- Avatars and presence --- */
 .dc-av {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--surface-3);
-  flex: none;
+  flex-shrink: 0;
 }
 
 .dc-av img {
@@ -1780,17 +1757,17 @@ button.dc-row {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  flex: none;
+  flex-shrink: 0;
   background: var(--text-3);
 }
 
 .dc-av .dc-dot {
   position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 12px;
-  height: 12px;
-  border: 3px solid var(--surface-1);
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--surface-1);
 }
 
 .dc-row:hover .dc-av .dc-dot,
@@ -1802,35 +1779,141 @@ button.dc-row {
   border-color: var(--surface-3);
 }
 
-.dc-online { background: var(--ok); }
-.dc-idle { background: var(--warn); }
-.dc-dnd { background: var(--err); }
+.dc-online  { background: var(--ok); }
+.dc-idle    { background: var(--warn); }
+.dc-dnd     { background: var(--err); }
 .dc-offline { background: var(--text-3); }
 
-/* Sign-in and progress states */
-.dc-state {
+/* --- Voice channels, grouped by server --- */
+.dc-guild {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 16px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dc-guild:not(:first-child) {
   border-top: 1px solid var(--line);
 }
 
-.dc-state-actions {
-  display: flex;
-  gap: 8px;
+.dc-guild-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex-shrink: 0;
 }
 
-/* Recipient row, log, composer (right column) */
+.dc-channel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 16px 4px 28px;
+  border: none;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  background: none;
+  font: inherit;
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dc-channel-row:first-child {
+  border-top: none;
+}
+
+.dc-channel-row:hover,
+.dc-channel-row.ov-controller-focus {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.dc-channel-row:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+.dc-channel-icon {
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+/* Presence text under a name. */
+.dc-presence {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.dc-presence-online { color: var(--ok); }
+.dc-presence-idle   { color: var(--warn); }
+.dc-presence-dnd    { color: var(--err); }
+
+/* Unread arrivals: the only inverted pill in the tab, so it reads first. */
+.dc-unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--text);
+  color: var(--surface-1);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Right column: the conversation --- */
+.dc-account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 36px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.dc-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dc-me:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
 .dc-recip {
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 60px;
+  gap: 10px;
+  height: 52px;
   padding: 0 16px;
-  border-top: 1px solid var(--line);
-  flex: none;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .dc-recip-name {
@@ -1838,6 +1921,44 @@ button.dc-row {
   font-weight: 600;
 }
 
+.dc-recip-hint {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.dc-recip-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dc-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dc-btn-ghost:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.dc-btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The log owns the column: the conversation is the point of the tab. */
 .dc-log {
   flex: 1;
   min-height: 0;
@@ -1845,59 +1966,76 @@ button.dc-row {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  border-top: 1px solid var(--line);
 }
 
-.dc-log-note {
-  padding: 10px 16px;
-  color: var(--text-2);
-}
-
-.dc-msg {
-  display: grid;
-  grid-template-columns: 40px 64px 1fr auto;
-  column-gap: 12px;
-  align-items: baseline;
-  padding: 10px 16px;
-  border-top: 1px solid var(--line);
-}
-
-.dc-msg-time {
-  flex: none;
-  color: var(--text-2);
+.dc-log-top-note {
+  padding: 12px 16px;
+  color: var(--text-3);
   font-size: 12px;
 }
 
-/* "You" stays dim; the other side carries the name weight. */
+.dc-msg {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+  min-height: 36px;
+}
+
+.dc-msg:hover {
+  background: var(--surface-2);
+}
+
+.dc-msg-time {
+  flex-shrink: 0;
+  width: 38px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .dc-msg-who {
+  flex-shrink: 0;
+  width: 56px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 12px;
 }
 
 .dc-msg.is-in .dc-msg-who {
   color: var(--text);
 }
 
-.dc-msg-text {
+.dc-msg-body {
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.dc-msg.is-sending .dc-msg-text {
+.dc-msg.is-sending {
   color: var(--text-2);
 }
 
 .dc-msg-end {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  justify-self: end;
+  gap: 6px;
+  margin-left: auto;
 }
 
-/* Row actions appear when the row is live (hover, or focus from the pad). */
+.dc-msg-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
 .dc-msg-actions {
   display: none;
   align-items: center;
@@ -1909,47 +2047,274 @@ button.dc-row {
   display: flex;
 }
 
-.dc-msg-state {
-  display: flex;
+.dc-msg-act {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.dc-msg-act:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.dc-msg-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
-  flex: none;
 }
 
 .dc-msg-error {
-  display: block;
-  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--err);
   font-size: 12px;
 }
 
-/* Attachments arrive as a name only (the SDK exposes no URL): the row says so
-   instead of dropping the message. */
-.dc-msg-file {
+.dc-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--err);
+  background: none;
+  color: var(--err);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dc-retry-btn:hover {
+  background: rgba(229, 72, 77, 0.1);
+}
+
+/* --- Compact composer: a strip, never a third of the panel --- */
+.dc-composer {
+  flex-shrink: 0;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dc-compose-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.dc-compose-to {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.dc-compose-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  max-height: 88px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+}
+
+.dc-compose-input::placeholder {
+  color: var(--text-3);
+}
+
+.dc-compose-input:focus {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+  border-color: var(--text-3);
+}
+
+.dc-compose-input.is-disabled {
+  color: var(--text-3);
+}
+
+.dc-compose-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dc-compose-send:hover {
+  background: var(--surface-3);
+}
+
+.dc-compose-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dc-compose-hints {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.dc-compose-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Empty and disconnected states: an invitation, not a dead end --- */
+.dc-state-full {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  padding: 40px;
+  text-align: center;
+}
+
+.dc-state-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.dc-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dc-state-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.dc-state-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dc-state-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--text-2);
+}
+
+.dc-state-note {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.dc-note-inline {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.dc-note-inline.is-error {
+  color: var(--err);
+}
+
+/* --- Status picker --- */
+.dc-status-row {
+  display: flex;
+  gap: 4px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.dc-status-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dc-status-opt:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.dc-status-opt.is-active {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+/* --- Add-friend search --- */
+.dc-search-bar {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 2px;
-  color: var(--text-2);
-  font-size: 12px;
-}
-
-/* Add-friend search row */
-.dc-search {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 10px 16px;
-  border-top: 1px solid var(--line);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .dc-search-input {
   flex: 1;
   min-width: 0;
-  height: 30px;
-  padding: 0 10px;
+  height: 28px;
+  padding: 0 8px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
   background: var(--surface-1);
@@ -1960,43 +2325,11 @@ button.dc-row {
 
 .dc-search-input:focus {
   outline: 2px solid var(--text);
-  outline-offset: 2px;
+  outline-offset: 1px;
   border-color: var(--text-3);
 }
 
-.dc-sub {
-  color: var(--text-2);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* The account chip doubles as the status picker's handle. */
-.dc-meta-btn {
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  cursor: pointer;
-}
-
-.dc-meta-btn:hover {
-  color: var(--text);
-}
-
-.dc-status-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--line);
-}
-
-.dc-status-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.dc-search-btn {
   height: 28px;
   padding: 0 10px;
   border-radius: var(--r-sm);
@@ -2008,18 +2341,88 @@ button.dc-row {
   cursor: pointer;
 }
 
-.dc-status-option:hover {
+.dc-search-btn:hover {
   color: var(--text);
-  background: var(--surface-3);
 }
 
-.dc-status-option.is-active {
-  color: var(--text);
-  border-color: var(--text);
+.dc-already {
+  color: var(--text-3);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.dc-dim {
+.dc-req-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: none;
   color: var(--text-2);
+  cursor: pointer;
+}
+
+.dc-req-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.dc-req-btn.accept:hover {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.dc-req-btn.reject:hover {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+/* --- Voice panel --- */
+.dc-voice-current {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.dc-voice-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  color: var(--ok);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dc-voice-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px 4px 36px;
+  font-size: 13px;
+}
+
+.dc-voice-person .dc-av {
+  width: 22px;
+  height: 22px;
+}
+
+.dc-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--warn);
+  color: var(--surface-1);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .dc-spin {
@@ -2030,93 +2433,19 @@ button.dc-row {
   to { transform: rotate(360deg); }
 }
 
-/* The composer band is the only filled surface in the tab, which is why the
-   eye lands on it. */
-.dc-composer {
-  flex: none;
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--line-strong);
-  background: var(--surface-2);
-}
-
-.dc-field-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  color: var(--text-2);
-  font-size: 12px;
-}
-
-.dc-field-label b {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.dc-field {
-  display: block;
-  width: 100%;
-  min-height: 88px;
-  max-height: 132px;
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
-  background: var(--surface-1);
-  color: var(--text);
-  font: inherit;
-  font-size: 15px;
-  line-height: 22px;
-  resize: none;
-  overflow-y: auto;
-}
-
-.dc-field::placeholder {
-  color: var(--text-2);
-}
-
-.dc-field:focus {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
-  border-color: var(--text-3);
-}
-
-.dc-field.is-disabled {
-  background: var(--surface-2);
-  border-color: var(--line);
-  color: var(--text-2);
-  min-height: 64px;
-}
-
-.dc-composer-foot {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 12px;
-  color: var(--text-2);
-  font-size: 12px;
-}
-
-.dc-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.dc-composer-end {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dc-ctx {
-  color: var(--text);
-  font-weight: 600;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .dc-spin { animation: none; }
+}
+
+/* Empty roster: an invitation, centered, never a naked sentence. */
+.dc-empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 24px;
+  text-align: center;
 }
 
 /* ==========================================================================
