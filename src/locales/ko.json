@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "대기 중인 요청 {count}개",
   "overlay.discordFriendsEmpty": "아직 친구가 없습니다",
   "overlay.discordFriendsMore": "{count}명 더",
+  "overlay.discordCallIncoming": "걸려온 전화",
   "overlay.discordRequests": "요청",
   "overlay.discordChannelsShort": "채널",
   "overlay.discordAddShort": "추가",

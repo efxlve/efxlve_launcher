@@ -1894,6 +1894,27 @@ async function notifyMessage(friendId: string, text: string): Promise<void> {
   }
 }
 
+/** An incoming call in the launcher's own client: a desktop notification, and
+ * the caller is preselected so opening the panel lands in their conversation. */
+async function notifyIncomingCall(from: string): Promise<void> {
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) granted = (await requestPermission()) === "granted";
+    if (!granted) return;
+    const friend = friendEntries().find((item) => item.id === from);
+    sendNotification({
+      title: friend?.name ?? t("overlay.discordCallIncoming"),
+      body: t("overlay.discordCallIncoming"),
+    });
+    if (friend) {
+      replyTarget = { id: friend.id, name: friend.name };
+      localStorage.setItem(LAST_FRIEND_KEY, friend.id);
+    }
+  } catch {
+    // No permission: nothing else to do here.
+  }
+}
+
 /** Ctrl+Up/Down inside the box: walk the friend list without losing the draft. */
 function stepReplyTarget(direction: number): void {
   const friends = friendEntries();
@@ -3426,6 +3447,11 @@ async function boot(): Promise<void> {
 
   // Messages the other side sends while the overlay is open, straight from the
   // SDK's message callback.
+    // Incoming call: the launcher's own client rings, and the overlay says so.
+  await listen<{ from: string }>("discord-web-call", (event) => {
+    void notifyIncomingCall(event.payload.from);
+  });
+
   await listen<{ friendId: string; messageId?: string; text: string; attachment?: string; at: number }>(
     "discord-sdk-message",
     (event) => {

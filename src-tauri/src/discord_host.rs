@@ -80,8 +80,14 @@ static CREATED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 /// The generation a paint watchdog is already polling.
 static WATCHING: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);/// Last logged web-voice note; only transitions reach the log.
+static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);
+
+/// Last logged web-voice note; only transitions reach the log.
 static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
+
+/// Whether the web client is ringing right now: the transition into a ring is
+/// what raises the incoming-call notification.
+static CALL_RINGING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Where a kept-alive child parks: far outside the client area, so nothing of
 /// it can show even if the platform rounds the size up, while the controller
@@ -282,6 +288,27 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         .get("inCall")
         .and_then(serde_json::Value::as_bool)
         .unwrap_or(false);
+
+    // An incoming call rings in the web client: its call store is the only
+    // signal, and the ring is what raises the notification.
+    let ringing = report
+        .get("call")
+        .and_then(|call| call.get("ringing"))
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
+    let caller = report
+        .get("call")
+        .and_then(|call| call.get("from"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let was_ringing = CALL_RINGING.swap(ringing > 0, Ordering::SeqCst);
+    if ringing > 0 && !was_ringing {
+        note_voice(app, format!("web call: ringing ({caller})"));
+        let _ = app.emit("discord-web-call", serde_json::json!({ "from": caller }));
+    } else if ringing == 0 && was_ringing {
+        note_voice(app, "web call: stopped ringing".to_string());
+    }
     let via = report
         .get("via")
         .and_then(serde_json::Value::as_str)

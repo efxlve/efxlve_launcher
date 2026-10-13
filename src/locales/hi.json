@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} लंबित अनुरोध",
   "overlay.discordFriendsEmpty": "अभी कोई मित्र नहीं",
   "overlay.discordFriendsMore": "{count} और",
+  "overlay.discordCallIncoming": "आने वाली कॉल",
   "overlay.discordRequests": "अनुरोध",
   "overlay.discordChannelsShort": "चैनल",
   "overlay.discordAddShort": "जोड़ें",

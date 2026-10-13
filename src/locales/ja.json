@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "保留中のリクエスト {count}件",
   "overlay.discordFriendsEmpty": "フレンドはまだいません",
   "overlay.discordFriendsMore": "他に{count}人",
+  "overlay.discordCallIncoming": "着信",
   "overlay.discordRequests": "リクエスト",
   "overlay.discordChannelsShort": "チャンネル",
   "overlay.discordAddShort": "追加",

@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "คำขอที่รออยู่ {count} รายการ",
   "overlay.discordFriendsEmpty": "ยังไม่มีเพื่อน",
   "overlay.discordFriendsMore": "อีก {count} คน",
+  "overlay.discordCallIncoming": "สายเข้า",
   "overlay.discordRequests": "คำขอ",
   "overlay.discordChannelsShort": "ช่อง",
   "overlay.discordAddShort": "เพิ่ม",

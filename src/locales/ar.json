@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} طلبات معلّقة",
   "overlay.discordFriendsEmpty": "لا أصدقاء بعد",
   "overlay.discordFriendsMore": "{count} آخرون",
+  "overlay.discordCallIncoming": "مكالمة واردة",
   "overlay.discordRequests": "الطلبات",
   "overlay.discordChannelsShort": "القنوات",
   "overlay.discordAddShort": "إضافة",

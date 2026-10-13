@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} 个待处理请求",
   "overlay.discordFriendsEmpty": "还没有好友",
   "overlay.discordFriendsMore": "还有 {count} 人",
+  "overlay.discordCallIncoming": "来电",
   "overlay.discordRequests": "好友请求",
   "overlay.discordChannelsShort": "频道",
   "overlay.discordAddShort": "添加",

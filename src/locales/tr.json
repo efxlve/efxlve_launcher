@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} bekleyen istek",
   "overlay.discordFriendsEmpty": "Henüz arkadaş yok",
   "overlay.discordFriendsMore": "{count} kişi daha",
+  "overlay.discordCallIncoming": "Gelen arama",
   "overlay.discordRequests": "İstekler",
   "overlay.discordChannelsShort": "Kanallar",
   "overlay.discordAddShort": "Ekle",

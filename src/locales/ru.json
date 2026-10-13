@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} заявок в ожидании",
   "overlay.discordFriendsEmpty": "Пока нет друзей",
   "overlay.discordFriendsMore": "ещё {count}",
+  "overlay.discordCallIncoming": "Входящий звонок",
   "overlay.discordRequests": "Запросы",
   "overlay.discordChannelsShort": "Каналы",
   "overlay.discordAddShort": "Добавить",

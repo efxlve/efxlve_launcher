@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} oczekujących zaproszeń",
   "overlay.discordFriendsEmpty": "Brak znajomych",
   "overlay.discordFriendsMore": "jeszcze {count}",
+  "overlay.discordCallIncoming": "Połączenie przychodzące",
   "overlay.discordRequests": "Zaproszenia",
   "overlay.discordChannelsShort": "Kanały",
   "overlay.discordAddShort": "Dodaj",

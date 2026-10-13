@@ -539,6 +539,34 @@
     }
   } catch (e) {}
 
+  // 6) An incoming call rings in the web client: its call store is the only
+  //    signal (the SDK's call API covers only calls it started itself). The
+  //    store shape differs between builds, so every read is duck-typed.
+  var call = { found: false, ringing: 0, active: 0, from: "" };
+  try {
+    var callStores = ["CallStore", "RingingStore", "CallsStore", "IncomingCallStore"];
+    for (var si = 0; si < callStores.length; si++) {
+      var callStore = stores[callStores[si]];
+      if (!callStore) continue;
+      call.found = true;
+      if (typeof callStore.getRingings === "function") {
+        var ringings = callStore.getRingings() || {};
+        call.ringing = Object.keys(ringings).length;
+        for (var ringKey in ringings) {
+          var ring = ringings[ringKey] || {};
+          var caller = ring.userId || ring.ringingUserId || ring.callerId || "";
+          if (caller) call.from = String(caller);
+          break;
+        }
+      }
+      if (typeof callStore.getCalls === "function") {
+        var calls = callStore.getCalls() || {};
+        call.active = Object.keys(calls).length;
+      }
+      break;
+    }
+  } catch (e) {}
+
   return {
     ok: true,
     inCall: !!voice,
@@ -549,6 +577,7 @@
     friendsTotal: friendTotal,
     pending: pending,
     channels: channels,
+    call: call,
     me: { id: me.id, name: displayName(me, null) || me.username || "", avatar: me.avatar || "" },
     diag: diag,
   };

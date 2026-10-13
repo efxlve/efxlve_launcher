@@ -1910,6 +1910,7 @@
   "overlay.discordFriendsPending": "{count} demandes en attente",
   "overlay.discordFriendsEmpty": "Pas encore d'amis",
   "overlay.discordFriendsMore": "{count} de plus",
+  "overlay.discordCallIncoming": "Appel entrant",
   "overlay.discordRequests": "Demandes",
   "overlay.discordChannelsShort": "Salons",
   "overlay.discordAddShort": "Ajouter",
