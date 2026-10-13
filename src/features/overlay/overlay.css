@@ -203,24 +203,22 @@
 }
 
 /* --- Modular Dashboard (Overview) --- */
+/* The tabs share one language: flat panels stacked in a column, each a quiet
+   head row over hairline rows. No cards inside cards. */
 .ov-dashboard {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 900px;
 }
 
 .ov-card {
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 16px;
   display: flex;
   flex-direction: column;
-  transition: border-color var(--ease);
-}
-
-.ov-card:hover {
-  border-color: var(--line-strong);
+  border-top: 1px solid var(--line-strong);
+  padding: 0;
+  background: none;
+  border-radius: 0;
 }
 
 .ov-card-head {
@@ -228,7 +226,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 12px;
+  height: 38px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
 }
 
 /* Mirrors the launcher's .section-title. */
@@ -237,9 +237,9 @@
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: var(--text-3);
 }
 
@@ -265,14 +265,16 @@
   color: var(--text);
 }
 
-/* Card layout spans */
-.ov-span-12 { grid-column: span 12; }
-.ov-span-8 { grid-column: span 8; }
-.ov-span-7 { grid-column: span 7; }
-.ov-span-6 { grid-column: span 6; }
-.ov-span-5 { grid-column: span 5; }
-.ov-span-4 { grid-column: span 4; }
-.ov-span-3 { grid-column: span 3; }
+/* Everything is a band now: the old grid spans only mean full width. */
+.ov-span-12,
+.ov-span-8,
+.ov-span-7,
+.ov-span-6,
+.ov-span-5,
+.ov-span-4,
+.ov-span-3 {
+  width: 100%;
+}
 
 @media (max-width: 960px) {
   .ov-span-8, .ov-span-7, .ov-span-6, .ov-span-5, .ov-span-4, .ov-span-3 {
@@ -393,13 +395,15 @@
 }
 
 .ov-metric-pill {
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  padding: 8px 12px;
+  border-radius: 0;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line);
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .ov-metric-label {
@@ -458,15 +462,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 8px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  padding: 8px 2px;
+  border-radius: 0;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line);
 }
 
 .ov-ach-item.unlocked {
-  background: var(--ok-tint);
-  border-color: var(--ok-tint);
+  background: none;
+  border-color: var(--line);
 }
 
 .ov-ach-thumb {
@@ -843,11 +848,12 @@
 }
 
 /* --- Dedicated Views Layouts --- */
+/* A quiet page head, the same weight as a panel head. */
 .ov-page-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -860,26 +866,25 @@
 }
 
 .ov-empty {
-  color: var(--text-2);
-  text-align: center;
-  padding: 40px 0;
+  color: var(--text-3);
+  text-align: left;
+  padding: 14px 2px;
   font-size: 13px;
 }
 
 .ov-ach-full-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .ov-ach-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  padding: 10px 2px;
+  border-top: 1px solid var(--line);
+  background: none;
+  border-radius: 0;
 }
 
 .ov-ach-row.unlocked {
@@ -913,11 +918,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 16px;
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  margin-bottom: 10px;
+  padding: 12px 2px;
+  border-radius: 0;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line);
+  margin-bottom: 0;
 }
 
 .ov-setting-info {
