@@ -1290,8 +1290,12 @@ mod imp {
         std::sync::atomic::AtomicBool::new(false);
     /// A stored session from before the voice-write request is refreshed once
     /// interactively, so the call endpoint stops refusing without the person
-    /// having to clear anything by hand.
+    /// having to clear anything by hand. The pump does it, never a callback.
     static REAUTHORIZED_FOR_SCOPES: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
+    /// Set by the token callback when the session came back without the call
+    /// scope; the pump turns it into one authorization prompt.
+    static WANT_AUTHORIZE: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);
 
     /// Starts (or restarts) the interactive flow: PKCE challenge, then the
@@ -1420,18 +1424,15 @@ mod imp {
             refresh_text.len(),
         );
         // A session from before the voice-write request comes back without it:
-        // ask once, so calls stop being refused, and only when the extra scope
-        // was not already dropped for being unavailable.
+        // ask once, so calls stop being refused — but never from inside the
+        // SDK's own callback, which the pump does instead.
         let has_voice_write = scope_text.split_whitespace().any(|item| item == "rpc.voice.write");
         if !has_voice_write
             && !EXTRA_SCOPES_DROPPED.load(Ordering::SeqCst)
             && !REAUTHORIZED_FOR_SCOPES.swap(true, Ordering::SeqCst)
         {
-            sdk_note!("stored session lacks rpc.voice.write; asking for approval once");
-            let client = flow.client;
-            free_flow(user);
-            begin_authorize(client);
-            return;
+            sdk_note!("stored session lacks rpc.voice.write; approval will be asked once");
+            WANT_AUTHORIZE.store(true, Ordering::SeqCst);
         }
         if !refresh_text.is_empty() {
             let expires_at = now_secs() + expires_in.max(0) as u64;
@@ -2467,6 +2468,12 @@ mod imp {
                             ptr::null_mut(),
                         );
                     }
+                }
+                // A missing call scope is fixed here, between callbacks: asking
+                // for approval from inside one would nest the SDK's own call.
+                if WANT_AUTHORIZE.swap(false, Ordering::SeqCst) {
+                    sdk_note!("asking for the call scope now");
+                    begin_authorize(client_ptr);
                 }
                 // A call waiting for its channel starts as soon as the history
                 // fetch has handed the id over.
