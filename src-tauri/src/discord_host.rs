@@ -77,6 +77,9 @@ static RECOVERED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::n
 /// left alone.
 static CREATED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
+/// The generation a paint watchdog is already polling.
+static WATCHING: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);/// Last logged web-voice note; only transitions reach the log.
 static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 
@@ -663,7 +666,12 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                         .and_then(|(_, value)| value.parse::<i64>().ok())
                         .unwrap_or(-1);
                     if kids > 0 {
-                        PAINTED.store(true, Ordering::SeqCst);
+                        // The page keeps reporting while it is up (and the
+                        // watchdog may poll): act on the transition only, or
+                        // every report re-shows the child and floods the log.
+                        if PAINTED.swap(true, Ordering::SeqCst) {
+                            return false;
+                        }
                         if WANT_VISIBLE.load(Ordering::SeqCst) {
                             // Give the first real frame a moment and re-apply
                             // the rectangle: a child that was hidden for a
@@ -824,17 +832,33 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
 /// really painted. A destroy bumps the generation, so a stale poll is inert;
 /// the timeout shows the child anyway so an error page is never hidden forever.
 fn watch_first_paint(app: &AppHandle, generation: u64) {
+    // One watchdog per generation: the show path is called on every layout
+    // change, and a poller per call would flood the page with readiness probes.
+    if WATCHING.swap(generation, Ordering::SeqCst) == generation {
+        return;
+    }
     let ready_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let deadline = std::time::Instant::now() + FIRST_PAINT_TIMEOUT;
+        let mut painted = false;
         while std::time::Instant::now() < deadline {
             tokio::time::sleep(Duration::from_millis(700)).await;
-            if GENERATION.load(Ordering::SeqCst) != generation || PAINTED.load(Ordering::SeqCst) {
-                return;
+            if GENERATION.load(Ordering::SeqCst) != generation {
+                break;
+            }
+            if PAINTED.load(Ordering::SeqCst) {
+                painted = true;
+                break;
             }
             if let Some(view) = view(&ready_app) {
                 let _ = view.eval(READY_SCRIPT);
             }
+        }
+        if WATCHING.load(Ordering::SeqCst) == generation {
+            WATCHING.store(0, Ordering::SeqCst);
+        }
+        if painted || GENERATION.load(Ordering::SeqCst) != generation {
+            return;
         }
         if GENERATION.load(Ordering::SeqCst) == generation && !PAINTED.load(Ordering::SeqCst) {
             // A navigation can wedge the client: a reload does not revive it,
