@@ -1739,6 +1739,12 @@ const sentRequests = new Set<string>();
 let sdkChannels: { id: string; name: string; guild: string; guildId: string }[] = [];
 /** The account chip's status picker. */
 let statusPickerOpen = false;
+/** The DM call the overlay started, if any (the SDK's own call). */
+let callState: { active: boolean; friendId: string | null; muted: boolean } = {
+  active: false,
+  friendId: null,
+  muted: false,
+};
 /** The channel panel starts folded: the roster is what you pick from, and a
  * list of every server's channels buries it. */
 let channelsOpen = localStorage.getItem("efxlve-overlay-channels") === "true";
@@ -2184,8 +2190,15 @@ function conversationPanelHtml(): string {
          <span class="dc-av dc-av-lg">${friend ? `<img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />` : ""}<span class="dc-dot dc-${esc(friend?.status ?? "offline")}"></span></span>
          <div><div class="dc-recip-name">${esc(target.name)}</div></div>
          <div class="dc-recip-actions">
-           <span class="dc-recip-hint"><kbd class="kbd">Ctrl</kbd> <kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> ${esc(t("overlay.discordSwitchFriend"))}</span>
-           <button class="dc-btn-ghost" data-ov="discord-open-dm" data-id="${esc(target.id)}">${icon("external", 12)} ${esc(t("overlay.discordOpenDm"))}</button>
+           ${
+             callState.active
+               ? `<span class="dc-call-chip">${icon("volume-2", 12)} ${esc(t("overlay.discordCallActive"))}${callState.friendId === target.id ? "" : ` · ${esc(callState.friendId ?? "")}`}</span>
+                  <button class="dc-btn-ghost" data-ov="discord-call-mute">${icon("mic-off", 12)} ${esc(callState.muted ? t("overlay.discordCallUnmute") : t("overlay.discordCallMute"))}</button>
+                  <button class="dc-btn-ghost" data-ov="discord-call-end">${esc(t("overlay.discordCallEnd"))}</button>`
+               : `<span class="dc-recip-hint"><kbd class="kbd">Ctrl</kbd> <kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> ${esc(t("overlay.discordSwitchFriend"))}</span>
+                  <button class="dc-btn-ghost" data-ov="discord-call-start" data-id="${esc(target.id)}">${icon("volume-2", 12)} ${esc(t("overlay.discordCall"))}</button>
+                  <button class="dc-btn-ghost" data-ov="discord-open-dm" data-id="${esc(target.id)}">${icon("external", 12)} ${esc(t("overlay.discordOpenDm"))}</button>`
+           }
          </div>
        </div>`
     : `<div class="dc-recip">
@@ -2464,6 +2477,33 @@ async function setDiscordStatus(status: string): Promise<void> {
   }
 }
 
+/** Calls a friend over their DM channel (the SDK's own call). */
+async function startDiscordCall(friendId: string): Promise<void> {
+  try {
+    await invoke("discord_sdk_call", { userId: friendId });
+  } catch (error) {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
+  }
+}
+
+/** Ends the call the overlay started. */
+async function endDiscordCall(): Promise<void> {
+  try {
+    await invoke("discord_sdk_hangup");
+  } catch (error) {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
+  }
+}
+
+/** Mutes (or unmutes) the call's microphone. */
+async function muteDiscordCall(mute: boolean): Promise<void> {
+  try {
+    await invoke("discord_sdk_call_mute", { mute });
+  } catch (error) {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
+  }
+}
+
 /** Accepts or rejects an incoming friend request; the list refreshes itself
  * when the SDK reports the relationship change. */
 async function answerFriendRequest(friendId: string, accept: boolean): Promise<void> {
@@ -2733,6 +2773,13 @@ function wireEvents(): void {
       void saveEdit();
     } else if (action === "discord-edit-cancel") {
       cancelEdit();
+    } else if (action === "discord-call-start") {
+      const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
+      if (friendId) void startDiscordCall(friendId);
+    } else if (action === "discord-call-end") {
+      void endDiscordCall();
+    } else if (action === "discord-call-mute") {
+      void muteDiscordCall(!callState.muted);
     } else if (action === "discord-channels-toggle") {
       channelsOpen = !channelsOpen;
       localStorage.setItem("efxlve-overlay-channels", String(channelsOpen));
@@ -3525,6 +3572,23 @@ async function boot(): Promise<void> {
         '[data-ov="discord-delete"]',
       );
       if (button) button.disabled = false;
+    },
+  );
+
+  // The DM call the overlay started: active, muted, ended.
+  await listen<{ state: string; friendId: string; muted: boolean; error?: string | null }>(
+    "discord-sdk-call",
+    (event) => {
+      const active = event.payload.state === "active";
+      callState = {
+        active,
+        friendId: active ? event.payload.friendId : null,
+        muted: event.payload.muted,
+      };
+      if (!active && event.payload.error) {
+        toast(t("overlay.discordSendFailed", { error: event.payload.error }), "err");
+      }
+      if (activeTab === "discord" && !document.hidden) repaintDiscord();
     },
   );
 

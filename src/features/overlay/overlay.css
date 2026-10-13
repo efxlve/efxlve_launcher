@@ -1968,6 +1968,20 @@ button.dc-row {
   cursor: default;
 }
 
+/* A live call: the only green chip outside the voice card. */
+.dc-call-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  background: var(--ok-tint);
+  color: var(--ok);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* The log owns the column: the conversation is the point of the tab. */
 .dc-log {
   flex: 1;

@@ -56,6 +56,9 @@ enum SdkCommand {
     AddFriend { username: String },
     Channels,
     SetStatus { code: i32, label: String },
+    Call { user_id: u64 },
+    Hangup,
+    CallMute { mute: bool },
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -460,6 +463,51 @@ pub fn discord_sdk_set_status(status: String) -> Result<(), String> {
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Starts a voice call in the direct-message channel with a friend; the state
+/// arrives on `discord-sdk-call`.
+#[tauri::command]
+pub fn discord_sdk_call(user_id: String) -> Result<(), String> {
+    let id = user_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_user_id".to_string())?;
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::Call { user_id: id })
+        .map_err(|_| "worker_gone".to_string())
+}
+
+/// Ends the call the overlay started.
+#[tauri::command]
+pub fn discord_sdk_hangup() -> Result<(), String> {
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::Hangup)
+        .map_err(|_| "worker_gone".to_string())
+}
+
+/// Mutes (or unmutes) the microphone of the call the overlay started.
+#[tauri::command]
+pub fn discord_sdk_call_mute(mute: bool) -> Result<(), String> {
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::CallMute { mute })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -555,6 +603,7 @@ mod ffi {
     opaque!(UserMessageSummary);
     opaque!(GuildMinimal);
     opaque!(GuildChannel);
+    opaque!(Call);
 
     #[repr(C)]
     pub struct RelationshipSpan {
@@ -620,6 +669,8 @@ mod ffi {
     pub type RelationshipCallback = unsafe extern "C" fn(u64, bool, *mut c_void);
     /// `void(Discord_ClientResult*, void*)`: edit, delete and friends share it.
     pub type ResultCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
+    /// `void(void* userData)`: a call that ended.
+    pub type EndCallCallback = unsafe extern "C" fn(*mut c_void);
     pub type UserMessageSummariesCallback =
         unsafe extern "C" fn(*mut ClientResult, UserMessageSummarySpan, *mut c_void);
     pub type UserMessagesWithLimitCallback =
@@ -723,6 +774,23 @@ mod ffi {
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
+        pub fn Discord_Client_StartCall(
+            client: *mut Client,
+            channel_id: u64,
+            out: *mut Call,
+        ) -> bool;
+        pub fn Discord_Client_EndCall(
+            client: *mut Client,
+            channel_id: u64,
+            callback: EndCallCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Call_SetSelfMute(call: *mut Call, mute: bool);
+        pub fn Discord_Call_SetSelfDeaf(call: *mut Call, deaf: bool);
+        pub fn Discord_Call_GetChannelId(call: *mut Call) -> u64;
+        pub fn Discord_Call_Drop(call: *mut Call);
+        pub fn Discord_MessageHandle_ChannelId(handle: *mut MessageHandle) -> u64;
         pub fn Discord_GuildMinimal_Id(guild: *mut GuildMinimal) -> u64;
         pub fn Discord_GuildMinimal_Name(guild: *mut GuildMinimal, out: *mut StringValue);
         pub fn Discord_GuildMinimal_Drop(guild: *mut GuildMinimal);
@@ -937,6 +1005,26 @@ mod imp {
 
     unsafe extern "C" fn free_status(user: *mut c_void) {
         drop(Box::from_raw(user as *mut StatusCtx));
+    }
+
+    /// Tells the UI where the call stands.
+    fn emit_call(state: &str, friend_id: u64, muted: bool, error: Option<String>) {
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit(
+                "discord-sdk-call",
+                serde_json::json!({
+                    "state": state,
+                    "friendId": friend_id.to_string(),
+                    "muted": muted,
+                    "error": error,
+                }),
+            );
+        }
+    }
+
+    unsafe extern "C" fn on_call_ended(_user: *mut c_void) {
+        sdk_note!("call ended");
+        emit_call("idle", 0, false, None);
     }
 
     /// The outcome of an online-status change; the social graph is re-read so
@@ -1296,6 +1384,9 @@ mod imp {
     /// Who the direct-message threads are with, straight from the SDK's own
     /// conversation list: that is what tells a DM apart from channel chatter.
     static DM_PARTNERS: Mutex<Vec<u64>> = Mutex::new(Vec::new());
+    /// The DM channel per friend (friend id -> channel id): starting a call
+    /// needs the channel, and only a message carries it.
+    static DM_CHANNELS: Mutex<Vec<(u64, u64)>> = Mutex::new(Vec::new());
     /// Message ids already handed to the UI. The created callback and the
     /// summary poll both see the same message; it must land exactly once.
     static EMITTED: Mutex<Vec<u64>> = Mutex::new(Vec::new());
@@ -1304,6 +1395,8 @@ mod imp {
     struct MsgData {
         id: u64,
         author: u64,
+        recipient: u64,
+        channel_id: u64,
         text: String,
         attachment: String,
         sent_ms: u64,
@@ -1331,6 +1424,8 @@ mod imp {
         MsgData {
             id: Discord_MessageHandle_Id(handle),
             author: Discord_MessageHandle_AuthorId(handle),
+            recipient: Discord_MessageHandle_RecipientId(handle),
+            channel_id: Discord_MessageHandle_ChannelId(handle),
             text: string_of(content),
             attachment,
             // Some SDK builds report seconds; the UI wants milliseconds.
@@ -1366,6 +1461,23 @@ mod imp {
             sdk_note!("message {message_id}: no signed-in account yet, skipped");
             return;
         };
+        // Remember the DM channel id: starting a call needs it, and this is the
+        // only place the SDK hands it out.
+        if data.channel_id != 0 {
+            let partner = if author.to_string() == me_id {
+                data.recipient
+            } else {
+                author
+            };
+            if partner != 0 {
+                if let Ok(mut map) = DM_CHANNELS.lock() {
+                    match map.iter_mut().find(|(friend, _)| *friend == partner) {
+                        Some(slot) => slot.1 = data.channel_id,
+                        None => map.push((partner, data.channel_id)),
+                    }
+                }
+            }
+        }
         // Our own sends come back through the same path; everything else must
         // come from a direct-message thread the SDK listed for this account.
         if author.to_string() == me_id {
@@ -1889,6 +2001,8 @@ mod imp {
             // queue carries the composer's sends and a slow poll watches the
             // conversation list for messages that arrived.
             let mut next_poll = Instant::now();
+            let mut active_call: Option<Call> = None;
+            let mut call_friend: u64 = 0;
             loop {
                 Discord_RunCallbacks();
                 loop {
@@ -1922,6 +2036,58 @@ mod imp {
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
                             );
+                        }
+                        Ok(SdkCommand::Call { user_id }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("call ignored: not connected");
+                                emit_call("idle", user_id, false, Some("not_ready".to_string()));
+                                continue;
+                            }
+                            let channel = DM_CHANNELS.lock().ok().and_then(|map| {
+                                map.iter()
+                                    .find(|(friend, _)| *friend == user_id)
+                                    .map(|(_, channel)| *channel)
+                            });
+                            let Some(channel) = channel else {
+                                sdk_note!("call ignored: no DM channel for {user_id}");
+                                emit_call("idle", user_id, false, Some("no_channel".to_string()));
+                                continue;
+                            };
+                            let mut call: Call = std::mem::zeroed();
+                            if Discord_Client_StartCall(client_ptr, channel, &mut call) {
+                                sdk_note!("call started in channel {channel}");
+                                active_call = Some(call);
+                                call_friend = user_id;
+                                emit_call("active", user_id, false, None);
+                            } else {
+                                sdk_note!("call could not start");
+                                emit_call("idle", user_id, false, Some("call_failed".to_string()));
+                            }
+                        }
+                        Ok(SdkCommand::Hangup) => {
+                            if let Some(mut call) = active_call.take() {
+                                let channel = Discord_Call_GetChannelId(&mut call);
+                                Discord_Client_EndCall(
+                                    client_ptr,
+                                    channel,
+                                    on_call_ended,
+                                    None,
+                                    ptr::null_mut(),
+                                );
+                                Discord_Call_Drop(&mut call);
+                                sdk_note!("call ended in channel {channel}");
+                                emit_call("idle", call_friend, false, None);
+                                call_friend = 0;
+                            }
+                        }
+                        Ok(SdkCommand::CallMute { mute }) => {
+                            if let Some(mut call) = active_call {
+                                Discord_Call_SetSelfMute(&mut call, mute);
+                                sdk_note!("call mute: {mute}");
+                                emit_call("active", call_friend, mute, None);
+                            }
                         }
                         Ok(SdkCommand::SetStatus { code, label }) => {
                             let ready =
