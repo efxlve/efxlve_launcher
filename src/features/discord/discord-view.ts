@@ -14,7 +14,7 @@ import { listen } from "@tauri-apps/api/event";
 import { DISCORD_INVITE_URL, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
-import { pushNavHistory } from "../../core/nav";
+import { clearDiscordUnread, pushNavHistory } from "../../core/nav";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
@@ -73,6 +73,9 @@ function paintHeaderActions(): void {
 export function hydrateDiscordPage(): void {
   hydrated = true;
   showErrorToasted = false;
+  // Seeing the page is what marks the messages read, however it was opened
+  // (sidebar, history, overlay focus).
+  clearDiscordUnread();
   ensureListeners();
   paintHeaderActions();
   observeSlot();
@@ -90,7 +93,15 @@ export function destroyDiscordPage(): void {
   hydrated = false;
   viewVisible = false;
   paintHeaderActions();
-  void invoke("discord_view_destroy").catch(() => undefined);
+  // The host decides what "destroy" means: with the keep-open setting on (or a
+  // call running) it parks the page off-screen instead of closing it.
+  void invoke("discord_view_destroy", { keepAlive: keepDiscordOpen() }).catch(() => undefined);
+}
+
+/** The launcher's own preference: the Discord page stays loaded in the
+ * background so messages and calls arrive while a game runs. */
+export function keepDiscordOpen(): boolean {
+  return localStorage.getItem("efxlve-discord-always") !== "false";
 }
 
 function syncDiscordPage(): void {

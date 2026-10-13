@@ -94,6 +94,11 @@ static CALL_RINGING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBo
 static CALL_DIAG_LOGGED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
+/// The "keep Discord open" setting, mirrored from the UI. With it on, leaving
+/// the page parks it off-screen instead of destroying it — the same trick a
+/// live call uses — so messages and calls keep arriving while a game runs.
+static KEEP_OPEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// Where a kept-alive child parks: far outside the client area, so nothing of
 /// it can show even if the platform rounds the size up, while the controller
 /// stays visible and the page (and its call) keeps running.
@@ -848,6 +853,7 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                     .map(|age| age > Duration::from_secs(90))
                     .unwrap_or(false);
                 if PARKED.load(Ordering::SeqCst)
+                    && !KEEP_OPEN.load(Ordering::SeqCst)
                     && (!IN_CALL.load(Ordering::SeqCst) || quiet)
                 {
                     web_log(
@@ -869,6 +875,34 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     watch_first_paint(app, generation);
 
     Ok(())
+}
+
+/// Asks the child to report whether the web client has painted, through its own
+/// CoreWebView2. Tauri's `eval` wrapper never reached a child webview, which is
+/// why the watchdog used to time out and rebuild pages that were already fine.
+#[cfg(windows)]
+fn run_ready_script(app: &AppHandle) {
+    use webview2_com::ExecuteScriptCompletedHandler;
+    use windows::core::PCWSTR;
+    let Some(view) = view(app) else {
+        return;
+    };
+    let _ = view.with_webview(move |platform| {
+        let controller = platform.controller();
+        let core = match unsafe { controller.CoreWebView2() } {
+            Ok(core) => core,
+            Err(_) => return,
+        };
+        // The script's own probe navigation is the report; the answer is empty.
+        let handler = ExecuteScriptCompletedHandler::create(Box::new(
+            move |_result: windows::core::Result<()>, _text: String| Ok(()),
+        ));
+        let script: Vec<u16> = READY_SCRIPT
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        let _ = unsafe { core.ExecuteScript(PCWSTR(script.as_ptr()), &handler) };
+    });
 }
 
 /// Keeps a fresh document hidden behind the loading note until the web client
@@ -893,9 +927,7 @@ fn watch_first_paint(app: &AppHandle, generation: u64) {
                 painted = true;
                 break;
             }
-            if let Some(view) = view(&ready_app) {
-                let _ = view.eval(READY_SCRIPT);
-            }
+            run_ready_script(&ready_app);
         }
         if WATCHING.load(Ordering::SeqCst) == generation {
             WATCHING.store(0, Ordering::SeqCst);
@@ -1020,6 +1052,9 @@ pub fn discord_view_hide(app: AppHandle) {
 pub fn discord_view_reload(app: AppHandle) {
     if let Some(view) = view(&app) {
         PAINTED.store(false, Ordering::SeqCst);
+        if let Ok(mut guard) = CREATED_AT.lock() {
+            *guard = Some(Instant::now());
+        }
         if let Ok(mut guard) = LAST_NAV.lock() {
             *guard = Some(Instant::now());
         }
@@ -1038,6 +1073,7 @@ pub fn discord_view_reload(app: AppHandle) {
 /// "keep Discord open" setting is on.
 #[tauri::command]
 pub async fn discord_view_prewarm(app: AppHandle) -> Result<(), String> {
+    KEEP_OPEN.store(true, Ordering::SeqCst);
     if view(&app).is_some() || CREATING.load(Ordering::SeqCst) {
         return Ok(());
     }
@@ -1078,6 +1114,12 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
     match view(&app) {
         Some(view) if !too_soon && !IN_CALL.load(Ordering::SeqCst) && healthy => {
             PAINTED.store(false, Ordering::SeqCst);
+            // The clock the wedged check reads starts at the navigation, not at
+            // the view's creation: otherwise a page older than 30s would be
+            // declared wedged on the next show and the deep link thrown away.
+            if let Ok(mut guard) = CREATED_AT.lock() {
+                *guard = Some(Instant::now());
+            }
             if let Ok(mut guard) = LAST_NAV.lock() {
                 *guard = Some(Instant::now());
             }
@@ -1123,18 +1165,28 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
 /// seconds behind, so a call that started a moment ago would otherwise be
 /// missed and closed along with the renderer.
 #[tauri::command]
-pub async fn discord_view_destroy(app: AppHandle) {
+pub async fn discord_view_destroy(app: AppHandle, keep_alive: Option<bool>) {
+    if let Some(keep) = keep_alive {
+        KEEP_OPEN.store(keep, Ordering::SeqCst);
+    }
     WANT_VISIBLE.store(false, Ordering::SeqCst);
     if !IN_CALL.load(Ordering::SeqCst) {
         if let Some(report) = read_voice_now(&app) {
             handle_voice_report(&app, report);
         }
     }
-    if IN_CALL.load(Ordering::SeqCst) {
+    // A live call and the "keep Discord open" setting keep the renderer alive
+    // off-screen; only when neither wants it does the page really close.
+    let in_call = IN_CALL.load(Ordering::SeqCst);
+    if in_call || KEEP_OPEN.load(Ordering::SeqCst) {
         PARKED.store(true, Ordering::SeqCst);
         web_log(
             &app,
-            "web voice: in a call; the page stays alive while it lasts",
+            if in_call {
+                "web voice: in a call; the page stays alive while it lasts"
+            } else {
+                "keep Discord open: the page stays parked"
+            },
         );
         if let Some(view) = view(&app) {
             // Off-screen, not a hide: the controller must stay visible or the

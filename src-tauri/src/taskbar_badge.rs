@@ -45,8 +45,8 @@ fn badge_image(count: u32) -> Image<'static> {
             rgba[index + 3] = alpha;
         }
     }
-    let text = if count > 9 {
-        "9+".to_string()
+    let text = if count > 99 {
+        "99+".to_string()
     } else {
         count.to_string()
     };

@@ -809,6 +809,11 @@ export async function initApp(hooks: {
   await listen<{ state: string }>("discord-sdk-call", (event) => {
     setDiscordInCall(event.payload.state === "active");
   });
+  // The embedded client's own calls (guild voice or a DM call) raise the same
+  // dot: it is the primary way people are in voice.
+  await listen<{ inCall: boolean }>("discord-web-voice", (event) => {
+    setDiscordInCall(event.payload.inCall);
+  });
 
   await listen("steam-library-changed", () => {
       void refreshSteamInstalled();

@@ -93,6 +93,8 @@ let discordInCall = false;
 
 /** One message arrived while the launcher was not showing the conversation. */
 export function noteDiscordMessage(): void {
+  // Looking at the page already counts as read; the badge is for the rest.
+  if (S.view === "discord") return;
   discordUnread += 1;
   paintDiscordBadge();
 }

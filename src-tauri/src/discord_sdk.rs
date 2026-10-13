@@ -1491,8 +1491,25 @@ mod imp {
             .map(|partners| partners.is_empty() || partners.contains(&author))
             .unwrap_or(true);
         if !known_partner {
-            sdk_note!("message {message_id}: author is not a DM partner, skipped");
-            return;
+            // A friend's very first message arrives before the conversation
+            // list has seen the thread; the friend list is the other proof that
+            // this is a DM and not channel chatter.
+            let is_friend = with_state(|state| {
+                state
+                    .friends
+                    .iter()
+                    .any(|friend| friend.id == author.to_string())
+            })
+            .unwrap_or(false);
+            if !is_friend {
+                sdk_note!("message {message_id}: author is not a DM partner, skipped");
+                return;
+            }
+            if let Ok(mut partners) = DM_PARTNERS.lock() {
+                if !partners.contains(&author) {
+                    partners.push(author);
+                }
+            }
         }
         // The client replays history when it (re)connects: the log is "now".
         if sent_ms > 0 && now_secs() * 1000 > sent_ms + 120_000 {
@@ -1712,8 +1729,10 @@ mod imp {
                 }
             }
             // Only a conversation that moved forward carries a new message; the
-            // first pass is the baseline, so a fresh session stays quiet.
-            if primed && known.map(|last| last_id > last).unwrap_or(false) {
+            // first pass is the baseline, so a fresh session stays quiet. A
+            // thread that was not in the baseline at all is new: its latest
+            // message is the one that matters.
+            if primed && known.map(|last| last_id > last).unwrap_or(true) {
                 fresh.push(last_id);
             }
         }
@@ -1731,6 +1750,20 @@ mod imp {
         Some(f(&mut guard))
     }
 
+    /// A call that was waiting for the history gives up when the history cannot
+    /// hand a channel over: the panel must hear about it instead of spinning.
+    unsafe fn fail_pending_call(friend_id: u64, reason: &str) {
+        let waiting = PENDING_CALL.lock().ok().and_then(|guard| *guard);
+        if waiting != Some(friend_id) {
+            return;
+        }
+        if let Ok(mut guard) = PENDING_CALL.lock() {
+            *guard = None;
+        }
+        sdk_note!("call: giving up for {friend_id} ({reason})");
+        emit_call("idle", friend_id, false, Some(reason.to_string()));
+    }
+
     /// The last messages of one conversation, so the panel opens with real
     /// history instead of an empty log.
     unsafe extern "C" fn on_history(
@@ -1741,9 +1774,13 @@ mod imp {
         let ctx = &*(user as *mut SendCtx);
         if !Discord_ClientResult_Successful(result) {
             sdk_note!("history failed: {}", result_error(result));
+            fail_pending_call(ctx.user_id, "history_failed");
             return;
         }
-        if messages.ptr.is_null() {
+        if messages.ptr.is_null() || messages.size == 0 {
+            // A thread with no messages has no channel id to hand over, so a
+            // call waiting on it would never start.
+            fail_pending_call(ctx.user_id, "no_channel");
             return;
         }
         let me_id = with_state(|state| state.me.as_ref().map(|me| me.id.clone())).flatten();
@@ -2087,6 +2124,20 @@ mod imp {
                                 );
                                 continue;
                             };
+                            // One call at a time: a second one replaces the
+                            // first instead of leaking its handle.
+                            if let Some(mut previous) = active_call.take() {
+                                let previous_channel = Discord_Call_GetChannelId(&mut previous);
+                                Discord_Client_EndCall(
+                                    client_ptr,
+                                    previous_channel,
+                                    on_call_ended,
+                                    None,
+                                    ptr::null_mut(),
+                                );
+                                Discord_Call_Drop(&mut previous);
+                                sdk_note!("call: ended the previous call in channel {previous_channel}");
+                            }
                             let mut call: Call = std::mem::zeroed();
                             if Discord_Client_StartCall(client_ptr, channel, &mut call) {
                                 sdk_note!("call started in channel {channel}");
@@ -2340,6 +2391,17 @@ mod imp {
                     if let Some(channel) = channel {
                         if let Ok(mut guard) = PENDING_CALL.lock() {
                             *guard = None;
+                        }
+                        if let Some(mut previous) = active_call.take() {
+                            let previous_channel = Discord_Call_GetChannelId(&mut previous);
+                            Discord_Client_EndCall(
+                                client_ptr,
+                                previous_channel,
+                                on_call_ended,
+                                None,
+                                ptr::null_mut(),
+                            );
+                            Discord_Call_Drop(&mut previous);
                         }
                         let mut call: Call = std::mem::zeroed();
                         if Discord_Client_StartCall(client_ptr, channel, &mut call) {

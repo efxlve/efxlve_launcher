@@ -727,7 +727,12 @@ document.addEventListener("click", (e) => {
     // Default is on: only an explicit "false" turns it off.
     const next = localStorage.getItem("efxlve-discord-always") === "false";
     localStorage.setItem("efxlve-discord-always", String(next));
-    if (next) void invoke("discord_view_prewarm").catch(() => undefined);
+    if (next) {
+      void invoke("discord_view_prewarm").catch(() => undefined);
+    } else {
+      // Off means closed, not parked: the host holds the keep-alive flag.
+      void invoke("discord_view_destroy", { keepAlive: false }).catch(() => undefined);
+    }
     render();
   } else if (act === "toggle-presence") {
     S.presenceEnabled = !S.presenceEnabled;

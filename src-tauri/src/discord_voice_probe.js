@@ -554,12 +554,14 @@
         if (incomingIds.length) call.channelId = String(incomingIds[0]);
       }
       if (typeof incoming.getIncomingCalls === "function") {
-        var incomingList = incoming.getIncomingCalls() || {};
-        for (var incomingKey in incomingList) {
-          var entry = incomingList[incomingKey] || {};
-          var who = entry.userId || entry.ringingUserId || entry.callerId || entry.otherUserId || "";
+        // The store hands back a Map, so the same valuesOf helper the voice
+        // reads use is what turns it into entries.
+        var incomingValues = valuesOf(incoming.getIncomingCalls());
+        if (incomingValues.length) {
+          var entry = incomingValues[0] || {};
+          var who =
+            entry.userId || entry.ringingUserId || entry.callerId || entry.otherUserId || "";
           if (who) call.from = String(who);
-          break;
         }
       }
       // A DM channel knows its recipients, which is the caller.
