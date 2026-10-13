@@ -824,6 +824,7 @@ fn main() {
             discord_sdk::discord_sdk_state,
             discord_sdk::discord_sdk_friends,
             discord_sdk::discord_sdk_send_dm,
+            discord_sdk::discord_sdk_delete_dm,
             discord_rpc::discord_voice_watch_start,
             discord_rpc::discord_voice_watch_stop,
             discord_rpc::discord_relationships_probe,

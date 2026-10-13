@@ -1890,6 +1890,25 @@ button.dc-row {
   color: var(--text-2);
 }
 
+.dc-msg-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+}
+
+/* Row actions appear when the row is live (hover, or focus from the pad). */
+.dc-msg-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.dc-msg:hover .dc-msg-actions,
+.dc-msg:focus-within .dc-msg-actions {
+  display: flex;
+}
+
 .dc-msg-state {
   display: flex;
   align-items: center;

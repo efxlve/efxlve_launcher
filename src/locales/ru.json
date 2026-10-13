@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} заявок в ожидании",
   "overlay.discordFriendsEmpty": "Пока нет друзей",
   "overlay.discordFriendsMore": "ещё {count}",
+  "overlay.discordDelete": "Удалить",
   "overlay.discordYou": "Ты",
   "overlay.discordFriendsOffline": "{count} не в сети",
   "overlay.discordConnectedAs": "Вход как {name}",

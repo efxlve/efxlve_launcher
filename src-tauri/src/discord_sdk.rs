@@ -48,6 +48,7 @@ static CLIENT_PTR: std::sync::atomic::AtomicPtr<ffi::Client> =
 
 enum SdkCommand {
     SendDm { user_id: u64, text: String },
+    DeleteDm { user_id: u64, message_id: u64 },
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -249,6 +250,34 @@ pub fn discord_sdk_send_dm(user_id: String, text: String) -> Result<(), String> 
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Deletes one of the messages the overlay sent; the outcome arrives on
+/// `discord-sdk-dm-deleted`.
+#[tauri::command]
+pub fn discord_sdk_delete_dm(user_id: String, message_id: String) -> Result<(), String> {
+    let id = user_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_user_id".to_string())?;
+    let message = message_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_message_id".to_string())?;
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::DeleteDm {
+            user_id: id,
+            message_id: message,
+        })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -373,6 +402,10 @@ mod ffi {
     pub type UpdateTokenCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
     pub type SendMessageCallback = unsafe extern "C" fn(*mut ClientResult, u64, *mut c_void);
     pub type MessageCreatedCallback = unsafe extern "C" fn(u64, *mut c_void);
+    pub type MessageDeletedCallback = unsafe extern "C" fn(u64, u64, *mut c_void);
+    pub type TokenExpirationCallback = unsafe extern "C" fn(*mut c_void);
+    /// `void(Discord_ClientResult*, void*)`: edit, delete and friends share it.
+    pub type ResultCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
     pub type UserMessageSummariesCallback =
         unsafe extern "C" fn(*mut ClientResult, UserMessageSummarySpan, *mut c_void);
 
@@ -397,6 +430,26 @@ mod ffi {
         pub fn Discord_Client_SetMessageCreatedCallback(
             client: *mut Client,
             callback: MessageCreatedCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_SetMessageDeletedCallback(
+            client: *mut Client,
+            callback: MessageDeletedCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_SetTokenExpirationCallback(
+            client: *mut Client,
+            callback: TokenExpirationCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_DeleteUserMessage(
+            client: *mut Client,
+            recipient_id: u64,
+            message_id: u64,
+            callback: ResultCallback,
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
@@ -525,9 +578,11 @@ mod imp {
         verifier: String,
     }
 
-    /// The recipient of an in-flight send, handed to the completion callback.
+    /// The recipient of an in-flight send (or the target of a delete), handed
+    /// to the completion callback.
     struct SendCtx {
         user_id: u64,
+        message_id: u64,
     }
 
     unsafe extern "C" fn free_flow(user: *mut c_void) {
@@ -792,10 +847,77 @@ mod imp {
                 "discord-sdk-message",
                 serde_json::json!({
                     "friendId": author.to_string(),
+                    "messageId": message_id.to_string(),
                     "text": text,
                     "at": sent_ms,
                 }),
             );
+        }
+    }
+
+    /// Someone deleted a message: the log drops the row if it showed it.
+    unsafe extern "C" fn on_message_deleted(
+        message_id: u64,
+        _channel_id: u64,
+        _user: *mut c_void,
+    ) {
+        sdk_note!("message {message_id} deleted");
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit(
+                "discord-sdk-message-deleted",
+                serde_json::json!({ "messageId": message_id.to_string() }),
+            );
+        }
+    }
+
+    /// The access token is about to expire: refresh from the sealed session so
+    /// a long session never drops.
+    unsafe extern "C" fn on_token_expiring(_user: *mut c_void) {
+        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+        if client.is_null() {
+            return;
+        }
+        let Some(session) = APP_HANDLE.get().and_then(load_session) else {
+            sdk_note!("token expiring but no stored session to refresh with");
+            return;
+        };
+        sdk_note!("token expiring; refreshing the stored session");
+        let flow = Box::into_raw(Box::new(Flow {
+            client,
+            verifier: String::new(),
+        }));
+        Discord_Client_RefreshToken(
+            client,
+            CLIENT_ID,
+            borrow_str(&session.refresh_token),
+            on_token,
+            None,
+            flow as *mut Flow as *mut c_void,
+        );
+    }
+
+    /// The outcome of a delete the overlay asked for.
+    unsafe extern "C" fn on_message_delete_result(result: *mut ClientResult, user: *mut c_void) {
+        let ctx = &*(user as *mut SendCtx);
+        let payload = if Discord_ClientResult_Successful(result) {
+            sdk_note!("direct message {} deleted", ctx.message_id);
+            serde_json::json!({
+                "userId": ctx.user_id.to_string(),
+                "messageId": ctx.message_id.to_string(),
+                "ok": true,
+            })
+        } else {
+            let error = result_error(result);
+            sdk_note!("delete failed: {error}");
+            serde_json::json!({
+                "userId": ctx.user_id.to_string(),
+                "messageId": ctx.message_id.to_string(),
+                "ok": false,
+                "error": error,
+            })
+        };
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit("discord-sdk-dm-deleted", payload);
         }
     }
 
@@ -1027,6 +1149,18 @@ mod imp {
                 None,
                 ptr::null_mut(),
             );
+            Discord_Client_SetMessageDeletedCallback(
+                &mut client,
+                on_message_deleted,
+                None,
+                ptr::null_mut(),
+            );
+            Discord_Client_SetTokenExpirationCallback(
+                &mut client,
+                on_token_expiring,
+                None,
+                ptr::null_mut(),
+            );
 
             match load_session(&app) {
                 Some(session) => {
@@ -1087,12 +1221,38 @@ mod imp {
                                 }
                                 continue;
                             }
-                            let ctx = Box::into_raw(Box::new(SendCtx { user_id }));
+                            let ctx = Box::into_raw(Box::new(SendCtx {
+                                user_id,
+                                message_id: 0,
+                            }));
                             Discord_Client_SendUserMessage(
                                 client_ptr,
                                 user_id,
                                 borrow_str(&text),
                                 on_message_sent,
+                                Some(free_send),
+                                ctx as *mut SendCtx as *mut c_void,
+                            );
+                        }
+                        Ok(SdkCommand::DeleteDm {
+                            user_id,
+                            message_id,
+                        }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("delete ignored: not connected");
+                                continue;
+                            }
+                            let ctx = Box::into_raw(Box::new(SendCtx {
+                                user_id,
+                                message_id,
+                            }));
+                            Discord_Client_DeleteUserMessage(
+                                client_ptr,
+                                user_id,
+                                message_id,
+                                on_message_delete_result,
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
                             );

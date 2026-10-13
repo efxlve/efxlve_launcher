@@ -100,7 +100,8 @@ export type IconName =
   | "music"
   | "spotify"
   | "discord"
-  | "unlock";
+  | "unlock"
+  | "trash";
 
 /** SVG path bodies keyed by icon name. */
 const ICON_PATHS: Record<string, string> = {

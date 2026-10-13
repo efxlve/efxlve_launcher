@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} 个待处理请求",
   "overlay.discordFriendsEmpty": "还没有好友",
   "overlay.discordFriendsMore": "还有 {count} 人",
+  "overlay.discordDelete": "删除",
   "overlay.discordYou": "你",
   "overlay.discordFriendsOffline": "{count} 位离线",
   "overlay.discordConnectedAs": "已连接为 {name}",

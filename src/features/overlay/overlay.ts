@@ -1701,6 +1701,8 @@ function renderBrowser(): void {
 interface ReplyLogEntry {
   id: number;
   friendId: string;
+  /** The Discord message id, once the SDK reported it: delete and open need it. */
+  messageId?: string;
   time: string;
   text: string;
   state: "sending" | "sent" | "error";
@@ -1788,7 +1790,7 @@ function selectReplyTarget(id: string, name: string, seed = ""): void {
 
 /** A message that arrived while the overlay is open: it lands in that friend's
  * thread, and a badge waits on the row if the conversation is not on screen. */
-function noteIncoming(friendId: string, text: string, at: number): void {
+function noteIncoming(friendId: string, text: string, at: number, messageId?: string): void {
   const time = new Date(at > 0 ? at : Date.now()).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -1796,6 +1798,7 @@ function noteIncoming(friendId: string, text: string, at: number): void {
   replyLog.push({
     id: ++replyLogSeq,
     friendId,
+    messageId,
     time,
     text,
     state: "sent",
@@ -1972,7 +1975,10 @@ function conversationHtml(): string {
     <div class="dc-recip">
       <span class="dc-av dc-av-lg">${friend ? `<img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />` : ""}<span class="dc-dot dc-${esc(friend?.status ?? "offline")}"></span></span>
       <span class="dc-row-main"><span class="dc-recip-name">${esc(target.name)}</span></span>
-      <span class="dc-row-end dc-hint"><kbd class="kbd">Ctrl</kbd> <kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> ${esc(t("overlay.discordSwitchFriend"))}</span>
+      <span class="dc-row-end">
+        <button class="btn ghost small" data-ov="discord-open-dm" data-id="${esc(target.id)}" title="${esc(t("overlay.discordOpenDm"))}">${icon("external", 13)}</button>
+        <span class="dc-hint"><kbd class="kbd">Ctrl</kbd> <kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> ${esc(t("overlay.discordSwitchFriend"))}</span>
+      </span>
     </div>
     ${logHtml(target)}
     <div class="dc-composer">
@@ -1997,6 +2003,15 @@ function logHtml(target: { id: string; name: string }): string {
   const rows = entries
     .map((entry) => {
       const who = entry.direction === "in" ? target.name : t("overlay.discordYou");
+      // Sent rows carry their own actions: open the conversation in the
+      // launcher's client, or delete the message through the SDK.
+      const actions =
+        entry.direction === "out" && entry.state === "sent"
+          ? `<span class="dc-msg-actions">
+               <button class="btn ghost small" data-ov="discord-open-dm" data-id="${esc(entry.friendId)}" title="${esc(t("overlay.discordOpenDm"))}">${icon("external", 13)}</button>
+               ${entry.messageId ? `<button class="btn ghost small" data-ov="discord-delete" data-entry="${entry.id}" title="${esc(t("overlay.discordDelete"))}">${icon("trash", 13)}</button>` : ""}
+             </span>`
+          : "";
       const state =
         entry.direction === "in"
           ? ""
@@ -2014,7 +2029,7 @@ function logHtml(target: { id: string; name: string }): string {
           <span class="dc-msg-time num">${esc(entry.time)}</span>
           <span class="dc-msg-who">${esc(who)}</span>
           <span class="dc-msg-text">${esc(entry.text)}${error}</span>
-          ${state}
+          <span class="dc-msg-end">${state}${actions}</span>
         </div>`;
     })
     .join("");
@@ -2096,6 +2111,25 @@ async function retryReply(entryId: number): Promise<void> {
     entry.state = "error";
     entry.error = String(error);
     repaintDiscord();
+  }
+}
+
+/** Deletes a message this overlay sent; the row goes when Discord confirms. */
+async function deleteReply(entryId: number): Promise<void> {
+  const entry = replyLog.find((item) => item.id === entryId);
+  if (!entry || !entry.messageId) return;
+  const button = document.querySelector<HTMLButtonElement>(
+    `[data-ov="discord-delete"][data-entry="${entryId}"]`,
+  );
+  if (button) button.disabled = true;
+  try {
+    await invoke("discord_sdk_delete_dm", {
+      userId: entry.friendId,
+      messageId: entry.messageId,
+    });
+  } catch (error) {
+    if (button) button.disabled = false;
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
   }
 }
 
@@ -2328,6 +2362,12 @@ function wireEvents(): void {
     } else if (action === "discord-retry") {
       const entryId = Number(target.closest<HTMLElement>("[data-ov]")?.dataset.entry);
       if (Number.isFinite(entryId)) void retryReply(entryId);
+    } else if (action === "discord-delete") {
+      const entryId = Number(target.closest<HTMLElement>("[data-ov]")?.dataset.entry);
+      if (Number.isFinite(entryId)) void deleteReply(entryId);
+    } else if (action === "discord-open-dm") {
+      const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
+      if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
     } else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
       if (key) {
@@ -2998,7 +3038,8 @@ async function boot(): Promise<void> {
   });
 
   // The send outcome lands in the log row: "Sending…" becomes "Sent", or the
-  // row turns into a retry, so a failed message is never silently lost.
+  // row turns into a retry, so a failed message is never silently lost. The
+  // message id is what delete and open-in-launcher need later.
   await listen<{ userId: string; ok: boolean; messageId?: string; error?: string }>("discord-sdk-dm", (event) => {
     replySending = false;
     const entry = [...replyLog]
@@ -3007,15 +3048,48 @@ async function boot(): Promise<void> {
     if (entry) {
       entry.state = event.payload.ok ? "sent" : "error";
       entry.error = event.payload.error;
+      if (event.payload.messageId) entry.messageId = event.payload.messageId;
     }
     if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
 
   // Messages the other side sends while the overlay is open, straight from the
   // SDK's message callback.
-  await listen<{ friendId: string; text: string; at: number }>("discord-sdk-message", (event) => {
-    noteIncoming(event.payload.friendId, event.payload.text, event.payload.at);
+  await listen<{ friendId: string; messageId?: string; text: string; at: number }>(
+    "discord-sdk-message",
+    (event) => {
+      noteIncoming(
+        event.payload.friendId,
+        event.payload.text,
+        event.payload.at,
+        event.payload.messageId,
+      );
+    },
+  );
+
+  // A message deleted anywhere (including from here) leaves the log: a row for
+  // something that no longer exists would be a lie.
+  await listen<{ messageId: string }>("discord-sdk-message-deleted", (event) => {
+    const before = replyLog.length;
+    replyLog = replyLog.filter((item) => item.messageId !== event.payload.messageId);
+    if (replyLog.length !== before && activeTab === "discord" && !document.hidden) {
+      repaintDiscord();
+    }
   });
+
+  await listen<{ userId: string; messageId: string; ok: boolean; error?: string }>(
+    "discord-sdk-dm-deleted",
+    (event) => {
+      // Success removes the row through the deleted event; a failure has to say
+      // so, otherwise the button would look like it did nothing.
+      if (event.payload.ok) return;
+      toast(t("overlay.discordSendFailed", { error: event.payload.error || "" }), "err");
+      const button = document.querySelector<HTMLButtonElement>(
+        '[data-ov="discord-delete"]',
+      );
+      if (button) button.disabled = false;
+    },
+  );
 
   // The default hint line is restored whenever the context line goes away.
   captureDefaultHints();

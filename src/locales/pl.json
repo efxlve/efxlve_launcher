@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} oczekujących zaproszeń",
   "overlay.discordFriendsEmpty": "Brak znajomych",
   "overlay.discordFriendsMore": "jeszcze {count}",
+  "overlay.discordDelete": "Usuń",
   "overlay.discordYou": "Ty",
   "overlay.discordFriendsOffline": "{count} offline",
   "overlay.discordConnectedAs": "Zalogowano jako {name}",
