@@ -521,7 +521,9 @@ function setTab(tab: TabId, fromOpen = false): void {
   localStorage.setItem("efxlve-overlay-tab", tab);
   // The Discord tab owns the full content area (no page padding, no outer
   // scroll), so the shell carries the active tab; the hint bar follows it.
-  document.getElementById("ov-shell")?.setAttribute("data-ov-tab", tab);
+  // The attribute must not be `data-ov-tab`: the click handler looks that up
+  // for the dock buttons, and a shell-level match would swallow every click.
+  document.getElementById("ov-shell")?.setAttribute("data-ov-active-tab", tab);
   refreshFooterHints();
   // The voice worker lives only while its tab is visible (idle zero cost).
   if (tab === "discord") {

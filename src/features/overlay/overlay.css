@@ -1537,7 +1537,7 @@
 
 /* The tab owns the full content area: no page padding, no outer scroll, and a
    bottom gap so the floating dock never covers the composer. */
-.ov[data-ov-tab="discord"] .ov-main {
+.ov[data-ov-active-tab="discord"] .ov-main {
   padding: 0 0 76px;
   overflow: hidden;
 }
@@ -1545,7 +1545,7 @@
 /* The tab speaks the row language, not the card language: a panel is a head
    row plus hairline rows, with no border or fill of its own. It is a flex
    column, which is what lets the log stretch and pin the composer. */
-.ov[data-ov-tab="discord"] .ov-panel {
+.ov[data-ov-active-tab="discord"] .ov-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1557,7 +1557,7 @@
 }
 
 /* The split fills the content area (a view has no intrinsic height). */
-.ov[data-ov-tab="discord"] .ov-view[data-ov-view="discord"].active {
+.ov[data-ov-active-tab="discord"] .ov-view[data-ov-view="discord"].active {
   height: 100%;
   min-height: 0;
 }
