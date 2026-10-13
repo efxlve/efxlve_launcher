@@ -1972,6 +1972,52 @@ button.dc-row {
   text-overflow: ellipsis;
 }
 
+/* The account chip doubles as the status picker's handle. */
+.dc-meta-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dc-meta-btn:hover {
+  color: var(--text);
+}
+
+.dc-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.dc-status-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dc-status-option:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.dc-status-option.is-active {
+  color: var(--text);
+  border-color: var(--text);
+}
+
 .dc-dim {
   color: var(--text-2);
 }

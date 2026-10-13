@@ -208,6 +208,8 @@ interface SdkMe {
   id: string;
   name: string;
   avatarUrl: string;
+  /** "online" | "idle" | "dnd" | "offline" */
+  status?: string;
 }
 
 interface SdkState {
@@ -1736,6 +1738,8 @@ let searchResults: { id: string; name: string; username: string; avatarUrl: stri
 const sentRequests = new Set<string>();
 /** Voice channels the panel can jump to, from the SDK's guild tree. */
 let sdkChannels: { id: string; name: string; guild: string; guildId: string }[] = [];
+/** The account chip's status picker. */
+let statusPickerOpen = false;
 
 /** The friend rows the tab shows: the live desktop read, the launcher's own web
  * client, the SDK's own list, then the last known list. Online first. */
@@ -2109,17 +2113,38 @@ function friendRowHtml(friend: FriendEntry): string {
 
 function messagePanelHtml(): string {
   const status = sdkState.status;
+  const me = status === "ready" ? sdkState.me : null;
   const meta =
     status === "ready"
-      ? `<span class="dc-dot dc-online"></span>${esc(t("overlay.discordConnectedAs", { name: sdkState.me?.name ?? "" }))}`
+      ? `<button class="dc-meta dc-meta-btn" data-ov="discord-status-toggle" title="${esc(t("overlay.discordConnectedAs", { name: me?.name ?? "" }))}"><span class="dc-dot dc-${esc(me?.status ?? "online")}"></span>${esc(t("overlay.discordConnectedAs", { name: me?.name ?? "" }))}</button>`
       : status === "idle" || status === "error"
         ? `<span class="dc-dot dc-offline"></span>${esc(t("overlay.discordNotConnected"))}`
         : `<span class="dc-dot dc-idle"></span>${esc(t("overlay.discordConnecting"))}`;
   return `
     <div class="ov-panel fill">
       <div class="ov-panel-head">${icon("edit", 13)} <b>${esc(t("overlay.discordReplyTitle"))}</b><span class="dc-meta">${meta}</span></div>
-      ${status === "ready" ? conversationHtml() : signInHtml()}
+      ${status === "ready" ? `${statusPickerOpen ? statusPickerHtml() : ""}${conversationHtml()}` : signInHtml()}
     </div>`;
+}
+
+/** The four statuses Discord shows, with the current one marked. */
+function statusPickerHtml(): string {
+  const current = sdkState.me?.status ?? "online";
+  const options = [
+    { id: "online", dot: "online", key: "overlay.discordStatusOnline" },
+    { id: "idle", dot: "idle", key: "overlay.discordStatusIdle" },
+    { id: "dnd", dot: "dnd", key: "overlay.discordStatusDnd" },
+    { id: "invisible", dot: "offline", key: "overlay.discordStatusInvisible" },
+  ];
+  const rows = options
+    .map(
+      (option) => `
+      <button class="dc-status-option${option.id === current ? " is-active" : ""}" data-ov="discord-status" data-status="${option.id}">
+        <span class="dc-dot dc-${option.dot}"></span>${esc(t(option.key))}
+      </button>`,
+    )
+    .join("");
+  return `<div class="dc-status-row">${rows}</div>`;
 }
 
 /** Before the session exists: one button, plus the state it is in. */
@@ -2323,6 +2348,15 @@ async function retryReply(entryId: number): Promise<void> {
     entry.state = "error";
     entry.error = String(error);
     repaintDiscord();
+  }
+}
+
+/** Sets the account's own Discord status. */
+async function setDiscordStatus(status: string): Promise<void> {
+  try {
+    await invoke("discord_sdk_set_status", { status });
+  } catch (error) {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
   }
 }
 
@@ -2638,6 +2672,12 @@ function wireEvents(): void {
       void saveEdit();
     } else if (action === "discord-edit-cancel") {
       cancelEdit();
+    } else if (action === "discord-status-toggle") {
+      statusPickerOpen = !statusPickerOpen;
+      repaintDiscord();
+    } else if (action === "discord-status") {
+      const value = target.closest<HTMLElement>("[data-ov]")?.dataset.status;
+      if (value) void setDiscordStatus(value);
     } else if (action === "discord-search-toggle") {
       searchOpen = !searchOpen;
       if (searchOpen) searchRan = false;
@@ -3424,6 +3464,17 @@ async function boot(): Promise<void> {
       if (button) button.disabled = false;
     },
   );
+
+  // The status picker: on success the panel closes it and the chip takes the
+  // new dot (the social graph is re-read by the worker).
+  await listen<{ status: string; ok: boolean; error?: string }>("discord-sdk-status-done", (event) => {
+    if (!event.payload.ok) {
+      toast(t("overlay.discordSendFailed", { error: event.payload.error || "" }), "err");
+      return;
+    }
+    statusPickerOpen = false;
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+  });
 
   // The add-friend search: results, and the request outcome.
   await listen<{ query: string; users: { id: string; name: string; username: string; avatarUrl: string }[] }>(

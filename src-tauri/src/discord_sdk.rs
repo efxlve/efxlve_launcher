@@ -55,6 +55,7 @@ enum SdkCommand {
     Search { query: String },
     AddFriend { username: String },
     Channels,
+    SetStatus { code: i32, label: String },
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -63,6 +64,8 @@ struct SdkMe {
     id: String,
     name: String,
     avatar_url: String,
+    /// "online" | "idle" | "dnd" | "offline" (invisible reads as offline).
+    status: String,
 }
 
 /// One relationship row, shaped like the page/RPC friend entries so the
@@ -114,6 +117,7 @@ fn state_json(state: &SdkState) -> serde_json::Value {
             "id": me.id,
             "name": me.name,
             "avatarUrl": me.avatar_url,
+            "status": me.status,
         })),
     })
 }
@@ -431,6 +435,31 @@ pub fn discord_sdk_channels() -> Result<(), String> {
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Sets the account's own online status (online / idle / dnd / invisible /
+/// offline); the outcome arrives on `discord-sdk-status-done`.
+#[tauri::command]
+pub fn discord_sdk_set_status(status: String) -> Result<(), String> {
+    let code = match status.as_str() {
+        "online" => 0,
+        "offline" => 1,
+        "idle" => 3,
+        "dnd" => 4,
+        "invisible" => 5,
+        _ => return Err("bad_status".to_string()),
+    };
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::SetStatus { code, label: status })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -687,6 +716,13 @@ mod ffi {
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
+        pub fn Discord_Client_SetOnlineStatus(
+            client: *mut Client,
+            status: i32,
+            callback: ResultCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
         pub fn Discord_GuildMinimal_Id(guild: *mut GuildMinimal) -> u64;
         pub fn Discord_GuildMinimal_Name(guild: *mut GuildMinimal, out: *mut StringValue);
         pub fn Discord_GuildMinimal_Drop(guild: *mut GuildMinimal);
@@ -874,6 +910,11 @@ mod imp {
         username: String,
     }
 
+    /// A status change in flight: the callback reports which one landed.
+    struct StatusCtx {
+        label: String,
+    }
+
     unsafe extern "C" fn free_flow(user: *mut c_void) {
         drop(Box::from_raw(user as *mut Flow));
     }
@@ -892,6 +933,28 @@ mod imp {
 
     unsafe extern "C" fn free_add_friend(user: *mut c_void) {
         drop(Box::from_raw(user as *mut AddFriendCtx));
+    }
+
+    unsafe extern "C" fn free_status(user: *mut c_void) {
+        drop(Box::from_raw(user as *mut StatusCtx));
+    }
+
+    /// The outcome of an online-status change; the social graph is re-read so
+    /// the chip in the panel matches what Discord now shows.
+    unsafe extern "C" fn on_status_result(result: *mut ClientResult, user: *mut c_void) {
+        let ctx = &*(user as *mut StatusCtx);
+        let payload = if Discord_ClientResult_Successful(result) {
+            sdk_note!("online status set to {}", ctx.label);
+            serde_json::json!({ "status": ctx.label, "ok": true })
+        } else {
+            let error = result_error(result);
+            sdk_note!("status change failed: {error}");
+            serde_json::json!({ "status": ctx.label, "ok": false, "error": error })
+        };
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit("discord-sdk-status-done", payload);
+        }
+        read_social();
     }
 
     /// The voice channels found so far, across the per-guild fetches.
@@ -1666,6 +1729,7 @@ mod imp {
                 id: id.to_string(),
                 name: handle_name(&mut me_handle),
                 avatar_url: handle_avatar(&mut me_handle, id),
+                status: status_word(Discord_UserHandle_Status(&mut me_handle)).to_string(),
             };
             Discord_UserHandle_Drop(&mut me_handle);
             Some(entry)
@@ -1857,6 +1921,22 @@ mod imp {
                                 on_message_sent,
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
+                            );
+                        }
+                        Ok(SdkCommand::SetStatus { code, label }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("status change ignored: not connected");
+                                continue;
+                            }
+                            let ctx = Box::into_raw(Box::new(StatusCtx { label }));
+                            Discord_Client_SetOnlineStatus(
+                                client_ptr,
+                                code,
+                                on_status_result,
+                                Some(free_status),
+                                ctx as *mut StatusCtx as *mut c_void,
                             );
                         }
                         Ok(SdkCommand::Channels) => {

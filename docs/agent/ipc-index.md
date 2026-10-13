@@ -64,6 +64,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `discord_sdk_history` | `discordSdkHistory({ ... })` | `src-tauri/src/discord_sdk.rs` |
 | `discord_sdk_search_users` | `discordSdkSearchUsers({ ... })` | `src-tauri/src/discord_sdk.rs` |
 | `discord_sdk_send_dm` | `discordSdkSendDm({ ... })` | `src-tauri/src/discord_sdk.rs` |
+| `discord_sdk_set_status` | `discordSdkSetStatus({ ... })` | `src-tauri/src/discord_sdk.rs` |
 | `discord_sdk_start` | `discordSdkStart({ ... })` | `src-tauri/src/discord_sdk.rs` |
 | `discord_sdk_state` | `discordSdkState({ ... })` | `src-tauri/src/discord_sdk.rs` |
 | `discord_view_destroy` | `discordViewDestroy({ ... })` | `src-tauri/src/discord_host.rs` |
