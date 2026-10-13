@@ -1739,6 +1739,9 @@ const sentRequests = new Set<string>();
 let sdkChannels: { id: string; name: string; guild: string; guildId: string }[] = [];
 /** The account chip's status picker. */
 let statusPickerOpen = false;
+/** The channel panel starts folded: the roster is what you pick from, and a
+ * list of every server's channels buries it. */
+let channelsOpen = localStorage.getItem("efxlve-overlay-channels") === "true";
 
 /** The friend rows the tab shows: the live desktop read, the launcher's own web
  * client, the SDK's own list, then the last known list. Online first. */
@@ -1988,8 +1991,8 @@ function voicePanelHtml(): string {
     </div>`;
 }
 
-/** Voice channels from the SDK's guild tree, grouped by server so two
- * "General" rows never read the same. */
+/** Voice channels from the SDK's guild tree, folded by default and grouped by
+ * server when opened, so two "General" rows never read the same. */
 function channelsPanelHtml(): string {
   if (!sdkChannels.length) return "";
   const guilds: { id: string; name: string; channels: typeof sdkChannels }[] = [];
@@ -2002,13 +2005,14 @@ function channelsPanelHtml(): string {
     group.channels.push(channel);
   }
   const inCallGuild = voiceDisplay()?.channel.guildId ?? null;
-  const rows = guilds
-    .slice(0, 4)
-    .map(
-      (guild) => `
+  const rows = channelsOpen
+    ? guilds
+        .slice(0, 2)
+        .map(
+          (guild) => `
       <div class="dc-guild"><span class="dc-guild-dot${guild.id === inCallGuild ? " dc-online" : ""}"></span>${esc(guild.name)}</div>
       ${guild.channels
-        .slice(0, 4)
+        .slice(0, 3)
         .map(
           (channel) => `
         <button class="dc-channel-row" data-ov="discord-open-channel" data-channel="${esc(channel.id)}" data-guild="${esc(channel.guildId)}" title="${esc(t("overlay.discordOpenChannel"))}">
@@ -2017,11 +2021,15 @@ function channelsPanelHtml(): string {
         </button>`,
         )
         .join("")}`,
-    )
-    .join("");
+        )
+        .join("")
+    : "";
   return `
     <div class="dc-panel">
-      <div class="dc-panel-head">${icon("list", 13)}<span class="dc-panel-head-label">${esc(t("overlay.discordChannels"))}</span></div>
+      <div class="dc-panel-head dc-panel-head-toggle" data-ov="discord-channels-toggle" title="${esc(t("overlay.discordChannels"))}">
+        ${icon("list", 13)}<span class="dc-panel-head-label">${esc(t("overlay.discordChannels"))}</span>
+        ${icon(channelsOpen ? "chevron-down" : "chevron-right", 12)}
+      </div>
       ${rows}
     </div>`;
 }
@@ -2058,7 +2066,14 @@ function friendsPanelHtml(): string {
   const section = (label: string, rows: FriendEntry[]): string =>
     rows.length ? `<div class="dc-sec">${esc(label)}</div>${rows.map(friendRowHtml).join("")}` : "";
   const requestSection = requests.length
-    ? `<div class="dc-sec">${esc(t("overlay.discordFriendsPending", { count: requests.length }))}</div>${requests.map(requestRowHtml).join("")}`
+    ? `<div class="dc-sec">${esc(t("overlay.discordFriendsPending", { count: requests.length }))}</div>${requests
+        .slice(0, 3)
+        .map(requestRowHtml)
+        .join("")}${
+        requests.length > 3
+          ? `<div class="dc-note-inline">${esc(t("overlay.discordFriendsMore", { count: requests.length - 3 }))}</div>`
+          : ""
+      }`
     : "";
   return `
     <div class="dc-panel fill">
@@ -2718,6 +2733,10 @@ function wireEvents(): void {
       void saveEdit();
     } else if (action === "discord-edit-cancel") {
       cancelEdit();
+    } else if (action === "discord-channels-toggle") {
+      channelsOpen = !channelsOpen;
+      localStorage.setItem("efxlve-overlay-channels", String(channelsOpen));
+      repaintDiscord();
     } else if (action === "discord-status-toggle") {
       statusPickerOpen = !statusPickerOpen;
       repaintDiscord();

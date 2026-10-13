@@ -1616,6 +1616,16 @@
   background: var(--surface-2);
 }
 
+/* A panel head that folds its body: the channel list stays out of the way. */
+.dc-panel-head-toggle {
+  cursor: pointer;
+}
+
+.dc-panel-head-toggle:hover {
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+
 .dc-sec {
   display: flex;
   align-items: center;
