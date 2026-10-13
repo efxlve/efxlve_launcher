@@ -539,31 +539,47 @@
     }
   } catch (e) {}
 
-  // 6) An incoming call rings in the web client: its call store is the only
-  //    signal (the SDK's call API covers only calls it started itself). The
-  //    store shape differs between builds, so every read is duck-typed.
-  var call = { found: false, ringing: 0, active: 0, from: "" };
+  // 6) An incoming call rings in the web client: IncomingCallStore is the
+  //    signal (the SDK's call API covers only calls it started itself).
+  var call = { found: false, ringing: 0, active: 0, from: "", channelId: "" };
   try {
-    var callStores = ["CallStore", "RingingStore", "CallsStore", "IncomingCallStore"];
-    for (var si = 0; si < callStores.length; si++) {
-      var callStore = stores[callStores[si]];
-      if (!callStore) continue;
+    var incoming = stores.IncomingCallStore;
+    if (incoming) {
       call.found = true;
-      if (typeof callStore.getRingings === "function") {
-        var ringings = callStore.getRingings() || {};
-        call.ringing = Object.keys(ringings).length;
-        for (var ringKey in ringings) {
-          var ring = ringings[ringKey] || {};
-          var caller = ring.userId || ring.ringingUserId || ring.callerId || "";
-          if (caller) call.from = String(caller);
+      if (typeof incoming.hasIncomingCalls === "function") {
+        call.ringing = incoming.hasIncomingCalls() ? 1 : 0;
+      }
+      if (typeof incoming.getIncomingCallChannelIds === "function") {
+        var incomingIds = incoming.getIncomingCallChannelIds() || [];
+        if (incomingIds.length) call.channelId = String(incomingIds[0]);
+      }
+      if (typeof incoming.getIncomingCalls === "function") {
+        var incomingList = incoming.getIncomingCalls() || {};
+        for (var incomingKey in incomingList) {
+          var entry = incomingList[incomingKey] || {};
+          var who = entry.userId || entry.ringingUserId || entry.callerId || entry.otherUserId || "";
+          if (who) call.from = String(who);
           break;
         }
       }
-      if (typeof callStore.getCalls === "function") {
-        var calls = callStore.getCalls() || {};
-        call.active = Object.keys(calls).length;
+      // A DM channel knows its recipients, which is the caller.
+      if (!call.from && call.channelId) {
+        try {
+          if (stores.ChannelStore && typeof stores.ChannelStore.getChannel === "function") {
+            var dmChannel = stores.ChannelStore.getChannel(call.channelId);
+            var recipients = (dmChannel && (dmChannel.recipients || dmChannel.rawRecipients)) || [];
+            if (recipients.length) {
+              call.from = String(recipients[0].userId || recipients[0].id || recipients[0] || "");
+            }
+          }
+        } catch (e) {}
       }
-      break;
+    }
+    var callStore = stores.CallStore;
+    if (callStore && typeof callStore.getCalls === "function") {
+      var calls = callStore.getCalls() || {};
+      call.active = Object.keys(calls).length;
+      call.found = true;
     }
   } catch (e) {}
 
