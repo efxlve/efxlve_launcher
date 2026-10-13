@@ -93,7 +93,7 @@ type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" |
  * out of the dock for now: 0.1.28 ships without it while the panel/browser
  * pairing settles. Bringing it back is this one flag — set it to true.
  */
-const BROWSER_TAB_ENABLED = false;
+const BROWSER_TAB_ENABLED = true;
 
 const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "home", icon: "layers", key: "overlay.tabHome" },
@@ -436,6 +436,10 @@ function shellHtml(): string {
           <div class="ov-controller-badge" id="ov-controller-badge" style="display:none">
             ${icon("gamepad-2", 14)} <span id="ov-controller-name">Controller</span>
           </div>
+          <button class="btn ghost small" data-ov="browser-open" title="${esc(t("overlay.tabBrowser"))}">
+            ${icon("globe", 14)}
+            <span>${esc(t("overlay.tabBrowser"))}</span>
+          </button>
           <button class="btn ov-btn-resume" data-ov="close" title="${esc(t("common.close"))}">
             <span>${esc(t("common.close"))}</span>
             <kbd class="kbd">Esc</kbd>
@@ -633,7 +637,7 @@ function renderHome(): void {
   const achUnlocked = achData?.user_unlocked ?? 0;
   const achTotal = achData?.total_achievements ?? achData?.achievements?.length ?? 0;
   const achPct = achTotal > 0 ? Math.round((achUnlocked / achTotal) * 100) : 0;
-  const recentAchs = achData?.achievements ? achData.achievements.slice(0, 3) : [];
+  const recentAchs = achData?.achievements ? achData.achievements.slice(0, 2) : [];
 
   // Screenshots preview
   const shotsPreview = cachedScreenshots.slice(0, 4);
@@ -643,8 +647,8 @@ function renderHome(): void {
 
   el.innerHTML = `
     <div class="ov-dashboard">
-      <!-- Session Card -->
-      <div class="ov-card ov-span-12">
+      <!-- Session Hero Banner -->
+      <div class="ov-card ov-span-12 ov-hero-card">
         <div class="ov-hero-banner">
           <div class="ov-hero-info">
             <div class="ov-hero-game">${esc(context.title || context.appName || "Game")}</div>
@@ -655,7 +659,8 @@ function renderHome(): void {
             </div>
           </div>
           <div class="ov-hero-actions">
-            <button class="btn" data-ov="launcher">${icon("external", 14)} ${esc(t("overlay.openLauncher"))}</button>
+            <button class="btn ghost small" data-ov="browser-open">${icon("globe", 14)} <span>${esc(t("overlay.tabBrowser"))}</span></button>
+            <button class="btn ghost small" data-ov="launcher">${icon("external", 14)} <span>${esc(t("overlay.openLauncher"))}</span></button>
           </div>
         </div>
       </div>
@@ -671,7 +676,7 @@ function renderHome(): void {
           <span class="ov-perf-unit">FPS</span>
           <span class="ov-perf-frame${m?.frameMs != null ? "" : " is-empty"}" id="ov-home-frame">${m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : ""}</span>
         </div>
-        ${perfCanvasHtml("ov-home-perf-canvas")}
+        ${perfCanvasHtml("ov-home-perf-canvas", ' style="height:68px"')}
         <div class="ov-metrics-mini">
           <div class="ov-metric-pill">
             <span class="ov-metric-label">${esc(t("overlay.cpu"))}</span>
@@ -693,6 +698,38 @@ function renderHome(): void {
           </div>
         </div>
         ${fpsNoticeHtml(m)}
+      </div>
+
+      <!-- In-Game Web Browser Quick Launch Card -->
+      <div class="ov-card ov-span-6">
+        <div class="ov-card-head">
+          <div class="ov-card-title">${icon("globe", 14)} <span class="title-text">${esc(t("overlay.tabBrowser"))}</span></div>
+          <button class="ov-card-action" data-ov-tab="browser">${icon("chevron-right", 16)}</button>
+        </div>
+        <div class="ov-home-browser-bar">
+          <input id="ov-home-browser-input" class="input ov-home-browser-input" placeholder="${esc(t("overlay.browserAddress"))}" spellcheck="false" />
+          <button class="btn primary small" data-ov="home-browser-go" title="${esc(t("overlay.tabBrowser"))}">${icon("chevron-right", 14)}</button>
+        </div>
+        <div class="ov-home-browser-chips">
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.google.com">${icon("search", 12)} <span>Google</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.youtube.com">${icon("play", 12)} <span>YouTube</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.fandom.com">${icon("gamepad-2", 12)} <span>Wiki</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.reddit.com/r/gaming">${icon("globe", 12)} <span>Reddit</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://discord.com/app">${icon("discord", 12)} <span>Discord</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://steamcommunity.com">${icon("users", 12)} <span>Steam</span></button>
+        </div>
+        <button class="btn ghost small full" data-ov="browser-open">
+          ${icon("external", 13)} <span>${esc(t("overlay.tabBrowser"))} Penceresini Aç</span>
+        </button>
+      </div>
+
+      <!-- Media Player Card -->
+      <div class="ov-card ov-span-6 ov-media-card">
+        <div class="ov-card-head">
+          <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
+          <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
+        </div>
+        ${mediaCardInnerHtml()}
       </div>
 
       <!-- Achievements Card -->
@@ -717,45 +754,32 @@ function renderHome(): void {
                 ${item.unlocked ? `<span style="color:var(--ok)">${icon("check", 14)}</span>` : ""}
               </div>`).join("")}
           </div>` : `
-          <div class="ov-empty" style="padding:24px 0">${esc(t("overlay.noAchievements"))}</div>`}
+          <div class="ov-empty" style="padding:16px 0">${esc(t("overlay.noAchievements"))}</div>`}
       </div>
 
-      <!-- Media Player Card -->
-      <div class="ov-card ov-span-6 ov-media-card">
+      <!-- Quick Notes Card -->
+      <div class="ov-card ov-span-6">
         <div class="ov-card-head">
-          <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
-          <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
+          <div class="ov-card-title">${icon("edit", 14)} <span class="title-text">${esc(t("overlay.tabNotes"))}</span></div>
+          <span style="font-size:11px;color:var(--text-3)" id="ov-home-notes-status">${savedNotes ? esc(t("overlay.saved")) : ""}</span>
         </div>
-        ${mediaCardInnerHtml()}
+        <textarea class="ov-notes-area" id="ov-home-notes" style="height:90px" placeholder="${esc(t("overlay.notesPlaceholder"))}" spellcheck="false">${esc(savedNotes)}</textarea>
       </div>
 
-      <!-- Recent Screenshots Card -->
+      <!-- Recent Screenshots Strip (shown if screenshots exist) -->
+      ${shotsPreview.length > 0 ? `
       <div class="ov-card ov-span-6">
         <div class="ov-card-head">
           <div class="ov-card-title">${icon("camera", 14)} <span class="title-text">${esc(t("overlay.tabScreenshots"))}</span></div>
           <button class="ov-card-action" data-ov-tab="shots">${icon("chevron-right", 16)}</button>
         </div>
-        ${shotsPreview.length > 0 ? `
-          <div class="ov-shots-grid">
-            ${shotsPreview.map((s) => `
-              <div class="ov-shot-item" data-ov-preview="${esc(s.data_url)}" title="${esc(s.date_str)}">
-                <img src="${esc(s.data_url)}" alt="" loading="lazy" />
-              </div>`).join("")}
-          </div>` : `
-          <div class="ov-empty" style="padding:24px 0">
-            <div>${esc(t("overlay.noShots"))}</div>
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">${esc(t("overlay.captureHint"))}</div>
-          </div>`}
-      </div>
-
-      <!-- Quick Notes Card -->
-      <div class="ov-card ov-span-12">
-        <div class="ov-card-head">
-          <div class="ov-card-title">${icon("edit", 14)} <span class="title-text">${esc(t("overlay.tabNotes"))}</span></div>
-          <span style="font-size:11px;color:var(--text-3)" id="ov-home-notes-status">${savedNotes ? esc(t("overlay.saved")) : ""}</span>
+        <div class="ov-shots-grid" style="grid-template-columns:repeat(4, 1fr);gap:8px">
+          ${shotsPreview.map((s) => `
+            <div class="ov-shot-item" data-ov-preview="${esc(s.data_url)}" title="${esc(s.date_str)}">
+              <img src="${esc(s.data_url)}" alt="" loading="lazy" />
+            </div>`).join("")}
         </div>
-        <textarea class="ov-notes-area" id="ov-home-notes" placeholder="${esc(t("overlay.notesPlaceholder"))}" spellcheck="false">${esc(savedNotes)}</textarea>
-      </div>
+      </div>` : ""}
     </div>`;
 
   wireNotesInput("ov-home-notes", "ov-home-notes-status");
@@ -771,7 +795,7 @@ function renderHomeSafe(): void {
   renderHome();
 }
 
-/** Home while the overlay runs without a game: launcher actions + media. */
+/** Home while the overlay runs without a game: launcher actions + media + browser. */
 function renderHomeLauncher(el: HTMLElement): void {
   el.innerHTML = `
     <div class="ov-dashboard">
@@ -783,16 +807,38 @@ function renderHomeLauncher(el: HTMLElement): void {
         </div>
         <div class="ov-launcher-actions">
           <button class="btn" data-ov="launcher">${icon("external", 14)} ${esc(t("overlay.openLauncher"))}</button>
+          <button class="btn ghost" data-ov="browser-open">${icon("globe", 14)} ${esc(t("overlay.tabBrowser"))}</button>
           <button class="btn ghost" data-ov-tab="music">${icon("spotify", 14)} ${esc(t("overlay.tabSpotify"))}</button>
         </div>
       </div>
 
-      <div class="ov-card ov-span-12 ov-media-card">
+      <div class="ov-card ov-span-6 ov-media-card">
         <div class="ov-card-head">
           <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
           <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
         </div>
         ${mediaCardInnerHtml()}
+      </div>
+
+      <!-- Quick Browser Card in Launcher Mode -->
+      <div class="ov-card ov-span-6">
+        <div class="ov-card-head">
+          <div class="ov-card-title">${icon("globe", 14)} <span class="title-text">${esc(t("overlay.tabBrowser"))}</span></div>
+          <button class="ov-card-action" data-ov-tab="browser">${icon("chevron-right", 16)}</button>
+        </div>
+        <div class="ov-home-browser-bar">
+          <input id="ov-home-browser-input" class="input ov-home-browser-input" placeholder="${esc(t("overlay.browserAddress"))}" spellcheck="false" />
+          <button class="btn primary small" data-ov="home-browser-go" title="${esc(t("overlay.tabBrowser"))}">${icon("chevron-right", 14)}</button>
+        </div>
+        <div class="ov-home-browser-chips">
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.google.com">${icon("search", 12)} <span>Google</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.youtube.com">${icon("play", 12)} <span>YouTube</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://www.reddit.com/r/gaming">${icon("globe", 12)} <span>Reddit</span></button>
+          <button class="ov-chip-btn" data-ov="browser-open" data-url="https://discord.com/app">${icon("discord", 12)} <span>Discord</span></button>
+        </div>
+        <button class="btn ghost small full" data-ov="browser-open">
+          ${icon("external", 13)} <span>${esc(t("overlay.tabBrowser"))} Penceresini Aç</span>
+        </button>
       </div>
     </div>`;
 }
@@ -1680,12 +1726,96 @@ function renderBrowser(): void {
   const el = viewEl("browser");
   if (!el) return;
   el.innerHTML = `
-    <div class="ov-page-title">${icon("globe", 20)} <span>${esc(t("overlay.tabBrowser"))}</span></div>
-    <div class="ov-card">
-      <div class="ov-empty-block">
-        <div class="ov-empty-icon">${icon("globe", 26)}</div>
-        <div class="ov-empty-desc">${esc(t("overlay.browserDesc"))}</div>
+    <div class="ov-page-title" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${icon("globe", 20)} <span>${esc(t("overlay.tabBrowser"))}</span>
       </div>
+      <button class="btn primary small" data-ov="browser-open">
+        ${icon("external", 14)} <span>${esc(t("overlay.browserNewTab"))}</span>
+      </button>
+    </div>
+
+    <!-- Search & Address Bar Card -->
+    <div class="ov-card" style="margin-bottom:16px">
+      <div class="ov-browser-hub-hero">
+        <div class="ov-browser-hub-lead">
+          <div class="ov-browser-hub-title">${esc(t("overlay.tabBrowser"))}</div>
+          <div class="ov-browser-hub-sub">${esc(t("overlay.browserDesc"))}</div>
+        </div>
+        <div class="ov-browser-search-wrap">
+          <span class="ov-browser-search-icon">${icon("search", 16)}</span>
+          <input id="ov-browser-hub-input" class="input ov-browser-hub-input" placeholder="${esc(t("overlay.browserAddress"))}" spellcheck="false" />
+          <button class="btn primary small" data-ov="browser-hub-go">
+            ${icon("arrow-right", 14)} <span>Git</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Bookmarks & Portals Grid -->
+    <div class="ov-section-head" style="margin-bottom:12px">
+      <span class="ov-section-title">Hızlı Bağlantılar & Oyun Rehberleri</span>
+    </div>
+    <div class="ov-browser-grid">
+      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.google.com">
+        <div class="ov-portal-icon">${icon("search", 20)}</div>
+        <div class="ov-portal-info">
+          <div class="ov-portal-title">Google</div>
+          <div class="ov-portal-desc">Web araması ve çözümler</div>
+        </div>
+        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
+      </div>
+
+      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.youtube.com">
+        <div class="ov-portal-icon">${icon("play", 20)}</div>
+        <div class="ov-portal-info">
+          <div class="ov-portal-title">YouTube</div>
+          <div class="ov-portal-desc">Rehberler, boss taktikleri ve videolar</div>
+        </div>
+        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
+      </div>
+
+      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.fandom.com">
+        <div class="ov-portal-icon">${icon("gamepad-2", 20)}</div>
+        <div class="ov-portal-info">
+          <div class="ov-portal-title">Game Wikis</div>
+          <div class="ov-portal-desc">Fandom oyun wikileri ve haritalar</div>
+        </div>
+        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
+      </div>
+
+      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.reddit.com/r/gaming">
+        <div class="ov-portal-icon">${icon("globe", 20)}</div>
+        <div class="ov-portal-info">
+          <div class="ov-portal-title">Reddit</div>
+          <div class="ov-portal-desc">Oyun toplulukları ve taktikler</div>
+        </div>
+        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
+      </div>
+
+      <div class="ov-portal-card" data-ov="browser-open" data-url="https://discord.com/app">
+        <div class="ov-portal-icon">${icon("discord", 20)}</div>
+        <div class="ov-portal-info">
+          <div class="ov-portal-title">Discord Web</div>
+          <div class="ov-portal-desc">Web tarayıcısı üzerinden sunucular</div>
+        </div>
+        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
+      </div>
+
+      <div class="ov-portal-card" data-ov="browser-open" data-url="https://steamcommunity.com">
+        <div class="ov-portal-icon">${icon("users", 20)}</div>
+        <div class="ov-portal-info">
+          <div class="ov-portal-title">Steam Community</div>
+          <div class="ov-portal-desc">Topluluk rehberleri ve modlar</div>
+        </div>
+        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
+      </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box" style="margin-top:16px">
+      ${icon("info", 14)}
+      <span>WebView2 tam donanım hızlandırmalı tarayıcı bağımsız bir pencerede oyun üzerinde yüzer. Sekmeler arasında serbestçe geçiş yapabilir, pencereleri istediğiniz gibi taşıyabilir ve boyutlandırabilirsiniz.</span>
     </div>`;
 }
 
@@ -2676,7 +2806,19 @@ function wireEvents(): void {
 
     if (action === "close") void invoke("overlay_hide");
     else if (action === "launcher") void invoke("overlay_show_launcher");
-    else if (action === "shots-folder") void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
+    else if (action === "browser-open" || action === "open-browser-window") {
+      const el = target.closest<HTMLElement>("[data-ov]");
+      const url = el?.dataset.url || null;
+      void invoke("overlay_browser_open", { url });
+    } else if (action === "home-browser-go") {
+      const input = document.getElementById("ov-home-browser-input") as HTMLInputElement | null;
+      const url = input?.value.trim() || null;
+      void invoke("overlay_browser_open", { url });
+    } else if (action === "browser-hub-go") {
+      const input = document.getElementById("ov-browser-hub-input") as HTMLInputElement | null;
+      const url = input?.value.trim() || null;
+      void invoke("overlay_browser_open", { url });
+    } else if (action === "shots-folder") void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
     else if (action === "close-lightbox") hideLightbox();
     else if (action === "lightbox-prev") stepLightbox(-1);
     else if (action === "lightbox-next") stepLightbox(1);
@@ -2845,6 +2987,14 @@ function wireEvents(): void {
       if (event.key === "Enter") {
         event.preventDefault();
         runUserSearch();
+      }
+      return;
+    }
+    if (typed instanceof HTMLInputElement && (typed.id === "ov-home-browser-input" || typed.id === "ov-browser-hub-input")) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const url = typed.value.trim() || null;
+        void invoke("overlay_browser_open", { url });
       }
       return;
     }

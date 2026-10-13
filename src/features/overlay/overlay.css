@@ -28,7 +28,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(0, 0, 0, 0.82);
   overflow: hidden;
   animation: fade-in 140ms ease-out;
 }
@@ -203,22 +203,33 @@
 }
 
 /* --- Modular Dashboard (Overview) --- */
-/* The tabs share one language: flat panels stacked in a column, each a quiet
-   head row over hairline rows. No cards inside cards. */
 .ov-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+  max-width: 1160px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .ov-card {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--line-strong);
-  padding: 0;
-  background: none;
-  border-radius: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px;
+  gap: 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+  transition: border-color var(--ease);
+}
+
+.ov-card[data-nav-target] {
+  cursor: pointer;
+}
+
+.ov-card[data-nav-target]:hover {
+  border-color: var(--line-strong);
 }
 
 .ov-card-head {
@@ -226,9 +237,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  height: 38px;
+  height: 28px;
   margin: 0;
-  border-bottom: 1px solid var(--line);
 }
 
 /* Mirrors the launcher's .section-title. */
@@ -265,20 +275,46 @@
   color: var(--text);
 }
 
-/* Everything is a band now: the old grid spans only mean full width. */
-.ov-span-12,
-.ov-span-8,
-.ov-span-7,
-.ov-span-6,
-.ov-span-5,
-.ov-span-4,
+.ov-span-12 {
+  grid-column: span 12;
+}
+
+.ov-span-8 {
+  grid-column: span 8;
+}
+
+.ov-span-7 {
+  grid-column: span 7;
+}
+
+.ov-span-6 {
+  grid-column: span 6;
+}
+
+.ov-span-5 {
+  grid-column: span 5;
+}
+
+.ov-span-4 {
+  grid-column: span 4;
+}
+
 .ov-span-3 {
-  width: 100%;
+  grid-column: span 3;
 }
 
 @media (max-width: 960px) {
-  .ov-span-8, .ov-span-7, .ov-span-6, .ov-span-5, .ov-span-4, .ov-span-3 {
-    grid-column: span 12;
+  .ov-dashboard {
+    grid-template-columns: 1fr;
+  }
+  .ov-span-12,
+  .ov-span-8,
+  .ov-span-7,
+  .ov-span-6,
+  .ov-span-5,
+  .ov-span-4,
+  .ov-span-3 {
+    grid-column: 1 / -1;
   }
 }
 
@@ -625,44 +661,50 @@
   transform: translateX(-50%);
   width: max-content;
   max-width: calc(100vw - 32px);
-  height: 44px;
+  height: 42px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 0 4px;
+  gap: 3px;
+  padding: 0 6px;
   border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--line-strong);
   box-shadow: var(--shadow-pop);
   z-index: 100;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ov-dock::-webkit-scrollbar {
+  display: none;
 }
 
 .ov-dock-items {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 
 .ov-dock-btn {
-  height: 34px;
+  height: 32px;
   padding: 0 10px;
   border-radius: var(--r-sm);
   display: inline-flex;
   align-items: center;
   gap: 7px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-2);
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
   font-family: inherit;
-  transition: background-color var(--ease), color var(--ease);
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
 }
 
-/* Icon-only dock when the labels would overrun the window. */
-@media (max-width: 1100px) {
+/* Icon-only dock when the window is very narrow */
+@media (max-width: 960px) {
   .ov-dock-btn span {
     display: none;
   }
@@ -676,6 +718,7 @@
 .ov-dock-btn.active {
   color: var(--text);
   background: var(--surface-3);
+  border-color: var(--line-strong);
 }
 
 .ov-bumper-hint {
@@ -1537,6 +1580,193 @@
   flex: 1;
   min-height: 0;
   background: var(--surface-1);
+}
+
+/* --- In-Game Browser Launchpad & Portals --- */
+.ov-home-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ov-home-browser-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+}
+
+.ov-home-browser-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.ov-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+
+.ov-chip-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.ov-chip-btn svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.ov-chip-btn:hover svg {
+  color: var(--text);
+}
+
+/* Browser View: Command Center Hero */
+.ov-browser-hub-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ov-browser-hub-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ov-browser-hub-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.ov-browser-hub-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.ov-browser-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  transition: border-color var(--ease);
+}
+
+.ov-browser-search-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.ov-browser-search-icon {
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+}
+
+.ov-browser-hub-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text);
+  font-size: 13px;
+  outline: none !important;
+}
+
+.ov-browser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.ov-portal-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+
+.ov-portal-card:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.ov-portal-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.ov-portal-card:hover .ov-portal-icon {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ov-portal-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ov-portal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ov-portal-desc {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-portal-action {
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  transition: transform var(--ease), color var(--ease);
+}
+
+.ov-portal-card:hover .ov-portal-action {
+  color: var(--text);
+  transform: translateX(2px);
 }
 
 /* --- Discord tab: exactly two areas — the friend picker (280px) and the
