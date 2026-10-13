@@ -62,8 +62,16 @@ static PARKED: AtomicBool = AtomicBool::new(false);
 static WEB_VOICE: Mutex<Option<serde_json::Value>> = Mutex::new(None);
 /// When the last report arrived; a parked page whose reports stop (a broken
 /// probe, a Discord update) is closed instead of leaking a renderer.
-static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);
-/// Last logged web-voice note; only transitions reach the log.
+/// When the page was last navigated. A navigation right on top of another one
+/// is how the client's router breaks and the page stays on its loading screen,
+/// so the conversation opener keeps a short cooldown between them.
+static LAST_NAV: Mutex<Option<Instant>> = Mutex::new(None);
+
+/// The generation an automatic recovery reload already ran for: a page that
+/// refuses to paint must not loop reloads forever.
+static RECOVERED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);/// Last logged web-voice note; only transitions reach the log.
 static VOICE_NOTE: Mutex<String> = Mutex::new(String::new());
 
 /// Where a kept-alive child parks: far outside the client area, so nothing of
@@ -816,13 +824,26 @@ fn watch_first_paint(app: &AppHandle, generation: u64) {
                 let _ = view.eval(READY_SCRIPT);
             }
         }
-        if GENERATION.load(Ordering::SeqCst) == generation
-            && !PAINTED.load(Ordering::SeqCst)
-            && WANT_VISIBLE.load(Ordering::SeqCst)
-        {
-            eprintln!("[discord-view] readiness timeout; showing the child anyway");
-            if let Some(view) = view(&ready_app) {
-                let _ = view.show();
+        if GENERATION.load(Ordering::SeqCst) == generation && !PAINTED.load(Ordering::SeqCst) {
+            // A navigation can leave the client on its loading screen forever.
+            // Recover once per generation with a reload, then leave the rest to
+            // the Reload button: a page that refuses to paint must not loop.
+            if RECOVERED.load(Ordering::SeqCst) != generation {
+                RECOVERED.store(generation, Ordering::SeqCst);
+                if let Some(view) = view(&ready_app) {
+                    web_log(&ready_app, "the client never painted; reloading once");
+                    if let Ok(url) = HOME_URL.parse::<url::Url>() {
+                        let _ = view.navigate(url);
+                    }
+                    watch_first_paint(&ready_app, generation);
+                    return;
+                }
+            }
+            if WANT_VISIBLE.load(Ordering::SeqCst) {
+                eprintln!("[discord-view] readiness timeout; showing the child anyway");
+                if let Some(view) = view(&ready_app) {
+                    let _ = view.show();
+                }
             }
         }
     });
@@ -900,6 +921,9 @@ pub fn discord_view_hide(app: AppHandle) {
 pub fn discord_view_reload(app: AppHandle) {
     if let Some(view) = view(&app) {
         PAINTED.store(false, Ordering::SeqCst);
+        if let Ok(mut guard) = LAST_NAV.lock() {
+            *guard = Some(Instant::now());
+        }
         let _ = view.hide();
         if let Ok(url) = HOME_URL.parse::<url::Url>() {
             let _ = view.navigate(url);
@@ -929,9 +953,18 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
         .and_then(|guard| *guard)
         .map(|at| at.elapsed() < Duration::from_secs(15))
         .unwrap_or(false);
+    let too_soon = LAST_NAV
+        .lock()
+        .ok()
+        .and_then(|guard| *guard)
+        .map(|at| at.elapsed() < Duration::from_secs(3))
+        .unwrap_or(false);
     match view(&app) {
-        Some(view) if !IN_CALL.load(Ordering::SeqCst) && healthy => {
+        Some(view) if !too_soon && !IN_CALL.load(Ordering::SeqCst) && healthy => {
             PAINTED.store(false, Ordering::SeqCst);
+            if let Ok(mut guard) = LAST_NAV.lock() {
+                *guard = Some(Instant::now());
+            }
             let _ = view.hide();
             let _ = view.navigate(target);
             watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
@@ -940,7 +973,9 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
         Some(_) => {
             web_log(
                 &app,
-                if IN_CALL.load(Ordering::SeqCst) {
+                if too_soon {
+                    "conversation asked again too soon; the client is still moving"
+                } else if IN_CALL.load(Ordering::SeqCst) {
                     "conversation asked while in a call; the client stays where it is"
                 } else {
                     "page still starting; only bringing the launcher forward"
