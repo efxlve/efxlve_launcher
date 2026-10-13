@@ -90,6 +90,8 @@
   "common.browse": "เรียกดู",
   "settings.defaultKey": "ค่าเริ่มต้น",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.discordAlwaysTitle": "เปิด Discord ค้างไว้",
+  "settings.discordAlwaysDesc": "โหลดหน้า Discord ตอนเริ่มโปรแกรมไว้เบื้องหลัง เพื่อรับข้อความและสายระหว่างเล่นเกม",
   "settings.presenceDesc": "แสดงสิ่งที่คุณกำลังทำบน Discord พร้อมปกเกมและไอคอนตัวเปิดเกม",
   "settings.discordDesc": "Discord ในตัวเรียกโปรแกรม: เพื่อน ข้อความส่วนตัว และเซิร์ฟเวอร์ผ่านเว็บไคลเอนต์จริง",
   "settings.discordJoin": "เข้าร่วมเซิร์ฟเวอร์",

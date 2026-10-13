@@ -820,6 +820,7 @@ fn main() {
             discord_host::discord_open_devtools,
             discord_host::discord_web_voice_state,
             discord_host::discord_open_conversation,
+            discord_host::discord_view_prewarm,
             discord_sdk::discord_sdk_start,
             discord_sdk::discord_sdk_state,
             discord_sdk::discord_sdk_friends,

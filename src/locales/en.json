@@ -104,6 +104,8 @@
   "common.browse": "Browse",
   "settings.defaultKey": "Default",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.discordAlwaysTitle": "Keep Discord open",
+  "settings.discordAlwaysDesc": "Loads the Discord page at startup, parked in the background, so messages and calls arrive while you play.",
   "settings.presenceDesc": "Shows what you are doing on Discord, with the game cover and the launcher icon.",
   "settings.discordDesc": "Discord in the launcher: friends, direct messages and servers in the real web client.",
   "settings.discordJoin": "Join the server",

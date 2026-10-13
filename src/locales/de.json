@@ -90,6 +90,8 @@
   "common.browse": "Durchsuchen",
   "settings.defaultKey": "Standard",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.discordAlwaysTitle": "Discord geöffnet lassen",
+  "settings.discordAlwaysDesc": "Lädt die Discord-Seite beim Start im Hintergrund, damit Nachrichten und Anrufe während des Spielens ankommen.",
   "settings.presenceDesc": "Zeigt auf Discord, was du tust, mit Spielcover und Launcher-Symbol.",
   "settings.discordDesc": "Discord im Launcher: Freunde, DMs und Server im echten Web-Client.",
   "settings.discordJoin": "Server beitreten",

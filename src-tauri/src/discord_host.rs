@@ -991,6 +991,23 @@ pub fn discord_view_reload(app: AppHandle) {
     }
 }
 
+/// Loads the Discord page in the background (parked, hidden) so the client is
+/// already connected when the person opens it — and so messages and calls
+/// arrive while they play. The launcher calls this at startup when the
+/// "keep Discord open" setting is on.
+#[tauri::command]
+pub async fn discord_view_prewarm(app: AppHandle) -> Result<(), String> {
+    if view(&app).is_some() || CREATING.load(Ordering::SeqCst) {
+        return Ok(());
+    }
+    web_log(&app, "prewarming the Discord page");
+    let (x, y, width, height) = PARK_RECT;
+    if let Ok(mut guard) = LAST_RECT.lock() {
+        *guard = Some((x, y, width, height));
+    }
+    create_view(&app, x, y, width, height).await
+}
+
 /// Brings a conversation forward: the overlay asks for a DM or a voice channel
 /// and the launcher's own client opens it. Only the client's own channel URLs
 /// are accepted; writing stays the person's job in the real client.

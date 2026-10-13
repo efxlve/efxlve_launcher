@@ -721,6 +721,12 @@ document.addEventListener("click", (e) => {
         if (S.currentModalAppName) openEpicModal(S.currentModalAppName, false);
       });
     }
+  } else if (act === "toggle-discord-always") {
+    // Default is on: only an explicit "false" turns it off.
+    const next = localStorage.getItem("efxlve-discord-always") === "false";
+    localStorage.setItem("efxlve-discord-always", String(next));
+    if (next) void invoke("discord_view_prewarm").catch(() => undefined);
+    render();
   } else if (act === "toggle-presence") {
     S.presenceEnabled = !S.presenceEnabled;
     applyPresenceSettings();

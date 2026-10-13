@@ -415,6 +415,15 @@ function renderIntegrations(): string {
 
   const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
 
+  // The Discord page is the message channel: keeping it loaded is what lets
+  // messages and calls arrive while a game runs. On by default; the person
+  // decides, and turning it off unloads the page on the next start.
+  const discordAlways = row(
+    t("settings.discordAlwaysTitle"),
+    t("settings.discordAlwaysDesc"),
+    toggle("toggle-discord-always", localStorage.getItem("efxlve-discord-always") !== "false"),
+  );
+
   // Opt-in per client: quit it once the game it launched closes. Steam keeps
   // its own localStorage toggle; the companion clients read the Rust settings.
   const exitToggle = (store: string) =>
@@ -437,7 +446,7 @@ function renderIntegrations(): string {
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
-    group(discord + presence, t("settings.secSocial"))
+    group(discord + presence + discordAlways, t("settings.secSocial"))
   );
 }
 

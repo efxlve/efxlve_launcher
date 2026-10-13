@@ -90,6 +90,8 @@
   "common.browse": "استعراض",
   "settings.defaultKey": "افتراضي",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.discordAlwaysTitle": "إبقاء Discord مفتوحًا",
+  "settings.discordAlwaysDesc": "يحمّل صفحة Discord عند بدء التشغيل في الخلفية، لتصل الرسائل والمكالمات أثناء اللعب.",
   "settings.presenceDesc": "يعرض ما تفعله على Discord، مع غلاف اللعبة وأيقونة المشغّل.",
   "settings.discordDesc": "Discord داخل المشغّل: الأصدقاء والرسائل الخاصة والخوادم عبر عميل الويب الحقيقي.",
   "settings.discordJoin": "انضم إلى الخادم",

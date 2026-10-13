@@ -90,6 +90,8 @@
   "common.browse": "参照",
   "settings.defaultKey": "デフォルト",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.discordAlwaysTitle": "Discord を開いたままにする",
+  "settings.discordAlwaysDesc": "起動時に Discord ページをバックグラウンドで読み込み、プレイ中もメッセージと通話を受け取れるようにします。",
   "settings.presenceDesc": "プレイ中の内容を、ゲームのカバーとランチャーのアイコンとともに Discord に表示します。",
   "settings.discordDesc": "ランチャー内のDiscord：フレンド、DM、サーバーを本物のWebクライアントで。",
   "settings.discordJoin": "サーバーに参加",

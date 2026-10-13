@@ -8,6 +8,7 @@
  */
 
 import "./styles/index.css";
+import { invoke } from "@tauri-apps/api/core";
 import { initSidebarLayout } from "./core/sidebar-layout";
 import { applySidebarPageVisibility } from "./core/page-visibility";
 import { S } from "./core/state";
@@ -46,6 +47,12 @@ document.documentElement.classList.add("ready");
 initSidebarLayout();
 initMiniPlayer();
 applySidebarPageVisibility();
+
+// Discord stays warm by default: the page loads parked off-screen at startup,
+// so messages and calls arrive while a game runs. Settings can turn it off.
+if (localStorage.getItem("efxlve-discord-always") !== "false") {
+  void invoke("discord_view_prewarm").catch(() => undefined);
+}
 
 let lastRenderedView: View | null = null;
 viewEl.addEventListener("animationend", (e) => {

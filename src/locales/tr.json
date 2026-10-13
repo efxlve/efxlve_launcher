@@ -104,6 +104,8 @@
   "common.browse": "Göz At",
   "settings.defaultKey": "Varsayılan",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.discordAlwaysTitle": "Discord açık kalsın",
+  "settings.discordAlwaysDesc": "Discord sayfası başlangıçta arka planda yüklenir; oyun oynarken mesajlar ve aramalar gelir.",
   "settings.presenceDesc": "Discord'da ne yaptığını gösterir. Oyun kapağı ve launcher ikonu da görünür.",
   "settings.discordDesc": "Launcher içinde Discord: arkadaşlar, DM'ler ve sunucular gerçek web istemcisiyle.",
   "settings.discordJoin": "Sunucuya katıl",
