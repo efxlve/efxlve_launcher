@@ -563,6 +563,10 @@ mod ffi {
             out: *mut MessageHandle,
         ) -> bool;
         pub fn Discord_MessageHandle_Content(handle: *mut MessageHandle, out: *mut StringValue);
+        pub fn Discord_MessageHandle_AdditionalName(
+            handle: *mut MessageHandle,
+            out: *mut StringValue,
+        ) -> bool;
         pub fn Discord_MessageHandle_AuthorId(handle: *mut MessageHandle) -> u64;
         pub fn Discord_MessageHandle_RecipientId(handle: *mut MessageHandle) -> u64;
         pub fn Discord_MessageHandle_SentTimestamp(handle: *mut MessageHandle) -> u64;
@@ -937,12 +941,23 @@ mod imp {
         };
         Discord_MessageHandle_Content(&mut handle, &mut content);
         let text = string_of(content);
+        // An attachment (image, GIF, sticker) carries no text: its name is all
+        // the row can show, but it must not vanish.
+        let mut additional = StringValue {
+            ptr: ptr::null_mut(),
+            size: 0,
+        };
+        let attachment = if Discord_MessageHandle_AdditionalName(&mut handle, &mut additional) {
+            string_of(additional)
+        } else {
+            String::new()
+        };
         let author = Discord_MessageHandle_AuthorId(&mut handle);
         let recipient = Discord_MessageHandle_RecipientId(&mut handle);
         let sent = Discord_MessageHandle_SentTimestamp(&mut handle);
         Discord_MessageHandle_Drop(&mut handle);
 
-        if text.is_empty() {
+        if text.is_empty() && attachment.is_empty() {
             sdk_note!("message {message_id}: empty content, skipped");
             return;
         }
@@ -990,6 +1005,7 @@ mod imp {
                     "friendId": author.to_string(),
                     "messageId": message_id.to_string(),
                     "text": text,
+                    "attachment": attachment,
                     "at": sent_ms,
                 }),
             );

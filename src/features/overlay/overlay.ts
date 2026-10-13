@@ -1711,6 +1711,8 @@ interface ReplyLogEntry {
   messageId?: string;
   time: string;
   text: string;
+  /** An attachment's name (image, GIF, sticker): the SDK sends no URL. */
+  attachment?: string;
   state: "sending" | "sent" | "error";
   error?: string;
   /** "out" = sent from here, "in" = received. */
@@ -1796,7 +1798,13 @@ function selectReplyTarget(id: string, name: string, seed = ""): void {
 
 /** A message that arrived while the overlay is open: it lands in that friend's
  * thread, and a badge waits on the row if the conversation is not on screen. */
-function noteIncoming(friendId: string, text: string, at: number, messageId?: string): void {
+function noteIncoming(
+  friendId: string,
+  text: string,
+  at: number,
+  messageId?: string,
+  attachment?: string,
+): void {
   const time = new Date(at > 0 ? at : Date.now()).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -1807,6 +1815,7 @@ function noteIncoming(friendId: string, text: string, at: number, messageId?: st
     messageId,
     time,
     text,
+    attachment,
     state: "sent",
     direction: "in",
   });
@@ -2064,11 +2073,14 @@ function logHtml(target: { id: string; name: string }): string {
         entry.state === "error"
           ? `<span class="dc-msg-error">${esc(t("overlay.discordSendFailed", { error: entry.error || "" }))}</span>`
           : "";
+      const file = entry.attachment
+        ? `<span class="dc-msg-file">${icon("clipboard", 13)} ${esc(entry.attachment)}</span>`
+        : "";
       return `
         <div class="dc-msg${entry.direction === "in" ? " is-in" : ""}${entry.state === "sending" ? " is-sending" : ""}">
           <span class="dc-msg-time num">${esc(entry.time)}</span>
           <span class="dc-msg-who">${esc(who)}</span>
-          <span class="dc-msg-text">${esc(entry.text)}${error}</span>
+          <span class="dc-msg-text">${esc(entry.text)}${file}${error}</span>
           <span class="dc-msg-end">${state}${actions}</span>
         </div>`;
     })
@@ -3166,7 +3178,7 @@ async function boot(): Promise<void> {
 
   // Messages the other side sends while the overlay is open, straight from the
   // SDK's message callback.
-  await listen<{ friendId: string; messageId?: string; text: string; at: number }>(
+  await listen<{ friendId: string; messageId?: string; text: string; attachment?: string; at: number }>(
     "discord-sdk-message",
     (event) => {
       noteIncoming(
@@ -3174,6 +3186,7 @@ async function boot(): Promise<void> {
         event.payload.text,
         event.payload.at,
         event.payload.messageId,
+        event.payload.attachment,
       );
     },
   );

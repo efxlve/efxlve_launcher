@@ -1925,6 +1925,17 @@ button.dc-row {
   font-size: 12px;
 }
 
+/* Attachments arrive as a name only (the SDK exposes no URL): the row says so
+   instead of dropping the message. */
+.dc-msg-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
 .dc-dim {
   color: var(--text-2);
 }
