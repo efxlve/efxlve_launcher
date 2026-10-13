@@ -1533,8 +1533,8 @@
   background: var(--surface-1);
 }
 
-/* --- Discord tab: context on the left (320px), the conversation on the right.
-   The tab owns the full content area, so the shell carries the active tab. --- */
+/* --- Discord tab: exactly two areas — the friend picker (280px) and the
+   conversation. Everything else is a takeover behind one labelled button. --- */
 .ov[data-ov-active-tab="discord"] .ov-main {
   padding: 0 0 76px;
   overflow: hidden;
@@ -1545,192 +1545,117 @@
   min-height: 0;
 }
 
-.dc-split {
+.discord-view {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 280px 1fr;
   height: 100%;
   min-height: 0;
 }
 
-.dc-col {
+/* --- Area 1: the friend picker --- */
+.picker-col {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  min-width: 0;
+  border-right: 1px solid var(--line);
 }
 
-.dc-col + .dc-col {
-  border-left: 1px solid var(--line);
-}
-
-/* Flat panels: a head row, then hairline rows. No cards inside the tab. */
-.dc-panel {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.dc-panel.fill {
-  flex: 1;
-  min-height: 0;
-}
-
-.dc-panel-head {
+.picker-header {
+  height: 44px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  height: 36px;
-  padding: 0 16px;
-  color: var(--text-3);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
-.dc-panel-head-label {
-  flex: 1;
+.picker-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
 }
 
-.dc-panel-head-action {
+/* Every trigger is a word, not a mystery icon. */
+.header-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   height: 24px;
   padding: 0 8px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   background: none;
-  color: var(--text-3);
+  color: var(--text-2);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.dc-panel-head-action:hover {
-  color: var(--text-2);
+.header-btn:hover {
   background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--line-strong);
 }
 
-/* A panel head that folds its body: the channel list stays out of the way. */
-.dc-panel-head-toggle {
-  cursor: pointer;
+/* A pending request is the one thing allowed to ask for attention. */
+.header-btn.highlight {
+  color: var(--warn);
+  border-color: rgba(224, 163, 46, 0.3);
 }
 
-.dc-panel-head-toggle:hover {
-  color: var(--text-2);
-  background: var(--surface-2);
-}
-
-.dc-sec {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 16px;
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-}
-
-.dc-sec:not(:first-child) {
-  border-top: 1px solid var(--line);
-}
-
-.dc-scroll {
+.picker-list {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
 }
 
-/* --- List rows --- */
-.dc-row {
-  position: relative;
+.friend-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 48px;
-  padding: 6px 16px;
+  height: 52px;
+  padding: 0 14px;
   border: none;
-  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   width: 100%;
   background: none;
-  font: inherit;
   color: inherit;
+  font: inherit;
   text-align: left;
-  cursor: default;
-}
-
-button.dc-row {
   cursor: pointer;
 }
 
-.dc-row:first-child {
-  border-top: none;
-}
-
-.dc-row:hover,
-.dc-row.ov-controller-focus {
+.friend-row:hover,
+.friend-row.ov-controller-focus {
   background: var(--surface-2);
 }
 
-.dc-row:focus-visible {
+.friend-row:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: -2px;
 }
 
-.dc-row.is-selected {
+.friend-row.is-active {
   background: var(--surface-3);
-  box-shadow: inset 2px 0 0 var(--text);
+  box-shadow: inset 3px 0 0 var(--text);
 }
 
-.dc-row.is-offline {
+.friend-row.is-offline {
   color: var(--text-2);
 }
 
-.dc-row-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.dc-row-end {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-3);
-  flex-shrink: 0;
-  font-size: 12px;
-}
-
-.dc-name {
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dc-sub {
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* --- Avatars and presence --- */
-.dc-av {
+.avatar-wrap {
   position: relative;
   width: 28px;
   height: 28px;
@@ -1739,7 +1664,7 @@ button.dc-row {
   flex-shrink: 0;
 }
 
-.dc-av img {
+.avatar-wrap img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -1747,130 +1672,59 @@ button.dc-row {
   display: block;
 }
 
-.dc-av-lg {
-  width: 32px;
-  height: 32px;
-}
-
-.dc-av.is-empty {
-  background: transparent;
-  border: 1px dashed var(--line-strong);
-}
-
-/* Green ring means live speech, the same way Discord draws it. */
-.dc-av.is-speaking {
-  box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--ok);
-}
-
-.dc-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--text-3);
-}
-
-.dc-av .dc-dot {
+.presence-dot {
   position: absolute;
   right: -1px;
   bottom: -1px;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
   border: 2px solid var(--surface-1);
 }
 
-.dc-row:hover .dc-av .dc-dot,
-.dc-row.ov-controller-focus .dc-av .dc-dot {
+.friend-row:hover .presence-dot,
+.friend-row.ov-controller-focus .presence-dot {
   border-color: var(--surface-2);
 }
 
-.dc-row.is-selected .dc-av .dc-dot {
+.friend-row.is-active .presence-dot {
   border-color: var(--surface-3);
 }
 
-.dc-online  { background: var(--ok); }
-.dc-idle    { background: var(--warn); }
-.dc-dnd     { background: var(--err); }
-.dc-offline { background: var(--text-3); }
+.presence-dot.online  { background: var(--ok); }
+.presence-dot.idle    { background: var(--warn); }
+.presence-dot.dnd     { background: var(--err); }
+.presence-dot.offline { background: var(--text-3); }
 
-/* --- Voice channels, grouped by server --- */
-.dc-guild {
+.friend-meta {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 16px;
-  color: var(--text-2);
-  font-size: 12px;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.friend-name {
+  font-size: 13px;
   font-weight: 600;
-  flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dc-guild:not(:first-child) {
-  border-top: 1px solid var(--line);
-}
-
-.dc-guild-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-3);
-  flex-shrink: 0;
-}
-
-.dc-channel-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 4px 16px 4px 28px;
-  border: none;
-  border-top: 1px solid var(--line);
-  width: 100%;
-  background: none;
-  font: inherit;
-  color: var(--text-2);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.dc-channel-row:first-child {
-  border-top: none;
-}
-
-.dc-channel-row:hover,
-.dc-channel-row.ov-controller-focus {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.dc-channel-row:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: -2px;
-}
-
-.dc-channel-icon {
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-
-/* Presence text under a name. */
-.dc-presence {
+.friend-status {
   font-size: 12px;
   color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dc-presence-online { color: var(--ok); }
-.dc-presence-idle   { color: var(--warn); }
-.dc-presence-dnd    { color: var(--err); }
+.friend-status.online { color: var(--ok); }
+.friend-status.idle   { color: var(--warn); }
+.friend-status.dnd    { color: var(--err); }
 
-/* Unread arrivals: the only inverted pill in the tab, so it reads first. */
-.dc-unread {
+.unread-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1883,107 +1737,87 @@ button.dc-row {
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
-/* --- Right column: the conversation --- */
-.dc-account-row {
+/* --- Area 2: the conversation --- */
+.conv-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.conv-header {
+  height: 44px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-  height: 36px;
+  justify-content: space-between;
+  gap: 12px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
 
-.dc-me {
+.conv-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.conv-target-name {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conv-target-state {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ok);
+  white-space: nowrap;
+}
+
+.conv-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 26px;
   padding: 0 10px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line);
-  background: none;
+  background: var(--surface-2);
   color: var(--text-2);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.dc-me:hover {
+.action-btn:hover {
+  background: var(--surface-3);
   color: var(--text);
   border-color: var(--line-strong);
 }
 
-.dc-recip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 52px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-}
-
-.dc-recip-name {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.dc-recip-hint {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.dc-recip-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dc-btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 8px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
-  background: none;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.dc-btn-ghost:hover {
-  color: var(--text);
-  background: var(--surface-2);
-}
-
-.dc-btn-ghost:disabled {
+.action-btn:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-/* A live call: the only green chip outside the voice card. */
-.dc-call-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: var(--r-sm);
-  background: var(--ok-tint);
-  color: var(--ok);
-  font-size: 12px;
-  font-weight: 600;
-}
-
 /* The log owns the column: the conversation is the point of the tab. */
-.dc-log {
+.conv-log {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1992,108 +1826,67 @@ button.dc-row {
   justify-content: flex-end;
 }
 
-.dc-log-top-note {
-  padding: 12px 16px;
-  color: var(--text-3);
-  font-size: 12px;
-}
-
-.dc-msg {
+.msg-row {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 6px 16px;
+  min-height: 32px;
   border-top: 1px solid var(--line);
-  min-height: 36px;
 }
 
-.dc-msg:hover {
+.msg-row:hover {
   background: var(--surface-2);
 }
 
-.dc-msg-time {
-  flex-shrink: 0;
+.msg-time {
   width: 38px;
-  color: var(--text-3);
   font-size: 12px;
+  color: var(--text-3);
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.dc-msg-who {
-  flex-shrink: 0;
-  width: 56px;
+.msg-author {
+  width: 48px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-3);
+  flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12px;
 }
 
-.dc-msg.is-in .dc-msg-who {
+.msg-row.is-incoming .msg-author {
   color: var(--text);
 }
 
-.dc-msg-body {
+.msg-content {
   flex: 1;
   min-width: 0;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
-.dc-msg.is-sending {
-  color: var(--text-2);
-}
-
-.dc-msg-end {
-  flex-shrink: 0;
+.msg-meta {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
-.dc-msg-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-3);
+.msg-status-text {
   font-size: 12px;
-}
-
-.dc-msg-actions {
-  display: none;
-  align-items: center;
-  gap: 2px;
-}
-
-.dc-msg:hover .dc-msg-actions,
-.dc-msg:focus-within .dc-msg-actions {
-  display: flex;
-}
-
-.dc-msg-act {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-sm);
-  border: none;
-  background: none;
   color: var(--text-3);
-  cursor: pointer;
 }
 
-.dc-msg-act:hover {
-  color: var(--text);
-  background: var(--surface-3);
-}
-
-.dc-msg-file {
+.msg-attachment {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 6px;
+  margin-top: 3px;
   padding: 2px 8px;
   border-radius: var(--r-sm);
   background: var(--surface-3);
@@ -2101,7 +1894,12 @@ button.dc-row {
   font-size: 12px;
 }
 
-.dc-msg-error {
+/* A failed message says so on the row itself. */
+.msg-row.is-failed {
+  background: rgba(229, 72, 77, 0.05);
+}
+
+.msg-error-label {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -2109,10 +1907,9 @@ button.dc-row {
   font-size: 12px;
 }
 
-.dc-retry-btn {
+.retry-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   height: 22px;
   padding: 0 8px;
   border-radius: var(--r-sm);
@@ -2124,40 +1921,67 @@ button.dc-row {
   cursor: pointer;
 }
 
-.dc-retry-btn:hover {
-  background: rgba(229, 72, 77, 0.1);
+.retry-btn:hover {
+  background: rgba(229, 72, 77, 0.12);
 }
 
-/* --- Compact composer: a strip, never a third of the panel --- */
-.dc-composer {
-  flex-shrink: 0;
-  padding: 8px 16px 10px;
+/* Row actions appear on hover, and they carry words. */
+.msg-hover-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.msg-row:hover .msg-hover-actions,
+.msg-row:focus-within .msg-hover-actions {
+  display: flex;
+}
+
+.msg-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.msg-act-btn:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+/* --- Composer: a strip, never a block --- */
+.conv-composer {
+  padding: 10px 16px 12px;
   border-top: 1px solid var(--line-strong);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.dc-compose-row {
+.composer-strip {
   display: flex;
   align-items: flex-end;
   gap: 8px;
 }
 
-.dc-compose-to {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.dc-compose-input {
+.composer-input {
   flex: 1;
   min-width: 0;
-  min-height: 34px;
+  height: 34px;
   max-height: 88px;
-  padding: 7px 10px;
+  padding: 7px 12px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
-  background: var(--surface-1);
+  background: var(--surface-2);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -2166,287 +1990,225 @@ button.dc-row {
   overflow-y: auto;
 }
 
-.dc-compose-input::placeholder {
+.composer-input::placeholder {
   color: var(--text-3);
 }
 
-.dc-compose-input:focus {
+.composer-input:focus {
   outline: 2px solid var(--text);
   outline-offset: 1px;
-  border-color: var(--text-3);
+  border-color: var(--text-2);
 }
 
-.dc-compose-input.is-disabled {
+.composer-input:disabled {
   color: var(--text-3);
 }
 
-.dc-compose-send {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.composer-send-btn {
   height: 34px;
-  padding: 0 12px;
+  padding: 0 14px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
-  background: var(--surface-2);
+  background: var(--surface-3);
   color: var(--text);
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.dc-compose-send:hover {
-  background: var(--surface-3);
+.composer-send-btn:hover {
+  background: var(--text);
+  color: var(--surface-1);
 }
 
-.dc-compose-send:disabled {
+.composer-send-btn:disabled {
   opacity: 0.35;
   cursor: default;
 }
 
-.dc-compose-hints {
+.composer-hints {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   font-size: 11px;
   color: var(--text-3);
 }
 
-.dc-compose-count {
-  margin-left: auto;
+.composer-count {
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Empty and disconnected states: an invitation, not a dead end --- */
-.dc-state-full {
+/* --- Takeover: a secondary feature borrows the picker column --- */
+.takeover-header {
+  height: 44px;
+  padding: 0 14px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  flex: 1;
-  min-height: 0;
-  padding: 40px;
-  text-align: center;
-}
-
-.dc-state-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  display: grid;
-  place-items: center;
-  color: var(--text-3);
-}
-
-.dc-state-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.dc-state-desc {
-  font-size: 13px;
-  color: var(--text-2);
-  max-width: 320px;
-  line-height: 1.5;
-}
-
-.dc-state-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 16px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
-  background: var(--surface-3);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dc-state-btn:hover {
-  background: var(--surface-2);
-  border-color: var(--text-2);
-}
-
-.dc-state-note {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.dc-note-inline {
-  padding: 10px 16px;
-  font-size: 13px;
-  color: var(--text-3);
-}
-
-.dc-note-inline.is-error {
-  color: var(--err);
-}
-
-/* --- Status picker --- */
-.dc-status-row {
-  display: flex;
-  gap: 4px;
-  padding: 6px 16px;
+  justify-content: space-between;
+  gap: 8px;
   border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
   flex-shrink: 0;
 }
 
-.dc-status-opt {
+.takeover-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: none;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.dc-status-opt:hover {
-  color: var(--text);
-  background: var(--surface-2);
-}
-
-.dc-status-opt.is-active {
-  color: var(--text);
-  border-color: var(--text);
-}
-
-/* --- Add-friend search --- */
-.dc-search-bar {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--line);
-}
-
-.dc-search-input {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
+  height: 26px;
   padding: 0 8px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
-  background: var(--surface-1);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-}
-
-.dc-search-input:focus {
-  outline: 2px solid var(--text);
-  outline-offset: 1px;
-  border-color: var(--text-3);
-}
-
-.dc-search-btn {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.dc-search-btn:hover {
-  color: var(--text);
-}
-
-.dc-already {
-  color: var(--text-3);
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.dc-req-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
   background: none;
-  color: var(--text-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.dc-req-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
+.takeover-back-btn:hover {
+  background: var(--surface-3);
 }
 
-.dc-req-btn.accept:hover {
-  color: var(--ok);
-  border-color: var(--ok);
-}
-
-.dc-req-btn.reject:hover {
-  color: var(--err);
-  border-color: var(--err);
-}
-
-/* --- Voice panel --- */
-.dc-voice-current {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-
-.dc-voice-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  color: var(--ok);
+.takeover-title {
   font-size: 13px;
   font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dc-voice-person {
+.guild-label {
+  padding: 8px 14px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.guild-label:not(:first-child) {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+
+/* A takeover row is shorter than a friend row: it is a list, not a roster. */
+.channel-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 16px 4px 36px;
+  height: 40px;
+  padding: 0 14px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
   font-size: 13px;
+  text-align: left;
+  cursor: pointer;
 }
 
-.dc-voice-person .dc-av {
-  width: 22px;
-  height: 22px;
+.channel-row:hover,
+.channel-row.ov-controller-focus {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
-.dc-pending-badge {
-  display: inline-flex;
+.channel-row:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+.search-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search-strip .composer-input {
+  height: 30px;
+}
+
+.request-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* --- Empty states: an invitation, never a dead end --- */
+.empty-picker-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
-  background: var(--warn);
-  color: var(--surface-1);
-  font-size: 10px;
+  padding: 30px 20px;
+  text-align: center;
+  gap: 12px;
+  color: var(--text-3);
+}
+
+.empty-conv-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  gap: 14px;
+}
+
+.empty-conv-title {
+  font-size: 20px;
   font-weight: 700;
+  color: var(--text);
+}
+
+.empty-conv-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+.connect-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.connect-button:hover {
+  background: var(--text);
+  color: var(--surface-1);
+}
+
+.dc-ctx {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .dc-spin {
@@ -2459,17 +2221,6 @@ button.dc-row {
 
 @media (prefers-reduced-motion: reduce) {
   .dc-spin { animation: none; }
-}
-
-/* Empty roster: an invitation, centered, never a naked sentence. */
-.dc-empty-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 40px 24px;
-  text-align: center;
 }
 
 /* ==========================================================================
