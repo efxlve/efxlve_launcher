@@ -1727,6 +1727,12 @@ const replyDrafts = new Map<string, string>();
 const replyUnread = new Map<string, number>();
 const LAST_FRIEND_KEY = "efxlve-overlay-dm";
 
+/** The friends panel's add-friend row: a username search. */
+let searchOpen = false;
+let searchQuery = "";
+let searchRan = false;
+let searchResults: { id: string; name: string; username: string; avatarUrl: string }[] = [];
+
 /** The friend rows the tab shows: the live desktop read, the launcher's own web
  * client, the SDK's own list, then the last known list. Online first. */
 function friendEntries(): FriendEntry[] {
@@ -1960,8 +1966,9 @@ function voicePanelHtml(): string {
 function friendsPanelHtml(): string {
   const friends = friendEntries();
   const state = friendsState;
-  const head = `<div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b></div>`;
-  if (!friends.length) {
+  const head = `<div class="ov-panel-head">${icon("users", 13)} <b>${esc(t("overlay.discordFriendsTitle"))}</b><button class="btn ghost small ov-panel-head-action" data-ov="discord-search-toggle" title="${esc(t("overlay.discordAddFriend"))}">${icon("plus", 13)}</button></div>`;
+  const searchSection = searchOpen ? searchHtml() : "";
+  if (!friends.length && !searchOpen) {
     const note =
       state.status === "error"
         ? `<p class="dc-note dc-error">${esc(state.error || t("common.unknownError"))}</p>`
@@ -1983,11 +1990,59 @@ function friendsPanelHtml(): string {
     <div class="ov-panel fill">
       ${head}
       <div class="dc-rows dc-scroll">
+        ${searchSection}
         ${requestSection}
         ${section(t("overlay.discordFriendsOnline", { count: online.length }), online)}
         ${section(t("overlay.discordFriendsOffline", { count: offline.length }), offline)}
       </div>
     </div>`;
+}
+
+/** The add-friend row: a username search with its results. */
+function searchHtml(): string {
+  const results = searchResults.map(searchRowHtml).join("");
+  const empty =
+    searchRan && !searchResults.length
+      ? `<p class="dc-note">${esc(t("overlay.discordNoResults"))}</p>`
+      : "";
+  return `
+    <div class="dc-search">
+      <input id="ov-discord-search" class="dc-search-input" type="text" value="${esc(searchQuery)}" placeholder="${esc(t("overlay.discordSearchPlaceholder"))}" spellcheck="false" />
+      <button class="btn small" data-ov="discord-search-run" title="${esc(t("overlay.discordSearchPlaceholder"))}">${icon("search", 13)}</button>
+    </div>
+    ${results}${empty}`;
+}
+
+function searchRowHtml(user: { id: string; name: string; username: string; avatarUrl: string }): string {
+  return `
+    <div class="dc-row">
+      <span class="dc-av"><img src="${esc(user.avatarUrl)}" alt="" loading="lazy" /></span>
+      <span class="dc-row-main"><span class="dc-name">${esc(user.name)}</span>${user.username ? `<span class="dc-sub">@${esc(user.username)}</span>` : ""}</span>
+      <span class="dc-row-end">
+        <button class="btn ghost small" data-ov="discord-add" data-username="${esc(user.username || user.name)}">${icon("plus", 13)} ${esc(t("overlay.discordAddFriend"))}</button>
+      </span>
+    </div>`;
+}
+
+/** Runs the username search through the SDK; results arrive on the event. */
+function runUserSearch(): void {
+  const input = document.getElementById("ov-discord-search") as HTMLInputElement | null;
+  const query = (input?.value ?? searchQuery).trim();
+  if (!query) return;
+  searchQuery = query;
+  searchRan = false;
+  void invoke("discord_sdk_search_users", { query }).catch((error) => {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
+  });
+}
+
+/** Sends a friend request to the picked username. */
+async function addFriend(username: string): Promise<void> {
+  try {
+    await invoke("discord_sdk_add_friend", { username });
+  } catch (error) {
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
+  }
 }
 
 /** An incoming friend request: accept or reject, right from the list. */
@@ -2550,6 +2605,18 @@ function wireEvents(): void {
       void saveEdit();
     } else if (action === "discord-edit-cancel") {
       cancelEdit();
+    } else if (action === "discord-search-toggle") {
+      searchOpen = !searchOpen;
+      if (searchOpen) searchRan = false;
+      repaintDiscord();
+      if (searchOpen) {
+        requestAnimationFrame(() => document.getElementById("ov-discord-search")?.focus());
+      }
+    } else if (action === "discord-search-run") {
+      runUserSearch();
+    } else if (action === "discord-add") {
+      const username = target.closest<HTMLElement>("[data-ov]")?.dataset.username;
+      if (username) void addFriend(username);
     } else if (action === "discord-accept" || action === "discord-reject") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void answerFriendRequest(friendId, action === "discord-accept");
@@ -2627,6 +2694,10 @@ function wireEvents(): void {
 
   document.addEventListener("input", (event) => {
     const target = event.target;
+    if (target instanceof HTMLInputElement && target.id === "ov-discord-search") {
+      searchQuery = target.value;
+      return;
+    }
     if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {
       if (replyTarget) replyDrafts.set(replyTarget.id, target.value);
       // The field grows to six lines, then scrolls.
@@ -2660,6 +2731,14 @@ function wireEvents(): void {
     // Composer keys: Enter sends, Shift+Enter adds a line, Ctrl+Up/Down walks
     // the friend list without leaving the box.
     const typed = event.target;
+    // Enter in the add-friend search runs it.
+    if (typed instanceof HTMLInputElement && typed.id === "ov-discord-search") {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runUserSearch();
+      }
+      return;
+    }
     const inComposer = typed instanceof HTMLTextAreaElement && typed.id === "ov-discord-reply-input";
     if (inComposer && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -3295,6 +3374,29 @@ async function boot(): Promise<void> {
       if (button) button.disabled = false;
     },
   );
+
+  // The add-friend search: results, and the request outcome.
+  await listen<{ query: string; users: { id: string; name: string; username: string; avatarUrl: string }[] }>(
+    "discord-sdk-search",
+    (event) => {
+      if (event.payload.query !== searchQuery) return;
+      searchResults = event.payload.users;
+      searchRan = true;
+      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+    },
+  );
+
+  await listen<{ username: string; ok: boolean; error?: string }>("discord-sdk-request-sent", (event) => {
+    if (!event.payload.ok) {
+      toast(t("overlay.discordSendFailed", { error: event.payload.error || "" }), "err");
+      return;
+    }
+    toast(t("overlay.discordRequestSent"), "");
+    searchResults = searchResults.filter(
+      (user) => (user.username || user.name) !== event.payload.username,
+    );
+    if (activeTab === "discord" && !document.hidden) repaintDiscord();
+  });
 
   // A friend request answered: the row goes at once, and the relationship
   // callback re-reads the list from Discord shortly after.

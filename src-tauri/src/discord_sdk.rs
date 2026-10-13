@@ -52,6 +52,8 @@ enum SdkCommand {
     DeleteDm { user_id: u64, message_id: u64 },
     FriendRequest { user_id: u64, accept: bool },
     History { user_id: u64, limit: i32 },
+    Search { query: String },
+    AddFriend { username: String },
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -370,6 +372,47 @@ pub fn discord_sdk_history(user_id: String, limit: Option<i32>) -> Result<(), St
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Looks up users by username; the results arrive on `discord-sdk-search`.
+#[tauri::command]
+pub fn discord_sdk_search_users(query: String) -> Result<(), String> {
+    let query = query.trim().to_string();
+    if query.is_empty() {
+        return Err("empty_query".to_string());
+    }
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::Search { query })
+        .map_err(|_| "worker_gone".to_string())
+}
+
+/// Sends a friend request by username; the outcome arrives on
+/// `discord-sdk-request-sent`.
+#[tauri::command]
+pub fn discord_sdk_add_friend(username: String) -> Result<(), String> {
+    let username = username.trim().to_string();
+    if username.is_empty() {
+        return Err("empty_query".to_string());
+    }
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::AddFriend { username })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -484,6 +527,13 @@ mod ffi {
         pub size: usize,
     }
 
+    /// `Discord_UserHandleSpan { Discord_UserHandle* ptr; size_t size; }`.
+    #[repr(C)]
+    pub struct UserHandleSpan {
+        pub ptr: *mut UserHandle,
+        pub size: usize,
+    }
+
     pub type FreeFn = unsafe extern "C" fn(*mut c_void);
     pub type LogCallback = unsafe extern "C" fn(StringValue, i32, *mut c_void);
     pub type StatusCallback = unsafe extern "C" fn(i32, i32, i32, *mut c_void);
@@ -570,6 +620,18 @@ mod ffi {
         pub fn Discord_Client_RejectDiscordFriendRequest(
             client: *mut Client,
             user_id: u64,
+            callback: ResultCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_SearchFriendsByUsername(
+            client: *mut Client,
+            search: StringValue,
+            out: *mut UserHandleSpan,
+        );
+        pub fn Discord_Client_SendDiscordFriendRequest(
+            client: *mut Client,
+            username: StringValue,
             callback: ResultCallback,
             free: Option<FreeFn>,
             user_data: *mut c_void,
@@ -749,6 +811,11 @@ mod imp {
         accept: bool,
     }
 
+    /// A friend request being sent by username.
+    struct AddFriendCtx {
+        username: String,
+    }
+
     unsafe extern "C" fn free_flow(user: *mut c_void) {
         drop(Box::from_raw(user as *mut Flow));
     }
@@ -763,6 +830,26 @@ mod imp {
 
     unsafe extern "C" fn free_request(user: *mut c_void) {
         drop(Box::from_raw(user as *mut RequestCtx));
+    }
+
+    unsafe extern "C" fn free_add_friend(user: *mut c_void) {
+        drop(Box::from_raw(user as *mut AddFriendCtx));
+    }
+
+    /// The outcome of a friend request sent by username.
+    unsafe extern "C" fn on_friend_request_sent(result: *mut ClientResult, user: *mut c_void) {
+        let ctx = &*(user as *mut AddFriendCtx);
+        let payload = if Discord_ClientResult_Successful(result) {
+            sdk_note!("friend request sent to {}", ctx.username);
+            serde_json::json!({ "username": ctx.username, "ok": true })
+        } else {
+            let error = result_error(result);
+            sdk_note!("friend request failed: {error}");
+            serde_json::json!({ "username": ctx.username, "ok": false, "error": error })
+        };
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit("discord-sdk-request-sent", payload);
+        }
     }
 
     fn string_of(value: StringValue) -> String {
@@ -1589,6 +1676,69 @@ mod imp {
                                 on_message_sent,
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
+                            );
+                        }
+                        Ok(SdkCommand::Search { query }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("search ignored: not connected");
+                                continue;
+                            }
+                            let mut span = UserHandleSpan {
+                                ptr: ptr::null_mut(),
+                                size: 0,
+                            };
+                            Discord_Client_SearchFriendsByUsername(
+                                client_ptr,
+                                borrow_str(&query),
+                                &mut span,
+                            );
+                            let mut users: Vec<serde_json::Value> = Vec::new();
+                            if !span.ptr.is_null() {
+                                for index in 0..span.size {
+                                    let mut handle = *span.ptr.add(index);
+                                    let id = Discord_UserHandle_Id(&mut handle);
+                                    let name = handle_name(&mut handle);
+                                    let avatar_url = handle_avatar(&mut handle, id);
+                                    let mut username = StringValue {
+                                        ptr: ptr::null_mut(),
+                                        size: 0,
+                                    };
+                                    Discord_UserHandle_Username(&mut handle, &mut username);
+                                    Discord_UserHandle_Drop(&mut handle);
+                                    users.push(serde_json::json!({
+                                        "id": id.to_string(),
+                                        "name": name,
+                                        "username": string_of(username),
+                                        "avatarUrl": avatar_url,
+                                    }));
+                                }
+                            }
+                            sdk_note!("search \"{query}\": {} users", users.len());
+                            if let Some(app) = APP_HANDLE.get() {
+                                let _ = app.emit(
+                                    "discord-sdk-search",
+                                    serde_json::json!({ "query": query, "users": users }),
+                                );
+                            }
+                        }
+                        Ok(SdkCommand::AddFriend { username }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("friend request ignored: not connected");
+                                continue;
+                            }
+                            let ctx = Box::into_raw(Box::new(AddFriendCtx {
+                                username: username.clone(),
+                            }));
+                            Discord_Client_SendDiscordFriendRequest(
+                                client_ptr,
+                                borrow_str(&username),
+                                on_friend_request_sent,
+                                Some(free_add_friend),
+                                ctx as *mut AddFriendCtx as *mut c_void,
                             );
                         }
                         Ok(SdkCommand::History { user_id, limit }) => {

@@ -1936,6 +1936,42 @@ button.dc-row {
   font-size: 12px;
 }
 
+/* Add-friend search row */
+.dc-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.dc-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.dc-search-input:focus {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+  border-color: var(--text-3);
+}
+
+.dc-sub {
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .dc-dim {
   color: var(--text-2);
 }
