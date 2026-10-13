@@ -1902,9 +1902,11 @@ async function notifyIncomingCall(from: string): Promise<void> {
     if (!granted) granted = (await requestPermission()) === "granted";
     if (!granted) return;
     const friend = friendEntries().find((item) => item.id === from);
+    // With a name the title is the caller and the body says what this is; with
+    // no name the title carries it alone.
     sendNotification({
       title: friend?.name ?? t("overlay.discordCallIncoming"),
-      body: t("overlay.discordCallIncoming"),
+      body: friend ? t("overlay.discordCallIncoming") : "",
     });
     if (friend) {
       replyTarget = { id: friend.id, name: friend.name };
