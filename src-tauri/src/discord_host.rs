@@ -666,19 +666,19 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                         .and_then(|(_, value)| value.parse::<i64>().ok())
                         .unwrap_or(-1);
                     if kids > 0 {
-                        // The page keeps reporting while it is up (and the
-                        // watchdog may poll): act on the transition only, or
-                        // every report re-shows the child and floods the log.
-                        if PAINTED.swap(true, Ordering::SeqCst) {
-                            return false;
-                        }
+                        let first = !PAINTED.swap(true, Ordering::SeqCst);
                         if WANT_VISIBLE.load(Ordering::SeqCst) {
-                            // Give the first real frame a moment and re-apply
-                            // the rectangle: a child that was hidden for a
-                            // navigation otherwise keeps its old frame.
+                            // Refresh the frame on every report: after a
+                            // navigation the child keeps its old (black) frame,
+                            // and the page can report once more before it is
+                            // torn down, so a transition-only refresh would miss
+                            // the new document. Logging stays on the transition.
                             let show_app = nav_app.clone();
                             tauri::async_runtime::spawn(async move {
-                                tokio::time::sleep(Duration::from_millis(260)).await;
+                                if first {
+                                    // Give the first real frame a moment.
+                                    tokio::time::sleep(Duration::from_millis(260)).await;
+                                }
                                 if !WANT_VISIBLE.load(Ordering::SeqCst) {
                                     return;
                                 }
@@ -691,7 +691,9 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                                     let _ = view.set_bounds(rect_of(x, y, w, h));
                                 }
                                 let _ = view.show();
-                                web_log(&show_app, "page painted; child shown");
+                                if first {
+                                    web_log(&show_app, "page painted; child shown");
+                                }
                             });
                         }
                     }
