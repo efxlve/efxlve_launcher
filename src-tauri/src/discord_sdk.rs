@@ -336,6 +336,7 @@ mod ffi {
     opaque!(CodeChallenge);
     opaque!(UserHandle);
     opaque!(RelationshipHandle);
+    opaque!(MessageHandle);
 
     #[repr(C)]
     pub struct RelationshipSpan {
@@ -359,6 +360,7 @@ mod ffi {
     );
     pub type UpdateTokenCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
     pub type SendMessageCallback = unsafe extern "C" fn(*mut ClientResult, u64, *mut c_void);
+    pub type MessageCreatedCallback = unsafe extern "C" fn(u64, *mut c_void);
 
     #[link(name = "discord_partner_sdk")]
     extern "C" {
@@ -378,6 +380,22 @@ mod ffi {
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
+        pub fn Discord_Client_SetMessageCreatedCallback(
+            client: *mut Client,
+            callback: MessageCreatedCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_GetMessageHandle(
+            client: *mut Client,
+            message_id: u64,
+            out: *mut MessageHandle,
+        ) -> bool;
+        pub fn Discord_MessageHandle_Content(handle: *mut MessageHandle, out: *mut StringValue);
+        pub fn Discord_MessageHandle_AuthorId(handle: *mut MessageHandle) -> u64;
+        pub fn Discord_MessageHandle_RecipientId(handle: *mut MessageHandle) -> u64;
+        pub fn Discord_MessageHandle_SentTimestamp(handle: *mut MessageHandle) -> u64;
+        pub fn Discord_MessageHandle_Drop(handle: *mut MessageHandle);
         pub fn Discord_Client_CreateAuthorizationCodeVerifier(
             client: *mut Client,
             out: *mut CodeVerifier,
@@ -691,6 +709,60 @@ mod imp {
         Discord_Client_Connect(client);
     }
 
+    /// A direct message that arrived while the overlay is open: the handle has
+    /// the text and both ids, so the panel can thread it into the conversation.
+    unsafe extern "C" fn on_message_created(message_id: u64, _user: *mut c_void) {
+        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+        if client.is_null() {
+            return;
+        }
+        let mut handle: MessageHandle = std::mem::zeroed();
+        if !Discord_Client_GetMessageHandle(client, message_id, &mut handle) {
+            return;
+        }
+        let mut content = StringValue {
+            ptr: ptr::null_mut(),
+            size: 0,
+        };
+        Discord_MessageHandle_Content(&mut handle, &mut content);
+        let text = string_of(content);
+        let author = Discord_MessageHandle_AuthorId(&mut handle);
+        let recipient = Discord_MessageHandle_RecipientId(&mut handle);
+        let sent = Discord_MessageHandle_SentTimestamp(&mut handle);
+        Discord_MessageHandle_Drop(&mut handle);
+
+        if text.is_empty() {
+            return;
+        }
+        let Some(me_id) = with_state(|state| state.me.as_ref().map(|me| me.id.clone())).flatten() else {
+            return;
+        };
+        // Our own sends come back through the same callback; and anything that
+        // is not a direct message to this account has no thread to land in.
+        if author.to_string() == me_id {
+            return;
+        }
+        if recipient != 0 && recipient.to_string() != me_id {
+            return;
+        }
+        // The client replays history when it (re)connects: the log is "now".
+        let sent_ms = if sent < 1_000_000_000_000 { sent * 1000 } else { sent };
+        if sent_ms > 0 && now_secs() * 1000 > sent_ms + 120_000 {
+            return;
+        }
+        sdk_note!("direct message received from {author}");
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit(
+                "discord-sdk-message",
+                serde_json::json!({
+                    "friendId": author.to_string(),
+                    "text": text,
+                    "at": sent_ms,
+                }),
+            );
+        }
+    }
+
     unsafe extern "C" fn on_message_sent(
         result: *mut ClientResult,
         message_id: u64,
@@ -839,6 +911,12 @@ mod imp {
 
             Discord_Client_AddLogCallback(&mut client, on_log, None, ptr::null_mut(), 2);
             Discord_Client_SetStatusChangedCallback(&mut client, on_status, None, ptr::null_mut());
+            Discord_Client_SetMessageCreatedCallback(
+                &mut client,
+                on_message_created,
+                None,
+                ptr::null_mut(),
+            );
 
             match load_session(&app) {
                 Some(session) => {

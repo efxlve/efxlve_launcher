@@ -1693,7 +1693,8 @@ function renderBrowser(): void {
  * is the whole flow, and the row shows the shortcut so nobody has to guess.
  */
 
-/** One message this session sent from the overlay, with its state. */
+/** One message in the conversation: what we sent, and what arrived while the
+ * overlay was open (the SDK's message callback feeds both directions). */
 interface ReplyLogEntry {
   id: number;
   friendId: string;
@@ -1701,12 +1702,16 @@ interface ReplyLogEntry {
   text: string;
   state: "sending" | "sent" | "error";
   error?: string;
+  /** "out" = sent from here, "in" = received. */
+  direction: "out" | "in";
 }
 
 let replyLog: ReplyLogEntry[] = [];
 let replyLogSeq = 0;
 /** Per-friend drafts, so switching targets never loses what was typed. */
 const replyDrafts = new Map<string, string>();
+/** Unread arrivals per friend, cleared when their conversation is picked. */
+const replyUnread = new Map<string, number>();
 const LAST_FRIEND_KEY = "efxlve-overlay-dm";
 
 /** The friend rows the tab shows: the live desktop read, the launcher's own web
@@ -1771,10 +1776,33 @@ function focusReplyInput(): void {
 function selectReplyTarget(id: string, name: string, seed = ""): void {
   replyTarget = { id, name };
   if (seed) replyDrafts.set(id, seed);
+  replyUnread.delete(id);
   localStorage.setItem(LAST_FRIEND_KEY, id);
   renderDiscord();
   focusReplyInput();
   refreshFooterHints();
+}
+
+/** A message that arrived while the overlay is open: it lands in that friend's
+ * thread, and a badge waits on the row if the conversation is not on screen. */
+function noteIncoming(friendId: string, text: string, at: number): void {
+  const time = new Date(at > 0 ? at : Date.now()).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  replyLog.push({
+    id: ++replyLogSeq,
+    friendId,
+    time,
+    text,
+    state: "sent",
+    direction: "in",
+  });
+  if (replyLog.length > 200) replyLog.splice(0, replyLog.length - 200);
+  if (replyTarget?.id !== friendId) {
+    replyUnread.set(friendId, (replyUnread.get(friendId) ?? 0) + 1);
+  }
+  if (activeTab === "discord" && !document.hidden) repaintDiscord();
 }
 
 /** Ctrl+Up/Down inside the box: walk the friend list without losing the draft. */
@@ -1865,11 +1893,15 @@ function friendsPanelHtml(): string {
 
 function friendRowHtml(friend: FriendEntry): string {
   const selected = replyTarget?.id === friend.id;
+  const unread = replyUnread.get(friend.id) ?? 0;
   return `
     <button class="dc-row dc-friend${selected ? " is-selected" : ""}${friend.status === "offline" ? " is-offline" : ""}" data-ov="discord-reply" data-id="${esc(friend.id)}" data-name="${esc(friend.name)}" title="${esc(t("overlay.discordReplyTitle"))}">
       <span class="dc-av"><img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" /><span class="dc-dot dc-${esc(friend.status)}"></span></span>
       <span class="dc-row-main"><span class="dc-name">${esc(friend.name)}</span></span>
-      <span class="dc-row-end dc-row-act">${esc(t("overlay.discordReplyTitle"))} <kbd class="kbd">Enter</kbd></span>
+      <span class="dc-row-end">
+        ${unread > 0 ? `<span class="dc-count">${unread}</span>` : ""}
+        <span class="dc-row-act">${esc(t("overlay.discordReplyTitle"))} <kbd class="kbd">Enter</kbd></span>
+      </span>
     </button>`;
 }
 
@@ -1955,24 +1987,29 @@ function conversationHtml(): string {
     </div>`;
 }
 
-/** Messages sent from here this session, oldest first, newest at the bottom. */
-function logHtml(target: { id: string }): string {
+/** The conversation so far: what we sent, and what arrived while it was open,
+ * oldest first, newest at the bottom. */
+function logHtml(target: { id: string; name: string }): string {
   const entries = replyLog.filter((entry) => entry.friendId === target.id).slice(-8);
   const rows = entries
     .map((entry) => {
+      const who = entry.direction === "in" ? target.name : t("overlay.discordYou");
       const state =
-        entry.state === "sending"
-          ? `<span class="dc-msg-state">${icon("refresh", 13, "dc-spin")} ${esc(t("overlay.discordSending"))}</span>`
-          : entry.state === "sent"
-            ? `<span class="dc-msg-state">${icon("check-circle", 13)} ${esc(t("overlay.discordSent"))}</span>`
-            : `<button class="btn ghost small" data-ov="discord-retry" data-entry="${entry.id}">${esc(t("overlay.discordRetry"))}</button>`;
+        entry.direction === "in"
+          ? ""
+          : entry.state === "sending"
+            ? `<span class="dc-msg-state">${icon("refresh", 13, "dc-spin")} ${esc(t("overlay.discordSending"))}</span>`
+            : entry.state === "sent"
+              ? `<span class="dc-msg-state">${icon("check-circle", 13)} ${esc(t("overlay.discordSent"))}</span>`
+              : `<button class="btn ghost small" data-ov="discord-retry" data-entry="${entry.id}">${esc(t("overlay.discordRetry"))}</button>`;
       const error =
         entry.state === "error"
           ? `<span class="dc-msg-error">${esc(t("overlay.discordSendFailed", { error: entry.error || "" }))}</span>`
           : "";
       return `
-        <div class="dc-msg${entry.state === "sending" ? " is-sending" : ""}">
+        <div class="dc-msg${entry.direction === "in" ? " is-in" : ""}${entry.state === "sending" ? " is-sending" : ""}">
           <span class="dc-msg-time num">${esc(entry.time)}</span>
+          <span class="dc-msg-who">${esc(who)}</span>
           <span class="dc-msg-text">${esc(entry.text)}${error}</span>
           ${state}
         </div>`;
@@ -2025,6 +2062,7 @@ async function sendDiscordReply(): Promise<void> {
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     text,
     state: "sending",
+    direction: "out",
   });
   if (replyLog.length > 200) replyLog.splice(0, replyLog.length - 200);
   renderDiscord();
@@ -2968,6 +3006,12 @@ async function boot(): Promise<void> {
       entry.error = event.payload.error;
     }
     if (activeTab === "discord" && !document.hidden) repaintDiscord();
+  });
+
+  // Messages the other side sends while the overlay is open, straight from the
+  // SDK's message callback.
+  await listen<{ friendId: string; text: string; at: number }>("discord-sdk-message", (event) => {
+    noteIncoming(event.payload.friendId, event.payload.text, event.payload.at);
   });
 
   // The default hint line is restored whenever the context line goes away.

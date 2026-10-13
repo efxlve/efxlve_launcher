@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "대기 중인 요청 {count}개",
   "overlay.discordFriendsEmpty": "아직 친구가 없습니다",
   "overlay.discordFriendsMore": "{count}명 더",
+  "overlay.discordYou": "나",
   "overlay.discordFriendsOffline": "{count} 오프라인",
   "overlay.discordConnectedAs": "{name}(으)로 연결됨",
   "overlay.discordNotConnected": "연결 안 됨",

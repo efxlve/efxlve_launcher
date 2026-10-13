@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "คำขอที่รออยู่ {count} รายการ",
   "overlay.discordFriendsEmpty": "ยังไม่มีเพื่อน",
   "overlay.discordFriendsMore": "อีก {count} คน",
+  "overlay.discordYou": "คุณ",
   "overlay.discordFriendsOffline": "{count} ออฟไลน์",
   "overlay.discordConnectedAs": "เชื่อมต่อในชื่อ {name}",
   "overlay.discordNotConnected": "ยังไม่เชื่อมต่อ",

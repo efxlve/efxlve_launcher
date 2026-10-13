@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "保留中のリクエスト {count}件",
   "overlay.discordFriendsEmpty": "フレンドはまだいません",
   "overlay.discordFriendsMore": "他に{count}人",
+  "overlay.discordYou": "あなた",
   "overlay.discordFriendsOffline": "{count} オフライン",
   "overlay.discordConnectedAs": "{name} として接続中",
   "overlay.discordNotConnected": "未接続",

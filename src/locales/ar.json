@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} طلبات معلّقة",
   "overlay.discordFriendsEmpty": "لا أصدقاء بعد",
   "overlay.discordFriendsMore": "{count} آخرون",
+  "overlay.discordYou": "أنت",
   "overlay.discordFriendsOffline": "{count} غير متصل",
   "overlay.discordConnectedAs": "متصل باسم {name}",
   "overlay.discordNotConnected": "غير متصل",

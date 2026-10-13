@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} bekleyen istek",
   "overlay.discordFriendsEmpty": "Henüz arkadaş yok",
   "overlay.discordFriendsMore": "{count} kişi daha",
+  "overlay.discordYou": "Sen",
   "overlay.discordFriendsOffline": "{count} çevrimdışı",
   "overlay.discordConnectedAs": "{name} olarak bağlı",
   "overlay.discordNotConnected": "Bağlı değil",

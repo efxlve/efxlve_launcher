@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} pending requests",
   "overlay.discordFriendsEmpty": "No friends yet",
   "overlay.discordFriendsMore": "{count} more",
+  "overlay.discordYou": "You",
   "overlay.discordFriendsOffline": "{count} offline",
   "overlay.discordConnectedAs": "Connected as {name}",
   "overlay.discordNotConnected": "Not connected",
