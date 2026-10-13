@@ -659,29 +659,11 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
     None
 }
 
-/// Unpackaged (dev) builds otherwise show the launching shell's name in Windows
-/// toasts instead of the app's.
-#[cfg(windows)]
-fn set_toast_app_id() {
-    use std::os::windows::ffi::OsStrExt;
-    const ID: &str = "com.efxlve.launcher";
-    extern "system" {
-        fn SetCurrentProcessExplicitAppUserModelID(app_id: *const u16) -> i32;
-    }
-    let wide: Vec<u16> = std::ffi::OsStr::new(ID).encode_wide().chain(Some(0)).collect();
-    unsafe {
-        let _ = SetCurrentProcessExplicitAppUserModelID(wide.as_ptr());
-    }
-}
-
-#[cfg(not(windows))]
-fn set_toast_app_id() {}
-
+/// Unpackaged (dev) builds show the launching shell's name in Windows toasts
+/// ("Windows PowerShell"); the packaged build takes the launcher's name from
+/// its Start-menu shortcut. An explicit app id here would make Windows drop
+/// the toasts entirely, because that id has no shortcut to resolve against.
 fn main() {
-    // Windows toasts take the process's app id: without this an unpackaged
-    // (dev) build shows the launching shell's name ("Windows PowerShell")
-    // instead of the launcher's.
-    set_toast_app_id();
     // Rockstar's launcher only continues when a process named
     // `EpicGamesLauncher.exe` is in its ancestor chain. This binary runs as
     // that relay copy when `legendary launch --wrapper` starts it, so Rockstar
