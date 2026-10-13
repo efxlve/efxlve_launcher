@@ -1387,6 +1387,9 @@ mod imp {
     /// The DM channel per friend (friend id -> channel id): starting a call
     /// needs the channel, and only a message carries it.
     static DM_CHANNELS: Mutex<Vec<(u64, u64)>> = Mutex::new(Vec::new());
+    /// A call that is waiting for its channel: the history fetch fills
+    /// `DM_CHANNELS`, and the pump then starts the call.
+    static PENDING_CALL: Mutex<Option<u64>> = Mutex::new(None);
     /// Message ids already handed to the UI. The created callback and the
     /// summary poll both see the same message; it must land exactly once.
     static EMITTED: Mutex<Vec<u64>> = Mutex::new(Vec::new());
@@ -1753,6 +1756,18 @@ mod imp {
                 continue;
             }
             let mine = me_id.as_deref() == Some(data.author.to_string().as_str());
+            // Messages carry the DM channel id: remember it so a call can start.
+            if data.channel_id != 0 {
+                let partner = if mine { data.recipient } else { data.author };
+                if partner != 0 {
+                    if let Ok(mut map) = DM_CHANNELS.lock() {
+                        match map.iter_mut().find(|(friend, _)| *friend == partner) {
+                            Some(slot) => slot.1 = data.channel_id,
+                            None => map.push((partner, data.channel_id)),
+                        }
+                    }
+                }
+            }
             rows.push(serde_json::json!({
                 "messageId": data.id.to_string(),
                 "text": data.text,
@@ -2051,8 +2066,25 @@ mod imp {
                                     .map(|(_, channel)| *channel)
                             });
                             let Some(channel) = channel else {
-                                sdk_note!("call ignored: no DM channel for {user_id}");
-                                emit_call("idle", user_id, false, Some("no_channel".to_string()));
+                                // The channel id is only carried by messages, so
+                                // ask for the history; the pump starts the call
+                                // the moment the id is known.
+                                sdk_note!("call: no DM channel for {user_id} yet; asking for the history");
+                                if let Ok(mut guard) = PENDING_CALL.lock() {
+                                    *guard = Some(user_id);
+                                }
+                                let ctx = Box::into_raw(Box::new(SendCtx {
+                                    user_id,
+                                    message_id: 0,
+                                }));
+                                Discord_Client_GetUserMessagesWithLimit(
+                                    client_ptr,
+                                    user_id,
+                                    30,
+                                    on_history,
+                                    Some(free_send),
+                                    ctx as *mut SendCtx as *mut c_void,
+                                );
                                 continue;
                             };
                             let mut call: Call = std::mem::zeroed();
@@ -2294,6 +2326,31 @@ mod imp {
                             None,
                             ptr::null_mut(),
                         );
+                    }
+                }
+                // A call waiting for its channel starts as soon as the history
+                // fetch has handed the id over.
+                let waiting = PENDING_CALL.lock().ok().and_then(|guard| *guard);
+                if let Some(friend) = waiting {
+                    let channel = DM_CHANNELS.lock().ok().and_then(|map| {
+                        map.iter()
+                            .find(|(entry, _)| *entry == friend)
+                            .map(|(_, channel)| *channel)
+                    });
+                    if let Some(channel) = channel {
+                        if let Ok(mut guard) = PENDING_CALL.lock() {
+                            *guard = None;
+                        }
+                        let mut call: Call = std::mem::zeroed();
+                        if Discord_Client_StartCall(client_ptr, channel, &mut call) {
+                            sdk_note!("call started in channel {channel} (waited for the id)");
+                            active_call = Some(call);
+                            call_friend = friend;
+                            emit_call("active", friend, false, None);
+                        } else {
+                            sdk_note!("call could not start after the wait");
+                            emit_call("idle", friend, false, Some("call_failed".to_string()));
+                        }
                     }
                 }
                 std::thread::sleep(Duration::from_millis(15));
