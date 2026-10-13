@@ -166,3 +166,36 @@
 }
 #eos-row-control .btn:disabled,
 #eos-row-control .btn.disabled { opacity: 0.45; pointer-events: none; }
+
+/* Settings search: filters rows in place, and shows every section so a match
+   anywhere in the page is visible. */
+.settings-search {
+  width: 100%;
+  height: 36px;
+  margin-bottom: 16px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.settings-search::placeholder {
+  color: var(--text-3);
+}
+
+.settings-search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.settings-search-head {
+  margin: 20px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}

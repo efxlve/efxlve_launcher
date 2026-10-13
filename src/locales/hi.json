@@ -104,6 +104,7 @@
   "common.browse": "ब्राउज़ करें",
   "settings.defaultKey": "डिफ़ॉल्ट",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.searchPlaceholder": "सेटिंग्स खोजें",
   "settings.discordAlwaysTitle": "Discord खुला रखें",
   "settings.discordAlwaysDesc": "खेलते समय संदेश और कॉल पाने के लिए Discord पेज शुरुआत में पृष्ठभूमि में लोड होता है।",
   "settings.presenceDesc": "Discord पर दिखाता है कि आप क्या कर रहे हैं, गेम कवर और लॉन्चर आइकन के साथ।",

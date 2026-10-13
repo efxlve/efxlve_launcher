@@ -64,7 +64,7 @@ function paintHeaderActions(): void {
   }
   host.innerHTML =
     `<button class="page-action-btn" data-act="open-external-url" data-url="${DISCORD_INVITE_URL}" title="${esc(t("settings.discordJoin"))}">${icon("discord", 14)}<span>${esc(t("settings.discordJoin"))}</span></button>` +
-    `<button class="page-action-btn" data-view="settings" title="${esc(t("overlay.tabSettings"))}">${icon("settings", 14)}<span>${esc(t("overlay.tabSettings"))}</span></button>` +
+    `<button class="page-action-btn" data-view="settings" data-settings-section="social" title="${esc(t("overlay.tabSettings"))}">${icon("settings", 14)}<span>${esc(t("overlay.tabSettings"))}</span></button>` +
     `<button class="page-action-btn" data-discord-act="reload" title="${esc(t("discord.reload"))}">${icon("refresh", 14)}<span>${esc(t("discord.reload"))}</span></button>`;
   host.classList.add("has-actions");
 }

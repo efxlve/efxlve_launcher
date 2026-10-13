@@ -58,6 +58,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "downloads", labelKey: "settings.secDownloads" },
   { id: "cloud", labelKey: "settings.secCloud" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
+  { id: "social", labelKey: "settings.secSocial" },
   { id: "launchers", labelKey: "settings.secLaunchers" },
   { id: "collections", labelKey: "settings.secCollections" },
   { id: "controller", labelKey: "settings.secController" },
@@ -68,10 +69,13 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "about", labelKey: "settings.secAbout" },
 ];
 
-/** A single setting line: title/description on the left, a control on the right. */
+/** A single setting line: title/description on the left, a control on the right.
+ * The plain text lands in `data-search`, which is what the settings search
+ * filters on. */
 function row(title: string, desc: string | null, control: string, stacked = false): string {
+  const search = `${title} ${desc ?? ""}`.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   return `
-    <div class="row settings-row${stacked ? " stacked" : ""}">
+    <div class="row settings-row${stacked ? " stacked" : ""}" data-search="${esc(search)}">
       <div class="row-main">
         <div class="settings-row-title">${title}</div>
         ${desc ? `<div class="settings-row-desc">${desc}</div>` : ""}
@@ -404,26 +408,6 @@ function renderIntegrations(): string {
      <button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`,
   );
 
-  // Discord lives in the launcher: the real web client opens as a page, and
-  // the community server stays one click away.
-  const discord = row(
-    t("settings.aboutDiscord"),
-    t("settings.discordDesc"),
-    `<button class="btn ghost small" data-view="discord">${icon("discord", 13)} ${t("overlay.openDiscord")}</button>
-     <button class="btn ghost small" data-act="open-external-url" data-url="${DISCORD_INVITE_URL}">${icon("external", 13)} ${t("settings.discordJoin")}</button>`,
-  );
-
-  const presence = row(t("settings.presenceTitle"), t("settings.presenceDesc"), toggle("toggle-presence", S.presenceEnabled));
-
-  // The Discord page is the message channel: keeping it loaded is what lets
-  // messages and calls arrive while a game runs. On by default; the person
-  // decides, and turning it off unloads the page on the next start.
-  const discordAlways = row(
-    t("settings.discordAlwaysTitle"),
-    t("settings.discordAlwaysDesc"),
-    toggle("toggle-discord-always", localStorage.getItem("efxlve-discord-always") !== "false"),
-  );
-
   // Opt-in per client: quit it once the game it launched closes. Steam keeps
   // its own localStorage toggle; the companion clients read the Rust settings.
   const exitToggle = (store: string) =>
@@ -445,9 +429,40 @@ function renderIntegrations(): string {
     group(nileGroup, t("settings.nileTitle")) +
     renderSteamGroup() +
     afterPlaying +
-    group(sgdb, t("settings.coverArtTitle")) +
-    group(discord + presence + discordAlways, t("settings.secSocial"))
+    group(sgdb, t("settings.coverArtTitle"))
   );
+}
+
+/**
+ * The Social section: Discord itself — the page, Rich Presence and staying
+ * open. It used to live inside Integrations, where nobody found it.
+ */
+function renderSocial(): string {
+  // Discord lives in the launcher: the real web client opens as a page, and
+  // the community server stays one click away.
+  const discord = row(
+    t("settings.aboutDiscord"),
+    t("settings.discordDesc"),
+    `<button class="btn ghost small" data-view="discord">${icon("discord", 13)} ${t("overlay.openDiscord")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="${DISCORD_INVITE_URL}">${icon("external", 13)} ${t("settings.discordJoin")}</button>`,
+  );
+
+  const presence = row(
+    t("settings.presenceTitle"),
+    t("settings.presenceDesc"),
+    toggle("toggle-presence", S.presenceEnabled),
+  );
+
+  // The Discord page is the message channel: keeping it loaded is what lets
+  // messages and calls arrive while a game runs. On by default; the person
+  // decides, and turning it off unloads the page on the next start.
+  const discordAlways = row(
+    t("settings.discordAlwaysTitle"),
+    t("settings.discordAlwaysDesc"),
+    toggle("toggle-discord-always", localStorage.getItem("efxlve-discord-always") !== "false"),
+  );
+
+  return group(discord + presence + discordAlways, t("settings.secSocial"));
 }
 
 /** Localized controller family names (kept literal so the key audit sees them). */
@@ -809,6 +824,7 @@ function renderSection(section: SettingsSection): string {
     case "account": return renderAccountSettings();
     case "cloud": return renderCloud();
     case "integrations": return renderIntegrations();
+    case "social": return renderSocial();
     case "launchers": return renderLaunchers();
     case "collections": return renderCollections();
     case "controller": return renderController();
@@ -821,17 +837,80 @@ function renderSection(section: SettingsSection): string {
   }
 }
 
+/** The settings search: a query shows every section, filtered to the matches. */
+let settingsQuery = "";
+let settingsSearching = false;
+
 export function renderSettings(): string {
   const active = SECTIONS.find((s) => s.id === S.settingsSection) ?? SECTIONS[0];
   const nav = SECTIONS.map((s) => `
     <button class="settings-nav-item ${s.id === active.id ? "active" : ""}" data-act="settings-section" data-section="${s.id}">${t(s.labelKey)}</button>`).join("");
+  wireSettingsSearch();
   return `
     <div class="page settings-page">
       <div class="settings-layout">
         <nav class="settings-nav">${nav}</nav>
-        <div class="settings-panel">${renderSection(active.id)}</div>
+        <div class="settings-panel">
+          <input id="settings-search" class="settings-search" type="text" value="${esc(settingsQuery)}" placeholder="${esc(t("settings.searchPlaceholder"))}" spellcheck="false" />
+          ${
+            settingsSearching
+              ? SECTIONS.map(
+                  (s) => `<h2 class="settings-search-head">${t(s.labelKey)}</h2>${renderSection(s.id)}`,
+                ).join("")
+              : renderSection(active.id)
+          }
+        </div>
       </div>
     </div>`;
+}
+
+/** Hides every row that does not match, and the groups left without matches. */
+function applySettingsSearch(query: string): void {
+  const panel = document.querySelector<HTMLElement>(".settings-panel");
+  if (!panel) return;
+  const needle = query.trim().toLowerCase();
+  panel.querySelectorAll<HTMLElement>(".settings-row").forEach((row) => {
+    const haystack = (row.dataset.search ?? "").toLowerCase();
+    row.hidden = needle.length > 0 && !haystack.includes(needle);
+  });
+  panel.querySelectorAll<HTMLElement>(".settings-group").forEach((group) => {
+    const anyVisible = [...group.querySelectorAll<HTMLElement>(".settings-row")].some(
+      (row) => !row.hidden,
+    );
+    group.hidden = needle.length > 0 && !anyVisible;
+    const head = group.previousElementSibling;
+    if (head instanceof HTMLElement && head.classList.contains("section-title")) {
+      head.hidden = group.hidden;
+    }
+  });
+}
+
+/** Wires the search box once; typing filters in place, and the first character
+ * re-renders so matches from every section are on screen. */
+let settingsSearchWired = false;
+
+function wireSettingsSearch(): void {
+  if (settingsSearchWired) return;
+  settingsSearchWired = true;
+  document.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.id !== "settings-search") return;
+    const query = input.value;
+    const searching = query.trim().length > 0;
+    settingsQuery = query;
+    if (searching !== settingsSearching) {
+      settingsSearching = searching;
+      render();
+      const fresh = document.getElementById("settings-search") as HTMLInputElement | null;
+      if (fresh) {
+        fresh.focus();
+        fresh.setSelectionRange(query.length, query.length);
+      }
+      applySettingsSearch(query);
+      return;
+    }
+    applySettingsSearch(query);
+  });
 }
 
 /**
@@ -873,6 +952,7 @@ export async function loadSettingsView(): Promise<void> {
   render();
   // Re-add the EOS notice if it was cleared. Uses the status already in memory.
   syncEosNotice();
+  applySettingsSearch(settingsQuery);
   if (S.settingsSection === "integrations") void loadIntegrationsView();
   if (S.settingsSection === "controller") void loadControllerView(true);
   if (S.settingsSection === "launchers") void loadLaunchersView();

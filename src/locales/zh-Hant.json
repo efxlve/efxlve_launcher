@@ -90,6 +90,7 @@
   "common.browse": "瀏覽",
   "settings.defaultKey": "預設",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.searchPlaceholder": "搜尋設定",
   "settings.discordAlwaysTitle": "保持 Discord 開啟",
   "settings.discordAlwaysDesc": "啟動時在背景載入 Discord 頁面，玩遊戲時也能收到訊息和通話。",
   "settings.presenceDesc": "在 Discord 上顯示你正在進行的內容，以及遊戲封面和啟動器圖示。",

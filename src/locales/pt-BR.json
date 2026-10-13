@@ -90,6 +90,7 @@
   "common.browse": "Procurar",
   "settings.defaultKey": "Padrão",
   "settings.presenceTitle": "Discord Rich Presence",
+  "settings.searchPlaceholder": "Buscar nas configurações",
   "settings.discordAlwaysTitle": "Manter o Discord aberto",
   "settings.discordAlwaysDesc": "Carrega a página do Discord na inicialização, em segundo plano, para receber mensagens e chamadas enquanto joga.",
   "settings.presenceDesc": "Mostra no Discord o que você está fazendo, com a capa do jogo e o ícone do launcher.",
