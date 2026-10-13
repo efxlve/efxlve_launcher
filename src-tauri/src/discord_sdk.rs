@@ -1284,6 +1284,11 @@ mod imp {
         }
     }
 
+    /// A rejected scope must not cost the whole connection: the first failure
+    /// retries with the SDK's own defaults.
+    static EXTRA_SCOPES_DROPPED: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
+
     /// Starts (or restarts) the interactive flow: PKCE challenge, then the
     /// authorize prompt in the Discord client — or the browser when it is not
     /// running. Used on the first run and when a refresh fails.
@@ -1294,7 +1299,15 @@ mod imp {
             size: 0,
         };
         Discord_Client_GetDefaultCommunicationScopes(&mut scopes);
-        let scopes_text = string_of(scopes);
+        // The defaults cover friends, messages and voice reads; the DM call
+        // endpoint wants the write side too, and asking is the only way to know
+        // whether this application may have it.
+        let scopes_text = if EXTRA_SCOPES_DROPPED.load(Ordering::SeqCst) {
+            string_of(scopes)
+        } else {
+            format!("{} rpc.voice.write", string_of(scopes))
+        };
+        sdk_note!("requesting scopes: {scopes_text}");
 
         let mut verifier: CodeVerifier = std::mem::zeroed();
         Discord_Client_CreateAuthorizationCodeVerifier(client, &mut verifier);
@@ -1336,6 +1349,15 @@ mod imp {
         if !Discord_ClientResult_Successful(result) {
             let error = result_error(result);
             sdk_note!("authorize failed: {error}");
+            // A scope this application may not request would block everything:
+            // drop it once and ask again with the SDK's defaults.
+            if !EXTRA_SCOPES_DROPPED.swap(true, Ordering::SeqCst) {
+                sdk_note!("retrying the authorization without the extra scope");
+                let client = flow.client;
+                free_flow(user);
+                begin_authorize(client);
+                return;
+            }
             set_state("error", Some(error));
             free_flow(user);
             return;
