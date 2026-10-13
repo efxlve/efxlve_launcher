@@ -569,25 +569,29 @@
 
   // 7) Discovery: which call-ish stores exist and what they expose, logged
   //    once per page load so the reader can be corrected without a live call.
+  //    Class methods are non-enumerable, so getOwnPropertyNames is the only way
+  //    to see them.
   if (!S.CallDiag) {
     var storeNames = [];
     try {
       for (var storeKey in stores) {
         if (!/call|ring/i.test(storeKey)) continue;
         var probeStore = stores[storeKey];
-        var methods = [];
+        var names = [];
         try {
-          var proto = Object.getPrototypeOf(probeStore) || {};
-          for (var methodName in proto) {
-            if (
-              /ring|call|incoming/i.test(methodName) &&
-              typeof probeStore[methodName] === "function"
-            ) {
-              methods.push(methodName);
-            }
-          }
+          names = names.concat(Object.getOwnPropertyNames(probeStore));
         } catch (e) {}
-        storeNames.push(storeKey + "[" + methods.slice(0, 8).join(",") + "]");
+        try {
+          names = names.concat(Object.getOwnPropertyNames(Object.getPrototypeOf(probeStore) || {}));
+        } catch (e) {}
+        var methods = [];
+        for (var ni = 0; ni < names.length && methods.length < 12; ni++) {
+          if (names[ni] === "constructor") continue;
+          try {
+            if (typeof probeStore[names[ni]] === "function") methods.push(names[ni]);
+          } catch (e) {}
+        }
+        storeNames.push(storeKey + "{" + methods.join(",") + "}");
       }
     } catch (e) {}
     S.CallDiag = storeNames.join(" ") || "none";
