@@ -1742,6 +1742,77 @@ function friendEntries(): FriendEntry[] {
   );
 }
 
+/** A conversation's entries, oldest first. Snowflake ids order the messages;
+ * ones still in flight (no id yet) go last. */
+function threadEntries(friendId: string): ReplyLogEntry[] {
+  return replyLog
+    .filter((entry) => entry.friendId === friendId)
+    .sort((a, b) => compareMessageIds(a.messageId, b.messageId));
+}
+
+function compareMessageIds(a?: string, b?: string): number {
+  if (a && b) {
+    // Snowflakes are all the same length; lexicographic order is time order.
+    return a.length === b.length ? a.localeCompare(b) : a.length - b.length;
+  }
+  if (a) return -1;
+  if (b) return 1;
+  return 0;
+}
+
+/** Friends whose history was already pulled this session. */
+const historyLoaded = new Set<string>();
+
+/** Pulls the last messages once per conversation, so the log opens with the
+ * real thread instead of only what happened since the overlay started. */
+function ensureHistory(friendId: string): void {
+  if (historyLoaded.has(friendId)) return;
+  historyLoaded.add(friendId);
+  void invoke("discord_sdk_history", { userId: friendId, limit: 30 }).catch(() => {
+    historyLoaded.delete(friendId);
+  });
+}
+
+interface HistoryMessage {
+  messageId: string;
+  text: string;
+  attachment?: string;
+  at: number;
+  direction: "out" | "in";
+}
+
+/** History merges under the session entries: known ids are skipped, and the
+ * thread keeps snowflake order. */
+function mergeHistory(friendId: string, messages: HistoryMessage[]): void {
+  const known = new Set(
+    replyLog
+      .filter((entry) => entry.friendId === friendId && entry.messageId)
+      .map((entry) => entry.messageId),
+  );
+  let added = 0;
+  for (const message of messages) {
+    if (!message.messageId || known.has(message.messageId)) continue;
+    known.add(message.messageId);
+    replyLog.push({
+      id: ++replyLogSeq,
+      friendId,
+      messageId: message.messageId,
+      time: new Date(message.at > 0 ? message.at : Date.now()).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      text: message.text,
+      attachment: message.attachment || undefined,
+      state: "sent",
+      direction: message.direction,
+    });
+    added += 1;
+  }
+  if (!added) return;
+  if (replyLog.length > 400) replyLog.splice(0, replyLog.length - 400);
+  if (activeTab === "discord" && !document.hidden) repaintDiscord();
+}
+
 function renderDiscord(): void {
   const el = viewEl("discord");
   if (!el) return;
@@ -1751,6 +1822,7 @@ function renderDiscord(): void {
     const pick = friendEntries().find((friend) => friend.id === stored);
     if (pick) replyTarget = { id: pick.id, name: pick.name };
   }
+  if (sdkState.status === "ready" && replyTarget) ensureHistory(replyTarget.id);
   el.innerHTML = `
     <div class="dc-split">
       <div class="dc-col">${voicePanelHtml()}${friendsPanelHtml()}</div>
@@ -2047,7 +2119,7 @@ function conversationHtml(): string {
 /** The conversation so far: what we sent, and what arrived while it was open,
  * oldest first, newest at the bottom. */
 function logHtml(target: { id: string; name: string }): string {
-  const entries = replyLog.filter((entry) => entry.friendId === target.id).slice(-8);
+  const entries = threadEntries(target.id).slice(-40);
   const rows = entries
     .map((entry) => {
       const who = entry.direction === "in" ? target.name : t("overlay.discordYou");
@@ -3188,6 +3260,15 @@ async function boot(): Promise<void> {
         event.payload.messageId,
         event.payload.attachment,
       );
+    },
+  );
+
+  // History for a conversation: the log opens with the real thread, not just
+  // what happened since the overlay started.
+  await listen<{ friendId: string; messages: HistoryMessage[] }>(
+    "discord-sdk-history",
+    (event) => {
+      mergeHistory(event.payload.friendId, event.payload.messages);
     },
   );
 

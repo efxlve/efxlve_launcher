@@ -51,6 +51,7 @@ enum SdkCommand {
     EditDm { user_id: u64, message_id: u64, text: String },
     DeleteDm { user_id: u64, message_id: u64 },
     FriendRequest { user_id: u64, accept: bool },
+    History { user_id: u64, limit: i32 },
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -345,6 +346,30 @@ pub fn discord_sdk_friend_request(user_id: String, accept: bool) -> Result<(), S
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// The last messages of one conversation; the result arrives on
+/// `discord-sdk-history`.
+#[tauri::command]
+pub fn discord_sdk_history(user_id: String, limit: Option<i32>) -> Result<(), String> {
+    let id = user_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_user_id".to_string())?;
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::History {
+            user_id: id,
+            limit: limit.unwrap_or(30).clamp(1, 100),
+        })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -452,6 +477,13 @@ mod ffi {
         pub size: usize,
     }
 
+    /// `Discord_MessageHandleSpan { Discord_MessageHandle* ptr; size_t size; }`.
+    #[repr(C)]
+    pub struct MessageHandleSpan {
+        pub ptr: *mut MessageHandle,
+        pub size: usize,
+    }
+
     pub type FreeFn = unsafe extern "C" fn(*mut c_void);
     pub type LogCallback = unsafe extern "C" fn(StringValue, i32, *mut c_void);
     pub type StatusCallback = unsafe extern "C" fn(i32, i32, i32, *mut c_void);
@@ -477,6 +509,8 @@ mod ffi {
     pub type ResultCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
     pub type UserMessageSummariesCallback =
         unsafe extern "C" fn(*mut ClientResult, UserMessageSummarySpan, *mut c_void);
+    pub type UserMessagesWithLimitCallback =
+        unsafe extern "C" fn(*mut ClientResult, MessageHandleSpan, *mut c_void);
 
     #[link(name = "discord_partner_sdk")]
     extern "C" {
@@ -562,6 +596,15 @@ mod ffi {
             message_id: u64,
             out: *mut MessageHandle,
         ) -> bool;
+        pub fn Discord_Client_GetUserMessagesWithLimit(
+            client: *mut Client,
+            recipient_id: u64,
+            limit: i32,
+            callback: UserMessagesWithLimitCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_MessageHandle_Id(handle: *mut MessageHandle) -> u64;
         pub fn Discord_MessageHandle_Content(handle: *mut MessageHandle, out: *mut StringValue);
         pub fn Discord_MessageHandle_AdditionalName(
             handle: *mut MessageHandle,
@@ -926,6 +969,48 @@ mod imp {
     /// summary poll both see the same message; it must land exactly once.
     static EMITTED: Mutex<Vec<u64>> = Mutex::new(Vec::new());
 
+    /// One message, read off its handle: exactly what the panel needs.
+    struct MsgData {
+        id: u64,
+        author: u64,
+        text: String,
+        attachment: String,
+        sent_ms: u64,
+    }
+
+    /// Reads a message handle. The caller owns the handle and drops it.
+    unsafe fn read_handle(handle: &mut MessageHandle) -> MsgData {
+        let mut content = StringValue {
+            ptr: ptr::null_mut(),
+            size: 0,
+        };
+        Discord_MessageHandle_Content(handle, &mut content);
+        // An attachment (image, GIF, sticker) carries no text: its name is all
+        // the row can show, but it must not vanish.
+        let mut additional = StringValue {
+            ptr: ptr::null_mut(),
+            size: 0,
+        };
+        let attachment = if Discord_MessageHandle_AdditionalName(handle, &mut additional) {
+            string_of(additional)
+        } else {
+            String::new()
+        };
+        let sent = Discord_MessageHandle_SentTimestamp(handle);
+        MsgData {
+            id: Discord_MessageHandle_Id(handle),
+            author: Discord_MessageHandle_AuthorId(handle),
+            text: string_of(content),
+            attachment,
+            // Some SDK builds report seconds; the UI wants milliseconds.
+            sent_ms: if sent < 1_000_000_000_000 {
+                sent * 1000
+            } else {
+                sent
+            },
+        }
+    }
+
     /// Reads one message and hands it to the UI when it is a direct message to
     /// this account. Shared by the created callback and the summary poll, and
     /// it logs every skip so a quiet conversation can be diagnosed.
@@ -935,27 +1020,12 @@ mod imp {
             sdk_note!("message {message_id}: no handle");
             return;
         }
-        let mut content = StringValue {
-            ptr: ptr::null_mut(),
-            size: 0,
-        };
-        Discord_MessageHandle_Content(&mut handle, &mut content);
-        let text = string_of(content);
-        // An attachment (image, GIF, sticker) carries no text: its name is all
-        // the row can show, but it must not vanish.
-        let mut additional = StringValue {
-            ptr: ptr::null_mut(),
-            size: 0,
-        };
-        let attachment = if Discord_MessageHandle_AdditionalName(&mut handle, &mut additional) {
-            string_of(additional)
-        } else {
-            String::new()
-        };
-        let author = Discord_MessageHandle_AuthorId(&mut handle);
-        let recipient = Discord_MessageHandle_RecipientId(&mut handle);
-        let sent = Discord_MessageHandle_SentTimestamp(&mut handle);
+        let data = read_handle(&mut handle);
         Discord_MessageHandle_Drop(&mut handle);
+        let author = data.author;
+        let text = data.text;
+        let attachment = data.attachment;
+        let sent_ms = data.sent_ms;
 
         if text.is_empty() && attachment.is_empty() {
             sdk_note!("message {message_id}: empty content, skipped");
@@ -979,7 +1049,6 @@ mod imp {
             return;
         }
         // The client replays history when it (re)connects: the log is "now".
-        let sent_ms = if sent < 1_000_000_000_000 { sent * 1000 } else { sent };
         if sent_ms > 0 && now_secs() * 1000 > sent_ms + 120_000 {
             sdk_note!("message {message_id}: older than two minutes, skipped");
             return;
@@ -997,7 +1066,7 @@ mod imp {
             }
             seen.push(message_id);
         }
-        sdk_note!("direct message received from {author} (to {recipient})");
+        sdk_note!("direct message received from {author}");
         if let Some(app) = APP_HANDLE.get() {
             let _ = app.emit(
                 "discord-sdk-message",
@@ -1214,6 +1283,51 @@ mod imp {
     unsafe fn with_seen<T>(f: impl FnOnce(&mut Vec<(u64, u64)>) -> T) -> Option<T> {
         let mut guard = SEEN_SUMMARIES.lock().ok()?;
         Some(f(&mut guard))
+    }
+
+    /// The last messages of one conversation, so the panel opens with real
+    /// history instead of an empty log.
+    unsafe extern "C" fn on_history(
+        result: *mut ClientResult,
+        messages: MessageHandleSpan,
+        user: *mut c_void,
+    ) {
+        let ctx = &*(user as *mut SendCtx);
+        if !Discord_ClientResult_Successful(result) {
+            sdk_note!("history failed: {}", result_error(result));
+            return;
+        }
+        if messages.ptr.is_null() {
+            return;
+        }
+        let me_id = with_state(|state| state.me.as_ref().map(|me| me.id.clone())).flatten();
+        let mut rows: Vec<serde_json::Value> = Vec::new();
+        for index in 0..messages.size {
+            let mut handle = *messages.ptr.add(index);
+            let data = read_handle(&mut handle);
+            Discord_MessageHandle_Drop(&mut handle);
+            if data.text.is_empty() && data.attachment.is_empty() {
+                continue;
+            }
+            let mine = me_id.as_deref() == Some(data.author.to_string().as_str());
+            rows.push(serde_json::json!({
+                "messageId": data.id.to_string(),
+                "text": data.text,
+                "attachment": data.attachment,
+                "at": data.sent_ms,
+                "direction": if mine { "out" } else { "in" },
+            }));
+        }
+        sdk_note!("history for {}: {} messages", ctx.user_id, rows.len());
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit(
+                "discord-sdk-history",
+                serde_json::json!({
+                    "friendId": ctx.user_id.to_string(),
+                    "messages": rows,
+                }),
+            );
+        }
     }
 
 
@@ -1473,6 +1587,26 @@ mod imp {
                                 user_id,
                                 borrow_str(&text),
                                 on_message_sent,
+                                Some(free_send),
+                                ctx as *mut SendCtx as *mut c_void,
+                            );
+                        }
+                        Ok(SdkCommand::History { user_id, limit }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("history ignored: not connected");
+                                continue;
+                            }
+                            let ctx = Box::into_raw(Box::new(SendCtx {
+                                user_id,
+                                message_id: 0,
+                            }));
+                            Discord_Client_GetUserMessagesWithLimit(
+                                client_ptr,
+                                user_id,
+                                limit,
+                                on_history,
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
                             );
