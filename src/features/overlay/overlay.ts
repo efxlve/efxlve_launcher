@@ -222,6 +222,10 @@ let sdkFriends: DiscordFriendsState = { status: "idle", friends: [], pending: 0,
 let replyTarget: { id: string; name: string } | null = null;
 /** True while a send is in flight: the button stays disabled until the SDK reports. */
 let replySending = false;
+/** The log row being edited, if any: the composer then saves instead of sends. */
+let editingEntryId: number | null = null;
+/** The compose draft put aside while editing, per friend. */
+const editStash = new Map<string, string>();
 
 /** The launcher's own Discord page call (no desktop app involved). */
 interface WebVoiceParticipant {
@@ -1971,6 +1975,10 @@ function conversationHtml(): string {
   }
   const friend = friendEntries().find((item) => item.id === target.id);
   const draft = replyDrafts.get(target.id) ?? "";
+  const editing =
+    editingEntryId !== null
+      ? replyLog.find((item) => item.id === editingEntryId) ?? null
+      : null;
   return `
     <div class="dc-recip">
       <span class="dc-av dc-av-lg">${friend ? `<img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />` : ""}<span class="dc-dot dc-${esc(friend?.status ?? "offline")}"></span></span>
@@ -1982,15 +1990,25 @@ function conversationHtml(): string {
     </div>
     ${logHtml(target)}
     <div class="dc-composer">
-      <div class="dc-field-label">${esc(t("overlay.discordReplyTo", { name: target.name }))}</div>
+      <div class="dc-field-label">${editing ? `${esc(t("overlay.discordEdit"))} · ${esc(target.name)}` : esc(t("overlay.discordReplyTo", { name: target.name }))}</div>
       <textarea id="ov-discord-reply-input" class="dc-field" rows="3" maxlength="2000" placeholder="${esc(t("overlay.discordReplyPlaceholder"))}">${esc(draft)}</textarea>
       <div class="dc-composer-foot">
-        <span class="dc-hint"><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))}</span>
-        <span class="dc-hint"><kbd class="kbd">Shift</kbd>+<kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordNewLine"))}</span>
-        <span class="dc-hint"><kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordBackToFriends"))}</span>
+        ${
+          editing
+            ? `<span class="dc-hint"><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSave"))}</span>
+               <span class="dc-hint"><kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordCancel"))}</span>`
+            : `<span class="dc-hint"><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))}</span>
+               <span class="dc-hint"><kbd class="kbd">Shift</kbd>+<kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordNewLine"))}</span>
+               <span class="dc-hint"><kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordBackToFriends"))}</span>`
+        }
         <span class="dc-composer-end">
           <span class="dc-count num" id="ov-discord-count">${draft.length} / 2000</span>
-          <button class="btn primary small" data-ov="discord-send"${replySending ? " disabled" : ""}>${icon("arrow-right", 13)} ${esc(t("overlay.discordSend"))}</button>
+          ${
+            editing
+              ? `<button class="btn ghost small" data-ov="discord-edit-cancel" title="${esc(t("overlay.discordCancel"))}">${icon("x", 13)}</button>
+                 <button class="btn primary small" data-ov="discord-edit-save"${replySending ? " disabled" : ""}>${icon("check-circle", 13)} ${esc(t("overlay.discordSave"))}</button>`
+              : `<button class="btn primary small" data-ov="discord-send"${replySending ? " disabled" : ""}>${icon("arrow-right", 13)} ${esc(t("overlay.discordSend"))}</button>`
+          }
         </span>
       </div>
     </div>`;
@@ -2009,6 +2027,7 @@ function logHtml(target: { id: string; name: string }): string {
         entry.direction === "out" && entry.state === "sent"
           ? `<span class="dc-msg-actions">
                <button class="btn ghost small" data-ov="discord-open-dm" data-id="${esc(entry.friendId)}" title="${esc(t("overlay.discordOpenDm"))}">${icon("external", 13)}</button>
+               ${entry.messageId ? `<button class="btn ghost small" data-ov="discord-edit" data-entry="${entry.id}" title="${esc(t("overlay.discordEdit"))}">${icon("edit", 13)}</button>` : ""}
                ${entry.messageId ? `<button class="btn ghost small" data-ov="discord-delete" data-entry="${entry.id}" title="${esc(t("overlay.discordDelete"))}">${icon("trash", 13)}</button>` : ""}
              </span>`
           : "";
@@ -2126,6 +2145,50 @@ async function deleteReply(entryId: number): Promise<void> {
     await invoke("discord_sdk_delete_dm", {
       userId: entry.friendId,
       messageId: entry.messageId,
+    });
+  } catch (error) {
+    if (button) button.disabled = false;
+    toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
+  }
+}
+
+/** Puts a sent message back in the composer to rewrite it; the compose draft
+ * waits in the stash so nothing is lost if the edit is cancelled. */
+function startEdit(entryId: number): void {
+  const entry = replyLog.find((item) => item.id === entryId);
+  if (!entry || entry.direction !== "out" || !entry.messageId) return;
+  editingEntryId = entry.id;
+  editStash.set(entry.friendId, replyDrafts.get(entry.friendId) ?? "");
+  replyDrafts.set(entry.friendId, entry.text);
+  renderDiscord();
+  focusReplyInput();
+  refreshFooterHints();
+}
+
+/** Leaves edit mode and brings the compose draft back. */
+function cancelEdit(): void {
+  const entry = replyLog.find((item) => item.id === editingEntryId);
+  editingEntryId = null;
+  if (entry) {
+    replyDrafts.set(entry.friendId, editStash.get(entry.friendId) ?? "");
+    editStash.delete(entry.friendId);
+  }
+  renderDiscord();
+}
+
+/** Saves the edit through the SDK; the row updates when Discord confirms. */
+async function saveEdit(): Promise<void> {
+  const entry = replyLog.find((item) => item.id === editingEntryId);
+  const input = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
+  const text = (input?.value ?? "").trim();
+  if (!entry || !entry.messageId || !text) return;
+  const button = document.querySelector<HTMLButtonElement>('[data-ov="discord-edit-save"]');
+  if (button) button.disabled = true;
+  try {
+    await invoke("discord_sdk_edit_dm", {
+      userId: entry.friendId,
+      messageId: entry.messageId,
+      text,
     });
   } catch (error) {
     if (button) button.disabled = false;
@@ -2365,6 +2428,13 @@ function wireEvents(): void {
     } else if (action === "discord-delete") {
       const entryId = Number(target.closest<HTMLElement>("[data-ov]")?.dataset.entry);
       if (Number.isFinite(entryId)) void deleteReply(entryId);
+    } else if (action === "discord-edit") {
+      const entryId = Number(target.closest<HTMLElement>("[data-ov]")?.dataset.entry);
+      if (Number.isFinite(entryId)) startEdit(entryId);
+    } else if (action === "discord-edit-save") {
+      void saveEdit();
+    } else if (action === "discord-edit-cancel") {
+      cancelEdit();
     } else if (action === "discord-open-dm") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
@@ -2475,7 +2545,8 @@ function wireEvents(): void {
     const inComposer = typed instanceof HTMLTextAreaElement && typed.id === "ov-discord-reply-input";
     if (inComposer && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      void sendDiscordReply();
+      if (editingEntryId !== null) void saveEdit();
+      else void sendDiscordReply();
       return;
     }
     if (inComposer && (event.ctrlKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
@@ -2494,9 +2565,15 @@ function wireEvents(): void {
     }
     if (isTextEntryFocused()) {
       // Esc leaves the box back to the friend row first; the next Esc closes.
+      // While editing, it cancels the edit and brings the compose draft back.
       if (event.key === "Escape") {
-        (document.activeElement as HTMLElement | null)?.blur();
-        focusSelectedFriendRow();
+        if (editingEntryId !== null) {
+          cancelEdit();
+          focusReplyInput();
+        } else {
+          (document.activeElement as HTMLElement | null)?.blur();
+          focusSelectedFriendRow();
+        }
       }
       return;
     }
@@ -3088,6 +3165,31 @@ async function boot(): Promise<void> {
         '[data-ov="discord-delete"]',
       );
       if (button) button.disabled = false;
+    },
+  );
+
+  // The edit result: the row takes the new text, and the composer goes back to
+  // writing (the compose draft returns from the stash).
+  await listen<{ userId: string; messageId: string; text?: string; ok: boolean; error?: string }>(
+    "discord-sdk-dm-edited",
+    (event) => {
+      const entry = replyLog.find((item) => item.messageId === event.payload.messageId);
+      if (!event.payload.ok) {
+        toast(t("overlay.discordSendFailed", { error: event.payload.error || "" }), "err");
+        const button = document.querySelector<HTMLButtonElement>('[data-ov="discord-edit-save"]');
+        if (button) button.disabled = false;
+        return;
+      }
+      if (entry) {
+        if (event.payload.text) entry.text = event.payload.text;
+        if (entry.id === editingEntryId) {
+          editingEntryId = null;
+          replyDrafts.set(entry.friendId, editStash.get(entry.friendId) ?? "");
+          editStash.delete(entry.friendId);
+        }
+      }
+      if (activeTab === "discord" && !document.hidden) repaintDiscord();
+      refreshFooterHints();
     },
   );
 

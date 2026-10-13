@@ -48,6 +48,7 @@ static CLIENT_PTR: std::sync::atomic::AtomicPtr<ffi::Client> =
 
 enum SdkCommand {
     SendDm { user_id: u64, text: String },
+    EditDm { user_id: u64, message_id: u64, text: String },
     DeleteDm { user_id: u64, message_id: u64 },
 }
 
@@ -278,6 +279,38 @@ pub fn discord_sdk_delete_dm(user_id: String, message_id: String) -> Result<(), 
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Rewrites one of the messages the overlay sent; the outcome arrives on
+/// `discord-sdk-dm-edited`.
+#[tauri::command]
+pub fn discord_sdk_edit_dm(user_id: String, message_id: String, text: String) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Err("empty_message".to_string());
+    }
+    let id = user_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_user_id".to_string())?;
+    let message = message_id
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| "bad_message_id".to_string())?;
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::EditDm {
+            user_id: id,
+            message_id: message,
+            text,
+        })
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -453,6 +486,15 @@ mod ffi {
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
+        pub fn Discord_Client_EditUserMessage(
+            client: *mut Client,
+            recipient_id: u64,
+            message_id: u64,
+            content: StringValue,
+            callback: ResultCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
         pub fn Discord_Client_GetMessageHandle(
             client: *mut Client,
             message_id: u64,
@@ -585,12 +627,23 @@ mod imp {
         message_id: u64,
     }
 
+    /// An edit in flight: the callback reports the new text back to the panel.
+    struct EditCtx {
+        user_id: u64,
+        message_id: u64,
+        text: String,
+    }
+
     unsafe extern "C" fn free_flow(user: *mut c_void) {
         drop(Box::from_raw(user as *mut Flow));
     }
 
     unsafe extern "C" fn free_send(user: *mut c_void) {
         drop(Box::from_raw(user as *mut SendCtx));
+    }
+
+    unsafe extern "C" fn free_edit(user: *mut c_void) {
+        drop(Box::from_raw(user as *mut EditCtx));
     }
 
     fn string_of(value: StringValue) -> String {
@@ -921,6 +974,32 @@ mod imp {
         }
     }
 
+    /// The outcome of an edit the overlay asked for.
+    unsafe extern "C" fn on_message_edit_result(result: *mut ClientResult, user: *mut c_void) {
+        let ctx = &*(user as *mut EditCtx);
+        let payload = if Discord_ClientResult_Successful(result) {
+            sdk_note!("direct message {} edited", ctx.message_id);
+            serde_json::json!({
+                "userId": ctx.user_id.to_string(),
+                "messageId": ctx.message_id.to_string(),
+                "text": ctx.text,
+                "ok": true,
+            })
+        } else {
+            let error = result_error(result);
+            sdk_note!("edit failed: {error}");
+            serde_json::json!({
+                "userId": ctx.user_id.to_string(),
+                "messageId": ctx.message_id.to_string(),
+                "ok": false,
+                "error": error,
+            })
+        };
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit("discord-sdk-dm-edited", payload);
+        }
+    }
+
     /// A direct message that arrived while the overlay is open.
     unsafe extern "C" fn on_message_created(message_id: u64, _user: *mut c_void) {
         sdk_note!("message created callback: {message_id}");
@@ -1232,6 +1311,36 @@ mod imp {
                                 on_message_sent,
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
+                            );
+                        }
+                        Ok(SdkCommand::EditDm {
+                            user_id,
+                            message_id,
+                            text,
+                        }) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if !ready {
+                                sdk_note!("edit ignored: not connected");
+                                continue;
+                            }
+                            let edit = EditCtx {
+                                user_id,
+                                message_id,
+                                text,
+                            };
+                            // The borrow ends here; the box keeps the text alive
+                            // for the SDK call.
+                            let content = borrow_str(&edit.text);
+                            let ctx = Box::into_raw(Box::new(edit));
+                            Discord_Client_EditUserMessage(
+                                client_ptr,
+                                user_id,
+                                message_id,
+                                content,
+                                on_message_edit_result,
+                                Some(free_edit),
+                                ctx as *mut EditCtx as *mut c_void,
                             );
                         }
                         Ok(SdkCommand::DeleteDm {
