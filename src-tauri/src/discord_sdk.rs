@@ -1288,6 +1288,11 @@ mod imp {
     /// retries with the SDK's own defaults.
     static EXTRA_SCOPES_DROPPED: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);
+    /// A stored session from before the voice-write request is refreshed once
+    /// interactively, so the call endpoint stops refusing without the person
+    /// having to clear anything by hand.
+    static REAUTHORIZED_FOR_SCOPES: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
 
     /// Starts (or restarts) the interactive flow: PKCE challenge, then the
     /// authorize prompt in the Discord client — or the browser when it is not
@@ -1408,12 +1413,26 @@ mod imp {
         }
         let access_text = string_of(access);
         let refresh_text = string_of(refresh);
+        let scope_text = string_of(scope);
         sdk_note!(
-            "token received ({} bytes, refresh {} bytes, {expires_in}s, scope {})",
+            "token received ({} bytes, refresh {} bytes, {expires_in}s, scope {scope_text})",
             access_text.len(),
             refresh_text.len(),
-            string_of(scope)
         );
+        // A session from before the voice-write request comes back without it:
+        // ask once, so calls stop being refused, and only when the extra scope
+        // was not already dropped for being unavailable.
+        let has_voice_write = scope_text.split_whitespace().any(|item| item == "rpc.voice.write");
+        if !has_voice_write
+            && !EXTRA_SCOPES_DROPPED.load(Ordering::SeqCst)
+            && !REAUTHORIZED_FOR_SCOPES.swap(true, Ordering::SeqCst)
+        {
+            sdk_note!("stored session lacks rpc.voice.write; asking for approval once");
+            let client = flow.client;
+            free_flow(user);
+            begin_authorize(client);
+            return;
+        }
         if !refresh_text.is_empty() {
             let expires_at = now_secs() + expires_in.max(0) as u64;
             save_session(&SdkSession {
