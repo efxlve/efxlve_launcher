@@ -1729,7 +1729,7 @@ let editingEntryId: number | null = null;
 /** The compose draft put aside while editing, per friend. */
 const editStash = new Map<string, string>();
 /** Which takeover borrows the picker column, if any. */
-type PickerMode = "friends" | "requests" | "channels" | "add" | "status";
+type PickerMode = "friends" | "requests" | "add" | "status";
 let pickerMode: PickerMode = "friends";
 /** The add-friend search's state. */
 let searchQuery = "";
@@ -1737,8 +1737,6 @@ let searchRan = false;
 let searchResults: { id: string; name: string; username: string; avatarUrl: string }[] = [];
 /** Usernames a request was sent to this session, so the row stops offering it. */
 const sentRequests = new Set<string>();
-/** Voice channels the panel can jump to, from the SDK's guild tree. */
-let sdkChannels: { id: string; name: string; guild: string; guildId: string }[] = [];
 /** The DM call the overlay started, if any (the SDK's own call). */
 let callState: { active: boolean; friendId: string | null; muted: boolean } = {
   active: false,
@@ -1968,14 +1966,6 @@ function pickerColumnHtml(): string {
         : `<div class="empty-picker-wrap"><span>${esc(t("overlay.discordFriendsEmpty"))}</span></div>`,
     );
   }
-  if (pickerMode === "channels") {
-    return takeoverHtml(
-      t("overlay.discordChannels"),
-      sdkChannels.length
-        ? channelsBodyHtml()
-        : `<div class="empty-picker-wrap"><span>${esc(t("overlay.discordNoChannel"))}</span></div>`,
-    );
-  }
   if (pickerMode === "add") {
     return takeoverHtml(t("overlay.discordAddFriend"), addFriendBodyHtml());
   }
@@ -2008,7 +1998,6 @@ function friendsColumnHtml(requests: FriendEntry[]): string {
             ? `<button class="header-btn highlight" data-ov="discord-picker" data-mode="requests">${esc(t("overlay.discordRequests"))} (${requests.length})</button>`
             : ""
         }
-        <button class="header-btn" data-ov="discord-picker" data-mode="channels">${esc(t("overlay.discordChannelsShort"))}</button>
         <button class="header-btn" data-ov="discord-picker" data-mode="add">+ ${esc(t("overlay.discordAddShort"))}</button>
       </div>
     </div>`;
@@ -2050,36 +2039,6 @@ function requestRowHtml(friend: FriendEntry): string {
         <button class="action-btn" data-ov="discord-reject" data-id="${esc(friend.id)}">${esc(t("overlay.discordReject"))}</button>
       </span>
     </div>`;
-}
-
-/** The voice channels, one level, grouped by server. */
-function channelsBodyHtml(): string {
-  const guilds: { id: string; name: string; channels: typeof sdkChannels }[] = [];
-  for (const channel of sdkChannels) {
-    let group = guilds.find((item) => item.id === channel.guildId);
-    if (!group) {
-      group = { id: channel.guildId, name: channel.guild, channels: [] };
-      guilds.push(group);
-    }
-    group.channels.push(channel);
-  }
-  return guilds
-    .slice(0, 6)
-    .map(
-      (guild) => `
-      <div class="guild-label">${esc(guild.name)}</div>
-      ${guild.channels
-        .slice(0, 4)
-        .map(
-          (channel) => `
-        <button class="channel-row" data-ov="discord-open-channel" data-channel="${esc(channel.id)}" data-guild="${esc(channel.guildId)}" title="${esc(t("overlay.discordOpenChannel"))}">
-          <span class="channel-icon">${icon("volume-2", 13)}</span>
-          ${esc(channel.name)}
-        </button>`,
-        )
-        .join("")}`,
-    )
-    .join("");
 }
 
 function addFriendBodyHtml(): string {
@@ -2730,13 +2689,6 @@ function wireEvents(): void {
     } else if (action === "discord-accept" || action === "discord-reject") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void answerFriendRequest(friendId, action === "discord-accept");
-    } else if (action === "discord-open-channel") {
-      const row = target.closest<HTMLElement>("[data-ov]");
-      const channel = row?.dataset.channel;
-      const guild = row?.dataset.guild;
-      if (channel && guild) {
-        void openDiscordInLauncher(`https://discord.com/channels/${guild}/${channel}`);
-      }
     } else if (action === "discord-open-dm") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
@@ -3454,16 +3406,6 @@ async function boot(): Promise<void> {
         event.payload.messageId,
         event.payload.attachment,
       );
-    },
-  );
-
-  // The guild tree's voice channels: the answers arrive in pieces as each
-  // guild's channel list lands.
-  await listen<{ channels: { id: string; name: string; guild: string; guildId: string }[] }>(
-    "discord-sdk-channels",
-    (event) => {
-      sdkChannels = event.payload.channels;
-      if (activeTab === "discord" && !document.hidden) repaintDiscord();
     },
   );
 
