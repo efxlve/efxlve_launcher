@@ -86,7 +86,7 @@ interface ScreenshotItem {
   data_url: string;
 }
 
-type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "browser" | "settings";
+type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "chat" | "browser" | "settings";
 
 /**
  * The Browser tab is built and working (window, tabs, commands), but it stays
@@ -100,6 +100,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
+  { id: "chat", icon: "mail", key: "overlay.discordReplyTitle" },
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "browser", icon: "globe", key: "overlay.tabBrowser" },
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
@@ -112,7 +113,8 @@ function visibleTabs(): typeof TABS {
     (tab) =>
       (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
       (tab.id !== "music" || spotifyPageVisible()) &&
-      (tab.id !== "discord" || discordPageVisible()),
+      (tab.id !== "discord" || discordPageVisible()) &&
+      (tab.id !== "chat" || discordPageVisible()),
   );
 }
 
@@ -440,7 +442,9 @@ function getDefaultWidgetPos(tab: TabId): WidgetPos {
     case "music":
       return { x: Math.max(24, winW - 390), y: 72 };
     case "discord":
-      return { x: Math.max(24, winW - 440), y: 72 };
+      return { x: Math.max(24, winW - 740), y: 72 };
+    case "chat":
+      return { x: Math.max(24, winW - 390), y: 72 };
     case "ach":
       return { x: Math.max(24, Math.min(380, winW - 420)), y: 72 };
     case "browser":
@@ -502,12 +506,15 @@ function renderWidgetContent(tab: TabId): void {
     renderMusicTab();
     void refreshMedia();
   } else if (tab === "discord") {
-    renderDiscord();
+    renderDiscordSocial();
     void invoke("discord_voice_watch_start").catch(() => undefined);
     void refreshWebVoice();
     void refreshSdkState();
+  } else if (tab === "chat") {
+    renderDiscordChat();
+    void refreshSdkState();
   } else if (tab === "browser") {
-    renderBrowser();
+    void invoke("overlay_browser_open", { url: null });
   } else if (tab === "settings") {
     renderSettings();
   }
@@ -553,6 +560,10 @@ function closeWidget(tab: TabId): void {
 }
 
 function toggleWidget(tab: TabId): void {
+  if (tab === "browser") {
+    void invoke("overlay_browser_open", { url: null });
+    return;
+  }
   if (isWidgetOpen(tab)) {
     closeWidget(tab);
   } else {
@@ -673,12 +684,12 @@ function shellHtml(): string {
 
       <!-- Floating Widgets Container -->
       <div class="ov-widgets-container" id="ov-widgets-container">
-        ${TABS.map((tab) => `
+        ${TABS.filter((t) => t.id !== "browser").map((tab) => `
           <section class="ov-widget" id="ov-widget-${tab.id}" data-widget-id="${tab.id}">
             <header class="ov-widget-header" data-widget-drag="${tab.id}">
               <div class="ov-widget-title">
                 ${icon(tab.icon, 14)}
-                <span>${esc(t(tab.key))}</span>
+                <span>${esc(tab.id === "discord" ? t("overlay.tabDiscord") + " Sosyal" : tab.id === "chat" ? t("overlay.tabDiscord") + " Sohbet" : t(tab.key))}</span>
               </div>
               <div class="ov-widget-header-actions">
                 ${tab.id === "perf" ? `
@@ -2073,23 +2084,106 @@ function presenceWord(status: string): string {
   }
 }
 
-function renderDiscord(): void {
+let friendsFilterQuery = "";
+
+function renderDiscordSocial(): void {
   const el = viewEl("discord");
   if (!el) return;
-  // The last person written to is preselected, so the tab opens ready to type.
-  if (sdkState.status === "ready" && !replyTarget) {
+  const requests = sdkFriends.pendingUsers ?? [];
+  if (pickerMode === "requests") {
+    el.innerHTML = takeoverSocialHtml(
+      t("overlay.discordRequests"),
+      requests.length
+        ? requests.map(requestRowHtml).join("")
+        : `<div class="empty-picker-wrap"><span>${esc(t("overlay.discordFriendsEmpty"))}</span></div>`,
+    );
+    return;
+  }
+  if (pickerMode === "add") {
+    el.innerHTML = takeoverSocialHtml(t("overlay.discordAddFriend"), addFriendBodyHtml());
+    return;
+  }
+  if (pickerMode === "status") {
+    el.innerHTML = takeoverSocialHtml(t("overlay.discordStatusLabel"), statusBodyHtml());
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="ov-dc-social-body">
+      ${socialProfileHtml()}
+      ${socialVoiceHtml()}
+      ${socialSearchStripHtml(requests.length)}
+      <div class="ov-dc-friends-scroll">
+        ${socialFriendsListHtml()}
+      </div>
+    </div>`;
+}
+
+function takeoverSocialHtml(title: string, body: string): string {
+  return `
+    <div class="ov-dc-social-body">
+      <div class="takeover-header">
+        <button class="takeover-back-btn" data-ov="discord-picker" data-mode="friends">← ${esc(t("overlay.discordFriendsTitle"))}</button>
+        <span class="takeover-title">${esc(title)}</span>
+      </div>
+      <div class="ov-dc-friends-scroll">${body}</div>
+    </div>`;
+}
+
+function renderDiscordChat(): void {
+  const el = viewEl("chat");
+  if (!el) return;
+  if (sdkState.status !== "ready") {
+    el.innerHTML = `
+      <div class="ov-dc-chat-body">
+        ${connectHtml()}
+      </div>`;
+    return;
+  }
+  if (!replyTarget) {
     const stored = localStorage.getItem(LAST_FRIEND_KEY);
-    const pick = friendEntries().find((friend) => friend.id === stored);
+    const pick = friendEntries().find((f) => f.id === stored);
     if (pick) replyTarget = { id: pick.id, name: pick.name };
   }
-  if (sdkState.status === "ready" && replyTarget) ensureHistory(replyTarget.id);
+  if (replyTarget) {
+    ensureHistory(replyTarget.id);
+  }
+  const target = replyTarget;
+  if (!target) {
+    el.innerHTML = `
+      <div class="ov-dc-chat-body">
+        ${chatEmptyPlaceholderHtml()}
+      </div>`;
+    return;
+  }
+  const friend = friendEntries().find((f) => f.id === target.id);
+  const draft = replyDrafts.get(target.id) ?? "";
+  const editing =
+    editingEntryId !== null
+      ? replyLog.find((item) => item.id === editingEntryId) ?? null
+      : null;
+
   el.innerHTML = `
-    <div class="discord-view">
-      ${pickerColumnHtml()}
-      ${conversationColumnHtml()}
+    <div class="ov-dc-chat-body">
+      ${chatTargetHeaderHtml(target, friend)}
+      <div class="ov-dc-chat-messages" id="ov-dc-chat-messages">
+        ${chatMessagesHtml(target)}
+      </div>
+      ${chatComposerHtml(target, draft, editing)}
     </div>`;
+
   const box = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
   if (box && box.value) growComposer(box);
+
+  const scrollContainer = document.getElementById("ov-dc-chat-messages");
+  if (scrollContainer) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
+}
+
+function renderDiscord(): void {
+  if (isWidgetOpen("discord")) renderDiscordSocial();
+  if (isWidgetOpen("chat")) renderDiscordChat();
 }
 
 /** The field grows with the draft, then scrolls at six lines. */
@@ -2098,18 +2192,21 @@ function growComposer(box: HTMLTextAreaElement): void {
   box.style.height = `${Math.min(88, Math.max(34, box.scrollHeight))}px`;
 }
 
-/** Repaints while keeping the caret where it was: friend and voice events
- * arrive while a message is being typed. */
-function repaintDiscord(): void {
+function repaintDiscordChat(): void {
   const box = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
   const wasFocused = box !== null && document.activeElement === box;
   const caret = box ? box.selectionStart : 0;
-  renderDiscord();
+  renderDiscordChat();
   if (!wasFocused) return;
   const fresh = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
   if (!fresh) return;
   fresh.focus();
   fresh.setSelectionRange(caret, caret);
+}
+
+function repaintDiscord(): void {
+  if (isWidgetOpen("discord")) renderDiscordSocial();
+  if (isWidgetOpen("chat")) repaintDiscordChat();
 }
 
 /** Puts the caret in the composer: after picking a friend the keyboard belongs
@@ -2127,7 +2224,11 @@ function selectReplyTarget(id: string, name: string, seed = ""): void {
   replyUnread.delete(id);
   pickerMode = "friends";
   localStorage.setItem(LAST_FRIEND_KEY, id);
-  renderDiscord();
+  ensureHistory(id);
+  openWidget("chat");
+  bringToFront("chat");
+  renderDiscordChat();
+  if (isWidgetOpen("discord")) renderDiscordSocial();
   focusReplyInput();
   refreshFooterHints();
 }
@@ -2160,7 +2261,7 @@ function noteIncoming(
     replyUnread.set(friendId, (replyUnread.get(friendId) ?? 0) + 1);
   }
   void notifyMessage(friendId, text);
-  if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+  if ((isWidgetOpen("discord") || isWidgetOpen("chat")) && !document.hidden) repaintDiscord();
 }
 
 /** A desktop notification for a message that arrived while the panel was not
@@ -2170,7 +2271,7 @@ function noteIncoming(
  * mobile-only), so the sender is preselected instead: opening the panel lands
  * straight in their conversation. */
 async function notifyMessage(friendId: string, text: string): Promise<void> {
-  const showing = isWidgetOpen("discord") && !document.hidden && replyTarget?.id === friendId;
+  const showing = isWidgetOpen("chat") && !document.hidden && replyTarget?.id === friendId;
   if (showing) return;
   try {
     let granted = await isPermissionGranted();
@@ -2301,77 +2402,175 @@ function mergeHistory(friendId: string, messages: HistoryMessage[]): void {
   }
   if (!added) return;
   if (replyLog.length > 400) replyLog.splice(0, replyLog.length - 400);
-  if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+  if ((isWidgetOpen("discord") || isWidgetOpen("chat")) && !document.hidden) repaintDiscord();
 }
 
-/* --- Area 1: the picker column (friends, or one takeover) --- */
+/* --- Area 1: Discord Sosyal (Friends List & Voice) --- */
 
-function pickerColumnHtml(): string {
-  const requests = sdkFriends.pendingUsers ?? [];
-  if (pickerMode === "requests") {
-    return takeoverHtml(
-      t("overlay.discordRequests"),
-      requests.length
-        ? requests.map(requestRowHtml).join("")
-        : `<div class="empty-picker-wrap"><span>${esc(t("overlay.discordFriendsEmpty"))}</span></div>`,
-    );
+function socialProfileHtml(): string {
+  const me = sdkState.me;
+  const connected = sdkState.status === "ready";
+  if (!connected) {
+    return `
+      <div class="ov-dc-profile-card">
+        <div class="ov-dc-profile-left">
+          <div class="ov-dc-avatar-wrap">
+            <div class="ov-dc-avatar-fallback">${icon("discord", 18)}</div>
+          </div>
+          <div class="ov-dc-profile-info">
+            <span class="ov-dc-profile-name">${esc(t("overlay.discordNotConnected"))}</span>
+            <span class="ov-dc-profile-desc">${esc(t("overlay.discordSdkDesc"))}</span>
+          </div>
+        </div>
+        <button class="btn primary small" data-ov="discord-sdk-start">${icon("discord", 13)} <span>${esc(t("overlay.discordConnect"))}</span></button>
+      </div>`;
   }
-  if (pickerMode === "add") {
-    return takeoverHtml(t("overlay.discordAddFriend"), addFriendBodyHtml());
-  }
-  if (pickerMode === "status") {
-    return takeoverHtml(t("overlay.discordStatusLabel"), statusBodyHtml());
-  }
-  return friendsColumnHtml(requests);
-}
-
-/** A takeover: the column shows one secondary feature, with a way back. */
-function takeoverHtml(title: string, body: string): string {
+  const currentStatus = me?.status ?? "online";
   return `
-    <section class="picker-col">
-      <div class="takeover-header">
-        <button class="takeover-back-btn" data-ov="discord-picker" data-mode="friends">← ${esc(t("overlay.discordFriendsTitle"))}</button>
-        <span class="takeover-title">${esc(title)}</span>
+    <div class="ov-dc-profile-card">
+      <div class="ov-dc-profile-left">
+        <div class="ov-dc-avatar-wrap">
+          ${me?.avatarUrl ? `<img class="ov-dc-avatar" src="${esc(me.avatarUrl)}" alt="" />` : `<div class="ov-dc-avatar-fallback">${icon("user", 16)}</div>`}
+          <span class="ov-dc-status-dot ${esc(currentStatus)}"></span>
+        </div>
+        <div class="ov-dc-profile-info">
+          <span class="ov-dc-profile-name">${esc(me?.name ?? "Discord")}</span>
+          <span class="ov-dc-profile-status">${esc(presenceWord(currentStatus))}</span>
+        </div>
       </div>
-      <div class="picker-list">${body}</div>
-    </section>`;
-}
-
-function friendsColumnHtml(requests: FriendEntry[]): string {
-  const friends = friendEntries();
-  const head = `
-    <div class="picker-header">
-      <span class="picker-title">${esc(t("overlay.discordFriendsTitle"))}</span>
-      <div class="picker-actions">
-        ${
-          requests.length
-            ? `<button class="header-btn highlight" data-ov="discord-picker" data-mode="requests">${esc(t("overlay.discordRequests"))} (${requests.length})</button>`
-            : ""
-        }
-        <button class="header-btn" data-ov="discord-picker" data-mode="add">+ ${esc(t("overlay.discordAddShort"))}</button>
+      <div class="ov-dc-profile-actions">
+        <button class="ov-dc-tool-btn" data-ov="discord-picker" data-mode="status" title="${esc(t("overlay.discordStatusLabel"))}">
+          ${icon("sliders", 14)}
+        </button>
       </div>
     </div>`;
-  const rows = friends.length
-    ? friends.map(friendRowHtml).join("")
-    : `<div class="empty-picker-wrap">${icon("users", 24)}<span>${esc(
-        sdkState.status === "ready"
-          ? t("overlay.discordFriendsEmpty")
-          : t("overlay.discordFriendsEmptyHint"),
-      )}</span></div>`;
-  return `<section class="picker-col">${head}<div class="picker-list">${rows}</div></section>`;
 }
 
-function friendRowHtml(friend: FriendEntry): string {
+function socialVoiceHtml(): string {
+  if (voiceState.status === "ready" && voiceState.channel) {
+    const ch = voiceState.channel;
+    const count = voiceState.participants.length;
+    return `
+      <div class="ov-dc-voice-strip">
+        <div class="ov-dc-voice-left">
+          <span class="ov-dc-voice-icon live">${icon("mic", 14)}</span>
+          <div class="ov-dc-voice-meta">
+            <span class="ov-dc-voice-channel">${esc(ch.name)}</span>
+            <span class="ov-dc-voice-count">${count} ${count === 1 ? "kişi" : "katılımcı"}</span>
+          </div>
+        </div>
+        <button class="ov-dc-voice-leave-btn" data-ov="discord-voice-leave" title="${esc(t("overlay.discordCallEnd"))}">
+          ${icon("x", 13)}
+        </button>
+      </div>`;
+  }
+  if (callState.active) {
+    const friend = friendEntries().find((f) => f.id === callState.friendId);
+    return `
+      <div class="ov-dc-voice-strip">
+        <div class="ov-dc-voice-left">
+          <span class="ov-dc-voice-icon live">${icon("mic", 14)}</span>
+          <div class="ov-dc-voice-meta">
+            <span class="ov-dc-voice-channel">${esc(friend?.name ?? t("overlay.discordCallActive"))}</span>
+            <span class="ov-dc-voice-count">${esc(t("overlay.discordCallActive"))}</span>
+          </div>
+        </div>
+        <div class="ov-dc-voice-btns">
+          <button class="ov-dc-tool-btn ${callState.muted ? "is-muted" : ""}" data-ov="discord-call-mute" title="${esc(callState.muted ? t("overlay.discordCallUnmute") : t("overlay.discordCallMute"))}">
+            ${icon(callState.muted ? "mic-off" : "mic", 13)}
+          </button>
+          <button class="ov-dc-voice-leave-btn" data-ov="discord-call-end" title="${esc(t("overlay.discordCallEnd"))}">
+            ${icon("x", 13)}
+          </button>
+        </div>
+      </div>`;
+  }
+  return "";
+}
+
+function socialSearchStripHtml(pendingCount: number): string {
+  return `
+    <div class="ov-dc-search-row">
+      <div class="ov-dc-search-box">
+        <span class="ov-dc-search-ico">${icon("search", 13)}</span>
+        <input id="ov-dc-friends-filter" class="ov-dc-search-input" placeholder="${esc(t("overlay.discordSearchPlaceholder"))}" value="${esc(friendsFilterQuery)}" spellcheck="false" />
+        ${friendsFilterQuery ? `<button class="ov-dc-search-clear" data-ov="discord-clear-filter">${icon("x", 11)}</button>` : ""}
+      </div>
+      <button class="ov-dc-add-btn" data-ov="discord-picker" data-mode="add" title="${esc(t("overlay.discordAddFriend"))}">
+        ${icon("plus", 13)}
+      </button>
+      ${pendingCount > 0 ? `
+        <button class="ov-dc-requests-btn" data-ov="discord-picker" data-mode="requests" title="${esc(t("overlay.discordRequests"))}">
+          ${icon("bell", 13)}
+          <span class="ov-dc-badge">${pendingCount}</span>
+        </button>
+      ` : ""}
+    </div>`;
+}
+
+function socialFriendsListHtml(): string {
+  const allFriends = friendEntries();
+  const filter = friendsFilterQuery.trim().toLowerCase();
+  const filtered = filter
+    ? allFriends.filter((f) => f.name.toLowerCase().includes(filter))
+    : allFriends;
+
+  const online = filtered.filter((f) => f.status === "online" || f.status === "idle" || f.status === "dnd");
+  const offline = filtered.filter((f) => f.status !== "online" && f.status !== "idle" && f.status !== "dnd");
+
+  if (allFriends.length === 0) {
+    return `
+      <div class="ov-dc-empty-list">
+        ${icon("users", 24)}
+        <span>${esc(sdkState.status === "ready" ? t("overlay.discordFriendsEmpty") : t("overlay.discordFriendsEmptyHint"))}</span>
+      </div>`;
+  }
+
+  if (filtered.length === 0) {
+    return `
+      <div class="ov-dc-empty-list">
+        <span>${esc(t("overlay.discordNoResults"))}</span>
+      </div>`;
+  }
+
+  let html = "";
+  if (online.length > 0) {
+    html += `
+      <div class="ov-dc-group-header">
+        <span>${esc(t("overlay.discordFriendsOnline", { count: String(online.length) }))}</span>
+      </div>
+      <div class="ov-dc-group-items">
+        ${online.map(socialFriendItemHtml).join("")}
+      </div>`;
+  }
+  if (offline.length > 0) {
+    html += `
+      <div class="ov-dc-group-header">
+        <span>${esc(t("overlay.discordFriendsOffline", { count: String(offline.length) }))}</span>
+      </div>
+      <div class="ov-dc-group-items">
+        ${offline.map(socialFriendItemHtml).join("")}
+      </div>`;
+  }
+  return html;
+}
+
+function socialFriendItemHtml(friend: FriendEntry): string {
   const active = replyTarget?.id === friend.id;
   const unread = replyUnread.get(friend.id) ?? 0;
+  const isOffline = friend.status !== "online" && friend.status !== "idle" && friend.status !== "dnd";
   return `
-    <button class="friend-row${active ? " is-active" : ""}${friend.status === "offline" ? " is-offline" : ""}" data-ov="discord-reply" data-id="${esc(friend.id)}" data-name="${esc(friend.name)}" title="${esc(t("overlay.discordReplyTitle"))}">
-      <span class="avatar-wrap"><img src="${esc(friend.avatarUrl)}" alt="" loading="lazy" /><span class="presence-dot ${esc(friend.status)}"></span></span>
-      <span class="friend-meta">
-        <span class="friend-name">${esc(friend.name)}</span>
-        <span class="friend-status ${esc(friend.status)}">${esc(presenceWord(friend.status))}</span>
-      </span>
-      ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ""}
+    <button class="ov-dc-friend-item${active ? " is-active" : ""}${isOffline ? " is-offline" : ""}" data-ov="discord-select-friend" data-id="${esc(friend.id)}" data-name="${esc(friend.name)}" title="${esc(t("overlay.discordReplyTitle"))}">
+      <div class="ov-dc-avatar-wrap">
+        <img class="ov-dc-avatar" src="${esc(friend.avatarUrl)}" alt="" loading="lazy" />
+        <span class="ov-dc-status-dot ${esc(friend.status)}"></span>
+      </div>
+      <div class="ov-dc-friend-info">
+        <span class="ov-dc-friend-name">${esc(friend.name)}</span>
+        <span class="ov-dc-friend-status ${esc(friend.status)}">${esc(presenceWord(friend.status))}</span>
+      </div>
+      ${unread > 0 ? `<span class="ov-dc-unread-pill">${unread}</span>` : ""}
+      <span class="ov-dc-item-chat-icon">${icon("mail", 13)}</span>
     </button>`;
 }
 
@@ -2407,8 +2606,6 @@ function addFriendBodyHtml(): string {
 
 function searchRowHtml(user: { id: string; name: string; username: string; avatarUrl: string }): string {
   const handle = user.username || user.name;
-  // A search returns anyone by that name: someone already in the list has
-  // nothing to send, and saying so beats a failing request.
   const friend = friendEntries().find((item) => item.id === user.id);
   const action = friend
     ? `<span class="msg-status-text">${esc(t("overlay.discordAlreadyFriend"))}</span>`
@@ -2446,37 +2643,135 @@ function statusBodyHtml(): string {
     .join("");
 }
 
-/* --- Area 2: the conversation --- */
+/* --- Area 2: Discord Sohbet (Chat & Messages) --- */
 
-function conversationColumnHtml(): string {
-  if (sdkState.status !== "ready") {
-    return `<section class="conv-col">${connectHtml()}</section>`;
-  }
-  const me = sdkState.me;
-  const target = replyTarget;
-  const friend = target ? friendEntries().find((item) => item.id === target.id) : undefined;
-  const draft = target ? replyDrafts.get(target.id) ?? "" : "";
-  const editing =
-    editingEntryId !== null
-      ? replyLog.find((item) => item.id === editingEntryId) ?? null
-      : null;
-  const head = `
-    <div class="conv-header">
-      <div class="conv-target">
-        ${
-          target
-            ? `<span class="conv-target-name">${esc(target.name)}</span><span class="conv-target-state" style="color:var(--ok)">● ${esc(presenceWord(friend?.status ?? "offline"))}</span>`
-            : `<span class="conv-target-name" style="color:var(--text-2)">${esc(t("overlay.discordReplyPick"))}</span>`
-        }
+function chatEmptyPlaceholderHtml(): string {
+  return `
+    <div class="ov-dc-chat-empty">
+      <div class="ov-dc-chat-empty-icon">${icon("mail", 28)}</div>
+      <div class="ov-dc-chat-empty-title">${esc(t("overlay.discordReplyTitle"))}</div>
+      <p class="ov-dc-chat-empty-desc">${esc(t("overlay.discordReplyPick"))}</p>
+      <button class="btn primary small" data-ov="discord-open-social">
+        ${icon("users", 13)} <span>${esc(t("overlay.discordFriendsTitle"))}</span>
+      </button>
+    </div>`;
+}
+
+function chatTargetHeaderHtml(target: { id: string; name: string }, friend?: FriendEntry): string {
+  const status = friend?.status ?? "offline";
+  const inCall = callState.active && callState.friendId === target.id;
+  return `
+    <div class="ov-dc-target-header">
+      <div class="ov-dc-target-left">
+        <div class="ov-dc-avatar-wrap">
+          <img class="ov-dc-avatar" src="${esc(friend?.avatarUrl ?? "")}" alt="" />
+          <span class="ov-dc-status-dot ${esc(status)}"></span>
+        </div>
+        <div class="ov-dc-target-meta">
+          <span class="ov-dc-target-name">${esc(target.name)}</span>
+          <span class="ov-dc-target-sub ${esc(status)}">● ${esc(presenceWord(status))}</span>
+        </div>
       </div>
-      <div class="conv-actions">
-        <button class="action-btn" data-ov="discord-picker" data-mode="status">${esc(t("overlay.discordStatusLabel"))}: ${esc(presenceWord(me?.status ?? "online"))}</button>
+      <div class="ov-dc-target-actions">
+        ${inCall ? `
+          <button class="ov-dc-tool-btn is-calling" data-ov="discord-call-end" title="${esc(t("overlay.discordCallEnd"))}">
+            ${icon("mic-off", 14)}
+          </button>
+        ` : `
+          <button class="ov-dc-tool-btn" data-ov="discord-call-start" data-id="${esc(target.id)}" title="${esc(t("overlay.discordCall"))}">
+            ${icon("mic", 14)}
+          </button>
+        `}
       </div>
     </div>`;
-  const log = target
-    ? logHtml(target)
-    : `<div class="conv-log"><div class="composer-hints" style="padding:12px 16px">${esc(t("overlay.discordReplyPick"))}</div></div>`;
-  return `<section class="conv-col">${head}${log}${composerHtml(target, draft, editing)}</section>`;
+}
+
+function chatMessagesHtml(target: { id: string; name: string }): string {
+  const entries = threadEntries(target.id).slice(-60);
+  if (entries.length === 0) {
+    return `
+      <div class="ov-dc-chat-thread-empty">
+        <span>Henüz mesaj yok. İlk mesajı sen gönder!</span>
+      </div>`;
+  }
+  return entries.map((entry) => chatBubbleHtml(entry, target.name)).join("");
+}
+
+function chatBubbleHtml(entry: ReplyLogEntry, _targetName: string): string {
+  const isIncoming = entry.direction === "in";
+  const actions =
+    !isIncoming && entry.state === "sent" && entry.messageId
+      ? `<div class="ov-dc-bubble-actions">
+           <button class="ov-dc-bubble-act-btn" data-ov="discord-edit" data-entry="${entry.id}">${esc(t("overlay.discordEdit"))}</button>
+           <button class="ov-dc-bubble-act-btn" data-ov="discord-delete" data-entry="${entry.id}">${esc(t("overlay.discordDelete"))}</button>
+         </div>`
+      : "";
+  const statusMeta =
+    isIncoming
+      ? ""
+      : entry.state === "sending"
+        ? `<span class="ov-dc-msg-status sending">${esc(t("overlay.discordSending"))}</span>`
+        : entry.state === "error"
+          ? `<button class="ov-dc-msg-retry" data-ov="discord-retry" data-entry="${entry.id}">${esc(t("overlay.discordRetry"))}</button>`
+          : "";
+  const errorBadge = entry.state === "error"
+    ? `<div class="ov-dc-msg-error-label">${esc(t("overlay.discordNotDelivered"))}</div>`
+    : "";
+  const attachment = entry.attachment
+    ? `<div class="ov-dc-msg-attachment">${icon("clipboard", 12)} <span>${esc(entry.attachment)}</span></div>`
+    : "";
+
+  return `
+    <div class="ov-dc-bubble-row ${isIncoming ? "incoming" : "outgoing"}">
+      <div class="ov-dc-bubble${entry.state === "error" ? " is-failed" : ""}">
+        <div class="ov-dc-bubble-text">${esc(entry.text)}</div>
+        ${attachment}
+        ${errorBadge}
+        <div class="ov-dc-bubble-meta">
+          <span class="ov-dc-bubble-time num">${esc(entry.time)}</span>
+          ${statusMeta}
+          ${actions}
+        </div>
+      </div>
+    </div>`;
+}
+
+function chatComposerHtml(target: { id: string; name: string }, draft: string, editing: ReplyLogEntry | null): string {
+  const placeholder = editing
+    ? `${t("overlay.discordEdit")} · ${target.name}`
+    : t("overlay.discordReplyTo", { name: target.name });
+  const sendLabel = editing ? t("overlay.discordSave") : t("overlay.discordSend");
+  const sendAction = editing ? "discord-edit-save" : "discord-send";
+
+  return `
+    <div class="ov-dc-composer-wrap">
+      ${editing ? `
+        <div class="ov-dc-editing-banner">
+          <span>${icon("edit", 12)} ${esc(t("overlay.discordEdit"))}</span>
+          <button class="ov-dc-edit-cancel-btn" data-ov="discord-edit-cancel">${icon("x", 12)}</button>
+        </div>
+      ` : ""}
+      <div class="ov-dc-composer-input-row">
+        <textarea
+          id="ov-discord-reply-input"
+          class="ov-dc-composer-input"
+          placeholder="${esc(placeholder)}"
+          rows="1"
+          spellcheck="false"
+        >${esc(draft)}</textarea>
+        <button
+          class="ov-dc-send-btn ${replySending ? "is-sending" : ""}"
+          data-ov="${sendAction}"
+          ${replySending ? "disabled" : ""}
+          title="${esc(sendLabel)}"
+        >
+          ${icon("arrow-right", 15)}
+        </button>
+      </div>
+      <div class="ov-dc-composer-hints">
+        <span><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))} · <kbd class="kbd">Shift+Enter</kbd> ${esc(t("overlay.discordNewLine"))}</span>
+      </div>
+    </div>`;
 }
 
 /** Before the session exists: one clear way in, never a dead end. */
@@ -2487,73 +2782,6 @@ function connectHtml(): string {
       <div class="empty-conv-title">${esc(t("overlay.discordConnect"))}</div>
       <p class="empty-conv-desc">${esc(failed ? sdkState.error || t("common.unknownError") : t("overlay.discordSdkDesc"))}</p>
       <button class="connect-button" data-ov="discord-sdk-start">${icon("discord", 14)} ${esc(t("overlay.discordConnect"))}</button>
-    </div>`;
-}
-
-/** The thread, oldest at the top; the newest sits right above the composer. */
-function logHtml(target: { id: string; name: string }): string {
-  const entries = threadEntries(target.id).slice(-40);
-  const rows = entries
-    .map((entry) => {
-      const who = entry.direction === "in" ? target.name : t("overlay.discordYou");
-      const actions =
-        entry.direction === "out" && entry.state === "sent"
-          ? `<div class="msg-hover-actions">
-               ${entry.messageId ? `<button class="msg-act-btn" data-ov="discord-edit" data-entry="${entry.id}">${esc(t("overlay.discordEdit"))}</button>` : ""}
-               ${entry.messageId ? `<button class="msg-act-btn" data-ov="discord-delete" data-entry="${entry.id}">${esc(t("overlay.discordDelete"))}</button>` : ""}
-             </div>`
-          : "";
-      const state =
-        entry.direction === "in"
-          ? ""
-          : entry.state === "sending"
-            ? `<span class="msg-status-text">${esc(t("overlay.discordSending"))}</span>`
-            : entry.state === "sent"
-              ? `<span class="msg-status-text">${esc(t("overlay.discordSent"))}</span>`
-              : `<button class="retry-btn" data-ov="discord-retry" data-entry="${entry.id}">${esc(t("overlay.discordRetry"))}</button>`;
-      const error =
-        entry.state === "error"
-          ? `<div><span class="msg-error-label">${esc(t("overlay.discordNotDelivered"))}</span></div>`
-          : "";
-      const file = entry.attachment
-        ? `<div class="msg-attachment">${icon("clipboard", 12)} ${esc(entry.attachment)}</div>`
-        : "";
-      return `
-        <div class="msg-row${entry.direction === "in" ? " is-incoming" : ""}${entry.state === "error" ? " is-failed" : ""}">
-          <span class="msg-time num">${esc(entry.time)}</span>
-          <span class="msg-author">${esc(who)}</span>
-          <span class="msg-content">${esc(entry.text)}${file}${error}</span>
-          <div class="msg-meta">${state}${actions}</div>
-        </div>`;
-    })
-    .join("");
-  return `<div class="conv-log">${rows}</div>`;
-}
-
-/** The composer: a strip under the log, so the thread keeps the room. */
-function composerHtml(
-  target: { id: string; name: string } | null,
-  draft: string,
-  editing: ReplyLogEntry | null,
-): string {
-  const disabled = !target;
-  const placeholder = editing
-    ? `${t("overlay.discordEdit")} · ${target?.name ?? ""}`
-    : target
-      ? t("overlay.discordReplyTo", { name: target.name })
-      : t("overlay.discordReplyPlaceholder");
-  const sendLabel = editing ? t("overlay.discordSave") : t("overlay.discordSend");
-  const sendAction = editing ? "discord-edit-save" : "discord-send";
-  const hints = editing
-    ? `<span><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSave"))} · <kbd class="kbd">Esc</kbd> ${esc(t("overlay.discordCancel"))}</span>`
-    : `<span><kbd class="kbd">Enter</kbd> ${esc(t("overlay.discordSend"))} · <kbd class="kbd">Shift+Enter</kbd> ${esc(t("overlay.discordNewLine"))} · <kbd class="kbd">Ctrl+↑↓</kbd> ${esc(t("overlay.discordSwitchFriend"))}</span>`;
-  return `
-    <div class="conv-composer">
-      <div class="composer-strip">
-        <textarea id="ov-discord-reply-input" class="composer-input" rows="1" maxlength="2000" ${disabled ? "disabled" : ""} placeholder="${esc(placeholder)}">${esc(draft)}</textarea>
-        <button class="composer-send-btn" data-ov="${sendAction}"${disabled || replySending ? " disabled" : ""}>${esc(sendLabel)}</button>
-      </div>
-      <div class="composer-hints">${hints}<span class="composer-count num">${draft.length} / 2000</span></div>
     </div>`;
 }
 
@@ -3030,10 +3258,18 @@ function wireEvents(): void {
       void openDiscordInLauncher("https://discord.com/channels/@me");
     } else if (action === "discord-sdk-start") {
       void startDiscordSdk();
-    } else if (action === "discord-reply") {
+    } else if (action === "discord-reply" || action === "discord-select-friend") {
       const row = target.closest<HTMLElement>("[data-ov]");
       const friendId = row?.dataset.id;
       if (friendId) selectReplyTarget(friendId, row?.dataset.name || friendId);
+    } else if (action === "discord-open-social") {
+      openWidget("discord");
+      bringToFront("discord");
+    } else if (action === "discord-clear-filter") {
+      friendsFilterQuery = "";
+      renderDiscordSocial();
+    } else if (action === "discord-voice-leave") {
+      void invoke("discord_voice_watch_stop").catch(() => undefined);
     } else if (action === "discord-send") {
       void sendDiscordReply();
     } else if (action === "discord-retry") {
@@ -3152,6 +3388,11 @@ function wireEvents(): void {
     const target = event.target;
     if (target instanceof HTMLInputElement && target.id === "ov-discord-search") {
       searchQuery = target.value;
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.id === "ov-dc-friends-filter") {
+      friendsFilterQuery = target.value;
+      renderDiscordSocial();
       return;
     }
     if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {

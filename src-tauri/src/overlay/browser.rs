@@ -325,9 +325,22 @@ pub fn overlay_browser_activate_tab(app: AppHandle, id: u32, x: f64, y: f64, wid
     emit_tabs(&app);
 }
 
+/// Parks and hides all child page webviews so they cannot remain visible when
+/// the browser window itself is hidden.
+fn hide_all_tabs(app: &AppHandle) {
+    let offscreen = page_rect(OFFSCREEN, OFFSCREEN, 100.0, 100.0);
+    for (id, _) in tab_list() {
+        if let Some(view) = app.get_webview(&page_label(id)) {
+            let _ = view.set_bounds(offscreen);
+            let _ = view.hide();
+        }
+    }
+}
+
 /// Hides the browser window (the tabs and their pages stay alive).
 #[tauri::command]
 pub fn overlay_browser_close(app: AppHandle) {
+    hide_all_tabs(&app);
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = window.hide();
     }
@@ -338,6 +351,7 @@ pub fn overlay_browser_close(app: AppHandle) {
 
 /// Hides the browser window when the overlay itself closes.
 pub fn hide_window(app: &AppHandle) {
+    hide_all_tabs(app);
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = window.hide();
     }
@@ -363,7 +377,7 @@ fn wake_overlay(app: &AppHandle) {
 /// sits on, in logical units. The monitor rect comes back in physical pixels,
 /// so an unscaled rect lands off-screen on a scaled display.
 fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
-    let fallback = (0.0, 0.0, 1280.0, 800.0);
+    let fallback = (0.0, 0.0, 780.0, 520.0);
     let Some(overlay) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) else {
         return fallback;
     };
@@ -376,8 +390,8 @@ fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
     let mon_h = monitor.size().height as f64 / scale;
     let mon_x = monitor.position().x as f64 / scale;
     let mon_y = monitor.position().y as f64 / scale;
-    let width = (mon_w * 0.85).min(1400.0).max(640.0);
-    let height = (mon_h * 0.85).min(900.0).max(480.0);
+    let width = (mon_w * 0.55).clamp(640.0, 920.0);
+    let height = (mon_h * 0.55).clamp(440.0, 640.0);
     let x = mon_x + ((mon_w - width) / 2.0);
     let y = mon_y + ((mon_h - height) / 2.0);
     (x, y, width, height)
@@ -387,28 +401,30 @@ fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
 #[tauri::command]
 pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
+        // If window is visible and caller didn't pass a new URL, toggle closed!
+        if window.is_visible().unwrap_or(false) && url.as_deref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+            overlay_browser_close(app);
+            return Ok(());
+        }
+
         if let Some(url) = url.as_deref().filter(|u| !u.trim().is_empty()) {
             let _ = overlay_browser_navigate(app.clone(), url.to_string());
         }
-        // Already up and in front: nothing to raise, so a repeated call (any
-        // path that asks twice) cannot churn show/hide and focus.
-        if window.is_visible().unwrap_or(false) {
-            if !window.is_focused().unwrap_or(false) {
-                let _ = window.set_focus();
-            }
-            emit_tabs(&app);
-            return Ok(());
-        }
+
+        let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
+        let (width, height) = window
+            .inner_size()
+            .map(|size| (size.width as f64 / scale, size.height as f64 / scale))
+            .unwrap_or((760.0, 520.0));
+
         // Every tab was closed earlier: the window is now empty, so open a fresh
         // page before bringing it forward.
         if tab_list().is_empty() {
-            let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
-            let (width, height) = window
-                .inner_size()
-                .map(|size| (size.width as f64 / scale, size.height as f64 / scale))
-                .unwrap_or((900.0, 640.0));
             overlay_browser_new_tab(app.clone(), None, 0.0, 90.0, width, height - 90.0).await?;
+        } else {
+            place_tabs(&app, 0.0, 90.0, width, (height - 90.0).max(100.0));
         }
+
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_always_on_top(true);
