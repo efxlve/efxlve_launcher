@@ -7,6 +7,9 @@
   </head>
   <body class="ov-page">
     <div id="ov-root"></div>
+    <!-- Toasts land here: core/toast writes into #toasts, and the overlay is its
+         own window, so the container has to exist in this document too. -->
+    <div id="toasts"></div>
     <script type="module" src="/src/features/overlay/overlay.ts"></script>
   </body>
 </html>
