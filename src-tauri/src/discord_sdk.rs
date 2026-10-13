@@ -846,6 +846,9 @@ mod imp {
     /// Who the direct-message threads are with, straight from the SDK's own
     /// conversation list: that is what tells a DM apart from channel chatter.
     static DM_PARTNERS: Mutex<Vec<u64>> = Mutex::new(Vec::new());
+    /// Message ids already handed to the UI. The created callback and the
+    /// summary poll both see the same message; it must land exactly once.
+    static EMITTED: Mutex<Vec<u64>> = Mutex::new(Vec::new());
 
     /// Reads one message and hands it to the UI when it is a direct message to
     /// this account. Shared by the created callback and the summary poll, and
@@ -893,6 +896,19 @@ mod imp {
         if sent_ms > 0 && now_secs() * 1000 > sent_ms + 120_000 {
             sdk_note!("message {message_id}: older than two minutes, skipped");
             return;
+        }
+        let duplicate = EMITTED
+            .lock()
+            .map(|seen| seen.contains(&message_id))
+            .unwrap_or(false);
+        if duplicate {
+            return;
+        }
+        if let Ok(mut seen) = EMITTED.lock() {
+            if seen.len() >= 200 {
+                seen.remove(0);
+            }
+            seen.push(message_id);
         }
         sdk_note!("direct message received from {author} (to {recipient})");
         if let Some(app) = APP_HANDLE.get() {
