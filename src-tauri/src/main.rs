@@ -830,6 +830,7 @@ fn main() {
             discord_sdk::discord_sdk_history,
             discord_sdk::discord_sdk_search_users,
             discord_sdk::discord_sdk_add_friend,
+            discord_sdk::discord_sdk_channels,
             discord_rpc::discord_voice_watch_start,
             discord_rpc::discord_voice_watch_stop,
             discord_rpc::discord_relationships_probe,

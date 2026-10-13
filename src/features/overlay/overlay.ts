@@ -1734,6 +1734,8 @@ let searchRan = false;
 let searchResults: { id: string; name: string; username: string; avatarUrl: string }[] = [];
 /** Usernames a request was sent to this session, so the row stops offering it. */
 const sentRequests = new Set<string>();
+/** Voice channels the panel can jump to, from the SDK's guild tree. */
+let sdkChannels: { id: string; name: string; guild: string; guildId: string }[] = [];
 
 /** The friend rows the tab shows: the live desktop read, the launcher's own web
  * client, the SDK's own list, then the last known list. Online first. */
@@ -1833,7 +1835,7 @@ function renderDiscord(): void {
   if (sdkState.status === "ready" && replyTarget) ensureHistory(replyTarget.id);
   el.innerHTML = `
     <div class="dc-split">
-      <div class="dc-col">${voicePanelHtml()}${friendsPanelHtml()}</div>
+      <div class="dc-col">${voicePanelHtml()}${channelsPanelHtml()}${friendsPanelHtml()}</div>
       <div class="dc-col">${messagePanelHtml()}</div>
     </div>`;
   const box = document.getElementById("ov-discord-reply-input") as HTMLTextAreaElement | null;
@@ -1962,6 +1964,28 @@ function voicePanelHtml(): string {
         <button class="btn ghost small ov-panel-head-action" data-ov="discord-open-launcher">${icon("external", 13)} ${esc(t("overlay.openDiscord"))}</button>
       </div>
       <div class="dc-rows${display && display.stale ? " dc-stale" : ""}">${rows.join("")}${note}</div>
+    </div>`;
+}
+
+/** Voice channels the person can jump to, from the SDK's own guild tree. The
+ * row opens the channel in the launcher's client; joining stays there. */
+function channelsPanelHtml(): string {
+  const channels = sdkChannels.slice(0, 6);
+  if (!channels.length) return "";
+  const rows = channels
+    .map(
+      (channel) => `
+      <button class="dc-row" data-ov="discord-open-channel" data-channel="${esc(channel.id)}" data-guild="${esc(channel.guildId)}" title="${esc(t("overlay.discordOpenChannel"))}">
+        <span class="dc-glyph">${icon("volume-2", 14)}</span>
+        <span class="dc-row-main"><span class="dc-name">${esc(channel.name)}</span></span>
+        <span class="dc-row-end">${esc(channel.guild)}</span>
+      </button>`,
+    )
+    .join("");
+  return `
+    <div class="ov-panel">
+      <div class="ov-panel-head">${icon("list", 13)} <b>${esc(t("overlay.discordChannels"))}</b></div>
+      <div class="dc-rows">${rows}</div>
     </div>`;
 }
 
@@ -2629,6 +2653,13 @@ function wireEvents(): void {
     } else if (action === "discord-accept" || action === "discord-reject") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void answerFriendRequest(friendId, action === "discord-accept");
+    } else if (action === "discord-open-channel") {
+      const row = target.closest<HTMLElement>("[data-ov]");
+      const channel = row?.dataset.channel;
+      const guild = row?.dataset.guild;
+      if (channel && guild) {
+        void openDiscordInLauncher(`https://discord.com/channels/${guild}/${channel}`);
+      }
     } else if (action === "discord-open-dm") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
@@ -3348,6 +3379,16 @@ async function boot(): Promise<void> {
         event.payload.messageId,
         event.payload.attachment,
       );
+    },
+  );
+
+  // The guild tree's voice channels: the answers arrive in pieces as each
+  // guild's channel list lands.
+  await listen<{ channels: { id: string; name: string; guild: string; guildId: string }[] }>(
+    "discord-sdk-channels",
+    (event) => {
+      sdkChannels = event.payload.channels;
+      if (activeTab === "discord" && !document.hidden) repaintDiscord();
     },
   );
 

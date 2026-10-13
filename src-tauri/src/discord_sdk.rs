@@ -54,6 +54,7 @@ enum SdkCommand {
     History { user_id: u64, limit: i32 },
     Search { query: String },
     AddFriend { username: String },
+    Channels,
 }
 
 /// The signed-in account, as the composer header shows it.
@@ -413,6 +414,23 @@ pub fn discord_sdk_add_friend(username: String) -> Result<(), String> {
         .map_err(|_| "worker_gone".to_string())
 }
 
+/// Refreshes the voice-channel list; the result arrives on
+/// `discord-sdk-channels`.
+#[tauri::command]
+pub fn discord_sdk_channels() -> Result<(), String> {
+    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+    if !ready {
+        return Err("not_ready".to_string());
+    }
+    let guard = COMMANDS.lock().map_err(|_| "worker_gone".to_string())?;
+    let Some(sender) = guard.as_ref() else {
+        return Err("worker_gone".to_string());
+    };
+    sender
+        .send(SdkCommand::Channels)
+        .map_err(|_| "worker_gone".to_string())
+}
+
 /* ---------- Sealed session (compiled only with the vendored SDK) ---------- */
 
 /// The OAuth session kept between launches: the refresh token is the part that
@@ -506,6 +524,8 @@ mod ffi {
     opaque!(RelationshipHandle);
     opaque!(MessageHandle);
     opaque!(UserMessageSummary);
+    opaque!(GuildMinimal);
+    opaque!(GuildChannel);
 
     #[repr(C)]
     pub struct RelationshipSpan {
@@ -531,6 +551,20 @@ mod ffi {
     #[repr(C)]
     pub struct UserHandleSpan {
         pub ptr: *mut UserHandle,
+        pub size: usize,
+    }
+
+    /// `Discord_GuildMinimalSpan { Discord_GuildMinimal* ptr; size_t size; }`.
+    #[repr(C)]
+    pub struct GuildMinimalSpan {
+        pub ptr: *mut GuildMinimal,
+        pub size: usize,
+    }
+
+    /// `Discord_GuildChannelSpan { Discord_GuildChannel* ptr; size_t size; }`.
+    #[repr(C)]
+    pub struct GuildChannelSpan {
+        pub ptr: *mut GuildChannel,
         pub size: usize,
     }
 
@@ -561,6 +595,10 @@ mod ffi {
         unsafe extern "C" fn(*mut ClientResult, UserMessageSummarySpan, *mut c_void);
     pub type UserMessagesWithLimitCallback =
         unsafe extern "C" fn(*mut ClientResult, MessageHandleSpan, *mut c_void);
+    pub type UserGuildsCallback =
+        unsafe extern "C" fn(*mut ClientResult, GuildMinimalSpan, *mut c_void);
+    pub type GuildChannelsCallback =
+        unsafe extern "C" fn(*mut ClientResult, GuildChannelSpan, *mut c_void);
 
     #[link(name = "discord_partner_sdk")]
     extern "C" {
@@ -636,6 +674,26 @@ mod ffi {
             free: Option<FreeFn>,
             user_data: *mut c_void,
         );
+        pub fn Discord_Client_GetUserGuilds(
+            client: *mut Client,
+            callback: UserGuildsCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_Client_GetGuildChannels(
+            client: *mut Client,
+            guild_id: u64,
+            callback: GuildChannelsCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_GuildMinimal_Id(guild: *mut GuildMinimal) -> u64;
+        pub fn Discord_GuildMinimal_Name(guild: *mut GuildMinimal, out: *mut StringValue);
+        pub fn Discord_GuildMinimal_Drop(guild: *mut GuildMinimal);
+        pub fn Discord_GuildChannel_Id(channel: *mut GuildChannel) -> u64;
+        pub fn Discord_GuildChannel_Name(channel: *mut GuildChannel, out: *mut StringValue);
+        pub fn Discord_GuildChannel_Type(channel: *mut GuildChannel) -> i32;
+        pub fn Discord_GuildChannel_Drop(channel: *mut GuildChannel);
         pub fn Discord_Client_DeleteUserMessage(
             client: *mut Client,
             recipient_id: u64,
@@ -836,6 +894,123 @@ mod imp {
         drop(Box::from_raw(user as *mut AddFriendCtx));
     }
 
+    /// The voice channels found so far, across the per-guild fetches.
+    static VOICE_CHANNELS: Mutex<Vec<serde_json::Value>> = Mutex::new(Vec::new());
+
+    /// A guild whose channels are being fetched: the callback carries its id
+    /// (the launcher's channel URL needs it) and its name (the row shows it).
+    struct GuildCtx {
+        id: u64,
+        name: String,
+    }
+
+    unsafe extern "C" fn free_guild(user: *mut c_void) {
+        drop(Box::from_raw(user as *mut GuildCtx));
+    }
+
+    /// Step one: the guild list. Each guild then asks for its own channels, so
+    /// the answers arrive in pieces and the panel grows as they do.
+    unsafe extern "C" fn on_guilds(
+        result: *mut ClientResult,
+        guilds: GuildMinimalSpan,
+        _user: *mut c_void,
+    ) {
+        if !Discord_ClientResult_Successful(result) {
+            sdk_note!("guild list failed: {}", result_error(result));
+            return;
+        }
+        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+        if client.is_null() || guilds.ptr.is_null() {
+            return;
+        }
+        if let Ok(mut list) = VOICE_CHANNELS.lock() {
+            list.clear();
+        }
+        // A cap keeps the fan-out sane: the panel wants the voice channels a
+        // person can jump to, not a directory of every server.
+        let count = guilds.size.min(12);
+        for index in 0..count {
+            let mut guild = *guilds.ptr.add(index);
+            let id = Discord_GuildMinimal_Id(&mut guild);
+            let mut name = StringValue {
+                ptr: ptr::null_mut(),
+                size: 0,
+            };
+            Discord_GuildMinimal_Name(&mut guild, &mut name);
+            Discord_GuildMinimal_Drop(&mut guild);
+            let ctx = Box::into_raw(Box::new(GuildCtx {
+                id,
+                name: string_of(name),
+            }));
+            Discord_Client_GetGuildChannels(
+                client,
+                id,
+                on_channels,
+                Some(free_guild),
+                ctx as *mut GuildCtx as *mut c_void,
+            );
+        }
+        sdk_note!("guild list: {} guilds (asking {count} for channels)", guilds.size);
+    }
+
+    /// Step two: one guild's channels; the voice ones are kept and pushed out.
+    unsafe extern "C" fn on_channels(
+        result: *mut ClientResult,
+        channels: GuildChannelSpan,
+        user: *mut c_void,
+    ) {
+        let ctx = &*(user as *mut GuildCtx);
+        if !Discord_ClientResult_Successful(result) || channels.ptr.is_null() {
+            return;
+        }
+        let mut payload: Option<Vec<serde_json::Value>> = None;
+        if let Ok(mut list) = VOICE_CHANNELS.lock() {
+            let mut added = 0;
+            for index in 0..channels.size {
+                let mut channel = *channels.ptr.add(index);
+                // 2 = Discord_ChannelType_GuildVoice.
+                let kind = Discord_GuildChannel_Type(&mut channel);
+                let id = Discord_GuildChannel_Id(&mut channel);
+                let mut name = StringValue {
+                    ptr: ptr::null_mut(),
+                    size: 0,
+                };
+                if kind == 2 {
+                    Discord_GuildChannel_Name(&mut channel, &mut name);
+                }
+                Discord_GuildChannel_Drop(&mut channel);
+                if kind != 2 {
+                    continue;
+                }
+                let id_text = id.to_string();
+                if list
+                    .iter()
+                    .any(|item| item.get("id").and_then(|value| value.as_str()) == Some(id_text.as_str()))
+                {
+                    continue;
+                }
+                list.push(serde_json::json!({
+                    "id": id_text,
+                    "name": string_of(name),
+                    "guild": ctx.name,
+                    "guildId": ctx.id.to_string(),
+                }));
+                added += 1;
+            }
+            if added > 0 {
+                payload = Some(list.clone());
+            }
+        }
+        if let Some(channels) = payload {
+            if let Some(app) = APP_HANDLE.get() {
+                let _ = app.emit(
+                    "discord-sdk-channels",
+                    serde_json::json!({ "channels": channels }),
+                );
+            }
+        }
+    }
+
     /// The outcome of a friend request sent by username.
     unsafe extern "C" fn on_friend_request_sent(result: *mut ClientResult, user: *mut c_void) {
         let ctx = &*(user as *mut AddFriendCtx);
@@ -892,6 +1067,12 @@ mod imp {
             3 => {
                 set_state("ready", None);
                 read_social();
+                // The voice channels the panel can jump to. The answers arrive
+                // in pieces and update the list as they land.
+                let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+                if !client.is_null() {
+                    Discord_Client_GetUserGuilds(client, on_guilds, None, ptr::null_mut());
+                }
             }
             1 | 2 => set_state("connecting", None),
             _ => {
@@ -1677,6 +1858,18 @@ mod imp {
                                 Some(free_send),
                                 ctx as *mut SendCtx as *mut c_void,
                             );
+                        }
+                        Ok(SdkCommand::Channels) => {
+                            let ready =
+                                with_state(|state| state.status == "ready").unwrap_or(false);
+                            if ready {
+                                Discord_Client_GetUserGuilds(
+                                    client_ptr,
+                                    on_guilds,
+                                    None,
+                                    ptr::null_mut(),
+                                );
+                            }
                         }
                         Ok(SdkCommand::Search { query }) => {
                             let ready =
