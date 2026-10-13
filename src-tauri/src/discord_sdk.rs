@@ -22,7 +22,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::sync::{Mutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Emitter};
 
@@ -337,10 +337,18 @@ mod ffi {
     opaque!(UserHandle);
     opaque!(RelationshipHandle);
     opaque!(MessageHandle);
+    opaque!(UserMessageSummary);
 
     #[repr(C)]
     pub struct RelationshipSpan {
         pub ptr: *mut RelationshipHandle,
+        pub size: usize,
+    }
+
+    /// `Discord_UserMessageSummarySpan { Discord_UserMessageSummary* ptr; size_t size; }`.
+    #[repr(C)]
+    pub struct UserMessageSummarySpan {
+        pub ptr: *mut UserMessageSummary,
         pub size: usize,
     }
 
@@ -361,6 +369,8 @@ mod ffi {
     pub type UpdateTokenCallback = unsafe extern "C" fn(*mut ClientResult, *mut c_void);
     pub type SendMessageCallback = unsafe extern "C" fn(*mut ClientResult, u64, *mut c_void);
     pub type MessageCreatedCallback = unsafe extern "C" fn(u64, *mut c_void);
+    pub type UserMessageSummariesCallback =
+        unsafe extern "C" fn(*mut ClientResult, UserMessageSummarySpan, *mut c_void);
 
     #[link(name = "discord_partner_sdk")]
     extern "C" {
@@ -396,6 +406,15 @@ mod ffi {
         pub fn Discord_MessageHandle_RecipientId(handle: *mut MessageHandle) -> u64;
         pub fn Discord_MessageHandle_SentTimestamp(handle: *mut MessageHandle) -> u64;
         pub fn Discord_MessageHandle_Drop(handle: *mut MessageHandle);
+        pub fn Discord_Client_GetUserMessageSummaries(
+            client: *mut Client,
+            callback: UserMessageSummariesCallback,
+            free: Option<FreeFn>,
+            user_data: *mut c_void,
+        );
+        pub fn Discord_UserMessageSummary_UserId(summary: *mut UserMessageSummary) -> u64;
+        pub fn Discord_UserMessageSummary_LastMessageId(summary: *mut UserMessageSummary) -> u64;
+        pub fn Discord_UserMessageSummary_Drop(summary: *mut UserMessageSummary);
         pub fn Discord_Client_CreateAuthorizationCodeVerifier(
             client: *mut Client,
             out: *mut CodeVerifier,
@@ -709,15 +728,17 @@ mod imp {
         Discord_Client_Connect(client);
     }
 
-    /// A direct message that arrived while the overlay is open: the handle has
-    /// the text and both ids, so the panel can thread it into the conversation.
-    unsafe extern "C" fn on_message_created(message_id: u64, _user: *mut c_void) {
-        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
-        if client.is_null() {
-            return;
-        }
+    /// The newest message id per conversation, so the summary poll only reports
+    /// messages that arrived after the first look.
+    static SEEN_SUMMARIES: Mutex<Vec<(u64, u64)>> = Mutex::new(Vec::new());
+
+    /// Reads one message and hands it to the UI when it is a direct message to
+    /// this account. Shared by the created callback and the summary poll, and
+    /// it logs every skip so a quiet conversation can be diagnosed.
+    unsafe fn emit_message_from(client: *mut Client, message_id: u64) {
         let mut handle: MessageHandle = std::mem::zeroed();
         if !Discord_Client_GetMessageHandle(client, message_id, &mut handle) {
+            sdk_note!("message {message_id}: no handle");
             return;
         }
         let mut content = StringValue {
@@ -732,22 +753,26 @@ mod imp {
         Discord_MessageHandle_Drop(&mut handle);
 
         if text.is_empty() {
+            sdk_note!("message {message_id}: empty content, skipped");
             return;
         }
         let Some(me_id) = with_state(|state| state.me.as_ref().map(|me| me.id.clone())).flatten() else {
+            sdk_note!("message {message_id}: no signed-in account yet, skipped");
             return;
         };
-        // Our own sends come back through the same callback; and anything that
-        // is not a direct message to this account has no thread to land in.
+        // Our own sends come back through the same path; and anything that is
+        // not a direct message to this account has no thread to land in.
         if author.to_string() == me_id {
             return;
         }
         if recipient != 0 && recipient.to_string() != me_id {
+            sdk_note!("message {message_id}: not a direct message to this account, skipped");
             return;
         }
         // The client replays history when it (re)connects: the log is "now".
         let sent_ms = if sent < 1_000_000_000_000 { sent * 1000 } else { sent };
         if sent_ms > 0 && now_secs() * 1000 > sent_ms + 120_000 {
+            sdk_note!("message {message_id}: older than two minutes, skipped");
             return;
         }
         sdk_note!("direct message received from {author}");
@@ -762,6 +787,75 @@ mod imp {
             );
         }
     }
+
+    /// A direct message that arrived while the overlay is open.
+    unsafe extern "C" fn on_message_created(message_id: u64, _user: *mut c_void) {
+        sdk_note!("message created callback: {message_id}");
+        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+        if client.is_null() {
+            return;
+        }
+        emit_message_from(client, message_id);
+    }
+
+    /// The conversation list, polled while connected. The first pass only
+    /// records where each conversation stands; later passes report the newest
+    /// message of any conversation that moved past it.
+    unsafe extern "C" fn on_summaries(
+        result: *mut ClientResult,
+        summaries: UserMessageSummarySpan,
+        _user: *mut c_void,
+    ) {
+        if !Discord_ClientResult_Successful(result) {
+            sdk_note!("summaries failed: {}", result_error(result));
+            return;
+        }
+        let client = super::CLIENT_PTR.load(Ordering::SeqCst);
+        if client.is_null() || summaries.ptr.is_null() {
+            return;
+        }
+        let primed = with_seen(|seen| !seen.is_empty()).unwrap_or(false);
+        let mut fresh: Vec<u64> = Vec::new();
+        for index in 0..summaries.size {
+            let mut summary = *summaries.ptr.add(index);
+            let user_id = Discord_UserMessageSummary_UserId(&mut summary);
+            let last_id = Discord_UserMessageSummary_LastMessageId(&mut summary);
+            Discord_UserMessageSummary_Drop(&mut summary);
+            if user_id == 0 || last_id == 0 {
+                continue;
+            }
+            let known = with_seen(|seen| {
+                seen.iter()
+                    .find(|(id, _)| *id == user_id)
+                    .map(|(_, last)| *last)
+            })
+            .flatten();
+            with_seen(|seen| {
+                match seen.iter_mut().find(|(id, _)| *id == user_id) {
+                    Some(slot) => slot.1 = last_id,
+                    None => seen.push((user_id, last_id)),
+                }
+            });
+            // Only a conversation that moved forward carries a new message; the
+            // first pass is the baseline, so a fresh session stays quiet.
+            if primed && known.map(|last| last_id > last).unwrap_or(false) {
+                fresh.push(last_id);
+            }
+        }
+        if !primed {
+            sdk_note!("conversation list primed ({} threads)", summaries.size);
+            return;
+        }
+        for message_id in fresh {
+            emit_message_from(client, message_id);
+        }
+    }
+
+    unsafe fn with_seen<T>(f: impl FnOnce(&mut Vec<(u64, u64)>) -> T) -> Option<T> {
+        let mut guard = SEEN_SUMMARIES.lock().ok()?;
+        Some(f(&mut guard))
+    }
+
 
     unsafe extern "C" fn on_message_sent(
         result: *mut ClientResult,
@@ -946,7 +1040,9 @@ mod imp {
             }
 
             // The pump: the SDK needs RunCallbacks every few milliseconds; the
-            // queue carries the composer's sends.
+            // queue carries the composer's sends and a slow poll watches the
+            // conversation list for messages that arrived.
+            let mut next_poll = Instant::now();
             loop {
                 Discord_RunCallbacks();
                 loop {
@@ -980,6 +1076,18 @@ mod imp {
                         }
                         Err(TryRecvError::Empty) => break,
                         Err(TryRecvError::Disconnected) => return,
+                    }
+                }
+                if Instant::now() >= next_poll {
+                    next_poll = Instant::now() + Duration::from_secs(5);
+                    let ready = with_state(|state| state.status == "ready").unwrap_or(false);
+                    if ready {
+                        Discord_Client_GetUserMessageSummaries(
+                            client_ptr,
+                            on_summaries,
+                            None,
+                            ptr::null_mut(),
+                        );
                     }
                 }
                 std::thread::sleep(Duration::from_millis(15));
