@@ -31,7 +31,7 @@ import {
   type TrackSummary,
 } from "../music/spotify-client";
 import { toast } from "../../core/toast";
-import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { isPermissionGranted, onAction, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import "../../styles/tokens.css";
 import "../../styles/components.css";
 import "./overlay.css";
@@ -1876,12 +1876,30 @@ async function notifyMessage(friendId: string, text: string): Promise<void> {
     if (!granted) granted = (await requestPermission()) === "granted";
     if (!granted) return;
     const friend = friendEntries().find((item) => item.id === friendId);
+    lastNotified = { friendId, at: Date.now() };
     sendNotification({
       title: friend?.name ?? t("overlay.tabDiscord"),
       body: text || t("overlay.discordSent"),
     });
   } catch {
     // No permission: the unread badge in the panel is still waiting.
+  }
+}
+
+/** The friend a notification was last sent for: clicking it opens that DM. */
+let lastNotified: { friendId: string; at: number } | null = null;
+
+/** A notification click opens the sender's conversation in the launcher's own
+ * Discord page — the same path the friend rows take. */
+async function wireNotificationActions(): Promise<void> {
+  try {
+    await onAction(() => {
+      const target = lastNotified;
+      if (!target || Date.now() - target.at > 120_000) return;
+      void openDiscordInLauncher(`https://discord.com/channels/@me/${target.friendId}`);
+    });
+  } catch {
+    // The platform has no notification actions; the unread badge still waits.
   }
 }
 
@@ -3560,6 +3578,9 @@ async function boot(): Promise<void> {
 
   // The default hint line is restored whenever the context line goes away.
   captureDefaultHints();
+
+  // A notification click opens the sender's DM in the launcher's Discord page.
+  void wireNotificationActions();
 
   // The SDK resumes its sealed session in the background: after the first
   // approval the panel is connected before it is ever opened, and messages
