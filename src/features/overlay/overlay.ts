@@ -533,6 +533,8 @@ function setTab(tab: TabId, fromOpen = false): void {
   } else {
     void invoke("discord_voice_watch_stop").catch(() => undefined);
   }
+  // The music tab exists to control playback: connect instead of asking first.
+  if (tab === "music" && !spotifyEngineOn) void startSpotifyEngine(false);
 
   document.querySelectorAll<HTMLElement>("[data-ov-tab]").forEach((el) => {
     el.classList.toggle("active", el.dataset.ovTab === tab);
@@ -1257,13 +1259,14 @@ function engineOffHtml(): string {
     </div>`;
 }
 
-/** Starts the launcher's Spotify engine without leaving the game. */
-async function startSpotifyEngine(): Promise<void> {
+/** Starts the launcher's Spotify engine without leaving the game. The tab's
+ * own open starts it silently; the button announces what is happening. */
+async function startSpotifyEngine(announce = true): Promise<void> {
   try {
     await spotifyPlaybackStart();
-    toast(t("overlay.engineStarting"), "");
+    if (announce) toast(t("overlay.engineStarting"), "");
   } catch (error) {
-    toast(String(error).replace(/^Error: /, ""), "err");
+    if (announce) toast(String(error).replace(/^Error: /, ""), "err");
   }
   window.setTimeout(() => void refreshMedia(), 1200);
 }
@@ -2040,7 +2043,7 @@ async function startDiscordSdk(): Promise<void> {
   sdkState = { ...sdkState, status: "starting", error: null };
   renderDiscord();
   try {
-    await invoke("discord_sdk_start");
+    await invoke("discord_sdk_start", { silent: false });
   } catch (error) {
     sdkState = { ...sdkState, status: "error", error: String(error) };
     renderDiscord();
@@ -3016,6 +3019,12 @@ async function boot(): Promise<void> {
 
   // The default hint line is restored whenever the context line goes away.
   captureDefaultHints();
+
+  // The SDK resumes its sealed session in the background: after the first
+  // approval the panel is connected before it is ever opened, and messages
+  // that arrive meanwhile are already in the log. A first-time user gets the
+  // Connect button instead of an unasked prompt.
+  void invoke("discord_sdk_start", { silent: true }).catch(() => undefined);
 
   try {
     const enabled = localStorage.getItem(ENABLED_KEY) !== "false";

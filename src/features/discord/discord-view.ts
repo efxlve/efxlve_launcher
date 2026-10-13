@@ -179,7 +179,7 @@ function ensureListeners(): void {
     } else if (event.key === "F10") {
       void invoke("discord_relationships_probe").catch(() => undefined);
     } else if (event.key === "F11") {
-      void invoke("discord_sdk_start").catch(() => undefined);
+      void invoke("discord_sdk_start", { silent: false }).catch(() => undefined);
     }
   });
   // Any covering surface (the changelog, a dialog, the palette) parks the child.

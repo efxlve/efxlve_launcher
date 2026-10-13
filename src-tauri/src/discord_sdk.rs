@@ -182,8 +182,12 @@ fn emit_friends() {
 
 /// Starts the client: resumes the sealed session, or asks for authorization on
 /// the first run. Idempotent; the worker lives until the app exits.
+///
+/// `silent` is the automatic start (the overlay booting): it resumes a stored
+/// session but never opens the approval prompt on its own — a first-time user
+/// gets the Connect button instead. The button passes `false`.
 #[tauri::command]
-pub fn discord_sdk_start(app: AppHandle) -> Result<(), String> {
+pub fn discord_sdk_start(app: AppHandle, silent: bool) -> Result<(), String> {
     let _ = APP_HANDLE.set(app.clone());
     if STARTED.swap(true, Ordering::SeqCst) {
         return Ok(());
@@ -195,7 +199,7 @@ pub fn discord_sdk_start(app: AppHandle) -> Result<(), String> {
     }
     let spawned = std::thread::Builder::new()
         .name("discord-sdk".to_string())
-        .spawn(move || worker(app, rx));
+        .spawn(move || worker(app, rx, silent));
     if spawned.is_err() {
         sdk_log("worker could not start");
         set_state("error", Some("worker_gone".to_string()));
@@ -731,6 +735,9 @@ mod imp {
     /// The newest message id per conversation, so the summary poll only reports
     /// messages that arrived after the first look.
     static SEEN_SUMMARIES: Mutex<Vec<(u64, u64)>> = Mutex::new(Vec::new());
+    /// Who the direct-message threads are with, straight from the SDK's own
+    /// conversation list: that is what tells a DM apart from channel chatter.
+    static DM_PARTNERS: Mutex<Vec<u64>> = Mutex::new(Vec::new());
 
     /// Reads one message and hands it to the UI when it is a direct message to
     /// this account. Shared by the created callback and the summary poll, and
@@ -760,13 +767,17 @@ mod imp {
             sdk_note!("message {message_id}: no signed-in account yet, skipped");
             return;
         };
-        // Our own sends come back through the same path; and anything that is
-        // not a direct message to this account has no thread to land in.
+        // Our own sends come back through the same path; everything else must
+        // come from a direct-message thread the SDK listed for this account.
         if author.to_string() == me_id {
             return;
         }
-        if recipient != 0 && recipient.to_string() != me_id {
-            sdk_note!("message {message_id}: not a direct message to this account, skipped");
+        let known_partner = DM_PARTNERS
+            .lock()
+            .map(|partners| partners.is_empty() || partners.contains(&author))
+            .unwrap_or(true);
+        if !known_partner {
+            sdk_note!("message {message_id}: author is not a DM partner, skipped");
             return;
         }
         // The client replays history when it (re)connects: the log is "now".
@@ -775,7 +786,7 @@ mod imp {
             sdk_note!("message {message_id}: older than two minutes, skipped");
             return;
         }
-        sdk_note!("direct message received from {author}");
+        sdk_note!("direct message received from {author} (to {recipient})");
         if let Some(app) = APP_HANDLE.get() {
             let _ = app.emit(
                 "discord-sdk-message",
@@ -836,6 +847,11 @@ mod imp {
                     None => seen.push((user_id, last_id)),
                 }
             });
+            if let Ok(mut partners) = DM_PARTNERS.lock() {
+                if !partners.contains(&user_id) {
+                    partners.push(user_id);
+                }
+            }
             // Only a conversation that moved forward carries a new message; the
             // first pass is the baseline, so a fresh session stays quiet.
             if primed && known.map(|last| last_id > last).unwrap_or(false) {
@@ -995,7 +1011,7 @@ mod imp {
 
     /// Owns the client for the whole app run: resume or authorize once, then
     /// pump the SDK's callbacks and serve the command queue until the app exits.
-    pub fn run(app: AppHandle, rx: Receiver<SdkCommand>) {
+    pub fn run(app: AppHandle, rx: Receiver<SdkCommand>, silent: bool) {
         unsafe {
             let mut client: Client = std::mem::zeroed();
             Discord_Client_Init(&mut client);
@@ -1034,8 +1050,15 @@ mod imp {
                     );
                 }
                 None => {
-                    sdk_note!("no stored session");
-                    begin_authorize(client_ptr);
+                    if silent {
+                        // Nothing to resume and nobody asked: the panel shows
+                        // the Connect button instead of an unasked prompt.
+                        sdk_note!("no stored session; waiting for the Connect button");
+                        set_state("idle", None);
+                    } else {
+                        sdk_note!("no stored session");
+                        begin_authorize(client_ptr);
+                    }
                 }
             }
 
@@ -1097,12 +1120,12 @@ mod imp {
 }
 
 #[cfg(discord_sdk)]
-fn worker(app: AppHandle, rx: Receiver<SdkCommand>) {
-    imp::run(app, rx);
+fn worker(app: AppHandle, rx: Receiver<SdkCommand>, silent: bool) {
+    imp::run(app, rx, silent);
 }
 
 #[cfg(not(discord_sdk))]
-fn worker(_app: AppHandle, _rx: Receiver<SdkCommand>) {
+fn worker(_app: AppHandle, _rx: Receiver<SdkCommand>, _silent: bool) {
     sdk_log("SDK not vendored; nothing to run");
     set_state("error", Some("sdk_not_vendored".to_string()));
 }
