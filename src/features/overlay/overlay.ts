@@ -31,6 +31,7 @@ import {
   type TrackSummary,
 } from "../music/spotify-client";
 import { toast } from "../../core/toast";
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import "../../styles/tokens.css";
 import "../../styles/components.css";
 import "./overlay.css";
@@ -1861,7 +1862,27 @@ function noteIncoming(
   if (replyTarget?.id !== friendId) {
     replyUnread.set(friendId, (replyUnread.get(friendId) ?? 0) + 1);
   }
+  void notifyMessage(friendId, text);
   if (activeTab === "discord" && !document.hidden) repaintDiscord();
+}
+
+/** A desktop notification for a message that arrived while the panel was not
+ * showing that conversation. The permission is asked once, on the first one. */
+async function notifyMessage(friendId: string, text: string): Promise<void> {
+  const showing = activeTab === "discord" && !document.hidden && replyTarget?.id === friendId;
+  if (showing) return;
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) granted = (await requestPermission()) === "granted";
+    if (!granted) return;
+    const friend = friendEntries().find((item) => item.id === friendId);
+    sendNotification({
+      title: friend?.name ?? t("overlay.tabDiscord"),
+      body: text || t("overlay.discordSent"),
+    });
+  } catch {
+    // No permission: the unread badge in the panel is still waiting.
+  }
 }
 
 /** Ctrl+Up/Down inside the box: walk the friend list without losing the draft. */
