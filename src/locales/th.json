@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "คำขอที่รออยู่ {count} รายการ",
   "overlay.discordFriendsEmpty": "ยังไม่มีเพื่อน",
   "overlay.discordFriendsMore": "อีก {count} คน",
+  "overlay.discordAlreadyFriend": "เป็นเพื่อนกันอยู่แล้ว",
   "overlay.discordAddFriend": "เพิ่มเพื่อน",
   "overlay.discordSearchPlaceholder": "ค้นหาด้วยชื่อผู้ใช้",
   "overlay.discordRequestSent": "ส่งคำขอแล้ว",

@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} bekleyen istek",
   "overlay.discordFriendsEmpty": "Henüz arkadaş yok",
   "overlay.discordFriendsMore": "{count} kişi daha",
+  "overlay.discordAlreadyFriend": "Zaten arkadaşsınız",
   "overlay.discordAddFriend": "Arkadaş ekle",
   "overlay.discordSearchPlaceholder": "Kullanıcı adıyla ara",
   "overlay.discordRequestSent": "İstek gönderildi",

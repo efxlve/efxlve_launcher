@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} oczekujących zaproszeń",
   "overlay.discordFriendsEmpty": "Brak znajomych",
   "overlay.discordFriendsMore": "jeszcze {count}",
+  "overlay.discordAlreadyFriend": "Już w znajomych",
   "overlay.discordAddFriend": "Dodaj znajomego",
   "overlay.discordSearchPlaceholder": "Szukaj po nazwie użytkownika",
   "overlay.discordRequestSent": "Zaproszenie wysłane",

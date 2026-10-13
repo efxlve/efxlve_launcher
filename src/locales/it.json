@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} richieste in sospeso",
   "overlay.discordFriendsEmpty": "Ancora nessun amico",
   "overlay.discordFriendsMore": "altri {count}",
+  "overlay.discordAlreadyFriend": "Già amici",
   "overlay.discordAddFriend": "Aggiungi amico",
   "overlay.discordSearchPlaceholder": "Cerca per nome utente",
   "overlay.discordRequestSent": "Richiesta inviata",

@@ -1732,6 +1732,8 @@ let searchOpen = false;
 let searchQuery = "";
 let searchRan = false;
 let searchResults: { id: string; name: string; username: string; avatarUrl: string }[] = [];
+/** Usernames a request was sent to this session, so the row stops offering it. */
+const sentRequests = new Set<string>();
 
 /** The friend rows the tab shows: the live desktop read, the launcher's own web
  * client, the SDK's own list, then the last known list. Online first. */
@@ -2014,13 +2016,20 @@ function searchHtml(): string {
 }
 
 function searchRowHtml(user: { id: string; name: string; username: string; avatarUrl: string }): string {
+  const handle = user.username || user.name;
+  // A search returns anyone by that name: someone already in the list has
+  // nothing to send, and saying so beats a failing request.
+  const friend = friendEntries().find((item) => item.id === user.id);
+  const action = friend
+    ? `<span class="dc-row-end dc-dim">${icon("check-circle", 13)} ${esc(t("overlay.discordAlreadyFriend"))}</span>`
+    : sentRequests.has(handle)
+      ? `<span class="dc-row-end dc-dim">${icon("check-circle", 13)} ${esc(t("overlay.discordRequestSent"))}</span>`
+      : `<span class="dc-row-end"><button class="btn ghost small" data-ov="discord-add" data-username="${esc(handle)}">${icon("plus", 13)} ${esc(t("overlay.discordAddFriend"))}</button></span>`;
   return `
     <div class="dc-row">
       <span class="dc-av"><img src="${esc(user.avatarUrl)}" alt="" loading="lazy" /></span>
       <span class="dc-row-main"><span class="dc-name">${esc(user.name)}</span>${user.username ? `<span class="dc-sub">@${esc(user.username)}</span>` : ""}</span>
-      <span class="dc-row-end">
-        <button class="btn ghost small" data-ov="discord-add" data-username="${esc(user.username || user.name)}">${icon("plus", 13)} ${esc(t("overlay.discordAddFriend"))}</button>
-      </span>
+      ${action}
     </div>`;
 }
 
@@ -3392,9 +3401,8 @@ async function boot(): Promise<void> {
       return;
     }
     toast(t("overlay.discordRequestSent"), "");
-    searchResults = searchResults.filter(
-      (user) => (user.username || user.name) !== event.payload.username,
-    );
+    // Keep the row and mark it: a row that vanishes reads as "nothing happened".
+    sentRequests.add(event.payload.username);
     if (activeTab === "discord" && !document.hidden) repaintDiscord();
   });
 

@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} demandes en attente",
   "overlay.discordFriendsEmpty": "Pas encore d'amis",
   "overlay.discordFriendsMore": "{count} de plus",
+  "overlay.discordAlreadyFriend": "Déjà amis",
   "overlay.discordAddFriend": "Ajouter un ami",
   "overlay.discordSearchPlaceholder": "Rechercher par pseudo",
   "overlay.discordRequestSent": "Demande envoyée",

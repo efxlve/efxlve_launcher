@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "대기 중인 요청 {count}개",
   "overlay.discordFriendsEmpty": "아직 친구가 없습니다",
   "overlay.discordFriendsMore": "{count}명 더",
+  "overlay.discordAlreadyFriend": "이미 친구",
   "overlay.discordAddFriend": "친구 추가",
   "overlay.discordSearchPlaceholder": "사용자 이름으로 검색",
   "overlay.discordRequestSent": "요청 보냄",

@@ -1907,6 +1907,7 @@
   "overlay.discordFriendsPending": "{count} طلبات معلّقة",
   "overlay.discordFriendsEmpty": "لا أصدقاء بعد",
   "overlay.discordFriendsMore": "{count} آخرون",
+  "overlay.discordAlreadyFriend": "أنتما صديقان بالفعل",
   "overlay.discordAddFriend": "إضافة صديق",
   "overlay.discordSearchPlaceholder": "البحث باسم المستخدم",
   "overlay.discordRequestSent": "أُرسل الطلب",
