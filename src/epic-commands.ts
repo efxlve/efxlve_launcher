@@ -739,6 +739,9 @@ export interface GameScreenshotItem {
 export const epicGetGameScreenshots = (appName: string, title: string) =>
   invoke<GameScreenshotItem[]>("epic_get_game_screenshots", { appName, title });
 
+export const epicGetAllScreenshots = () =>
+  invoke<GameScreenshotItem[]>("epic_get_all_screenshots");
+
 /** Full-resolution data URL for one screenshot, read only when a viewer asks. */
 export const epicGetScreenshotFullData = (filePath: string) =>
   invoke<string>("epic_get_screenshot_full_data", { filePath });

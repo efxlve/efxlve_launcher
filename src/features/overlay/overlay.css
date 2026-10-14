@@ -291,7 +291,7 @@
   width: 350px;
   height: 380px;
   min-width: 310px;
-  min-height: 330px;
+  min-height: 350px;
   max-width: 600px;
   max-height: 600px;
 }
@@ -402,19 +402,19 @@
   display: flex;
   flex-direction: column;
   padding: 0;
-  overflow: hidden;
+  overflow: hidden !important;
   background: var(--surface-1);
 }
 
 .ov-perf {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px 10px;
   height: 100%;
   box-sizing: border-box;
   user-select: none;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* Base Telemetry Card Style */
@@ -422,7 +422,7 @@
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  padding: 8px 10px;
+  padding: 6px 9px;
   cursor: pointer;
   transition: background-color var(--ease), border-color var(--ease);
   outline: none;
@@ -448,7 +448,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 6px 10px;
   flex-shrink: 0;
 }
 
@@ -460,7 +460,7 @@
 }
 
 .ov-perf-fps-num {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -478,7 +478,7 @@
 .ov-perf-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -516,7 +516,7 @@
 }
 
 .ov-perf-sub {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -527,12 +527,12 @@
 }
 
 .ov-perf-card-num {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
-  margin: 3px 0 6px;
+  margin: 2px 0 5px;
 }
 
 /* Progress Bar — Clean, Flat, No Glow */
@@ -564,11 +564,11 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 105px;
+  min-height: 80px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  padding: 8px 10px 6px;
+  padding: 6px 10px 4px;
   position: relative;
 }
 
@@ -623,7 +623,7 @@
 
 .ov-perf-canvas-wrap {
   flex: 1;
-  min-height: 55px;
+  min-height: 40px;
   position: relative;
   width: 100%;
 }

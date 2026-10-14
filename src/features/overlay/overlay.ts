@@ -504,7 +504,7 @@ interface WidgetSize {
 function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
   switch (tab) {
     case "perf":
-      return { minW: 310, minH: 330, maxW: 600, maxH: 600 };
+      return { minW: 310, minH: 350, maxW: 600, maxH: 600 };
     case "shots":
       return { minW: 280, minH: 240, maxW: 800, maxH: 800 };
     case "music":
@@ -922,7 +922,7 @@ function setTab(tab: TabId, fromOpen = false): void {
 }
 
 /** Tabs that only make sense with a running game. */
-const GAME_ONLY_TABS: TabId[] = ["ach", "shots"];
+const GAME_ONLY_TABS: TabId[] = ["ach"];
 
 /** Friendly stand-in for a game-only tab while the overlay runs over the launcher. */
 function noGameStateHtml(tab: TabId): string {
@@ -1729,25 +1729,42 @@ async function loadScreenshots(force = false): Promise<void> {
   if (!el) return;
   if (cachedScreenshots.length === 0 || force) {
     el.innerHTML = `<div class="ov-empty">${esc(t("common.calculating"))}</div>`;
-    const { store } = splitKey(context.appName);
-    if (store === "game") {
-      // A title the launcher did not install: no store library to scan.
-      cachedScreenshots = [];
-    } else {
+    if (launcherMode) {
       try {
-        cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_game_screenshots", {
-          appName: context.appName,
-          title: context.title,
-        });
+        cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_all_screenshots");
       } catch {
         cachedScreenshots = [];
+      }
+    } else {
+      const { store, id } = splitKey(context.appName);
+      if (store === "steam") {
+        try {
+          cachedScreenshots = await invoke<ScreenshotItem[]>("steam_get_game_screenshots", { appId: id });
+        } catch {
+          cachedScreenshots = [];
+        }
+      } else if (store === "game") {
+        cachedScreenshots = [];
+      } else {
+        try {
+          cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_game_screenshots", {
+            appName: context.appName,
+            title: context.title,
+          });
+        } catch {
+          cachedScreenshots = [];
+        }
       }
     }
   }
 
+  const titleText = launcherMode
+    ? esc(t("overlay.tabScreenshots"))
+    : (context.title ? `${esc(context.title)} — ${esc(t("overlay.tabScreenshots"))}` : esc(t("overlay.tabScreenshots")));
+
   el.innerHTML = `
     <div class="ov-page-title" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">${icon("camera", 20)} <span>${esc(t("overlay.tabScreenshots"))}</span></div>
+      <div style="display:flex;align-items:center;gap:10px">${icon("camera", 20)} <span>${titleText}</span></div>
       <button class="btn ghost small" data-ov="shots-folder">${icon("folder", 14)} ${esc(t("overlay.openFolder"))}</button>
     </div>
     ${cachedScreenshots.length === 0 ? `
@@ -3727,7 +3744,13 @@ function wireEvents(): void {
       const input = document.getElementById("ov-browser-hub-input") as HTMLInputElement | null;
       const url = input?.value.trim() || null;
       void invoke("overlay_browser_open", { url });
-    } else if (action === "shots-folder") void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
+    } else if (action === "shots-folder") {
+      if (launcherMode) {
+        void invoke("epic_open_screenshot_dir");
+      } else {
+        void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
+      }
+    }
     else if (action === "close-lightbox") hideLightbox();
     else if (action === "lightbox-prev") stepLightbox(-1);
     else if (action === "lightbox-next") stepLightbox(1);

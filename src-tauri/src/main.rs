@@ -921,6 +921,7 @@ fn main() {
             legendary::steamgrid::epic_get_steamgrid_covers,
             legendary::commands::epic_get_player_profile,
             legendary::screenshots::epic_get_game_screenshots,
+            legendary::screenshots::epic_get_all_screenshots,
             legendary::screenshots::epic_get_screenshot_full_data,
             legendary::screenshots::epic_save_screenshot_preview,
             legendary::screenshots::epic_delete_game_screenshot,

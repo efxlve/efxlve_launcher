@@ -579,6 +579,121 @@ pub async fn epic_get_game_screenshots(
     .map_err(|e| e.to_string())?
 }
 
+fn scan_dir_files(
+    dir: &Path,
+    results: &mut Vec<GameScreenshotItem>,
+    scanned: &mut std::collections::HashSet<PathBuf>,
+) {
+    if dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && scanned.insert(path.clone()) {
+                    if let Some(item) = parse_file_to_item(&path) {
+                        results.push(item);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Scans and returns all screenshots from all games and capture folders from disk,
+/// sorted chronologically (newest to oldest).
+#[tauri::command]
+pub async fn epic_get_all_screenshots(
+    _app: AppHandle,
+) -> Result<Vec<GameScreenshotItem>, String> {
+    tokio::task::spawn_blocking(move || {
+        let mut results = Vec::new();
+        let mut scanned_paths = std::collections::HashSet::new();
+
+        // 1. Scanned root and its subdirectories (one subfolder per game)
+        let root = screenshots_root();
+        if root.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(&root) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        scan_dir_files(&path, &mut results, &mut scanned_paths);
+                    } else if path.is_file() && scanned_paths.insert(path.clone()) {
+                        if let Some(item) = parse_file_to_item(&path) {
+                            results.push(item);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Legacy screenshots root (if different from root)
+        let legacy_root = get_user_pictures_dir().join("Efxlve Screenshots");
+        if legacy_root != root && legacy_root.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(&legacy_root) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        scan_dir_files(&path, &mut results, &mut scanned_paths);
+                    } else if path.is_file() && scanned_paths.insert(path.clone()) {
+                        if let Some(item) = parse_file_to_item(&path) {
+                            results.push(item);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Ubisoft Connect captures
+        for root_name in ["UbisoftConnect", "Uplay"] {
+            let ubi_root = get_user_pictures_dir().join(root_name);
+            if ubi_root.is_dir() {
+                if let Ok(entries) = std::fs::read_dir(&ubi_root) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_dir() {
+                            scan_dir_files(&path, &mut results, &mut scanned_paths);
+                        } else if path.is_file() && scanned_paths.insert(path.clone()) {
+                            if let Some(item) = parse_file_to_item(&path) {
+                                results.push(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Windows Game Bar Captures (%USERPROFILE%\Videos\Captures)
+        let captures_dir = get_user_videos_dir().join("Captures");
+        scan_dir_files(&captures_dir, &mut results, &mut scanned_paths);
+
+        // 5. Steam screenshots (if Steam is installed)
+        if let Some(steam) = crate::steam::steam_install_path() {
+            let userdata = steam.join("userdata");
+            if userdata.is_dir() {
+                if let Ok(acc_entries) = std::fs::read_dir(&userdata) {
+                    for acc_entry in acc_entries.flatten() {
+                        let remote = acc_entry.path().join("760").join("remote");
+                        if remote.is_dir() {
+                            if let Ok(app_entries) = std::fs::read_dir(&remote) {
+                                for app_entry in app_entries.flatten() {
+                                    let shots_dir = app_entry.path().join("screenshots");
+                                    scan_dir_files(&shots_dir, &mut results, &mut scanned_paths);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort newest to oldest
+        results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        results.truncate(300);
+        Ok(results)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Full-resolution data URL for one screenshot, produced only when the
 /// lightbox, share sheet or compressor asks for it. The listing ships previews.
 #[tauri::command]
@@ -966,7 +1081,9 @@ pub async fn epic_open_game_screenshots_folder(
             clean_folder_name(&app_name)
         };
         // Ubisoft games keep their captures in the client's own folder.
-        let target_dir = if app_name.starts_with("ubisoft::") {
+        let target_dir = if clean_t.is_empty() {
+            screenshots_root()
+        } else if app_name.starts_with("ubisoft::") {
             ubisoft_game_dir(&title).unwrap_or_else(|| game_screenshots_dir(&clean_t))
         } else {
             game_screenshots_dir(&clean_t)
