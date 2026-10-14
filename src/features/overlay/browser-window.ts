@@ -37,7 +37,6 @@ const QUICK_BOOKMARKS: QuickBookmark[] = [
   { label: "Reddit", iconName: "users", url: "https://www.reddit.com/r/gaming" },
   { label: "Twitch", iconName: "monitor", url: "https://www.twitch.tv" },
   { label: "Steam Guides", iconName: "gamepad-2", url: "https://steamcommunity.com" },
-  { label: "Game8", iconName: "sparkles", url: "https://game8.co" },
 ];
 
 let tabs: BrowserTab[] = [];
@@ -122,12 +121,62 @@ function goto(input: string): void {
   void invoke("overlay_browser_navigate", { url: input }).catch(() => undefined);
 }
 
-function newTab(url?: string): void {
-  void invoke("overlay_browser_new_tab", { url: url || null, ...frameRect() }).catch(() => undefined);
+async function newTab(url?: string): Promise<void> {
+  try {
+    const res = await invoke<{ tabs?: BrowserTab[] }>("overlay_browser_new_tab", {
+      url: url || null,
+      ...frameRect(),
+    });
+    if (res?.tabs && res.tabs.length > 0) {
+      tabs = res.tabs;
+      const active = activeTab();
+      if (active) activeUrl = active.url;
+      paintTabs();
+    }
+  } catch (err) {
+    console.error("Failed to create new tab:", err);
+  }
 }
 
-function closeTab(id: number): void {
-  void invoke("overlay_browser_close_tab", { id, ...frameRect() }).catch(() => undefined);
+async function closeTab(id: number): Promise<void> {
+  try {
+    const res = await invoke<{ tabs?: BrowserTab[] }>("overlay_browser_close_tab", {
+      id,
+      ...frameRect(),
+    });
+    if (res?.tabs) {
+      tabs = res.tabs;
+      const active = activeTab();
+      if (active) activeUrl = active.url;
+      paintTabs();
+    }
+  } catch (err) {
+    console.error("Failed to close tab:", err);
+  }
+}
+
+async function activateTab(id: number): Promise<void> {
+  for (const t of tabs) {
+    t.active = t.id === id;
+  }
+  const active = activeTab();
+  if (active) activeUrl = active.url;
+  paintTabs();
+
+  try {
+    const res = await invoke<{ tabs?: BrowserTab[] }>("overlay_browser_activate_tab", {
+      id,
+      ...frameRect(),
+    });
+    if (res?.tabs) {
+      tabs = res.tabs;
+      const act = activeTab();
+      if (act) activeUrl = act.url;
+      paintTabs();
+    }
+  } catch (err) {
+    console.error("Failed to activate tab:", err);
+  }
 }
 
 /** Hides the browser window and emits close state to the overlay. */
@@ -167,9 +216,6 @@ function bookmarksHtml(): string {
 }
 
 function wire(): void {
-  const badgeIcon = document.getElementById("ov-browser-badge-icon");
-  if (badgeIcon) badgeIcon.innerHTML = icon("globe", 14);
-
   const chrome = document.getElementById("ov-browser-chrome");
   if (chrome) chrome.innerHTML = chromeHtml();
 
@@ -180,25 +226,17 @@ function wire(): void {
   document.addEventListener("click", (event) => {
     const el = event.target as HTMLElement;
 
-    // Window control buttons (minimize, maximize, close)
+    // Window close button
     const winAct = el.closest<HTMLElement>("[data-win]")?.dataset.win;
     if (winAct) {
-      if (winAct === "minimize" || winAct === "close") {
-        closeWindow();
-      } else if (winAct === "maximize") {
-        void getCurrentWindow().toggleMaximize().catch(() => undefined);
-      }
+      closeWindow();
       return;
     }
 
-    // Bookmark chips
+    // Bookmark chips - always open in a new tab
     const bmUrl = el.closest<HTMLElement>("[data-bm]")?.dataset.bm;
     if (bmUrl) {
-      if (event.ctrlKey || event.metaKey) {
-        newTab(bmUrl);
-      } else {
-        goto(bmUrl);
-      }
+      void newTab(bmUrl);
       return;
     }
 
@@ -216,20 +254,21 @@ function wire(): void {
     // Close tab button
     const closeId = el.closest<HTMLElement>("[data-tab-x]")?.dataset.tabX;
     if (closeId) {
-      closeTab(Number(closeId));
+      void closeTab(Number(closeId));
       return;
     }
 
     // New tab button
     if (el.closest("[data-tab-new]")) {
-      newTab();
+      void newTab();
       return;
     }
 
     // Activate tab
-    const tabId = el.closest<HTMLElement>("[data-tab]")?.dataset.tab;
-    if (tabId) {
-      void invoke("overlay_browser_activate_tab", { id: Number(tabId), ...frameRect() }).catch(() => undefined);
+    const tabEl = el.closest<HTMLElement>("[data-tab]");
+    if (tabEl && !el.closest("[data-tab-x]")) {
+      const tabId = Number(tabEl.dataset.tab);
+      if (tabId) void activateTab(tabId);
       return;
     }
 
@@ -251,27 +290,55 @@ function wire(): void {
     if (tabEl && !el.closest("[data-tab-x]")) {
       event.preventDefault();
       const tabId = Number(tabEl.dataset.tab);
-      if (tabId) closeTab(tabId);
+      if (tabId) void closeTab(tabId);
     }
   });
 
-  // Window drag on topbar, chrome, or bookmark empty areas
-  document.addEventListener("mousedown", (event) => {
+  // Window drag fallback using overlay_browser_set_position
+  let isDragging = false;
+  let startMouseX = 0;
+  let startMouseY = 0;
+  let startWinX = 0;
+  let startWinY = 0;
+
+  document.addEventListener("mousedown", async (event) => {
     if (event.button !== 0) return;
     const el = event.target as HTMLElement | null;
     if (!el || el.closest("button, input, a, .ov-browser-tab, .ov-browser-bm-chip, [data-win]")) return;
-    if (el.closest(".ov-browser-topbar, .ov-browser-badge, .ov-browser-tabs-wrapper, #ov-browser-chrome, #ov-browser-bookmarks")) {
-      void getCurrentWindow().startDragging().catch(() => undefined);
+    if (!el.closest(".ov-browser-topbar, .ov-browser-drag-filler, .ov-browser-tabs-wrapper, #ov-browser-chrome, #ov-browser-bookmarks")) return;
+
+    // Trigger native Tauri drag first
+    void getCurrentWindow().startDragging().catch(() => undefined);
+
+    // Track mouse coordinates for reliable SetWindowPos repositioning
+    try {
+      const pos = await getCurrentWindow().outerPosition();
+      startWinX = pos.x;
+      startWinY = pos.y;
+      startMouseX = event.screenX;
+      startMouseY = event.screenY;
+      isDragging = true;
+    } catch {
+      // ignore
     }
   });
 
-  // Double click topbar to toggle maximize
-  document.addEventListener("dblclick", (event) => {
-    const el = event.target as HTMLElement | null;
-    if (!el || el.closest("button, input, a, .ov-browser-tab, .ov-browser-bm-chip, [data-win]")) return;
-    if (el.closest(".ov-browser-topbar, .ov-browser-badge, .ov-browser-tabs-wrapper")) {
-      void getCurrentWindow().toggleMaximize().catch(() => undefined);
+  window.addEventListener("mousemove", (event) => {
+    if (!isDragging) return;
+    if ((event.buttons & 1) === 0) {
+      isDragging = false;
+      return;
     }
+    const dpr = window.devicePixelRatio || 1;
+    const dx = (event.screenX - startMouseX) * dpr;
+    const dy = (event.screenY - startMouseY) * dpr;
+    const newX = Math.round(startWinX + dx);
+    const newY = Math.round(startWinY + dy);
+    void invoke("overlay_browser_set_position", { x: newX, y: newY }).catch(() => undefined);
+  });
+
+  window.addEventListener("mouseup", () => {
+    isDragging = false;
   });
 
   const input = addressInput();
@@ -318,11 +385,11 @@ function wire(): void {
     if (event.ctrlKey || event.metaKey) {
       if (event.key === "t") {
         event.preventDefault();
-        newTab();
+        void newTab();
       } else if (event.key === "w") {
         event.preventDefault();
         const active = activeTab();
-        if (active) closeTab(active.id);
+        if (active) void closeTab(active.id);
       } else if (event.key === "r") {
         event.preventDefault();
         void invoke("overlay_browser_action", { action: "reload" }).catch(() => undefined);
@@ -363,6 +430,12 @@ function wire(): void {
     const active = activeTab();
     if (active) activeUrl = active.url;
     paintTabs();
+  }).catch(() => undefined);
+
+  void listen<string>("overlay-browser-new-tab", (event) => {
+    if (event.payload) {
+      void newTab(event.payload);
+    }
   }).catch(() => undefined);
 }
 

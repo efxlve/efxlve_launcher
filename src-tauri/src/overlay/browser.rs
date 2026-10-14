@@ -222,9 +222,9 @@ pub async fn overlay_browser_new_tab(
     y: f64,
     width: f64,
     height: f64,
-) -> Result<(), String> {
+) -> Result<TabListPayload, String> {
     if tab_list().len() >= MAX_TABS {
-        return Ok(());
+        return Ok(tab_list_payload());
     }
     let target = normalize_url(url.as_deref().unwrap_or(HOME_URL));
     let parsed = target
@@ -238,10 +238,11 @@ pub async fn overlay_browser_new_tab(
 
     let app_nav = app.clone();
     let label = page_label(id);
+    let app_popup = app.clone();
     // A child webview builder must not call `additional_browser_args`: that flag
     // silently breaks child webview rendering.
     let builder = WebviewBuilder::new(&label, WebviewUrl::External(parsed))
-        .background_color(tauri::webview::Color(10, 10, 10, 255))
+        .background_color(tauri::webview::Color(16, 17, 24, 255))
         .on_navigation(move |url| {
             // Keep the strip and the address bar in step with the page.
             let tab = tab_id_from_label(&label);
@@ -255,7 +256,13 @@ pub async fn overlay_browser_new_tab(
             let _ = app_nav.emit_to(WINDOW_LABEL, "overlay-browser-tabs", payload_tabs.clone());
             let _ = app_nav.emit("overlay-browser-tabs", payload_tabs);
             true
-        })        .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny);
+        })
+        .on_new_window(move |target_url, _| {
+            let payload = target_url.to_string();
+            let _ = app_popup.emit_to(WINDOW_LABEL, "overlay-browser-new-tab", payload.clone());
+            let _ = app_popup.emit("overlay-browser-new-tab", payload);
+            tauri::webview::NewWindowResponse::Deny
+        });
 
     let host = app
         .get_window(WINDOW_LABEL)
@@ -276,7 +283,7 @@ pub async fn overlay_browser_new_tab(
     }
     place_tabs(&app, x, y, width, height);
     emit_tabs(&app);
-    Ok(())
+    Ok(tab_list_payload())
 }
 
 #[derive(Serialize, Clone)]
@@ -308,7 +315,7 @@ pub fn overlay_browser_tabs() -> TabListPayload {
 
 /// Closes one tab; the last tab closes the whole window.
 #[tauri::command]
-pub fn overlay_browser_close_tab(app: AppHandle, id: u32, x: f64, y: f64, width: f64, height: f64) {
+pub fn overlay_browser_close_tab(app: AppHandle, id: u32, x: f64, y: f64, width: f64, height: f64) -> TabListPayload {
     if let Some(view) = app.get_webview(&page_label(id)) {
         let _ = view.close();
     }
@@ -321,7 +328,7 @@ pub fn overlay_browser_close_tab(app: AppHandle, id: u32, x: f64, y: f64, width:
         set_active(0);
         overlay_browser_close(app.clone());
         emit_tabs(&app);
-        return;
+        return tab_list_payload();
     }
     if active_id() == id {
         // Focus the neighbour that took its place.
@@ -334,18 +341,39 @@ pub fn overlay_browser_close_tab(app: AppHandle, id: u32, x: f64, y: f64, width:
     }
     place_tabs(&app, x, y, width, height);
     emit_tabs(&app);
+    tab_list_payload()
 }
 
 /// Makes one tab the visible one.
 #[tauri::command]
-pub fn overlay_browser_activate_tab(app: AppHandle, id: u32, x: f64, y: f64, width: f64, height: f64) {
+pub fn overlay_browser_activate_tab(app: AppHandle, id: u32, x: f64, y: f64, width: f64, height: f64) -> TabListPayload {
     let known = tab_list().iter().any(|(tab, _)| *tab == id);
     if !known {
-        return;
+        return tab_list_payload();
     }
     set_active(id);
     place_tabs(&app, x, y, width, height);
     emit_tabs(&app);
+    tab_list_payload()
+}
+
+/// Moves the browser window position during drag.
+#[tauri::command]
+pub fn overlay_browser_set_position(app: AppHandle, x: i32, y: i32) {
+    if let Some(w) = app.get_window(WINDOW_LABEL) {
+        #[cfg(windows)]
+        if let Ok(raw) = w.hwnd() {
+            unsafe {
+                SetWindowPos(
+                    raw.0 as *mut core::ffi::c_void,
+                    core::ptr::null_mut(),
+                    x, y, 0, 0,
+                    0x0001 | 0x0010, // SWP_NOSIZE | SWP_NOACTIVATE
+                );
+            }
+        }
+        let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
+    }
 }
 
 /// Parks and hides all child page webviews so they cannot remain visible when

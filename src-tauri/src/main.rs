@@ -952,6 +952,7 @@ fn main() {
             overlay::browser::overlay_browser_close_tab,
             overlay::browser::overlay_browser_activate_tab,
             overlay::browser::overlay_browser_close,
+            overlay::browser::overlay_browser_set_position,
             spotify::playback::spotify_playback_status,
             spotify::playback::spotify_playback_start,
             spotify::playback::spotify_playback_now,
