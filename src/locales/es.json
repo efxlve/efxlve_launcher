@@ -2050,5 +2050,6 @@
   "overlay.settingsGeneral": "General",
   "overlay.settingsAppearance": "Apariencia",
   "overlay.settingsBrowser": "Navegador",
-  "overlay.settingsGame": "Juego"
+  "overlay.settingsGame": "Juego",
+  "overlay.otherGame": "Otros"
 }

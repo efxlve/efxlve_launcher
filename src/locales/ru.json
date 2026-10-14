@@ -2050,5 +2050,6 @@
   "overlay.settingsGeneral": "Общие",
   "overlay.settingsAppearance": "Внешний вид",
   "overlay.settingsBrowser": "Браузер",
-  "overlay.settingsGame": "Игра"
+  "overlay.settingsGame": "Игра",
+  "overlay.otherGame": "Прочее"
 }

@@ -2050,5 +2050,6 @@
   "overlay.settingsGeneral": "일반",
   "overlay.settingsAppearance": "화면 표시",
   "overlay.settingsBrowser": "브라우저",
-  "overlay.settingsGame": "게임"
+  "overlay.settingsGame": "게임",
+  "overlay.otherGame": "기타"
 }

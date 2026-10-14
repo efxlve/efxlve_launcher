@@ -2050,5 +2050,6 @@
   "overlay.settingsGeneral": "सामान्य",
   "overlay.settingsAppearance": "दिखावट",
   "overlay.settingsBrowser": "ब्राउज़र",
-  "overlay.settingsGame": "गेम"
+  "overlay.settingsGame": "गेम",
+  "overlay.otherGame": "अन्य"
 }

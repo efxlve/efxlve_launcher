@@ -368,7 +368,7 @@ function fpsNoticeHtml(m: MetricsSample | null): string {
       ? t("overlay.fpsDenied")
       : t("overlay.fpsPermission");
   return `
-    <div class="ov-fps-notice">
+    <div class="ov-fps-notice" id="ov-fps-notice">
       ${icon("info", 14)}
       <span class="ov-fps-notice-text">${esc(text)}</span>
       <button class="btn ghost small" data-ov="enable-fps" ${fpsEnableState === "idle" ? "" : "disabled"}>${esc(t("overlay.fpsEnable"))}</button>
@@ -392,29 +392,24 @@ function refreshFpsNotices(): void {
   });
 }
 
-/** Hides the notice when the counter runs; creates it on the first sample. */
+/** Adds or removes the permission notice in the Perf widget as the counter's
+ * availability changes. It patches in place: re-rendering the widget on every
+ * sample was a full DOM rebuild each second. */
 function updateFpsNotice(): void {
-  const activeView = document.querySelector<HTMLElement>(".ov-view.active");
-  const notices = activeView
-    ? [...activeView.querySelectorAll<HTMLElement>(".ov-fps-notice")]
-    : [];
+  const existing = document.getElementById("ov-fps-notice");
   if (metrics?.fpsAvailable === true) {
-    // Hide every notice, including ones parked in inactive views.
-    document.querySelectorAll<HTMLElement>(".ov-fps-notice").forEach((el) => {
-      el.hidden = true;
-    });
+    existing?.remove();
     return;
   }
   if (!metrics) return;
-  if (notices.length === 0) {
-    // The view rendered before the first sample; re-render it so the notice
-    // exists. Notices in other (hidden) views never block the active one.
-    if (isWidgetOpen("perf")) renderPerf();
+  if (existing) {
+    refreshFpsNotices();
     return;
   }
-  notices.forEach((el) => {
-    el.hidden = false;
-  });
+  if (!isWidgetOpen("perf")) return;
+  const perf = document.querySelector<HTMLElement>("#ov-widget-perf-body .ov-perf");
+  if (!perf) return;
+  perf.insertAdjacentHTML("afterbegin", fpsNoticeHtml(metrics));
   refreshFpsNotices();
 }
 
@@ -601,6 +596,23 @@ function syncWidgetSizeClasses(tab: TabId, w: number, h: number): void {
   el.classList.toggle("ov-compact-h", h < 380);
   el.classList.toggle("ov-mini-h", h < 240);
   el.classList.toggle("ov-narrow-w", w < 300);
+}
+
+/** Keeps every open widget on screen when the panel changes size or monitor. */
+function clampWidgetsIntoView(): void {
+  const winW = window.innerWidth || 1920;
+  const winH = window.innerHeight || 1080;
+  for (const tab of TABS) {
+    const el = document.getElementById(`ov-widget-${tab.id}`);
+    if (!el || el.style.display === "none") continue;
+    const width = el.offsetWidth || 320;
+    const x = Math.max(8, Math.min(Math.max(8, winW - width - 8), el.offsetLeft));
+    const y = Math.max(8, Math.min(Math.max(8, winH - 44), el.offsetTop));
+    if (x === el.offsetLeft && y === el.offsetTop) continue;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    saveWidgetPos(tab.id, { x, y });
+  }
 }
 
 let highestZIndex = 100;
@@ -1601,6 +1613,7 @@ function renderPerf(): void {
 
   el.innerHTML = `
     <div class="ov-perf">
+      ${fpsNoticeHtml(m)}
       <!-- Top FPS Row -->
       <button class="ov-perf-card ov-perf-fps-row ${activePerfMetric === "fps" ? "active" : ""}" data-perf-metric="fps" type="button">
         <div class="ov-perf-fps-left">
@@ -1997,12 +2010,16 @@ async function loadAchievements(force = false): Promise<void> {
   renderHomeSafe();
 }
 
+/** The game a capture belongs to; untitled files share the "Other" bucket. */
+function shotGameLabel(item: ScreenshotItem): string {
+  return item.game_title?.trim() || t("overlay.otherGame");
+}
+
 /* 4. Full Screenshots View */
 function getVisibleScreenshots(): ScreenshotItem[] {
   if (selectedGameFilters.size === 0) return cachedScreenshots;
   return cachedScreenshots.filter((item) => {
-    const g = (item.game_title?.trim() || "Diğer").toLowerCase();
-    return selectedGameFilters.has(g);
+    return selectedGameFilters.has(shotGameLabel(item).toLowerCase());
   });
 }
 
@@ -2041,12 +2058,11 @@ async function loadScreenshots(force = false): Promise<void> {
   }
 
   const isTr = (localStorage.getItem("efxlve_lang") || "").startsWith("tr");
-  const otherLabel = isTr ? "Diğer" : "Other";
 
   // Build game counts map
   const gameCounts = new Map<string, number>();
   for (const item of cachedScreenshots) {
-    const g = item.game_title?.trim() || otherLabel;
+    const g = shotGameLabel(item);
     gameCounts.set(g, (gameCounts.get(g) || 0) + 1);
   }
 
@@ -2871,106 +2887,11 @@ async function overlaySpotifyControl(
 
 /* 7. Browser View */
 /**
- * The panel cannot host pages itself, so this tab is only the doorway: the
+ * The panel cannot host pages itself, so the tab is only the doorway: the
  * browser window floats over the game with its own tab strip and opens the
- * moment the tab is picked (no second button to hunt for).
+ * moment the tab is picked (no second button to hunt for). `renderWidgetContent`
+ * is the whole view — there is no widget body for it.
  */
-function renderBrowser(): void {
-  const el = viewEl("browser");
-  if (!el) return;
-  el.innerHTML = `
-    <div class="ov-page-title" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
-        ${icon("globe", 20)} <span>${esc(t("overlay.tabBrowser"))}</span>
-      </div>
-      <button class="btn primary small" data-ov="browser-open">
-        ${icon("external", 14)} <span>${esc(t("overlay.browserNewTab"))}</span>
-      </button>
-    </div>
-
-    <!-- Search & Address Bar Card -->
-    <div class="ov-card" style="margin-bottom:16px">
-      <div class="ov-browser-hub-hero">
-        <div class="ov-browser-hub-lead">
-          <div class="ov-browser-hub-title">${esc(t("overlay.tabBrowser"))}</div>
-          <div class="ov-browser-hub-sub">${esc(t("overlay.browserDesc"))}</div>
-        </div>
-        <div class="ov-browser-search-wrap">
-          <span class="ov-browser-search-icon">${icon("search", 16)}</span>
-          <input id="ov-browser-hub-input" class="input ov-browser-hub-input" placeholder="${esc(t("overlay.browserAddress"))}" spellcheck="false" />
-          <button class="btn primary small" data-ov="browser-hub-go">
-            ${icon("arrow-right", 14)} <span>Git</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Bookmarks & Portals Grid -->
-    <div class="ov-section-head" style="margin-bottom:12px">
-      <span class="ov-section-title">Hızlı Bağlantılar & Oyun Rehberleri</span>
-    </div>
-    <div class="ov-browser-grid">
-      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.google.com">
-        <div class="ov-portal-icon">${icon("search", 20)}</div>
-        <div class="ov-portal-info">
-          <div class="ov-portal-title">Google</div>
-          <div class="ov-portal-desc">Web araması ve çözümler</div>
-        </div>
-        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
-      </div>
-
-      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.youtube.com">
-        <div class="ov-portal-icon">${icon("play", 20)}</div>
-        <div class="ov-portal-info">
-          <div class="ov-portal-title">YouTube</div>
-          <div class="ov-portal-desc">Rehberler, boss taktikleri ve videolar</div>
-        </div>
-        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
-      </div>
-
-      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.fandom.com">
-        <div class="ov-portal-icon">${icon("gamepad-2", 20)}</div>
-        <div class="ov-portal-info">
-          <div class="ov-portal-title">Game Wikis</div>
-          <div class="ov-portal-desc">Fandom oyun wikileri ve haritalar</div>
-        </div>
-        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
-      </div>
-
-      <div class="ov-portal-card" data-ov="browser-open" data-url="https://www.reddit.com/r/gaming">
-        <div class="ov-portal-icon">${icon("globe", 20)}</div>
-        <div class="ov-portal-info">
-          <div class="ov-portal-title">Reddit</div>
-          <div class="ov-portal-desc">Oyun toplulukları ve taktikler</div>
-        </div>
-        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
-      </div>
-
-      <div class="ov-portal-card" data-ov="browser-open" data-url="https://discord.com/app">
-        <div class="ov-portal-icon">${icon("discord", 20)}</div>
-        <div class="ov-portal-info">
-          <div class="ov-portal-title">Discord Web</div>
-          <div class="ov-portal-desc">Web tarayıcısı üzerinden sunucular</div>
-        </div>
-        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
-      </div>
-
-      <div class="ov-portal-card" data-ov="browser-open" data-url="https://steamcommunity.com">
-        <div class="ov-portal-icon">${icon("users", 20)}</div>
-        <div class="ov-portal-info">
-          <div class="ov-portal-title">Steam Community</div>
-          <div class="ov-portal-desc">Topluluk rehberleri ve modlar</div>
-        </div>
-        <span class="ov-portal-action">${icon("chevron-right", 14)}</span>
-      </div>
-    </div>
-
-    <!-- Info Box -->
-    <div class="info-box" style="margin-top:16px">
-      ${icon("info", 14)}
-      <span>WebView2 tam donanım hızlandırmalı tarayıcı bağımsız bir pencerede oyun üzerinde yüzer. Sekmeler arasında serbestçe geçiş yapabilir, pencereleri istediğiniz gibi taşıyabilir ve boyutlandırabilirsiniz.</span>
-    </div>`;
-}
 
 /* 8. Discord View */
 /**
@@ -3205,7 +3126,6 @@ function selectReplyTarget(id: string, name: string, seed = ""): void {
   renderDiscordChat();
   if (isWidgetOpen("discord")) renderDiscordSocial();
   focusReplyInput();
-  refreshFooterHints();
 }
 
 /** A message that arrived while the overlay is open: it lands in that friend's
@@ -3530,6 +3450,23 @@ function socialFriendsListHtml(): string {
   return html;
 }
 
+/** Re-paints only the friend list while the filter box keeps focus: a full
+ * picker re-render on every keystroke used to drop the caret. */
+function repaintFriendsList(): void {
+  const scroll = document.querySelector<HTMLElement>(".ov-dc-friends-scroll");
+  if (scroll) scroll.innerHTML = socialFriendsListHtml();
+  const row = document.querySelector<HTMLElement>(".ov-dc-search-row");
+  const clearBtn = row?.querySelector<HTMLElement>(".ov-dc-search-clear");
+  if (friendsFilterQuery && !clearBtn && row) {
+    row.insertAdjacentHTML(
+      "beforeend",
+      `<button class="ov-dc-search-clear" data-ov="discord-clear-filter">${icon("x", 11)}</button>`,
+    );
+  } else if (!friendsFilterQuery) {
+    clearBtn?.remove();
+  }
+}
+
 function socialFriendItemHtml(friend: FriendEntry): string {
   const active = replyTarget?.id === friend.id;
   const unread = replyUnread.get(friend.id) ?? 0;
@@ -3768,7 +3705,6 @@ async function refreshSdkState(): Promise<void> {
     const friends = await invoke<DiscordFriendsState>("discord_sdk_friends");
     if (friends) sdkFriends = friends;
     if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
-    refreshFooterHints();
   } catch {
     // Older hosts have no Social SDK commands; the other sources stay.
   }
@@ -3863,7 +3799,6 @@ function startEdit(entryId: number): void {
   replyDrafts.set(entry.friendId, entry.text);
   renderDiscord();
   focusReplyInput();
-  refreshFooterHints();
 }
 
 /** Leaves edit mode and brings the compose draft back. */
@@ -3963,9 +3898,6 @@ async function addFriend(username: string): Promise<void> {
     toast(t("overlay.discordSendFailed", { error: String(error) }), "err");
   }
 }
-
-function captureDefaultHints(): void {}
-function refreshFooterHints(): void {}
 
 /** Fetches the web page's last voice report, so the card paints immediately. */
 async function refreshWebVoice(): Promise<void> {
@@ -4261,13 +4193,16 @@ function wireEvents(): void {
 
     // Backdrop click outside any widget and topbar closes the overlay, unless clicking over the browser window
     if (target.id === "ov-shell" || target.id === "ov-widgets-container") {
+      // The browser reports screen coordinates; the click is overlay-local.
+      const localX = browserBounds ? browserBounds.x - (window.screenX || 0) : 0;
+      const localY = browserBounds ? browserBounds.y - (window.screenY || 0) : 0;
       if (
         browserBounds &&
         isWidgetOpen("browser") &&
-        event.clientX >= browserBounds.x &&
-        event.clientX <= browserBounds.x + browserBounds.w &&
-        event.clientY >= browserBounds.y &&
-        event.clientY <= browserBounds.y + browserBounds.h
+        event.clientX >= localX &&
+        event.clientX <= localX + browserBounds.w &&
+        event.clientY >= localY &&
+        event.clientY <= localY + browserBounds.h
       ) {
         void invoke("overlay_browser_raise").catch(() => undefined);
         return;
@@ -4287,22 +4222,6 @@ function wireEvents(): void {
     const widgetCloseBtn = target.closest<HTMLElement>("[data-ov-widget-close]");
     if (widgetCloseBtn?.dataset.ovWidgetClose) {
       closeWidget(widgetCloseBtn.dataset.ovWidgetClose as TabId);
-      return;
-    }
-
-    // HUD Pin button
-    const hudBtn = target.closest<HTMLElement>('[data-ov-toggle="hud-btn"]');
-    if (hudBtn) {
-      const current = localStorage.getItem(HUD_KEY) === "true";
-      const next = !current;
-      localStorage.setItem(HUD_KEY, String(next));
-      void invoke("overlay_set_hud", { enabled: next });
-      document.querySelectorAll<HTMLElement>('[data-ov-toggle="hud-btn"]').forEach((b) => {
-        b.classList.toggle("is-pinned", next);
-      });
-      document.querySelectorAll<HTMLInputElement>('input[data-ov-toggle="hud"]').forEach((chk) => {
-        chk.checked = next;
-      });
       return;
     }
 
@@ -4635,7 +4554,7 @@ function wireEvents(): void {
     }
     if (target instanceof HTMLInputElement && target.id === "ov-dc-friends-filter") {
       friendsFilterQuery = target.value;
-      renderDiscordSocial();
+      repaintFriendsList();
       return;
     }
     if (target instanceof HTMLInputElement && target.id === "ov-sp-search-input") {
@@ -4784,6 +4703,17 @@ function wireEvents(): void {
     // The panel and the browser window never share the screen — Rust hides the
     // browser whenever the panel hides or shows — so this only re-arms the pad.
     if (!document.hidden) gamepadSuppressUntil = performance.now() + 450;
+  });
+
+  // The panel is re-placed over the game on every open and the game can change
+  // resolution: pull widgets back on screen when the surface changes size.
+  let clampTimer: number | null = null;
+  window.addEventListener("resize", () => {
+    if (clampTimer !== null) window.clearTimeout(clampTimer);
+    clampTimer = window.setTimeout(() => {
+      clampTimer = null;
+      clampWidgetsIntoView();
+    }, 150);
   });
 }
 
@@ -4994,16 +4924,11 @@ function pollGamepadLoop(): void {
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   const pad = gamepads.find((p) => p && p.connected);
 
-  const badgeEl = document.getElementById("ov-controller-badge");
-  const badgeNameEl = document.getElementById("ov-controller-name");
   const topbarPadEl = document.getElementById("ov-topbar-gamepad");
 
   if (!pad) {
     if (topbarPadEl && topbarPadEl.style.display !== "none") {
       topbarPadEl.style.display = "none";
-    }
-    if (badgeEl && badgeEl.style.display !== "none") {
-      badgeEl.style.display = "none";
     }
     prevButtons = [];
     return;
@@ -5013,31 +4938,11 @@ function pollGamepadLoop(): void {
     topbarPadEl.style.display = "inline-flex";
   }
 
-  if (badgeEl && badgeEl.style.display === "none") {
-    badgeEl.style.display = "inline-flex";
-    const id = pad.id.toLowerCase();
-    const name = id.includes("playstation") || id.includes("dualsense") || id.includes("dualshock")
-      ? "DualSense"
-      : id.includes("nintendo") || id.includes("switch")
-      ? "Switch Pro"
-      : id.includes("xbox")
-      ? "Xbox"
-      : "Controller";
-    if (badgeNameEl) badgeNameEl.textContent = name;
-  }
-
   const buttons = pad.buttons.map((b) => b.pressed);
 
   // Swallow input right after the panel opened: the shortcut that opened it
   // (Guide, Start+Back) is usually still held on the first frames.
   if (performance.now() < gamepadSuppressUntil) {
-    prevButtons = buttons;
-    return;
-  }
-
-  // A focused text box owns the pad too: replying must not be interrupted by a
-  // drifting stick or a stray button press.
-  if (isTextEntryFocused()) {
     prevButtons = buttons;
     return;
   }
@@ -5111,14 +5016,6 @@ function pollGamepadLoop(): void {
     }
   } else {
     lastDir = null;
-  }
-
-  // Right stick scrolls the open page without moving the ring.
-  const scrollAxis = pad.axes[3] || 0;
-  if (!lightboxIsOpen() && Math.abs(scrollAxis) > 0.28) {
-    const main = document.getElementById("ov-main");
-    if (main) main.scrollTop += scrollAxis * 22;
-    anyInput = true;
   }
 
   if (anyInput) {
@@ -5253,8 +5150,13 @@ async function boot(): Promise<void> {
     initWidgetResizing();
   }
 
-  clockTimer = window.setInterval(updateClock, 1000);
+  // A hidden panel (the overlay lives in one window that hides when closed)
+  // needs neither a ticking clock nor an IPC media poll.
+  clockTimer = window.setInterval(() => {
+    if (!document.hidden) updateClock();
+  }, 1000);
   mediaPollTimer = window.setInterval(() => {
+    if (document.hidden) return;
     if (document.getElementById("ov-shell")) void refreshMedia();
   }, 2500);
 
@@ -5354,7 +5256,6 @@ async function boot(): Promise<void> {
   await listen<SdkState>("discord-sdk-state", (event) => {
     sdkState = event.payload;
     if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
-    refreshFooterHints();
   });
 
   await listen<DiscordFriendsState>("discord-sdk-friends", (event) => {
@@ -5522,12 +5423,8 @@ async function boot(): Promise<void> {
         }
       }
       if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
-      refreshFooterHints();
     },
   );
-
-  // The default hint line is restored whenever the context line goes away.
-  captureDefaultHints();
 
   // The SDK resumes its sealed session in the background: after the first
   // approval the panel is connected before it is ever opened, and messages

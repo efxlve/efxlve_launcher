@@ -2050,5 +2050,6 @@
   "overlay.settingsGeneral": "一般",
   "overlay.settingsAppearance": "外観",
   "overlay.settingsBrowser": "ブラウザ",
-  "overlay.settingsGame": "ゲーム"
+  "overlay.settingsGame": "ゲーム",
+  "overlay.otherGame": "その他"
 }

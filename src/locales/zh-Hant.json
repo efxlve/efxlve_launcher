@@ -2050,5 +2050,6 @@
   "overlay.settingsGeneral": "一般",
   "overlay.settingsAppearance": "外觀",
   "overlay.settingsBrowser": "瀏覽器",
-  "overlay.settingsGame": "遊戲"
+  "overlay.settingsGame": "遊戲",
+  "overlay.otherGame": "其他"
 }
