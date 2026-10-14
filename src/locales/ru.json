@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "Съёмка выключена",
   "ss.gameCaptureTip": "Выключает горячую клавишу снимков для этой игры.",
   "ss.gameCaptureOnToast": "Для этой игры съёмка выключена.",
-  "ss.gameCaptureOffToast": "Для этой игры съёмка включена."
+  "ss.gameCaptureOffToast": "Для этой игры съёмка включена.",
+  "ss.filterAll": "Все",
+  "ss.filterRaw": "Без сжатия",
+  "ss.filterCompressed": "Сжатые",
+  "ss.filterFavorites": "Избранное",
+  "ss.filterEmpty": "Ничего не найдено по этому фильтру.",
+  "ss.selectMode": "Выбрать",
+  "ss.selectedCount": "Выбрано: {count}",
+  "ss.clearSelection": "Сбросить",
+  "ss.copyPaths": "Копировать пути",
+  "ss.pathsCopied": "Скопировано путей: {count}",
+  "ss.batchDeleted": "Удалено снимков: {count}",
+  "ss.favorite": "Добавить в избранное",
+  "ss.unfavorite": "Убрать из избранного",
+  "ss.favorited": "Добавлено в избранное",
+  "ss.unfavorited": "Убрано из избранного",
+  "ss.batchDeleteConfirm": "Удалить?"
 }

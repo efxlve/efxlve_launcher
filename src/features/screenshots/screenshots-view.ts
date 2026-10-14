@@ -23,6 +23,59 @@ import {
   type GameScreenshotItem,
 } from "../../epic";
 import { steamGetGameScreenshots, steamGetScreenshotFullData } from "../../steam";
+import { ssDensity, ssFavorites, ssSort, ssSortItems } from "./ss-settings";
+
+/* --- Game page gallery: the toolbar's own view state ---------------------- */
+type GalleryFilter = "all" | "raw" | "compressed" | "favorites";
+let galleryFilter: GalleryFilter = "all";
+let gallerySelectMode = false;
+let galleryBatchDeleteArmed = false;
+const gallerySelection = new Set<string>();
+
+export function setGalleryFilter(filter: GalleryFilter): void {
+  galleryFilter = filter;
+}
+
+export function setGallerySelectMode(on: boolean): void {
+  gallerySelectMode = on;
+  if (!on) gallerySelection.clear();
+}
+
+export function toggleGallerySelection(filePath: string): void {
+  if (gallerySelection.has(filePath)) gallerySelection.delete(filePath);
+  else gallerySelection.add(filePath);
+  galleryBatchDeleteArmed = false;
+}
+
+export function clearGallerySelection(): void {
+  gallerySelection.clear();
+  galleryBatchDeleteArmed = false;
+}
+
+/** Batch delete asks once: the button's first click arms it. */
+export function isBatchDeleteArmed(): boolean {
+  return galleryBatchDeleteArmed;
+}
+
+export function setBatchDeleteArmed(on: boolean): void {
+  galleryBatchDeleteArmed = on;
+}
+
+/** The selected rows, newest first, ready for a batch action. */
+export function gallerySelectedItems(): { appName: string; item: GameScreenshotItem }[] {
+  const appName = S.currentModalAppName ?? "";
+  const list = S.loadedScreenshots.get(appName) || [];
+  return list.filter((item) => gallerySelection.has(item.file_path)).map((item) => ({ appName, item }));
+}
+
+/** Repaints the game page's Screenshots tab in place after a toolbar action. */
+export function repaintDrawerShots(): void {
+  const appName = S.currentModalAppName;
+  if (!appName || S.activeDrawerTab !== "screenshots") return;
+  const contentEl = document.getElementById("drawer-tab-content");
+  const summary = summaryOf(appName);
+  if (contentEl && summary) contentEl.innerHTML = renderDrawerScreenshots(summary);
+}
 
 /** Steam keeps its screenshots in the client's own folder: gallery is read-only. */
 function isSteamApp(appName: string): boolean {
@@ -620,14 +673,77 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
     `;
   }
 
-  const cardsHtml = screenshots
+  // The gallery view: the shared defaults (sort/density) plus the toolbar's
+  // own filter and selection state.
+  const favorites = ssFavorites();
+  const indexed = screenshots.map((item, idx) => ({ item, idx }));
+  const sorted = ssSortItems(
+    indexed,
+    (entry) => entry.item.timestamp,
+    (entry) => entry.item.file_name,
+    (entry) => entry.item.size_bytes || 0,
+  );
+  const visible = sorted.filter(({ item }) => {
+    const compressed = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+    if (galleryFilter === "raw") return !compressed;
+    if (galleryFilter === "compressed") return compressed;
+    if (galleryFilter === "favorites") return favorites.has(item.file_path);
+    return true;
+  });
+  const selectedCount = gallerySelection.size;
+  const density = ssDensity();
+  const sort = ssSort();
+
+  const chip = (act: string, value: string, label: string, active: boolean, data: string): string =>
+    `<button type="button" class="ss-chip-btn${active ? " active" : ""}" data-act="${act}" ${data}="${value}">${label}</button>`;
+
+  const toolbar = `
+    <div class="ss-toolbar">
+      <div class="ss-toolbar-left">
+        ${chip("ssg-filter", "all", t("ss.filterAll"), galleryFilter === "all", "data-filter")}
+        ${chip("ssg-filter", "raw", t("ss.filterRaw"), galleryFilter === "raw", "data-filter")}
+        ${chip("ssg-filter", "compressed", t("ss.filterCompressed"), galleryFilter === "compressed", "data-filter")}
+        ${chip("ssg-filter", "favorites", t("ss.filterFavorites"), galleryFilter === "favorites", "data-filter")}
+      </div>
+      <div class="ss-toolbar-right">
+        ${chip("ssg-sort", "newest", t("ss.sortNewest"), sort === "newest", "data-sort")}
+        ${chip("ssg-sort", "oldest", t("ss.sortOldest"), sort === "oldest", "data-sort")}
+        ${chip("ssg-sort", "name", t("ss.sortName"), sort === "name", "data-sort")}
+        ${chip("ssg-sort", "size", t("ss.sortSize"), sort === "size", "data-sort")}
+        <span class="ss-toolbar-divider"></span>
+        ${chip("ssg-density", "s", t("ss.densitySmall"), density === "s", "data-density")}
+        ${chip("ssg-density", "m", t("ss.densityMedium"), density === "m", "data-density")}
+        ${chip("ssg-density", "l", t("ss.densityLarge"), density === "l", "data-density")}
+        <span class="ss-toolbar-divider"></span>
+        <button type="button" class="btn ghost small${gallerySelectMode ? " active" : ""}" data-act="ssg-select">
+          ${icon("check", 12)} ${t("ss.selectMode")}
+        </button>
+      </div>
+    </div>
+    ${
+      gallerySelectMode
+        ? `<div class="ss-batch-bar">
+            <span class="ss-batch-count">${t("ss.selectedCount", { count: String(selectedCount) })}</span>
+            <button type="button" class="btn ghost small" data-act="ssg-batch-copy" ${selectedCount === 0 ? "disabled" : ""}>${icon("clipboard", 12)} ${t("ss.copyPaths")}</button>
+            ${readOnly ? "" : `<button type="button" class="btn ghost small" data-act="ssg-batch-compress" ${selectedCount === 0 ? "disabled" : ""}>${icon("minimize-2", 12)} ${t("ss.compress")}</button>`}
+            ${readOnly ? "" : `<button type="button" class="btn ${galleryBatchDeleteArmed ? "danger" : "ghost danger"} small" data-act="ssg-batch-delete" ${selectedCount === 0 ? "disabled" : ""}>${icon("trash", 12)} ${galleryBatchDeleteArmed ? t("ss.batchDeleteConfirm") : t("common.delete")}</button>`}
+            <button type="button" class="btn ghost small" data-act="ssg-batch-clear" ${selectedCount === 0 ? "disabled" : ""}>${t("ss.clearSelection")}</button>
+          </div>`
+        : ""
+    }`;
+
+  const cardsHtml = visible
     .map(
-      (item, idx) => {
+      ({ item, idx }) => {
         const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
+        const isFavorite = favorites.has(item.file_path);
+        const isSelected = gallerySelection.has(item.file_path);
+        const cardAction = gallerySelectMode ? "ssg-toggle-select" : "open-screenshot-lightbox";
         return `
-    <div class="screenshot-card" data-act="open-screenshot-lightbox" data-id="${s.appName}" data-idx="${idx}" tabindex="0" title="${esc(item.file_name)}">
+    <div class="screenshot-card${isSelected ? " is-selected" : ""}${gallerySelectMode ? " is-selecting" : ""}" data-act="${cardAction}" data-id="${s.appName}" data-idx="${idx}" data-path="${esc(item.file_path)}" tabindex="0" title="${esc(item.file_name)}">
       <div class="screenshot-thumb-wrap">
         ${shotThumbHtml(item)}
+        ${gallerySelectMode ? `<span class="ss-select-box">${isSelected ? icon("check", 12) : ""}</span>` : ""}
         <div class="screenshot-overlay">
           <div class="screenshot-overlay-top">
             <span class="ss-chip date">${esc(formatScreenshotDate(item.timestamp, item.date_str))}</span>
@@ -655,6 +771,9 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
             </button>`}
           </div>
         </div>
+        <button class="ss-fav-btn${isFavorite ? " is-favorite" : ""}" data-act="ssg-favorite" data-path="${esc(item.file_path)}" title="${isFavorite ? t("ss.unfavorite") : t("ss.favorite")}">
+          ${icon("star", 13)}
+        </button>
       </div>
       <div class="screenshot-info-strip">
         <span class="ss-name" title="${esc(item.file_name)}">${esc(item.file_name)}</span>
@@ -670,9 +789,12 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   return `
     <div class="screenshots-tab-container">
       ${headerHtml}
-      <div class="screenshots-grid">
-        ${cardsHtml}
-      </div>
+      ${toolbar}
+      ${
+        visible.length === 0
+          ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
+          : `<div class="screenshots-grid ss-density-${density}">${cardsHtml}</div>`
+      }
     </div>
   `;
 }

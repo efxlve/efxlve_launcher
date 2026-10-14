@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "Yakalama kapalı",
   "ss.gameCaptureTip": "Bu oyunda ekran görüntüsü kısayolunu kapatır.",
   "ss.gameCaptureOnToast": "Bu oyunda yakalama kapalı.",
-  "ss.gameCaptureOffToast": "Bu oyunda yakalama açık."
+  "ss.gameCaptureOffToast": "Bu oyunda yakalama açık.",
+  "ss.filterAll": "Tümü",
+  "ss.filterRaw": "Ham",
+  "ss.filterCompressed": "Sıkıştırılmış",
+  "ss.filterFavorites": "Favoriler",
+  "ss.filterEmpty": "Bu filtreyle eşleşen yok.",
+  "ss.selectMode": "Seç",
+  "ss.selectedCount": "{count} seçili",
+  "ss.clearSelection": "Temizle",
+  "ss.copyPaths": "Yolları kopyala",
+  "ss.pathsCopied": "{count} yol kopyalandı",
+  "ss.batchDeleted": "{count} ekran görüntüsü silindi",
+  "ss.favorite": "Favorilere ekle",
+  "ss.unfavorite": "Favorilerden çıkar",
+  "ss.favorited": "Favorilere eklendi",
+  "ss.unfavorited": "Favorilerden çıkarıldı",
+  "ss.batchDeleteConfirm": "Silinsin mi?"
 }

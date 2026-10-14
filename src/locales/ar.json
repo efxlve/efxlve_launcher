@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "الالتقاط متوقف",
   "ss.gameCaptureTip": "يوقف اختصار اللقطات لهذه اللعبة.",
   "ss.gameCaptureOnToast": "الالتقاط متوقف لهذه اللعبة.",
-  "ss.gameCaptureOffToast": "الالتقاط مفعّل لهذه اللعبة."
+  "ss.gameCaptureOffToast": "الالتقاط مفعّل لهذه اللعبة.",
+  "ss.filterAll": "الكل",
+  "ss.filterRaw": "بدون ضغط",
+  "ss.filterCompressed": "مضغوطة",
+  "ss.filterFavorites": "المفضلة",
+  "ss.filterEmpty": "لا شيء يطابق هذا التصفية.",
+  "ss.selectMode": "تحديد",
+  "ss.selectedCount": "تم تحديد {count}",
+  "ss.clearSelection": "مسح",
+  "ss.copyPaths": "نسخ المسارات",
+  "ss.pathsCopied": "تم نسخ {count} مسارًا",
+  "ss.batchDeleted": "تم حذف {count} لقطة",
+  "ss.favorite": "أضف إلى المفضلة",
+  "ss.unfavorite": "أزل من المفضلة",
+  "ss.favorited": "أُضيفت إلى المفضلة",
+  "ss.unfavorited": "أُزيلت من المفضلة",
+  "ss.batchDeleteConfirm": "حذف؟"
 }

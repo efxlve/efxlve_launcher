@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "撮影オフ",
   "ss.gameCaptureTip": "このゲームのスクリーンショットホットキーを無効にします。",
   "ss.gameCaptureOnToast": "このゲームは撮影オフです。",
-  "ss.gameCaptureOffToast": "このゲームは撮影オンです。"
+  "ss.gameCaptureOffToast": "このゲームは撮影オンです。",
+  "ss.filterAll": "すべて",
+  "ss.filterRaw": "未圧縮",
+  "ss.filterCompressed": "圧縮済み",
+  "ss.filterFavorites": "お気に入り",
+  "ss.filterEmpty": "このフィルターに一致するものはありません。",
+  "ss.selectMode": "選択",
+  "ss.selectedCount": "{count} 件選択",
+  "ss.clearSelection": "クリア",
+  "ss.copyPaths": "パスをコピー",
+  "ss.pathsCopied": "{count} 件のパスをコピーしました",
+  "ss.batchDeleted": "{count} 件のスクリーンショットを削除しました",
+  "ss.favorite": "お気に入りに追加",
+  "ss.unfavorite": "お気に入りから削除",
+  "ss.favorited": "お気に入りに追加しました",
+  "ss.unfavorited": "お気に入りから削除しました",
+  "ss.batchDeleteConfirm": "削除しますか？"
 }

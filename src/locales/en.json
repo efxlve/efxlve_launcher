@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "Capture off",
   "ss.gameCaptureTip": "Turn the screenshot hotkey off for this game.",
   "ss.gameCaptureOnToast": "Capture is off for this game.",
-  "ss.gameCaptureOffToast": "Capture is on for this game."
+  "ss.gameCaptureOffToast": "Capture is on for this game.",
+  "ss.filterAll": "All",
+  "ss.filterRaw": "Raw",
+  "ss.filterCompressed": "Compressed",
+  "ss.filterFavorites": "Favorites",
+  "ss.filterEmpty": "Nothing matches this filter.",
+  "ss.selectMode": "Select",
+  "ss.selectedCount": "{count} selected",
+  "ss.clearSelection": "Clear",
+  "ss.copyPaths": "Copy paths",
+  "ss.pathsCopied": "{count} paths copied",
+  "ss.batchDeleted": "{count} screenshots deleted",
+  "ss.favorite": "Add to favorites",
+  "ss.unfavorite": "Remove from favorites",
+  "ss.favorited": "Added to favorites",
+  "ss.unfavorited": "Removed from favorites",
+  "ss.batchDeleteConfirm": "Delete?"
 }

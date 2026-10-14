@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "Captura desactivada",
   "ss.gameCaptureTip": "Desactiva el atajo de capturas para este juego.",
   "ss.gameCaptureOnToast": "La captura está desactivada para este juego.",
-  "ss.gameCaptureOffToast": "La captura está activada para este juego."
+  "ss.gameCaptureOffToast": "La captura está activada para este juego.",
+  "ss.filterAll": "Todas",
+  "ss.filterRaw": "Sin comprimir",
+  "ss.filterCompressed": "Comprimidas",
+  "ss.filterFavorites": "Favoritos",
+  "ss.filterEmpty": "Nada coincide con este filtro.",
+  "ss.selectMode": "Seleccionar",
+  "ss.selectedCount": "{count} seleccionadas",
+  "ss.clearSelection": "Limpiar",
+  "ss.copyPaths": "Copiar rutas",
+  "ss.pathsCopied": "{count} rutas copiadas",
+  "ss.batchDeleted": "{count} capturas borradas",
+  "ss.favorite": "Añadir a favoritos",
+  "ss.unfavorite": "Quitar de favoritos",
+  "ss.favorited": "Añadida a favoritos",
+  "ss.unfavorited": "Quitada de favoritos",
+  "ss.batchDeleteConfirm": "¿Borrar?"
 }

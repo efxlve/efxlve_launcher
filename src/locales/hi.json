@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "कैप्चर बंद",
   "ss.gameCaptureTip": "इस गेम के लिए स्क्रीनशॉट शॉर्टकट बंद करता है।",
   "ss.gameCaptureOnToast": "इस गेम का कैप्चर बंद है।",
-  "ss.gameCaptureOffToast": "इस गेम का कैप्चर चालू है।"
+  "ss.gameCaptureOffToast": "इस गेम का कैप्चर चालू है।",
+  "ss.filterAll": "सभी",
+  "ss.filterRaw": "असंपीड़ित",
+  "ss.filterCompressed": "संपीड़ित",
+  "ss.filterFavorites": "पसंदीदा",
+  "ss.filterEmpty": "इस फ़िल्टर से कुछ मेल नहीं खाता।",
+  "ss.selectMode": "चुनें",
+  "ss.selectedCount": "{count} चयनित",
+  "ss.clearSelection": "साफ़ करें",
+  "ss.copyPaths": "पथ कॉपी करें",
+  "ss.pathsCopied": "{count} पथ कॉपी हुए",
+  "ss.batchDeleted": "{count} स्क्रीनशॉट हटाए गए",
+  "ss.favorite": "पसंदीदा में जोड़ें",
+  "ss.unfavorite": "पसंदीदा से हटाएँ",
+  "ss.favorited": "पसंदीदा में जोड़ा गया",
+  "ss.unfavorited": "पसंदीदा से हटाया गया",
+  "ss.batchDeleteConfirm": "हटाएँ?"
 }

@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "ปิดการแคป",
   "ss.gameCaptureTip": "ปิดคีย์ลัดแคปหน้าจอสำหรับเกมนี้",
   "ss.gameCaptureOnToast": "เกมนี้ปิดการแคป",
-  "ss.gameCaptureOffToast": "เกมนี้เปิดการแคป"
+  "ss.gameCaptureOffToast": "เกมนี้เปิดการแคป",
+  "ss.filterAll": "ทั้งหมด",
+  "ss.filterRaw": "ยังไม่บีบอัด",
+  "ss.filterCompressed": "บีบอัดแล้ว",
+  "ss.filterFavorites": "รายการโปรด",
+  "ss.filterEmpty": "ไม่มีรายการที่ตรงกับตัวกรองนี้",
+  "ss.selectMode": "เลือก",
+  "ss.selectedCount": "เลือก {count} รายการ",
+  "ss.clearSelection": "ล้าง",
+  "ss.copyPaths": "คัดลอกพาธ",
+  "ss.pathsCopied": "คัดลอก {count} พาธแล้ว",
+  "ss.batchDeleted": "ลบ {count} ภาพแคปแล้ว",
+  "ss.favorite": "เพิ่มในรายการโปรด",
+  "ss.unfavorite": "นำออกจากรายการโปรด",
+  "ss.favorited": "เพิ่มในรายการโปรดแล้ว",
+  "ss.unfavorited": "นำออกจากรายการโปรดแล้ว",
+  "ss.batchDeleteConfirm": "ลบหรือไม่?"
 }

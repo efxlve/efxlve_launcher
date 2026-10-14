@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "截圖已關閉",
   "ss.gameCaptureTip": "關閉此遊戲的截圖快速鍵。",
   "ss.gameCaptureOnToast": "此遊戲的截圖已關閉。",
-  "ss.gameCaptureOffToast": "此遊戲的截圖已開啟。"
+  "ss.gameCaptureOffToast": "此遊戲的截圖已開啟。",
+  "ss.filterAll": "全部",
+  "ss.filterRaw": "未壓縮",
+  "ss.filterCompressed": "已壓縮",
+  "ss.filterFavorites": "收藏",
+  "ss.filterEmpty": "沒有符合此篩選的內容。",
+  "ss.selectMode": "選擇",
+  "ss.selectedCount": "已選 {count} 項",
+  "ss.clearSelection": "清除",
+  "ss.copyPaths": "複製路徑",
+  "ss.pathsCopied": "已複製 {count} 個路徑",
+  "ss.batchDeleted": "已刪除 {count} 張截圖",
+  "ss.favorite": "加入收藏",
+  "ss.unfavorite": "取消收藏",
+  "ss.favorited": "已加入收藏",
+  "ss.unfavorited": "已取消收藏",
+  "ss.batchDeleteConfirm": "刪除？"
 }

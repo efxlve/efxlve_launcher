@@ -19,16 +19,26 @@ import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
   closeShareModal,
+  clearGallerySelection,
   compressScreenshotItem,
   copyScreenshotImageToClipboard,
   fetchAndRenderScreenshots,
   forgetFullShot,
+  gallerySelectedItems,
+  isBatchDeleteArmed,
   navigateScreenshotLightbox,
   openScreenshotDeleteConfirm,
   openScreenshotLightbox,
   openShareModal,
+  repaintDrawerShots,
+  setBatchDeleteArmed,
+  setGalleryFilter,
+  setGallerySelectMode,
   takePendingScreenshotDelete,
+  toggleGallerySelection,
 } from "../../screenshots/screenshots-view";
+import { ssToggleFavorite } from "../../screenshots/ss-settings";
+import { SS_DENSITY_KEY, SS_SORT_KEY } from "../../../core/constants";
 
 /** True for the Steam client's own screenshots: shown read-only. */
 function isSteamShots(appName: string): boolean {
@@ -54,6 +64,128 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
   if (!act) return false;
 
   switch (act) {
+    case "ssg-filter": {
+      const filter = t.dataset.filter;
+      if (filter === "all" || filter === "raw" || filter === "compressed" || filter === "favorites") {
+        setGalleryFilter(filter);
+        repaintDrawerShots();
+      }
+      return true;
+    }
+
+    case "ssg-sort": {
+      const sort = t.dataset.sort;
+      if (sort === "newest" || sort === "oldest" || sort === "name" || sort === "size") {
+        localStorage.setItem(SS_SORT_KEY, sort);
+        repaintDrawerShots();
+      }
+      return true;
+    }
+
+    case "ssg-density": {
+      const density = t.dataset.density;
+      if (density === "s" || density === "m" || density === "l") {
+        localStorage.setItem(SS_DENSITY_KEY, density);
+        repaintDrawerShots();
+      }
+      return true;
+    }
+
+    case "ssg-select": {
+      const active = t.classList.contains("active");
+      setGallerySelectMode(!active);
+      repaintDrawerShots();
+      return true;
+    }
+
+    case "ssg-toggle-select": {
+      const path = t.dataset.path;
+      if (path) {
+        toggleGallerySelection(path);
+        repaintDrawerShots();
+      }
+      return true;
+    }
+
+    case "ssg-favorite": {
+      const path = t.dataset.path;
+      if (path) {
+        const favorite = ssToggleFavorite(path);
+        toast(i18nT(favorite ? "ss.favorited" : "ss.unfavorited"), "ok");
+        repaintDrawerShots();
+      }
+      return true;
+    }
+
+    case "ssg-batch-clear":
+      clearGallerySelection();
+      repaintDrawerShots();
+      return true;
+
+    case "ssg-batch-copy": {
+      const paths = gallerySelectedItems().map((entry) => entry.item.file_path);
+      if (paths.length === 0) return true;
+      navigator.clipboard
+        .writeText(paths.join("\n"))
+        .then(() => toast(i18nT("ss.pathsCopied", { count: String(paths.length) }), "ok"))
+        .catch(() => toast(paths.join(", "), ""));
+      return true;
+    }
+
+    case "ssg-batch-compress": {
+      const entries = gallerySelectedItems().filter((entry) => {
+        const name = entry.item.file_name;
+        return !name.endsWith(".avif") && !name.endsWith(".webp") && !isSteamShots(entry.appName);
+      });
+      if (entries.length === 0) return true;
+      toast(i18nT("ss.compressingCount", { count: String(entries.length) }), "");
+      void (async () => {
+        for (const entry of entries) {
+          await compressScreenshotItem(
+            entry.appName,
+            entry.item,
+            S.screenshotCompressionFormat,
+            S.screenshotCompressionQuality,
+            true,
+          ).catch(() => undefined);
+        }
+        clearGallerySelection();
+        toast(i18nT("ss.compressedCount", { count: String(entries.length) }), "ok");
+        repaintDrawerShots();
+      })();
+      return true;
+    }
+
+    case "ssg-batch-delete": {
+      const entries = gallerySelectedItems();
+      if (entries.length === 0) return true;
+      if (!isBatchDeleteArmed()) {
+        setBatchDeleteArmed(true);
+        repaintDrawerShots();
+        return true;
+      }
+      setBatchDeleteArmed(false);
+      void (async () => {
+        let removed = 0;
+        for (const entry of entries) {
+          try {
+            if (await epicDeleteGameScreenshot(entry.item.file_path)) {
+              forgetFullShot(entry.item.file_path);
+              removed += 1;
+            }
+          } catch {
+            // One locked file must not stop the rest.
+          }
+        }
+        clearGallerySelection();
+        toast(i18nT("ss.batchDeleted", { count: String(removed) }), "ok");
+        const appName = S.currentModalAppName;
+        if (appName) void fetchAndRenderScreenshots(appName, summaryOf(appName)?.title || appName, true);
+        repaintDrawerShots();
+      })();
+      return true;
+    }
+
     case "toggle-game-capture": {
       const key = t.dataset.id ?? id ?? "";
       if (!key) return true;

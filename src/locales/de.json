@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "Aufnahme aus",
   "ss.gameCaptureTip": "Schaltet den Screenshot-Hotkey für dieses Spiel ab.",
   "ss.gameCaptureOnToast": "Die Aufnahme ist für dieses Spiel aus.",
-  "ss.gameCaptureOffToast": "Die Aufnahme ist für dieses Spiel an."
+  "ss.gameCaptureOffToast": "Die Aufnahme ist für dieses Spiel an.",
+  "ss.filterAll": "Alle",
+  "ss.filterRaw": "Roh",
+  "ss.filterCompressed": "Komprimiert",
+  "ss.filterFavorites": "Favoriten",
+  "ss.filterEmpty": "Nichts passt zu diesem Filter.",
+  "ss.selectMode": "Auswählen",
+  "ss.selectedCount": "{count} ausgewählt",
+  "ss.clearSelection": "Leeren",
+  "ss.copyPaths": "Pfade kopieren",
+  "ss.pathsCopied": "{count} Pfade kopiert",
+  "ss.batchDeleted": "{count} Screenshots gelöscht",
+  "ss.favorite": "Zu Favoriten hinzufügen",
+  "ss.unfavorite": "Aus Favoriten entfernen",
+  "ss.favorited": "Zu Favoriten hinzugefügt",
+  "ss.unfavorited": "Aus Favoriten entfernt",
+  "ss.batchDeleteConfirm": "Löschen?"
 }

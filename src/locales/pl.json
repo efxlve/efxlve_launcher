@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "Zrzuty wyłączone",
   "ss.gameCaptureTip": "Wyłącza skrót zrzutów dla tej gry.",
   "ss.gameCaptureOnToast": "Zrzuty są wyłączone dla tej gry.",
-  "ss.gameCaptureOffToast": "Zrzuty są włączone dla tej gry."
+  "ss.gameCaptureOffToast": "Zrzuty są włączone dla tej gry.",
+  "ss.filterAll": "Wszystkie",
+  "ss.filterRaw": "Niekompresowane",
+  "ss.filterCompressed": "Skompresowane",
+  "ss.filterFavorites": "Ulubione",
+  "ss.filterEmpty": "Nic nie pasuje do tego filtra.",
+  "ss.selectMode": "Wybierz",
+  "ss.selectedCount": "Wybrano {count}",
+  "ss.clearSelection": "Wyczyść",
+  "ss.copyPaths": "Kopiuj ścieżki",
+  "ss.pathsCopied": "Skopiowano {count} ścieżek",
+  "ss.batchDeleted": "Usunięto {count} zrzutów",
+  "ss.favorite": "Dodaj do ulubionych",
+  "ss.unfavorite": "Usuń z ulubionych",
+  "ss.favorited": "Dodano do ulubionych",
+  "ss.unfavorited": "Usunięto z ulubionych",
+  "ss.batchDeleteConfirm": "Usunąć?"
 }

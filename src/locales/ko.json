@@ -2243,5 +2243,21 @@
   "ss.gameCaptureOff": "캡처 꺼짐",
   "ss.gameCaptureTip": "이 게임의 스크린샷 단축키를 끕니다.",
   "ss.gameCaptureOnToast": "이 게임은 캡처가 꺼져 있습니다.",
-  "ss.gameCaptureOffToast": "이 게임은 캡처가 켜져 있습니다."
+  "ss.gameCaptureOffToast": "이 게임은 캡처가 켜져 있습니다.",
+  "ss.filterAll": "전체",
+  "ss.filterRaw": "원본",
+  "ss.filterCompressed": "압축됨",
+  "ss.filterFavorites": "즐겨찾기",
+  "ss.filterEmpty": "이 필터와 일치하는 항목이 없습니다.",
+  "ss.selectMode": "선택",
+  "ss.selectedCount": "{count}개 선택됨",
+  "ss.clearSelection": "지우기",
+  "ss.copyPaths": "경로 복사",
+  "ss.pathsCopied": "경로 {count}개 복사됨",
+  "ss.batchDeleted": "스크린샷 {count}개 삭제됨",
+  "ss.favorite": "즐겨찾기에 추가",
+  "ss.unfavorite": "즐겨찾기에서 제거",
+  "ss.favorited": "즐겨찾기에 추가됨",
+  "ss.unfavorited": "즐겨찾기에서 제거됨",
+  "ss.batchDeleteConfirm": "삭제할까요?"
 }
