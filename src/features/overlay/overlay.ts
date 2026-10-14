@@ -681,7 +681,7 @@ function closeWidget(tab: TabId): void {
 function toggleWidget(tab: TabId): void {
   if (tab === "browser") {
     const toggleBtn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="browser"]');
-    const currentlyActive = toggleBtn?.classList.contains("active") || openWidgets.has("browser");
+    const currentlyActive = toggleBtn?.classList.contains("active");
     if (currentlyActive) {
       void invoke("overlay_browser_close");
       if (toggleBtn) toggleBtn.classList.remove("active");
@@ -5092,6 +5092,7 @@ async function boot(): Promise<void> {
     hideLightbox();
     removeGamepadFocus();
     document.body.classList.remove("ov-using-gamepad");
+    void invoke("overlay_browser_close").catch(() => undefined);
     // The voice worker is only meant to run while its tab is visible.
     void invoke("discord_voice_watch_stop").catch(() => undefined);
   });

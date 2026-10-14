@@ -11,7 +11,7 @@
 //! WebView2 shares the app's persistent profile, so sign-ins — Google among
 //! them — survive between sessions; nothing lives only in memory.
 
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 
 use serde::Serialize;
@@ -27,10 +27,27 @@ const MAX_TABS: usize = 8;
 /// Parked here while a tab is not the active one.
 const OFFSCREEN: f64 = -10000.0;
 
+/// Tracks whether the browser window is currently open / visible.
+static IS_OPEN: AtomicBool = AtomicBool::new(false);
 /// One open tab: its id and the page it points at.
 static TABS: Mutex<Vec<(u32, String)>> = Mutex::new(Vec::new());
 static NEXT_ID: AtomicU32 = AtomicU32::new(1);
 static ACTIVE: Mutex<u32> = Mutex::new(0);
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn ShowWindow(hwnd: *mut core::ffi::c_void, cmd: i32) -> i32;
+    fn SetWindowPos(
+        hwnd: *mut core::ffi::c_void,
+        insert_after: *mut core::ffi::c_void,
+        x: i32,
+        y: i32,
+        cx: i32,
+        cy: i32,
+        flags: u32,
+    ) -> i32;
+}
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -95,6 +112,9 @@ fn remember_url(id: u32, url: &str) {
 
 /// Shows the active tab at `rect` and parks every other one.
 fn place_tabs(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) {
+    if !IS_OPEN.load(Ordering::Relaxed) {
+        return;
+    }
     let active = active_id();
     let rect = page_rect(x, y, width.max(100.0), height.max(100.0));
     let offscreen = page_rect(OFFSCREEN, OFFSCREEN, 100.0, 100.0);
@@ -145,6 +165,9 @@ pub fn overlay_browser_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
+    if !IS_OPEN.load(Ordering::Relaxed) {
+        return Ok(());
+    }
     place_tabs(&app, x, y, width, height);
     Ok(())
 }
@@ -344,6 +367,14 @@ fn emit_browser_state(app: &AppHandle, open: bool) {
 /// Checks whether the in-game browser window is currently visible.
 #[tauri::command]
 pub fn overlay_browser_is_open(app: AppHandle) -> bool {
+    if !IS_OPEN.load(Ordering::Relaxed) {
+        return false;
+    }
+    if let Some(w) = app.get_window(WINDOW_LABEL) {
+        if let Ok(vis) = w.is_visible() {
+            return vis;
+        }
+    }
     app.get_webview_window(WINDOW_LABEL)
         .and_then(|w| w.is_visible().ok())
         .unwrap_or(false)
@@ -352,19 +383,31 @@ pub fn overlay_browser_is_open(app: AppHandle) -> bool {
 /// Hides the browser window (the tabs and their pages stay alive).
 #[tauri::command]
 pub fn overlay_browser_close(app: AppHandle) {
-    hide_all_tabs(&app);
-    if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
-        let _ = window.hide();
-    }
-    emit_browser_state(&app, false);
-    // The panel was covered while the browser was up: nudge it so its webview
-    // repaints (WebView2 keeps a stale frame after a full cover).
+    hide_window(&app);
     wake_overlay(&app);
 }
 
 /// Hides the browser window when the overlay itself closes.
 pub fn hide_window(app: &AppHandle) {
+    IS_OPEN.store(false, Ordering::Relaxed);
     hide_all_tabs(app);
+
+    if let Some(window) = app.get_window(WINDOW_LABEL) {
+        #[cfg(windows)]
+        if let Ok(raw) = window.hwnd() {
+            unsafe {
+                ShowWindow(raw.0 as *mut core::ffi::c_void, 0); // SW_HIDE
+                SetWindowPos(
+                    raw.0 as *mut core::ffi::c_void,
+                    -2isize as *mut core::ffi::c_void, // HWND_NOTOPMOST
+                    0, 0, 0, 0,
+                    0x0001 | 0x0002 | 0x0010, // SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+                );
+            }
+        }
+        let _ = window.set_always_on_top(false);
+        let _ = window.hide();
+    }
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = window.hide();
     }
@@ -391,7 +434,7 @@ fn wake_overlay(app: &AppHandle) {
 /// sits on, in logical units. The monitor rect comes back in physical pixels,
 /// so an unscaled rect lands off-screen on a scaled display.
 fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
-    let fallback = (0.0, 0.0, 780.0, 520.0);
+    let fallback = (0.0, 0.0, 860.0, 580.0);
     let Some(overlay) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) else {
         return fallback;
     };
@@ -404,8 +447,8 @@ fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
     let mon_h = monitor.size().height as f64 / scale;
     let mon_x = monitor.position().x as f64 / scale;
     let mon_y = monitor.position().y as f64 / scale;
-    let width = (mon_w * 0.55).clamp(640.0, 920.0);
-    let height = (mon_h * 0.55).clamp(440.0, 640.0);
+    let width = (mon_w * 0.65).clamp(720.0, 1150.0);
+    let height = (mon_h * 0.70).clamp(480.0, 780.0);
     let x = mon_x + ((mon_w - width) / 2.0);
     let y = mon_y + ((mon_h - height) / 2.0);
     (x, y, width, height)
@@ -414,35 +457,42 @@ fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
 /// Opens (or re-shows) the browser window; a URL navigates the active tab.
 #[tauri::command]
 pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
-        // If window is visible and caller didn't pass a new URL, toggle closed!
-        if window.is_visible().unwrap_or(false) && url.as_deref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-            overlay_browser_close(app);
-            return Ok(());
-        }
+    IS_OPEN.store(true, Ordering::Relaxed);
 
-        if let Some(url) = url.as_deref().filter(|u| !u.trim().is_empty()) {
-            let _ = overlay_browser_navigate(app.clone(), url.to_string());
+    if let Some(window) = app.get_window(WINDOW_LABEL) {
+        #[cfg(windows)]
+        if let Ok(raw) = window.hwnd() {
+            unsafe {
+                ShowWindow(raw.0 as *mut core::ffi::c_void, 5); // SW_SHOW
+                SetWindowPos(
+                    raw.0 as *mut core::ffi::c_void,
+                    -1isize as *mut core::ffi::c_void, // HWND_TOPMOST
+                    0, 0, 0, 0,
+                    0x0001 | 0x0002 | 0x0040, // SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW
+                );
+            }
+        }
+        let _ = window.set_always_on_top(true);
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+
+        if let Some(target) = url.as_deref().filter(|u| !u.trim().is_empty()) {
+            let _ = overlay_browser_navigate(app.clone(), target.to_string());
         }
 
         let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
         let (width, height) = window
             .inner_size()
             .map(|size| (size.width as f64 / scale, size.height as f64 / scale))
-            .unwrap_or((760.0, 520.0));
+            .unwrap_or((860.0, 580.0));
 
-        // Every tab was closed earlier: the window is now empty, so open a fresh
-        // page before bringing it forward.
         if tab_list().is_empty() {
-            overlay_browser_new_tab(app.clone(), None, 0.0, 90.0, width, height - 90.0).await?;
+            overlay_browser_new_tab(app.clone(), None, 0.0, 110.0, width, height - 110.0).await?;
         } else {
-            place_tabs(&app, 0.0, 90.0, width, (height - 90.0).max(100.0));
+            place_tabs(&app, 0.0, 110.0, width, (height - 110.0).max(100.0));
         }
 
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_always_on_top(true);
-        let _ = window.set_focus();
         emit_tabs(&app);
         emit_browser_state(&app, true);
         return Ok(());
@@ -457,21 +507,31 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
     .title("Efxlve Browser")
     .inner_size(width, height)
     .position(x, y)
-    .min_inner_size(520.0, 360.0)
+    .min_inner_size(560.0, 380.0)
     .decorations(false)
     .always_on_top(true)
     .skip_taskbar(true)
     .resizable(true)
-    .background_color(tauri::webview::Color(16, 16, 20, 255))
+    .background_color(tauri::webview::Color(16, 17, 24, 255))
     .build()
     .map_err(|e| e.to_string())?;
 
-    // First tab: Google (or the requested URL). The chrome page reports the
-    // real frame rect right after load and `overlay_browser_show` re-places it
-    // (this guess is drag strip 12px + tab strip 34px + chrome bar 44px).
     let target = normalize_url(url.as_deref().unwrap_or(HOME_URL));
-    overlay_browser_new_tab(app.clone(), Some(target), 0.0, 90.0, width, height - 90.0).await?;
-    if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
+    overlay_browser_new_tab(app.clone(), Some(target), 0.0, 110.0, width, height - 110.0).await?;
+    if let Some(window) = app.get_window(WINDOW_LABEL) {
+        #[cfg(windows)]
+        if let Ok(raw) = window.hwnd() {
+            unsafe {
+                ShowWindow(raw.0 as *mut core::ffi::c_void, 5);
+                SetWindowPos(
+                    raw.0 as *mut core::ffi::c_void,
+                    -1isize as *mut core::ffi::c_void,
+                    0, 0, 0, 0,
+                    0x0001 | 0x0002 | 0x0040,
+                );
+            }
+        }
+        let _ = window.set_always_on_top(true);
         let _ = window.show();
         let _ = window.set_focus();
     }

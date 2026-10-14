@@ -6,12 +6,28 @@
     <title>Efxlve Browser</title>
   </head>
   <body class="ov-browser-page">
-    <!-- The strip, the tab strip and the bar are the window handles: dragging an
-         empty part of them moves the window (buttons, tabs and the input keep
-         their own clicks). -->
-    <div class="ov-browser-drag"></div>
-    <div class="ov-browser-tabs" id="ov-browser-tabs"></div>
+    <div class="ov-browser-topbar" id="ov-browser-topbar">
+      <div class="ov-browser-badge" id="ov-browser-badge">
+        <span class="ov-browser-badge-icon" id="ov-browser-badge-icon"></span>
+        <span class="ov-browser-badge-text">Efxlve Browser</span>
+      </div>
+      <div class="ov-browser-tabs-wrapper" id="ov-browser-tabs-wrapper">
+        <div class="ov-browser-tabs" id="ov-browser-tabs"></div>
+      </div>
+      <div class="ov-browser-window-controls" id="ov-browser-window-controls">
+        <button class="ov-browser-ctrl-btn" data-win="minimize" title="Küçült" aria-label="Minimize">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"></line></svg>
+        </button>
+        <button class="ov-browser-ctrl-btn" data-win="maximize" title="Ekranı Kapla" aria-label="Maximize">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+        </button>
+        <button class="ov-browser-ctrl-btn ov-browser-ctrl-close" data-win="close" title="Kapat" aria-label="Close">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    </div>
     <header class="ov-browser-chrome" id="ov-browser-chrome"></header>
+    <div class="ov-browser-bookmarks" id="ov-browser-bookmarks"></div>
     <div class="ov-browser-frame" id="ov-browser-frame"></div>
     <script type="module" src="/src/features/overlay/browser-window.ts"></script>
   </body>

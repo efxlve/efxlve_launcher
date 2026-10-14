@@ -2942,67 +2942,122 @@
 }
 
 /* --- Browser tab and its floating window --- */
-/* The browser window's own page (browser.html): a drag strip, the tab strip,
-   the chrome bar, and the frame the native page webviews are placed into. */
+/* The browser window's own page (browser.html): topbar with tabs and window controls,
+   the chrome bar (nav + omnibox), quick bookmark bar, and transparent child webview frame. */
 .ov-browser-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
   margin: 0;
-  background: var(--bg);
+  background: #0d0e14;
   color: var(--text);
   overflow: hidden;
+  user-select: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
 }
 
-/* Thin title-bar strip: an obvious, clickable handle for an undecorated window. */
-.ov-browser-drag {
-  height: 12px;
-  flex-shrink: 0;
-}
-
-.ov-browser-tabs {
+/* --- Topbar: App Badge, Tabs, and Window Controls --- */
+.ov-browser-topbar {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 34px;
-  padding: 0 8px;
+  height: 38px;
+  background: #13141c;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--line);
+  cursor: default;
+}
+
+.ov-browser-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  height: 100%;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.ov-browser-badge-icon {
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.ov-browser-badge-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ov-browser-tabs-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
 }
 
-.ov-browser-tabs::-webkit-scrollbar {
+.ov-browser-tabs-wrapper::-webkit-scrollbar {
   display: none;
+}
+
+.ov-browser-tabs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+  padding: 0 4px;
 }
 
 .ov-browser-tab {
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 26px;
-  max-width: 200px;
-  padding: 0 4px 0 10px;
+  gap: 6px;
+  height: 28px;
+  max-width: 180px;
+  min-width: 80px;
+  padding: 0 6px 0 10px;
   flex-shrink: 0;
-  border-radius: var(--r-sm);
-  color: var(--muted);
+  border-radius: 6px;
+  color: var(--text-3);
+  background: transparent;
   cursor: pointer;
+  transition: background var(--ease), color var(--ease);
+  border: 1px solid transparent;
 }
 
 .ov-browser-tab:hover {
-  background: var(--surface-3);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text);
 }
 
 .ov-browser-tab.is-active {
-  background: var(--surface-1);
+  background: #1c1e28;
   color: var(--text);
+  border-color: rgba(255, 255, 255, 0.08);
+  font-weight: 500;
+}
+
+.ov-browser-tab-favicon {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.ov-browser-tab.is-active .ov-browser-tab-favicon {
+  color: var(--accent);
 }
 
 .ov-browser-tab-title {
-  font-size: 12px;
+  flex: 1;
+  font-size: 11.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3015,20 +3070,23 @@
   height: 18px;
   flex-shrink: 0;
   border: 0;
-  border-radius: var(--r-sm);
+  border-radius: 4px;
   background: transparent;
-  color: inherit;
+  color: var(--text-3);
   cursor: pointer;
   opacity: 0;
+  transition: opacity var(--ease), background var(--ease), color var(--ease);
 }
 
 .ov-browser-tab:hover .ov-browser-tab-x,
 .ov-browser-tab.is-active .ov-browser-tab-x {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .ov-browser-tab-x:hover {
-  background: var(--surface-3);
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
 }
 
 .ov-browser-tab-new {
@@ -3038,27 +3096,57 @@
   height: 26px;
   flex-shrink: 0;
   border: 0;
-  border-radius: var(--r-sm);
+  border-radius: 6px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-3);
   cursor: pointer;
+  transition: background var(--ease), color var(--ease);
 }
 
 .ov-browser-tab-new:hover {
-  background: var(--surface-3);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
 }
 
+.ov-browser-window-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.ov-browser-ctrl-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease);
+}
+
+.ov-browser-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.ov-browser-ctrl-btn.ov-browser-ctrl-close:hover {
+  background: #e53935;
+  color: #ffffff;
+}
+
+/* --- Chrome Bar: Navigation & Omnibox --- */
 .ov-browser-chrome {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 44px;
+  height: 42px;
   padding: 0 10px;
   flex-shrink: 0;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--line);
-  /* The bar is the window handle; empty parts of it drag the window. */
+  background: #171822;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   cursor: default;
 }
 
@@ -3069,15 +3157,131 @@
   flex-shrink: 0;
 }
 
+.ov-browser-nav-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease);
+}
+
+.ov-browser-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.ov-browser-omnibox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 10px;
+  background: #101117;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  transition: border-color var(--ease), background var(--ease);
+}
+
+.ov-browser-omnibox:focus-within {
+  border-color: var(--accent);
+  background: #0d0e14;
+}
+
+.ov-browser-omni-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
 .ov-browser-input {
   flex: 1;
   min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
 }
 
+.ov-browser-input::placeholder {
+  color: var(--text-3);
+}
+
+.ov-browser-omni-clear {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--ease), color var(--ease);
+}
+
+.ov-browser-omni-clear:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+}
+
+/* --- Quick Bookmarks Bar --- */
+.ov-browser-bookmarks {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  background: #14151e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.ov-browser-bookmarks::-webkit-scrollbar {
+  display: none;
+}
+
+.ov-browser-bm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--ease), color var(--ease);
+}
+
+.ov-browser-bm-chip:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text);
+}
+
+/* Native Child WebView Container Frame: MUST be transparent so child WebView2 paints cleanly */
 .ov-browser-frame {
   flex: 1;
   min-height: 0;
-  background: var(--surface-1);
+  background: transparent;
+  position: relative;
 }
 
 /* --- In-Game Browser Launchpad & Portals --- */

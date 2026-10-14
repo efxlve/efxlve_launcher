@@ -292,6 +292,7 @@ pub(crate) fn hide(app: &AppHandle) {
     hud::focus_window(hwnd);
     let _ = app.emit("overlay-close", ());
     let _ = app.emit_to(OVERLAY_LABEL, "overlay-close", ());
+    let _ = app.emit_to(browser::WINDOW_LABEL, "overlay-close", ());
 }
 
 /// Fills the monitor that hosts the game window; keeps the current monitor when
