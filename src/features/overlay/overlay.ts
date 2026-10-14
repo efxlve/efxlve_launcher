@@ -511,7 +511,7 @@ function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
     case "shots":
       return { minW: 280, minH: 240, maxW: 800, maxH: 800 };
     case "music":
-      return { minW: 280, minH: 300, maxW: 600, maxH: 800 };
+      return { minW: 260, minH: 140, maxW: 600, maxH: 800 };
     case "discord":
       return { minW: 280, minH: 320, maxW: 600, maxH: 900 };
     case "chat":
@@ -575,6 +575,15 @@ function saveWidgetSize(tab: TabId, size: WidgetSize): void {
   localStorage.setItem(`efxlve-ov-size-${tab}`, JSON.stringify(size));
 }
 
+/** Toggles responsive helper classes on widget containers when resized. */
+function syncWidgetSizeClasses(tab: TabId, w: number, h: number): void {
+  const el = document.getElementById(`ov-widget-${tab}`);
+  if (!el) return;
+  el.classList.toggle("ov-compact-h", h < 380);
+  el.classList.toggle("ov-mini-h", h < 240);
+  el.classList.toggle("ov-narrow-w", w < 300);
+}
+
 let highestZIndex = 100;
 
 function bringToFront(tab: TabId): void {
@@ -623,6 +632,7 @@ function openWidget(tab: TabId, render = true): void {
     const size = loadWidgetSize(tab);
     widget.style.width = `${size.w}px`;
     widget.style.height = `${size.h}px`;
+    syncWidgetSizeClasses(tab, size.w, size.h);
     widget.style.display = "flex";
     bringToFront(tab);
   }
@@ -803,6 +813,7 @@ function initWidgetResizing(): void {
 
     el.style.width = `${newW}px`;
     el.style.height = `${newH}px`;
+    syncWidgetSizeClasses(resizingTab, newW, newH);
   });
 
   window.addEventListener("mouseup", () => {
@@ -810,6 +821,7 @@ function initWidgetResizing(): void {
     const el = document.getElementById(`ov-widget-${resizingTab}`);
     if (el) {
       saveWidgetSize(resizingTab, { w: el.offsetWidth, h: el.offsetHeight });
+      syncWidgetSizeClasses(resizingTab, el.offsetWidth, el.offsetHeight);
     }
     resizingTab = null;
     document.body.style.cursor = "";
@@ -866,6 +878,11 @@ function shellHtml(): string {
                 <span>${esc(tab.id === "discord" ? t("overlay.tabDiscord") + " Sosyal" : tab.id === "chat" ? t("overlay.tabDiscord") + " Sohbet" : t(tab.key))}</span>
               </div>
               <div class="ov-widget-header-actions">
+                ${tab.id === "music" ? `
+                  <button class="ov-widget-tool-btn ov-sp-mini-toggle-btn" id="ov-sp-mini-toggle-btn" data-ov="sp-toggle-mini-view" title="${esc(t("overlay.library"))}">
+                    ${icon("list", 12)}
+                  </button>
+                ` : ""}
                 <button class="ov-widget-tool-btn ov-widget-close-btn" data-ov-widget-close="${tab.id}" title="${esc(t("common.close"))}">
                   ${icon("x", 13)}
                 </button>
@@ -2064,6 +2081,18 @@ function mediaCardInnerHtml(): string {
 let musicViewMode: "playlists" | "tracks" = "playlists";
 let spotifySearchQuery = "";
 let spotifySearchOpen = false;
+let spotifyMiniView: "player" | "library" = "player";
+
+function updateMusicMiniViewState(): void {
+  const widget = document.getElementById("ov-widget-music");
+  if (!widget) return;
+  widget.dataset.miniView = spotifyMiniView;
+  const btn = document.getElementById("ov-sp-mini-toggle-btn");
+  if (btn) {
+    btn.innerHTML = spotifyMiniView === "player" ? icon("list", 12) : icon("music", 12);
+    btn.title = spotifyMiniView === "player" ? t("overlay.library") : "Player";
+  }
+}
 
 function renderMusicTab(): void {
   const el = viewEl("music");
@@ -2078,6 +2107,11 @@ function renderMusicTab(): void {
   renderPlaylistList();
   renderTrackList();
   void ensurePlaylists();
+  const widget = document.getElementById("ov-widget-music");
+  if (widget) {
+    syncWidgetSizeClasses("music", widget.offsetWidth, widget.offsetHeight);
+    updateMusicMiniViewState();
+  }
 }
 
 function unifiedPlayerHtml(m: OverlayMediaModel): string {
@@ -2408,6 +2442,8 @@ async function selectPlaylist(uri: string): Promise<void> {
 /** Starts the open playlist at the clicked track. */
 async function playTrack(trackUri: string): Promise<void> {
   if (!selectedPlaylist) return;
+  spotifyMiniView = "player";
+  updateMusicMiniViewState();
   try {
     await spotifyPlaybackPlay(selectedPlaylist, trackUri);
   } catch {
@@ -4070,6 +4106,9 @@ function wireEvents(): void {
       }
     } else if (action === "sp-engine-start") {
       ensureSpotifyEngine();
+    } else if (action === "sp-toggle-mini-view") {
+      spotifyMiniView = spotifyMiniView === "player" ? "library" : "player";
+      updateMusicMiniViewState();
     } else if (action === "sp-tab-playlists" || action === "sp-back-playlists") {
       setMusicViewMode("playlists");
     } else if (action === "sp-tab-tracks" || action === "sp-show-tracks") {
@@ -4682,6 +4721,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     const size = loadWidgetSize(tab.id);
     widget.style.width = `${size.w}px`;
     widget.style.height = `${size.h}px`;
+    syncWidgetSizeClasses(tab.id, size.w, size.h);
 
     const isOpen = openWidgets.has(tab.id);
     widget.style.display = isOpen ? "flex" : "none";
