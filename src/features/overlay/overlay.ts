@@ -152,7 +152,8 @@ let tracksError = "";
 let tracksFor: string | null = null;
 let cachedAchievements: AchievementsData | null = null;
 let cachedScreenshots: ScreenshotItem[] = [];
-let screenshotGameFilter = "all";
+let selectedGameFilters = new Set<string>();
+let filterPopoverOpen = false;
 let sessionStartEpoch = Date.now();
 let activeTab: TabId = (localStorage.getItem("efxlve-overlay-tab") as TabId) || "home";
 
@@ -1727,10 +1728,10 @@ async function loadAchievements(force = false): Promise<void> {
 
 /* 4. Full Screenshots View */
 function getVisibleScreenshots(): ScreenshotItem[] {
-  if (screenshotGameFilter === "all") return cachedScreenshots;
+  if (selectedGameFilters.size === 0) return cachedScreenshots;
   return cachedScreenshots.filter((item) => {
-    const g = item.game_title?.trim() || "Diğer";
-    return g.toLowerCase() === screenshotGameFilter.toLowerCase();
+    const g = (item.game_title?.trim() || "Diğer").toLowerCase();
+    return selectedGameFilters.has(g);
   });
 }
 
@@ -1778,42 +1779,68 @@ async function loadScreenshots(force = false): Promise<void> {
     gameCounts.set(g, (gameCounts.get(g) || 0) + 1);
   }
 
-  if (screenshotGameFilter !== "all") {
-    const hasCurrent = Array.from(gameCounts.keys()).some(
-      (k) => k.toLowerCase() === screenshotGameFilter.toLowerCase()
-    );
-    if (!hasCurrent) {
-      screenshotGameFilter = "all";
+  // Prune deleted/obsolete filters
+  if (selectedGameFilters.size > 0) {
+    const validKeys = new Set(Array.from(gameCounts.keys()).map((k) => k.toLowerCase()));
+    for (const key of Array.from(selectedGameFilters)) {
+      if (!validKeys.has(key)) {
+        selectedGameFilters.delete(key);
+      }
     }
   }
 
+  const activeFilterCount = selectedGameFilters.size;
   const visibleShots = getVisibleScreenshots();
 
   const titleText = launcherMode
     ? esc(t("overlay.tabScreenshots"))
     : (context.title ? `${esc(context.title)} — ${esc(t("overlay.tabScreenshots"))}` : esc(t("overlay.tabScreenshots")));
 
-  // Filter bar: only shown if screenshots come from more than 1 distinct category/game
-  const filterBarHtml = gameCounts.size > 1 ? `
-    <div class="ov-shots-filter-bar">
+  const filterBtnHtml = gameCounts.size > 1 ? `
+    <div class="ov-shots-filter-wrapper">
       <button
-        class="ov-shots-filter-chip ${screenshotGameFilter === "all" ? "active" : ""}"
-        data-ov-shot-filter="all"
+        class="btn ghost small ov-shots-filter-btn ${activeFilterCount > 0 ? "active" : ""}"
+        data-ov="shots-filter-toggle"
         type="button"
+        title="${isTr ? "Oyun Filtresi" : "Game Filter"}"
       >
-        <span>${isTr ? "Tümü" : "All"}</span>
-        <span class="ov-shots-filter-count">${cachedScreenshots.length}</span>
+        ${icon("sliders", 13)}
+        <span>${isTr ? "Filtrele" : "Filter"}</span>
+        ${activeFilterCount > 0 ? `<span class="ov-shots-filter-active-count">${activeFilterCount}</span>` : ""}
+        ${icon("chevron-down", 11)}
       </button>
-      ${Array.from(gameCounts.entries()).map(([game, count]) => `
-        <button
-          class="ov-shots-filter-chip ${screenshotGameFilter.toLowerCase() === game.toLowerCase() ? "active" : ""}"
-          data-ov-shot-filter="${esc(game)}"
-          type="button"
-        >
-          <span>${esc(game)}</span>
-          <span class="ov-shots-filter-count">${count}</span>
-        </button>
-      `).join("")}
+      <div class="ov-shots-filter-popover ${filterPopoverOpen ? "open" : ""}" id="ov-shots-filter-popover">
+        <div class="ov-shots-filter-popover-header">
+          <span class="ov-shots-filter-popover-title">${isTr ? "Oyun Filtresi" : "Game Filter"}</span>
+          ${activeFilterCount > 0 ? `
+            <button class="btn ghost tiny ov-shots-filter-clear-btn" data-ov="shots-filter-clear" type="button">
+              ${isTr ? "Temizle" : "Clear"}
+            </button>
+          ` : ""}
+        </div>
+        <div class="ov-shots-filter-popover-list">
+          <div class="ov-shots-filter-row" data-ov-filter-game="all">
+            <div class="ov-shots-filter-checkbox ${selectedGameFilters.size === 0 ? "checked" : ""}">
+              ${selectedGameFilters.size === 0 ? icon("check", 12) : ""}
+            </div>
+            <span class="ov-shots-filter-label">${isTr ? "Tümü" : "All"}</span>
+            <span class="ov-shots-filter-row-count">${cachedScreenshots.length}</span>
+          </div>
+          <div class="ov-shots-filter-popover-divider"></div>
+          ${Array.from(gameCounts.entries()).map(([game, count]) => {
+            const isChecked = selectedGameFilters.has(game.toLowerCase());
+            return `
+              <div class="ov-shots-filter-row" data-ov-filter-game="${esc(game)}">
+                <div class="ov-shots-filter-checkbox ${isChecked ? "checked" : ""}">
+                  ${isChecked ? icon("check", 12) : ""}
+                </div>
+                <span class="ov-shots-filter-label" title="${esc(game)}">${esc(game)}</span>
+                <span class="ov-shots-filter-row-count">${count}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
     </div>` : "";
 
   el.innerHTML = `
@@ -1823,11 +1850,13 @@ async function loadScreenshots(force = false): Promise<void> {
         <span>${titleText}</span>
         <span class="ov-shots-count-pill" title="${visibleShots.length} ${isTr ? "ekran görüntüsü" : "screenshots"}">${visibleShots.length}</span>
       </div>
-      <button class="btn ghost small" data-ov="shots-folder" title="${esc(t("overlay.openFolder"))}">
-        ${icon("folder", 14)} <span>${esc(t("overlay.openFolder"))}</span>
-      </button>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${filterBtnHtml}
+        <button class="btn ghost small" data-ov="shots-folder" title="${esc(t("overlay.openFolder"))}">
+          ${icon("folder", 14)} <span>${esc(t("overlay.openFolder"))}</span>
+        </button>
+      </div>
     </div>
-    ${filterBarHtml}
     ${visibleShots.length === 0 ? `
       <div class="ov-empty">
         <div>${esc(t("overlay.noShots"))}</div>
@@ -3779,12 +3808,29 @@ function wireEvents(): void {
       return;
     }
 
-    // Screenshot game category filter
-    const shotFilterBtn = target.closest<HTMLElement>("[data-ov-shot-filter]");
-    if (shotFilterBtn?.dataset.ovShotFilter) {
-      screenshotGameFilter = shotFilterBtn.dataset.ovShotFilter;
+    // Screenshot game category filter row (toggle checkbox)
+    const filterRow = target.closest<HTMLElement>("[data-ov-filter-game]");
+    if (filterRow?.dataset.ovFilterGame) {
+      const g = filterRow.dataset.ovFilterGame;
+      if (g === "all") {
+        selectedGameFilters.clear();
+      } else {
+        const lower = g.toLowerCase();
+        if (selectedGameFilters.has(lower)) {
+          selectedGameFilters.delete(lower);
+        } else {
+          selectedGameFilters.add(lower);
+        }
+      }
       void loadScreenshots();
       return;
+    }
+
+    // Close screenshots filter popover when clicking outside
+    if (filterPopoverOpen && !target.closest(".ov-shots-filter-wrapper")) {
+      filterPopoverOpen = false;
+      const pop = document.getElementById("ov-shots-filter-popover");
+      if (pop) pop.classList.remove("open");
     }
 
     // Tab button
@@ -3832,6 +3878,15 @@ function wireEvents(): void {
       } else {
         void invoke("epic_open_game_screenshots_folder", { appName: context.appName, title: context.title });
       }
+    } else if (action === "shots-filter-toggle") {
+      filterPopoverOpen = !filterPopoverOpen;
+      const pop = document.getElementById("ov-shots-filter-popover");
+      if (pop) pop.classList.toggle("open", filterPopoverOpen);
+      return;
+    } else if (action === "shots-filter-clear") {
+      selectedGameFilters.clear();
+      void loadScreenshots();
+      return;
     }
     else if (action === "close-lightbox") hideLightbox();
     else if (action === "lightbox-prev") stepLightbox(-1);
@@ -4004,6 +4059,12 @@ function wireEvents(): void {
     // hidden nodes, so it is swallowed here.
     if (event.key === "Tab") {
       event.preventDefault();
+      return;
+    }
+    if (event.key === "Escape" && filterPopoverOpen) {
+      filterPopoverOpen = false;
+      const pop = document.getElementById("ov-shots-filter-popover");
+      if (pop) pop.classList.remove("open");
       return;
     }
     // Composer keys: Enter sends, Shift+Enter adds a line, Ctrl+Up/Down walks

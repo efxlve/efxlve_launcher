@@ -1082,60 +1082,158 @@
   margin-left: 2px;
 }
 
-.ov-shots-filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 2px 0 8px;
-  margin-bottom: 8px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+/* --- Screenshots Filter Popover --- */
+.ov-shots-filter-wrapper {
+  position: relative;
 }
 
-.ov-shots-filter-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.ov-shots-filter-chip {
+.ov-shots-filter-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 9px;
+}
+
+.ov-shots-filter-btn.active {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.35);
   background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+}
+
+.ov-shots-filter-active-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.ov-shots-filter-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 250px;
+  max-height: 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  z-index: 120;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.ov-shots-filter-popover.open {
+  display: flex;
+  animation: ovFadeIn 0.12s ease-out;
+}
+
+.ov-shots-filter-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ov-shots-filter-popover-title {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-2);
-  font-size: 11.5px;
-  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ov-shots-filter-clear-btn {
+  font-size: 10.5px;
+  padding: 2px 6px;
+  color: var(--text-3);
   cursor: pointer;
-  white-space: nowrap;
-  outline: none;
+}
+
+.ov-shots-filter-clear-btn:hover {
+  color: var(--text);
+}
+
+.ov-shots-filter-popover-list {
+  padding: 4px;
+  overflow-y: auto;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ov-shots-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--ease);
+}
+
+.ov-shots-filter-row:hover {
+  background: var(--surface-hover);
+}
+
+.ov-shots-filter-checkbox {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: transparent;
   transition: background-color var(--ease), border-color var(--ease), color var(--ease);
+}
+
+.ov-shots-filter-checkbox.checked {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+
+.ov-shots-filter-checkbox svg {
+  display: block;
+}
+
+.ov-shots-filter-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-shots-filter-row-count {
+  font-size: 10.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
-.ov-shots-filter-chip:hover {
-  background: var(--surface-3);
-  color: var(--text);
-  border-color: var(--line-strong);
-}
-
-.ov-shots-filter-chip.active {
-  background: var(--surface-3);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: var(--text);
-  font-weight: 600;
-}
-
-.ov-shots-filter-count {
-  font-size: 10px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.ov-shots-filter-chip.active .ov-shots-filter-count {
-  color: var(--text-2);
+.ov-shots-filter-popover-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 3px 6px;
 }
 
 .ov-shots-grid {

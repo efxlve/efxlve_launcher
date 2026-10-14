@@ -164,6 +164,14 @@ pub fn get_user_videos_dir() -> PathBuf {
     }
 }
 
+pub fn get_user_documents_dir() -> PathBuf {
+    if let Ok(profile) = std::env::var("USERPROFILE") {
+        PathBuf::from(profile).join("Documents")
+    } else {
+        std::env::temp_dir()
+    }
+}
+
 /// User-configured screenshots root. `None` keeps the legacy
 /// `%USERPROFILE%\Pictures\Efxlve Screenshots` layout.
 static SCREENSHOT_ROOT: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
@@ -363,6 +371,207 @@ pub fn get_file_local_datetime_str(
     chrono_fallback(epoch_sec)
 }
 
+static TITLE_CACHE: std::sync::RwLock<
+    Option<(std::time::Instant, std::collections::HashMap<String, String>)>,
+> = std::sync::RwLock::new(None);
+
+/// Resolves raw identifiers (such as Epic 32-hex app names, codenames like Ginger/Heather/Jasper/Brill,
+/// or numeric Steam App IDs) to clean, human-readable game titles across all supported stores.
+pub fn resolve_name_to_game_title(raw_name: &str) -> Option<String> {
+    let trimmed = raw_name.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let lower = trimmed.to_lowercase();
+
+    // 1. Check title cache (30s TTL)
+    const TTL: std::time::Duration = std::time::Duration::from_secs(30);
+    if let Ok(guard) = TITLE_CACHE.read() {
+        if let Some((at, map)) = guard.as_ref() {
+            if at.elapsed() < TTL {
+                if let Some(t) = map.get(&lower) {
+                    if !t.trim().is_empty() {
+                        return Some(t.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Build or refresh cache
+    let mut map = std::collections::HashMap::new();
+    let config = crate::legendary::skip::default_config_dir();
+
+    // Epic / Legendary: installed.json
+    let inst_path = config.join("installed.json");
+    if let Ok(text) = std::fs::read_to_string(&inst_path) {
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
+            if let Some(obj) = val.as_object() {
+                for (k, v) in obj {
+                    let title = v
+                        .get("title")
+                        .or_else(|| v.get("app_title"))
+                        .and_then(|s| s.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    if !title.is_empty() {
+                        map.insert(k.to_lowercase(), title.to_string());
+                        if let Some(app_name) = v.get("app_name").and_then(|s| s.as_str()) {
+                            map.insert(app_name.to_lowercase(), title.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Epic / Legendary: efxlve_library_snapshot.json
+    let snap_path = config.join("efxlve_library_snapshot.json");
+    if let Ok(text) = std::fs::read_to_string(&snap_path) {
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
+            if let Some(arr) = val.as_array() {
+                for item in arr {
+                    let app_name = item
+                        .get("app_name")
+                        .and_then(|s| s.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    let title = item
+                        .get("app_title")
+                        .or_else(|| item.get("title"))
+                        .and_then(|s| s.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    if !app_name.is_empty() && !title.is_empty() {
+                        map.entry(app_name.to_lowercase())
+                            .or_insert_with(|| title.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Steam games across library folders
+    if let Some(steam) = crate::steam::steam_install_path() {
+        for folder in crate::steam::library_folders(&steam) {
+            if let Ok(entries) = std::fs::read_dir(&folder) {
+                for entry in entries.flatten() {
+                    let fname = entry.file_name().to_string_lossy().to_string();
+                    if fname.starts_with("appmanifest_") && fname.ends_with(".acf") {
+                        let id = fname
+                            .trim_start_matches("appmanifest_")
+                            .trim_end_matches(".acf")
+                            .to_string();
+                        if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                            for line in content.lines() {
+                                let l = line.trim();
+                                if l.starts_with("\"name\"") {
+                                    let parts: Vec<&str> = l.split('"').collect();
+                                    if parts.len() >= 4 && !parts[3].trim().is_empty() {
+                                        let name = parts[3].trim().to_string();
+                                        map.insert(id.to_lowercase(), name.clone());
+                                        map.insert(format!("steam_{}", id.to_lowercase()), name);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Nile (Amazon) installed games
+    if let Ok(profile) = std::env::var("USERPROFILE") {
+        let nile_inst = PathBuf::from(profile)
+            .join(".config")
+            .join("nile")
+            .join("installed.json");
+        if let Ok(text) = std::fs::read_to_string(&nile_inst) {
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
+                if let Some(obj) = val.as_object() {
+                    for (k, v) in obj {
+                        if let Some(t) = v.get("title").and_then(|s| s.as_str()) {
+                            if !t.trim().is_empty() {
+                                map.insert(k.to_lowercase(), t.trim().to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let found = map.get(&lower).cloned();
+
+    // Metadata file direct fallback
+    let fallback = if found.is_none() && trimmed.len() >= 3 {
+        let meta_file = config.join("metadata").join(format!("{trimmed}.json"));
+        std::fs::read_to_string(&meta_file)
+            .ok()
+            .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+            .and_then(|v| {
+                v.get("app_title")
+                    .or_else(|| v.get("title"))
+                    .and_then(|s| s.as_str())
+                    .map(|s| s.trim().to_string())
+            })
+            .filter(|s| !s.is_empty())
+    } else {
+        None
+    };
+
+    if let Some(ref fb) = fallback {
+        map.insert(lower.clone(), fb.clone());
+    }
+
+    if let Ok(mut guard) = TITLE_CACHE.write() {
+        *guard = Some((std::time::Instant::now(), map));
+    }
+
+    found.or(fallback)
+}
+
+/// Automatically renames/merges screenshot folders named after raw IDs or codenames
+/// (e.g. 3419b0161b3c4b5da5f33ab69ad030f0, Ginger, Heather) into their clean readable game titles.
+pub fn migrate_known_app_folders(root: &Path) {
+    if !root.is_dir() {
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let folder_name = entry.file_name().to_string_lossy().to_string();
+        if let Some(resolved) = resolve_name_to_game_title(&folder_name) {
+            let clean = clean_folder_name(&resolved);
+            if !clean.is_empty() && !clean.eq_ignore_ascii_case(&folder_name) {
+                let target_dir = root.join(&clean);
+                if let Ok(()) = std::fs::create_dir_all(&target_dir) {
+                    if let Ok(files) = std::fs::read_dir(&path) {
+                        for file_entry in files.flatten() {
+                            let fpath = file_entry.path();
+                            if fpath.is_file() {
+                                let fname = file_entry.file_name();
+                                let target_file = target_dir.join(&fname);
+                                if !target_file.exists() {
+                                    let _ = std::fs::rename(&fpath, &target_file);
+                                }
+                            }
+                        }
+                    }
+                    let _ = std::fs::remove_dir(&path);
+                }
+            }
+        }
+    }
+}
+
 pub fn detect_game_title_from_path(path: &Path) -> String {
     let parent = path.parent();
     let parent_name = parent
@@ -371,29 +580,36 @@ pub fn detect_game_title_from_path(path: &Path) -> String {
         .unwrap_or("");
 
     if parent_name.eq_ignore_ascii_case("screenshots") {
-        if let Some(app_id) = parent
-            .and_then(|p| p.parent())
-            .and_then(|p| p.file_name())
-            .and_then(|n| n.to_str())
-        {
-            if !app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit()) {
-                if let Some(steam) = crate::steam::steam_install_path() {
-                    let manifest_file = steam
-                        .join("steamapps")
-                        .join(format!("appmanifest_{}.acf", app_id));
-                    if let Ok(content) = std::fs::read_to_string(&manifest_file) {
-                        for line in content.lines() {
-                            let trimmed = line.trim();
-                            if trimmed.starts_with("\"name\"") {
-                                let parts: Vec<&str> = trimmed.split('"').collect();
-                                if parts.len() >= 4 && !parts[3].trim().is_empty() {
-                                    return parts[3].trim().to_string();
-                                }
-                            }
-                        }
-                    }
+        if let Some(grandparent) = parent.and_then(|p| p.parent()) {
+            let gp_name = grandparent
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+            let great_gp_name = grandparent
+                .parent()
+                .and_then(|p| p.file_name())
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+
+            // Steam screenshots: .../userdata/<acc>/760/remote/<app_id>/screenshots/
+            if great_gp_name.eq_ignore_ascii_case("remote") && gp_name.chars().all(|c| c.is_ascii_digit()) {
+                if let Some(title) = resolve_name_to_game_title(gp_name) {
+                    return title;
                 }
-                return format!("Steam {}", app_id);
+                return format!("Steam {}", gp_name);
+            }
+
+            // Documents/<Game>/Screenshots or Pictures/<Game>/Screenshots
+            if !gp_name.is_empty()
+                && !matches!(
+                    gp_name.to_lowercase().as_str(),
+                    "pictures" | "documents" | "remote" | "videos" | "temp" | "my games" | "rockstar games"
+                )
+            {
+                if let Some(title) = resolve_name_to_game_title(gp_name) {
+                    return title;
+                }
+                return gp_name.to_string();
             }
         }
     }
@@ -423,6 +639,9 @@ pub fn detect_game_title_from_path(path: &Path) -> String {
                 | "temp"
         )
     {
+        if let Some(title) = resolve_name_to_game_title(parent_name) {
+            return title;
+        }
         return parent_name.to_string();
     }
 
@@ -691,6 +910,7 @@ pub async fn epic_get_all_screenshots(
 
         // 1. Scanned root and its subdirectories (one subfolder per game)
         let root = screenshots_root();
+        migrate_known_app_folders(&root);
         if root.is_dir() {
             if let Ok(entries) = std::fs::read_dir(&root) {
                 for entry in entries.flatten() {
@@ -709,6 +929,7 @@ pub async fn epic_get_all_screenshots(
         // 2. Legacy screenshots root (if different from root)
         let legacy_root = get_user_pictures_dir().join("Efxlve Screenshots");
         if legacy_root != root && legacy_root.is_dir() {
+            migrate_known_app_folders(&legacy_root);
             if let Ok(entries) = std::fs::read_dir(&legacy_root) {
                 for entry in entries.flatten() {
                     let path = entry.path();
@@ -758,6 +979,52 @@ pub async fn epic_get_all_screenshots(
                                 for app_entry in app_entries.flatten() {
                                     let shots_dir = app_entry.path().join("screenshots");
                                     scan_dir_files(&shots_dir, &mut results, &mut scanned_paths);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 6. Documents game screenshot folders (e.g. Documents/<Game>/Screenshots, Rockstar Games, etc.)
+        let docs = get_user_documents_dir();
+        if docs.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(&docs) {
+                for entry in entries.flatten() {
+                    let dpath = entry.path();
+                    if dpath.is_dir() {
+                        let direct = dpath.join("Screenshots");
+                        if direct.is_dir() {
+                            scan_dir_files(&direct, &mut results, &mut scanned_paths);
+                        }
+                        if entry
+                            .file_name()
+                            .to_string_lossy()
+                            .eq_ignore_ascii_case("Rockstar Games")
+                        {
+                            if let Ok(rg_entries) = std::fs::read_dir(&dpath) {
+                                for rg_entry in rg_entries.flatten() {
+                                    let rg_path = rg_entry.path();
+                                    if rg_path.is_dir() {
+                                        scan_dir_files(
+                                            &rg_path.join("Screenshots"),
+                                            &mut results,
+                                            &mut scanned_paths,
+                                        );
+                                        let profs = rg_path.join("Profiles");
+                                        if profs.is_dir() {
+                                            if let Ok(p_entries) = std::fs::read_dir(&profs) {
+                                                for p_entry in p_entries.flatten() {
+                                                    scan_dir_files(
+                                                        &p_entry.path().join("Screenshots"),
+                                                        &mut results,
+                                                        &mut scanned_paths,
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -878,7 +1145,11 @@ fn capture_screen_to_game_folder(
     app_name: &str,
     title: &str,
 ) -> Result<GameScreenshotItem, String> {
-    let clean_t = if !title.trim().is_empty() {
+    let clean_t = if !title.trim().is_empty() && title.trim() != app_name.trim() {
+        clean_folder_name(title)
+    } else if let Some(resolved) = resolve_name_to_game_title(app_name) {
+        clean_folder_name(&resolved)
+    } else if !title.trim().is_empty() {
         clean_folder_name(title)
     } else {
         clean_folder_name(app_name)
