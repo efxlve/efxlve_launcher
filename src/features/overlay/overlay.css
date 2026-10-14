@@ -288,12 +288,12 @@
 
 /* Widget Dimensions & Limits */
 #ov-widget-perf {
-  width: 420px;
-  height: 380px;
-  min-width: 320px;
-  min-height: 180px;
-  max-width: 650px;
-  max-height: 520px;
+  width: 380px;
+  height: 340px;
+  min-width: 300px;
+  min-height: 220px;
+  max-width: 600px;
+  max-height: 500px;
 }
 
 #ov-widget-shots {
@@ -396,7 +396,7 @@
   border-color: var(--text-2);
 }
 
-/* --- Bespoke Efxlve Telemetry Widget --- */
+/* --- Bespoke Efxlve Telemetry Widget (Flat, Restrained, Native) --- */
 #ov-widget-perf-body {
   height: 100%;
   display: flex;
@@ -406,443 +406,234 @@
   background: var(--surface-1);
 }
 
-.ov-telemetry {
+.ov-perf {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 10px;
   height: 100%;
   box-sizing: border-box;
   user-select: none;
   overflow-y: auto;
 }
 
-/* Top Hero FPS & View Mode Bar */
-.ov-tele-hero {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.ov-tele-fps-card {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+/* Base Telemetry Card Style */
+.ov-perf-card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
+  padding: 8px 10px;
   cursor: pointer;
-  transition: all 0.16s ease-out;
+  transition: background-color var(--ease), border-color var(--ease);
   outline: none;
   text-align: left;
   min-width: 0;
-}
-
-.ov-tele-fps-card:hover {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%);
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.ov-tele-fps-card.active {
-  border-color: #22c55e;
-  box-shadow: 0 0 14px rgba(34, 197, 94, 0.25);
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
-}
-
-.ov-tele-fps-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.ov-tele-fps-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  flex: 1;
+  justify-content: space-between;
 }
 
-.ov-tele-fps-label {
-  display: flex;
+.ov-perf-card:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+
+.ov-perf-card.active {
+  background: var(--surface-3);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Top FPS Row */
+.ov-perf-fps-row {
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  color: var(--text-3);
-}
-
-.ov-tele-fps-pill {
-  font-size: 8.5px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-2);
-}
-
-.ov-tele-fps-pill.ok {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
-}
-
-.ov-tele-fps-readout {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.ov-tele-fps-num {
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1;
-  color: #ffffff;
-  font-variant-numeric: tabular-nums;
-}
-
-.ov-tele-fps-unit {
-  font-size: 10px;
-  font-weight: 700;
-  color: #22c55e;
-}
-
-.ov-tele-fps-frame-ms {
-  font-size: 10.5px;
-  color: var(--text-2);
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-}
-
-.ov-tele-actions {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 3px;
-  border-radius: var(--r-sm);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 12px;
   flex-shrink: 0;
 }
 
-.ov-tele-mode-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text-3);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  outline: none;
+.ov-perf-fps-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
-.ov-tele-mode-btn:hover {
+.ov-perf-fps-num {
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-.ov-tele-mode-btn.active {
-  background: var(--surface-3);
-  color: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+.ov-perf-fps-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-/* 4 Hardware Telemetry Cards (2x2 Grid) */
-.ov-tele-grid {
+/* 2x2 Grid */
+.ov-perf-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   flex-shrink: 0;
 }
 
-.ov-tele-card {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: all 0.16s ease-out;
-  outline: none;
-  text-align: left;
-  min-width: 0;
-}
-
-.ov-tele-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.ov-tele-card-header {
+.ov-perf-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 2px;
 }
 
-.ov-tele-card-title-group {
+.ov-perf-card-title-group {
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
 }
 
-.ov-tele-card-icon {
+.ov-perf-icon {
+  color: var(--text-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.ov-tele-card-title {
+.ov-perf-card-title {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-2);
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
-.ov-tele-card-sub {
-  font-size: 9.5px;
-  font-weight: 500;
+.ov-perf-sub {
+  font-size: 10.5px;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.ov-tele-card-body {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-
-.ov-tele-card-val {
-  font-size: 18px;
-  font-weight: 800;
-  color: #ffffff;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
 }
 
-.ov-tele-status-pip {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-3);
-  flex-shrink: 0;
+.ov-perf-card-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  margin: 3px 0 6px;
 }
 
-.ov-tele-status-pip.ok {
-  background: var(--ok);
-  box-shadow: 0 0 6px var(--ok);
-}
-
-.ov-tele-status-pip.warn {
-  background: var(--warn);
-  box-shadow: 0 0 6px var(--warn);
-}
-
-.ov-tele-status-pip.err {
-  background: var(--err);
-  box-shadow: 0 0 6px var(--err);
-}
-
-.ov-tele-bar {
+/* Progress Bar — Clean, Flat, No Glow */
+.ov-perf-bar {
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-3);
   border-radius: 2px;
   overflow: hidden;
+  width: 100%;
 }
 
-.ov-tele-bar-fill {
+.ov-perf-bar-fill {
   height: 100%;
+  background: var(--text);
   border-radius: 2px;
-  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+  transition: width 0.25s ease-out;
 }
 
-/* Component Themes */
-.ov-card-cpu .ov-tele-card-icon { color: #38bdf8; }
-.ov-card-cpu.active {
-  border-color: #38bdf8;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
-  background: rgba(56, 189, 248, 0.05);
-}
-.ov-card-cpu .ov-tele-bar-fill {
-  background: linear-gradient(90deg, #0284c7, #38bdf8);
-  box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+.ov-perf-bar-fill.warn {
+  background: var(--warn);
 }
 
-.ov-card-gpu .ov-tele-card-icon { color: #10b981; }
-.ov-card-gpu.active {
-  border-color: #10b981;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.22);
-  background: rgba(16, 185, 129, 0.05);
-}
-.ov-card-gpu .ov-tele-bar-fill {
-  background: linear-gradient(90deg, #059669, #10b981);
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+.ov-perf-bar-fill.err {
+  background: var(--err);
 }
 
-.ov-card-ram .ov-tele-card-icon { color: #f59e0b; }
-.ov-card-ram.active {
-  border-color: #f59e0b;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.22);
-  background: rgba(245, 158, 11, 0.05);
-}
-.ov-card-ram .ov-tele-bar-fill {
-  background: linear-gradient(90deg, #d97706, #f59e0b);
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
-}
-
-.ov-card-vram .ov-tele-card-icon { color: #a855f7; }
-.ov-card-vram.active {
-  border-color: #a855f7;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.22);
-  background: rgba(168, 85, 247, 0.05);
-}
-.ov-card-vram .ov-tele-bar-fill {
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
-  box-shadow: 0 0 6px rgba(168, 85, 247, 0.5);
-}
-
-/* Oscilloscope Scope */
-.ov-tele-scope {
+/* Telemetry Scope (Chart) */
+.ov-perf-scope {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 120px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  min-height: 105px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 8px 10px 6px;
   position: relative;
 }
 
-.is-compact .ov-tele-scope {
-  display: none;
-}
-
-.ov-tele-scope-header {
+.ov-perf-scope-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-.ov-tele-scope-meta {
+.ov-perf-scope-title-group {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   min-width: 0;
 }
 
-.ov-tele-scope-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.ov-tele-scope-tag {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
+.ov-perf-scope-title {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-2);
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.ov-tele-scope-current {
+.ov-perf-scope-val {
   font-size: 13px;
-  font-weight: 800;
-  color: #ffffff;
+  font-weight: 700;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
-  margin-left: 2px;
 }
 
-.ov-tele-stats-group {
+.ov-perf-scope-stats {
   display: flex;
   align-items: center;
-  gap: 5px;
-}
-
-.ov-tele-stat-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  font-size: 9.5px;
+  gap: 8px;
+  font-size: 10px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.ov-tele-stat-badge b {
-  color: #ffffff;
-  font-weight: 700;
+.ov-perf-scope-stats b {
+  color: var(--text-2);
+  font-weight: 600;
 }
 
-.ov-tele-canvas-wrap {
+.ov-perf-canvas-wrap {
   flex: 1;
-  min-height: 60px;
+  min-height: 55px;
   position: relative;
   width: 100%;
 }
 
-.ov-tele-canvas-wrap canvas {
+.ov-perf-canvas-wrap canvas {
   width: 100%;
   height: 100%;
   display: block;
 }
 
-.ov-tele-timeline {
+.ov-perf-timeline {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 9.5px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
-  margin-top: 3px;
-  padding: 0 4px;
-}
-
-.ov-tele-live-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--ok);
-}
-
-.ov-tele-live-pulse {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 6px var(--ok);
-  animation: ov-pulse 1.8s infinite ease-in-out;
-}
-
-@keyframes ov-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+  margin-top: 2px;
+  padding: 0 2px;
 }
 
 #ov-widget-shots-body .ov-shots-grid {

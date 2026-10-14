@@ -128,8 +128,6 @@ let launcherMode = false;
 let metrics: MetricsSample | null = null;
 type PerfMetric = "cpu" | "gpu" | "vram" | "ram" | "fps";
 let activePerfMetric: PerfMetric = "cpu";
-type PerfViewMode = "dashboard" | "compact";
-let perfViewMode: PerfViewMode = "dashboard";
 let fpsHistory: number[] = [];
 let cpuHistory: number[] = [];
 let gpuHistory: number[] = [];
@@ -1210,21 +1208,19 @@ function getTelemetryReadings(m: MetricsSample | null) {
   const subFps = m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : (m?.running ? "..." : (isTr ? "Beklemede" : "Idle"));
 
   let data: number[] = [];
-  let tag = "CPU PROCESSOR";
+  let tag = "CPU";
   let num = `${cpuVal}%`;
   let sub = cpuSub;
   let peakVal = "0%";
   let avgVal = "0%";
   let minVal = "0%";
-  let accentColor = "#38bdf8";
 
   switch (activePerfMetric) {
     case "cpu": {
       data = cpuHistory;
-      tag = isTr ? "CPU İŞLEMCİ" : "CPU PROCESSOR";
+      tag = "CPU";
       num = `${cpuVal}%`;
       sub = cpuSub;
-      accentColor = "#38bdf8";
       const valid = data.length > 0 ? data : [cpuVal];
       const peak = Math.round(Math.max(...valid));
       const avg = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
@@ -1236,10 +1232,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "gpu": {
       data = gpuHistory;
-      tag = isTr ? "GPU GRAFİK KARTI" : "GPU GRAPHICS";
+      tag = "GPU";
       num = `${gpuVal}%`;
       sub = gpuSub;
-      accentColor = "#10b981";
       const valid = data.length > 0 ? data : [gpuVal];
       const peak = Math.round(Math.max(...valid));
       const avg = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
@@ -1251,10 +1246,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "ram": {
       data = ramHistory;
-      tag = isTr ? "SİSTEM BELLEĞİ (RAM)" : "SYSTEM RAM";
+      tag = isTr ? "Bellek (RAM)" : "Memory (RAM)";
       num = `${ramPct}%`;
-      sub = ramSub;
-      accentColor = "#f59e0b";
+      sub = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;
       const valid = data.length > 0 ? data : [ramPct];
       const peak = Math.round(Math.max(...valid));
       const avg = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
@@ -1266,10 +1260,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "vram": {
       data = vramHistory;
-      tag = isTr ? "VİDEO BELLEĞİ (VRAM)" : "VIDEO MEMORY (VRAM)";
+      tag = isTr ? "Video Belleği (VRAM)" : "Video Memory (VRAM)";
       num = `${vramPct}%`;
-      sub = vramSub;
-      accentColor = "#a855f7";
+      sub = `${fmtMb(vramUsed)} / ${fmtMb(vramTotal)}`;
       const valid = data.length > 0 ? data : [vramPct];
       const peak = Math.round(Math.max(...valid));
       const avg = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
@@ -1281,10 +1274,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "fps": {
       data = fpsHistory;
-      tag = isTr ? "KARE HIZI (FPS)" : "FRAME RATE (FPS)";
+      tag = isTr ? "Kare Hızı (FPS)" : "Frame Rate (FPS)";
       num = fpsVal != null ? String(fpsVal) : "--";
       sub = subFps;
-      accentColor = "#22c55e";
       const validFps = data.filter((v) => v > 0);
       const peak = validFps.length > 0 ? Math.round(Math.max(...validFps)) : (fpsVal ?? 0);
       const avg = validFps.length > 0 ? Math.round(validFps.reduce((a, b) => a + b, 0) / validFps.length) : (fpsVal ?? 0);
@@ -1312,14 +1304,12 @@ function getTelemetryReadings(m: MetricsSample | null) {
     gpuStatus: statusLevel(gpuVal),
     ramStatus: statusLevel(ramPct),
     vramStatus: statusLevel(vramPct),
-    fpsStatus: fpsVal != null ? (fpsVal >= 60 ? "ok" : fpsVal >= 30 ? "warn" : "err") : "idle",
     tag,
     num,
     sub,
     peakVal,
     avgVal,
     minVal,
-    accentColor,
     isTr,
   };
 }
@@ -1332,133 +1322,94 @@ function renderPerf(): void {
   const t = getTelemetryReadings(m);
 
   el.innerHTML = `
-    <div class="ov-telemetry ${perfViewMode === "compact" ? "is-compact" : ""}">
-      <!-- Top Hero / FPS Control Bar -->
-      <div class="ov-tele-hero">
-        <button class="ov-tele-fps-card ${activePerfMetric === "fps" ? "active" : ""}" data-perf-metric="fps" type="button">
-          <div class="ov-tele-fps-icon">
-            ${icon("zap", 16)}
-          </div>
-          <div class="ov-tele-fps-info">
-            <div class="ov-tele-fps-label">
-              <span>${t.isTr ? "KARE HIZI" : "FRAME RATE"}</span>
-              <span class="ov-tele-fps-pill ${t.fpsStatus}">${t.isTr ? (t.fpsVal != null ? "OYUN AKTİF" : "MASAÜSTÜ") : (t.fpsVal != null ? "GAME ACTIVE" : "DESKTOP")}</span>
-            </div>
-            <div class="ov-tele-fps-readout">
-              <span class="ov-tele-fps-num" id="ov-chip-val-fps">${t.fpsVal != null ? String(t.fpsVal) : "--"}</span>
-              <span class="ov-tele-fps-unit">FPS</span>
-              <span class="ov-tele-fps-frame-ms" id="ov-perf-frame-ms">${t.subFps}</span>
-            </div>
-          </div>
-        </button>
-        <div class="ov-tele-actions">
-          <button class="ov-tele-mode-btn ${perfViewMode === "dashboard" ? "active" : ""}" data-perf-view="dashboard" type="button" title="${t.isTr ? "Detaylı Panel" : "Detailed Dashboard"}">
-            ${icon("layout-grid", 13)}
-          </button>
-          <button class="ov-tele-mode-btn ${perfViewMode === "compact" ? "active" : ""}" data-perf-view="compact" type="button" title="${t.isTr ? "Kompakt HUD" : "Compact HUD"}">
-            ${icon("rows", 13)}
-          </button>
+    <div class="ov-perf">
+      <!-- Top FPS Row -->
+      <button class="ov-perf-card ov-perf-fps-row ${activePerfMetric === "fps" ? "active" : ""}" data-perf-metric="fps" type="button">
+        <div class="ov-perf-fps-left">
+          <span class="ov-perf-icon">${icon("zap", 14)}</span>
+          <span class="ov-perf-card-title">FPS</span>
+          <span class="ov-perf-fps-num" id="ov-chip-val-fps">${t.fpsVal != null ? String(t.fpsVal) : "--"}</span>
         </div>
-      </div>
+        <div class="ov-perf-fps-right">
+          <span class="ov-perf-sub" id="ov-perf-frame-ms">${t.subFps}</span>
+        </div>
+      </button>
 
       <!-- 4 Hardware Telemetry Cards (2x2 Grid) -->
-      <div class="ov-tele-grid">
+      <div class="ov-perf-grid">
         <!-- CPU Card -->
-        <button class="ov-tele-card ov-card-cpu ${activePerfMetric === "cpu" ? "active" : ""}" data-perf-metric="cpu" type="button">
-          <div class="ov-tele-card-header">
-            <div class="ov-tele-card-title-group">
-              <span class="ov-tele-card-icon">${icon("cpu", 13)}</span>
-              <span class="ov-tele-card-title">CPU</span>
+        <button class="ov-perf-card ${activePerfMetric === "cpu" ? "active" : ""}" data-perf-metric="cpu" type="button">
+          <div class="ov-perf-card-head">
+            <div class="ov-perf-card-title-group">
+              <span class="ov-perf-icon">${icon("cpu", 13)}</span>
+              <span class="ov-perf-card-title">CPU</span>
             </div>
-            <span class="ov-tele-card-sub" id="ov-card-sub-cpu">${t.cpuSub}</span>
+            <span class="ov-perf-sub" id="ov-card-sub-cpu">${t.cpuSub}</span>
           </div>
-          <div class="ov-tele-card-body">
-            <div class="ov-tele-card-val" id="ov-chip-val-cpu">${t.cpuVal}%</div>
-            <div class="ov-tele-status-pip ${t.cpuStatus}"></div>
-          </div>
-          <div class="ov-tele-bar"><div class="ov-tele-bar-fill" id="ov-chip-bar-cpu" style="width:${t.cpuVal}%"></div></div>
+          <div class="ov-perf-card-num" id="ov-chip-val-cpu">${t.cpuVal}%</div>
+          <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.cpuStatus}" id="ov-chip-bar-cpu" style="width:${t.cpuVal}%"></div></div>
         </button>
 
         <!-- GPU Card -->
-        <button class="ov-tele-card ov-card-gpu ${activePerfMetric === "gpu" ? "active" : ""}" data-perf-metric="gpu" type="button">
-          <div class="ov-tele-card-header">
-            <div class="ov-tele-card-title-group">
-              <span class="ov-tele-card-icon">${icon("activity", 13)}</span>
-              <span class="ov-tele-card-title">GPU</span>
+        <button class="ov-perf-card ${activePerfMetric === "gpu" ? "active" : ""}" data-perf-metric="gpu" type="button">
+          <div class="ov-perf-card-head">
+            <div class="ov-perf-card-title-group">
+              <span class="ov-perf-icon">${icon("activity", 13)}</span>
+              <span class="ov-perf-card-title">GPU</span>
             </div>
-            <span class="ov-tele-card-sub" id="ov-card-sub-gpu">${t.gpuSub}</span>
+            <span class="ov-perf-sub" id="ov-card-sub-gpu">${t.gpuSub}</span>
           </div>
-          <div class="ov-tele-card-body">
-            <div class="ov-tele-card-val" id="ov-chip-val-gpu">${t.gpuVal}%</div>
-            <div class="ov-tele-status-pip ${t.gpuStatus}"></div>
-          </div>
-          <div class="ov-tele-bar"><div class="ov-tele-bar-fill" id="ov-chip-bar-gpu" style="width:${t.gpuVal}%"></div></div>
+          <div class="ov-perf-card-num" id="ov-chip-val-gpu">${t.gpuVal}%</div>
+          <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.gpuStatus}" id="ov-chip-bar-gpu" style="width:${t.gpuVal}%"></div></div>
         </button>
 
         <!-- RAM Card -->
-        <button class="ov-tele-card ov-card-ram ${activePerfMetric === "ram" ? "active" : ""}" data-perf-metric="ram" type="button">
-          <div class="ov-tele-card-header">
-            <div class="ov-tele-card-title-group">
-              <span class="ov-tele-card-icon">${icon("server", 13)}</span>
-              <span class="ov-tele-card-title">RAM</span>
+        <button class="ov-perf-card ${activePerfMetric === "ram" ? "active" : ""}" data-perf-metric="ram" type="button">
+          <div class="ov-perf-card-head">
+            <div class="ov-perf-card-title-group">
+              <span class="ov-perf-icon">${icon("server", 13)}</span>
+              <span class="ov-perf-card-title">RAM</span>
             </div>
-            <span class="ov-tele-card-sub" id="ov-card-sub-ram">${t.ramSub}</span>
+            <span class="ov-perf-sub" id="ov-card-sub-ram">${t.ramSub}</span>
           </div>
-          <div class="ov-tele-card-body">
-            <div class="ov-tele-card-val" id="ov-chip-val-ram">${t.ramPct}%</div>
-            <div class="ov-tele-status-pip ${t.ramStatus}"></div>
-          </div>
-          <div class="ov-tele-bar"><div class="ov-tele-bar-fill" id="ov-chip-bar-ram" style="width:${t.ramPct}%"></div></div>
+          <div class="ov-perf-card-num" id="ov-chip-val-ram">${t.ramPct}%</div>
+          <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.ramStatus}" id="ov-chip-bar-ram" style="width:${t.ramPct}%"></div></div>
         </button>
 
         <!-- VRAM Card -->
-        <button class="ov-tele-card ov-card-vram ${activePerfMetric === "vram" ? "active" : ""}" data-perf-metric="vram" type="button">
-          <div class="ov-tele-card-header">
-            <div class="ov-tele-card-title-group">
-              <span class="ov-tele-card-icon">${icon("hard-drive", 13)}</span>
-              <span class="ov-tele-card-title">VRAM</span>
+        <button class="ov-perf-card ${activePerfMetric === "vram" ? "active" : ""}" data-perf-metric="vram" type="button">
+          <div class="ov-perf-card-head">
+            <div class="ov-perf-card-title-group">
+              <span class="ov-perf-icon">${icon("hard-drive", 13)}</span>
+              <span class="ov-perf-card-title">VRAM</span>
             </div>
-            <span class="ov-tele-card-sub" id="ov-card-sub-vram">${t.vramSub}</span>
+            <span class="ov-perf-sub" id="ov-card-sub-vram">${t.vramSub}</span>
           </div>
-          <div class="ov-tele-card-body">
-            <div class="ov-tele-card-val" id="ov-chip-val-vram">${t.vramPct}%</div>
-            <div class="ov-tele-status-pip ${t.vramStatus}"></div>
-          </div>
-          <div class="ov-tele-bar"><div class="ov-tele-bar-fill" id="ov-chip-bar-vram" style="width:${t.vramPct}%"></div></div>
+          <div class="ov-perf-card-num" id="ov-chip-val-vram">${t.vramPct}%</div>
+          <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.vramStatus}" id="ov-chip-bar-vram" style="width:${t.vramPct}%"></div></div>
         </button>
       </div>
 
-      <!-- Live Oscilloscope Scope (Visible in Dashboard Mode) -->
-      <div class="ov-tele-scope">
-        <div class="ov-tele-scope-header">
-          <div class="ov-tele-scope-meta">
-            <span class="ov-tele-scope-dot" id="ov-scope-dot" style="background:${t.accentColor};box-shadow:0 0 6px ${t.accentColor}"></span>
-            <span class="ov-tele-scope-tag" id="ov-scope-tag">${t.tag}</span>
-            <span class="ov-tele-scope-current" id="ov-scope-num">${t.num}</span>
+      <!-- Telemetry Scope (Chart) -->
+      <div class="ov-perf-scope">
+        <div class="ov-perf-scope-head">
+          <div class="ov-perf-scope-title-group">
+            <span class="ov-perf-scope-title" id="ov-scope-tag">${t.tag}</span>
+            <span class="ov-perf-scope-val" id="ov-scope-num">${t.num}</span>
           </div>
-          <div class="ov-tele-stats-group">
-            <div class="ov-tele-stat-badge">
-              <span>${activePerfMetric === "fps" ? "1% Low" : "Min"}</span>
-              <b id="ov-stat-min-val">${t.minVal}</b>
-            </div>
-            <div class="ov-tele-stat-badge">
-              <span>Avg</span>
-              <b id="ov-stat-avg-val">${t.avgVal}</b>
-            </div>
-            <div class="ov-tele-stat-badge">
-              <span>Peak</span>
-              <b id="ov-stat-peak-val">${t.peakVal}</b>
-            </div>
+          <div class="ov-perf-scope-stats">
+            <span>Min <b id="ov-stat-min-val">${t.minVal}</b></span>
+            <span>${t.isTr ? "Ort" : "Avg"} <b id="ov-stat-avg-val">${t.avgVal}</b></span>
+            <span>${t.isTr ? "Zirve" : "Peak"} <b id="ov-stat-peak-val">${t.peakVal}</b></span>
           </div>
         </div>
 
-        <div class="ov-tele-canvas-wrap">
+        <div class="ov-perf-canvas-wrap">
           <canvas class="ov-perf-canvas" id="ov-perf-canvas"></canvas>
         </div>
 
-        <div class="ov-tele-timeline">
-          <span>-60s</span>
-          <span class="ov-tele-live-pill"><span class="ov-tele-live-pulse"></span> ${t.isTr ? "CANLI" : "LIVE"}</span>
+        <div class="ov-perf-timeline">
+          <span>60s</span>
           <span>${t.isTr ? "Şimdi" : "Now"}</span>
         </div>
       </div>
@@ -1473,7 +1424,7 @@ function drawPerfCanvas(): void {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     const width = rect.width || 360;
-    const height = rect.height || 110;
+    const height = rect.height || 100;
     if (canvas.width !== Math.round(width * dpr)) canvas.width = Math.round(width * dpr);
     if (canvas.height !== Math.round(height * dpr)) canvas.height = Math.round(height * dpr);
     const ctx = canvas.getContext("2d");
@@ -1484,51 +1435,39 @@ function drawPerfCanvas(): void {
 
       let data: number[] = [];
       let maxVal = 100;
-      let strokeColor = "#38bdf8";
-      let gradRgb = "56, 189, 248";
 
       switch (activePerfMetric) {
         case "cpu":
           data = cpuHistory.length > 0 ? cpuHistory : [0];
           maxVal = 100;
-          strokeColor = "#38bdf8";
-          gradRgb = "56, 189, 248";
           break;
         case "gpu":
           data = gpuHistory.length > 0 ? gpuHistory : [0];
           maxVal = 100;
-          strokeColor = "#10b981";
-          gradRgb = "16, 185, 129";
           break;
         case "ram":
           data = ramHistory.length > 0 ? ramHistory : [0];
           maxVal = 100;
-          strokeColor = "#f59e0b";
-          gradRgb = "245, 158, 11";
           break;
         case "vram":
           data = vramHistory.length > 0 ? vramHistory : [0];
           maxVal = 100;
-          strokeColor = "#a855f7";
-          gradRgb = "168, 85, 247";
           break;
         case "fps":
           data = fpsHistory.length > 0 ? fpsHistory : [0];
           maxVal = Math.max(60, ...data) * 1.15;
-          strokeColor = "#22c55e";
-          gradRgb = "34, 197, 94";
           break;
       }
 
-      // Draw faint dotted reference grid
+      // Horizontal reference grid lines at 25%, 50%, 75%
       ctx.save();
-      ctx.setLineDash([3, 5]);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+      ctx.setLineDash([2, 4]);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.lineWidth = 1;
       for (const pct of [0.25, 0.5, 0.75]) {
         const y = Math.round(height - pct * (height - 16) - 8);
         ctx.beginPath();
-        ctx.moveTo(34, y);
+        ctx.moveTo(30, y);
         ctx.lineTo(width, y);
         ctx.stroke();
       }
@@ -1537,29 +1476,28 @@ function drawPerfCanvas(): void {
       // Axis labels on left margin
       ctx.font = "9px system-ui, -apple-system, sans-serif";
       ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal)}` : "100%", 4, 11);
-      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal / 2)}` : "50%", 4, Math.round(height / 2) + 3);
-      ctx.fillText("0", 4, height - 4);
+      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal)}` : "100%", 2, 10);
+      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal / 2)}` : "50%", 2, Math.round(height / 2) + 3);
+      ctx.fillText("0", 2, height - 3);
 
-      const chartLeft = 36;
-      const chartWidth = Math.max(10, width - chartLeft);
+      const chartLeft = 32;
+      const chartWidth = Math.max(10, width - chartLeft - 4);
       const len = 60;
       const step = chartWidth / (len - 1);
       const offset = len - data.length;
       const points = data.map((val, idx) => {
         const x = chartLeft + (offset + idx) * step;
         const norm = maxVal > 0 ? Math.min(1, Math.max(0, val / maxVal)) : 0;
-        const y = height - norm * (height - 18) - 9;
+        const y = height - norm * (height - 16) - 8;
         return [x, Math.max(4, Math.min(height - 4, y))] as const;
       });
 
       if (points.length > 1) {
+        // Subtle area fill
         const grad = ctx.createLinearGradient(0, 0, 0, height);
-        grad.addColorStop(0, `rgba(${gradRgb}, 0.38)`);
-        grad.addColorStop(0.8, `rgba(${gradRgb}, 0.05)`);
-        grad.addColorStop(1, `rgba(${gradRgb}, 0.0)`);
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.10)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0.00)");
 
-        ctx.save();
         ctx.beginPath();
         ctx.moveTo(points[0][0], points[0][1]);
         for (let i = 1; i < points.length; i++) {
@@ -1568,40 +1506,24 @@ function drawPerfCanvas(): void {
           ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
         }
         ctx.lineTo(points[points.length - 1][0], points[points.length - 1][1]);
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.75;
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
-        ctx.shadowColor = strokeColor;
-        ctx.shadowBlur = 8;
         ctx.stroke();
 
         ctx.lineTo(points[points.length - 1][0], height);
         ctx.lineTo(points[0][0], height);
         ctx.closePath();
-        ctx.shadowBlur = 0;
         ctx.fillStyle = grad;
         ctx.fill();
-        ctx.restore();
 
-        // Pulsing live tracer node on latest point
+        // Sharp solid white point on latest reading
         const [lastX, lastY] = points[points.length - 1];
-        ctx.save();
         ctx.beginPath();
-        ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${gradRgb}, 0.3)`;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-        ctx.fillStyle = strokeColor;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(lastX, lastY, 1.5, 0, Math.PI * 2);
+        ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
         ctx.fill();
-        ctx.restore();
       }
     }
   }
@@ -1636,8 +1558,8 @@ function drawPerfCanvas(): void {
 
       if (points.length > 1) {
         const grad = ctx.createLinearGradient(0, 0, 0, height);
-        grad.addColorStop(0, "rgba(56, 189, 248, 0.35)");
-        grad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.10)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0.0)");
 
         ctx.beginPath();
         ctx.moveTo(points[0][0], points[0][1]);
@@ -1647,8 +1569,8 @@ function drawPerfCanvas(): void {
           ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
         }
         ctx.lineTo(points[points.length - 1][0], points[points.length - 1][1]);
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.75;
         ctx.stroke();
 
         ctx.lineTo(points[points.length - 1][0], height);
@@ -1689,26 +1611,24 @@ function updateMetricsUi(): void {
     setText("ov-card-sub-vram", t.vramSub);
     setText("ov-perf-frame-ms", t.subFps);
 
-    const setWidth = (id: string, pct: number) => {
+    const setBar = (id: string, pct: number, status: string) => {
       const el = document.getElementById(id);
-      if (el) el.style.width = `${pct}%`;
+      if (el) {
+        el.style.width = `${pct}%`;
+        el.classList.toggle("warn", status === "warn");
+        el.classList.toggle("err", status === "err");
+      }
     };
-    setWidth("ov-chip-bar-cpu", t.cpuVal);
-    setWidth("ov-chip-bar-gpu", t.gpuVal);
-    setWidth("ov-chip-bar-ram", t.ramPct);
-    setWidth("ov-chip-bar-vram", t.vramPct);
+    setBar("ov-chip-bar-cpu", t.cpuVal, t.cpuStatus);
+    setBar("ov-chip-bar-gpu", t.gpuVal, t.gpuStatus);
+    setBar("ov-chip-bar-ram", t.ramPct, t.ramStatus);
+    setBar("ov-chip-bar-vram", t.vramPct, t.vramStatus);
 
     setText("ov-scope-tag", t.tag);
     setText("ov-scope-num", t.num, t.num === "--");
     setText("ov-stat-min-val", t.minVal);
     setText("ov-stat-avg-val", t.avgVal);
     setText("ov-stat-peak-val", t.peakVal);
-
-    const dot = document.getElementById("ov-scope-dot");
-    if (dot) {
-      dot.style.background = t.accentColor;
-      dot.style.boxShadow = `0 0 6px ${t.accentColor}`;
-    }
 
     drawPerfCanvas();
   }
@@ -3757,20 +3677,7 @@ function wireEvents(): void {
       return;
     }
 
-    // Perf view mode toggle (dashboard vs compact)
-    const perfViewBtn = target.closest<HTMLElement>("[data-perf-view]");
-    if (perfViewBtn?.dataset.perfView) {
-      perfViewMode = perfViewBtn.dataset.perfView as PerfViewMode;
-      const teleEl = document.querySelector<HTMLElement>(".ov-telemetry");
-      if (teleEl) {
-        teleEl.classList.toggle("is-compact", perfViewMode === "compact");
-      }
-      document.querySelectorAll<HTMLElement>("[data-perf-view]").forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.perfView === perfViewMode);
-      });
-      drawPerfCanvas();
-      return;
-    }
+
 
     // Tab button
     const tabBtn = target.closest<HTMLElement>("[data-ov-tab]");
