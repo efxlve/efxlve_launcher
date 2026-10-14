@@ -2190,5 +2190,9 @@
   "igdb.parse": "Не удалось прочитать ответ IGDB.",
   "igdb.auth": "Ошибка аутентификации IGDB.",
   "igdb.rateLimited": "Достигнут лимит IGDB; попробуйте через момент.",
-  "igdb.notFound": "Подходящей игры в IGDB нет."
+  "igdb.notFound": "Подходящей игры в IGDB нет.",
+  "igdb.cardTitle": "Из IGDB",
+  "igdb.loading": "Загрузка данных IGDB…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "Похожие игры"
 }

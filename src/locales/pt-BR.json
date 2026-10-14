@@ -2190,5 +2190,9 @@
   "igdb.parse": "Não foi possível ler a resposta do IGDB.",
   "igdb.auth": "Falha na autenticação do IGDB.",
   "igdb.rateLimited": "Limite do IGDB atingido; tente em instantes.",
-  "igdb.notFound": "Nenhum jogo correspondente no IGDB."
+  "igdb.notFound": "Nenhum jogo correspondente no IGDB.",
+  "igdb.cardTitle": "Do IGDB",
+  "igdb.loading": "Carregando dados do IGDB…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "Jogos semelhantes"
 }

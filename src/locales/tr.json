@@ -2190,5 +2190,9 @@
   "igdb.parse": "IGDB yanıtı okunamadı.",
   "igdb.auth": "IGDB kimlik doğrulaması başarısız.",
   "igdb.rateLimited": "IGDB istek sınırına ulaşıldı; birazdan tekrar dene.",
-  "igdb.notFound": "IGDB'de eşleşen oyun yok."
+  "igdb.notFound": "IGDB'de eşleşen oyun yok.",
+  "igdb.cardTitle": "IGDB'den",
+  "igdb.loading": "IGDB verisi yükleniyor…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "Benzer oyunlar"
 }

@@ -214,6 +214,13 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `gog_verify_game` | `gogVerifyGame({ ... })` | `src-tauri/src/gogdl/transfers.rs` |
 | `hide_notif_overlay` | `hideNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `hide_store_view` | `hideStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `igdb_clear_credentials` | `igdbClearCredentials({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_enrich` | `igdbEnrich({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_game` | `igdbGame({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_search` | `igdbSearch({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_set_credentials` | `igdbSetCredentials({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_status` | `igdbStatus({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_test` | `igdbTest({ ... })` | `src-tauri/src/igdb.rs` |
 | `launchers_status` | `launchersStatus({ ... })` | `src-tauri/src/launchers.rs` |
 | `library_dir` | `libraryDir({ ... })` | `src-tauri/src/main.rs` |
 | `move_notif_overlay` | `moveNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |

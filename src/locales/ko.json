@@ -2190,5 +2190,9 @@
   "igdb.parse": "IGDB 응답을 읽을 수 없습니다.",
   "igdb.auth": "IGDB 인증에 실패했습니다.",
   "igdb.rateLimited": "IGDB 요청 한도에 도달했습니다. 잠시 후 다시 시도하세요.",
-  "igdb.notFound": "IGDB에 일치하는 게임이 없습니다."
+  "igdb.notFound": "IGDB에 일치하는 게임이 없습니다.",
+  "igdb.cardTitle": "IGDB 제공",
+  "igdb.loading": "IGDB 데이터 불러오는 중…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "비슷한 게임"
 }

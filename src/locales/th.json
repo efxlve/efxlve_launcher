@@ -2190,5 +2190,9 @@
   "igdb.parse": "อ่านการตอบกลับของ IGDB ไม่ได้",
   "igdb.auth": "การยืนยันตัวตน IGDB ล้มเหลว",
   "igdb.rateLimited": "ถึงขีดจำกัด IGDB แล้ว ลองใหม่ภายหลัง",
-  "igdb.notFound": "ไม่พบเกมที่ตรงกันใน IGDB"
+  "igdb.notFound": "ไม่พบเกมที่ตรงกันใน IGDB",
+  "igdb.cardTitle": "จาก IGDB",
+  "igdb.loading": "กำลังโหลดข้อมูล IGDB…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "เกมที่คล้ายกัน"
 }

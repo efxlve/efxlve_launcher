@@ -38,6 +38,7 @@ import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
 import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
+import { ensureIgdbOverview, renderIgdbSection } from "./igdb-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -630,6 +631,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (companion && isInitialOpen) S.activeDrawerTab = "overview";
 
   ensureOverviewData(s);
+  // IGDB enrichment (only when credentials are configured): one cached call.
+  ensureIgdbOverview(s, gameReleaseYear(s));
   if (companion) {
     // The client catalog often ships its own description; Wikipedia is only
     // the fallback, so the store text does not flash and get replaced.
@@ -800,6 +803,7 @@ export function renderDrawerOverview(
           </p>
           <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
         </section>
+        ${renderIgdbSection(s)}
         ${renderMomentsStrip(s.appName)}
         ${renderNextAchievements(s.appName)}
       </div>

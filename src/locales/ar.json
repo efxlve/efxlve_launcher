@@ -2190,5 +2190,9 @@
   "igdb.parse": "تعذّرت قراءة رد IGDB.",
   "igdb.auth": "فشل توثيق IGDB.",
   "igdb.rateLimited": "تم بلوغ حد IGDB؛ أعد المحاولة بعد قليل.",
-  "igdb.notFound": "لا لعبة مطابقة على IGDB."
+  "igdb.notFound": "لا لعبة مطابقة على IGDB.",
+  "igdb.cardTitle": "من IGDB",
+  "igdb.loading": "جارٍ تحميل بيانات IGDB…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "ألعاب مشابهة"
 }

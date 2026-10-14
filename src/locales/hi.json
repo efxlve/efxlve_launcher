@@ -2190,5 +2190,9 @@
   "igdb.parse": "IGDB का जवाब पढ़ा नहीं जा सका।",
   "igdb.auth": "IGDB प्रमाणीकरण विफल।",
   "igdb.rateLimited": "IGDB की सीमा पूरी; थोड़ी देर बाद फिर कोशिश करें।",
-  "igdb.notFound": "IGDB पर कोई मेल खाता गेम नहीं।"
+  "igdb.notFound": "IGDB पर कोई मेल खाता गेम नहीं।",
+  "igdb.cardTitle": "IGDB से",
+  "igdb.loading": "IGDB डेटा लोड हो रहा…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "समान गेम"
 }

@@ -2190,5 +2190,9 @@
   "igdb.parse": "Nie udało się odczytać odpowiedzi IGDB.",
   "igdb.auth": "Uwierzytelnianie IGDB nie powiodło się.",
   "igdb.rateLimited": "Osiągnięto limit IGDB; spróbuj za chwilę.",
-  "igdb.notFound": "Brak pasującej gry w IGDB."
+  "igdb.notFound": "Brak pasującej gry w IGDB.",
+  "igdb.cardTitle": "Z IGDB",
+  "igdb.loading": "Ładowanie danych IGDB…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "Podobne gry"
 }

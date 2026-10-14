@@ -2190,5 +2190,9 @@
   "igdb.parse": "无法读取 IGDB 响应。",
   "igdb.auth": "IGDB 认证失败。",
   "igdb.rateLimited": "已达 IGDB 速率限制；请稍后再试。",
-  "igdb.notFound": "IGDB 上没有匹配的游戏。"
+  "igdb.notFound": "IGDB 上没有匹配的游戏。",
+  "igdb.cardTitle": "来自 IGDB",
+  "igdb.loading": "正在加载 IGDB 数据…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "相似游戏"
 }

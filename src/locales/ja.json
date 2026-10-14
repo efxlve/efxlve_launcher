@@ -2190,5 +2190,9 @@
   "igdb.parse": "IGDB の応答を読み取れませんでした。",
   "igdb.auth": "IGDB の認証に失敗しました。",
   "igdb.rateLimited": "IGDB のレート制限に達しました。少し待って再試行してください。",
-  "igdb.notFound": "IGDB に一致するゲームがありません。"
+  "igdb.notFound": "IGDB に一致するゲームがありません。",
+  "igdb.cardTitle": "IGDB より",
+  "igdb.loading": "IGDB データを読み込み中…",
+  "igdb.poweredBy": "Powered by IGDB",
+  "igdb.similarTitle": "似ているゲーム"
 }
