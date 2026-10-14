@@ -3485,10 +3485,12 @@
   display: flex;
   width: 100%;
   align-items: flex-end;
+  margin-bottom: 2px;
 }
 
 .ov-dc-bubble-row.incoming {
   justify-content: flex-start;
+  gap: 8px;
 }
 
 .ov-dc-bubble-row.outgoing {
@@ -3497,9 +3499,8 @@
 
 .ov-dc-bubble-avatar-wrap {
   flex-shrink: 0;
-  margin-right: 8px;
   align-self: flex-end;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .ov-dc-bubble-avatar {
@@ -3519,26 +3520,26 @@
 
 .ov-dc-bubble {
   position: relative;
-  min-width: 64px;
-  max-width: 82%;
-  padding: 8px 12px;
+  max-width: 80%;
+  min-width: 0;
+  padding: 7px 11px;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.4;
   word-break: break-word;
-  white-space: pre-wrap;
+  white-space: normal;
 }
 
 .ov-dc-bubble-row.incoming .ov-dc-bubble {
   background: var(--surface-2);
   border: 1px solid var(--line);
   color: var(--text);
-  border-radius: 12px 12px 12px 2px;
+  border-radius: 14px 14px 14px 3px;
 }
 
 .ov-dc-bubble-row.outgoing .ov-dc-bubble {
   background: #5865F2;
   color: #ffffff;
-  border-radius: 12px 12px 2px 12px;
+  border-radius: 14px 14px 3px 14px;
 }
 
 .ov-dc-bubble.is-failed {
@@ -3547,6 +3548,9 @@
 
 .ov-dc-bubble-text {
   font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
 }
 
 .ov-dc-bubble-text.is-empty {
@@ -3558,10 +3562,11 @@
 .ov-dc-bubble-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 5px;
+  margin-top: 3px;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .ov-dc-bubble-row.incoming .ov-dc-bubble-meta {
