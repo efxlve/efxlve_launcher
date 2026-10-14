@@ -481,6 +481,89 @@ function saveWidgetPos(tab: TabId, pos: WidgetPos): void {
   localStorage.setItem(`efxlve-ov-pos-${tab}`, JSON.stringify(pos));
 }
 
+interface WidgetSizeLimits {
+  minW: number;
+  minH: number;
+  maxW: number;
+  maxH: number;
+}
+
+interface WidgetSize {
+  w: number;
+  h: number;
+}
+
+function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
+  switch (tab) {
+    case "perf":
+      return { minW: 260, minH: 180, maxW: 600, maxH: 700 };
+    case "shots":
+      return { minW: 280, minH: 240, maxW: 800, maxH: 800 };
+    case "music":
+      return { minW: 280, minH: 240, maxW: 600, maxH: 700 };
+    case "discord":
+      return { minW: 280, minH: 320, maxW: 600, maxH: 900 };
+    case "chat":
+      return { minW: 300, minH: 320, maxW: 800, maxH: 900 };
+    case "ach":
+      return { minW: 280, minH: 260, maxW: 700, maxH: 800 };
+    case "notes":
+      return { minW: 260, minH: 220, maxW: 700, maxH: 700 };
+    case "settings":
+      return { minW: 300, minH: 260, maxW: 700, maxH: 800 };
+    default:
+      return { minW: 260, minH: 200, maxW: 800, maxH: 800 };
+  }
+}
+
+function getDefaultWidgetSize(tab: TabId): WidgetSize {
+  switch (tab) {
+    case "perf":
+      return { w: 340, h: 360 };
+    case "shots":
+      return { w: 340, h: 460 };
+    case "music":
+      return { w: 360, h: 440 };
+    case "discord":
+      return { w: 330, h: 540 };
+    case "chat":
+      return { w: 380, h: 540 };
+    case "ach":
+      return { w: 380, h: 480 };
+    case "notes":
+      return { w: 340, h: 360 };
+    case "settings":
+      return { w: 400, h: 500 };
+    default:
+      return { w: 340, h: 400 };
+  }
+}
+
+function loadWidgetSize(tab: TabId): WidgetSize {
+  const limits = getWidgetSizeLimits(tab);
+  const def = getDefaultWidgetSize(tab);
+  try {
+    const raw = localStorage.getItem(`efxlve-ov-size-${tab}`);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { w?: number; h?: number };
+      if (typeof parsed.w === "number" && typeof parsed.h === "number") {
+        const winW = typeof window !== "undefined" ? window.innerWidth || 1920 : 1920;
+        const winH = typeof window !== "undefined" ? window.innerHeight || 1080 : 1080;
+        const clampedW = Math.max(limits.minW, Math.min(Math.min(limits.maxW, winW - 16), parsed.w));
+        const clampedH = Math.max(limits.minH, Math.min(Math.min(limits.maxH, winH - 60), parsed.h));
+        return { w: clampedW, h: clampedH };
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return def;
+}
+
+function saveWidgetSize(tab: TabId, size: WidgetSize): void {
+  localStorage.setItem(`efxlve-ov-size-${tab}`, JSON.stringify(size));
+}
+
 let highestZIndex = 100;
 
 function bringToFront(tab: TabId): void {
@@ -526,6 +609,9 @@ function openWidget(tab: TabId, render = true): void {
 
   const widget = document.getElementById(`ov-widget-${tab}`);
   if (widget) {
+    const size = loadWidgetSize(tab);
+    widget.style.width = `${size.w}px`;
+    widget.style.height = `${size.h}px`;
     widget.style.display = "flex";
     bringToFront(tab);
   }
@@ -642,6 +728,71 @@ function initWidgetDragging(): void {
   });
 }
 
+let resizingTab: TabId | null = null;
+let resizeStartX = 0;
+let resizeStartY = 0;
+let widgetStartW = 0;
+let widgetStartH = 0;
+let resizingInitialized = false;
+
+function initWidgetResizing(): void {
+  if (resizingInitialized) return;
+  resizingInitialized = true;
+
+  document.addEventListener("mousedown", (e) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    const resizer = target.closest<HTMLElement>("[data-widget-resize]");
+    if (!resizer) return;
+
+    const tabId = resizer.dataset.widgetResize as TabId | undefined;
+    if (!tabId) return;
+
+    const el = document.getElementById(`ov-widget-${tabId}`);
+    if (!el) return;
+
+    bringToFront(tabId);
+    resizingTab = tabId;
+    resizeStartX = e.clientX;
+    resizeStartY = e.clientY;
+    widgetStartW = el.offsetWidth;
+    widgetStartH = el.offsetHeight;
+    document.body.style.cursor = "nwse-resize";
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!resizingTab) return;
+    const el = document.getElementById(`ov-widget-${resizingTab}`);
+    if (!el) return;
+
+    const limits = getWidgetSizeLimits(resizingTab);
+    const winW = window.innerWidth || 1920;
+    const winH = window.innerHeight || 1080;
+
+    const maxAllowedW = Math.min(limits.maxW, Math.max(limits.minW, winW - el.offsetLeft - 8));
+    const maxAllowedH = Math.min(limits.maxH, Math.max(limits.minH, winH - el.offsetTop - 8));
+
+    const newW = Math.max(limits.minW, Math.min(maxAllowedW, widgetStartW + (e.clientX - resizeStartX)));
+    const newH = Math.max(limits.minH, Math.min(maxAllowedH, widgetStartH + (e.clientY - resizeStartY)));
+
+    el.style.width = `${newW}px`;
+    el.style.height = `${newH}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!resizingTab) return;
+    const el = document.getElementById(`ov-widget-${resizingTab}`);
+    if (el) {
+      saveWidgetSize(resizingTab, { w: el.offsetWidth, h: el.offsetHeight });
+    }
+    resizingTab = null;
+    document.body.style.cursor = "";
+  });
+}
+
 /* ---------- Shell HTML Template ---------- */
 
 function shellHtml(): string {
@@ -703,6 +854,7 @@ function shellHtml(): string {
               </div>
             </header>
             <div class="ov-widget-body" id="ov-widget-${tab.id}-body" data-ov-view="${tab.id}"></div>
+            <div class="ov-widget-resizer" data-widget-resize="${tab.id}" title="Boyutlandır"></div>
           </section>
         `).join("")}
       </div>
@@ -2691,13 +2843,15 @@ function chatMessagesHtml(target: { id: string; name: string }): string {
   if (entries.length === 0) {
     return `
       <div class="ov-dc-chat-thread-empty">
-        <span>Henüz mesaj yok. İlk mesajı sen gönder!</span>
+        <span>${esc(t("overlay.discordFriendsEmpty"))}</span>
       </div>`;
   }
-  return entries.map((entry) => chatBubbleHtml(entry, target.name)).join("");
+  const friend = sdkFriends.friends.find((f) => f.id === target.id) || friendsState.friends.find((f) => f.id === target.id);
+  const avatarUrl = friend?.avatarUrl;
+  return entries.map((entry) => chatBubbleHtml(entry, target.name, avatarUrl)).join("");
 }
 
-function chatBubbleHtml(entry: ReplyLogEntry, _targetName: string): string {
+function chatBubbleHtml(entry: ReplyLogEntry, targetName: string, partnerAvatar?: string): string {
   const isIncoming = entry.direction === "in";
   const actions =
     !isIncoming && entry.state === "sent" && entry.messageId
@@ -2721,10 +2875,25 @@ function chatBubbleHtml(entry: ReplyLogEntry, _targetName: string): string {
     ? `<div class="ov-dc-msg-attachment">${icon("clipboard", 12)} <span>${esc(entry.attachment)}</span></div>`
     : "";
 
+  const hasText = Boolean(entry.text && entry.text.trim().length > 0);
+  const textHtml = hasText
+    ? `<div class="ov-dc-bubble-text">${esc(entry.text)}</div>`
+    : entry.attachment
+      ? ""
+      : `<div class="ov-dc-bubble-text is-empty"><em>(Boş mesaj)</em></div>`;
+
   return `
     <div class="ov-dc-bubble-row ${isIncoming ? "incoming" : "outgoing"}">
+      ${isIncoming ? `
+        <div class="ov-dc-bubble-avatar-wrap" title="${esc(targetName)}">
+          ${partnerAvatar
+            ? `<img class="ov-dc-bubble-avatar" src="${esc(partnerAvatar)}" alt="" />`
+            : `<div class="ov-dc-bubble-avatar placeholder">${icon("user", 12)}</div>`
+          }
+        </div>
+      ` : ""}
       <div class="ov-dc-bubble${entry.state === "error" ? " is-failed" : ""}">
-        <div class="ov-dc-bubble-text">${esc(entry.text)}</div>
+        ${textHtml}
         ${attachment}
         ${errorBadge}
         <div class="ov-dc-bubble-meta">
@@ -3891,6 +4060,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     root.innerHTML = shellHtml();
     wireEvents();
     initWidgetDragging();
+    initWidgetResizing();
   }
   applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
 
@@ -3915,6 +4085,10 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     const pos = loadWidgetPos(tab.id);
     widget.style.left = `${pos.x}px`;
     widget.style.top = `${pos.y}px`;
+
+    const size = loadWidgetSize(tab.id);
+    widget.style.width = `${size.w}px`;
+    widget.style.height = `${size.h}px`;
 
     const isOpen = openWidgets.has(tab.id);
     widget.style.display = isOpen ? "flex" : "none";
@@ -3950,6 +4124,7 @@ async function boot(): Promise<void> {
     root.innerHTML = shellHtml();
     wireEvents();
     initWidgetDragging();
+    initWidgetResizing();
   }
 
   clockTimer = window.setInterval(updateClock, 1000);

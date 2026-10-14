@@ -5,6 +5,10 @@
    Tabular-nums for every changing number.
    ========================================================================== */
 
+:root {
+  --danger: var(--err);
+}
+
 .ov-page {
   margin: 0;
   padding: 0;
@@ -245,6 +249,32 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.ov-widget-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ov-widget-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ov-widget-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+}
+
+.ov-widget-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+#ov-widget-discord-body,
+#ov-widget-chat-body {
+  padding: 0 !important;
+  overflow: hidden !important;
+  gap: 0 !important;
 }
 
 /* Hide redundant page title inside widget body since widget header has it */
@@ -252,54 +282,113 @@
   display: none;
 }
 
-/* Widget Dimensions */
+/* Widget Dimensions & Limits */
 #ov-widget-perf {
   width: 340px;
-  max-height: calc(100vh - 100px);
+  min-width: 260px;
+  min-height: 180px;
+  max-width: 600px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-shots {
   width: 340px;
-  max-height: calc(100vh - 100px);
+  min-width: 280px;
+  min-height: 240px;
+  max-width: 800px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-music {
   width: 360px;
-  max-height: calc(100vh - 100px);
+  min-width: 280px;
+  min-height: 240px;
+  max-width: 600px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-discord {
   width: 330px;
   height: 540px;
-  max-height: calc(100vh - 100px);
+  min-width: 280px;
+  min-height: 320px;
+  max-width: 600px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-chat {
   width: 380px;
   height: 540px;
-  max-height: calc(100vh - 100px);
+  min-width: 300px;
+  min-height: 320px;
+  max-width: 800px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-ach {
   width: 380px;
   height: 480px;
-  max-height: calc(100vh - 100px);
+  min-width: 280px;
+  min-height: 260px;
+  max-width: 700px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-browser {
   width: 480px;
-  max-height: calc(100vh - 100px);
+  min-width: 340px;
+  min-height: 280px;
+  max-width: 1200px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-notes {
   width: 340px;
   height: 360px;
-  max-height: calc(100vh - 100px);
+  min-width: 260px;
+  min-height: 220px;
+  max-width: 700px;
+  max-height: calc(100vh - 60px);
 }
 
 #ov-widget-settings {
   width: 400px;
-  max-height: calc(100vh - 100px);
+  min-width: 300px;
+  min-height: 260px;
+  max-width: 700px;
+  max-height: calc(100vh - 60px);
+}
+
+/* Resizer Handle */
+.ov-widget-resizer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  z-index: 40;
+  user-select: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 3px;
+}
+
+.ov-widget-resizer::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--text-3);
+  border-bottom: 2px solid var(--text-3);
+  opacity: 0.6;
+  transition: opacity var(--ease), border-color var(--ease);
+}
+
+.ov-widget:hover .ov-widget-resizer::after,
+.ov-widget-resizer:hover::after {
+  opacity: 1;
+  border-color: var(--text-2);
 }
 
 /* Widget Layout Adaptations */
@@ -331,8 +420,14 @@
   gap: 8px !important;
 }
 
+#ov-widget-notes-body {
+  height: 100%;
+}
+
 #ov-widget-notes-body .ov-notes-area {
-  height: 240px !important;
+  flex: 1;
+  min-height: 140px;
+  height: 100% !important;
   resize: none !important;
 }
 
@@ -2877,7 +2972,7 @@
 
 .ov-dc-status-dot.online { background: var(--ok); }
 .ov-dc-status-dot.idle { background: var(--warn); }
-.ov-dc-status-dot.dnd { background: var(--danger); }
+.ov-dc-status-dot.dnd { background: var(--err); }
 .ov-dc-status-dot.offline,
 .ov-dc-status-dot.invisible { background: var(--text-3); }
 
@@ -2923,28 +3018,28 @@
   width: 28px;
   height: 28px;
   border-radius: var(--r-sm);
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
   color: var(--text-2);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .ov-dc-tool-btn:hover {
-  background: var(--surface-3);
+  background: var(--surface-2);
   color: var(--text);
-  border-color: var(--line);
+  border-color: var(--line-strong);
 }
 
 .ov-dc-tool-btn.is-muted {
-  color: var(--danger);
-  border-color: var(--danger);
+  color: var(--err);
+  border-color: var(--err);
 }
 
 .ov-dc-tool-btn.is-calling {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.12);
-  border-color: var(--danger);
+  color: var(--err);
+  background: var(--err-tint);
+  border-color: var(--err);
 }
 
 .ov-dc-voice-strip {
@@ -3002,15 +3097,15 @@
   width: 26px;
   height: 26px;
   border-radius: var(--r-sm);
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid var(--danger);
-  color: var(--danger);
+  background: var(--err-tint);
+  border: 1px solid var(--err);
+  color: var(--err);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .ov-dc-voice-leave-btn:hover {
-  background: var(--danger);
+  background: var(--err);
   color: #fff;
 }
 
@@ -3091,17 +3186,20 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: 14px;
-  height: 14px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 4px;
-  border-radius: 7px;
-  background: var(--danger);
+  border-radius: 8px;
+  background: var(--err);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .ov-dc-friends-scroll {
@@ -3112,6 +3210,25 @@
   flex-direction: column;
   padding: 4px;
   gap: 1px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.ov-dc-friends-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ov-dc-friends-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ov-dc-friends-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+}
+
+.ov-dc-friends-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .ov-dc-group-header {
@@ -3187,14 +3304,14 @@
 
 .ov-dc-friend-status.online { color: var(--ok); }
 .ov-dc-friend-status.idle { color: var(--warn); }
-.ov-dc-friend-status.dnd { color: var(--danger); }
+.ov-dc-friend-status.dnd { color: var(--err); }
 
 .ov-dc-unread-pill {
   min-width: 16px;
   height: 16px;
   padding: 0 5px;
   border-radius: 8px;
-  background: var(--accent);
+  background: #5865F2;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -3306,12 +3423,23 @@
 
 .ov-dc-target-sub.online { color: var(--ok); }
 .ov-dc-target-sub.idle { color: var(--warn); }
-.ov-dc-target-sub.dnd { color: var(--danger); }
+.ov-dc-target-sub.dnd { color: var(--err); }
 
 .ov-dc-target-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.ov-dc-target-actions .ov-dc-tool-btn {
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+}
+
+.ov-dc-target-actions .ov-dc-tool-btn:hover {
+  background: var(--surface-1);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 
 .ov-dc-chat-messages {
@@ -3322,6 +3450,25 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.ov-dc-chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ov-dc-chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ov-dc-chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+}
+
+.ov-dc-chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .ov-dc-chat-thread-empty {
@@ -3337,6 +3484,7 @@
 .ov-dc-bubble-row {
   display: flex;
   width: 100%;
+  align-items: flex-end;
 }
 
 .ov-dc-bubble-row.incoming {
@@ -3347,8 +3495,31 @@
   justify-content: flex-end;
 }
 
+.ov-dc-bubble-avatar-wrap {
+  flex-shrink: 0;
+  margin-right: 8px;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.ov-dc-bubble-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-3);
+  display: block;
+}
+
+.ov-dc-bubble-avatar.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
 .ov-dc-bubble {
   position: relative;
+  min-width: 64px;
   max-width: 82%;
   padding: 8px 12px;
   font-size: 13px;
@@ -3365,17 +3536,23 @@
 }
 
 .ov-dc-bubble-row.outgoing .ov-dc-bubble {
-  background: var(--accent);
-  color: #fff;
+  background: #5865F2;
+  color: #ffffff;
   border-radius: 12px 12px 2px 12px;
 }
 
 .ov-dc-bubble.is-failed {
-  border-color: var(--danger) !important;
+  border-color: var(--err) !important;
 }
 
 .ov-dc-bubble-text {
   font-size: 13px;
+}
+
+.ov-dc-bubble-text.is-empty {
+  font-style: italic;
+  color: var(--text-3);
+  font-size: 12px;
 }
 
 .ov-dc-bubble-meta {
@@ -3392,7 +3569,7 @@
 }
 
 .ov-dc-bubble-row.outgoing .ov-dc-bubble-meta {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   justify-content: flex-end;
 }
 
@@ -3408,17 +3585,18 @@
 }
 
 .ov-dc-bubble-act-btn {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   border: none;
   color: #fff;
   border-radius: var(--r-sm);
   padding: 2px 6px;
   font-size: 10px;
   cursor: pointer;
+  transition: background-color var(--ease);
 }
 
 .ov-dc-bubble-act-btn:hover {
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
 }
 
 .ov-dc-msg-status.sending {
@@ -3437,7 +3615,7 @@
 }
 
 .ov-dc-msg-error-label {
-  color: var(--danger);
+  color: var(--err);
   font-size: 10px;
   font-weight: 600;
   margin-top: 2px;
@@ -3491,7 +3669,7 @@
 }
 
 .ov-dc-composer-input-row:focus-within {
-  border-color: var(--accent);
+  border-color: #5865F2;
 }
 
 .ov-dc-composer-input {
@@ -3515,17 +3693,21 @@
   width: 28px;
   height: 28px;
   border-radius: var(--r-sm);
-  background: var(--accent);
-  color: #fff;
+  background: #5865F2;
+  color: #ffffff;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   margin-bottom: 2px;
-  transition: opacity 0.15s ease;
+  transition: background-color var(--ease), opacity var(--ease);
+}
+
+.ov-dc-send-btn:hover:not(:disabled) {
+  background: #4752c4;
 }
 
 .ov-dc-send-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
