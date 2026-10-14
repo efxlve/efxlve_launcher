@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "आकार बदलें",
   "overlay.discordGroupsTitle": "समूह DM",
   "overlay.discordGroupMembers": "{count} सदस्य",
-  "overlay.discordGroupOpen": "Discord में खोलें"
+  "overlay.discordGroupOpen": "Discord में खोलें",
+  "settings.navAccount": "खाता और कनेक्शन",
+  "settings.navLibrary": "गेम और लाइब्रेरी",
+  "settings.navApp": "ऐप और सिस्टम",
+  "settings.searchResults": "{count} अनुभाग मेल खाते हैं",
+  "settings.searchEmpty": "कोई मेल खाती सेटिंग नहीं",
+  "settings.searchEmptyDesc": "कोई छोटा या अलग शब्द आज़माएँ।"
 }

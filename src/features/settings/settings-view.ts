@@ -69,6 +69,25 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "about", labelKey: "settings.secAbout" },
 ];
 
+/**
+ * The nav in three labelled clusters. A flat list of thirteen items was a place
+ * to get lost in, and the search is the other way out of that.
+ */
+const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
+  {
+    labelKey: "settings.navAccount",
+    sections: ["account", "cloud", "integrations", "social", "launchers"],
+  },
+  {
+    labelKey: "settings.navLibrary",
+    sections: ["downloads", "collections", "hidden"],
+  },
+  {
+    labelKey: "settings.navApp",
+    sections: ["controller", "appearance", "screenshots", "system", "about"],
+  },
+];
+
 /** A single setting line: title/description on the left, a control on the right.
  * The plain text lands in `data-search`, which is what the settings search
  * filters on. */
@@ -103,8 +122,9 @@ function infoBox(key: string): string {
  * title, an optional hint and the current status, the body holds the fields.
  */
 function detailsRow(title: string, desc: string, chip: string, control: string, hint = ""): string {
+  const search = `${title} ${desc} ${hint}`.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   return `
-    <details class="settings-details">
+    <details class="settings-details" data-search="${esc(search)}">
       <summary>
         <span class="settings-details-main">
           <span class="settings-row-title">${title}</span>
@@ -616,7 +636,7 @@ function renderAppearance(): string {
       t("settings.secStoreTabs"),
       infoBox("settings.storeTabsNote"),
     ) +
-    `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group">${languages}</div>`
+    `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group" data-search="${esc(LANGUAGES.map((l) => l.label).join(" "))}">${languages}</div>`
   );
 }
 
@@ -734,14 +754,16 @@ function renderAbout(): string {
       link(DISCORD_INVITE_URL, storeLogo("discord", 14, "about-link-logo"), t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
       t("settings.aboutLinksTitle"),
     )}
-    <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>
-    <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
-    <p class="settings-about-text">${t("settings.aboutLogos")}</p>
-    <p class="settings-about-text">${t("settings.aboutMarks")}</p>
-    <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
-    <p class="settings-about-text">${t("settings.aboutThirdParty")}</p>
-    <p class="settings-about-text">${t("settings.aboutPrivacy")}</p>
-    <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>`;
+    <div class="settings-about-texts" data-search="about">
+      <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>
+      <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
+      <p class="settings-about-text">${t("settings.aboutLogos")}</p>
+      <p class="settings-about-text">${t("settings.aboutMarks")}</p>
+      <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
+      <p class="settings-about-text">${t("settings.aboutThirdParty")}</p>
+      <p class="settings-about-text">${t("settings.aboutPrivacy")}</p>
+      <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>
+    </div>`;
 }
 
 function hiddenCover(id: string): string {
@@ -841,22 +863,59 @@ function renderSection(section: SettingsSection): string {
 let settingsQuery = "";
 let settingsSearching = false;
 
+/** Called when the user leaves the search for a section (nav click, deep link). */
+export function resetSettingsSearch(): void {
+  settingsQuery = "";
+  settingsSearching = false;
+}
+
+/** "No results" placeholder, toggled by {@link applySettingsSearch}. */
+function searchEmptyHtml(): string {
+  return `
+    <div class="settings-search-empty" id="settings-search-empty" hidden>
+      ${icon("search", 28)}
+      <div class="settings-search-empty-title">${esc(t("settings.searchEmpty"))}</div>
+      <div class="settings-search-empty-desc">${esc(t("settings.searchEmptyDesc"))}</div>
+    </div>`;
+}
+
 export function renderSettings(): string {
   const active = SECTIONS.find((s) => s.id === S.settingsSection) ?? SECTIONS[0];
-  const nav = SECTIONS.map((s) => `
-    <button class="settings-nav-item ${s.id === active.id ? "active" : ""}" data-act="settings-section" data-section="${s.id}">${t(s.labelKey)}</button>`).join("");
+  const nav = NAV_GROUPS.map(
+    (cluster) => `
+      <div class="settings-nav-group">
+        <div class="settings-nav-group-label">${esc(t(cluster.labelKey))}</div>
+        ${cluster.sections
+          .map((id) => {
+            const section = SECTIONS.find((s) => s.id === id);
+            if (!section) return "";
+            const isActive = section.id === active.id && !settingsSearching;
+            return `<button class="settings-nav-item ${isActive ? "active" : ""}" data-act="settings-section" data-section="${section.id}">${t(section.labelKey)}</button>`;
+          })
+          .join("")}
+      </div>`,
+  ).join("");
   wireSettingsSearch();
+  // The paint applies the filter to the fresh DOM; the call also restores the
+  // match state after any in-page re-render (a toggle, a section switch).
+  queueMicrotask(() => applySettingsSearch(settingsQuery));
   return `
     <div class="page settings-page">
       <div class="settings-layout">
         <nav class="settings-nav">${nav}</nav>
         <div class="settings-panel">
-          <input id="settings-search" class="settings-search" type="text" value="${esc(settingsQuery)}" placeholder="${esc(t("settings.searchPlaceholder"))}" spellcheck="false" />
+          <div class="settings-search-bar">
+            <input id="settings-search" class="settings-search" type="text" value="${esc(settingsQuery)}" placeholder="${esc(t("settings.searchPlaceholder"))}" spellcheck="false" />
+            <span class="settings-search-count" id="settings-search-count" hidden></span>
+          </div>
           ${
             settingsSearching
               ? SECTIONS.map(
-                  (s) => `<h2 class="settings-search-head">${t(s.labelKey)}</h2>${renderSection(s.id)}`,
-                ).join("")
+                  (s) => `<section class="settings-search-section" data-section-id="${s.id}">
+                    <h2 class="settings-search-head">${t(s.labelKey)}</h2>
+                    ${renderSection(s.id)}
+                  </section>`,
+                ).join("") + searchEmptyHtml()
               : renderSection(active.id)
           }
         </div>
@@ -864,25 +923,124 @@ export function renderSettings(): string {
     </div>`;
 }
 
-/** Hides every row that does not match, and the groups left without matches. */
+/**
+ * The blocks a search treats as one result: rows, collapsible rows, info boxes,
+ * cards and the custom list rows a few sections still hand-write.
+ */
+const SEARCH_UNIT_SELECTOR =
+  "[data-search], .settings-row, .settings-details, .info-box, .card, .row, .empty-state";
+
+/** Marks a block the current query filtered out. A class, not the `hidden`
+ * attribute: other code sets `hidden` on its own nodes (`.account-switch`),
+ * and the search must not put those back on screen. */
+const SEARCH_HIDE_CLASS = "settings-search-hide";
+
+function isSearchHidden(el: HTMLElement): boolean {
+  return el.classList.contains(SEARCH_HIDE_CLASS);
+}
+
+/** Case- and accent-insensitive fold: Turkish users type "sayfasi" for
+ * "sayfası", and the accented locales have the same habit. */
+function foldForSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ıi̇]/g, "i")
+    .replace(/ş/g, "s")
+    .replace(/ğ/g, "g")
+    .replace(/ç/g, "c")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .replace(/ß/g, "ss");
+}
+
+function searchMatches(text: string, tokens: string[]): boolean {
+  const hay = foldForSearch(text);
+  return tokens.every((token) => hay.includes(token));
+}
+
+/**
+ * Hides every block that does not match, then the groups, headings and whole
+ * sections left without a match. Multi-word queries are AND: every word has to
+ * appear somewhere in the block.
+ */
 function applySettingsSearch(query: string): void {
   const panel = document.querySelector<HTMLElement>(".settings-panel");
   if (!panel) return;
-  const needle = query.trim().toLowerCase();
-  panel.querySelectorAll<HTMLElement>(".settings-row").forEach((row) => {
-    const haystack = (row.dataset.search ?? "").toLowerCase();
-    row.hidden = needle.length > 0 && !haystack.includes(needle);
+  const tokens = query
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(foldForSearch);
+  const searching = tokens.length > 0;
+
+  panel.querySelectorAll<HTMLElement>(SEARCH_UNIT_SELECTOR).forEach((unit) => {
+    // The attribute text is the hand-written part; the rest comes from the DOM,
+    // so custom markup is searchable without being tagged.
+    const text = `${unit.dataset.search ?? ""} ${unit.textContent ?? ""}`;
+    unit.classList.toggle(SEARCH_HIDE_CLASS, searching && !searchMatches(text, tokens));
   });
+
   panel.querySelectorAll<HTMLElement>(".settings-group").forEach((group) => {
-    const anyVisible = [...group.querySelectorAll<HTMLElement>(".settings-row")].some(
-      (row) => !row.hidden,
+    const anyVisible = [...group.querySelectorAll<HTMLElement>(SEARCH_UNIT_SELECTOR)].some(
+      (el) => !isSearchHidden(el),
     );
-    group.hidden = needle.length > 0 && !anyVisible;
-    const head = group.previousElementSibling;
-    if (head instanceof HTMLElement && head.classList.contains("section-title")) {
-      head.hidden = group.hidden;
+    group.classList.toggle(SEARCH_HIDE_CLASS, searching && !anyVisible);
+  });
+
+  panel.querySelectorAll<HTMLElement>(".settings-search-section").forEach((section) => {
+    const anyVisible = [...section.querySelectorAll<HTMLElement>(SEARCH_UNIT_SELECTOR)].some(
+      (el) => !isSearchHidden(el),
+    );
+    section.classList.toggle(SEARCH_HIDE_CLASS, searching && !anyVisible);
+  });
+
+  // A heading goes with its content: walk the following siblings until the next
+  // heading and keep the heading only when something readable is left.
+  panel.querySelectorAll<HTMLElement>(".section-title").forEach((title) => {
+    const head = title.closest<HTMLElement>(".settings-section-head, .settings-hidden-head") ?? title;
+    let sibling = head.nextElementSibling;
+    let anyVisible = false;
+    while (sibling instanceof HTMLElement) {
+      if (sibling.matches(".section-title") || sibling.querySelector(":scope > .section-title")) break;
+      if (!isSearchHidden(sibling) && (sibling.matches(SEARCH_UNIT_SELECTOR) || sibling.querySelector(SEARCH_UNIT_SELECTOR))) {
+        anyVisible = true;
+        break;
+      }
+      sibling = sibling.nextElementSibling;
+    }
+    head.classList.toggle(SEARCH_HIDE_CLASS, searching && !anyVisible);
+    // The language page keeps its description between the title and the grid.
+    const desc = head.nextElementSibling;
+    if (desc instanceof HTMLElement && desc.classList.contains("settings-lang-desc")) {
+      desc.classList.toggle(SEARCH_HIDE_CLASS, searching && !anyVisible);
     }
   });
+
+  const visibleSections = [
+    ...panel.querySelectorAll<HTMLElement>(".settings-search-section"),
+  ].filter((section) => !isSearchHidden(section)).length;
+  const count = panel.querySelector<HTMLElement>("#settings-search-count");
+  if (count) {
+    count.hidden = !searching || visibleSections === 0;
+    count.textContent = searching ? t("settings.searchResults", { count: String(visibleSections) }) : "";
+  }
+  const empty = panel.querySelector<HTMLElement>("#settings-search-empty");
+  if (empty) empty.hidden = !searching || visibleSections > 0;
+}
+
+/** Enter jumps the caret to the first match, so a long page does not hide it. */
+function jumpToFirstMatch(): void {
+  const first = document.querySelector<HTMLElement>(
+    `.settings-search-section:not(.${SEARCH_HIDE_CLASS}) [data-search]:not(.${SEARCH_HIDE_CLASS}), .settings-search-section:not(.${SEARCH_HIDE_CLASS}) .settings-row:not(.${SEARCH_HIDE_CLASS})`,
+  );
+  if (!first) return;
+  first.scrollIntoView({ block: "center" });
+  first.classList.add("settings-search-jump");
+  window.setTimeout(() => first.classList.remove("settings-search-jump"), 1000);
 }
 
 /** Wires the search box once; typing filters in place, and the first character
@@ -910,6 +1068,25 @@ function wireSettingsSearch(): void {
       return;
     }
     applySettingsSearch(query);
+  });
+  document.addEventListener("keydown", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.id !== "settings-search") return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (!input.value) {
+        input.blur();
+        return;
+      }
+      resetSettingsSearch();
+      render();
+      document.getElementById("settings-search")?.focus();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      jumpToFirstMatch();
+    }
   });
 }
 

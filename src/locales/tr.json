@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "Boyutlandır",
   "overlay.discordGroupsTitle": "Grup Sohbetleri",
   "overlay.discordGroupMembers": "{count} üye",
-  "overlay.discordGroupOpen": "Discord'da aç"
+  "overlay.discordGroupOpen": "Discord'da aç",
+  "settings.navAccount": "Hesap & Bağlantılar",
+  "settings.navLibrary": "Oyunlar & Kitaplık",
+  "settings.navApp": "Uygulama & Sistem",
+  "settings.searchResults": "{count} bölümde eşleşme",
+  "settings.searchEmpty": "Eşleşen ayar yok",
+  "settings.searchEmptyDesc": "Daha kısa veya farklı bir kelime dene."
 }

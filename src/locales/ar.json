@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "تغيير الحجم",
   "overlay.discordGroupsTitle": "المحادثات الجماعية",
   "overlay.discordGroupMembers": "{count} أعضاء",
-  "overlay.discordGroupOpen": "فتح في ديسكورد"
+  "overlay.discordGroupOpen": "فتح في ديسكورد",
+  "settings.navAccount": "الحساب والاتصالات",
+  "settings.navLibrary": "الألعاب والمكتبة",
+  "settings.navApp": "التطبيق والنظام",
+  "settings.searchResults": "{count} أقسام مطابقة",
+  "settings.searchEmpty": "لا توجد إعدادات مطابقة",
+  "settings.searchEmptyDesc": "جرّب كلمة أقصر أو مختلفة."
 }

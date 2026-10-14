@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "调整大小",
   "overlay.discordGroupsTitle": "群组私信",
   "overlay.discordGroupMembers": "{count} 位成员",
-  "overlay.discordGroupOpen": "在 Discord 中打开"
+  "overlay.discordGroupOpen": "在 Discord 中打开",
+  "settings.navAccount": "账户与连接",
+  "settings.navLibrary": "游戏与库",
+  "settings.navApp": "应用与系统",
+  "settings.searchResults": "{count} 个分区匹配",
+  "settings.searchEmpty": "没有匹配的设置",
+  "settings.searchEmptyDesc": "试试更短或不同的词。"
 }

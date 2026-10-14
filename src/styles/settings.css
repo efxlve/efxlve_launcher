@@ -199,3 +199,52 @@
   letter-spacing: 0.05em;
   color: var(--text-3);
 }
+
+/* --- Grouped navigation --------------------------------------------------- */
+.settings-nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }
+.settings-nav-group:first-child { margin-top: 0; }
+.settings-nav-group-label {
+  padding: 0 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  user-select: none;
+}
+
+/* --- Search v2 ------------------------------------------------------------ */
+/* The rows are flex, and a class selector beats the browser's own [hidden]
+   rule: without this the search's hidden attribute never hid a single row. */
+.settings-panel [hidden] { display: none !important; }
+.settings-panel .settings-search-hide { display: none !important; }
+
+.settings-search-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.settings-search-bar .settings-search { flex: 1 1 auto; margin-bottom: 0; }
+.settings-search-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.settings-search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--text-3);
+}
+.settings-search-empty-title { margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--text); }
+.settings-search-empty-desc { font-size: 12px; color: var(--text-3); }
+
+/* Enter on the search box: the first match flashes so a long page does not
+   hide it. */
+.settings-search-jump { animation: settings-jump 1000ms ease; }
+@keyframes settings-jump {
+  0% { background: var(--accent-tint); }
+  100% { background: transparent; }
+}

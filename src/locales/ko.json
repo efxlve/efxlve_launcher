@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "크기 조정",
   "overlay.discordGroupsTitle": "그룹 DM",
   "overlay.discordGroupMembers": "멤버 {count}명",
-  "overlay.discordGroupOpen": "Discord에서 열기"
+  "overlay.discordGroupOpen": "Discord에서 열기",
+  "settings.navAccount": "계정 및 연결",
+  "settings.navLibrary": "게임 및 라이브러리",
+  "settings.navApp": "앱 및 시스템",
+  "settings.searchResults": "{count}개 섹션 일치",
+  "settings.searchEmpty": "일치하는 설정이 없습니다",
+  "settings.searchEmptyDesc": "더 짧거나 다른 단어를 입력해 보세요."
 }

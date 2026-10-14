@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "ปรับขนาด",
   "overlay.discordGroupsTitle": "แชทกลุ่ม",
   "overlay.discordGroupMembers": "สมาชิก {count} คน",
-  "overlay.discordGroupOpen": "เปิดใน Discord"
+  "overlay.discordGroupOpen": "เปิดใน Discord",
+  "settings.navAccount": "บัญชีและการเชื่อมต่อ",
+  "settings.navLibrary": "เกมและคลังเกม",
+  "settings.navApp": "แอปและระบบ",
+  "settings.searchResults": "ตรงกัน {count} ส่วน",
+  "settings.searchEmpty": "ไม่มีการตั้งค่าที่ตรงกัน",
+  "settings.searchEmptyDesc": "ลองใช้คำที่สั้นหรือต่างออกไป"
 }

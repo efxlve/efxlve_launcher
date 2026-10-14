@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "Zmień rozmiar",
   "overlay.discordGroupsTitle": "Grupowe DM",
   "overlay.discordGroupMembers": "{count} członków",
-  "overlay.discordGroupOpen": "Otwórz w Discordzie"
+  "overlay.discordGroupOpen": "Otwórz w Discordzie",
+  "settings.navAccount": "Konto i połączenia",
+  "settings.navLibrary": "Gry i biblioteka",
+  "settings.navApp": "Aplikacja i system",
+  "settings.searchResults": "{count} sekcji",
+  "settings.searchEmpty": "Brak pasujących ustawień",
+  "settings.searchEmptyDesc": "Spróbuj krótszego lub innego słowa."
 }

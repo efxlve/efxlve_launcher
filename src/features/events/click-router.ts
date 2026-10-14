@@ -113,7 +113,7 @@ import {
   openNotifPanel,
   renderNotificationPanel,
 } from "../notifications/notifications";
-import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction } from "../settings/settings-view";
+import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
 import { ALL_PROFILE_STORES, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -232,7 +232,12 @@ document.addEventListener("click", (e) => {
     const settingsSection = targetView === "settings"
       ? ((t.dataset.settingsSection as import("../../core/types").SettingsSection | undefined) || "account")
       : undefined;
-    if (settingsSection) S.settingsSection = settingsSection;
+    if (settingsSection) {
+      S.settingsSection = settingsSection;
+      // A deep link into a section leaves the search, otherwise the panel keeps
+      // showing the last query's results.
+      resetSettingsSearch();
+    }
     setView(targetView);
     pushNavHistory({ view: targetView, settingsSection });
     if (S.view === "library") void bootEpic();
@@ -758,6 +763,8 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "settings-section" && t.dataset.section) {
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
+    // Picking a section leaves the search: the section is what was asked for.
+    resetSettingsSearch();
     pushNavHistory({ view: "settings", settingsSection: S.settingsSection });
     render();
     if (S.settingsSection === "integrations") void loadIntegrationsView();

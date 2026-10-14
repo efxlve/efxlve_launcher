@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "Redimensionar",
   "overlay.discordGroupsTitle": "Mensajes grupales",
   "overlay.discordGroupMembers": "{count} miembros",
-  "overlay.discordGroupOpen": "Abrir en Discord"
+  "overlay.discordGroupOpen": "Abrir en Discord",
+  "settings.navAccount": "Cuenta y conexiones",
+  "settings.navLibrary": "Juegos y biblioteca",
+  "settings.navApp": "Aplicación y sistema",
+  "settings.searchResults": "{count} secciones coinciden",
+  "settings.searchEmpty": "No hay ajustes coincidentes",
+  "settings.searchEmptyDesc": "Prueba una palabra más corta o diferente."
 }

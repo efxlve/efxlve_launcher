@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "サイズ変更",
   "overlay.discordGroupsTitle": "グループDM",
   "overlay.discordGroupMembers": "メンバー{count}人",
-  "overlay.discordGroupOpen": "Discordで開く"
+  "overlay.discordGroupOpen": "Discordで開く",
+  "settings.navAccount": "アカウントと接続",
+  "settings.navLibrary": "ゲームとライブラリ",
+  "settings.navApp": "アプリとシステム",
+  "settings.searchResults": "{count} 件のセクションが一致",
+  "settings.searchEmpty": "一致する設定がありません",
+  "settings.searchEmptyDesc": "短い別の単語を試してください。"
 }

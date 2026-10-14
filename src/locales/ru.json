@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "Изменить размер",
   "overlay.discordGroupsTitle": "Групповые ЛС",
   "overlay.discordGroupMembers": "Участники: {count}",
-  "overlay.discordGroupOpen": "Открыть в Discord"
+  "overlay.discordGroupOpen": "Открыть в Discord",
+  "settings.navAccount": "Аккаунт и подключения",
+  "settings.navLibrary": "Игры и библиотека",
+  "settings.navApp": "Приложение и система",
+  "settings.searchResults": "Совпадений в разделах: {count}",
+  "settings.searchEmpty": "Нет подходящих настроек",
+  "settings.searchEmptyDesc": "Попробуйте более короткое или другое слово."
 }

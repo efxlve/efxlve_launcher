@@ -2057,5 +2057,11 @@
   "overlay.widgetResize": "調整大小",
   "overlay.discordGroupsTitle": "群組私訊",
   "overlay.discordGroupMembers": "{count} 位成員",
-  "overlay.discordGroupOpen": "在 Discord 中開啟"
+  "overlay.discordGroupOpen": "在 Discord 中開啟",
+  "settings.navAccount": "帳戶與連線",
+  "settings.navLibrary": "遊戲與資料庫",
+  "settings.navApp": "應用與系統",
+  "settings.searchResults": "{count} 個區段符合",
+  "settings.searchEmpty": "沒有符合的設定",
+  "settings.searchEmptyDesc": "試試更短或不同的詞。"
 }
