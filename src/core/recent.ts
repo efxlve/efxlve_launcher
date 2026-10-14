@@ -10,17 +10,46 @@ import { updateChrome } from "./nav";
 import { summaryOf } from "./selectors";
 import { S } from "./state";
 
-function syncRecentGamesCache(): void {
+export function syncRecentGamesCache(): void {
   try {
-    const list = S.epicRecent.map((id) => {
+    const list: Array<{ appName: string; title: string; coverUrl?: string }> = [];
+    const seen = new Set<string>();
+
+    for (const id of S.epicRecent) {
+      if (seen.has(id)) continue;
       const s = summaryOf(id);
-      return {
-        appName: id,
-        title: s?.title || id,
-        coverUrl: s?.cover || (id.startsWith("steam::") ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${id.slice(7)}/library_600x900.jpg` : ""),
-      };
-    });
-    localStorage.setItem("efxlve-recent-games-cache", JSON.stringify(list));
+      if (s && s.installed) {
+        seen.add(id);
+        list.push({
+          appName: id,
+          title: s.title || id,
+          coverUrl: s.cover || (id.startsWith("steam::") ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${id.slice(7)}/library_600x900.jpg` : ""),
+        });
+      }
+    }
+
+    if (list.length < 5) {
+      const all: Array<{ appName: string; title: string; installed?: boolean; cover?: string | null }> = [
+        ...S.epicSummaries.map((s) => ({ appName: s.appName, title: s.title, installed: s.installed, cover: s.cover })),
+        ...S.steamSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
+        ...S.gogSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
+        ...S.amazonSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
+        ...S.companionSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
+      ];
+      for (const item of all) {
+        if (list.length >= 5) break;
+        if (item.installed && !seen.has(item.appName) && !S.hiddenGames.has(item.appName)) {
+          seen.add(item.appName);
+          list.push({
+            appName: item.appName,
+            title: item.title || item.appName,
+            coverUrl: item.cover || (item.appName.startsWith("steam::") ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${item.appName.slice(7)}/library_600x900.jpg` : ""),
+          });
+        }
+      }
+    }
+
+    localStorage.setItem("efxlve-recent-games-cache", JSON.stringify(list.slice(0, 5)));
   } catch {
     // ignore
   }

@@ -65,234 +65,330 @@
   user-select: none;
 }
 
-/* --- Recent Games Pill (Xbox Game Bar style on topbar left) --- */
+/* --- Game Hub Trigger (Topbar Left) --- */
 .ov-topbar-recent-wrap {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.ov-topbar-recent-pill {
+.ov-topbar-game-hub-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   height: 32px;
-  padding: 0 4px 0 3px;
+  padding: 0 10px 0 6px;
   border-radius: 16px;
   background: var(--surface-2);
   border: 1px solid var(--line);
+  color: var(--text-2);
   cursor: pointer;
-  transition: background var(--ease), border-color var(--ease);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all var(--ease);
 }
 
-.ov-topbar-recent-pill:hover {
+.ov-topbar-game-hub-btn:hover {
   background: var(--surface-3);
   border-color: var(--line-strong);
+  color: var(--text);
 }
 
-.ov-recent-thumbs {
-  display: flex;
-  align-items: center;
+.ov-topbar-game-hub-btn.is-playing {
+  background: rgba(30, 215, 96, 0.08);
+  border-color: rgba(30, 215, 96, 0.28);
+  color: var(--text);
+}
+
+.ov-topbar-game-hub-btn.is-playing:hover {
+  background: rgba(30, 215, 96, 0.14);
+  border-color: rgba(30, 215, 96, 0.45);
+}
+
+.ov-hub-art-wrap {
   position: relative;
-  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.ov-recent-thumb {
-  width: 24px;
-  height: 24px;
-  border-radius: 5px;
+.ov-hub-art {
+  width: 20px;
+  height: 26px;
+  border-radius: 4px;
   object-fit: cover;
   background: var(--surface-3);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.ov-hub-art.ov-ph {
   display: grid;
   place-items: center;
   color: var(--text-3);
 }
 
-.ov-recent-thumb + .ov-recent-thumb {
-  margin-left: -9px;
-  position: relative;
-  z-index: 1;
+.ov-hub-live-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1ed760;
+  border: 1.5px solid var(--surface-1);
+  box-shadow: 0 0 6px rgba(30, 215, 96, 0.7);
 }
 
-.ov-recent-active-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  max-width: 130px;
+.ov-hub-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary);
+  margin-left: 3px;
+}
+
+.ov-hub-title {
+  max-width: 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 2px;
+  letter-spacing: -0.01em;
 }
 
-.ov-recent-arrow {
-  color: var(--text-3);
-  display: inline-flex;
-  align-items: center;
-  padding: 0 1px;
-  transition: transform var(--ease), color var(--ease);
-}
-
-.ov-topbar-recent-pill:hover .ov-recent-arrow {
-  color: var(--text);
-}
-
-.ov-recent-pill-divider {
-  width: 1px;
-  height: 14px;
-  background: var(--line);
-  margin: 0 1px;
-}
-
-.ov-recent-launcher-btn {
-  border: none;
-  background: transparent;
-  color: var(--text-3);
+.ov-hub-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
-  cursor: pointer;
-  padding: 0;
-  transition: color var(--ease), background var(--ease);
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-.ov-recent-launcher-btn:hover {
+.ov-hub-arrow {
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  transition: transform var(--ease), color var(--ease);
+}
+
+.ov-topbar-game-hub-btn:hover .ov-hub-arrow {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.1);
 }
 
-/* --- Recent Games Dropdown --- */
-.ov-recent-dropdown {
+/* --- Quick Launch Popover (Bespoke Efxlve UI) --- */
+.ov-quick-launch-popover {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: 240px;
-  max-height: 320px;
-  background: var(--surface-1);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(16px);
+  width: 290px;
+  background: rgba(18, 20, 26, 0.94);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
   z-index: 1001;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: ov-pop-in 120ms ease-out;
+  padding: 7px;
+  animation: ov-pop-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ov-recent-header {
-  padding: 8px 10px 6px;
-  border-bottom: 1px solid var(--line);
-  font-size: 11px;
+.ov-quick-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px 9px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.ov-quick-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ov-quick-header-title svg {
+  color: var(--primary);
+}
+
+.ov-quick-header-badge {
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--text-3);
-  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-.ov-recent-list {
+.ov-quick-cards {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px;
+  gap: 3px;
+  max-height: 330px;
   overflow-y: auto;
-  max-height: 220px;
   scrollbar-width: thin;
 }
 
-.ov-recent-item {
+.ov-quick-card {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 5px 8px;
-  border: none;
-  background: transparent;
-  border-radius: var(--r-sm);
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 9px;
   color: var(--text);
   cursor: pointer;
   text-align: left;
   font: inherit;
-  transition: background var(--ease);
+  transition: all var(--ease);
 }
 
-.ov-recent-item:hover {
-  background: var(--surface-2);
+.ov-quick-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
 }
 
-.ov-recent-item-art {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+.ov-quick-card.is-current {
+  background: rgba(30, 215, 96, 0.07);
+  border-color: rgba(30, 215, 96, 0.22);
+}
+
+.ov-quick-card.is-current:hover {
+  background: rgba(30, 215, 96, 0.12);
+  border-color: rgba(30, 215, 96, 0.35);
+}
+
+.ov-quick-card-art-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ov-quick-card-art {
+  width: 32px;
+  height: 44px;
+  border-radius: 5px;
   object-fit: cover;
   background: var(--surface-3);
-  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  display: block;
+}
+
+.ov-quick-card-art.ov-ph {
   display: grid;
   place-items: center;
   color: var(--text-3);
-  border: 1px solid var(--line);
 }
 
-.ov-recent-item-title {
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.ov-quick-live-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1ed760;
+  border: 1.5px solid var(--surface-1);
+  box-shadow: 0 0 6px rgba(30, 215, 96, 0.8);
+}
+
+.ov-quick-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
 
-.ov-recent-item-play {
+.ov-quick-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.ov-quick-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ov-quick-tag {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.ov-quick-tag.is-store {
   color: var(--text-3);
-  opacity: 0;
-  transition: opacity var(--ease), color var(--ease);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ov-quick-tag.is-running {
+  color: #1ed760;
+  background: rgba(30, 215, 96, 0.12);
+  border: 1px solid rgba(30, 215, 96, 0.25);
+  font-weight: 600;
+}
+
+.ov-quick-card-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ov-quick-play-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-2);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: all var(--ease);
 }
 
-.ov-recent-item:hover .ov-recent-item-play {
+.ov-quick-card:hover .ov-quick-play-btn {
   opacity: 1;
-  color: #1ed760;
+  background: #1ed760;
+  border-color: #1ed760;
+  color: #000;
+  box-shadow: 0 0 10px rgba(30, 215, 96, 0.5);
 }
 
-.ov-recent-empty {
-  padding: 14px 10px;
+.ov-quick-empty {
+  padding: 18px 10px;
   text-align: center;
   font-size: 11.5px;
   color: var(--text-3);
-}
-
-.ov-recent-footer {
-  padding: 4px;
-  border-top: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.ov-recent-footer-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 6px 8px;
-  border: none;
-  background: transparent;
-  border-radius: var(--r-sm);
-  color: var(--text-2);
-  font-size: 11.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--ease), color var(--ease);
-}
-
-.ov-recent-footer-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
 }
 
 .ov-topbar-divider {

@@ -42,6 +42,16 @@ const ENABLED_KEY = OVERLAY_ENABLED_KEY;
 const HUD_KEY = OVERLAY_HUD_KEY;
 const OPACITY_KEY = OVERLAY_OPACITY_KEY;
 const DISABLED_KEY = OVERLAY_DISABLED_KEY;
+const CLOCK_SECONDS_KEY = "efxlve-overlay-clock-seconds";
+const BATTERY_PERCENT_KEY = "efxlve-overlay-battery-percent";
+
+function showClockSeconds(): boolean {
+  return localStorage.getItem(CLOCK_SECONDS_KEY) === "true";
+}
+
+function showBatteryPercent(): boolean {
+  return localStorage.getItem(BATTERY_PERCENT_KEY) === "true";
+}
 
 /* ---------- Data Types ---------- */
 
@@ -869,6 +879,7 @@ function initBatteryMonitoring(): void {
 function paintBattery(): void {
   const el = document.getElementById("ov-topbar-battery");
   if (!el) return;
+  const showPct = showBatteryPercent();
   if (!cachedBattery) {
     el.innerHTML = `<span class="ov-battery-icon">${icon("battery", 15)}</span>`;
     el.title = t("tv.battery");
@@ -877,7 +888,7 @@ function paintBattery(): void {
   const ic = cachedBattery.charging ? icon("battery-charging", 15) : icon("battery", 15);
   el.innerHTML = `
     <span class="ov-battery-icon">${ic}</span>
-    <span class="ov-battery-level">${cachedBattery.level}%</span>
+    ${showPct ? `<span class="ov-battery-level">${cachedBattery.level}%</span>` : ""}
   `;
   el.title = `${t("tv.battery")}: ${cachedBattery.level}%${cachedBattery.charging ? " (Şarj oluyor)" : ""}`;
 }
@@ -891,6 +902,13 @@ interface RecentGameInfo {
 }
 
 let recentMenuOpen = false;
+
+function inferStoreLabel(appName: string): string {
+  if (appName.startsWith("steam::")) return "Steam";
+  if (appName.startsWith("gog::")) return "GOG";
+  if (appName.startsWith("amazon::")) return "Amazon";
+  return "Epic Games";
+}
 
 function getRecentGames(): RecentGameInfo[] {
   let list: RecentGameInfo[] = [];
@@ -937,52 +955,70 @@ function getRecentGames(): RecentGameInfo[] {
     }
   }
 
-  return list;
+  return list.slice(0, 5);
 }
 
 function recentGamesPillHtml(): string {
   const list = getRecentGames();
-  const activeTitle = !launcherMode && context.title ? context.title : "";
-  const thumbs = list.slice(0, 2);
+  const isPlaying = !launcherMode && Boolean(context.title);
+  const activeTitle = isPlaying ? context.title : "";
+  const activeGame = isPlaying
+    ? list.find((g) => g.appName === context.appName) || { appName: context.appName, title: context.title, coverUrl: "" }
+    : null;
 
   return `
-    <div class="ov-topbar-recent-pill" id="ov-topbar-recent-pill" data-ov="toggle-recent-menu" title="${esc(t("profile.recentGamesTitle"))}">
-      <div class="ov-recent-thumbs">
-        ${thumbs.length > 0 ? thumbs.map((g) => g.coverUrl ? `
-          <img class="ov-recent-thumb" src="${esc(g.coverUrl)}" alt="" loading="lazy" />
-        ` : `
-          <span class="ov-recent-thumb">${icon("gamepad-2", 13)}</span>
-        `).join("") : `
-          <span class="ov-recent-thumb">${icon("gamepad-2", 13)}</span>
+    <button class="ov-topbar-game-hub-btn ${isPlaying ? "is-playing" : ""}" id="ov-topbar-game-hub-btn" data-ov="toggle-recent-menu" title="${esc(t("profile.recentGamesTitle"))}">
+      ${isPlaying ? `
+        <span class="ov-hub-art-wrap">
+          ${activeGame?.coverUrl
+            ? `<img class="ov-hub-art" src="${esc(activeGame.coverUrl)}" alt="" />`
+            : `<span class="ov-hub-art ov-ph">${icon("gamepad-2", 13)}</span>`
+          }
+          <span class="ov-hub-live-dot" title="${esc(t("overlay.running"))}"></span>
+        </span>
+        <span class="ov-hub-title" title="${esc(activeTitle)}">${esc(activeTitle)}</span>
+      ` : `
+        <span class="ov-hub-icon">${icon("gamepad-2", 14)}</span>
+        <span class="ov-hub-title">${esc(t("profile.recentGamesTitle"))}</span>
+        <span class="ov-hub-chip">${list.length}</span>
+      `}
+      <span class="ov-hub-arrow">${icon("chevron-down", 11)}</span>
+    </button>
+    <div class="ov-quick-launch-popover" id="ov-recent-dropdown"${recentMenuOpen ? "" : ' style="display:none"'}>
+      <div class="ov-quick-header">
+        <div class="ov-quick-header-title">
+          ${icon("sparkles", 13)}
+          <span>${esc(t("profile.recentGamesTitle"))}</span>
+        </div>
+        <span class="ov-quick-header-badge">${list.length} Oyun</span>
+      </div>
+      <div class="ov-quick-cards">
+        ${list.length > 0 ? list.map((g) => {
+          const isCurrent = !launcherMode && context.appName === g.appName;
+          const storeLabel = inferStoreLabel(g.appName);
+          return `
+            <button class="ov-quick-card ${isCurrent ? "is-current" : ""}" data-ov="launch-recent-game" data-id="${esc(g.appName)}" title="${esc(g.title)}">
+              <div class="ov-quick-card-art-wrap">
+                ${g.coverUrl ? `<img class="ov-quick-card-art" src="${esc(g.coverUrl)}" alt="" loading="lazy" />` : `<div class="ov-quick-card-art ov-ph">${icon("gamepad-2", 16)}</div>`}
+                ${isCurrent ? `<span class="ov-quick-live-indicator" title="${esc(t("overlay.running"))}"></span>` : ""}
+              </div>
+              <div class="ov-quick-card-info">
+                <span class="ov-quick-card-title">${esc(g.title)}</span>
+                <div class="ov-quick-card-tags">
+                  ${isCurrent
+                    ? `<span class="ov-quick-tag is-running">● ${esc(t("overlay.running"))}</span>`
+                    : `<span class="ov-quick-tag is-store">${esc(storeLabel)}</span>`
+                  }
+                </div>
+              </div>
+              <div class="ov-quick-card-action">
+                <span class="ov-quick-play-btn">${icon("play", 11)}</span>
+              </div>
+            </button>
+          `;
+        }).join("") : `
+          <div class="ov-quick-empty">Son oynanan oyun yok</div>
         `}
-      </div>
-      ${activeTitle ? `<span class="ov-recent-active-title" title="${esc(activeTitle)}">${esc(activeTitle)}</span>` : ""}
-      <span class="ov-recent-arrow">${icon("chevron-down", 11)}</span>
-      <div class="ov-recent-pill-divider"></div>
-      <button class="ov-recent-launcher-btn" data-ov="launcher" title="${esc(t("overlay.openLauncher"))}">
-        ${icon("layout-grid", 13)}
-      </button>
-    </div>
-    <div class="ov-recent-dropdown" id="ov-recent-dropdown"${recentMenuOpen ? "" : ' style="display:none"'}>
-      <div class="ov-recent-header">
-        <span>${esc(t("profile.recentGamesTitle"))}</span>
-      </div>
-      <div class="ov-recent-list">
-        ${list.length > 0 ? list.map((g) => `
-          <button class="ov-recent-item" data-ov="launch-recent-game" data-id="${esc(g.appName)}" title="${esc(g.title)}">
-            ${g.coverUrl ? `<img class="ov-recent-item-art" src="${esc(g.coverUrl)}" alt="" loading="lazy" />` : `<span class="ov-recent-item-art">${icon("gamepad-2", 14)}</span>`}
-            <span class="ov-recent-item-title">${esc(g.title)}</span>
-            <span class="ov-recent-item-play">${icon("play", 11)}</span>
-          </button>
-        `).join("") : `
-          <div class="ov-recent-empty">Son oynanan oyun yok</div>
-        `}
-      </div>
-      <div class="ov-recent-footer">
-        <button class="ov-recent-footer-btn" data-ov="launcher">
-          ${icon("layout-grid", 13)}
-          <span>${esc(t("overlay.openLauncher"))}</span>
-        </button>
       </div>
     </div>`;
 }
@@ -1006,6 +1042,10 @@ function closeRecentMenu(): void {
 
 async function launchRecentGame(appName: string): Promise<void> {
   closeRecentMenu();
+  if (!launcherMode && context.appName === appName) {
+    void invoke("overlay_hide");
+    return;
+  }
   try {
     if (appName.startsWith("steam::")) {
       const appId = appName.slice(7);
@@ -1050,13 +1090,14 @@ function shellHtml(): string {
         <div class="ov-topbar-divider"></div>
 
         <div class="ov-topbar-clock">
-          <span id="ov-clock-time">00:00</span><span class="ov-clock-sec" id="ov-clock-sec">:00</span>
+          <span id="ov-clock-time">00:00</span><span class="ov-clock-sec" id="ov-clock-sec" style="${showClockSeconds() ? "" : "display:none"}">:00</span>
         </div>
 
         <div class="ov-topbar-divider"></div>
 
         <div class="ov-topbar-battery" id="ov-topbar-battery" title="${esc(t("tv.battery"))}">
           <span class="ov-battery-icon">${icon("battery", 15)}</span>
+          ${showBatteryPercent() && cachedBattery ? `<span class="ov-battery-level">${cachedBattery.level}%</span>` : ""}
         </div>
 
         <div class="ov-topbar-gamepad" id="ov-topbar-gamepad" style="${padConnected ? "" : "display:none"}" title="Oyun Kumandası">
@@ -1171,7 +1212,10 @@ function updateClock(): void {
   const sessionEl = document.getElementById("ov-session-text");
 
   if (timeEl) timeEl.textContent = `${hours}:${mins}`;
-  if (secEl) secEl.textContent = `:${secs}`;
+  if (secEl) {
+    secEl.textContent = `:${secs}`;
+    secEl.style.display = showClockSeconds() ? "inline" : "none";
+  }
   if (sessionEl) sessionEl.textContent = formatSessionTime(Date.now() - sessionStartEpoch);
   if (isWidgetOpen("music")) paintSpotifyProgress();
 }
@@ -3987,6 +4031,22 @@ function renderSettings(): void {
 
     <div class="ov-setting-item">
       <div class="ov-setting-info">
+        <div class="ov-setting-name">${esc(t("overlay.clockSecondsTitle"))}</div>
+        <div class="ov-setting-desc">${esc(t("overlay.clockSecondsDesc"))}</div>
+      </div>
+      <label class="switch"><input type="checkbox" data-ov-toggle="clock-seconds" ${showClockSeconds() ? "checked" : ""} /><span class="track"></span></label>
+    </div>
+
+    <div class="ov-setting-item">
+      <div class="ov-setting-info">
+        <div class="ov-setting-name">${esc(t("overlay.batteryPercentTitle"))}</div>
+        <div class="ov-setting-desc">${esc(t("overlay.batteryPercentDesc"))}</div>
+      </div>
+      <label class="switch"><input type="checkbox" data-ov-toggle="battery-percent" ${showBatteryPercent() ? "checked" : ""} /><span class="track"></span></label>
+    </div>
+
+    <div class="ov-setting-item">
+      <div class="ov-setting-info">
         <div class="ov-setting-name">${esc(t("overlay.opacityTitle"))}</div>
         <div class="ov-setting-desc">${esc(t("overlay.opacityDesc"))}</div>
       </div>
@@ -4371,6 +4431,12 @@ function wireEvents(): void {
       document.querySelectorAll<HTMLInputElement>('input[data-ov-toggle="hud"]').forEach((chk) => {
         chk.checked = input.checked;
       });
+    } else if (toggle === "clock-seconds") {
+      localStorage.setItem(CLOCK_SECONDS_KEY, String(input.checked));
+      updateClock();
+    } else if (toggle === "battery-percent") {
+      localStorage.setItem(BATTERY_PERCENT_KEY, String(input.checked));
+      paintBattery();
     } else if (toggle === "disable-game") {
       // The panel over the launcher/desktop is not a game: blocking it would
       // hide the overlay from the only place its blocklist can be edited.
@@ -4579,8 +4645,7 @@ function getFocusableElements(): HTMLElement[] {
     items.push(node);
   };
 
-  push(document.querySelector(".ov-topbar-recent-pill"));
-  push(document.querySelector(".ov-recent-launcher-btn"));
+  push(document.getElementById("ov-topbar-game-hub-btn"));
   document.querySelectorAll(".ov-topbar-btn").forEach(push);
 
   document.querySelectorAll<HTMLElement>(".ov-widget").forEach((w) => {
