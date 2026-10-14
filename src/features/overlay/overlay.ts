@@ -504,7 +504,7 @@ interface WidgetSize {
 function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
   switch (tab) {
     case "perf":
-      return { minW: 260, minH: 180, maxW: 600, maxH: 700 };
+      return { minW: 310, minH: 330, maxW: 600, maxH: 600 };
     case "shots":
       return { minW: 280, minH: 240, maxW: 800, maxH: 800 };
     case "music":
@@ -527,7 +527,7 @@ function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
 function getDefaultWidgetSize(tab: TabId): WidgetSize {
   switch (tab) {
     case "perf":
-      return { w: 340, h: 360 };
+      return { w: 350, h: 380 };
     case "shots":
       return { w: 340, h: 460 };
     case "music":
@@ -1203,8 +1203,10 @@ function getTelemetryReadings(m: MetricsSample | null) {
 
   const cpuSub = m?.cpuGhz ? `${m.cpuGhz.toFixed(2)} GHz` : (isTr ? "İşlemci" : "Processor");
   const gpuSub = m?.running ? (isTr ? "3D Aktif" : "3D Active") : (isTr ? "Sistem 3D" : "System 3D");
-  const ramSub = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;
-  const vramSub = `${fmtMb(vramUsed)} / ${fmtMb(vramTotal)}`;
+  const ramSub = ramUsed > 0 ? fmtMb(ramUsed) : (isTr ? "Bellek" : "Memory");
+  const vramSub = vramUsed > 0 ? fmtMb(vramUsed) : (isTr ? "Bellek" : "Memory");
+  const ramSubTitle = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;
+  const vramSubTitle = `${fmtMb(vramUsed)} / ${fmtMb(vramTotal)}`;
   const subFps = m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : (m?.running ? "..." : (isTr ? "Beklemede" : "Idle"));
 
   let data: number[] = [];
@@ -1246,9 +1248,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "ram": {
       data = ramHistory;
-      tag = isTr ? "Bellek (RAM)" : "Memory (RAM)";
+      tag = "RAM";
       num = `${ramPct}%`;
-      sub = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;
+      sub = ramSubTitle;
       const valid = data.length > 0 ? data : [ramPct];
       const peak = Math.round(Math.max(...valid));
       const avg = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
@@ -1260,9 +1262,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "vram": {
       data = vramHistory;
-      tag = isTr ? "Video Belleği (VRAM)" : "Video Memory (VRAM)";
+      tag = "VRAM";
       num = `${vramPct}%`;
-      sub = `${fmtMb(vramUsed)} / ${fmtMb(vramTotal)}`;
+      sub = vramSubTitle;
       const valid = data.length > 0 ? data : [vramPct];
       const peak = Math.round(Math.max(...valid));
       const avg = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
@@ -1274,7 +1276,7 @@ function getTelemetryReadings(m: MetricsSample | null) {
     }
     case "fps": {
       data = fpsHistory;
-      tag = isTr ? "Kare Hızı (FPS)" : "Frame Rate (FPS)";
+      tag = "FPS";
       num = fpsVal != null ? String(fpsVal) : "--";
       sub = subFps;
       const validFps = data.filter((v) => v > 0);
@@ -1299,6 +1301,8 @@ function getTelemetryReadings(m: MetricsSample | null) {
     gpuSub,
     ramSub,
     vramSub,
+    ramSubTitle,
+    vramSubTitle,
     subFps,
     cpuStatus: statusLevel(cpuVal),
     gpuStatus: statusLevel(gpuVal),
@@ -1364,7 +1368,7 @@ function renderPerf(): void {
         </button>
 
         <!-- RAM Card -->
-        <button class="ov-perf-card ${activePerfMetric === "ram" ? "active" : ""}" data-perf-metric="ram" type="button">
+        <button class="ov-perf-card ${activePerfMetric === "ram" ? "active" : ""}" data-perf-metric="ram" type="button" title="${t.ramSubTitle}">
           <div class="ov-perf-card-head">
             <div class="ov-perf-card-title-group">
               <span class="ov-perf-icon">${icon("server", 13)}</span>
@@ -1377,7 +1381,7 @@ function renderPerf(): void {
         </button>
 
         <!-- VRAM Card -->
-        <button class="ov-perf-card ${activePerfMetric === "vram" ? "active" : ""}" data-perf-metric="vram" type="button">
+        <button class="ov-perf-card ${activePerfMetric === "vram" ? "active" : ""}" data-perf-metric="vram" type="button" title="${t.vramSubTitle}">
           <div class="ov-perf-card-head">
             <div class="ov-perf-card-title-group">
               <span class="ov-perf-icon">${icon("hard-drive", 13)}</span>
@@ -1610,6 +1614,11 @@ function updateMetricsUi(): void {
     setText("ov-card-sub-ram", t.ramSub);
     setText("ov-card-sub-vram", t.vramSub);
     setText("ov-perf-frame-ms", t.subFps);
+
+    const ramCard = document.querySelector<HTMLElement>('[data-perf-metric="ram"]');
+    if (ramCard) ramCard.title = t.ramSubTitle;
+    const vramCard = document.querySelector<HTMLElement>('[data-perf-metric="vram"]');
+    if (vramCard) vramCard.title = t.vramSubTitle;
 
     const setBar = (id: string, pct: number, status: string) => {
       const el = document.getElementById(id);

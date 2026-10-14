@@ -288,12 +288,12 @@
 
 /* Widget Dimensions & Limits */
 #ov-widget-perf {
-  width: 380px;
-  height: 340px;
-  min-width: 300px;
-  min-height: 220px;
+  width: 350px;
+  height: 380px;
+  min-width: 310px;
+  min-height: 330px;
   max-width: 600px;
-  max-height: 500px;
+  max-height: 600px;
 }
 
 #ov-widget-shots {
@@ -488,6 +488,7 @@
   justify-content: space-between;
   gap: 6px;
   margin-bottom: 2px;
+  min-width: 0;
 }
 
 .ov-perf-card-title-group {
@@ -495,6 +496,7 @@
   align-items: center;
   gap: 5px;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .ov-perf-icon {
@@ -520,6 +522,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 1;
+  text-align: right;
 }
 
 .ov-perf-card-num {
@@ -574,6 +578,7 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 4px;
+  min-width: 0;
 }
 
 .ov-perf-scope-title-group {
@@ -581,6 +586,7 @@
   align-items: baseline;
   gap: 6px;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .ov-perf-scope-title {
@@ -588,6 +594,7 @@
   font-weight: 600;
   color: var(--text-2);
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .ov-perf-scope-val {
@@ -595,6 +602,7 @@
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .ov-perf-scope-stats {
@@ -605,6 +613,7 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ov-perf-scope-stats b {
