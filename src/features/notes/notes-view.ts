@@ -18,6 +18,7 @@ import {
   cachedNotes,
   deleteNote,
   loadNotes,
+  notesFontSize,
   onNotesChanged,
   saveNote,
   sortNotes,
@@ -25,7 +26,6 @@ import {
 } from "./notes-client";
 import { notePreview, renderMarkdownLite, scopeTail, toggleChecklist } from "./markdown";
 
-const FONT_KEY = "efxlve-notes-font";
 /** The swatches the editor offers; empty is the neutral surface color. */
 const NOTE_COLORS = ["", "blue", "green", "yellow", "red", "purple"];
 
@@ -49,11 +49,6 @@ let editorMode: "edit" | "preview" = "edit";
 let deleteArmed = false;
 let saveTimer: number | null = null;
 let saveState: "idle" | "saving" | "saved" = "idle";
-
-function notesFont(): "s" | "m" | "l" {
-  const value = localStorage.getItem(FONT_KEY);
-  return value === "s" || value === "l" ? value : "m";
-}
 
 function hasDraft(): boolean {
   return editorOpen;
@@ -220,7 +215,7 @@ export function renderNotesPage(): string {
             ${notes.length ? notes.map(noteRowHtml).join("") : listEmptyHtml()}
           </div>
         </aside>
-        <section class="notes-editor notes-font-${notesFont()}">
+        <section class="notes-editor notes-font-${notesFontSize()}">
           ${editorHtml()}
         </section>
       </div>
@@ -475,7 +470,7 @@ function wireNotesView(): void {
 
   document.addEventListener("click", (event) => {
     const box = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-note-check]");
-    if (!box) return;
+    if (!box || !box.closest(".notes-editor")) return;
     const index = Number(box.dataset.noteCheck);
     if (!Number.isFinite(index)) return;
     draftBody = toggleChecklist(draftBody, index);

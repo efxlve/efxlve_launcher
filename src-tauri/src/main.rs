@@ -1042,6 +1042,8 @@ fn main() {
             notes::notes_save,
             notes::notes_delete,
             notes::notes_import,
+            notes::notes_import_text,
+            notes::notes_export,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");

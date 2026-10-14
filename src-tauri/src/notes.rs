@@ -273,6 +273,106 @@ pub fn notes_import(app: AppHandle, notes: Vec<NoteInput>) -> Result<u32, String
     Ok(count)
 }
 
+/// Merges an exported file back in. Same id → the incoming note wins; the
+/// timestamps of the export are kept, so a restore does not look brand new.
+fn merge_import(file: &mut NotesFile, incoming: Vec<Note>, now: u64, seq: &mut u64) -> Result<u32, String> {
+    let mut count = 0;
+    for mut note in incoming {
+        if note.id.trim().is_empty() {
+            note.id = format!("{now:x}-{seq:x}");
+            *seq += 1;
+        }
+        note.scope = normalize_scope(&note.scope);
+        note.title = note.title.trim().chars().take(MAX_TITLE).collect();
+        note.body = note.body.chars().take(MAX_BODY).collect();
+        note.color = normalize_color(&note.color);
+        if note.created == 0 {
+            note.created = now;
+        }
+        if note.updated == 0 {
+            note.updated = note.created;
+        }
+        match file.notes.iter_mut().find(|existing| existing.id == note.id) {
+            Some(existing) => {
+                *existing = note;
+                count += 1;
+            }
+            None => {
+                if file.notes.len() >= MAX_NOTES {
+                    return Err("@t:notes.full".to_string());
+                }
+                file.notes.push(note);
+                count += 1;
+            }
+        }
+    }
+    Ok(count)
+}
+
+/// Imports an exported JSON payload (pasted into the settings field).
+#[tauri::command]
+pub fn notes_import_text(app: AppHandle, json: String) -> Result<u32, String> {
+    let parsed: NotesFile = serde_json::from_str(&json).map_err(|_| "@t:notes.badJson".to_string())?;
+    let mut file = read_notes(&app);
+    let mut seq = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+    let count = merge_import(&mut file, parsed.notes, now_ms(), &mut seq)?;
+    write_notes(&app, &file)?;
+    Ok(count)
+}
+
+/// The export as markdown: one section per scope, newest first inside it.
+fn notes_to_markdown(file: &NotesFile) -> String {
+    let mut scopes: Vec<String> = Vec::new();
+    for note in &file.notes {
+        if !scopes.contains(&note.scope) {
+            scopes.push(note.scope.clone());
+        }
+    }
+    // The launcher's own notes lead, the games follow alphabetically.
+    scopes.sort_by(|a, b| {
+        let launcher = |scope: &String| scope == "launcher";
+        launcher(b).cmp(&launcher(a)).then_with(|| a.cmp(b))
+    });
+
+    let mut out = String::from("# Efxlve notes\n");
+    for scope in scopes {
+        out.push_str(&format!("\n## {scope}\n"));
+        let mut notes: Vec<&Note> = file.notes.iter().filter(|note| note.scope == scope).collect();
+        notes.sort_by(|a, b| b.updated.cmp(&a.updated));
+        for note in notes {
+            let title = if note.title.trim().is_empty() { "Untitled" } else { note.title.trim() };
+            out.push_str(&format!("\n### {title}\n\n"));
+            out.push_str(note.body.trim_end());
+            out.push_str("\n");
+        }
+    }
+    out
+}
+
+/// Writes an export next to the user's downloads (or the app data) and returns
+/// the path, so the settings page can offer to open the folder.
+#[tauri::command]
+pub fn notes_export(app: AppHandle, format: String) -> Result<String, String> {
+    let file = read_notes(&app);
+    let dir = app
+        .path()
+        .download_dir()
+        .or_else(|_| app.path().app_data_dir())
+        .map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let (name, data) = if format == "markdown" {
+        ("efxlve-notes.md".to_string(), notes_to_markdown(&file))
+    } else {
+        (
+            "efxlve-notes.json".to_string(),
+            serde_json::to_string_pretty(&file).map_err(|e| e.to_string())?,
+        )
+    };
+    let path = dir.join(name);
+    std::fs::write(&path, data).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,5 +460,56 @@ mod tests {
         assert!(delete_note(&mut file, &first.id));
         assert_eq!(file.notes.len(), 1);
         assert!(!delete_note(&mut file, &first.id));
+    }
+
+    #[test]
+    fn importing_an_export_replaces_matching_ids() {
+        let mut file = NotesFile::default();
+        let first = upsert(&mut file, input("launcher", "a", "one"), 1000, 1).unwrap();
+        let mut seq = 5;
+        let incoming = vec![
+            Note {
+                id: first.id.clone(),
+                scope: "launcher".to_string(),
+                title: "a2".to_string(),
+                body: "two".to_string(),
+                pinned: true,
+                color: "red".to_string(),
+                created: 500,
+                updated: 900,
+            },
+            Note {
+                id: "external-1".to_string(),
+                scope: "steam::1".to_string(),
+                title: "b".to_string(),
+                body: String::new(),
+                pinned: false,
+                color: String::new(),
+                created: 0,
+                updated: 0,
+            },
+        ];
+        let count = merge_import(&mut file, incoming, 2000, &mut seq).unwrap();
+        assert_eq!(count, 2);
+        assert_eq!(file.notes.len(), 2);
+        let replaced = file.notes.iter().find(|note| note.id == first.id).unwrap();
+        assert_eq!(replaced.title, "a2");
+        assert_eq!(replaced.created, 500);
+        assert_eq!(replaced.updated, 900);
+        let added = file.notes.iter().find(|note| note.id == "external-1").unwrap();
+        assert_eq!(added.created, 2000);
+        assert_eq!(added.scope, "steam::1");
+    }
+
+    #[test]
+    fn markdown_export_puts_the_launcher_first() {
+        let mut file = NotesFile::default();
+        upsert(&mut file, input("steam::1", "Game note", "body"), 1, 1).unwrap();
+        upsert(&mut file, input("launcher", "Home", "body"), 2, 2).unwrap();
+        let markdown = notes_to_markdown(&file);
+        let launcher_at = markdown.find("## launcher").unwrap();
+        let game_at = markdown.find("## steam::1").unwrap();
+        assert!(launcher_at < game_at);
+        assert!(markdown.contains("### Game note"));
     }
 }
