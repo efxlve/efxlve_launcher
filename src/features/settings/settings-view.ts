@@ -33,6 +33,7 @@ import {
   epicGetScreenshotMoveInfo,
   epicGetSettings,
   epicGetSteamGridKey,
+  epicOpenFolderPath,
   epicOpenScreenshotDir,
   epicPortrait,
   epicSelectFolderDialog,
@@ -44,6 +45,7 @@ import { eglLauncherPresent } from "../../egl-removal";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
+import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
@@ -64,6 +66,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
   { id: "screenshots", labelKey: "settings.secScreenshots" },
+  { id: "notes", labelKey: "settings.secNotes" },
   { id: "system", labelKey: "settings.secSystem" },
   { id: "hidden", labelKey: "settings.secHidden" },
   { id: "about", labelKey: "settings.secAbout" },
@@ -84,7 +87,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navApp",
-    sections: ["controller", "appearance", "screenshots", "system", "about"],
+    sections: ["controller", "appearance", "screenshots", "notes", "system", "about"],
   },
 ];
 
@@ -640,6 +643,59 @@ function renderAppearance(): string {
   );
 }
 
+function renderNotes(): string {
+  // The list is needed for the stats; one cached call, then a single repaint.
+  if (!notesSettingsLoaded) {
+    void loadNotes().then(() => {
+      notesSettingsLoaded = true;
+      if (S.settingsSection === "notes") render();
+    });
+  }
+  const notes = cachedNotes();
+  const games = new Set(
+    notes.filter((note) => note.scope !== LAUNCHER_SCOPE).map((note) => note.scope),
+  ).size;
+  const font = notesFontSize();
+  const fontSizes: ("s" | "m" | "l")[] = ["s", "m", "l"];
+  const fontRow = row(
+    t("notes.fontSize"),
+    t("notes.fontSizeDesc"),
+    `<div class="seg">${fontSizes
+      .map(
+        (size) =>
+          `<button type="button" class="${font === size ? "active" : ""}" data-act="notes-font" data-size="${size}">${t(size === "s" ? "notes.fontSmall" : size === "m" ? "notes.fontMedium" : "notes.fontLarge")}</button>`,
+      )
+      .join("")}</div>`,
+  );
+  const statsRow = row(
+    t("notes.statsTitle"),
+    t("notes.statsDesc"),
+    `<span class="settings-value">${t("notes.statsNotes", { count: String(notes.length) })} · ${t("notes.statsGames", { count: String(games) })}</span>`,
+  );
+  const openRow = row(
+    t("notes.openPage"),
+    t("notes.openPageDesc"),
+    `<button type="button" class="btn ghost small" data-view="notes">${icon("external", 13)} ${t("notes.openPage")}</button>`,
+  );
+  const exportRow = row(
+    t("notes.exportTitle"),
+    t("notes.exportDesc"),
+    `<button type="button" class="btn ghost small" data-act="notes-export" data-format="json">${icon("download", 13)} JSON</button>
+     <button type="button" class="btn ghost small" data-act="notes-export" data-format="markdown">${icon("download", 13)} Markdown</button>`,
+  );
+  const importRow = row(
+    t("notes.importTitle"),
+    t("notes.importDesc"),
+    `<textarea id="notes-import-json" class="notes-import-area" placeholder="${esc(t("notes.importPlaceholder"))}" spellcheck="false"></textarea>
+     <button type="button" class="btn primary small" data-act="notes-import-text">${icon("upload", 13)} ${t("notes.importBtn")}</button>`,
+    true,
+  );
+  return (
+    group(openRow + statsRow + fontRow, t("settings.secNotes"), infoBox("notes.settingsInfo")) +
+    group(exportRow + importRow, t("notes.backupTitle"))
+  );
+}
+
 function renderScreenshots(): string {
   const folder = row(
     t("settings.ssDirTitle"),
@@ -852,6 +908,7 @@ function renderSection(section: SettingsSection): string {
     case "controller": return renderController();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
+    case "notes": return renderNotes();
     case "system": return renderSystem();
     case "hidden": return renderHidden();
     case "about": return renderAbout();
@@ -862,6 +919,8 @@ function renderSection(section: SettingsSection): string {
 /** The settings search: a query shows every section, filtered to the matches. */
 let settingsQuery = "";
 let settingsSearching = false;
+/** The notes section's stats need the list once; the flag stops re-render loops. */
+let notesSettingsLoaded = false;
 
 /** Called when the user leaves the search for a section (nav click, deep link). */
 export function resetSettingsSearch(): void {
@@ -1272,6 +1331,47 @@ async function resetScreenshotsFolder(): Promise<void> {
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement): boolean {
   switch (act) {
+    case "notes-font": {
+      const size = _el.dataset.size;
+      if (size === "s" || size === "m" || size === "l") {
+        setNotesFontSize(size);
+        render();
+      }
+      return true;
+    }
+    case "notes-export": {
+      const format = _el.dataset.format === "markdown" ? "markdown" : "json";
+      void exportNotes(format).then((path) => {
+        if (!path) {
+          toast(t("notes.exportFailed"), "err");
+          return;
+        }
+        toast(t("notes.exportDone", { path }), "ok");
+      });
+      return true;
+    }
+    case "notes-open-export-folder": {
+      const path = _el.dataset.path;
+      if (!path) return true;
+      const dir = path.replace(/[\\/][^\\/]*$/, "");
+      void epicOpenFolderPath(dir).catch(() => undefined);
+      return true;
+    }
+    case "notes-import-text": {
+      const area = document.getElementById("notes-import-json") as HTMLTextAreaElement | null;
+      const json = area?.value.trim() ?? "";
+      if (!json) return true;
+      void importNotesText(json).then((count) => {
+        if (count === null) {
+          toast(t("notes.importFailed"), "err");
+          return;
+        }
+        toast(t("notes.importDone", { count: String(count) }), "ok");
+        if (area) area.value = "";
+        render();
+      });
+      return true;
+    }
     case "ss-open-dir":
       void openScreenshotsFolder();
       return true;

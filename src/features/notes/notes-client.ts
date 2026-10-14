@@ -16,6 +16,19 @@ export const LAUNCHER_SCOPE = "launcher";
 /** The overlay's old notes lived under this prefix, one note per scope. */
 const LEGACY_PREFIX = "efxlve-overlay-notes::";
 const MIGRATION_KEY = "efxlve-notes-migrated";
+/** Shared with the overlay widget: the editor's text size. */
+const FONT_KEY = "efxlve-notes-font";
+
+export type NotesFontSize = "s" | "m" | "l";
+
+export function notesFontSize(): NotesFontSize {
+  const value = localStorage.getItem(FONT_KEY);
+  return value === "s" || value === "l" ? value : "m";
+}
+
+export function setNotesFontSize(size: NotesFontSize): void {
+  localStorage.setItem(FONT_KEY, size);
+}
 
 export interface Note {
   id: string;
@@ -103,6 +116,26 @@ export async function deleteNote(id: string): Promise<boolean> {
     return removed;
   } catch {
     return false;
+  }
+}
+
+/** Writes an export next to the downloads and returns the file path. */
+export async function exportNotes(format: "json" | "markdown"): Promise<string | null> {
+  try {
+    return await invoke<string>("notes_export", { format });
+  } catch {
+    return null;
+  }
+}
+
+/** Merges a pasted export back in; returns how many notes were written. */
+export async function importNotesText(json: string): Promise<number | null> {
+  try {
+    const count = await invoke<number>("notes_import_text", { json });
+    await loadNotes(true);
+    return count;
+  } catch {
+    return null;
   }
 }
 

@@ -236,7 +236,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `nile_uninstall` | `nileUninstall({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_verify` | `nileVerify({ ... })` | `src-tauri/src/nile/manage.rs` |
 | `notes_delete` | `notesDelete({ ... })` | `src-tauri/src/notes.rs` |
+| `notes_export` | `notesExport({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_import` | `notesImport({ ... })` | `src-tauri/src/notes.rs` |
+| `notes_import_text` | `notesImportText({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_list` | `notesList({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_save` | `notesSave({ ... })` | `src-tauri/src/notes.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |
