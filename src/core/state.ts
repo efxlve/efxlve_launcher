@@ -251,6 +251,10 @@ export const S = {
   customProfileName: (localStorage.getItem(CUSTOM_PROFILE_NAME_KEY) || "") as string,
   customProfileBanners: loadJsonRecord(CUSTOM_PROFILE_BANNERS_KEY),
   steamGridApiKey: (null) as string | null,
+  /** IGDB: the credentials live sealed in Rust; these are for the settings row. */
+  igdbConfigured: false,
+  igdbClientId: "" as string,
+  showSettingsIgdbSecret: false,
   customCoverActiveTab: ("steamgrid") as "steamgrid" | "url" | "file",
   activeCoverTarget: ("cover") as "cover" | "hero",
   sgdbSearchQuery: "",

@@ -117,6 +117,7 @@ import {
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
+import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -297,6 +298,7 @@ document.addEventListener("click", (e) => {
   if (handleSettingsAction(act, t)) return;
   if (handleNotesAction(act, t)) return;
   if (handleDrawerNotesAction(act, t)) return;
+  if (handleIgdbAction(act, t)) return;
   if (handleAuthAction(act, t, id)) return;
   if (handleCloudBackupAction(act, t, id, targetEl)) return;
   if (handleCoverAction(act, t, id, targetEl)) return;

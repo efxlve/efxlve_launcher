@@ -55,6 +55,7 @@ import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
 import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
+import { igdbStatus } from "../../igdb";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
@@ -423,6 +424,21 @@ function renderIntegrations(): string {
 
   const eos = renderEosSettingsRow();
 
+  // IGDB (Twitch) credentials: the secret is write-only here — it is sealed on
+  // disk and only ever read back by Rust.
+  const igdb = detailsRow(
+    t("settings.igdbTitle"),
+    t("settings.igdbDesc"),
+    `<span class="chip ${S.igdbConfigured ? "ok" : ""}">${S.igdbConfigured ? t("settings.connected") : t("settings.keyMissing")}</span>`,
+    `<input id="settings-igdb-id" class="input settings-path-input" placeholder="${esc(t("settings.igdbIdPlaceholder"))}" value="${esc(S.igdbClientId)}" spellcheck="false" autocomplete="off" />
+     <input id="settings-igdb-secret" type="${S.showSettingsIgdbSecret ? "text" : "password"}" class="input settings-path-input" placeholder="${esc(t(S.igdbConfigured ? "settings.igdbSecretStored" : "settings.igdbSecretPlaceholder"))}" value="" spellcheck="false" autocomplete="off" />
+     <button class="icon-btn" data-act="toggle-igdb-secret-visibility" title="${t("settings.showHide")}">${icon(S.showSettingsIgdbSecret ? "eye-off" : "eye", 15)}</button>
+     <button class="btn primary small" data-act="save-igdb-credentials">${t("common.save")}</button>
+     <button class="btn ghost small" data-act="test-igdb">${t("settings.test")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="https://dev.twitch.tv/console/apps/create">${t("settings.getFreeKey")}</button>
+     ${S.igdbConfigured ? `<button class="btn ghost small" data-act="clear-igdb-credentials">${t("common.delete")}</button>` : ""}`,
+  );
+
   // Amazon Games runs through the open-source Nile helper; the row reports
   // whether it is already on disk and links to the account card.
   const nileReady = Boolean(S.amazonStatus?.binary);
@@ -454,7 +470,8 @@ function renderIntegrations(): string {
     group(nileGroup, t("settings.nileTitle")) +
     renderSteamGroup() +
     afterPlaying +
-    group(sgdb, t("settings.coverArtTitle"))
+    group(sgdb, t("settings.coverArtTitle")) +
+    group(igdb, t("settings.igdbGroup"))
   );
 }
 
@@ -1310,7 +1327,7 @@ function wireSettingsSearch(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -1322,6 +1339,7 @@ export async function loadSettingsView(): Promise<void> {
         appGetAutostart().catch(() => false),
         amazonGetInstallDir().catch(() => null),
         amazonDefaultInstallDir().catch(() => ""),
+        igdbStatus().catch(() => null),
       ]);
       S.epicSettingsCache = st;
       S.epicDefaultDir = dir;
@@ -1334,6 +1352,10 @@ export async function loadSettingsView(): Promise<void> {
       S.gogCometEnabled = st.gog_comet_enabled ?? true;
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
+      if (igdb) {
+        S.igdbConfigured = igdb.configured;
+        S.igdbClientId = igdb.clientId;
+      }
     } catch {
       // Silent: keep the last cached values.
     }

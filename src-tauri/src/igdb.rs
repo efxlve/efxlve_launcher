@@ -537,12 +537,21 @@ fn write_cached_game(app: &AppHandle, game: &IgdbGame) {
 #[serde(rename_all = "camelCase")]
 pub struct IgdbStatus {
     pub configured: bool,
+    /// The Client ID is not a secret; the settings row shows it back.
+    pub client_id: String,
 }
 
 #[tauri::command]
 pub fn igdb_status(app: AppHandle) -> IgdbStatus {
-    IgdbStatus {
-        configured: load_credentials(&app).is_some(),
+    match load_credentials(&app) {
+        Some(credentials) => IgdbStatus {
+            configured: true,
+            client_id: credentials.client_id,
+        },
+        None => IgdbStatus {
+            configured: false,
+            client_id: String::new(),
+        },
     }
 }
 
