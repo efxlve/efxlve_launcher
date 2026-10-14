@@ -17,6 +17,7 @@ mod gogdl;
 mod launchers;
 mod legendary;
 mod nile;
+mod notes;
 mod net_diag;
 mod game_running;
 mod presence;
@@ -1037,6 +1038,10 @@ fn main() {
             cloud_backup::commands::cloud_backup_list_game,
             cloud_backup::commands::cloud_backup_download_game,
             cloud_backup::commands::cloud_backup_delete_remote,
+            notes::notes_list,
+            notes::notes_save,
+            notes::notes_delete,
+            notes::notes_import,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");

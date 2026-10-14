@@ -100,6 +100,7 @@ import {
   renderMomentsStrip,
 } from "../screenshots/screenshots-view";
 import { setView } from "../store/store-view";
+import { ensureNotesMigration } from "../notes/notes-client";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -185,6 +186,9 @@ export async function initApp(hooks: {
   });
   loadNotifications();
   initAutoUpdate();
+  // The overlay's old localStorage notes move into `<app_data>/notes.json`
+  // once; the overlay itself also runs this, the file guards the race.
+  void ensureNotesMigration();
   updateOfflineModeUi();
   initContextMenu();
   initCollectionTabs();
