@@ -20,6 +20,7 @@ import { t } from "../i18n";
 import { epicGetQueue, epicPortrait } from "../epic";
 import { openStoreUrl, setView, syncStoreTabsPill } from "../features/store/store-view";
 import { loadSettingsView } from "../features/settings/settings-view";
+import { loadNotesView } from "../features/notes/notes-view";
 
 /** Highlight the sidebar entry that matches the current view (or open game). */
 export function updateSidebarActive(): void {
@@ -144,6 +145,7 @@ export function updatePageHeader(): void {
       accounts: t("accounts.title"),
       music: t("overlay.tabSpotify"),
       discord: t("discord.title"),
+      notes: t("notes.title"),
     };
     const next = game ?? titles[S.view] ?? "";
     if (title.textContent !== next) title.textContent = next;
@@ -429,6 +431,8 @@ function applyNavHistory(item: NavHistoryItem): void {
         render();
         if (item.view === "settings") {
           void loadSettingsView();
+        } else if (item.view === "notes") {
+          void loadNotesView();
         } else if (item.view === "downloads") {
           void epicGetQueue().then((q) => {
             S.dlQueueStatus = q;

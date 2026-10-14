@@ -1,0 +1,119 @@
+/* ==========================================================================
+   Notes: the list + editor page. The markdown-lite output rules at the end
+   are shared with the overlay widget.
+   ========================================================================== */
+
+.notes-page { padding-bottom: 40px; }
+.notes-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+
+.notes-side { position: sticky; top: 0; display: flex; flex-direction: column; gap: 10px; }
+.notes-side-head { display: flex; align-items: center; gap: 8px; }
+.notes-search {
+  flex: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-3);
+}
+.notes-search-input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--text); font: inherit; font-size: 13px; outline: none; }
+.notes-filter { display: grid; grid-template-columns: repeat(3, 1fr); }
+.notes-filter button { height: 28px; font-size: 12px; }
+
+.notes-list { display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 280px); overflow-y: auto; padding-right: 2px; }
+.notes-list-empty { padding: 28px 12px; text-align: center; font-size: 12px; color: var(--text-3); }
+
+.notes-row {
+  display: flex; align-items: stretch; gap: 10px; padding: 10px 12px 10px 8px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: border-color var(--ease), background-color var(--ease);
+}
+.notes-row:hover { background: var(--surface-2); }
+.notes-row.is-active { border-color: var(--accent); background: var(--surface-2); }
+.notes-row-bar { width: 3px; border-radius: 2px; background: var(--surface-3); flex-shrink: 0; }
+.notes-row.color-blue .notes-row-bar { background: var(--accent); }
+.notes-row.color-green .notes-row-bar { background: var(--ok); }
+.notes-row.color-yellow .notes-row-bar { background: var(--warn); }
+.notes-row.color-red .notes-row-bar { background: var(--err); }
+.notes-row.color-purple .notes-row-bar { background: #a855f7; }
+.notes-row-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.notes-row-top { display: flex; align-items: center; gap: 6px; }
+.notes-row-title { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.notes-row-pin { color: var(--ok); display: grid; place-items: center; }
+.notes-row-preview { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notes-row-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-3); }
+.notes-scope-chip {
+  padding: 1px 7px; border-radius: 8px; background: var(--surface-3); color: var(--text-2);
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.notes-row-time { font-variant-numeric: tabular-nums; }
+
+.notes-editor {
+  display: flex; flex-direction: column; gap: 10px; min-height: 440px;
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px;
+}
+.notes-editor-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 400px; color: var(--text-3); }
+.notes-editor-empty-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.notes-editor-empty-desc { font-size: 12px; margin-bottom: 8px; }
+
+.notes-editor-head { display: flex; align-items: center; gap: 10px; }
+.notes-title-input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--text); font: inherit; font-size: 17px; font-weight: 600; outline: none; padding: 4px 0; }
+.notes-editor-actions { display: flex; align-items: center; gap: 4px; }
+.notes-editor-actions .icon-btn.active { color: var(--ok); }
+.notes-editor-actions .icon-btn.danger { color: var(--err); }
+
+.notes-delete-bar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border: 1px solid var(--err); border-radius: var(--r-sm); background: var(--err-tint); font-size: 12px;
+}
+.notes-delete-bar .btn:first-of-type { margin-left: auto; }
+
+.notes-toolbar { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.notes-tool-btn {
+  min-width: 28px; height: 26px; padding: 0 6px; border: none; border-radius: 4px; background: transparent;
+  color: var(--text-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.notes-tool-btn:hover { background: var(--surface-3); color: var(--text); }
+
+.notes-body {
+  width: 100%; min-height: 320px; flex: 1; border: none; background: transparent; color: var(--text);
+  font: inherit; line-height: 1.6; resize: vertical; outline: none;
+}
+.notes-preview { min-height: 320px; color: var(--text); line-height: 1.6; }
+.notes-font-s .notes-body, .notes-font-s .notes-preview { font-size: 13px; }
+.notes-font-m .notes-body, .notes-font-m .notes-preview { font-size: 14.5px; }
+.notes-font-l .notes-body, .notes-font-l .notes-preview { font-size: 16.5px; }
+
+.notes-editor-foot { display: flex; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.notes-colors { display: flex; align-items: center; gap: 6px; }
+.notes-color { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: var(--surface-3); padding: 0; }
+.notes-color.is-blue { background: var(--accent); }
+.notes-color.is-green { background: var(--ok); }
+.notes-color.is-yellow { background: var(--warn); }
+.notes-color.is-red { background: var(--err); }
+.notes-color.is-purple { background: #a855f7; }
+.notes-color.active { border-color: var(--text); }
+.notes-scope-hint { margin-left: auto; font-size: 11px; color: var(--text-3); }
+.notes-save-state { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+
+/* --- Markdown-lite output (shared with the overlay widget) --------------- */
+.notes-preview h1, .notes-preview h2, .notes-preview h3,
+.notes-preview h4, .notes-preview h5, .notes-preview h6 { margin: 14px 0 6px; line-height: 1.3; }
+.notes-preview h1 { font-size: 1.4em; }
+.notes-preview h2 { font-size: 1.25em; }
+.notes-preview h3 { font-size: 1.12em; }
+.notes-preview p { margin: 0 0 8px; }
+.notes-preview ul, .notes-preview ol { margin: 0 0 8px; padding-left: 22px; }
+.notes-preview li { margin: 2px 0; }
+.notes-preview blockquote { margin: 0 0 8px; padding: 4px 12px; border-left: 3px solid var(--line-strong); color: var(--text-2); }
+.notes-preview code { font-family: Consolas, monospace; font-size: 0.92em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.notes-preview pre { margin: 0 0 8px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); overflow-x: auto; }
+.notes-preview pre code { background: transparent; padding: 0; }
+.notes-preview a { color: var(--accent); }
+.notes-preview hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
+.notes-preview-empty { color: var(--text-3); }
+.notes-checklist { list-style: none; padding-left: 0; }
+.notes-check { display: flex; align-items: flex-start; gap: 8px; }
+.notes-check.is-done span { color: var(--text-3); text-decoration: line-through; }
+.notes-check-box {
+  flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px; padding: 0;
+  border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-2);
+  color: var(--ok); font-size: 11px; line-height: 1; display: grid; place-items: center; cursor: pointer;
+}

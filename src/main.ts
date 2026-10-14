@@ -37,6 +37,7 @@ import { renderProfile } from "./features/profile/profile-view";
 import { closeAvatarModal } from "./features/profile/profile-avatar";
 import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
+import { renderNotesPage } from "./features/notes/notes-view";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
@@ -140,6 +141,7 @@ function render(): void {
     : S.view === "accounts" ? renderAccounts()
     : S.view === "music" ? renderMusic()
     : S.view === "discord" ? renderDiscordPage()
+    : S.view === "notes" ? renderNotesPage()
     : S.view === "tv" ? renderTvMode()
     : renderSettings();
   if (S.view === "library") {

@@ -114,6 +114,7 @@ import {
   renderNotificationPanel,
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
+import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { ALL_PROFILE_STORES, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -263,6 +264,11 @@ document.addEventListener("click", (e) => {
       void loadSettingsView();
       return;
     }
+    if (S.view === "notes") {
+      render();
+      void loadNotesView();
+      return;
+    }
     render();
     return;
   }
@@ -287,6 +293,7 @@ document.addEventListener("click", (e) => {
   // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
   if (handleSettingsAction(act, t)) return;
+  if (handleNotesAction(act, t)) return;
   if (handleAuthAction(act, t, id)) return;
   if (handleCloudBackupAction(act, t, id, targetEl)) return;
   if (handleCoverAction(act, t, id, targetEl)) return;
