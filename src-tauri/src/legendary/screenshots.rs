@@ -137,6 +137,8 @@ pub struct GameScreenshotItem {
     /// original is fetched per file when a viewer asks for it.
     #[serde(default)]
     pub full_data_url: String,
+    #[serde(default)]
+    pub game_title: String,
 }
 
 pub fn clean_folder_name(name: &str) -> String {
@@ -361,6 +363,72 @@ pub fn get_file_local_datetime_str(
     chrono_fallback(epoch_sec)
 }
 
+pub fn detect_game_title_from_path(path: &Path) -> String {
+    let parent = path.parent();
+    let parent_name = parent
+        .and_then(|p| p.file_name())
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    if parent_name.eq_ignore_ascii_case("screenshots") {
+        if let Some(app_id) = parent
+            .and_then(|p| p.parent())
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+        {
+            if !app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit()) {
+                if let Some(steam) = crate::steam::steam_install_path() {
+                    let manifest_file = steam
+                        .join("steamapps")
+                        .join(format!("appmanifest_{}.acf", app_id));
+                    if let Ok(content) = std::fs::read_to_string(&manifest_file) {
+                        for line in content.lines() {
+                            let trimmed = line.trim();
+                            if trimmed.starts_with("\"name\"") {
+                                let parts: Vec<&str> = trimmed.split('"').collect();
+                                if parts.len() >= 4 && !parts[3].trim().is_empty() {
+                                    return parts[3].trim().to_string();
+                                }
+                            }
+                        }
+                    }
+                }
+                return format!("Steam {}", app_id);
+            }
+        }
+    }
+
+    if parent_name.eq_ignore_ascii_case("Captures") {
+        let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        for marker in [" 202", " 201", " Screenshot 20"] {
+            if let Some(pos) = file_stem.find(marker) {
+                let candidate = file_stem[..pos].trim();
+                if !candidate.is_empty() {
+                    return candidate.to_string();
+                }
+            }
+        }
+        return "Captures".to_string();
+    }
+
+    if !parent_name.is_empty()
+        && !matches!(
+            parent_name.to_lowercase().as_str(),
+            "efxlve screenshots"
+                | "pictures"
+                | "videos"
+                | "screenshots"
+                | "ubisoftconnect"
+                | "uplay"
+                | "temp"
+        )
+    {
+        return parent_name.to_string();
+    }
+
+    String::new()
+}
+
 fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
     let metadata = std::fs::metadata(path).ok()?;
     if !metadata.is_file() {
@@ -393,6 +461,7 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
     // Get Windows' real local file time and date (local timezone instead of UTC)
     let datetime = get_file_local_datetime_str(path, &metadata, timestamp);
     let data_url = file_to_preview_data_url(path)?;
+    let game_title = detect_game_title_from_path(path);
 
     Some(GameScreenshotItem {
         id: format!("{}_{}", file_name, timestamp),
@@ -404,6 +473,7 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
         size_str,
         data_url,
         full_data_url: String::new(),
+        game_title,
     })
 }
 
@@ -565,6 +635,17 @@ pub async fn epic_get_game_screenshots(
                         }
                     }
                 }
+            }
+        }
+
+        let fallback_title = if !title.is_empty() {
+            title.clone()
+        } else {
+            clean_t.clone()
+        };
+        for item in &mut results {
+            if item.game_title.is_empty() {
+                item.game_title = fallback_title.clone();
             }
         }
 

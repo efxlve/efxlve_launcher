@@ -32,6 +32,26 @@ fn steam_shots_for(app_id: &str) -> Vec<GameScreenshotItem> {
         return Vec::new();
     };
 
+    let mut game_title = String::new();
+    if let Some(steam) = steam_install_path() {
+        let manifest_file = steam.join("steamapps").join(format!("appmanifest_{}.acf", app_id));
+        if let Ok(content) = std::fs::read_to_string(&manifest_file) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with("\"name\"") {
+                    let parts: Vec<&str> = trimmed.split('"').collect();
+                    if parts.len() >= 4 && !parts[3].trim().is_empty() {
+                        game_title = parts[3].trim().to_string();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if game_title.is_empty() {
+        game_title = format!("Steam {}", app_id);
+    }
+
     let mut items = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
@@ -83,6 +103,7 @@ fn steam_shots_for(app_id: &str) -> Vec<GameScreenshotItem> {
             size_str: format_bytes(size_bytes),
             data_url,
             full_data_url: String::new(),
+            game_title: game_title.clone(),
         });
     }
     items.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));

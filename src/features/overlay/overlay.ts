@@ -86,6 +86,7 @@ interface ScreenshotItem {
   file_name: string;
   date_str: string;
   data_url: string;
+  game_title?: string;
 }
 
 type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "chat" | "browser" | "settings";
@@ -151,6 +152,7 @@ let tracksError = "";
 let tracksFor: string | null = null;
 let cachedAchievements: AchievementsData | null = null;
 let cachedScreenshots: ScreenshotItem[] = [];
+let screenshotGameFilter = "all";
 let sessionStartEpoch = Date.now();
 let activeTab: TabId = (localStorage.getItem("efxlve-overlay-tab") as TabId) || "home";
 
@@ -1724,6 +1726,14 @@ async function loadAchievements(force = false): Promise<void> {
 }
 
 /* 4. Full Screenshots View */
+function getVisibleScreenshots(): ScreenshotItem[] {
+  if (screenshotGameFilter === "all") return cachedScreenshots;
+  return cachedScreenshots.filter((item) => {
+    const g = item.game_title?.trim() || "Diğer";
+    return g.toLowerCase() === screenshotGameFilter.toLowerCase();
+  });
+}
+
 async function loadScreenshots(force = false): Promise<void> {
   const el = viewEl("shots");
   if (!el) return;
@@ -1758,25 +1768,80 @@ async function loadScreenshots(force = false): Promise<void> {
     }
   }
 
+  const isTr = (localStorage.getItem("efxlve_lang") || "").startsWith("tr");
+  const otherLabel = isTr ? "Diğer" : "Other";
+
+  // Build game counts map
+  const gameCounts = new Map<string, number>();
+  for (const item of cachedScreenshots) {
+    const g = item.game_title?.trim() || otherLabel;
+    gameCounts.set(g, (gameCounts.get(g) || 0) + 1);
+  }
+
+  if (screenshotGameFilter !== "all") {
+    const hasCurrent = Array.from(gameCounts.keys()).some(
+      (k) => k.toLowerCase() === screenshotGameFilter.toLowerCase()
+    );
+    if (!hasCurrent) {
+      screenshotGameFilter = "all";
+    }
+  }
+
+  const visibleShots = getVisibleScreenshots();
+
   const titleText = launcherMode
     ? esc(t("overlay.tabScreenshots"))
     : (context.title ? `${esc(context.title)} — ${esc(t("overlay.tabScreenshots"))}` : esc(t("overlay.tabScreenshots")));
 
+  // Filter bar: only shown if screenshots come from more than 1 distinct category/game
+  const filterBarHtml = gameCounts.size > 1 ? `
+    <div class="ov-shots-filter-bar">
+      <button
+        class="ov-shots-filter-chip ${screenshotGameFilter === "all" ? "active" : ""}"
+        data-ov-shot-filter="all"
+        type="button"
+      >
+        <span>${isTr ? "Tümü" : "All"}</span>
+        <span class="ov-shots-filter-count">${cachedScreenshots.length}</span>
+      </button>
+      ${Array.from(gameCounts.entries()).map(([game, count]) => `
+        <button
+          class="ov-shots-filter-chip ${screenshotGameFilter.toLowerCase() === game.toLowerCase() ? "active" : ""}"
+          data-ov-shot-filter="${esc(game)}"
+          type="button"
+        >
+          <span>${esc(game)}</span>
+          <span class="ov-shots-filter-count">${count}</span>
+        </button>
+      `).join("")}
+    </div>` : "";
+
   el.innerHTML = `
     <div class="ov-page-title" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">${icon("camera", 20)} <span>${titleText}</span></div>
-      <button class="btn ghost small" data-ov="shots-folder">${icon("folder", 14)} ${esc(t("overlay.openFolder"))}</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${icon("camera", 20)}
+        <span>${titleText}</span>
+        <span class="ov-shots-count-pill" title="${visibleShots.length} ${isTr ? "ekran görüntüsü" : "screenshots"}">${visibleShots.length}</span>
+      </div>
+      <button class="btn ghost small" data-ov="shots-folder" title="${esc(t("overlay.openFolder"))}">
+        ${icon("folder", 14)} <span>${esc(t("overlay.openFolder"))}</span>
+      </button>
     </div>
-    ${cachedScreenshots.length === 0 ? `
+    ${filterBarHtml}
+    ${visibleShots.length === 0 ? `
       <div class="ov-empty">
         <div>${esc(t("overlay.noShots"))}</div>
         <div style="font-size:12px;color:var(--text-3);margin-top:6px">${esc(t("overlay.captureHint"))}</div>
       </div>` : `
       <div class="ov-shots-grid" style="grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:12px">
-        ${cachedScreenshots.map((item) => `
-          <div class="ov-shot-item" data-ov-preview="${esc(item.data_url)}" title="${esc(item.date_str)}">
-            <img src="${esc(item.data_url)}" alt="" loading="lazy" />
-          </div>`).join("")}
+        ${visibleShots.map((item) => {
+          const tooltip = item.game_title ? `${item.game_title} • ${item.date_str}` : item.date_str;
+          return `
+            <div class="ov-shot-item" data-ov-preview="${esc(item.data_url)}" title="${esc(tooltip)}">
+              <img src="${esc(item.data_url)}" alt="" loading="lazy" />
+              ${item.game_title ? `<div class="ov-shot-badge">${esc(item.game_title)}</div>` : ""}
+            </div>`;
+        }).join("")}
       </div>`}`;
   renderHomeSafe();
 }
@@ -3619,21 +3684,32 @@ function showLightbox(src: string): void {
   const img = document.getElementById("ov-lightbox-img") as HTMLImageElement | null;
   const counter = document.getElementById("ov-lightbox-counter");
   if (!box || !img) return;
-  lightboxIndex = cachedScreenshots.findIndex((item) => item.data_url === src);
+  const items = getVisibleScreenshots();
+  lightboxIndex = items.findIndex((item) => item.data_url === src);
   img.src = src;
-  if (counter) counter.textContent = lightboxIndex >= 0 && cachedScreenshots.length > 1 ? `${lightboxIndex + 1} / ${cachedScreenshots.length}` : "";
+  if (counter) {
+    if (lightboxIndex >= 0 && items.length > 1) {
+      const g = items[lightboxIndex].game_title ? `${items[lightboxIndex].game_title} • ` : "";
+      counter.textContent = `${g}${lightboxIndex + 1} / ${items.length}`;
+    } else {
+      counter.textContent = items[lightboxIndex]?.game_title || "";
+    }
+  }
   box.style.display = "grid";
 }
 
 /** Steps through the screenshots while the lightbox is open (LB/RB, arrows). */
 function stepLightbox(delta: number): void {
-  const items = cachedScreenshots;
+  const items = getVisibleScreenshots();
   if (lightboxIndex < 0 || items.length === 0) return;
   lightboxIndex = (lightboxIndex + delta + items.length) % items.length;
   const img = document.getElementById("ov-lightbox-img") as HTMLImageElement | null;
   const counter = document.getElementById("ov-lightbox-counter");
   if (img) img.src = items[lightboxIndex].data_url;
-  if (counter) counter.textContent = `${lightboxIndex + 1} / ${items.length}`;
+  if (counter) {
+    const g = items[lightboxIndex].game_title ? `${items[lightboxIndex].game_title} • ` : "";
+    counter.textContent = `${g}${lightboxIndex + 1} / ${items.length}`;
+  }
 }
 
 function hideLightbox(): void {
@@ -3703,7 +3779,13 @@ function wireEvents(): void {
       return;
     }
 
-
+    // Screenshot game category filter
+    const shotFilterBtn = target.closest<HTMLElement>("[data-ov-shot-filter]");
+    if (shotFilterBtn?.dataset.ovShotFilter) {
+      screenshotGameFilter = shotFilterBtn.dataset.ovShotFilter;
+      void loadScreenshots();
+      return;
+    }
 
     // Tab button
     const tabBtn = target.closest<HTMLElement>("[data-ov-tab]");

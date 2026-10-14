@@ -734,6 +734,7 @@ export interface GameScreenshotItem {
   data_url: string;
   /** Retained for the wire format; originals load per file when a viewer asks. */
   full_data_url: string;
+  game_title?: string;
 }
 
 export const epicGetGameScreenshots = (appName: string, title: string) =>
