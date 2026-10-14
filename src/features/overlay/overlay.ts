@@ -2855,7 +2855,7 @@ function chatBubbleHtml(entry: ReplyLogEntry, targetName: string, partnerAvatar?
   const isIncoming = entry.direction === "in";
   const actionsHtml =
     !isIncoming && entry.state === "sent" && entry.messageId
-      ? `<div class="ov-dc-bubble-actions"><button class="ov-dc-bubble-act-btn" data-ov="discord-edit" data-entry="${entry.id}">${esc(t("overlay.discordEdit"))}</button><button class="ov-dc-bubble-act-btn" data-ov="discord-delete" data-entry="${entry.id}">${esc(t("overlay.discordDelete"))}</button></div>`
+      ? `<div class="ov-dc-bubble-actions"><button class="ov-dc-bubble-act-btn" data-ov="discord-edit" data-entry="${entry.id}" title="${esc(t("overlay.discordEdit"))}">${icon("edit", 12)}</button><button class="ov-dc-bubble-act-btn is-danger" data-ov="discord-delete" data-entry="${entry.id}" title="${esc(t("overlay.discordDelete"))}">${icon("trash", 12)}</button></div>`
       : "";
   const statusMeta =
     isIncoming
@@ -2877,13 +2877,13 @@ function chatBubbleHtml(entry: ReplyLogEntry, targetName: string, partnerAvatar?
     ? `<div class="ov-dc-bubble-text">${esc(entry.text)}</div>`
     : "";
 
-  const metaHtml = `<div class="ov-dc-bubble-meta"><span class="ov-dc-bubble-time num">${esc(entry.time)}</span>${statusMeta}${actionsHtml}</div>`;
+  const metaHtml = `<div class="ov-dc-bubble-meta"><span class="ov-dc-bubble-time num">${esc(entry.time)}</span>${statusMeta}</div>`;
   const avatarHtml = isIncoming
     ? `<div class="ov-dc-bubble-avatar-wrap" title="${esc(targetName)}">${partnerAvatar ? `<img class="ov-dc-bubble-avatar" src="${esc(partnerAvatar)}" alt="" />` : `<div class="ov-dc-bubble-avatar placeholder">${icon("user", 12)}</div>`}</div>`
     : "";
   const bubbleClasses = `ov-dc-bubble${entry.state === "error" ? " is-failed" : ""}`;
 
-  return `<div class="ov-dc-bubble-row ${isIncoming ? "incoming" : "outgoing"}">${avatarHtml}<div class="${bubbleClasses}">${textHtml}${attachment}${errorBadge}${metaHtml}</div></div>`;
+  return `<div class="ov-dc-bubble-row ${isIncoming ? "incoming" : "outgoing"}">${avatarHtml}<div class="${bubbleClasses}">${actionsHtml}${textHtml}${attachment}${errorBadge}${metaHtml}</div></div>`;
 }
 
 function chatComposerHtml(target: { id: string; name: string }, draft: string, editing: ReplyLogEntry | null): string {

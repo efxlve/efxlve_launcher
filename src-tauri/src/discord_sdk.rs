@@ -603,7 +603,13 @@ mod ffi {
     opaque!(UserMessageSummary);
     opaque!(GuildMinimal);
     opaque!(GuildChannel);
-    opaque!(Call);
+
+    /// An opaque Call handle: `Discord_Call { void* opaque[3]; }` in cdiscord.h.
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct Call {
+        pub opaque: [*mut c_void; 3],
+    }
 
     #[repr(C)]
     pub struct RelationshipSpan {
@@ -2190,6 +2196,7 @@ mod imp {
                                     None,
                                     ptr::null_mut(),
                                 );
+                                Discord_Call_Drop(&mut previous);
                                 sdk_note!("call: ended the previous call in channel {previous_channel}");
                             }
                             let mut call: Call = std::mem::zeroed();
@@ -2213,14 +2220,15 @@ mod imp {
                                     None,
                                     ptr::null_mut(),
                                 );
+                                Discord_Call_Drop(&mut call);
                                 sdk_note!("call ended in channel {channel}");
                                 emit_call("idle", call_friend, false, None);
                                 call_friend = 0;
                             }
                         }
                         Ok(SdkCommand::CallMute { mute }) => {
-                            if let Some(mut call) = active_call {
-                                Discord_Call_SetSelfMute(&mut call, mute);
+                            if let Some(call) = active_call.as_mut() {
+                                Discord_Call_SetSelfMute(call, mute);
                                 sdk_note!("call mute: {mute}");
                                 emit_call("active", call_friend, mute, None);
                             }
@@ -2417,7 +2425,12 @@ mod imp {
                             );
                         }
                         Err(TryRecvError::Empty) => break,
-                        Err(TryRecvError::Disconnected) => return,
+                        Err(TryRecvError::Disconnected) => {
+                            if let Some(mut call) = active_call.take() {
+                                Discord_Call_Drop(&mut call);
+                            }
+                            return;
+                        }
                     }
                 }
                 if Instant::now() >= next_poll {
@@ -2454,6 +2467,7 @@ mod imp {
                                 None,
                                 ptr::null_mut(),
                             );
+                            Discord_Call_Drop(&mut previous);
                         }
                         let mut call: Call = std::mem::zeroed();
                         if Discord_Client_StartCall(client_ptr, channel, &mut call) {

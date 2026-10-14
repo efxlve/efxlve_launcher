@@ -3579,29 +3579,54 @@
 }
 
 .ov-dc-bubble-actions {
-  display: none;
+  position: absolute;
+  top: -12px;
+  left: 6px;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 3px;
+  gap: 2px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  border-radius: var(--r-sm);
+  padding: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(3px) scale(0.95);
+  transition: opacity var(--ease), transform var(--ease);
+  z-index: 10;
 }
 
-.ov-dc-bubble:hover .ov-dc-bubble-actions {
-  display: flex;
+.ov-dc-bubble:hover .ov-dc-bubble-actions,
+.ov-dc-bubble-actions:hover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
 .ov-dc-bubble-act-btn {
-  background: rgba(0, 0, 0, 0.3);
+  background: transparent;
   border: none;
-  color: #fff;
-  border-radius: var(--r-sm);
-  padding: 2px 6px;
-  font-size: 10px;
+  color: var(--text-2);
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background-color var(--ease);
+  padding: 0;
+  transition: background-color var(--ease), color var(--ease);
 }
 
 .ov-dc-bubble-act-btn:hover {
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ov-dc-bubble-act-btn.is-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--err);
 }
 
 .ov-dc-msg-status.sending {
