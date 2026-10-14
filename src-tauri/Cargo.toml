@@ -45,4 +45,4 @@ protobuf = "3"
 crc32fast = "1"
 ferrisetw = "1.2"
 webview2-com = "0.38"
-windows = { version = "0.61", features = ["Foundation", "Media_Control", "Win32_Foundation", "Win32_System_Performance", "Win32_System_Pipes", "Win32_System_Diagnostics_Etw", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.61", features = ["Foundation", "Media_Control", "Win32_Foundation", "Win32_System_Performance", "Win32_System_Pipes", "Win32_System_Diagnostics_Etw", "Win32_System_Registry", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

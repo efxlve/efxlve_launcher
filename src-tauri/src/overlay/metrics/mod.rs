@@ -30,14 +30,18 @@ pub struct MetricsSample {
     pub fps_available: bool,
     /// System-wide CPU load, percent.
     pub cpu: f32,
+    /// CPU frequency in GHz.
+    pub cpu_ghz: Option<f32>,
     /// The game's own CPU load when its process was found.
     pub game_cpu: Option<f32>,
     pub ram_used_mb: u64,
     pub ram_total_mb: u64,
-    /// The game's GPU utilization, percent.
+    /// The GPU utilization, percent.
     pub gpu: Option<f64>,
-    /// The game's local VRAM usage, MB.
+    /// The local VRAM usage, MB.
     pub vram_used_mb: Option<u64>,
+    /// The total dedicated VRAM, MB.
+    pub vram_total_mb: Option<u64>,
 }
 
 /// Starts the worker if it is not running. It stops itself a few seconds after
@@ -74,13 +78,24 @@ fn run(app: AppHandle) {
         let pids = crate::legendary::screenshots::active_game_pids();
         let pid = pids.first().copied();
 
-        sys.refresh_cpu_usage();
+        sys.refresh_cpu_all();
         sys.refresh_memory();
         // `global_cpu_usage` is documented as 0-100 but can overshoot on hybrid
         // CPUs; the per-process value counts every logical core (max =
         // cores * 100), so it is divided down to a machine-wide percentage.
         let logical_cpus = sys.cpus().len();
         let cpu = sys.global_cpu_usage().clamp(0.0, 100.0);
+        let cpu_ghz = if !sys.cpus().is_empty() {
+            let avg_mhz = sys.cpus().iter().map(|c| c.frequency()).sum::<u64>()
+                / sys.cpus().len().max(1) as u64;
+            if avg_mhz > 0 {
+                Some(avg_mhz as f32 / 1000.0)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         let game_cpu = pid.and_then(|id| {
             let wanted = Pid::from_u32(id);
             sys.refresh_processes(ProcessesToUpdate::Some(&[wanted]), true);
@@ -101,8 +116,9 @@ fn run(app: AppHandle) {
             None => (None, None),
         };
 
-        let gpu_value = pid.and_then(|id| gpu.as_mut().and_then(|query| query.utilization(id)));
-        let vram = pid.and_then(|id| gpu.as_mut().and_then(|query| query.vram_bytes(id)));
+        let gpu_value = gpu.as_mut().and_then(|query| query.utilization(pid));
+        let vram = gpu.as_mut().and_then(|query| query.vram_bytes(pid));
+        let vram_total_mb = gpu.as_ref().and_then(|query| query.total_vram_mb());
 
         let sample = MetricsSample {
             running: pid.is_some(),
@@ -111,11 +127,13 @@ fn run(app: AppHandle) {
             frame_ms,
             fps_available: etw::available(),
             cpu,
+            cpu_ghz,
             game_cpu,
             ram_used_mb: sys.used_memory() / 1_048_576,
             ram_total_mb: sys.total_memory() / 1_048_576,
             gpu: gpu_value,
             vram_used_mb: vram.map(|bytes| bytes / 1_048_576),
+            vram_total_mb,
         };
         let _ = app.emit("overlay-metrics", sample.clone());
 

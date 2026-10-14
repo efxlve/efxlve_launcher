@@ -56,50 +56,148 @@ mod imp {
             unsafe { PdhCollectQueryData(self.query) == 0 }
         }
 
-        /// The game's summed 3D-engine utilization in percent. Copy/compute
-        /// engines stay out so the number stays close to Task Manager's.
-        pub fn utilization(&mut self, pid: u32) -> Option<f64> {
+        /// Summed 3D-engine utilization in percent. If a PID is given, filters to
+        /// that game's processes; otherwise sums 3D utilization across the system.
+        pub fn utilization(&mut self, pid: Option<u32>) -> Option<f64> {
             if !self.collect() {
                 return None;
             }
             let items = read_array(self.util)?;
-            let prefix = format!("pid_{pid}_");
+            let prefix = pid.map(|id| format!("pid_{id}_"));
             let mut total = 0.0;
             let mut found = false;
             for (name, value) in &items {
-                if !name.starts_with(&prefix) {
-                    continue;
+                if let Some(ref p) = prefix {
+                    if !name.starts_with(p) {
+                        continue;
+                    }
                 }
-                if name.contains("engtype_3D") && value.is_finite() {
+                if name.to_ascii_lowercase().contains("engtype_3d") && value.is_finite() {
                     total += value;
                     found = true;
                 }
             }
             if found {
                 Some(total.min(100.0))
+            } else if pid.is_none() {
+                Some(0.0)
             } else {
                 None
             }
         }
 
-        /// The game's local VRAM usage in bytes. On hybrid systems the same
-        /// pid has one instance per adapter; the largest one is the render
-        /// adapter, which is the number users expect.
-        pub fn vram_bytes(&mut self, pid: u32) -> Option<u64> {
+        /// Local VRAM usage in bytes. If a PID is given, returns that game's
+        /// usage on its render adapter; otherwise sums local VRAM in use across
+        /// all active processes.
+        pub fn vram_bytes(&mut self, pid: Option<u32>) -> Option<u64> {
             if !self.collect() {
                 return None;
             }
             let items = read_array(self.vram)?;
-            let prefix = format!("pid_{pid}_");
-            let mut best: Option<u64> = None;
-            for (name, value) in &items {
-                if name.starts_with(&prefix) && value.is_finite() && *value > 0.0 {
-                    let bytes = *value as u64;
-                    best = Some(best.map_or(bytes, |current| current.max(bytes)));
+            if let Some(id) = pid {
+                let prefix = format!("pid_{id}_");
+                let mut best: Option<u64> = None;
+                for (name, value) in &items {
+                    if name.starts_with(&prefix) && value.is_finite() && *value > 0.0 {
+                        let bytes = *value as u64;
+                        best = Some(best.map_or(bytes, |current| current.max(bytes)));
+                    }
+                }
+                best
+            } else {
+                let mut total_bytes = 0u64;
+                for (_name, value) in &items {
+                    if value.is_finite() && *value > 0.0 {
+                        total_bytes += *value as u64;
+                    }
+                }
+                Some(total_bytes)
+            }
+        }
+
+        /// Total dedicated video memory in MB.
+        pub fn total_vram_mb(&self) -> Option<u64> {
+            detect_total_vram_mb()
+        }
+    }
+
+    /// Detects the system's primary dedicated GPU VRAM size in MB via the display adapter registry.
+    fn detect_total_vram_mb() -> Option<u64> {
+        use std::sync::OnceLock;
+        use windows::core::PCWSTR;
+        use windows::Win32::System::Registry::{
+            RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_LOCAL_MACHINE, KEY_READ,
+        };
+
+        static CACHED: OnceLock<Option<u64>> = OnceLock::new();
+        *CACHED.get_or_init(|| {
+            let mut max_bytes = 0u64;
+            for i in 0..8 {
+                let subkey = format!(
+                    "SYSTEM\\CurrentControlSet\\Control\\Class\\{{4d36e968-e325-11ce-bfc1-08002be10318}}\\{:04}\0",
+                    i
+                );
+                let wide: Vec<u16> = subkey.encode_utf16().collect();
+                let mut hkey = HKEY::default();
+                unsafe {
+                    if RegOpenKeyExW(
+                        HKEY_LOCAL_MACHINE,
+                        PCWSTR(wide.as_ptr()),
+                        Some(0),
+                        KEY_READ,
+                        &mut hkey,
+                    )
+                    .is_ok()
+                    {
+                        let val_name: Vec<u16> =
+                            "HardwareInformation.qwMemorySize\0".encode_utf16().collect();
+                        let mut qword_val = 0u64;
+                        let mut size = std::mem::size_of::<u64>() as u32;
+                        if RegQueryValueExW(
+                            hkey,
+                            PCWSTR(val_name.as_ptr()),
+                            None,
+                            None,
+                            Some(&mut qword_val as *mut _ as *mut u8),
+                            Some(&mut size),
+                        )
+                        .is_ok()
+                            && qword_val > max_bytes
+                        {
+                            max_bytes = qword_val;
+                        }
+
+                        if max_bytes == 0 {
+                            let dword_name: Vec<u16> =
+                                "HardwareInformation.MemorySize\0".encode_utf16().collect();
+                            let mut dword_val = 0u32;
+                            let mut dword_size = std::mem::size_of::<u32>() as u32;
+                            if RegQueryValueExW(
+                                hkey,
+                                PCWSTR(dword_name.as_ptr()),
+                                None,
+                                None,
+                                Some(&mut dword_val as *mut _ as *mut u8),
+                                Some(&mut dword_size),
+                            )
+                            .is_ok()
+                                && (dword_val as u64) > max_bytes
+                            {
+                                max_bytes = dword_val as u64;
+                            }
+                        }
+
+                        let _ = RegCloseKey(hkey);
+                    }
                 }
             }
-            best
-        }
+
+            if max_bytes > 0 {
+                Some(max_bytes / 1_048_576)
+            } else {
+                None
+            }
+        })
     }
 
     /// Reads every instance of a counter as `(name, double value)`.
@@ -158,10 +256,13 @@ impl GpuQuery {
     pub fn open() -> Option<GpuQuery> {
         None
     }
-    pub fn utilization(&mut self, _pid: u32) -> Option<f64> {
+    pub fn utilization(&mut self, _pid: Option<u32>) -> Option<f64> {
         None
     }
-    pub fn vram_bytes(&mut self, _pid: u32) -> Option<u64> {
+    pub fn vram_bytes(&mut self, _pid: Option<u32>) -> Option<u64> {
+        None
+    }
+    pub fn total_vram_mb(&self) -> Option<u64> {
         None
     }
 }

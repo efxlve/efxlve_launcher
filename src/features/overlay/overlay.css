@@ -288,11 +288,12 @@
 
 /* Widget Dimensions & Limits */
 #ov-widget-perf {
-  width: 340px;
-  min-width: 260px;
+  width: 320px;
+  height: 215px;
+  min-width: 270px;
   min-height: 180px;
-  max-width: 600px;
-  max-height: calc(100vh - 60px);
+  max-width: 540px;
+  max-height: 400px;
 }
 
 #ov-widget-shots {
@@ -395,28 +396,138 @@
   border-color: var(--text-2);
 }
 
-/* Widget Layout Adaptations */
-#ov-widget-perf-body .ov-dashboard {
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 8px !important;
-  margin-bottom: 8px !important;
+/* --- Xbox Game Bar Style Performance Widget --- */
+#ov-widget-perf-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
-#ov-widget-perf-body .ov-card.ov-span-3 {
-  padding: 8px 10px !important;
+.ov-perf-xbox {
+  display: flex;
+  gap: 14px;
+  padding: 8px 12px 10px;
+  height: 100%;
+  box-sizing: border-box;
+  user-select: none;
 }
 
-#ov-widget-perf-body .ov-perf-hero {
-  margin-bottom: 8px !important;
+.ov-perf-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 105px;
+  flex-shrink: 0;
+  justify-content: space-between;
 }
 
-#ov-widget-perf-body .ov-perf-val {
-  font-size: 26px !important;
+.ov-perf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+  outline: none;
 }
 
-#ov-widget-perf-body .ov-perf-canvas {
-  height: 70px !important;
+.ov-perf-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.ov-perf-row.active {
+  background: var(--surface-3);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.ov-perf-row-label {
+  font-weight: inherit;
+}
+
+.ov-perf-row-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.ov-perf-detail {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.ov-perf-detail-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ov-perf-detail-val {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.ov-perf-detail-val.is-empty {
+  font-size: 22px;
+  color: var(--text-3);
+}
+
+.ov-perf-detail-max {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-perf-detail-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-top: 2px;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-perf-chart-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 55px;
+  display: flex;
+}
+
+.ov-perf-chart-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ov-perf-timeline {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
 }
 
 #ov-widget-shots-body .ov-shots-grid {
