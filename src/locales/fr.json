@@ -2037,5 +2037,11 @@
   "settings.showMiniPlayerDesc": "Afficher le lecteur de la barre latérale pendant la lecture d'un titre.",
   "settings.showDiscordTitle": "Discord page",
   "settings.showDiscordDesc": "Show the Discord page and its sidebar entry. Rich Presence is not affected.",
-  "settings.pagesNote": "Turning a page off hides it here and in the in-game overlay. Discord Rich Presence keeps working."
+  "settings.pagesNote": "Turning a page off hides it here and in the in-game overlay. Discord Rich Presence keeps working.",
+  "overlay.browserHomepageTitle": "Browser homepage",
+  "overlay.browserHomepageDesc": "Address loaded when opening a new tab or pressing the home button.",
+  "overlay.browserBookmarksTitle": "Browser bookmarks",
+  "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
+  "overlay.browserBookmarkAdd": "Add",
+  "overlay.browserBookmarkReset": "Reset to default"
 }

@@ -2037,5 +2037,11 @@
   "settings.showMiniPlayerDesc": "Bir parça çalarken kenar çubuğu oynatıcısını göster.",
   "settings.showDiscordTitle": "Discord sayfası",
   "settings.showDiscordDesc": "Discord sayfasını ve kenar çubuğu girişini göster. Rich Presence etkilenmez.",
-  "settings.pagesNote": "Bir sayfayı kapatınca hem burada hem oyun içi arayüzde gizlenir. Discord Rich Presence çalışmaya devam eder."
+  "settings.pagesNote": "Bir sayfayı kapatınca hem burada hem oyun içi arayüzde gizlenir. Discord Rich Presence çalışmaya devam eder.",
+  "overlay.browserHomepageTitle": "Tarayıcı ana sayfası",
+  "overlay.browserHomepageDesc": "Yeni sekme açıldığında veya ana sayfa butonuna tıklandığında yüklenecek adres.",
+  "overlay.browserBookmarksTitle": "Tarayıcı yer imleri",
+  "overlay.browserBookmarksDesc": "Tarayıcı çubuğunda hızlı erişim sağlamak istediğiniz siteleri yönetin.",
+  "overlay.browserBookmarkAdd": "Ekle",
+  "overlay.browserBookmarkReset": "Varsayılana sıfırla"
 }

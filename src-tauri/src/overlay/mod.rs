@@ -251,6 +251,13 @@ pub(crate) fn show(app: &AppHandle) {
     #[cfg(windows)]
     if let Ok(raw_hwnd) = win.hwnd() {
         hud::focus_window(raw_hwnd.0 as isize);
+        if browser::overlay_browser_is_open(app.clone()) {
+            if let Some(b_win) = app.get_window(browser::WINDOW_LABEL) {
+                if let Ok(b_raw) = b_win.hwnd() {
+                    browser::bind_owner_hwnd(b_raw.0 as *mut core::ffi::c_void, raw_hwnd.0 as isize);
+                }
+            }
+        }
     }
     let payload = match STATE.lock() {
         Ok(mut s) => {

@@ -10,8 +10,15 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import {
+  BOOKMARKS_STORAGE_KEY,
+  DEFAULT_BOOKMARKS,
+  HOMEPAGE_STORAGE_KEY,
+  getHomepage,
+  loadBookmarks,
+} from "./browser-window";
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
 import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
@@ -4053,6 +4060,55 @@ function renderSettings(): void {
       <input type="range" min="60" max="100" step="1" value="${opacity}" data-ov-opacity style="width:160px" />
     </div>
 
+    <!-- Browser Settings: Homepage & Bookmarks -->
+    <div class="ov-setting-item">
+      <div class="ov-setting-info">
+        <div class="ov-setting-name">${esc(t("overlay.browserHomepageTitle"))}</div>
+        <div class="ov-setting-desc">${esc(t("overlay.browserHomepageDesc"))}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select class="input select small" id="ov-setting-browser-hp-select" style="max-width:130px">
+          <option value="https://www.google.com/" ${getHomepage() === "https://www.google.com/" ? "selected" : ""}>Google</option>
+          <option value="https://duckduckgo.com/" ${getHomepage() === "https://duckduckgo.com/" ? "selected" : ""}>DuckDuckGo</option>
+          <option value="https://www.bing.com/" ${getHomepage() === "https://www.bing.com/" ? "selected" : ""}>Bing</option>
+          <option value="https://yandex.com/" ${getHomepage() === "https://yandex.com/" ? "selected" : ""}>Yandex</option>
+          <option value="custom" ${!["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(getHomepage()) ? "selected" : ""}>Özel URL</option>
+        </select>
+        <input type="text" class="input small" id="ov-setting-browser-hp-custom" value="${esc(getHomepage())}" placeholder="https://..." style="${["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(getHomepage()) ? "display:none;" : ""}width:160px" />
+      </div>
+    </div>
+
+    <div class="ov-card" style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600">${esc(t("overlay.browserBookmarksTitle"))}</div>
+        <button class="btn ghost small" data-ov="reset-browser-bookmarks" title="${esc(t("overlay.browserBookmarkReset"))}">${esc(t("overlay.browserBookmarkReset"))}</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">${esc(t("overlay.browserBookmarksDesc"))}</div>
+
+      <!-- Add Bookmark Form -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+        <input type="text" class="input small" id="ov-add-bm-label" placeholder="${esc(t("overlay.browserBookmarkLabel"))} (e.g. GitHub)" style="width:120px" />
+        <input type="text" class="input small" id="ov-add-bm-url" placeholder="${esc(t("overlay.browserBookmarkUrl"))} (e.g. https://github.com)" style="flex:1" />
+        <button class="btn primary small" data-ov="add-browser-bookmark">${icon("plus", 14)} <span>${esc(t("overlay.browserBookmarkAdd"))}</span></button>
+      </div>
+
+      <!-- Bookmarks List -->
+      <div style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto">
+        ${loadBookmarks().map((bm, idx) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--surface-2);border-radius:var(--r-sm)">
+            <div style="display:flex;align-items:center;gap:8px;overflow:hidden;flex:1;margin-right:8px">
+              <span style="color:var(--accent);display:flex;flex-shrink:0">${icon(bm.iconName || "globe", 13)}</span>
+              <span style="font-size:12px;font-weight:500;white-space:nowrap">${esc(bm.label)}</span>
+              <span style="font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(bm.url)}</span>
+            </div>
+            <button class="btn ghost small danger" data-ov="delete-browser-bookmark" data-index="${idx}" title="Kaldır" style="padding:2px 6px">
+              ${icon("trash", 12)}
+            </button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+
     ${launcherMode ? "" : `
     <div class="ov-setting-item">
       <div class="ov-setting-info">
@@ -4414,6 +4470,46 @@ function wireEvents(): void {
       void refreshLibrary();
     } else if (action === "sp-open") {
       void openSpotifyLink();
+    } else if (action === "add-browser-bookmark") {
+      const labelInput = document.getElementById("ov-add-bm-label") as HTMLInputElement | null;
+      const urlInput = document.getElementById("ov-add-bm-url") as HTMLInputElement | null;
+      const label = labelInput?.value.trim();
+      let url = urlInput?.value.trim();
+      if (label && url) {
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+          url = `https://${url}`;
+        }
+        const current = loadBookmarks();
+        const host = url.toLowerCase();
+        let iconName: Parameters<typeof icon>[0] = "globe";
+        if (host.includes("youtube.com")) iconName = "youtube";
+        else if (host.includes("twitter.com") || host.includes("x.com")) iconName = "twitter";
+        else if (host.includes("google.com")) iconName = "search";
+        else if (host.includes("reddit.com")) iconName = "users";
+        else if (host.includes("twitch.tv")) iconName = "monitor";
+        else if (host.includes("steam")) iconName = "gamepad-2";
+        else if (host.includes("discord.com")) iconName = "discord";
+        else if (host.includes("github.com")) iconName = "github";
+        else if (host.includes("spotify.com")) iconName = "spotify";
+
+        current.push({ label, iconName, url });
+        localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(current));
+        void emit("overlay-browser-bookmarks-updated", {});
+        renderSettings();
+      }
+    } else if (action === "delete-browser-bookmark") {
+      const idx = Number(target.closest<HTMLElement>("[data-ov]")?.dataset.index);
+      if (!Number.isNaN(idx)) {
+        const current = loadBookmarks();
+        current.splice(idx, 1);
+        localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(current));
+        void emit("overlay-browser-bookmarks-updated", {});
+        renderSettings();
+      }
+    } else if (action === "reset-browser-bookmarks") {
+      localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(DEFAULT_BOOKMARKS));
+      void emit("overlay-browser-bookmarks-updated", {});
+      renderSettings();
     }
   });
 
@@ -4449,6 +4545,18 @@ function wireEvents(): void {
         : disabledGames().filter((i) => i.key !== context.appName);
       saveDisabled(next);
       if (input.checked) void invoke("overlay_hide");
+    } else if (input.id === "ov-setting-browser-hp-select") {
+      const sel = input as unknown as HTMLSelectElement;
+      const customInput = document.getElementById("ov-setting-browser-hp-custom") as HTMLInputElement | null;
+      if (sel.value === "custom") {
+        if (customInput) {
+          customInput.style.display = "inline-block";
+          customInput.focus();
+        }
+      } else {
+        if (customInput) customInput.style.display = "none";
+        localStorage.setItem(HOMEPAGE_STORAGE_KEY, sel.value);
+      }
     }
   });
 
@@ -4474,6 +4582,14 @@ function wireEvents(): void {
       growComposer(target);
       const count = document.querySelector<HTMLElement>(".composer-count");
       if (count) count.textContent = `${target.value.length} / 2000`;
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.id === "ov-setting-browser-hp-custom") {
+      let val = target.value.trim();
+      if (val && !val.startsWith("http://") && !val.startsWith("https://")) {
+        val = `https://${val}`;
+      }
+      if (val) localStorage.setItem(HOMEPAGE_STORAGE_KEY, val);
       return;
     }
     const input = event.target as HTMLInputElement | null;
@@ -4781,7 +4897,7 @@ function refreshDock(): void {
   document.querySelector<HTMLElement>(".ov-topbar-settings-btn")?.classList.toggle("active", isWidgetOpen("settings"));
 }
 
-/** B / Esc: close the lightbox, leave the text box, go home, then close. */
+/** B / Esc: close the lightbox, leave the text box, then close. */
 function goBack(): void {
   if (lightboxIsOpen()) {
     hideLightbox();
@@ -4789,11 +4905,6 @@ function goBack(): void {
   }
   if (isTextEntryFocused()) {
     (document.activeElement as HTMLElement | null)?.blur();
-    return;
-  }
-  if (activeTab !== "home") {
-    setTab("home");
-    focusElement(dockTabButton("home"));
     return;
   }
   void invoke("overlay_hide");

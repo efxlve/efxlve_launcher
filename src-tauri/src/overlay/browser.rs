@@ -47,6 +47,18 @@ extern "system" {
         cy: i32,
         flags: u32,
     ) -> i32;
+    fn SetWindowLongPtrW(
+        hwnd: *mut core::ffi::c_void,
+        index: i32,
+        new_long: isize,
+    ) -> isize;
+}
+
+#[cfg(windows)]
+pub fn bind_owner_hwnd(browser_hwnd: *mut core::ffi::c_void, owner_hwnd: isize) {
+    unsafe {
+        SetWindowLongPtrW(browser_hwnd, -8, owner_hwnd);
+    }
 }
 
 #[derive(Serialize, Clone)]
@@ -490,6 +502,11 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
     if let Some(window) = app.get_window(WINDOW_LABEL) {
         #[cfg(windows)]
         if let Ok(raw) = window.hwnd() {
+            if let Some(overlay_win) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) {
+                if let Ok(overlay_raw) = overlay_win.hwnd() {
+                    bind_owner_hwnd(raw.0 as *mut core::ffi::c_void, overlay_raw.0 as isize);
+                }
+            }
             unsafe {
                 ShowWindow(raw.0 as *mut core::ffi::c_void, 5); // SW_SHOW
                 SetWindowPos(
@@ -549,6 +566,11 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
     if let Some(window) = app.get_window(WINDOW_LABEL) {
         #[cfg(windows)]
         if let Ok(raw) = window.hwnd() {
+            if let Some(overlay_win) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) {
+                if let Ok(overlay_raw) = overlay_win.hwnd() {
+                    bind_owner_hwnd(raw.0 as *mut core::ffi::c_void, overlay_raw.0 as isize);
+                }
+            }
             unsafe {
                 ShowWindow(raw.0 as *mut core::ffi::c_void, 5);
                 SetWindowPos(
