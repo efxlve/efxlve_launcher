@@ -2062,11 +2062,16 @@ function mediaCardInnerHtml(): string {
 
 /* 6. Spotify Overlay Widget View */
 let musicViewMode: "playlists" | "tracks" = "playlists";
+let spotifySearchQuery = "";
+let spotifySearchOpen = false;
 
 function renderMusicTab(): void {
   const el = viewEl("music");
   if (!el) return;
   ensureSpotifyEngine();
+  if (!selectedPlaylist && musicViewMode === "tracks") {
+    musicViewMode = "playlists";
+  }
   el.innerHTML = `
     ${unifiedPlayerHtml(getOverlayMedia())}
     ${libraryHtml()}`;
@@ -2081,7 +2086,7 @@ function unifiedPlayerHtml(m: OverlayMediaModel): string {
       <div class="ov-card ov-sp-player ov-sp-idle">
         <div class="ov-sp-player-main">
           <div class="ov-sp-art ov-sp-art-spotify" id="ov-sp-art">
-            ${spotifyLogoSvg(30)}
+            ${spotifyLogoSvg(32)}
           </div>
           <div class="ov-sp-info">
             <div class="ov-sp-title" id="ov-sp-title">${esc(t("overlay.noMedia"))}</div>
@@ -2102,8 +2107,8 @@ function unifiedPlayerHtml(m: OverlayMediaModel): string {
         ${m.artUrl
           ? `<img class="ov-sp-art" id="ov-sp-art" src="${esc(m.artUrl)}" alt="" />`
           : m.isSpotify
-          ? `<div class="ov-sp-art ov-sp-art-spotify" id="ov-sp-art">${spotifyLogoSvg(30)}</div>`
-          : `<div class="ov-media-icon ov-sp-art" id="ov-sp-art">${icon("music", 24)}</div>`}
+          ? `<div class="ov-sp-art ov-sp-art-spotify" id="ov-sp-art">${spotifyLogoSvg(32)}</div>`
+          : `<div class="ov-media-icon ov-sp-art" id="ov-sp-art">${icon("music", 26)}</div>`}
         <div class="ov-sp-info">
           <div class="ov-sp-meta-top">
             <div class="ov-sp-title" id="ov-sp-title" title="${esc(m.title)}">${esc(m.title)}</div>
@@ -2146,50 +2151,47 @@ function unifiedPlayerHtml(m: OverlayMediaModel): string {
     </div>`;
 }
 
-/* ---------- Library browser (master-detail: playlists -> tracks) ---------- */
+/* ---------- Library browser (dual-tab: playlists <-> tracks) ---------- */
 
-function libraryHeadHtml(): string {
-  if (musicViewMode === "tracks" && selectedPlaylist) {
-    const sel = playlists?.find((p) => p.uri === selectedPlaylist);
-    const title = sel?.name || t("overlay.tracks");
-    return `
-      <div class="ov-sp-head-left">
-        <button class="btn ghost small ov-sp-back-btn" data-ov="sp-back-playlists" title="${esc(t("music.back"))}">
-          ${icon("arrow-left", 12)} <span>${esc(t("music.back"))}</span>
+function libraryTabsHtml(): string {
+  const plCount = playlists?.length ?? 0;
+  const trCount = playlistTracks?.length ?? 0;
+  return `
+    <div class="ov-sp-tabs-bar">
+      <div class="ov-sp-tabs">
+        <button class="ov-sp-tab-btn ${musicViewMode === "playlists" ? "active" : ""}" data-ov="sp-tab-playlists" type="button">
+          ${icon("list", 13)}
+          <span>${esc(t("overlay.library"))}</span>
+          ${plCount > 0 ? `<span class="ov-sp-count-pill">${plCount}</span>` : ""}
         </button>
-        <span class="ov-sp-library-title ov-sp-playlist-title" title="${esc(title)}">
-          ${esc(title)}
-        </span>
+        <button class="ov-sp-tab-btn ${musicViewMode === "tracks" ? "active" : ""}" data-ov="sp-tab-tracks" type="button">
+          ${icon("music", 13)}
+          <span>${esc(t("overlay.tracks"))}</span>
+          ${trCount > 0 ? `<span class="ov-sp-count-pill">${trCount}</span>` : ""}
+        </button>
       </div>
-      <div class="ov-sp-head-right">
-        <button class="icon-btn small" data-ov="sp-refresh-library" title="${esc(t("overlay.refresh"))}">
+      <div class="ov-sp-tab-actions">
+        <button class="icon-btn small ov-sp-action-btn${spotifySearchOpen ? " active" : ""}" data-ov="sp-toggle-search" title="${esc(t("common.search"))}">
+          ${icon("search", 13)}
+        </button>
+        <button class="icon-btn small ov-sp-action-btn" data-ov="sp-refresh-library" title="${esc(t("overlay.refresh"))}">
           ${icon("refresh", 13)}
         </button>
-      </div>`;
-  }
-
-  return `
-    <div class="ov-sp-head-left">
-      <span class="ov-sp-library-title">
-        ${icon("list", 14)} <span>${esc(t("overlay.library"))}</span>
-      </span>
+      </div>
     </div>
-    <div class="ov-sp-head-right">
-      ${selectedPlaylist ? `
-        <button class="btn ghost small ov-sp-show-tracks-btn" data-ov="sp-show-tracks">
-          <span>${esc(t("overlay.tracks"))}</span> ${icon("chevron-right", 12)}
-        </button>` : ""}
-      <button class="icon-btn small" data-ov="sp-refresh-library" title="${esc(t("overlay.refresh"))}">
-        ${icon("refresh", 13)}
-      </button>
-    </div>`;
+    ${spotifySearchOpen ? `
+      <div class="ov-sp-search-box">
+        ${icon("search", 12)}
+        <input type="text" id="ov-sp-search-input" placeholder="${esc(t("lib.searchPlaceholder"))}" value="${esc(spotifySearchQuery)}" />
+        ${spotifySearchQuery ? `<button class="ov-sp-search-clear" data-ov="sp-clear-search" title="Clear">${icon("x", 12)}</button>` : ""}
+      </div>` : ""}`;
 }
 
 function libraryHtml(): string {
   return `
     <div class="ov-sp-library">
-      <div class="ov-sp-library-head" id="ov-sp-library-head">
-        ${libraryHeadHtml()}
+      <div class="ov-sp-library-header" id="ov-sp-library-header">
+        ${libraryTabsHtml()}
       </div>
       <div class="ov-sp-panes">
         <div class="ov-sp-pane" id="ov-sp-playlist-list"${musicViewMode === "playlists" ? "" : ' style="display:none"'}></div>
@@ -2200,12 +2202,14 @@ function libraryHtml(): string {
 
 function setMusicViewMode(mode: "playlists" | "tracks"): void {
   musicViewMode = mode;
-  const head = document.getElementById("ov-sp-library-head");
-  if (head) head.innerHTML = libraryHeadHtml();
+  const header = document.getElementById("ov-sp-library-header");
+  if (header) header.innerHTML = libraryTabsHtml();
   const plList = document.getElementById("ov-sp-playlist-list");
   const trList = document.getElementById("ov-sp-track-list");
-  if (plList) plList.style.display = mode === "playlists" ? "" : "none";
-  if (trList) trList.style.display = mode === "tracks" ? "" : "none";
+  if (plList) plList.style.display = mode === "playlists" ? "flex" : "none";
+  if (trList) trList.style.display = mode === "tracks" ? "flex" : "none";
+  if (mode === "playlists") renderPlaylistList();
+  else renderTrackList();
 }
 
 /** Shimmering rows while a library pane loads. */
@@ -2249,9 +2253,17 @@ function renderPlaylistList(): void {
     host.innerHTML = emptyBlockHtml("alert-triangle", t("overlay.playlistsError"), playlistsError.slice(0, 140), retryButtonHtml());
     return;
   }
-  const lists = playlists ?? [];
+  let lists = playlists ?? [];
+  if (spotifySearchQuery.trim()) {
+    const q = spotifySearchQuery.trim().toLowerCase();
+    lists = lists.filter((l) => l.name.toLowerCase().includes(q));
+  }
   if (lists.length === 0) {
-    host.innerHTML = emptyBlockHtml("list", t("overlay.noPlaylists"), "", retryButtonHtml());
+    if (spotifySearchQuery.trim()) {
+      host.innerHTML = emptyBlockHtml("search", "Sonuç Bulunamadı", "Farklı bir arama terimi deneyin.");
+    } else {
+      host.innerHTML = emptyBlockHtml("list", t("overlay.noPlaylists"), "", retryButtonHtml());
+    }
     return;
   }
   host.innerHTML = lists
@@ -2275,7 +2287,15 @@ function renderTrackList(): void {
   const host = document.getElementById("ov-sp-track-list");
   if (!host) return;
   if (!selectedPlaylist) {
-    host.innerHTML = emptyBlockHtml("list", t("overlay.libraryEmptyTitle"), t("overlay.libraryEmptyDesc"));
+    host.innerHTML = `
+      <div class="ov-empty-block">
+        <div class="ov-empty-icon">${icon("list", 28)}</div>
+        <div class="ov-empty-title">${esc(t("overlay.libraryEmptyTitle"))}</div>
+        <div class="ov-empty-desc">${esc(t("overlay.libraryEmptyDesc"))}</div>
+        <button class="btn primary small" data-ov="sp-tab-playlists" style="margin-top:10px">
+          ${icon("list", 13)} <span>${esc(t("overlay.library"))}</span>
+        </button>
+      </div>`;
     return;
   }
   if (tracksState === "idle" || tracksState === "loading") {
@@ -2286,12 +2306,32 @@ function renderTrackList(): void {
     host.innerHTML = emptyBlockHtml("alert-triangle", t("overlay.playlistsError"), tracksError.slice(0, 140), retryButtonHtml());
     return;
   }
-  const tracks = playlistTracks ?? [];
+  let tracks = playlistTracks ?? [];
+  if (spotifySearchQuery.trim()) {
+    const q = spotifySearchQuery.trim().toLowerCase();
+    tracks = tracks.filter((t) => t.name.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q));
+  }
+  const selObj = playlists?.find((p) => p.uri === selectedPlaylist);
+  const trackHeaderHtml = `
+    <div class="ov-sp-tracklist-bar">
+      <div class="ov-sp-tl-left">
+        <button class="btn ghost small ov-sp-back-inline" data-ov="sp-tab-playlists" title="${esc(t("music.back"))}">
+          ${icon("arrow-left", 12)} <span>${esc(t("music.back"))}</span>
+        </button>
+        <span class="ov-sp-tl-title" title="${esc(selObj?.name || "")}">${esc(selObj?.name || t("overlay.tracks"))}</span>
+      </div>
+      <span class="ov-sp-tl-count">${playlistTracks?.length ?? 0} ${esc(t("overlay.tracks"))}</span>
+    </div>`;
+
   if (tracks.length === 0) {
-    host.innerHTML = emptyBlockHtml("list", t("overlay.noTracks"), "", retryButtonHtml());
+    if (spotifySearchQuery.trim()) {
+      host.innerHTML = trackHeaderHtml + emptyBlockHtml("search", "Sonuç Bulunamadı", "Arama terimini değiştirin.");
+    } else {
+      host.innerHTML = trackHeaderHtml + emptyBlockHtml("list", t("overlay.noTracks"), "", retryButtonHtml());
+    }
     return;
   }
-  host.innerHTML = tracks
+  host.innerHTML = trackHeaderHtml + tracks
     .map(
       (track, index) => `
       <button class="ov-sp-row ov-sp-track" data-ov="sp-play-track" data-uri="${esc(track.uri)}" data-index="${index + 1}">
@@ -2333,8 +2373,8 @@ async function ensurePlaylists(force = false): Promise<void> {
     playlistsState = "error";
   }
   renderPlaylistList();
-  const head = document.getElementById("ov-sp-library-head");
-  if (head) head.innerHTML = libraryHeadHtml();
+  const header = document.getElementById("ov-sp-library-header");
+  if (header) header.innerHTML = libraryTabsHtml();
 }
 
 /** Opens a playlist: highlight it and load its tracks. */
@@ -2344,6 +2384,8 @@ async function selectPlaylist(uri: string): Promise<void> {
   renderPlaylistList();
   if (playlistTracks && tracksState === "ready" && tracksFor === uri) {
     renderTrackList();
+    const header = document.getElementById("ov-sp-library-header");
+    if (header) header.innerHTML = libraryTabsHtml();
     return;
   }
   tracksFor = uri;
@@ -2359,6 +2401,8 @@ async function selectPlaylist(uri: string): Promise<void> {
     tracksState = "error";
   }
   renderTrackList();
+  const header = document.getElementById("ov-sp-library-header");
+  if (header) header.innerHTML = libraryTabsHtml();
 }
 
 /** Starts the open playlist at the clicked track. */
@@ -4026,10 +4070,26 @@ function wireEvents(): void {
       }
     } else if (action === "sp-engine-start") {
       ensureSpotifyEngine();
-    } else if (action === "sp-back-playlists") {
+    } else if (action === "sp-tab-playlists" || action === "sp-back-playlists") {
       setMusicViewMode("playlists");
-    } else if (action === "sp-show-tracks") {
-      if (selectedPlaylist) setMusicViewMode("tracks");
+    } else if (action === "sp-tab-tracks" || action === "sp-show-tracks") {
+      setMusicViewMode("tracks");
+    } else if (action === "sp-toggle-search") {
+      spotifySearchOpen = !spotifySearchOpen;
+      if (!spotifySearchOpen) spotifySearchQuery = "";
+      const header = document.getElementById("ov-sp-library-header");
+      if (header) header.innerHTML = libraryTabsHtml();
+      if (musicViewMode === "playlists") renderPlaylistList();
+      else renderTrackList();
+      if (spotifySearchOpen) {
+        window.setTimeout(() => document.getElementById("ov-sp-search-input")?.focus(), 50);
+      }
+    } else if (action === "sp-clear-search") {
+      spotifySearchQuery = "";
+      const header = document.getElementById("ov-sp-library-header");
+      if (header) header.innerHTML = libraryTabsHtml();
+      if (musicViewMode === "playlists") renderPlaylistList();
+      else renderTrackList();
     } else if (action === "sp-select-playlist") {
       const uri = target.closest<HTMLElement>("[data-ov]")?.dataset.uri;
       if (uri) void selectPlaylist(uri);
@@ -4081,6 +4141,12 @@ function wireEvents(): void {
     if (target instanceof HTMLInputElement && target.id === "ov-dc-friends-filter") {
       friendsFilterQuery = target.value;
       renderDiscordSocial();
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.id === "ov-sp-search-input") {
+      spotifySearchQuery = target.value;
+      if (musicViewMode === "playlists") renderPlaylistList();
+      else renderTrackList();
       return;
     }
     if (target instanceof HTMLTextAreaElement && target.id === "ov-discord-reply-input") {
@@ -4567,12 +4633,9 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   spotifyBaseMs = 0;
   spotifyBaseAt = 0;
   lastMediaActive = false;
-  playlists = null;
-  playlistsState = "idle";
-  selectedPlaylist = null;
-  playlistTracks = null;
-  tracksState = "idle";
-  tracksFor = null;
+  if (!selectedPlaylist) {
+    musicViewMode = "playlists";
+  }
   sessionStartEpoch = Date.now();
   gamepadSuppressUntil = performance.now() + 450;
 

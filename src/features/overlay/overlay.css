@@ -1760,9 +1760,14 @@
 .ov-sp-progress-fill {
   height: 100%;
   border-radius: 2px;
-  background: var(--accent);
+  background: #1ed760;
   width: 0;
   transition: width 150ms linear;
+  box-shadow: 0 0 6px rgba(30, 215, 96, 0.35);
+}
+
+.ov-sp-progress:hover .ov-sp-progress-fill {
+  background: #1fdf64;
 }
 
 .ov-sp-times {
@@ -1777,13 +1782,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 2px;
 }
 
 .ov-sp-ctrl-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1792,7 +1797,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color var(--ease), background var(--ease);
+  transition: color var(--ease), background var(--ease), transform var(--ease);
 }
 
 .ov-sp-ctrl-btn:hover {
@@ -1801,28 +1806,53 @@
 }
 
 .ov-sp-ctrl-btn.active {
-  color: var(--accent);
+  color: #1ed760;
+}
+
+.ov-sp-ctrl-btn.repeat-track {
+  position: relative;
+}
+
+.ov-sp-ctrl-btn.repeat-track::after {
+  content: "1";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #1ed760;
+  line-height: 1;
 }
 
 .ov-sp-play-btn {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50% !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0 !important;
-  background: var(--accent) !important;
-  color: var(--accent-contrast, #fff) !important;
+  background: #1ed760 !important;
+  color: #000000 !important;
   border: none;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  transition: transform var(--ease), filter var(--ease);
+  box-shadow: 0 2px 8px rgba(30, 215, 96, 0.4);
+  transition: transform var(--ease), box-shadow var(--ease), filter var(--ease);
+}
+
+.ov-sp-play-btn svg {
+  color: #000000 !important;
+}
+
+.ov-sp-play-btn svg rect,
+.ov-sp-play-btn svg polygon {
+  fill: #000000 !important;
 }
 
 .ov-sp-play-btn:hover {
-  transform: scale(1.05);
-  filter: brightness(1.1);
+  transform: scale(1.06);
+  background: #1fdf64 !important;
+  box-shadow: 0 4px 14px rgba(30, 215, 96, 0.55);
 }
 
 .ov-sp-extras {
@@ -1866,7 +1896,7 @@
 }
 
 .ov-sp-volume input[type="range"]::-webkit-slider-thumb:hover {
-  background: var(--accent);
+  background: #1ed760;
 }
 
 .ov-sp-open-btn {
@@ -1888,7 +1918,7 @@
   padding-top: 4px;
 }
 
-/* Library (Single-column master-detail for widgets) */
+/* Library browser (dual-tab segmented design) */
 .ov-sp-library {
   flex: 1;
   min-height: 0;
@@ -1898,17 +1928,162 @@
   margin-top: 2px;
 }
 
-.ov-sp-library-head {
+.ov-sp-library-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ov-sp-tabs-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 2px;
-  min-height: 26px;
+  min-height: 28px;
+  padding: 0 1px;
+}
+
+.ov-sp-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  padding: 2px;
+  border-radius: var(--r-sm);
+}
+
+.ov-sp-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: calc(var(--r-sm) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--ease), background var(--ease);
+  line-height: 1;
+}
+
+.ov-sp-tab-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ov-sp-tab-btn.active {
+  color: var(--text);
+  background: var(--surface-3);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.ov-sp-count-pill {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.ov-sp-tab-btn.active .ov-sp-count-pill {
+  background: rgba(30, 215, 96, 0.16);
+  color: #1ed760;
+  font-weight: 600;
+}
+
+.ov-sp-tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ov-sp-action-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color var(--ease), background var(--ease);
+}
+
+.ov-sp-action-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.ov-sp-action-btn.active {
+  color: #1ed760;
+  background: rgba(30, 215, 96, 0.12);
+}
+
+.ov-sp-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+
+.ov-sp-search-box input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 11.5px;
+  padding: 0;
+}
+
+.ov-sp-search-box input::placeholder {
+  color: var(--text-3);
+}
+
+.ov-sp-search-clear {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 3px;
+  transition: color var(--ease);
+}
+
+.ov-sp-search-clear:hover {
+  color: var(--text);
+}
+
+.ov-sp-tracklist-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px 5px 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
   flex-shrink: 0;
 }
 
-.ov-sp-head-left {
+.ov-sp-tl-left {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1916,17 +2091,15 @@
   flex: 1;
 }
 
-.ov-sp-head-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.ov-sp-back-inline {
+  height: 22px !important;
+  padding: 0 6px !important;
+  font-size: 10.5px !important;
+  gap: 3px !important;
   flex-shrink: 0;
 }
 
-.ov-sp-library-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.ov-sp-tl-title {
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
@@ -1935,19 +2108,11 @@
   text-overflow: ellipsis;
 }
 
-.ov-sp-playlist-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  max-width: 180px;
-}
-
-.ov-sp-back-btn,
-.ov-sp-show-tracks-btn {
-  padding: 2px 7px !important;
-  height: 22px !important;
-  font-size: 11px !important;
-  gap: 4px !important;
+.ov-sp-tl-count {
+  font-size: 10.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .ov-sp-panes {
@@ -2080,12 +2245,13 @@
 }
 
 .ov-sp-track.playing {
-  background: var(--accent-tint, rgba(29, 185, 84, 0.12));
+  background: rgba(30, 215, 96, 0.12);
+  border-color: rgba(30, 215, 96, 0.22);
 }
 
 .ov-sp-track.playing .ov-sp-row-name,
 .ov-sp-track.playing .ov-sp-track-index {
-  color: var(--accent, #1db954);
+  color: #1ed760;
   font-weight: 600;
 }
 
