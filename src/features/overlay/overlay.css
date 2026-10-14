@@ -288,12 +288,12 @@
 
 /* Widget Dimensions & Limits */
 #ov-widget-perf {
-  width: 320px;
-  height: 215px;
-  min-width: 270px;
-  min-height: 180px;
-  max-width: 540px;
-  max-height: 400px;
+  width: 380px;
+  height: 280px;
+  min-width: 320px;
+  min-height: 240px;
+  max-width: 650px;
+  max-height: 500px;
 }
 
 #ov-widget-shots {
@@ -396,138 +396,252 @@
   border-color: var(--text-2);
 }
 
-/* --- Xbox Game Bar Style Performance Widget --- */
+/* --- Bespoke Efxlve Telemetry Widget --- */
 #ov-widget-perf-body {
   height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  background: var(--surface-1);
 }
 
-.ov-perf-xbox {
+.ov-telemetry {
   display: flex;
-  gap: 14px;
-  padding: 8px 12px 10px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
   height: 100%;
   box-sizing: border-box;
   user-select: none;
 }
 
-.ov-perf-sidebar {
+/* 5 Telemetry Selector Chips */
+.ov-tele-chips {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ov-tele-chip {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  width: 105px;
-  flex-shrink: 0;
   justify-content: space-between;
+  padding: 6px 7px 5px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.16s ease-out;
+  outline: none;
+  min-width: 0;
+  text-align: left;
 }
 
-.ov-perf-row {
+.ov-tele-chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.ov-tele-chip.active {
+  background: var(--surface-3);
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.22);
+}
+
+.ov-tele-chip-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  font-variant-numeric: tabular-nums;
-  outline: none;
+  gap: 4px;
+  min-width: 0;
 }
 
-.ov-perf-row:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
+.ov-tele-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-3);
 }
 
-.ov-perf-row.active {
-  background: var(--surface-3);
-  color: #ffffff;
+.ov-tele-dot.ok {
+  background: var(--ok);
+  box-shadow: 0 0 5px rgba(47, 179, 109, 0.6);
+}
+
+.ov-tele-dot.warn {
+  background: var(--warn);
+  box-shadow: 0 0 5px rgba(224, 163, 46, 0.6);
+}
+
+.ov-tele-dot.err {
+  background: var(--err);
+  box-shadow: 0 0 5px rgba(229, 72, 77, 0.6);
+}
+
+.ov-tele-chip-title {
+  font-size: 11px;
   font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.2px;
 }
 
-.ov-perf-row-label {
-  font-weight: inherit;
+.ov-tele-chip.active .ov-tele-chip-title {
+  color: #fff;
 }
 
-.ov-perf-row-val {
+.ov-tele-chip-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
-  font-weight: inherit;
-  color: inherit;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
-.ov-perf-detail {
+.ov-tele-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.ov-tele-bar-fill {
+  height: 100%;
+  background: var(--text-2);
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.ov-tele-chip.active .ov-tele-bar-fill {
+  background: #38bdf8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+}
+
+/* Telemetry Cockpit Scope */
+.ov-tele-scope {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-width: 0;
-  height: 100%;
+  min-height: 0;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  padding: 8px 10px 6px;
 }
 
-.ov-perf-detail-top {
+.ov-tele-scope-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
+  margin-bottom: 6px;
 }
 
-.ov-perf-detail-val {
-  font-size: 30px;
+.ov-tele-scope-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ov-tele-scope-tag {
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.ov-tele-scope-num {
+  font-size: 26px;
+  font-weight: 800;
   line-height: 1.05;
-  color: var(--text);
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.5px;
 }
 
-.ov-perf-detail-val.is-empty {
-  font-size: 22px;
+.ov-tele-scope-num.is-empty {
+  font-size: 20px;
   color: var(--text-3);
 }
 
-.ov-perf-detail-max {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.ov-perf-detail-sub {
-  font-size: 12px;
+.ov-tele-scope-sub {
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-2);
-  margin-top: 2px;
-  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-tele-scope-right {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.ov-tele-stat-pill {
+  font-size: 10.5px;
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  color: var(--text-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.ov-perf-chart-wrap {
+.ov-tele-stat-pill b {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.ov-tele-canvas-wrap {
   position: relative;
   flex: 1;
-  min-height: 55px;
-  display: flex;
+  min-height: 50px;
+  width: 100%;
 }
 
-.ov-perf-chart-wrap canvas {
+.ov-tele-canvas-wrap canvas {
   width: 100%;
   height: 100%;
   display: block;
 }
 
-.ov-perf-timeline {
+.ov-tele-timeline {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   font-size: 10px;
   color: var(--text-3);
-  margin-top: 3px;
   font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+  padding: 0 2px;
+}
+
+.ov-tele-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ok);
+}
+
+.ov-tele-live-pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+  animation: ov-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes ov-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
 }
 
 #ov-widget-shots-body .ov-shots-grid {
