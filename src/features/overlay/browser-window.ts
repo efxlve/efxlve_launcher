@@ -205,6 +205,7 @@ function wire(): void {
 }
 
 async function boot(): Promise<void> {
+  document.documentElement.dataset.surface = "soft";
   await setLanguage(initialLanguage());
   wire();
   // Strip events can fire before the listeners exist: ask for the current list

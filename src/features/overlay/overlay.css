@@ -7,6 +7,11 @@
 
 :root {
   --danger: var(--err);
+  /* Soft Black surfaces from launcher design system */
+  --bg: #101014;
+  --surface-1: #18181c;
+  --surface-2: #222228;
+  --surface-3: #2c2c32;
 }
 
 .ov-page {
@@ -24,7 +29,6 @@
   height: 100vh;
 }
 
-/* --- Backdrop: a flat scrim; the game stays visible through it. --- */
 /* --- Backdrop: a flat translucent scrim; the game stays clearly visible through it. --- */
 .ov {
   position: fixed;
@@ -33,14 +37,14 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(0, 0, 0, 0.42);
+  background: rgba(16, 16, 20, 0.45);
   overflow: hidden;
   animation: fade-in 140ms ease-out;
 }
 
-.ov.ov-opacity-90 { background: rgba(0, 0, 0, 0.54); }
-.ov.ov-opacity-75 { background: rgba(0, 0, 0, 0.36); }
-.ov.ov-opacity-60 { background: rgba(0, 0, 0, 0.22); }
+.ov.ov-opacity-90 { background: rgba(16, 16, 20, 0.58); }
+.ov.ov-opacity-75 { background: rgba(16, 16, 20, 0.40); }
+.ov.ov-opacity-60 { background: rgba(16, 16, 20, 0.25); }
 
 /* --- Top Floating Widget Bar (Xbox Game Bar style) --- */
 .ov-topbar {

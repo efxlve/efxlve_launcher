@@ -240,6 +240,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_browser_activate_tab` | `overlayBrowserActivateTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_close` | `overlayBrowserClose({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_close_tab` | `overlayBrowserCloseTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_is_open` | `overlayBrowserIsOpen({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_navigate` | `overlayBrowserNavigate({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_new_tab` | `overlayBrowserNewTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_open` | `overlayBrowserOpen({ ... })` | `src-tauri/src/overlay/browser.rs` |

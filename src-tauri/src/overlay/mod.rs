@@ -235,10 +235,10 @@ pub fn overlay_show(app: AppHandle) {
 
 /// Shows the panel over the game monitor and announces the game context.
 pub(crate) fn show(app: &AppHandle) {
-    // The panel and the browser window share the screen (a WebView2 keeps a bad
-    // frame when another topmost window covers it), so exactly one of them is
-    // up: a shown panel sends the browser away, the Browser tab brings it back.
-    browser::hide_window(app);
+    // The browser window floats over the game alongside other widgets.
+
+
+
     let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
         return;
     };

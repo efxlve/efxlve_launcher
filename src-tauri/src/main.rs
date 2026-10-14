@@ -942,6 +942,7 @@ fn main() {
             overlay::overlay_show,
             overlay::overlay_show_launcher,
             overlay::browser::overlay_browser_open,
+            overlay::browser::overlay_browser_is_open,
             overlay::browser::overlay_browser_show,
             overlay::browser::overlay_browser_tabs,
             overlay::browser::overlay_browser_navigate,

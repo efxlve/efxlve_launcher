@@ -100,7 +100,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
-  { id: "chat", icon: "mail", key: "overlay.discordReplyTitle" },
+  { id: "chat", icon: "discord", key: "overlay.discordReplyTitle" },
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "browser", icon: "globe", key: "overlay.tabBrowser" },
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
@@ -111,10 +111,10 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
 function visibleTabs(): typeof TABS {
   return TABS.filter(
     (tab) =>
+      tab.id !== "chat" &&
       (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
       (tab.id !== "music" || spotifyPageVisible()) &&
-      (tab.id !== "discord" || discordPageVisible()) &&
-      (tab.id !== "chat" || discordPageVisible()),
+      (tab.id !== "discord" || discordPageVisible()),
   );
 }
 
@@ -647,7 +647,18 @@ function closeWidget(tab: TabId): void {
 
 function toggleWidget(tab: TabId): void {
   if (tab === "browser") {
-    void invoke("overlay_browser_open", { url: null });
+    const toggleBtn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="browser"]');
+    const currentlyActive = toggleBtn?.classList.contains("active") || openWidgets.has("browser");
+    if (currentlyActive) {
+      void invoke("overlay_browser_close");
+      if (toggleBtn) toggleBtn.classList.remove("active");
+      openWidgets.delete("browser");
+    } else {
+      void invoke("overlay_browser_open", { url: null });
+      if (toggleBtn) toggleBtn.classList.add("active");
+      openWidgets.add("browser");
+    }
+    saveOpenWidgets();
     return;
   }
   if (isWidgetOpen(tab)) {
@@ -4045,6 +4056,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   }
   applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
 
+  document.documentElement.dataset.surface = "soft";
   hideLightbox();
 
   const launcher = isLauncherContext(context);
@@ -4080,6 +4092,18 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     }
   }
 
+  // Sync browser button and state
+  const browserBtn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="browser"]');
+  void invoke<boolean>("overlay_browser_is_open")
+    .then((isOpen) => {
+      const active = Boolean(isOpen);
+      if (browserBtn) browserBtn.classList.toggle("active", active);
+      if (active) openWidgets.add("browser");
+      else openWidgets.delete("browser");
+      saveOpenWidgets();
+    })
+    .catch(() => undefined);
+
   // Preload achievements and screenshots
   const { store } = splitKey(context.appName);
   if (context.appName && store !== "game") {
@@ -4098,6 +4122,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
 }
 
 async function boot(): Promise<void> {
+  document.documentElement.dataset.surface = "soft";
   await setLanguage(initialLanguage());
 
   const root = document.getElementById("ov-root");
@@ -4117,6 +4142,18 @@ async function boot(): Promise<void> {
 
   await listen<OpenPayload>("overlay-open", (event) => {
     void onOpen(event.payload);
+  });
+
+  await listen<{ open: boolean }>("overlay-browser-state", (event) => {
+    const isOpen = Boolean(event.payload?.open);
+    const toggleBtn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="browser"]');
+    if (toggleBtn) toggleBtn.classList.toggle("active", isOpen);
+    if (isOpen) {
+      openWidgets.add("browser");
+    } else {
+      openWidgets.delete("browser");
+    }
+    saveOpenWidgets();
   });
 
   await listen("overlay-close", () => {

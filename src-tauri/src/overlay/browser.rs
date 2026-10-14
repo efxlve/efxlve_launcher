@@ -337,6 +337,18 @@ fn hide_all_tabs(app: &AppHandle) {
     }
 }
 
+fn emit_browser_state(app: &AppHandle, open: bool) {
+    let _ = app.emit("overlay-browser-state", serde_json::json!({ "open": open }));
+}
+
+/// Checks whether the in-game browser window is currently visible.
+#[tauri::command]
+pub fn overlay_browser_is_open(app: AppHandle) -> bool {
+    app.get_webview_window(WINDOW_LABEL)
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false)
+}
+
 /// Hides the browser window (the tabs and their pages stay alive).
 #[tauri::command]
 pub fn overlay_browser_close(app: AppHandle) {
@@ -344,6 +356,7 @@ pub fn overlay_browser_close(app: AppHandle) {
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = window.hide();
     }
+    emit_browser_state(&app, false);
     // The panel was covered while the browser was up: nudge it so its webview
     // repaints (WebView2 keeps a stale frame after a full cover).
     wake_overlay(&app);
@@ -355,6 +368,7 @@ pub fn hide_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = window.hide();
     }
+    emit_browser_state(app, false);
 }
 
 /// One-frame size nudge: forces the overlay webview to repaint its surface.
@@ -430,6 +444,7 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
         let _ = window.set_always_on_top(true);
         let _ = window.set_focus();
         emit_tabs(&app);
+        emit_browser_state(&app, true);
         return Ok(());
     }
 
@@ -447,7 +462,7 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
     .always_on_top(true)
     .skip_taskbar(true)
     .resizable(true)
-    .background_color(tauri::webview::Color(10, 10, 10, 255))
+    .background_color(tauri::webview::Color(16, 16, 20, 255))
     .build()
     .map_err(|e| e.to_string())?;
 
@@ -460,6 +475,7 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
         let _ = window.show();
         let _ = window.set_focus();
     }
+    emit_browser_state(&app, true);
     Ok(())
 }
 
