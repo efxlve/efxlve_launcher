@@ -19,6 +19,7 @@ mod legendary;
 mod nile;
 mod notes;
 mod net_diag;
+mod igdb;
 mod task_manager;
 mod game_running;
 mod presence;
@@ -1048,6 +1049,13 @@ fn main() {
             task_manager::task_manager_snapshot,
             task_manager::task_manager_stop,
             spotify_host::spotify_player_destroy,
+            igdb::igdb_status,
+            igdb::igdb_set_credentials,
+            igdb::igdb_clear_credentials,
+            igdb::igdb_test,
+            igdb::igdb_search,
+            igdb::igdb_game,
+            igdb::igdb_enrich,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");
