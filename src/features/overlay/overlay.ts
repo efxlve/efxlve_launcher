@@ -174,6 +174,7 @@ let selectedGameFilters = new Set<string>();
 let filterPopoverOpen = false;
 let sessionStartEpoch = Date.now();
 let activeTab: TabId = (localStorage.getItem("efxlve-overlay-tab") as TabId) || "home";
+let browserBounds: { x: number; y: number; w: number; h: number } | null = null;
 
 /* ---------- Discord voice (streamed by the Rust worker) ---------- */
 
@@ -539,7 +540,7 @@ function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
     case "notes":
       return { minW: 260, minH: 220, maxW: 700, maxH: 700 };
     case "settings":
-      return { minW: 300, minH: 260, maxW: 700, maxH: 800 };
+      return { minW: 360, minH: 340, maxW: 720, maxH: 850 };
     default:
       return { minW: 260, minH: 200, maxW: 800, maxH: 800 };
   }
@@ -562,7 +563,7 @@ function getDefaultWidgetSize(tab: TabId): WidgetSize {
     case "notes":
       return { w: 340, h: 360 };
     case "settings":
-      return { w: 400, h: 500 };
+      return { w: 480, h: 580 };
     default:
       return { w: 340, h: 400 };
   }
@@ -611,6 +612,7 @@ function bringToFront(tab: TabId): void {
     highestZIndex += 1;
     widget.style.zIndex = String(highestZIndex);
   }
+  void invoke("overlay_raise").catch(() => undefined);
 }
 
 function renderWidgetContent(tab: TabId): void {
@@ -4017,119 +4019,173 @@ function renderSettings(): void {
   const opacity = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
   const disabled = isDisabledGame(context.appName);
   const disabledList = disabledGames();
+  const hp = getHomepage();
+  const isPresetHp = ["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(hp);
 
   el.innerHTML = `
-    <div class="ov-page-title">${icon("settings", 20)} <span>${esc(t("overlay.tabSettings"))}</span></div>
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.enabledTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.enabledDesc"))}</div>
-      </div>
-      <label class="switch"><input type="checkbox" data-ov-toggle="enabled" ${enabled ? "checked" : ""} /><span class="track"></span></label>
-    </div>
-
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.hudTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.hudDesc"))}</div>
-      </div>
-      <label class="switch"><input type="checkbox" data-ov-toggle="hud" ${hud ? "checked" : ""} /><span class="track"></span></label>
-    </div>
-
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.clockSecondsTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.clockSecondsDesc"))}</div>
-      </div>
-      <label class="switch"><input type="checkbox" data-ov-toggle="clock-seconds" ${showClockSeconds() ? "checked" : ""} /><span class="track"></span></label>
-    </div>
-
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.batteryPercentTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.batteryPercentDesc"))}</div>
-      </div>
-      <label class="switch"><input type="checkbox" data-ov-toggle="battery-percent" ${showBatteryPercent() ? "checked" : ""} /><span class="track"></span></label>
-    </div>
-
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.opacityTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.opacityDesc"))}</div>
-      </div>
-      <input type="range" min="60" max="100" step="1" value="${opacity}" data-ov-opacity style="width:160px" />
-    </div>
-
-    <!-- Browser Settings: Homepage & Bookmarks -->
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.browserHomepageTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.browserHomepageDesc"))}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <select class="input select small" id="ov-setting-browser-hp-select" style="max-width:130px">
-          <option value="https://www.google.com/" ${getHomepage() === "https://www.google.com/" ? "selected" : ""}>Google</option>
-          <option value="https://duckduckgo.com/" ${getHomepage() === "https://duckduckgo.com/" ? "selected" : ""}>DuckDuckGo</option>
-          <option value="https://www.bing.com/" ${getHomepage() === "https://www.bing.com/" ? "selected" : ""}>Bing</option>
-          <option value="https://yandex.com/" ${getHomepage() === "https://yandex.com/" ? "selected" : ""}>Yandex</option>
-          <option value="custom" ${!["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(getHomepage()) ? "selected" : ""}>Özel URL</option>
-        </select>
-        <input type="text" class="input small" id="ov-setting-browser-hp-custom" value="${esc(getHomepage())}" placeholder="https://..." style="${["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(getHomepage()) ? "display:none;" : ""}width:160px" />
-      </div>
-    </div>
-
-    <div class="ov-card" style="margin-top:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div style="font-size:13px;font-weight:600">${esc(t("overlay.browserBookmarksTitle"))}</div>
-        <button class="btn ghost small" data-ov="reset-browser-bookmarks" title="${esc(t("overlay.browserBookmarkReset"))}">${esc(t("overlay.browserBookmarkReset"))}</button>
-      </div>
-      <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">${esc(t("overlay.browserBookmarksDesc"))}</div>
-
-      <!-- Add Bookmark Form -->
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-        <input type="text" class="input small" id="ov-add-bm-label" placeholder="${esc(t("overlay.browserBookmarkLabel"))} (e.g. GitHub)" style="width:120px" />
-        <input type="text" class="input small" id="ov-add-bm-url" placeholder="${esc(t("overlay.browserBookmarkUrl"))} (e.g. https://github.com)" style="flex:1" />
-        <button class="btn primary small" data-ov="add-browser-bookmark">${icon("plus", 14)} <span>${esc(t("overlay.browserBookmarkAdd"))}</span></button>
-      </div>
-
-      <!-- Bookmarks List -->
-      <div style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto">
-        ${loadBookmarks().map((bm, idx) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--surface-2);border-radius:var(--r-sm)">
-            <div style="display:flex;align-items:center;gap:8px;overflow:hidden;flex:1;margin-right:8px">
-              <span style="color:var(--accent);display:flex;flex-shrink:0">${icon(bm.iconName || "globe", 13)}</span>
-              <span style="font-size:12px;font-weight:500;white-space:nowrap">${esc(bm.label)}</span>
-              <span style="font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(bm.url)}</span>
+    <div class="ov-settings-wrap">
+      <!-- Section: General -->
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("sliders", 13)}
+          <span>${esc(t("overlay.settingsGeneral"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.enabledTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.enabledDesc"))}</div>
             </div>
-            <button class="btn ghost small danger" data-ov="delete-browser-bookmark" data-index="${idx}" title="Kaldır" style="padding:2px 6px">
-              ${icon("trash", 12)}
-            </button>
+            <label class="switch"><input type="checkbox" data-ov-toggle="enabled" ${enabled ? "checked" : ""} /><span class="track"></span></label>
           </div>
-        `).join("")}
-      </div>
-    </div>
 
-    ${launcherMode ? "" : `
-    <div class="ov-setting-item">
-      <div class="ov-setting-info">
-        <div class="ov-setting-name">${esc(t("overlay.disableTitle"))}</div>
-        <div class="ov-setting-desc">${esc(t("overlay.disableDesc"))}</div>
-      </div>
-      <label class="switch"><input type="checkbox" data-ov-toggle="disable-game" ${disabled ? "checked" : ""} /><span class="track"></span></label>
-    </div>`}
-
-    ${disabledList.length > 0 ? `
-      <div class="ov-card" style="margin-top:16px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(t("overlay.disabledListTitle"))}</div>
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">${esc(t("overlay.disabledListDesc"))}</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          ${disabledList.map((g) => `
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:13px">${esc(g.title)}</span>
-              <button class="btn ghost small" data-ov="restore-game" data-key="${esc(g.key)}">${esc(t("overlay.restore"))}</button>
-            </div>`).join("")}
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.hudTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.hudDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="hud" ${hud ? "checked" : ""} /><span class="track"></span></label>
+          </div>
         </div>
-      </div>` : ""}`;
+      </section>
+
+      <!-- Section: Appearance -->
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("monitor", 13)}
+          <span>${esc(t("overlay.settingsAppearance"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.clockSecondsTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.clockSecondsDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="clock-seconds" ${showClockSeconds() ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.batteryPercentTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.batteryPercentDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="battery-percent" ${showBatteryPercent() ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.opacityTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.opacityDesc"))}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="range" min="60" max="100" step="1" value="${opacity}" data-ov-opacity style="width:130px" />
+              <span id="ov-opacity-val" style="font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-2); min-width: 34px; text-align: right;">${opacity}%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Browser -->
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("globe", 13)}
+          <span>${esc(t("overlay.settingsBrowser"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item" style="flex-direction:column;align-items:stretch;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <div class="ov-setting-info">
+                <div class="ov-setting-name">${esc(t("overlay.browserHomepageTitle"))}</div>
+                <div class="ov-setting-desc">${esc(t("overlay.browserHomepageDesc"))}</div>
+              </div>
+              <select class="input select small" id="ov-setting-browser-hp-select" style="min-width:130px">
+                <option value="https://www.google.com/" ${hp === "https://www.google.com/" ? "selected" : ""}>Google</option>
+                <option value="https://duckduckgo.com/" ${hp === "https://duckduckgo.com/" ? "selected" : ""}>DuckDuckGo</option>
+                <option value="https://www.bing.com/" ${hp === "https://www.bing.com/" ? "selected" : ""}>Bing</option>
+                <option value="https://yandex.com/" ${hp === "https://yandex.com/" ? "selected" : ""}>Yandex</option>
+                <option value="custom" ${!isPresetHp ? "selected" : ""}>${esc(t("overlay.browserCustomUrl"))}</option>
+              </select>
+            </div>
+            <input type="text" class="input small" id="ov-setting-browser-hp-custom" value="${esc(hp)}" placeholder="https://..." style="${isPresetHp ? "display:none;" : ""}width:100%" />
+          </div>
+
+          <div class="ov-setting-item" style="flex-direction:column;align-items:stretch;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div class="ov-setting-info">
+                <div class="ov-setting-name">${esc(t("overlay.browserBookmarksTitle"))}</div>
+                <div class="ov-setting-desc">${esc(t("overlay.browserBookmarksDesc"))}</div>
+              </div>
+              <button class="btn ghost small" data-ov="reset-browser-bookmarks" title="${esc(t("overlay.browserBookmarkReset"))}" style="flex-shrink:0">
+                ${icon("refresh", 12)}
+                <span>${esc(t("overlay.browserBookmarkReset"))}</span>
+              </button>
+            </div>
+
+            <!-- Add Bookmark Form -->
+            <div class="ov-bm-form">
+              <input type="text" class="input small" id="ov-add-bm-label" placeholder="${esc(t("overlay.browserBookmarkLabel"))}" />
+              <input type="text" class="input small" id="ov-add-bm-url" placeholder="${esc(t("overlay.browserBookmarkUrl"))}" />
+              <button class="btn primary small" data-ov="add-browser-bookmark">
+                ${icon("plus", 13)}
+                <span>${esc(t("overlay.browserBookmarkAdd"))}</span>
+              </button>
+            </div>
+
+            <!-- Bookmarks List -->
+            <div class="ov-bm-list">
+              ${loadBookmarks().map((bm, idx) => `
+                <div class="ov-bm-item">
+                  <div style="display:flex;align-items:center;gap:9px;overflow:hidden;flex:1;margin-right:8px">
+                    <span class="ov-bm-icon-pill">${icon(bm.iconName || "globe", 13)}</span>
+                    <div style="display:flex;flex-direction:column;min-width:0;overflow:hidden">
+                      <span style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bm.label)}</span>
+                      <span style="font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace">${esc(bm.url)}</span>
+                    </div>
+                  </div>
+                  <button class="btn ghost small danger" data-ov="delete-browser-bookmark" data-index="${idx}" title="${esc(t("common.delete"))}" style="padding:4px 6px">
+                    ${icon("trash", 12)}
+                  </button>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Game Settings -->
+      ${!launcherMode && context.appName ? `
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("gamepad-2", 13)}
+          <span>${esc(t("overlay.settingsGame"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.disableTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.disableDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="disable-game" ${disabled ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+        </div>
+      </section>` : ""}
+
+      ${disabledList.length > 0 ? `
+      <section class="ov-settings-section">
+        <div class="ov-card">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(t("overlay.disabledListTitle"))}</div>
+          <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">${esc(t("overlay.disabledListDesc"))}</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${disabledList.map((g) => `
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:13px">${esc(g.title)}</span>
+                <button class="btn ghost small" data-ov="restore-game" data-key="${esc(g.key)}">${esc(t("overlay.restore"))}</button>
+              </div>`).join("")}
+          </div>
+        </div>
+      </section>` : ""}
+    </div>
+  `;
 }
 
 function applyOpacity(val: number): void {
@@ -4203,8 +4259,19 @@ function wireEvents(): void {
       return;
     }
 
-    // Backdrop click outside any widget and topbar closes the overlay
+    // Backdrop click outside any widget and topbar closes the overlay, unless clicking over the browser window
     if (target.id === "ov-shell" || target.id === "ov-widgets-container") {
+      if (
+        browserBounds &&
+        isWidgetOpen("browser") &&
+        event.clientX >= browserBounds.x &&
+        event.clientX <= browserBounds.x + browserBounds.w &&
+        event.clientY >= browserBounds.y &&
+        event.clientY <= browserBounds.y + browserBounds.h
+      ) {
+        void invoke("overlay_browser_raise").catch(() => undefined);
+        return;
+      }
       void invoke("overlay_hide");
       return;
     }
@@ -4597,6 +4664,8 @@ function wireEvents(): void {
     const val = Number(input.value);
     localStorage.setItem(OPACITY_KEY, String(val));
     applyOpacity(val);
+    const badge = document.getElementById("ov-opacity-val");
+    if (badge) badge.textContent = `${val}%`;
   });
 
   document.addEventListener("change", (event) => {
@@ -4635,6 +4704,14 @@ function wireEvents(): void {
         event.preventDefault();
         const url = typed.value.trim() || null;
         void invoke("overlay_browser_open", { url });
+      }
+      return;
+    }
+    if (typed instanceof HTMLInputElement && (typed.id === "ov-add-bm-label" || typed.id === "ov-add-bm-url")) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const addBtn = document.querySelector<HTMLButtonElement>('[data-ov="add-browser-bookmark"]');
+        addBtn?.click();
       }
       return;
     }
@@ -5189,6 +5266,7 @@ async function boot(): Promise<void> {
 
   await listen<{ open: boolean }>("overlay-browser-state", (event) => {
     const isOpen = Boolean(event.payload?.open);
+    if (!isOpen) browserBounds = null;
     const toggleBtn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="browser"]');
     if (toggleBtn) toggleBtn.classList.toggle("active", isOpen);
     if (isOpen) {
@@ -5197,6 +5275,10 @@ async function boot(): Promise<void> {
       openWidgets.delete("browser");
     }
     saveOpenWidgets();
+  });
+
+  await listen<{ x: number; y: number; w: number; h: number }>("overlay-browser-bounds", (event) => {
+    browserBounds = event.payload;
   });
 
   await listen("overlay-close", () => {

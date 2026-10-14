@@ -47,17 +47,24 @@ extern "system" {
         cy: i32,
         flags: u32,
     ) -> i32;
-    fn SetWindowLongPtrW(
-        hwnd: *mut core::ffi::c_void,
-        index: i32,
-        new_long: isize,
-    ) -> isize;
 }
 
-#[cfg(windows)]
-pub fn bind_owner_hwnd(browser_hwnd: *mut core::ffi::c_void, owner_hwnd: isize) {
-    unsafe {
-        SetWindowLongPtrW(browser_hwnd, -8, owner_hwnd);
+/// Brings the browser window to the top of the z-order and sets focus.
+#[tauri::command]
+pub fn overlay_browser_raise(app: AppHandle) {
+    if let Some(win) = app.get_window(WINDOW_LABEL) {
+        let _ = win.set_focus();
+        #[cfg(windows)]
+        if let Ok(raw) = win.hwnd() {
+            unsafe {
+                SetWindowPos(
+                    raw.0 as *mut core::ffi::c_void,
+                    -1isize as *mut core::ffi::c_void, // HWND_TOPMOST
+                    0, 0, 0, 0,
+                    0x0001 | 0x0002, // SWP_NOSIZE | SWP_NOMOVE
+                );
+            }
+        }
     }
 }
 
@@ -502,11 +509,6 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
     if let Some(window) = app.get_window(WINDOW_LABEL) {
         #[cfg(windows)]
         if let Ok(raw) = window.hwnd() {
-            if let Some(overlay_win) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) {
-                if let Ok(overlay_raw) = overlay_win.hwnd() {
-                    bind_owner_hwnd(raw.0 as *mut core::ffi::c_void, overlay_raw.0 as isize);
-                }
-            }
             unsafe {
                 ShowWindow(raw.0 as *mut core::ffi::c_void, 5); // SW_SHOW
                 SetWindowPos(
@@ -566,11 +568,6 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
     if let Some(window) = app.get_window(WINDOW_LABEL) {
         #[cfg(windows)]
         if let Ok(raw) = window.hwnd() {
-            if let Some(overlay_win) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) {
-                if let Ok(overlay_raw) = overlay_win.hwnd() {
-                    bind_owner_hwnd(raw.0 as *mut core::ffi::c_void, overlay_raw.0 as isize);
-                }
-            }
             unsafe {
                 ShowWindow(raw.0 as *mut core::ffi::c_void, 5);
                 SetWindowPos(

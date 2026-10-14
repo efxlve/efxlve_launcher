@@ -179,6 +179,25 @@ pub fn overlay_show_launcher(app: AppHandle) {
     }
 }
 
+/// Brings the overlay window to the top of the z-order and sets focus.
+#[tauri::command]
+pub fn overlay_raise(app: AppHandle) {
+    if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
+        let _ = win.set_focus();
+        #[cfg(windows)]
+        if let Ok(raw) = win.hwnd() {
+            unsafe {
+                hud::SetWindowPos(
+                    raw.0 as *mut core::ffi::c_void,
+                    -1isize as *mut core::ffi::c_void, // HWND_TOPMOST
+                    0, 0, 0, 0,
+                    0x0001 | 0x0002, // SWP_NOSIZE | SWP_NOMOVE
+                );
+            }
+        }
+    }
+}
+
 /// Sets the currently active game context for the overlay.
 #[tauri::command]
 pub fn overlay_set_active_game(app_name: String, title: String) {
@@ -251,13 +270,6 @@ pub(crate) fn show(app: &AppHandle) {
     #[cfg(windows)]
     if let Ok(raw_hwnd) = win.hwnd() {
         hud::focus_window(raw_hwnd.0 as isize);
-        if browser::overlay_browser_is_open(app.clone()) {
-            if let Some(b_win) = app.get_window(browser::WINDOW_LABEL) {
-                if let Ok(b_raw) = b_win.hwnd() {
-                    browser::bind_owner_hwnd(b_raw.0 as *mut core::ffi::c_void, raw_hwnd.0 as isize);
-                }
-            }
-        }
     }
     let payload = match STATE.lock() {
         Ok(mut s) => {

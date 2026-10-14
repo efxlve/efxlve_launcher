@@ -1971,6 +1971,101 @@
   color: var(--text-2);
 }
 
+/* --- Redesigned Overlay Settings Layout --- */
+.ov-settings-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.ov-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ov-settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  padding: 0 2px;
+}
+
+.ov-settings-group {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 2px 14px;
+}
+
+.ov-settings-group .ov-setting-item {
+  border-top: 1px solid var(--line);
+  padding: 11px 0;
+}
+
+.ov-settings-group .ov-setting-item:first-child {
+  border-top: none;
+}
+
+.ov-bm-form {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 440px) {
+  .ov-bm-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ov-bm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 170px;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding-right: 2px;
+}
+
+.ov-bm-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  transition: background-color var(--ease), border-color var(--ease);
+}
+
+.ov-bm-item:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+
+.ov-bm-icon-pill {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
 /* One-time Windows permission notice for the FPS counter. */
 .ov-fps-notice {
   display: flex;

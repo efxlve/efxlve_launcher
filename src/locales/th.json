@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Browser bookmarks",
   "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
   "overlay.browserBookmarkAdd": "Add",
-  "overlay.browserBookmarkReset": "Reset to default"
+  "overlay.browserBookmarkReset": "Reset to default",
+  "overlay.browserBookmarkLabel": "ชื่อ (เช่น YouTube)",
+  "overlay.browserBookmarkUrl": "URL (เช่น https://youtube.com)",
+  "overlay.browserCustomUrl": "URL ที่กำหนดเอง",
+  "overlay.settingsGeneral": "ทั่วไป",
+  "overlay.settingsAppearance": "ลักษณะที่ปรากฏ",
+  "overlay.settingsBrowser": "เบราว์เซอร์",
+  "overlay.settingsGame": "เกม"
 }

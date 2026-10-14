@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Browser bookmarks",
   "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
   "overlay.browserBookmarkAdd": "Add",
-  "overlay.browserBookmarkReset": "Reset to default"
+  "overlay.browserBookmarkReset": "Reset to default",
+  "overlay.browserBookmarkLabel": "शीर्षक (उदा. YouTube)",
+  "overlay.browserBookmarkUrl": "URL (उदा. https://youtube.com)",
+  "overlay.browserCustomUrl": "कस्टम URL",
+  "overlay.settingsGeneral": "सामान्य",
+  "overlay.settingsAppearance": "दिखावट",
+  "overlay.settingsBrowser": "ब्राउज़र",
+  "overlay.settingsGame": "गेम"
 }

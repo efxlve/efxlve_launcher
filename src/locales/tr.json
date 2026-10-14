@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Tarayıcı yer imleri",
   "overlay.browserBookmarksDesc": "Tarayıcı çubuğunda hızlı erişim sağlamak istediğiniz siteleri yönetin.",
   "overlay.browserBookmarkAdd": "Ekle",
-  "overlay.browserBookmarkReset": "Varsayılana sıfırla"
+  "overlay.browserBookmarkReset": "Varsayılana sıfırla",
+  "overlay.browserBookmarkLabel": "Başlık (örn. YouTube)",
+  "overlay.browserBookmarkUrl": "URL (örn. https://youtube.com)",
+  "overlay.browserCustomUrl": "Özel URL",
+  "overlay.settingsGeneral": "Genel",
+  "overlay.settingsAppearance": "Görünüm",
+  "overlay.settingsBrowser": "Tarayıcı",
+  "overlay.settingsGame": "Oyun"
 }

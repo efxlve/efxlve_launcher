@@ -10,7 +10,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
@@ -74,10 +74,33 @@ function frameRect(): { x: number; y: number; width: number; height: number } {
   };
 }
 
+async function emitBounds(): Promise<void> {
+  try {
+    const win = getCurrentWindow();
+    const pos = await win.outerPosition();
+    const size = await win.outerSize();
+    const scale = window.devicePixelRatio || 1;
+    await emit("overlay-browser-bounds", {
+      x: pos.x / scale,
+      y: pos.y / scale,
+      w: size.width / scale,
+      h: size.height / scale,
+    });
+  } catch {
+    void emit("overlay-browser-bounds", {
+      x: window.screenX,
+      y: window.screenY,
+      w: window.outerWidth,
+      h: window.outerHeight,
+    });
+  }
+}
+
 async function syncBounds(): Promise<void> {
   const rect = frameRect();
   if (rect.width < 40 || rect.height < 40) return;
   await invoke("overlay_browser_show", rect).catch(() => undefined);
+  void emitBounds();
 }
 
 function scheduleSyncBounds(): void {
@@ -276,6 +299,17 @@ function wire(): void {
 
   refreshBookmarksBar();
 
+  // Raise browser window above overlay widgets when interacted with
+  window.addEventListener("mousedown", () => {
+    void invoke("overlay_browser_raise").catch(() => undefined);
+  });
+  window.addEventListener("focus", () => {
+    void invoke("overlay_browser_raise").catch(() => undefined);
+  });
+  window.addEventListener("resize", () => {
+    void emitBounds();
+  });
+
   // Window Controls & Clicks
   document.addEventListener("click", (event) => {
     const el = event.target as HTMLElement;
@@ -396,7 +430,10 @@ function wire(): void {
   });
 
   window.addEventListener("mouseup", () => {
-    isDragging = false;
+    if (isDragging) {
+      isDragging = false;
+      void emitBounds();
+    }
   });
 
   const input = addressInput();

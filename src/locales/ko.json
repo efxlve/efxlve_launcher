@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Browser bookmarks",
   "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
   "overlay.browserBookmarkAdd": "Add",
-  "overlay.browserBookmarkReset": "Reset to default"
+  "overlay.browserBookmarkReset": "Reset to default",
+  "overlay.browserBookmarkLabel": "제목 (예: YouTube)",
+  "overlay.browserBookmarkUrl": "URL (예: https://youtube.com)",
+  "overlay.browserCustomUrl": "사용자 지정 URL",
+  "overlay.settingsGeneral": "일반",
+  "overlay.settingsAppearance": "화면 표시",
+  "overlay.settingsBrowser": "브라우저",
+  "overlay.settingsGame": "게임"
 }

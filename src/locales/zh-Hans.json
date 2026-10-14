@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Browser bookmarks",
   "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
   "overlay.browserBookmarkAdd": "Add",
-  "overlay.browserBookmarkReset": "Reset to default"
+  "overlay.browserBookmarkReset": "Reset to default",
+  "overlay.browserBookmarkLabel": "标题（如 YouTube）",
+  "overlay.browserBookmarkUrl": "URL（如 https://youtube.com）",
+  "overlay.browserCustomUrl": "自定义 URL",
+  "overlay.settingsGeneral": "常规",
+  "overlay.settingsAppearance": "外观",
+  "overlay.settingsBrowser": "浏览器",
+  "overlay.settingsGame": "游戏"
 }

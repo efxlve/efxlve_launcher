@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Browser bookmarks",
   "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
   "overlay.browserBookmarkAdd": "Add",
-  "overlay.browserBookmarkReset": "Reset to default"
+  "overlay.browserBookmarkReset": "Reset to default",
+  "overlay.browserBookmarkLabel": "Titre (ex. YouTube)",
+  "overlay.browserBookmarkUrl": "URL (ex. https://youtube.com)",
+  "overlay.browserCustomUrl": "URL personnalisée",
+  "overlay.settingsGeneral": "Général",
+  "overlay.settingsAppearance": "Apparence",
+  "overlay.settingsBrowser": "Navigateur",
+  "overlay.settingsGame": "Jeu"
 }

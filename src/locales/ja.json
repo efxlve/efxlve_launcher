@@ -2043,5 +2043,12 @@
   "overlay.browserBookmarksTitle": "Browser bookmarks",
   "overlay.browserBookmarksDesc": "Manage quick access bookmarks shown in the browser toolbar.",
   "overlay.browserBookmarkAdd": "Add",
-  "overlay.browserBookmarkReset": "Reset to default"
+  "overlay.browserBookmarkReset": "Reset to default",
+  "overlay.browserBookmarkLabel": "タイトル (例: YouTube)",
+  "overlay.browserBookmarkUrl": "URL (例: https://youtube.com)",
+  "overlay.browserCustomUrl": "カスタムURL",
+  "overlay.settingsGeneral": "一般",
+  "overlay.settingsAppearance": "外観",
+  "overlay.settingsBrowser": "ブラウザ",
+  "overlay.settingsGame": "ゲーム"
 }
