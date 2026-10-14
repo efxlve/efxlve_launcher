@@ -152,6 +152,11 @@ pub fn discord_voice_watch_stop() {
     }
 }
 
+/// True while the voice watcher thread is alive (the task manager shows this).
+pub fn voice_watch_running() -> bool {
+    WORKER_RUNNING.load(Ordering::SeqCst)
+}
+
 /// Dev-only probe for the Faz 4 friends list (F10 on the Discord page): asks
 /// Discord for the `relationships.read` scope and calls `GET_RELATIONSHIPS`.
 /// The result lands in the worker log. The worker's stored token stays

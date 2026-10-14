@@ -53,6 +53,17 @@ pub fn ensure_running(app: AppHandle) {
     std::thread::spawn(move || run(app));
 }
 
+/// True while the sampling worker is alive (the task manager shows this).
+pub fn running() -> bool {
+    RUNNING.load(Ordering::SeqCst)
+}
+
+/// Asks the worker to stop: it exits on its next tick. The next panel open (or
+/// HUD enable) starts it again through `ensure_running`.
+pub fn stop() {
+    RUNNING.store(false, Ordering::SeqCst);
+}
+
 /// True while the ETW FPS session is running (Windows permission granted).
 pub fn fps_available() -> bool {
     etw::available()
@@ -65,6 +76,9 @@ fn run(app: AppHandle) {
     let mut idle = 0u32;
 
     loop {
+        if !RUNNING.load(Ordering::SeqCst) {
+            break;
+        }
         let active = STATE.lock().map(|s| s.visible || s.hud).unwrap_or(false);
         if active {
             idle = 0;

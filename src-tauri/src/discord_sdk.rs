@@ -237,6 +237,11 @@ pub fn discord_sdk_state() -> serde_json::Value {
     with_state(|state| state_json(state)).unwrap_or_else(|| serde_json::json!({ "status": "idle" }))
 }
 
+/// True once the Social SDK session is connected (the task manager shows this).
+pub fn sdk_connected() -> bool {
+    with_state(|state| state.status == "ready").unwrap_or(false)
+}
+
 /// The relationship list the SDK read, in the overlay's friend shape.
 #[tauri::command]
 pub fn discord_sdk_friends() -> serde_json::Value {

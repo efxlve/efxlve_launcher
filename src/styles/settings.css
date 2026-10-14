@@ -248,3 +248,10 @@
   0% { background: var(--accent-tint); }
   100% { background: transparent; }
 }
+
+/* --- Task manager --------------------------------------------------------- */
+.task-numbers { gap: 14px; font-variant-numeric: tabular-nums; }
+.task-numbers .task-cpu { font-size: 13px; color: var(--text); min-width: 48px; text-align: right; }
+.task-numbers .task-mem { font-size: 12px; color: var(--text-2); min-width: 72px; text-align: right; }
+.task-status { min-width: 76px; justify-content: center; }
+.task-foot { display: flex; justify-content: flex-end; margin-top: 10px; }

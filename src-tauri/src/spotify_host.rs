@@ -123,6 +123,20 @@ pub fn spotify_player_hide(app: AppHandle) {
     }
 }
 
+/// Closes the player page for good; the next visit recreates it. Used by the
+/// task manager to hand the renderer's memory back.
+#[tauri::command]
+pub fn spotify_player_destroy(app: AppHandle) {
+    if let Some(view) = player(&app) {
+        let _ = view.close();
+    }
+}
+
+/// True while the player page exists (the task manager shows this).
+pub fn player_alive(app: &AppHandle) -> bool {
+    player(app).is_some()
+}
+
 /// Reloads the player page (a stuck sign-in or a stale session).
 #[tauri::command]
 pub fn spotify_player_reload(app: AppHandle) {

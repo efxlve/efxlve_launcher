@@ -905,6 +905,13 @@ pub fn set_store_palette_hold(
     }
 }
 
+/// True while an embedded store page exists (the task manager shows this).
+pub fn store_view_alive(app: &AppHandle) -> bool {
+    app.get_window("main")
+        .map(|window| !store_views(&window).is_empty())
+        .unwrap_or(false)
+}
+
 /// Destroys the embedded store webview to release its renderer process memory
 /// (a hidden WebView2 keeps a full Chromium renderer alive). It is recreated on
 /// demand the next time the store is opened.

@@ -683,6 +683,11 @@ fn view(app: &AppHandle) -> Option<tauri::Webview> {
         .find(|view| view.label() == LABEL)
 }
 
+/// True while the Discord page exists (the task manager shows this).
+pub fn page_alive(app: &AppHandle) -> bool {
+    view(app).is_some()
+}
+
 fn rect_of(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
     tauri::Rect {
         position: Position::Logical(LogicalPosition::new(x, y)),

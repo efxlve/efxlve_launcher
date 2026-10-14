@@ -40,6 +40,11 @@ struct Handle {
 
 static HANDLE: Mutex<Option<Handle>> = Mutex::new(None);
 
+/// True while the presence worker is alive (the task manager shows this).
+pub fn running() -> bool {
+    HANDLE.lock().map(|guard| guard.is_some()).unwrap_or(false)
+}
+
 /// (Re)configures the presence worker. Disabling, or passing an empty
 /// `client_id`, stops the worker and clears any active presence.
 pub fn configure(enabled: bool, client_id: &str) {

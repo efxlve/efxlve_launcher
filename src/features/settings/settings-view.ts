@@ -7,6 +7,7 @@
  */
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
+import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
@@ -68,6 +69,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "screenshots", labelKey: "settings.secScreenshots" },
   { id: "notes", labelKey: "settings.secNotes" },
   { id: "system", labelKey: "settings.secSystem" },
+  { id: "tasks", labelKey: "settings.secTasks" },
   { id: "hidden", labelKey: "settings.secHidden" },
   { id: "about", labelKey: "settings.secAbout" },
 ];
@@ -87,7 +89,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navApp",
-    sections: ["controller", "appearance", "screenshots", "notes", "system", "about"],
+    sections: ["controller", "appearance", "screenshots", "notes", "system", "tasks", "about"],
   },
 ];
 
@@ -737,6 +739,151 @@ function renderScreenshots(): string {
   return group(folder + hotkey + compression + options, t("settings.screenshotsTitle"));
 }
 
+/* ---------- Task manager ---------- */
+
+interface TaskRow {
+  id: string;
+  kind: string;
+  name: string;
+  role: string;
+  pid: number;
+  cpu: number;
+  memoryMb: number;
+  threads: number;
+  running: boolean;
+  stoppable: boolean;
+}
+
+let taskRows: TaskRow[] = [];
+let taskTimer: number | null = null;
+let tasksLoaded = false;
+
+function taskRoleLabel(role: string): string {
+  switch (role) {
+    case "app": return t("task.roleApp");
+    case "renderer": return t("task.roleRenderer");
+    case "gpu": return t("task.roleGpu");
+    case "utility": return t("task.roleUtility");
+    default: return t("task.roleOther");
+  }
+}
+
+function formatTaskMb(mb: number): string {
+  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
+}
+
+function processRowHtml(row: TaskRow): string {
+  const title = row.role === "app"
+    ? t("task.mainProcess")
+    : `${row.name || "WebView2"} · ${taskRoleLabel(row.role)}`;
+  return `
+    <div class="row settings-row task-row" data-task="${esc(row.id)}">
+      <div class="row-main">
+        <div class="settings-row-title">${esc(title)}</div>
+        <div class="settings-row-desc">PID ${row.pid} · <span class="task-threads">${row.threads}</span> ${esc(t("task.threadsShort"))}</div>
+      </div>
+      <div class="settings-row-control task-numbers">
+        <span class="task-cpu">${row.cpu.toFixed(1)}%</span>
+        <span class="task-mem">${formatTaskMb(row.memoryMb)}</span>
+      </div>
+    </div>`;
+}
+
+function jobRowHtml(row: TaskRow): string {
+  return `
+    <div class="row settings-row task-row" data-task="${esc(row.id)}">
+      <div class="row-main">
+        <div class="settings-row-title">${esc(t(`task.job.${row.id}`))}</div>
+        ${row.stoppable ? "" : `<div class="settings-row-desc">${esc(t("task.alwaysOn"))}</div>`}
+      </div>
+      <div class="settings-row-control">
+        <span class="chip ${row.running ? "ok" : ""} task-status">${esc(row.running ? t("task.running") : t("task.stopped"))}</span>
+        ${row.stoppable ? `<button type="button" class="btn ghost small" data-act="task-stop" data-id="${esc(row.id)}" ${row.running ? "" : "disabled"}>${esc(t("task.stop"))}</button>` : ""}
+      </div>
+    </div>`;
+}
+
+/** The section: process tree, background jobs, and a live refresh. */
+function renderTasks(): string {
+  if (!isTauri) return infoBox("task.desktopOnly");
+  if (!tasksLoaded) {
+    tasksLoaded = true;
+    void refreshTasks();
+  }
+  ensureTaskPolling();
+  const processes = taskRows.filter((row) => row.kind === "process");
+  const jobs = taskRows.filter((row) => row.kind === "job");
+  const totalMem = processes.reduce((sum, row) => sum + row.memoryMb, 0);
+  const totalCpu = processes.reduce((sum, row) => sum + row.cpu, 0);
+  const summary = row(
+    t("task.total"),
+    t("task.totalDesc", { count: String(processes.length) }),
+    `<span class="settings-value">${totalCpu.toFixed(1)}% · ${formatTaskMb(totalMem)}</span>`,
+  );
+  return (
+    infoBox("task.info") +
+    group(
+      summary + (processes.length ? processes.map(processRowHtml).join("") : row(t("task.loading"), null, "")),
+      t("task.processes"),
+    ) +
+    group(jobs.length ? jobs.map(jobRowHtml).join("") : row(t("task.loading"), null, ""), t("task.jobs")) +
+    `<div class="task-foot"><button type="button" class="btn ghost small" data-act="task-refresh">${icon("refresh", 13)} ${t("task.refresh")}</button></div>`
+  );
+}
+
+async function refreshTasks(repaint = true): Promise<void> {
+  if (!isTauri) return;
+  try {
+    taskRows = await invoke<TaskRow[]>("task_manager_snapshot");
+  } catch {
+    taskRows = [];
+  }
+  if (repaint && S.view === "settings" && S.settingsSection === "tasks") render();
+}
+
+/** Polls while the section is on screen; patches numbers, repaints on a
+ * changed row set. The interval stops itself when the section is left. */
+function ensureTaskPolling(): void {
+  if (taskTimer !== null) return;
+  taskTimer = window.setInterval(() => {
+    if (S.view !== "settings" || S.settingsSection !== "tasks") {
+      if (taskTimer !== null) window.clearInterval(taskTimer);
+      taskTimer = null;
+      return;
+    }
+    void refreshTasks(false).then(() => patchTaskRows());
+  }, 2000);
+}
+
+function patchTaskRows(): void {
+  const panel = document.querySelector<HTMLElement>(".settings-panel");
+  if (!panel) return;
+  const known = new Set<string>();
+  for (const row of taskRows) {
+    known.add(row.id);
+    const el = panel.querySelector<HTMLElement>(`[data-task="${CSS.escape(row.id)}"]`);
+    if (!el) {
+      render();
+      return;
+    }
+    const cpu = el.querySelector<HTMLElement>(".task-cpu");
+    if (cpu) cpu.textContent = `${row.cpu.toFixed(1)}%`;
+    const mem = el.querySelector<HTMLElement>(".task-mem");
+    if (mem) mem.textContent = formatTaskMb(row.memoryMb);
+    const threads = el.querySelector<HTMLElement>(".task-threads");
+    if (threads) threads.textContent = String(row.threads);
+    const status = el.querySelector<HTMLElement>(".task-status");
+    if (status) {
+      status.textContent = row.running ? t("task.running") : t("task.stopped");
+      status.classList.toggle("ok", row.running);
+    }
+    const stop = el.querySelector<HTMLButtonElement>('[data-act="task-stop"]');
+    if (stop) stop.disabled = !row.running;
+  }
+  const shown = [...panel.querySelectorAll<HTMLElement>("[data-task]")].map((el) => el.dataset.task ?? "");
+  if (shown.length !== known.size || shown.some((id) => !known.has(id))) render();
+}
+
 function renderSystem(): string {
   const blocked = appUpdateInstallBlocked();
   const statusText =
@@ -909,6 +1056,7 @@ function renderSection(section: SettingsSection): string {
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
     case "notes": return renderNotes();
+    case "tasks": return renderTasks();
     case "system": return renderSystem();
     case "hidden": return renderHidden();
     case "about": return renderAbout();
@@ -1372,6 +1520,21 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement):
       });
       return true;
     }
+    case "task-stop": {
+      const id = _el.dataset.id ?? "";
+      void invoke("task_manager_stop", { id })
+        .then(() => {
+          toast(t("task.stoppedToast", { name: t(`task.job.${id}`) }), "ok");
+          void refreshTasks();
+        })
+        .catch((error) => {
+          toast(t("task.stopFailed", { error: String(error) }), "err");
+        });
+      return true;
+    }
+    case "task-refresh":
+      void refreshTasks();
+      return true;
     case "ss-open-dir":
       void openScreenshotsFolder();
       return true;

@@ -19,6 +19,7 @@ mod legendary;
 mod nile;
 mod notes;
 mod net_diag;
+mod task_manager;
 mod game_running;
 mod presence;
 mod shared_library;
@@ -1044,6 +1045,9 @@ fn main() {
             notes::notes_import,
             notes::notes_import_text,
             notes::notes_export,
+            task_manager::task_manager_snapshot,
+            task_manager::task_manager_stop,
+            spotify_host::spotify_player_destroy,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");
