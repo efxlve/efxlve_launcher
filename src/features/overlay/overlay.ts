@@ -20,6 +20,8 @@ import {
   loadBookmarks,
 } from "./browser-window";
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
+import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
+import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
 import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
@@ -292,7 +294,6 @@ let webVoice: WebVoiceState | null = null;
 
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
-let notesSaveTimer: number | null = null;
 
 /* ---------- Helpers ---------- */
 
@@ -696,7 +697,7 @@ function renderWidgetContent(tab: TabId): void {
   if (tab === "perf") renderPerf();
   else if (tab === "ach") void loadAchievements();
   else if (tab === "shots") void loadScreenshots();
-  else if (tab === "notes") renderNotes();
+  else if (tab === "notes") renderOverlayNotes();
   else if (tab === "music") {
     renderMusicTab();
     void refreshMedia();
@@ -1349,9 +1350,6 @@ function renderHome(): void {
   // Screenshots preview
   const shotsPreview = cachedScreenshots.slice(0, 4);
 
-  // Notes preview
-  const savedNotes = localStorage.getItem(`efxlve-overlay-notes::${context.appName}`) ?? "";
-
   el.innerHTML = `
     <div class="ov-dashboard">
       <!-- Session Hero Banner -->
@@ -1468,9 +1466,9 @@ function renderHome(): void {
       <div class="ov-card ov-span-6">
         <div class="ov-card-head">
           <div class="ov-card-title">${icon("edit", 14)} <span class="title-text">${esc(t("overlay.tabNotes"))}</span></div>
-          <span style="font-size:11px;color:var(--text-3)" id="ov-home-notes-status">${savedNotes ? esc(t("overlay.saved")) : ""}</span>
+          <button class="ov-card-action" data-ov-tab="notes">${icon("chevron-right", 16)}</button>
         </div>
-        <textarea class="ov-notes-area" id="ov-home-notes" style="height:90px" placeholder="${esc(t("overlay.notesPlaceholder"))}" spellcheck="false">${esc(savedNotes)}</textarea>
+        <div class="ov-note">${esc(t("overlay.notesHint"))}</div>
       </div>
 
       <!-- Recent Screenshots Strip (shown if screenshots exist) -->
@@ -1489,7 +1487,6 @@ function renderHome(): void {
       </div>` : ""}
     </div>`;
 
-  wireNotesInput("ov-home-notes", "ov-home-notes-status");
   drawPerfCanvas();
   updatePerfEmptyStates();
 }
@@ -2246,37 +2243,10 @@ async function loadScreenshots(force = false): Promise<void> {
 }
 
 /* 5. Full Notes View */
-/** Launcher mode keeps one shared note; games keep theirs per title. */
-function notesKey(): string {
-  return launcherMode ? "launcher" : context.appName;
-}
-
+/** The notes widget lives in `notes/overlay-notes.ts`: the same list the
+ * launcher's Notes page and the game drawer write. */
 function renderNotes(): void {
-  const el = viewEl("notes");
-  if (!el) return;
-  const saved = localStorage.getItem(`efxlve-overlay-notes::${notesKey()}`) ?? "";
-  el.innerHTML = `
-    <div class="ov-page-title" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">${icon("edit", 20)} <span>${esc(t("overlay.tabNotes"))}</span></div>
-      <span style="font-size:12px;color:var(--text-3)" id="ov-full-notes-status">${saved ? esc(t("overlay.saved")) : ""}</span>
-    </div>
-    <textarea class="ov-notes-area" id="ov-full-notes" style="height:380px" placeholder="${esc(t("overlay.notesPlaceholder"))}" spellcheck="false">${esc(saved)}</textarea>
-    <p class="ov-note">${esc(t("overlay.notesHint"))}</p>`;
-
-  wireNotesInput("ov-full-notes", "ov-full-notes-status");
-}
-
-function wireNotesInput(inputId: string, statusId: string): void {
-  const area = document.getElementById(inputId) as HTMLTextAreaElement | null;
-  area?.addEventListener("input", () => {
-    if (notesSaveTimer) window.clearTimeout(notesSaveTimer);
-    notesSaveTimer = window.setTimeout(() => {
-      notesSaveTimer = null;
-      localStorage.setItem(`efxlve-overlay-notes::${notesKey()}`, area.value);
-      const tag = document.getElementById(statusId);
-      if (tag) tag.textContent = t("overlay.saved");
-    }, 350);
-  });
+  renderOverlayNotes();
 }
 
 /* 6. Full Music View */
@@ -4154,6 +4124,30 @@ function renderSettings(): void {
         </div>
       </section>
 
+      <!-- Section: Notes (the Notes page's settings, kept in step) -->
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("edit", 13)}
+          <span>${esc(t("settings.secNotes"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("notes.fontSize"))}</div>
+              <div class="ov-setting-desc">${esc(t("notes.fontSizeDesc"))}</div>
+            </div>
+            <div class="seg" role="radiogroup">
+              ${(["s", "m", "l"] as const)
+                .map(
+                  (size) =>
+                    `<button class="${notesFontSize() === size ? "active" : ""}" data-ov="ov-note-font" data-size="${size}">${esc(t(size === "s" ? "notes.fontSmall" : size === "m" ? "notes.fontMedium" : "notes.fontLarge"))}</button>`,
+                )
+                .join("")}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Section: Browser -->
       <section class="ov-settings-section">
         <header class="ov-settings-section-header">
@@ -4327,6 +4321,10 @@ function wireEvents(): void {
       hideLightbox();
       return;
     }
+
+    // The notes widget has its own module: list, editor, checklists.
+    const notesActionEl = target.closest<HTMLElement>("[data-ov]");
+    if (notesActionEl && handleOverlayNotesAction(notesActionEl.dataset.ov, notesActionEl)) return;
 
     // Backdrop click outside any widget and topbar closes the overlay, unless clicking over the browser window
     if (target.id === "ov-shell" || target.id === "ov-widgets-container") {
@@ -5223,6 +5221,8 @@ async function onOpen(payload: OpenPayload): Promise<void> {
 
   const launcher = isLauncherContext(context);
   launcherMode = launcher;
+  // The notes widget follows the context: the game, or the launcher.
+  setOverlayNotesScope(overlayNotesScope(launcher, context.appName));
 
   refreshRecentGamesPill();
   initBatteryMonitoring();
@@ -5593,3 +5593,12 @@ async function boot(): Promise<void> {
 }
 
 void boot();
+
+// The notes wiring lives outside boot: boot's `listen` awaits abort in a
+// browser (no Tauri), and the notes migration and repaint hook must not depend
+// on those succeeding.
+void ensureNotesMigration();
+onNotesChanged(() => refreshOverlayNotes());
+setOverlayNotesSettingsRepaint(() => {
+  if (isWidgetOpen("settings")) renderSettings();
+});
