@@ -15,6 +15,7 @@ import { esc } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
 
 import { epicGetSteamGridCovers, epicSearchSteamGrid, type SteamGridGame, type SteamGridImage } from "../../epic";
+import { igdbCovers, igdbImage } from "../../igdb";
 import { cachedSteamCover, cachedSteamHero, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
 import { steamLibraryArt } from "../../steam";
 export function saveCustomCover(appName: string, url: string): void {
@@ -122,7 +123,12 @@ export function openCustomCoverModal(appName: string, initialTarget: "cover" | "
   S.sgdbAssetType = S.activeCoverTarget === "hero" ? "heroes" : "grids";
   S.sgdbActiveStyle = "";
   S.sgdbSelectedCoverUrl = "";
-  S.customCoverActiveTab = S.steamGridApiKey ? "steamgrid" : "url";
+  S.customCoverActiveTab = S.steamGridApiKey ? "steamgrid" : S.igdbConfigured ? "igdb" : "url";
+  // A fresh IGDB search per game: the modal is per game.
+  S.igdbCoverQuery = "";
+  S.igdbCoverHits = [];
+  S.igdbCoverLoading = false;
+  S.igdbCoverError = "";
   S.sgdbErrorMsg = "";
   S.sgdbCoversList = [];
   S.sgdbGamesList = [];
@@ -272,6 +278,9 @@ export function renderCustomCoverModalFrame(appName: string): void {
             <button class="cover-tab-btn ${S.customCoverActiveTab === "steamgrid" ? "active" : ""}" data-act="switch-cover-tab" data-tab="steamgrid" data-id="${appName}">
               ${icon("globe", 13)} <span>${t("cover.tabSteamgrid")}</span>
             </button>
+            <button class="cover-tab-btn ${S.customCoverActiveTab === "igdb" ? "active" : ""}" data-act="switch-cover-tab" data-tab="igdb" data-id="${appName}">
+              ${icon("sparkles", 13)} <span>${t("cover.tabIgdb")}</span>
+            </button>
             <button class="cover-tab-btn ${S.customCoverActiveTab === "url" ? "active" : ""}" data-act="switch-cover-tab" data-tab="url" data-id="${appName}">
               ${icon("external", 13)} <span>${t("cover.tabUrl")}</span>
             </button>
@@ -300,6 +309,111 @@ export function renderCustomCoverModalFrame(appName: string): void {
   `;
 }
 
+/** The IGDB pane: portrait covers for the cover target, key art for the wide one. */
+function igdbCoverPaneHtml(appName: string): string {
+  if (!S.igdbConfigured) {
+    return `
+      <div class="cover-tab-pane">
+        <div class="sgdb-setup-box">
+          <div class="sgdb-setup-header">
+            <div class="sgdb-setup-icon">${icon("sparkles", 20)}</div>
+            <div>
+              <div class="sgdb-setup-title">${t("cover.igdbSetupTitle")}</div>
+              <div class="sgdb-setup-desc">${t("cover.igdbSetupDesc")}</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:center;width:100%">
+            <button class="btn primary small" data-view="settings" data-settings-section="integrations">
+              ${icon("settings", 13)} <span>${t("cover.igdbOpenSettings")}</span>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const wide = S.activeCoverTarget === "hero";
+  const items: { url: string; thumb: string; label: string }[] = [];
+  for (const hit of S.igdbCoverHits) {
+    if (wide) {
+      for (const art of hit.artworks) {
+        items.push({ url: igdbImage(art, "1080p"), thumb: igdbImage(art, "720p"), label: hit.name });
+      }
+      for (const shot of hit.screenshots) {
+        items.push({
+          url: igdbImage(shot, "screenshot_huge"),
+          thumb: igdbImage(shot, "screenshot_big"),
+          label: hit.name,
+        });
+      }
+    } else if (hit.coverId) {
+      items.push({
+        url: igdbImage(hit.coverId, "cover_big_2x"),
+        thumb: igdbImage(hit.coverId, "cover_big"),
+        label: `${hit.name}${hit.year ? ` (${hit.year})` : ""}`,
+      });
+    }
+  }
+
+  return `
+    <div class="cover-tab-pane">
+      <div class="sgdb-container">
+        <div class="sgdb-search-bar">
+          <input id="igdb-cover-search-input" class="text-input" placeholder="${t("cover.searchPlaceholder")}" value="${esc(S.igdbCoverQuery || S.sgdbSearchQuery)}" spellcheck="false" autocomplete="off" />
+          <button class="btn primary small" data-act="igdb-cover-search" data-id="${appName}" ${S.igdbCoverLoading ? "disabled" : ""}>
+            ${S.igdbCoverLoading ? icon("refresh", 12) : icon("search", 12)}
+            <span>${S.igdbCoverLoading ? t("cover.searching") : t("cover.search")}</span>
+          </button>
+        </div>
+        <div class="sgdb-gallery">
+          ${
+            S.igdbCoverLoading
+              ? `<div style="padding:40px;text-align:center;color:var(--muted);font-size:12.5px">${icon("refresh", 16)} ${t("cover.scanning")}</div>`
+              : S.igdbCoverError
+                ? `<div style="padding:24px;text-align:center;color:#f87171;font-size:12px">${esc(S.igdbCoverError)}</div>`
+                : items.length === 0
+                  ? `<div style="padding:40px;text-align:center;color:var(--muted);font-size:12.5px">${t("cover.igdbSearchHint")}</div>`
+                  : `<div class="${wide ? "sgdb-grid-horizontal" : "sgdb-grid-vertical"}">
+                      ${items
+                        .map((item) => {
+                          const selected = S.sgdbSelectedCoverUrl === item.url;
+                          return `
+                          <div class="sgdb-card ${selected ? "selected" : ""}" data-act="igdb-select-image" data-url="${esc(item.url)}" title="${esc(item.label)}">
+                            <img src="${esc(item.thumb)}" loading="lazy" alt="Cover" />
+                            <div class="sgdb-card-badges"><span class="sgdb-style-tag">IGDB</span><span></span></div>
+                            <div class="sgdb-card-footer">${esc(item.label)}</div>
+                            ${selected ? `<div class="sgdb-selected-check">${icon("check", 14)}</div>` : ""}
+                          </div>`;
+                        })
+                        .join("")}
+                    </div>`
+          }
+        </div>
+      </div>
+    </div>`;
+}
+
+/** Runs the modal's IGDB search (the tab switch and the button both call it). */
+export function runIgdbCoverSearch(appName: string, query?: string): void {
+  const term = (query ?? S.igdbCoverQuery ?? "").trim() || S.sgdbSearchQuery.trim();
+  if (!term) return;
+  S.igdbCoverQuery = term;
+  S.igdbCoverLoading = true;
+  S.igdbCoverError = "";
+  renderCustomCoverModalContent(appName);
+  igdbCovers(term, 6)
+    .then((hits) => {
+      S.igdbCoverHits = hits;
+    })
+    .catch((error) => {
+      S.igdbCoverHits = [];
+      S.igdbCoverError = sgdbErrorText(error);
+    })
+    .finally(() => {
+      S.igdbCoverLoading = false;
+      if (S.activeCustomCoverAppName === appName) renderCustomCoverModalContent(appName);
+    });
+}
+
 export function renderCustomCoverModalContent(appName: string): void {
   const container = document.getElementById("cover-tab-content-area");
   if (!container) return;
@@ -323,8 +437,7 @@ export function renderCustomCoverModalContent(appName: string): void {
     return;
   }
 
-  if (S.customCoverActiveTab === "file") {
-    container.innerHTML = `
+  if (S.customCoverActiveTab === "file") {    container.innerHTML = `
       <div class="cover-tab-pane">
         <div class="cover-inputs-section">
           <label class="cover-input-label">${t("cover.fileLabel")}</label>
@@ -338,6 +451,11 @@ export function renderCustomCoverModalContent(appName: string): void {
         </div>
       </div>
     `;
+    return;
+  }
+
+  if (S.customCoverActiveTab === "igdb") {
+    container.innerHTML = igdbCoverPaneHtml(appName);
     return;
   }
 

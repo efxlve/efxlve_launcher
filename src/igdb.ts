@@ -37,6 +37,18 @@ export interface IgdbGame {
   screenshots: string[];
   similar: IgdbSearchHit[];
   website: string;
+  /** ESRB/PEGI-style ratings. */
+  ageRatings: { organization: string; rating: string }[];
+}
+
+/** One cover-picker row: portrait cover plus key art. */
+export interface IgdbCoverHit {
+  id: number;
+  name: string;
+  year: number | null;
+  coverId: string;
+  artworks: string[];
+  screenshots: string[];
 }
 
 export interface IgdbStatus {
@@ -58,13 +70,44 @@ export const igdbSearch = (query: string, limit?: number) =>
 
 export const igdbGame = (id: number) => invoke<IgdbGame>("igdb_game", { id });
 
-export const igdbEnrich = (title: string, year?: number | null) =>
-  invoke<IgdbGame | null>("igdb_enrich", { title, year: year ?? null });
+export const igdbCovers = (query: string, limit?: number) =>
+  invoke<IgdbCoverHit[]>("igdb_covers", { query, limit: limit ?? null });
 
-/** `images.igdb.com` size templates (`cover_big`, `screenshot_big`, `720p`). */
+export const igdbEnrich = (
+  title: string,
+  year?: number | null,
+  external?: { category: number; uid: string } | null,
+) =>
+  invoke<IgdbGame | null>("igdb_enrich", {
+    title,
+    year: year ?? null,
+    externalCategory: external?.category ?? null,
+    externalUid: external?.uid ?? null,
+  });
+
+/**
+ * The exact external id IGDB knows a library key by. Steam/GOG/Amazon keys
+ * carry their store id, which beats any fuzzy title match; Epic app names and
+ * companion keys have none.
+ */
+export function igdbExternalId(appName: string): { category: number; uid: string } | null {
+  if (appName.startsWith("steam::")) return { category: 1, uid: appName.slice(7) };
+  if (appName.startsWith("gog::")) return { category: 5, uid: appName.slice(5) };
+  if (appName.startsWith("amazon::")) return { category: 20, uid: appName.slice(8) };
+  return null;
+}
+
+/** `images.igdb.com` size templates; any size also accepts a `_2x` suffix. */
 export function igdbImage(
   imageId: string,
-  size: "cover_big" | "screenshot_big" | "720p" | "thumb" = "cover_big",
+  size:
+    | "thumb"
+    | "cover_big"
+    | "cover_big_2x"
+    | "screenshot_big"
+    | "screenshot_huge"
+    | "720p"
+    | "1080p" = "cover_big",
 ): string {
   return imageId ? `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg` : "";
 }

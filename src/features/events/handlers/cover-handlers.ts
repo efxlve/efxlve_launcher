@@ -18,6 +18,7 @@ import {
   renderCustomCoverModalFrame,
   resetCustomCover,
   resetCustomHero,
+  runIgdbCoverSearch,
   saveCustomCover,
   saveCustomHero,
   searchAndLoadSteamGrid,
@@ -74,9 +75,34 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
         });
         if (S.activeCustomCoverAppName) {
           renderCustomCoverModalContent(S.activeCustomCoverAppName);
+          // First visit to the IGDB pane runs the search, so it is not empty.
+          if (
+            S.customCoverActiveTab === "igdb" &&
+            S.igdbConfigured &&
+            S.igdbCoverHits.length === 0 &&
+            !S.igdbCoverLoading
+          ) {
+            if (!S.igdbCoverQuery) S.igdbCoverQuery = S.sgdbSearchQuery;
+            runIgdbCoverSearch(S.activeCustomCoverAppName);
+          }
         }
       }
       return true;
+
+    case "igdb-cover-search": {
+      const input = document.getElementById("igdb-cover-search-input") as HTMLInputElement | null;
+      if (id) runIgdbCoverSearch(id, input?.value);
+      return true;
+    }
+
+    case "igdb-select-image": {
+      const url = t.dataset.url;
+      if (url && S.activeCustomCoverAppName) {
+        S.sgdbSelectedCoverUrl = url;
+        renderCustomCoverModalContent(S.activeCustomCoverAppName);
+      }
+      return true;
+    }
 
     case "sgdb-search":
       if (id) {

@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "IGDB より",
   "igdb.loading": "IGDB データを読み込み中…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "似ているゲーム"
+  "igdb.similarTitle": "似ているゲーム",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "IGDB を接続",
+  "cover.igdbSetupDesc": "IGDB のカバーには無料の Twitch 認証情報が必要です。設定 > 連携 で一度だけ追加してください。",
+  "cover.igdbOpenSettings": "設定を開く",
+  "cover.igdbSearchHint": "このゲームのカバーとキーアートを IGDB で検索します。"
 }

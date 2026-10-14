@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "จาก IGDB",
   "igdb.loading": "กำลังโหลดข้อมูล IGDB…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "เกมที่คล้ายกัน"
+  "igdb.similarTitle": "เกมที่คล้ายกัน",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "เชื่อมต่อ IGDB",
+  "cover.igdbSetupDesc": "ปกจาก IGDB ต้องใช้ข้อมูล Twitch ฟรี เพิ่มครั้งเดียวในตั้งค่า > การเชื่อมต่อ",
+  "cover.igdbOpenSettings": "เปิดการตั้งค่า",
+  "cover.igdbSearchHint": "ค้นหาปกและภาพหลักของเกมนี้ใน IGDB"
 }

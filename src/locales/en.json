@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "From IGDB",
   "igdb.loading": "Loading IGDB data…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "Similar games"
+  "igdb.similarTitle": "Similar games",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "Connect IGDB",
+  "cover.igdbSetupDesc": "IGDB covers need free Twitch credentials; add them once in Settings > Integrations.",
+  "cover.igdbOpenSettings": "Open settings",
+  "cover.igdbSearchHint": "Search IGDB for this game's covers and key art."
 }

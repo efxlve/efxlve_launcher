@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "من IGDB",
   "igdb.loading": "جارٍ تحميل بيانات IGDB…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "ألعاب مشابهة"
+  "igdb.similarTitle": "ألعاب مشابهة",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "اربط IGDB",
+  "cover.igdbSetupDesc": "أغلفة IGDB تحتاج بيانات Twitch مجانية؛ أضفها مرة واحدة في الإعدادات > التكاملات.",
+  "cover.igdbOpenSettings": "افتح الإعدادات",
+  "cover.igdbSearchHint": "ابحث في IGDB عن أغلفة هذه اللعبة وفنها الرئيسي."
 }

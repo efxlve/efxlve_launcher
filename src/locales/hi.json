@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "IGDB से",
   "igdb.loading": "IGDB डेटा लोड हो रहा…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "समान गेम"
+  "igdb.similarTitle": "समान गेम",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "IGDB कनेक्ट करें",
+  "cover.igdbSetupDesc": "IGDB कवर के लिए मुफ़्त Twitch क्रेडेंशियल चाहिए; सेटिंग्स > इंटीग्रेशन्स में एक बार जोड़ें।",
+  "cover.igdbOpenSettings": "सेटिंग्स खोलें",
+  "cover.igdbSearchHint": "इस गेम के कवर और की-आर्ट IGDB पर खोजें।"
 }

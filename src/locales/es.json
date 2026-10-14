@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "De IGDB",
   "igdb.loading": "Cargando datos de IGDB…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "Juegos similares"
+  "igdb.similarTitle": "Juegos similares",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "Conectar IGDB",
+  "cover.igdbSetupDesc": "Las carátulas de IGDB necesitan credenciales gratuitas de Twitch; añádelas una vez en Ajustes > Integraciones.",
+  "cover.igdbOpenSettings": "Abrir ajustes",
+  "cover.igdbSearchHint": "Busca en IGDB las carátulas y el arte de este juego."
 }

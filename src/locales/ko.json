@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "IGDB 제공",
   "igdb.loading": "IGDB 데이터 불러오는 중…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "비슷한 게임"
+  "igdb.similarTitle": "비슷한 게임",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "IGDB 연결",
+  "cover.igdbSetupDesc": "IGDB 커버는 무료 Twitch 자격 증명이 필요합니다. 설정 > 연동에서 한 번 추가하세요.",
+  "cover.igdbOpenSettings": "설정 열기",
+  "cover.igdbSearchHint": "이 게임의 커버와 키 아트를 IGDB에서 검색합니다."
 }

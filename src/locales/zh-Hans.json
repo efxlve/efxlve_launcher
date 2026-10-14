@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "来自 IGDB",
   "igdb.loading": "正在加载 IGDB 数据…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "相似游戏"
+  "igdb.similarTitle": "相似游戏",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "连接 IGDB",
+  "cover.igdbSetupDesc": "IGDB 封面需要免费的 Twitch 凭据；请在设置 > 集成 中添加一次。",
+  "cover.igdbOpenSettings": "打开设置",
+  "cover.igdbSearchHint": "在 IGDB 搜索这款游戏的封面和主视觉。"
 }

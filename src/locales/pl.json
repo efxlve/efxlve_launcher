@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "Z IGDB",
   "igdb.loading": "Ładowanie danych IGDB…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "Podobne gry"
+  "igdb.similarTitle": "Podobne gry",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "Połącz IGDB",
+  "cover.igdbSetupDesc": "Okładki IGDB wymagają darmowych danych Twitch; dodaj je raz w Ustawienia > Integracje.",
+  "cover.igdbOpenSettings": "Otwórz ustawienia",
+  "cover.igdbSearchHint": "Szukaj w IGDB okładek i grafiki tej gry."
 }

@@ -2194,5 +2194,10 @@
   "igdb.cardTitle": "來自 IGDB",
   "igdb.loading": "正在載入 IGDB 資料…",
   "igdb.poweredBy": "Powered by IGDB",
-  "igdb.similarTitle": "相似遊戲"
+  "igdb.similarTitle": "相似遊戲",
+  "cover.tabIgdb": "IGDB",
+  "cover.igdbSetupTitle": "連接 IGDB",
+  "cover.igdbSetupDesc": "IGDB 封面需要免費的 Twitch 認證資料；請在設定 > 整合 中新增一次。",
+  "cover.igdbOpenSettings": "開啟設定",
+  "cover.igdbSearchHint": "在 IGDB 搜尋這款遊戲的封面與主視覺。"
 }

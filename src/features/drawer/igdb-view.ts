@@ -11,7 +11,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import { igdbEnrich, igdbImage, type IgdbGame } from "../../igdb";
+import { igdbEnrich, igdbExternalId, igdbImage, type IgdbGame } from "../../igdb";
 
 interface IgdbTarget {
   appName: string;
@@ -26,7 +26,7 @@ const loading = new Set<string>();
 export function ensureIgdbOverview(target: IgdbTarget, year: number | null): void {
   if (!S.igdbConfigured || cache.has(target.appName) || loading.has(target.appName)) return;
   loading.add(target.appName);
-  void igdbEnrich(target.title, year)
+  void igdbEnrich(target.title, year, igdbExternalId(target.appName))
     .then((game) => {
       cache.set(target.appName, game ?? null);
     })
@@ -70,6 +70,13 @@ function igdbCardHtml(game: IgdbGame): string {
   if (game.publisher && game.publisher !== game.developer) {
     facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
   }
+  const ageChips = game.ageRatings
+    .filter((rating) => rating.rating)
+    .map(
+      (rating) =>
+        `<span class="igdb-age-chip" title="${esc(rating.organization)}">${esc(rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating)}</span>`,
+    )
+    .join("");
 
   return `
     <section class="gp-section igdb-card">
@@ -80,6 +87,7 @@ function igdbCardHtml(game: IgdbGame): string {
       <div class="igdb-meta">
         ${game.rating != null ? `<span class="igdb-rating" title="${esc(t("critic.igdbCommunity"))}">${Math.round(game.rating)}</span>` : ""}
         <div class="igdb-facts">${facts.map((fact) => `<span class="igdb-fact">${fact}</span>`).join("")}</div>
+        ${ageChips ? `<div class="igdb-ages">${ageChips}</div>` : ""}
       </div>
       ${tags.length ? `<div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>` : ""}
       ${

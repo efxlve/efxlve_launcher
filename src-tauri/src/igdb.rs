@@ -214,7 +214,24 @@ fn game_query(id: i64) -> String {
          involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
          franchises.name, collection.name, cover.image_id, screenshots.image_id, \
          similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
-         websites.category, websites.url; where id = {id};"
+         websites.category, websites.url, age_ratings.organization, age_ratings.rating_category; \
+         where id = {id};"
+    )
+}
+
+/// External ids (Steam/GOG/Amazon) turn a fuzzy title match into an exact one.
+fn external_query(category: i64, uid: &str) -> String {
+    format!(
+        "fields id; where external_games.category = {category} & external_games.uid = \"{}\"; limit 1;",
+        sanitize_query_text(uid)
+    )
+}
+
+/// The cover picker's search: covers and key art in one request.
+fn covers_query(query: &str, limit: usize) -> String {
+    format!(
+        "search \"{}\"; fields name, first_release_date, cover.image_id, artworks.image_id, screenshots.image_id; limit {limit};",
+        sanitize_query_text(query)
     )
 }
 
@@ -302,6 +319,23 @@ pub struct IgdbSearchHit {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct IgdbAgeRating {
+    /// "ESRB", "PEGI", …
+    pub organization: String,
+    /// "M", "18", …
+    pub rating: String,
+}
+
+/// The two small reference tables behind `age_ratings`, fetched once.
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct AgeTables {
+    organizations: std::collections::HashMap<i64, String>,
+    /// id → (organization id, rating name)
+    categories: std::collections::HashMap<i64, (i64, String)>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct IgdbGame {
     pub id: i64,
     pub name: String,
@@ -322,6 +356,21 @@ pub struct IgdbGame {
     pub screenshots: Vec<String>,
     pub similar: Vec<IgdbSearchHit>,
     pub website: String,
+    /// ESRB/PEGI-style ratings, mapped through the reference tables.
+    #[serde(default)]
+    pub age_ratings: Vec<IgdbAgeRating>,
+}
+
+/// One cover-picker row: the game's portrait cover and its key art.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IgdbCoverHit {
+    pub id: i64,
+    pub name: String,
+    pub year: Option<i64>,
+    pub cover_id: String,
+    pub artworks: Vec<String>,
+    pub screenshots: Vec<String>,
 }
 
 fn map_search_hit(value: &serde_json::Value) -> IgdbSearchHit {
@@ -340,7 +389,38 @@ fn map_search_hit(value: &serde_json::Value) -> IgdbSearchHit {
     }
 }
 
-fn map_game(value: &serde_json::Value) -> IgdbGame {
+fn map_cover_hit(value: &serde_json::Value) -> IgdbCoverHit {
+    let images = |key: &str, max: usize| -> Vec<String> {
+        value
+            .get(key)
+            .and_then(serde_json::Value::as_array)
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|item| item.get("image_id").and_then(serde_json::Value::as_str))
+                    .take(max)
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let timestamp = value
+        .get("first_release_date")
+        .and_then(serde_json::Value::as_i64);
+    IgdbCoverHit {
+        id: value.get("id").and_then(serde_json::Value::as_i64).unwrap_or(0),
+        name: string_field(value, "name"),
+        year: timestamp.map(year_of),
+        cover_id: value
+            .get("cover")
+            .map(|cover| string_field(cover, "image_id"))
+            .unwrap_or_default(),
+        artworks: images("artworks", 4),
+        screenshots: images("screenshots", 2),
+    }
+}
+
+fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
     let timestamp = value
         .get("first_release_date")
         .and_then(serde_json::Value::as_i64);
@@ -407,6 +487,34 @@ fn map_game(value: &serde_json::Value) -> IgdbGame {
         })
         .unwrap_or_default();
 
+    let age_ratings = value
+        .get("age_ratings")
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| {
+                    let category = item
+                        .get("rating_category")
+                        .and_then(serde_json::Value::as_i64)?;
+                    let (organization_id, rating) = age_tables.categories.get(&category)?;
+                    if rating.trim().is_empty() {
+                        return None;
+                    }
+                    Some(IgdbAgeRating {
+                        organization: age_tables
+                            .organizations
+                            .get(organization_id)
+                            .cloned()
+                            .unwrap_or_default(),
+                        rating: rating.clone(),
+                    })
+                })
+                .take(4)
+                .collect()
+        })
+        .unwrap_or_default();
+
     IgdbGame {
         id: value.get("id").and_then(serde_json::Value::as_i64).unwrap_or(0),
         name: string_field(value, "name"),
@@ -432,6 +540,7 @@ fn map_game(value: &serde_json::Value) -> IgdbGame {
         screenshots,
         similar,
         website,
+        age_ratings,
     }
 }
 
@@ -531,6 +640,101 @@ fn write_cached_game(app: &AppHandle, game: &IgdbGame) {
     }
 }
 
+/* ---------- Age rating reference tables ---------- */
+
+fn age_tables_path(app: &AppHandle) -> Option<PathBuf> {
+    igdb_dir(app).map(|dir| dir.join("age-ratings.json"))
+}
+
+fn read_age_tables(app: &AppHandle) -> Option<AgeTables> {
+    let path = age_tables_path(app)?;
+    let data = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&data).ok()
+}
+
+fn write_age_tables(app: &AppHandle, tables: &AgeTables) {
+    let Some(path) = age_tables_path(app) else { return };
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(data) = serde_json::to_string(tables) {
+        let _ = std::fs::write(path, data);
+    }
+}
+
+/// The two reference tables behind `age_ratings`: two small requests, once.
+async fn ensure_age_tables(app: &AppHandle) -> AgeTables {
+    if let Some(tables) = read_age_tables(app) {
+        if !tables.categories.is_empty() {
+            return tables;
+        }
+    }
+    let mut tables = AgeTables::default();
+    if let Ok(orgs) = api_post(app, "age_rating_organizations", "fields id, name; limit 50;").await {
+        if let Some(items) = orgs.as_array() {
+            for item in items {
+                if let (Some(id), Some(name)) = (
+                    item.get("id").and_then(serde_json::Value::as_i64),
+                    item.get("name").and_then(serde_json::Value::as_str),
+                ) {
+                    tables.organizations.insert(id, name.to_string());
+                }
+            }
+        }
+    }
+    if let Ok(cats) = api_post(app, "age_rating_categories", "fields id, organization, rating; limit 200;").await {
+        if let Some(items) = cats.as_array() {
+            for item in items {
+                let Some(id) = item.get("id").and_then(serde_json::Value::as_i64) else {
+                    continue;
+                };
+                let organization = item
+                    .get("organization")
+                    .and_then(serde_json::Value::as_i64)
+                    .unwrap_or(0);
+                let rating = item
+                    .get("rating")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("");
+                tables.categories.insert(id, (organization, rating.to_string()));
+            }
+        }
+    }
+    if !tables.categories.is_empty() {
+        write_age_tables(app, &tables);
+    }
+    tables
+}
+
+/// Does the response carry age ratings worth the two reference requests?
+fn has_age_ratings(value: &serde_json::Value) -> bool {
+    value
+        .as_array()
+        .and_then(|items| items.first())
+        .and_then(|first| first.get("age_ratings"))
+        .and_then(serde_json::Value::as_array)
+        .map(|items| !items.is_empty())
+        .unwrap_or(false)
+}
+
+/// Fetches one game's details and maps them, pulling the reference tables in
+/// only when the game actually carries ratings.
+async fn fetch_game(app: &AppHandle, id: i64) -> Result<IgdbGame, String> {
+    let value = api_post(app, "games", &game_query(id)).await?;
+    let tables = if has_age_ratings(&value) {
+        ensure_age_tables(app).await
+    } else {
+        AgeTables::default()
+    };
+    let game = value
+        .as_array()
+        .and_then(|items| items.first())
+        .map(|item| map_game(item, &tables))
+        .ok_or_else(|| "@t:igdb.notFound".to_string())?;
+    write_cached_game(app, &game);
+    Ok(game)
+}
+
 /* ---------- Commands ---------- */
 
 #[derive(Serialize)]
@@ -613,20 +817,31 @@ pub async fn igdb_game(app: AppHandle, id: i64) -> Result<IgdbGame, String> {
     if let Some(cached) = read_cached_game(&app, id) {
         return Ok(cached);
     }
-    let value = api_post(&app, "games", &game_query(id)).await?;
-    let game = value
-        .as_array()
-        .and_then(|items| items.first())
-        .map(map_game)
-        .ok_or_else(|| "@t:igdb.notFound".to_string())?;
-    write_cached_game(&app, &game);
-    Ok(game)
+    fetch_game(&app, id).await
 }
 
-/// The game page's entry point: a title (plus the year when the store knows
-/// it) becomes an IGDB game. `None` when nothing convincing matched.
+/// The cover picker's search: portraits and key art for one title.
 #[tauri::command]
-pub async fn igdb_enrich(app: AppHandle, title: String, year: Option<i64>) -> Result<Option<IgdbGame>, String> {
+pub async fn igdb_covers(app: AppHandle, query: String, limit: Option<usize>) -> Result<Vec<IgdbCoverHit>, String> {
+    let limit = limit.unwrap_or(6).clamp(1, 20);
+    let value = api_post(&app, "games", &covers_query(&query, limit)).await?;
+    Ok(value
+        .as_array()
+        .map(|items| items.iter().map(map_cover_hit).collect())
+        .unwrap_or_default())
+}
+
+/// The game page's entry point: an exact external id when the library knows
+/// one (Steam/GOG/Amazon), then the cached title lookup, then a title search
+/// with the year as a tiebreaker. `None` when nothing convincing matched.
+#[tauri::command]
+pub async fn igdb_enrich(
+    app: AppHandle,
+    title: String,
+    year: Option<i64>,
+    external_category: Option<i64>,
+    external_uid: Option<String>,
+) -> Result<Option<IgdbGame>, String> {
     if title.trim().is_empty() || load_credentials(&app).is_none() {
         return Ok(None);
     }
@@ -635,17 +850,39 @@ pub async fn igdb_enrich(app: AppHandle, title: String, year: Option<i64>) -> Re
         return Ok(None);
     }
 
+    let mut id: Option<i64> = None;
+
+    // An external id is exact: it beats every fuzzy match.
+    if let (Some(category), Some(uid)) = (
+        external_category,
+        external_uid
+            .as_deref()
+            .map(str::trim)
+            .filter(|uid| !uid.is_empty()),
+    ) {
+        let value = api_post(&app, "games", &external_query(category, uid)).await?;
+        id = value
+            .as_array()
+            .and_then(|items| items.first())
+            .and_then(|item| item.get("id").and_then(serde_json::Value::as_i64));
+    }
+
     let mut lookup = read_lookup(&app);
-    let mut id = lookup
-        .get(&key)
-        .and_then(serde_json::Value::as_i64)
-        .filter(|id| *id > 0);
+    if id.is_none() {
+        id = lookup
+            .get(&key)
+            .and_then(serde_json::Value::as_i64)
+            .filter(|id| *id > 0);
+    }
 
     if id.is_none() {
         let value = api_post(&app, "games", &search_query(&title, 8)).await?;
         let hits = value.as_array().cloned().unwrap_or_default();
         id = pick_best_match(&hits, &title, year);
-        if let Some(found) = id {
+    }
+
+    if let Some(found) = id {
+        if lookup.get(&key).and_then(serde_json::Value::as_i64) != Some(found) {
             lookup.insert(key, serde_json::Value::from(found));
             write_lookup(&app, &lookup);
         }
@@ -655,14 +892,7 @@ pub async fn igdb_enrich(app: AppHandle, title: String, year: Option<i64>) -> Re
     if let Some(cached) = read_cached_game(&app, id) {
         return Ok(Some(cached));
     }
-    let value = api_post(&app, "games", &game_query(id)).await?;
-    let game = value
-        .as_array()
-        .and_then(|items| items.first())
-        .map(map_game)
-        .ok_or_else(|| "@t:igdb.notFound".to_string())?;
-    write_cached_game(&app, &game);
-    Ok(Some(game))
+    Ok(Some(fetch_game(&app, id).await?))
 }
 
 #[cfg(test)]
@@ -727,7 +957,7 @@ mod tests {
                 { "category": 1, "url": "https://thewitcher.com" }
             ]
         });
-        let game = map_game(&sample);
+        let game = map_game(&sample, &AgeTables::default());
         assert_eq!(game.id, 1942);
         assert_eq!(game.developer, "CD Projekt RED");
         assert_eq!(game.publisher, "CD Projekt");
@@ -739,6 +969,43 @@ mod tests {
         assert_eq!(game.franchises, vec!["The Witcher".to_string()]);
         assert_eq!(game.website, "https://thewitcher.com");
         assert_eq!(game.genres, vec!["Role-playing (RPG)".to_string()]);
+        // Without the reference tables the ratings stay out.
+        assert!(game.age_ratings.is_empty());
+    }
+
+    #[test]
+    fn age_ratings_map_through_the_reference_tables() {
+        let mut tables = AgeTables::default();
+        tables.organizations.insert(1, "ESRB".to_string());
+        tables.organizations.insert(2, "PEGI".to_string());
+        tables.categories.insert(11, (1, "M".to_string()));
+        tables.categories.insert(5, (2, "18".to_string()));
+
+        let sample = serde_json::json!({
+            "id": 1,
+            "name": "Game",
+            "age_ratings": [
+                { "organization": 1, "rating_category": 11 },
+                { "organization": 2, "rating_category": 5 },
+                { "organization": 3, "rating_category": 99 }
+            ]
+        });
+        let game = map_game(&sample, &tables);
+        assert_eq!(game.age_ratings.len(), 2);
+        assert_eq!(game.age_ratings[0].organization, "ESRB");
+        assert_eq!(game.age_ratings[0].rating, "M");
+        assert_eq!(game.age_ratings[1].organization, "PEGI");
+        assert_eq!(game.age_ratings[1].rating, "18");
+    }
+
+    #[test]
+    fn external_and_cover_queries_are_well_formed() {
+        assert!(external_query(1, "570").contains("external_games.category = 1 & external_games.uid = \"570\""));
+        assert!(external_query(5, "1234").contains("limit 1;"));
+        let covers = covers_query("Halo", 6);
+        assert!(covers.contains("cover.image_id"));
+        assert!(covers.contains("artworks.image_id"));
+        assert!(covers.contains("limit 6;"));
     }
 
     #[test]

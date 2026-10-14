@@ -255,7 +255,19 @@ export const S = {
   igdbConfigured: false,
   igdbClientId: "" as string,
   showSettingsIgdbSecret: false,
-  customCoverActiveTab: ("steamgrid") as "steamgrid" | "url" | "file",
+  /** The cover modal's own IGDB search. */
+  igdbCoverQuery: "",
+  igdbCoverHits: [] as {
+    id: number;
+    name: string;
+    year: number | null;
+    coverId: string;
+    artworks: string[];
+    screenshots: string[];
+  }[],
+  igdbCoverLoading: false,
+  igdbCoverError: "",
+  customCoverActiveTab: ("steamgrid") as "steamgrid" | "igdb" | "url" | "file",
   activeCoverTarget: ("cover") as "cover" | "hero",
   sgdbSearchQuery: "",
   sgdbAssetType: ("grids") as "grids" | "heroes",
