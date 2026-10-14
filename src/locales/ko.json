@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "화면 표시",
   "overlay.settingsBrowser": "브라우저",
   "overlay.settingsGame": "게임",
-  "overlay.otherGame": "기타"
+  "overlay.otherGame": "기타",
+  "overlay.widgetPin": "고정",
+  "overlay.widgetUnpin": "고정 해제",
+  "overlay.widgetResize": "크기 조정"
 }

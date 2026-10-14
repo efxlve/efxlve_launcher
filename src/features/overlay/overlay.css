@@ -603,6 +603,19 @@
   color: #ef4444;
 }
 
+.ov-widget-header.is-dragging {
+  cursor: grabbing;
+}
+
+/* Pinned: the header no longer drags and the resize handle is gone. */
+.ov-widget.is-pinned .ov-widget-header {
+  cursor: default;
+}
+
+.ov-widget.is-pinned .ov-widget-resizer {
+  display: none;
+}
+
 .ov-widget-body {
   padding: 12px 14px;
   overflow-y: auto;

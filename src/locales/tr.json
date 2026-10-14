@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "Görünüm",
   "overlay.settingsBrowser": "Tarayıcı",
   "overlay.settingsGame": "Oyun",
-  "overlay.otherGame": "Diğer"
+  "overlay.otherGame": "Diğer",
+  "overlay.widgetPin": "Sabitle",
+  "overlay.widgetUnpin": "Sabitlemeyi kaldır",
+  "overlay.widgetResize": "Boyutlandır"
 }

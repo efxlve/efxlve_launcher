@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "外観",
   "overlay.settingsBrowser": "ブラウザ",
   "overlay.settingsGame": "ゲーム",
-  "overlay.otherGame": "その他"
+  "overlay.otherGame": "その他",
+  "overlay.widgetPin": "ピン留め",
+  "overlay.widgetUnpin": "ピン留めを解除",
+  "overlay.widgetResize": "サイズ変更"
 }

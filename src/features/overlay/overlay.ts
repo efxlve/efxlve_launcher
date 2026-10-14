@@ -451,6 +451,53 @@ function isWidgetOpen(tab: TabId): boolean {
   return openWidgets.has(tab);
 }
 
+/* ---------- Pinned widgets ---------- */
+
+/** A pinned widget keeps its place and size until it is unpinned. */
+const PIN_KEY = "efxlve-overlay-pins";
+let widgetPins = loadWidgetPins();
+
+function loadWidgetPins(): Set<TabId> {
+  try {
+    const raw = localStorage.getItem(PIN_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.filter((id) => TABS.some((t) => t.id === id)) as TabId[]);
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return new Set();
+}
+
+function saveWidgetPins(): void {
+  localStorage.setItem(PIN_KEY, JSON.stringify([...widgetPins]));
+}
+
+function isWidgetPinned(tab: TabId): boolean {
+  return widgetPins.has(tab);
+}
+
+/** Flips one widget's pin and repaints its header button. */
+function setWidgetPinned(tab: TabId, pinned: boolean): void {
+  if (pinned) widgetPins.add(tab);
+  else widgetPins.delete(tab);
+  saveWidgetPins();
+  applyWidgetPinState(tab);
+}
+
+function applyWidgetPinState(tab: TabId): void {
+  const pinned = isWidgetPinned(tab);
+  const widget = document.getElementById(`ov-widget-${tab}`);
+  if (widget) widget.classList.toggle("is-pinned", pinned);
+  const btn = document.querySelector<HTMLElement>(`[data-ov-widget-pin="${tab}"]`);
+  if (!btn) return;
+  btn.classList.toggle("is-pinned", pinned);
+  btn.title = pinned ? t("overlay.widgetUnpin") : t("overlay.widgetPin");
+}
+
 interface WidgetPos {
   x: number;
   y: number;
@@ -668,6 +715,7 @@ function openWidget(tab: TabId, render = true): void {
     widget.style.display = "flex";
     bringToFront(tab);
   }
+  applyWidgetPinState(tab);
 
   const toggleBtn = document.querySelector<HTMLElement>(`[data-ov-widget-toggle="${tab}"]`);
   if (toggleBtn) toggleBtn.classList.add("active");
@@ -729,6 +777,17 @@ let widgetStartLeft = 0;
 let widgetStartTop = 0;
 let draggingInitialized = false;
 
+/** Ends a drag: saves the place and drops the grabbing state. */
+function finishWidgetDrag(): void {
+  if (!draggingTab) return;
+  const el = document.getElementById(`ov-widget-${draggingTab}`);
+  if (el) saveWidgetPos(draggingTab, { x: el.offsetLeft, y: el.offsetTop });
+  document.querySelectorAll(".ov-widget-header.is-dragging").forEach((header) => {
+    header.classList.remove("is-dragging");
+  });
+  draggingTab = null;
+}
+
 function initWidgetDragging(): void {
   if (draggingInitialized) return;
   draggingInitialized = true;
@@ -749,6 +808,8 @@ function initWidgetDragging(): void {
 
     const tabId = header.dataset.widgetDrag as TabId | undefined;
     if (!tabId) return;
+    // A pinned widget keeps its place.
+    if (isWidgetPinned(tabId)) return;
 
     const el = document.getElementById(`ov-widget-${tabId}`);
     if (!el) return;
@@ -758,12 +819,17 @@ function initWidgetDragging(): void {
     dragStartY = e.clientY;
     widgetStartLeft = el.offsetLeft;
     widgetStartTop = el.offsetTop;
-    header.style.cursor = "grabbing";
+    header.classList.add("is-dragging");
     e.preventDefault();
   });
 
   window.addEventListener("mousemove", (e) => {
     if (!draggingTab) return;
+    // Released outside the window: no mouseup will arrive.
+    if ((e.buttons & 1) === 0) {
+      finishWidgetDrag();
+      return;
+    }
     const el = document.getElementById(`ov-widget-${draggingTab}`);
     if (!el) return;
 
@@ -781,16 +847,7 @@ function initWidgetDragging(): void {
     el.style.top = `${newY}px`;
   });
 
-  window.addEventListener("mouseup", () => {
-    if (!draggingTab) return;
-    const el = document.getElementById(`ov-widget-${draggingTab}`);
-    if (el) {
-      const header = el.querySelector<HTMLElement>("[data-widget-drag]");
-      if (header) header.style.cursor = "grab";
-      saveWidgetPos(draggingTab, { x: el.offsetLeft, y: el.offsetTop });
-    }
-    draggingTab = null;
-  });
+  window.addEventListener("mouseup", finishWidgetDrag);
 }
 
 let resizingTab: TabId | null = null;
@@ -799,6 +856,18 @@ let resizeStartY = 0;
 let widgetStartW = 0;
 let widgetStartH = 0;
 let resizingInitialized = false;
+
+/** Ends a resize: stores the final size and drops the resize cursor. */
+function finishWidgetResize(): void {
+  if (!resizingTab) return;
+  const el = document.getElementById(`ov-widget-${resizingTab}`);
+  if (el) {
+    saveWidgetSize(resizingTab, { w: el.offsetWidth, h: el.offsetHeight });
+    syncWidgetSizeClasses(resizingTab, el.offsetWidth, el.offsetHeight);
+  }
+  resizingTab = null;
+  document.body.style.cursor = "";
+}
 
 function initWidgetResizing(): void {
   if (resizingInitialized) return;
@@ -813,6 +882,8 @@ function initWidgetResizing(): void {
 
     const tabId = resizer.dataset.widgetResize as TabId | undefined;
     if (!tabId) return;
+    // A pinned widget keeps its size (its handle is hidden as well).
+    if (isWidgetPinned(tabId)) return;
 
     const el = document.getElementById(`ov-widget-${tabId}`);
     if (!el) return;
@@ -830,6 +901,11 @@ function initWidgetResizing(): void {
 
   window.addEventListener("mousemove", (e) => {
     if (!resizingTab) return;
+    // Released outside the window: no mouseup will arrive.
+    if ((e.buttons & 1) === 0) {
+      finishWidgetResize();
+      return;
+    }
     const el = document.getElementById(`ov-widget-${resizingTab}`);
     if (!el) return;
 
@@ -848,16 +924,7 @@ function initWidgetResizing(): void {
     syncWidgetSizeClasses(resizingTab, newW, newH);
   });
 
-  window.addEventListener("mouseup", () => {
-    if (!resizingTab) return;
-    const el = document.getElementById(`ov-widget-${resizingTab}`);
-    if (el) {
-      saveWidgetSize(resizingTab, { w: el.offsetWidth, h: el.offsetHeight });
-      syncWidgetSizeClasses(resizingTab, el.offsetWidth, el.offsetHeight);
-    }
-    resizingTab = null;
-    document.body.style.cursor = "";
-  });
+  window.addEventListener("mouseup", finishWidgetResize);
 }
 
 /* ---------- Battery Monitoring ---------- */
@@ -1145,13 +1212,16 @@ function shellHtml(): string {
                     ${icon("list", 12)}
                   </button>
                 ` : ""}
+                <button class="ov-widget-tool-btn ov-widget-pin-btn${isWidgetPinned(tab.id) ? " is-pinned" : ""}" data-ov-widget-pin="${tab.id}" title="${esc(isWidgetPinned(tab.id) ? t("overlay.widgetUnpin") : t("overlay.widgetPin"))}">
+                  ${icon("pin", 12)}
+                </button>
                 <button class="ov-widget-tool-btn ov-widget-close-btn" data-ov-widget-close="${tab.id}" title="${esc(t("common.close"))}">
                   ${icon("x", 13)}
                 </button>
               </div>
             </header>
             <div class="ov-widget-body" id="ov-widget-${tab.id}-body" data-ov-view="${tab.id}"></div>
-            <div class="ov-widget-resizer" data-widget-resize="${tab.id}" title="Boyutlandır"></div>
+            <div class="ov-widget-resizer" data-widget-resize="${tab.id}" title="${esc(t("overlay.widgetResize"))}"></div>
           </section>
         `).join("")}
       </div>
@@ -4225,6 +4295,14 @@ function wireEvents(): void {
       return;
     }
 
+    // Widget header pin button
+    const widgetPinBtn = target.closest<HTMLElement>("[data-ov-widget-pin]");
+    if (widgetPinBtn?.dataset.ovWidgetPin) {
+      const tab = widgetPinBtn.dataset.ovWidgetPin as TabId;
+      setWidgetPinned(tab, !isWidgetPinned(tab));
+      return;
+    }
+
     // Perf metric selection card/chip
     const perfMetricBtn = target.closest<HTMLElement>("[data-perf-metric]");
     if (perfMetricBtn?.dataset.perfMetric) {
@@ -5102,6 +5180,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     const isOpen = openWidgets.has(tab.id);
     widget.style.display = isOpen ? "flex" : "none";
     if (toggleBtn) toggleBtn.classList.toggle("active", isOpen);
+    applyWidgetPinState(tab.id);
 
     if (isOpen) {
       renderWidgetContent(tab.id);

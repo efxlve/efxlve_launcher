@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "ลักษณะที่ปรากฏ",
   "overlay.settingsBrowser": "เบราว์เซอร์",
   "overlay.settingsGame": "เกม",
-  "overlay.otherGame": "อื่นๆ"
+  "overlay.otherGame": "อื่นๆ",
+  "overlay.widgetPin": "ปักหมุด",
+  "overlay.widgetUnpin": "เลิกปักหมุด",
+  "overlay.widgetResize": "ปรับขนาด"
 }

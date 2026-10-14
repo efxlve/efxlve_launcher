@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "المظهر",
   "overlay.settingsBrowser": "المتصفح",
   "overlay.settingsGame": "اللعبة",
-  "overlay.otherGame": "أخرى"
+  "overlay.otherGame": "أخرى",
+  "overlay.widgetPin": "تثبيت",
+  "overlay.widgetUnpin": "إلغاء التثبيت",
+  "overlay.widgetResize": "تغيير الحجم"
 }

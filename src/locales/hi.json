@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "दिखावट",
   "overlay.settingsBrowser": "ब्राउज़र",
   "overlay.settingsGame": "गेम",
-  "overlay.otherGame": "अन्य"
+  "overlay.otherGame": "अन्य",
+  "overlay.widgetPin": "पिन करें",
+  "overlay.widgetUnpin": "अनपिन करें",
+  "overlay.widgetResize": "आकार बदलें"
 }

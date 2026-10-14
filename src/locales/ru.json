@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "Внешний вид",
   "overlay.settingsBrowser": "Браузер",
   "overlay.settingsGame": "Игра",
-  "overlay.otherGame": "Прочее"
+  "overlay.otherGame": "Прочее",
+  "overlay.widgetPin": "Закрепить",
+  "overlay.widgetUnpin": "Открепить",
+  "overlay.widgetResize": "Изменить размер"
 }

@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "Aparência",
   "overlay.settingsBrowser": "Navegador",
   "overlay.settingsGame": "Jogo",
-  "overlay.otherGame": "Outros"
+  "overlay.otherGame": "Outros",
+  "overlay.widgetPin": "Fixar",
+  "overlay.widgetUnpin": "Desafixar",
+  "overlay.widgetResize": "Redimensionar"
 }

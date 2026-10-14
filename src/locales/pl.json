@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "Wygląd",
   "overlay.settingsBrowser": "Przeglądarka",
   "overlay.settingsGame": "Gra",
-  "overlay.otherGame": "Inne"
+  "overlay.otherGame": "Inne",
+  "overlay.widgetPin": "Przypnij",
+  "overlay.widgetUnpin": "Odepnij",
+  "overlay.widgetResize": "Zmień rozmiar"
 }

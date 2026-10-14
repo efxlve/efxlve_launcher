@@ -2051,5 +2051,8 @@
   "overlay.settingsAppearance": "外观",
   "overlay.settingsBrowser": "浏览器",
   "overlay.settingsGame": "游戏",
-  "overlay.otherGame": "其他"
+  "overlay.otherGame": "其他",
+  "overlay.widgetPin": "固定",
+  "overlay.widgetUnpin": "取消固定",
+  "overlay.widgetResize": "调整大小"
 }
