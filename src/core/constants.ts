@@ -89,6 +89,8 @@ export const TV_AUTO_KEY = "efxlve-tv-auto";
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";
 export const SHOW_MINI_PLAYER_KEY = "efxlve-show-mini-player";
 export const SHOW_DISCORD_KEY = "efxlve-show-discord";
+/** The Notes sidebar entry is opt-in; the page is reached from Settings. */
+export const SHOW_NOTES_SIDEBAR_KEY = "efxlve-notes-sidebar";
 
 /** The Efxlve community server. The About page, the settings card and the
  *  Discord page's header all link to it. */

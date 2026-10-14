@@ -2167,5 +2167,7 @@
   "task.job.store_page": "Страница магазина (WebView2)",
   "task.job.discord_page": "Страница Discord (WebView2)",
   "task.job.spotify_player": "Плеер Spotify (WebView2)",
-  "task.job.overlay_browser": "Браузер в игре"
+  "task.job.overlay_browser": "Браузер в игре",
+  "notes.sidebarTitle": "Показывать в боковой панели",
+  "notes.sidebarDesc": "Добавляет пункт «Заметки» в боковую панель. Страница остаётся доступной отсюда."
 }

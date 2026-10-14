@@ -2167,5 +2167,7 @@
   "task.job.store_page": "商店页面 (WebView2)",
   "task.job.discord_page": "Discord 页面 (WebView2)",
   "task.job.spotify_player": "Spotify 播放器 (WebView2)",
-  "task.job.overlay_browser": "游戏内浏览器"
+  "task.job.overlay_browser": "游戏内浏览器",
+  "notes.sidebarTitle": "在侧边栏显示",
+  "notes.sidebarDesc": "在侧边栏添加笔记入口。页面仍可从这里打开。"
 }

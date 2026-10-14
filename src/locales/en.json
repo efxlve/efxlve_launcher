@@ -2167,5 +2167,7 @@
   "task.job.store_page": "Store page (WebView2)",
   "task.job.discord_page": "Discord page (WebView2)",
   "task.job.spotify_player": "Spotify player (WebView2)",
-  "task.job.overlay_browser": "In-game browser"
+  "task.job.overlay_browser": "In-game browser",
+  "notes.sidebarTitle": "Show in the sidebar",
+  "notes.sidebarDesc": "Adds a Notes entry to the sidebar. The page stays reachable from here either way."
 }

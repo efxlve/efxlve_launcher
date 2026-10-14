@@ -11,7 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
-import { discordPageVisible, miniPlayerVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -679,6 +679,11 @@ function renderNotes(): string {
     t("notes.openPageDesc"),
     `<button type="button" class="btn ghost small" data-view="notes">${icon("external", 13)} ${t("notes.openPage")}</button>`,
   );
+  const sidebarRow = row(
+    t("notes.sidebarTitle"),
+    t("notes.sidebarDesc"),
+    toggle("toggle-notes-sidebar", notesSidebarVisible()),
+  );
   const exportRow = row(
     t("notes.exportTitle"),
     t("notes.exportDesc"),
@@ -693,7 +698,7 @@ function renderNotes(): string {
     true,
   );
   return (
-    group(openRow + statsRow + fontRow, t("settings.secNotes"), infoBox("notes.settingsInfo")) +
+    group(openRow + sidebarRow + statsRow + fontRow, t("settings.secNotes"), infoBox("notes.settingsInfo")) +
     group(exportRow + importRow, t("notes.backupTitle"))
   );
 }

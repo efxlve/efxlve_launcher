@@ -2167,5 +2167,7 @@
   "task.job.store_page": "صفحة المتجر (WebView2)",
   "task.job.discord_page": "صفحة Discord (WebView2)",
   "task.job.spotify_player": "مشغل Spotify (WebView2)",
-  "task.job.overlay_browser": "المتصفح داخل اللعبة"
+  "task.job.overlay_browser": "المتصفح داخل اللعبة",
+  "notes.sidebarTitle": "إظهار في الشريط الجانبي",
+  "notes.sidebarDesc": "يضيف عنصر الملاحظات إلى الشريط الجانبي. تبقى الصفحة متاحة من هنا."
 }

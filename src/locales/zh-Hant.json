@@ -2167,5 +2167,7 @@
   "task.job.store_page": "商店頁面 (WebView2)",
   "task.job.discord_page": "Discord 頁面 (WebView2)",
   "task.job.spotify_player": "Spotify 播放器 (WebView2)",
-  "task.job.overlay_browser": "遊戲內瀏覽器"
+  "task.job.overlay_browser": "遊戲內瀏覽器",
+  "notes.sidebarTitle": "在側邊欄顯示",
+  "notes.sidebarDesc": "在側邊欄新增筆記項目。頁面仍可從這裡開啟。"
 }

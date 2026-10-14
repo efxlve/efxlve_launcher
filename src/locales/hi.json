@@ -2167,5 +2167,7 @@
   "task.job.store_page": "स्टोर पेज (WebView2)",
   "task.job.discord_page": "Discord पेज (WebView2)",
   "task.job.spotify_player": "Spotify प्लेयर (WebView2)",
-  "task.job.overlay_browser": "इन-गेम ब्राउज़र"
+  "task.job.overlay_browser": "इन-गेम ब्राउज़र",
+  "notes.sidebarTitle": "साइडबार में दिखाएँ",
+  "notes.sidebarDesc": "साइडबार में नोट्स प्रविष्टि जोड़ता है। पेज यहाँ से हमेशा खुल सकता है।"
 }

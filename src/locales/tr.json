@@ -2167,5 +2167,7 @@
   "task.job.store_page": "Mağaza sayfası (WebView2)",
   "task.job.discord_page": "Discord sayfası (WebView2)",
   "task.job.spotify_player": "Spotify oynatıcı (WebView2)",
-  "task.job.overlay_browser": "Oyun içi tarayıcı"
+  "task.job.overlay_browser": "Oyun içi tarayıcı",
+  "notes.sidebarTitle": "Kenar çubuğunda göster",
+  "notes.sidebarDesc": "Kenar çubuğuna bir Notlar girdisi ekler. Sayfaya buradan her zaman ulaşabilirsin."
 }

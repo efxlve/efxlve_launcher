@@ -2167,5 +2167,7 @@
   "task.job.store_page": "Página da loja (WebView2)",
   "task.job.discord_page": "Página do Discord (WebView2)",
   "task.job.spotify_player": "Player do Spotify (WebView2)",
-  "task.job.overlay_browser": "Navegador no jogo"
+  "task.job.overlay_browser": "Navegador no jogo",
+  "notes.sidebarTitle": "Mostrar na barra lateral",
+  "notes.sidebarDesc": "Adiciona uma entrada Notas na barra lateral. A página continua acessível daqui."
 }

@@ -2167,5 +2167,7 @@
   "task.job.store_page": "Store-Seite (WebView2)",
   "task.job.discord_page": "Discord-Seite (WebView2)",
   "task.job.spotify_player": "Spotify-Player (WebView2)",
-  "task.job.overlay_browser": "In-Game-Browser"
+  "task.job.overlay_browser": "In-Game-Browser",
+  "notes.sidebarTitle": "In der Seitenleiste anzeigen",
+  "notes.sidebarDesc": "Fügt einen Notizen-Eintrag in die Seitenleiste ein. Die Seite bleibt trotzdem hier erreichbar."
 }

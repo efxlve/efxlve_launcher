@@ -2167,5 +2167,7 @@
   "task.job.store_page": "หน้า Store (WebView2)",
   "task.job.discord_page": "หน้า Discord (WebView2)",
   "task.job.spotify_player": "เครื่องเล่น Spotify (WebView2)",
-  "task.job.overlay_browser": "เบราว์เซอร์ในเกม"
+  "task.job.overlay_browser": "เบราว์เซอร์ในเกม",
+  "notes.sidebarTitle": "แสดงในแถบด้านข้าง",
+  "notes.sidebarDesc": "เพิ่มรายการโน้ตในแถบด้านข้าง หน้านี้ยังเปิดได้จากที่นี่"
 }

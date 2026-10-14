@@ -2167,5 +2167,7 @@
   "task.job.store_page": "ストアページ (WebView2)",
   "task.job.discord_page": "Discord ページ (WebView2)",
   "task.job.spotify_player": "Spotify プレイヤー (WebView2)",
-  "task.job.overlay_browser": "ゲーム内ブラウザ"
+  "task.job.overlay_browser": "ゲーム内ブラウザ",
+  "notes.sidebarTitle": "サイドバーに表示",
+  "notes.sidebarDesc": "サイドバーにノートの項目を追加します。ページはここからいつでも開けます。"
 }

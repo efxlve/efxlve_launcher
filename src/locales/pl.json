@@ -2167,5 +2167,7 @@
   "task.job.store_page": "Strona sklepu (WebView2)",
   "task.job.discord_page": "Strona Discord (WebView2)",
   "task.job.spotify_player": "Odtwarzacz Spotify (WebView2)",
-  "task.job.overlay_browser": "Przeglądarka w grze"
+  "task.job.overlay_browser": "Przeglądarka w grze",
+  "notes.sidebarTitle": "Pokaż na pasku bocznym",
+  "notes.sidebarDesc": "Dodaje pozycję Notatki na pasku bocznym. Strona pozostaje dostępna stąd."
 }
