@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "link",
   "notes.full": "Note piene: eliminane una prima.",
   "nav.notes": "Note",
-  "nav.notesTitle": "Note"
+  "nav.notesTitle": "Note",
+  "drawer.notes": "Note",
+  "notes.openPage": "Tutte le note",
+  "notes.drawerEmptyDesc": "Le note su questo gioco compaiono qui e nella pagina Note."
 }

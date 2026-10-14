@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "連結",
   "notes.full": "筆記已滿：請先刪除一則。",
   "nav.notes": "筆記",
-  "nav.notesTitle": "筆記"
+  "nav.notesTitle": "筆記",
+  "drawer.notes": "筆記",
+  "notes.openPage": "全部筆記",
+  "notes.drawerEmptyDesc": "這款遊戲的筆記會顯示在這裡和筆記頁面。"
 }

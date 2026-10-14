@@ -117,3 +117,31 @@
   border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-2);
   color: var(--ok); font-size: 11px; line-height: 1; display: grid; place-items: center; cursor: pointer;
 }
+
+/* --- Game page (drawer) Notes tab ----------------------------------------- */
+.drawer-notes { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px 16px; }
+.drawer-notes-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.drawer-notes-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.drawer-notes-actions { display: flex; align-items: center; gap: 8px; }
+.drawer-notes-list { display: flex; flex-direction: column; gap: 4px; }
+.drawer-note-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+.drawer-note-row:hover { background: var(--surface-2); }
+.drawer-note-bar { width: 3px; align-self: stretch; border-radius: 2px; background: var(--surface-3); flex-shrink: 0; }
+.drawer-note-bar.color-blue { background: var(--accent); }
+.drawer-note-bar.color-green { background: var(--ok); }
+.drawer-note-bar.color-yellow { background: var(--warn); }
+.drawer-note-bar.color-red { background: var(--err); }
+.drawer-note-bar.color-purple { background: #a855f7; }
+.drawer-note-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.drawer-note-title { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-note-preview { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-note-time { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.drawer-notes-editor { display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 16px; }
+.drawer-notes-editor-head { display: flex; align-items: center; gap: 8px; }
+.drawer-notes-editor .notes-title-input { font-size: 15px; }
+.drawer-notes-editor .notes-body, .drawer-notes-editor .notes-preview { min-height: 220px; }

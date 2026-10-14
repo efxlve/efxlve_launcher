@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "link",
   "notes.full": "Notizen sind voll: Lösche zuerst eine.",
   "nav.notes": "Notizen",
-  "nav.notesTitle": "Notizen"
+  "nav.notesTitle": "Notizen",
+  "drawer.notes": "Notizen",
+  "notes.openPage": "Alle Notizen",
+  "notes.drawerEmptyDesc": "Notizen zu diesem Spiel erscheinen hier und auf der Notizen-Seite."
 }

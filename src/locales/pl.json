@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "link",
   "notes.full": "Limit notatek: najpierw usuń jedną.",
   "nav.notes": "Notatki",
-  "nav.notesTitle": "Notatki"
+  "nav.notesTitle": "Notatki",
+  "drawer.notes": "Notatki",
+  "notes.openPage": "Wszystkie notatki",
+  "notes.drawerEmptyDesc": "Notatki do tej gry pojawią się tutaj i na stronie Notatek."
 }

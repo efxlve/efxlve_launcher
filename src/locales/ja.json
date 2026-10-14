@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "リンク",
   "notes.full": "ノートが上限です。先に1つ削除してください。",
   "nav.notes": "ノート",
-  "nav.notesTitle": "ノート"
+  "nav.notesTitle": "ノート",
+  "drawer.notes": "ノート",
+  "notes.openPage": "すべてのノート",
+  "notes.drawerEmptyDesc": "このゲームのノートはここ とノートページに表示されます。"
 }

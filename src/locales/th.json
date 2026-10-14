@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "ลิงก์",
   "notes.full": "โน้ตเต็มแล้ว: ลบสักอันก่อน",
   "nav.notes": "โน้ต",
-  "nav.notesTitle": "โน้ต"
+  "nav.notesTitle": "โน้ต",
+  "drawer.notes": "โน้ต",
+  "notes.openPage": "โน้ตทั้งหมด",
+  "notes.drawerEmptyDesc": "โน้ตของเกมนี้จะแสดงที่นี่และในหน้าโน้ต"
 }

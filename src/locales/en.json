@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "link",
   "notes.full": "Notes are full: delete one first.",
   "nav.notes": "Notes",
-  "nav.notesTitle": "Notes"
+  "nav.notesTitle": "Notes",
+  "drawer.notes": "Notes",
+  "notes.openPage": "All notes",
+  "notes.drawerEmptyDesc": "Notes you take on this game show up here and on the Notes page."
 }

@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "enlace",
   "notes.full": "Las notas están llenas: elimina una primero.",
   "nav.notes": "Notas",
-  "nav.notesTitle": "Notas"
+  "nav.notesTitle": "Notas",
+  "drawer.notes": "Notas",
+  "notes.openPage": "Todas las notas",
+  "notes.drawerEmptyDesc": "Las notas de este juego aparecen aquí y en la página de Notas."
 }

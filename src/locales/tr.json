@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "bağlantı",
   "notes.full": "Not sınırına ulaşıldı: önce bir not sil.",
   "nav.notes": "Notlar",
-  "nav.notesTitle": "Notlar"
+  "nav.notesTitle": "Notlar",
+  "drawer.notes": "Notlar",
+  "notes.openPage": "Tüm notlar",
+  "notes.drawerEmptyDesc": "Bu oyunda aldığın notlar burada ve Notlar sayfasında görünür."
 }

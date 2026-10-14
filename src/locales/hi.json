@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "लिंक",
   "notes.full": "नोट्स भर गए: पहले एक हटाएँ।",
   "nav.notes": "नोट्स",
-  "nav.notesTitle": "नोट्स"
+  "nav.notesTitle": "नोट्स",
+  "drawer.notes": "नोट्स",
+  "notes.openPage": "सभी नोट्स",
+  "notes.drawerEmptyDesc": "इस गेम के नोट यहाँ और नोट्स पेज पर दिखेंगे।"
 }

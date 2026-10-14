@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "链接",
   "notes.full": "笔记已满：请先删除一条。",
   "nav.notes": "笔记",
-  "nav.notesTitle": "笔记"
+  "nav.notesTitle": "笔记",
+  "drawer.notes": "笔记",
+  "notes.openPage": "全部笔记",
+  "notes.drawerEmptyDesc": "这款游戏的笔记会显示在这里和笔记页面。"
 }

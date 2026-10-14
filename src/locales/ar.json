@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "رابط",
   "notes.full": "الملاحظات ممتلئة: احذف واحدة أولاً.",
   "nav.notes": "الملاحظات",
-  "nav.notesTitle": "الملاحظات"
+  "nav.notesTitle": "الملاحظات",
+  "drawer.notes": "الملاحظات",
+  "notes.openPage": "كل الملاحظات",
+  "notes.drawerEmptyDesc": "تظهر ملاحظات هذه اللعبة هنا وفي صفحة الملاحظات."
 }

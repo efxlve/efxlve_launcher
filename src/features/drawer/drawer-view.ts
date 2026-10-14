@@ -36,6 +36,8 @@ import { buildSteamRequirements, steamLanguage } from "./steam-details";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
+import { cachedNotes } from "../notes/notes-client";
+import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -378,6 +380,7 @@ function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null,
     case "achievements": return renderDrawerAchievements(s);
     case "dlcs": return renderDrawerDlcs(s);
     case "screenshots": return renderDrawerScreenshots(s);
+    case "notes": return renderDrawerNotes(s.appName);
     case "manage": return renderDrawerManage(s);
     default: return renderDrawerSystemRequirements(s);
   }
@@ -388,6 +391,7 @@ const TAB_ICON: Record<string, IconName> = {
   achievements: "trophy",
   dlcs: "package",
   screenshots: "camera",
+  notes: "edit",
   manage: "settings",
   specs: "cpu",
 };
@@ -639,10 +643,13 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
     ensureEosSupport(appName);
   }
+  // The notes tab's list and badge; the client caches, so this is one call.
+  ensureDrawerNotes(appName);
 
   const dlcRes = S.dlcCache.get(appName);
   const dlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
   const ssCount = S.loadedScreenshots.get(appName)?.length ?? 0;
+  const notesCount = cachedNotes().filter((note) => note.scope === appName).length;
   const isPlat = isAppPlatinum(appName);
 
   // Tab switch / live refresh on the SAME game: patch the tab strip and content only.
@@ -681,6 +688,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
        ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
        ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
        ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
+       ${tabButton("notes", t("drawer.notes"), notesCount)}
        ${tabButton("specs", t("drawer.specs"))}`;
 
   modalRoot.innerHTML = `

@@ -18,7 +18,7 @@ export type GogPhase = "checking" | "setup" | "login" | "library" | "error";
 export type EpicPhase = "checking" | "setup" | "login" | "library" | "error";
 
 /** Game detail drawer tabs. */
-export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "manage" | "specs";
+export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "notes" | "manage" | "specs";
 
 /** Library filter modes. */
 export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections";

@@ -2105,5 +2105,8 @@
   "notes.mdLinkText": "ссылка",
   "notes.full": "Заметки заполнены: сначала удалите одну.",
   "nav.notes": "Заметки",
-  "nav.notesTitle": "Заметки"
+  "nav.notesTitle": "Заметки",
+  "drawer.notes": "Заметки",
+  "notes.openPage": "Все заметки",
+  "notes.drawerEmptyDesc": "Заметки об этой игре появятся здесь и на странице заметок."
 }
