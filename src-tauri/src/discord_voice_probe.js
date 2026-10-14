@@ -539,6 +539,124 @@
     }
   } catch (e) {}
 
+  // 6b) Group DMs the client knows. Read-only: the overlay lists them and
+  //     hands the conversation back to the real client for reading and
+  //     writing. The ChannelStore API drifts between client builds, so every
+  //     known shape is tried and a one-time diag records what was there.
+  var conversations = [];
+  try {
+    var channelStore = stores.ChannelStore;
+    var privates = [];
+    try {
+      if (channelStore && typeof channelStore.getPrivateChannelsArray === "function") {
+        privates = channelStore.getPrivateChannelsArray() || [];
+      }
+    } catch (e) {}
+    if (!privates.length) {
+      try {
+        if (channelStore && typeof channelStore.getPrivateChannels === "function") {
+          privates = valuesOf(channelStore.getPrivateChannels());
+        }
+      } catch (e) {}
+    }
+    if (!privates.length) {
+      try {
+        if (channelStore && typeof channelStore.getSortedPrivateChannels === "function") {
+          privates = channelStore.getSortedPrivateChannels() || [];
+        }
+      } catch (e) {}
+    }
+    if (!privates.length) {
+      try {
+        var sortStore = stores.PrivateChannelSortStore;
+        var sortIds = sortStore && typeof sortStore.getPrivateChannelIds === "function"
+          ? sortStore.getPrivateChannelIds() || []
+          : [];
+        for (var si = 0; si < sortIds.length; si++) {
+          var sorted = channelStore && channelStore.getChannel ? channelStore.getChannel(sortIds[si]) : null;
+          if (sorted) privates.push(sorted);
+        }
+      } catch (e) {}
+    }
+    var readStates = stores.ReadStateStore;
+    var messageStore = stores.MessageStore;
+    for (var pc = 0; pc < privates.length && conversations.length < 25; pc++) {
+      var conv = privates[pc];
+      if (!conv || Number(conv.type) !== 3) continue;
+      var recips = conv.recipients || conv.rawRecipients || [];
+      var members = [];
+      for (var ri = 0; ri < recips.length && members.length < 12; ri++) {
+        var rid = recips[ri] && (recips[ri].userId || recips[ri].id || recips[ri]);
+        if (!rid) continue;
+        var member = user(rid);
+        members.push({
+          id: String(rid),
+          name: displayName(member, null) || String(rid),
+          avatar: member && member.avatar ? member.avatar : "",
+        });
+      }
+      var unread = 0;
+      try {
+        if (readStates && typeof readStates.getUnreadCount === "function") {
+          unread = readStates.getUnreadCount(conv.id) || 0;
+        }
+      } catch (e) {}
+      // The last message is only there for a conversation the client has
+      // already loaded; an empty preview is normal, not an error.
+      var preview = null;
+      try {
+        if (messageStore && typeof messageStore.getMessages === "function") {
+          var messages = messageStore.getMessages(conv.id);
+          var rows = messages && typeof messages.toArray === "function"
+            ? messages.toArray()
+            : messages && messages._array
+              ? messages._array
+              : null;
+          var last = rows && rows.length ? rows[rows.length - 1] : null;
+          if (last && typeof last.content === "string" && last.content) {
+            preview = {
+              author: last.author ? displayName(last.author, null) || "" : "",
+              text: last.content.slice(0, 140),
+            };
+          }
+        }
+      } catch (e) {}
+      conversations.push({
+        id: String(conv.id),
+        name: conv.name || "",
+        members: members,
+        memberCount: members.length,
+        unread: unread,
+        lastMessageId: conv.lastMessageId ? String(conv.lastMessageId) : "",
+        preview: preview,
+      });
+    }
+    // Newest activity first; the same snowflake order the overlay uses.
+    conversations.sort(function (a, b) {
+      var left = a.lastMessageId || "";
+      var right = b.lastMessageId || "";
+      if (!left) return 1;
+      if (!right) return -1;
+      if (left.length !== right.length) return left.length < right.length ? 1 : -1;
+      return left < right ? 1 : left > right ? -1 : 0;
+    });
+  } catch (e) {}
+
+  if (!S.ConvDiag) {
+    var convApi = [];
+    try {
+      var convStore = stores.ChannelStore || {};
+      var convNames = [];
+      try { convNames = convNames.concat(Object.getOwnPropertyNames(convStore)); } catch (e) {}
+      try { convNames = convNames.concat(Object.getOwnPropertyNames(Object.getPrototypeOf(convStore) || {})); } catch (e) {}
+      for (var cn = 0; cn < convNames.length; cn++) {
+        if (!/private|sorted/i.test(convNames[cn])) continue;
+        try { if (typeof convStore[convNames[cn]] === "function") convApi.push(convNames[cn]); } catch (e) {}
+      }
+    } catch (e) {}
+    S.ConvDiag = "groups=" + conversations.length + " apis=" + (convApi.join(",") || "none");
+  }
+
   // 6) An incoming call rings in the web client: IncomingCallStore is the
   //    signal (the SDK's call API covers only calls it started itself).
   var call = { found: false, ringing: 0, active: 0, from: "", channelId: "" };
@@ -625,6 +743,8 @@
     friendsTotal: friendTotal,
     pending: pending,
     channels: channels,
+    conversations: conversations,
+    convDiag: S.ConvDiag,
     call: call,
     callDiag: S.CallDiag,
     me: { id: me.id, name: displayName(me, null) || me.username || "", avatar: me.avatar || "" },

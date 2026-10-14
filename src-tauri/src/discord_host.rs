@@ -94,6 +94,11 @@ static CALL_RINGING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBo
 static CALL_DIAG_LOGGED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
+/// Same one-shot rule for the private-channel report that feeds the group DM
+/// rows: which ChannelStore APIs this client build exposes.
+static CONV_DIAG_LOGGED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 /// The "keep Discord open" setting, mirrored from the UI. With it on, leaving
 /// the page parks it off-screen instead of destroying it — the same trick a
 /// live call uses — so messages and calls keep arriving while a game runs.
@@ -328,6 +333,13 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
             }
         }
     }
+    if !CONV_DIAG_LOGGED.swap(true, Ordering::SeqCst) {
+        if let Some(diag) = report.get("convDiag").and_then(serde_json::Value::as_str) {
+            if !diag.is_empty() {
+                web_log(app, &format!("web group DMs: {diag}"));
+            }
+        }
+    }
     let via = report
         .get("via")
         .and_then(serde_json::Value::as_str)
@@ -377,6 +389,49 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
                 "name": item.get("name").and_then(serde_json::Value::as_str).unwrap_or(""),
                 "guild": item.get("guild").and_then(serde_json::Value::as_str).unwrap_or(""),
                 "guildId": item.get("guildId").and_then(serde_json::Value::as_str).unwrap_or(""),
+            }));
+        }
+    }
+    // Group DMs the launcher's own client knows. Read-only: the overlay lists
+    // them, and opening the conversation stays in the real client.
+    let mut conversations = Vec::new();
+    if let Some(items) = report
+        .get("conversations")
+        .and_then(serde_json::Value::as_array)
+    {
+        for item in items.iter().take(25) {
+            let mut members = Vec::new();
+            if let Some(people) = item.get("members").and_then(serde_json::Value::as_array) {
+                for person in people.iter().take(12) {
+                    let id = person
+                        .get("id")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("");
+                    let avatar = person
+                        .get("avatar")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("");
+                    members.push(serde_json::json!({
+                        "id": id,
+                        "name": person.get("name").and_then(serde_json::Value::as_str).unwrap_or(""),
+                        "avatarUrl": crate::discord_rpc::avatar_url(id, avatar),
+                    }));
+                }
+            }
+            let preview = match item.get("preview") {
+                Some(value) if value.is_object() => serde_json::json!({
+                    "author": value.get("author").and_then(serde_json::Value::as_str).unwrap_or(""),
+                    "text": value.get("text").and_then(serde_json::Value::as_str).unwrap_or(""),
+                }),
+                _ => serde_json::Value::Null,
+            };
+            conversations.push(serde_json::json!({
+                "id": item.get("id").and_then(serde_json::Value::as_str).unwrap_or(""),
+                "name": item.get("name").and_then(serde_json::Value::as_str).unwrap_or(""),
+                "members": members,
+                "memberCount": item.get("memberCount").and_then(serde_json::Value::as_u64).unwrap_or(0),
+                "unread": item.get("unread").and_then(serde_json::Value::as_u64).unwrap_or(0),
+                "preview": preview,
             }));
         }
     }
@@ -446,6 +501,7 @@ fn handle_voice_report(app: &AppHandle, report: serde_json::Value) {
         "friendsTotal": friends_total,
         "pending": pending,
         "channels": channels,
+        "conversations": conversations,
     });
     if let Ok(mut guard) = WEB_VOICE.lock() {
         *guard = Some(payload.clone());
@@ -474,7 +530,8 @@ fn destroy_view(app: &AppHandle) {
             "participants": [],
             "friends": [],
             "friendsTotal": 0,
-            "pending": 0
+            "pending": 0,
+            "conversations": []
         }),
     );
     if let Some(view) = view(app) {

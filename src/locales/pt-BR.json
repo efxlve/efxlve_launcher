@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "Outros",
   "overlay.widgetPin": "Fixar",
   "overlay.widgetUnpin": "Desafixar",
-  "overlay.widgetResize": "Redimensionar"
+  "overlay.widgetResize": "Redimensionar",
+  "overlay.discordGroupsTitle": "DMs em grupo",
+  "overlay.discordGroupMembers": "{count} membros",
+  "overlay.discordGroupOpen": "Abrir no Discord"
 }

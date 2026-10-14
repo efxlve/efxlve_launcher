@@ -263,6 +263,17 @@ interface WebFriend {
   status: string;
 }
 
+/** A group DM the launcher's own client knows. Read-only here: the overlay
+ * lists it and opens the conversation in the real client. */
+interface WebGroupConversation {
+  id: string;
+  name: string;
+  members: { id: string; name: string; avatarUrl: string }[];
+  memberCount: number;
+  unread: number;
+  preview: { author: string; text: string } | null;
+}
+
 interface WebVoiceState {
   inCall: boolean;
   channel: { id: string; name: string; guild: string } | null;
@@ -273,6 +284,8 @@ interface WebVoiceState {
   pending?: number;
   /** Voice channels to jump to (the client opens them; joining stays there). */
   channels?: { id: string; name: string; guild: string; guildId: string }[];
+  /** Group DMs the client has: the overlay shows them, the client writes them. */
+  conversations?: WebGroupConversation[];
 }
 
 let webVoice: WebVoiceState | null = null;
@@ -3080,7 +3093,7 @@ function renderDiscordSocial(): void {
       ${socialVoiceHtml()}
       ${socialSearchStripHtml(requests.length)}
       <div class="ov-dc-friends-scroll">
-        ${socialFriendsListHtml()}
+        ${socialListHtml()}
       </div>
     </div>`;
 }
@@ -3520,11 +3533,65 @@ function socialFriendsListHtml(): string {
   return html;
 }
 
-/** Re-paints only the friend list while the filter box keeps focus: a full
- * picker re-render on every keystroke used to drop the caret. */
+/** Group DMs the launcher's own client knows: read-only rows that open the
+ * conversation in the Discord page (reading and writing stay there). */
+function socialGroupsHtml(): string {
+  const groups = webVoice?.conversations ?? [];
+  if (groups.length === 0) return "";
+  return `
+    <div class="ov-dc-group-header">
+      <span>${esc(t("overlay.discordGroupsTitle"))} · ${groups.length}</span>
+    </div>
+    <div class="ov-dc-group-items">
+      ${groups.map(socialGroupItemHtml).join("")}
+    </div>`;
+}
+
+/** A group DM has a user-set name or none: fall back to the member names. */
+function groupTitle(conv: WebGroupConversation): string {
+  const named = conv.name.trim();
+  if (named) return named;
+  const names = conv.members.map((member) => member.name).filter(Boolean);
+  return names.length ? names.slice(0, 3).join(", ") : t("overlay.discordGroupsTitle");
+}
+
+function socialGroupItemHtml(conv: WebGroupConversation): string {
+  const members = conv.members.slice(0, 3);
+  const label = t("overlay.discordGroupMembers", { count: String(conv.memberCount) });
+  const preview = conv.preview
+    ? `${conv.preview.author ? `${conv.preview.author}: ` : ""}${conv.preview.text}`
+    : "";
+  return `
+    <button class="ov-dc-friend-item ov-dc-group-item" data-ov="discord-open-group" data-id="${esc(conv.id)}" title="${esc(t("overlay.discordGroupOpen"))}">
+      <div class="ov-dc-avatar-wrap ov-dc-stack">
+        ${members.length
+          ? members
+              .map(
+                (member, index) =>
+                  `<img class="ov-dc-avatar ov-dc-stack-avatar" src="${esc(member.avatarUrl)}" alt="" loading="lazy" style="z-index:${members.length - index}" />`,
+              )
+              .join("")
+          : `<div class="ov-dc-avatar-fallback">${icon("users", 14)}</div>`}
+      </div>
+      <div class="ov-dc-friend-info">
+        <span class="ov-dc-friend-name">${esc(groupTitle(conv))}</span>
+        <span class="ov-dc-friend-status">${esc(preview ? `${label} · ${preview}` : label)}</span>
+      </div>
+      ${conv.unread > 0 ? `<span class="ov-dc-unread-pill">${conv.unread}</span>` : ""}
+      <span class="ov-dc-item-chat-icon">${icon("external", 13)}</span>
+    </button>`;
+}
+
+/** Everything in the picker's scroll area: group DMs first, then the friends. */
+function socialListHtml(): string {
+  return socialGroupsHtml() + socialFriendsListHtml();
+}
+
+/** Re-paints only the list while the filter box keeps focus: a full picker
+ * re-render on every keystroke used to drop the caret. */
 function repaintFriendsList(): void {
   const scroll = document.querySelector<HTMLElement>(".ov-dc-friends-scroll");
-  if (scroll) scroll.innerHTML = socialFriendsListHtml();
+  if (scroll) scroll.innerHTML = socialListHtml();
   const row = document.querySelector<HTMLElement>(".ov-dc-search-row");
   const clearBtn = row?.querySelector<HTMLElement>(".ov-dc-search-clear");
   if (friendsFilterQuery && !clearBtn && row) {
@@ -4474,6 +4541,9 @@ function wireEvents(): void {
     } else if (action === "discord-open-dm") {
       const friendId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (friendId) void openDiscordInLauncher(`https://discord.com/channels/@me/${friendId}`);
+    } else if (action === "discord-open-group") {
+      const channelId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
+      if (channelId) void openDiscordInLauncher(`https://discord.com/channels/@me/${channelId}`);
     } else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
       if (key) {

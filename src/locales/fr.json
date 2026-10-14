@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "Autres",
   "overlay.widgetPin": "Épingler",
   "overlay.widgetUnpin": "Détacher",
-  "overlay.widgetResize": "Redimensionner"
+  "overlay.widgetResize": "Redimensionner",
+  "overlay.discordGroupsTitle": "Messages de groupe",
+  "overlay.discordGroupMembers": "{count} membres",
+  "overlay.discordGroupOpen": "Ouvrir dans Discord"
 }

@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "その他",
   "overlay.widgetPin": "ピン留め",
   "overlay.widgetUnpin": "ピン留めを解除",
-  "overlay.widgetResize": "サイズ変更"
+  "overlay.widgetResize": "サイズ変更",
+  "overlay.discordGroupsTitle": "グループDM",
+  "overlay.discordGroupMembers": "メンバー{count}人",
+  "overlay.discordGroupOpen": "Discordで開く"
 }

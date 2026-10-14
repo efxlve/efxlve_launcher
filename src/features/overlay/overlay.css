@@ -4452,6 +4452,27 @@
   place-items: center;
 }
 
+/* Group DM row: the member avatars overlap instead of one face. */
+.ov-dc-stack {
+  display: flex;
+  align-items: center;
+  width: 44px;
+}
+
+.ov-dc-stack .ov-dc-stack-avatar {
+  width: 22px;
+  height: 22px;
+  margin-left: -9px;
+  border: 2px solid var(--surface-1);
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-3);
+}
+
+.ov-dc-stack .ov-dc-stack-avatar:first-child {
+  margin-left: 0;
+}
+
 .ov-dc-status-dot {
   position: absolute;
   right: -1px;

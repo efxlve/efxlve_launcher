@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "Sonstige",
   "overlay.widgetPin": "Anheften",
   "overlay.widgetUnpin": "Lösen",
-  "overlay.widgetResize": "Größe ändern"
+  "overlay.widgetResize": "Größe ändern",
+  "overlay.discordGroupsTitle": "Gruppen-DMs",
+  "overlay.discordGroupMembers": "{count} Mitglieder",
+  "overlay.discordGroupOpen": "In Discord öffnen"
 }

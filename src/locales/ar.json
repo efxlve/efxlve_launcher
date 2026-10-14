@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "أخرى",
   "overlay.widgetPin": "تثبيت",
   "overlay.widgetUnpin": "إلغاء التثبيت",
-  "overlay.widgetResize": "تغيير الحجم"
+  "overlay.widgetResize": "تغيير الحجم",
+  "overlay.discordGroupsTitle": "المحادثات الجماعية",
+  "overlay.discordGroupMembers": "{count} أعضاء",
+  "overlay.discordGroupOpen": "فتح في ديسكورد"
 }

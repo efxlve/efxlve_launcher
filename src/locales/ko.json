@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "기타",
   "overlay.widgetPin": "고정",
   "overlay.widgetUnpin": "고정 해제",
-  "overlay.widgetResize": "크기 조정"
+  "overlay.widgetResize": "크기 조정",
+  "overlay.discordGroupsTitle": "그룹 DM",
+  "overlay.discordGroupMembers": "멤버 {count}명",
+  "overlay.discordGroupOpen": "Discord에서 열기"
 }

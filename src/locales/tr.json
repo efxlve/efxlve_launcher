@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "Diğer",
   "overlay.widgetPin": "Sabitle",
   "overlay.widgetUnpin": "Sabitlemeyi kaldır",
-  "overlay.widgetResize": "Boyutlandır"
+  "overlay.widgetResize": "Boyutlandır",
+  "overlay.discordGroupsTitle": "Grup Sohbetleri",
+  "overlay.discordGroupMembers": "{count} üye",
+  "overlay.discordGroupOpen": "Discord'da aç"
 }

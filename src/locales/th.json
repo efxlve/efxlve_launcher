@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "อื่นๆ",
   "overlay.widgetPin": "ปักหมุด",
   "overlay.widgetUnpin": "เลิกปักหมุด",
-  "overlay.widgetResize": "ปรับขนาด"
+  "overlay.widgetResize": "ปรับขนาด",
+  "overlay.discordGroupsTitle": "แชทกลุ่ม",
+  "overlay.discordGroupMembers": "สมาชิก {count} คน",
+  "overlay.discordGroupOpen": "เปิดใน Discord"
 }

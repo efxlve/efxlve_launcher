@@ -2054,5 +2054,8 @@
   "overlay.otherGame": "Прочее",
   "overlay.widgetPin": "Закрепить",
   "overlay.widgetUnpin": "Открепить",
-  "overlay.widgetResize": "Изменить размер"
+  "overlay.widgetResize": "Изменить размер",
+  "overlay.discordGroupsTitle": "Групповые ЛС",
+  "overlay.discordGroupMembers": "Участники: {count}",
+  "overlay.discordGroupOpen": "Открыть в Discord"
 }
