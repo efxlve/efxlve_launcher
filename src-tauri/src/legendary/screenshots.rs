@@ -390,15 +390,17 @@ pub fn resolve_name_to_game_title(raw_name: &str) -> Option<String> {
         if let Some((at, map)) = guard.as_ref() {
             if at.elapsed() < TTL {
                 if let Some(t) = map.get(&lower) {
-                    if !t.trim().is_empty() {
-                        return Some(t.clone());
+                    if t.is_empty() {
+                        return None;
                     }
+                    return Some(t.clone());
                 }
+                return None;
             }
         }
     }
 
-    // 2. Build or refresh cache
+    // 2. Build or refresh cache with fast sources (installed.json is only ~10 KB)
     let mut map = std::collections::HashMap::new();
     let config = crate::legendary::skip::default_config_dir();
 
@@ -416,35 +418,10 @@ pub fn resolve_name_to_game_title(raw_name: &str) -> Option<String> {
                         .trim();
                     if !title.is_empty() {
                         map.insert(k.to_lowercase(), title.to_string());
+                        map.insert(title.to_lowercase(), title.to_string());
                         if let Some(app_name) = v.get("app_name").and_then(|s| s.as_str()) {
                             map.insert(app_name.to_lowercase(), title.to_string());
                         }
-                    }
-                }
-            }
-        }
-    }
-
-    // Epic / Legendary: efxlve_library_snapshot.json
-    let snap_path = config.join("efxlve_library_snapshot.json");
-    if let Ok(text) = std::fs::read_to_string(&snap_path) {
-        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
-            if let Some(arr) = val.as_array() {
-                for item in arr {
-                    let app_name = item
-                        .get("app_name")
-                        .and_then(|s| s.as_str())
-                        .unwrap_or("")
-                        .trim();
-                    let title = item
-                        .get("app_title")
-                        .or_else(|| item.get("title"))
-                        .and_then(|s| s.as_str())
-                        .unwrap_or("")
-                        .trim();
-                    if !app_name.is_empty() && !title.is_empty() {
-                        map.entry(app_name.to_lowercase())
-                            .or_insert_with(|| title.to_string());
                     }
                 }
             }
@@ -470,6 +447,7 @@ pub fn resolve_name_to_game_title(raw_name: &str) -> Option<String> {
                                     if parts.len() >= 4 && !parts[3].trim().is_empty() {
                                         let name = parts[3].trim().to_string();
                                         map.insert(id.to_lowercase(), name.clone());
+                                        map.insert(name.to_lowercase(), name.clone());
                                         map.insert(format!("steam_{}", id.to_lowercase()), name);
                                         break;
                                     }
@@ -495,6 +473,7 @@ pub fn resolve_name_to_game_title(raw_name: &str) -> Option<String> {
                         if let Some(t) = v.get("title").and_then(|s| s.as_str()) {
                             if !t.trim().is_empty() {
                                 map.insert(k.to_lowercase(), t.trim().to_string());
+                                map.insert(t.trim().to_lowercase(), t.trim().to_string());
                             }
                         }
                     }
@@ -503,34 +482,34 @@ pub fn resolve_name_to_game_title(raw_name: &str) -> Option<String> {
         }
     }
 
-    let found = map.get(&lower).cloned();
+    let mut result = map.get(&lower).cloned();
 
-    // Metadata file direct fallback
-    let fallback = if found.is_none() && trimmed.len() >= 3 {
+    // 3. Fallback: check individual 2 KB metadata file metadata/<trimmed>.json
+    if result.is_none() && trimmed.len() >= 3 {
         let meta_file = config.join("metadata").join(format!("{trimmed}.json"));
-        std::fs::read_to_string(&meta_file)
-            .ok()
-            .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-            .and_then(|v| {
-                v.get("app_title")
+        if let Ok(text) = std::fs::read_to_string(&meta_file) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+                if let Some(t) = v
+                    .get("app_title")
                     .or_else(|| v.get("title"))
                     .and_then(|s| s.as_str())
-                    .map(|s| s.trim().to_string())
-            })
-            .filter(|s| !s.is_empty())
-    } else {
-        None
-    };
-
-    if let Some(ref fb) = fallback {
-        map.insert(lower.clone(), fb.clone());
+                {
+                    let cleaned = t.trim().to_string();
+                    if !cleaned.is_empty() {
+                        result = Some(cleaned);
+                    }
+                }
+            }
+        }
     }
+
+    map.insert(lower.clone(), result.clone().unwrap_or_default());
 
     if let Ok(mut guard) = TITLE_CACHE.write() {
         *guard = Some((std::time::Instant::now(), map));
     }
 
-    found.or(fallback)
+    result
 }
 
 /// Automatically renames/merges screenshot folders named after raw IDs or codenames
@@ -548,24 +527,32 @@ pub fn migrate_known_app_folders(root: &Path) {
             continue;
         }
         let folder_name = entry.file_name().to_string_lossy().to_string();
-        if let Some(resolved) = resolve_name_to_game_title(&folder_name) {
-            let clean = clean_folder_name(&resolved);
-            if !clean.is_empty() && !clean.eq_ignore_ascii_case(&folder_name) {
-                let target_dir = root.join(&clean);
-                if let Ok(()) = std::fs::create_dir_all(&target_dir) {
-                    if let Ok(files) = std::fs::read_dir(&path) {
-                        for file_entry in files.flatten() {
-                            let fpath = file_entry.path();
-                            if fpath.is_file() {
-                                let fname = file_entry.file_name();
-                                let target_file = target_dir.join(&fname);
-                                if !target_file.exists() {
-                                    let _ = std::fs::rename(&fpath, &target_file);
+        let is_candidate = (folder_name.len() == 32
+            && folder_name.chars().all(|c| c.is_ascii_hexdigit()))
+            || matches!(
+                folder_name.to_lowercase().as_str(),
+                "ginger" | "heather" | "jasper" | "brill"
+            );
+        if is_candidate {
+            if let Some(resolved) = resolve_name_to_game_title(&folder_name) {
+                let clean = clean_folder_name(&resolved);
+                if !clean.is_empty() && !clean.eq_ignore_ascii_case(&folder_name) {
+                    let target_dir = root.join(&clean);
+                    if let Ok(()) = std::fs::create_dir_all(&target_dir) {
+                        if let Ok(files) = std::fs::read_dir(&path) {
+                            for file_entry in files.flatten() {
+                                let fpath = file_entry.path();
+                                if fpath.is_file() {
+                                    let fname = file_entry.file_name();
+                                    let target_file = target_dir.join(&fname);
+                                    if !target_file.exists() {
+                                        let _ = std::fs::rename(&fpath, &target_file);
+                                    }
                                 }
                             }
                         }
+                        let _ = std::fs::remove_dir(&path);
                     }
-                    let _ = std::fs::remove_dir(&path);
                 }
             }
         }
@@ -1982,5 +1969,29 @@ mod tests {
             }
         }
         println!("no capture folders found under {}", root.display());
+    }
+
+    #[test]
+    #[ignore]
+    fn test_live_all_screenshots_scan() {
+        let start = std::time::Instant::now();
+        let mut results = Vec::new();
+        let mut scanned_paths = std::collections::HashSet::new();
+        let root = screenshots_root();
+        migrate_known_app_folders(&root);
+        if root.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(&root) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        scan_dir_files(&path, &mut results, &mut scanned_paths);
+                    }
+                }
+            }
+        }
+        println!("Scanned {} screenshots in {:?}", results.len(), start.elapsed());
+        for item in &results {
+            println!("- Game: '{}', File: {}", item.game_title, item.file_name);
+        }
     }
 }
