@@ -766,6 +766,9 @@ export const epicSetScreenshotHotkey = (vkey: number) =>
 export const epicSetScreenshotDisabledGames = (games: string[]) =>
   invoke<void>("epic_set_screenshot_disabled_games", { games });
 
+export const epicGetScreenshotDisabledGames = () =>
+  invoke<string[]>("epic_get_screenshot_disabled_games");
+
 /** Effective screenshots root (configured folder, or the default Pictures path). */
 export const epicGetScreenshotDir = () =>
   invoke<string>("epic_get_screenshot_dir");

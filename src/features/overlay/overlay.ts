@@ -22,6 +22,9 @@ import {
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
 import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
 import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
+import { ssDensity, ssFavorites, ssNotifyOn, ssSort, ssSortItems, ssSoundOn, ssToggleFavorite } from "../screenshots/ss-settings";
+import { epicGetScreenshotDisabledGames, epicSetScreenshotDisabledGames } from "../../epic";
+import { SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY } from "../../core/constants";
 import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
@@ -106,6 +109,9 @@ interface ScreenshotItem {
   date_str: string;
   data_url: string;
   game_title?: string;
+  /** Present on the wire; the overlay sorts and sizes with them. */
+  timestamp?: number;
+  size_bytes?: number;
 }
 
 type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "chat" | "browser" | "settings";
@@ -2096,11 +2102,27 @@ function shotGameLabel(item: ScreenshotItem): string {
 }
 
 /* 4. Full Screenshots View */
+/** Session-only: the overlay's own "favorites only" chip. */
+let overlayShotsFavoritesOnly = false;
+/** Games with capture turned off, for the settings widget's per-game row. */
+let overlayDisabledGames: string[] = [];
+let overlayDisabledGamesFetched = false;
+
 function getVisibleScreenshots(): ScreenshotItem[] {
-  if (selectedGameFilters.size === 0) return cachedScreenshots;
-  return cachedScreenshots.filter((item) => {
-    return selectedGameFilters.has(shotGameLabel(item).toLowerCase());
-  });
+  const favorites = ssFavorites();
+  let items = cachedScreenshots;
+  if (selectedGameFilters.size > 0) {
+    items = items.filter((item) => selectedGameFilters.has(shotGameLabel(item).toLowerCase()));
+  }
+  if (overlayShotsFavoritesOnly) {
+    items = items.filter((item) => favorites.has(item.file_path));
+  }
+  return ssSortItems(
+    items,
+    (item) => item.timestamp ?? 0,
+    (item) => item.file_name,
+    (item) => item.size_bytes ?? 0,
+  );
 }
 
 async function loadScreenshots(force = false): Promise<void> {
@@ -2219,6 +2241,12 @@ async function loadScreenshots(force = false): Promise<void> {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         ${filterBtnHtml}
+        <button class="btn ghost small ${overlayShotsFavoritesOnly ? "active" : ""}" data-ov="shots-fav-filter" title="${esc(t("ss.filterFavorites"))}">
+          ${icon("star", 14)}
+        </button>
+        <button class="btn ghost small" data-ov="shots-sort-cycle" title="${esc(t("ss.sortTitle"))}">
+          ${icon("list", 14)} <span>${esc(overlaySortLabel())}</span>
+        </button>
         <button class="btn ghost small" data-ov="shots-folder" title="${esc(t("overlay.openFolder"))}">
           ${icon("folder", 14)} <span>${esc(t("overlay.openFolder"))}</span>
         </button>
@@ -2229,17 +2257,40 @@ async function loadScreenshots(force = false): Promise<void> {
         <div>${esc(t("overlay.noShots"))}</div>
         <div style="font-size:12px;color:var(--text-3);margin-top:6px">${esc(t("overlay.captureHint"))}</div>
       </div>` : `
-      <div class="ov-shots-grid" style="grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:12px">
+      <div class="ov-shots-grid" style="grid-template-columns:repeat(auto-fill, minmax(${overlayDensityPx()}px, 1fr));gap:12px">
         ${visibleShots.map((item) => {
           const tooltip = item.game_title ? `${item.game_title} • ${item.date_str}` : item.date_str;
+          const isFavorite = ssFavorites().has(item.file_path);
           return `
             <div class="ov-shot-item" data-ov-preview="${esc(item.data_url)}" title="${esc(tooltip)}">
               <img src="${esc(item.data_url)}" alt="" loading="lazy" />
               ${item.game_title ? `<div class="ov-shot-badge">${esc(item.game_title)}</div>` : ""}
+              <button class="ov-shot-fav${isFavorite ? " is-favorite" : ""}" data-ov="ov-shot-favorite" data-path="${esc(item.file_path)}" title="${esc(isFavorite ? t("ss.unfavorite") : t("ss.favorite"))}">
+                ${icon("star", 12)}
+              </button>
             </div>`;
         }).join("")}
       </div>`}`;
   renderHomeSafe();
+}
+
+/** The overlay's sort button label (the shared order). */
+function overlaySortLabel(): string {
+  switch (ssSort()) {
+    case "oldest": return t("ss.sortOldest");
+    case "name": return t("ss.sortName");
+    case "size": return t("ss.sortSize");
+    default: return t("ss.sortNewest");
+  }
+}
+
+/** The overlay's grid minimum width per density step. */
+function overlayDensityPx(): number {
+  switch (ssDensity()) {
+    case "s": return 140;
+    case "l": return 320;
+    default: return 220;
+  }
 }
 
 /* 5. Full Notes View */
@@ -4053,6 +4104,17 @@ function voiceDisplay(): { channel: VoiceChannel; people: VoiceParticipant[]; st
 function renderSettings(): void {
   const el = viewEl("settings");
   if (!el) return;
+  // The capture-off list lives in Rust (the hotkey listener reads it): pull it
+  // once, then paint the per-game row from it.
+  if (!overlayDisabledGamesFetched) {
+    overlayDisabledGamesFetched = true;
+    void epicGetScreenshotDisabledGames()
+      .then((list) => {
+        overlayDisabledGames = Array.isArray(list) ? list : [];
+        if (isWidgetOpen("settings")) renderSettings();
+      })
+      .catch(() => undefined);
+  }
   const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
   const hud = localStorage.getItem(HUD_KEY) === "true";
   const opacity = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
@@ -4121,6 +4183,69 @@ function renderSettings(): void {
               <span id="ov-opacity-val" style="font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-2); min-width: 34px; text-align: right;">${opacity}%</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Section: Screenshots (the launcher's settings, kept in step) -->
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("camera", 13)}
+          <span>${esc(t("settings.screenshotsTitle"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("ss.sortTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("ss.sortDesc"))}</div>
+            </div>
+            <div class="seg" role="radiogroup">
+              ${([["newest", "ss.sortNewest"], ["oldest", "ss.sortOldest"], ["name", "ss.sortName"], ["size", "ss.sortSize"]] as const)
+                .map(
+                  ([value, key]) =>
+                    `<button class="${ssSort() === value ? "active" : ""}" data-ov="ss-sort" data-sort="${value}">${esc(t(key))}</button>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("ss.densityTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("ss.densityDesc"))}</div>
+            </div>
+            <div class="seg" role="radiogroup">
+              ${([["s", "ss.densitySmall"], ["m", "ss.densityMedium"], ["l", "ss.densityLarge"]] as const)
+                .map(
+                  ([value, key]) =>
+                    `<button class="${ssDensity() === value ? "active" : ""}" data-ov="ss-density" data-density="${value}">${esc(t(key))}</button>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("ss.soundTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("ss.soundDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="ss-sound" ${ssSoundOn() ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("ss.notifyTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("ss.notifyDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="ss-notify" ${ssNotifyOn() ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+          ${
+            !launcherMode && context.appName
+              ? `<div class="ov-setting-item">
+                  <div class="ov-setting-info">
+                    <div class="ov-setting-name">${esc(t("ss.gameCaptureOff"))}</div>
+                    <div class="ov-setting-desc">${esc(t("ss.gameCaptureTip"))}</div>
+                  </div>
+                  <label class="switch"><input type="checkbox" data-ov-toggle="ss-capture-game" ${overlayDisabledGames.includes(context.appName) ? "checked" : ""} /><span class="track"></span></label>
+                </div>`
+              : ""
+          }
         </div>
       </section>
 
@@ -4322,6 +4447,17 @@ function wireEvents(): void {
       return;
     }
 
+    // Screenshot star: toggles a favorite without opening the lightbox.
+    const favBtn = target.closest<HTMLElement>('[data-ov="ov-shot-favorite"]');
+    if (favBtn) {
+      const path = favBtn.dataset.path ?? "";
+      if (path) {
+        ssToggleFavorite(path);
+        void loadScreenshots();
+      }
+      return;
+    }
+
     // The notes widget has its own module: list, editor, checklists.
     const notesActionEl = target.closest<HTMLElement>("[data-ov]");
     if (notesActionEl && handleOverlayNotesAction(notesActionEl.dataset.ov, notesActionEl)) return;
@@ -4471,6 +4607,32 @@ function wireEvents(): void {
       return;
     } else if (action === "shots-filter-clear") {
       selectedGameFilters.clear();
+      void loadScreenshots();
+      return;
+    } else if (action === "ss-sort") {
+      const sort = target.closest<HTMLElement>("[data-ov]")?.dataset.sort;
+      if (sort === "newest" || sort === "oldest" || sort === "name" || sort === "size") {
+        localStorage.setItem(SS_SORT_KEY, sort);
+        renderSettings();
+        if (isWidgetOpen("shots")) void loadScreenshots();
+      }
+      return;
+    } else if (action === "ss-density") {
+      const density = target.closest<HTMLElement>("[data-ov]")?.dataset.density;
+      if (density === "s" || density === "m" || density === "l") {
+        localStorage.setItem(SS_DENSITY_KEY, density);
+        renderSettings();
+        if (isWidgetOpen("shots")) void loadScreenshots();
+      }
+      return;
+    } else if (action === "shots-fav-filter") {
+      overlayShotsFavoritesOnly = !overlayShotsFavoritesOnly;
+      void loadScreenshots();
+      return;
+    } else if (action === "shots-sort-cycle") {
+      const order = ssSort();
+      const next = order === "newest" ? "oldest" : order === "oldest" ? "name" : order === "name" ? "size" : "newest";
+      localStorage.setItem(SS_SORT_KEY, next);
       void loadScreenshots();
       return;
     }
@@ -4665,6 +4827,19 @@ function wireEvents(): void {
     } else if (toggle === "battery-percent") {
       localStorage.setItem(BATTERY_PERCENT_KEY, String(input.checked));
       paintBattery();
+    } else if (toggle === "ss-sound") {
+      localStorage.setItem(SS_SOUND_KEY, String(input.checked));
+    } else if (toggle === "ss-notify") {
+      localStorage.setItem(SS_NOTIFY_KEY, String(input.checked));
+    } else if (toggle === "ss-capture-game") {
+      const key = context.appName;
+      if (key) {
+        const next = input.checked
+          ? [...new Set([...overlayDisabledGames, key])]
+          : overlayDisabledGames.filter((item) => item !== key);
+        overlayDisabledGames = next;
+        void epicSetScreenshotDisabledGames(next).catch(() => undefined);
+      }
     } else if (toggle === "disable-game") {
       // The panel over the launcher/desktop is not a game: blocking it would
       // hide the overlay from the only place its blocklist can be edited.

@@ -1264,6 +1264,15 @@ pub fn epic_set_screenshot_disabled_games(app: AppHandle, games: Vec<String>) {
     crate::save_settings(&app, &settings);
 }
 
+/// The games with capture turned off (the overlay's settings row reads this).
+#[tauri::command]
+pub fn epic_get_screenshot_disabled_games() -> Vec<String> {
+    DISABLED_GAMES
+        .read()
+        .map(|list| list.clone())
+        .unwrap_or_default()
+}
+
 /// Background listener that captures a screenshot when the hotkey (default F12) is pressed while a game is running.
 #[cfg(target_os = "windows")]
 pub fn start_f12_listener(app: AppHandle) {

@@ -942,6 +942,7 @@ fn main() {
             legendary::screenshots::epic_open_screenshot_dir,
             legendary::screenshots::epic_replace_screenshot_with_compressed,
             legendary::screenshots::epic_set_screenshot_disabled_games,
+            legendary::screenshots::epic_get_screenshot_disabled_games,
             overlay::overlay_get_state,
             overlay::overlay_set_enabled,
             overlay::overlay_set_hud,
