@@ -65,32 +65,234 @@
   user-select: none;
 }
 
-.ov-topbar-game {
+/* --- Recent Games Pill (Xbox Game Bar style on topbar left) --- */
+.ov-topbar-recent-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 8px 0 4px;
-  max-width: 180px;
 }
 
-.ov-topbar-badge {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+.ov-topbar-recent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 4px 0 3px;
+  border-radius: 16px;
   background: var(--surface-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background var(--ease), border-color var(--ease);
+}
+
+.ov-topbar-recent-pill:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+
+.ov-recent-thumbs {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 24px;
+}
+
+.ov-recent-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  object-fit: cover;
+  background: var(--surface-3);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  color: var(--text-2);
-  flex-shrink: 0;
+  color: var(--text-3);
 }
 
-.ov-topbar-title {
-  font-size: 13px;
+.ov-recent-thumb + .ov-recent-thumb {
+  margin-left: -9px;
+  position: relative;
+  z-index: 1;
+}
+
+.ov-recent-active-title {
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
+  max-width: 130px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0 2px;
+}
+
+.ov-recent-arrow {
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1px;
+  transition: transform var(--ease), color var(--ease);
+}
+
+.ov-topbar-recent-pill:hover .ov-recent-arrow {
+  color: var(--text);
+}
+
+.ov-recent-pill-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--line);
+  margin: 0 1px;
+}
+
+.ov-recent-launcher-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--ease), background var(--ease);
+}
+
+.ov-recent-launcher-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Recent Games Dropdown --- */
+.ov-recent-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 240px;
+  max-height: 320px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(16px);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ov-pop-in 120ms ease-out;
+}
+
+.ov-recent-header {
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+}
+
+.ov-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  overflow-y: auto;
+  max-height: 220px;
+  scrollbar-width: thin;
+}
+
+.ov-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background var(--ease);
+}
+
+.ov-recent-item:hover {
+  background: var(--surface-2);
+}
+
+.ov-recent-item-art {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--surface-3);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+}
+
+.ov-recent-item-title {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.ov-recent-item-play {
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity var(--ease), color var(--ease);
+  display: inline-flex;
+  align-items: center;
+}
+
+.ov-recent-item:hover .ov-recent-item-play {
+  opacity: 1;
+  color: #1ed760;
+}
+
+.ov-recent-empty {
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.ov-recent-footer {
+  padding: 4px;
+  border-top: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.ov-recent-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease);
+}
+
+.ov-recent-footer-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .ov-topbar-divider {
@@ -155,17 +357,76 @@
   font-weight: 500;
 }
 
-.ov-topbar-close {
-  width: 30px;
+.ov-topbar-battery {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
   height: 30px;
-  padding: 0;
-  justify-content: center;
-  border-radius: 50%;
+  border-radius: 15px;
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  cursor: default;
+  transition: color var(--ease), background var(--ease);
 }
 
-.ov-topbar-close:hover {
+.ov-topbar-battery:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.ov-battery-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ov-battery-level {
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.ov-topbar-gamepad {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  background: transparent;
+}
+
+.ov-topbar-settings-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  justify-content: center;
+  border-radius: 50% !important;
+  color: var(--text-2);
+}
+
+.ov-topbar-settings-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.ov-topbar-settings-btn.active {
   background: var(--surface-3);
   color: var(--text);
+  font-weight: 600;
+}
+
+@keyframes ov-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* --- Floating Widgets Container & Window Box --- */

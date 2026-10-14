@@ -115,6 +115,7 @@ function visibleTabs(): typeof TABS {
   return TABS.filter(
     (tab) =>
       tab.id !== "chat" &&
+      tab.id !== "settings" &&
       (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
       (tab.id !== "music" || spotifyPageVisible()) &&
       (tab.id !== "discord" || discordPageVisible()),
@@ -828,20 +829,211 @@ function initWidgetResizing(): void {
   });
 }
 
+/* ---------- Battery Monitoring ---------- */
+
+interface BatteryManager extends EventTarget {
+  charging: boolean;
+  chargingTime: number;
+  dischargingTime: number;
+  level: number;
+  addEventListener(type: "chargingchange" | "levelchange", listener: EventListener): void;
+}
+
+interface NavigatorWithBattery extends Navigator {
+  getBattery?: () => Promise<BatteryManager>;
+}
+
+let cachedBattery: { level: number; charging: boolean } | null = null;
+let batteryListenerAttached = false;
+
+function initBatteryMonitoring(): void {
+  const nav = navigator as NavigatorWithBattery;
+  if (!nav.getBattery || batteryListenerAttached) return;
+  batteryListenerAttached = true;
+  nav.getBattery()
+    .then((battery) => {
+      const update = (): void => {
+        cachedBattery = {
+          level: Math.round(battery.level * 100),
+          charging: battery.charging,
+        };
+        paintBattery();
+      };
+      update();
+      battery.addEventListener("levelchange", update);
+      battery.addEventListener("chargingchange", update);
+    })
+    .catch(() => undefined);
+}
+
+function paintBattery(): void {
+  const el = document.getElementById("ov-topbar-battery");
+  if (!el) return;
+  if (!cachedBattery) {
+    el.innerHTML = `<span class="ov-battery-icon">${icon("battery", 15)}</span>`;
+    el.title = t("tv.battery");
+    return;
+  }
+  const ic = cachedBattery.charging ? icon("battery-charging", 15) : icon("battery", 15);
+  el.innerHTML = `
+    <span class="ov-battery-icon">${ic}</span>
+    <span class="ov-battery-level">${cachedBattery.level}%</span>
+  `;
+  el.title = `${t("tv.battery")}: ${cachedBattery.level}%${cachedBattery.charging ? " (Şarj oluyor)" : ""}`;
+}
+
+/* ---------- Recent Games (Top Bar Left) ---------- */
+
+interface RecentGameInfo {
+  appName: string;
+  title: string;
+  coverUrl?: string;
+}
+
+let recentMenuOpen = false;
+
+function getRecentGames(): RecentGameInfo[] {
+  let list: RecentGameInfo[] = [];
+  try {
+    const raw = localStorage.getItem("efxlve-recent-games-cache");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+    }
+  } catch {
+    // fallback
+  }
+
+  if (list.length === 0) {
+    try {
+      const raw = localStorage.getItem("efxlve-recent");
+      if (raw) {
+        const ids = JSON.parse(raw);
+        if (Array.isArray(ids) && ids.length > 0) {
+          list = ids.map((id: string) => {
+            let title = id;
+            let coverUrl = "";
+            if (id.startsWith("steam::")) {
+              const appId = id.slice(7);
+              title = `Steam App ${appId}`;
+              coverUrl = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`;
+            }
+            return { appName: id, title, coverUrl };
+          });
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  if (!launcherMode && context.appName && context.title) {
+    const idx = list.findIndex((g) => g.appName === context.appName);
+    if (idx >= 0) {
+      const [item] = list.splice(idx, 1);
+      list.unshift(item);
+    } else {
+      list.unshift({ appName: context.appName, title: context.title });
+    }
+  }
+
+  return list;
+}
+
+function recentGamesPillHtml(): string {
+  const list = getRecentGames();
+  const activeTitle = !launcherMode && context.title ? context.title : "";
+  const thumbs = list.slice(0, 2);
+
+  return `
+    <div class="ov-topbar-recent-pill" id="ov-topbar-recent-pill" data-ov="toggle-recent-menu" title="${esc(t("profile.recentGamesTitle"))}">
+      <div class="ov-recent-thumbs">
+        ${thumbs.length > 0 ? thumbs.map((g) => g.coverUrl ? `
+          <img class="ov-recent-thumb" src="${esc(g.coverUrl)}" alt="" loading="lazy" />
+        ` : `
+          <span class="ov-recent-thumb">${icon("gamepad-2", 13)}</span>
+        `).join("") : `
+          <span class="ov-recent-thumb">${icon("gamepad-2", 13)}</span>
+        `}
+      </div>
+      ${activeTitle ? `<span class="ov-recent-active-title" title="${esc(activeTitle)}">${esc(activeTitle)}</span>` : ""}
+      <span class="ov-recent-arrow">${icon("chevron-down", 11)}</span>
+      <div class="ov-recent-pill-divider"></div>
+      <button class="ov-recent-launcher-btn" data-ov="launcher" title="${esc(t("overlay.openLauncher"))}">
+        ${icon("layout-grid", 13)}
+      </button>
+    </div>
+    <div class="ov-recent-dropdown" id="ov-recent-dropdown"${recentMenuOpen ? "" : ' style="display:none"'}>
+      <div class="ov-recent-header">
+        <span>${esc(t("profile.recentGamesTitle"))}</span>
+      </div>
+      <div class="ov-recent-list">
+        ${list.length > 0 ? list.map((g) => `
+          <button class="ov-recent-item" data-ov="launch-recent-game" data-id="${esc(g.appName)}" title="${esc(g.title)}">
+            ${g.coverUrl ? `<img class="ov-recent-item-art" src="${esc(g.coverUrl)}" alt="" loading="lazy" />` : `<span class="ov-recent-item-art">${icon("gamepad-2", 14)}</span>`}
+            <span class="ov-recent-item-title">${esc(g.title)}</span>
+            <span class="ov-recent-item-play">${icon("play", 11)}</span>
+          </button>
+        `).join("") : `
+          <div class="ov-recent-empty">Son oynanan oyun yok</div>
+        `}
+      </div>
+      <div class="ov-recent-footer">
+        <button class="ov-recent-footer-btn" data-ov="launcher">
+          ${icon("layout-grid", 13)}
+          <span>${esc(t("overlay.openLauncher"))}</span>
+        </button>
+      </div>
+    </div>`;
+}
+
+function refreshRecentGamesPill(): void {
+  const wrap = document.getElementById("ov-topbar-recent-wrap");
+  if (wrap) wrap.innerHTML = recentGamesPillHtml();
+}
+
+function toggleRecentMenu(): void {
+  recentMenuOpen = !recentMenuOpen;
+  const menu = document.getElementById("ov-recent-dropdown");
+  if (menu) menu.style.display = recentMenuOpen ? "flex" : "none";
+}
+
+function closeRecentMenu(): void {
+  recentMenuOpen = false;
+  const menu = document.getElementById("ov-recent-dropdown");
+  if (menu) menu.style.display = "none";
+}
+
+async function launchRecentGame(appName: string): Promise<void> {
+  closeRecentMenu();
+  try {
+    if (appName.startsWith("steam::")) {
+      const appId = appName.slice(7);
+      await openUrl(`steam://run/${appId}`).catch(() => undefined);
+    } else if (appName.startsWith("gog::")) {
+      await invoke("gog_launch_game", { gameId: appName });
+    } else {
+      await invoke("epic_launch_game", { appName });
+    }
+  } catch {
+    void invoke("overlay_show_launcher");
+  }
+  void invoke("overlay_hide");
+}
+
 /* ---------- Shell HTML Template ---------- */
 
 function shellHtml(): string {
   const hudActive = localStorage.getItem(HUD_KEY) === "true";
   const tabs = visibleTabs();
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const padConnected = Boolean(gamepads.find((p) => p && p.connected));
   return `
     <div class="ov" id="ov-shell">
       <!-- Floating Top Widget Bar (Xbox Game Bar style) -->
       <header class="ov-topbar" id="ov-topbar">
-        <div class="ov-topbar-game" id="ov-topbar-game">
-          <div class="ov-topbar-badge" id="ov-topbar-badge">
-            ${icon("gamepad-2", 15)}
-          </div>
-          <span class="ov-topbar-title" id="ov-game-title">—</span>
+        <div class="ov-topbar-recent-wrap" id="ov-topbar-recent-wrap">
+          ${recentGamesPillHtml()}
         </div>
 
         <div class="ov-topbar-divider"></div>
@@ -863,8 +1055,16 @@ function shellHtml(): string {
 
         <div class="ov-topbar-divider"></div>
 
-        <button class="ov-topbar-btn ov-topbar-close" data-ov="close" title="${esc(t("common.close"))}">
-          ${icon("x", 15)}
+        <div class="ov-topbar-battery" id="ov-topbar-battery" title="${esc(t("tv.battery"))}">
+          <span class="ov-battery-icon">${icon("battery", 15)}</span>
+        </div>
+
+        <div class="ov-topbar-gamepad" id="ov-topbar-gamepad" style="${padConnected ? "" : "display:none"}" title="Oyun Kumandası">
+          ${icon("gamepad-2", 15)}
+        </div>
+
+        <button class="ov-topbar-btn ov-topbar-settings-btn ${isWidgetOpen("settings") ? "active" : ""}" data-ov-widget-toggle="settings" title="${esc(t("overlay.tabSettings"))}">
+          ${icon("settings", 15)}
         </button>
       </header>
 
@@ -3959,6 +4159,11 @@ function wireEvents(): void {
       if (pop) pop.classList.remove("open");
     }
 
+    // Close recent games menu when clicking outside
+    if (recentMenuOpen && !target.closest(".ov-topbar-recent-wrap")) {
+      closeRecentMenu();
+    }
+
     // Tab button
     const tabBtn = target.closest<HTMLElement>("[data-ov-tab]");
     if (tabBtn?.dataset.ovTab) {
@@ -3985,7 +4190,17 @@ function wireEvents(): void {
     if (!action) return;
 
     if (action === "close") void invoke("overlay_hide");
-    else if (action === "launcher") void invoke("overlay_show_launcher");
+    else if (action === "launcher") {
+      closeRecentMenu();
+      void invoke("overlay_show_launcher");
+    } else if (action === "toggle-recent-menu") {
+      toggleRecentMenu();
+      return;
+    } else if (action === "launch-recent-game") {
+      const id = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
+      if (id) void launchRecentGame(id);
+      return;
+    }
     else if (action === "browser-open" || action === "open-browser-window") {
       const el = target.closest<HTMLElement>("[data-ov]");
       const url = el?.dataset.url || null;
@@ -4364,8 +4579,9 @@ function getFocusableElements(): HTMLElement[] {
     items.push(node);
   };
 
+  push(document.querySelector(".ov-topbar-recent-pill"));
+  push(document.querySelector(".ov-recent-launcher-btn"));
   document.querySelectorAll(".ov-topbar-btn").forEach(push);
-  push(document.querySelector(".ov-topbar-close"));
 
   document.querySelectorAll<HTMLElement>(".ov-widget").forEach((w) => {
     if (w.style.display !== "none") {
@@ -4497,6 +4713,7 @@ function refreshDock(): void {
       <span class="ov-topbar-btn-label">${esc(t(tab.key))}</span>
     </button>
   `).join("");
+  document.querySelector<HTMLElement>(".ov-topbar-settings-btn")?.classList.toggle("active", isWidgetOpen("settings"));
 }
 
 /** B / Esc: close the lightbox, leave the text box, go home, then close. */
@@ -4526,13 +4743,21 @@ function pollGamepadLoop(): void {
 
   const badgeEl = document.getElementById("ov-controller-badge");
   const badgeNameEl = document.getElementById("ov-controller-name");
+  const topbarPadEl = document.getElementById("ov-topbar-gamepad");
 
   if (!pad) {
+    if (topbarPadEl && topbarPadEl.style.display !== "none") {
+      topbarPadEl.style.display = "none";
+    }
     if (badgeEl && badgeEl.style.display !== "none") {
       badgeEl.style.display = "none";
     }
     prevButtons = [];
     return;
+  }
+
+  if (topbarPadEl && topbarPadEl.style.display === "none") {
+    topbarPadEl.style.display = "inline-flex";
   }
 
   if (badgeEl && badgeEl.style.display === "none") {
@@ -4701,8 +4926,9 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   const launcher = isLauncherContext(context);
   launcherMode = launcher;
 
-  const titleEl = document.getElementById("ov-game-title");
-  if (titleEl) titleEl.textContent = launcher ? "Efxlve Launcher" : context.title || context.appName;
+  refreshRecentGamesPill();
+  initBatteryMonitoring();
+  paintBattery();
 
   updateClock();
   refreshDock();

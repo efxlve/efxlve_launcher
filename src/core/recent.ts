@@ -10,10 +10,27 @@ import { updateChrome } from "./nav";
 import { summaryOf } from "./selectors";
 import { S } from "./state";
 
+function syncRecentGamesCache(): void {
+  try {
+    const list = S.epicRecent.map((id) => {
+      const s = summaryOf(id);
+      return {
+        appName: id,
+        title: s?.title || id,
+        coverUrl: s?.cover || (id.startsWith("steam::") ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${id.slice(7)}/library_600x900.jpg` : ""),
+      };
+    });
+    localStorage.setItem("efxlve-recent-games-cache", JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+}
+
 /** Drop entries that are no longer installed. */
 export function pruneRecent(): void {
   S.epicRecent = S.epicRecent.filter((id) => Boolean(summaryOf(id)?.installed));
   localStorage.setItem(RECENT_KEY, JSON.stringify(S.epicRecent));
+  syncRecentGamesCache();
 }
 
 /** Move a game to the front of the recent list (only if installed). */
@@ -22,6 +39,7 @@ export function pushRecent(appName: string): void {
   if (!s || !s.installed) return;
   S.epicRecent = [appName, ...S.epicRecent.filter((x) => x !== appName)].slice(0, 8);
   localStorage.setItem(RECENT_KEY, JSON.stringify(S.epicRecent));
+  syncRecentGamesCache();
   updateChrome();
 }
 
