@@ -52,6 +52,8 @@ export interface EpicSettings {
   presence_client_id?: string | null;
   preferred_cdn?: string | null;
   screenshot_dir?: string | null;
+  /** Games with screenshot capture turned off (F12 does nothing there). */
+  screenshot_disabled_games?: string[] | null;
   /** Run Comet (GOG Communication Service) during GOG sessions. */
   gog_comet_enabled?: boolean | null;
 }
@@ -759,6 +761,10 @@ export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
 
 export const epicSetScreenshotHotkey = (vkey: number) =>
   invoke<void>("epic_set_screenshot_hotkey", { vkey });
+
+/** Games with capture turned off; the F12 listener reads the stored list. */
+export const epicSetScreenshotDisabledGames = (games: string[]) =>
+  invoke<void>("epic_set_screenshot_disabled_games", { games });
 
 /** Effective screenshots root (configured folder, or the default Pictures path). */
 export const epicGetScreenshotDir = () =>

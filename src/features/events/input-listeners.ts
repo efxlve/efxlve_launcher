@@ -56,6 +56,7 @@ import { epicDoLogin } from "../auth/auth-actions";
 import { gogLoginWithCode } from "../auth/gog-auth-actions";
 import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
 import { closeNotifPanel } from "../notifications/notifications";
+import { ssCleanupPolicy, ssSetCleanupPolicy } from "../screenshots/ss-settings";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   const target = e.target as HTMLElement | null;
@@ -520,6 +521,17 @@ document.addEventListener("change", (e) => {
     S.profileSort = (t as HTMLSelectElement).value as typeof S.profileSort;
     resetProfileCards();
     render();
+    return;
+  }
+  if (t.id === "ss-cleanup-size" || t.id === "ss-cleanup-days") {
+    const policy = ssCleanupPolicy();
+    const value = Number((t as HTMLInputElement).value);
+    if (t.id === "ss-cleanup-size") {
+      policy.sizeGb = Math.max(1, Math.min(2000, Math.round(value) || policy.sizeGb));
+    } else {
+      policy.days = Math.max(1, Math.min(3650, Math.round(value) || policy.days));
+    }
+    ssSetCleanupPolicy(policy);
     return;
   }
   if (t.id === "epic-sort") {

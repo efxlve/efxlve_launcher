@@ -101,6 +101,7 @@ import {
 } from "../screenshots/screenshots-view";
 import { setView } from "../store/store-view";
 import { ensureNotesMigration } from "../notes/notes-client";
+import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -714,7 +715,7 @@ export async function initApp(hooks: {
     await listen<{ id: string; count: number }>("screenshots-updated", (event) => {
       const { id, count } = event.payload;
       if (count > 0) {
-        toast(t("ss.newCaptures", { count }), "ok");
+        if (ssNotifyOn()) toast(t("ss.newCaptures", { count }), "ok");
         const s = summaryOf(id);
         const title = s ? s.title : id;
         void fetchAndRenderScreenshots(id, title, true);
@@ -724,10 +725,10 @@ export async function initApp(hooks: {
     await listen<{ id: string; title: string }>(
       "screenshot-shutter",
       (event) => {
-        playScreenshotShutterSound();
+        if (ssSoundOn()) playScreenshotShutterSound();
         const sum = summaryOf(event.payload.id);
         const title = sum?.title || event.payload.title || "Oyun";
-        toast(t("ss.capturingTitle", { title }), "ok");
+        if (ssNotifyOn()) toast(t("ss.capturingTitle", { title }), "ok");
       }
     );
 
@@ -735,7 +736,7 @@ export async function initApp(hooks: {
       "screenshot-captured",
       (event) => {
         const { id, item } = event.payload;
-        toast(t("ss.saved", { file: item.file_name }), "ok");
+        if (ssNotifyOn()) toast(t("ss.saved", { file: item.file_name }), "ok");
 
         const existing = S.loadedScreenshots.get(id) || [];
         S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);

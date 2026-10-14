@@ -12,7 +12,9 @@ import {
   epicDeleteGameScreenshot,
   epicOpenFolderPath,
   epicOpenGameScreenshotsFolder,
+  epicSetScreenshotDisabledGames,
 } from "../../../epic";
+import { openEpicModal } from "../../../core/render";
 import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
@@ -52,6 +54,22 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
   if (!act) return false;
 
   switch (act) {
+    case "toggle-game-capture": {
+      const key = t.dataset.id ?? id ?? "";
+      if (!key) return true;
+      const current = S.epicSettingsCache?.screenshot_disabled_games ?? [];
+      const off = current.includes(key);
+      const next = off ? current.filter((item) => item !== key) : [...current, key];
+      epicSetScreenshotDisabledGames(next)
+        .then(() => {
+          if (S.epicSettingsCache) S.epicSettingsCache.screenshot_disabled_games = next;
+          toast(i18nT(off ? "ss.gameCaptureOnToast" : "ss.gameCaptureOffToast"), "ok");
+          if (S.currentModalAppName === key) openEpicModal(key, false);
+        })
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
+
     case "open-screenshots-folder":
       if (id) {
         const s = summaryOf(id);

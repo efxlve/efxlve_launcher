@@ -8,7 +8,7 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
-import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
@@ -39,13 +39,18 @@ import {
   epicPortrait,
   epicSelectFolderDialog,
   epicSetScreenshotDir,
+  epicSetScreenshotDisabledGames,
+  epicGetAllScreenshots,
+  epicDeleteGameScreenshot,
   type EglDetectedGame,
+  type GameScreenshotItem,
   type ScreenshotMoveInfo,
 } from "../../epic";
 import { eglLauncherPresent } from "../../egl-removal";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
+import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { storeLogo } from "../store/store-logos";
@@ -758,7 +763,85 @@ function renderScreenshots(): string {
       row(t("settings.quality"), null, `<input type="range" min="0.70" max="0.95" step="0.05" value="${S.screenshotCompressionQuality}" data-act="set-ss-quality" id="ss-quality-slider" class="settings-range" /><span id="ss-quality-val" class="settings-range-val">%${Math.round(S.screenshotCompressionQuality * 100)}</span>`)
     : "";
 
-  return group(folder + hotkey + compression + options, t("settings.screenshotsTitle"));
+  /* Capture feedback: the shutter sound and the saved notice. */
+  const sound = row(t("ss.soundTitle"), t("ss.soundDesc"), toggle("toggle-ss-sound", ssSoundOn()));
+  const notify = row(t("ss.notifyTitle"), t("ss.notifyDesc"), toggle("toggle-ss-notify", ssNotifyOn()));
+
+  /* Gallery defaults the drawer and the overlay read. */
+  const sort = ssSort();
+  const sortRow = row(
+    t("ss.sortTitle"),
+    t("ss.sortDesc"),
+    `<div class="seg">${([["newest", "ss.sortNewest"], ["oldest", "ss.sortOldest"], ["name", "ss.sortName"], ["size", "ss.sortSize"]] as const)
+      .map(([value, key]) => `<button type="button" class="${sort === value ? "active" : ""}" data-act="ss-sort" data-sort="${value}">${t(key)}</button>`)
+      .join("")}</div>`,
+  );
+  const density = ssDensity();
+  const densityRow = row(
+    t("ss.densityTitle"),
+    t("ss.densityDesc"),
+    `<div class="seg">${([["s", "ss.densitySmall"], ["m", "ss.densityMedium"], ["l", "ss.densityLarge"]] as const)
+      .map(([value, key]) => `<button type="button" class="${density === value ? "active" : ""}" data-act="ss-density" data-density="${value}">${t(key)}</button>`)
+      .join("")}</div>`,
+  );
+
+  /* Games with capture turned off (the game page toggles them). */
+  const disabled = S.epicSettingsCache?.screenshot_disabled_games ?? [];
+  const disabledRows = disabled.length
+    ? disabled
+        .map((key) =>
+          row(
+            esc(summaryOf(key)?.title || key),
+            null,
+            `<button type="button" class="btn ghost small" data-act="ss-enable-game" data-key="${esc(key)}">${t("overlay.restore")}</button>`,
+          ),
+        )
+        .join("")
+    : row(t("ss.disabledEmpty"), null, "");
+
+  /* Favorites and the auto-cleanup policy. */
+  const favorites = ssFavorites();
+  const favoritesRow = row(
+    t("ss.favoritesTitle"),
+    t("ss.favoritesDesc", { count: String(favorites.size) }),
+    favorites.size
+      ? `<button type="button" class="btn ghost small" data-act="ss-clear-favorites">${t("ss.favoritesClear")}</button>`
+      : "",
+  );
+  const policy = ssCleanupPolicy();
+  const policyRow = row(
+    t("ss.cleanupTitle"),
+    t("ss.cleanupDesc"),
+    `<div class="seg">${([["off", "ss.cleanupOff"], ["size", "ss.cleanupSize"], ["age", "ss.cleanupAge"]] as const)
+      .map(([value, key]) => `<button type="button" class="${policy.mode === value ? "active" : ""}" data-act="ss-cleanup-mode" data-mode="${value}">${t(key)}</button>`)
+      .join("")}</div>`,
+  );
+  const sizeRow = policy.mode === "size"
+    ? row(
+        t("ss.cleanupSizeTitle"),
+        t("ss.cleanupSizeDesc"),
+        `<input type="number" min="1" max="2000" id="ss-cleanup-size" class="input settings-time-input" value="${policy.sizeGb}" /><span class="settings-value">GB</span>`,
+      )
+    : "";
+  const ageRow = policy.mode === "age"
+    ? row(
+        t("ss.cleanupAgeTitle"),
+        t("ss.cleanupAgeDesc"),
+        `<input type="number" min="1" max="3650" id="ss-cleanup-days" class="input settings-time-input" value="${policy.days}" /><span class="settings-value">${esc(t("ss.daysUnit"))}</span>`,
+      )
+    : "";
+  const cleanupActions = policy.mode !== "off"
+    ? `<div class="task-foot"><button type="button" class="btn ghost small" data-act="ss-cleanup-preview">${icon("search", 13)} ${t("ss.cleanupPreview")}</button></div>
+       <div id="ss-cleanup-report"></div>`
+    : "";
+
+  return (
+    group(folder + hotkey + sound + notify, t("settings.screenshotsTitle")) +
+    group(compression + options, t("ss.compressionSection")) +
+    group(sortRow + densityRow, t("ss.gallerySection")) +
+    group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
+    group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection"))
+  );
 }
 
 /* ---------- Task manager ---------- */
@@ -1500,12 +1583,123 @@ async function resetScreenshotsFolder(): Promise<void> {
   await applyScreenshotDir(null, false);
 }
 
+/* ---------- Screenshot cleanup (favorites never get deleted) ---------- */
+
+/** The shots the policy would delete right now. */
+async function cleanupCandidates(): Promise<GameScreenshotItem[]> {
+  const policy = ssCleanupPolicy();
+  if (policy.mode === "off") return [];
+  const all = await epicGetAllScreenshots().catch(() => [] as GameScreenshotItem[]);
+  const favorites = ssFavorites();
+  const pool = all.filter((item) => !favorites.has(item.file_path));
+  if (policy.mode === "age") {
+    const cutoff = Date.now() - policy.days * 86_400_000;
+    return pool.filter((item) => item.timestamp > 0 && item.timestamp < cutoff);
+  }
+  // Size cap: keep the newest shots until the cap is reached, the rest goes.
+  const cap = policy.sizeGb * 1024 * 1024 * 1024;
+  const sorted = [...pool].sort((a, b) => b.timestamp - a.timestamp);
+  let kept = 0;
+  const doomed: GameScreenshotItem[] = [];
+  for (const item of sorted) {
+    kept += item.size_bytes || 0;
+    if (kept > cap) doomed.push(item);
+  }
+  return doomed;
+}
+
+async function previewCleanup(): Promise<void> {
+  const host = document.getElementById("ss-cleanup-report");
+  if (host) {
+    host.innerHTML = `<div class="hub-desc-loading"><span class="spinner"></span><span>${esc(t("common.calculating"))}</span></div>`;
+  }
+  const candidates = await cleanupCandidates();
+  const bytes = candidates.reduce((sum, item) => sum + (item.size_bytes || 0), 0);
+  if (!host) return;
+  host.innerHTML =
+    candidates.length === 0
+      ? `<div class="settings-row-desc">${esc(t("ss.cleanupNothing"))}</div>`
+      : `<div class="ss-cleanup-report">
+          <span>${esc(t("ss.cleanupReport", { count: String(candidates.length), size: fmtBytes(bytes) }))}</span>
+          <button type="button" class="btn danger small" data-act="ss-cleanup-apply">${icon("trash", 13)} ${esc(t("ss.cleanupApply"))}</button>
+        </div>`;
+}
+
+async function applyCleanup(): Promise<void> {
+  const host = document.getElementById("ss-cleanup-report");
+  const candidates = await cleanupCandidates();
+  let removed = 0;
+  for (const item of candidates) {
+    try {
+      if (await epicDeleteGameScreenshot(item.file_path)) removed += 1;
+    } catch {
+      // One locked file must not stop the rest.
+    }
+  }
+  if (host) {
+    host.innerHTML = `<div class="settings-row-desc">${esc(t("ss.cleanupDone", { count: String(removed) }))}</div>`;
+  }
+}
+
 /**
  * Screenshot-folder actions routed here from click-router so the shared router
  * does not grow. Returns true when the action was handled.
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement): boolean {
   switch (act) {
+    case "toggle-ss-sound":
+      localStorage.setItem(SS_SOUND_KEY, String((_el as HTMLInputElement).checked));
+      return true;
+    case "toggle-ss-notify":
+      localStorage.setItem(SS_NOTIFY_KEY, String((_el as HTMLInputElement).checked));
+      return true;
+    case "ss-sort": {
+      const sort = _el.dataset.sort;
+      if (sort === "newest" || sort === "oldest" || sort === "name" || sort === "size") {
+        localStorage.setItem(SS_SORT_KEY, sort);
+        render();
+      }
+      return true;
+    }
+    case "ss-density": {
+      const density = _el.dataset.density;
+      if (density === "s" || density === "m" || density === "l") {
+        localStorage.setItem(SS_DENSITY_KEY, density);
+        render();
+      }
+      return true;
+    }
+    case "ss-enable-game": {
+      const key = _el.dataset.key ?? "";
+      if (!key) return true;
+      const next = (S.epicSettingsCache?.screenshot_disabled_games ?? []).filter((item) => item !== key);
+      void epicSetScreenshotDisabledGames(next)
+        .then(() => {
+          if (S.epicSettingsCache) S.epicSettingsCache.screenshot_disabled_games = next;
+          render();
+        })
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
+    case "ss-clear-favorites":
+      ssClearFavorites();
+      render();
+      return true;
+    case "ss-cleanup-mode": {
+      const mode = _el.dataset.mode;
+      if (mode === "off" || mode === "size" || mode === "age") {
+        const policy = ssCleanupPolicy();
+        ssSetCleanupPolicy({ ...policy, mode });
+        render();
+      }
+      return true;
+    }
+    case "ss-cleanup-preview":
+      void previewCleanup();
+      return true;
+    case "ss-cleanup-apply":
+      void applyCleanup();
+      return true;
     case "notes-font": {
       const size = _el.dataset.size;
       if (size === "s" || size === "m" || size === "l") {

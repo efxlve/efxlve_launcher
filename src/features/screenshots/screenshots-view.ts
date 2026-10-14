@@ -578,22 +578,27 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   const owner = galleryOwner(s.appName);
   const readOnly = owner !== null;
 
+  const captureOff = (S.epicSettingsCache?.screenshot_disabled_games ?? []).includes(s.appName);
   const headerHtml = `
     <div class="screenshots-gallery-head">
       <div class="screenshots-head-info">
         <h3 class="screenshots-title">${icon("image", 15)} <span>${t("ss.title")}</span></h3>
         <span class="screenshots-count-chip">${t("ss.photoCount", { count: screenshots.length })}</span>
       </div>
-      ${screenshots.length === 0 ? "" : `<div class="screenshots-head-actions">
-        ${hasUncompressed && !readOnly ? `
+      <div class="screenshots-head-actions">
+        <button class="btn ghost small ${captureOff ? "active" : ""}" data-act="toggle-game-capture" data-id="${s.appName}" title="${t("ss.gameCaptureTip")}">
+          ${icon(captureOff ? "eye-off" : "camera", 13)} ${captureOff ? t("ss.gameCaptureOff") : t("ss.gameCaptureOn")}
+        </button>
+        ${screenshots.length > 0 && hasUncompressed && !readOnly ? `
           <button class="btn ghost small" data-act="compress-all-screenshots" data-id="${s.appName}" title="${t("ss.compressAllTip")}">
             ${icon("minimize-2", 13)} ${t("ss.compressAll")}
           </button>
         ` : ""}
+        ${screenshots.length > 0 ? `
         <button class="btn ghost small" data-act="open-screenshots-folder" data-id="${s.appName}" data-title="${esc(s.title)}" title="${t("ss.openFolderTip")}">
           ${icon("folder", 13)} ${t("ss.openFolder")}
-        </button>
-      </div>`}
+        </button>` : ""}
+      </div>
     </div>
   `;
 

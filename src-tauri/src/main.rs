@@ -146,6 +146,9 @@ pub struct EpicSettings {
     /// Root folder for in-game screenshots (`None` = Pictures\Efxlve Screenshots).
     #[serde(default)]
     pub screenshot_dir: Option<String>,
+    /// Games the user turned screenshot capture off for (F12 does nothing).
+    #[serde(default)]
+    pub screenshot_disabled_games: Vec<String>,
     /// Run Comet (the GOG Communication Service) while a GOG game plays so
     /// in-game achievements unlock without the Galaxy client. On by default.
     #[serde(default)]
@@ -702,6 +705,9 @@ fn main() {
             legendary::playtime_session::recover_stale();
             // The hotkey listener must already know the configured folder.
             legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
+    legendary::screenshots::set_disabled_games(
+        load_settings(app.handle()).screenshot_disabled_games,
+    );
             legendary::screenshots::start_f12_listener(app.handle().clone());
             // Shift+Tab overlay panel over the running game.
             overlay::start(app.handle().clone());
@@ -935,6 +941,7 @@ fn main() {
             legendary::screenshots::epic_get_screenshot_move_info,
             legendary::screenshots::epic_open_screenshot_dir,
             legendary::screenshots::epic_replace_screenshot_with_compressed,
+            legendary::screenshots::epic_set_screenshot_disabled_games,
             overlay::overlay_get_state,
             overlay::overlay_set_enabled,
             overlay::overlay_set_hud,

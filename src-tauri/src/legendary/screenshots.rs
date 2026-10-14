@@ -1232,6 +1232,38 @@ pub fn epic_get_screenshot_hotkey() -> i32 {
     SCREENSHOT_HOTKEY.load(std::sync::atomic::Ordering::Relaxed)
 }
 
+/// Games the user turned capture off for ("Disable for this game" on the game
+/// page). The F12 listener and the manual capture path both consult it.
+static DISABLED_GAMES: std::sync::RwLock<Vec<String>> = std::sync::RwLock::new(Vec::new());
+
+/// Replaces the disabled list (boot reads it from settings, the command saves).
+pub fn set_disabled_games(list: Vec<String>) {
+    if let Ok(mut guard) = DISABLED_GAMES.write() {
+        *guard = list;
+    }
+}
+
+fn capture_disabled(app_name: &str) -> bool {
+    DISABLED_GAMES
+        .read()
+        .map(|list| list.iter().any(|key| key == app_name))
+        .unwrap_or(false)
+}
+
+/// Turns capture off for one game (or back on). The settings file remembers it.
+#[tauri::command]
+pub fn epic_set_screenshot_disabled_games(app: AppHandle, games: Vec<String>) {
+    let cleaned: Vec<String> = games
+        .into_iter()
+        .map(|key| key.trim().to_string())
+        .filter(|key| !key.is_empty())
+        .collect();
+    set_disabled_games(cleaned.clone());
+    let mut settings = crate::load_settings(&app);
+    settings.screenshot_disabled_games = cleaned;
+    crate::save_settings(&app, &settings);
+}
+
 /// Background listener that captures a screenshot when the hotkey (default F12) is pressed while a game is running.
 #[cfg(target_os = "windows")]
 pub fn start_f12_listener(app: AppHandle) {
@@ -1251,6 +1283,14 @@ pub fn start_f12_listener(app: AppHandle) {
                 was_down = false;
                 std::thread::sleep(std::time::Duration::from_millis(250));
                 continue;
+            }
+            // A game with capture turned off never fires the hotkey.
+            if let Some((app_name, _)) = running.as_ref() {
+                if capture_disabled(app_name) {
+                    was_down = false;
+                    std::thread::sleep(std::time::Duration::from_millis(250));
+                    continue;
+                }
             }
 
             std::thread::sleep(std::time::Duration::from_millis(20));
@@ -1750,6 +1790,15 @@ mod tests {
         );
         clear_active_running_game("Sugar");
         assert_eq!(get_active_running_game(), None);
+    }
+
+    #[test]
+    fn disabled_games_block_capture() {
+        set_disabled_games(vec!["steam::1".to_string()]);
+        assert!(capture_disabled("steam::1"));
+        assert!(!capture_disabled("steam::2"));
+        set_disabled_games(Vec::new());
+        assert!(!capture_disabled("steam::1"));
     }
 
     #[test]

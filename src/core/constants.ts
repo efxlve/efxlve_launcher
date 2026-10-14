@@ -36,6 +36,16 @@ export const SS_COMPRESS_KEY = "efxlve-ss-compression";
 export const SS_FORMAT_KEY = "efxlve-ss-format";
 /** Screenshot compression quality. */
 export const SS_QUALITY_KEY = "efxlve-ss-quality";
+/** Capture feedback: the shutter sound and the saved toast; missing = on. */
+export const SS_SOUND_KEY = "efxlve-ss-sound";
+export const SS_NOTIFY_KEY = "efxlve-ss-notify";
+/** Gallery defaults the drawer and the overlay both read. */
+export const SS_SORT_KEY = "efxlve-ss-sort";
+export const SS_DENSITY_KEY = "efxlve-ss-density";
+/** Favorite screenshots: auto-cleanup never touches them. */
+export const SS_FAVORITES_KEY = "efxlve-ss-favorites";
+/** Auto-cleanup policy (`off` | `size` | `age`). */
+export const SS_CLEANUP_KEY = "efxlve-ss-cleanup";
 /** Show download speed in bits per second instead of bytes. */
 export const SPEED_BITS_KEY = "efxlve-speed-bits";
 /** Pause active downloads while a game is running. */
