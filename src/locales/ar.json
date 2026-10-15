@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "تُحفظ أغلفة ولقطات صفحات الألعاب على القرص، فتُفتح الصفحة التي فتحتها سابقًا دون انتظار الشبكة.",
   "settings.imageCacheCleared": "تم تفريغ ذاكرة الصور ({size}).",
   "drawer.readMore": "اقرأ المزيد",
-  "drawer.readLess": "عرض أقل"
+  "drawer.readLess": "عرض أقل",
+  "manage.searchPlaceholder": "ابحث في هذه الإعدادات",
+  "manage.searchEmpty": "لا شيء يطابق ذلك."
 }

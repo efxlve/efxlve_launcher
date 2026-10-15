@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "ปกและภาพหน้าจอของหน้าเกมถูกเก็บไว้บนดิสก์ หน้าเกมที่เคยเปิดจึงเปิดได้โดยไม่ต้องรอเครือข่าย",
   "settings.imageCacheCleared": "ล้างแคชรูปภาพแล้ว ({size})",
   "drawer.readMore": "อ่านต่อ",
-  "drawer.readLess": "ย่อ"
+  "drawer.readLess": "ย่อ",
+  "manage.searchPlaceholder": "ค้นหาในการตั้งค่าเหล่านี้",
+  "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน"
 }

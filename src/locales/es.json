@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "Las carátulas y capturas de las páginas de juego se guardan en disco, así una página abierta se abre sin esperar a la red.",
   "settings.imageCacheCleared": "Caché de imágenes borrada ({size}).",
   "drawer.readMore": "Leer más",
-  "drawer.readLess": "Mostrar menos"
+  "drawer.readLess": "Mostrar menos",
+  "manage.searchPlaceholder": "Buscar en estos ajustes",
+  "manage.searchEmpty": "Nada coincide con eso."
 }

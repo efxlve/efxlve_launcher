@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "Обложки и скриншоты со страниц игр хранятся на диске, поэтому уже открытая страница открывается без ожидания сети.",
   "settings.imageCacheCleared": "Кэш изображений очищен ({size}).",
   "drawer.readMore": "Читать дальше",
-  "drawer.readLess": "Свернуть"
+  "drawer.readLess": "Свернуть",
+  "manage.searchPlaceholder": "Поиск по этим настройкам",
+  "manage.searchEmpty": "Ничего не найдено."
 }

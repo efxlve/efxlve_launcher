@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "ゲームページのカバーとスクリーンショットはディスクに保存され、一度開いたページは通信を待たずに開きます。",
   "settings.imageCacheCleared": "画像キャッシュを削除しました（{size}）。",
   "drawer.readMore": "続きを読む",
-  "drawer.readLess": "折りたたむ"
+  "drawer.readLess": "折りたたむ",
+  "manage.searchPlaceholder": "この設定を検索",
+  "manage.searchEmpty": "一致する項目はありません。"
 }

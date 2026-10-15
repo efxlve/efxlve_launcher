@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "게임 페이지의 커버와 스크린샷을 디스크에 보관하므로 한 번 연 페이지는 네트워크를 기다리지 않습니다.",
   "settings.imageCacheCleared": "이미지 캐시를 비웠습니다 ({size}).",
   "drawer.readMore": "더 보기",
-  "drawer.readLess": "접기"
+  "drawer.readLess": "접기",
+  "manage.searchPlaceholder": "이 설정에서 검색",
+  "manage.searchEmpty": "일치하는 항목이 없습니다."
 }

@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "Cover und Screenshots der Spielseiten liegen auf der Platte, damit eine einmal geöffnete Seite ohne Netzwerk wartet.",
   "settings.imageCacheCleared": "Bild-Cache geleert ({size}).",
   "drawer.readMore": "Mehr lesen",
-  "drawer.readLess": "Weniger anzeigen"
+  "drawer.readLess": "Weniger anzeigen",
+  "manage.searchPlaceholder": "Diese Einstellungen durchsuchen",
+  "manage.searchEmpty": "Dazu passt hier nichts."
 }

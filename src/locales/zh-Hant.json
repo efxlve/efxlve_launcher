@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "遊戲頁面的封面與截圖會保存在磁碟上，開啟過的頁面不必等待網路。",
   "settings.imageCacheCleared": "圖片快取已清空（{size}）。",
   "drawer.readMore": "展開閱讀",
-  "drawer.readLess": "收合"
+  "drawer.readLess": "收合",
+  "manage.searchPlaceholder": "搜尋這些設定",
+  "manage.searchEmpty": "沒有符合的項目。"
 }

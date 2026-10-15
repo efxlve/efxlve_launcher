@@ -2391,5 +2391,7 @@
   "settings.imageCacheDesc": "Oyun sayfalarındaki kapak ve ekran görüntüleri diske kaydedilir; bir kez açtığın sayfa ağ beklemeden açılır.",
   "settings.imageCacheCleared": "Görsel önbelleği temizlendi ({size}).",
   "drawer.readMore": "Devamını oku",
-  "drawer.readLess": "Daha az göster"
+  "drawer.readLess": "Daha az göster",
+  "manage.searchPlaceholder": "Bu ayarlarda ara",
+  "manage.searchEmpty": "Aramanla eşleşen bir şey yok."
 }

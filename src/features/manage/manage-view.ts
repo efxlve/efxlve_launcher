@@ -24,9 +24,12 @@ function envToText(env: Record<string, string> | undefined): string {
   return Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n");
 }
 
+/** One settings line in the panel. The plain text lands in `data-search`, which
+ * is what the panel's search box filters on. */
 function row(title: string, desc: string, actions: string, extra = "", descId = ""): string {
+  const search = `${title} ${desc} ${actions}`.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   return `
-    <div class="row mg-row">
+    <div class="row mg-row" data-search="${esc(search)}">
       <div class="row-main">
         <div class="mg-title">${title}</div>
         <div class="mg-desc"${descId ? ` id="${descId}"` : ""}>${desc}</div>
@@ -34,6 +37,41 @@ function row(title: string, desc: string, actions: string, extra = "", descId = 
       </div>
       <div class="row-actions">${actions}</div>
     </div>`;
+}
+
+/** Class that hides a row or a caption while the search box filters. */
+const MANAGE_HIDE = "manage-hide";
+
+/**
+ * Filters the panel the way Settings does: every row matches on its own text,
+ * and when nothing matches the panel says so instead of looking empty.
+ */
+function applyManageSearch(query: string): void {
+  const body = document.querySelector<HTMLElement>(".manage-body");
+  if (!body) return;
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let visible = 0;
+  body.querySelectorAll<HTMLElement>(".row[data-search]").forEach((line) => {
+    const text = (line.dataset.search ?? "").toLowerCase();
+    const match = tokens.length === 0 || tokens.every((token) => text.includes(token));
+    line.classList.toggle(MANAGE_HIDE, !match);
+    if (match) visible += 1;
+  });
+  const empty = document.getElementById("manage-search-empty");
+  if (empty) empty.hidden = tokens.length === 0 || visible > 0;
+}
+
+let manageSearchWired = false;
+
+/** Binds the panel's search box once; every later open reuses the listener. */
+function wireManageSearch(): void {
+  if (manageSearchWired) return;
+  manageSearchWired = true;
+  document.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.id !== "manage-search") return;
+    applyManageSearch(input.value);
+  });
 }
 
 function toggle(act: string, checked: boolean): string {
@@ -114,6 +152,7 @@ export function openManagePopup(appName: string): void {
   const s = summaryOf(appName);
   if (!s) return;
   openManageAppName = appName;
+  wireManageSearch();
   manageRoot.innerHTML = `
     <div class="manage-overlay" data-act="manage-overlay-close">
       <div class="manage-dialog">
@@ -124,7 +163,12 @@ export function openManagePopup(appName: string): void {
           </div>
           <button class="manage-head-close" data-act="close-manage-popup" title="${t("common.close")}">${icon("x", 16)}</button>
         </div>
+        <div class="manage-search">
+          ${icon("search", 13)}
+          <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
+        </div>
         <div class="manage-body">${renderDrawerManage(s)}</div>
+        <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>
       </div>
     </div>`;
 
