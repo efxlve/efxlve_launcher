@@ -81,3 +81,17 @@ Two bugs surfaced only once the transport was real, both fixed:
 
 Remaining ideas: IGDB `dlcs`/`expansions` merged into the DLC tab, and a
 "power user" way back to own credentials now that the row is always visible.
+
+## 7. Screenshots — needs a pass (parked 2026-10-15)
+
+The user reports the whole workstream as broken. What the machine says so far:
+
+- `Videos/Efxlve` holds **zero files**: the F9 clip recorder has never produced
+  an AVI here, so the MJPEG writer path needs a real test before anything else.
+- `Pictures/Efxlve Screenshots` holds 34 captures, the newest a `.webp`, so raw
+  capture works — the report is about the gallery, the editor, the strips and
+  sharing, not the capture itself.
+- Nothing in `<app_data>/logs` mentions a capture or a clip. A failed capture
+  should write a line there, so the next report comes with a trace.
+
+Ask for the concrete symptom when this comes back up.
