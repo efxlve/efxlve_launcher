@@ -11,7 +11,8 @@ import { icon } from "../../../core/icons";
 import { render } from "../../../core/render";
 import { S } from "../../../core/state";
 import { toast } from "../../../core/toast";
-import { t } from "../../../i18n";
+import { t, localizeMessage } from "../../../i18n";
+import { refreshIgdbProxyProbe } from "../../settings/settings-view";
 import {
   igdbClearCredentials,
   igdbSetCredentials,
@@ -31,6 +32,12 @@ function fields(): { proxy: string; id: string; secret: string } {
   };
 }
 
+/** Rust sends `@t:<key>` descriptors; a toast should show the sentence. */
+function messageOf(error: unknown): string {
+  const raw = String(error);
+  return raw.startsWith("@t:") ? localizeMessage(raw) : raw;
+}
+
 /** Saves the row: the server address and, when filled, own credentials (which
  * take priority). Resolves true when IGDB is usable afterwards. */
 async function saveFromRow(): Promise<boolean> {
@@ -48,6 +55,7 @@ async function saveFromRow(): Promise<boolean> {
       S.igdbMode = "direct";
       toast(t("igdb.saved"), "ok");
       render();
+      refreshIgdbProxyProbe();
       return true;
     }
     if (id || secret) {
@@ -60,9 +68,10 @@ async function saveFromRow(): Promise<boolean> {
     S.igdbMode = status.mode;
     S.igdbProxyUrl = status.proxyUrl;
     render();
+    refreshIgdbProxyProbe();
     return status.configured;
   } catch (error) {
-    toast(String(error), "err");
+    toast(messageOf(error), "err");
     return false;
   }
 }
@@ -90,7 +99,7 @@ export function handleIgdbAction(act: string | undefined, el: HTMLElement): bool
             "ok",
           );
         } catch (error) {
-          toast(t("igdb.testFailed", { error: String(error) }), "err");
+          toast(t("igdb.testFailed", { error: messageOf(error) }), "err");
         }
       })();
       return true;

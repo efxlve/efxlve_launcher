@@ -1368,6 +1368,24 @@ function wireSettingsSearch(): void {
 }
 
 /**
+ * Asks the shared IGDB proxy whether it answers with JSON at all. The settings
+ * row shows the answer, so an undeployed server stops looking like a working
+ * setup — nothing else in the launcher waits for this.
+ */
+export function refreshIgdbProxyProbe(): void {
+  if (S.igdbMode !== "proxy") {
+    S.igdbProxyReachable = null;
+    return;
+  }
+  void igdbProbeProxy()
+    .then((probe) => {
+      S.igdbProxyReachable = probe.reachable;
+      if (S.view === "settings") render();
+    })
+    .catch(() => undefined);
+}
+
+/**
  * Loads the cheap settings data (settings.json, default dir, SteamGrid key).
  * Heavy integration scans are deferred to {@link loadIntegrationsView} so the
  * page paints instantly and the launcher never appears to freeze.
@@ -1407,16 +1425,7 @@ export async function loadSettingsView(): Promise<void> {
         S.igdbProxyUrl = igdb.proxyUrl;
         // The proxy is the default transport, so the row has to say when the
         // server is not deployed: otherwise the chip claims a working setup.
-        if (igdb.mode === "proxy") {
-          void igdbProbeProxy()
-            .then((probe) => {
-              S.igdbProxyReachable = probe.reachable;
-              if (S.view === "settings") render();
-            })
-            .catch(() => undefined);
-        } else {
-          S.igdbProxyReachable = null;
-        }
+        refreshIgdbProxyProbe();
       }
     } catch {
       // Silent: keep the last cached values.
