@@ -181,11 +181,11 @@ export function openManagePopup(appName: string): void {
             <h2>${t("drawer.manage")}</h2>
             <div class="manage-head-sub">${esc(s.title)}</div>
           </div>
+          <div class="manage-search">
+            ${icon("search", 13)}
+            <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
+          </div>
           <button class="manage-head-close" data-act="close-manage-popup" title="${t("common.close")}">${icon("x", 16)}</button>
-        </div>
-        <div class="manage-search">
-          ${icon("search", 13)}
-          <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
         </div>
         <div class="manage-body">${renderDrawerManage(s)}</div>
         <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>
@@ -221,22 +221,17 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
 }
 
 /** Renders the Manage tab for an installed game. */
-/** Manage panel for a game owned by EA, Ubisoft, Xbox or Battle.net. */
+/** Manage panel for a game owned by EA, Ubisoft, Xbox, Battle.net or Riot. */
 function companionManageBody(s: EpicSummary, source: GameSource): string {
   const brand = source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "riot" ? "Riot Client" : "Battle.net";
   const pt = S.playtimeMap.get(s.appName);
   const playtime = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
   const files = s.installed
-    ? `${row(
+    ? row(
         t("manage.installLocation"),
         `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
         `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
-      )}
-      ${row(
-        t("manage.uninstallTitle"),
-        t("accounts.companionUninstallDesc", { name: brand }),
-        `<button class="btn ghost small danger" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`,
-      )}`
+      )
     : row(
         t("common.install"),
         t("accounts.companionManagedDesc", { name: brand }),
@@ -244,15 +239,16 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      <div class="section-title">${t("manage.groupFiles")}</div>
-      <div class="list">${files}</div>
-      <div class="section-title">${t("manage.groupPlaytime")}</div>
-      <div class="list">${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "")}</div>
-      <div class="section-title">${t("manage.groupCover")}</div>
-      <div class="list">
-        ${row(t("manage.coverTitle"), t("manage.coverDesc"),
-          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
-      </div>
+      ${group("folder", t("manage.groupFiles"), files)}
+      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+        `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
+      ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", ""))}
+      ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+        `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+      ${s.installed ? `<div class="list mg-danger">
+        ${row(t("manage.uninstallTitle"), t("accounts.companionUninstallDesc", { name: brand }),
+          `<button class="btn danger small" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)}
+      </div>` : ""}
     </div>`;
 }
 
@@ -332,8 +328,7 @@ function amazonManageBody(s: EpicSummary): string {
          <button class="btn ghost small" data-act="amazon-import" data-id="${esc(id)}" title="${t("amazon.importDesc")}">${icon("folder", 13)} ${t("amazon.importTitle")}</button>`,
       );
   const saves = s.installed
-    ? `<div class="section-title">${t("manage.groupSaves")}</div>
-      <div class="list">
+    ? group("cloud", t("manage.groupSaves"), `
         <div class="row mg-row">
           <div class="row-main">
             <div class="mg-title">${t("manage.saveFolderTitle")}</div>
@@ -349,20 +344,15 @@ function amazonManageBody(s: EpicSummary): string {
           `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(s.appName)}</div>`,
         )}
         <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
-      </div>`
+      `)
     : "";
   return `
     <div class="manage-tab-content">
-      <div class="section-title">${t("manage.groupFiles")}</div>
-      <div class="list">${files}</div>
-      <div class="section-title">${t("manage.groupCover")}</div>
-      <div class="list">
-        ${row(t("manage.coverTitle"), t("manage.coverDesc"),
-          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
-      </div>
+      ${group("folder", t("manage.groupFiles"), files)}
       ${saves}
-      ${s.installed ? `<div class="section-title">${t("manage.groupLaunch")}</div>
-      <div class="list">
+      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+        `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
+      ${s.installed ? group("play", t("manage.groupLaunch"), `
         <div class="row mg-row stack">
           <div class="mg-title">${t("manage.argsTitle")}</div>
           <div class="mg-desc">${t("manage.argsDesc")}</div>
@@ -377,18 +367,13 @@ function amazonManageBody(s: EpicSummary): string {
           <textarea id="manage-env-input" class="input mg-env" spellcheck="false" placeholder="DXVK_HUD=1&#10;WINEDLLOVERRIDES=d3d11=n,b">${esc(envToText(st.envVars))}</textarea>
           <div class="mg-inline end"><button class="btn primary small" data-act="manage-save-launch-extras" data-id="${s.appName}">${t("common.save")}</button></div>
         </div>
-      </div>` : ""}
-      <div class="section-title">${t("manage.groupPlaytime")}</div>
-      <div class="list">
-        ${row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtime)}</span>`,
-          pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
+      `) : ""}
+      ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtime)}</span>`,
+        pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${s.appName}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
-          "", "manage-playtime-meta")}
-      </div>
-      <div class="list">
-        ${row(t("manage.hideTitle"), t("manage.hideDesc"),
-          `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
-      </div>
+          "", "manage-playtime-meta"))}
+      ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+        `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
       ${s.installed ? `<div class="list mg-danger">
         ${row(t("manage.dangerTitle"), t("amazon.uninstallDesc"),
           `<button class="btn danger small" data-act="amazon-uninstall" data-id="${esc(id)}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)}
@@ -418,13 +403,9 @@ export function renderDrawerManage(s: EpicSummary): string {
     if (!s.installed) {
       return `
         <div class="manage-tab-content">
-          <div class="section-title">${t("manage.groupFiles")}</div>
-          <div class="list">
-            ${row(t("steam.managedBy"), t("steam.managedByDesc"),
-              `<button class="btn primary small" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 13)} ${t("common.install")}</button>`)}
-          </div>
-          <div class="section-title">${t("manage.groupSaves")}</div>
-          <div class="list">
+          ${group("folder", t("manage.groupFiles"), row(t("steam.managedBy"), t("steam.managedByDesc"),
+            `<button class="btn primary small" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 13)} ${t("common.install")}</button>`))}
+          ${group("cloud", t("manage.groupSaves"), `
             <div class="row mg-row stack mg-callout">
               <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
               <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
@@ -433,35 +414,25 @@ export function renderDrawerManage(s: EpicSummary): string {
               </div>
             </div>
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
-          </div>
-          <div class="section-title">${t("manage.groupCover")}</div>
-          <div class="list">
-            ${row(t("manage.coverTitle"), t("manage.coverDesc"),
-              `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
-          </div>
-          <div class="section-title">${t("manage.groupPlaytime")}</div>
-          <div class="list">
-            ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "")}
-          </div>
-          <div class="list">
-            ${row(t("manage.hideTitle"), t("manage.hideDesc"),
-              `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
-          </div>
+          `)}
+          ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+            `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
+          ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), ""))}
+          ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+            `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         </div>`;
     }
     return `
       <div class="manage-tab-content">
-        <div class="section-title">${t("manage.groupFiles")}</div>
-        <div class="list">
+        ${group("folder", t("manage.groupFiles"), `
           ${row(t("steam.managedBy"), t("steam.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
           ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
-        </div>
+        `)}
 
-        <div class="section-title">${t("manage.groupSaves")}</div>
-        <div class="list">
+        ${group("cloud", t("manage.groupSaves"), `
           <div class="row mg-row stack mg-callout">
             <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
             <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
@@ -470,23 +441,15 @@ export function renderDrawerManage(s: EpicSummary): string {
             </div>
           </div>
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
-        </div>
+        `)}
 
-        <div class="section-title">${t("manage.groupCover")}</div>
-        <div class="list">
-          ${row(t("manage.coverTitle"), t("manage.coverDesc"),
-            `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
-        </div>
+        ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
-        <div class="section-title">${t("manage.groupPlaytime")}</div>
-        <div class="list">
-          ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "")}
-        </div>
+        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), ""))}
 
-        <div class="list">
-          ${row(t("manage.hideTitle"), t("manage.hideDesc"),
-            `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
-        </div>
+        ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+          `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
 
         <div class="list mg-danger">
           ${row(t("manage.dangerTitle"), t("steam.uninstallDesc"),
@@ -500,17 +463,15 @@ export function renderDrawerManage(s: EpicSummary): string {
     const playtimeGog = ptGog?.total_seconds ? fmtPlaytime(ptGog.total_seconds) : t("playtime.notPlayed");
     return `
       <div class="manage-tab-content">
-        <div class="section-title">${t("manage.groupFiles")}</div>
-        <div class="list">
+        ${group("folder", t("manage.groupFiles"), `
           ${row(t("gog.managedBy"), t("gog.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
           ${s.installed ? row(t("manage.verifyTitle"), t("manage.verifyDesc"),
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
             `<div id="manage-verify-box-container"></div>`) : ""}
-        </div>
-        <div class="section-title">${t("manage.groupSaves")}</div>
-        <div class="list">
+        `)}
+        ${group("cloud", t("manage.groupSaves"), `
           <div class="row mg-row stack mg-callout">
             <div class="mg-title">${icon("cloud", 14)} ${t("gog.cloudNoticeTitle")}</div>
             <div class="mg-desc">${t("gog.cloudNoticeDesc")}</div>
@@ -519,20 +480,12 @@ export function renderDrawerManage(s: EpicSummary): string {
             </div>
           </div>
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
-        </div>
-        <div class="section-title">${t("manage.groupCover")}</div>
-        <div class="list">
-          ${row(t("manage.coverTitle"), t("manage.coverDesc"),
-            `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
-        </div>
-        <div class="section-title">${t("manage.groupPlaytime")}</div>
-        <div class="list">
-          ${row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "")}
-        </div>
-        <div class="list">
-          ${row(t("manage.hideTitle"), t("manage.hideDesc"),
-            `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
-        </div>
+        `)}
+        ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
+        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", ""))}
+        ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+          `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         ${s.installed ? `<div class="list mg-danger">
           ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
             `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)}
@@ -595,9 +548,6 @@ export function renderDrawerManage(s: EpicSummary): string {
           `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)}
       `) : ""}
 
-      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
-        `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${id}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-
       ${s.installed ? group("cloud", t("manage.groupSaves"), `
         ${partnerSaves
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
@@ -617,6 +567,9 @@ export function renderDrawerManage(s: EpicSummary): string {
               `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(id)}</div>`}
       `) : ""}
+
+      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+        `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${id}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
       ${s.installed ? group("play", t("manage.groupLaunch"), `
         ${row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate))}
