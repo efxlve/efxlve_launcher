@@ -23,6 +23,7 @@ import {
   type GameScreenshotItem,
 } from "../../epic";
 import { steamGetGameScreenshots, steamGetScreenshotFullData } from "../../steam";
+import { SS_WEBHOOK_KEY } from "../../core/constants";
 import { ssDensity, ssFavorites, ssSort, ssSortItems } from "./ss-settings";
 
 /* --- Game page gallery: the toolbar's own view state ---------------------- */
@@ -535,6 +536,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
   }
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
   const readOnly = galleryOwner(appName) !== null;
+  const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
   shareRoot.innerHTML = `
     <div class="ss-share-backdrop" data-act="close-share-modal">
       <div class="ss-share-card" role="dialog" aria-modal="true">
@@ -556,6 +558,30 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
         </div>
 
         <div class="ss-share-actions">
+          <button class="ss-share-btn" data-act="do-share-discord">
+            <div class="ss-share-btn-icon">${icon("discord", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">${t("ss.shareDiscord")}</span>
+              <span class="ss-btn-hint">${webhook ? t("ss.shareDiscordHint") : t("ss.shareDiscordSetup")}</span>
+            </div>
+          </button>
+
+          <button class="ss-share-btn" data-act="do-share-x">
+            <div class="ss-share-btn-icon">${icon("twitter", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">${t("ss.shareX")}</span>
+              <span class="ss-btn-hint">${t("ss.shareXHint")}</span>
+            </div>
+          </button>
+
+          <button class="ss-share-btn" data-act="do-share-reddit">
+            <div class="ss-share-btn-icon">${icon("globe", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">${t("ss.shareReddit")}</span>
+              <span class="ss-btn-hint">${t("ss.shareRedditHint")}</span>
+            </div>
+          </button>
+
           <button class="ss-share-btn primary" data-act="do-copy-image">
             <div class="ss-share-btn-icon">${icon("copy", 18)}</div>
             <div class="ss-share-btn-text">

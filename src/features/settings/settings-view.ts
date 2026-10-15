@@ -8,7 +8,7 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
-import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, SS_WEBHOOK_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
@@ -852,12 +852,25 @@ function renderScreenshots(): string {
     toggle("toggle-screenshots-sidebar", screenshotsSidebarVisible()),
   );
 
+  /* Sharing: one-click Discord needs the user's own webhook; the rest copy the
+     image and open the compose page. */
+  const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
+  const webhookRow = row(
+    t("ss.webhookTitle"),
+    t("ss.webhookDesc"),
+    `<input id="ss-webhook-input" class="input settings-path-input" placeholder="https://discord.com/api/webhooks/…" value="${esc(webhook)}" spellcheck="false" autocomplete="off" />
+     <button type="button" class="btn primary small" data-act="save-ss-webhook">${t("common.save")}</button>
+     ${webhook ? `<button type="button" class="btn ghost small" data-act="clear-ss-webhook">${t("common.delete")}</button>` : ""}`,
+    true,
+  );
+
   return (
     group(folder + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
     group(compression + options, t("ss.compressionSection")) +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
-    group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection"))
+    group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection")) +
+    group(webhookRow, t("ss.shareSection"))
   );
 }
 
@@ -1528,6 +1541,22 @@ async function applyCleanup(): Promise<void> {
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement, _targetEl?: HTMLElement): boolean {
   switch (act) {
+    case "save-ss-webhook": {
+      const input = document.getElementById("ss-webhook-input") as HTMLInputElement | null;
+      const value = input?.value.trim() ?? "";
+      if (value && !/^https:\/\/(canary\.|ptb\.)?discord(app)?\.com\/api\/webhooks\//.test(value)) {
+        toast(t("ss.badWebhook"), "err");
+        return true;
+      }
+      localStorage.setItem(SS_WEBHOOK_KEY, value);
+      toast(t("ss.webhookSaved"), "ok");
+      render();
+      return true;
+    }
+    case "clear-ss-webhook":
+      localStorage.removeItem(SS_WEBHOOK_KEY);
+      render();
+      return true;
     case "settings-search-clear":
       resetSettingsSearch();
       render();

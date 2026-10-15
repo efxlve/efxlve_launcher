@@ -760,6 +760,15 @@ export const epicDeleteGameScreenshot = (filePath: string) =>
 export const epicSaveEditedScreenshot = (filePath: string, dataUrl: string, replace: boolean) =>
   invoke<string>("epic_save_edited_screenshot", { filePath, dataUrl, replace });
 
+/** Posts a screenshot to the user's own Discord webhook. */
+export const screenshotShareDiscord = (input: {
+  webhook: string;
+  filePath: string | null;
+  dataUrl: string | null;
+  fileName: string;
+  message: string;
+}) => invoke<void>("screenshot_share_discord", input);
+
 export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
   invoke<void>("epic_open_game_screenshots_folder", { appName, title });
 

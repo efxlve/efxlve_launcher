@@ -1498,6 +1498,109 @@ fn decode_data_url(data_url: &str) -> Result<Vec<u8>, String> {
         .map_err(|_| "@t:ss.badImage".to_string())
 }
 
+/// Posts a screenshot to the user's own Discord webhook.
+///
+/// One-click sharing without asking anyone for API keys: the webhook is the
+/// user's own channel address. The command refuses anything that is not a
+/// Discord webhook URL, so it cannot be used to post anywhere else.
+#[tauri::command]
+pub async fn screenshot_share_discord(
+    webhook: String,
+    file_path: Option<String>,
+    data_url: Option<String>,
+    file_name: String,
+    message: String,
+) -> Result<(), String> {
+    let webhook = webhook.trim().to_string();
+    let allowed = [
+        "https://discord.com/api/webhooks/",
+        "https://discordapp.com/api/webhooks/",
+        "https://canary.discord.com/api/webhooks/",
+        "https://ptb.discord.com/api/webhooks/",
+    ];
+    if !allowed.iter().any(|prefix| webhook.starts_with(prefix)) {
+        return Err("@t:ss.badWebhook".to_string());
+    }
+
+    // The caller sends a path for formats Discord accepts, and a PNG data URL
+    // for anything it does not (AVIF), so the upload always lands.
+    let (bytes, upload_name, mime) = match (file_path, data_url) {
+        (Some(path), _) if Path::new(&path).is_file() => {
+            let bytes = std::fs::read(&path).map_err(|_| "@t:ss.fileNotFound".to_string())?;
+            let name = Path::new(&path)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| file_name.clone());
+            let mime = match Path::new(&name)
+                .extension()
+                .map(|e| e.to_string_lossy().to_ascii_lowercase())
+                .unwrap_or_default()
+                .as_str()
+            {
+                "jpg" | "jpeg" => "image/jpeg",
+                "webp" => "image/webp",
+                "gif" => "image/gif",
+                _ => "image/png",
+            };
+            (bytes, name, mime.to_string())
+        }
+        (_, Some(url)) => (
+            decode_data_url(&url)?,
+            if file_name.trim().is_empty() {
+                "screenshot.png".to_string()
+            } else {
+                file_name.clone()
+            },
+            "image/png".to_string(),
+        ),
+        _ => return Err("@t:ss.fileNotFound".to_string()),
+    };
+
+    let boundary = format!(
+        "----efxlve{:x}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    );
+    let payload = serde_json::json!({ "content": message }).to_string();
+    let mut body: Vec<u8> = Vec::with_capacity(bytes.len() + 512);
+    body.extend_from_slice(
+        format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"payload_json\"\r\n\r\n{payload}\r\n"
+        )
+        .as_bytes(),
+    );
+    body.extend_from_slice(
+        format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"{upload_name}\"\r\nContent-Type: {mime}\r\n\r\n"
+        )
+        .as_bytes(),
+    );
+    body.extend_from_slice(&bytes);
+    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|_| "@t:ss.shareFailed".to_string())?;
+    let response = client
+        .post(&webhook)
+        .header("Content-Type", format!("multipart/form-data; boundary={boundary}"))
+        .body(body)
+        .send()
+        .await
+        .map_err(|_| "@t:ss.shareFailed".to_string())?;
+
+    match response.status().as_u16() {
+        200 | 204 => Ok(()),
+        401 | 403 | 404 => Err("@t:ss.badWebhook".to_string()),
+        413 => Err("@t:ss.shareTooLarge".to_string()),
+        429 => Err("@t:ss.shareRateLimited".to_string()),
+        _ => Err("@t:ss.shareFailed".to_string()),
+    }
+}
+
 /// Per-game folder the Ubisoft Connect client writes its captures to. Falls
 /// back to the client's root when it stores loose files there.
 fn ubisoft_game_dir(title: &str) -> Option<PathBuf> {

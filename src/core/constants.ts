@@ -46,6 +46,8 @@ export const SS_DENSITY_KEY = "efxlve-ss-density";
 export const SS_FAVORITES_KEY = "efxlve-ss-favorites";
 /** Auto-cleanup policy (`off` | `size` | `age`). */
 export const SS_CLEANUP_KEY = "efxlve-ss-cleanup";
+/** The user's own Discord webhook for one-click screenshot sharing. */
+export const SS_WEBHOOK_KEY = "efxlve-ss-webhook";
 /** Task manager: whether the WebView2 group is expanded. */
 export const TM_EXPANDED_KEY = "efxlve-tm-expanded";
 /** Show download speed in bits per second instead of bytes. */

@@ -13,9 +13,29 @@ import {
   epicOpenFolderPath,
   epicOpenGameScreenshotsFolder,
   epicSetScreenshotDisabledGames,
+  screenshotShareDiscord,
 } from "../../../epic";
 import { openEpicModal } from "../../../core/render";
 import { openScreenshotEditor } from "../../screenshots/screenshot-editor";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { SS_WEBHOOK_KEY } from "../../../core/constants";
+
+/** The full-resolution PNG of a shot, for services that cannot take AVIF. */
+async function sharePngDataUrl(appName: string, item: GameScreenshotItem): Promise<string | null> {
+  const src = await ensureFullShot(appName, item);
+  if (!src) return null;
+  const image = new Image();
+  await new Promise((resolve, reject) => {
+    image.onload = () => resolve(undefined);
+    image.onerror = () => reject(new Error("image"));
+    image.src = src;
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  canvas.getContext("2d")?.drawImage(image, 0, 0);
+  return canvas.toDataURL("image/png");
+}
 import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
@@ -23,6 +43,7 @@ import {
   clearGallerySelection,
   compressScreenshotItem,
   copyScreenshotImageToClipboard,
+  ensureFullShot,
   fetchAndRenderScreenshots,
   forgetFullShot,
   gallerySelectedItems,
@@ -38,6 +59,7 @@ import {
   takePendingScreenshotDelete,
   toggleGallerySelection,
 } from "../../screenshots/screenshots-view";
+import type { GameScreenshotItem } from "../../../epic";
 import { ssToggleFavorite } from "../../screenshots/ss-settings";
 import { SS_DENSITY_KEY, SS_SORT_KEY } from "../../../core/constants";
 
@@ -304,6 +326,64 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
         closeShareModal();
       }
       return true;
+
+    case "do-share-discord": {
+      const active = S.activeShareScreenshot;
+      if (!active) return true;
+      const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
+      if (!webhook) {
+        toast(i18nT("ss.shareDiscordSetup"), "err");
+        closeShareModal();
+        return true;
+      }
+      const game = summaryOf(active.appName)?.title || active.item.game_title || "";
+      void (async () => {
+        toast(i18nT("ss.shareSending"), "");
+        try {
+          // Discord cannot render AVIF: those go up as a PNG built here.
+          const needsPng = active.item.file_name.toLowerCase().endsWith(".avif");
+          const dataUrl = needsPng ? await sharePngDataUrl(active.appName, active.item) : null;
+          await screenshotShareDiscord({
+            webhook,
+            filePath: needsPng ? null : active.item.file_path,
+            dataUrl,
+            fileName: active.item.file_name,
+            message: i18nT("ss.shareMessage", { game }),
+          });
+          toast(i18nT("ss.shareSent"), "ok");
+          closeShareModal();
+        } catch (error) {
+          toast(String(error), "err");
+        }
+      })();
+      return true;
+    }
+
+    case "do-share-x": {
+      const active = S.activeShareScreenshot;
+      if (!active) return true;
+      const game = summaryOf(active.appName)?.title || active.item.game_title || "";
+      void (async () => {
+        const copied = await copyScreenshotImageToClipboard(active.item, active.appName).catch(() => false);
+        toast(i18nT(copied ? "ss.shareCopiedPaste" : "ss.copyFailed"), copied ? "ok" : "err");
+        void openUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(i18nT("ss.shareMessage", { game }))}`).catch(() => undefined);
+        closeShareModal();
+      })();
+      return true;
+    }
+
+    case "do-share-reddit": {
+      const active = S.activeShareScreenshot;
+      if (!active) return true;
+      const game = summaryOf(active.appName)?.title || active.item.game_title || "";
+      void (async () => {
+        const copied = await copyScreenshotImageToClipboard(active.item, active.appName).catch(() => false);
+        toast(i18nT(copied ? "ss.shareCopiedPaste" : "ss.copyFailed"), copied ? "ok" : "err");
+        void openUrl(`https://www.reddit.com/submit?title=${encodeURIComponent(i18nT("ss.shareMessage", { game }))}`).catch(() => undefined);
+        closeShareModal();
+      })();
+      return true;
+    }
 
     case "do-copy-path":
       if (S.activeShareScreenshot) {
