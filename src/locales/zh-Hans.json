@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "来源：IGDB",
   "settings.imageCacheTitle": "图片缓存",
   "settings.imageCacheDesc": "游戏页面的封面与截图会保存在磁盘上，打开过的页面无需等待网络。",
-  "settings.imageCacheCleared": "图片缓存已清空（{size}）。"
+  "settings.imageCacheCleared": "图片缓存已清空（{size}）。",
+  "drawer.readMore": "展开阅读",
+  "drawer.readLess": "收起"
 }

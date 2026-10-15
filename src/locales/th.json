@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "ที่มา: IGDB",
   "settings.imageCacheTitle": "แคชรูปภาพ",
   "settings.imageCacheDesc": "ปกและภาพหน้าจอของหน้าเกมถูกเก็บไว้บนดิสก์ หน้าเกมที่เคยเปิดจึงเปิดได้โดยไม่ต้องรอเครือข่าย",
-  "settings.imageCacheCleared": "ล้างแคชรูปภาพแล้ว ({size})"
+  "settings.imageCacheCleared": "ล้างแคชรูปภาพแล้ว ({size})",
+  "drawer.readMore": "อ่านต่อ",
+  "drawer.readLess": "ย่อ"
 }

@@ -117,6 +117,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .hub-desc-text p + p { margin-top: 14px; }
 .hub-desc-loading { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 13px; }
 .hub-desc-source { margin: 8px 0 0; font-size: 12px; color: var(--text-3); }
+.about-toggle { margin-top: 10px; }
 .gp-features-card { padding: 18px 18px 8px; }
 .gp-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .gp-about-tags { margin: 0 0 14px; }

@@ -81,13 +81,18 @@ Each phase is one commit and its own check (`npm.cmd run build`, plus
 around each repaint; count DOM nodes, images and listeners when the page opens;
 write the numbers into `TODO.md` so every later phase has a before/after.
 
-**Faz 1 — fact sheet and de-duplication (M).** Hero fact row; IGDB block trimmed
-to media + a single age rating (region-priority, the rest behind a tooltip);
-critic card loses its IGDB row; features card keeps its facts and the Sistem tab
-keeps the requirements.
+**Faz 1 — fact sheet and de-duplication (M). DONE.** The hero carries the year
+and the developer; the IGDB block keeps the publisher only when it differs; the
+age row shows one organisation (region-picked) plus a counter; the critic card
+dropped its IGDB row. The "Sistem tab vs features card" overlap turned out not to
+exist on inspection: the tab holds requirements and languages, the card holds
+the quick facts — they only looked alike in the plan.
 
-**Faz 2 — overview layout (M).** Order: chips → facts → About (clamped) →
-media → progress. Sidebar rules: HLTB, scores, features, nothing else.
+**Faz 2 — overview layout (M). Partly done.** Long blurbs now collapse behind
+"Devamını oku" / "Daha az göster" (520 characters, sentence-aware). The order
+(chips → About → IGDB → media → progress, sidebar: HLTB, scores, features) is
+the shape the plan asked for, so what is left here is the media strip collapse
+(one row plus "tümünü gör" for the similar-games grid) and a skeleton pass.
 
 **Faz 3 — repaint diet (M).** IGDB arrival patches the affected containers
 instead of rebuilding the overview; batch the store/HLTB/critic paints into one

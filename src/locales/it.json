@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "Fonte: IGDB",
   "settings.imageCacheTitle": "Cache immagini",
   "settings.imageCacheDesc": "Copertine e screenshot delle pagine di gioco restano su disco: una pagina già aperta si riapre senza attese di rete.",
-  "settings.imageCacheCleared": "Cache immagini svuotata ({size})."
+  "settings.imageCacheCleared": "Cache immagini svuotata ({size}).",
+  "drawer.readMore": "Leggi tutto",
+  "drawer.readLess": "Mostra meno"
 }

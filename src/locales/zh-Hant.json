@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "來源：IGDB",
   "settings.imageCacheTitle": "圖片快取",
   "settings.imageCacheDesc": "遊戲頁面的封面與截圖會保存在磁碟上，開啟過的頁面不必等待網路。",
-  "settings.imageCacheCleared": "圖片快取已清空（{size}）。"
+  "settings.imageCacheCleared": "圖片快取已清空（{size}）。",
+  "drawer.readMore": "展開閱讀",
+  "drawer.readLess": "收合"
 }

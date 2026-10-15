@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "출처: IGDB",
   "settings.imageCacheTitle": "이미지 캐시",
   "settings.imageCacheDesc": "게임 페이지의 커버와 스크린샷을 디스크에 보관하므로 한 번 연 페이지는 네트워크를 기다리지 않습니다.",
-  "settings.imageCacheCleared": "이미지 캐시를 비웠습니다 ({size})."
+  "settings.imageCacheCleared": "이미지 캐시를 비웠습니다 ({size}).",
+  "drawer.readMore": "더 보기",
+  "drawer.readLess": "접기"
 }

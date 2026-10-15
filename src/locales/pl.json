@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "Źródło: IGDB",
   "settings.imageCacheTitle": "Pamięć obrazów",
   "settings.imageCacheDesc": "Okładki i zrzuty ze stron gier są trzymane na dysku, więc raz otwarta strona otwiera się bez czekania na sieć.",
-  "settings.imageCacheCleared": "Pamięć obrazów wyczyszczona ({size})."
+  "settings.imageCacheCleared": "Pamięć obrazów wyczyszczona ({size}).",
+  "drawer.readMore": "Czytaj dalej",
+  "drawer.readLess": "Pokaż mniej"
 }

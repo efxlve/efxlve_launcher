@@ -6,6 +6,7 @@
 import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
+import { toggleAboutExpanded } from "../../drawer/drawer-view";
 import { gameVersionsOf, isCompanionSource, sourceOfKey, summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { refreshLibraryResultsInPlace } from "../../library/library-view";
@@ -130,6 +131,14 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       document.getElementById("version-dropdown-menu")?.classList.toggle("show", S.isVersionDropdownOpen);
       document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", String(S.isVersionDropdownOpen));
       return true;
+
+    case "toggle-about": {
+      const appName = t.dataset.id ?? S.currentModalAppName ?? "";
+      if (!appName) return true;
+      toggleAboutExpanded(appName);
+      if (S.currentModalAppName) openEpicModal(S.currentModalAppName, false);
+      return true;
+    }
 
     case "drawer-tab": {
       const tab = t.dataset.tab as DrawerTab;

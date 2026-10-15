@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "Fuente: IGDB",
   "settings.imageCacheTitle": "Caché de imágenes",
   "settings.imageCacheDesc": "Las carátulas y capturas de las páginas de juego se guardan en disco, así una página abierta se abre sin esperar a la red.",
-  "settings.imageCacheCleared": "Caché de imágenes borrada ({size})."
+  "settings.imageCacheCleared": "Caché de imágenes borrada ({size}).",
+  "drawer.readMore": "Leer más",
+  "drawer.readLess": "Mostrar menos"
 }

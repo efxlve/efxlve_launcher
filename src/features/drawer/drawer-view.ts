@@ -440,6 +440,40 @@ function aboutMarkup(text: string): string {
   return parts.map((part) => `<p>${esc(part)}</p>`).join("");
 }
 
+/** Blurbs past this read as a wall; the box shows the opening and a way in. */
+const ABOUT_CLAMP_CHARS = 520;
+/** Games whose blurb the user opened in full (session-scoped). */
+const expandedAbout = new Set<string>();
+
+/** Opens or closes a clamped blurb; the action handler calls this. */
+export function toggleAboutExpanded(appName: string): void {
+  if (expandedAbout.has(appName)) expandedAbout.delete(appName);
+  else expandedAbout.add(appName);
+}
+
+/**
+ * The About box body: the whole blurb, or its opening plus a "read more". Store
+ * catalogs can run twenty lines, and the facts below should not be pushed off
+ * the screen by a wall of marketing copy.
+ */
+function aboutBodyHtml(s: EpicSummary, text: string): { html: string; clamped: boolean } {
+  if (!text) return { html: "", clamped: false };
+  if (expandedAbout.has(s.appName) || text.length <= ABOUT_CLAMP_CHARS) {
+    return { html: aboutMarkup(text), clamped: false };
+  }
+  const head = text.slice(0, ABOUT_CLAMP_CHARS);
+  const sentence = Math.max(head.lastIndexOf(". "), head.lastIndexOf(".\n"));
+  const space = head.lastIndexOf(" ");
+  const cut = sentence > 200 ? head.slice(0, sentence + 1) : head.slice(0, space > 200 ? space : head.length);
+  return { html: aboutMarkup(`${cut}…`), clamped: true };
+}
+
+/** The "read more" / "read less" control under a clamped blurb. */
+function aboutToggleHtml(s: EpicSummary): string {
+  const expanded = expandedAbout.has(s.appName);
+  return `<button type="button" class="btn ghost small about-toggle" data-act="toggle-about" data-id="${esc(s.appName)}">${t(expanded ? "drawer.readLess" : "drawer.readMore")}</button>`;
+}
+
 /** IGDB's blurb for this game: the About box's first choice. */
 function igdbAboutText(s: EpicSummary): string {
   return igdbGameFor(s.appName)?.summary?.trim() || "";
@@ -529,11 +563,12 @@ function paintAboutText(s: EpicSummary): void {
   const igdbDesc = igdbAboutText(s);
   const text = igdbDesc || storeDesc || wikiText;
   const pending = !igdbDesc && !igdbAboutSettled(s.appName);
+  const body = aboutBodyHtml(s, text);
   descEl.innerHTML = pending
     ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
-    : text
-      ? aboutMarkup(text)
-      : `<p>${t("drawer.noDescription")}</p>`;
+    : body.html || `<p>${t("drawer.noDescription")}</p>`;
+  const toggle = document.querySelector<HTMLElement>(".about-toggle");
+  if (toggle) toggle.hidden = text.length <= ABOUT_CLAMP_CHARS;
   const srcEl = document.getElementById("hub-desc-source");
   if (srcEl) {
     srcEl.hidden = pending || !text;
@@ -856,6 +891,10 @@ export function renderDrawerOverview(
     (!effectiveDesc && !(aboutCache.has(key) || S.loadedRequirements.has(s.appName) || Boolean(epicDesc)));
   const sourceText = aboutSourceText(s, epicDesc, wikiText);
   const sourceHidden = aboutLoading || !effectiveDesc;
+  const aboutBody = aboutBodyHtml(s, effectiveDesc ?? "");
+  // Long blurb = a toggle either way: "read more" while clamped, "show less"
+  // once it is open.
+  const aboutLong = (effectiveDesc ?? "").length > ABOUT_CLAMP_CHARS;
 
   return `
     <div class="hub-overview-layout">
@@ -866,10 +905,9 @@ export function renderDrawerOverview(
           <div class="hub-desc-text" id="hub-desc-text">${
             aboutLoading
               ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
-              : effectiveDesc
-                ? aboutMarkup(effectiveDesc)
-                : `<p>${t("drawer.noDescription")}</p>`
+              : aboutBody.html || `<p>${t("drawer.noDescription")}</p>`
           }</div>
+          ${!aboutLoading && aboutLong ? aboutToggleHtml(s) : ""}
           <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
         </section>
         ${renderIgdbSection(s)}

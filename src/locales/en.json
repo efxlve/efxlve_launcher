@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "Source: IGDB",
   "settings.imageCacheTitle": "Picture cache",
   "settings.imageCacheDesc": "Covers and screenshots from the game pages are kept on disk, so a page you opened once opens again without a network wait.",
-  "settings.imageCacheCleared": "Picture cache cleared ({size})."
+  "settings.imageCacheCleared": "Picture cache cleared ({size}).",
+  "drawer.readMore": "Read more",
+  "drawer.readLess": "Show less"
 }

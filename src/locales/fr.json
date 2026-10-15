@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "Source : IGDB",
   "settings.imageCacheTitle": "Cache d'images",
   "settings.imageCacheDesc": "Les jaquettes et captures des pages de jeu restent sur le disque : une page déjà ouverte se rouvre sans attendre le réseau.",
-  "settings.imageCacheCleared": "Cache d'images vidé ({size})."
+  "settings.imageCacheCleared": "Cache d'images vidé ({size}).",
+  "drawer.readMore": "Lire la suite",
+  "drawer.readLess": "Afficher moins"
 }

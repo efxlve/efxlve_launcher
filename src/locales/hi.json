@@ -2389,5 +2389,7 @@
   "drawer.sourceIgdb": "स्रोत: IGDB",
   "settings.imageCacheTitle": "छवि कैश",
   "settings.imageCacheDesc": "गेम पेजों के कवर और स्क्रीनशॉट डिस्क पर रखे जाते हैं, इसलिए एक बार खोला गया पेज नेटवर्क का इंतज़ार नहीं करता।",
-  "settings.imageCacheCleared": "छवि कैश साफ़ किया गया ({size})।"
+  "settings.imageCacheCleared": "छवि कैश साफ़ किया गया ({size})।",
+  "drawer.readMore": "और पढ़ें",
+  "drawer.readLess": "कम दिखाएँ"
 }
