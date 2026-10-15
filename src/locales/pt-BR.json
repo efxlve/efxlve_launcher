@@ -1561,7 +1561,6 @@
   "ss.moved": "{count} capturas movidas",
   "ss.movedPartial": "{count} movidas, {skipped} já existiam",
   "ss.moveFailed": "Não foi possível mover as capturas.",
-  "drawer.igdbLink": "Pesquisar no IGDB",
   "drawer.loadingAbout": "Carregando descrição…",
   "drawer.wikiSource": "Sem dados da {store}. Fonte atual: Wikipédia.",
   "drawer.sourceEpic": "Fonte: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "Desligado",
   "accounts.openDiscord": "Abrir o Discord",
   "igdb.proxyDown": "Servidor não responde",
-  "igdb.setupHint": "Com o IGDB você vê a nota da comunidade, gêneros, classificação etária e capturas em cada jogo."
+  "igdb.setupHint": "Com o IGDB você vê a nota da comunidade, gêneros, classificação etária e capturas em cada jogo.",
+  "drawer.sourceIgdb": "Fonte: IGDB"
 }

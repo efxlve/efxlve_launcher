@@ -1561,7 +1561,6 @@
   "ss.moved": "Przeniesiono {count} zrzutów ekranu",
   "ss.movedPartial": "Przeniesiono {count}, {skipped} już istniało",
   "ss.moveFailed": "Nie udało się przenieść zrzutów ekranu.",
-  "drawer.igdbLink": "Szukaj w IGDB",
   "drawer.loadingAbout": "Ładowanie opisu…",
   "drawer.wikiSource": "Brak danych z {store}. Obecne źródło: Wikipedia.",
   "drawer.sourceEpic": "Źródło: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "Wyłączone",
   "accounts.openDiscord": "Otwórz Discord",
   "igdb.proxyDown": "Serwer nie odpowiada",
-  "igdb.setupHint": "Dzięki IGDB zobaczysz ocenę społeczności, gatunki, kategorie wiekowe i zrzuty ekranu na każdej stronie gry."
+  "igdb.setupHint": "Dzięki IGDB zobaczysz ocenę społeczności, gatunki, kategorie wiekowe i zrzuty ekranu na każdej stronie gry.",
+  "drawer.sourceIgdb": "Źródło: IGDB"
 }

@@ -1652,7 +1652,6 @@
   "ss.moved": "{count} screenshots moved",
   "ss.movedPartial": "{count} moved, {skipped} already existed",
   "ss.moveFailed": "Screenshots could not be moved.",
-  "drawer.igdbLink": "Search on IGDB",
   "drawer.loadingAbout": "Loading description…",
   "drawer.wikiSource": "No data from {store}. Current source: Wikipedia.",
   "drawer.sourceEpic": "Source: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "Off",
   "accounts.openDiscord": "Open Discord",
   "igdb.proxyDown": "Server not responding",
-  "igdb.setupHint": "Add IGDB to see community scores, genres, age ratings and screenshots on every game page."
+  "igdb.setupHint": "Add IGDB to see community scores, genres, age ratings and screenshots on every game page.",
+  "drawer.sourceIgdb": "Source: IGDB"
 }

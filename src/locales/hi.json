@@ -1652,7 +1652,6 @@
   "ss.moved": "{count} स्क्रीनशॉट स्थानांतरित किए गए",
   "ss.movedPartial": "{count} स्थानांतरित किए गए, {skipped} पहले से मौजूद थे",
   "ss.moveFailed": "स्क्रीनशॉट स्थानांतरित नहीं किए जा सके।",
-  "drawer.igdbLink": "IGDB पर खोजें",
   "drawer.loadingAbout": "विवरण लोड हो रहा है…",
   "drawer.wikiSource": "{store} से कोई डेटा नहीं। वर्तमान स्रोत: Wikipedia।",
   "drawer.sourceEpic": "स्रोत: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "बंद",
   "accounts.openDiscord": "Discord खोलें",
   "igdb.proxyDown": "सर्वर जवाब नहीं दे रहा",
-  "igdb.setupHint": "IGDB चालू करने पर हर गेम पेज पर कम्युनिटी स्कोर, शैलियाँ, आयु रेटिंग और स्क्रीनशॉट दिखेंगे।"
+  "igdb.setupHint": "IGDB चालू करने पर हर गेम पेज पर कम्युनिटी स्कोर, शैलियाँ, आयु रेटिंग और स्क्रीनशॉट दिखेंगे।",
+  "drawer.sourceIgdb": "स्रोत: IGDB"
 }

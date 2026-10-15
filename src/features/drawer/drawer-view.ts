@@ -38,7 +38,7 @@ import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
 import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
-import { ensureIgdbOverview, renderIgdbSection } from "./igdb-view";
+import { ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbSection } from "./igdb-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -104,6 +104,10 @@ function gameAntiCheat(s: EpicSummary, g: ReturnType<typeof rawOf>): string | nu
 }
 
 function gameDeveloper(s: EpicSummary, g: ReturnType<typeof rawOf>): string {
+  // IGDB knows the studio that made the game; the store catalogs often list the
+  // publisher or nothing at all. Their fields stay as the fallback.
+  const igdbDev = igdbGameFor(s.appName)?.developer ?? "";
+  if (igdbDev) return igdbDev;
   if (s.appName.startsWith("gog::")) {
     return S.gogSummariesMap.get(s.appName.slice(5))?.developer || "";
   }
@@ -431,9 +435,9 @@ function aboutMarkup(text: string): string {
   return parts.map((part) => `<p>${esc(part)}</p>`).join("");
 }
 
-/** IGDB has no keyless API, so the About box links to its search page. */
-function igdbSearchUrl(title: string): string {
-  return `https://www.igdb.com/search?type=1&q=${encodeURIComponent(title)}`;
+/** IGDB's blurb for this game: the About box's first choice. */
+function igdbAboutText(s: EpicSummary): string {
+  return igdbGameFor(s.appName)?.summary?.trim() || "";
 }
 
 /** Epic's catalog description (raw or from the store data); empty when unusable. */
@@ -458,13 +462,16 @@ function aboutKey(appName: string): string {
 }
 
 /**
- * Order: the game's own store first (Epic/GOG), then Wikipedia.
+ * Order: IGDB first (it is the page's metadata source), then the game's own
+ * store (Epic/GOG), then Wikipedia.
  *
- * The wiki fallback is deliberately NOT requested until the store lookup has
- * settled. Starting it earlier made Wikipedia appear first and then get
- * replaced by the store text, which read like a wrong description.
+ * The wiki fallback is deliberately NOT requested until IGDB and the store
+ * lookup have settled. Starting it earlier made Wikipedia appear first and then
+ * get replaced by the better text, which read like a wrong description.
  */
 function maybeLoadWikiAbout(s: EpicSummary): void {
+  if (igdbAboutText(s)) return;
+  if (!igdbAboutSettled(s.appName)) return;
   if (epicDescription(s)) return;
   if (!storeAboutSettled.has(s.appName)) return;
   if (!S.loadedRequirements.has(s.appName)) return;
@@ -487,8 +494,9 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
   }
 }
 
-/** Source note under the description: the game's own store, or the Wikipedia fallback. */
+/** Source note under the description: IGDB, the game's own store, or Wikipedia. */
 function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): string {
+  if (igdbAboutText(s)) return t("drawer.sourceIgdb");
   const source = sourceOfKey(s.appName);
   const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : source === "riot" ? "Riot Games" : source === "amazon" ? "Amazon Games" : "Epic Games Store";
   if (!storeDesc && wikiText) return t("drawer.wikiSource", { store: storeName });
@@ -513,11 +521,17 @@ function paintAboutText(s: EpicSummary): void {
   if (!descEl) return;
   const storeDesc = epicDescription(s);
   const wikiText = aboutCache.get(aboutKey(s.appName)) || "";
-  const text = storeDesc || wikiText;
-  descEl.innerHTML = text ? aboutMarkup(text) : `<p>${t("drawer.noDescription")}</p>`;
+  const igdbDesc = igdbAboutText(s);
+  const text = igdbDesc || storeDesc || wikiText;
+  const pending = !igdbDesc && !igdbAboutSettled(s.appName);
+  descEl.innerHTML = pending
+    ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
+    : text
+      ? aboutMarkup(text)
+      : `<p>${t("drawer.noDescription")}</p>`;
   const srcEl = document.getElementById("hub-desc-source");
   if (srcEl) {
-    srcEl.hidden = !text;
+    srcEl.hidden = pending || !text;
     srcEl.textContent = aboutSourceText(s, storeDesc, wikiText);
   }
 }
@@ -631,8 +645,14 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (companion && isInitialOpen) S.activeDrawerTab = "overview";
 
   ensureOverviewData(s);
-  // IGDB enrichment (only when credentials are configured): one cached call.
-  ensureIgdbOverview(s, gameReleaseYear(s));
+  // IGDB is the page's first metadata source: one cached call per game. When
+  // the answer lands the hero line and the overview are repainted, so the store
+  // data only ever fills the gaps.
+  ensureIgdbOverview(s, gameReleaseYear(s), () => {
+    if (S.currentModalAppName !== appName) return;
+    paintGameMeta(s);
+    if (S.activeDrawerTab === "overview") openEpicModal(appName, false);
+  });
   if (companion) {
     // The client catalog often ships its own description; Wikipedia is only
     // the fallback, so the store text does not flash and get replaced.
@@ -775,15 +795,21 @@ export function renderDrawerOverview(
   antiCheat: string | null = null,
 ): string {
   const epicDesc = epicDescription(s);
+  const igdbDesc = igdbAboutText(s);
   const key = aboutKey(s.appName);
   const wikiText = aboutCache.get(key) || "";
-  // The game's own store (Epic) wins; Wikipedia is the fallback. The source
-  // note under the box tells the user when the fallback is being used.
-  const effectiveDesc = epicDesc || wikiText || null;
-  const aboutResolved = aboutCache.has(key);
-  const aboutLoading = !effectiveDesc && !aboutResolved && (S.loadingReqFor === s.appName || S.loadingAboutFor === key);
+  // IGDB first, then the game's own store, then Wikipedia. The note under the
+  // box names whichever source won, so a fallback is never silent.
+  const effectiveDesc = igdbDesc || epicDesc || wikiText || null;
+  // The box waits for IGDB before showing the store text: replacing the text
+  // under the reader's eyes reads like the wrong description. Once IGDB has
+  // settled, the spinner only stays while the store or the wiki can still answer.
+  const igdbPending = !igdbDesc && !igdbAboutSettled(s.appName);
+  const aboutLoading =
+    igdbPending ||
+    (!effectiveDesc && !(aboutCache.has(key) || S.loadedRequirements.has(s.appName) || Boolean(epicDesc)));
   const sourceText = aboutSourceText(s, epicDesc, wikiText);
-  const sourceHidden = !effectiveDesc;
+  const sourceHidden = aboutLoading || !effectiveDesc;
 
   return `
     <div class="hub-overview-layout">
@@ -798,9 +824,6 @@ export function renderDrawerOverview(
                 ? aboutMarkup(effectiveDesc)
                 : `<p>${t("drawer.noDescription")}</p>`
           }</div>
-          <p class="hub-desc-igdb">
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${igdbSearchUrl(s.title)}">${icon("external", 13)} ${t("drawer.igdbLink")}</button>
-          </p>
           <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
         </section>
         ${renderIgdbSection(s)}

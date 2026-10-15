@@ -1652,7 +1652,6 @@
   "ss.moved": "{count} ekran görüntüsü taşındı",
   "ss.movedPartial": "{count} taşındı, {skipped} zaten vardı",
   "ss.moveFailed": "Ekran görüntüleri taşınamadı.",
-  "drawer.igdbLink": "IGDB'de ara",
   "drawer.loadingAbout": "Açıklama yükleniyor…",
   "drawer.wikiSource": "{store}'dan veriler alınamadı. Şu anki kaynak: Wikipedia.",
   "drawer.sourceEpic": "Kaynak: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "Kapalı",
   "accounts.openDiscord": "Discord'u Aç",
   "igdb.proxyDown": "Sunucu yanıt vermiyor",
-  "igdb.setupHint": "IGDB'yi açarak her oyun sayfasında topluluk puanı, tür, yaş sınırı ve ekran görüntülerini görebilirsin."
+  "igdb.setupHint": "IGDB'yi açarak her oyun sayfasında topluluk puanı, tür, yaş sınırı ve ekran görüntülerini görebilirsin.",
+  "drawer.sourceIgdb": "Kaynak: IGDB"
 }

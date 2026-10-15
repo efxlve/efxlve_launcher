@@ -1561,7 +1561,6 @@
   "ss.moved": "Перемещено снимков: {count}",
   "ss.movedPartial": "Перемещено {count}, уже было {skipped}",
   "ss.moveFailed": "Не удалось переместить снимки.",
-  "drawer.igdbLink": "Искать в IGDB",
   "drawer.loadingAbout": "Загрузка описания…",
   "drawer.wikiSource": "Нет данных из {store}. Текущий источник: Wikipedia.",
   "drawer.sourceEpic": "Источник: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "Выключено",
   "accounts.openDiscord": "Открыть Discord",
   "igdb.proxyDown": "Сервер не отвечает",
-  "igdb.setupHint": "С IGDB на каждой странице игры появятся оценка сообщества, жанры, возрастные рейтинги и скриншоты."
+  "igdb.setupHint": "С IGDB на каждой странице игры появятся оценка сообщества, жанры, возрастные рейтинги и скриншоты.",
+  "drawer.sourceIgdb": "Источник: IGDB"
 }

@@ -1561,7 +1561,6 @@
   "ss.moved": "已移動 {count} 張擷取畫面",
   "ss.movedPartial": "已移動 {count} 張，{skipped} 張已存在",
   "ss.moveFailed": "無法移動螢幕擷取畫面。",
-  "drawer.igdbLink": "在 IGDB 中搜尋",
   "drawer.loadingAbout": "正在載入簡介…",
   "drawer.wikiSource": "無法從 {store} 取得資料。目前來源：Wikipedia。",
   "drawer.sourceEpic": "來源：Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "關閉",
   "accounts.openDiscord": "開啟 Discord",
   "igdb.proxyDown": "伺服器無回應",
-  "igdb.setupHint": "啟用 IGDB 後，每個遊戲頁面都會顯示社群評分、類型、年齡分級與截圖。"
+  "igdb.setupHint": "啟用 IGDB 後，每個遊戲頁面都會顯示社群評分、類型、年齡分級與截圖。",
+  "drawer.sourceIgdb": "來源：IGDB"
 }

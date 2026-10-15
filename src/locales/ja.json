@@ -1561,7 +1561,6 @@
   "ss.moved": "{count} 件のスクリーンショットを移動しました",
   "ss.movedPartial": "{count} 件移動、{skipped} 件は既存",
   "ss.moveFailed": "スクリーンショットを移動できませんでした。",
-  "drawer.igdbLink": "IGDB で検索",
   "drawer.loadingAbout": "説明を読み込み中…",
   "drawer.wikiSource": "{store} からデータを取得できませんでした。現在のソース: Wikipedia。",
   "drawer.sourceEpic": "ソース: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "オフ",
   "accounts.openDiscord": "Discord を開く",
   "igdb.proxyDown": "サーバーが応答しません",
-  "igdb.setupHint": "IGDB を設定すると、各ゲームページにコミュニティスコア、ジャンル、年齢区分、スクリーンショットが表示されます。"
+  "igdb.setupHint": "IGDB を設定すると、各ゲームページにコミュニティスコア、ジャンル、年齢区分、スクリーンショットが表示されます。",
+  "drawer.sourceIgdb": "出典: IGDB"
 }

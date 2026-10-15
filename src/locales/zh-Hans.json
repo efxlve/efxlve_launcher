@@ -1561,7 +1561,6 @@
   "ss.moved": "已移动 {count} 张截图",
   "ss.movedPartial": "已移动 {count} 张，{skipped} 张已存在",
   "ss.moveFailed": "无法移动截图。",
-  "drawer.igdbLink": "在 IGDB 中搜索",
   "drawer.loadingAbout": "正在加载简介…",
   "drawer.wikiSource": "无法从 {store} 获取数据。当前来源：Wikipedia。",
   "drawer.sourceEpic": "来源：Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "关闭",
   "accounts.openDiscord": "打开 Discord",
   "igdb.proxyDown": "服务器无响应",
-  "igdb.setupHint": "启用 IGDB 后，每个游戏页面都会显示社区评分、类型、年龄分级和截图。"
+  "igdb.setupHint": "启用 IGDB 后，每个游戏页面都会显示社区评分、类型、年龄分级和截图。",
+  "drawer.sourceIgdb": "来源：IGDB"
 }

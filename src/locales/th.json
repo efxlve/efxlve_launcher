@@ -1561,7 +1561,6 @@
   "ss.moved": "ย้ายภาพหน้าจอแล้ว {count} ภาพ",
   "ss.movedPartial": "ย้าย {count} ภาพ มีอยู่แล้ว {skipped} ภาพ",
   "ss.moveFailed": "ไม่สามารถย้ายภาพหน้าจอได้",
-  "drawer.igdbLink": "ค้นหาใน IGDB",
   "drawer.loadingAbout": "กำลังโหลดคำอธิบาย…",
   "drawer.wikiSource": "ไม่พบข้อมูลจาก {store} แหล่งข้อมูลปัจจุบัน: Wikipedia",
   "drawer.sourceEpic": "แหล่งข้อมูล: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "ปิด",
   "accounts.openDiscord": "เปิด Discord",
   "igdb.proxyDown": "เซิร์ฟเวอร์ไม่ตอบสนอง",
-  "igdb.setupHint": "เปิด IGDB เพื่อดูคะแนนจากชุมชน แนวเกม เรตติ้งตามวัย และภาพหน้าจอในทุกหน้าเกม"
+  "igdb.setupHint": "เปิด IGDB เพื่อดูคะแนนจากชุมชน แนวเกม เรตติ้งตามวัย และภาพหน้าจอในทุกหน้าเกม",
+  "drawer.sourceIgdb": "ที่มา: IGDB"
 }

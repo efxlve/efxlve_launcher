@@ -1561,7 +1561,6 @@
   "ss.moved": "تم نقل {count} لقطة",
   "ss.movedPartial": "تم نقل {count}، وكانت {skipped} موجودة مسبقًا",
   "ss.moveFailed": "تعذّر نقل اللقطات.",
-  "drawer.igdbLink": "ابحث في IGDB",
   "drawer.loadingAbout": "جارٍ تحميل الوصف…",
   "drawer.wikiSource": "لا توجد بيانات من {store}. المصدر الحالي: Wikipedia.",
   "drawer.sourceEpic": "المصدر: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "متوقف",
   "accounts.openDiscord": "افتح Discord",
   "igdb.proxyDown": "الخادم لا يستجيب",
-  "igdb.setupHint": "بتفعيل IGDB سترى تقييم المجتمع والأنواع والتصنيف العمري ولقطات الشاشة في كل صفحة لعبة."
+  "igdb.setupHint": "بتفعيل IGDB سترى تقييم المجتمع والأنواع والتصنيف العمري ولقطات الشاشة في كل صفحة لعبة.",
+  "drawer.sourceIgdb": "المصدر: IGDB"
 }

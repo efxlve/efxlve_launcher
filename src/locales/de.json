@@ -1561,7 +1561,6 @@
   "ss.moved": "{count} Screenshots verschoben",
   "ss.movedPartial": "{count} verschoben, {skipped} bereits vorhanden",
   "ss.moveFailed": "Screenshots konnten nicht verschoben werden.",
-  "drawer.igdbLink": "Auf IGDB suchen",
   "drawer.loadingAbout": "Beschreibung wird geladen…",
   "drawer.wikiSource": "Keine Daten von {store}. Aktuelle Quelle: Wikipedia.",
   "drawer.sourceEpic": "Quelle: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "Aus",
   "accounts.openDiscord": "Discord öffnen",
   "igdb.proxyDown": "Server antwortet nicht",
-  "igdb.setupHint": "Mit IGDB siehst du Community-Wertung, Genres, Altersfreigaben und Screenshots auf jeder Spielseite."
+  "igdb.setupHint": "Mit IGDB siehst du Community-Wertung, Genres, Altersfreigaben und Screenshots auf jeder Spielseite.",
+  "drawer.sourceIgdb": "Quelle: IGDB"
 }

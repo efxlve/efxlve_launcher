@@ -25,7 +25,7 @@ const errors = new Map<string, string>();
 const loading = new Set<string>();
 
 /** Fetches once per game and repaints the block when the answer lands. */
-export function ensureIgdbOverview(target: IgdbTarget, year: number | null): void {
+export function ensureIgdbOverview(target: IgdbTarget, year: number | null, onArrive?: () => void): void {
   if (!S.igdbConfigured || S.offlineMode || cache.has(target.appName) || loading.has(target.appName)) return;
   loading.add(target.appName);
   void igdbEnrich(target.title, year, igdbExternalId(target.appName))
@@ -47,7 +47,28 @@ export function ensureIgdbOverview(target: IgdbTarget, year: number | null): voi
       if (host && S.currentModalAppName === target.appName) {
         host.innerHTML = igdbInnerHtml(target);
       }
+      onArrive?.();
     });
+}
+
+/**
+ * The enriched game for an app name, for the parts of the page that prefer IGDB
+ * over the store data: `undefined` until the call settles, `null` when IGDB had
+ * no convincing match.
+ */
+export function igdbGameFor(appName: string): IgdbGame | null | undefined {
+  return cache.get(appName);
+}
+
+/**
+ * True once IGDB cannot answer for this game any more — it has answered, it
+ * failed, or it is not configured at all. The About box waits for this before
+ * it falls back to a store description or Wikipedia, so the text does not
+ * appear and then get replaced.
+ */
+export function igdbAboutSettled(appName: string): boolean {
+  if (!S.igdbConfigured || S.offlineMode) return true;
+  return cache.has(appName) || errors.has(appName);
 }
 
 /** The whole block; a short setup row while IGDB has not been configured. */

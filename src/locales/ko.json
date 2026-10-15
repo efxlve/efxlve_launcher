@@ -1561,7 +1561,6 @@
   "ss.moved": "스크린샷 {count}개를 이동했습니다",
   "ss.movedPartial": "{count}개 이동, {skipped}개는 이미 있음",
   "ss.moveFailed": "스크린샷을 이동할 수 없습니다.",
-  "drawer.igdbLink": "IGDB에서 검색",
   "drawer.loadingAbout": "설명을 불러오는 중…",
   "drawer.wikiSource": "{store}에서 데이터를 가져오지 못했습니다. 현재 출처: Wikipedia.",
   "drawer.sourceEpic": "출처: Epic Games Store",
@@ -2386,5 +2385,6 @@
   "accounts.discordIdle": "꺼짐",
   "accounts.openDiscord": "Discord 열기",
   "igdb.proxyDown": "서버가 응답하지 않음",
-  "igdb.setupHint": "IGDB를 켜면 각 게임 페이지에서 커뮤니티 점수, 장르, 연령 등급, 스크린샷을 볼 수 있습니다."
+  "igdb.setupHint": "IGDB를 켜면 각 게임 페이지에서 커뮤니티 점수, 장르, 연령 등급, 스크린샷을 볼 수 있습니다.",
+  "drawer.sourceIgdb": "출처: IGDB"
 }
