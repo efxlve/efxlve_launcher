@@ -173,6 +173,163 @@ pub(crate) fn uninstall_games() -> Vec<FoundGame> {
 
 #[cfg(windows)]
 fn scan_uninstall() -> String {
+    use windows::core::{PCWSTR, PWSTR};
+    use windows::Win32::Foundation::ERROR_SUCCESS;
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegEnumKeyExW, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER,
+        HKEY_LOCAL_MACHINE, KEY_READ, REG_EXPAND_SZ, REG_SZ, REG_VALUE_TYPE,
+    };
+
+    fn wide(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    /// One string value of an open key, with the marker the text parser expects.
+    unsafe fn read_string(key: HKEY, name: &str) -> Option<(String, &'static str)> {
+        let name = wide(name);
+        let mut kind = REG_VALUE_TYPE(0);
+        let mut size = 0u32;
+        if RegQueryValueExW(
+            key,
+            PCWSTR(name.as_ptr()),
+            None,
+            Some(&mut kind),
+            None,
+            Some(&mut size),
+        ) != ERROR_SUCCESS
+            || size == 0
+        {
+            return None;
+        }
+        let marker = if kind == REG_EXPAND_SZ {
+            "REG_EXPAND_SZ"
+        } else if kind == REG_SZ {
+            "REG_SZ"
+        } else {
+            return None;
+        };
+        let mut buffer = vec![0u16; size as usize / 2 + 1];
+        let mut read = size;
+        if RegQueryValueExW(
+            key,
+            PCWSTR(name.as_ptr()),
+            None,
+            Some(&mut kind),
+            Some(buffer.as_mut_ptr() as *mut u8),
+            Some(&mut read),
+        ) != ERROR_SUCCESS
+        {
+            return None;
+        }
+        let text = String::from_utf16_lossy(&buffer);
+        let text = text.trim_end_matches('\0').trim().to_string();
+        (!text.is_empty()).then_some((text, marker))
+    }
+
+    // The Win32 registry API instead of `reg query <root> /s`: the text dump
+    // walks every key in the tree and took 2.5 s of the first library refresh,
+    // while this reads only the three values the parser keeps (~50 ms). It also
+    // decodes the names properly; `reg query` writes them in the OEM code page.
+    let roots: [(HKEY, &str, &str); 3] = [
+        (
+            HKEY_LOCAL_MACHINE,
+            "HKEY_LOCAL_MACHINE",
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        ),
+        (
+            HKEY_LOCAL_MACHINE,
+            "HKEY_LOCAL_MACHINE",
+            r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+        ),
+        (
+            HKEY_CURRENT_USER,
+            "HKEY_CURRENT_USER",
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        ),
+    ];
+
+    /// Reads the three values of one uninstall key and appends them in the
+    /// `reg query` shape the parser expects.
+    unsafe fn emit(key: HKEY, full_path: &str, out: &mut String) {
+        let mut wrote_header = false;
+        for value_name in ["DisplayName", "Publisher", "InstallLocation"] {
+            let Some((text, marker)) = read_string(key, value_name) else {
+                continue;
+            };
+            if !wrote_header {
+                // The parser flushes an entry when a key path starts.
+                out.push_str(&format!("\r\n{full_path}\n"));
+                wrote_header = true;
+            }
+            out.push_str(&format!("    {value_name}    {marker}    {text}\n"));
+        }
+    }
+
+    /// `reg query /s` recursed; a few products keep their entry one level down,
+    /// so the walk does too (three levels is far past anything real).
+    unsafe fn walk(key: HKEY, full_path: &str, out: &mut String, depth: u32) {
+        if depth > 3 {
+            return;
+        }
+        let mut index = 0u32;
+        loop {
+            let mut name_buf = [0u16; 512];
+            let mut name_len = (name_buf.len() - 1) as u32;
+            let status = RegEnumKeyExW(
+                key,
+                index,
+                Some(PWSTR(name_buf.as_mut_ptr())),
+                &mut name_len,
+                None,
+                None,
+                None,
+                None,
+            );
+            if status != ERROR_SUCCESS {
+                // A name that does not fit is skipped, not the rest of the key.
+                if status == windows::Win32::Foundation::ERROR_MORE_DATA {
+                    index += 1;
+                    continue;
+                }
+                break;
+            }
+            index += 1;
+            let sub_name = String::from_utf16_lossy(&name_buf[..name_len as usize]);
+            let child_path = wide(&sub_name);
+            let mut child = HKEY::default();
+            if RegOpenKeyExW(key, PCWSTR(child_path.as_ptr()), None, KEY_READ, &mut child)
+                != ERROR_SUCCESS
+            {
+                continue;
+            }
+            let child_full = format!("{full_path}\\{sub_name}");
+            emit(child, &child_full, out);
+            walk(child, &child_full, out, depth + 1);
+            let _ = RegCloseKey(child);
+        }
+    }
+
+    let mut out = String::new();
+    for (root, hive, path) in roots {
+        let subkey = wide(path);
+        let mut key = HKEY::default();
+        unsafe {
+            if RegOpenKeyExW(root, PCWSTR(subkey.as_ptr()), None, KEY_READ, &mut key)
+                != ERROR_SUCCESS
+            {
+                continue;
+            }
+            walk(key, &format!("{hive}\\{path}"), &mut out, 1);
+            let _ = RegCloseKey(key);
+        }
+    }
+    out
+}
+
+/// The pre-Win32 implementation, kept for the comparison test: `reg query /s`
+/// over the same three hives.
+#[cfg(all(windows, test))]
+fn scan_uninstall_reg_query() -> String {
     use std::os::windows::process::CommandExt;
 
     let roots = [
@@ -216,7 +373,12 @@ fn query_uninstall() -> String {
                 return text.clone();
             }
         }
+        let t_scan = Instant::now();
         let text = scan_uninstall();
+        crate::perf::write_line_global(&format!(
+            "{:>6} ms  rust:companion/uninstall_walk",
+            t_scan.elapsed().as_millis()
+        ));
         *guard = Some((Instant::now(), text.clone()));
         return text;
     }
@@ -352,5 +514,37 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\UbiAC
         assert!(games.iter().any(|g| g.store == "battlenet" && g.name == "Overwatch"));
         assert!(games.iter().all(|g| g.name != "EA App" && g.name != "Ubisoft Connect"));
         assert!(games.iter().all(|g| !g.name.contains("AntiCheat")));
+    }
+
+    /// The Win32 enumeration must hand the parser exactly what `reg query /s`
+    /// used to: run manually on Windows (`cargo test -- --ignored`), because it
+    /// reads the real registry.
+    ///
+    /// Two legacy quirks are filtered out, both fixed by the new reader:
+    /// `reg query` wrote names in the OEM code page (mojibake for non-ASCII),
+    /// and the text parser also matched `DisplayName_Localized`, an
+    /// `@dll,-id` reference that showed as garbage where the real
+    /// `DisplayName` now wins.
+    #[test]
+    #[ignore = "reads the real registry; run manually to compare with reg query"]
+    fn win32_uninstall_scan_matches_reg_query() {
+        let collect = |text: &str| {
+            let mut entries: Vec<_> = parse_uninstall_export(text)
+                .into_iter()
+                .filter(|e| e.name.is_ascii() && e.location.is_ascii() && !e.name.starts_with('@'))
+                .map(|e| (e.name, e.publisher, e.location))
+                .collect();
+            entries.sort();
+            entries
+        };
+        let ours = collect(&scan_uninstall());
+        let legacy = collect(&scan_uninstall_reg_query());
+        // The old text scan lost every entry whose `DisplayName_Localized` (an
+        // `@dll,-id` reference) overwrote the real name, so the legacy set must
+        // be a subset: the new reader may find more, never less.
+        let missing: Vec<_> = legacy.iter().filter(|e| !ours.contains(e)).collect();
+        assert!(missing.is_empty(), "entries the new scan lost: {missing:#?}");
+        assert!(!ours.is_empty(), "the machine should have uninstall entries");
+        assert!(ours.len() >= legacy.len());
     }
 }

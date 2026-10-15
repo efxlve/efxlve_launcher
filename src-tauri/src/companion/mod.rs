@@ -245,13 +245,28 @@ pub async fn companion_installed_games() -> Vec<CompanionGame> {
 /// for the library by the name it uses.
 #[tauri::command]
 pub async fn companion_library() -> Vec<CompanionGame> {
-    tokio::task::spawn_blocking(companion_games_sync)
+    let timer = crate::perf::Timer::start("rust:companion_library");
+    let games = tokio::task::spawn_blocking(companion_games_sync)
         .await
-        .unwrap_or_default()
+        .unwrap_or_default();
+    timer.done_global();
+    games
 }
 
 fn companion_games_sync() -> Vec<CompanionGame> {
-    with_cached_art(&library_games())
+    let t_library = std::time::Instant::now();
+    let games = library_games();
+    crate::perf::write_line_global(&format!(
+        "{:>6} ms  rust:companion/library_games",
+        t_library.elapsed().as_millis()
+    ));
+    let t_art = std::time::Instant::now();
+    let result = with_cached_art(&games);
+    crate::perf::write_line_global(&format!(
+        "{:>6} ms  rust:companion/art",
+        t_art.elapsed().as_millis()
+    ));
+    result
 }
 
 #[tauri::command]

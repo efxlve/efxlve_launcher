@@ -697,6 +697,11 @@ fn main() {
         .manage(TrayPref::default())
         .manage(PendingLaunch(Mutex::new(pending_launch)))
         .setup(|app| {
+            // Boot timing: capture the log path before anything slow runs, so
+            // every module can write a line without an AppHandle.
+            if let Ok(dir) = app.path().app_data_dir() {
+                perf::init(dir);
+            }
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
                 hide_accent_border(&win);

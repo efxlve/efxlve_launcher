@@ -26,8 +26,9 @@ pub struct SteamStatus {
 
 #[tauri::command]
 pub async fn steam_status() -> SteamStatus {
+    let timer = crate::perf::Timer::start("rust:steam_status");
     // The manifest scan and the account file read belong off the main thread.
-    tokio::task::spawn_blocking(|| match steam_install_path() {
+    let status = tokio::task::spawn_blocking(|| match steam_install_path() {
         Some(path) => {
             let games = installed_games(&path).len();
             let user_name = active_steam_user(&path)
@@ -53,7 +54,9 @@ pub async fn steam_status() -> SteamStatus {
         path: String::new(),
         games: 0,
         user_name: String::new(),
-    })
+    });
+    timer.done_global();
+    status
 }
 
 /// Opens the Steam client itself (`steam://open/main`).
@@ -70,14 +73,17 @@ pub fn steam_open_downloads() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn steam_list_installed() -> Vec<SteamGame> {
+    let timer = crate::perf::Timer::start("rust:steam_list_installed");
     // A manifest scan for the whole library: off the main thread.
-    tokio::task::spawn_blocking(|| {
+    let games = tokio::task::spawn_blocking(|| {
         steam_install_path()
             .map(|p| installed_games(&p))
             .unwrap_or_default()
     })
     .await
-    .unwrap_or_default()
+    .unwrap_or_default();
+    timer.done_global();
+    games
 }
 
 /// Opens a `steam://` URL through Steam's registered protocol handler.

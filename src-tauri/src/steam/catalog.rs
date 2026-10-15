@@ -521,9 +521,12 @@ pub(super) fn cached_app_metadata(steam: &Path) -> std::collections::HashMap<Str
 /// the client's own app cache. Empty when Steam or its cache is missing.
 #[tauri::command]
 pub fn steam_app_metadata() -> std::collections::HashMap<String, SteamAppMetadata> {
-    steam_install_path()
+    let timer = crate::perf::Timer::start("rust:steam_app_metadata");
+    let result = steam_install_path()
         .map(|steam| cached_app_metadata(&steam))
-        .unwrap_or_default()
+        .unwrap_or_default();
+    timer.done_global();
+    result
 }
 
 /// Drops tags and decodes the few entities Steam actually uses.

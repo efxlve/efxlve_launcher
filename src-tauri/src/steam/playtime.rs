@@ -81,15 +81,18 @@ pub fn read_playtimes(steam: &Path) -> std::collections::HashMap<String, SteamPl
 
 #[tauri::command]
 pub async fn steam_sync_playtime() -> std::collections::HashMap<String, SteamPlaytime> {
+    let timer = crate::perf::Timer::start("rust:steam_sync_playtime");
     // The client's local config can be a few megabytes; keep the parse off the
     // main thread.
-    tokio::task::spawn_blocking(|| {
+    let playtimes = tokio::task::spawn_blocking(|| {
         steam_install_path()
             .map(|p| read_playtimes(&p))
             .unwrap_or_default()
     })
     .await
-    .unwrap_or_default()
+    .unwrap_or_default();
+    timer.done_global();
+    playtimes
 }
 
 #[cfg(test)]
