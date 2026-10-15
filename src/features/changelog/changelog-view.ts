@@ -31,9 +31,81 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.30",
+    date: "2026-10-15",
+    isCurrent: true,
+    items: [
+      {
+        en: "The game page reads its metadata from IGDB: description, genres, age rating, community score, screenshots and similar games come from the shared Efxlve server, so no Twitch key is needed. Your own credentials still work if you prefer them.",
+        tr: "Oyun sayfası künyesini artık IGDB'den okuyor: açıklama, türler, yaş sınırı, topluluk puanı, ekran görüntüleri ve benzer oyunlar paylaşılan Efxlve sunucusundan geliyor; Twitch anahtarı gerekmiyor. İstersen kendi anahtarını girmeye devam edebilirsin.",
+      },
+      {
+        en: "Scores live in one card: the IGDB community score sits next to OpenCritic and Metacritic instead of in a block of its own.",
+        tr: "Puanlar tek kartta: IGDB topluluk puanı artık kendi bloğunda değil, OpenCritic ve Metacritic'in yanında.",
+      },
+      {
+        en: "The Media tab holds the store's screenshots above your own gallery and clips, and the similar-games card closes the overview.",
+        tr: "Medya sekmesi mağazanın ekran görüntülerini kendi galerinin ve kliplerinin üstünde tutuyor; benzer oyunlar kartı Genel Bakış'ı kapatıyor.",
+      },
+      {
+        en: "The System tab leads with the facts of this copy: platform, installed size, build and EOS support.",
+        tr: "Sistem sekmesi bu kopyanın bilgileriyle başlıyor: platform, yüklü boyut, build ve EOS desteği.",
+      },
+      {
+        en: "The Manage panel is sectioned and searchable: the search opens from the icon next to the close button, and all nine stores share the same section order.",
+        tr: "Yönet paneli bölümlere ayrıldı ve aranabilir: arama, kapatma düğmesinin yanındaki ikondan açılıyor ve dokuz mağazanın hepsi aynı bölüm sırasını kullanıyor.",
+      },
+      {
+        en: "Covers and screenshots are cached on disk, so a game page you opened once opens again without waiting for the network. Settings > System shows the size and clears it.",
+        tr: "Kapaklar ve ekran görüntüleri diske kaydediliyor; bir kez açtığın oyun sayfası ağ beklemeden açılıyor. Ayarlar > Sistem boyutu gösteriyor ve temizleyebiliyor.",
+      },
+      {
+        en: "Long descriptions collapse behind a Read more button.",
+        tr: "Uzun açıklamalar \"Devamını oku\" düğmesinin arkasına katlanıyor.",
+      },
+      {
+        en: "Update rows show the version (10.2.0.7 to 10.2.1.2) instead of the build's file name.",
+        tr: "Güncelleme satırları yapının dosya adı yerine sürümü gösteriyor (10.2.0.7 - 10.2.1.2).",
+      },
+      {
+        en: "Two accounts can own the same game: the launcher plays your own copy instead of offering to switch accounts.",
+        tr: "İki hesap aynı oyuna sahip olabiliyor: launcher artık hesap değiştirmeyi önermek yerine kendi kopyanı oynatıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "IGDB matching: a standalone remaster is found again, DLC chapters and empty duplicate entries no longer win, and store titles with curly apostrophes match.",
+        tr: "IGDB eşleştirmesi: tek başına duran bir remaster yeniden bulunuyor, DLC bölümleri ve boş kopya kayıtları artık kazanmıyor, kıvrık kesme işaretli mağaza adları eşleşiyor.",
+      },
+      {
+        en: "The hero line shows the PC release, not the console release of a remaster.",
+        tr: "Başlık satırı bir remaster'ın konsol çıkışını değil, PC çıkışını gösteriyor.",
+      },
+      {
+        en: "Age ratings are picked for your region and the rest sit behind a counter.",
+        tr: "Yaş sınırı bölgene göre seçiliyor ve gerisi bir sayaç arkasında duruyor.",
+      },
+      {
+        en: "The developer and the publisher no longer appear twice when both names are the same company.",
+        tr: "Geliştirici ve yayıncı aynı şirket olduğunda artık iki kez görünmüyor.",
+      },
+      {
+        en: "The Manage panel's search no longer floats in the header, and the grey plates that read as disabled are gone.",
+        tr: "Yönet panelindeki arama artık başlıkta yüzmüyor; devre dışı gibi görünen gri plakalar kaldırıldı.",
+      },
+      {
+        en: "The completed downloads list keeps its own action button (Play or Update).",
+        tr: "Tamamlanan indirmeler listesi kendi aksiyon düğmesini koruyor (Oyna veya Güncelle).",
+      },
+      {
+        en: "An open settings row no longer closes itself on a repaint.",
+        tr: "Açık bir ayar satırı yeniden çizimde kendi kendine kapanmıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.29",
     date: "2026-10-11",
-    isCurrent: true,
     items: [
       {
         en: "The library lists Steam family shared games: titles other members share appear next to your own, and the game page marks them with a Family sharing badge.",
