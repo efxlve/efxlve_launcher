@@ -25,6 +25,9 @@ export interface IgdbGame {
   /** `yyyy-mm-dd`, empty when IGDB has no date. */
   releaseDate: string;
   releaseYear: number | null;
+  /** The PC release, which is the one this launcher should show. */
+  pcReleaseDate: string;
+  pcReleaseYear: number | null;
   /** IGDB's own 0-100 rating. */
   rating: number | null;
   genres: string[];

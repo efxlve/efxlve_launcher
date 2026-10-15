@@ -353,7 +353,8 @@ fn game_query(id: i64) -> String {
          involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
          franchises.name, collection.name, cover.image_id, screenshots.image_id, \
          similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
-         websites.category, websites.url, age_ratings.organization, age_ratings.rating_category; \
+         websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
+         release_dates.platform, release_dates.date; \
          where id = {id};"
     )
 }
@@ -482,6 +483,12 @@ pub struct IgdbGame {
     pub url: String,
     pub release_date: String,
     pub release_year: Option<i64>,
+    /// The PC release, when IGDB has one: this is a PC launcher, so a remaster's
+    /// PS5 date must not stand in for the version on this machine.
+    #[serde(default)]
+    pub pc_release_date: String,
+    #[serde(default)]
+    pub pc_release_year: Option<i64>,
     /// IGDB's own 0-100 rating.
     pub rating: Option<f64>,
     pub genres: Vec<String>,
@@ -563,6 +570,7 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
     let timestamp = value
         .get("first_release_date")
         .and_then(serde_json::Value::as_i64);
+    let pc_timestamp = pc_release_timestamp(value);
 
     let mut developer = String::new();
     let mut publisher = String::new();
@@ -661,6 +669,8 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
         url: string_field(value, "url"),
         release_date: timestamp.map(release_date).unwrap_or_default(),
         release_year: timestamp.map(year_of),
+        pc_release_date: pc_timestamp.map(release_date).unwrap_or_default(),
+        pc_release_year: pc_timestamp.map(year_of),
         rating: value.get("rating").and_then(serde_json::Value::as_f64),
         genres: name_list(value, "genres"),
         themes: name_list(value, "themes"),
@@ -681,6 +691,26 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
         website,
         age_ratings,
     }
+}
+
+/// IGDB platform 6 is PC (Microsoft Windows).
+const PC_PLATFORM: i64 = 6;
+
+/// The earliest PC release date, when the game has one. IGDB keeps one entry per
+/// platform, so this is the date a PC launcher should show.
+fn pc_release_timestamp(value: &serde_json::Value) -> Option<i64> {
+    value
+        .get("release_dates")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|dates| {
+            dates
+                .iter()
+                .filter(|entry| {
+                    entry.get("platform").and_then(serde_json::Value::as_i64) == Some(PC_PLATFORM)
+                })
+                .filter_map(|entry| entry.get("date").and_then(serde_json::Value::as_i64))
+                .min()
+        })
 }
 
 /// Lowercase, letters and digits only: the key the title lookup caches under.
@@ -790,10 +820,24 @@ fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Va
     }
 }
 
+/// Bumped whenever `IgdbGame` gains a field: entries written by an older build
+/// are fetched again instead of showing up half empty.
+const CACHE_SCHEMA: u32 = 2;
+
+/// What actually lands on disk: the schema marker next to the game itself.
+#[derive(Serialize, Deserialize)]
+struct CachedGame {
+    #[serde(default)]
+    schema: u32,
+    #[serde(flatten)]
+    game: IgdbGame,
+}
+
 fn read_cached_game(app: &AppHandle, id: i64) -> Option<IgdbGame> {
     let path = game_cache_path(app, id)?;
     let data = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str(&data).ok()
+    let cached: CachedGame = serde_json::from_str(&data).ok()?;
+    (cached.schema == CACHE_SCHEMA).then_some(cached.game)
 }
 
 fn write_cached_game(app: &AppHandle, game: &IgdbGame) {
@@ -801,7 +845,11 @@ fn write_cached_game(app: &AppHandle, game: &IgdbGame) {
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    if let Ok(data) = serde_json::to_string(game) {
+    let cached = CachedGame {
+        schema: CACHE_SCHEMA,
+        game: game.clone(),
+    };
+    if let Ok(data) = serde_json::to_string(&cached) {
         let _ = std::fs::write(path, data);
     }
 }
@@ -1230,6 +1278,37 @@ mod tests {
     }
 
     #[test]
+    fn the_pc_release_date_wins_over_a_console_first_release() {
+        // Spider-Man Remastered: PS5 in 2020, PC in 2022.
+        let sample = serde_json::json!({
+            "id": 138949,
+            "name": "Marvel's Spider-Man Remastered",
+            "first_release_date": 1_605_139_200_i64,
+            "release_dates": [
+                { "platform": 6, "date": 1_660_262_400_i64 },
+                { "platform": 167, "date": 1_605_139_200_i64 }
+            ]
+        });
+        let game = map_game(&sample, &AgeTables::default());
+        assert_eq!(game.release_year, Some(2020));
+        assert_eq!(game.pc_release_date, "2022-08-12");
+        assert_eq!(game.pc_release_year, Some(2022));
+    }
+
+    #[test]
+    fn a_game_without_a_pc_release_keeps_the_pc_fields_empty() {
+        let sample = serde_json::json!({
+            "id": 1,
+            "name": "Console Only",
+            "first_release_date": 1_605_139_200_i64,
+            "release_dates": [{ "platform": 167, "date": 1_605_139_200_i64 }]
+        });
+        let game = map_game(&sample, &AgeTables::default());
+        assert!(game.pc_release_date.is_empty());
+        assert_eq!(game.pc_release_year, None);
+    }
+
+    #[test]
     fn mapping_reads_companies_screenshots_and_similar_games() {
         let sample = serde_json::json!({
             "id": 1942,
@@ -1260,8 +1339,7 @@ mod tests {
             ]
         });
         let game = map_game(&sample, &AgeTables::default());
-        assert_eq!(game.id, 1942);
-        assert_eq!(game.developer, "CD Projekt RED");
+        assert_eq!(game.id, 1942);        assert_eq!(game.developer, "CD Projekt RED");
         assert_eq!(game.publisher, "CD Projekt");
         assert_eq!(game.release_year, Some(2015));
         assert_eq!(game.release_date, "2015-05-19");

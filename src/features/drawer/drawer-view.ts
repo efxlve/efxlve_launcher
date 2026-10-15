@@ -121,8 +121,10 @@ function gameDeveloper(s: EpicSummary, g: ReturnType<typeof rawOf>): string {
 
 function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
   const dev = gameDeveloper(s, rawOf(s.appName));
-  // IGDB carries the release year; the store catalog often does not.
-  const year = igdbGameFor(s.appName)?.releaseYear ?? null;
+  // IGDB carries the release year; the store catalog often does not. The PC
+  // date wins, so a remaster does not show its console release here.
+  const igdb = igdbGameFor(s.appName);
+  const year = igdb?.pcReleaseYear ?? igdb?.releaseYear ?? null;
   return [
     dev ? `<span>${esc(dev)}</span>` : "",
     year ? `<span class="gp-meta-item">${icon("calendar", 13)} ${year}</span>` : "",

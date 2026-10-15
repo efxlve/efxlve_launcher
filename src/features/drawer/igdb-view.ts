@@ -131,7 +131,10 @@ function igdbInnerHtml(target: IgdbTarget): string {
 function igdbCardHtml(game: IgdbGame): string {
   const tags = [...game.genres, ...game.themes].slice(0, 6);
   const facts: string[] = [];
-  if (game.releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(game.releaseDate)}</span>`);
+  // The PC release is the one that matters here; the first release is the
+  // fallback for games IGDB has no PC date for.
+  const releaseDate = game.pcReleaseDate || game.releaseDate;
+  if (releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(releaseDate)}</span>`);
   // The developer already stands in the hero line; only the publisher is added
   // here, and only when it is a different company.
   if (game.publisher && game.publisher !== game.developer) {
