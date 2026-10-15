@@ -68,7 +68,7 @@ import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
 import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
-import { igdbStatus } from "../../igdb";
+import { igdbProbeProxy, igdbStatus } from "../../igdb";
 
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
@@ -440,8 +440,10 @@ function renderIntegrations(): string {
   // IGDB (Twitch): the shared proxy is the default, so nobody has to register a
   // Twitch app. Own credentials stay possible — the secret is write-only here,
   // sealed on disk and only ever read back by Rust.
-  const igdbModeLine =
-    S.igdbMode === "direct"
+  const igdbProxyDown = S.igdbMode === "proxy" && S.igdbProxyReachable === false;
+  const igdbModeLine = igdbProxyDown
+    ? t("igdb.proxyMissing")
+    : S.igdbMode === "direct"
       ? t("igdb.modeDirect")
       : S.igdbMode === "proxy"
         ? t("igdb.modeProxy")
@@ -449,7 +451,9 @@ function renderIntegrations(): string {
   const igdb = detailsRow(
     t("settings.igdbTitle"),
     t("settings.igdbDesc"),
-    `<span class="chip ${S.igdbConfigured ? "ok" : ""}">${S.igdbConfigured ? t("settings.connected") : t("settings.keyMissing")}</span>`,
+    igdbProxyDown
+      ? `<span class="chip warn">${t("igdb.proxyDown")}</span>`
+      : `<span class="chip ${S.igdbConfigured ? "ok" : ""}">${S.igdbConfigured ? t("settings.connected") : t("settings.keyMissing")}</span>`,
     `<div class="settings-row-desc" style="flex-basis:100%">${esc(igdbModeLine)}</div>
      <input id="settings-igdb-proxy" class="input settings-path-input" placeholder="${esc(t("settings.igdbProxyPlaceholder"))}" value="${esc(S.igdbProxyUrl)}" spellcheck="false" autocomplete="off" />
      <input id="settings-igdb-id" class="input settings-path-input" placeholder="${esc(t("settings.igdbIdPlaceholder"))}" value="${esc(S.igdbClientId)}" spellcheck="false" autocomplete="off" />
@@ -1401,6 +1405,18 @@ export async function loadSettingsView(): Promise<void> {
         S.igdbClientId = igdb.clientId;
         S.igdbMode = igdb.mode;
         S.igdbProxyUrl = igdb.proxyUrl;
+        // The proxy is the default transport, so the row has to say when the
+        // server is not deployed: otherwise the chip claims a working setup.
+        if (igdb.mode === "proxy") {
+          void igdbProbeProxy()
+            .then((probe) => {
+              S.igdbProxyReachable = probe.reachable;
+              if (S.view === "settings") render();
+            })
+            .catch(() => undefined);
+        } else {
+          S.igdbProxyReachable = null;
+        }
       }
     } catch {
       // Silent: keep the last cached values.

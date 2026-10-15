@@ -1080,6 +1080,7 @@ fn main() {
             igdb::igdb_set_proxy_url,
             igdb::igdb_clear_credentials,
             igdb::igdb_test,
+            igdb::igdb_probe_proxy,
             igdb::igdb_search,
             igdb::igdb_game,
             igdb::igdb_covers,

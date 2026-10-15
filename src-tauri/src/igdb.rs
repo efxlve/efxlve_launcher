@@ -270,8 +270,9 @@ async fn direct_post(app: &AppHandle, endpoint: &str, body: &str) -> Result<serd
     Err("@t:igdb.auth".to_string())
 }
 
-/// The shared proxy: one GET, no credentials on this machine at all. A 404
-/// means the endpoint is not deployed (yet), which the settings row explains.
+/// The shared proxy: one GET, no credentials on this machine at all. A 404 —
+/// or an HTML answer, which is what an undeployed path returns — means the
+/// endpoint is not live, and the settings row explains what to do instead.
 async fn proxy_get(url: &str, endpoint: &str, body: &str) -> Result<serde_json::Value, String> {
     wait_for_slot().await;
     let response = http()
@@ -291,9 +292,17 @@ async fn proxy_get(url: &str, endpoint: &str, body: &str) -> Result<serde_json::
     if !response.status().is_success() {
         return Err("@t:igdb.network".to_string());
     }
-    response
-        .json::<serde_json::Value>()
+    let text = response
+        .text()
         .await
+        .map_err(|_| "@t:igdb.parse".to_string())?;
+    // A site without the function answers with its own HTML page; saying
+    // "the server is not deployed" beats "the answer could not be read".
+    let trimmed = text.trim_start();
+    if !trimmed.starts_with('[') && !trimmed.starts_with('{') {
+        return Err("@t:igdb.proxyMissing".to_string());
+    }
+    serde_json::from_str::<serde_json::Value>(trimmed)
         .map_err(|_| "@t:igdb.parse".to_string())
 }
 
@@ -947,6 +956,38 @@ pub async fn igdb_test(app: AppHandle) -> Result<IgdbTestResult, String> {
         mode: mode.to_string(),
         name,
     })
+}
+
+/// The one bit of the shared proxy's state a settings row can show: whether the
+/// endpoint answers with JSON at all, i.e. whether the function is deployed.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IgdbProxyProbe {
+    pub url: String,
+    pub reachable: bool,
+}
+
+#[tauri::command]
+pub async fn igdb_probe_proxy(app: AppHandle) -> IgdbProxyProbe {
+    let url = proxy_url(&app);
+    let probe = async {
+        wait_for_slot().await;
+        let response = http()
+            .get(&url)
+            .query(&[("endpoint", "games"), ("q", "fields name; limit 1;")])
+            .header("Accept", "application/json")
+            .send()
+            .await
+            .ok()?;
+        let text = response.text().await.ok()?;
+        let trimmed = text.trim_start();
+        Some(trimmed.starts_with('[') || trimmed.starts_with('{'))
+    }
+    .await;
+    IgdbProxyProbe {
+        url,
+        reachable: probe.unwrap_or(false),
+    }
 }
 
 #[tauri::command]

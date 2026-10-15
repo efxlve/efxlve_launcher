@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "Добавлено: {name}",
   "accounts.groupServices": "Подключённые сервисы",
   "accounts.discordIdle": "Выключено",
-  "accounts.openDiscord": "Открыть Discord"
+  "accounts.openDiscord": "Открыть Discord",
+  "igdb.proxyDown": "Сервер не отвечает",
+  "igdb.setupHint": "С IGDB на каждой странице игры появятся оценка сообщества, жанры, возрастные рейтинги и скриншоты."
 }

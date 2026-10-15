@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "Eklendi: {name}",
   "accounts.groupServices": "Bağlı servisler",
   "accounts.discordIdle": "Kapalı",
-  "accounts.openDiscord": "Discord'u Aç"
+  "accounts.openDiscord": "Discord'u Aç",
+  "igdb.proxyDown": "Sunucu yanıt vermiyor",
+  "igdb.setupHint": "IGDB'yi açarak her oyun sayfasında topluluk puanı, tür, yaş sınırı ve ekran görüntülerini görebilirsin."
 }

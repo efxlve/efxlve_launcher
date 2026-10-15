@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "जोड़ा गया: {name}",
   "accounts.groupServices": "जुड़ी सेवाएँ",
   "accounts.discordIdle": "बंद",
-  "accounts.openDiscord": "Discord खोलें"
+  "accounts.openDiscord": "Discord खोलें",
+  "igdb.proxyDown": "सर्वर जवाब नहीं दे रहा",
+  "igdb.setupHint": "IGDB चालू करने पर हर गेम पेज पर कम्युनिटी स्कोर, शैलियाँ, आयु रेटिंग और स्क्रीनशॉट दिखेंगे।"
 }

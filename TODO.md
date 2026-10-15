@@ -65,6 +65,11 @@ and it touches the core render switch, so it needs care.
 ## 6. IGDB proxy deployment (user action)
 
 See `services/igdb-proxy/README.md`: deploy the Netlify function and set
-`IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` there. Until it is deployed, the
-launcher falls back to per-user Twitch credentials — exactly the setup the
-proxy was built to remove.
+`IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` there. Checked on 2026-10-15:
+`https://efxlve.com/api/igdb` answers with the site's own HTML, so the function
+is not deployed, and no per-user credentials are stored either — IGDB is off.
+
+The launcher no longer hides that: the settings row probes the endpoint and
+shows "Sunucu yanıt vermiyor", and a game page with a dead transport shows a
+short card with an "Ayarları aç" button. Deploying the function (or entering
+Twitch credentials) clears both without any further change.

@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "追加しました: {name}",
   "accounts.groupServices": "連携サービス",
   "accounts.discordIdle": "オフ",
-  "accounts.openDiscord": "Discord を開く"
+  "accounts.openDiscord": "Discord を開く",
+  "igdb.proxyDown": "サーバーが応答しません",
+  "igdb.setupHint": "IGDB を設定すると、各ゲームページにコミュニティスコア、ジャンル、年齢区分、スクリーンショットが表示されます。"
 }

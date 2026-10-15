@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "เพิ่มแล้ว: {name}",
   "accounts.groupServices": "บริการที่เชื่อมต่อ",
   "accounts.discordIdle": "ปิด",
-  "accounts.openDiscord": "เปิด Discord"
+  "accounts.openDiscord": "เปิด Discord",
+  "igdb.proxyDown": "เซิร์ฟเวอร์ไม่ตอบสนอง",
+  "igdb.setupHint": "เปิด IGDB เพื่อดูคะแนนจากชุมชน แนวเกม เรตติ้งตามวัย และภาพหน้าจอในทุกหน้าเกม"
 }

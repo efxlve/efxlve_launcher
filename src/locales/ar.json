@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "تمت الإضافة: {name}",
   "accounts.groupServices": "الخدمات المتصلة",
   "accounts.discordIdle": "متوقف",
-  "accounts.openDiscord": "افتح Discord"
+  "accounts.openDiscord": "افتح Discord",
+  "igdb.proxyDown": "الخادم لا يستجيب",
+  "igdb.setupHint": "بتفعيل IGDB سترى تقييم المجتمع والأنواع والتصنيف العمري ولقطات الشاشة في كل صفحة لعبة."
 }

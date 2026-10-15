@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "Aggiunto: {name}",
   "accounts.groupServices": "Servizi collegati",
   "accounts.discordIdle": "Spento",
-  "accounts.openDiscord": "Apri Discord"
+  "accounts.openDiscord": "Apri Discord",
+  "igdb.proxyDown": "Server non risponde",
+  "igdb.setupHint": "Con IGDB vedi il voto della community, i generi, le classificazioni per età e gli screenshot su ogni gioco."
 }

@@ -257,6 +257,8 @@ export const S = {
   /** Which transport is active, and the proxy address in use. */
   igdbMode: "off" as "direct" | "proxy" | "off",
   igdbProxyUrl: "" as string,
+  /** null until probed; false means the shared proxy is not deployed. */
+  igdbProxyReachable: null as boolean | null,
   /** Game clip recording, mirrored from the Rust recorder. */
   clipRecording: false,
   clipTitle: "" as string,

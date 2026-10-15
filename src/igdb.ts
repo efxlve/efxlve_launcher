@@ -64,7 +64,15 @@ export interface IgdbTestResult {
   name: string;
 }
 
+export interface IgdbProxyProbe {
+  url: string;
+  reachable: boolean;
+}
+
 export const igdbStatus = () => invoke<IgdbStatus>("igdb_status");
+
+/** Whether the shared proxy answers with JSON (i.e. the function is deployed). */
+export const igdbProbeProxy = () => invoke<IgdbProxyProbe>("igdb_probe_proxy");
 
 export const igdbSetCredentials = (clientId: string, clientSecret: string) =>
   invoke<void>("igdb_set_credentials", { clientId, clientSecret });

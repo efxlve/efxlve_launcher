@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "추가됨: {name}",
   "accounts.groupServices": "연결된 서비스",
   "accounts.discordIdle": "꺼짐",
-  "accounts.openDiscord": "Discord 열기"
+  "accounts.openDiscord": "Discord 열기",
+  "igdb.proxyDown": "서버가 응답하지 않음",
+  "igdb.setupHint": "IGDB를 켜면 각 게임 페이지에서 커뮤니티 점수, 장르, 연령 등급, 스크린샷을 볼 수 있습니다."
 }

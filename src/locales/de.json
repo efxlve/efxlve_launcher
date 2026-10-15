@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "Hinzugefügt: {name}",
   "accounts.groupServices": "Verbundene Dienste",
   "accounts.discordIdle": "Aus",
-  "accounts.openDiscord": "Discord öffnen"
+  "accounts.openDiscord": "Discord öffnen",
+  "igdb.proxyDown": "Server antwortet nicht",
+  "igdb.setupHint": "Mit IGDB siehst du Community-Wertung, Genres, Altersfreigaben und Screenshots auf jeder Spielseite."
 }

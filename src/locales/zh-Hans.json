@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "已添加：{name}",
   "accounts.groupServices": "已连接的服务",
   "accounts.discordIdle": "关闭",
-  "accounts.openDiscord": "打开 Discord"
+  "accounts.openDiscord": "打开 Discord",
+  "igdb.proxyDown": "服务器无响应",
+  "igdb.setupHint": "启用 IGDB 后，每个游戏页面都会显示社区评分、类型、年龄分级和截图。"
 }

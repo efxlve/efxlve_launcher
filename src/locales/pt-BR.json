@@ -2384,5 +2384,7 @@
   "ss.webhookAdded": "Adicionado: {name}",
   "accounts.groupServices": "Serviços conectados",
   "accounts.discordIdle": "Desligado",
-  "accounts.openDiscord": "Abrir o Discord"
+  "accounts.openDiscord": "Abrir o Discord",
+  "igdb.proxyDown": "Servidor não responde",
+  "igdb.setupHint": "Com o IGDB você vê a nota da comunidade, gêneros, classificação etária e capturas em cada jogo."
 }
