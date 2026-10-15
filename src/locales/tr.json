@@ -2393,5 +2393,6 @@
   "drawer.readMore": "Devamını oku",
   "drawer.readLess": "Daha az göster",
   "manage.searchPlaceholder": "Bu ayarlarda ara",
-  "manage.searchEmpty": "Aramanla eşleşen bir şey yok."
+  "manage.searchEmpty": "Aramanla eşleşen bir şey yok.",
+  "manage.searchTitle": "Ayarlarda ara"
 }

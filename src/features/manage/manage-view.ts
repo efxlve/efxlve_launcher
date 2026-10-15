@@ -83,6 +83,27 @@ function applyManageSearch(query: string): void {
 
 let manageSearchWired = false;
 
+/** Opens or closes the header's search field; closing clears the filter. */
+export function setManageSearchOpen(open: boolean): void {
+  const head = document.querySelector<HTMLElement>(".manage-head");
+  const input = document.getElementById("manage-search") as HTMLInputElement | null;
+  head?.classList.toggle("searching", open);
+  document.querySelector<HTMLElement>(".manage-search-toggle")?.setAttribute("aria-expanded", String(open));
+  if (!input) return;
+  if (open) {
+    // The field animates open; focus once it has room to take the caret.
+    window.setTimeout(() => input.focus(), 80);
+    return;
+  }
+  input.value = "";
+  applyManageSearch("");
+}
+
+/** True while the header's search field is open. */
+export function manageSearchOpen(): boolean {
+  return Boolean(document.querySelector(".manage-head.searching"));
+}
+
 /** Binds the panel's search box once; every later open reuses the listener. */
 function wireManageSearch(): void {
   if (manageSearchWired) return;
@@ -181,11 +202,12 @@ export function openManagePopup(appName: string): void {
             <h2>${t("drawer.manage")}</h2>
             <div class="manage-head-sub">${esc(s.title)}</div>
           </div>
+          <div class="manage-search" id="manage-search-wrap">
+            ${icon("search", 13)}
+            <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
+          </div>
+          <button class="icon-btn manage-search-toggle" data-act="manage-search-toggle" title="${esc(t("manage.searchTitle"))}" aria-expanded="false">${icon("search", 15)}</button>
           <button class="manage-head-close" data-act="close-manage-popup" title="${t("common.close")}">${icon("x", 16)}</button>
-        </div>
-        <div class="manage-search">
-          ${icon("search", 13)}
-          <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
         </div>
         <div class="manage-body">${renderDrawerManage(s)}</div>
         <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>

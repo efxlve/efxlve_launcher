@@ -2393,5 +2393,6 @@
   "drawer.readMore": "展开阅读",
   "drawer.readLess": "收起",
   "manage.searchPlaceholder": "搜索这些设置",
-  "manage.searchEmpty": "没有匹配项。"
+  "manage.searchEmpty": "没有匹配项。",
+  "manage.searchTitle": "搜索设置"
 }

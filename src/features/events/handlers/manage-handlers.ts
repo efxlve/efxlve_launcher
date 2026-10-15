@@ -15,8 +15,10 @@ import { gogVerifyGame } from "../../../gog";
 import { nileCreateDesktopShortcut, nileVerify } from "../../../nile";
 import {
   closeManagePopup,
+  manageSearchOpen,
   openManagePopup,
   resetVerifyInPlace,
+  setManageSearchOpen,
   updateManageModalInputsInPlace,
   updateManageSyncBar,
   updateVerifyProgressInPlace,
@@ -67,6 +69,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
 
     case "close-manage-popup":
       closeManagePopup();
+      return true;
+
+    case "manage-search-toggle":
+      setManageSearchOpen(!manageSearchOpen());
       return true;
 
     case "manage-overlay-close":

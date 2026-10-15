@@ -2393,5 +2393,6 @@
   "drawer.readMore": "อ่านต่อ",
   "drawer.readLess": "ย่อ",
   "manage.searchPlaceholder": "ค้นหาในการตั้งค่าเหล่านี้",
-  "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน"
+  "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน",
+  "manage.searchTitle": "ค้นหาการตั้งค่า"
 }

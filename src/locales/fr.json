@@ -2393,5 +2393,6 @@
   "drawer.readMore": "Lire la suite",
   "drawer.readLess": "Afficher moins",
   "manage.searchPlaceholder": "Rechercher dans ces réglages",
-  "manage.searchEmpty": "Rien ne correspond."
+  "manage.searchEmpty": "Rien ne correspond.",
+  "manage.searchTitle": "Rechercher des réglages"
 }

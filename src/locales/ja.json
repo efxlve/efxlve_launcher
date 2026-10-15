@@ -2393,5 +2393,6 @@
   "drawer.readMore": "続きを読む",
   "drawer.readLess": "折りたたむ",
   "manage.searchPlaceholder": "この設定を検索",
-  "manage.searchEmpty": "一致する項目はありません。"
+  "manage.searchEmpty": "一致する項目はありません。",
+  "manage.searchTitle": "設定を検索"
 }

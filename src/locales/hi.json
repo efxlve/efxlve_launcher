@@ -2393,5 +2393,6 @@
   "drawer.readMore": "और पढ़ें",
   "drawer.readLess": "कम दिखाएँ",
   "manage.searchPlaceholder": "इन सेटिंग्स में खोजें",
-  "manage.searchEmpty": "इससे कुछ मेल नहीं खाता।"
+  "manage.searchEmpty": "इससे कुछ मेल नहीं खाता।",
+  "manage.searchTitle": "सेटिंग्स खोजें"
 }

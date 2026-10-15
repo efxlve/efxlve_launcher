@@ -2393,5 +2393,6 @@
   "drawer.readMore": "더 보기",
   "drawer.readLess": "접기",
   "manage.searchPlaceholder": "이 설정에서 검색",
-  "manage.searchEmpty": "일치하는 항목이 없습니다."
+  "manage.searchEmpty": "일치하는 항목이 없습니다.",
+  "manage.searchTitle": "설정 검색"
 }

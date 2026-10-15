@@ -2393,5 +2393,6 @@
   "drawer.readMore": "Читать дальше",
   "drawer.readLess": "Свернуть",
   "manage.searchPlaceholder": "Поиск по этим настройкам",
-  "manage.searchEmpty": "Ничего не найдено."
+  "manage.searchEmpty": "Ничего не найдено.",
+  "manage.searchTitle": "Поиск настроек"
 }

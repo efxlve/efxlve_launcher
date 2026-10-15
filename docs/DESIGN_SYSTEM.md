@@ -82,6 +82,7 @@ Defined once, reused everywhere:
 ## 5. Motion
 
 - Transitions: `opacity`, `color`, `background-color`, `border-color` at 140ms ease-out.
+- One documented exception (29.09.2026): the Manage panel's search field opens from its header icon with a `width` + `opacity` transition at 140ms ease-out. The motion explains where the field came from; it never loops and never plays on a hover.
 - Allowed one-shot keyframes (must stop): `page-in` (view change), `fade-in` (game hero, store loading, overlay). Never loop except the loading spinner.
 - No transform zoom/lift on hover, no Ken-Burns, no pulses. `prefers-reduced-motion` disables the one-shot keyframes.
 - `:active` press feedback: `transform: scale(0.98)` on buttons only.

@@ -2393,5 +2393,6 @@
   "drawer.readMore": "展開閱讀",
   "drawer.readLess": "收合",
   "manage.searchPlaceholder": "搜尋這些設定",
-  "manage.searchEmpty": "沒有符合的項目。"
+  "manage.searchEmpty": "沒有符合的項目。",
+  "manage.searchTitle": "搜尋設定"
 }

@@ -44,7 +44,7 @@ import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-inst
 import { updateInstallFinalPath } from "../install/install-dialog";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
-import { closeManagePopup } from "../manage/manage-view";
+import { closeManagePopup, manageSearchOpen, setManageSearchOpen } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
 import { filteredProfileGames, profileListGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
 import {
@@ -254,6 +254,11 @@ document.addEventListener("keydown", (e) => {
       return;
     }
     if (manageRoot && manageRoot.innerHTML.trim()) {
+      // The header's search field closes first; the panel itself stays open.
+      if (manageSearchOpen()) {
+        setManageSearchOpen(false);
+        return;
+      }
       closeManagePopup();
       return;
     }
