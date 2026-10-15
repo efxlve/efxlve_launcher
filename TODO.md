@@ -3,6 +3,35 @@
 Open work, in the order it should be picked up. Each item is sized so it can
 land as one commit with `npm run build` (plus `cargo test` when Rust changed).
 
+## 0. Game page: revision after 0.1.30 (owner asked for this)
+
+The owner is not happy with the new game page yet ("daha da kötüleşiyor gibi"),
+even though the objective changes landed: three media strips became two, the
+sidebar went from twelve rows to three, the scores merged into one card, and the
+IGDB facts moved under the description. Revisit with fresh screenshots before
+touching anything:
+
+- The credits line under the About text may be too heavy; try it as one muted
+  line without the hairline.
+- Similar games moved to the very bottom of the page (it used to sit under the
+  description); check whether that pushed useful content out of sight.
+- The sidebar is short on games with no HowLongToBeat and no scores, which
+  leaves a tall empty column next to a long left column.
+- `docs/design-brief-game-page.md` holds the external design review this came
+  from, including the two points that were deliberately not followed
+  (anti-cheat stays in the hero, the achievements stat stays in the hero).
+
+## 0b. Remaining plan items
+
+1. Repaint diet: an IGDB answer repaints the whole overview tab
+   (`openEpicModal(appName, false)`); only the credits line and the scores card
+   actually change.
+2. Keyboard and TV pass over the game page (tab order, focus ring, controller).
+3. Library cover caching + hover prefetch (the game page's own images are
+   cached already; `image_cache.rs` has the size cap and the trim).
+4. Screenshots workstream (parked, see section 7).
+
+
 ## 1. TV mode modernization (needs a screen)
 
 The mode works — timers are cleaned up, reduced motion is respected, gamepad
