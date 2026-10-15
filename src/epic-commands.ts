@@ -769,6 +769,35 @@ export const screenshotShareDiscord = (input: {
   message: string;
 }) => invoke<void>("screenshot_share_discord", input);
 
+/* ---------- Game clips (MJPEG AVI recorder) ---------- */
+
+export interface ClipStatus {
+  running: boolean;
+  seconds: number;
+  frames: number;
+  fps: number;
+  path: string;
+  error: string;
+}
+
+export interface ClipItem {
+  path: string;
+  name: string;
+  sizeBytes: number;
+  dateStr: string;
+  seconds: number;
+}
+
+export const clipStatus = () => invoke<ClipStatus>("clip_status");
+export const clipStart = () => invoke<void>("clip_start");
+export const clipStop = () => invoke<void>("clip_stop");
+export const clipSetHotkey = (vkey: number) => invoke<void>("clip_set_hotkey", { vkey });
+export const clipSetOptions = (options: { fps?: number; quality?: number; maxSecs?: number }) =>
+  invoke<void>("clip_set_options", options);
+export const clipList = () => invoke<ClipItem[]>("clip_list");
+export const clipDelete = (path: string) => invoke<boolean>("clip_delete", { path });
+export const clipFolderPath = () => invoke<string>("clip_folder_path");
+
 export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
   invoke<void>("epic_open_game_screenshots_folder", { appName, title });
 

@@ -35,6 +35,8 @@ import {
   epicGetSettings,
   epicGetSteamGridKey,
   epicOpenFolderPath,
+  clipFolderPath,
+  clipSetOptions,
   epicOpenScreenshotDir,
   epicPortrait,
   epicSelectFolderDialog,
@@ -51,6 +53,8 @@ import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
+import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
+import { pushClipSettings } from "../screenshots/ss-settings";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { keepDiscordOpen } from "../discord/discord-view";
@@ -864,13 +868,51 @@ function renderScreenshots(): string {
     true,
   );
 
+  /* Video: the MJPEG recorder runs in Rust and is driven by a hotkey. */
+  const clipEnabled = localStorage.getItem(CLIP_ENABLED_KEY) === "true";
+  const clipHotkey = Number(localStorage.getItem(CLIP_HOTKEY_KEY) ?? "0x78");
+  const clipHotkeyCode = Number.isFinite(clipHotkey) && clipHotkey > 0 ? clipHotkey : 0x78;
+  const clipHotkeyName = localStorage.getItem(CLIP_HOTKEY_NAME_KEY) || "F9";
+  const clipFps = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "15");
+  const clipMaxMin = Number(localStorage.getItem(CLIP_MAX_MIN_KEY) ?? "5");
+  const clipToggle = row(
+    t("ss.clipTitle"),
+    t("ss.clipDesc"),
+    toggle("toggle-clip-recording", clipEnabled),
+  );
+  const clipHotkeyRow = row(
+    t("ss.clipHotkey"),
+    `${t("settings.activeKey")}: <strong>${esc(clipHotkeyName)}</strong>`,
+    `<select id="clip-hotkey-select" class="settings-select" data-act="change-clip-hotkey">
+      ${S.PRESET_HOTKEYS.map((k) => `<option value="${k.code}" ${k.code === clipHotkeyCode ? "selected" : ""}>${k.name}${k.code === 0x78 ? ` (${t("settings.defaultKey")})` : ""}</option>`).join("")}
+    </select>`,
+  );
+  const clipOptions = clipEnabled
+    ? row(
+        t("ss.clipFps"),
+        t("ss.clipFpsDesc"),
+        `<div class="seg">${[10, 15, 30].map((fps) => `<button type="button" class="${clipFps === fps ? "active" : ""}" data-act="set-clip-fps" data-fps="${fps}">${fps}</button>`).join("")}</div>`,
+      ) +
+      row(
+        t("ss.clipMax"),
+        t("ss.clipMaxDesc"),
+        `<input type="number" min="1" max="60" id="clip-max-min" class="input settings-time-input" value="${clipMaxMin}" /><span class="settings-value">${esc(t("ss.minutesUnit"))}</span>`,
+      ) +
+      row(
+        t("ss.clipFolder"),
+        t("ss.clipFolderDesc"),
+        `<button type="button" class="btn ghost small" data-act="clip-open-folder">${icon("folder", 13)} ${t("ss.openFolder")}</button>`,
+      )
+    : "";
+
   return (
     group(folder + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
     group(compression + options, t("ss.compressionSection")) +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
     group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection")) +
-    group(webhookRow, t("ss.shareSection"))
+    group(webhookRow, t("ss.shareSection")) +
+    group(clipToggle + clipHotkeyRow + clipOptions, t("ss.clipSection"))
   );
 }
 
@@ -1556,6 +1598,28 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "clear-ss-webhook":
       localStorage.removeItem(SS_WEBHOOK_KEY);
       render();
+      return true;
+    case "toggle-clip-recording": {
+      const enabled = (_el as HTMLInputElement).checked;
+      localStorage.setItem(CLIP_ENABLED_KEY, String(enabled));
+      // The recorder reads its settings from Rust, so they travel with the toggle.
+      if (enabled) pushClipSettings();
+      render();
+      return true;
+    }
+    case "set-clip-fps": {
+      const fps = Number(_el.dataset.fps ?? "15");
+      if ([10, 15, 30].includes(fps)) {
+        localStorage.setItem(CLIP_FPS_KEY, String(fps));
+        void clipSetOptions({ fps });
+        render();
+      }
+      return true;
+    }
+    case "clip-open-folder":
+      void clipFolderPath()
+        .then((path) => epicOpenFolderPath(path))
+        .catch(() => undefined);
       return true;
     case "settings-search-clear":
       resetSettingsSearch();

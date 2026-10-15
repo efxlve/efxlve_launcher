@@ -12,7 +12,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::time::Instant;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 /// Trim the log when it grows past this; the newest lines stay.
 const MAX_BYTES: u64 = 48 * 1024;

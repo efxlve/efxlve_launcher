@@ -9,13 +9,19 @@
  */
 
 import {
+  CLIP_ENABLED_KEY,
+  CLIP_FPS_KEY,
+  CLIP_HOTKEY_KEY,
+  CLIP_MAX_MIN_KEY,
   SS_CLEANUP_KEY,
   SS_DENSITY_KEY,
   SS_FAVORITES_KEY,
   SS_NOTIFY_KEY,
   SS_SORT_KEY,
   SS_SOUND_KEY,
+  isTauri,
 } from "../../core/constants";
+import { clipSetHotkey, clipSetOptions } from "../../epic";
 
 export type ShotSort = "newest" | "oldest" | "name" | "size";
 export type ShotDensity = "s" | "m" | "l";
@@ -92,6 +98,35 @@ export function ssCleanupPolicy(): CleanupPolicy {
 
 export function ssSetCleanupPolicy(policy: CleanupPolicy): void {
   localStorage.setItem(SS_CLEANUP_KEY, JSON.stringify(policy));
+}
+
+/* ---------- Game clips (the MJPEG recorder) ---------- */
+
+export function clipEnabled(): boolean {
+  return localStorage.getItem(CLIP_ENABLED_KEY) === "true";
+}
+
+export function clipHotkeyCode(): number {
+  const stored = Number(localStorage.getItem(CLIP_HOTKEY_KEY) ?? "0");
+  return Number.isFinite(stored) && stored > 0 ? stored : 0x78; // F9
+}
+
+export function clipFps(): number {
+  const stored = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "15");
+  return [10, 15, 30].includes(stored) ? stored : 15;
+}
+
+export function clipMaxSecs(): number {
+  const minutes = Number(localStorage.getItem(CLIP_MAX_MIN_KEY) ?? "5");
+  const safe = Number.isFinite(minutes) && minutes > 0 ? minutes : 5;
+  return Math.round(Math.min(60, safe) * 60);
+}
+
+/** Hands the stored recorder settings to Rust: the recorder reads them there. */
+export function pushClipSettings(): void {
+  if (!isTauri) return;
+  void clipSetHotkey(clipHotkeyCode()).catch(() => undefined);
+  void clipSetOptions({ fps: clipFps(), maxSecs: clipMaxSecs() }).catch(() => undefined);
 }
 
 /** Sorts a gallery by the user's default order. */

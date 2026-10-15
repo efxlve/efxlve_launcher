@@ -16,9 +16,11 @@ import {
   clearPageSelection,
   closePageLightbox,
   deletePageShot,
+  dropClip,
   isPageBatchDeleteArmed,
   loadScreenshotsPage,
   navigatePageLightbox,
+  openClipFolder,
   openPageLightbox,
   openPageShotFolder,
   pageLightboxOpen,
@@ -31,6 +33,8 @@ import {
   togglePageFavorite,
   togglePageSelection,
 } from "../../screenshots/screenshots-page";
+import { clipDelete } from "../../../epic";
+import { openPath } from "@tauri-apps/plugin-opener";
 import {
   compressScreenshotItem,
   copyScreenshotImageToClipboard,
@@ -169,6 +173,32 @@ export function handleScreenshotsPageAction(
     }
 
     /* ---------- Lightbox ---------- */
+
+    case "ssp-clip-play": {
+      const path = el.dataset.path ?? "";
+      if (path) void openPath(path).catch(() => toast(path, ""));
+      return true;
+    }
+
+    case "ssp-clip-folder": {
+      const path = el.dataset.path ?? "";
+      if (path) openClipFolder(path);
+      return true;
+    }
+
+    case "ssp-clip-delete": {
+      const path = el.dataset.path ?? "";
+      if (!path) return true;
+      void clipDelete(path)
+        .then((ok) => {
+          if (ok) {
+            dropClip(path);
+            toast(t("ss.clipDeleted"), "ok");
+          }
+        })
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
 
     case "ssp-lightbox-close":
       closePageLightbox();

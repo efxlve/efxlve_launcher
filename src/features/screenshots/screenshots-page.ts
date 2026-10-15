@@ -17,9 +17,11 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
 import {
+  clipList,
   epicDeleteGameScreenshot,
   epicGetAllScreenshots,
   epicOpenFolderPath,
+  type ClipItem,
   type GameScreenshotItem,
 } from "../../epic";
 import {
@@ -207,6 +209,7 @@ export function renderScreenshotsPage(): string {
           <h4 class="screenshots-empty-title">${t("ss.emptyTitle")}</h4>
           <p class="screenshots-empty-desc">${t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}</p>
         </div>
+        ${clipsSectionHtml()}
       </div>`;
   }
 
@@ -219,7 +222,76 @@ export function renderScreenshotsPage(): string {
           ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
           : `<div class="screenshots-grid ss-density-${ssDensity()}">${visible.map((item, index) => cardHtml(item, index)).join("")}</div>`
       }
+      ${clipsSectionHtml()}
     </div>`;
+}
+
+/* ---------- Game clips ---------- */
+
+let clips: ClipItem[] = [];
+let clipsLoaded = false;
+
+export function loadClips(): void {
+  if (!isTauri || clipsLoaded) return;
+  clipsLoaded = true;
+  void clipList()
+    .then((items) => {
+      clips = items ?? [];
+      repaintScreenshotsPage();
+    })
+    .catch(() => undefined);
+}
+
+export function reloadClips(): void {
+  clipsLoaded = false;
+  loadClips();
+}
+
+export function pageClips(): ClipItem[] {
+  return clips;
+}
+
+function clipsSectionHtml(): string {
+  if (!clipsLoaded) loadClips();
+  const rows = clips.length
+    ? clips
+        .map(
+          (clip) => `
+      <div class="ss-clip" data-path="${esc(clip.path)}">
+        <span class="ss-clip-icon">${icon("play", 14)}</span>
+        <div class="ss-clip-main">
+          <div class="ss-clip-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
+          <div class="ss-clip-meta">${esc(clip.dateStr)} · ${fmtBytes(clip.sizeBytes)} · ${esc(clipSeconds(clip))}</div>
+        </div>
+        <div class="ss-clip-actions">
+          <button type="button" class="btn ghost small" data-act="ssp-clip-play" data-path="${esc(clip.path)}">${icon("play", 12)} ${t("ss.clipPlay")}</button>
+          <button type="button" class="btn ghost small" data-act="ssp-clip-folder" data-path="${esc(clip.path)}">${icon("folder", 12)}</button>
+          <button type="button" class="btn ghost danger small" data-act="ssp-clip-delete" data-path="${esc(clip.path)}">${icon("trash", 12)}</button>
+        </div>
+      </div>`,
+        )
+        .join("")
+    : `<div class="settings-row-desc">${t("ss.clipEmpty")}</div>`;
+  return `
+    <h3 class="section-title">${t("ss.clipSection")}</h3>
+    <div class="list settings-group ss-clips">${rows}</div>`;
+}
+
+function clipSeconds(clip: ClipItem): string {
+  const total = Math.max(0, clip.seconds);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes > 0 ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${seconds}s`;
+}
+
+export function dropClip(path: string): void {
+  clips = clips.filter((clip) => clip.path !== path);
+  repaintScreenshotsPage();
+}
+
+export function openClipFolder(path: string): void {
+  const dir = path.replace(/[\\/][^\\/]+$/, "");
+  void epicOpenFolderPath(dir).catch(() => undefined);
 }
 
 /* ---------- Lightbox ---------- */

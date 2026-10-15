@@ -4,7 +4,7 @@ import { summaryOf } from "../../core/selectors";
  * form change/input delegation and the scroll-to-top button.
  */
 
-import { AUTO_UPDATE_TIME_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
+import { AUTO_UPDATE_TIME_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelConfirm } from "../../core/confirm-dialog";
@@ -16,6 +16,8 @@ import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
+  clipSetHotkey,
+  clipSetOptions,
   epicInstallGame,
   epicSaveGameSettings,
   epicSetScreenshotHotkey,
@@ -384,6 +386,25 @@ document.addEventListener("change", (e) => {
       toast(i18nT("ss.hotkeyUpdated", { key: name }), "ok");
       render();
     }
+    return;
+  }
+  if (target && target.id === "clip-hotkey-select") {
+    const code = parseInt(target.value, 10);
+    if (code && code > 0) {
+      const found = S.PRESET_HOTKEYS.find((k) => k.code === code);
+      const name = found ? found.name.split(" ")[0] : `Key_${code}`;
+      localStorage.setItem(CLIP_HOTKEY_KEY, String(code));
+      localStorage.setItem(CLIP_HOTKEY_NAME_KEY, name);
+      if (isTauri) void clipSetHotkey(code);
+      toast(i18nT("ss.hotkeyUpdated", { key: name }), "ok");
+      render();
+    }
+    return;
+  }
+  if (target && target.id === "clip-max-min") {
+    const minutes = Math.max(1, Math.min(60, Number((target as HTMLInputElement).value) || 5));
+    localStorage.setItem(CLIP_MAX_MIN_KEY, String(minutes));
+    if (isTauri) void clipSetOptions({ maxSecs: minutes * 60 });
     return;
   }
 });

@@ -257,6 +257,9 @@ export const S = {
   /** Which transport is active, and the proxy address in use. */
   igdbMode: "off" as "direct" | "proxy" | "off",
   igdbProxyUrl: "" as string,
+  /** Game clip recording, mirrored from the Rust recorder. */
+  clipRecording: false,
+  clipTitle: "" as string,
   showSettingsIgdbSecret: false,
   /** The cover modal's own IGDB search. */
   igdbCoverQuery: "",

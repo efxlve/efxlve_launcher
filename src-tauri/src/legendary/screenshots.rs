@@ -1094,6 +1094,10 @@ pub async fn epic_save_screenshot_preview(
 #[path = "screenshot_capture.rs"]
 mod win_capture;
 
+/// The recorder's frame grabber (same module as the F12 capture).
+#[cfg(target_os = "windows")]
+pub use win_capture::capture_frame_jpeg;
+
 #[cfg(not(target_os = "windows"))]
 #[path = "screenshot_capture_stub.rs"]
 mod win_capture;
@@ -1283,6 +1287,7 @@ pub fn start_f12_listener(app: AppHandle) {
         }
 
         let mut was_down = false;
+        let mut was_clip_down = false;
         let mut last_capture_time = std::time::Instant::now() - std::time::Duration::from_secs(10);
 
         loop {
@@ -1346,6 +1351,30 @@ pub fn start_f12_listener(app: AppHandle) {
             }
 
             was_down = is_down;
+
+            // The clip hotkey toggles recording; its edge is tracked apart from
+            // the screenshot key so holding one never blocks the other.
+            let clip_key = crate::legendary::clip_recorder::hotkey();
+            if clip_key > 0 {
+                let clip_state = unsafe { GetAsyncKeyState(clip_key as i32) };
+                let clip_down = (clip_state as u16 & 0x8000) != 0;
+                if clip_down && !was_clip_down {
+                    if crate::legendary::clip_recorder::running() {
+                        crate::legendary::clip_recorder::stop();
+                        let _ = app.emit("clip-stopping", ());
+                    } else if let Some((_, title)) = get_active_running_game() {
+                        match crate::legendary::clip_recorder::start(&app, &title) {
+                            Ok(()) => {
+                                let _ = app.emit("clip-started", serde_json::json!({ "title": title }));
+                            }
+                            Err(err) => {
+                                let _ = app.emit("clip-error", err);
+                            }
+                        }
+                    }
+                }
+                was_clip_down = clip_down;
+            }
         }
     });
 }

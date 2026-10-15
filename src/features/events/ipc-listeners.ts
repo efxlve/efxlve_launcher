@@ -104,6 +104,7 @@ import { ensureNotesMigration } from "../notes/notes-client";
 import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
 import { perfMark } from "../../core/perf";
 import { initOfflineMode } from "../../core/offline";
+import { pushClipSettings } from "../screenshots/ss-settings";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -233,6 +234,8 @@ export async function initApp(hooks: {
   // parallel with the paint above (anything network-bound awaits `offlineReady`),
   // so the disk-cached library still paints without waiting for it.
   void initOfflineMode(epicGetOfflineMode).then(() => updateOfflineModeUi());
+  // The clip recorder lives in Rust and reads its settings from there.
+  pushClipSettings();
   // Re-arm the XInput bridge when the user left it on last session.
   // HidApi enumeration races WebView2's own device scan during the first
   // paint and can leave the window on the library skeleton, not responding.
@@ -845,6 +848,30 @@ export async function initApp(hooks: {
   listenLater("steam-library-changed", () => {
       void refreshSteamInstalled();
     });
+
+  // Game clips: the recorder runs in Rust; the UI only mirrors its state.
+  listenLater<{ title: string }>("clip-started", (event) => {
+    S.clipRecording = true;
+    S.clipTitle = event.payload?.title ?? "";
+    toast(t("ss.clipStarted", { title: S.clipTitle }), "ok");
+    hooks.scheduleRender();
+  });
+  listenLater("clip-stopping", () => {
+    toast(t("ss.clipStopping"), "");
+  });
+  listenLater<{ path: string; frames: number }>("clip-saved", (event) => {
+    S.clipRecording = false;
+    S.clipTitle = "";
+    const name = event.payload?.path?.split(/[\\/]/).pop() ?? "";
+    toast(t("ss.clipSaved", { file: name }), "ok");
+    hooks.scheduleRender();
+  });
+  listenLater<string>("clip-error", (event) => {
+    S.clipRecording = false;
+    S.clipTitle = "";
+    toast(localizeMessage(String(event.payload)), "err");
+    hooks.scheduleRender();
+  });
 
   // One parallel batch instead of 23 serial `listen` round trips (measured
   // ~900 ms of the boot path). Order never mattered; only that every listener

@@ -943,6 +943,14 @@ fn main() {
             legendary::screenshots::epic_delete_game_screenshot,
             legendary::screenshots::epic_save_edited_screenshot,
             legendary::screenshots::screenshot_share_discord,
+            legendary::clip_recorder::clip_status,
+            legendary::clip_recorder::clip_start,
+            legendary::clip_recorder::clip_stop,
+            legendary::clip_recorder::clip_set_options,
+            legendary::clip_recorder::clip_set_hotkey,
+            legendary::clip_recorder::clip_list,
+            legendary::clip_recorder::clip_folder_path,
+            legendary::clip_recorder::clip_delete,
             legendary::screenshots::epic_open_game_screenshots_folder,
             legendary::screenshots::epic_set_screenshot_hotkey,
             legendary::screenshots::epic_get_screenshot_dir,
@@ -1073,6 +1081,7 @@ fn main() {
             igdb::igdb_test,
             igdb::igdb_search,
             igdb::igdb_game,
+            igdb::igdb_covers,
             igdb::igdb_enrich,
         ])
         .build(tauri::generate_context!())

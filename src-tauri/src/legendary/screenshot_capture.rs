@@ -126,6 +126,12 @@ extern "system" {
         clsidEncoder: *const GUID,
         encoderParams: *const c_void,
     ) -> i32;
+    fn GdipSaveImageToStream(
+        image: *mut c_void,
+        stream: *mut c_void,
+        clsidEncoder: *const GUID,
+        encoderParams: *const c_void,
+    ) -> i32;
     fn GdipDisposeImage(image: *mut c_void) -> i32;
     fn GdipLoadImageFromFile(filename: *const u16, image: *mut *mut c_void) -> i32;
     fn GdipGetImageWidth(image: *mut c_void, width: *mut u32) -> i32;
@@ -144,6 +150,41 @@ extern "system" {
 extern "system" {
     fn GetLastError() -> u32;
     fn SetLastError(dwErrCode: u32);
+    fn GlobalLock(h: *mut c_void) -> *mut c_void;
+    fn GlobalUnlock(h: *mut c_void) -> i32;
+    fn GlobalSize(h: *mut c_void) -> usize;
+}
+
+#[link(name = "ole32")]
+extern "system" {
+    fn CreateStreamOnHGlobal(
+        hglobal: *mut c_void,
+        f_delete_on_release: i32,
+        stream: *mut *mut c_void,
+    ) -> i32;
+    fn GetHGlobalFromStream(stream: *mut c_void, hglobal: *mut *mut c_void) -> i32;
+}
+
+/// GDI+'s JPEG quality knob: `EncoderQuality` = {1d5be4b5-fa4a-452d-9cdd-5db35105e7eb}.
+const ENCODER_QUALITY: GUID = GUID {
+    data1: 0x1d5be4b5,
+    data2: 0xfa4a,
+    data3: 0x452d,
+    data4: [0x9c, 0xdd, 0x5d, 0xb3, 0x51, 0x05, 0xe7, 0xeb],
+};
+
+#[repr(C)]
+struct EncoderParameter {
+    guid: GUID,
+    number_of_values: u32,
+    type_: u32,
+    value: *mut c_void,
+}
+
+#[repr(C)]
+struct EncoderParameters {
+    count: u32,
+    parameter: [EncoderParameter; 1],
 }
 
 pub fn capture_screen_native(target_file: &Path) -> Result<(), String> {
@@ -395,4 +436,193 @@ unsafe fn make_thumbnail_gdi(source: &Path, target: &Path, max_px: u32) -> Resul
         ));
     }
     Ok(())
+}
+
+/// Releases a COM interface (`IUnknown::Release`, slot 2 of the vtable).
+///
+/// `CreateStreamOnHGlobal` hands back a stream that owns its HGLOBAL, so this
+/// is what frees the frame buffer after the JPEG bytes are copied out.
+unsafe fn com_release(interface: *mut c_void) {
+    if interface.is_null() {
+        return;
+    }
+    let vtable = *(interface as *const *const usize);
+    if vtable.is_null() {
+        return;
+    }
+    let release: extern "system" fn(*mut c_void) -> u32 = std::mem::transmute(*vtable.add(2));
+    release(interface);
+}
+
+/// One screen frame as JPEG bytes, for the clip recorder.
+///
+/// Same GDI recipe as `capture_screen_native` (kept separate on purpose: that
+/// path is the proven one behind F12 and must not be disturbed), but the image
+/// goes to an in-memory stream instead of a file, which is what makes 12 frames
+/// a second affordable.
+pub fn capture_frame_jpeg(quality: u8) -> Result<(Vec<u8>, u32, u32), String> {
+    unsafe {
+        let _ = SetProcessDPIAware();
+
+        let h_desk = OpenInputDesktop(0, 0, 0x01FF);
+        if !h_desk.is_null() {
+            let _ = SetThreadDesktop(h_desk);
+        }
+
+        let hdc_screen = GetDC(std::ptr::null_mut());
+        if hdc_screen.is_null() {
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("GetDC failed".to_string());
+        }
+
+        let mut width = GetDeviceCaps(hdc_screen, DESKTOPHORZRES);
+        let mut height = GetDeviceCaps(hdc_screen, DESKTOPVERTRES);
+        if width <= 0 || height <= 0 {
+            width = GetSystemMetrics(0);
+            height = GetSystemMetrics(1);
+        }
+        if width <= 0 || height <= 0 {
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("@t:ss.noResolution".to_string());
+        }
+
+        let hdc_mem = CreateCompatibleDC(hdc_screen);
+        if hdc_mem.is_null() {
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("CreateCompatibleDC failed".to_string());
+        }
+
+        let bmi = BITMAPINFO {
+            bmi_header: BITMAPINFOHEADER {
+                bi_size: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                bi_width: width,
+                bi_height: -height,
+                bi_planes: 1,
+                bi_bit_count: 32,
+                bi_compression: 0,
+                bi_size_image: (width * height * 4) as u32,
+                bi_xpels_per_meter: 0,
+                bi_ypels_per_meter: 0,
+                bi_clr_used: 0,
+                bi_clr_important: 0,
+            },
+            bmi_colors: [0],
+        };
+
+        let mut ppv_bits: *mut c_void = std::ptr::null_mut();
+        let h_bitmap = CreateDIBSection(hdc_mem, &bmi, 0, &mut ppv_bits, std::ptr::null_mut(), 0);
+        if h_bitmap.is_null() {
+            DeleteDC(hdc_mem);
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("CreateDIBSection failed".to_string());
+        }
+
+        let h_old = SelectObject(hdc_mem, h_bitmap);
+        let blt_ok = BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, 0, 0, SRCCOPY);
+        SelectObject(hdc_mem, h_old);
+        DeleteDC(hdc_mem);
+        ReleaseDC(std::ptr::null_mut(), hdc_screen);
+
+        if blt_ok == 0 {
+            DeleteObject(h_bitmap);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("BitBlt failed".to_string());
+        }
+
+        let startup_input = GdiplusStartupInput {
+            gdiplus_version: 1,
+            debug_event_callback: 0,
+            suppress_background_thread: 0,
+            suppress_external_codecs: 0,
+        };
+        let mut token: usize = 0;
+        if GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut()) != 0 {
+            DeleteObject(h_bitmap);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("GdiplusStartup failed".to_string());
+        }
+
+        let mut gdip_image: *mut c_void = std::ptr::null_mut();
+        let create_status =
+            GdipCreateBitmapFromHBITMAP(h_bitmap, std::ptr::null_mut(), &mut gdip_image);
+        if create_status != 0 || gdip_image.is_null() {
+            DeleteObject(h_bitmap);
+            GdiplusShutdown(token);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+            return Err("GdipCreateBitmapFromHBITMAP failed".to_string());
+        }
+
+        // The quality parameter travels as an EncoderParameters block. A "Long"
+        // value is four bytes: the encoder reads exactly that much.
+        let mut quality_value: u32 = quality.clamp(10, 100) as u32;
+        let params = EncoderParameters {
+            count: 1,
+            parameter: [EncoderParameter {
+                guid: ENCODER_QUALITY,
+                number_of_values: 1,
+                type_: 4, // EncoderParameterValueTypeLong (1 is Byte: GDI+ refuses it)
+                value: &mut quality_value as *mut u32 as *mut c_void,
+            }],
+        };
+
+        let mut stream: *mut c_void = std::ptr::null_mut();
+        let mut bytes: Result<Vec<u8>, String> = Err("CreateStreamOnHGlobal failed".to_string());
+        let stream_status = CreateStreamOnHGlobal(std::ptr::null_mut(), 1, &mut stream);
+        if stream_status == 0 && !stream.is_null() {
+            let save_status = GdipSaveImageToStream(
+                gdip_image,
+                stream,
+                &CLSID_JPEG,
+                &params as *const EncoderParameters as *const c_void,
+            );
+            if save_status == 0 {
+                let mut hglobal: *mut c_void = std::ptr::null_mut();
+                let global_status = GetHGlobalFromStream(stream, &mut hglobal);
+                if global_status == 0 && !hglobal.is_null() {
+                    let size = GlobalSize(hglobal);
+                    let ptr = GlobalLock(hglobal) as *const u8;
+                    if !ptr.is_null() && size > 0 {
+                        bytes = Ok(std::slice::from_raw_parts(ptr, size).to_vec());
+                    } else {
+                        bytes = Err(format!("GlobalLock/GlobalSize failed (size: {size})"));
+                    }
+                    let _ = GlobalUnlock(hglobal);
+                } else {
+                    bytes = Err(format!("GetHGlobalFromStream failed (0x{global_status:08X})"));
+                }
+            } else {
+                bytes = Err(format!("GdipSaveImageToStream failed (status: {save_status})"));
+            }
+            // The stream owns the HGLOBAL (f_delete_on_release = 1), so releasing
+            // the COM interface frees the memory.
+            com_release(stream);
+        }
+
+        GdipDisposeImage(gdip_image);
+        DeleteObject(h_bitmap);
+        GdiplusShutdown(token);
+        if !h_desk.is_null() {
+            CloseDesktop(h_desk);
+        }
+
+        let bytes = bytes?;
+        Ok((bytes, width as u32, height as u32))
+    }
 }

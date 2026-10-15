@@ -48,6 +48,12 @@ export const SS_FAVORITES_KEY = "efxlve-ss-favorites";
 export const SS_CLEANUP_KEY = "efxlve-ss-cleanup";
 /** The user's own Discord webhook for one-click screenshot sharing. */
 export const SS_WEBHOOK_KEY = "efxlve-ss-webhook";
+/** Game clip recording: enable, hotkey, frame rate and the length cap. */
+export const CLIP_ENABLED_KEY = "efxlve-clip-enabled";
+export const CLIP_HOTKEY_KEY = "efxlve-clip-hotkey";
+export const CLIP_HOTKEY_NAME_KEY = "efxlve-clip-hotkey-name";
+export const CLIP_FPS_KEY = "efxlve-clip-fps";
+export const CLIP_MAX_MIN_KEY = "efxlve-clip-max-min";
 /** Task manager: whether the WebView2 group is expanded. */
 export const TM_EXPANDED_KEY = "efxlve-tm-expanded";
 /** Show download speed in bits per second instead of bytes. */
