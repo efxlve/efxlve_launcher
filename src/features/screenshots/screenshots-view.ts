@@ -818,6 +818,9 @@ export function renderScreenshotLightbox(appName: string, index: number): string
             <span class="lightbox-meta">${esc(formatScreenshotDate(item.timestamp, item.date_str))} • ${esc(item.size_str)}</span>
           </div>
           <div class="lightbox-tools">
+            <button class="btn ghost small" data-act="edit-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.editTip")}">
+              ${icon("edit", 13)} ${t("ss.edit")}
+            </button>
             <button class="btn ghost small" data-act="share-screenshot" data-id="${appName}" data-idx="${index}" title="${t("ss.shareTip2")}">
               ${icon("share-2", 13)} ${t("ss.share")}
             </button>

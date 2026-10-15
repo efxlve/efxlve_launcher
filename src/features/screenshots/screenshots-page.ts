@@ -83,6 +83,11 @@ export function loadScreenshotsPage(force = false): void {
     });
 }
 
+/** The editor announces a save; the page reloads so the new file shows up. */
+window.addEventListener("screenshots-changed", () => {
+  if (S.view === "screenshots") loadScreenshotsPage(true);
+});
+
 /** Repaints the page in place after a toolbar or lightbox action. */
 export function repaintScreenshotsPage(): void {
   if (S.view !== "screenshots") return;
@@ -257,6 +262,7 @@ export function openPageLightbox(index: number): void {
           </div>
           <div class="lightbox-tools">
             <button class="btn ghost small" data-act="ssp-lightbox-favorite">${icon("star", 13)} ${esc(isFavorite ? t("ss.unfavorite") : t("ss.favorite"))}</button>
+            <button class="btn ghost small" data-act="ssp-lightbox-edit" title="${t("ss.editTip")}">${icon("edit", 13)} ${t("ss.edit")}</button>
             <button class="btn ghost small" data-act="ssp-lightbox-share" title="${t("ss.shareTip2")}">${icon("share-2", 13)} ${t("ss.share")}</button>
             <button class="btn ghost small" data-act="ssp-lightbox-copy" title="${t("ss.copyTip")}">${icon("copy", 13)} ${t("ss.copy")}</button>
             ${isCompressed(item) ? `<span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>` : `<button class="btn ghost small" data-act="ssp-lightbox-compress" title="${t("ss.compressTip2")}">${icon("minimize-2", 13)} ${t("ss.compress")}</button>`}

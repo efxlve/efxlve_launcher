@@ -15,6 +15,7 @@ import {
   epicSetScreenshotDisabledGames,
 } from "../../../epic";
 import { openEpicModal } from "../../../core/render";
+import { openScreenshotEditor } from "../../screenshots/screenshot-editor";
 import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
@@ -64,6 +65,14 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
   if (!act) return false;
 
   switch (act) {
+    case "edit-screenshot": {
+      const appKey = t.dataset.id ?? id ?? "";
+      const list = S.loadedScreenshots.get(appKey) || [];
+      const shot = list[Number(t.dataset.idx ?? "-1")];
+      if (shot) openScreenshotEditor(shot);
+      return true;
+    }
+
     case "ssg-filter": {
       const filter = t.dataset.filter;
       if (filter === "all" || filter === "raw" || filter === "compressed" || filter === "favorites") {

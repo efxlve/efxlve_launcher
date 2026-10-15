@@ -58,6 +58,7 @@ import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth
 import { closeNotifPanel } from "../notifications/notifications";
 import { closeTaskDetail } from "../settings/task-manager";
 import { closePageLightbox, pageLightboxOpen, repaintScreenshotsPage } from "../screenshots/screenshots-page";
+import { closeScreenshotEditor, editorOpen } from "../screenshots/screenshot-editor";
 import { ssCleanupPolicy, ssSetCleanupPolicy } from "../screenshots/ss-settings";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
@@ -197,6 +198,11 @@ document.addEventListener("keydown", (e) => {
     // The task manager's detail card closes like any other modal.
     if (document.getElementById("tm-detail-root")) {
       closeTaskDetail();
+      return;
+    }
+    // The screenshot editor owns Escape while it is open.
+    if (editorOpen()) {
+      closeScreenshotEditor();
       return;
     }
     // The Screenshots page's lightbox owns Escape while it is open.

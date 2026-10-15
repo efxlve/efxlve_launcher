@@ -36,6 +36,7 @@ import {
   copyScreenshotImageToClipboard,
   openShareModal,
 } from "../../screenshots/screenshots-view";
+import { openScreenshotEditor } from "../../screenshots/screenshot-editor";
 
 /** One selection flip and the repaint that follows. */
 function repaint(): void {
@@ -202,6 +203,16 @@ export function handleScreenshotsPageAction(
       if (shot) {
         const favorite = togglePageFavorite(shot.file_path);
         toast(t(favorite ? "ss.favorited" : "ss.unfavorited"), "ok");
+      }
+      return true;
+    }
+
+    case "ssp-lightbox-edit": {
+      const shot = pageLightboxShot();
+      if (shot) {
+        closePageLightbox();
+        repaint();
+        openScreenshotEditor(shot);
       }
       return true;
     }

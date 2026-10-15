@@ -135,6 +135,7 @@ import { handleDrawerAction } from "./handlers/drawer-handlers";
 import { handleManageAction } from "./handlers/manage-handlers";
 import { handleScreenshotAction } from "./handlers/screenshot-handlers";
 import { handleScreenshotsPageAction } from "./handlers/screenshots-page-handlers";
+import { handleScreenshotEditorAction } from "../screenshots/screenshot-editor";
 import { handleSteamAction } from "./handlers/steam-handlers";
 
 document.addEventListener("click", (e) => {
@@ -311,6 +312,7 @@ document.addEventListener("click", (e) => {
   if (handleDrawerAction(act, t, id, targetEl)) return;
   if (handleScreenshotAction(act, t, id, targetEl)) return;
   if (handleScreenshotsPageAction(act, t, targetEl)) return;
+  if (handleScreenshotEditorAction(act, t, targetEl)) return;
   if (handleSteamAction(act, t, id)) return;
 
   // Global Navigation & Modal Controls

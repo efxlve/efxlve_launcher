@@ -1432,6 +1432,72 @@ pub async fn epic_delete_game_screenshot(
     .map_err(|e| e.to_string())?
 }
 
+/// Writes an edited copy of a screenshot and returns its path.
+///
+/// The original stays untouched unless `replace` is set — and only a PNG can be
+/// replaced, so the encoded data always matches the extension. Copies land next
+/// to the original as `<name>_edited.png` (`_edited-2`, … when taken).
+#[tauri::command]
+pub async fn epic_save_edited_screenshot(
+    file_path: String,
+    data_url: String,
+    replace: bool,
+) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || {
+        let source = PathBuf::from(&file_path);
+        if !source.is_file() {
+            return Err("@t:ss.fileNotFound".to_string());
+        }
+        // The path comes from the UI; writing must stay inside the screenshots
+        // root so a wrong one cannot touch anything else on disk.
+        if !source.starts_with(screenshots_root()) {
+            return Err("@t:ss.outsideRoot".to_string());
+        }
+        let bytes = decode_data_url(&data_url)?;
+        let is_png = source
+            .extension()
+            .map(|ext| ext.eq_ignore_ascii_case("png"))
+            .unwrap_or(false);
+        let target = if replace && is_png {
+            source.clone()
+        } else {
+            edited_sibling(&source)
+        };
+        std::fs::write(&target, bytes).map_err(|e| e.to_string())?;
+        Ok(target.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// `<stem>_edited.png`, then `_edited-2.png`, … so nothing is overwritten.
+fn edited_sibling(source: &Path) -> PathBuf {
+    let dir = source.parent().unwrap_or_else(|| Path::new("."));
+    let stem = source
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "screenshot".to_string());
+    let mut candidate = dir.join(format!("{stem}_edited.png"));
+    let mut index = 2;
+    while candidate.exists() {
+        candidate = dir.join(format!("{stem}_edited-{index}.png"));
+        index += 1;
+    }
+    candidate
+}
+
+/// `data:image/png;base64,…` (or a bare base64 payload) → bytes.
+fn decode_data_url(data_url: &str) -> Result<Vec<u8>, String> {
+    let payload = data_url
+        .split_once(',')
+        .map(|(_, rest)| rest)
+        .unwrap_or(data_url)
+        .trim();
+    base64::engine::general_purpose::STANDARD
+        .decode(payload)
+        .map_err(|_| "@t:ss.badImage".to_string())
+}
+
 /// Per-game folder the Ubisoft Connect client writes its captures to. Falls
 /// back to the client's root when it stores loose files there.
 fn ubisoft_game_dir(title: &str) -> Option<PathBuf> {

@@ -756,6 +756,10 @@ export const epicSaveScreenshotPreview = (filePath: string, dataUrl: string) =>
 export const epicDeleteGameScreenshot = (filePath: string) =>
   invoke<boolean>("epic_delete_game_screenshot", { filePath });
 
+/** Writes an edited copy (or replaces the original PNG) and returns the path. */
+export const epicSaveEditedScreenshot = (filePath: string, dataUrl: string, replace: boolean) =>
+  invoke<string>("epic_save_edited_screenshot", { filePath, dataUrl, replace });
+
 export const epicOpenGameScreenshotsFolder = (appName: string, title: string) =>
   invoke<void>("epic_open_game_screenshots_folder", { appName, title });
 
