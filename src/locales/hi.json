@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "नाम (वैकल्पिक)",
   "ss.webhookAdd": "जोड़ें",
   "ss.webhookChecking": "वेबहुक जाँचा जा रहा है…",
-  "ss.webhookAdded": "जोड़ा गया: {name}"
+  "ss.webhookAdded": "जोड़ा गया: {name}",
+  "accounts.groupServices": "जुड़ी सेवाएँ",
+  "accounts.discordIdle": "बंद",
+  "accounts.openDiscord": "Discord खोलें"
 }

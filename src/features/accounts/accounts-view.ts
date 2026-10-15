@@ -10,10 +10,12 @@
  */
 
 import { emptyState, icon } from "../../core/icons";
-import { render } from "../../core/render";
+import { render, scheduleRender } from "../../core/render";
 import { avatarFor, getCustomAvatar, S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { invoke } from "@tauri-apps/api/core";
+import { isTauri } from "../../core/constants";
 import { amazonDownloadActive } from "../auth/amazon-auth-actions";
 import { storeLogo } from "../store/store-logos";
 
@@ -182,21 +184,6 @@ function groupTitle(key: string): string {
   return `<h3 class="section-title acc-group-title">${t(key)}</h3>`;
 }
 
-/** A store that is announced but not available yet. */
-function soonCard(id: string, title: string, descKey: string): string {
-  return `
-    <section class="card acc-card soon">
-      <div class="acc-card-head">
-        <span class="acc-store-mark">${storeLogo(id)}</span>
-        <div class="row-main">
-          <div class="acc-store-name">${esc(title)}</div>
-          <div class="row-meta">${t(descKey)}</div>
-        </div>
-        <span class="chip warn">${t("accounts.soon")}</span>
-      </div>
-    </section>`;
-}
-
 /** Spotify is managed on the Music page, not as a store account. */
 function spotifyCard(): string {
   return `
@@ -208,6 +195,42 @@ function spotifyCard(): string {
           <div class="row-meta">${t("accounts.spotifyDesc")}</div>
         </div>
         <button class="btn ghost small" data-view="music">${icon("music", 14)} ${t("accounts.openMusic")}</button>
+      </div>
+    </section>`;
+}
+
+/** Discord lives on its own page; the card mirrors the SDK session. */
+let discordSdkCache: { status: string; me?: { name?: string } | null } | null = null;
+let discordSdkLoading = false;
+
+function ensureDiscordSdkState(): void {
+  if (discordSdkCache || discordSdkLoading || !isTauri) return;
+  discordSdkLoading = true;
+  void invoke<{ status: string; me?: { name?: string } | null }>("discord_sdk_state")
+    .then((state) => {
+      discordSdkCache = state;
+      if (S.view === "accounts" || (S.view === "settings" && S.settingsSection === "account")) scheduleRender();
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      discordSdkLoading = false;
+    });
+}
+
+function discordCard(): string {
+  ensureDiscordSdkState();
+  const ready = discordSdkCache?.status === "ready";
+  const name = discordSdkCache?.me?.name ?? "";
+  return `
+    <section class="card acc-card">
+      <div class="acc-card-head">
+        <span class="acc-store-mark">${storeLogo("discord")}</span>
+        <div class="row-main">
+          <div class="acc-store-name">Discord</div>
+          <div class="row-meta">${name ? esc(name) : t("accounts.discordDesc")}</div>
+        </div>
+        <span class="chip ${ready ? "ok" : ""}">${ready ? t("settings.connected") : t("accounts.discordIdle")}</span>
+        <button class="btn ghost small" data-view="discord">${icon("discord", 14)} ${t("accounts.openDiscord")}</button>
       </div>
     </section>`;
 }
@@ -830,6 +853,7 @@ function companionCard(store: "ea" | "ubisoft" | "xbox" | "battlenet" | "riot", 
 function accountCards(): string {
   return `
     ${groupTitle("accounts.groupManaged")}
+    ${infoBox("accounts.optionalInfo")}
     ${epicCard()}
     ${gogCard()}
     ${amazonCard()}
@@ -841,14 +865,14 @@ function accountCards(): string {
     ${companionCard("ubisoft", "Ubisoft Connect")}
     ${companionCard("ea", "EA App")}
     ${companionCard("riot", "Riot Games")}
+    ${groupTitle("accounts.groupServices")}
     ${spotifyCard()}
-    ${groupTitle("accounts.groupSoon")}
-    ${soonCard("discord", "Discord", "accounts.discordDesc")}`;
+    ${discordCard()}`;
 }
 
 /** Account list, switch, add and sign-out, embedded in Settings. */
 export function renderAccountSettings(): string {
-  return `<div class="settings-accounts">${infoBox("accounts.optionalInfo")}${accountCards()}</div>`;
+  return `<div class="settings-accounts">${accountCards()}</div>`;
 }
 
 export function renderAccounts(): string {
@@ -856,7 +880,6 @@ export function renderAccounts(): string {
   return `
     <div class="page acc-page">
       <p class="page-sub acc-intro">${t("accounts.subtitle")}</p>
-      ${infoBox("accounts.optionalInfo")}
       ${accountCards()}
     </div>`;
 }

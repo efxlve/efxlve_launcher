@@ -940,7 +940,7 @@ function renderScreenshots(): string {
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
     group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection")) +
-    group(webhookList + webhookRow, t("ss.shareSection")) +
+    group(webhookRow + webhookList, t("ss.shareSection")) +
     group(clipToggle + clipHotkeyRow + clipOptions, t("ss.clipSection"))
   );
 }

@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "이름(선택)",
   "ss.webhookAdd": "추가",
   "ss.webhookChecking": "웹훅 확인 중…",
-  "ss.webhookAdded": "추가됨: {name}"
+  "ss.webhookAdded": "추가됨: {name}",
+  "accounts.groupServices": "연결된 서비스",
+  "accounts.discordIdle": "꺼짐",
+  "accounts.openDiscord": "Discord 열기"
 }

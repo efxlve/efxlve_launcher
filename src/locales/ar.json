@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "الاسم (اختياري)",
   "ss.webhookAdd": "إضافة",
   "ss.webhookChecking": "جارٍ التحقق من الويب هوك…",
-  "ss.webhookAdded": "تمت الإضافة: {name}"
+  "ss.webhookAdded": "تمت الإضافة: {name}",
+  "accounts.groupServices": "الخدمات المتصلة",
+  "accounts.discordIdle": "متوقف",
+  "accounts.openDiscord": "افتح Discord"
 }

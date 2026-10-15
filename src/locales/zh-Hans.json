@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "名称（可选）",
   "ss.webhookAdd": "添加",
   "ss.webhookChecking": "正在检查 Webhook…",
-  "ss.webhookAdded": "已添加：{name}"
+  "ss.webhookAdded": "已添加：{name}",
+  "accounts.groupServices": "已连接的服务",
+  "accounts.discordIdle": "关闭",
+  "accounts.openDiscord": "打开 Discord"
 }

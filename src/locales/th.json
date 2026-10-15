@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "ชื่อ (ไม่บังคับ)",
   "ss.webhookAdd": "เพิ่ม",
   "ss.webhookChecking": "กำลังตรวจสอบเว็บฮุก…",
-  "ss.webhookAdded": "เพิ่มแล้ว: {name}"
+  "ss.webhookAdded": "เพิ่มแล้ว: {name}",
+  "accounts.groupServices": "บริการที่เชื่อมต่อ",
+  "accounts.discordIdle": "ปิด",
+  "accounts.openDiscord": "เปิด Discord"
 }

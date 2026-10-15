@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "名前（任意）",
   "ss.webhookAdd": "追加",
   "ss.webhookChecking": "Webhook を確認中…",
-  "ss.webhookAdded": "追加しました: {name}"
+  "ss.webhookAdded": "追加しました: {name}",
+  "accounts.groupServices": "連携サービス",
+  "accounts.discordIdle": "オフ",
+  "accounts.openDiscord": "Discord を開く"
 }

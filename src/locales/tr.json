@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "Ad (isteğe bağlı)",
   "ss.webhookAdd": "Ekle",
   "ss.webhookChecking": "Webhook denetleniyor…",
-  "ss.webhookAdded": "Eklendi: {name}"
+  "ss.webhookAdded": "Eklendi: {name}",
+  "accounts.groupServices": "Bağlı servisler",
+  "accounts.discordIdle": "Kapalı",
+  "accounts.openDiscord": "Discord'u Aç"
 }

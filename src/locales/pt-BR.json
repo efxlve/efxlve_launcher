@@ -2381,5 +2381,8 @@
   "ss.webhookNamePlaceholder": "Nome (opcional)",
   "ss.webhookAdd": "Adicionar",
   "ss.webhookChecking": "Verificando o webhook…",
-  "ss.webhookAdded": "Adicionado: {name}"
+  "ss.webhookAdded": "Adicionado: {name}",
+  "accounts.groupServices": "Serviços conectados",
+  "accounts.discordIdle": "Desligado",
+  "accounts.openDiscord": "Abrir o Discord"
 }
