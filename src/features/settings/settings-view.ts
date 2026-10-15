@@ -880,7 +880,10 @@ function renderScreenshots(): string {
     t("ss.webhookAddTitle"),
     `${t("ss.webhookDesc")}
      <div class="ss-webhook-howto">
-       <div class="ss-webhook-howto-title">${t("ss.webhookHowTo")}</div>
+       <div class="ss-webhook-howto-head">
+         <span class="ss-webhook-howto-title">${t("ss.webhookHowTo")}</span>
+         <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://support.discord.com/hc/articles/228383668">${icon("external", 12)} ${t("ss.webhookDocs")}</button>
+       </div>
        <ol>
          <li>${t("ss.webhookStep1")}</li>
          <li>${t("ss.webhookStep2")}</li>
@@ -890,8 +893,7 @@ function renderScreenshots(): string {
      </div>`,
     `<input id="ss-webhook-name" class="input settings-path-input" placeholder="${esc(t("ss.webhookNamePlaceholder"))}" value="" spellcheck="false" autocomplete="off" />
      <input id="ss-webhook-input" class="input settings-path-input" placeholder="https://discord.com/api/webhooks/…" value="" spellcheck="false" autocomplete="off" />
-     <button type="button" class="btn primary small" data-act="add-ss-webhook">${icon("plus", 13)} ${t("ss.webhookAdd")}</button>
-     <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://support.discord.com/hc/articles/228383668">${icon("external", 13)} ${t("ss.webhookDocs")}</button>`,
+     <button type="button" class="btn primary small" data-act="add-ss-webhook">${icon("plus", 13)} ${t("ss.webhookAdd")}</button>`,
     true,
   );
 
