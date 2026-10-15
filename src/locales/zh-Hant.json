@@ -1365,7 +1365,7 @@
   "drawer.overview": "概觀",
   "drawer.achievements": "成就",
   "drawer.dlcs": "附加內容",
-  "drawer.screenshots": "螢幕截圖",
+  "drawer.screenshots": "媒體",
   "drawer.manage": "管理",
   "drawer.specs": "系統",
   "library.all": "全部",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "搜尋這些設定",
   "manage.searchEmpty": "沒有符合的項目。",
   "manage.searchTitle": "搜尋設定",
-  "sys.thisCopy": "此電腦上的副本"
+  "sys.thisCopy": "此電腦上的副本",
+  "critic.scoresTitle": "評分"
 }

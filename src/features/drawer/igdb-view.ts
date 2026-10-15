@@ -1,6 +1,6 @@
-/**
+﻿/**
  * The IGDB block on the game page: genres, companies, release date, rating,
- * screenshots and similar games — plus the attribution IGDB asks for.
+ * screenshots and similar games â€” plus the attribution IGDB asks for.
  *
  * Shown only when the user configured IGDB credentials in Settings. The Rust
  * side caches each game on disk, so opening a page costs one request at most,
@@ -21,7 +21,7 @@ interface IgdbTarget {
 
 /** Per app name: the enriched game, or `null` when IGDB had no match. */
 const cache = new Map<string, IgdbGame | null>();
-/** App name → a translated message, set only when IGDB could not be reached. */
+/** App name â†’ a translated message, set only when IGDB could not be reached. */
 const errors = new Map<string, string>();
 const loading = new Set<string>();
 
@@ -44,10 +44,8 @@ export function ensureIgdbOverview(target: IgdbTarget, year: number | null, onAr
     })
     .finally(() => {
       loading.delete(target.appName);
-      const host = document.getElementById("drawer-igdb-container");
-      if (host && S.currentModalAppName === target.appName) {
-        host.innerHTML = igdbInnerHtml(target);
-      }
+      // The page repaints through this callback: the facts now live inside the
+      // About box and the media in its own tab, so there is no container here.
       onArrive?.();
     });
 }
@@ -62,7 +60,7 @@ export function igdbGameFor(appName: string): IgdbGame | null | undefined {
 }
 
 /**
- * True once IGDB cannot answer for this game any more — it has answered, it
+ * True once IGDB cannot answer for this game any more â€” it has answered, it
  * failed, or it is not configured at all. The About box waits for this before
  * it falls back to a store description or Wikipedia, so the text does not
  * appear and then get replaced.
@@ -73,9 +71,107 @@ export function igdbAboutSettled(appName: string): boolean {
 }
 
 /** The whole block; a short setup row while IGDB has not been configured. */
-export function renderIgdbSection(target: IgdbTarget): string {
-  if (!S.igdbConfigured) return `<div id="drawer-igdb-container">${igdbSetupRow()}</div>`;
-  return `<div id="drawer-igdb-container">${igdbInnerHtml(target)}</div>`;
+/**
+ * The credit line that closes the About box: release date, publisher, age
+ * rating, genre chips and the IGDB attribution. The facts used to live in a card
+ * of their own below the description, which is where the duplication started.
+ */
+export function renderIgdbCredits(target: IgdbTarget): string {
+  const game = cache.get(target.appName);
+  if (!game) {
+    // Not configured, or the transport is broken: the invite stays visible. A
+    // game with no IGDB match stays quiet, like every other missing fact.
+    if (!S.igdbConfigured) return igdbSetupRow();
+    const error = errors.get(target.appName);
+    return error ? igdbSetupRow(error) : "";
+  }
+
+  const facts: string[] = [];
+  // The PC release is the one that matters here; the first release is the
+  // fallback for games IGDB has no PC date for.
+  const releaseDate = game.pcReleaseDate || game.releaseDate;
+  if (releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(releaseDate)}</span>`);
+  // The developer already stands in the hero line; only the publisher is added
+  // here, and only when it is a different company.
+  if (game.publisher && !sameCompany(game.publisher, game.developer)) {
+    facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
+  }
+  // One age rating in the row â€” the body the user's region reads first â€” and the
+  // rest behind a counter. Four organisations at once read as noise.
+  const rated = game.ageRatings.filter((rating) => rating.rating);
+  const preferred =
+    ageOrgOrder()
+      .map((org) => rated.find((rating) => rating.organization === org))
+      .find((rating) => rating !== undefined) ?? rated[0];
+  const others = rated.filter((rating) => rating !== preferred);
+  const labelOf = (rating: { organization: string; rating: string }) =>
+    rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
+  const ageChips = preferred
+    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" Â· "))}">${esc(labelOf(preferred))}</span>` +
+      (others.length
+        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" Â· "))}">+${others.length}</span>`
+        : "")
+    : "";
+  const tags = [...game.genres, ...game.themes].slice(0, 6);
+  if (!facts.length && !ageChips && !tags.length) return "";
+
+  return `
+    <div class="igdb-credits">
+      <div class="igdb-meta">
+        <div class="igdb-facts">${facts.map((fact) => `<span class="igdb-fact">${fact}</span>`).join("")}</div>
+        ${ageChips ? `<div class="igdb-ages">${ageChips}</div>` : ""}
+      </div>
+      ${tags.length ? `<div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>` : ""}
+      <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
+    </div>`;
+}
+
+/** IGDB's own screenshots, for the Media tab. */
+export function renderIgdbMedia(target: IgdbTarget): string {
+  const game = cache.get(target.appName);
+  if (!game || game.screenshots.length === 0) return "";
+  warmImages(game.screenshots.map((id) => igdbImage(id, "screenshot_big")));
+  return `
+    <section class="gp-section">
+      <h3 class="gp-section-title">${icon("sparkles", 14)} ${esc(t("igdb.cardTitle"))}</h3>
+      <div class="igdb-shots">${game.screenshots
+        .map((id) => {
+          const url = igdbImage(id, "screenshot_big");
+          return `<button type="button" class="igdb-shot" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
+        })
+        .join("")}</div>
+    </section>`;
+}
+
+/** The similar-games card that closes the overview. */
+export function renderIgdbSimilar(target: IgdbTarget): string {
+  const game = cache.get(target.appName);
+  if (!game || game.similar.length === 0) return "";
+  warmImages(game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
+  return `
+    <section class="gp-section igdb-card">
+      <div class="igdb-head">
+        <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
+        <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
+      </div>
+      <div class="igdb-similar">${game.similar
+        .map(
+          (hit) => `
+                 <button type="button" class="igdb-similar-item" data-act="open-external-url" data-url="https://www.igdb.com/games/${hit.id}">
+                   ${
+                     hit.coverId
+                       ? (() => {
+                           const url = igdbImage(hit.coverId, "cover_big");
+                           return `<img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" />`;
+                         })()
+                       : `<span class="igdb-similar-ph">${icon("gamepad-2", 16)}</span>`
+                   }
+                   <span class="igdb-similar-name">${esc(hit.name)}</span>
+                   ${hit.year ? `<span class="igdb-similar-year">${hit.year}</span>` : ""}
+                 </button>`,
+        )
+        .join("")}</div>
+    </section>`;
 }
 
 /** Only "IGDB is not reachable at all" deserves a card on the game page. */
@@ -86,7 +182,6 @@ function igdbTransportError(raw: unknown): string {
     ? localizeMessage(text)
     : "";
 }
-
 /** Loose equality for company names: IGDB writes "Behaviour Interactive Inc."
  * where the hero shows the shorter name, and printing both reads as two
  * different companies. */
@@ -126,98 +221,3 @@ function igdbSetupRow(hint = ""): string {
     </section>`;
 }
 
-function igdbInnerHtml(target: IgdbTarget): string {
-  const game = cache.get(target.appName);
-  if (game === undefined) {
-    const error = errors.get(target.appName);
-    if (error) return igdbSetupRow(error);
-    return `<section class="gp-section igdb-card">
-      <h3 class="gp-section-title">${icon("sparkles", 14)} ${esc(t("igdb.cardTitle"))}</h3>
-      <div class="hub-desc-loading"><span class="spinner"></span><span>${esc(t("igdb.loading"))}</span></div>
-    </section>`;
-  }
-  if (game === null) return "";
-  return igdbCardHtml(game);
-}
-
-function igdbCardHtml(game: IgdbGame): string {
-  const tags = [...game.genres, ...game.themes].slice(0, 6);
-  const facts: string[] = [];
-  // The PC release is the one that matters here; the first release is the
-  // fallback for games IGDB has no PC date for.
-  const releaseDate = game.pcReleaseDate || game.releaseDate;
-  if (releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(releaseDate)}</span>`);
-  // The developer already stands in the hero line; only the publisher is added
-  // here, and only when it is a different company.
-  if (game.publisher && !sameCompany(game.publisher, game.developer)) {
-    facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
-  }
-  // One age rating in the row — the body the user's region reads first — and the
-  // rest behind a counter. Four organisations at once read as noise.
-  const rated = game.ageRatings.filter((rating) => rating.rating);
-  const preferred =
-    ageOrgOrder()
-      .map((org) => rated.find((rating) => rating.organization === org))
-      .find((rating) => rating !== undefined) ?? rated[0];
-  const others = rated.filter((rating) => rating !== preferred);
-  const labelOf = (rating: { organization: string; rating: string }) =>
-    rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
-  const ageChips = preferred
-    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" · "))}">${esc(labelOf(preferred))}</span>` +
-      (others.length
-        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
-        : "")
-    : "";
-
-  // Ask for the pictures once: they paint from disk from the second open on.
-  warmImages([
-    ...game.screenshots.map((id) => igdbImage(id, "screenshot_big")),
-    ...game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")),
-  ]);
-
-  return `
-    <section class="gp-section igdb-card">
-      <div class="igdb-head">
-        <h3 class="gp-section-title">${icon("sparkles", 14)} ${esc(t("igdb.cardTitle"))}</h3>
-        <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
-      </div>
-      <div class="igdb-meta">
-        ${game.rating != null ? `<span class="igdb-rating" title="${esc(t("critic.igdbCommunity"))}">${Math.round(game.rating)}</span>` : ""}
-        <div class="igdb-facts">${facts.map((fact) => `<span class="igdb-fact">${fact}</span>`).join("")}</div>
-        ${ageChips ? `<div class="igdb-ages">${ageChips}</div>` : ""}
-      </div>
-      ${tags.length ? `<div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>` : ""}
-      ${
-        game.screenshots.length
-          ? `<div class="igdb-shots">${game.screenshots
-              .map((id) => {
-                const url = igdbImage(id, "screenshot_big");
-                return `<button type="button" class="igdb-shot" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
-              })
-              .join("")}</div>`
-          : ""
-      }
-      ${
-        game.similar.length
-          ? `<div class="igdb-similar-title">${esc(t("igdb.similarTitle"))}</div>
-             <div class="igdb-similar">${game.similar
-               .map(
-                 (hit) => `
-                 <button type="button" class="igdb-similar-item" data-act="open-external-url" data-url="https://www.igdb.com/games/${hit.id}">
-                   ${
-                     hit.coverId
-                       ? (() => {
-                           const url = igdbImage(hit.coverId, "cover_big");
-                           return `<img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" />`;
-                         })()
-                       : `<span class="igdb-similar-ph">${icon("gamepad-2", 16)}</span>`
-                   }
-                   <span class="igdb-similar-name">${esc(hit.name)}</span>
-                   ${hit.year ? `<span class="igdb-similar-year">${hit.year}</span>` : ""}
-                 </button>`,
-               )
-               .join("")}</div>`
-          : ""
-      }
-    </section>`;
-}

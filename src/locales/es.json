@@ -1365,7 +1365,7 @@
   "drawer.overview": "Resumen",
   "drawer.achievements": "Logros",
   "drawer.dlcs": "Complementos",
-  "drawer.screenshots": "Capturas",
+  "drawer.screenshots": "Medios",
   "drawer.manage": "Gestionar",
   "drawer.specs": "Sistema",
   "library.all": "Todos",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "Buscar en estos ajustes",
   "manage.searchEmpty": "Nada coincide con eso.",
   "manage.searchTitle": "Buscar ajustes",
-  "sys.thisCopy": "La copia en este PC"
+  "sys.thisCopy": "La copia en este PC",
+  "critic.scoresTitle": "Puntuaciones"
 }

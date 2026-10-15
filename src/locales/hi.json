@@ -1456,7 +1456,7 @@
   "drawer.overview": "अवलोकन",
   "drawer.achievements": "उपलब्धियां",
   "drawer.dlcs": "ऐड-ऑन",
-  "drawer.screenshots": "स्क्रीनशॉट",
+  "drawer.screenshots": "मीडिया",
   "drawer.manage": "प्रबंधन",
   "drawer.specs": "सिस्टम",
   "library.all": "सभी",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "इन सेटिंग्स में खोजें",
   "manage.searchEmpty": "इससे कुछ मेल नहीं खाता।",
   "manage.searchTitle": "सेटिंग्स खोजें",
-  "sys.thisCopy": "इस पीसी पर मौजूद कॉपी"
+  "sys.thisCopy": "इस पीसी पर मौजूद कॉपी",
+  "critic.scoresTitle": "स्कोर"
 }

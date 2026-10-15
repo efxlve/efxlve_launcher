@@ -1365,7 +1365,7 @@
   "drawer.overview": "Visão geral",
   "drawer.achievements": "Conquistas",
   "drawer.dlcs": "Conteúdos extras",
-  "drawer.screenshots": "Capturas",
+  "drawer.screenshots": "Mídia",
   "drawer.manage": "Gerenciar",
   "drawer.specs": "Sistema",
   "library.all": "Todos",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "Buscar nestas configurações",
   "manage.searchEmpty": "Nada corresponde a isso.",
   "manage.searchTitle": "Buscar configurações",
-  "sys.thisCopy": "A cópia neste PC"
+  "sys.thisCopy": "A cópia neste PC",
+  "critic.scoresTitle": "Notas"
 }

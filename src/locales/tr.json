@@ -1456,7 +1456,7 @@
   "drawer.overview": "Genel Bakış",
   "drawer.achievements": "Başarımlar",
   "drawer.dlcs": "Eklentiler",
-  "drawer.screenshots": "Ekran Görüntüleri",
+  "drawer.screenshots": "Medya",
   "drawer.manage": "Yönet",
   "drawer.specs": "Sistem",
   "library.all": "Tümü",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "Bu ayarlarda ara",
   "manage.searchEmpty": "Aramanla eşleşen bir şey yok.",
   "manage.searchTitle": "Ayarlarda ara",
-  "sys.thisCopy": "Bu bilgisayardaki kopya"
+  "sys.thisCopy": "Bu bilgisayardaki kopya",
+  "critic.scoresTitle": "Puanlar"
 }

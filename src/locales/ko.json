@@ -1365,7 +1365,7 @@
   "drawer.overview": "개요",
   "drawer.achievements": "업적",
   "drawer.dlcs": "애드온",
-  "drawer.screenshots": "스크린샷",
+  "drawer.screenshots": "미디어",
   "drawer.manage": "관리",
   "drawer.specs": "시스템",
   "library.all": "전체",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "이 설정에서 검색",
   "manage.searchEmpty": "일치하는 항목이 없습니다.",
   "manage.searchTitle": "설정 검색",
-  "sys.thisCopy": "이 PC의 복사본"
+  "sys.thisCopy": "이 PC의 복사본",
+  "critic.scoresTitle": "점수"
 }

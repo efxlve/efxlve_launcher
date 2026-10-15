@@ -1365,7 +1365,7 @@
   "drawer.overview": "Обзор",
   "drawer.achievements": "Достижения",
   "drawer.dlcs": "Дополнения",
-  "drawer.screenshots": "Скриншоты",
+  "drawer.screenshots": "Медиа",
   "drawer.manage": "Управление",
   "drawer.specs": "Система",
   "library.all": "Все",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "Поиск по этим настройкам",
   "manage.searchEmpty": "Ничего не найдено.",
   "manage.searchTitle": "Поиск настроек",
-  "sys.thisCopy": "Копия на этом ПК"
+  "sys.thisCopy": "Копия на этом ПК",
+  "critic.scoresTitle": "Оценки"
 }

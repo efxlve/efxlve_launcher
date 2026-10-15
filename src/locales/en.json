@@ -1456,7 +1456,7 @@
   "drawer.overview": "Overview",
   "drawer.achievements": "Achievements",
   "drawer.dlcs": "Add-ons",
-  "drawer.screenshots": "Screenshots",
+  "drawer.screenshots": "Media",
   "drawer.manage": "Manage",
   "drawer.specs": "System",
   "library.all": "All",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "Search these settings",
   "manage.searchEmpty": "Nothing here matches that.",
   "manage.searchTitle": "Search settings",
-  "sys.thisCopy": "The copy on this PC"
+  "sys.thisCopy": "The copy on this PC",
+  "critic.scoresTitle": "Scores"
 }

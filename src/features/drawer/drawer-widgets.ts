@@ -68,12 +68,13 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
   `;
 }
 
-export function renderCriticCard(critic?: CriticData, isLoading = false): string {
+export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRating: number | null = null): string {
+  const igdbScore = igdbRating != null ? Math.round(igdbRating) : null;
   if (isLoading) {
     return `
       <div class="hub-card hub-critic-card loading">
         <div class="hub-card-header">
-          <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.title")}</span></h3>
+          <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.scoresTitle")}</span></h3>
         </div>
         <div class="critic-loading-text"><span class="hltb-spinner"></span> ${i18nT("critic.scanning")}</div>
       </div>
@@ -87,12 +88,12 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
   if (
     !critic ||
     !critic.supported ||
-    (!critic.opencritic_score && !critic.metacritic_score && !goygoy)
+    (!critic.opencritic_score && !critic.metacritic_score && !goygoy && igdbScore == null)
   ) {
     return "";
   }
 
-  const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score);
+  const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score || igdbScore != null);
 
   const tierPill = critic.tier
     ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
@@ -104,6 +105,18 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
   if (hasGlobalScores) {
     globalScoresHtml = `
       <div class="hub-critic-grid">
+        ${
+          igdbScore != null
+            ? `
+          <div class="hub-critic-badge igdb" title="${i18nT("critic.igdbCommunity")}">
+            <div class="critic-badge-score igdb">${igdbScore}</div>
+            <div class="critic-badge-info">
+              <div class="critic-badge-name">IGDB</div>
+              <div class="critic-badge-sub">${i18nT("critic.communityScore")}</div>
+            </div>
+          </div>`
+            : ""
+        }
         ${
           critic.opencritic_score
             ? `
@@ -702,32 +715,10 @@ export function renderGameFeatures(
   antiCheat: string | null = null,
   reqData?: GameRequirementsResponse,
 ): string {
-  const achSum = achSummaryOf(s.appName);
-  const customAttrs = g?.metadata?.customAttributes as Record<string, { type?: string; value?: string }> | undefined;
-  const canRunOffline = customAttrs?.CanRunOffline?.value === "true";
+  const canRunOffline = (g?.metadata?.customAttributes as Record<string, { value?: string }> | undefined)?.CanRunOffline?.value === "true";
 
   const isOnlineOnly = isOnlineOnlyGame(s, g, reqData);
   const ctrl = detectControllerSupport(s, g, reqData);
-  const cloud = cloudSaveInfo(s, g, partner, reqData);
-  const cats = steamCategories(s.appName);
-  const cheat = antiCheat || (s.appName.startsWith("steam::") && cats.includes(STEAM_CAT_VAC) ? "VAC" : null);
-  const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
-  const versionOk = Boolean(versionInfo.display && /\d/.test(versionInfo.display));
-
-  // 3. Achievement status
-  let achVal = i18nT("feat.none");
-  let achClass = "";
-  if (achSum && achSum.total_achievements > 0) {
-    const totalXp = achSum.total_xp || 0;
-    achVal = i18nT("feat.trophiesXp", {
-      count: achSum.total_achievements,
-      extra: totalXp > 0 ? ` • ${totalXp} XP` : "",
-    });
-    achClass = isAppPlatinum(s.appName) ? "plat" : "gold";
-  } else if (partner) {
-    achVal = i18nT("feat.partnerAchievements", { name: partner.name });
-    achClass = "accent";
-  }
 
   // 4. Offline play
   let offlineVal = i18nT("feat.supportedOffline");
@@ -749,10 +740,6 @@ export function renderGameFeatures(
   // 5. Game mode (row hidden when the mode cannot be determined)
   const mode = detectGameMode(s, reqData);
 
-  // The store's own size can under-report (Epic reports Fortnite at a few
-  // hundred MB while the folder holds tens of GB); prefer the measured size.
-  const sizeBytes = measuredSize(s.appName) ?? s.installSize;
-
   return `
     <div class="hub-feature-row" title="${esc(ctrl.tooltip)}">
       <div class="hub-feature-label">
@@ -760,22 +747,6 @@ export function renderGameFeatures(
         <span>${i18nT("feat.controller")}</span>
       </div>
       <div class="hub-feature-val ${ctrl.className}">${ctrl.label}</div>
-    </div>
-
-    <div class="hub-feature-row" title="${esc(cloud.tooltip)}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("cloud", 12)}</div>
-        <span>${i18nT("feat.cloud")}</span>
-      </div>
-      <div class="hub-feature-val ${cloud.synced ? "supported" : ""}">${esc(cloud.label)}</div>
-    </div>
-
-    <div class="hub-feature-row">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${isAppPlatinum(s.appName) ? epicPlatinumIcon(12) : icon("trophy", 12)}</div>
-        <span>${i18nT("feat.achievements")}</span>
-      </div>
-      <div class="hub-feature-val ${achClass}">${achVal}</div>
     </div>
 
     <div class="hub-feature-row" title="${esc(offlineTooltip)}">
@@ -795,45 +766,6 @@ export function renderGameFeatures(
         <span>${i18nT("feat.mode")}</span>
       </div>
       <div class="hub-feature-val ${mode === "singlePlayer" ? "supported" : "accent"}">${i18nT(`feat.${mode}`)}</div>
-    </div>`
-        : ""
-    }
-
-    ${
-      partner
-        ? `
-    <div class="hub-feature-row" title="${esc(i18nT("feat.externalLauncherTip", { name: partner.name }))}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("layers", 12)}</div>
-        <span>${i18nT("feat.externalLauncher")}</span>
-      </div>
-      <div class="hub-feature-val accent">${esc(partner.name)}</div>
-    </div>`
-        : ""
-    }
-
-    ${
-      cheat
-        ? `
-    <div class="hub-feature-row" title="${esc(i18nT("feat.antiCheatTip", { name: cheat }))}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("shield", 12)}</div>
-        <span>${i18nT("feat.antiCheat")}</span>
-      </div>
-      <div class="hub-feature-val accent">${esc(cheat)}</div>
-    </div>`
-        : ""
-    }
-
-    ${
-      S.eosSupportMap.get(s.appName) === true
-        ? `
-    <div class="hub-feature-row" title="${esc(i18nT("feat.eosTip"))}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("users", 12)}</div>
-        <span>${i18nT("feat.eos")}</span>
-      </div>
-      <div class="hub-feature-val supported">${i18nT("feat.eosSupported")}</div>
     </div>`
         : ""
     }
@@ -857,6 +789,18 @@ export function renderInstalledCopyFacts(s: EpicSummary): string {
       </div>
       <div class="hub-feature-val supported">Windows (PC x64)</div>
     </div>
+    ${
+      S.eosSupportMap.get(s.appName) === true
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("feat.eosTip"))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("users", 12)}</div>
+        <span>${i18nT("feat.eos")}</span>
+      </div>
+      <div class="hub-feature-val supported">${i18nT("feat.eosSupported")}</div>
+    </div>`
+        : ""
+    }
     <div class="hub-feature-row" title="${esc(i18nT("feat.installedSizeTip"))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>

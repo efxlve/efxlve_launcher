@@ -1365,7 +1365,7 @@
   "drawer.overview": "概要",
   "drawer.achievements": "実績",
   "drawer.dlcs": "アドオン",
-  "drawer.screenshots": "スクリーンショット",
+  "drawer.screenshots": "メディア",
   "drawer.manage": "管理",
   "drawer.specs": "システム",
   "library.all": "すべて",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "この設定を検索",
   "manage.searchEmpty": "一致する項目はありません。",
   "manage.searchTitle": "設定を検索",
-  "sys.thisCopy": "この PC のコピー"
+  "sys.thisCopy": "この PC のコピー",
+  "critic.scoresTitle": "スコア"
 }

@@ -23,6 +23,7 @@ import {
   type GameScreenshotItem,
 } from "../../epic";
 import { steamGetGameScreenshots, steamGetScreenshotFullData } from "../../steam";
+import { renderIgdbMedia } from "../drawer/igdb-view";
 import { ssDensity, ssFavorites, ssSort, ssSortItems, ssWebhooks } from "./ss-settings";
 
 /* --- Game page gallery: the toolbar's own view state ---------------------- */
@@ -656,10 +657,14 @@ export function closeShareModal(): void {
 export function renderDrawerScreenshots(s: EpicSummary): string {
   const screenshots = S.loadedScreenshots.get(s.appName) || [];
   const isLoading = S.loadingScreenshotsFor === s.appName;
+  // The store's own screenshots sit above the player's gallery: they belong to
+  // this tab, not to the overview, where they pushed the progress content down.
+  const storeShots = renderIgdbMedia(s);
 
   if (isLoading && screenshots.length === 0) {
     return `
       <div class="screenshots-tab-container">
+        ${storeShots}
         <div class="screenshots-loading-box">
           <span class="hltb-spinner" style="width:28px;height:28px;border-width:3px"></span>
           <span>${t("ss.scanning")}</span>
@@ -699,6 +704,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   if (screenshots.length === 0) {
     return `
       <div class="screenshots-tab-container">
+        ${storeShots}
         ${headerHtml}
         <div class="screenshots-empty-card">
           <div class="screenshots-empty-icon">${icon("image", 44)}</div>
@@ -829,6 +835,7 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   hydrateShotPreviews();
   return `
     <div class="screenshots-tab-container">
+      ${storeShots}
       ${headerHtml}
       ${toolbar}
       ${

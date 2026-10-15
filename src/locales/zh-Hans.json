@@ -1365,7 +1365,7 @@
   "drawer.overview": "概览",
   "drawer.achievements": "成就",
   "drawer.dlcs": "附加内容",
-  "drawer.screenshots": "截图",
+  "drawer.screenshots": "媒体",
   "drawer.manage": "管理",
   "drawer.specs": "系统",
   "library.all": "全部",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "搜索这些设置",
   "manage.searchEmpty": "没有匹配项。",
   "manage.searchTitle": "搜索设置",
-  "sys.thisCopy": "此电脑上的副本"
+  "sys.thisCopy": "此电脑上的副本",
+  "critic.scoresTitle": "评分"
 }

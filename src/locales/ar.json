@@ -1365,7 +1365,7 @@
   "drawer.overview": "نظرة عامة",
   "drawer.achievements": "الإنجازات",
   "drawer.dlcs": "الإضافات",
-  "drawer.screenshots": "لقطات الشاشة",
+  "drawer.screenshots": "الوسائط",
   "drawer.manage": "إدارة",
   "drawer.specs": "النظام",
   "library.all": "الكل",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "ابحث في هذه الإعدادات",
   "manage.searchEmpty": "لا شيء يطابق ذلك.",
   "manage.searchTitle": "ابحث في الإعدادات",
-  "sys.thisCopy": "النسخة على هذا الجهاز"
+  "sys.thisCopy": "النسخة على هذا الجهاز",
+  "critic.scoresTitle": "التقييمات"
 }

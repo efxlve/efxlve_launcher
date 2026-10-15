@@ -1365,7 +1365,7 @@
   "drawer.overview": "ภาพรวม",
   "drawer.achievements": "ความสำเร็จ",
   "drawer.dlcs": "ส่วนเสริม",
-  "drawer.screenshots": "ภาพหน้าจอ",
+  "drawer.screenshots": "มีเดีย",
   "drawer.manage": "จัดการ",
   "drawer.specs": "ระบบ",
   "library.all": "ทั้งหมด",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "ค้นหาในการตั้งค่าเหล่านี้",
   "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน",
   "manage.searchTitle": "ค้นหาการตั้งค่า",
-  "sys.thisCopy": "สำเนาบนเครื่องนี้"
+  "sys.thisCopy": "สำเนาบนเครื่องนี้",
+  "critic.scoresTitle": "คะแนน"
 }

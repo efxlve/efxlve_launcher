@@ -1365,7 +1365,7 @@
   "drawer.overview": "Aperçu",
   "drawer.achievements": "Succès",
   "drawer.dlcs": "Contenus additionnels",
-  "drawer.screenshots": "Captures",
+  "drawer.screenshots": "Médias",
   "drawer.manage": "Gérer",
   "drawer.specs": "Système",
   "library.all": "Tous",
@@ -2395,5 +2395,6 @@
   "manage.searchPlaceholder": "Rechercher dans ces réglages",
   "manage.searchEmpty": "Rien ne correspond.",
   "manage.searchTitle": "Rechercher des réglages",
-  "sys.thisCopy": "La copie sur ce PC"
+  "sys.thisCopy": "La copie sur ce PC",
+  "critic.scoresTitle": "Notes"
 }

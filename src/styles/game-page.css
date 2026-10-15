@@ -572,6 +572,12 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .igdb-similar-name { font-size: 12px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .igdb-similar-year { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .igdb-ages { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+/* The credits under the About text: date, publisher, age, genres, attribution. */
+.igdb-credits {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
+}
+.igdb-credits .igdb-attrib { align-self: flex-end; }
 .igdb-age-chip {
   height: 22px; padding: 0 8px; display: inline-flex; align-items: center;
   border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2);

@@ -40,7 +40,7 @@ import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreensho
 import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
-import { ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbSection } from "./igdb-view";
+import { ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -858,7 +858,7 @@ export function updateHltbUI(appName: string, data?: HltbData): void {
 export function updateCriticUI(appName: string, data: CriticData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-critic-container");
-  if (container) container.innerHTML = renderCriticCard(data, false);
+  if (container) container.innerHTML = renderCriticCard(data, false, igdbGameFor(appName)?.rating ?? null);
 }
 
 /** Collection chips + add button shown under the game description. */
@@ -911,14 +911,15 @@ export function renderDrawerOverview(
           }</div>
           ${!aboutLoading && aboutLong ? aboutToggleHtml(s) : ""}
           <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
+          ${renderIgdbCredits(s)}
         </section>
-        ${renderIgdbSection(s)}
         ${renderMomentsStrip(s.appName)}
         ${renderNextAchievements(s.appName)}
+        ${renderIgdbSimilar(s)}
       </div>
       <aside class="hub-overview-sidebar">
         <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName)}</div>
-        <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName)}</div>
+        <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName, igdbGameFor(s.appName)?.rating ?? null)}</div>
         ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>
     </div>`;
