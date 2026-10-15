@@ -20,6 +20,7 @@ mod nile;
 mod notes;
 mod net_diag;
 mod igdb;
+mod image_cache;
 mod perf;
 mod task_manager;
 mod game_running;
@@ -1085,6 +1086,9 @@ fn main() {
             igdb::igdb_game,
             igdb::igdb_covers,
             igdb::igdb_enrich,
+            image_cache::cache_images,
+            image_cache::image_cache_size,
+            image_cache::clear_image_cache,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");

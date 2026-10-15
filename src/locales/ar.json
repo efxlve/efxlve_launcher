@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "افتح Discord",
   "igdb.proxyDown": "الخادم لا يستجيب",
   "igdb.setupHint": "بتفعيل IGDB سترى تقييم المجتمع والأنواع والتصنيف العمري ولقطات الشاشة في كل صفحة لعبة.",
-  "drawer.sourceIgdb": "المصدر: IGDB"
+  "drawer.sourceIgdb": "المصدر: IGDB",
+  "settings.imageCacheTitle": "ذاكرة الصور",
+  "settings.imageCacheDesc": "تُحفظ أغلفة ولقطات صفحات الألعاب على القرص، فتُفتح الصفحة التي فتحتها سابقًا دون انتظار الشبكة.",
+  "settings.imageCacheCleared": "تم تفريغ ذاكرة الصور ({size})."
 }

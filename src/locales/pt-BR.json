@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Abrir o Discord",
   "igdb.proxyDown": "Servidor não responde",
   "igdb.setupHint": "Com o IGDB você vê a nota da comunidade, gêneros, classificação etária e capturas em cada jogo.",
-  "drawer.sourceIgdb": "Fonte: IGDB"
+  "drawer.sourceIgdb": "Fonte: IGDB",
+  "settings.imageCacheTitle": "Cache de imagens",
+  "settings.imageCacheDesc": "Capas e capturas das páginas de jogo ficam no disco, então uma página já aberta abre sem esperar a rede.",
+  "settings.imageCacheCleared": "Cache de imagens limpo ({size})."
 }

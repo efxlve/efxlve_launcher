@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "เปิด Discord",
   "igdb.proxyDown": "เซิร์ฟเวอร์ไม่ตอบสนอง",
   "igdb.setupHint": "เปิด IGDB เพื่อดูคะแนนจากชุมชน แนวเกม เรตติ้งตามวัย และภาพหน้าจอในทุกหน้าเกม",
-  "drawer.sourceIgdb": "ที่มา: IGDB"
+  "drawer.sourceIgdb": "ที่มา: IGDB",
+  "settings.imageCacheTitle": "แคชรูปภาพ",
+  "settings.imageCacheDesc": "ปกและภาพหน้าจอของหน้าเกมถูกเก็บไว้บนดิสก์ หน้าเกมที่เคยเปิดจึงเปิดได้โดยไม่ต้องรอเครือข่าย",
+  "settings.imageCacheCleared": "ล้างแคชรูปภาพแล้ว ({size})"
 }

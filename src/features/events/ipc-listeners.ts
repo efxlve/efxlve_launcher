@@ -104,6 +104,7 @@ import { ensureNotesMigration } from "../notes/notes-client";
 import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
 import { perfMark } from "../../core/perf";
 import { initOfflineMode } from "../../core/offline";
+import { prefetchRecentImages } from "../../core/image-cache";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 
@@ -947,5 +948,9 @@ export async function initApp(hooks: {
     // Everything the boot path must do before the launcher is fully usable has
     // been kicked off; this mark is the number to compare between releases.
     perfMark("boot:ready");
+
+    // Pictures sit behind the first paint on purpose: the recently played games
+    // are warmed once so their game pages open without an image request.
+    window.setTimeout(() => prefetchRecentImages(), 2500);
   }
 }

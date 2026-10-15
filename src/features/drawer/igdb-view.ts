@@ -8,6 +8,7 @@
  */
 
 import { icon } from "../../core/icons";
+import { cachedImage, warmImages } from "../../core/image-cache";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
@@ -131,6 +132,12 @@ function igdbCardHtml(game: IgdbGame): string {
     )
     .join("");
 
+  // Ask for the pictures once: they paint from disk from the second open on.
+  warmImages([
+    ...game.screenshots.map((id) => igdbImage(id, "screenshot_big")),
+    ...game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")),
+  ]);
+
   return `
     <section class="gp-section igdb-card">
       <div class="igdb-head">
@@ -146,10 +153,10 @@ function igdbCardHtml(game: IgdbGame): string {
       ${
         game.screenshots.length
           ? `<div class="igdb-shots">${game.screenshots
-              .map(
-                (id) =>
-                  `<button type="button" class="igdb-shot" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}"><img src="${esc(igdbImage(id, "screenshot_big"))}" alt="" loading="lazy" /></button>`,
-              )
+              .map((id) => {
+                const url = igdbImage(id, "screenshot_big");
+                return `<button type="button" class="igdb-shot" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
+              })
               .join("")}</div>`
           : ""
       }
@@ -162,7 +169,10 @@ function igdbCardHtml(game: IgdbGame): string {
                  <button type="button" class="igdb-similar-item" data-act="open-external-url" data-url="https://www.igdb.com/games/${hit.id}">
                    ${
                      hit.coverId
-                       ? `<img src="${esc(igdbImage(hit.coverId, "cover_big"))}" alt="" loading="lazy" />`
+                       ? (() => {
+                           const url = igdbImage(hit.coverId, "cover_big");
+                           return `<img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" />`;
+                         })()
                        : `<span class="igdb-similar-ph">${icon("gamepad-2", 16)}</span>`
                    }
                    <span class="igdb-similar-name">${esc(hit.name)}</span>

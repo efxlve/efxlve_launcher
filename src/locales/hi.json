@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Discord खोलें",
   "igdb.proxyDown": "सर्वर जवाब नहीं दे रहा",
   "igdb.setupHint": "IGDB चालू करने पर हर गेम पेज पर कम्युनिटी स्कोर, शैलियाँ, आयु रेटिंग और स्क्रीनशॉट दिखेंगे।",
-  "drawer.sourceIgdb": "स्रोत: IGDB"
+  "drawer.sourceIgdb": "स्रोत: IGDB",
+  "settings.imageCacheTitle": "छवि कैश",
+  "settings.imageCacheDesc": "गेम पेजों के कवर और स्क्रीनशॉट डिस्क पर रखे जाते हैं, इसलिए एक बार खोला गया पेज नेटवर्क का इंतज़ार नहीं करता।",
+  "settings.imageCacheCleared": "छवि कैश साफ़ किया गया ({size})।"
 }

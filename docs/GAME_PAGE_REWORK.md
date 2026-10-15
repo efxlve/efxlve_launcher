@@ -146,3 +146,39 @@ empty and error states (IGDB down, store offline), and a locale pass.
 Faz 0 + Faz 1 in two commits: they are the biggest visible win, they touch the
 fewest files, and every later phase builds on the fact row. Manage (Faz 4) can
 start in parallel in a second worktree, since it shares no file with Faz 1.
+
+## 9. Caching (audited 2026-10-15)
+
+The rule: a game page that was opened once must open again without a network
+wait — data and pictures alike.
+
+Already on disk, verified by reading the call paths:
+
+| Source | Cache |
+|---|---|
+| IGDB metadata | `<app_data>/igdb/game-<id>.json`, `lookup.json`, `age-ratings.json` |
+| HowLongToBeat | `<config>/legendary/hltb-v4/<app>-<year>.json` |
+| Review scores | `<config>/legendary/critic/*.json` |
+| Wikipedia blurb | `<config>/wiki_about/<app>_<lang>_v1.json` |
+| Store requirements | `<config>/specs/<app>.json` |
+| Achievements, playtime, DLC | the client's own files — no network at all |
+
+Missing, and now added: **pictures**. The hero art, the IGDB screenshots and the
+similar-game covers were fetched from the network on every open.
+
+- `src-tauri/src/image_cache.rs`: `cache_images(urls)` downloads a batch into
+  `<app_data>/images/<sha256[0..16]>.<ext>` (four at a time, 20 s timeout, 12 MB
+  per file, 512 MB per directory with oldest-first trimming), plus
+  `image_cache_size()` and `clear_image_cache()`.
+- The asset protocol is enabled for `$APPDATA/images/**`, so the webview paints
+  the local file through `convertFileSrc`.
+- `src/core/image-cache.ts`: `cachedImage(url)` for the markup, `warmImages()`
+  to ask in the background and swap what is already on screen, and
+  `prefetchRecentImages()` — called from the boot path 2.5 s after `boot:ready`
+  for the eight recently played games.
+- Wired: the game hero, the IGDB screenshots and the similar covers. Settings →
+  Sistem shows the size and clears it.
+
+Left for Faz 3: the same treatment for library covers (bounded, visible page
+only) and a hover prefetch, so even a first-ever open paints from disk.
+

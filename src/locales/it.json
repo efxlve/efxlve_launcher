@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Apri Discord",
   "igdb.proxyDown": "Server non risponde",
   "igdb.setupHint": "Con IGDB vedi il voto della community, i generi, le classificazioni per età e gli screenshot su ogni gioco.",
-  "drawer.sourceIgdb": "Fonte: IGDB"
+  "drawer.sourceIgdb": "Fonte: IGDB",
+  "settings.imageCacheTitle": "Cache immagini",
+  "settings.imageCacheDesc": "Copertine e screenshot delle pagine di gioco restano su disco: una pagina già aperta si riapre senza attese di rete.",
+  "settings.imageCacheCleared": "Cache immagini svuotata ({size})."
 }

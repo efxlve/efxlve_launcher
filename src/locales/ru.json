@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Открыть Discord",
   "igdb.proxyDown": "Сервер не отвечает",
   "igdb.setupHint": "С IGDB на каждой странице игры появятся оценка сообщества, жанры, возрастные рейтинги и скриншоты.",
-  "drawer.sourceIgdb": "Источник: IGDB"
+  "drawer.sourceIgdb": "Источник: IGDB",
+  "settings.imageCacheTitle": "Кэш изображений",
+  "settings.imageCacheDesc": "Обложки и скриншоты со страниц игр хранятся на диске, поэтому уже открытая страница открывается без ожидания сети.",
+  "settings.imageCacheCleared": "Кэш изображений очищен ({size})."
 }

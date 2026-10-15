@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "打开 Discord",
   "igdb.proxyDown": "服务器无响应",
   "igdb.setupHint": "启用 IGDB 后，每个游戏页面都会显示社区评分、类型、年龄分级和截图。",
-  "drawer.sourceIgdb": "来源：IGDB"
+  "drawer.sourceIgdb": "来源：IGDB",
+  "settings.imageCacheTitle": "图片缓存",
+  "settings.imageCacheDesc": "游戏页面的封面与截图会保存在磁盘上，打开过的页面无需等待网络。",
+  "settings.imageCacheCleared": "图片缓存已清空（{size}）。"
 }

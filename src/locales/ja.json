@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Discord を開く",
   "igdb.proxyDown": "サーバーが応答しません",
   "igdb.setupHint": "IGDB を設定すると、各ゲームページにコミュニティスコア、ジャンル、年齢区分、スクリーンショットが表示されます。",
-  "drawer.sourceIgdb": "出典: IGDB"
+  "drawer.sourceIgdb": "出典: IGDB",
+  "settings.imageCacheTitle": "画像キャッシュ",
+  "settings.imageCacheDesc": "ゲームページのカバーとスクリーンショットはディスクに保存され、一度開いたページは通信を待たずに開きます。",
+  "settings.imageCacheCleared": "画像キャッシュを削除しました（{size}）。"
 }

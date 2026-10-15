@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Discord öffnen",
   "igdb.proxyDown": "Server antwortet nicht",
   "igdb.setupHint": "Mit IGDB siehst du Community-Wertung, Genres, Altersfreigaben und Screenshots auf jeder Spielseite.",
-  "drawer.sourceIgdb": "Quelle: IGDB"
+  "drawer.sourceIgdb": "Quelle: IGDB",
+  "settings.imageCacheTitle": "Bild-Cache",
+  "settings.imageCacheDesc": "Cover und Screenshots der Spielseiten liegen auf der Platte, damit eine einmal geöffnete Seite ohne Netzwerk wartet.",
+  "settings.imageCacheCleared": "Bild-Cache geleert ({size})."
 }

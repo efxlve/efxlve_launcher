@@ -18,6 +18,7 @@ import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
+import { clearImageCache, imageCacheSize } from "../../core/image-cache";
 import { toast } from "../../core/toast";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
@@ -1001,7 +1002,15 @@ function renderSystem(): string {
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
       row(t("settings.startWithWindows"), t("settings.startWithWindowsDesc"), toggle("toggle-autostart", S.startWithWindows)) +
       row(t("settings.minimizeOnGame"), t("settings.minimizeOnGameDesc"), toggle("toggle-minimize-on-game", S.minimizeOnGame)) +
-      row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)),
+      row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)) +
+      // The pictures the game pages paint live on disk; the row shows what that
+      // costs and offers to start over.
+      row(
+        t("settings.imageCacheTitle"),
+        t("settings.imageCacheDesc"),
+        `<span class="chip">${S.imageCacheBytes == null ? "—" : esc(fmtBytes(S.imageCacheBytes))}</span>
+         <button class="btn ghost small" data-act="clear-image-cache">${t("common.delete")}</button>`,
+      ),
       t("settings.secSystem"),
     ) +
     group(
@@ -1410,7 +1419,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, imgBytes] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -1423,6 +1432,7 @@ export async function loadSettingsView(): Promise<void> {
         amazonGetInstallDir().catch(() => null),
         amazonDefaultInstallDir().catch(() => ""),
         igdbStatus().catch(() => null),
+        imageCacheSize().catch(() => null),
       ]);
       S.epicSettingsCache = st ?? S.epicSettingsCache;
       S.epicDefaultDir = dir ?? "";
@@ -1435,6 +1445,7 @@ export async function loadSettingsView(): Promise<void> {
       S.gogCometEnabled = st?.gog_comet_enabled ?? true;
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
+      S.imageCacheBytes = imgBytes;
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;
@@ -1713,6 +1724,15 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       resetSettingsSearch();
       render();
       document.getElementById("settings-search")?.focus();
+      return true;
+    case "clear-image-cache":
+      void clearImageCache()
+        .then((bytes) => {
+          S.imageCacheBytes = 0;
+          render();
+          toast(t("settings.imageCacheCleared", { size: fmtBytes(bytes) }), "ok");
+        })
+        .catch(() => undefined);
       return true;
     case "toggle-ss-sound":
       localStorage.setItem(SS_SOUND_KEY, String((_el as HTMLInputElement).checked));

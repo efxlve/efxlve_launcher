@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Discord 열기",
   "igdb.proxyDown": "서버가 응답하지 않음",
   "igdb.setupHint": "IGDB를 켜면 각 게임 페이지에서 커뮤니티 점수, 장르, 연령 등급, 스크린샷을 볼 수 있습니다.",
-  "drawer.sourceIgdb": "출처: IGDB"
+  "drawer.sourceIgdb": "출처: IGDB",
+  "settings.imageCacheTitle": "이미지 캐시",
+  "settings.imageCacheDesc": "게임 페이지의 커버와 스크린샷을 디스크에 보관하므로 한 번 연 페이지는 네트워크를 기다리지 않습니다.",
+  "settings.imageCacheCleared": "이미지 캐시를 비웠습니다 ({size})."
 }

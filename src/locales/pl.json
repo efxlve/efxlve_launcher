@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "Otwórz Discord",
   "igdb.proxyDown": "Serwer nie odpowiada",
   "igdb.setupHint": "Dzięki IGDB zobaczysz ocenę społeczności, gatunki, kategorie wiekowe i zrzuty ekranu na każdej stronie gry.",
-  "drawer.sourceIgdb": "Źródło: IGDB"
+  "drawer.sourceIgdb": "Źródło: IGDB",
+  "settings.imageCacheTitle": "Pamięć obrazów",
+  "settings.imageCacheDesc": "Okładki i zrzuty ze stron gier są trzymane na dysku, więc raz otwarta strona otwiera się bez czekania na sieć.",
+  "settings.imageCacheCleared": "Pamięć obrazów wyczyszczona ({size})."
 }

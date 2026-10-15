@@ -2386,5 +2386,8 @@
   "accounts.openDiscord": "開啟 Discord",
   "igdb.proxyDown": "伺服器無回應",
   "igdb.setupHint": "啟用 IGDB 後，每個遊戲頁面都會顯示社群評分、類型、年齡分級與截圖。",
-  "drawer.sourceIgdb": "來源：IGDB"
+  "drawer.sourceIgdb": "來源：IGDB",
+  "settings.imageCacheTitle": "圖片快取",
+  "settings.imageCacheDesc": "遊戲頁面的封面與截圖會保存在磁碟上，開啟過的頁面不必等待網路。",
+  "settings.imageCacheCleared": "圖片快取已清空（{size}）。"
 }
