@@ -181,11 +181,11 @@ export function openManagePopup(appName: string): void {
             <h2>${t("drawer.manage")}</h2>
             <div class="manage-head-sub">${esc(s.title)}</div>
           </div>
-          <div class="manage-search">
-            ${icon("search", 13)}
-            <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
-          </div>
           <button class="manage-head-close" data-act="close-manage-popup" title="${t("common.close")}">${icon("x", 16)}</button>
+        </div>
+        <div class="manage-search">
+          ${icon("search", 13)}
+          <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
         </div>
         <div class="manage-body">${renderDrawerManage(s)}</div>
         <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>
@@ -553,7 +553,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
               `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
-              `<div class="mg-note">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}${mtuIssueHtml()}`, "manage-cloud-subtitle")}
+              `<div class="mg-info">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}${mtuIssueHtml()}`, "manage-cloud-subtitle")}
             <div class="row mg-row">
               <div class="row-main">
                 <div class="mg-title">${t("manage.saveFolderTitle")}</div>
