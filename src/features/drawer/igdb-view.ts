@@ -87,7 +87,18 @@ function igdbTransportError(raw: unknown): string {
     : "";
 }
 
-/** Age-rating bodies in the order this language reads them: the region's own
+/** Loose equality for company names: IGDB writes "Behaviour Interactive Inc."
+ * where the hero shows the shorter name, and printing both reads as two
+ * different companies. */
+function sameCompany(a: string, b: string): boolean {
+  const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const left = norm(a);
+  const right = norm(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+/** The age-rating bodies in the order this language reads them: the region's own
  * first, then the widely known ones. A game rated only by GRAC still shows a
  * number instead of nothing, but a Turkish user sees PEGI or ESRB first. */
 function ageOrgOrder(): string[] {
@@ -101,7 +112,8 @@ function ageOrgOrder(): string[] {
 }
 
 /** One line that says what IGDB adds, with the way to turn it on. */
-function igdbSetupRow(hint = ""): string {  if (S.offlineMode) return "";
+function igdbSetupRow(hint = ""): string {
+  if (S.offlineMode) return "";
   return `
     <section class="gp-section igdb-card igdb-setup">
       <div class="igdb-head">
@@ -137,7 +149,7 @@ function igdbCardHtml(game: IgdbGame): string {
   if (releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(releaseDate)}</span>`);
   // The developer already stands in the hero line; only the publisher is added
   // here, and only when it is a different company.
-  if (game.publisher && game.publisher !== game.developer) {
+  if (game.publisher && !sameCompany(game.publisher, game.developer)) {
     facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
   }
   // One age rating in the row — the body the user's region reads first — and the

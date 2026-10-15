@@ -41,7 +41,7 @@ import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbSection } from "./igdb-view";
-import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderNextAchievements } from "./drawer-widgets";
+import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1332,14 +1332,23 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
 /* ---------- System requirements ---------- */
 
 export function renderDrawerSystemRequirements(s: EpicSummary): string {
-  if (S.loadingReqFor === s.appName) return loadingState(t("sys.loadingStore"));
+  // The facts of this copy are known whatever the store answers, so they lead
+  // every state of this tab — loading, missing requirements, or a full list.
+  const copyCard = `
+    <section class="card sys-req-copy">
+      <h3 class="gp-section-title">${t("sys.thisCopy")}</h3>
+      <div>${renderInstalledCopyFacts(s)}</div>
+    </section>`;
+  const withCopy = (body: string): string => `<div class="sys-req-container">${copyCard}${body}</div>`;
+
+  if (S.loadingReqFor === s.appName) return withCopy(loadingState(t("sys.loadingStore")));
   const data = S.loadedRequirements.get(s.appName);
   if (!data) {
     void fetchAndRenderRequirements(s.appName, s.title);
-    return loadingState(t("sys.loading"));
+    return withCopy(loadingState(t("sys.loading")));
   }
   if (!data.supported || data.systems.length === 0) {
-    return emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"));
+    return withCopy(emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc")));
   }
 
   const hasWin = data.systems.some((sys) => isWinSys(sys.systemType));
@@ -1362,8 +1371,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${body}
     </section>`;
 
-  return `
-    <div class="sys-req-container">
+  return withCopy(`
       ${hasWin && hasMac ? `
         <div class="seg sys-req-platforms">
           <button class="${isWinSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Windows">${t("sys.windowsPc")}</button>
@@ -1379,8 +1387,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
         ${s.appName.startsWith("riot::") || s.appName.startsWith("amazon::")
           ? ""
           : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`}
-      </div>
-    </div>`;
+      </div>`);
 }
 
 export async function fetchAndRenderRequirements(appName: string, title: string, forceRefresh = false): Promise<void> {

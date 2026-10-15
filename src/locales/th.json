@@ -2394,5 +2394,6 @@
   "drawer.readLess": "ย่อ",
   "manage.searchPlaceholder": "ค้นหาในการตั้งค่าเหล่านี้",
   "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน",
-  "manage.searchTitle": "ค้นหาการตั้งค่า"
+  "manage.searchTitle": "ค้นหาการตั้งค่า",
+  "sys.thisCopy": "สำเนาบนเครื่องนี้"
 }

@@ -2394,5 +2394,6 @@
   "drawer.readLess": "عرض أقل",
   "manage.searchPlaceholder": "ابحث في هذه الإعدادات",
   "manage.searchEmpty": "لا شيء يطابق ذلك.",
-  "manage.searchTitle": "ابحث في الإعدادات"
+  "manage.searchTitle": "ابحث في الإعدادات",
+  "sys.thisCopy": "النسخة على هذا الجهاز"
 }

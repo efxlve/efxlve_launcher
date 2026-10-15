@@ -2394,5 +2394,6 @@
   "drawer.readLess": "Daha az göster",
   "manage.searchPlaceholder": "Bu ayarlarda ara",
   "manage.searchEmpty": "Aramanla eşleşen bir şey yok.",
-  "manage.searchTitle": "Ayarlarda ara"
+  "manage.searchTitle": "Ayarlarda ara",
+  "sys.thisCopy": "Bu bilgisayardaki kopya"
 }

@@ -2394,5 +2394,6 @@
   "drawer.readLess": "접기",
   "manage.searchPlaceholder": "이 설정에서 검색",
   "manage.searchEmpty": "일치하는 항목이 없습니다.",
-  "manage.searchTitle": "설정 검색"
+  "manage.searchTitle": "설정 검색",
+  "sys.thisCopy": "이 PC의 복사본"
 }

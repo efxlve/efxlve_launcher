@@ -2394,5 +2394,6 @@
   "drawer.readLess": "Weniger anzeigen",
   "manage.searchPlaceholder": "Diese Einstellungen durchsuchen",
   "manage.searchEmpty": "Dazu passt hier nichts.",
-  "manage.searchTitle": "Einstellungen durchsuchen"
+  "manage.searchTitle": "Einstellungen durchsuchen",
+  "sys.thisCopy": "Die Kopie auf diesem PC"
 }

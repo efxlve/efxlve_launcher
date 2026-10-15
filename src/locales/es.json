@@ -2394,5 +2394,6 @@
   "drawer.readLess": "Mostrar menos",
   "manage.searchPlaceholder": "Buscar en estos ajustes",
   "manage.searchEmpty": "Nada coincide con eso.",
-  "manage.searchTitle": "Buscar ajustes"
+  "manage.searchTitle": "Buscar ajustes",
+  "sys.thisCopy": "La copia en este PC"
 }

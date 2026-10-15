@@ -2394,5 +2394,6 @@
   "drawer.readLess": "折りたたむ",
   "manage.searchPlaceholder": "この設定を検索",
   "manage.searchEmpty": "一致する項目はありません。",
-  "manage.searchTitle": "設定を検索"
+  "manage.searchTitle": "設定を検索",
+  "sys.thisCopy": "この PC のコピー"
 }

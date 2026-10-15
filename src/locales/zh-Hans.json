@@ -2394,5 +2394,6 @@
   "drawer.readLess": "收起",
   "manage.searchPlaceholder": "搜索这些设置",
   "manage.searchEmpty": "没有匹配项。",
-  "manage.searchTitle": "搜索设置"
+  "manage.searchTitle": "搜索设置",
+  "sys.thisCopy": "此电脑上的副本"
 }

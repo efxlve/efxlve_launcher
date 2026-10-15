@@ -837,7 +837,19 @@ export function renderGameFeatures(
     </div>`
         : ""
     }
+  `;
+}
 
+/**
+ * The facts of the copy on this PC: platform, size and build. They used to sit
+ * in the overview's features card, which made it a wall of rows — the System tab
+ * is where technical facts belong.
+ */
+export function renderInstalledCopyFacts(s: EpicSummary): string {
+  const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
+  const versionOk = Boolean(versionInfo.display && /\d/.test(versionInfo.display));
+  const sizeBytes = measuredSize(s.appName) ?? s.installSize;
+  return `
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("monitor", 12)}</div>
@@ -845,7 +857,6 @@ export function renderGameFeatures(
       </div>
       <div class="hub-feature-val supported">Windows (PC x64)</div>
     </div>
-
     <div class="hub-feature-row" title="${esc(i18nT("feat.installedSizeTip"))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>
@@ -859,7 +870,6 @@ export function renderGameFeatures(
         }
       </div>
     </div>
-
     ${
       s.installed && versionOk
         ? `

@@ -2394,5 +2394,6 @@
   "drawer.readLess": "Pokaż mniej",
   "manage.searchPlaceholder": "Szukaj w tych ustawieniach",
   "manage.searchEmpty": "Nic nie pasuje.",
-  "manage.searchTitle": "Szukaj ustawień"
+  "manage.searchTitle": "Szukaj ustawień",
+  "sys.thisCopy": "Kopia na tym PC"
 }

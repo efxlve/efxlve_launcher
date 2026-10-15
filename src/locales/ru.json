@@ -2394,5 +2394,6 @@
   "drawer.readLess": "Свернуть",
   "manage.searchPlaceholder": "Поиск по этим настройкам",
   "manage.searchEmpty": "Ничего не найдено.",
-  "manage.searchTitle": "Поиск настроек"
+  "manage.searchTitle": "Поиск настроек",
+  "sys.thisCopy": "Копия на этом ПК"
 }
