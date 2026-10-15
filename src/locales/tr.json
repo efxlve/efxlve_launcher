@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "Favorilerden çıkar",
   "ss.favorited": "Favorilere eklendi",
   "ss.unfavorited": "Favorilerden çıkarıldı",
-  "ss.batchDeleteConfirm": "Silinsin mi?"
+  "ss.batchDeleteConfirm": "Silinsin mi?",
+  "task.colProcess": "Süreç",
+  "task.colCpu": "CPU",
+  "task.colRam": "Bellek",
+  "task.statCpuSub": "tüm süreçlerin toplamı",
+  "task.statRamSub": "{count} süreç",
+  "task.statJobsSub": "çalışıyor",
+  "task.autoRefresh": "2 saniyede bir otomatik yenilenir",
+  "task.alwaysOnShort": "Her zaman açık"
 }

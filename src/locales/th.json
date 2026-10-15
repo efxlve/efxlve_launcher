@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "นำออกจากรายการโปรด",
   "ss.favorited": "เพิ่มในรายการโปรดแล้ว",
   "ss.unfavorited": "นำออกจากรายการโปรดแล้ว",
-  "ss.batchDeleteConfirm": "ลบหรือไม่?"
+  "ss.batchDeleteConfirm": "ลบหรือไม่?",
+  "task.colProcess": "โปรเซส",
+  "task.colCpu": "CPU",
+  "task.colRam": "หน่วยความจำ",
+  "task.statCpuSub": "โปรเซสรวมทั้งหมด",
+  "task.statRamSub": "{count} โปรเซส",
+  "task.statJobsSub": "กำลังทำงาน",
+  "task.autoRefresh": "รีเฟรชอัตโนมัติทุก 2 วินาที",
+  "task.alwaysOnShort": "เปิดตลอดเวลา"
 }

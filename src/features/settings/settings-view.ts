@@ -10,7 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
-import { emptyState, icon } from "../../core/icons";
+import { emptyState, icon, type IconName } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
@@ -873,42 +873,84 @@ function taskRoleLabel(role: string): string {
   }
 }
 
+/** Each background job gets its own mark, so the grid scans by shape. */
+function taskJobIcon(id: string): IconName {
+  switch (id) {
+    case "metrics": return "activity";
+    case "spotify":
+    case "spotify_player": return "music";
+    case "controller_bridge": return "gamepad-2";
+    case "discord_voice": return "mic";
+    case "discord_sdk":
+    case "discord_page": return "discord";
+    case "presence": return "wifi";
+    case "game_watch": return "eye";
+    case "screenshots": return "camera";
+    case "store_page": return "package";
+    case "overlay_browser": return "globe";
+    default: return "server";
+  }
+}
+
 function formatTaskMb(mb: number): string {
   return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
 }
 
-function processRowHtml(row: TaskRow): string {
-  const title = row.role === "app"
-    ? t("task.mainProcess")
-    : `${row.name || "WebView2"} · ${taskRoleLabel(row.role)}`;
+/** One process line: mark, name/role, then CPU and memory with relative bars.
+ * The bars are scaled to the biggest row, so the top consumer is obvious. */
+function processRowHtml(row: TaskRow, cpuPeak: number, memPeak: number): string {
+  const isMain = row.role === "" || row.role === "app";
+  const title = isMain ? t("task.mainProcess") : "WebView2";
+  const badge = isMain ? t("task.roleApp") : taskRoleLabel(row.role);
+  const cpuPct = Math.max(2, Math.round((row.cpu / cpuPeak) * 100));
+  const memPct = Math.max(2, Math.round((row.memoryMb / memPeak) * 100));
   return `
-    <div class="row settings-row task-row" data-task="${esc(row.id)}">
-      <div class="row-main">
-        <div class="settings-row-title">${esc(title)}</div>
-        <div class="settings-row-desc">PID ${row.pid} · <span class="task-threads">${row.threads}</span> ${esc(t("task.threadsShort"))}</div>
+    <div class="tm-row" data-task="${esc(row.id)}" data-search="${esc(title)} ${esc(badge)} PID ${row.pid}">
+      <span class="tm-row-icon${isMain ? " is-main" : ""}">${icon(isMain ? "monitor" : "layers", 14)}</span>
+      <div class="tm-row-main">
+        <div class="tm-row-title">${esc(title)}</div>
+        <div class="tm-row-sub">
+          <span class="tm-badge">${esc(badge)}</span>
+          <span>PID ${row.pid}</span>
+          <span class="tm-sub-sep">·</span>
+          <span class="task-threads">${row.threads}</span>
+          <span>${esc(t("task.threadsShort"))}</span>
+        </div>
       </div>
-      <div class="settings-row-control task-numbers">
-        <span class="task-cpu">${row.cpu.toFixed(1)}%</span>
-        <span class="task-mem">${formatTaskMb(row.memoryMb)}</span>
+      <div class="tm-metric" title="${esc(t("task.colCpu"))}">
+        <span class="tm-bar"><span class="tm-bar-fill task-cpu-bar" style="width:${cpuPct}%"></span></span>
+        <span class="tm-num task-cpu">${row.cpu.toFixed(1)}%</span>
+      </div>
+      <div class="tm-metric" title="${esc(t("task.colRam"))}">
+        <span class="tm-bar"><span class="tm-bar-fill mem task-mem-bar" style="width:${memPct}%"></span></span>
+        <span class="tm-num task-mem">${formatTaskMb(row.memoryMb)}</span>
       </div>
     </div>`;
 }
 
+/** One background job: mark, name, live dot, and the stop action when stopping
+ * is safe. Jobs are threads, so they carry no CPU or memory of their own. */
 function jobRowHtml(row: TaskRow): string {
+  const name = t(`task.job.${row.id}`);
   return `
-    <div class="row settings-row task-row" data-task="${esc(row.id)}">
-      <div class="row-main">
-        <div class="settings-row-title">${esc(t(`task.job.${row.id}`))}</div>
-        ${row.stoppable ? "" : `<div class="settings-row-desc">${esc(t("task.alwaysOn"))}</div>`}
+    <div class="tm-job${row.running ? " is-running" : ""}" data-task="${esc(row.id)}" data-search="${esc(name)}">
+      <div class="tm-job-head">
+        <span class="tm-job-icon">${icon(taskJobIcon(row.id), 14)}</span>
+        <span class="tm-job-name">${esc(name)}</span>
+        <span class="tm-dot${row.running ? " on" : ""}"></span>
       </div>
-      <div class="settings-row-control">
-        <span class="chip ${row.running ? "ok" : ""} task-status">${esc(row.running ? t("task.running") : t("task.stopped"))}</span>
-        ${row.stoppable ? `<button type="button" class="btn ghost small" data-act="task-stop" data-id="${esc(row.id)}" ${row.running ? "" : "disabled"}>${esc(t("task.stop"))}</button>` : ""}
+      <div class="tm-job-foot">
+        <span class="tm-job-state task-status">${esc(row.running ? t("task.running") : t("task.stopped"))}</span>
+        ${
+          row.stoppable
+            ? `<button type="button" class="btn ghost small" data-act="task-stop" data-id="${esc(row.id)}" ${row.running ? "" : "disabled"}>${esc(t("task.stop"))}</button>`
+            : `<span class="tm-job-lock" title="${esc(t("task.alwaysOn"))}">${icon("lock", 11)} ${esc(t("task.alwaysOnShort"))}</span>`
+        }
       </div>
     </div>`;
 }
 
-/** The section: process tree, background jobs, and a live refresh. */
+/** The section: a live stat strip, the process table and the job grid. */
 function renderTasks(): string {
   if (!isTauri) return infoBox("task.desktopOnly");
   if (!tasksLoaded) {
@@ -920,20 +962,56 @@ function renderTasks(): string {
   const jobs = taskRows.filter((row) => row.kind === "job");
   const totalMem = processes.reduce((sum, row) => sum + row.memoryMb, 0);
   const totalCpu = processes.reduce((sum, row) => sum + row.cpu, 0);
-  const summary = row(
-    t("task.total"),
-    t("task.totalDesc", { count: String(processes.length) }),
-    `<span class="settings-value">${totalCpu.toFixed(1)}% · ${formatTaskMb(totalMem)}</span>`,
-  );
-  return (
-    infoBox("task.info") +
-    group(
-      summary + (processes.length ? processes.map(processRowHtml).join("") : row(t("task.loading"), null, "")),
-      t("task.processes"),
-    ) +
-    group(jobs.length ? jobs.map(jobRowHtml).join("") : row(t("task.loading"), null, ""), t("task.jobs")) +
-    `<div class="task-foot"><button type="button" class="btn ghost small" data-act="task-refresh">${icon("refresh", 13)} ${t("task.refresh")}</button></div>`
-  );
+  const runningJobs = jobs.filter((row) => row.running).length;
+  const cpuPeak = Math.max(...processes.map((row) => row.cpu), 0.1);
+  const memPeak = Math.max(...processes.map((row) => row.memoryMb), 1);
+
+  const stats = `
+    <div class="tm-stats">
+      <div class="tm-stat">
+        <span class="tm-stat-label">${icon("cpu", 12)} ${esc(t("task.colCpu"))}</span>
+        <span class="tm-stat-value task-total-cpu">${totalCpu.toFixed(1)}%</span>
+        <span class="tm-stat-sub">${esc(t("task.statCpuSub"))}</span>
+      </div>
+      <div class="tm-stat">
+        <span class="tm-stat-label">${icon("hard-drive", 12)} ${esc(t("task.colRam"))}</span>
+        <span class="tm-stat-value task-total-mem">${formatTaskMb(totalMem)}</span>
+        <span class="tm-stat-sub">${esc(t("task.statRamSub", { count: String(processes.length) }))}</span>
+      </div>
+      <div class="tm-stat">
+        <span class="tm-stat-label">${icon("activity", 12)} ${esc(t("task.jobs"))}</span>
+        <span class="tm-stat-value"><span class="task-jobs-count">${runningJobs}</span><span class="tm-stat-of"> / ${jobs.length}</span></span>
+        <span class="tm-stat-sub">${esc(t("task.statJobsSub"))}</span>
+      </div>
+    </div>`;
+
+  const table = processes.length
+    ? `<div class="list settings-group tm-table">
+        <div class="tm-thead">
+          <span></span>
+          <span>${esc(t("task.colProcess"))}</span>
+          <span>${esc(t("task.colCpu"))}</span>
+          <span>${esc(t("task.colRam"))}</span>
+        </div>
+        ${processes.map((row) => processRowHtml(row, cpuPeak, memPeak)).join("")}
+      </div>`
+    : `<div class="list settings-group tm-table"><div class="tm-empty">${esc(t("task.loading"))}</div></div>`;
+
+  const grid = jobs.length
+    ? `<div class="settings-group tm-jobs">${jobs.map(jobRowHtml).join("")}</div>`
+    : `<div class="settings-group tm-jobs"><div class="tm-empty">${esc(t("task.loading"))}</div></div>`;
+
+  return `
+    ${infoBox("task.info")}
+    ${stats}
+    <h3 class="section-title">${t("task.processes")}</h3>
+    ${table}
+    <h3 class="section-title">${t("task.jobs")}</h3>
+    ${grid}
+    <div class="tm-foot">
+      <span class="tm-updated">${esc(t("task.autoRefresh"))}</span>
+      <button type="button" class="btn ghost small" data-act="task-refresh">${icon("refresh", 13)} ${t("task.refresh")}</button>
+    </div>`;
 }
 
 async function refreshTasks(repaint = true): Promise<void> {
@@ -960,9 +1038,15 @@ function ensureTaskPolling(): void {
   }, 2000);
 }
 
+/** Live patch: numbers, bars and states update in place; a changed row set
+ * repaints the section. */
 function patchTaskRows(): void {
   const panel = document.querySelector<HTMLElement>(".settings-panel");
   if (!panel) return;
+  const processes = taskRows.filter((row) => row.kind === "process");
+  const jobs = taskRows.filter((row) => row.kind === "job");
+  const cpuPeak = Math.max(...processes.map((row) => row.cpu), 0.1);
+  const memPeak = Math.max(...processes.map((row) => row.memoryMb), 1);
   const known = new Set<string>();
   for (const row of taskRows) {
     known.add(row.id);
@@ -973,18 +1057,28 @@ function patchTaskRows(): void {
     }
     const cpu = el.querySelector<HTMLElement>(".task-cpu");
     if (cpu) cpu.textContent = `${row.cpu.toFixed(1)}%`;
+    const cpuBar = el.querySelector<HTMLElement>(".task-cpu-bar");
+    if (cpuBar) cpuBar.style.width = `${Math.max(2, Math.round((row.cpu / cpuPeak) * 100))}%`;
     const mem = el.querySelector<HTMLElement>(".task-mem");
     if (mem) mem.textContent = formatTaskMb(row.memoryMb);
+    const memBar = el.querySelector<HTMLElement>(".task-mem-bar");
+    if (memBar) memBar.style.width = `${Math.max(2, Math.round((row.memoryMb / memPeak) * 100))}%`;
     const threads = el.querySelector<HTMLElement>(".task-threads");
     if (threads) threads.textContent = String(row.threads);
     const status = el.querySelector<HTMLElement>(".task-status");
-    if (status) {
-      status.textContent = row.running ? t("task.running") : t("task.stopped");
-      status.classList.toggle("ok", row.running);
-    }
+    if (status) status.textContent = row.running ? t("task.running") : t("task.stopped");
+    el.classList.toggle("is-running", row.running);
+    const dot = el.querySelector<HTMLElement>(".tm-dot");
+    if (dot) dot.classList.toggle("on", row.running);
     const stop = el.querySelector<HTMLButtonElement>('[data-act="task-stop"]');
     if (stop) stop.disabled = !row.running;
   }
+  const cpuTotal = panel.querySelector<HTMLElement>(".task-total-cpu");
+  if (cpuTotal) cpuTotal.textContent = `${processes.reduce((sum, row) => sum + row.cpu, 0).toFixed(1)}%`;
+  const memTotal = panel.querySelector<HTMLElement>(".task-total-mem");
+  if (memTotal) memTotal.textContent = formatTaskMb(processes.reduce((sum, row) => sum + row.memoryMb, 0));
+  const jobsCount = panel.querySelector<HTMLElement>(".task-jobs-count");
+  if (jobsCount) jobsCount.textContent = String(jobs.filter((row) => row.running).length);
   const shown = [...panel.querySelectorAll<HTMLElement>("[data-task]")].map((el) => el.dataset.task ?? "");
   if (shown.length !== known.size || shown.some((id) => !known.has(id))) render();
 }
@@ -1214,12 +1308,16 @@ export function renderSettings(): string {
   return `
     <div class="page settings-page">
       <div class="settings-layout">
-        <nav class="settings-nav">${nav}</nav>
-        <div class="settings-panel">
-          <div class="settings-search-bar">
+        <nav class="settings-nav">
+          <div class="settings-nav-search">
+            ${icon("search", 13)}
             <input id="settings-search" class="settings-search" type="text" value="${esc(settingsQuery)}" placeholder="${esc(t("settings.searchPlaceholder"))}" spellcheck="false" />
-            <span class="settings-search-count" id="settings-search-count" hidden></span>
+            ${settingsQuery ? `<button type="button" class="settings-search-clear" data-act="settings-search-clear">${icon("x", 12)}</button>` : ""}
           </div>
+          <span class="settings-search-count" id="settings-search-count" hidden></span>
+          ${nav}
+        </nav>
+        <div class="settings-panel">
           ${
             settingsSearching
               ? SECTIONS.map(
@@ -1335,7 +1433,8 @@ function applySettingsSearch(query: string): void {
   const visibleSections = [
     ...panel.querySelectorAll<HTMLElement>(".settings-search-section"),
   ].filter((section) => !isSearchHidden(section)).length;
-  const count = panel.querySelector<HTMLElement>("#settings-search-count");
+  // The counter sits in the nav, next to the box the query was typed into.
+  const count = document.getElementById("settings-search-count");
   if (count) {
     count.hidden = !searching || visibleSections === 0;
     count.textContent = searching ? t("settings.searchResults", { count: String(visibleSections) }) : "";
@@ -1647,6 +1746,11 @@ async function applyCleanup(): Promise<void> {
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement): boolean {
   switch (act) {
+    case "settings-search-clear":
+      resetSettingsSearch();
+      render();
+      document.getElementById("settings-search")?.focus();
+      return true;
     case "toggle-ss-sound":
       localStorage.setItem(SS_SOUND_KEY, String((_el as HTMLInputElement).checked));
       return true;

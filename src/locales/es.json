@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "Quitar de favoritos",
   "ss.favorited": "Añadida a favoritos",
   "ss.unfavorited": "Quitada de favoritos",
-  "ss.batchDeleteConfirm": "¿Borrar?"
+  "ss.batchDeleteConfirm": "¿Borrar?",
+  "task.colProcess": "Proceso",
+  "task.colCpu": "CPU",
+  "task.colRam": "Memoria",
+  "task.statCpuSub": "todos los procesos combinados",
+  "task.statRamSub": "{count} procesos",
+  "task.statJobsSub": "en ejecución",
+  "task.autoRefresh": "Se actualiza automáticamente cada 2 segundos",
+  "task.alwaysOnShort": "Siempre activo"
 }

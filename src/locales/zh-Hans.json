@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "取消收藏",
   "ss.favorited": "已加入收藏",
   "ss.unfavorited": "已取消收藏",
-  "ss.batchDeleteConfirm": "删除？"
+  "ss.batchDeleteConfirm": "删除？",
+  "task.colProcess": "进程",
+  "task.colCpu": "CPU",
+  "task.colRam": "内存",
+  "task.statCpuSub": "所有进程合计",
+  "task.statRamSub": "{count} 个进程",
+  "task.statJobsSub": "运行中",
+  "task.autoRefresh": "每 2 秒自动刷新",
+  "task.alwaysOnShort": "始终开启"
 }

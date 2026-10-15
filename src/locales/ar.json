@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "أزل من المفضلة",
   "ss.favorited": "أُضيفت إلى المفضلة",
   "ss.unfavorited": "أُزيلت من المفضلة",
-  "ss.batchDeleteConfirm": "حذف؟"
+  "ss.batchDeleteConfirm": "حذف؟",
+  "task.colProcess": "العملية",
+  "task.colCpu": "CPU",
+  "task.colRam": "الذاكرة",
+  "task.statCpuSub": "جميع العمليات مجتمعة",
+  "task.statRamSub": "{count} عملية",
+  "task.statJobsSub": "قيد التشغيل",
+  "task.autoRefresh": "يتم التحديث تلقائيًا كل ثانيتين",
+  "task.alwaysOnShort": "مفعّل دائمًا"
 }

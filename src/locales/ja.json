@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "お気に入りから削除",
   "ss.favorited": "お気に入りに追加しました",
   "ss.unfavorited": "お気に入りから削除しました",
-  "ss.batchDeleteConfirm": "削除しますか？"
+  "ss.batchDeleteConfirm": "削除しますか？",
+  "task.colProcess": "プロセス",
+  "task.colCpu": "CPU",
+  "task.colRam": "メモリ",
+  "task.statCpuSub": "全プロセスの合計",
+  "task.statRamSub": "プロセス {count} 件",
+  "task.statJobsSub": "実行中",
+  "task.autoRefresh": "2 秒ごとに自動更新",
+  "task.alwaysOnShort": "常時オン"
 }

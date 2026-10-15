@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "즐겨찾기에서 제거",
   "ss.favorited": "즐겨찾기에 추가됨",
   "ss.unfavorited": "즐겨찾기에서 제거됨",
-  "ss.batchDeleteConfirm": "삭제할까요?"
+  "ss.batchDeleteConfirm": "삭제할까요?",
+  "task.colProcess": "프로세스",
+  "task.colCpu": "CPU",
+  "task.colRam": "메모리",
+  "task.statCpuSub": "모든 프로세스 합계",
+  "task.statRamSub": "프로세스 {count}개",
+  "task.statJobsSub": "실행 중",
+  "task.autoRefresh": "2초마다 자동 새로 고침",
+  "task.alwaysOnShort": "항상 켜짐"
 }

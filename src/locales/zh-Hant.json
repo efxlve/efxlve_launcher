@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "取消收藏",
   "ss.favorited": "已加入收藏",
   "ss.unfavorited": "已取消收藏",
-  "ss.batchDeleteConfirm": "刪除？"
+  "ss.batchDeleteConfirm": "刪除？",
+  "task.colProcess": "處理程序",
+  "task.colCpu": "CPU",
+  "task.colRam": "記憶體",
+  "task.statCpuSub": "所有處理程序合計",
+  "task.statRamSub": "{count} 個處理程序",
+  "task.statJobsSub": "執行中",
+  "task.autoRefresh": "每 2 秒自動重新整理",
+  "task.alwaysOnShort": "始終開啟"
 }

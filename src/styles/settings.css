@@ -1,7 +1,7 @@
 /* ==========================================================================
    Settings: plain text sub-navigation + list-row panels.
    ========================================================================== */
-.settings-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; align-items: start; }
+.settings-layout { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 32px; align-items: start; }
 .settings-nav { position: sticky; top: 0; display: flex; flex-direction: column; gap: 2px; }
 .settings-nav-item {
   height: 34px; padding: 0 12px; border: none; border-radius: var(--r-sm); background: transparent;
@@ -139,6 +139,9 @@
 @media (max-width: 1100px) {
   .settings-layout { grid-template-columns: 1fr; gap: 16px; }
   .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; }
+  /* The search keeps its own line above the section buttons. */
+  .settings-nav-search { flex: 1 1 100%; }
+  .settings-search-count { flex: 1 1 100%; padding-left: 0; }
   .settings-row-control { justify-content: flex-start; }
 }
 #eos-settings-row { align-items: center; }
@@ -167,12 +170,11 @@
 #eos-row-control .btn:disabled,
 #eos-row-control .btn.disabled { opacity: 0.45; pointer-events: none; }
 
-/* Settings search: filters rows in place, and shows every section so a match
-   anywhere in the page is visible. */
+/* Settings search: sits at the top of the sidebar, filters rows in place, and
+   shows every section so a match anywhere in the page is visible. */
 .settings-search {
   width: 100%;
   height: 36px;
-  margin-bottom: 16px;
   padding: 0 12px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
@@ -190,6 +192,17 @@
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* The box inside the nav: leading icon, clear button, tighter height. */
+.settings-nav-search { position: relative; display: flex; align-items: center; }
+.settings-nav-search > svg { position: absolute; left: 10px; color: var(--text-3); pointer-events: none; }
+.settings-nav-search .settings-search { height: 34px; padding: 0 28px 0 30px; font-size: 12.5px; }
+.settings-search-clear {
+  position: absolute; right: 5px; width: 22px; height: 22px; display: grid; place-items: center;
+  border: none; border-radius: 50%; background: transparent; color: var(--text-3); cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+.settings-search-clear:hover { background: var(--surface-2); color: var(--text); }
 
 .settings-search-head {
   margin: 20px 0 8px;
@@ -219,10 +232,9 @@
 .settings-panel [hidden] { display: none !important; }
 .settings-panel .settings-search-hide { display: none !important; }
 
-.settings-search-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.settings-search-bar .settings-search { flex: 1 1 auto; margin-bottom: 0; }
 .settings-search-count {
-  flex-shrink: 0;
+  display: block;
+  padding: 4px 12px 2px;
   font-size: 11px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
@@ -250,8 +262,84 @@
 }
 
 /* --- Task manager --------------------------------------------------------- */
-.task-numbers { gap: 14px; font-variant-numeric: tabular-nums; }
-.task-numbers .task-cpu { font-size: 13px; color: var(--text); min-width: 48px; text-align: right; }
-.task-numbers .task-mem { font-size: 12px; color: var(--text-2); min-width: 72px; text-align: right; }
-.task-status { min-width: 76px; justify-content: center; }
-.task-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
+/* A live stat strip, a process table with relative usage bars, and the
+   background jobs as a card grid. */
+.tm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 4px 0 8px; }
+.tm-stat {
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 14px;
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.tm-stat-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
+}
+.tm-stat-value { font-size: 21px; font-weight: 600; line-height: 1.15; color: var(--text); font-variant-numeric: tabular-nums; }
+.tm-stat-of { font-size: 13px; font-weight: 500; color: var(--text-3); }
+.tm-stat-sub { font-size: 11px; color: var(--text-3); }
+
+.tm-thead, .tm-row {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 132px 132px;
+  align-items: center; gap: 12px; padding: 10px 14px;
+}
+.tm-thead {
+  padding-top: 9px; padding-bottom: 7px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
+}
+.tm-row { border-top: 1px solid var(--line); transition: background-color var(--ease); }
+.tm-row:hover { background: var(--surface-2); }
+.tm-row-icon {
+  display: grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 8px; background: var(--surface-3); color: var(--text-2);
+}
+.tm-row-icon.is-main { background: var(--accent-tint); color: var(--accent); }
+.tm-row-main { min-width: 0; }
+.tm-row-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.tm-row-sub {
+  display: flex; align-items: center; gap: 6px; margin-top: 2px;
+  font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.tm-badge {
+  display: inline-flex; align-items: center; height: 17px; padding: 0 7px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-2);
+}
+.tm-sub-sep { color: var(--line-strong); }
+.tm-metric { display: grid; grid-template-columns: minmax(0, 1fr) 54px; align-items: center; gap: 8px; }
+.tm-bar { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.tm-bar-fill { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width 400ms linear; }
+.tm-bar-fill.mem { background: var(--text-3); }
+.tm-num { font-size: 12px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+.tm-jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 10px; }
+.tm-job {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
+  min-height: 84px; padding: 12px;
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
+  transition: border-color var(--ease);
+}
+.tm-job:hover { border-color: var(--line-strong); }
+.tm-job-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.tm-job-icon {
+  display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 8px; background: var(--surface-3); color: var(--text-2);
+}
+.tm-job-name {
+  flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tm-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--surface-3); border: 1px solid var(--line-strong); }
+.tm-dot.on { background: var(--ok); border-color: transparent; }
+.tm-job-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.tm-job-state { font-size: 11px; font-weight: 500; color: var(--text-3); }
+.tm-job.is-running .tm-job-state { color: var(--ok); }
+.tm-job-lock { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); }
+.tm-empty { padding: 14px; font-size: 12px; color: var(--text-3); }
+.tm-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.tm-updated { font-size: 11px; color: var(--text-3); }
+
+@media (max-width: 900px) {
+  .tm-stats { grid-template-columns: 1fr; }
+  .tm-thead { display: none; }
+  .tm-row { grid-template-columns: 30px minmax(0, 1fr); }
+  .tm-row .tm-metric { grid-column: 2; }
+}

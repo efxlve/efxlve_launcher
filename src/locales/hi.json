@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "पसंदीदा से हटाएँ",
   "ss.favorited": "पसंदीदा में जोड़ा गया",
   "ss.unfavorited": "पसंदीदा से हटाया गया",
-  "ss.batchDeleteConfirm": "हटाएँ?"
+  "ss.batchDeleteConfirm": "हटाएँ?",
+  "task.colProcess": "प्रक्रिया",
+  "task.colCpu": "CPU",
+  "task.colRam": "मेमोरी",
+  "task.statCpuSub": "सभी प्रक्रियाएँ मिलाकर",
+  "task.statRamSub": "{count} प्रक्रियाएँ",
+  "task.statJobsSub": "चल रहा है",
+  "task.autoRefresh": "हर 2 सेकंड में अपने-आप रीफ़्रेश होता है",
+  "task.alwaysOnShort": "हमेशा चालू"
 }

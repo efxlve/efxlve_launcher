@@ -2259,5 +2259,13 @@
   "ss.unfavorite": "Убрать из избранного",
   "ss.favorited": "Добавлено в избранное",
   "ss.unfavorited": "Убрано из избранного",
-  "ss.batchDeleteConfirm": "Удалить?"
+  "ss.batchDeleteConfirm": "Удалить?",
+  "task.colProcess": "Процесс",
+  "task.colCpu": "CPU",
+  "task.colRam": "Память",
+  "task.statCpuSub": "все процессы вместе",
+  "task.statRamSub": "Процессов: {count}",
+  "task.statJobsSub": "работает",
+  "task.autoRefresh": "Обновляется автоматически каждые 2 секунды",
+  "task.alwaysOnShort": "Всегда включено"
 }
