@@ -62,25 +62,22 @@ parse/eval here). Splitting the rare views (tv mode, store, discord) behind
 dynamic imports is tracked in ROADMAP 6.3; only worth it for low-end machines,
 and it touches the core render switch, so it needs care.
 
-## 6. IGDB proxy deployment (user action)
+## 6. IGDB — live
 
-Chosen path: the function lives on `efxlve.com` itself
-(`Desktop\efxlve.com\netlify\functions\igdb.mjs` + the `/api/igdb` redirect
-above the SPA rule in that repo's `netlify.toml`), so the launcher's default
-server address works with no user setup at all. The website side is prepared
-and committed locally; what remains is the user's:
+The proxy runs on `efxlve.com/api/igdb` (the website repo's
+`netlify/functions/igdb.mjs` plus the redirect above the SPA rule), with
+`IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` set in Netlify. Verified 2026-10-15:
+the endpoint answers with JSON for a real query, and the launcher's default
+server address already points at it, so no user setup is involved.
 
-1. Netlify → `efxlve.com` → Site configuration → Environment variables:
-   `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` (mark the secret one).
-2. `git push` in `Desktop\efxlve.com`, then wait for the deploy.
-3. Verify: `curl.exe "https://efxlve.com/api/igdb?endpoint=games&q=fields%20name%3B%20limit%201%3B"`
-   must answer with a JSON array (not the site's HTML).
+Two bugs surfaced only once the transport was real, both fixed:
 
-Checked on 2026-10-15: `https://efxlve.com/api/igdb` still answers with the
-site's own HTML, so the function is not deployed yet, and no per-user
-credentials are stored either — IGDB is off.
+- `igdb_enrich` bailed out when the credential store was empty, which is always
+  the case in proxy mode — game pages never asked IGDB at all. The guard now
+  asks the transport.
+- `S.igdbConfigured` was only ever set by the Settings loader, so a game page
+  opened before Settings enriched nothing. The game page now loads the status
+  once by itself.
 
-The launcher no longer hides that: the settings row probes the endpoint and
-shows "Sunucu yanıt vermiyor", and a game page with a dead transport shows a
-short card with an "Ayarları aç" button. Deploying the function (or entering
-Twitch credentials) clears both without any further change.
+Remaining ideas: IGDB `dlcs`/`expansions` merged into the DLC tab, and a
+"power user" way back to own credentials now that the row is always visible.

@@ -38,6 +38,7 @@ import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
 import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
+import { igdbStatus } from "../../igdb";
 import { ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbSection } from "./igdb-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderNextAchievements } from "./drawer-widgets";
 
@@ -614,6 +615,40 @@ function ensureOverviewData(s: EpicSummary): void {
   }
 }
 
+/** The lazily loaded IGDB transport status: `idle` until a game page asks. */
+let igdbTransport: "idle" | "loading" | "done" = "idle";
+/** Callbacks waiting for that status, so two game pages can ask at once. */
+const igdbTransportWaiters: Array<() => void> = [];
+
+/**
+ * Loads the IGDB transport status once per session. Settings loads it too, but a
+ * game page can be the first thing the user opens, and without this the page
+ * would never ask IGDB at all.
+ */
+function ensureIgdbTransport(onReady: () => void): void {
+  if (S.igdbConfigured || igdbTransport === "done") {
+    onReady();
+    return;
+  }
+  igdbTransportWaiters.push(onReady);
+  if (igdbTransport === "loading") return;
+  igdbTransport = "loading";
+  void igdbStatus()
+    .then((status) => {
+      S.igdbConfigured = status.configured;
+      S.igdbMode = status.mode;
+      S.igdbProxyUrl = status.proxyUrl;
+      igdbTransport = "done";
+    })
+    .catch(() => {
+      // A later game page gets another try.
+      igdbTransport = "idle";
+    })
+    .finally(() => {
+      for (const waiter of igdbTransportWaiters.splice(0)) waiter();
+    });
+}
+
 export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
   const s = summaryOf(appName);
   if (!s) return;
@@ -645,13 +680,17 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (companion && isInitialOpen) S.activeDrawerTab = "overview";
 
   ensureOverviewData(s);
-  // IGDB is the page's first metadata source: one cached call per game. When
-  // the answer lands the hero line and the overview are repainted, so the store
-  // data only ever fills the gaps.
-  ensureIgdbOverview(s, gameReleaseYear(s), () => {
+  // IGDB is the page's first metadata source: one cached call per game. The
+  // transport status is loaded lazily — Settings is not the only way into a game
+  // page — and the enrichment starts as soon as it is known. When the answer
+  // lands the hero line and the overview are repainted, so the store data only
+  // ever fills the gaps.
+  ensureIgdbTransport(() => {
     if (S.currentModalAppName !== appName) return;
-    paintGameMeta(s);
-    if (S.activeDrawerTab === "overview") openEpicModal(appName, false);
+    ensureIgdbOverview(s, gameReleaseYear(s), () => {
+      paintGameMeta(s);
+      if (S.activeDrawerTab === "overview") openEpicModal(appName, false);
+    });
   });
   if (companion) {
     // The client catalog often ships its own description; Wikipedia is only

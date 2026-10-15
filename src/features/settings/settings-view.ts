@@ -504,11 +504,6 @@ function renderIntegrations(): string {
     t("settings.afterPlayingTitle"),
   );
 
-  // While the shared server answers, IGDB needs no settings at all: the whole
-  // group stays out of the way. It comes back the moment the server cannot be
-  // reached, or when the user is running on their own Twitch credentials.
-  const showIgdbRow = !(S.igdbMode === "proxy" && S.igdbProxyReachable !== false);
-
   return (
     infoBox("settings.integrationsInfo") +
     group(eglGroup, t("settings.eglTitle")) +
@@ -518,7 +513,7 @@ function renderIntegrations(): string {
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
-    (showIgdbRow ? group(igdb, t("settings.igdbGroup")) : "")
+    group(igdb, t("settings.igdbGroup"))
   );
 }
 

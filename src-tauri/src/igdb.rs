@@ -1031,7 +1031,10 @@ pub async fn igdb_enrich(
     external_category: Option<i64>,
     external_uid: Option<String>,
 ) -> Result<Option<IgdbGame>, String> {
-    if title.trim().is_empty() || load_credentials(&app).is_none() {
+    // The shared proxy needs no credentials on this machine, so the guard asks
+    // the transport, not the credential store: proxy mode used to bail out here
+    // and game pages never got any IGDB data.
+    if title.trim().is_empty() || matches!(transport(&app), Transport::Off) {
         return Ok(None);
     }
     let key = normalize_title(&title);
