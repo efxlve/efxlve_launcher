@@ -103,6 +103,7 @@ import { setView } from "../store/store-view";
 import { ensureNotesMigration } from "../notes/notes-client";
 import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
 import { perfMark } from "../../core/perf";
+import { initOfflineMode } from "../../core/offline";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -228,6 +229,10 @@ export async function initApp(hooks: {
   // Kick off the library load immediately: it must not wait for listener
   // registration, settings fetches or window-chrome IPC.
   initGamepadSupport();
+  // Offline mode gates every network call the boot makes; the flag is read in
+  // parallel with the paint above (anything network-bound awaits `offlineReady`),
+  // so the disk-cached library still paints without waiting for it.
+  void initOfflineMode(epicGetOfflineMode).then(() => updateOfflineModeUi());
   // Re-arm the XInput bridge when the user left it on last session.
   // HidApi enumeration races WebView2's own device scan during the first
   // paint and can leave the window on the library skeleton, not responding.
@@ -848,22 +853,17 @@ export async function initApp(hooks: {
   await Promise.all(bootListeners);
   perfMark("boot:listeners-done");
 
-    try {
-      const pt = await epicGetPlaytimes();
-      S.playtimeMap = new Map(Object.entries(pt));
-      S.libraryDataRev++;
-      if (S.view === "library" && S.showCoverStats) hooks.scheduleRender();
-      // Epic's server snapshot fills in the hours played outside this launcher.
-      void syncEpicServerPlaytimes();
-    } catch {
-      // ignore
-    }
-    try {
-      S.offlineMode = await epicGetOfflineMode();
-      updateOfflineModeUi();
-    } catch {
-      // ignore
-    }
+    // Playtimes only decorate the cards, so they load behind the first paint
+    // instead of holding up the boot sequence.
+    void epicGetPlaytimes()
+      .then((pt) => {
+        S.playtimeMap = new Map(Object.entries(pt));
+        S.libraryDataRev++;
+        if (S.view === "library" && S.showCoverStats) hooks.scheduleRender();
+        // Epic's server snapshot fills in the hours played outside this launcher.
+        void syncEpicServerPlaytimes();
+      })
+      .catch(() => undefined);
     try {
       S.networkProfile = await epicGetNetworkProfile();
     } catch {

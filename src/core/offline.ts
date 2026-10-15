@@ -19,6 +19,29 @@ export function isOffline(): boolean {
   return S.offlineMode;
 }
 
+/**
+ * The stored flag is read once, in parallel with the first paint. Anything that
+ * touches the network awaits {@link offlineReady} first, so the very first sync
+ * of a start already knows the answer without holding up the disk-cached paint.
+ */
+let ready: Promise<void> | null = null;
+
+export function initOfflineMode(read: () => Promise<boolean>): Promise<void> {
+  if (!ready) {
+    ready = read()
+      .then((offline) => {
+        S.offlineMode = offline;
+      })
+      .catch(() => undefined);
+  }
+  return ready;
+}
+
+/** Resolves once the stored offline flag has been applied to the state. */
+export function offlineReady(): Promise<void> {
+  return ready ?? Promise.resolve();
+}
+
 /** Guards one network action: `true` means "stop, the user is offline".
  * `what` is an already-translated phrase, e.g. "Library sync". */
 export function blockedOffline(what: string): boolean {

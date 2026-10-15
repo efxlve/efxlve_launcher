@@ -40,7 +40,7 @@ import { loadPlayerProfile } from "../store/store-view";
 import { loadSharedLibrary } from "../library/shared-library";
 import { steamGetAchievementsSummary } from "../../steam";
 import { perfMark } from "../../core/perf";
-import { blockedOffline } from "../../core/offline";
+import { blockedOffline, offlineReady } from "../../core/offline";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -142,6 +142,9 @@ let librarySyncGen = 0;
 /** Background sync. `force` starts a new pass even if one is already running. */
 export async function syncEpicLibrary(manual: boolean, force = false): Promise<void> {
   if (!isTauri) return;
+  // The stored offline flag resolves during the first paint; waiting for it
+  // here is what keeps an offline start from touching the Epic API at all.
+  await offlineReady();
   // Offline mode means the disk cache is the library: no Epic API call at all.
   if (S.offlineMode) {
     if (manual) blockedOffline(t("net.whatSync"));
