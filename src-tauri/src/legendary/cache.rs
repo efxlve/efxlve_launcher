@@ -40,21 +40,79 @@ pub fn read_user(config: &Path) -> Option<(String, Option<String>)> {
 /// Reading and parsing ~900 individual metadata files on a cold start can take
 /// seconds on an HDD. This consolidated file lets the UI paint the library
 /// almost instantly; the background sync refreshes it.
+///
+/// The file carries a version stamp: when [`slim_game`] starts dropping a field
+/// the reader slims the old payload once and writes it back, so a release never
+/// ships a stale shape (and never falls back to walking `metadata/*.json`).
 fn snapshot_path(config: &Path) -> std::path::PathBuf {
     config.join("efxlve_library_snapshot.json")
 }
 
+/// Bump when `slim_game` drops something the old file still carries.
+const SNAPSHOT_VERSION: u32 = 3;
+
+#[derive(Serialize, Deserialize)]
+struct LibrarySnapshot {
+    version: u32,
+    games: Vec<LegendaryGame>,
+}
+
 pub fn write_library_snapshot(config: &Path, games: &[LegendaryGame]) {
-    if let Ok(json) = serde_json::to_string(games) {
+    let snapshot = LibrarySnapshot {
+        version: SNAPSHOT_VERSION,
+        games: games.to_vec(),
+    };
+    if let Ok(json) = serde_json::to_string(&snapshot) {
         let _ = std::fs::write(snapshot_path(config), json);
     }
 }
 
 pub fn read_library_snapshot(config: &Path) -> Option<Vec<LegendaryGame>> {
-    let text = std::fs::read_to_string(snapshot_path(config)).ok()?;
-    // An empty file is a real snapshot. Falling through to metadata/*.json
-    // would parse the previous account's catalog after a switch.
-    serde_json::from_str(&text).ok()
+    if let Ok(text) = std::fs::read_to_string(snapshot_path(config)) {
+        if let Ok(snapshot) = serde_json::from_str::<LibrarySnapshot>(&text) {
+            if snapshot.version == SNAPSHOT_VERSION {
+                return Some(snapshot.games);
+            }
+            return Some(reslim(config, snapshot.games));
+        }
+        // Older releases wrote a bare array; slim it into the stamped shape.
+        if let Ok(games) = serde_json::from_str::<Vec<LegendaryGame>>(&text) {
+            return Some(reslim(config, games));
+        }
+        return None;
+    }
+    migrate_legacy_snapshot(config)
+}
+
+/// Applies the current `slim_game` to an outdated payload and rewrites the file.
+fn reslim(config: &Path, mut games: Vec<LegendaryGame>) -> Vec<LegendaryGame> {
+    for game in games.iter_mut() {
+        super::models::slim_game(game);
+    }
+    write_library_snapshot(config, &games);
+    games
+}
+
+/// One-time hop from the pre-versioning files (`_v2`, then the original name).
+fn migrate_legacy_snapshot(config: &Path) -> Option<Vec<LegendaryGame>> {
+    for legacy in [
+        config.join("efxlve_library_snapshot_v2.json"),
+        config.join("efxlve_library_snapshot_v1.json"),
+    ] {
+        if !legacy.is_file() {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&legacy) else {
+            continue;
+        };
+        let Ok(games) = serde_json::from_str::<Vec<LegendaryGame>>(&text) else {
+            continue;
+        };
+        let games = reslim(config, games);
+        let _ = std::fs::remove_file(&legacy);
+        return Some(games);
+    }
+    None
 }
 
 /// All game metadata in the cache (broken files are skipped).
@@ -295,37 +353,66 @@ pub fn ensure_egl_manifest(
 
 #[cfg(windows)]
 fn query_registry_path(reg_path: &str, reg_key: &str) -> Option<String> {
-    use std::os::windows::process::CommandExt;
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::ERROR_SUCCESS;
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_LOCAL_MACHINE, KEY_READ,
+        REG_EXPAND_SZ, REG_SZ, REG_VALUE_TYPE,
+    };
 
-    let full_key = format!("HKLM\\{}", reg_path);
-    let output = std::process::Command::new("reg")
-        .args(["query", &full_key, "/v", reg_key])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
+    fn wide(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
     }
 
-    let text = String::from_utf8_lossy(&output.stdout);
-    for line in text.lines() {
-        if line.contains("REG_SZ") || line.contains("REG_EXPAND_SZ") {
-            if let Some(pos) = line.find("REG_") {
-                let rest = &line[pos..];
-                let parts: Vec<&str> = rest.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    let val = parts[1..].join(" ");
-                    let val = val.trim();
-                    if !val.is_empty() {
-                        return Some(val.to_string());
-                    }
-                }
-            }
+    // The Win32 registry API instead of `reg query`: every probe used to be a
+    // process spawn (~30 ms each, 0.47 s for the boot path's two dozen probes).
+    let subkey = wide(reg_path);
+    let value_name = wide(reg_key);
+    unsafe {
+        let mut key = HKEY::default();
+        if RegOpenKeyExW(
+            HKEY_LOCAL_MACHINE,
+            PCWSTR(subkey.as_ptr()),
+            None,
+            KEY_READ,
+            &mut key,
+        ) != ERROR_SUCCESS
+        {
+            return None;
         }
+        let mut kind = REG_VALUE_TYPE(0);
+        let mut size = 0u32;
+        let sized = RegQueryValueExW(
+            key,
+            PCWSTR(value_name.as_ptr()),
+            None,
+            Some(&mut kind),
+            None,
+            Some(&mut size),
+        ) == ERROR_SUCCESS
+            && size > 0;
+        if !sized || (kind != REG_SZ && kind != REG_EXPAND_SZ) {
+            let _ = RegCloseKey(key);
+            return None;
+        }
+        let mut buffer = vec![0u16; size as usize / 2 + 1];
+        let mut read = size;
+        let ok = RegQueryValueExW(
+            key,
+            PCWSTR(value_name.as_ptr()),
+            None,
+            Some(&mut kind),
+            Some(buffer.as_mut_ptr() as *mut u8),
+            Some(&mut read),
+        ) == ERROR_SUCCESS;
+        let _ = RegCloseKey(key);
+        if !ok {
+            return None;
+        }
+        let text = String::from_utf16_lossy(&buffer);
+        let text = text.trim_end_matches('\0').trim().to_string();
+        (!text.is_empty()).then_some(text)
     }
-    None
 }
 
 #[cfg(not(windows))]
@@ -368,32 +455,13 @@ pub fn read_third_party_installed_games(
         })
         .collect();
 
-    // Each probe starts a `reg query` process (~30 ms here), so ~24 candidates cost
-    // 0.7 s of the boot path when run one by one. The probes are independent and
-    // IO-bound, so they are fanned out across a few threads and kept in input order.
-    let mut probes: Vec<Option<String>> = vec![None; jobs.len()];
-    std::thread::scope(|scope| {
-        let workers = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(4)
-            .clamp(2, 8)
-            .min(jobs.len().max(1));
-        let chunk = jobs.len().div_ceil(workers).max(1);
-        let handles: Vec<_> = probes
-            .chunks_mut(chunk)
-            .zip(jobs.chunks(chunk))
-            .map(|(slot_chunk, job_chunk)| {
-                scope.spawn(move || {
-                    for (slot, (_, _, attrs)) in slot_chunk.iter_mut().zip(job_chunk) {
-                        *slot = attrs.as_ref().and_then(probe_install_location);
-                    }
-                })
-            })
-            .collect();
-        for handle in handles {
-            let _ = handle.join();
-        }
-    });
+    // The registry probes used to be `reg query` process spawns and needed a
+    // thread fan-out to stay under a second; with the Win32 registry API they
+    // are microseconds, so a plain loop is simpler and faster.
+    let probes: Vec<Option<String>> = jobs
+        .iter()
+        .map(|(_, _, attrs)| attrs.as_ref().and_then(probe_install_location))
+        .collect();
 
     let mut out = Vec::new();
     for ((app_name, title, _), install_path) in jobs.into_iter().zip(probes) {
@@ -501,7 +569,17 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
     // walking `metadata/*.json` (~1.6 s measured). The walk stays as the fallback for
     // a first run, before any snapshot exists.
     let snapshot = read_library_snapshot(config);
-    read_installed_with_catalog(config, snapshot.as_deref())
+    read_installed_with_catalog(config, snapshot.as_deref(), None)
+}
+
+/// One timing line per phase, only when a boot path asked for it.
+fn mark(app: Option<&tauri::AppHandle>, label: &str, started: std::time::Instant) {
+    if let Some(app) = app {
+        crate::perf::write_line(
+            app,
+            &format!("{:>6} ms  {label}", started.elapsed().as_millis()),
+        );
+    }
 }
 
 /// `read_installed` with an already-parsed catalog: see
@@ -509,7 +587,9 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
 pub fn read_installed_with_catalog(
     config: &Path,
     catalog: Option<&[LegendaryGame]>,
+    app: Option<&tauri::AppHandle>,
 ) -> Vec<InstalledGame> {
+    let t_installed = std::time::Instant::now();
     let installed_file = config.join("installed.json");
     let mut map: HashMap<String, InstalledGame> = HashMap::new();
     if let Ok(text) = std::fs::read_to_string(&installed_file) {
@@ -517,10 +597,12 @@ pub fn read_installed_with_catalog(
             map = loaded;
         }
     }
+    mark(app, "rust:installed/json", t_installed);
 
     let mut changed = false;
 
     // Prune stale entries whose install directory no longer exists on a mounted drive.
+    let t_prune = std::time::Instant::now();
     let keys: Vec<String> = map.keys().cloned().collect();
     for key in keys {
         if let Some(game) = map.get(&key) {
@@ -543,6 +625,8 @@ pub fn read_installed_with_catalog(
     }
 
     // 1. Read the Epic Games Launcher manifests and add the missing ones
+    mark(app, "rust:installed/prune", t_prune);
+    let t_egl = std::time::Instant::now();
     for egl in read_egl_installed_games() {
         ensure_egl_manifest(
             config,
@@ -590,12 +674,15 @@ pub fn read_installed_with_catalog(
 
     // 2. Detect games installed via third-party launchers (Ubisoft Connect, EA, ...) from the registry
     // CAUTION: third-party games are NOT persisted to installed.json! (no legendary manifest -> python TypeError)
+    mark(app, "rust:installed/egl", t_egl);
+    let t_third = std::time::Instant::now();
     let mut extra_tp = Vec::new();
     for tp in read_third_party_installed_games(config, &map, catalog) {
         if !map.contains_key(&tp.app_name) {
             extra_tp.push(tp);
         }
     }
+    mark(app, "rust:installed/third-party", t_third);
 
     let mut v: Vec<_> = map.into_values().collect();
     v.extend(extra_tp);

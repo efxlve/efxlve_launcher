@@ -12,6 +12,7 @@ pub struct SetupStatus {
 
 #[tauri::command]
 pub async fn epic_setup_status(app: AppHandle) -> Result<SetupStatus, String> {
+    let timer = crate::perf::Timer::start("rust:epic_setup_status");
     let path = paths::resolve_binary(&app).ok();
     let mut version = None;
     if let Some(ref p) = path {
@@ -20,6 +21,7 @@ pub async fn epic_setup_status(app: AppHandle) -> Result<SetupStatus, String> {
         version = downloader::binary_version_cached(p).await.ok();
     }
     let needs_download = version.is_none();
+    timer.done(&app);
     Ok(SetupStatus {
         binary_path: path.map(|p| p.to_string_lossy().to_string()),
         version,
@@ -78,8 +80,11 @@ pub struct CachedLibrary {
 pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
     // Reads and parses ~900 metadata files: run on a blocking thread so the
     // main thread / UI never stalls on a slow HDD.
-    tauri::async_runtime::spawn_blocking(move || {
+    let timer = crate::perf::Timer::start("rust:epic_cached_library");
+    let app_for_timer = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
         let config = skip::default_config_dir();
+        let t_snapshot = std::time::Instant::now();
         let (account, account_id) = match cache::read_user(&config) {
             Some((name, id)) => (Some(name), id),
             None => (None, None),
@@ -93,14 +98,23 @@ pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
                 g
             }
         };
+        let snapshot_ms = t_snapshot.elapsed().as_millis();
         // The snapshot above already holds every catalog entry, so third-party
         // detection does not re-read 820 metadata files (measured 3.0 s before).
-        let installed = cache::read_installed_with_catalog(&config, Some(&games));
+        let t_installed = std::time::Instant::now();
+        let installed = cache::read_installed_with_catalog(&config, Some(&games), Some(&app));
+        let installed_ms = t_installed.elapsed().as_millis();
+        let t_rest = std::time::Instant::now();
         let skipped: Vec<String> = skip::load_skipped(&app)
             .into_iter()
             .map(|s| s.app_name)
             .collect();
         let collections = crate::legendary::collections::read_collections().unwrap_or_default();
+        let rest_ms = t_rest.elapsed().as_millis();
+        // Split marks: they say which half of the boot read to attack next.
+        crate::perf::write_line(&app, &format!("{snapshot_ms:>6} ms  rust:epic_cached_library/snapshot"));
+        crate::perf::write_line(&app, &format!("{installed_ms:>6} ms  rust:epic_cached_library/installed"));
+        crate::perf::write_line(&app, &format!("{rest_ms:>6} ms  rust:epic_cached_library/rest"));
         CachedLibrary {
             account,
             account_id,
@@ -115,7 +129,9 @@ pub async fn epic_cached_library(app: AppHandle) -> CachedLibrary {
         // A panicking scan must not hand the UI an empty library without a trace.
         eprintln!("[library] cached library scan failed: {err}");
         CachedLibrary::default()
-    })
+    });
+    timer.done(&app_for_timer);
+    result
 }
 
 #[tauri::command]

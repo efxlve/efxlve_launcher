@@ -39,6 +39,7 @@ import { updateAuthProgressUi } from "../accounts/accounts-view";
 import { loadPlayerProfile } from "../store/store-view";
 import { loadSharedLibrary } from "../library/shared-library";
 import { steamGetAchievementsSummary } from "../../steam";
+import { perfMark } from "../../core/perf";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -71,6 +72,7 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     // Both are independent disk reads, so they travel together: fetching the setup
     // status first and the library after it added a full round trip to every launch.
     const [setup, cached] = await Promise.all([epicSetupStatus(), epicCachedLibrary()]);
+    perfMark("library:epic-data");
     S.setupInfo = setup;
     if (setup.needsDownload) {
       S.epicPhase = "setup";
@@ -96,6 +98,7 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     S.epicPhase = "library";
     if (forceSync) S.epicSyncing = true;
     render();
+    perfMark("library:epic-cached");
     // Achievement summaries wait until the list finishes. Starting them now
     // competes with that list on a large account.
     if (!forceSync) void loadEpicAchSummaries();
@@ -184,6 +187,7 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     if (gen === librarySyncGen) {
       S.epicSyncing = false;
       S.epicBusyMsg = "";
+      perfMark("library:epic-sync");
       if (S.view === "library" || S.view === "profile" || S.view === "accounts" || S.view === "settings") {
         scheduleRender();
       }

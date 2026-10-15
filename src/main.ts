@@ -11,6 +11,7 @@ import "./styles/index.css";
 import { invoke } from "@tauri-apps/api/core";
 import { initSidebarLayout } from "./core/sidebar-layout";
 import { applySidebarPageVisibility } from "./core/page-visibility";
+import { perfMark } from "./core/perf";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavHistoryUi } from "./core/nav";
@@ -45,6 +46,7 @@ import { hydrateTvMode, renderTvMode } from "./features/gamepad/tv-mode";
 
 if (S.surface === "soft") document.documentElement.dataset.surface = "soft";
 document.documentElement.classList.add("ready");
+perfMark("main:module");
 initSidebarLayout();
 initMiniPlayer();
 applySidebarPageVisibility();

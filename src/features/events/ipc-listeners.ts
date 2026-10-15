@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Application bootstrap and Tauri IPC event listeners.
  *
  * Wires the render/HUD/modal buses, hydrates settings, registers every backend
@@ -102,6 +102,7 @@ import {
 import { setView } from "../store/store-view";
 import { ensureNotesMigration } from "../notes/notes-client";
 import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
+import { perfMark } from "../../core/perf";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -175,6 +176,20 @@ function applyDlDomUpdate(id: string): void {
   scheduleDrawSpeedCanvas();
 }
 
+/**
+ * Boot listeners register in one parallel batch.
+ *
+ * Every `listen` is an IPC round trip; 23 of them, awaited one by one, cost
+ * ~900 ms of the boot path before the library could paint. They are collected
+ * here and flushed together, which keeps the semantics (all registered before
+ * the launcher is interactive) without the serial latency.
+ */
+const bootListeners: Promise<unknown>[] = [];
+
+function listenLater<T>(event: string, handler: (event: { payload: T }) => void): void {
+  bootListeners.push(listen<T>(event, handler));
+}
+
 export async function initApp(hooks: {
   render: () => void;
   scheduleRender: () => void;
@@ -208,6 +223,7 @@ export async function initApp(hooks: {
   // FIRST PAINT: paint the shell (skeleton) before any slow IPC so the window is
   // never blank on startup.
   hooks.render();
+  perfMark("paint:shell");
 
   // Kick off the library load immediately: it must not wait for listener
   // registration, settings fetches or window-chrome IPC.
@@ -263,18 +279,18 @@ export async function initApp(hooks: {
     void epicListSkipped()
       .then((s) => { S.epicSkippedCount = s.length; })
       .catch(() => { S.epicSkippedCount = 0; });
-    await listen<SetupEvent>("legendary-setup", (event) => {
+    listenLater<SetupEvent>("legendary-setup", (event) => {
       S.setupProgress = event.payload.progress ?? null;
       S.setupMessage = localizeMessage(event.payload.message);
       if (event.payload.state === "error") toast(S.setupMessage, "err");
       if (S.view === "library") render();
     });
-    await listen<LibraryEvent>("legendary-library", (event) => {
+    listenLater<LibraryEvent>("legendary-library", (event) => {
       S.epicBusyMsg = localizeMessage(event.payload.message);
     });
     // Amazon installs stream their own progress lines; feed the same active
     // download metrics the Epic/GOG path uses, then patch the card in place.
-    await listen<NileProgressEvent>("nile-progress", (event) => {
+    listenLater<NileProgressEvent>("nile-progress", (event) => {
       const { id, percent, speed, diskSpeed, eta, downloaded, total } = event.payload;
       const dl = S.downloads.get(id);
       // A late line after the install finished must not revive the card.
@@ -322,7 +338,7 @@ export async function initApp(hooks: {
       scheduleDlDomUpdate(id);
     });
 
-    await listen<DlProgressEvent>("download-progress", (event) => {
+    listenLater<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       if (id.startsWith("gog::") && done) S.gogDlPaused = false;
       if (id.startsWith("gog::") && progress === 0 && !done) S.gogDlPaused = false;
@@ -368,9 +384,9 @@ export async function initApp(hooks: {
             title,
             progress,
             done: false,
-            speed: speed ?? "—",
+            speed: speed ?? "â€”",
             speedBytes: measuredSpeedBytes,
-            diskSpeed: diskSpeed ?? "—",
+            diskSpeed: diskSpeed ?? "â€”",
             diskBytes: freshDisk ? measuredDiskBytes : 0,
             eta: eta ?? t("common.calculating"),
             downloadedBytes: downloadedBytes ?? 0,
@@ -444,7 +460,7 @@ export async function initApp(hooks: {
         });
       }
     });
-    await listen<{ id: string }>("download-paused", (event) => {
+    listenLater<{ id: string }>("download-paused", (event) => {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = true;
       else S.dlQueueStatus.isPaused = true;
       lastDlSample = null;
@@ -454,12 +470,12 @@ export async function initApp(hooks: {
       }
       if (S.view === "downloads") render();
     });
-    await listen<{ id: string }>("download-resumed", (event) => {
+    listenLater<{ id: string }>("download-resumed", (event) => {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       else S.dlQueueStatus.isPaused = false;
       if (S.view === "downloads") render();
     });
-    await listen<DownloadFailedEvent>("download-failed", (event) => {
+    listenLater<DownloadFailedEvent>("download-failed", (event) => {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
@@ -481,7 +497,7 @@ export async function initApp(hooks: {
         else if (S.view === "library") patchLibraryCardDom(event.payload.id);
       });
     });
-    await listen<DownloadCancelledEvent>("download-cancelled", (event) => {
+    listenLater<DownloadCancelledEvent>("download-cancelled", (event) => {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
@@ -500,7 +516,7 @@ export async function initApp(hooks: {
     window.addEventListener("resize", () => {
       if (S.view === "downloads") drawSpeedCanvas();
     });
-    await listen<VerifyProgressEvent>("verify-progress", (event) => {
+    listenLater<VerifyProgressEvent>("verify-progress", (event) => {
       const { id, current, total, percent, speed, detail } = event.payload;
       // Nile reports verified/needed bytes. While nothing has been repaired yet
       // (the normal case) the bar would sit at 0%, so say what is happening.
@@ -511,7 +527,7 @@ export async function initApp(hooks: {
         : detail;
       updateVerifyProgressInPlace(id, current, total, percent, speed, shown);
     });
-    await listen<VerifyCompleteEvent>("verify-complete", (event) => {
+    listenLater<VerifyCompleteEvent>("verify-complete", (event) => {
       const { id, success, message } = event.payload;
       resetVerifyInPlace(id);
       if (success) {
@@ -521,7 +537,7 @@ export async function initApp(hooks: {
       }
     });
 
-    await listen<MoveGameProgress>("move-progress", (event) => {
+    listenLater<MoveGameProgress>("move-progress", (event) => {
       const payload = event.payload;
       if (!payload || !S.activeMoveModalAppName) return;
       if (payload.id === S.activeMoveModalAppName) {
@@ -531,7 +547,7 @@ export async function initApp(hooks: {
         }
       }
     });
-    await listen<{ id?: string; success: boolean; newPath?: string; new_path?: string; message?: string }>(
+    listenLater<{ id?: string; success: boolean; newPath?: string; new_path?: string; message?: string }>(
       "move-complete",
       (event) => {
         const payload = event.payload;
@@ -549,7 +565,7 @@ export async function initApp(hooks: {
       }
     );
 
-    await listen<{ appName?: string; title?: string; slug?: string }>(
+    listenLater<{ appName?: string; title?: string; slug?: string }>(
       "efxlve-open-game-from-store",
       (event) => {
         const { appName, title, slug } = event.payload;
@@ -578,7 +594,7 @@ export async function initApp(hooks: {
       },
     );
 
-    await listen<GameStatusEvent>("game-status", (event) => {
+    listenLater<GameStatusEvent>("game-status", (event) => {
       const { id, running, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
       const sum = summaryOf(id);
       const title = sum?.title || id;
@@ -712,7 +728,7 @@ export async function initApp(hooks: {
       }
     });
 
-    await listen<{ id: string; count: number }>("screenshots-updated", (event) => {
+    listenLater<{ id: string; count: number }>("screenshots-updated", (event) => {
       const { id, count } = event.payload;
       if (count > 0) {
         if (ssNotifyOn()) toast(t("ss.newCaptures", { count }), "ok");
@@ -722,7 +738,7 @@ export async function initApp(hooks: {
       }
     });
 
-    await listen<{ id: string; title: string }>(
+    listenLater<{ id: string; title: string }>(
       "screenshot-shutter",
       (event) => {
         if (ssSoundOn()) playScreenshotShutterSound();
@@ -732,7 +748,7 @@ export async function initApp(hooks: {
       }
     );
 
-    await listen<{ id: string; title: string; item: GameScreenshotItem }>(
+    listenLater<{ id: string; title: string; item: GameScreenshotItem }>(
       "screenshot-captured",
       (event) => {
         const { id, item } = event.payload;
@@ -771,13 +787,13 @@ export async function initApp(hooks: {
       }
     );
 
-    await listen<{ appName: string; phase: string; uploaded: number; total: number }>("cloud-sync-progress", (event) => {
+    listenLater<{ appName: string; phase: string; uploaded: number; total: number }>("cloud-sync-progress", (event) => {
       const p = event.payload;
       S.cloudSyncProgress.set(p.appName, { phase: p.phase, uploaded: p.uploaded, total: p.total });
       updateManageSyncBar(p.appName);
     });
 
-    await listen<{ id: string; success: boolean; message?: string; syncedAt?: string }>("cloud-sync-complete", (event) => {
+    listenLater<{ id: string; success: boolean; message?: string; syncedAt?: string }>("cloud-sync-complete", (event) => {
       const cloudSub = document.getElementById("manage-cloud-subtitle");
       const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
       // The transfer is over; the bar folds away and the row shows the result.
@@ -808,21 +824,28 @@ export async function initApp(hooks: {
 
     // Discord: a message raises the sidebar count, and the overlay's own call
   // raises a dot; opening the page clears the count (like the real client).
-  await listen("discord-sdk-message", () => {
+  listenLater("discord-sdk-message", () => {
     noteDiscordMessage();
   });
-  await listen<{ state: string }>("discord-sdk-call", (event) => {
+  listenLater<{ state: string }>("discord-sdk-call", (event) => {
     setDiscordInCall(event.payload.state === "active");
   });
   // The embedded client's own calls (guild voice or a DM call) raise the same
   // dot: it is the primary way people are in voice.
-  await listen<{ inCall: boolean }>("discord-web-voice", (event) => {
+  listenLater<{ inCall: boolean }>("discord-web-voice", (event) => {
     setDiscordInCall(event.payload.inCall);
   });
 
-  await listen("steam-library-changed", () => {
+  listenLater("steam-library-changed", () => {
       void refreshSteamInstalled();
     });
+
+  // One parallel batch instead of 23 serial `listen` round trips (measured
+  // ~900 ms of the boot path). Order never mattered; only that every listener
+  // exists before the launcher is interactive.
+  perfMark("boot:listeners-start");
+  await Promise.all(bootListeners);
+  perfMark("boot:listeners-done");
 
     try {
       const pt = await epicGetPlaytimes();
@@ -857,8 +880,11 @@ export async function initApp(hooks: {
     void loadSharedLibrary();
 
     // Steam games come from the Steam client's own manifests on this PC.
-    void loadSteamLibrary().then(() => startSteamLibraryWatch());
-    void loadCompanionLibrary();
+    void loadSteamLibrary().then(() => {
+      perfMark("library:steam");
+      startSteamLibraryWatch();
+    });
+    void loadCompanionLibrary().then(() => perfMark("library:companion"));
     // Linked companion accounts refresh in the background (Ubisoft session).
     void syncCompanionAccounts();
 
@@ -878,5 +904,8 @@ export async function initApp(hooks: {
     } catch {
       // ignore
     }
+    // Everything the boot path must do before the launcher is fully usable has
+    // been kicked off; this mark is the number to compare between releases.
+    perfMark("boot:ready");
   }
 }

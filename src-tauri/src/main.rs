@@ -20,6 +20,7 @@ mod nile;
 mod notes;
 mod net_diag;
 mod igdb;
+mod perf;
 mod task_manager;
 mod game_running;
 mod presence;
@@ -739,6 +740,7 @@ fn main() {
             library_dir,
             app_minimize,
             app_get_autostart,
+            perf::perf_mark,
             app_set_autostart,
             launchers::launchers_status,
             app_toggle_maximize,

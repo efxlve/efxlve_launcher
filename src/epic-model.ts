@@ -40,6 +40,8 @@ export interface EpicGame {
   sidecar: unknown;
   achievements: unknown;
   dlcs?: unknown[];
+  /** Filled by `slim_game`: the DLC list is dropped, the count stays. */
+  dlc_count?: number;
 }
 
 export interface EpicInstalled {
@@ -535,7 +537,7 @@ export function summarize(
         version: ver,
         cover: epicCover(g),
         description: epicDescription(g),
-        dlcCount: Array.isArray(g.dlcs) ? g.dlcs.length : 0,
+        dlcCount: Array.isArray(g.dlcs) && g.dlcs.length > 0 ? g.dlcs.length : (g.dlc_count ?? 0),
         installed: !!ins,
         installPath: ins?.install_path ?? null,
         installSize: ins?.install_size ?? 0,

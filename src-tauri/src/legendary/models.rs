@@ -70,6 +70,11 @@ pub struct LegendaryGame {
     /// `list --json` embeds the DLC list into each game.
     #[serde(default)]
     pub dlcs: Vec<Value>,
+    /// How many DLCs the game has. `slim_game` folds `dlcs` into this number so
+    /// the library payload stays small; it survives re-slimming because it only
+    /// ever grows.
+    #[serde(default)]
+    pub dlc_count: usize,
 }
 
 /// Catalog metadata keys that are large but never read by the frontend. A single
@@ -108,6 +113,17 @@ pub fn slim_game(g: &mut LegendaryGame) {
     }
     // The Epic sidecar blob is never read by the UI either.
     g.sidecar = None;
+    // The achievement list is ~20 KB per game and made the boot snapshot 17 MB
+    // (measured: 630 ms just to parse it). The achievements tab reads the list
+    // from the game's metadata file, where Rust enriches it anyway, so the
+    // snapshot does not carry it.
+    g.achievements = None;
+    // `list --json` embeds every DLC entry: 3.4 MB of the snapshot's 4.8 MB, and
+    // the UI only ever shows the count. The DLC tab re-reads the game's metadata
+    // file for the real list. `max` keeps this idempotent when a snapshot is
+    // slimmed twice (read → write).
+    g.dlc_count = g.dlc_count.max(g.dlcs.len());
+    g.dlcs.clear();
 }
 
 /// One element of the `legendary list-installed --json` array.
@@ -532,7 +548,12 @@ mod tests {
         assert!(g.metadata.contains_key("namespace"));
         assert!(g.metadata.contains_key("categories"));
         assert!(g.sidecar.is_none());
-        // DLC list at the top level is still needed for the DLC count.
-        assert_eq!(g.dlcs.len(), 1);
+        // The DLC list becomes a count: the list itself was 3.4 MB of the boot
+        // payload and only its length ever reached the UI.
+        assert!(g.dlcs.is_empty());
+        assert_eq!(g.dlc_count, 1);
+        // Slimming twice must not lose the count.
+        slim_game(&mut g);
+        assert_eq!(g.dlc_count, 1);
     }
 }

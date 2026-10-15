@@ -314,6 +314,7 @@ mod tests {
             sidecar: None,
             achievements: None,
             dlcs: Vec::new(),
+            dlc_count: 0,
         }
     }
 
