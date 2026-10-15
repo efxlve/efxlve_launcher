@@ -308,9 +308,18 @@ async fn proxy_get(url: &str, endpoint: &str, body: &str) -> Result<serde_json::
 
 /* ---------- Query building and mapping (pure, tested below) ---------- */
 
-/// Apicalypse strings cannot carry quotes; a title never needs them.
+/// Apicalypse strings cannot carry quotes; a title never needs them. Typographic
+/// punctuation is folded to ASCII first: store catalogs write `Marvel’s` where
+/// IGDB has `Marvel's`, and the substring match is literal, so a curly apostrophe
+/// silently finds nothing.
 fn sanitize_query_text(text: &str) -> String {
-    text.replace(['"', '\\'], " ").trim().to_string()
+    text.replace(['\u{2018}', '\u{2019}', '\u{02bc}'], "'")
+        .replace(['\u{201c}', '\u{201d}', '\u{201e}'], " ")
+        .replace(['\u{2013}', '\u{2014}'], "-")
+        .replace('\u{00a0}', " ")
+        .replace(['"', '\\'], " ")
+        .trim()
+        .to_string()
 }
 
 fn search_query(title: &str, limit: usize) -> String {
@@ -1150,6 +1159,18 @@ mod tests {
         assert_eq!(sanitize_query_text("  Halo \"Infinite\"  "), "Halo  Infinite");
         assert!(search_query("Halo", 3).contains("search \"Halo\";"));
         assert!(game_query(42).contains("where id = 42;"));
+    }
+
+    #[test]
+    fn query_text_folds_typographic_punctuation() {
+        // A store catalog title against IGDB's ASCII spelling.
+        assert_eq!(
+            sanitize_query_text("Marvel\u{2019}s Spider-Man: Miles Morales"),
+            "Marvel's Spider-Man: Miles Morales"
+        );
+        assert_eq!(sanitize_query_text("Half\u{2013}Life"), "Half-Life");
+        assert_eq!(sanitize_query_text("A\u{00a0}B"), "A B");
+        assert_eq!(sanitize_query_text("\u{201c}Quoted\u{201d}"), "Quoted");
     }
 
     #[test]
