@@ -1,9 +1,16 @@
 //! IGDB (Twitch) client: search and game details for the game pages.
 //!
-//! The API is free but needs application credentials from a Twitch developer
-//! app (Client ID + Client Secret). The secret stays on this machine — sealed
-//! with DPAPI, never shipped with the launcher and never committed — because a
-//! leaked secret lets anyone mint tokens for our app and burn its rate limit.
+//! Two transports, picked automatically:
+//!
+//! * **Proxy** (default): the launcher's shared Netlify function holds the
+//!   Twitch credentials, so users install nothing and register nothing. See
+//!   `services/igdb-proxy/`. The address is stored in `<app_data>/igdb/proxy.json`
+//!   and defaults to [`DEFAULT_PROXY_URL`].
+//! * **Direct** (opt-in): the user's own Twitch app. The secret stays on this
+//!   machine — sealed with DPAPI, never shipped with the launcher and never
+//!   committed — because a leaked secret lets anyone mint tokens for that app
+//!   and burn its rate limit. Saving credentials switches the transport to
+//!   direct; clearing them falls back to the proxy.
 //!
 //! Requests run here in Rust (the API refuses browser calls on purpose), keep
 //! the 4 requests/second limit, and cache each game on disk: IGDB explicitly
@@ -17,6 +24,8 @@ use tauri::{AppHandle, Manager};
 
 const TOKEN_URL: &str = "https://id.twitch.tv/oauth2/token";
 const API_BASE: &str = "https://api.igdb.com/v4";
+/// The launcher's shared proxy: no user setup, the secret lives server-side.
+const DEFAULT_PROXY_URL: &str = "https://efxlve.com/api/igdb";
 /// The API allows 4 requests per second; one every 260 ms stays under it.
 const MIN_REQUEST_GAP: Duration = Duration::from_millis(260);
 /// How many screenshots / similar games a game page shows.
@@ -77,6 +86,63 @@ fn save_credentials(app: &AppHandle, credentials: &Credentials) -> Result<(), St
     let plain = serde_json::to_vec(credentials).map_err(|_| "@t:igdb.noStore".to_string())?;
     let sealed = crate::steam_auth::vault::dpapi::protect(&plain)?;
     std::fs::write(&path, sealed).map_err(|_| "@t:igdb.noStore".to_string())
+}
+
+/* ---------- Proxy address (not a secret) ---------- */
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct ProxyConfig {
+    url: String,
+}
+
+fn proxy_config_path(app: &AppHandle) -> Option<PathBuf> {
+    igdb_dir(app).map(|dir| dir.join("proxy.json"))
+}
+
+/// The proxy address in use: the stored one, or the launcher's shared server.
+fn proxy_url(app: &AppHandle) -> String {
+    let stored = proxy_config_path(app)
+        .and_then(|path| std::fs::read(path).ok())
+        .and_then(|raw| serde_json::from_slice::<ProxyConfig>(&raw).ok())
+        .map(|config| config.url.trim().to_string())
+        .unwrap_or_default();
+    if stored.is_empty() {
+        DEFAULT_PROXY_URL.to_string()
+    } else {
+        stored
+    }
+}
+
+fn save_proxy_url(app: &AppHandle, url: &str) -> Result<(), String> {
+    let path = proxy_config_path(app).ok_or_else(|| "@t:igdb.noStore".to_string())?;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(|_| "@t:igdb.noStore".to_string())?;
+    }
+    let config = ProxyConfig {
+        url: url.trim().to_string(),
+    };
+    let raw = serde_json::to_vec(&config).map_err(|_| "@t:igdb.noStore".to_string())?;
+    std::fs::write(&path, raw).map_err(|_| "@t:igdb.noStore".to_string())
+}
+
+/// How this machine reaches IGDB: the user's own credentials win, the shared
+/// proxy is the default, and "off" means neither is usable.
+enum Transport {
+    Direct,
+    Proxy(String),
+    Off,
+}
+
+fn transport(app: &AppHandle) -> Transport {
+    if load_credentials(app).is_some() {
+        return Transport::Direct;
+    }
+    let url = proxy_url(app);
+    if url.starts_with("https://") || url.starts_with("http://") {
+        Transport::Proxy(url)
+    } else {
+        Transport::Off
+    }
 }
 
 /* ---------- Tokens and requests ---------- */
@@ -157,7 +223,18 @@ async fn wait_for_slot() {
     }
 }
 
+/// One IGDB query on whichever transport this machine uses.
 async fn api_post(app: &AppHandle, endpoint: &str, body: &str) -> Result<serde_json::Value, String> {
+    match transport(app) {
+        Transport::Direct => direct_post(app, endpoint, body).await,
+        Transport::Proxy(url) => proxy_get(&url, endpoint, body).await,
+        Transport::Off => Err("@t:igdb.notConfigured".to_string()),
+    }
+}
+
+/// The user's own credentials: token, then one POST, retried once on a stale
+/// token.
+async fn direct_post(app: &AppHandle, endpoint: &str, body: &str) -> Result<serde_json::Value, String> {
     for attempt in 0..2 {
         let (client_id, token) = app_token(app).await?;
         wait_for_slot().await;
@@ -191,6 +268,33 @@ async fn api_post(app: &AppHandle, endpoint: &str, body: &str) -> Result<serde_j
             .map_err(|_| "@t:igdb.parse".to_string());
     }
     Err("@t:igdb.auth".to_string())
+}
+
+/// The shared proxy: one GET, no credentials on this machine at all. A 404
+/// means the endpoint is not deployed (yet), which the settings row explains.
+async fn proxy_get(url: &str, endpoint: &str, body: &str) -> Result<serde_json::Value, String> {
+    wait_for_slot().await;
+    let response = http()
+        .get(url)
+        .query(&[("endpoint", endpoint), ("q", body)])
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|_| "@t:igdb.network".to_string())?;
+
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err("@t:igdb.proxyMissing".to_string());
+    }
+    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        return Err("@t:igdb.rateLimited".to_string());
+    }
+    if !response.status().is_success() {
+        return Err("@t:igdb.network".to_string());
+    }
+    response
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|_| "@t:igdb.parse".to_string())
 }
 
 /* ---------- Query building and mapping (pure, tested below) ---------- */
@@ -743,20 +847,47 @@ pub struct IgdbStatus {
     pub configured: bool,
     /// The Client ID is not a secret; the settings row shows it back.
     pub client_id: String,
+    /// `direct` (own Twitch app) | `proxy` (the shared server) | `off`.
+    pub mode: String,
+    /// The proxy address in use, so the row can show and edit it.
+    pub proxy_url: String,
 }
 
 #[tauri::command]
 pub fn igdb_status(app: AppHandle) -> IgdbStatus {
-    match load_credentials(&app) {
-        Some(credentials) => IgdbStatus {
+    let client_id = load_credentials(&app)
+        .map(|credentials| credentials.client_id)
+        .unwrap_or_default();
+    match transport(&app) {
+        Transport::Direct => IgdbStatus {
             configured: true,
-            client_id: credentials.client_id,
+            client_id,
+            mode: "direct".to_string(),
+            proxy_url: proxy_url(&app),
         },
-        None => IgdbStatus {
+        Transport::Proxy(url) => IgdbStatus {
+            configured: true,
+            client_id,
+            mode: "proxy".to_string(),
+            proxy_url: url,
+        },
+        Transport::Off => IgdbStatus {
             configured: false,
-            client_id: String::new(),
+            client_id,
+            mode: "off".to_string(),
+            proxy_url: proxy_url(&app),
         },
     }
+}
+
+/// Stores the proxy address; an empty string restores the shared server.
+#[tauri::command]
+pub fn igdb_set_proxy_url(app: AppHandle, url: String) -> Result<(), String> {
+    let trimmed = url.trim();
+    if !trimmed.is_empty() && !trimmed.starts_with("https://") && !trimmed.starts_with("http://") {
+        return Err("@t:igdb.badProxy".to_string());
+    }
+    save_proxy_url(&app, trimmed)
 }
 
 /// Stores the pair (the secret sealed with DPAPI) and drops any cached token.
@@ -786,19 +917,36 @@ pub fn igdb_clear_credentials(app: AppHandle) {
     }
 }
 
-/// Proves the pair works: a token plus one tiny search.
+/// Proves the active transport works: one tiny search, whichever way it goes.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IgdbTestResult {
+    /// Which transport answered: `direct` or `proxy`.
+    pub mode: String,
+    /// The game IGDB returned, so the row can say what it found.
+    pub name: String,
+}
+
 #[tauri::command]
-pub async fn igdb_test(app: AppHandle) -> Result<String, String> {
+pub async fn igdb_test(app: AppHandle) -> Result<IgdbTestResult, String> {
+    let mode = match transport(&app) {
+        Transport::Direct => "direct",
+        Transport::Proxy(_) => "proxy",
+        Transport::Off => return Err("@t:igdb.notConfigured".to_string()),
+    };
     let value = api_post(&app, "games", &search_query("Halo", 1)).await?;
-    let first = value
+    let name = value
         .as_array()
         .and_then(|items| items.first())
         .map(|hit| string_field(hit, "name"))
         .unwrap_or_default();
-    if first.is_empty() {
+    if name.is_empty() {
         return Err("@t:igdb.request".to_string());
     }
-    Ok(first)
+    Ok(IgdbTestResult {
+        mode: mode.to_string(),
+        name,
+    })
 }
 
 #[tauri::command]

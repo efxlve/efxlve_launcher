@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "Kenar çubuğuna bir Notlar girdisi ekler. Sayfaya buradan her zaman ulaşabilirsin.",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "IGDB API",
-  "settings.igdbDesc": "IGDB'den (Twitch) oyun bilgisi. Ücretsiz bir Twitch uygulaması oluştur, Client ID ve Client Secret'ı buraya yapıştır; gizli anahtar bu bilgisayarda mühürlenir.",
+  "settings.igdbDesc": "IGDB'den oyun bilgisi. Varsayılan olarak Efxlve sunucusu üzerinden çalışır — kurulum gerekmez. İstersen kendi Twitch anahtarını kullan; gizli anahtar bu bilgisayarda mühürlenir.",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "Kaydedildi — değiştirmek için yeni secret yapıştır",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "Yürütülebilir dosya",
   "task.detailCmd": "Komut satırı",
   "task.processCount": "süreç",
-  "task.roleHelper": "Yardımcı süreç"
+  "task.roleHelper": "Yardımcı süreç",
+  "igdb.modeProxy": "Efxlve sunucusu üzerinden çalışıyor — kurulum gerekmez.",
+  "igdb.modeDirect": "Kendi Twitch anahtarınla çalışıyor.",
+  "igdb.modeOff": "Sunucu adresi geçerli değil. Kendi Twitch anahtarını girebilirsin.",
+  "igdb.proxySaved": "Sunucu adresi kaydedildi.",
+  "igdb.badProxy": "Adres http:// veya https:// ile başlamalı.",
+  "igdb.proxyMissing": "Efxlve IGDB sunucusuna ulaşılamadı. Kendi Twitch anahtarını girebilirsin.",
+  "igdb.testOkProxy": "Efxlve sunucusu üzerinden bağlandı: {name} bulundu.",
+  "settings.igdbProxyPlaceholder": "Sunucu adresi"
 }

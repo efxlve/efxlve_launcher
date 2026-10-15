@@ -54,6 +54,14 @@ export interface IgdbCoverHit {
 export interface IgdbStatus {
   configured: boolean;
   clientId: string;
+  /** `direct` (own Twitch app) | `proxy` (the shared server) | `off`. */
+  mode: "direct" | "proxy" | "off";
+  proxyUrl: string;
+}
+
+export interface IgdbTestResult {
+  mode: "direct" | "proxy";
+  name: string;
 }
 
 export const igdbStatus = () => invoke<IgdbStatus>("igdb_status");
@@ -61,9 +69,13 @@ export const igdbStatus = () => invoke<IgdbStatus>("igdb_status");
 export const igdbSetCredentials = (clientId: string, clientSecret: string) =>
   invoke<void>("igdb_set_credentials", { clientId, clientSecret });
 
+/** The shared proxy address; an empty string restores the default. */
+export const igdbSetProxyUrl = (url: string) =>
+  invoke<void>("igdb_set_proxy_url", { url });
+
 export const igdbClearCredentials = () => invoke<void>("igdb_clear_credentials");
 
-export const igdbTest = () => invoke<string>("igdb_test");
+export const igdbTest = () => invoke<IgdbTestResult>("igdb_test");
 
 export const igdbSearch = (query: string, limit?: number) =>
   invoke<IgdbSearchHit[]>("igdb_search", { query, limit: limit ?? null });

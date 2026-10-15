@@ -254,6 +254,9 @@ export const S = {
   /** IGDB: the credentials live sealed in Rust; these are for the settings row. */
   igdbConfigured: false,
   igdbClientId: "" as string,
+  /** Which transport is active, and the proxy address in use. */
+  igdbMode: "off" as "direct" | "proxy" | "off",
+  igdbProxyUrl: "" as string,
   showSettingsIgdbSecret: false,
   /** The cover modal's own IGDB search. */
   igdbCoverQuery: "",

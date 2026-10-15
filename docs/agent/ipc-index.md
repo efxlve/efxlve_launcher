@@ -219,6 +219,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `igdb_game` | `igdbGame({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_search` | `igdbSearch({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_set_credentials` | `igdbSetCredentials({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_set_proxy_url` | `igdbSetProxyUrl({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_status` | `igdbStatus({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_test` | `igdbTest({ ... })` | `src-tauri/src/igdb.rs` |
 | `launchers_status` | `launchersStatus({ ... })` | `src-tauri/src/launchers.rs` |

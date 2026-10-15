@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "साइडबार में नोट्स प्रविष्टि जोड़ता है। पेज यहाँ से हमेशा खुल सकता है।",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "IGDB API",
-  "settings.igdbDesc": "IGDB (Twitch) से गेम मेटाडेटा। मुफ़्त Twitch ऐप बनाएँ और उसका Client ID व Client Secret यहाँ पेस्ट करें; गुप्त कुंजी इस PC पर सील हो जाती है।",
+  "settings.igdbDesc": "IGDB से गेम जानकारी। डिफ़ॉल्ट रूप से Efxlve सर्वर से चलता है — सेटअप ज़रूरी नहीं। चाहें तो अपने Twitch क्रेडेंशियल भी इस्तेमाल करें; सीक्रेट इसी PC में सील रहता है।",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "सहेजा गया — बदलने के लिए नया secret पेस्ट करें",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "निष्पादन योग्य फ़ाइल",
   "task.detailCmd": "कमांड लाइन",
   "task.processCount": "प्रक्रियाएँ",
-  "task.roleHelper": "सहायक प्रक्रिया"
+  "task.roleHelper": "सहायक प्रक्रिया",
+  "igdb.modeProxy": "Efxlve सर्वर से चल रहा है — कोई सेटअप ज़रूरी नहीं।",
+  "igdb.modeDirect": "आपके अपने Twitch क्रेडेंशियल इस्तेमाल हो रहे हैं।",
+  "igdb.modeOff": "सर्वर पता मान्य नहीं है। आप अपने Twitch क्रेडेंशियल डाल सकते हैं।",
+  "igdb.proxySaved": "सर्वर पता सहेजा गया।",
+  "igdb.badProxy": "पता http:// या https:// से शुरू होना चाहिए।",
+  "igdb.proxyMissing": "Efxlve IGDB सर्वर तक नहीं पहुँच सके। आप अपने Twitch क्रेडेंशियल डाल सकते हैं।",
+  "igdb.testOkProxy": "Efxlve सर्वर से जुड़ गया: {name} मिला।",
+  "settings.igdbProxyPlaceholder": "सर्वर पता"
 }

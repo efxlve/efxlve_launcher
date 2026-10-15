@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "사이드바에 노트 항목을 추가합니다. 페이지는 여기서 언제든 열 수 있습니다.",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "IGDB API",
-  "settings.igdbDesc": "IGDB(Twitch)의 게임 메타데이터. 무료 Twitch 앱을 만들어 Client ID와 Client Secret을 여기에 붙여넣으세요. 시크릿은 이 PC에서 봉인됩니다.",
+  "settings.igdbDesc": "IGDB의 게임 정보입니다. 기본값은 Efxlve 서버 경유이며 설정이 필요 없습니다. 자체 Twitch 자격 증명도 사용할 수 있습니다(비밀은 이 PC에 봉인됨).",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "저장됨 — 변경하려면 새 시크릿을 붙여넣으세요",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "실행 파일",
   "task.detailCmd": "명령줄",
   "task.processCount": "프로세스",
-  "task.roleHelper": "보조 프로세스"
+  "task.roleHelper": "보조 프로세스",
+  "igdb.modeProxy": "Efxlve 서버를 통해 작동 중 — 설정이 필요 없습니다.",
+  "igdb.modeDirect": "자체 Twitch 자격 증명을 사용 중입니다.",
+  "igdb.modeOff": "서버 주소가 올바르지 않습니다. 자체 Twitch 자격 증명을 입력할 수 있습니다.",
+  "igdb.proxySaved": "서버 주소를 저장했습니다.",
+  "igdb.badProxy": "주소는 http:// 또는 https://로 시작해야 합니다.",
+  "igdb.proxyMissing": "Efxlve IGDB 서버에 연결할 수 없습니다. 자체 Twitch 자격 증명을 입력할 수 있습니다.",
+  "igdb.testOkProxy": "Efxlve 서버를 통해 연결됨: {name} 발견.",
+  "settings.igdbProxyPlaceholder": "서버 주소"
 }

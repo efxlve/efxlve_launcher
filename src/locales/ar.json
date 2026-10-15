@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "يضيف عنصر الملاحظات إلى الشريط الجانبي. تبقى الصفحة متاحة من هنا.",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "واجهة IGDB",
-  "settings.igdbDesc": "بيانات الألعاب من IGDB (Twitch). أنشئ تطبيق Twitch مجانيًا والصق معرّف العميل والمفتاح السري هنا؛ يُشفَّر المفتاح على هذا الجهاز.",
+  "settings.igdbDesc": "معلومات الألعاب من IGDB. يعمل افتراضيًا عبر خادم Efxlve — بلا إعداد. يمكنك استخدام بيانات Twitch الخاصة بك؛ يبقى السر مختومًا على هذا الجهاز.",
   "settings.igdbIdPlaceholder": "معرّف العميل",
   "settings.igdbSecretPlaceholder": "المفتاح السري",
   "settings.igdbSecretStored": "محفوظ — الصق مفتاحًا سريًا جديدًا للتغيير",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "الملف التنفيذي",
   "task.detailCmd": "سطر الأوامر",
   "task.processCount": "عملية",
-  "task.roleHelper": "عملية مساعدة"
+  "task.roleHelper": "عملية مساعدة",
+  "igdb.modeProxy": "يعمل عبر خادم Efxlve — بلا إعداد.",
+  "igdb.modeDirect": "يستخدم بيانات Twitch الخاصة بك.",
+  "igdb.modeOff": "عنوان الخادم غير صالح. يمكنك إدخال بيانات Twitch الخاصة بك.",
+  "igdb.proxySaved": "تم حفظ عنوان الخادم.",
+  "igdb.badProxy": "يجب أن يبدأ العنوان بـ http:// أو https://.",
+  "igdb.proxyMissing": "تعذّر الوصول إلى خادم IGDB الخاص بـ Efxlve. يمكنك إدخال بيانات Twitch الخاصة بك.",
+  "igdb.testOkProxy": "تم الاتصال عبر خادم Efxlve: تم العثور على {name}.",
+  "settings.igdbProxyPlaceholder": "عنوان الخادم"
 }

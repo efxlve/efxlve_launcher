@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "在侧边栏添加笔记入口。页面仍可从这里打开。",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "IGDB API",
-  "settings.igdbDesc": "来自 IGDB（Twitch）的游戏元数据。创建一个免费的 Twitch 应用，把它的 Client ID 和 Client Secret 粘贴到这里；密钥会密封在这台电脑上。",
+  "settings.igdbDesc": "来自 IGDB 的游戏信息。默认通过 Efxlve 服务器运行，无需配置。也可以使用你自己的 Twitch 凭据；密钥会封存在本机。",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "已保存 — 粘贴新密钥即可更改",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "可执行文件",
   "task.detailCmd": "命令行",
   "task.processCount": "个进程",
-  "task.roleHelper": "辅助进程"
+  "task.roleHelper": "辅助进程",
+  "igdb.modeProxy": "通过 Efxlve 服务器运行 — 无需配置。",
+  "igdb.modeDirect": "正在使用你自己的 Twitch 凭据。",
+  "igdb.modeOff": "服务器地址无效。你可以输入自己的 Twitch 凭据。",
+  "igdb.proxySaved": "服务器地址已保存。",
+  "igdb.badProxy": "地址必须以 http:// 或 https:// 开头。",
+  "igdb.proxyMissing": "无法连接 Efxlve IGDB 服务器。你可以输入自己的 Twitch 凭据。",
+  "igdb.testOkProxy": "已通过 Efxlve 服务器连接：找到 {name}。",
+  "settings.igdbProxyPlaceholder": "服务器地址"
 }

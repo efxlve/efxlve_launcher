@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "在側邊欄新增筆記項目。頁面仍可從這裡開啟。",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "IGDB API",
-  "settings.igdbDesc": "來自 IGDB（Twitch）的遊戲中介資料。建立免費的 Twitch 應用程式，把它的 Client ID 與 Client Secret 貼到這裡；密鑰會密封在這台電腦上。",
+  "settings.igdbDesc": "來自 IGDB 的遊戲資訊。預設透過 Efxlve 伺服器運作，無需設定。也可以使用你自己的 Twitch 憑證；密鑰會封存在本機。",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "已儲存 — 貼上新的密鑰即可變更",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "可執行檔",
   "task.detailCmd": "命令列",
   "task.processCount": "個處理程序",
-  "task.roleHelper": "輔助處理程序"
+  "task.roleHelper": "輔助處理程序",
+  "igdb.modeProxy": "透過 Efxlve 伺服器運作 — 無需設定。",
+  "igdb.modeDirect": "正在使用你自己的 Twitch 憑證。",
+  "igdb.modeOff": "伺服器位址無效。你可以輸入自己的 Twitch 憑證。",
+  "igdb.proxySaved": "伺服器位址已儲存。",
+  "igdb.badProxy": "位址必須以 http:// 或 https:// 開頭。",
+  "igdb.proxyMissing": "無法連線 Efxlve IGDB 伺服器。你可以輸入自己的 Twitch 憑證。",
+  "igdb.testOkProxy": "已透過 Efxlve 伺服器連線：找到 {name}。",
+  "settings.igdbProxyPlaceholder": "伺服器位址"
 }

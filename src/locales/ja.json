@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "サイドバーにノートの項目を追加します。ページはここからいつでも開けます。",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "IGDB API",
-  "settings.igdbDesc": "IGDB（Twitch）のゲームメタデータ。無料の Twitch アプリを作り、Client ID と Client Secret をここに貼り付けてください。シークレットはこの PC で封印されます。",
+  "settings.igdbDesc": "IGDB のゲーム情報。既定では Efxlve サーバー経由で動作し、設定は不要です。自分の Twitch 認証情報も使えます（シークレットはこの PC 内で封印されます）。",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "保存済み — 変更するには新しいシークレットを貼り付け",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "実行ファイル",
   "task.detailCmd": "コマンドライン",
   "task.processCount": "プロセス",
-  "task.roleHelper": "補助プロセス"
+  "task.roleHelper": "補助プロセス",
+  "igdb.modeProxy": "Efxlve サーバー経由で動作中 — 設定は不要です。",
+  "igdb.modeDirect": "自分の Twitch 認証情報を使用中。",
+  "igdb.modeOff": "サーバーアドレスが無効です。自分の Twitch 認証情報を入力できます。",
+  "igdb.proxySaved": "サーバーアドレスを保存しました。",
+  "igdb.badProxy": "アドレスは http:// または https:// で始まる必要があります。",
+  "igdb.proxyMissing": "Efxlve の IGDB サーバーに接続できませんでした。自分の Twitch 認証情報を入力できます。",
+  "igdb.testOkProxy": "Efxlve サーバー経由で接続しました: {name} を検出。",
+  "settings.igdbProxyPlaceholder": "サーバーアドレス"
 }

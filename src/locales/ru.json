@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "Добавляет пункт «Заметки» в боковую панель. Страница остаётся доступной отсюда.",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "API IGDB",
-  "settings.igdbDesc": "Метаданные игр из IGDB (Twitch). Создайте бесплатное приложение Twitch и вставьте сюда Client ID и Client Secret; секрет запечатывается на этом ПК.",
+  "settings.igdbDesc": "Сведения об играх из IGDB. По умолчанию работает через сервер Efxlve — настройка не нужна. Можно использовать свои данные Twitch; секрет остаётся зашифрованным на этом компьютере.",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "Сохранено — вставьте новый секрет, чтобы изменить",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "Исполняемый файл",
   "task.detailCmd": "Командная строка",
   "task.processCount": "процессов",
-  "task.roleHelper": "Вспомогательный процесс"
+  "task.roleHelper": "Вспомогательный процесс",
+  "igdb.modeProxy": "Работает через сервер Efxlve — настройка не нужна.",
+  "igdb.modeDirect": "Используются ваши данные Twitch.",
+  "igdb.modeOff": "Адрес сервера недействителен. Можно ввести свои данные Twitch.",
+  "igdb.proxySaved": "Адрес сервера сохранён.",
+  "igdb.badProxy": "Адрес должен начинаться с http:// или https://.",
+  "igdb.proxyMissing": "Сервер IGDB Efxlve недоступен. Можно ввести свои данные Twitch.",
+  "igdb.testOkProxy": "Подключено через сервер Efxlve: найден {name}.",
+  "settings.igdbProxyPlaceholder": "Адрес сервера"
 }

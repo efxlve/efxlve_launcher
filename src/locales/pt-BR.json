@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "Adiciona uma entrada Notas na barra lateral. A página continua acessível daqui.",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "API do IGDB",
-  "settings.igdbDesc": "Metadados de jogos do IGDB (Twitch). Crie um app Twitch grátis e cole aqui o Client ID e o Client Secret; o segredo é selado neste PC.",
+  "settings.igdbDesc": "Informações de jogos do IGDB. Por padrão funciona pelo servidor da Efxlve — sem configuração. Você também pode usar suas credenciais da Twitch; o segredo fica selado neste computador.",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "Salvo — cole um novo segredo para alterar",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "Executável",
   "task.detailCmd": "Linha de comando",
   "task.processCount": "processos",
-  "task.roleHelper": "Processo auxiliar"
+  "task.roleHelper": "Processo auxiliar",
+  "igdb.modeProxy": "Funciona pelo servidor da Efxlve — sem configuração.",
+  "igdb.modeDirect": "Usando suas próprias credenciais da Twitch.",
+  "igdb.modeOff": "O endereço do servidor não é válido. Você pode inserir suas credenciais da Twitch.",
+  "igdb.proxySaved": "Endereço do servidor salvo.",
+  "igdb.badProxy": "O endereço deve começar com http:// ou https://.",
+  "igdb.proxyMissing": "Não foi possível alcançar o servidor IGDB da Efxlve. Você pode inserir suas credenciais da Twitch.",
+  "igdb.testOkProxy": "Conectado pelo servidor da Efxlve: {name} encontrado.",
+  "settings.igdbProxyPlaceholder": "Endereço do servidor"
 }

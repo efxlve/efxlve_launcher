@@ -1059,6 +1059,7 @@ fn main() {
             spotify_host::spotify_player_destroy,
             igdb::igdb_status,
             igdb::igdb_set_credentials,
+            igdb::igdb_set_proxy_url,
             igdb::igdb_clear_credentials,
             igdb::igdb_test,
             igdb::igdb_search,

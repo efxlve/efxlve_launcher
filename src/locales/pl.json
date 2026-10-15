@@ -2172,7 +2172,7 @@
   "notes.sidebarDesc": "Dodaje pozycję Notatki na pasku bocznym. Strona pozostaje dostępna stąd.",
   "settings.igdbGroup": "IGDB",
   "settings.igdbTitle": "API IGDB",
-  "settings.igdbDesc": "Metadane gier z IGDB (Twitch). Utwórz darmową aplikację Twitch i wklej tutaj Client ID oraz Client Secret; sekret jest pieczętowany na tym PC.",
+  "settings.igdbDesc": "Informacje o grach z IGDB. Domyślnie działa przez serwer Efxlve — bez konfiguracji. Możesz też użyć własnych danych Twitch; sekret zostaje zapieczętowany na tym komputerze.",
   "settings.igdbIdPlaceholder": "Client ID",
   "settings.igdbSecretPlaceholder": "Client Secret",
   "settings.igdbSecretStored": "Zapisano — wklej nowy sekret, aby go zmienić",
@@ -2281,5 +2281,13 @@
   "task.detailExe": "Plik wykonywalny",
   "task.detailCmd": "Wiersz polecenia",
   "task.processCount": "procesów",
-  "task.roleHelper": "Proces pomocniczy"
+  "task.roleHelper": "Proces pomocniczy",
+  "igdb.modeProxy": "Działa przez serwer Efxlve — bez konfiguracji.",
+  "igdb.modeDirect": "Używa własnych danych Twitch.",
+  "igdb.modeOff": "Adres serwera jest nieprawidłowy. Możesz podać własne dane Twitch.",
+  "igdb.proxySaved": "Adres serwera zapisany.",
+  "igdb.badProxy": "Adres musi zaczynać się od http:// lub https://.",
+  "igdb.proxyMissing": "Nie można połączyć się z serwerem IGDB Efxlve. Możesz podać własne dane Twitch.",
+  "igdb.testOkProxy": "Połączono przez serwer Efxlve: znaleziono {name}.",
+  "settings.igdbProxyPlaceholder": "Adres serwera"
 }

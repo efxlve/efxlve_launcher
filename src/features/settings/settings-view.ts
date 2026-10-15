@@ -373,7 +373,7 @@ function renderIntegrations(): string {
   if (S.settingsIntegrationsLoading && !S.settingsIntegrationsLoaded) {
     return `<div class="empty-state"><span class="spinner"></span><p>${t("settings.scanning")}</p></div>`;
   }
-  const egl = S.eglDetectedList;
+  const egl = S.eglDetectedList ?? [];
   const eglAction = egl.length > 0
     ? `<button class="btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
     : `<button class="btn ghost small" data-act="epic-refresh-egl">${t("settings.rescan")}</button>`;
@@ -398,7 +398,7 @@ function renderIntegrations(): string {
 
   // GOG Galaxy parity: games installed by the official client are detected from
   // its registry entries and can be imported with full launcher support.
-  const galaxy = S.gogGalaxyDetected;
+  const galaxy = S.gogGalaxyDetected ?? [];
   const galaxyAction = galaxy.length > 0
     ? `<button class="btn primary small" data-act="gog-galaxy-import" ${S.gogGalaxySyncing ? "disabled" : ""}>${S.gogGalaxySyncing ? t("settings.eglSyncing") : t("settings.gogGalaxyImport")}</button>`
     : `<button class="btn ghost small" data-act="gog-galaxy-scan">${t("settings.rescan")}</button>`;
@@ -430,19 +430,28 @@ function renderIntegrations(): string {
 
   const eos = renderEosSettingsRow();
 
-  // IGDB (Twitch) credentials: the secret is write-only here â€” it is sealed on
-  // disk and only ever read back by Rust.
+  // IGDB (Twitch): the shared proxy is the default, so nobody has to register a
+  // Twitch app. Own credentials stay possible — the secret is write-only here,
+  // sealed on disk and only ever read back by Rust.
+  const igdbModeLine =
+    S.igdbMode === "direct"
+      ? t("igdb.modeDirect")
+      : S.igdbMode === "proxy"
+        ? t("igdb.modeProxy")
+        : t("igdb.modeOff");
   const igdb = detailsRow(
     t("settings.igdbTitle"),
     t("settings.igdbDesc"),
     `<span class="chip ${S.igdbConfigured ? "ok" : ""}">${S.igdbConfigured ? t("settings.connected") : t("settings.keyMissing")}</span>`,
-    `<input id="settings-igdb-id" class="input settings-path-input" placeholder="${esc(t("settings.igdbIdPlaceholder"))}" value="${esc(S.igdbClientId)}" spellcheck="false" autocomplete="off" />
+    `<div class="settings-row-desc" style="flex-basis:100%">${esc(igdbModeLine)}</div>
+     <input id="settings-igdb-proxy" class="input settings-path-input" placeholder="${esc(t("settings.igdbProxyPlaceholder"))}" value="${esc(S.igdbProxyUrl)}" spellcheck="false" autocomplete="off" />
+     <input id="settings-igdb-id" class="input settings-path-input" placeholder="${esc(t("settings.igdbIdPlaceholder"))}" value="${esc(S.igdbClientId)}" spellcheck="false" autocomplete="off" />
      <input id="settings-igdb-secret" type="${S.showSettingsIgdbSecret ? "text" : "password"}" class="input settings-path-input" placeholder="${esc(t(S.igdbConfigured ? "settings.igdbSecretStored" : "settings.igdbSecretPlaceholder"))}" value="" spellcheck="false" autocomplete="off" />
      <button class="icon-btn" data-act="toggle-igdb-secret-visibility" title="${t("settings.showHide")}">${icon(S.showSettingsIgdbSecret ? "eye-off" : "eye", 15)}</button>
      <button class="btn primary small" data-act="save-igdb-credentials">${t("common.save")}</button>
      <button class="btn ghost small" data-act="test-igdb">${t("settings.test")}</button>
      <button class="btn ghost small" data-act="open-external-url" data-url="https://dev.twitch.tv/console/apps/create">${t("settings.getFreeKey")}</button>
-     ${S.igdbConfigured ? `<button class="btn ghost small" data-act="clear-igdb-credentials">${t("common.delete")}</button>` : ""}`,
+     ${S.igdbMode === "direct" ? `<button class="btn ghost small" data-act="clear-igdb-credentials">${t("common.delete")}</button>` : ""}`,
   );
 
   // Amazon Games runs through the open-source Nile helper; the row reports
@@ -1285,20 +1294,22 @@ export async function loadSettingsView(): Promise<void> {
         amazonDefaultInstallDir().catch(() => ""),
         igdbStatus().catch(() => null),
       ]);
-      S.epicSettingsCache = st;
-      S.epicDefaultDir = dir;
+      S.epicSettingsCache = st ?? S.epicSettingsCache;
+      S.epicDefaultDir = dir ?? "";
       S.steamGridApiKey = sgdbKey;
       S.screenshotDir = ssDir || "";
       S.steamApiKey = steamKey;
       S.gogInstallDir = gogDir || "";
       S.gogDefaultDir = gogDefault || "";
       S.startWithWindows = autostart;
-      S.gogCometEnabled = st.gog_comet_enabled ?? true;
+      S.gogCometEnabled = st?.gog_comet_enabled ?? true;
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;
+        S.igdbMode = igdb.mode;
+        S.igdbProxyUrl = igdb.proxyUrl;
       }
     } catch {
       // Silent: keep the last cached values.
@@ -1374,10 +1385,12 @@ export async function loadIntegrationsView(force = false): Promise<void> {
       steamStatus().catch(() => null),
       companionGetClientSettings().catch(() => null),
     ]);
-    S.eglDetectedList = eglList;
-    S.eglLauncherPresent = eglPresent;
+    // A null from the backend (older binary, shape change) must not white-screen
+    // the page: the lists are read with .length right after this.
+    S.eglDetectedList = eglList ?? [];
+    S.eglLauncherPresent = eglPresent ?? false;
     S.eosOverlay = eos;
-    S.gogGalaxyDetected = galaxyList;
+    S.gogGalaxyDetected = galaxyList ?? [];
     S.steamStatus = steamState;
     S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
     syncEosNotice();
