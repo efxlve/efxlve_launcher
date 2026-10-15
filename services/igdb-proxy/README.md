@@ -17,7 +17,40 @@ endpoint ever goes away.
     (shown once).
 - A Netlify account — the same one `efxlve.com` already uses.
 
-## Deploy (a separate site; nothing on efxlve.com changes)
+## Deploy on efxlve.com (what the launcher actually ships with)
+
+The website is connected to a Git repository, so the function lives there, at
+`netlify/functions/igdb.mjs`. Two details matter when copying it over:
+
+- **Drop the `export const config = { path: "/api/igdb" }` line.** A function
+  that declares a custom path is not served at `/.netlify/functions/<name>`, and
+  that is exactly what the redirect below points at.
+- **Keep the redirect above the SPA rule.** Redirects match top-down and the
+  first match wins, so `/api/igdb` has to come before `/* → /index.html`;
+  `force = true` stops the fallback from shadowing it.
+
+```toml
+[[redirects]]
+  from = "/api/igdb"
+  to = "/.netlify/functions/igdb"
+  status = 200
+  force = true
+
+[functions]
+  node_bundler = "esbuild"
+```
+
+Set `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` under **Site configuration →
+Environment variables** (leave the scopes at their default) and push: Netlify
+builds and the endpoint is live. It is then `https://efxlve.com/api/igdb`, which
+is what the launcher already defaults to — no setting changes needed anywhere,
+for this install or any other.
+
+## Alternative: a separate site
+
+Nothing on `efxlve.com` changes, but the launcher then has to be pointed at the
+new address (see "Point the launcher at it" below), and shipping that default
+for everyone becomes a launcher change.
 
 ```powershell
 cd services/igdb-proxy
@@ -34,36 +67,26 @@ Prefer the UI? Create a site at <https://app.netlify.com>, add the two
 environment variables under **Site configuration → Environment variables**, and
 deploy this folder with `npx netlify-cli deploy --prod`.
 
-## Or put it on efxlve.com
-
-If the `efxlve.com` site is connected to a Git repository, copy
-`netlify/functions/igdb.mjs` into that repository and merge this block into its
-`netlify.toml`:
-
-```toml
-[functions]
-  node_bundler = "esbuild"
-```
-
-The endpoint is then `https://efxlve.com/api/igdb`, which is what the launcher
-already defaults to — no setting changes needed anywhere.
-
 ## Test it
 
 ```powershell
-curl.exe "https://efxlve-igdb.netlify.app/api/igdb?endpoint=games&q=fields%20name%3B%20limit%201%3B"
+curl.exe "https://efxlve.com/api/igdb?endpoint=games&q=fields%20name%3B%20limit%201%3B"
 ```
+
+On the separate-site route, use `https://efxlve-igdb.netlify.app/api/igdb`
+instead.
 
 A working deploy answers with a JSON array holding one game. Errors are JSON
 too: `proxy_not_configured` (missing env vars), `unknown_endpoint`,
-`bad_query`, `rate_limited`, `igdb_error`.
+`bad_query`, `rate_limited`, `igdb_error`. The site's own HTML coming back means
+the redirect is missing or the deploy did not happen.
 
 ## Point the launcher at it
 
-**Settings → Integrations → IGDB → Server address.** The default is
-`https://efxlve.com/api/igdb`; paste the netlify.app address to use the
-separate site instead. Leave the credential fields empty — the proxy needs no
-user setup.
+Only needed for the separate-site route: **Settings → Integrations → IGDB →
+Server address.** The default is `https://efxlve.com/api/igdb`; paste the
+netlify.app address to use that site instead. Leave the credential fields empty
+— the proxy needs no user setup.
 
 ## Notes
 

@@ -64,10 +64,21 @@ and it touches the core render switch, so it needs care.
 
 ## 6. IGDB proxy deployment (user action)
 
-See `services/igdb-proxy/README.md`: deploy the Netlify function and set
-`IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` there. Checked on 2026-10-15:
-`https://efxlve.com/api/igdb` answers with the site's own HTML, so the function
-is not deployed, and no per-user credentials are stored either — IGDB is off.
+Chosen path: the function lives on `efxlve.com` itself
+(`Desktop\efxlve.com\netlify\functions\igdb.mjs` + the `/api/igdb` redirect
+above the SPA rule in that repo's `netlify.toml`), so the launcher's default
+server address works with no user setup at all. The website side is prepared
+and committed locally; what remains is the user's:
+
+1. Netlify → `efxlve.com` → Site configuration → Environment variables:
+   `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` (mark the secret one).
+2. `git push` in `Desktop\efxlve.com`, then wait for the deploy.
+3. Verify: `curl.exe "https://efxlve.com/api/igdb?endpoint=games&q=fields%20name%3B%20limit%201%3B"`
+   must answer with a JSON array (not the site's HTML).
+
+Checked on 2026-10-15: `https://efxlve.com/api/igdb` still answers with the
+site's own HTML, so the function is not deployed yet, and no per-user
+credentials are stored either — IGDB is off.
 
 The launcher no longer hides that: the settings row probes the endpoint and
 shows "Sunucu yanıt vermiyor", and a game page with a dead transport shows a
