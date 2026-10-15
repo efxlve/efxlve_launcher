@@ -2295,5 +2295,10 @@
   "nav.noConnection": "ไม่มีการเชื่อมต่อ",
   "nav.noConnectionTip": "ไม่มีการเชื่อมต่ออินเทอร์เน็ต",
   "lib.offlineMode": "โหมดออฟไลน์: กำลังแสดงคลังเกมจากแคช",
-  "net.whatDownload": "ไม่ได้เริ่มดาวน์โหลด"
+  "net.whatDownload": "ไม่ได้เริ่มดาวน์โหลด",
+  "ss.copy": "คัดลอก",
+  "ss.copyTip": "คัดลอกรูปไปยังคลิปบอร์ด",
+  "ss.compressed": "บีบอัดรูปแล้ว",
+  "ss.sidebarTitle": "แสดงในแถบข้าง",
+  "ss.sidebarDesc": "เพิ่มหน้าสกรีนช็อตในแถบข้าง"
 }

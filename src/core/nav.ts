@@ -22,6 +22,7 @@ import { epicGetQueue, epicPortrait } from "../epic";
 import { openStoreUrl, setView, syncStoreTabsPill } from "../features/store/store-view";
 import { loadSettingsView } from "../features/settings/settings-view";
 import { loadNotesView } from "../features/notes/notes-view";
+import { loadScreenshotsPage } from "../features/screenshots/screenshots-page";
 
 /** Highlight the sidebar entry that matches the current view (or open game). */
 export function updateSidebarActive(): void {
@@ -147,6 +148,7 @@ export function updatePageHeader(): void {
       music: t("overlay.tabSpotify"),
       discord: t("discord.title"),
       notes: t("notes.title"),
+      screenshots: t("ss.title"),
     };
     const next = game ?? titles[S.view] ?? "";
     if (title.textContent !== next) title.textContent = next;
@@ -446,6 +448,8 @@ function applyNavHistory(item: NavHistoryItem): void {
           void loadSettingsView();
         } else if (item.view === "notes") {
           void loadNotesView();
+        } else if (item.view === "screenshots") {
+          loadScreenshotsPage();
         } else if (item.view === "downloads") {
           void epicGetQueue().then((q) => {
             S.dlQueueStatus = q;

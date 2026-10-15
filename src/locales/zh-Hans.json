@@ -2295,5 +2295,10 @@
   "nav.noConnection": "无连接",
   "nav.noConnectionTip": "没有网络连接",
   "lib.offlineMode": "离线模式：正在从缓存显示库。",
-  "net.whatDownload": "未开始下载"
+  "net.whatDownload": "未开始下载",
+  "ss.copy": "复制",
+  "ss.copyTip": "将图像复制到剪贴板",
+  "ss.compressed": "图像已压缩。",
+  "ss.sidebarTitle": "在侧边栏显示",
+  "ss.sidebarDesc": "将截图页面添加到侧边栏。"
 }

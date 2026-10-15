@@ -2295,5 +2295,10 @@
   "nav.noConnection": "Aucune connexion",
   "nav.noConnectionTip": "Aucune connexion internet",
   "lib.offlineMode": "Mode hors ligne : bibliothèque affichée depuis le cache.",
-  "net.whatDownload": "Téléchargement non lancé"
+  "net.whatDownload": "Téléchargement non lancé",
+  "ss.copy": "Copier",
+  "ss.copyTip": "Copier l'image dans le presse-papiers",
+  "ss.compressed": "Image compressée.",
+  "ss.sidebarTitle": "Afficher dans la barre latérale",
+  "ss.sidebarDesc": "Ajoute la page Captures à la barre latérale."
 }

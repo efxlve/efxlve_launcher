@@ -2295,5 +2295,10 @@
   "nav.noConnection": "No connection",
   "nav.noConnectionTip": "No internet connection",
   "lib.offlineMode": "Offline mode: showing the library from the cache.",
-  "net.whatDownload": "Download not started"
+  "net.whatDownload": "Download not started",
+  "ss.copy": "Copy",
+  "ss.copyTip": "Copy the image to the clipboard",
+  "ss.compressed": "Image compressed.",
+  "ss.sidebarTitle": "Show in the sidebar",
+  "ss.sidebarDesc": "Adds the Screenshots page to the sidebar."
 }

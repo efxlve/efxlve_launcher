@@ -2295,5 +2295,10 @@
   "nav.noConnection": "Sem conexão",
   "nav.noConnectionTip": "Sem conexão com a internet",
   "lib.offlineMode": "Modo offline: mostrando a biblioteca do cache.",
-  "net.whatDownload": "Download não iniciado"
+  "net.whatDownload": "Download não iniciado",
+  "ss.copy": "Copiar",
+  "ss.copyTip": "Copiar a imagem para a área de transferência",
+  "ss.compressed": "Imagem comprimida.",
+  "ss.sidebarTitle": "Mostrar na barra lateral",
+  "ss.sidebarDesc": "Adiciona a página de capturas à barra lateral."
 }

@@ -11,7 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
-import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -846,8 +846,14 @@ function renderScreenshots(): string {
        <div id="ss-cleanup-report"></div>`
     : "";
 
+  const sidebar = row(
+    t("ss.sidebarTitle"),
+    t("ss.sidebarDesc"),
+    toggle("toggle-screenshots-sidebar", screenshotsSidebarVisible()),
+  );
+
   return (
-    group(folder + hotkey + sound + notify, t("settings.screenshotsTitle")) +
+    group(folder + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
     group(compression + options, t("ss.compressionSection")) +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +

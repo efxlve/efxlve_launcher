@@ -2295,5 +2295,10 @@
   "nav.noConnection": "無連線",
   "nav.noConnectionTip": "沒有網際網路連線",
   "lib.offlineMode": "離線模式：正在從快取顯示媒體庫。",
-  "net.whatDownload": "未開始下載"
+  "net.whatDownload": "未開始下載",
+  "ss.copy": "複製",
+  "ss.copyTip": "將影像複製到剪貼簿",
+  "ss.compressed": "影像已壓縮。",
+  "ss.sidebarTitle": "在側邊欄顯示",
+  "ss.sidebarDesc": "將截圖頁面加入側邊欄。"
 }

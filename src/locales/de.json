@@ -2295,5 +2295,10 @@
   "nav.noConnection": "Keine Verbindung",
   "nav.noConnectionTip": "Keine Internetverbindung",
   "lib.offlineMode": "Offline-Modus: Bibliothek wird aus dem Cache angezeigt.",
-  "net.whatDownload": "Download nicht gestartet"
+  "net.whatDownload": "Download nicht gestartet",
+  "ss.copy": "Kopieren",
+  "ss.copyTip": "Bild in die Zwischenablage kopieren",
+  "ss.compressed": "Bild komprimiert.",
+  "ss.sidebarTitle": "In der Seitenleiste zeigen",
+  "ss.sidebarDesc": "Fügt die Screenshots-Seite zur Seitenleiste hinzu."
 }

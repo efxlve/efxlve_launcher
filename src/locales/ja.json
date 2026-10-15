@@ -2295,5 +2295,10 @@
   "nav.noConnection": "接続なし",
   "nav.noConnectionTip": "インターネット接続がありません",
   "lib.offlineMode": "オフラインモード: ライブラリをキャッシュから表示しています。",
-  "net.whatDownload": "ダウンロードを開始しませんでした"
+  "net.whatDownload": "ダウンロードを開始しませんでした",
+  "ss.copy": "コピー",
+  "ss.copyTip": "画像をクリップボードにコピー",
+  "ss.compressed": "画像を圧縮しました。",
+  "ss.sidebarTitle": "サイドバーに表示",
+  "ss.sidebarDesc": "スクリーンショットページをサイドバーに追加します。"
 }

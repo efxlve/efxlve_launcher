@@ -6,7 +6,7 @@
  * feature and is not affected.
  */
 
-import { OVERLAY_DISABLED_KEY, SHOW_DISCORD_KEY, SHOW_MINI_PLAYER_KEY, SHOW_NOTES_SIDEBAR_KEY, SHOW_SPOTIFY_KEY } from "./constants";
+import { OVERLAY_DISABLED_KEY, SHOW_DISCORD_KEY, SHOW_MINI_PLAYER_KEY, SHOW_NOTES_SIDEBAR_KEY, SHOW_SCREENSHOTS_SIDEBAR_KEY, SHOW_SPOTIFY_KEY } from "./constants";
 
 export function spotifyPageVisible(): boolean {
   return localStorage.getItem(SHOW_SPOTIFY_KEY) !== "false";
@@ -51,6 +51,11 @@ export function notesSidebarVisible(): boolean {
   return localStorage.getItem(SHOW_NOTES_SIDEBAR_KEY) === "true";
 }
 
+/** The Screenshots sidebar entry: opt-in, like Notes. */
+export function screenshotsSidebarVisible(): boolean {
+  return localStorage.getItem(SHOW_SCREENSHOTS_SIDEBAR_KEY) === "true";
+}
+
 /** Shows/hides the sidebar entries (and their shared divider). */
 export function applySidebarPageVisibility(): void {
   const spotify = spotifyPageVisible();
@@ -67,4 +72,7 @@ export function applySidebarPageVisibility(): void {
   document
     .querySelector<HTMLElement>('#sidebar .sb-item[data-view="notes"]')
     ?.classList.toggle("is-hidden", !notesSidebarVisible());
+  document
+    .querySelector<HTMLElement>('#sidebar .sb-item[data-view="screenshots"]')
+    ?.classList.toggle("is-hidden", !screenshotsSidebarVisible());
 }

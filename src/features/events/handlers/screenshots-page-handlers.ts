@@ -1,0 +1,270 @@
+/**
+ * Click actions for the Screenshots page: the library-wide gallery, its
+ * toolbar, its batch bar and its lightbox.
+ *
+ * Kept apart from the game page's handlers (`ssg-*`) because the two surfaces
+ * keep their own filter and selection state; everything they share (favorites,
+ * sort, density, compression) comes from `ss-settings`.
+ */
+
+import { SS_DENSITY_KEY, SS_SORT_KEY } from "../../../core/constants";
+import { t } from "../../../i18n";
+import { toast } from "../../../core/toast";
+import { icon } from "../../../core/icons";
+import { S } from "../../../core/state";
+import {
+  clearPageSelection,
+  closePageLightbox,
+  deletePageShot,
+  isPageBatchDeleteArmed,
+  loadScreenshotsPage,
+  navigatePageLightbox,
+  openPageLightbox,
+  openPageShotFolder,
+  pageLightboxOpen,
+  pageLightboxShot,
+  repaintScreenshotsPage,
+  selectedPageShots,
+  setPageBatchDeleteArmed,
+  setPageFilter,
+  setPageSelectMode,
+  togglePageFavorite,
+  togglePageSelection,
+} from "../../screenshots/screenshots-page";
+import {
+  compressScreenshotItem,
+  copyScreenshotImageToClipboard,
+  openShareModal,
+} from "../../screenshots/screenshots-view";
+
+/** One selection flip and the repaint that follows. */
+function repaint(): void {
+  repaintScreenshotsPage();
+}
+
+export function handleScreenshotsPageAction(
+  act: string | undefined,
+  el: HTMLElement,
+  targetEl?: HTMLElement,
+): boolean {
+  switch (act) {
+    case "ssp-filter": {
+      const value = el.dataset.filter;
+      if (value === "all" || value === "favorites" || value === "raw" || value === "compressed") {
+        setPageFilter(value);
+        repaint();
+      }
+      return true;
+    }
+
+    case "ssp-sort": {
+      const value = el.dataset.sort;
+      if (value === "newest" || value === "oldest" || value === "name" || value === "size") {
+        localStorage.setItem(SS_SORT_KEY, value);
+        repaint();
+      }
+      return true;
+    }
+
+    case "ssp-density": {
+      const value = el.dataset.density;
+      if (value === "s" || value === "m" || value === "l") {
+        localStorage.setItem(SS_DENSITY_KEY, value);
+        repaint();
+      }
+      return true;
+    }
+
+    case "ssp-select":
+      setPageSelectMode(!el.classList.contains("active"));
+      repaint();
+      return true;
+
+    case "ssp-toggle-select": {
+      const path = el.dataset.path;
+      if (path) {
+        togglePageSelection(path);
+        repaint();
+      }
+      return true;
+    }
+
+    case "ssp-favorite": {
+      const path = el.dataset.path;
+      if (path) {
+        const favorite = togglePageFavorite(path);
+        toast(t(favorite ? "ss.favorited" : "ss.unfavorited"), "ok");
+      }
+      return true;
+    }
+
+    case "ssp-open": {
+      const index = Number(el.dataset.index ?? "-1");
+      if (index >= 0) openPageLightbox(index);
+      return true;
+    }
+
+    case "ssp-refresh":
+      loadScreenshotsPage(true);
+      return true;
+
+    case "ssp-batch-clear":
+      clearPageSelection();
+      repaint();
+      return true;
+
+    case "ssp-batch-copy": {
+      const paths = selectedPageShots().map((item) => item.file_path);
+      if (paths.length === 0) return true;
+      navigator.clipboard
+        .writeText(paths.join("\n"))
+        .then(() => toast(t("ss.pathsCopied", { count: String(paths.length) }), "ok"))
+        .catch(() => toast(paths.join(", "), ""));
+      return true;
+    }
+
+    case "ssp-batch-compress": {
+      const items = selectedPageShots().filter(
+        (item) => !item.file_name.endsWith(".avif") && !item.file_name.endsWith(".webp"),
+      );
+      if (items.length === 0) return true;
+      toast(t("ss.compressingCount", { count: String(items.length) }), "");
+      void (async () => {
+        for (const item of items) {
+          await compressScreenshotItem(
+            "",
+            item,
+            S.screenshotCompressionFormat,
+            S.screenshotCompressionQuality,
+            true,
+          ).catch(() => undefined);
+        }
+        clearPageSelection();
+        toast(t("ss.compressedCount", { count: String(items.length) }), "ok");
+        loadScreenshotsPage(true);
+      })();
+      return true;
+    }
+
+    case "ssp-batch-delete": {
+      const items = selectedPageShots();
+      if (items.length === 0) return true;
+      if (!isPageBatchDeleteArmed()) {
+        setPageBatchDeleteArmed(true);
+        repaint();
+        return true;
+      }
+      setPageBatchDeleteArmed(false);
+      void (async () => {
+        let removed = 0;
+        for (const item of items) {
+          if (await deletePageShot(item)) removed += 1;
+        }
+        clearPageSelection();
+        toast(t("ss.batchDeleted", { count: String(removed) }), "ok");
+        loadScreenshotsPage(true);
+      })();
+      return true;
+    }
+
+    /* ---------- Lightbox ---------- */
+
+    case "ssp-lightbox-close":
+      closePageLightbox();
+      repaint();
+      return true;
+
+    case "ssp-lightbox-backdrop":
+      if (targetEl === el) {
+        closePageLightbox();
+        repaint();
+      }
+      return true;
+
+    case "ssp-lightbox-stage":
+      // A click on the empty stage closes; the image and arrows are inside it.
+      if (targetEl === el) {
+        closePageLightbox();
+        repaint();
+      }
+      return true;
+
+    case "ssp-lightbox-prev":
+      navigatePageLightbox(-1);
+      return true;
+
+    case "ssp-lightbox-next":
+      navigatePageLightbox(1);
+      return true;
+
+    case "ssp-lightbox-favorite": {
+      const shot = pageLightboxShot();
+      if (shot) {
+        const favorite = togglePageFavorite(shot.file_path);
+        toast(t(favorite ? "ss.favorited" : "ss.unfavorited"), "ok");
+      }
+      return true;
+    }
+
+    case "ssp-lightbox-share": {
+      const shot = pageLightboxShot();
+      if (shot) openShareModal("", shot);
+      return true;
+    }
+
+    case "ssp-lightbox-copy": {
+      const shot = pageLightboxShot();
+      if (shot) {
+        void copyScreenshotImageToClipboard(shot).then((ok) => {
+          toast(t(ok ? "ss.copied" : "ss.copyFailed"), ok ? "ok" : "err");
+        });
+      }
+      return true;
+    }
+
+    case "ssp-lightbox-compress": {
+      const shot = pageLightboxShot();
+      if (!shot) return true;
+      void compressScreenshotItem(
+        "",
+        shot,
+        S.screenshotCompressionFormat,
+        S.screenshotCompressionQuality,
+        false,
+      )
+        .then(() => {
+          toast(t("ss.compressed"), "ok");
+          closePageLightbox();
+          loadScreenshotsPage(true);
+        })
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
+
+    case "ssp-lightbox-delete": {
+      const shot = pageLightboxShot();
+      if (!shot) return true;
+      void deletePageShot(shot).then((ok) => {
+        toast(t(ok ? "ss.deleted" : "ss.deleteFailed"), ok ? "ok" : "err");
+      });
+      return true;
+    }
+
+    case "ssp-lightbox-folder": {
+      const shot = pageLightboxShot();
+      if (shot) openPageShotFolder(shot);
+      return true;
+    }
+
+    default:
+      return false;
+  }
+}
+
+/** Exported for the page module's own lightbox markup. */
+export const pageIcons = { icon };
+
+/** True while the page's lightbox owns Escape. */
+export function pageLightboxOwnsEscape(): boolean {
+  return pageLightboxOpen();
+}

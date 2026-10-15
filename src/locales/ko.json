@@ -2295,5 +2295,10 @@
   "nav.noConnection": "연결 없음",
   "nav.noConnectionTip": "인터넷 연결이 없습니다",
   "lib.offlineMode": "오프라인 모드: 라이브러리를 캐시에서 표시합니다.",
-  "net.whatDownload": "다운로드를 시작하지 않았습니다"
+  "net.whatDownload": "다운로드를 시작하지 않았습니다",
+  "ss.copy": "복사",
+  "ss.copyTip": "이미지를 클립보드에 복사",
+  "ss.compressed": "이미지를 압축했습니다.",
+  "ss.sidebarTitle": "사이드바에 표시",
+  "ss.sidebarDesc": "스크린샷 페이지를 사이드바에 추가합니다."
 }

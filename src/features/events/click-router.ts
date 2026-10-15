@@ -33,6 +33,7 @@ import {
   SHOW_SPOTIFY_KEY,
   SHOW_DISCORD_KEY,
   SHOW_NOTES_SIDEBAR_KEY,
+  SHOW_SCREENSHOTS_SIDEBAR_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
   SEPARATE_COPIES_KEY,
@@ -46,7 +47,7 @@ import {
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerConfirm, askConfirm } from "../../core/confirm-dialog";
-import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
 import {
@@ -133,6 +134,7 @@ import { handleDownloadsAction } from "./handlers/downloads-handlers";
 import { handleDrawerAction } from "./handlers/drawer-handlers";
 import { handleManageAction } from "./handlers/manage-handlers";
 import { handleScreenshotAction } from "./handlers/screenshot-handlers";
+import { handleScreenshotsPageAction } from "./handlers/screenshots-page-handlers";
 import { handleSteamAction } from "./handlers/steam-handlers";
 
 document.addEventListener("click", (e) => {
@@ -308,6 +310,7 @@ document.addEventListener("click", (e) => {
   if (handleManageAction(act, t, id, targetEl)) return;
   if (handleDrawerAction(act, t, id, targetEl)) return;
   if (handleScreenshotAction(act, t, id, targetEl)) return;
+  if (handleScreenshotsPageAction(act, t, targetEl)) return;
   if (handleSteamAction(act, t, id)) return;
 
   // Global Navigation & Modal Controls
@@ -841,6 +844,10 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "toggle-notes-sidebar") {
     localStorage.setItem(SHOW_NOTES_SIDEBAR_KEY, String(!notesSidebarVisible()));
+    applySidebarPageVisibility();
+    render();
+  } else if (act === "toggle-screenshots-sidebar") {
+    localStorage.setItem(SHOW_SCREENSHOTS_SIDEBAR_KEY, String(!screenshotsSidebarVisible()));
     applySidebarPageVisibility();
     render();
   } else if (act === "toggle-store-visible") {

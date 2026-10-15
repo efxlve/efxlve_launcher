@@ -2295,5 +2295,10 @@
   "nav.noConnection": "لا يوجد اتصال",
   "nav.noConnectionTip": "لا يوجد اتصال بالإنترنت",
   "lib.offlineMode": "وضع عدم الاتصال: يتم عرض المكتبة من ذاكرة التخزين المؤقت.",
-  "net.whatDownload": "لم يبدأ التنزيل"
+  "net.whatDownload": "لم يبدأ التنزيل",
+  "ss.copy": "نسخ",
+  "ss.copyTip": "نسخ الصورة إلى الحافظة",
+  "ss.compressed": "تم ضغط الصورة.",
+  "ss.sidebarTitle": "إظهار في الشريط الجانبي",
+  "ss.sidebarDesc": "يضيف صفحة اللقطات إلى الشريط الجانبي."
 }

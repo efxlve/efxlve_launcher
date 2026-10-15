@@ -2295,5 +2295,10 @@
   "nav.noConnection": "Bağlantı yok",
   "nav.noConnectionTip": "İnternet bağlantısı yok",
   "lib.offlineMode": "Çevrimdışı mod: kütüphane önbellekten gösteriliyor.",
-  "net.whatDownload": "İndirme başlatılmadı"
+  "net.whatDownload": "İndirme başlatılmadı",
+  "ss.copy": "Kopyala",
+  "ss.copyTip": "Görseli panoya kopyala",
+  "ss.compressed": "Görsel sıkıştırıldı.",
+  "ss.sidebarTitle": "Menüde göster",
+  "ss.sidebarDesc": "Ekran Görüntüleri sayfasını sol menüye ekler."
 }

@@ -2295,5 +2295,10 @@
   "nav.noConnection": "Nessuna connessione",
   "nav.noConnectionTip": "Nessuna connessione a internet",
   "lib.offlineMode": "Modalità offline: libreria mostrata dalla cache.",
-  "net.whatDownload": "Download non avviato"
+  "net.whatDownload": "Download non avviato",
+  "ss.copy": "Copia",
+  "ss.copyTip": "Copia l'immagine negli appunti",
+  "ss.compressed": "Immagine compressa.",
+  "ss.sidebarTitle": "Mostra nella barra laterale",
+  "ss.sidebarDesc": "Aggiunge la pagina Catture alla barra laterale."
 }

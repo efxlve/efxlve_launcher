@@ -2295,5 +2295,10 @@
   "nav.noConnection": "Brak połączenia",
   "nav.noConnectionTip": "Brak połączenia z internetem",
   "lib.offlineMode": "Tryb offline: biblioteka z pamięci podręcznej.",
-  "net.whatDownload": "Nie rozpoczęto pobierania"
+  "net.whatDownload": "Nie rozpoczęto pobierania",
+  "ss.copy": "Kopiuj",
+  "ss.copyTip": "Kopiuj obraz do schowka",
+  "ss.compressed": "Obraz skompresowany.",
+  "ss.sidebarTitle": "Pokaż na pasku bocznym",
+  "ss.sidebarDesc": "Dodaje stronę zrzutów do paska bocznego."
 }

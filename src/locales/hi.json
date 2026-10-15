@@ -2295,5 +2295,10 @@
   "nav.noConnection": "कोई कनेक्शन नहीं",
   "nav.noConnectionTip": "इंटरनेट कनेक्शन नहीं है",
   "lib.offlineMode": "ऑफ़लाइन मोड: लाइब्रेरी कैश से दिखाई जा रही है।",
-  "net.whatDownload": "डाउनलोड शुरू नहीं हुआ"
+  "net.whatDownload": "डाउनलोड शुरू नहीं हुआ",
+  "ss.copy": "कॉपी",
+  "ss.copyTip": "छवि को क्लिपबोर्ड पर कॉपी करें",
+  "ss.compressed": "छवि संपीड़ित की गई।",
+  "ss.sidebarTitle": "साइडबार में दिखाएँ",
+  "ss.sidebarDesc": "स्क्रीनशॉट पेज को साइडबार में जोड़ता है।"
 }
