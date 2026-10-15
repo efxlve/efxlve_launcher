@@ -441,11 +441,14 @@ export function renderDownloads(): string {
     if (bytes > 0) metaParts.push(fmtBytes(bytes));
     if (at > 0) metaParts.push(esc(formatSyncStamp(String(at))));
     const removeBtn = `<button class="icon-btn" data-act="dl-completed-remove" data-id="${esc(id)}" title="${esc(t("downloads.completedRemove"))}">${icon("x", 15)}</button>`;
-    // The updates section already offers this transfer; a second button here
-    // reads like two different things to do.
-    const offeredAbove = updates.some((u) => u.appName === id);
-    const primary = offeredAbove ? "" : epicActionButtons(summary, "small", { primaryOnly: true });
-    return gameRow(summary, id, metaParts.join(" · "), `${primary}${manageBtn(id)}${removeBtn}`);
+    // The library's own action: "Play" for a finished game, "Update" when a newer
+    // build is out — the same button the game page shows.
+    return gameRow(
+      summary,
+      id,
+      metaParts.join(" · "),
+      `${epicActionButtons(summary, "small", { primaryOnly: true })}${manageBtn(id)}${removeBtn}`,
+    );
   }).join("");
 
   const steamDownloading = S.steamGames.filter((g) => g.downloading);

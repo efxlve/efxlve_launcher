@@ -150,10 +150,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
   warmImages(game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
   return `
     <section class="gp-section igdb-card">
-      <div class="igdb-head">
-        <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
-        <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
-      </div>
+      <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
       <div class="igdb-similar">${game.similar
         .map(
           (hit) => `
