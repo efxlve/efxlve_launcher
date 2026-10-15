@@ -2267,5 +2267,10 @@
   "task.statRamSub": "프로세스 {count}개",
   "task.statJobsSub": "실행 중",
   "task.autoRefresh": "2초마다 자동 새로 고침",
-  "task.alwaysOnShort": "항상 켜짐"
+  "task.alwaysOnShort": "항상 켜짐",
+  "task.roleBrowser": "WebView2 (브라우저)",
+  "task.roleNetwork": "네트워크 서비스",
+  "task.roleStorage": "저장소 서비스",
+  "task.roleAudio": "오디오 서비스",
+  "task.roleCrashpad": "충돌 처리기"
 }

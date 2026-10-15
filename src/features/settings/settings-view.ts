@@ -854,7 +854,6 @@ interface TaskRow {
   pid: number;
   cpu: number;
   memoryMb: number;
-  threads: number;
   running: boolean;
   stoppable: boolean;
 }
@@ -866,10 +865,30 @@ let tasksLoaded = false;
 function taskRoleLabel(role: string): string {
   switch (role) {
     case "app": return t("task.roleApp");
+    case "browser": return t("task.roleBrowser");
     case "renderer": return t("task.roleRenderer");
     case "gpu": return t("task.roleGpu");
+    case "network": return t("task.roleNetwork");
+    case "storage": return t("task.roleStorage");
+    case "audio": return t("task.roleAudio");
+    case "crashpad": return t("task.roleCrashpad");
     case "utility": return t("task.roleUtility");
     default: return t("task.roleOther");
+  }
+}
+
+/** One mark per role, so the table reads by shape before by name. */
+function taskRoleIcon(role: string): IconName {
+  switch (role) {
+    case "browser": return "globe";
+    case "renderer": return "layers";
+    case "gpu": return "zap";
+    case "network": return "wifi";
+    case "storage": return "hard-drive";
+    case "audio": return "volume-2";
+    case "crashpad": return "alert-triangle";
+    case "utility": return "server";
+    default: return "layers";
   }
 }
 
@@ -896,25 +915,23 @@ function formatTaskMb(mb: number): string {
   return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
 }
 
-/** One process line: mark, name/role, then CPU and memory with relative bars.
- * The bars are scaled to the biggest row, so the top consumer is obvious. */
+/** One process line: role mark, the role as the title, the exe name and PID
+ * under it, then CPU and memory with bars scaled to the biggest row. */
 function processRowHtml(row: TaskRow, cpuPeak: number, memPeak: number): string {
-  const isMain = row.role === "" || row.role === "app";
-  const title = isMain ? t("task.mainProcess") : "WebView2";
-  const badge = isMain ? t("task.roleApp") : taskRoleLabel(row.role);
+  const isMain = row.role === "app";
+  const title = isMain ? t("task.mainProcess") : taskRoleLabel(row.role);
   const cpuPct = Math.max(2, Math.round((row.cpu / cpuPeak) * 100));
   const memPct = Math.max(2, Math.round((row.memoryMb / memPeak) * 100));
   return `
-    <div class="tm-row" data-task="${esc(row.id)}" data-search="${esc(title)} ${esc(badge)} PID ${row.pid}">
-      <span class="tm-row-icon${isMain ? " is-main" : ""}">${icon(isMain ? "monitor" : "layers", 14)}</span>
+    <div class="tm-row" data-task="${esc(row.id)}" data-search="${esc(title)} ${esc(row.name)} PID ${row.pid}">
+      <span class="tm-row-icon${isMain ? " is-main" : ""}">${icon(isMain ? "monitor" : taskRoleIcon(row.role), 14)}</span>
       <div class="tm-row-main">
         <div class="tm-row-title">${esc(title)}</div>
         <div class="tm-row-sub">
-          <span class="tm-badge">${esc(badge)}</span>
-          <span>PID ${row.pid}</span>
+          ${isMain ? `<span class="tm-badge">${esc(t("task.roleApp"))}</span>` : ""}
+          <span class="tm-row-exe">${esc(row.name)}</span>
           <span class="tm-sub-sep">·</span>
-          <span class="task-threads">${row.threads}</span>
-          <span>${esc(t("task.threadsShort"))}</span>
+          <span>PID ${row.pid}</span>
         </div>
       </div>
       <div class="tm-metric" title="${esc(t("task.colCpu"))}">
@@ -1063,8 +1080,6 @@ function patchTaskRows(): void {
     if (mem) mem.textContent = formatTaskMb(row.memoryMb);
     const memBar = el.querySelector<HTMLElement>(".task-mem-bar");
     if (memBar) memBar.style.width = `${Math.max(2, Math.round((row.memoryMb / memPeak) * 100))}%`;
-    const threads = el.querySelector<HTMLElement>(".task-threads");
-    if (threads) threads.textContent = String(row.threads);
     const status = el.querySelector<HTMLElement>(".task-status");
     if (status) status.textContent = row.running ? t("task.running") : t("task.stopped");
     el.classList.toggle("is-running", row.running);

@@ -2267,5 +2267,10 @@
   "task.statRamSub": "Процессов: {count}",
   "task.statJobsSub": "работает",
   "task.autoRefresh": "Обновляется автоматически каждые 2 секунды",
-  "task.alwaysOnShort": "Всегда включено"
+  "task.alwaysOnShort": "Всегда включено",
+  "task.roleBrowser": "WebView2 (браузер)",
+  "task.roleNetwork": "Сетевой сервис",
+  "task.roleStorage": "Сервис хранилища",
+  "task.roleAudio": "Аудиосервис",
+  "task.roleCrashpad": "Обработчик сбоев"
 }

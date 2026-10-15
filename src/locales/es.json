@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} procesos",
   "task.statJobsSub": "en ejecución",
   "task.autoRefresh": "Se actualiza automáticamente cada 2 segundos",
-  "task.alwaysOnShort": "Siempre activo"
+  "task.alwaysOnShort": "Siempre activo",
+  "task.roleBrowser": "WebView2 (navegador)",
+  "task.roleNetwork": "Servicio de red",
+  "task.roleStorage": "Servicio de almacenamiento",
+  "task.roleAudio": "Servicio de audio",
+  "task.roleCrashpad": "Gestor de fallos"
 }

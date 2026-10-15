@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} प्रक्रियाएँ",
   "task.statJobsSub": "चल रहा है",
   "task.autoRefresh": "हर 2 सेकंड में अपने-आप रीफ़्रेश होता है",
-  "task.alwaysOnShort": "हमेशा चालू"
+  "task.alwaysOnShort": "हमेशा चालू",
+  "task.roleBrowser": "WebView2 (ब्राउज़र)",
+  "task.roleNetwork": "नेटवर्क सेवा",
+  "task.roleStorage": "स्टोरेज सेवा",
+  "task.roleAudio": "ऑडियो सेवा",
+  "task.roleCrashpad": "क्रैश हैंडलर"
 }

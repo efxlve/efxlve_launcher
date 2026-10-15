@@ -10,7 +10,7 @@
 
 use serde::Serialize;
 use std::sync::Mutex;
-use sysinfo::{Pid, ProcessesToUpdate, System};
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
 use tauri::AppHandle;
 
 /// Kept between calls: CPU usage is a delta since the previous refresh, so a
@@ -26,26 +26,50 @@ pub struct TaskRow {
     pub kind: String,
     /// Process name; empty for jobs (the UI labels those by id).
     pub name: String,
-    /// WebView2 role of a child process: `renderer`, `gpu`, `utility`, ….
+    /// `app` for the launcher itself, then the WebView2 role of a child
+    /// process: `browser`, `renderer`, `gpu`, `network`, `storage`, `audio`,
+    /// `crashpad`, `utility`, ….
     pub role: String,
     pub pid: u32,
     /// Machine-wide CPU percent (0-100), like Task Manager.
     pub cpu: f64,
     pub memory_mb: f64,
-    pub threads: u32,
     pub running: bool,
     pub stoppable: bool,
 }
 
-/// The WebView2 role a child process plays, from its `--type=` switch.
+/// The WebView2 role a child process plays, from its `--type=` switch. Utility
+/// processes are narrowed by `--utility-sub-type=`, so the panel can tell the
+/// network, storage and audio services apart.
 fn webview_role(cmd: &[std::ffi::OsString]) -> String {
+    let mut kind = String::new();
+    let mut sub = String::new();
     for arg in cmd {
         let text = arg.to_string_lossy();
         if let Some(rest) = text.strip_prefix("--type=") {
-            return rest.to_string();
+            kind = rest.to_string();
+        } else if let Some(rest) = text.strip_prefix("--utility-sub-type=") {
+            sub = rest.to_string();
         }
     }
-    String::new()
+    match kind.as_str() {
+        // No `--type=`: the WebView2 browser process itself.
+        "" => "browser".to_string(),
+        "gpu-process" => "gpu".to_string(),
+        "crashpad-handler" => "crashpad".to_string(),
+        "utility" => {
+            if sub.starts_with("network.") {
+                "network".to_string()
+            } else if sub.starts_with("storage.") {
+                "storage".to_string()
+            } else if sub.starts_with("audio.") {
+                "audio".to_string()
+            } else {
+                "utility".to_string()
+            }
+        }
+        other => other.to_string(),
+    }
 }
 
 /// Direct and indirect children of `root`, so WebView2's renderer processes
@@ -76,7 +100,17 @@ pub fn task_manager_snapshot(app: AppHandle) -> Vec<TaskRow> {
     let system = guard.get_or_insert_with(System::new);
     system.refresh_cpu_all();
     system.refresh_memory();
-    system.refresh_processes(ProcessesToUpdate::All, true);
+    // The default refresh kind skips the command line, and that is where the
+    // WebView2 role labels come from. Ask for it once; it never changes.
+    system.refresh_processes_specifics(
+        ProcessesToUpdate::All,
+        true,
+        ProcessRefreshKind::nothing()
+            .with_memory()
+            .with_cpu()
+            .with_exe(UpdateKind::OnlyIfNotSet)
+            .with_cmd(UpdateKind::OnlyIfNotSet),
+    );
 
     let mut rows = Vec::new();
     let me = std::process::id();
@@ -88,11 +122,14 @@ pub fn task_manager_snapshot(app: AppHandle) -> Vec<TaskRow> {
             id: format!("process:{pid}"),
             kind: "process".to_string(),
             name: process.name().to_string_lossy().to_string(),
-            role: webview_role(process.cmd()),
+            role: if pid == me {
+                "app".to_string()
+            } else {
+                webview_role(process.cmd())
+            },
             pid,
             cpu: (process.cpu_usage() / logical) as f64,
             memory_mb: process.memory() as f64 / (1024.0 * 1024.0),
-            threads: process.tasks().map(|tasks| tasks.len()).unwrap_or(0) as u32,
             running: true,
             stoppable: false,
         })
@@ -118,7 +155,6 @@ pub fn task_manager_snapshot(app: AppHandle) -> Vec<TaskRow> {
         pid: 0,
         cpu: 0.0,
         memory_mb: 0.0,
-        threads: 0,
         running,
         stoppable,
     };
@@ -171,13 +207,35 @@ mod tests {
 
     #[test]
     fn webview_role_reads_the_type_switch() {
-        let cmd = vec![
-            OsString::from("msedgewebview2.exe"),
-            OsString::from("--type=renderer"),
-            OsString::from("--foo=bar"),
-        ];
-        assert_eq!(webview_role(&cmd), "renderer");
-        assert_eq!(webview_role(&[]), "");
-        assert_eq!(webview_role(&[OsString::from("--no-type")]), "");
+        // No `--type=`: the WebView2 browser process itself.
+        assert_eq!(webview_role(&[]), "browser");
+        assert_eq!(
+            webview_role(&[
+                OsString::from("msedgewebview2.exe"),
+                OsString::from("--type=renderer"),
+                OsString::from("--foo=bar"),
+            ]),
+            "renderer"
+        );
+        assert_eq!(webview_role(&[OsString::from("--type=gpu-process")]), "gpu");
+        assert_eq!(
+            webview_role(&[OsString::from("--type=crashpad-handler")]),
+            "crashpad"
+        );
+    }
+
+    #[test]
+    fn webview_role_narrows_utility_processes() {
+        let utility = |sub: &str| {
+            webview_role(&[
+                OsString::from("--type=utility"),
+                OsString::from(format!("--utility-sub-type={sub}")),
+            ])
+        };
+        assert_eq!(utility("network.mojom.NetworkService"), "network");
+        assert_eq!(utility("storage.mojom.StorageService"), "storage");
+        assert_eq!(utility("audio.mojom.AudioService"), "audio");
+        assert_eq!(utility("something.else"), "utility");
+        assert_eq!(webview_role(&[OsString::from("--type=utility")]), "utility");
     }
 }

@@ -2267,5 +2267,10 @@
   "task.statRamSub": "プロセス {count} 件",
   "task.statJobsSub": "実行中",
   "task.autoRefresh": "2 秒ごとに自動更新",
-  "task.alwaysOnShort": "常時オン"
+  "task.alwaysOnShort": "常時オン",
+  "task.roleBrowser": "WebView2 (ブラウザー)",
+  "task.roleNetwork": "ネットワークサービス",
+  "task.roleStorage": "ストレージサービス",
+  "task.roleAudio": "オーディオサービス",
+  "task.roleCrashpad": "クラッシュハンドラー"
 }

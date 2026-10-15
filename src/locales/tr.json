@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} süreç",
   "task.statJobsSub": "çalışıyor",
   "task.autoRefresh": "2 saniyede bir otomatik yenilenir",
-  "task.alwaysOnShort": "Her zaman açık"
+  "task.alwaysOnShort": "Her zaman açık",
+  "task.roleBrowser": "WebView2 (tarayıcı)",
+  "task.roleNetwork": "Ağ servisi",
+  "task.roleStorage": "Depolama servisi",
+  "task.roleAudio": "Ses servisi",
+  "task.roleCrashpad": "Çökme işleyicisi"
 }

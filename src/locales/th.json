@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} โปรเซส",
   "task.statJobsSub": "กำลังทำงาน",
   "task.autoRefresh": "รีเฟรชอัตโนมัติทุก 2 วินาที",
-  "task.alwaysOnShort": "เปิดตลอดเวลา"
+  "task.alwaysOnShort": "เปิดตลอดเวลา",
+  "task.roleBrowser": "WebView2 (เบราว์เซอร์)",
+  "task.roleNetwork": "บริการเครือข่าย",
+  "task.roleStorage": "บริการจัดเก็บข้อมูล",
+  "task.roleAudio": "บริการเสียง",
+  "task.roleCrashpad": "ตัวจัดการข้อขัดข้อง"
 }

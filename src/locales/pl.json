@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} procesów",
   "task.statJobsSub": "działa",
   "task.autoRefresh": "Odświeża się automatycznie co 2 sekundy",
-  "task.alwaysOnShort": "Zawsze włączone"
+  "task.alwaysOnShort": "Zawsze włączone",
+  "task.roleBrowser": "WebView2 (przeglądarka)",
+  "task.roleNetwork": "Usługa sieciowa",
+  "task.roleStorage": "Usługa magazynu",
+  "task.roleAudio": "Usługa audio",
+  "task.roleCrashpad": "Program obsługi awarii"
 }

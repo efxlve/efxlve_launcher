@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} processes",
   "task.statJobsSub": "running",
   "task.autoRefresh": "Refreshes automatically every 2 seconds",
-  "task.alwaysOnShort": "Always on"
+  "task.alwaysOnShort": "Always on",
+  "task.roleBrowser": "WebView2 (browser)",
+  "task.roleNetwork": "Network service",
+  "task.roleStorage": "Storage service",
+  "task.roleAudio": "Audio service",
+  "task.roleCrashpad": "Crash handler"
 }

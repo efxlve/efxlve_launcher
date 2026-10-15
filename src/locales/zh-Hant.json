@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} 個處理程序",
   "task.statJobsSub": "執行中",
   "task.autoRefresh": "每 2 秒自動重新整理",
-  "task.alwaysOnShort": "始終開啟"
+  "task.alwaysOnShort": "始終開啟",
+  "task.roleBrowser": "WebView2（瀏覽器）",
+  "task.roleNetwork": "網路服務",
+  "task.roleStorage": "儲存服務",
+  "task.roleAudio": "音訊服務",
+  "task.roleCrashpad": "當機處理程序"
 }

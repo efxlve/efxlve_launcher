@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} 个进程",
   "task.statJobsSub": "运行中",
   "task.autoRefresh": "每 2 秒自动刷新",
-  "task.alwaysOnShort": "始终开启"
+  "task.alwaysOnShort": "始终开启",
+  "task.roleBrowser": "WebView2（浏览器）",
+  "task.roleNetwork": "网络服务",
+  "task.roleStorage": "存储服务",
+  "task.roleAudio": "音频服务",
+  "task.roleCrashpad": "崩溃处理程序"
 }

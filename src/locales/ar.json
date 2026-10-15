@@ -2267,5 +2267,10 @@
   "task.statRamSub": "{count} عملية",
   "task.statJobsSub": "قيد التشغيل",
   "task.autoRefresh": "يتم التحديث تلقائيًا كل ثانيتين",
-  "task.alwaysOnShort": "مفعّل دائمًا"
+  "task.alwaysOnShort": "مفعّل دائمًا",
+  "task.roleBrowser": "WebView2 (المتصفح)",
+  "task.roleNetwork": "خدمة الشبكة",
+  "task.roleStorage": "خدمة التخزين",
+  "task.roleAudio": "خدمة الصوت",
+  "task.roleCrashpad": "معالج الأعطال"
 }
