@@ -697,11 +697,11 @@ fn pick_best_match(hits: &[serde_json::Value], title: &str, year: Option<i64>) -
         if normalized.is_empty() {
             continue;
         }
-        // A DLC or expansion names the game it belongs to: it is never the page's
-        // game, however exactly its name starts with the title.
-        if hit.get("parent_game").map(|v| !v.is_null()).unwrap_or(false) {
-            continue;
-        }
+        // A DLC, an expansion or a re-release names the game it belongs to. It is
+        // not the page's game when the main entry is in the list — but a remaster
+        // or a port is a real standalone release (Spider-Man Remastered is one),
+        // so this is a penalty, never a skip.
+        let parented = hit.get("parent_game").map(|v| !v.is_null()).unwrap_or(false);
         // Editions carry a version_parent; prefer the main game.
         let edition = hit.get("version_parent").map(|v| !v.is_null()).unwrap_or(false);
         let mut score = 0;
@@ -721,6 +721,9 @@ fn pick_best_match(hits: &[serde_json::Value], title: &str, year: Option<i64>) -
         }
         if edition {
             score -= 25;
+        }
+        if parented {
+            score -= 40;
         }
         // Two entries can carry the same name — a bare duplicate with no data
         // next to the real one. The one people actually rated is the real one.
@@ -1171,9 +1174,9 @@ mod tests {
     }
 
     #[test]
-    fn best_match_skips_dlc_and_prefers_the_rated_entry() {
+    fn best_match_keeps_the_main_entry_over_its_dlc_and_accepts_a_remaster() {
         let hits = serde_json::json!([
-            { "id": 10, "name": "Dead by Daylight: Headcase", "first_release_date": 1_496_880_000_i64, "parent_game": 18866 },
+            { "id": 10, "name": "Dead by Daylight: Headcase", "first_release_date": 1_496_880_000_i64, "parent_game": 18866, "rating_count": 12 },
             { "id": 11, "name": "Dead By DayLight", "first_release_date": 1_615_248_000_i64 },
             { "id": 12, "name": "Dead by Daylight", "first_release_date": 1_465_862_400_i64, "rating_count": 434, "rating": 70.6 }
         ]);
@@ -1184,6 +1187,17 @@ mod tests {
         assert!(match_has_data(&hits, Some(12)));
         assert!(!match_has_data(&hits, Some(11)));
         assert!(!match_has_data(&hits, None));
+
+        // A standalone re-release is parented too. Alone in the list it still
+        // has to win: this is Spider-Man Remastered.
+        let remaster = serde_json::json!([
+            { "id": 138949, "name": "Marvel's Spider-Man Remastered", "first_release_date": 1_660_000_000_i64, "parent_game": 19565, "rating_count": 295, "rating": 84.0 }
+        ]);
+        let remaster = remaster.as_array().cloned().unwrap_or_default();
+        assert_eq!(
+            pick_best_match(&remaster, "Marvel's Spider-Man Remastered", Some(2022)),
+            Some(138949)
+        );
     }
 
     #[test]

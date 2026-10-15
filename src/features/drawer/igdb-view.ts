@@ -87,16 +87,17 @@ function igdbTransportError(raw: unknown): string {
     : "";
 }
 
-/** The age-rating body the user's region reads first: ESRB for English, PEGI
- * for most of Europe, USK for German, and so on. */
-function preferredAgeOrg(): string {
+/** Age-rating bodies in the order this language reads them: the region's own
+ * first, then the widely known ones. A game rated only by GRAC still shows a
+ * number instead of nothing, but a Turkish user sees PEGI or ESRB first. */
+function ageOrgOrder(): string[] {
   const lang = currentLanguage();
-  if (lang === "de") return "USK";
-  if (lang === "ja") return "CERO";
-  if (lang === "ko") return "GRAC";
-  if (lang === "pt" || lang === "pt-BR") return "CLASS_IND";
-  if (lang === "en") return "ESRB";
-  return "PEGI";
+  if (lang === "de") return ["USK", "PEGI", "ESRB", "ACB", "CERO", "GRAC", "CLASS_IND"];
+  if (lang === "ja") return ["CERO", "PEGI", "ESRB", "USK", "ACB", "GRAC", "CLASS_IND"];
+  if (lang === "ko") return ["GRAC", "PEGI", "ESRB", "USK", "CERO", "ACB", "CLASS_IND"];
+  if (lang === "pt" || lang === "pt-BR") return ["CLASS_IND", "PEGI", "ESRB", "USK", "ACB", "CERO", "GRAC"];
+  if (lang === "en") return ["ESRB", "PEGI", "USK", "ACB", "CERO", "GRAC", "CLASS_IND"];
+  return ["PEGI", "ESRB", "USK", "ACB", "CERO", "GRAC", "CLASS_IND"];
 }
 
 /** One line that says what IGDB adds, with the way to turn it on. */
@@ -139,7 +140,10 @@ function igdbCardHtml(game: IgdbGame): string {
   // One age rating in the row — the body the user's region reads first — and the
   // rest behind a counter. Four organisations at once read as noise.
   const rated = game.ageRatings.filter((rating) => rating.rating);
-  const preferred = rated.find((rating) => rating.organization === preferredAgeOrg()) ?? rated[0];
+  const preferred =
+    ageOrgOrder()
+      .map((org) => rated.find((rating) => rating.organization === org))
+      .find((rating) => rating !== undefined) ?? rated[0];
   const others = rated.filter((rating) => rating !== preferred);
   const labelOf = (rating: { organization: string; rating: string }) =>
     rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
