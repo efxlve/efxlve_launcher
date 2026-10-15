@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "Screenshot saved",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "Clip recording started",
-  "ss.clipNotifySavedTitle": "Clip saved"
+  "ss.clipNotifySavedTitle": "Clip saved",
+  "ss.webhookHowTo": "How to get one",
+  "ss.webhookStep1": "In Discord, open the channel's settings (right-click the channel → Edit Channel).",
+  "ss.webhookStep2": "Integrations → Webhooks → New Webhook.",
+  "ss.webhookStep3": "Copy the URL it gives you and paste it here.",
+  "ss.webhookSafe": "A webhook can only post to that one channel; it cannot read your account or server settings.",
+  "ss.webhookDocs": "Discord guide"
 }

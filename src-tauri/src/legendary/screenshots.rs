@@ -205,6 +205,31 @@ pub fn screenshots_root() -> PathBuf {
     resolve_screenshot_root(configured_screenshot_root().as_deref())
 }
 
+/// Every root the gallery reads from.
+///
+/// The scan walks more than the configured folder — Steam's userdata, Game Bar
+/// captures, Rockstar's Documents folders — and a capture the user can see must
+/// also be editable where it lives, so the write guard accepts them all.
+pub fn screenshot_roots() -> Vec<PathBuf> {
+    let mut roots = vec![screenshots_root()];
+    let legacy = get_user_pictures_dir().join("Efxlve Screenshots");
+    if !roots.contains(&legacy) {
+        roots.push(legacy);
+    }
+    roots.push(get_user_videos_dir().join("Captures"));
+    roots.push(get_user_pictures_dir().join("UbisoftConnect"));
+    roots.push(get_user_documents_dir());
+    if let Some(steam) = crate::steam::steam_install_path() {
+        roots.push(steam.join("userdata"));
+    }
+    roots
+}
+
+/// True when a path lives under one of the roots the gallery scans.
+pub fn is_under_screenshot_roots(path: &Path) -> bool {
+    screenshot_roots().iter().any(|root| path.starts_with(root))
+}
+
 pub fn game_screenshots_dir(clean_title: &str) -> PathBuf {
     screenshots_root().join(clean_title)
 }
@@ -1477,9 +1502,10 @@ pub async fn epic_save_edited_screenshot(
         if !source.is_file() {
             return Err("@t:ss.fileNotFound".to_string());
         }
-        // The path comes from the UI; writing must stay inside the screenshots
-        // root so a wrong one cannot touch anything else on disk.
-        if !source.starts_with(screenshots_root()) {
+        // The path comes from the UI; writing must stay inside a folder the
+        // gallery actually reads (the configured root, Steam's userdata, Game
+        // Bar captures, …), so a wrong one cannot touch anything else on disk.
+        if !is_under_screenshot_roots(&source) {
             return Err("@t:ss.outsideRoot".to_string());
         }
         let bytes = decode_data_url(&data_url)?;

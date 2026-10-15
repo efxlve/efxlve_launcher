@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "스크린샷을 저장했습니다",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "클립 녹화를 시작했습니다",
-  "ss.clipNotifySavedTitle": "클립을 저장했습니다"
+  "ss.clipNotifySavedTitle": "클립을 저장했습니다",
+  "ss.webhookHowTo": "발급 방법",
+  "ss.webhookStep1": "Discord에서 채널 설정을 엽니다(채널 우클릭 → 채널 편집).",
+  "ss.webhookStep2": "연동 → 웹훅 → 새 웹훅.",
+  "ss.webhookStep3": "표시된 URL을 복사해 여기에 붙여넣습니다.",
+  "ss.webhookSafe": "웹훅은 그 채널에만 글을 쓸 수 있고, 계정이나 서버 설정은 읽을 수 없습니다.",
+  "ss.webhookDocs": "Discord 안내"
 }

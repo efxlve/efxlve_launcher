@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "截圖已儲存",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "片段錄製已開始",
-  "ss.clipNotifySavedTitle": "片段已儲存"
+  "ss.clipNotifySavedTitle": "片段已儲存",
+  "ss.webhookHowTo": "如何取得",
+  "ss.webhookStep1": "在 Discord 中開啟頻道設定（右鍵頻道 → 編輯頻道）。",
+  "ss.webhookStep2": "整合 → Webhook → 新增 Webhook。",
+  "ss.webhookStep3": "複製產生的 URL 並貼到這裡。",
+  "ss.webhookSafe": "Webhook 只能向該頻道發文，無法讀取你的帳號或伺服器設定。",
+  "ss.webhookDocs": "Discord 指南"
 }

@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "स्क्रीनशॉट सहेजा गया",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "क्लिप रिकॉर्डिंग शुरू",
-  "ss.clipNotifySavedTitle": "क्लिप सहेजी गई"
+  "ss.clipNotifySavedTitle": "क्लिप सहेजी गई",
+  "ss.webhookHowTo": "यह कैसे लें",
+  "ss.webhookStep1": "Discord में चैनल की सेटिंग खोलें (चैनल पर राइट-क्लिक → Edit Channel)।",
+  "ss.webhookStep2": "Integrations → Webhooks → New Webhook।",
+  "ss.webhookStep3": "दिया गया URL कॉपी करके यहाँ पेस्ट करें।",
+  "ss.webhookSafe": "वेबहुक केवल उसी चैनल पर पोस्ट कर सकता है; आपका खाता या सर्वर सेटिंग नहीं पढ़ सकता।",
+  "ss.webhookDocs": "Discord गाइड"
 }

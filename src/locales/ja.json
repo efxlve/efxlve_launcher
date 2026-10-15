@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "スクリーンショットを保存しました",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "クリップ録画を開始しました",
-  "ss.clipNotifySavedTitle": "クリップを保存しました"
+  "ss.clipNotifySavedTitle": "クリップを保存しました",
+  "ss.webhookHowTo": "取得方法",
+  "ss.webhookStep1": "Discord でチャンネル設定を開きます（チャンネルを右クリック → チャンネルを編集）。",
+  "ss.webhookStep2": "連携 → Webhook → 新しい Webhook。",
+  "ss.webhookStep3": "表示された URL をコピーしてここに貼り付けます。",
+  "ss.webhookSafe": "Webhook はそのチャンネルへの投稿だけができ、アカウントやサーバー設定は読めません。",
+  "ss.webhookDocs": "Discord ガイド"
 }

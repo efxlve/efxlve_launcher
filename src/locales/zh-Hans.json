@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "截图已保存",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "片段录制已开始",
-  "ss.clipNotifySavedTitle": "片段已保存"
+  "ss.clipNotifySavedTitle": "片段已保存",
+  "ss.webhookHowTo": "如何获取",
+  "ss.webhookStep1": "在 Discord 中打开频道设置（右键频道 → 编辑频道）。",
+  "ss.webhookStep2": "整合 → Webhook → 新建 Webhook。",
+  "ss.webhookStep3": "复制生成的 URL 并粘贴到这里。",
+  "ss.webhookSafe": "Webhook 只能向该频道发帖，无法读取你的账号或服务器设置。",
+  "ss.webhookDocs": "Discord 指南"
 }

@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "Screenshot gespeichert",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "Clip-Aufnahme gestartet",
-  "ss.clipNotifySavedTitle": "Clip gespeichert"
+  "ss.clipNotifySavedTitle": "Clip gespeichert",
+  "ss.webhookHowTo": "So bekommst du einen",
+  "ss.webhookStep1": "Öffne in Discord die Kanaleinstellungen (Rechtsklick auf den Kanal → Kanal bearbeiten).",
+  "ss.webhookStep2": "Integrationen → Webhooks → Neuer Webhook.",
+  "ss.webhookStep3": "Kopiere die angezeigte URL und füge sie hier ein.",
+  "ss.webhookSafe": "Ein Webhook kann nur in diesen einen Kanal schreiben; er liest weder dein Konto noch Servereinstellungen.",
+  "ss.webhookDocs": "Discord-Anleitung"
 }

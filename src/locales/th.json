@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "บันทึกสกรีนช็อตแล้ว",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "เริ่มบันทึกคลิปแล้ว",
-  "ss.clipNotifySavedTitle": "บันทึกคลิปแล้ว"
+  "ss.clipNotifySavedTitle": "บันทึกคลิปแล้ว",
+  "ss.webhookHowTo": "วิธีขอ",
+  "ss.webhookStep1": "ใน Discord เปิดการตั้งค่าช่อง (คลิกขวาที่ช่อง → แก้ไขช่อง)",
+  "ss.webhookStep2": "การผสานรวม → Webhook → Webhook ใหม่",
+  "ss.webhookStep3": "คัดลอก URL ที่ได้แล้ววางที่นี่",
+  "ss.webhookSafe": "เว็บฮุกโพสต์ได้เฉพาะช่องนั้น อ่านบัญชีหรือการตั้งเซิร์ฟเวอร์ของคุณไม่ได้",
+  "ss.webhookDocs": "คู่มือ Discord"
 }

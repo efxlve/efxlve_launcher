@@ -524,6 +524,7 @@ pub fn clip_folder_path() -> String {
 pub fn clip_delete(path: String) -> Result<bool, String> {
     let file = PathBuf::from(&path);
     // Only clips under the Efxlve folder can be removed from the UI.
+    // Only clips under the Efxlve folder can be removed from the UI.
     if !file.starts_with(crate::legendary::screenshots::get_user_videos_dir().join("Efxlve")) {
         return Err("@t:ss.outsideRoot".to_string());
     }
@@ -595,5 +596,8 @@ mod tests {
         assert!(bytes.len() > 1000, "a real frame is more than a kilobyte");
         assert_eq!(&bytes[0..2], &[0xFF, 0xD8], "JPEG start-of-image");
         assert_eq!(&bytes[bytes.len() - 2..], &[0xFF, 0xD9], "JPEG end-of-image");
+        // Kept for the orientation check against a .NET capture of the same
+        // screen; the file is written next to the workspace, never committed.
+        let _ = std::fs::write("tmp-rust-frame.jpg", &bytes);
     }
 }

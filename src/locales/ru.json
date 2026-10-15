@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "Снимок сохранён",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "Запись клипа начата",
-  "ss.clipNotifySavedTitle": "Клип сохранён"
+  "ss.clipNotifySavedTitle": "Клип сохранён",
+  "ss.webhookHowTo": "Как его получить",
+  "ss.webhookStep1": "В Discord откройте настройки канала (правый клик по каналу → Изменить канал).",
+  "ss.webhookStep2": "Интеграции → Вебхуки → Новый вебхук.",
+  "ss.webhookStep3": "Скопируйте выданный URL и вставьте его сюда.",
+  "ss.webhookSafe": "Вебхук умеет писать только в этот канал; он не читает аккаунт и настройки сервера.",
+  "ss.webhookDocs": "Руководство Discord"
 }

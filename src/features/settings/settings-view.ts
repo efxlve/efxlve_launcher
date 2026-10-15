@@ -861,10 +861,20 @@ function renderScreenshots(): string {
   const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
   const webhookRow = row(
     t("ss.webhookTitle"),
-    t("ss.webhookDesc"),
+    `${t("ss.webhookDesc")}
+     <div class="ss-webhook-howto">
+       <div class="ss-webhook-howto-title">${t("ss.webhookHowTo")}</div>
+       <ol>
+         <li>${t("ss.webhookStep1")}</li>
+         <li>${t("ss.webhookStep2")}</li>
+         <li>${t("ss.webhookStep3")}</li>
+       </ol>
+       <div class="ss-webhook-safe">${icon("shield", 12)} ${t("ss.webhookSafe")}</div>
+     </div>`,
     `<input id="ss-webhook-input" class="input settings-path-input" placeholder="https://discord.com/api/webhooks/…" value="${esc(webhook)}" spellcheck="false" autocomplete="off" />
      <button type="button" class="btn primary small" data-act="save-ss-webhook">${t("common.save")}</button>
-     ${webhook ? `<button type="button" class="btn ghost small" data-act="clear-ss-webhook">${t("common.delete")}</button>` : ""}`,
+     ${webhook ? `<button type="button" class="btn ghost small" data-act="clear-ss-webhook">${t("common.delete")}</button>` : ""}
+     <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://support.discord.com/hc/articles/228383668">${icon("external", 13)} ${t("ss.webhookDocs")}</button>`,
     true,
   );
 

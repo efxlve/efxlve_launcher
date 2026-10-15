@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "تم حفظ اللقطة",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "بدأ تسجيل المقطع",
-  "ss.clipNotifySavedTitle": "تم حفظ المقطع"
+  "ss.clipNotifySavedTitle": "تم حفظ المقطع",
+  "ss.webhookHowTo": "كيفية الحصول عليه",
+  "ss.webhookStep1": "في Discord افتح إعدادات القناة (انقر بزر الفأرة الأيمن على القناة → تعديل القناة).",
+  "ss.webhookStep2": "التكاملات → Webhooks → Webhook جديد.",
+  "ss.webhookStep3": "انسخ الرابط الظاهر والصقه هنا.",
+  "ss.webhookSafe": "الويب هوك يمكنه النشر في تلك القناة فقط؛ لا يقرأ حسابك أو إعدادات السيرفر.",
+  "ss.webhookDocs": "دليل Discord"
 }

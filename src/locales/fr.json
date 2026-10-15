@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "Capture enregistrée",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "Enregistrement du clip démarré",
-  "ss.clipNotifySavedTitle": "Clip enregistré"
+  "ss.clipNotifySavedTitle": "Clip enregistré",
+  "ss.webhookHowTo": "Comment en obtenir un",
+  "ss.webhookStep1": "Dans Discord, ouvre les paramètres du salon (clic droit sur le salon → Modifier le salon).",
+  "ss.webhookStep2": "Intégrations → Webhooks → Nouveau webhook.",
+  "ss.webhookStep3": "Copie l'URL proposée et colle-la ici.",
+  "ss.webhookSafe": "Un webhook ne peut publier que dans ce salon ; il ne lit ni votre compte ni les réglages du serveur.",
+  "ss.webhookDocs": "Guide Discord"
 }

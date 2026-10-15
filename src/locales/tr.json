@@ -2368,5 +2368,11 @@
   "ss.notifyCapturedTitle": "Ekran görüntüsü kaydedildi",
   "ss.notifyCapturedBody": "{game} — {file}",
   "ss.clipNotifyStartTitle": "Klip kaydı başladı",
-  "ss.clipNotifySavedTitle": "Klip kaydedildi"
+  "ss.clipNotifySavedTitle": "Klip kaydedildi",
+  "ss.webhookHowTo": "Nasıl alınır?",
+  "ss.webhookStep1": "Discord'da kanalın ayarlarını aç (kanal adına sağ tık → Kanalı Düzenle).",
+  "ss.webhookStep2": "Entegrasyonlar → Webhook'lar → Yeni Webhook.",
+  "ss.webhookStep3": "Oluşan URL'yi kopyala ve buraya yapıştır.",
+  "ss.webhookSafe": "Webhook yalnızca o kanala mesaj gönderebilir; hesabını veya sunucu ayarlarını okuyamaz.",
+  "ss.webhookDocs": "Discord rehberi"
 }
