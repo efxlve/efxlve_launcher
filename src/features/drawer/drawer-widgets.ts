@@ -87,12 +87,12 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
   if (
     !critic ||
     !critic.supported ||
-    (!critic.opencritic_score && !critic.metacritic_score && !critic.igdb_score && !goygoy)
+    (!critic.opencritic_score && !critic.metacritic_score && !goygoy)
   ) {
     return "";
   }
 
-  const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score || critic.igdb_score);
+  const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score);
 
   const tierPill = critic.tier
     ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
@@ -127,18 +127,6 @@ export function renderCriticCard(critic?: CriticData, isLoading = false): string
               <div class="critic-badge-sub">${i18nT("critic.metascore")}</div>
             </div>
             ${critic.metacritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
-          </div>`
-            : ""
-        }
-        ${
-          critic.igdb_score
-            ? `
-          <div class="hub-critic-badge igdb" title="${i18nT("critic.igdbCommunity")}">
-            <div class="critic-badge-score igdb">${Math.round(critic.igdb_score <= 10 ? critic.igdb_score * 10 : critic.igdb_score)}</div>
-            <div class="critic-badge-info">
-              <div class="critic-badge-name">IGDB</div>
-              <div class="critic-badge-sub">${i18nT("critic.communityScore")}</div>
-            </div>
           </div>`
             : ""
         }

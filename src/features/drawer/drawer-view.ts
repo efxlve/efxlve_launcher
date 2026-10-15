@@ -121,8 +121,11 @@ function gameDeveloper(s: EpicSummary, g: ReturnType<typeof rawOf>): string {
 
 function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
   const dev = gameDeveloper(s, rawOf(s.appName));
+  // IGDB carries the release year; the store catalog often does not.
+  const year = igdbGameFor(s.appName)?.releaseYear ?? null;
   return [
     dev ? `<span>${esc(dev)}</span>` : "",
+    year ? `<span class="gp-meta-item">${icon("calendar", 13)} ${year}</span>` : "",
     s.appName.startsWith("gog::") ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
     S.steamSharedIds.has(s.appName)
       ? `<span class="gp-meta-item" title="${esc(t("drawer.familySharingTip"))}">${icon("users", 13)} ${esc(t("drawer.familySharing"))}</span>`

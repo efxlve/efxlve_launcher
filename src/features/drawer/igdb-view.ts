@@ -11,7 +11,7 @@ import { icon } from "../../core/icons";
 import { cachedImage, warmImages } from "../../core/image-cache";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
-import { localizeMessage, t } from "../../i18n";
+import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { igdbEnrich, igdbExternalId, igdbImage, type IgdbGame } from "../../igdb";
 
 interface IgdbTarget {
@@ -87,9 +87,20 @@ function igdbTransportError(raw: unknown): string {
     : "";
 }
 
+/** The age-rating body the user's region reads first: ESRB for English, PEGI
+ * for most of Europe, USK for German, and so on. */
+function preferredAgeOrg(): string {
+  const lang = currentLanguage();
+  if (lang === "de") return "USK";
+  if (lang === "ja") return "CERO";
+  if (lang === "ko") return "GRAC";
+  if (lang === "pt" || lang === "pt-BR") return "CLASS_IND";
+  if (lang === "en") return "ESRB";
+  return "PEGI";
+}
+
 /** One line that says what IGDB adds, with the way to turn it on. */
-function igdbSetupRow(hint = ""): string {
-  if (S.offlineMode) return "";
+function igdbSetupRow(hint = ""): string {  if (S.offlineMode) return "";
   return `
     <section class="gp-section igdb-card igdb-setup">
       <div class="igdb-head">
@@ -120,17 +131,24 @@ function igdbCardHtml(game: IgdbGame): string {
   const tags = [...game.genres, ...game.themes].slice(0, 6);
   const facts: string[] = [];
   if (game.releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(game.releaseDate)}</span>`);
-  if (game.developer) facts.push(`${icon("users", 12)} <span>${esc(game.developer)}</span>`);
+  // The developer already stands in the hero line; only the publisher is added
+  // here, and only when it is a different company.
   if (game.publisher && game.publisher !== game.developer) {
     facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
   }
-  const ageChips = game.ageRatings
-    .filter((rating) => rating.rating)
-    .map(
-      (rating) =>
-        `<span class="igdb-age-chip" title="${esc(rating.organization)}">${esc(rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating)}</span>`,
-    )
-    .join("");
+  // One age rating in the row — the body the user's region reads first — and the
+  // rest behind a counter. Four organisations at once read as noise.
+  const rated = game.ageRatings.filter((rating) => rating.rating);
+  const preferred = rated.find((rating) => rating.organization === preferredAgeOrg()) ?? rated[0];
+  const others = rated.filter((rating) => rating !== preferred);
+  const labelOf = (rating: { organization: string; rating: string }) =>
+    rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
+  const ageChips = preferred
+    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" · "))}">${esc(labelOf(preferred))}</span>` +
+      (others.length
+        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
+        : "")
+    : "";
 
   // Ask for the pictures once: they paint from disk from the second open on.
   warmImages([
