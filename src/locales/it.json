@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Clip eliminato.",
   "ss.recordingBusy": "Una registrazione è già in corso.",
   "ss.recordFailed": "Impossibile avviare la registrazione.",
-  "ss.notRecording": "Nessuna registrazione in corso."
+  "ss.notRecording": "Nessuna registrazione in corso.",
+  "ss.notifyCapturedTitle": "Cattura salvata",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Registrazione clip avviata",
+  "ss.clipNotifySavedTitle": "Clip salvato"
 }

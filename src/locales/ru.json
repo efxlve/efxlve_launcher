@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Клип удалён.",
   "ss.recordingBusy": "Запись уже идёт.",
   "ss.recordFailed": "Не удалось начать запись.",
-  "ss.notRecording": "Запись не идёт."
+  "ss.notRecording": "Запись не идёт.",
+  "ss.notifyCapturedTitle": "Снимок сохранён",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Запись клипа начата",
+  "ss.clipNotifySavedTitle": "Клип сохранён"
 }

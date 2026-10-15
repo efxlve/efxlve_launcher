@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Clip deleted.",
   "ss.recordingBusy": "A recording is already running.",
   "ss.recordFailed": "Could not start the recording.",
-  "ss.notRecording": "No recording is running."
+  "ss.notRecording": "No recording is running.",
+  "ss.notifyCapturedTitle": "Screenshot saved",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Clip recording started",
+  "ss.clipNotifySavedTitle": "Clip saved"
 }

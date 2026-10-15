@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "ลบคลิปแล้ว",
   "ss.recordingBusy": "กำลังบันทึกอยู่แล้ว",
   "ss.recordFailed": "เริ่มบันทึกไม่ได้",
-  "ss.notRecording": "ไม่มีการบันทึกอยู่"
+  "ss.notRecording": "ไม่มีการบันทึกอยู่",
+  "ss.notifyCapturedTitle": "บันทึกสกรีนช็อตแล้ว",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "เริ่มบันทึกคลิปแล้ว",
+  "ss.clipNotifySavedTitle": "บันทึกคลิปแล้ว"
 }

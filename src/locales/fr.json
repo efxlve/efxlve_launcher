@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Clip supprimé.",
   "ss.recordingBusy": "Un enregistrement est déjà en cours.",
   "ss.recordFailed": "Impossible de démarrer l'enregistrement.",
-  "ss.notRecording": "Aucun enregistrement en cours."
+  "ss.notRecording": "Aucun enregistrement en cours.",
+  "ss.notifyCapturedTitle": "Capture enregistrée",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Enregistrement du clip démarré",
+  "ss.clipNotifySavedTitle": "Clip enregistré"
 }

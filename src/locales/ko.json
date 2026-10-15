@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "클립을 삭제했습니다.",
   "ss.recordingBusy": "이미 녹화 중입니다.",
   "ss.recordFailed": "녹화를 시작할 수 없습니다.",
-  "ss.notRecording": "녹화 중이 아닙니다."
+  "ss.notRecording": "녹화 중이 아닙니다.",
+  "ss.notifyCapturedTitle": "스크린샷을 저장했습니다",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "클립 녹화를 시작했습니다",
+  "ss.clipNotifySavedTitle": "클립을 저장했습니다"
 }

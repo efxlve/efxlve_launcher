@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Clip borrado.",
   "ss.recordingBusy": "Ya hay una grabación en curso.",
   "ss.recordFailed": "No se pudo iniciar la grabación.",
-  "ss.notRecording": "No hay ninguna grabación."
+  "ss.notRecording": "No hay ninguna grabación.",
+  "ss.notifyCapturedTitle": "Captura guardada",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Grabación de clip iniciada",
+  "ss.clipNotifySavedTitle": "Clip guardado"
 }

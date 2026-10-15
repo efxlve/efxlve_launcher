@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "क्लिप हटाई गई।",
   "ss.recordingBusy": "रिकॉर्डिंग पहले से चल रही है।",
   "ss.recordFailed": "रिकॉर्डिंग शुरू नहीं हो सकी।",
-  "ss.notRecording": "कोई रिकॉर्डिंग नहीं चल रही।"
+  "ss.notRecording": "कोई रिकॉर्डिंग नहीं चल रही।",
+  "ss.notifyCapturedTitle": "स्क्रीनशॉट सहेजा गया",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "क्लिप रिकॉर्डिंग शुरू",
+  "ss.clipNotifySavedTitle": "क्लिप सहेजी गई"
 }

@@ -1303,9 +1303,18 @@
 .ov-ach-summary {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 12px;
 }
+
+/* The full list's header: "7 / 97", a bar, then the percentage. */
+.ov-ach-count {
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ov-ach-count strong { color: var(--text); font-weight: 600; }
 
 .ov-ach-bar {
   flex: 1;
@@ -1340,16 +1349,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 2px;
-  border-radius: 0;
-  background: none;
-  border: none;
-  border-top: 1px solid var(--line);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-left: 2px solid transparent;
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
 }
 
 .ov-ach-item.unlocked {
-  background: none;
-  border-color: var(--line);
+  border-left-color: var(--ok);
+  background: var(--surface-2);
 }
 
 .ov-ach-thumb {
@@ -1378,9 +1387,11 @@
 .ov-ach-desc {
   font-size: 12px;
   color: var(--text-3);
-  white-space: nowrap;
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* --- Media Player Widget --- */
@@ -1927,26 +1938,68 @@
 .ov-ach-full-list {
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
+/* One achievement: icon, name + description, and a compact state mark. The
+   unlocked rows used to get a full green tint, which fought the row separators
+   and made the list look broken; the accent now lives on the left edge. */
 .ov-ach-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 2px;
-  border-top: 1px solid var(--line);
-  background: none;
-  border-radius: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 2px solid transparent;
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
 }
 
 .ov-ach-row.unlocked {
-  background: var(--ok-tint);
-  border-color: var(--ok-tint);
+  border-left-color: var(--ok);
+  background: var(--surface-2);
 }
 
-.ov-ach-row.unlocked .ov-ach-state {
-  color: var(--ok);
+.ov-ach-body { flex: 1; min-width: 0; }
+
+.ov-ach-name {
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-ach-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+  /* Two lines at most: a long description must not stretch the row. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ov-ach-check {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ok-tint);
+  color: var(--ok);
+}
+
+.ov-ach-locked {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-3);
 }
 
 .ov-ach-icon {

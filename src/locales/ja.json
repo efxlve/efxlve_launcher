@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "クリップを削除しました。",
   "ss.recordingBusy": "すでに録画中です。",
   "ss.recordFailed": "録画を開始できませんでした。",
-  "ss.notRecording": "録画中ではありません。"
+  "ss.notRecording": "録画中ではありません。",
+  "ss.notifyCapturedTitle": "スクリーンショットを保存しました",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "クリップ録画を開始しました",
+  "ss.clipNotifySavedTitle": "クリップを保存しました"
 }

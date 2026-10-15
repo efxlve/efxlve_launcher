@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Klip silindi.",
   "ss.recordingBusy": "Zaten bir kayıt sürüyor.",
   "ss.recordFailed": "Kayıt başlatılamadı.",
-  "ss.notRecording": "Süren bir kayıt yok."
+  "ss.notRecording": "Süren bir kayıt yok.",
+  "ss.notifyCapturedTitle": "Ekran görüntüsü kaydedildi",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Klip kaydı başladı",
+  "ss.clipNotifySavedTitle": "Klip kaydedildi"
 }

@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "Clipe apagado.",
   "ss.recordingBusy": "Já existe uma gravação em andamento.",
   "ss.recordFailed": "Não foi possível iniciar a gravação.",
-  "ss.notRecording": "Nenhuma gravação em andamento."
+  "ss.notRecording": "Nenhuma gravação em andamento.",
+  "ss.notifyCapturedTitle": "Captura salva",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "Gravação de clipe iniciada",
+  "ss.clipNotifySavedTitle": "Clipe salvo"
 }

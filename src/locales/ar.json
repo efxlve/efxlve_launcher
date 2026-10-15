@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "تم حذف المقطع.",
   "ss.recordingBusy": "هناك تسجيل جارٍ بالفعل.",
   "ss.recordFailed": "تعذّر بدء التسجيل.",
-  "ss.notRecording": "لا يوجد تسجيل جارٍ."
+  "ss.notRecording": "لا يوجد تسجيل جارٍ.",
+  "ss.notifyCapturedTitle": "تم حفظ اللقطة",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "بدأ تسجيل المقطع",
+  "ss.clipNotifySavedTitle": "تم حفظ المقطع"
 }

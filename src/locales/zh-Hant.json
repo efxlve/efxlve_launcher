@@ -2364,5 +2364,9 @@
   "ss.clipDeleted": "片段已刪除。",
   "ss.recordingBusy": "已有錄製正在進行。",
   "ss.recordFailed": "無法開始錄製。",
-  "ss.notRecording": "沒有正在進行的錄製。"
+  "ss.notRecording": "沒有正在進行的錄製。",
+  "ss.notifyCapturedTitle": "截圖已儲存",
+  "ss.notifyCapturedBody": "{game} — {file}",
+  "ss.clipNotifyStartTitle": "片段錄製已開始",
+  "ss.clipNotifySavedTitle": "片段已儲存"
 }

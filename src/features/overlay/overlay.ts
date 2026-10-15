@@ -2078,19 +2078,24 @@ async function loadAchievements(force = false): Promise<void> {
       return `
         <div class="ov-ach-row${item.unlocked ? " unlocked" : ""}" data-nav-row>
           ${item.icon_link ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(name)}</div>
-            <div style="font-size:12px;color:var(--text-3)">${esc(desc)}</div>
+          <div class="ov-ach-body">
+            <div class="ov-ach-name">${esc(name)}</div>
+            <div class="ov-ach-desc">${esc(desc)}</div>
           </div>
-          <span class="ov-ach-state">${item.unlocked ? `${icon("check", 14)} ${esc(t("ach.earned"))}` : "·"}</span>
+          ${
+            item.unlocked
+              ? `<span class="ov-ach-check" title="${esc(t("ach.earned"))}">${icon("check", 13)}</span>`
+              : `<span class="ov-ach-locked" title="${esc(t("ach.locked"))}">${icon("lock", 11)}</span>`
+          }
         </div>`;
     }).join("");
 
   el.innerHTML = `
-    <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))} (${unlocked}/${total})</span></div>
-    <div class="ov-ach-summary" style="margin-bottom:18px">
+    <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span></div>
+    <div class="ov-ach-summary">
+      <div class="ov-ach-count"><strong>${unlocked}</strong> / ${total}</div>
       <div class="ov-ach-bar"><span style="width:${pct}%"></span></div>
-      <span class="ov-ach-pct">%${pct}</span>
+      <div class="ov-ach-pct">%${pct}</div>
     </div>
     <div class="ov-ach-full-list">${rows}</div>`;
   renderHomeSafe();

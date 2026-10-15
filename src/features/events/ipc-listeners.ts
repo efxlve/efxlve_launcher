@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Download, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Download, Image, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -105,6 +105,7 @@ import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../s
 import { perfMark } from "../../core/perf";
 import { initOfflineMode } from "../../core/offline";
 import { pushClipSettings } from "../screenshots/ss-settings";
+import { notifyBackgrounded } from "../../core/system-notify";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -200,7 +201,7 @@ export async function initApp(hooks: {
   installArtFallback();
   updateMaxIcon();
   createIcons({
-    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, ...BRAND_ICONS },
+    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, ...BRAND_ICONS },
   });
   loadNotifications();
   initAutoUpdate();
@@ -762,6 +763,15 @@ export async function initApp(hooks: {
       (event) => {
         const { id, item } = event.payload;
         if (ssNotifyOn()) toast(t("ss.saved", { file: item.file_name }), "ok");
+        // The launcher window sits behind the game: a system toast is the only
+        // feedback the player can actually see.
+        void notifyBackgrounded(
+          t("ss.notifyCapturedTitle"),
+          t("ss.notifyCapturedBody", {
+            game: summaryOf(id)?.title || event.payload.title || "",
+            file: item.file_name,
+          }),
+        );
 
         const existing = S.loadedScreenshots.get(id) || [];
         S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
@@ -854,6 +864,7 @@ export async function initApp(hooks: {
     S.clipRecording = true;
     S.clipTitle = event.payload?.title ?? "";
     toast(t("ss.clipStarted", { title: S.clipTitle }), "ok");
+    void notifyBackgrounded(t("ss.clipNotifyStartTitle"), t("ss.clipStarted", { title: S.clipTitle }));
     hooks.scheduleRender();
   });
   listenLater("clip-stopping", () => {
@@ -864,6 +875,7 @@ export async function initApp(hooks: {
     S.clipTitle = "";
     const name = event.payload?.path?.split(/[\\/]/).pop() ?? "";
     toast(t("ss.clipSaved", { file: name }), "ok");
+    void notifyBackgrounded(t("ss.clipNotifySavedTitle"), t("ss.clipSaved", { file: name }));
     hooks.scheduleRender();
   });
   listenLater<string>("clip-error", (event) => {
