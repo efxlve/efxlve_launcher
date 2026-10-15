@@ -393,9 +393,12 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .manage-tab-content .section-title:first-child { margin-top: 0; }
 .mg-row { align-items: flex-start; padding: 12px 14px; }
 .mg-row:hover { background: transparent; }
-/* A form block (launch arguments, wrapper, environment): stacked instead of a
-   line, and nothing else — grey surfaces read as disabled. */
-.mg-row.stack { flex-direction: column; align-items: stretch; gap: 4px; }
+/* A form block (launch arguments, wrapper, environment): stacked, and outlined
+   with the same hairline the list uses — no grey plate behind it. */
+.mg-row.stack {
+  flex-direction: column; align-items: stretch; gap: 4px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+}
 .mg-title { font-size: 13px; font-weight: 500; }
 .mg-desc { font-size: 12px; color: var(--text-3); line-height: 1.5; }
 .mg-path { font-family: Consolas, monospace; font-size: 12px; color: var(--text-2); word-break: break-all; }
@@ -410,8 +413,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .mg-row.stack > .input { margin-top: 8px; }
 .mg-env { height: auto; min-height: 72px; padding: 8px 10px; resize: vertical; font-family: Consolas, monospace; }
 .mg-gap { margin-top: 12px; }
-/* Notes and callouts are text, not panels: no grey plate behind them. */
-.mg-callout { background: transparent; }
+/* Notes and callouts are text, not panels: a hairline, never a grey plate. */
+.mg-callout { background: transparent; border: 1px solid var(--line); border-radius: var(--r-sm); }
 /* Removal lives apart from everything else, and looks like it. */
 .mg-danger {
   margin-top: 28px; border-color: rgba(229, 72, 77, 0.3); background: rgba(229, 72, 77, 0.05);
