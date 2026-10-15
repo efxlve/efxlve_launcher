@@ -1,4 +1,4 @@
-//! Updates, playtime, launcher preferences, save backups, collections, profile, and move.
+﻿//! Updates, playtime, launcher preferences, save backups, collections, profile, and move.
 
 use super::prelude::*;
 
@@ -9,6 +9,26 @@ pub struct GameUpdateInfo {
     pub title: String,
     pub installed_version: String,
     pub latest_version: String,
+}
+
+/// Epic sometimes stores a build's file name where a version belongs
+/// (`DBD_Vanilla_HFL_EGS_Shipping_9_3871532_10.2.0.7`). The list shows the
+/// version, and comparing these keeps a rename from looking like an update.
+fn display_version(raw: &str) -> String {
+    let value = raw.trim();
+    if value.is_empty() {
+        return String::new();
+    }
+    if value.chars().all(|c| c.is_ascii_digit() || c == '.') {
+        return value.to_string();
+    }
+    // The trailing number group is the version in every artifact name seen.
+    value
+        .rsplit('_')
+        .next()
+        .filter(|tail| tail.chars().all(|c| c.is_ascii_digit() || c == '.'))
+        .map(str::to_string)
+        .unwrap_or_else(|| value.to_string())
 }
 
 #[tauri::command]
@@ -63,11 +83,11 @@ fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
                 }
             }
 
-            let installed_ver = val
-                .get("version")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .trim();
+            let installed_ver = display_version(
+                val.get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(""),
+            );
             let title = val
                 .get("title")
                 .and_then(|v| v.as_str())
@@ -78,16 +98,17 @@ fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
             if meta_path.is_file() {
                 if let Ok(meta_raw) = std::fs::read_to_string(&meta_path) {
                     if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_raw) {
-                        let latest_ver = meta_val
-                            .pointer("/asset_infos/Windows/build_version")
-                            .and_then(|v| v.as_str())
-                            .or_else(|| {
-                                meta_val
-                                    .pointer("/metadata/customAttributes/BuildVersion/value")
-                                    .and_then(|v| v.as_str())
-                            })
-                            .unwrap_or("")
-                            .trim();
+                        let latest_ver = display_version(
+                            meta_val
+                                .pointer("/asset_infos/Windows/build_version")
+                                .and_then(|v| v.as_str())
+                                .or_else(|| {
+                                    meta_val
+                                        .pointer("/metadata/customAttributes/BuildVersion/value")
+                                        .and_then(|v| v.as_str())
+                                })
+                                .unwrap_or(""),
+                        );
 
                         if !installed_ver.is_empty()
                             && !latest_ver.is_empty()
@@ -96,8 +117,8 @@ fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
                             updates.push(GameUpdateInfo {
                                 app_name: app_name.clone(),
                                 title,
-                                installed_version: installed_ver.to_string(),
-                                latest_version: latest_ver.to_string(),
+                                installed_version: installed_ver,
+                                latest_version: latest_ver,
                             });
                         }
                     }
@@ -338,4 +359,28 @@ pub async fn epic_move_game(
 #[tauri::command]
 pub async fn epic_cancel_move_game(app_name: String) -> bool {
     crate::legendary::move_game::cancel_move_game(&app_name).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_plain_version_stays_as_it_is() {
+        assert_eq!(display_version("10.2.1.2"), "10.2.1.2");
+        assert_eq!(display_version(" 1.0.1158.13 "), "1.0.1158.13");
+        assert_eq!(display_version(""), "");
+    }
+
+    #[test]
+    fn an_artifact_name_shows_only_its_version() {
+        assert_eq!(
+            display_version("DBD_Vanilla_HFL_EGS_Shipping_9_3871532_10.2.0.7"),
+            "10.2.0.7"
+        );
+        assert_eq!(display_version("Some_Game_1.0"), "1.0");
+        assert_eq!(display_version("Some_Game_2026"), "2026");
+        // Nothing number-like to pull out: the value is shown unchanged.
+        assert_eq!(display_version("BuildNightly"), "BuildNightly");
+    }
 }
