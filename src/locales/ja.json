@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "メモリ",
   "task.statCpuSub": "全プロセスの合計",
-  "task.statRamSub": "プロセス {count} 件",
+  "task.statRamSub": "プロセス {count} 件 · システムメモリの {percent}%",
   "task.statJobsSub": "実行中",
   "task.autoRefresh": "2 秒ごとに自動更新",
   "task.alwaysOnShort": "常時オン",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "ネットワークサービス",
   "task.roleStorage": "ストレージサービス",
   "task.roleAudio": "オーディオサービス",
-  "task.roleCrashpad": "クラッシュハンドラー"
+  "task.roleCrashpad": "クラッシュハンドラー",
+  "task.colDisk": "ディスク",
+  "task.detailRole": "役割",
+  "task.detailStarted": "開始",
+  "task.detailDisk": "ディスク (読み取り / 書き込み)",
+  "task.detailDiskValue": "読み取り {read} · 書き込み {written}",
+  "task.detailExe": "実行ファイル",
+  "task.detailCmd": "コマンドライン",
+  "task.processCount": "プロセス",
+  "task.roleHelper": "補助プロセス"
 }

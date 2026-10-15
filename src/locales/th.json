@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "หน่วยความจำ",
   "task.statCpuSub": "โปรเซสรวมทั้งหมด",
-  "task.statRamSub": "{count} โปรเซส",
+  "task.statRamSub": "{count} โปรเซส · {percent}% ของหน่วยความจำระบบ",
   "task.statJobsSub": "กำลังทำงาน",
   "task.autoRefresh": "รีเฟรชอัตโนมัติทุก 2 วินาที",
   "task.alwaysOnShort": "เปิดตลอดเวลา",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "บริการเครือข่าย",
   "task.roleStorage": "บริการจัดเก็บข้อมูล",
   "task.roleAudio": "บริการเสียง",
-  "task.roleCrashpad": "ตัวจัดการข้อขัดข้อง"
+  "task.roleCrashpad": "ตัวจัดการข้อขัดข้อง",
+  "task.colDisk": "ดิสก์",
+  "task.detailRole": "บทบาท",
+  "task.detailStarted": "เริ่มเมื่อ",
+  "task.detailDisk": "ดิสก์ (อ่าน / เขียน)",
+  "task.detailDiskValue": "อ่าน {read} · เขียน {written}",
+  "task.detailExe": "ไฟล์เรียกทำงาน",
+  "task.detailCmd": "บรรทัดคำสั่ง",
+  "task.processCount": "โปรเซส",
+  "task.roleHelper": "โปรเซสช่วย"
 }

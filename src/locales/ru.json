@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "Память",
   "task.statCpuSub": "все процессы вместе",
-  "task.statRamSub": "Процессов: {count}",
+  "task.statRamSub": "Процессов: {count} · {percent}% памяти системы",
   "task.statJobsSub": "работает",
   "task.autoRefresh": "Обновляется автоматически каждые 2 секунды",
   "task.alwaysOnShort": "Всегда включено",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "Сетевой сервис",
   "task.roleStorage": "Сервис хранилища",
   "task.roleAudio": "Аудиосервис",
-  "task.roleCrashpad": "Обработчик сбоев"
+  "task.roleCrashpad": "Обработчик сбоев",
+  "task.colDisk": "Диск",
+  "task.detailRole": "Роль",
+  "task.detailStarted": "Запущен",
+  "task.detailDisk": "Диск (чтение / запись)",
+  "task.detailDiskValue": "прочитано {read} · записано {written}",
+  "task.detailExe": "Исполняемый файл",
+  "task.detailCmd": "Командная строка",
+  "task.processCount": "процессов",
+  "task.roleHelper": "Вспомогательный процесс"
 }

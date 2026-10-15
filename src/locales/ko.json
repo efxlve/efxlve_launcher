@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "메모리",
   "task.statCpuSub": "모든 프로세스 합계",
-  "task.statRamSub": "프로세스 {count}개",
+  "task.statRamSub": "프로세스 {count}개 · 시스템 메모리의 {percent}%",
   "task.statJobsSub": "실행 중",
   "task.autoRefresh": "2초마다 자동 새로 고침",
   "task.alwaysOnShort": "항상 켜짐",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "네트워크 서비스",
   "task.roleStorage": "저장소 서비스",
   "task.roleAudio": "오디오 서비스",
-  "task.roleCrashpad": "충돌 처리기"
+  "task.roleCrashpad": "충돌 처리기",
+  "task.colDisk": "디스크",
+  "task.detailRole": "역할",
+  "task.detailStarted": "시작",
+  "task.detailDisk": "디스크 (읽기 / 쓰기)",
+  "task.detailDiskValue": "읽기 {read} · 쓰기 {written}",
+  "task.detailExe": "실행 파일",
+  "task.detailCmd": "명령줄",
+  "task.processCount": "프로세스",
+  "task.roleHelper": "보조 프로세스"
 }

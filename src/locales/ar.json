@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "الذاكرة",
   "task.statCpuSub": "جميع العمليات مجتمعة",
-  "task.statRamSub": "{count} عملية",
+  "task.statRamSub": "{count} عملية · {percent}% من ذاكرة النظام",
   "task.statJobsSub": "قيد التشغيل",
   "task.autoRefresh": "يتم التحديث تلقائيًا كل ثانيتين",
   "task.alwaysOnShort": "مفعّل دائمًا",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "خدمة الشبكة",
   "task.roleStorage": "خدمة التخزين",
   "task.roleAudio": "خدمة الصوت",
-  "task.roleCrashpad": "معالج الأعطال"
+  "task.roleCrashpad": "معالج الأعطال",
+  "task.colDisk": "القرص",
+  "task.detailRole": "الدور",
+  "task.detailStarted": "البدء",
+  "task.detailDisk": "القرص (قراءة / كتابة)",
+  "task.detailDiskValue": "قُرئ {read} · كُتب {written}",
+  "task.detailExe": "الملف التنفيذي",
+  "task.detailCmd": "سطر الأوامر",
+  "task.processCount": "عملية",
+  "task.roleHelper": "عملية مساعدة"
 }

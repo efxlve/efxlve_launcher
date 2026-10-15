@@ -46,6 +46,8 @@ export const SS_DENSITY_KEY = "efxlve-ss-density";
 export const SS_FAVORITES_KEY = "efxlve-ss-favorites";
 /** Auto-cleanup policy (`off` | `size` | `age`). */
 export const SS_CLEANUP_KEY = "efxlve-ss-cleanup";
+/** Task manager: whether the WebView2 group is expanded. */
+export const TM_EXPANDED_KEY = "efxlve-tm-expanded";
 /** Show download speed in bits per second instead of bytes. */
 export const SPEED_BITS_KEY = "efxlve-speed-bits";
 /** Pause active downloads while a game is running. */

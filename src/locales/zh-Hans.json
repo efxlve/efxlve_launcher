@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "内存",
   "task.statCpuSub": "所有进程合计",
-  "task.statRamSub": "{count} 个进程",
+  "task.statRamSub": "{count} 个进程 · 系统内存的 {percent}%",
   "task.statJobsSub": "运行中",
   "task.autoRefresh": "每 2 秒自动刷新",
   "task.alwaysOnShort": "始终开启",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "网络服务",
   "task.roleStorage": "存储服务",
   "task.roleAudio": "音频服务",
-  "task.roleCrashpad": "崩溃处理程序"
+  "task.roleCrashpad": "崩溃处理程序",
+  "task.colDisk": "磁盘",
+  "task.detailRole": "角色",
+  "task.detailStarted": "启动时间",
+  "task.detailDisk": "磁盘（读 / 写）",
+  "task.detailDiskValue": "读取 {read} · 写入 {written}",
+  "task.detailExe": "可执行文件",
+  "task.detailCmd": "命令行",
+  "task.processCount": "个进程",
+  "task.roleHelper": "辅助进程"
 }

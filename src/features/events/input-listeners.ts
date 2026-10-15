@@ -56,6 +56,7 @@ import { epicDoLogin } from "../auth/auth-actions";
 import { gogLoginWithCode } from "../auth/gog-auth-actions";
 import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
 import { closeNotifPanel } from "../notifications/notifications";
+import { closeTaskDetail } from "../settings/task-manager";
 import { ssCleanupPolicy, ssSetCleanupPolicy } from "../screenshots/ss-settings";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
@@ -192,6 +193,11 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     // The shared confirm dialog owns Escape while it is open.
     if (cancelConfirm()) return;
+    // The task manager's detail card closes like any other modal.
+    if (document.getElementById("tm-detail-root")) {
+      closeTaskDetail();
+      return;
+    }
     if (S.notifOpen) {
       closeNotifPanel();
       return;

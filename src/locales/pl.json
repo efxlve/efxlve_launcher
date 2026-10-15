@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "Pamięć",
   "task.statCpuSub": "wszystkie procesy razem",
-  "task.statRamSub": "{count} procesów",
+  "task.statRamSub": "{count} procesów · {percent}% pamięci systemu",
   "task.statJobsSub": "działa",
   "task.autoRefresh": "Odświeża się automatycznie co 2 sekundy",
   "task.alwaysOnShort": "Zawsze włączone",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "Usługa sieciowa",
   "task.roleStorage": "Usługa magazynu",
   "task.roleAudio": "Usługa audio",
-  "task.roleCrashpad": "Program obsługi awarii"
+  "task.roleCrashpad": "Program obsługi awarii",
+  "task.colDisk": "Dysk",
+  "task.detailRole": "Rola",
+  "task.detailStarted": "Start",
+  "task.detailDisk": "Dysk (odczyt / zapis)",
+  "task.detailDiskValue": "{read} odczytane · {written} zapisane",
+  "task.detailExe": "Plik wykonywalny",
+  "task.detailCmd": "Wiersz polecenia",
+  "task.processCount": "procesów",
+  "task.roleHelper": "Proces pomocniczy"
 }

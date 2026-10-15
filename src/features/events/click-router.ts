@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
   // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
-  if (handleSettingsAction(act, t)) return;
+  if (handleSettingsAction(act, t, targetEl)) return;
   if (handleNotesAction(act, t)) return;
   if (handleDrawerNotesAction(act, t)) return;
   if (handleIgdbAction(act, t)) return;

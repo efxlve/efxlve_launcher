@@ -262,12 +262,13 @@
 }
 
 /* --- Task manager --------------------------------------------------------- */
-/* A live stat strip, a process table with relative usage bars, and the
-   background jobs as a card grid. */
+/* A stat strip with one-minute sparklines, a process table with relative bars
+   and a collapsible WebView2 group, and the background jobs as a card grid. */
 .tm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 4px 0 8px; }
 .tm-stat {
-  display: flex; flex-direction: column; gap: 3px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 8px;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
+  overflow: hidden;
 }
 .tm-stat-label {
   display: inline-flex; align-items: center; gap: 6px;
@@ -276,16 +277,26 @@
 .tm-stat-value { font-size: 21px; font-weight: 600; line-height: 1.15; color: var(--text); font-variant-numeric: tabular-nums; }
 .tm-stat-of { font-size: 13px; font-weight: 500; color: var(--text-3); }
 .tm-stat-sub { font-size: 11px; color: var(--text-3); }
+.tm-spark { display: block; width: 100%; height: 26px; margin-top: 5px; color: var(--accent); opacity: 0.6; }
+.tm-spark.task-mem-spark { color: var(--text-2); }
 
-.tm-thead, .tm-row {
-  display: grid; grid-template-columns: 30px minmax(0, 1fr) 132px 132px;
+.tm-thead, .tm-row, .tm-group {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 118px 118px 128px;
   align-items: center; gap: 12px; padding: 10px 14px;
 }
 .tm-thead {
   padding-top: 9px; padding-bottom: 7px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
 }
-.tm-row { border-top: 1px solid var(--line); transition: background-color var(--ease); }
+.tm-sort {
+  display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px;
+  padding: 0; border: none; background: transparent; cursor: pointer;
+  font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-3); transition: color var(--ease);
+}
+.tm-sort:hover { color: var(--text); }
+.tm-sort.active { color: var(--text-2); }
+.tm-row { border-top: 1px solid var(--line); cursor: pointer; transition: background-color var(--ease); }
 .tm-row:hover { background: var(--surface-2); }
 .tm-row-icon {
   display: grid; place-items: center; width: 28px; height: 28px;
@@ -298,6 +309,7 @@
   display: flex; align-items: center; gap: 6px; margin-top: 2px;
   font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
 }
+.tm-row-exe { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tm-badge {
   display: inline-flex; align-items: center; height: 17px; padding: 0 7px;
   border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2);
@@ -309,6 +321,25 @@
 .tm-bar-fill { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width 400ms linear; }
 .tm-bar-fill.mem { background: var(--text-3); }
 .tm-num { font-size: 12px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* The collapsible WebView2 group: a header row that folds the children away. */
+.tm-group {
+  width: 100%; border: none; border-top: 1px solid var(--line); border-radius: 0;
+  background: var(--surface-1); color: var(--text); font: inherit; text-align: left; cursor: pointer;
+  transition: background-color var(--ease);
+}
+.tm-group:hover { background: var(--surface-2); }
+.tm-group-chevron {
+  display: grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 8px; background: var(--surface-3); color: var(--text-2);
+}
+.tm-group-title { display: flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 500; }
+.tm-group-meta { font-size: 11.5px; font-weight: 400; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+.tm-disk { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.tm-disk .tm-num { font-size: 11px; line-height: 1.35; }
+.tm-disk-empty { color: var(--text-3); }
+.tm-disk .task-disk-write { color: var(--text-3); }
 
 .tm-jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 10px; }
 .tm-job {
@@ -337,9 +368,29 @@
 .tm-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
 .tm-updated { font-size: 11px; color: var(--text-3); }
 
+/* The row's detail card. */
+.tm-detail-card { width: min(560px, 100%); }
+.tm-detail-body { display: flex; flex-direction: column; gap: 14px; }
+.tm-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin: 0; }
+.tm-detail-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tm-detail-field dt {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
+}
+.tm-detail-field dd { margin: 0; font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
+.tm-detail-block { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tm-detail-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
+}
+.tm-detail-code {
+  display: block; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2);
+  font-family: Consolas, monospace; font-size: 11.5px; line-height: 1.5; color: var(--text-2);
+  overflow-wrap: anywhere; max-height: 120px; overflow: auto;
+}
+
 @media (max-width: 900px) {
   .tm-stats { grid-template-columns: 1fr; }
   .tm-thead { display: none; }
-  .tm-row { grid-template-columns: 30px minmax(0, 1fr); }
-  .tm-row .tm-metric { grid-column: 2; }
+  .tm-row, .tm-group { grid-template-columns: 30px minmax(0, 1fr); }
+  .tm-row .tm-metric, .tm-row .tm-disk, .tm-group .tm-num { grid-column: 2; }
+  .tm-detail-grid { grid-template-columns: 1fr; }
 }

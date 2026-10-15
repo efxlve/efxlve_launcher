@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Settings page renderer.
  *
  * Two-pane layout: a plain text sub-navigation (left) selects one focused
@@ -10,7 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
-import { emptyState, icon, type IconName } from "../../core/icons";
+import { emptyState, icon } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
@@ -53,6 +53,7 @@ import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScree
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
@@ -152,7 +153,7 @@ function detailsRow(title: string, desc: string, chip: string, control: string, 
 
 function renderDownloads(): string {
   const savedDir = S.epicSettingsCache?.install_dir?.trim() || "";
-  const shownDir = savedDir || S.epicDefaultDir || "—";
+  const shownDir = savedDir || S.epicDefaultDir || "â€”";
   const dir = row(
     t("settings.epicInstallDirTitle"),
     `${t("settings.epicInstallDirHint")} <code>${esc(shownDir)}</code>`,
@@ -162,7 +163,7 @@ function renderDownloads(): string {
   );
 
   const gogSavedDir = S.gogInstallDir.trim();
-  const gogShownDir = gogSavedDir || S.gogDefaultDir || "—";
+  const gogShownDir = gogSavedDir || S.gogDefaultDir || "â€”";
   const gogDir = row(
     t("settings.gogInstallDirTitle"),
     `${t("settings.gogInstallDirHint")} <code>${esc(gogShownDir)}</code>`,
@@ -172,7 +173,7 @@ function renderDownloads(): string {
   );
 
   const amazonSavedDir = S.amazonInstallDir.trim();
-  const amazonShownDir = amazonSavedDir || S.amazonDefaultDir || "—";
+  const amazonShownDir = amazonSavedDir || S.amazonDefaultDir || "â€”";
   const amazonDir = row(
     t("settings.amazonInstallDirTitle"),
     `${t("settings.amazonInstallDirHint")} <code>${esc(amazonShownDir)}</code>`,
@@ -429,7 +430,7 @@ function renderIntegrations(): string {
 
   const eos = renderEosSettingsRow();
 
-  // IGDB (Twitch) credentials: the secret is write-only here — it is sealed on
+  // IGDB (Twitch) credentials: the secret is write-only here â€” it is sealed on
   // disk and only ever read back by Rust.
   const igdb = detailsRow(
     t("settings.igdbTitle"),
@@ -481,7 +482,7 @@ function renderIntegrations(): string {
 }
 
 /**
- * The Social section: Discord itself — the page, Rich Presence and staying
+ * The Social section: Discord itself â€” the page, Rich Presence and staying
  * open. It used to live inside Integrations, where nobody found it.
  */
 function renderSocial(): string {
@@ -694,7 +695,7 @@ function renderNotes(): string {
   const statsRow = row(
     t("notes.statsTitle"),
     t("notes.statsDesc"),
-    `<span class="settings-value">${t("notes.statsNotes", { count: String(notes.length) })} · ${t("notes.statsGames", { count: String(games) })}</span>`,
+    `<span class="settings-value">${t("notes.statsNotes", { count: String(notes.length) })} Â· ${t("notes.statsGames", { count: String(games) })}</span>`,
   );
   const openRow = row(
     t("notes.openPage"),
@@ -728,7 +729,7 @@ function renderNotes(): string {
 function renderScreenshots(): string {
   const folder = row(
     t("settings.ssDirTitle"),
-    `${t("settings.ssDirDesc")} <code>${esc(S.screenshotDir || "—")}</code>`,
+    `${t("settings.ssDirDesc")} <code>${esc(S.screenshotDir || "â€”")}</code>`,
     `<button type="button" class="btn ghost small" data-act="ss-open-dir">${t("ss.openFolder")}</button>
      <button type="button" class="btn ghost small" data-act="ss-pick-dir">${t("common.browse")}</button>
      <button type="button" class="btn ghost small" data-act="ss-reset-dir">${t("settings.ssDirReset")}</button>`,
@@ -842,260 +843,6 @@ function renderScreenshots(): string {
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
     group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection"))
   );
-}
-
-/* ---------- Task manager ---------- */
-
-interface TaskRow {
-  id: string;
-  kind: string;
-  name: string;
-  role: string;
-  pid: number;
-  cpu: number;
-  memoryMb: number;
-  running: boolean;
-  stoppable: boolean;
-}
-
-let taskRows: TaskRow[] = [];
-let taskTimer: number | null = null;
-let tasksLoaded = false;
-
-function taskRoleLabel(role: string): string {
-  switch (role) {
-    case "app": return t("task.roleApp");
-    case "browser": return t("task.roleBrowser");
-    case "renderer": return t("task.roleRenderer");
-    case "gpu": return t("task.roleGpu");
-    case "network": return t("task.roleNetwork");
-    case "storage": return t("task.roleStorage");
-    case "audio": return t("task.roleAudio");
-    case "crashpad": return t("task.roleCrashpad");
-    case "utility": return t("task.roleUtility");
-    default: return t("task.roleOther");
-  }
-}
-
-/** One mark per role, so the table reads by shape before by name. */
-function taskRoleIcon(role: string): IconName {
-  switch (role) {
-    case "browser": return "globe";
-    case "renderer": return "layers";
-    case "gpu": return "zap";
-    case "network": return "wifi";
-    case "storage": return "hard-drive";
-    case "audio": return "volume-2";
-    case "crashpad": return "alert-triangle";
-    case "utility": return "server";
-    default: return "layers";
-  }
-}
-
-/** Each background job gets its own mark, so the grid scans by shape. */
-function taskJobIcon(id: string): IconName {
-  switch (id) {
-    case "metrics": return "activity";
-    case "spotify":
-    case "spotify_player": return "music";
-    case "controller_bridge": return "gamepad-2";
-    case "discord_voice": return "mic";
-    case "discord_sdk":
-    case "discord_page": return "discord";
-    case "presence": return "wifi";
-    case "game_watch": return "eye";
-    case "screenshots": return "camera";
-    case "store_page": return "package";
-    case "overlay_browser": return "globe";
-    default: return "server";
-  }
-}
-
-function formatTaskMb(mb: number): string {
-  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
-}
-
-/** One process line: role mark, the role as the title, the exe name and PID
- * under it, then CPU and memory with bars scaled to the biggest row. */
-function processRowHtml(row: TaskRow, cpuPeak: number, memPeak: number): string {
-  const isMain = row.role === "app";
-  const title = isMain ? t("task.mainProcess") : taskRoleLabel(row.role);
-  const cpuPct = Math.max(2, Math.round((row.cpu / cpuPeak) * 100));
-  const memPct = Math.max(2, Math.round((row.memoryMb / memPeak) * 100));
-  return `
-    <div class="tm-row" data-task="${esc(row.id)}" data-search="${esc(title)} ${esc(row.name)} PID ${row.pid}">
-      <span class="tm-row-icon${isMain ? " is-main" : ""}">${icon(isMain ? "monitor" : taskRoleIcon(row.role), 14)}</span>
-      <div class="tm-row-main">
-        <div class="tm-row-title">${esc(title)}</div>
-        <div class="tm-row-sub">
-          ${isMain ? `<span class="tm-badge">${esc(t("task.roleApp"))}</span>` : ""}
-          <span class="tm-row-exe">${esc(row.name)}</span>
-          <span class="tm-sub-sep">·</span>
-          <span>PID ${row.pid}</span>
-        </div>
-      </div>
-      <div class="tm-metric" title="${esc(t("task.colCpu"))}">
-        <span class="tm-bar"><span class="tm-bar-fill task-cpu-bar" style="width:${cpuPct}%"></span></span>
-        <span class="tm-num task-cpu">${row.cpu.toFixed(1)}%</span>
-      </div>
-      <div class="tm-metric" title="${esc(t("task.colRam"))}">
-        <span class="tm-bar"><span class="tm-bar-fill mem task-mem-bar" style="width:${memPct}%"></span></span>
-        <span class="tm-num task-mem">${formatTaskMb(row.memoryMb)}</span>
-      </div>
-    </div>`;
-}
-
-/** One background job: mark, name, live dot, and the stop action when stopping
- * is safe. Jobs are threads, so they carry no CPU or memory of their own. */
-function jobRowHtml(row: TaskRow): string {
-  const name = t(`task.job.${row.id}`);
-  return `
-    <div class="tm-job${row.running ? " is-running" : ""}" data-task="${esc(row.id)}" data-search="${esc(name)}">
-      <div class="tm-job-head">
-        <span class="tm-job-icon">${icon(taskJobIcon(row.id), 14)}</span>
-        <span class="tm-job-name">${esc(name)}</span>
-        <span class="tm-dot${row.running ? " on" : ""}"></span>
-      </div>
-      <div class="tm-job-foot">
-        <span class="tm-job-state task-status">${esc(row.running ? t("task.running") : t("task.stopped"))}</span>
-        ${
-          row.stoppable
-            ? `<button type="button" class="btn ghost small" data-act="task-stop" data-id="${esc(row.id)}" ${row.running ? "" : "disabled"}>${esc(t("task.stop"))}</button>`
-            : `<span class="tm-job-lock" title="${esc(t("task.alwaysOn"))}">${icon("lock", 11)} ${esc(t("task.alwaysOnShort"))}</span>`
-        }
-      </div>
-    </div>`;
-}
-
-/** The section: a live stat strip, the process table and the job grid. */
-function renderTasks(): string {
-  if (!isTauri) return infoBox("task.desktopOnly");
-  if (!tasksLoaded) {
-    tasksLoaded = true;
-    void refreshTasks();
-  }
-  ensureTaskPolling();
-  const processes = taskRows.filter((row) => row.kind === "process");
-  const jobs = taskRows.filter((row) => row.kind === "job");
-  const totalMem = processes.reduce((sum, row) => sum + row.memoryMb, 0);
-  const totalCpu = processes.reduce((sum, row) => sum + row.cpu, 0);
-  const runningJobs = jobs.filter((row) => row.running).length;
-  const cpuPeak = Math.max(...processes.map((row) => row.cpu), 0.1);
-  const memPeak = Math.max(...processes.map((row) => row.memoryMb), 1);
-
-  const stats = `
-    <div class="tm-stats">
-      <div class="tm-stat">
-        <span class="tm-stat-label">${icon("cpu", 12)} ${esc(t("task.colCpu"))}</span>
-        <span class="tm-stat-value task-total-cpu">${totalCpu.toFixed(1)}%</span>
-        <span class="tm-stat-sub">${esc(t("task.statCpuSub"))}</span>
-      </div>
-      <div class="tm-stat">
-        <span class="tm-stat-label">${icon("hard-drive", 12)} ${esc(t("task.colRam"))}</span>
-        <span class="tm-stat-value task-total-mem">${formatTaskMb(totalMem)}</span>
-        <span class="tm-stat-sub">${esc(t("task.statRamSub", { count: String(processes.length) }))}</span>
-      </div>
-      <div class="tm-stat">
-        <span class="tm-stat-label">${icon("activity", 12)} ${esc(t("task.jobs"))}</span>
-        <span class="tm-stat-value"><span class="task-jobs-count">${runningJobs}</span><span class="tm-stat-of"> / ${jobs.length}</span></span>
-        <span class="tm-stat-sub">${esc(t("task.statJobsSub"))}</span>
-      </div>
-    </div>`;
-
-  const table = processes.length
-    ? `<div class="list settings-group tm-table">
-        <div class="tm-thead">
-          <span></span>
-          <span>${esc(t("task.colProcess"))}</span>
-          <span>${esc(t("task.colCpu"))}</span>
-          <span>${esc(t("task.colRam"))}</span>
-        </div>
-        ${processes.map((row) => processRowHtml(row, cpuPeak, memPeak)).join("")}
-      </div>`
-    : `<div class="list settings-group tm-table"><div class="tm-empty">${esc(t("task.loading"))}</div></div>`;
-
-  const grid = jobs.length
-    ? `<div class="settings-group tm-jobs">${jobs.map(jobRowHtml).join("")}</div>`
-    : `<div class="settings-group tm-jobs"><div class="tm-empty">${esc(t("task.loading"))}</div></div>`;
-
-  return `
-    ${infoBox("task.info")}
-    ${stats}
-    <h3 class="section-title">${t("task.processes")}</h3>
-    ${table}
-    <h3 class="section-title">${t("task.jobs")}</h3>
-    ${grid}
-    <div class="tm-foot">
-      <span class="tm-updated">${esc(t("task.autoRefresh"))}</span>
-      <button type="button" class="btn ghost small" data-act="task-refresh">${icon("refresh", 13)} ${t("task.refresh")}</button>
-    </div>`;
-}
-
-async function refreshTasks(repaint = true): Promise<void> {
-  if (!isTauri) return;
-  try {
-    taskRows = await invoke<TaskRow[]>("task_manager_snapshot");
-  } catch {
-    taskRows = [];
-  }
-  if (repaint && S.view === "settings" && S.settingsSection === "tasks") render();
-}
-
-/** Polls while the section is on screen; patches numbers, repaints on a
- * changed row set. The interval stops itself when the section is left. */
-function ensureTaskPolling(): void {
-  if (taskTimer !== null) return;
-  taskTimer = window.setInterval(() => {
-    if (S.view !== "settings" || S.settingsSection !== "tasks") {
-      if (taskTimer !== null) window.clearInterval(taskTimer);
-      taskTimer = null;
-      return;
-    }
-    void refreshTasks(false).then(() => patchTaskRows());
-  }, 2000);
-}
-
-/** Live patch: numbers, bars and states update in place; a changed row set
- * repaints the section. */
-function patchTaskRows(): void {
-  const panel = document.querySelector<HTMLElement>(".settings-panel");
-  if (!panel) return;
-  const processes = taskRows.filter((row) => row.kind === "process");
-  const jobs = taskRows.filter((row) => row.kind === "job");
-  const cpuPeak = Math.max(...processes.map((row) => row.cpu), 0.1);
-  const memPeak = Math.max(...processes.map((row) => row.memoryMb), 1);
-  const known = new Set<string>();
-  for (const row of taskRows) {
-    known.add(row.id);
-    const el = panel.querySelector<HTMLElement>(`[data-task="${CSS.escape(row.id)}"]`);
-    if (!el) {
-      render();
-      return;
-    }
-    const cpu = el.querySelector<HTMLElement>(".task-cpu");
-    if (cpu) cpu.textContent = `${row.cpu.toFixed(1)}%`;
-    const cpuBar = el.querySelector<HTMLElement>(".task-cpu-bar");
-    if (cpuBar) cpuBar.style.width = `${Math.max(2, Math.round((row.cpu / cpuPeak) * 100))}%`;
-    const mem = el.querySelector<HTMLElement>(".task-mem");
-    if (mem) mem.textContent = formatTaskMb(row.memoryMb);
-    const memBar = el.querySelector<HTMLElement>(".task-mem-bar");
-    if (memBar) memBar.style.width = `${Math.max(2, Math.round((row.memoryMb / memPeak) * 100))}%`;
-    const status = el.querySelector<HTMLElement>(".task-status");
-    if (status) status.textContent = row.running ? t("task.running") : t("task.stopped");
-    el.classList.toggle("is-running", row.running);
-    const dot = el.querySelector<HTMLElement>(".tm-dot");
-    if (dot) dot.classList.toggle("on", row.running);
-    const stop = el.querySelector<HTMLButtonElement>('[data-act="task-stop"]');
-    if (stop) stop.disabled = !row.running;
-  }
-  const cpuTotal = panel.querySelector<HTMLElement>(".task-total-cpu");
-  if (cpuTotal) cpuTotal.textContent = `${processes.reduce((sum, row) => sum + row.cpu, 0).toFixed(1)}%`;
-  const memTotal = panel.querySelector<HTMLElement>(".task-total-mem");
-  if (memTotal) memTotal.textContent = formatTaskMb(processes.reduce((sum, row) => sum + row.memoryMb, 0));
-  const jobsCount = panel.querySelector<HTMLElement>(".task-jobs-count");
-  if (jobsCount) jobsCount.textContent = String(jobs.filter((row) => row.running).length);
-  const shown = [...panel.querySelectorAll<HTMLElement>("[data-task]")].map((el) => el.dataset.task ?? "");
-  if (shown.length !== known.size || shown.some((id) => !known.has(id))) render();
 }
 
 function renderSystem(): string {
@@ -1365,21 +1112,21 @@ function isSearchHidden(el: HTMLElement): boolean {
 }
 
 /** Case- and accent-insensitive fold: Turkish users type "sayfasi" for
- * "sayfası", and the accented locales have the same habit. */
+ * "sayfasÄ±", and the accented locales have the same habit. */
 function foldForSearch(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[ıi̇]/g, "i")
-    .replace(/ş/g, "s")
-    .replace(/ğ/g, "g")
-    .replace(/ç/g, "c")
-    .replace(/ö/g, "o")
-    .replace(/ü/g, "u")
-    .replace(/œ/g, "oe")
-    .replace(/æ/g, "ae")
-    .replace(/ß/g, "ss");
+    .replace(/[Ä±iÌ‡]/g, "i")
+    .replace(/ÅŸ/g, "s")
+    .replace(/ÄŸ/g, "g")
+    .replace(/Ã§/g, "c")
+    .replace(/Ã¶/g, "o")
+    .replace(/Ã¼/g, "u")
+    .replace(/Å“/g, "oe")
+    .replace(/Ã¦/g, "ae")
+    .replace(/ÃŸ/g, "ss");
 }
 
 function searchMatches(text: string, tokens: string[]): boolean {
@@ -1759,7 +1506,7 @@ async function applyCleanup(): Promise<void> {
  * Screenshot-folder actions routed here from click-router so the shared router
  * does not grow. Returns true when the action was handled.
  */
-export function handleSettingsAction(act: string | undefined, _el: HTMLElement): boolean {
+export function handleSettingsAction(act: string | undefined, _el: HTMLElement, _targetEl?: HTMLElement): boolean {
   switch (act) {
     case "settings-search-clear":
       resetSettingsSearch();
@@ -1860,21 +1607,14 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement):
       });
       return true;
     }
-    case "task-stop": {
-      const id = _el.dataset.id ?? "";
-      void invoke("task_manager_stop", { id })
-        .then(() => {
-          toast(t("task.stoppedToast", { name: t(`task.job.${id}`) }), "ok");
-          void refreshTasks();
-        })
-        .catch((error) => {
-          toast(t("task.stopFailed", { error: String(error) }), "err");
-        });
-      return true;
-    }
+    case "task-stop":
     case "task-refresh":
-      void refreshTasks();
-      return true;
+    case "task-sort":
+    case "task-toggle-webview":
+    case "task-detail":
+    case "task-detail-close":
+    case "task-detail-backdrop":
+      return handleTaskAction(act, _el, _targetEl);
     case "ss-open-dir":
       void openScreenshotsFolder();
       return true;

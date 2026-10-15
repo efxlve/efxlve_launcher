@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "Bellek",
   "task.statCpuSub": "tüm süreçlerin toplamı",
-  "task.statRamSub": "{count} süreç",
+  "task.statRamSub": "{count} süreç · sistem belleğinin %{percent}'i",
   "task.statJobsSub": "çalışıyor",
   "task.autoRefresh": "2 saniyede bir otomatik yenilenir",
   "task.alwaysOnShort": "Her zaman açık",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "Ağ servisi",
   "task.roleStorage": "Depolama servisi",
   "task.roleAudio": "Ses servisi",
-  "task.roleCrashpad": "Çökme işleyicisi"
+  "task.roleCrashpad": "Çökme işleyicisi",
+  "task.colDisk": "Disk",
+  "task.detailRole": "Rol",
+  "task.detailStarted": "Başlangıç",
+  "task.detailDisk": "Disk (okuma / yazma)",
+  "task.detailDiskValue": "{read} okundu · {written} yazıldı",
+  "task.detailExe": "Yürütülebilir dosya",
+  "task.detailCmd": "Komut satırı",
+  "task.processCount": "süreç",
+  "task.roleHelper": "Yardımcı süreç"
 }

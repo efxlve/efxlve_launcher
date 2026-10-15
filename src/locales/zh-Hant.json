@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "記憶體",
   "task.statCpuSub": "所有處理程序合計",
-  "task.statRamSub": "{count} 個處理程序",
+  "task.statRamSub": "{count} 個處理程序 · 系統記憶體的 {percent}%",
   "task.statJobsSub": "執行中",
   "task.autoRefresh": "每 2 秒自動重新整理",
   "task.alwaysOnShort": "始終開啟",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "網路服務",
   "task.roleStorage": "儲存服務",
   "task.roleAudio": "音訊服務",
-  "task.roleCrashpad": "當機處理程序"
+  "task.roleCrashpad": "當機處理程序",
+  "task.colDisk": "磁碟",
+  "task.detailRole": "角色",
+  "task.detailStarted": "啟動時間",
+  "task.detailDisk": "磁碟（讀 / 寫）",
+  "task.detailDiskValue": "讀取 {read} · 寫入 {written}",
+  "task.detailExe": "可執行檔",
+  "task.detailCmd": "命令列",
+  "task.processCount": "個處理程序",
+  "task.roleHelper": "輔助處理程序"
 }

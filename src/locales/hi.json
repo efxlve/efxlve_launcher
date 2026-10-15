@@ -2264,7 +2264,7 @@
   "task.colCpu": "CPU",
   "task.colRam": "मेमोरी",
   "task.statCpuSub": "सभी प्रक्रियाएँ मिलाकर",
-  "task.statRamSub": "{count} प्रक्रियाएँ",
+  "task.statRamSub": "{count} प्रक्रियाएँ · सिस्टम मेमोरी का {percent}%",
   "task.statJobsSub": "चल रहा है",
   "task.autoRefresh": "हर 2 सेकंड में अपने-आप रीफ़्रेश होता है",
   "task.alwaysOnShort": "हमेशा चालू",
@@ -2272,5 +2272,14 @@
   "task.roleNetwork": "नेटवर्क सेवा",
   "task.roleStorage": "स्टोरेज सेवा",
   "task.roleAudio": "ऑडियो सेवा",
-  "task.roleCrashpad": "क्रैश हैंडलर"
+  "task.roleCrashpad": "क्रैश हैंडलर",
+  "task.colDisk": "डिस्क",
+  "task.detailRole": "भूमिका",
+  "task.detailStarted": "शुरू",
+  "task.detailDisk": "डिस्क (पढ़ना / लिखना)",
+  "task.detailDiskValue": "{read} पढ़ा · {written} लिखा",
+  "task.detailExe": "निष्पादन योग्य फ़ाइल",
+  "task.detailCmd": "कमांड लाइन",
+  "task.processCount": "प्रक्रियाएँ",
+  "task.roleHelper": "सहायक प्रक्रिया"
 }
