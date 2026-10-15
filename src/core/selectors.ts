@@ -191,9 +191,11 @@ export function rebuildAllGamesMap(): void {
   }
 
   // Other accounts' games stay searchable/detail-openable through the same map
-  // while the shared library is enabled.
+  // while the shared library is enabled — but only the ones this account does
+  // not own, or the shared copy would replace the real, installed one.
   if (S.showSharedLibrary) {
     for (const g of S.sharedOwners.values()) {
+      if (activeOwnsKey(g.key)) continue;
       const item: LibraryItem = {
         key: g.key,
         source: g.store === "gog" ? "gog" : "epic",
@@ -323,9 +325,26 @@ export function summaryOf(appName: string): EpicSummary | undefined {
   return undefined;
 }
 
+/**
+ * True when the active account's own libraries carry this key. Two accounts can
+ * own the same game: the shared library then only exists for the games this
+ * account does not have, and the page belongs to the active copy.
+ */
+export function activeOwnsKey(key: string): boolean {
+  if (S.epicSummariesMap.has(key)) return true;
+  if (key.startsWith("gog::")) {
+    return S.gogSummariesMap.has(key.slice(5)) || S.gogSummariesMap.has(key);
+  }
+  if (key.startsWith("steam::")) return S.steamSummariesMap.has(key);
+  if (S.amazonSummaries.some((item) => item.key === key)) return true;
+  return S.companionSummaries.some((item) => item.key === key);
+}
+
 /** Owner of a game that belongs to another saved account (shared library). */
 export function sharedOwnerOf(key: string): import("../epic").SharedGame | undefined {
-  return S.sharedOwners.get(key);
+  const owner = S.sharedOwners.get(key);
+  if (!owner) return undefined;
+  return activeOwnsKey(key) ? undefined : owner;
 }
 
 /** Store of a library key: `epic` (no prefix), or `<store>::<id>`. */
@@ -550,7 +569,9 @@ export function totalLibraryGamesCount(): number {
   for (const g of S.steamSummaries) add(g.key, g.title);
   for (const g of S.companionSummaries) add(g.key, g.title);
   if (S.showSharedLibrary) {
-    for (const g of S.sharedOwners.values()) add(g.key, g.title);
+    for (const g of S.sharedOwners.values()) {
+      if (!activeOwnsKey(g.key)) add(g.key, g.title);
+    }
   }
   return count;
 }
