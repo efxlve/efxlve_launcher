@@ -315,10 +315,27 @@ fn sanitize_query_text(text: &str) -> String {
 
 fn search_query(title: &str, limit: usize) -> String {
     format!(
-        "search \"{}\"; fields name, first_release_date, cover.image_id, rating, aggregated_rating, version_parent; limit {limit};",
+        "search \"{}\"; {} limit {limit};",
+        sanitize_query_text(title),
+        MATCH_FIELDS
+    )
+}
+
+/// The substring question, asked when the ranked search comes back with a bare
+/// duplicate or only DLC chapters. IGDB's `search` ranks those above the game
+/// itself (Dead by Daylight is the poster child), while `name ~` finds the entry
+/// people actually rated.
+fn name_like_query(title: &str, limit: usize) -> String {
+    format!(
+        "{} where name ~ *\"{}\"*; limit {limit};",
+        MATCH_FIELDS,
         sanitize_query_text(title)
     )
 }
+
+/// What {@link pick_best_match} needs to tell a real entry from its neighbours.
+const MATCH_FIELDS: &str = "fields name, first_release_date, cover.image_id, rating, \
+     aggregated_rating, rating_count, version_parent, parent_game, game_type;";
 
 fn game_query(id: i64) -> String {
     format!(
@@ -680,6 +697,11 @@ fn pick_best_match(hits: &[serde_json::Value], title: &str, year: Option<i64>) -
         if normalized.is_empty() {
             continue;
         }
+        // A DLC or expansion names the game it belongs to: it is never the page's
+        // game, however exactly its name starts with the title.
+        if hit.get("parent_game").map(|v| !v.is_null()).unwrap_or(false) {
+            continue;
+        }
         // Editions carry a version_parent; prefer the main game.
         let edition = hit.get("version_parent").map(|v| !v.is_null()).unwrap_or(false);
         let mut score = 0;
@@ -700,6 +722,10 @@ fn pick_best_match(hits: &[serde_json::Value], title: &str, year: Option<i64>) -
         if edition {
             score -= 25;
         }
+        // Two entries can carry the same name — a bare duplicate with no data
+        // next to the real one. The one people actually rated is the real one.
+        let ratings = hit.get("rating_count").and_then(serde_json::Value::as_i64).unwrap_or(0);
+        score += (ratings / 20).clamp(0, 25) as i32;
         if score > 0 {
             match best {
                 Some((_, best_score)) if best_score >= score => {}
@@ -708,6 +734,21 @@ fn pick_best_match(hits: &[serde_json::Value], title: &str, year: Option<i64>) -
         }
     }
     best.map(|(id, _)| id)
+}
+
+/// True when the chosen hit carries something to show: a score or ratings. A
+/// bare duplicate answers false, which is the cue to ask the substring question.
+fn match_has_data(hits: &[serde_json::Value], id: Option<i64>) -> bool {
+    let Some(id) = id else { return false };
+    hits.iter().any(|hit| {
+        hit.get("id").and_then(serde_json::Value::as_i64) == Some(id)
+            && (hit.get("rating").map(|v| !v.is_null()).unwrap_or(false)
+                || hit
+                    .get("rating_count")
+                    .and_then(serde_json::Value::as_i64)
+                    .unwrap_or(0)
+                    > 0)
+    })
 }
 
 /* ---------- Disk cache ---------- */
@@ -1069,8 +1110,18 @@ pub async fn igdb_enrich(
 
     if id.is_none() {
         let value = api_post(&app, "games", &search_query(&title, 8)).await?;
-        let hits = value.as_array().cloned().unwrap_or_default();
+        let mut hits = value.as_array().cloned().unwrap_or_default();
         id = pick_best_match(&hits, &title, year);
+        // A bare duplicate (an exact name with no ratings) usually means the real
+        // entry sits outside the ranked results, so ask the substring question
+        // and pick from both lists together.
+        if !match_has_data(&hits, id) {
+            let value = api_post(&app, "games", &name_like_query(&title, 20)).await?;
+            if let Some(more) = value.as_array() {
+                hits.extend(more.iter().cloned());
+            }
+            id = pick_best_match(&hits, &title, year).or(id);
+        }
     }
 
     if let Some(found) = id {
@@ -1117,6 +1168,30 @@ mod tests {
         assert_eq!(pick_best_match(&hits, "Halo 3", Some(2007)), Some(2));
         assert_eq!(pick_best_match(&hits, "Halo 3", None), Some(2));
         assert_eq!(pick_best_match(&hits, "Something else", None), None);
+    }
+
+    #[test]
+    fn best_match_skips_dlc_and_prefers_the_rated_entry() {
+        let hits = serde_json::json!([
+            { "id": 10, "name": "Dead by Daylight: Headcase", "first_release_date": 1_496_880_000_i64, "parent_game": 18866 },
+            { "id": 11, "name": "Dead By DayLight", "first_release_date": 1_615_248_000_i64 },
+            { "id": 12, "name": "Dead by Daylight", "first_release_date": 1_465_862_400_i64, "rating_count": 434, "rating": 70.6 }
+        ]);
+        let hits = hits.as_array().cloned().unwrap_or_default();
+        // The DLC belongs to another game, and the bare duplicate loses to the
+        // entry people actually rated.
+        assert_eq!(pick_best_match(&hits, "Dead by Daylight", Some(2016)), Some(12));
+        assert!(match_has_data(&hits, Some(12)));
+        assert!(!match_has_data(&hits, Some(11)));
+        assert!(!match_has_data(&hits, None));
+    }
+
+    #[test]
+    fn name_like_query_asks_for_a_substring_and_drops_quotes() {
+        let query = name_like_query("Dead \"by\" Daylight", 20);
+        assert!(query.contains("where name ~ *\"Dead  by  Daylight\"*;"));
+        assert!(query.contains("limit 20;"));
+        assert!(query.contains("rating_count"));
     }
 
     #[test]
