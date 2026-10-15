@@ -818,6 +818,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         <div class="gp-bar">
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
+            <div id="drawer-col-chips-container" class="gp-tags gp-bar-tags">${renderCollectionTags(s.appName)}</div>
           </div>
           <div class="gp-stats">${heroStatsHtml(s, partner)}</div>
         </div>
@@ -901,7 +902,6 @@ export function renderDrawerOverview(
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
-        <div id="drawer-col-chips-container" class="gp-tags gp-about-tags">${renderCollectionTags(s.appName)}</div>
         <section class="gp-section">
           <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
           <div class="hub-desc-text" id="hub-desc-text">${
