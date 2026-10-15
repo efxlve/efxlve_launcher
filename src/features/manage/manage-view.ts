@@ -4,7 +4,7 @@
  */
 
 import { manageRoot } from "../../core/dom";
-import { icon } from "../../core/icons";
+import { icon, type IconName } from "../../core/icons";
 import { lastPlayedLabel, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
@@ -39,12 +39,26 @@ function row(title: string, desc: string, actions: string, extra = "", descId = 
     </div>`;
 }
 
-/** Class that hides a row or a caption while the search box filters. */
+/**
+ * One titled block of the panel. Sections are the panel's spine: every store
+ * uses the same order, and the search hides a section whose rows all filtered
+ * out instead of leaving an empty caption behind.
+ */
+function group(iconName: IconName, title: string, body: string, tone = ""): string {
+  return `
+    <section class="manage-group${tone ? ` ${tone}` : ""}">
+      <h3 class="manage-group-title">${icon(iconName, 14)} ${title}</h3>
+      <div class="list">${body}</div>
+    </section>`;
+}
+
+/** Class that hides a row or a section while the search box filters. */
 const MANAGE_HIDE = "manage-hide";
 
 /**
  * Filters the panel the way Settings does: every row matches on its own text,
- * and when nothing matches the panel says so instead of looking empty.
+ * empty sections disappear with their rows, and when nothing matches the panel
+ * says so instead of looking empty.
  */
 function applyManageSearch(query: string): void {
   const body = document.querySelector<HTMLElement>(".manage-body");
@@ -56,6 +70,12 @@ function applyManageSearch(query: string): void {
     const match = tokens.length === 0 || tokens.every((token) => text.includes(token));
     line.classList.toggle(MANAGE_HIDE, !match);
     if (match) visible += 1;
+  });
+  body.querySelectorAll<HTMLElement>(".manage-group").forEach((section) => {
+    const any = Array.from(section.querySelectorAll<HTMLElement>(".row[data-search]")).some(
+      (line) => !line.classList.contains(MANAGE_HIDE),
+    );
+    section.classList.toggle(MANAGE_HIDE, tokens.length > 0 && !any);
   });
   const empty = document.getElementById("manage-search-empty");
   if (empty) empty.hidden = tokens.length === 0 || visible > 0;
@@ -564,8 +584,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
   return `
     <div class="manage-tab-content">
-      ${s.installed ? `<div class="section-title">${t("manage.groupFiles")}</div>
-      <div class="list">
+      ${s.installed ? group("folder", t("manage.groupFiles"), `
         ${row(t("manage.verifyTitle"), t("manage.verifyDesc"),
           `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>`,
           `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
@@ -574,21 +593,17 @@ export function renderDrawerManage(s: EpicSummary): string {
           blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : "")}
         ${row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
           `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)}
-      </div>` : ""}
+      `) : ""}
 
-      <div class="section-title">${t("manage.groupCover")}</div>
-      <div class="list">
-        ${row(t("manage.coverTitle"), t("manage.coverDesc"),
-          `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${id}">${icon("image", 13)} ${t("manage.coverChange")}</button>`)}
-      </div>
+      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+        `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${id}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
-      ${s.installed ? `<div class="section-title">${t("manage.groupSaves")}</div>
-      <div class="list">
+      ${s.installed ? group("cloud", t("manage.groupSaves"), `
         ${partnerSaves
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
               `<button class="btn ghost small" data-act="manage-sync-saves" data-id="${id}" title="${t("manage.syncNow")}" ${S.manageSyncingSaves ? "disabled" : ""}>${icon("refresh", 13)} ${t("manage.sync")}</button>${toggle("manage-toggle-cloud", st.cloudSavesEnabled)}`,
-              `<div class="mg-note" style="color: var(--text-3); font-size: 11px;">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}${mtuIssueHtml()}`, "manage-cloud-subtitle")}
+              `<div class="mg-note">${icon("info", 12)} ${t("manage.eosCloudNotice")}</div>${syncProgressHtml(id)}${mtuIssueHtml()}`, "manage-cloud-subtitle")}
             <div class="row mg-row">
               <div class="row-main">
                 <div class="mg-title">${t("manage.saveFolderTitle")}</div>
@@ -601,12 +616,11 @@ export function renderDrawerManage(s: EpicSummary): string {
                <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
               `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(id)}</div>`}
-      </div>` : ""}
+      `) : ""}
 
-      ${s.installed ? `<div class="section-title">${t("manage.groupLaunch")}</div>
-      <div class="list">
-        ${s.installed ? row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate)) : ""}
-        ${s.installed ? row(t("manage.priorityTitle"), t("manage.priorityDesc"), toggle("manage-toggle-priority", st.highPriority)) : ""}
+      ${s.installed ? group("play", t("manage.groupLaunch"), `
+        ${row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate))}
+        ${row(t("manage.priorityTitle"), t("manage.priorityDesc"), toggle("manage-toggle-priority", st.highPriority))}
         <div class="row mg-row stack">
           <div class="mg-title">${t("manage.argsTitle")}</div>
           <div class="mg-desc">${t("manage.argsDesc")}</div>
@@ -624,10 +638,9 @@ export function renderDrawerManage(s: EpicSummary): string {
           <textarea id="manage-env-input" class="input mg-env" spellcheck="false" placeholder="DXVK_HUD=1&#10;WINEDLLOVERRIDES=d3d11=n,b">${esc(envToText(st.envVars))}</textarea>
           <div class="mg-inline end"><button class="btn primary small" data-act="manage-save-launch-extras" data-id="${id}">${t("common.save")}</button></div>
         </div>
-      </div>` : ""}
+      `) : ""}
 
-      <div class="section-title">${t("manage.groupPlaytime")}</div>
-      <div class="list">
+      ${group("clock", t("manage.groupPlaytime"), `
         ${row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtimeStr)}</span>`,
           pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${id}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
@@ -637,12 +650,10 @@ export function renderDrawerManage(s: EpicSummary): string {
           <div class="mg-desc">${t("manage.epicDataP1")}</div>
           <div class="mg-desc">${t("manage.epicDataP2")}</div>
         </div>
-      </div>
+      `)}
 
-      <div class="list">
-        ${row(t("manage.hideTitle"), t("manage.hideDesc"),
-          `<button class="btn ghost small" data-act="hide-game" data-id="${id}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`)}
-      </div>
+      ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+        `<button class="btn ghost small" data-act="hide-game" data-id="${id}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
 
       ${s.installed ? `<div class="list mg-danger">
         ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
