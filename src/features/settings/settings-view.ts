@@ -53,6 +53,7 @@ import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScree
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
@@ -516,7 +517,7 @@ function renderSocial(): string {
   const discordAlways = row(
     t("settings.discordAlwaysTitle"),
     t("settings.discordAlwaysDesc"),
-    toggle("toggle-discord-always", localStorage.getItem("efxlve-discord-always") !== "false"),
+    toggle("toggle-discord-always", keepDiscordOpen()),
   );
 
   return group(discord + presence + discordAlways, t("settings.secSocial"));

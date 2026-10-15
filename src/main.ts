@@ -20,7 +20,7 @@ import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
-import { destroyDiscordPage, hydrateDiscordPage, renderDiscordPage } from "./features/discord/discord-view";
+import { destroyDiscordPage, hydrateDiscordPage, keepDiscordOpen, renderDiscordPage } from "./features/discord/discord-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
 import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
 import "./features/events/click-router";
@@ -55,9 +55,9 @@ applySidebarPageVisibility();
 // launcher never claims "Online" while the cable is out.
 watchConnection(updateOfflineModeUi);
 
-// Discord stays warm by default: the page loads parked off-screen at startup,
-// so messages and calls arrive while a game runs. Settings can turn it off.
-if (localStorage.getItem("efxlve-discord-always") !== "false") {
+// Discord is loaded on demand; keeping the page parked off-screen is opt-in in
+// Settings (Social), because a hidden Discord client costs real idle CPU.
+if (keepDiscordOpen()) {
   void invoke("discord_view_prewarm").catch(() => undefined);
 }
 

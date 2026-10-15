@@ -92,7 +92,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "搜索设置",
   "settings.discordAlwaysTitle": "保持 Discord 打开",
-  "settings.discordAlwaysDesc": "启动时在后台加载 Discord 页面，玩游戏时也能收到消息和通话。",
+  "settings.discordAlwaysDesc": "让 Discord 页面在后台保持加载，玩游戏时也能收到消息和来电。空闲时会持续占用 CPU——笔记本上建议关闭。",
   "settings.presenceDesc": "在 Discord 上显示你正在进行的内容，以及游戏封面和启动器图标。",
   "settings.discordDesc": "启动器内的 Discord：好友、私信和服务器，使用真正的网页客户端。",
   "settings.discordJoin": "加入服务器",

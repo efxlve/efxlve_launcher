@@ -126,10 +126,41 @@ export function initMiniPlayer(): void {
     window.addEventListener("pointerup", up);
   });
 
-  window.setInterval(() => void quickRefresh(), 1000);
   window.setInterval(() => void refresh(), 10000);
-  window.setInterval(paintProgress, 1000);
   void refresh();
+}
+
+/* The fast loop only runs while something is playing.
+ *
+ * It used to poll the receiver three times a second, forever: an idle launcher
+ * kept a WebView2 process busy (measured ~16% of a core) for nothing. Now the
+ * one-second loop exists only during playback; while signed in but idle a slow
+ * poll still notices the user pressing play, and when signed out nothing runs
+ * (the ten-second refresh above keeps looking for a sign-in). */
+let fastTimer = 0;
+let idleTimer = 0;
+
+function setPolling(playing: boolean): void {
+  if (playing && !fastTimer) {
+    window.clearInterval(idleTimer);
+    idleTimer = 0;
+    fastTimer = window.setInterval(() => {
+      void quickRefresh();
+      paintProgress();
+    }, 1000);
+    return;
+  }
+  if (!playing && fastTimer) {
+    window.clearInterval(fastTimer);
+    fastTimer = 0;
+  }
+  if (!playing && signedIn && !idleTimer) {
+    idleTimer = window.setInterval(() => void quickRefresh(), 3000);
+  }
+  if (!signedIn && idleTimer) {
+    window.clearInterval(idleTimer);
+    idleTimer = 0;
+  }
 }
 
 /** Opens the current track inside the launcher's embedded Spotify page. */
@@ -267,6 +298,7 @@ function paint(): void {
     eq.classList.toggle("playing", pageMode || Boolean(current?.isPlaying));
     eq.classList.toggle("paused", pageMode ? false : Boolean(current && !current.isPlaying));
   }
+  setPolling(pageMode || Boolean(current?.isPlaying));
 
   const title = document.getElementById("sb-mini-title");
   const artist = document.getElementById("sb-mini-artist");

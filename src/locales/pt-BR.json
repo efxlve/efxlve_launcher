@@ -92,7 +92,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "Buscar nas configurações",
   "settings.discordAlwaysTitle": "Manter o Discord aberto",
-  "settings.discordAlwaysDesc": "Carrega a página do Discord na inicialização, em segundo plano, para receber mensagens e chamadas enquanto joga.",
+  "settings.discordAlwaysDesc": "Mantém a página do Discord carregada em segundo plano para receber mensagens e chamadas enquanto joga. Consome CPU real em repouso — deixe desligado em notebooks.",
   "settings.presenceDesc": "Mostra no Discord o que você está fazendo, com a capa do jogo e o ícone do launcher.",
   "settings.discordDesc": "Discord no launcher: amigos, mensagens diretas e servidores no cliente web real.",
   "settings.discordJoin": "Entrar no servidor",

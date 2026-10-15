@@ -329,6 +329,11 @@ body.sb-resizing iframe {
   height: 30%;
   border-radius: 2px;
   background: var(--text);
+}
+
+/* The bars only animate while something plays. Animating them forever kept the
+   compositor (and the CPU) awake on an idle launcher. */
+.sb-eq.playing span {
   animation: sb-eq 900ms ease-in-out infinite;
 }
 

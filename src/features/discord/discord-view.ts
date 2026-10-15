@@ -99,9 +99,13 @@ export function destroyDiscordPage(): void {
 }
 
 /** The launcher's own preference: the Discord page stays loaded in the
- * background so messages and calls arrive while a game runs. */
+ * background so messages and calls arrive while a game runs.
+ *
+ * Opt-in by default: the parked page runs Discord's whole web client and costs
+ * ~30% of a CPU core while idle (measured with the process tree). The lighter
+ * Discord SDK/RPC path keeps presence and call detection working either way. */
 export function keepDiscordOpen(): boolean {
-  return localStorage.getItem("efxlve-discord-always") !== "false";
+  return localStorage.getItem("efxlve-discord-always") === "true";
 }
 
 function syncDiscordPage(): void {

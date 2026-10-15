@@ -106,7 +106,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "सेटिंग्स खोजें",
   "settings.discordAlwaysTitle": "Discord खुला रखें",
-  "settings.discordAlwaysDesc": "खेलते समय संदेश और कॉल पाने के लिए Discord पेज शुरुआत में पृष्ठभूमि में लोड होता है।",
+  "settings.discordAlwaysDesc": "Discord पेज को बैकग्राउंड में लोड रखता है ताकि खेलते समय संदेश और कॉल आएँ। निष्क्रिय रहते हुए असली CPU खर्च करता है — लैपटॉप पर बंद ही रखें।",
   "settings.presenceDesc": "Discord पर दिखाता है कि आप क्या कर रहे हैं, गेम कवर और लॉन्चर आइकन के साथ।",
   "settings.discordDesc": "लॉन्चर में Discord: दोस्त, DM और सर्वर असली वेब क्लाइंट में।",
   "settings.discordJoin": "सर्वर से जुड़ें",

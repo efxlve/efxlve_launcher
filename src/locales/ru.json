@@ -92,7 +92,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "Поиск в настройках",
   "settings.discordAlwaysTitle": "Держать Discord открытым",
-  "settings.discordAlwaysDesc": "Загружает страницу Discord при запуске в фоне, чтобы сообщения и звонки приходили во время игры.",
+  "settings.discordAlwaysDesc": "Держит страницу Discord загруженной в фоне, чтобы сообщения и звонки приходили во время игры. Заметно расходует CPU в простое — на ноутбуках лучше выключить.",
   "settings.presenceDesc": "Показывает в Discord, чем вы заняты, вместе с обложкой игры и значком лаунчера.",
   "settings.discordDesc": "Discord в лаунчере: друзья, личные сообщения и серверы в настоящем веб-клиенте.",
   "settings.discordJoin": "Вступить в сервер",

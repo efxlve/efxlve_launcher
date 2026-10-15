@@ -92,7 +92,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "搜尋設定",
   "settings.discordAlwaysTitle": "保持 Discord 開啟",
-  "settings.discordAlwaysDesc": "啟動時在背景載入 Discord 頁面，玩遊戲時也能收到訊息和通話。",
+  "settings.discordAlwaysDesc": "讓 Discord 頁面在背景保持載入，玩遊戲時也能收到訊息與來電。閒置時會持續佔用 CPU——筆電上建議關閉。",
   "settings.presenceDesc": "在 Discord 上顯示你正在進行的內容，以及遊戲封面和啟動器圖示。",
   "settings.discordDesc": "啟動器內的 Discord：好友、私訊和伺服器，使用真正的網頁客戶端。",
   "settings.discordJoin": "加入伺服器",

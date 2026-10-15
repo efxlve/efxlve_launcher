@@ -92,7 +92,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "ابحث في الإعدادات",
   "settings.discordAlwaysTitle": "إبقاء Discord مفتوحًا",
-  "settings.discordAlwaysDesc": "يحمّل صفحة Discord عند بدء التشغيل في الخلفية، لتصل الرسائل والمكالمات أثناء اللعب.",
+  "settings.discordAlwaysDesc": "يبقي صفحة Discord محمّلة في الخلفية لتصل الرسائل والمكالمات أثناء اللعب. يستهلك CPU فعليًا في وضع الخمول — اتركه مغلقًا على الحواسيب المحمولة.",
   "settings.presenceDesc": "يعرض ما تفعله على Discord، مع غلاف اللعبة وأيقونة المشغّل.",
   "settings.discordDesc": "Discord داخل المشغّل: الأصدقاء والرسائل الخاصة والخوادم عبر عميل الويب الحقيقي.",
   "settings.discordJoin": "انضم إلى الخادم",

@@ -92,7 +92,7 @@
   "settings.presenceTitle": "Discord Rich Presence",
   "settings.searchPlaceholder": "ค้นหาการตั้งค่า",
   "settings.discordAlwaysTitle": "เปิด Discord ค้างไว้",
-  "settings.discordAlwaysDesc": "โหลดหน้า Discord ตอนเริ่มโปรแกรมไว้เบื้องหลัง เพื่อรับข้อความและสายระหว่างเล่นเกม",
+  "settings.discordAlwaysDesc": "โหลดหน้า Discord ไว้เบื้องหลังเพื่อให้ข้อความและสายเข้ามาระหว่างเล่นเกม ใช้ CPU จริงขณะว่าง — บนโน้ตบุ๊กควรปิดไว้",
   "settings.presenceDesc": "แสดงสิ่งที่คุณกำลังทำบน Discord พร้อมปกเกมและไอคอนตัวเปิดเกม",
   "settings.discordDesc": "Discord ในตัวเรียกโปรแกรม: เพื่อน ข้อความส่วนตัว และเซิร์ฟเวอร์ผ่านเว็บไคลเอนต์จริง",
   "settings.discordJoin": "เข้าร่วมเซิร์ฟเวอร์",
