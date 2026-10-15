@@ -97,6 +97,17 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_delete_backup` | `epicDeleteBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_delete_collection` | `epicDeleteCollection({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_delete_game_screenshot` | `epicDeleteGameScreenshot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `epic_save_edited_screenshot` | `epicSaveEditedScreenshot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `screenshot_share_discord` | `screenshotShareDiscord({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `clip_status` | `clipStatus({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_start` | `clipStart({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_stop` | `clipStop({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_set_options` | `clipSetOptions({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_set_hotkey` | `clipSetHotkey({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_list` | `clipList({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_folder_path` | `clipFolderPath({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `clip_delete` | `clipDelete({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
 | `epic_detect_egl_games` | `epicDetectEglGames({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_detect_eos` | `epicDetectEos({ ... })` | `src-tauri/src/main.rs` |
 | `epic_ensure_binary` | `epicEnsureBinary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |

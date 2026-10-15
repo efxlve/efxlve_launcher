@@ -25,7 +25,21 @@ prewarm fix (launcher 2.5%, GPU 2.7%, renderer 5.6%).
 - Disable transparency while the window is unfocused, or
 - offer a "solid background" switch in Settings → Appearance for low-end PCs.
 
-## 3. Startup: what is left
+## 3. Screenshots workstream — shipped, with room to grow
+
+Done: opt-in sidebar page (filters, favorites, multi-select, batch), canvas
+editor (crop, rotate, flip, pen, arrow, rectangle, mosaic, text, undo/redo,
+save a copy or overwrite a PNG), one-click sharing (Discord webhook, X and
+Reddit via clipboard + compose window), and the F9 MJPEG-AVI clip recorder.
+
+Left, in rough priority:
+- Trim/join clips in the launcher (the AVI writer is already a plain container;
+  a simple cut list would be a small extension).
+- Upload a clip to the Discord webhook as well (the multipart path exists, the
+  8 MB webhook limit means a shorter cap or a compressed re-encode first).
+- Screenshot `SteamGridDB` upload? Not planned; the picker already covers covers.
+
+## 4. Startup: what is left
 
 Measured through `<app_data>/perf.log` on the dev machine (before → after):
 
@@ -35,21 +49,20 @@ Measured through `<app_data>/perf.log` on the dev machine (before → after):
 | `library:epic-cached` | 2.26 s | ~0.6 s |
 | `library:companion` | 4.19 s | ~0.7 s |
 | `library:steam` | 5.0 s | ~0.8 s (day-long cache) |
-| `library:epic-sync` | ~11 s | ~11 s (network, background) |
-| `boot:ready` | 1.6 s | ~0.6 s |
+| `boot:ready` | 1.6 s | ~0.7 s |
 
 Left: `epicGetNetworkProfile` and the CDN/shortcut prefetch are still awaited on
 the boot path (a few IPC round trips, ~50 ms). Not worth another pass unless a
 slow start shows up again.
 
-## 4. Bundle size
+## 5. Bundle size
 
 `main` + `utils` + the shared feature chunk are ~1.1 MB minified (~134 ms of
 parse/eval here). Splitting the rare views (tv mode, store, discord) behind
 dynamic imports is tracked in ROADMAP 6.3; only worth it for low-end machines,
 and it touches the core render switch, so it needs care.
 
-## 5. IGDB proxy deployment (user action)
+## 6. IGDB proxy deployment (user action)
 
 See `services/igdb-proxy/README.md`: deploy the Netlify function and set
 `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` there. Until it is deployed, the
