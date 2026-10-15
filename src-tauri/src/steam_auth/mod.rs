@@ -14,7 +14,7 @@
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub const API_BASE: &str = "https://api.steampowered.com/IAuthenticationService";
 pub const OWNED_GAMES_URL: &str = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/";
@@ -186,7 +186,7 @@ impl SteamLoginStatus {
 }
 
 /// One owned Steam game (`IPlayerService/GetOwnedGames`).
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SteamOwnedGame {
     pub app_id: String,
@@ -197,7 +197,7 @@ pub struct SteamOwnedGame {
     pub icon_url: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SteamOwnedGames {
     pub game_count: i64,
@@ -206,7 +206,7 @@ pub struct SteamOwnedGames {
 
 /// One game shared with the account through Steam Families
 /// (`IFamilyGroupsService/GetSharedLibraryApps`).
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SteamSharedGame {
     pub app_id: String,

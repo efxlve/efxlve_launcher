@@ -78,8 +78,8 @@ export const steamOpenDownloads = () => invoke<void>("steam_open_downloads");
 export const steamListInstalled = () => invoke<SteamGame[]>("steam_list_installed");
 
 /** Games family members share with the signed-in account (Steam Families). */
-export const steamFamilySharedApps = () =>
-  invoke<SteamSharedGame[]>("steam_family_shared_apps");
+export const steamFamilySharedApps = (force = false) =>
+  invoke<SteamSharedGame[]>("steam_family_shared_apps", { force });
 
 /** One app's metadata, read from the Steam client's own `appcache/appinfo.vdf`. */
 export interface SteamAppMetadata {
@@ -250,4 +250,5 @@ export const steamSwitchAccount = (steamId: string) =>
 export const steamRemoveSavedAccount = (steamId: string) =>
   invoke<void>("steam_remove_saved_account", { steamId });
 /** Every owned game (installed or not); refreshes the access token silently. */
-export const steamOwnedGames = () => invoke<SteamOwnedGames>("steam_owned_games");
+export const steamOwnedGames = (force = false) =>
+  invoke<SteamOwnedGames>("steam_owned_games", { force });

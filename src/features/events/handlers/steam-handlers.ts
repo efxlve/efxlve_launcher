@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Click delegation handlers for the Steam integration: detection hand-off,
- * Settings shortcuts and the account sign-in flow (ROADMAP §13).
+ * Settings shortcuts and the account sign-in flow (ROADMAP Â§13).
  */
 
 import { closeAllModals, render } from "../../../core/render";
@@ -122,7 +122,7 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
       // card, so one light pass keeps the Settings list and the grid in step
       // (a full integrations pass would re-scan EA/Ubisoft/Xbox as well).
       S.steamStatus = null;
-      void loadSteamLibrary().then(() => render());
+      void loadSteamLibrary(true).then(() => render());
       return true;
 
     case "steam-scan":

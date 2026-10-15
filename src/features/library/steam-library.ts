@@ -200,7 +200,7 @@ export async function refreshSteamStatus(): Promise<void> {
  * Returns the owned-library error message (or `null`), so the caller can react
  * to an expired session.
  */
-export async function loadSteamLibrary(): Promise<string | null> {
+export async function loadSteamLibrary(force = false): Promise<string | null> {
   S.steamLibrarySyncing = true;
   // The boot hydration may not have finished yet; one cheap status check keeps
   // the owned fetch from being skipped (no network while no login is pending).
@@ -245,7 +245,7 @@ export async function loadSteamLibrary(): Promise<string | null> {
 
   let error: string | null = null;
   try {
-    const result = await steamOwnedGames();
+    const result = await steamOwnedGames(force);
     S.steamOwnedCount = result.gameCount;
     mergeOwnedPlaytimes(result.games);
     const installedIds = new Set(installed.map((g) => g.appId));
@@ -257,7 +257,7 @@ export async function loadSteamLibrary(): Promise<string | null> {
     // Steam Families: games other members share with this account never appear
     // in the owned list, so they are merged here as "install through Steam".
     S.steamSharedIds = new Set();
-    const shared = await steamFamilySharedApps().catch(() => []);
+    const shared = await steamFamilySharedApps(force).catch(() => []);
     const ownedIds = new Set(result.games.map((g) => g.appId));
     for (const g of shared) {
       if (installedIds.has(g.appId) || ownedIds.has(g.appId)) continue;

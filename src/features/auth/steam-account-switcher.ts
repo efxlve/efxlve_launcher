@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Steam multi-account switcher, mirroring the Epic/GOG vault pattern.
  *
  * Each account's refresh token is sealed with DPAPI in its own vault file; the
@@ -36,7 +36,7 @@ export async function switchSteamAccount(steamId: string): Promise<void> {
     render();
     toast(t("settings.accountSwitched", { name: status.accountName }), "ok");
     // The owned library belongs to the active account; installed manifests stay.
-    void loadSteamLibrary();
+    void loadSteamLibrary(true);
   } catch (e) {
     toast(String(e), "err");
   } finally {
@@ -52,7 +52,7 @@ export async function removeSavedSteamAccount(steamId: string): Promise<void> {
       S.steamAuth = null;
       S.steamAuthStep = "idle";
       S.steamOwnedCount = 0;
-      void loadSteamLibrary();
+      void loadSteamLibrary(true);
     }
     await loadSavedSteamAccounts();
     toast(t("settings.accountRemoved"), "ok");

@@ -8,6 +8,7 @@ use std::time::Duration;
 use base64::Engine;
 use serde::Serialize;
 use serde_json::Value;
+use tauri::Manager;
 use zeroize::Zeroize;
 
 use super::vault::*;
@@ -607,7 +608,7 @@ pub fn steam_remove_saved_account(app: tauri::AppHandle, steam_id: String) {
 /// Every owned game on the signed-in account. The access token is refreshed
 /// transparently; expired tokens are retried once with a fresh one.
 #[tauri::command]
-pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames, String> {
+pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Result<SteamOwnedGames, String> {
     ensure_disk_checked(&app);
 
     let (steam_id, cached) = {
@@ -621,18 +622,84 @@ pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames,
         )
     };
 
+    // Steam's list only changes when the user buys something, and the call takes
+    // seconds: a day-long disk cache makes every start after the first instant.
+    // The manual refresh passes `force` to bypass it.
+    if !force.unwrap_or(false) {
+        if let Some(cached_games) = read_owned_cache(&app, &steam_id) {
+            return Ok(cached_games);
+        }
+    }
+
     let client = http_client()?;
     let token = match cached {
         Some(token) => token,
         None => refresh_access_token(&client).await?,
     };
 
-    match fetch_owned_games(&client, &token, &steam_id).await {
+    let games = match fetch_owned_games(&client, &token, &steam_id).await {
         Err(err) if err == "@t:steam.err.sessionExpired" => {
             let fresh = refresh_access_token(&client).await?;
-            fetch_owned_games(&client, &fresh, &steam_id).await
+            fetch_owned_games(&client, &fresh, &steam_id).await?
         }
-        other => other,
+        other => other?,
+    };
+    write_owned_cache(&app, &steam_id, &games);
+    Ok(games)
+}
+
+/* ---------- Owned-list disk cache ---------- */
+
+/// A day is short enough that a purchase shows up on the next start, long
+/// enough that the network call happens twice a day instead of every launch.
+const OWNED_CACHE_TTL_SECS: u64 = 60 * 60 * 24;
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct OwnedCache {
+    steam_id: String,
+    at: u64,
+    games: SteamOwnedGames,
+}
+
+fn owned_cache_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("steam").join("owned_games.json"))
+}
+
+fn read_owned_cache(app: &tauri::AppHandle, steam_id: &str) -> Option<SteamOwnedGames> {
+    let path = owned_cache_path(app)?;
+    let raw = std::fs::read(path).ok()?;
+    let cache: OwnedCache = serde_json::from_slice(&raw).ok()?;
+    if cache.steam_id != steam_id {
+        return None;
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    (now.saturating_sub(cache.at) < OWNED_CACHE_TTL_SECS).then_some(cache.games)
+}
+
+fn write_owned_cache(app: &tauri::AppHandle, steam_id: &str, games: &SteamOwnedGames) {
+    let Some(path) = owned_cache_path(app) else {
+        return;
+    };
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let cache = OwnedCache {
+        steam_id: steam_id.to_string(),
+        at: now,
+        games: games.clone(),
+    };
+    if let Ok(raw) = serde_json::to_vec(&cache) {
+        let _ = std::fs::write(path, raw);
     }
 }
 
@@ -642,6 +709,7 @@ pub async fn steam_owned_games(app: tauri::AppHandle) -> Result<SteamOwnedGames,
 #[tauri::command]
 pub async fn steam_family_shared_apps(
     app: tauri::AppHandle,
+    force: Option<bool>,
 ) -> Result<Vec<SteamSharedGame>, String> {
     ensure_disk_checked(&app);
 
@@ -653,18 +721,72 @@ pub async fn steam_family_shared_apps(
         session.access_token_valid().map(str::to_string)
     };
 
+    // Same reasoning as the owned list: family sharing changes rarely and the
+    // call is a network round trip on the boot path.
+    if !force.unwrap_or(false) {
+        if let Some(shared) = read_shared_cache(&app) {
+            return Ok(shared);
+        }
+    }
+
     let client = http_client()?;
     let token = match cached {
         Some(token) => token,
         None => refresh_access_token(&client).await?,
     };
 
-    match family_shared_with(&client, &token).await {
+    let shared = match family_shared_with(&client, &token).await {
         Err(err) if err == "@t:steam.err.sessionExpired" => {
             let fresh = refresh_access_token(&client).await?;
-            family_shared_with(&client, &fresh).await
+            family_shared_with(&client, &fresh).await?
         }
-        other => other,
+        other => other?,
+    };
+    write_shared_cache(&app, &shared);
+    Ok(shared)
+}
+
+fn shared_cache_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("steam").join("family_shared.json"))
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SharedCache {
+    at: u64,
+    games: Vec<SteamSharedGame>,
+}
+
+fn read_shared_cache(app: &tauri::AppHandle) -> Option<Vec<SteamSharedGame>> {
+    let path = shared_cache_path(app)?;
+    let raw = std::fs::read(path).ok()?;
+    let cache: SharedCache = serde_json::from_slice(&raw).ok()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    (now.saturating_sub(cache.at) < OWNED_CACHE_TTL_SECS).then_some(cache.games)
+}
+
+fn write_shared_cache(app: &tauri::AppHandle, games: &[SteamSharedGame]) {
+    let Some(path) = shared_cache_path(app) else {
+        return;
+    };
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let cache = SharedCache {
+        at: now,
+        games: games.to_vec(),
+    };
+    if let Ok(raw) = serde_json::to_vec(&cache) {
+        let _ = std::fs::write(path, raw);
     }
 }
 

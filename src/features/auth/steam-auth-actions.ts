@@ -1,9 +1,9 @@
-/**
- * Steam account sign-in lifecycle (ROADMAP §13).
+﻿/**
+ * Steam account sign-in lifecycle (ROADMAP Â§13).
  *
  * The password only travels to the backend for a single request; the UI keeps
  * no copy. Polling runs only while a sign-in is pending and stops on success,
- * cancel or a five minute deadline — never in the background at idle.
+ * cancel or a five minute deadline â€” never in the background at idle.
  */
 
 import { isTauri } from "../../core/constants";
@@ -246,7 +246,7 @@ function startSteamPoll(): void {
       applySteamStatus(status);
       if (status.state === "signed_in") {
         toast(t("accounts.connected"), "ok");
-        void loadSteamLibrary();
+        void loadSteamLibrary(true);
         return;
       }
     } catch (e) {
@@ -300,6 +300,6 @@ export async function logoutSteam(): Promise<void> {
   S.steamAuthUser = "";
   S.steamOwnedCount = 0;
   void loadSavedSteamAccounts();
-  void loadSteamLibrary();
+  void loadSteamLibrary(true);
   render();
 }
