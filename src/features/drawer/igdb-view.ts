@@ -24,7 +24,7 @@ const loading = new Set<string>();
 
 /** Fetches once per game and repaints the block when the answer lands. */
 export function ensureIgdbOverview(target: IgdbTarget, year: number | null): void {
-  if (!S.igdbConfigured || cache.has(target.appName) || loading.has(target.appName)) return;
+  if (!S.igdbConfigured || S.offlineMode || cache.has(target.appName) || loading.has(target.appName)) return;
   loading.add(target.appName);
   void igdbEnrich(target.title, year, igdbExternalId(target.appName))
     .then((game) => {

@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "주소는 http:// 또는 https://로 시작해야 합니다.",
   "igdb.proxyMissing": "Efxlve IGDB 서버에 연결할 수 없습니다. 자체 Twitch 자격 증명을 입력할 수 있습니다.",
   "igdb.testOkProxy": "Efxlve 서버를 통해 연결됨: {name} 발견.",
-  "settings.igdbProxyPlaceholder": "서버 주소"
+  "settings.igdbProxyPlaceholder": "서버 주소",
+  "net.blocked": "{what} — 오프라인 모드입니다.",
+  "net.whatSync": "라이브러리 동기화를 건너뛰었습니다",
+  "nav.noConnection": "연결 없음",
+  "nav.noConnectionTip": "인터넷 연결이 없습니다",
+  "lib.offlineMode": "오프라인 모드: 라이브러리를 캐시에서 표시합니다.",
+  "net.whatDownload": "다운로드를 시작하지 않았습니다"
 }

@@ -14,7 +14,8 @@ import { applySidebarPageVisibility } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
-import { updateChrome, updateNavHistoryUi } from "./core/nav";
+import { updateChrome, updateNavHistoryUi, updateOfflineModeUi } from "./core/nav";
+import { watchConnection } from "./core/offline";
 import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
@@ -50,6 +51,9 @@ perfMark("main:module");
 initSidebarLayout();
 initMiniPlayer();
 applySidebarPageVisibility();
+// Windows reports a lost/restored connection; the chip follows it so the
+// launcher never claims "Online" while the cable is out.
+watchConnection(updateOfflineModeUi);
 
 // Discord stays warm by default: the page loads parked off-screen at startup,
 // so messages and calls arrive while a game runs. Settings can turn it off.

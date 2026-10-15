@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "Адрес должен начинаться с http:// или https://.",
   "igdb.proxyMissing": "Сервер IGDB Efxlve недоступен. Можно ввести свои данные Twitch.",
   "igdb.testOkProxy": "Подключено через сервер Efxlve: найден {name}.",
-  "settings.igdbProxyPlaceholder": "Адрес сервера"
+  "settings.igdbProxyPlaceholder": "Адрес сервера",
+  "net.blocked": "{what} — включён автономный режим.",
+  "net.whatSync": "Синхронизация библиотеки пропущена",
+  "nav.noConnection": "Нет подключения",
+  "nav.noConnectionTip": "Нет подключения к интернету",
+  "lib.offlineMode": "Автономный режим: библиотека показана из кэша.",
+  "net.whatDownload": "Загрузка не начата"
 }

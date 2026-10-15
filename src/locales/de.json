@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "Die Adresse muss mit http:// oder https:// beginnen.",
   "igdb.proxyMissing": "Der Efxlve-IGDB-Server ist nicht erreichbar. Du kannst eigene Twitch-Zugangsdaten eingeben.",
   "igdb.testOkProxy": "Über den Efxlve-Server verbunden: {name} gefunden.",
-  "settings.igdbProxyPlaceholder": "Serveradresse"
+  "settings.igdbProxyPlaceholder": "Serveradresse",
+  "net.blocked": "{what} — du bist im Offline-Modus.",
+  "net.whatSync": "Bibliotheksabgleich übersprungen",
+  "nav.noConnection": "Keine Verbindung",
+  "nav.noConnectionTip": "Keine Internetverbindung",
+  "lib.offlineMode": "Offline-Modus: Bibliothek wird aus dem Cache angezeigt.",
+  "net.whatDownload": "Download nicht gestartet"
 }

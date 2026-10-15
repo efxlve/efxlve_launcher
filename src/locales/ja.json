@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "アドレスは http:// または https:// で始まる必要があります。",
   "igdb.proxyMissing": "Efxlve の IGDB サーバーに接続できませんでした。自分の Twitch 認証情報を入力できます。",
   "igdb.testOkProxy": "Efxlve サーバー経由で接続しました: {name} を検出。",
-  "settings.igdbProxyPlaceholder": "サーバーアドレス"
+  "settings.igdbProxyPlaceholder": "サーバーアドレス",
+  "net.blocked": "{what} — オフラインモードです。",
+  "net.whatSync": "ライブラリの同期をスキップしました",
+  "nav.noConnection": "接続なし",
+  "nav.noConnectionTip": "インターネット接続がありません",
+  "lib.offlineMode": "オフラインモード: ライブラリをキャッシュから表示しています。",
+  "net.whatDownload": "ダウンロードを開始しませんでした"
 }

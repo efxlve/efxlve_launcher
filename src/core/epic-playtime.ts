@@ -39,7 +39,7 @@ export function mergeEpicServerPlaytimes(server: Record<string, number>): boolea
  * skips the backend cache and is used right after a game session ends.
  */
 export async function syncEpicServerPlaytimes(force = false): Promise<void> {
-  if (!isTauri) return;
+  if (!isTauri || S.offlineMode) return;
   try {
     const server = await epicSyncEpicPlaytimes(force);
     if (mergeEpicServerPlaytimes(server)) scheduleRender();

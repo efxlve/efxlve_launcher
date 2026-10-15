@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "पता http:// या https:// से शुरू होना चाहिए।",
   "igdb.proxyMissing": "Efxlve IGDB सर्वर तक नहीं पहुँच सके। आप अपने Twitch क्रेडेंशियल डाल सकते हैं।",
   "igdb.testOkProxy": "Efxlve सर्वर से जुड़ गया: {name} मिला।",
-  "settings.igdbProxyPlaceholder": "सर्वर पता"
+  "settings.igdbProxyPlaceholder": "सर्वर पता",
+  "net.blocked": "{what} — आप ऑफ़लाइन मोड में हैं।",
+  "net.whatSync": "लाइब्रेरी सिंक छोड़ा गया",
+  "nav.noConnection": "कोई कनेक्शन नहीं",
+  "nav.noConnectionTip": "इंटरनेट कनेक्शन नहीं है",
+  "lib.offlineMode": "ऑफ़लाइन मोड: लाइब्रेरी कैश से दिखाई जा रही है।",
+  "net.whatDownload": "डाउनलोड शुरू नहीं हुआ"
 }

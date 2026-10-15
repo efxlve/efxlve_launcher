@@ -235,7 +235,8 @@ export async function loadSteamLibrary(): Promise<string | null> {
   }
   scheduleRender();
 
-  if (S.steamAuth?.state !== "signed_in") {
+  if (S.steamAuth?.state !== "signed_in" || S.offlineMode) {
+    // Offline: the installed list above is the library, nothing else to fetch.
     S.steamOwnedCount = 0;
     S.steamSharedIds = new Set();
     S.steamLibrarySyncing = false;

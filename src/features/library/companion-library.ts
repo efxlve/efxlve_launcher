@@ -47,6 +47,8 @@ function bindCompanionLogin(): void {
  * again.
  */
 export async function syncCompanionAccounts(): Promise<void> {
+  // Offline mode: the cards keep the cached list, the sessions stay untouched.
+  if (S.offlineMode) return;
   let changed = false;
   try {
     const report = await companionSync("ubisoft");

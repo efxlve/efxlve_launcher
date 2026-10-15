@@ -40,6 +40,7 @@ import { loadPlayerProfile } from "../store/store-view";
 import { loadSharedLibrary } from "../library/shared-library";
 import { steamGetAchievementsSummary } from "../../steam";
 import { perfMark } from "../../core/perf";
+import { blockedOffline } from "../../core/offline";
 
 export async function bootEpic(): Promise<void> {
   if (!isTauri || S.epicBooted) return;
@@ -106,7 +107,8 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     void refreshUpdates();
     void syncEpicServerPlaytimes();
     void syncEpicLibrary(false, forceSync);
-    void epicResumePendingDownload().catch(() => {});
+    // Resuming a download needs the network; offline mode leaves it paused.
+    if (!S.offlineMode) void epicResumePendingDownload().catch(() => {});
   } catch (e) {
     S.epicPhase = "error";
     S.epicError = localizeMessage(String(e));
@@ -140,6 +142,12 @@ let librarySyncGen = 0;
 /** Background sync. `force` starts a new pass even if one is already running. */
 export async function syncEpicLibrary(manual: boolean, force = false): Promise<void> {
   if (!isTauri) return;
+  // Offline mode means the disk cache is the library: no Epic API call at all.
+  if (S.offlineMode) {
+    if (manual) blockedOffline(t("net.whatSync"));
+    S.epicSyncNote = t("lib.offlineMode");
+    return;
+  }
   if (S.epicSyncing && !force) return;
   const gen = ++librarySyncGen;
   S.epicSyncing = true;

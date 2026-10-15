@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "位址必須以 http:// 或 https:// 開頭。",
   "igdb.proxyMissing": "無法連線 Efxlve IGDB 伺服器。你可以輸入自己的 Twitch 憑證。",
   "igdb.testOkProxy": "已透過 Efxlve 伺服器連線：找到 {name}。",
-  "settings.igdbProxyPlaceholder": "伺服器位址"
+  "settings.igdbProxyPlaceholder": "伺服器位址",
+  "net.blocked": "{what} — 你處於離線模式。",
+  "net.whatSync": "已略過媒體庫同步",
+  "nav.noConnection": "無連線",
+  "nav.noConnectionTip": "沒有網際網路連線",
+  "lib.offlineMode": "離線模式：正在從快取顯示媒體庫。",
+  "net.whatDownload": "未開始下載"
 }

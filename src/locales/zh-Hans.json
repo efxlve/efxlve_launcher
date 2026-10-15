@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "地址必须以 http:// 或 https:// 开头。",
   "igdb.proxyMissing": "无法连接 Efxlve IGDB 服务器。你可以输入自己的 Twitch 凭据。",
   "igdb.testOkProxy": "已通过 Efxlve 服务器连接：找到 {name}。",
-  "settings.igdbProxyPlaceholder": "服务器地址"
+  "settings.igdbProxyPlaceholder": "服务器地址",
+  "net.blocked": "{what} — 你处于离线模式。",
+  "net.whatSync": "已跳过库同步",
+  "nav.noConnection": "无连接",
+  "nav.noConnectionTip": "没有网络连接",
+  "lib.offlineMode": "离线模式：正在从缓存显示库。",
+  "net.whatDownload": "未开始下载"
 }

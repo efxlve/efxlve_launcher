@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "Adres http:// veya https:// ile başlamalı.",
   "igdb.proxyMissing": "Efxlve IGDB sunucusuna ulaşılamadı. Kendi Twitch anahtarını girebilirsin.",
   "igdb.testOkProxy": "Efxlve sunucusu üzerinden bağlandı: {name} bulundu.",
-  "settings.igdbProxyPlaceholder": "Sunucu adresi"
+  "settings.igdbProxyPlaceholder": "Sunucu adresi",
+  "net.blocked": "{what} — çevrimdışı moddasın.",
+  "net.whatSync": "Kütüphane eşitlenmedi",
+  "nav.noConnection": "Bağlantı yok",
+  "nav.noConnectionTip": "İnternet bağlantısı yok",
+  "lib.offlineMode": "Çevrimdışı mod: kütüphane önbellekten gösteriliyor.",
+  "net.whatDownload": "İndirme başlatılmadı"
 }

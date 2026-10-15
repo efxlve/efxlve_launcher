@@ -41,6 +41,7 @@ import {
   showEpicRelayNoticeOnce,
 } from "../features/epic-launcher/epic-launcher-notice";
 import { syncLibraryHeadingCount } from "../features/library/library-view";
+import { blockedOffline } from "./offline";
 
 /** Launch a game and record it in the recent list. */
 export async function epicStop(appName: string): Promise<void> {
@@ -137,6 +138,8 @@ export async function epicPlay(appName: string): Promise<void> {
 export async function epicInstall(appName: string, installDir?: string | null): Promise<void> {
   const s = S.epicSummariesMap.get(appName);
   if (!s || epicDlProgress(appName) !== null) return;
+  // Downloads need the network; offline mode says no before any UI spins up.
+  if (blockedOffline(t("net.whatDownload"))) return;
   const g = rawOf(appName);
   const partner = getThirdPartyLauncher(g);
   if (requiresThirdPartyLauncher(partner)) {
@@ -283,7 +286,7 @@ let updatesCheckedOnce = false;
 
 /** Check for pending updates across all installed games. */
 export async function refreshUpdates(): Promise<void> {
-  if (!isTauri) return;
+  if (!isTauri || S.offlineMode) return;
   try {
     const updates = await epicCheckUpdates();
     const firstRun = !updatesCheckedOnce;

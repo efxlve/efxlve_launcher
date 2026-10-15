@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "يجب أن يبدأ العنوان بـ http:// أو https://.",
   "igdb.proxyMissing": "تعذّر الوصول إلى خادم IGDB الخاص بـ Efxlve. يمكنك إدخال بيانات Twitch الخاصة بك.",
   "igdb.testOkProxy": "تم الاتصال عبر خادم Efxlve: تم العثور على {name}.",
-  "settings.igdbProxyPlaceholder": "عنوان الخادم"
+  "settings.igdbProxyPlaceholder": "عنوان الخادم",
+  "net.blocked": "{what} — أنت في وضع عدم الاتصال.",
+  "net.whatSync": "تم تخطي مزامنة المكتبة",
+  "nav.noConnection": "لا يوجد اتصال",
+  "nav.noConnectionTip": "لا يوجد اتصال بالإنترنت",
+  "lib.offlineMode": "وضع عدم الاتصال: يتم عرض المكتبة من ذاكرة التخزين المؤقت.",
+  "net.whatDownload": "لم يبدأ التنزيل"
 }

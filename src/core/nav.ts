@@ -11,6 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
 import { rawOf, totalLibraryGamesCount } from "./selectors";
+import { hasConnection } from "./offline";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
 import type { EpicFilter, SettingsSection, View } from "./types";
@@ -283,11 +284,23 @@ export function updateSidebarGames(): void {
 export function updateOfflineModeUi(): void {
   const btn = document.getElementById("btn-offline-mode");
   if (!btn) return;
-  btn.classList.toggle("offline", S.offlineMode);
-  btn.classList.toggle("online", !S.offlineMode);
+  const offline = S.offlineMode;
+  const connected = hasConnection();
+  btn.classList.toggle("offline", offline || !connected);
+  btn.classList.toggle("online", !offline && connected);
   const label = btn.querySelector<HTMLElement>(".net-label");
-  if (label) label.textContent = S.offlineMode ? t("nav.offline") : t("nav.online");
-  btn.title = S.offlineMode ? t("nav.offlineTip") : t("nav.onlineTip");
+  if (label) {
+    label.textContent = offline
+      ? t("nav.offline")
+      : connected
+        ? t("nav.online")
+        : t("nav.noConnection");
+  }
+  btn.title = offline
+    ? t("nav.offlineTip")
+    : connected
+      ? t("nav.onlineTip")
+      : t("nav.noConnectionTip");
 }
 
 /**

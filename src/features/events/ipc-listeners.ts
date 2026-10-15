@@ -272,7 +272,8 @@ export async function initApp(hooks: {
     window.setInterval(syncInstalledWatch, 20_000);
     // Warm the Comet binary in the background so a GOG launch never waits for
     // the first download; the call is a no-op when the toggle is off.
-    void epicPrepareComet().catch(() => {});
+    // Offline mode skips the Comet warm-up: it downloads the binary.
+    if (!S.offlineMode) void epicPrepareComet().catch(() => {});
     void invoke<string>("library_dir")
       .then((p) => { S.libraryPath = p; })
       .catch(() => { S.libraryPath = t("common.unavailable"); });

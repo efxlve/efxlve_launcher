@@ -2289,5 +2289,11 @@
   "igdb.badProxy": "ที่อยู่ต้องขึ้นต้นด้วย http:// หรือ https://",
   "igdb.proxyMissing": "เชื่อมต่อเซิร์ฟเวอร์ IGDB ของ Efxlve ไม่ได้ คุณใส่ข้อมูล Twitch ของคุณเองได้",
   "igdb.testOkProxy": "เชื่อมต่อผ่านเซิร์ฟเวอร์ Efxlve แล้ว: พบ {name}",
-  "settings.igdbProxyPlaceholder": "ที่อยู่เซิร์ฟเวอร์"
+  "settings.igdbProxyPlaceholder": "ที่อยู่เซิร์ฟเวอร์",
+  "net.blocked": "{what} — คุณอยู่ในโหมดออฟไลน์",
+  "net.whatSync": "ข้ามการซิงก์คลังเกม",
+  "nav.noConnection": "ไม่มีการเชื่อมต่อ",
+  "nav.noConnectionTip": "ไม่มีการเชื่อมต่ออินเทอร์เน็ต",
+  "lib.offlineMode": "โหมดออฟไลน์: กำลังแสดงคลังเกมจากแคช",
+  "net.whatDownload": "ไม่ได้เริ่มดาวน์โหลด"
 }
