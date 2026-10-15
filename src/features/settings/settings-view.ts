@@ -139,11 +139,13 @@ function infoBox(key: string): string {
 /**
  * Collapsible settings row for keys that are set once: the summary shows the
  * title, an optional hint and the current status, the body holds the fields.
+ * `key` is what remembers whether the row was open, so an async re-render does
+ * not close the row under the user's cursor.
  */
-function detailsRow(title: string, desc: string, chip: string, control: string, hint = ""): string {
+function detailsRow(key: string, title: string, desc: string, chip: string, control: string, hint = ""): string {
   const search = `${title} ${desc} ${hint}`.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   return `
-    <details class="settings-details" data-search="${esc(search)}">
+    <details class="settings-details" data-details-key="${esc(key)}" data-search="${esc(search)}"${openDetails.has(key) ? " open" : ""}>
       <summary>
         <span class="settings-details-main">
           <span class="settings-row-title">${title}</span>
@@ -156,6 +158,20 @@ function detailsRow(title: string, desc: string, chip: string, control: string, 
         <div class="settings-row-control">${control}</div>
       </div>
     </details>`;
+}
+
+/** Collapsible rows the user opened, by key, so a repaint does not close them. */
+const openDetails = new Set<string>();
+
+/** Reads the open rows out of the mounted panel before it is replaced. */
+function captureOpenDetails(): void {
+  const panel = document.querySelector<HTMLElement>(".settings-panel");
+  if (!panel) return;
+  openDetails.clear();
+  panel.querySelectorAll<HTMLDetailsElement>(".settings-details[data-details-key]").forEach((el) => {
+    const key = el.dataset.detailsKey;
+    if (key && el.open) openDetails.add(key);
+  });
 }
 
 function renderDownloads(): string {
@@ -425,7 +441,7 @@ function renderIntegrations(): string {
     row(t("settings.cometTitle"), t("settings.cometDesc"), toggle("toggle-gog-comet", S.gogCometEnabled));
 
   const sgdb = detailsRow(
-    t("settings.sgdbTitle"),
+    "sgdb",    t("settings.sgdbTitle"),
     t("settings.sgdbDesc"),
     `<span class="chip ${S.steamGridApiKey ? "ok" : ""}">${S.steamGridApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
     `<input id="settings-sgdb-key-input" type="${S.showSettingsSgdbKey ? "text" : "password"}" class="input settings-path-input" placeholder="${t("settings.sgdbPlaceholder")}" value="${esc(S.steamGridApiKey || "")}" spellcheck="false" autocomplete="off" />
@@ -449,7 +465,7 @@ function renderIntegrations(): string {
         ? t("igdb.modeProxy")
         : t("igdb.modeOff");
   const igdb = detailsRow(
-    t("settings.igdbTitle"),
+    "igdb",    t("settings.igdbTitle"),
     t("settings.igdbDesc"),
     igdbProxyDown
       ? `<span class="chip warn">${t("igdb.proxyDown")}</span>`
@@ -488,6 +504,11 @@ function renderIntegrations(): string {
     t("settings.afterPlayingTitle"),
   );
 
+  // While the shared server answers, IGDB needs no settings at all: the whole
+  // group stays out of the way. It comes back the moment the server cannot be
+  // reached, or when the user is running on their own Twitch credentials.
+  const showIgdbRow = !(S.igdbMode === "proxy" && S.igdbProxyReachable !== false);
+
   return (
     infoBox("settings.integrationsInfo") +
     group(eglGroup, t("settings.eglTitle")) +
@@ -497,7 +518,7 @@ function renderIntegrations(): string {
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
-    group(igdb, t("settings.igdbGroup"))
+    (showIgdbRow ? group(igdb, t("settings.igdbGroup")) : "")
   );
 }
 
@@ -613,7 +634,7 @@ function renderSteamGroup(): string {
     return group(row(t("steam.notFound"), t("steam.desc"), rescan), "Steam");
   }
   const apiKey = detailsRow(
-    t("settings.steamApiTitle"),
+    "steam-api-key",    t("settings.steamApiTitle"),
     t("settings.steamApiDesc"),
     `<span class="chip ${S.steamApiKey ? "ok" : ""}">${S.steamApiKey ? t("settings.connected") : t("settings.keyMissing")}</span>`,
     `<input id="settings-steam-key-input" type="password" class="input settings-path-input" placeholder="${t("settings.steamApiPlaceholder")}" value="${esc(S.steamApiKey || "")}" spellcheck="false" autocomplete="off" />
@@ -1153,6 +1174,7 @@ function searchEmptyHtml(): string {
 
 export function renderSettings(): string {
   const active = SECTIONS.find((s) => s.id === S.settingsSection) ?? SECTIONS[0];
+  captureOpenDetails();
   const nav = NAV_GROUPS.map(
     (cluster) => `
       <div class="settings-nav-group">
