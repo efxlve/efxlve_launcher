@@ -48,6 +48,8 @@ export const SS_FAVORITES_KEY = "efxlve-ss-favorites";
 export const SS_CLEANUP_KEY = "efxlve-ss-cleanup";
 /** The user's own Discord webhook for one-click screenshot sharing. */
 export const SS_WEBHOOK_KEY = "efxlve-ss-webhook";
+/** The webhook list (one or many); the single key above is migrated into it. */
+export const SS_WEBHOOKS_KEY = "efxlve-ss-webhooks";
 /** Game clip recording: enable, hotkey, frame rate and the length cap. */
 export const CLIP_ENABLED_KEY = "efxlve-clip-enabled";
 export const CLIP_HOTKEY_KEY = "efxlve-clip-hotkey";

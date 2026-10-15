@@ -1656,6 +1656,47 @@ pub async fn screenshot_share_discord(
     }
 }
 
+/// The name Discord gives a webhook, so the list can show "#screenshots" style
+/// labels instead of raw URLs. Also proves the URL works before it is stored.
+#[tauri::command]
+pub async fn screenshot_webhook_info(webhook: String) -> Result<String, String> {
+    let webhook = webhook.trim().to_string();
+    let allowed = [
+        "https://discord.com/api/webhooks/",
+        "https://discordapp.com/api/webhooks/",
+        "https://canary.discord.com/api/webhooks/",
+        "https://ptb.discord.com/api/webhooks/",
+    ];
+    if !allowed.iter().any(|prefix| webhook.starts_with(prefix)) {
+        return Err("@t:ss.badWebhook".to_string());
+    }
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(20))
+        .build()
+        .map_err(|_| "@t:ss.shareFailed".to_string())?;
+    let response = client
+        .get(&webhook)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|_| "@t:ss.shareFailed".to_string())?;
+    match response.status().as_u16() {
+        200 => {
+            let body = response
+                .json::<serde_json::Value>()
+                .await
+                .map_err(|_| "@t:ss.badWebhook".to_string())?;
+            Ok(body
+                .get("name")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string())
+        }
+        401 | 403 | 404 => Err("@t:ss.badWebhook".to_string()),
+        _ => Err("@t:ss.shareFailed".to_string()),
+    }
+}
+
 /// Per-game folder the Ubisoft Connect client writes its captures to. Falls
 /// back to the client's root when it stores loose files there.
 fn ubisoft_game_dir(title: &str) -> Option<PathBuf> {

@@ -943,6 +943,7 @@ fn main() {
             legendary::screenshots::epic_delete_game_screenshot,
             legendary::screenshots::epic_save_edited_screenshot,
             legendary::screenshots::screenshot_share_discord,
+            legendary::screenshots::screenshot_webhook_info,
             legendary::clip_recorder::clip_status,
             legendary::clip_recorder::clip_start,
             legendary::clip_recorder::clip_stop,

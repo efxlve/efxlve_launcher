@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "Integrations → Webhooks → New Webhook.",
   "ss.webhookStep3": "Copy the URL it gives you and paste it here.",
   "ss.webhookSafe": "A webhook can only post to that one channel; it cannot read your account or server settings.",
-  "ss.webhookDocs": "Discord guide"
+  "ss.webhookDocs": "Discord guide",
+  "ss.webhookEmpty": "No webhooks yet",
+  "ss.webhookEmptyDesc": "Add one below; every screenshot can then go to any of them in one click.",
+  "ss.webhookAddTitle": "Add a webhook",
+  "ss.webhookNamePlaceholder": "Name (optional)",
+  "ss.webhookAdd": "Add",
+  "ss.webhookChecking": "Checking the webhook…",
+  "ss.webhookAdded": "Added: {name}"
 }

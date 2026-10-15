@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "整合 → Webhook → 新建 Webhook。",
   "ss.webhookStep3": "复制生成的 URL 并粘贴到这里。",
   "ss.webhookSafe": "Webhook 只能向该频道发帖，无法读取你的账号或服务器设置。",
-  "ss.webhookDocs": "Discord 指南"
+  "ss.webhookDocs": "Discord 指南",
+  "ss.webhookEmpty": "还没有 Webhook",
+  "ss.webhookEmptyDesc": "在下方添加后，每张截图都能一键发送过去。",
+  "ss.webhookAddTitle": "添加 Webhook",
+  "ss.webhookNamePlaceholder": "名称（可选）",
+  "ss.webhookAdd": "添加",
+  "ss.webhookChecking": "正在检查 Webhook…",
+  "ss.webhookAdded": "已添加：{name}"
 }

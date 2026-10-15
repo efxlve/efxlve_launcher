@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "Entegrasyonlar → Webhook'lar → Yeni Webhook.",
   "ss.webhookStep3": "Oluşan URL'yi kopyala ve buraya yapıştır.",
   "ss.webhookSafe": "Webhook yalnızca o kanala mesaj gönderebilir; hesabını veya sunucu ayarlarını okuyamaz.",
-  "ss.webhookDocs": "Discord rehberi"
+  "ss.webhookDocs": "Discord rehberi",
+  "ss.webhookEmpty": "Henüz webhook yok",
+  "ss.webhookEmptyDesc": "Aşağıdan ekle; sonra her ekran görüntüsünü tek tıkla istediğine gönderebilirsin.",
+  "ss.webhookAddTitle": "Webhook ekle",
+  "ss.webhookNamePlaceholder": "Ad (isteğe bağlı)",
+  "ss.webhookAdd": "Ekle",
+  "ss.webhookChecking": "Webhook denetleniyor…",
+  "ss.webhookAdded": "Eklendi: {name}"
 }

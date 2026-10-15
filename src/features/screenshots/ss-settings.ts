@@ -19,6 +19,8 @@ import {
   SS_NOTIFY_KEY,
   SS_SORT_KEY,
   SS_SOUND_KEY,
+  SS_WEBHOOK_KEY,
+  SS_WEBHOOKS_KEY,
   isTauri,
 } from "../../core/constants";
 import { clipSetHotkey, clipSetOptions } from "../../epic";
@@ -127,6 +129,63 @@ export function pushClipSettings(): void {
   if (!isTauri) return;
   void clipSetHotkey(clipHotkeyCode()).catch(() => undefined);
   void clipSetOptions({ fps: clipFps(), maxSecs: clipMaxSecs() }).catch(() => undefined);
+}
+
+/* ---------- Discord webhooks (one or many) ---------- */
+
+export interface DiscordWebhook {
+  id: string;
+  /** The webhook's own name from Discord (fallback: "Discord"). */
+  name: string;
+  url: string;
+}
+
+/** The stored list, migrating the single-webhook key from earlier releases. */
+export function ssWebhooks(): DiscordWebhook[] {
+  try {
+    const raw = localStorage.getItem(SS_WEBHOOKS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+          .filter((item) => typeof item.url === "string" && item.url)
+          .map((item) => ({
+            id: typeof item.id === "string" && item.id ? item.id : String(item.url),
+            name: typeof item.name === "string" && item.name ? item.name : "Discord",
+            url: String(item.url),
+          }));
+      }
+    }
+  } catch {
+    // fall through
+  }
+  // Migration: the one webhook the settings row used to hold.
+  const legacy = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
+  if (legacy) {
+    const migrated: DiscordWebhook[] = [{ id: "legacy", name: "Discord", url: legacy }];
+    localStorage.setItem(SS_WEBHOOKS_KEY, JSON.stringify(migrated));
+    return migrated;
+  }
+  return [];
+}
+
+export function ssAddWebhook(name: string, url: string): DiscordWebhook[] {
+  const list = ssWebhooks();
+  const entry: DiscordWebhook = {
+    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    name: name.trim() || "Discord",
+    url: url.trim(),
+  };
+  const next = [...list, entry];
+  localStorage.setItem(SS_WEBHOOKS_KEY, JSON.stringify(next));
+  return next;
+}
+
+export function ssRemoveWebhook(id: string): DiscordWebhook[] {
+  const next = ssWebhooks().filter((hook) => hook.id !== id);
+  localStorage.setItem(SS_WEBHOOKS_KEY, JSON.stringify(next));
+  return next;
 }
 
 /** Sorts a gallery by the user's default order. */

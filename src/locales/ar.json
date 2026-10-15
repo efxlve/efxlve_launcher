@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "التكاملات → Webhooks → Webhook جديد.",
   "ss.webhookStep3": "انسخ الرابط الظاهر والصقه هنا.",
   "ss.webhookSafe": "الويب هوك يمكنه النشر في تلك القناة فقط؛ لا يقرأ حسابك أو إعدادات السيرفر.",
-  "ss.webhookDocs": "دليل Discord"
+  "ss.webhookDocs": "دليل Discord",
+  "ss.webhookEmpty": "لا توجد ويب هوكات بعد",
+  "ss.webhookEmptyDesc": "أضف واحدًا بالأسفل؛ بعدها تُرسل أي لقطة بنقرة واحدة.",
+  "ss.webhookAddTitle": "إضافة ويب هوك",
+  "ss.webhookNamePlaceholder": "الاسم (اختياري)",
+  "ss.webhookAdd": "إضافة",
+  "ss.webhookChecking": "جارٍ التحقق من الويب هوك…",
+  "ss.webhookAdded": "تمت الإضافة: {name}"
 }

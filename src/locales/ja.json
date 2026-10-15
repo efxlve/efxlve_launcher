@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "連携 → Webhook → 新しい Webhook。",
   "ss.webhookStep3": "表示された URL をコピーしてここに貼り付けます。",
   "ss.webhookSafe": "Webhook はそのチャンネルへの投稿だけができ、アカウントやサーバー設定は読めません。",
-  "ss.webhookDocs": "Discord ガイド"
+  "ss.webhookDocs": "Discord ガイド",
+  "ss.webhookEmpty": "Webhook はまだありません",
+  "ss.webhookEmptyDesc": "下から追加すると、スクリーンショットをワンクリックで送れるようになります。",
+  "ss.webhookAddTitle": "Webhook を追加",
+  "ss.webhookNamePlaceholder": "名前（任意）",
+  "ss.webhookAdd": "追加",
+  "ss.webhookChecking": "Webhook を確認中…",
+  "ss.webhookAdded": "追加しました: {name}"
 }

@@ -769,6 +769,10 @@ export const screenshotShareDiscord = (input: {
   message: string;
 }) => invoke<void>("screenshot_share_discord", input);
 
+/** The webhook's own name, and proof that the URL works before it is stored. */
+export const screenshotWebhookInfo = (webhook: string) =>
+  invoke<string>("screenshot_webhook_info", { webhook });
+
 /* ---------- Game clips (MJPEG AVI recorder) ---------- */
 
 export interface ClipStatus {

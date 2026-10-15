@@ -8,7 +8,7 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
-import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, SS_WEBHOOK_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
 import { emptyState, icon } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
@@ -55,6 +55,8 @@ import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScree
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
 import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
 import { pushClipSettings } from "../screenshots/ss-settings";
+import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-settings";
+import { screenshotWebhookInfo } from "../../epic";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { keepDiscordOpen } from "../discord/discord-view";
@@ -856,11 +858,26 @@ function renderScreenshots(): string {
     toggle("toggle-screenshots-sidebar", screenshotsSidebarVisible()),
   );
 
-  /* Sharing: one-click Discord needs the user's own webhook; the rest copy the
+  /* Sharing: one-click Discord needs the user's own webhooks; the rest copy the
      image and open the compose page. */
-  const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
+  const webhooks = ssWebhooks();
+  const maskWebhook = (url: string): string => {
+    const tail = url.split("/").pop() ?? "";
+    return `${url.replace(/\/[^/]*$/, "/")}${tail.slice(0, 6)}…`;
+  };
+  const webhookList = webhooks.length
+    ? webhooks
+        .map((hook) =>
+          row(
+            `${icon("discord", 14)} ${esc(hook.name)}`,
+            `<code>${esc(maskWebhook(hook.url))}</code>`,
+            `<button type="button" class="btn ghost danger small" data-act="ss-webhook-remove" data-id="${esc(hook.id)}">${icon("trash", 12)} ${t("common.delete")}</button>`,
+          ),
+        )
+        .join("")
+    : row(t("ss.webhookEmpty"), t("ss.webhookEmptyDesc"), "");
   const webhookRow = row(
-    t("ss.webhookTitle"),
+    t("ss.webhookAddTitle"),
     `${t("ss.webhookDesc")}
      <div class="ss-webhook-howto">
        <div class="ss-webhook-howto-title">${t("ss.webhookHowTo")}</div>
@@ -871,9 +888,9 @@ function renderScreenshots(): string {
        </ol>
        <div class="ss-webhook-safe">${icon("shield", 12)} ${t("ss.webhookSafe")}</div>
      </div>`,
-    `<input id="ss-webhook-input" class="input settings-path-input" placeholder="https://discord.com/api/webhooks/…" value="${esc(webhook)}" spellcheck="false" autocomplete="off" />
-     <button type="button" class="btn primary small" data-act="save-ss-webhook">${t("common.save")}</button>
-     ${webhook ? `<button type="button" class="btn ghost small" data-act="clear-ss-webhook">${t("common.delete")}</button>` : ""}
+    `<input id="ss-webhook-name" class="input settings-path-input" placeholder="${esc(t("ss.webhookNamePlaceholder"))}" value="" spellcheck="false" autocomplete="off" />
+     <input id="ss-webhook-input" class="input settings-path-input" placeholder="https://discord.com/api/webhooks/…" value="" spellcheck="false" autocomplete="off" />
+     <button type="button" class="btn primary small" data-act="add-ss-webhook">${icon("plus", 13)} ${t("ss.webhookAdd")}</button>
      <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://support.discord.com/hc/articles/228383668">${icon("external", 13)} ${t("ss.webhookDocs")}</button>`,
     true,
   );
@@ -921,7 +938,7 @@ function renderScreenshots(): string {
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
     group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection")) +
-    group(webhookRow, t("ss.shareSection")) +
+    group(webhookList + webhookRow, t("ss.shareSection")) +
     group(clipToggle + clipHotkeyRow + clipOptions, t("ss.clipSection"))
   );
 }
@@ -1593,22 +1610,39 @@ async function applyCleanup(): Promise<void> {
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement, _targetEl?: HTMLElement): boolean {
   switch (act) {
-    case "save-ss-webhook": {
-      const input = document.getElementById("ss-webhook-input") as HTMLInputElement | null;
-      const value = input?.value.trim() ?? "";
-      if (value && !/^https:\/\/(canary\.|ptb\.)?discord(app)?\.com\/api\/webhooks\//.test(value)) {
+    case "add-ss-webhook": {
+      const nameInput = document.getElementById("ss-webhook-name") as HTMLInputElement | null;
+      const urlInput = document.getElementById("ss-webhook-input") as HTMLInputElement | null;
+      const url = urlInput?.value.trim() ?? "";
+      if (!/^https:\/\/(canary\.|ptb\.)?discord(app)?\.com\/api\/webhooks\//.test(url)) {
         toast(t("ss.badWebhook"), "err");
         return true;
       }
-      localStorage.setItem(SS_WEBHOOK_KEY, value);
-      toast(t("ss.webhookSaved"), "ok");
-      render();
+      void (async () => {
+        toast(t("ss.webhookChecking"), "");
+        let name = nameInput?.value.trim() ?? "";
+        try {
+          // The webhook's own name from Discord doubles as the validity check.
+          const info = await screenshotWebhookInfo(url);
+          if (!name) name = info || "Discord";
+        } catch (error) {
+          toast(String(error), "err");
+          return;
+        }
+        ssAddWebhook(name, url);
+        toast(t("ss.webhookAdded", { name }), "ok");
+        render();
+      })();
       return true;
     }
-    case "clear-ss-webhook":
-      localStorage.removeItem(SS_WEBHOOK_KEY);
-      render();
+    case "ss-webhook-remove": {
+      const id = _el.dataset.id ?? "";
+      if (id) {
+        ssRemoveWebhook(id);
+        render();
+      }
       return true;
+    }
     case "toggle-clip-recording": {
       const enabled = (_el as HTMLInputElement).checked;
       localStorage.setItem(CLIP_ENABLED_KEY, String(enabled));

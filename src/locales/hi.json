@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "Integrations → Webhooks → New Webhook।",
   "ss.webhookStep3": "दिया गया URL कॉपी करके यहाँ पेस्ट करें।",
   "ss.webhookSafe": "वेबहुक केवल उसी चैनल पर पोस्ट कर सकता है; आपका खाता या सर्वर सेटिंग नहीं पढ़ सकता।",
-  "ss.webhookDocs": "Discord गाइड"
+  "ss.webhookDocs": "Discord गाइड",
+  "ss.webhookEmpty": "अभी कोई वेबहुक नहीं",
+  "ss.webhookEmptyDesc": "नीचे एक जोड़ें; फिर हर स्क्रीनशॉट एक क्लिक में वहाँ जाएगा।",
+  "ss.webhookAddTitle": "वेबहुक जोड़ें",
+  "ss.webhookNamePlaceholder": "नाम (वैकल्पिक)",
+  "ss.webhookAdd": "जोड़ें",
+  "ss.webhookChecking": "वेबहुक जाँचा जा रहा है…",
+  "ss.webhookAdded": "जोड़ा गया: {name}"
 }

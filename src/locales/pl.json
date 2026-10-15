@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "Integracje → Webhooki → Nowy webhook.",
   "ss.webhookStep3": "Skopiuj podany URL i wklej go tutaj.",
   "ss.webhookSafe": "Webhook może pisać tylko na tym kanale; nie czyta konta ani ustawień serwera.",
-  "ss.webhookDocs": "Poradnik Discord"
+  "ss.webhookDocs": "Poradnik Discord",
+  "ss.webhookEmpty": "Brak webhooków",
+  "ss.webhookEmptyDesc": "Dodaj jeden poniżej; każdy zrzut trafi tam jednym kliknięciem.",
+  "ss.webhookAddTitle": "Dodaj webhook",
+  "ss.webhookNamePlaceholder": "Nazwa (opcjonalna)",
+  "ss.webhookAdd": "Dodaj",
+  "ss.webhookChecking": "Sprawdzanie webhooka…",
+  "ss.webhookAdded": "Dodano: {name}"
 }

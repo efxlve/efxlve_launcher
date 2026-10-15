@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "Intégrations → Webhooks → Nouveau webhook.",
   "ss.webhookStep3": "Copie l'URL proposée et colle-la ici.",
   "ss.webhookSafe": "Un webhook ne peut publier que dans ce salon ; il ne lit ni votre compte ni les réglages du serveur.",
-  "ss.webhookDocs": "Guide Discord"
+  "ss.webhookDocs": "Guide Discord",
+  "ss.webhookEmpty": "Aucun webhook",
+  "ss.webhookEmptyDesc": "Ajoutez-en un ci-dessous ; chaque capture pourra ensuite y aller en un clic.",
+  "ss.webhookAddTitle": "Ajouter un webhook",
+  "ss.webhookNamePlaceholder": "Nom (facultatif)",
+  "ss.webhookAdd": "Ajouter",
+  "ss.webhookChecking": "Vérification du webhook…",
+  "ss.webhookAdded": "Ajouté : {name}"
 }

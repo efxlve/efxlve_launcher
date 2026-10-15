@@ -23,8 +23,7 @@ import {
   type GameScreenshotItem,
 } from "../../epic";
 import { steamGetGameScreenshots, steamGetScreenshotFullData } from "../../steam";
-import { SS_WEBHOOK_KEY } from "../../core/constants";
-import { ssDensity, ssFavorites, ssSort, ssSortItems } from "./ss-settings";
+import { ssDensity, ssFavorites, ssSort, ssSortItems, ssWebhooks } from "./ss-settings";
 
 /* --- Game page gallery: the toolbar's own view state ---------------------- */
 type GalleryFilter = "all" | "raw" | "compressed" | "favorites";
@@ -536,7 +535,29 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
   }
   const isAvifOrWebp = item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
   const readOnly = galleryOwner(appName) !== null;
-  const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
+  // One button per saved webhook; with none, the button explains the setup.
+  const webhooks = ssWebhooks();
+  const discordButtons = webhooks.length
+    ? webhooks
+        .map(
+          (hook) => `
+          <button class="ss-share-btn" data-act="do-share-discord" data-webhook-id="${esc(hook.id)}">
+            <div class="ss-share-btn-icon">${icon("discord", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">${esc(hook.name)}</span>
+              <span class="ss-btn-hint">${t("ss.shareDiscordHint")}</span>
+            </div>
+          </button>`,
+        )
+        .join("")
+    : `
+          <button class="ss-share-btn" data-act="do-share-discord">
+            <div class="ss-share-btn-icon">${icon("discord", 18)}</div>
+            <div class="ss-share-btn-text">
+              <span class="ss-btn-main">${t("ss.shareDiscord")}</span>
+              <span class="ss-btn-hint">${t("ss.shareDiscordSetup")}</span>
+            </div>
+          </button>`;
   shareRoot.innerHTML = `
     <div class="ss-share-backdrop" data-act="close-share-modal">
       <div class="ss-share-card" role="dialog" aria-modal="true">
@@ -558,13 +579,7 @@ export function openShareModal(appName: string, item: GameScreenshotItem): void 
         </div>
 
         <div class="ss-share-actions">
-          <button class="ss-share-btn" data-act="do-share-discord">
-            <div class="ss-share-btn-icon">${icon("discord", 18)}</div>
-            <div class="ss-share-btn-text">
-              <span class="ss-btn-main">${t("ss.shareDiscord")}</span>
-              <span class="ss-btn-hint">${webhook ? t("ss.shareDiscordHint") : t("ss.shareDiscordSetup")}</span>
-            </div>
-          </button>
+          ${discordButtons}
 
           <button class="ss-share-btn" data-act="do-share-x">
             <div class="ss-share-btn-icon">${icon("twitter", 18)}</div>

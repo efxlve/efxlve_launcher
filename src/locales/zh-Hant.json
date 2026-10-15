@@ -2374,5 +2374,12 @@
   "ss.webhookStep2": "整合 → Webhook → 新增 Webhook。",
   "ss.webhookStep3": "複製產生的 URL 並貼到這裡。",
   "ss.webhookSafe": "Webhook 只能向該頻道發文，無法讀取你的帳號或伺服器設定。",
-  "ss.webhookDocs": "Discord 指南"
+  "ss.webhookDocs": "Discord 指南",
+  "ss.webhookEmpty": "還沒有 Webhook",
+  "ss.webhookEmptyDesc": "在下方新增後，每張截圖都能一鍵傳送過去。",
+  "ss.webhookAddTitle": "新增 Webhook",
+  "ss.webhookNamePlaceholder": "名稱（可選）",
+  "ss.webhookAdd": "新增",
+  "ss.webhookChecking": "正在檢查 Webhook…",
+  "ss.webhookAdded": "已新增：{name}"
 }

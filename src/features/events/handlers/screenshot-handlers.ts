@@ -18,7 +18,7 @@ import {
 import { openEpicModal } from "../../../core/render";
 import { openScreenshotEditor } from "../../screenshots/screenshot-editor";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { SS_WEBHOOK_KEY } from "../../../core/constants";
+import { ssWebhooks } from "../../screenshots/ss-settings";
 
 /** The full-resolution PNG of a shot, for services that cannot take AVIF. */
 async function sharePngDataUrl(appName: string, item: GameScreenshotItem): Promise<string | null> {
@@ -330,12 +330,15 @@ export function handleScreenshotAction(act: string | undefined, t: HTMLElement, 
     case "do-share-discord": {
       const active = S.activeShareScreenshot;
       if (!active) return true;
-      const webhook = (localStorage.getItem(SS_WEBHOOK_KEY) ?? "").trim();
-      if (!webhook) {
+      const webhooks = ssWebhooks();
+      const wanted = t.dataset.webhookId ?? "";
+      const hook = webhooks.find((item) => item.id === wanted) ?? webhooks[0];
+      if (!hook) {
         toast(i18nT("ss.shareDiscordSetup"), "err");
         closeShareModal();
         return true;
       }
+      const webhook = hook.url;
       const game = summaryOf(active.appName)?.title || active.item.game_title || "";
       void (async () => {
         toast(i18nT("ss.shareSending"), "");
