@@ -1356,7 +1356,7 @@ export async function loadLaunchersView(force = false): Promise<void> {
   S.launchersLoading = true;
   render();
   try {
-    S.launchers = await launchersStatus();
+    S.launchers = (await launchersStatus()) ?? [];
   } catch {
     S.launchers = [];
   } finally {

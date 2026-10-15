@@ -865,7 +865,7 @@ export async function initApp(hooks: {
       })
       .catch(() => undefined);
     try {
-      S.networkProfile = await epicGetNetworkProfile();
+      S.networkProfile = (await epicGetNetworkProfile()) ?? "";
     } catch {
       // ignore
     }

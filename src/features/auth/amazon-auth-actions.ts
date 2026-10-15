@@ -198,7 +198,7 @@ export async function loadAmazonSession(sync = false): Promise<void> {
     S.amazonAccountId = status.logged_in ? status.user_id : null;
     if (status.logged_in) {
       try {
-        S.amazonGames = await nileLibrary(sync);
+        S.amazonGames = (await nileLibrary(sync)) ?? [];
       } catch {
         // Keep the previous list when the refresh fails.
       }

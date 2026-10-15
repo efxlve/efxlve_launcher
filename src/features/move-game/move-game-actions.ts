@@ -78,7 +78,7 @@ export async function openMoveGameModal(appName: string): Promise<void> {
   S.activeMoveProgress = null;
 
   try {
-    S.moveSystemDrives = await epicGetSystemDrives();
+    S.moveSystemDrives = (await epicGetSystemDrives()) ?? [];
   } catch (err) {
     console.warn("System drives could not be detected:", err);
     S.moveSystemDrives = [];

@@ -432,7 +432,7 @@ export async function openStorageManager(): Promise<void> {
   S_STORAGE.sortMode = "size-desc";
   renderStorageManager();
   try {
-    S.moveSystemDrives = await epicGetSystemDrives();
+    S.moveSystemDrives = (await epicGetSystemDrives()) ?? [];
   } catch {
     S.moveSystemDrives = [];
   }

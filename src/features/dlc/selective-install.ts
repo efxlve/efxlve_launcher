@@ -68,7 +68,7 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
   try {
     const msg = await epicInstallWithOptions(appName, tags, dlcs, installDir);
     toast(msg, "ok");
-    S.dlQueueStatus = await epicGetQueue();
+    S.dlQueueStatus = (await epicGetQueue()) ?? S.dlQueueStatus;
     render();
     void refreshEpicInstalled();
   } catch (e) {

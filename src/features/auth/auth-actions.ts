@@ -178,7 +178,7 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     void syncEpicServerPlaytimes();
     if (manual) {
       try {
-        S.epicCollections = await epicImportEglCollections();
+        S.epicCollections = (await epicImportEglCollections()) ?? S.epicCollections;
         S.libraryDataRev++;
       } catch {
         void loadEpicCollections();

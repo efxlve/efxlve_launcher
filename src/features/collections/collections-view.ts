@@ -334,7 +334,9 @@ export function updateDrawerCollectionsBoxInPlace(appName: string): void {
 export async function loadEpicCollections(): Promise<void> {
   if (!isTauri) return;
   try {
-    S.epicCollections = await epicGetCollections();
+    // `?? []`: a null from the backend (older binary, shape change) must not
+    // reach the state — every collection view calls `.map`/`.find` on it.
+    S.epicCollections = (await epicGetCollections()) ?? [];
     S.libraryDataRev++;
     if (S.view === "library") scheduleRender();
   } catch (e) {

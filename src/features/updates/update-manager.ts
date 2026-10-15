@@ -73,7 +73,7 @@ function updateProgressDom(): void {
 export async function initAppUpdater(): Promise<void> {
   if (!isTauri) return;
   try {
-    S.appVersion = await getVersion();
+    S.appVersion = (await getVersion()) ?? S.appVersion;
     const winbarVer = document.getElementById("winbar-version-num");
     if (winbarVer) winbarVer.textContent = `v${S.appVersion}`;
   } catch {

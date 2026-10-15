@@ -180,7 +180,7 @@ export async function epicInstall(appName: string, installDir?: string | null): 
       updateBadge();
     }
     toast(msg, "ok");
-    S.dlQueueStatus = await epicGetQueue();
+    S.dlQueueStatus = (await epicGetQueue()) ?? S.dlQueueStatus;
     if (S.view === "downloads") render();
     else if (S.view === "library") refreshGameActionUi(appName);
   } catch (e) {
