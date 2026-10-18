@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "8MB에 맞추기",
   "ss.clipShareWillSend": "{time} · {size} 전송",
   "ss.clipShareTooLarge": "{size}이(가) 8MB 제한을 넘습니다",
-  "ss.clipShareSent": "Discord로 {size} 전송됨"
+  "ss.clipShareSent": "Discord로 {size} 전송됨",
+  "settings.pictureCache": "이미지 캐시",
+  "settings.pictureCacheDesc": "히어로 이미지, IGDB 스크린샷, 비슷한 게임 커버를 디스크에 보관해 네트워크 없이 페이지를 엽니다.",
+  "settings.pictureCacheCleared": "이미지 {size} 삭제됨"
 }

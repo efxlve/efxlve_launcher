@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "Ajustar a 8 MB",
   "ss.clipShareWillSend": "Se envía {time} · {size}",
   "ss.clipShareTooLarge": "{size} supera el límite de 8 MB",
-  "ss.clipShareSent": "{size} enviados a Discord"
+  "ss.clipShareSent": "{size} enviados a Discord",
+  "settings.pictureCache": "Caché de imágenes",
+  "settings.pictureCacheDesc": "Arte principal, capturas de IGDB y carátulas de juegos similares se guardan en disco para abrir la página sin esperar a la red.",
+  "settings.pictureCacheCleared": "Se borraron {size} de imágenes"
 }

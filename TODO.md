@@ -35,12 +35,14 @@ touching anything:
    into that click, which woke up 14 targets (library cards, screenshot cards,
    cover picks, download rows, profile rows, task rows, critic badges). The
    controller stays TV-only by design; that page has its own focus model.
-3. Picture cache, take two: 0.1.30's version (asset protocol + a boot-time
-   prefetch) is removed in the local tree — it was the prime suspect for the
-   window closing on some machines a few seconds after start. Not released yet;
-   the owner asked to hold it. If it comes back, use the pattern the screenshot
-   gallery already proves (base64 data URLs, no new webview protocol) and
-   prefetch only while the window is idle.
+3. Picture cache, take two: back as `src-tauri/src/image_cache.rs` +
+   `src/core/picture-cache.ts` (2026-10-18). The pictures the game page paints
+   (hero art, IGDB screenshots, similar-game covers) are fetched once, kept on
+   disk under `<app_data>/images` and handed to the WebView as `data:` URLs — no
+   asset protocol, which was the suspect in the first version. Nothing runs at
+   boot: `prefetchRecentPicturesWhenIdle` waits for an idle moment, and the hero
+   of the open page is the only picture asked for eagerly. Settings → Advanced
+   has the size row and a clear button.
 4. Screenshots workstream (parked, see section 7).
 5. Library covers: the grid renders its first 48 cards and appends more as a
    sentinel scrolls into view, and WebView2 keeps the pictures in its own disk
@@ -56,11 +58,12 @@ Every metadata source already caches on disk (IGDB, HowLongToBeat, the critic
 service, Wikipedia, store specs — see `docs/GAME_PAGE_REWORK.md` §9), so the
 remaining work is pictures and prefetching:
 
-- Pictures: the game page's own cache comes back as item 5 above / 0b.3; the
-  library's covers are 0b.5 (the idle prefetch of the next chunk shipped; a
-  second disk copy of what the WebView already caches is not worth it).
-- Prefetch while idle: shipped for library covers (`prefetchNextCovers`). The
-  same idea applies to the game page's pictures when 0b.3 comes back.
+- Pictures: the game page's own cache came back as item 3 above (base64 data
+  URLs, idle prefetch only); the library's covers are 0b.5 (the idle prefetch of
+  the next chunk shipped; a second disk copy of what the WebView already caches
+  is not worth it).
+- Prefetch while idle: shipped for library covers (`prefetchNextCovers`) and for
+  the recently played hero art (`prefetchRecentPicturesWhenIdle`).
 - Idle cost first: transparency (section 2) and TV mode (section 1) are the two
   known CPU drains; measure with the task manager page before and after.
 

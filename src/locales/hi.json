@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "8 MB में फ़िट करें",
   "ss.clipShareWillSend": "{time} · {size} भेजा जाएगा",
   "ss.clipShareTooLarge": "{size} 8 MB सीमा से अधिक है",
-  "ss.clipShareSent": "Discord पर {size} भेजा गया"
+  "ss.clipShareSent": "Discord पर {size} भेजा गया",
+  "settings.pictureCache": "चित्र कैश",
+  "settings.pictureCacheDesc": "मुख्य चित्र, IGDB स्क्रीनशॉट और समान गेम कवर डिस्क पर रहते हैं, इसलिए पेज नेटवर्क के बिना खुलता है।",
+  "settings.pictureCacheCleared": "{size} चित्र हटाए गए"
 }

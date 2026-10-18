@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "Auf 8 MB kürzen",
   "ss.clipShareWillSend": "Sendet {time} · {size}",
   "ss.clipShareTooLarge": "{size} liegt über dem 8-MB-Limit",
-  "ss.clipShareSent": "{size} an Discord gesendet"
+  "ss.clipShareSent": "{size} an Discord gesendet",
+  "settings.pictureCache": "Bild-Cache",
+  "settings.pictureCacheDesc": "Heldenbilder, IGDB-Screenshots und Cover ähnlicher Spiele liegen auf der Platte, damit eine Spielseite ohne Netz öffnet.",
+  "settings.pictureCacheCleared": "{size} an Bildern gelöscht"
 }

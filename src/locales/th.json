@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "ย่อให้พอดี 8 MB",
   "ss.clipShareWillSend": "จะส่ง {time} · {size}",
   "ss.clipShareTooLarge": "{size} เกินขีดจำกัด 8 MB",
-  "ss.clipShareSent": "ส่ง {size} ไป Discord แล้ว"
+  "ss.clipShareSent": "ส่ง {size} ไป Discord แล้ว",
+  "settings.pictureCache": "แคชรูปภาพ",
+  "settings.pictureCacheDesc": "ภาพหลัก สกรีนช็อต IGDB และปกเกมที่คล้ายกันเก็บไว้บนดิสก์ เปิดหน้าได้โดยไม่รอเครือข่าย",
+  "settings.pictureCacheCleared": "ลบรูปภาพ {size} แล้ว"
 }

@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "8 MB に収める",
   "ss.clipShareWillSend": "{time} · {size} を送信",
   "ss.clipShareTooLarge": "{size} は 8 MB の上限を超えています",
-  "ss.clipShareSent": "Discord に {size} を送信しました"
+  "ss.clipShareSent": "Discord に {size} を送信しました",
+  "settings.pictureCache": "画像キャッシュ",
+  "settings.pictureCacheDesc": "ヒーロー画像、IGDB のスクリーンショット、類似ゲームのカバーをディスクに保存し、通信を待たずにページを開きます。",
+  "settings.pictureCacheCleared": "{size} の画像を削除しました"
 }

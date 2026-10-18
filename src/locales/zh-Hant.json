@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "縮到 8 MB",
   "ss.clipShareWillSend": "將傳送 {time} · {size}",
   "ss.clipShareTooLarge": "{size} 超過 8 MB 的 webhook 上限",
-  "ss.clipShareSent": "已傳送 {size} 到 Discord"
+  "ss.clipShareSent": "已傳送 {size} 到 Discord",
+  "settings.pictureCache": "圖片快取",
+  "settings.pictureCacheDesc": "主視覺圖、IGDB 截圖與相似遊戲封面保存在磁碟上，開啟頁面不必等待網路。",
+  "settings.pictureCacheCleared": "已清除 {size} 圖片"
 }

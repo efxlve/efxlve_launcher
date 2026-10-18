@@ -18,6 +18,7 @@ import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
+import { cachedImage, warmImages } from "../../core/picture-cache";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
@@ -786,6 +787,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const isGog = appName.startsWith("gog::");
   const isSteam = appName.startsWith("steam::");
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
+  // The hero is the one picture the page waits for: ask for it as soon as the
+  // page opens, and paint from the cached copy the moment it arrives.
+  warmImages([art]);
   const meta = gameMetaHtml(s, partner, antiCheat);
 
   const tabs = `${tabButton("overview", t("drawer.overview"))}
@@ -799,7 +803,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     <div class="overlay">
       <div class="game-hub">
         <div class="gp-hero">
-          ${art ? `<img class="gp-hero-img" src="${esc(art)}" alt="" decoding="async" />` : ""}
+          ${art ? `<img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" />` : ""}
           <div class="gp-hero-scrim"></div>
           <div class="gp-hero-top">
             <div class="gp-hero-nav">

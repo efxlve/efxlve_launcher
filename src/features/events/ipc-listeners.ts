@@ -106,6 +106,7 @@ import { perfMark } from "../../core/perf";
 import { initOfflineMode } from "../../core/offline";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
+import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -944,6 +945,9 @@ export async function initApp(hooks: {
     } catch {
       // ignore
     }
+    // The pictures the game pages paint are warmed only when the window is idle:
+    // the first version started this at boot, which is where it hurt.
+    prefetchRecentPicturesWhenIdle();
     // Everything the boot path must do before the launcher is fully usable has
     // been kicked off; this mark is the number to compare between releases.
     perfMark("boot:ready");

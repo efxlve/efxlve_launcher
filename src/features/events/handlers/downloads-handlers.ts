@@ -8,9 +8,10 @@ import { askConfirm } from "../../../core/confirm-dialog";
 import { localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { closeAllModals, render } from "../../../core/render";
-import { cdnShortLabel } from "../../../core/utils";
+import { cdnShortLabel, fmtBytes } from "../../../core/utils";
 import { isCompanionKey, rawOf, sourceOfKey, summaryOf } from "../../../core/selectors";
 import { isTauri } from "../../../core/constants";
+import { clearImageCache } from "../../../core/picture-cache";
 import { clearRecentDownloads, removeRecentDownload } from "../../../core/recent";
 import { epicOpenFolderPath } from "../../../epic-commands";
 import { patchLibraryCardDom } from "../../../core/game-view";
@@ -392,6 +393,14 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         }
       })();
       return true;
+
+    case "clear-picture-cache": {
+      toast(i18nT("downloads.cacheClearing"), "");
+      void clearImageCache()
+        .then((bytes) => toast(i18nT("settings.pictureCacheCleared", { size: fmtBytes(bytes) }), "ok"))
+        .catch((error: unknown) => toast(String(error), "err"));
+      return true;
+    }
 
     case "dl-cleanup-cache":
       toast(i18nT("downloads.cacheClearing"), "");

@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "Dopasuj do 8 MB",
   "ss.clipShareWillSend": "Wysyłanie {time} · {size}",
   "ss.clipShareTooLarge": "{size} przekracza limit 8 MB",
-  "ss.clipShareSent": "Wysłano {size} na Discorda"
+  "ss.clipShareSent": "Wysłano {size} na Discorda",
+  "settings.pictureCache": "Pamięć obrazów",
+  "settings.pictureCacheDesc": "Grafika główna, zrzuty IGDB i okładki podobnych gier leżą na dysku, więc strona otwiera się bez sieci.",
+  "settings.pictureCacheCleared": "Usunięto {size} obrazów"
 }

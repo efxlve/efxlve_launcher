@@ -2439,5 +2439,8 @@
   "ss.clipShareFit": "Fit to 8 MB",
   "ss.clipShareWillSend": "Sending {time} · {size}",
   "ss.clipShareTooLarge": "{size} is over the 8 MB webhook limit",
-  "ss.clipShareSent": "Sent {size} to Discord"
+  "ss.clipShareSent": "Sent {size} to Discord",
+  "settings.pictureCache": "Picture cache",
+  "settings.pictureCacheDesc": "Hero art, IGDB screenshots and similar-game covers, kept on disk so a game page opens without waiting for the network.",
+  "settings.pictureCacheCleared": "Cleared {size} of pictures"
 }

@@ -20,6 +20,7 @@ mod nile;
 mod notes;
 mod net_diag;
 mod igdb;
+mod image_cache;
 mod perf;
 mod task_manager;
 mod game_running;
@@ -786,6 +787,9 @@ fn main() {    // Rockstar's launcher only continues when a process named
         })
         .invoke_handler(tauri::generate_handler![
             library_dir,
+            image_cache::cache_images,
+            image_cache::image_cache_size,
+            image_cache::clear_image_cache,
             app_minimize,
             app_get_autostart,
             perf::perf_mark,
