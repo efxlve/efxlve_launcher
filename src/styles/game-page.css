@@ -126,6 +126,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-about-tags { margin: 0 0 14px; }
 .gp-tag { height: 28px; padding: 0 10px; border: none; cursor: pointer; font-family: inherit; }
 .gp-tag:hover { background: var(--surface-3); color: var(--text); }
+/* The genre chips under a description are facts, not buttons: they must not
+   light up under the cursor the way the collection chips do. */
+.igdb-tags .gp-tag { cursor: default; }
+.igdb-tags .gp-tag:hover { background: var(--surface-2); color: var(--text-2); }
 
 .gp-progress-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .gp-progress-head .gp-section-title { margin: 0; display: inline-flex; align-items: center; gap: 6px; }

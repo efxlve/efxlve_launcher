@@ -15,6 +15,8 @@ export interface IgdbSearchHit {
   year: number | null;
   coverId: string;
   rating: number | null;
+  /** IGDB's URL name; `igdb.com/games/<slug>` is the link that works. */
+  slug: string;
 }
 
 export interface IgdbGame {

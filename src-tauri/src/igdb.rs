@@ -353,6 +353,7 @@ fn game_query(id: i64) -> String {
          involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
          franchises.name, collection.name, cover.image_id, screenshots.image_id, \
          similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
+         similar_games.slug, \
          websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
          release_dates.platform, release_dates.date; \
          where id = {id};"
@@ -455,6 +456,10 @@ pub struct IgdbSearchHit {
     pub year: Option<i64>,
     pub cover_id: String,
     pub rating: Option<f64>,
+    /// IGDB's URL name for the game: `igdb.com/games/<slug>` is the only link
+    /// that works, the numeric id lands on a search page.
+    #[serde(default)]
+    pub slug: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -532,6 +537,7 @@ fn map_search_hit(value: &serde_json::Value) -> IgdbSearchHit {
             .map(|cover| string_field(cover, "image_id"))
             .unwrap_or_default(),
         rating: value.get("rating").and_then(serde_json::Value::as_f64),
+        slug: string_field(value, "slug"),
     }
 }
 
@@ -822,7 +828,7 @@ fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Va
 
 /// Bumped whenever `IgdbGame` gains a field: entries written by an older build
 /// are fetched again instead of showing up half empty.
-const CACHE_SCHEMA: u32 = 2;
+const CACHE_SCHEMA: u32 = 3;
 
 /// What actually lands on disk: the schema marker next to the game itself.
 #[derive(Serialize, Deserialize)]

@@ -143,6 +143,14 @@ export function renderIgdbMedia(target: IgdbTarget): string {
     </section>`;
 }
 
+/** IGDB's own page for a hit. The numeric id lands on an empty search page, so a
+ * hit without a slug falls back to searching by name. */
+function igdbGameUrl(hit: { id: number; name: string; slug?: string }): string {
+  return hit.slug
+    ? `https://www.igdb.com/games/${hit.slug}`
+    : `https://www.igdb.com/search?type=1&q=${encodeURIComponent(hit.name)}`;
+}
+
 /** The similar-games card that closes the overview. */
 export function renderIgdbSimilar(target: IgdbTarget): string {
   const game = cache.get(target.appName);
@@ -154,7 +162,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
       <div class="igdb-similar">${game.similar
         .map(
           (hit) => `
-                 <button type="button" class="igdb-similar-item" data-act="open-external-url" data-url="https://www.igdb.com/games/${hit.id}">
+                 <button type="button" class="igdb-similar-item" data-act="open-external-url" data-url="${esc(igdbGameUrl(hit))}">
                    ${
                      hit.coverId
                        ? (() => {
