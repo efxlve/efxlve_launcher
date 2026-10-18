@@ -313,6 +313,28 @@ export function epicArt(s: EpicSummary): string {
   return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
 }
 
+/**
+ * The cover URL a card would use, without the markup around it. The idle
+ * prefetch warms these while nothing else is happening, so scrolling into the
+ * next chunk of cards shows pictures instead of empty boxes. `""` when the game
+ * has no cover of its own — a Steam game only knows its URL after its first
+ * lookup, and guessing one would be a wasted request.
+ */
+export function epicArtUrl(s: EpicSummary): string {
+  const custom = S.customCovers[s.appName];
+  if (custom) return custom;
+  if (s.appName.startsWith("steam::")) {
+    const appId = s.appName.slice("steam::".length);
+    return cachedSteamCover(appId) || "";
+  }
+  const g = rawOf(s.appName);
+  const url = g ? epicPortrait(g) : s.cover;
+  if (!url) return "";
+  return url.includes("_product_card_v2_mobile_slider_639.jpg")
+    ? url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg")
+    : url;
+}
+
 function steamPortraitImg(appId: string): string {
   const cached = cachedSteamCover(appId);
   if (cached === "") return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;

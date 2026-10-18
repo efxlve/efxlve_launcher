@@ -6,10 +6,10 @@
  * Full-page innerHTML of a grown 500-card chunk is treated as a bug.
  */
 
-import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, isTauri } from "../../core/constants";
+import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, PREFETCH_COVERS, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
-import { achSummaryOf, epicActionButtons, epicArt, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
@@ -489,8 +489,43 @@ export function renderEpicItems(): string {
     ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>`
     : "";
   const itemsHtml = chunk.map(renderItem).join("");
+  // The covers of the next chunk are fetched while nothing else is happening:
+  // scrolling into them then shows pictures instead of empty boxes. The WebView
+  // keeps them in its own disk cache, so this costs one request per cover ever.
+  prefetchNextCovers(visible, chunk.length);
 
   return `${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
+}
+
+/** Covers already asked for while idle, so a repaint does not ask again. */
+const prefetchedCovers = new Set<string>();
+
+/**
+ * Warms the covers just past the rendered chunk, a few at a time and only while
+ * the machine is idle. Nothing is drawn: an `Image` object is enough to put the
+ * picture in the browser's cache.
+ */
+function prefetchNextCovers(visible: EpicSummary[], renderedCount: number): void {
+  if (S.offlineMode || S.libPagination) return;
+  const ahead = visible.slice(renderedCount, renderedCount + PREFETCH_COVERS);
+  const urls = ahead
+    .map((s) => epicArtUrl(s))
+    .filter((url) => url && !prefetchedCovers.has(url));
+  if (urls.length === 0) return;
+
+  const start = (): void => {
+    for (const url of urls) {
+      prefetchedCovers.add(url);
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+    }
+  };
+  // `requestIdleCallback` is the point of this: a start-up burst of requests is
+  // what the chunked grid exists to avoid.
+  const idleHost = window as Window & { requestIdleCallback?: (cb: () => void) => number };
+  if (typeof idleHost.requestIdleCallback === "function") idleHost.requestIdleCallback(start);
+  else window.setTimeout(start, 1500);
 }
 
 /** The summaries the current grid renders, in order (page or chunk). */

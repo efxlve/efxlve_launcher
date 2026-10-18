@@ -42,9 +42,13 @@ touching anything:
    gallery already proves (base64 data URLs, no new webview protocol) and
    prefetch only while the window is idle.
 4. Screenshots workstream (parked, see section 7).
-5. Library covers: the grid loads every cover from the store CDN with
-   `loading="lazy"`, and nothing is kept between runs beyond the WebView2 HTTP
-   cache. This is the biggest remaining caching win for a big library.
+5. Library covers: the grid renders its first 48 cards and appends more as a
+   sentinel scrolls into view, and WebView2 keeps the pictures in its own disk
+   cache between runs, so the repeat case was already covered. What was missing
+   was the next chunk: `prefetchNextCovers` (library-view.ts, `PREFETCH_COVERS`)
+   warms the 24 covers just past the rendered chunk through `requestIdleCallback`,
+   once per URL, never in offline or paginated mode. Scrolling into them shows
+   pictures instead of empty boxes.
 
 ## 0c. Caching and speed (owner's next focus, after the list above)
 
@@ -53,10 +57,10 @@ service, Wikipedia, store specs — see `docs/GAME_PAGE_REWORK.md` §9), so the
 remaining work is pictures and prefetching:
 
 - Pictures: the game page's own cache comes back as item 5 above / 0b.3; the
-  library's covers are 0b.5. Both must avoid a new webview protocol.
-- Prefetch while idle: a warm pass after `boot:ready` that fills the *disk*
-  caches only (no DOM work), so a click is instant without touching the first
-  paint.
+  library's covers are 0b.5 (the idle prefetch of the next chunk shipped; a
+  second disk copy of what the WebView already caches is not worth it).
+- Prefetch while idle: shipped for library covers (`prefetchNextCovers`). The
+  same idea applies to the game page's pictures when 0b.3 comes back.
 - Idle cost first: transparency (section 2) and TV mode (section 1) are the two
   known CPU drains; measure with the task manager page before and after.
 

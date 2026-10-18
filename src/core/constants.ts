@@ -197,6 +197,8 @@ export const RECENT_INSTALLS_KEY = "efxlve-recent-installs";
 export const INITIAL_CARD_CHUNK = 48;
 /** Number of extra library cards appended per scroll sentinel hit. */
 export const MORE_CARD_CHUNK = 36;
+/** Covers just past the rendered chunk that are fetched while the window is idle. */
+export const PREFETCH_COVERS = 24;
 
 /** Real folder sizes measured off the filesystem, keyed by library key. */
 export const FOLDER_SIZES_KEY = "efxlve-folder-sizes";
