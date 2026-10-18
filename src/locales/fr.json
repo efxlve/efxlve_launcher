@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "Ce fichier n'est pas un clip de ce launcher",
   "ss.clipUnreadable": "Le clip n'a pas pu être lu",
   "ss.clipWriteFailed": "Le clip n'a pas pu être écrit",
-  "ss.joinMismatch": "Les clips n'ont pas la même taille ni la même cadence"
+  "ss.joinMismatch": "Les clips n'ont pas la même taille ni la même cadence",
+  "ss.clipShareTitle": "Envoyer sur Discord",
+  "ss.clipShareFit": "Ajuster à 8 Mo",
+  "ss.clipShareWillSend": "Envoi de {time} · {size}",
+  "ss.clipShareTooLarge": "{size} dépasse la limite de 8 Mo",
+  "ss.clipShareSent": "{size} envoyés sur Discord"
 }

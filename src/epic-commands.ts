@@ -809,6 +809,15 @@ export const clipTrim = (path: string, startSecs: number, endSecs: number) =>
   invoke<ClipItem>("clip_trim", { path, startSecs, endSecs });
 /** Puts clips together, in the order given. */
 export const clipJoin = (paths: string[]) => invoke<ClipItem>("clip_join", { paths });
+/** Sends a range of a clip to a Discord webhook; resolves with the bytes sent.
+ *  `endSecs <= 0` sends the whole file. */
+export const clipShareDiscord = (
+  webhook: string,
+  path: string,
+  startSecs: number,
+  endSecs: number,
+  message: string,
+) => invoke<number>("clip_share_discord", { webhook, path, startSecs, endSecs, message });
 export const clipDelete = (path: string) => invoke<boolean>("clip_delete", { path });
 export const clipFolderPath = () => invoke<string>("clip_folder_path");
 

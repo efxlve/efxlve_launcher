@@ -20,6 +20,7 @@ import {
   clipFrame,
   clipJoin,
   clipList,
+  clipShareDiscord,
   clipThumbnail,
   clipTrim,
   epicDeleteGameScreenshot,
@@ -36,7 +37,7 @@ import {
   shotPreviewSrc,
   shotThumbHtml,
 } from "./screenshots-view";
-import { ssDensity, ssFavorites, ssSort, ssSortItems, ssToggleFavorite } from "./ss-settings";
+import { ssDensity, ssFavorites, ssSort, ssSortItems, ssToggleFavorite, ssWebhooks } from "./ss-settings";
 
 type PageFilter = "all" | "favorites" | "raw" | "compressed";
 
@@ -271,6 +272,7 @@ function clipsSectionHtml(): string {
         <div class="ss-clip-actions">
           <button type="button" class="btn ghost small" data-act="ssp-clip-play" data-path="${esc(clip.path)}">${icon("play", 12)} ${t("ss.clipPlay")}</button>
           <button type="button" class="btn ghost small" data-act="clip-trim" data-path="${esc(clip.path)}">${icon("sliders", 12)} ${t("ss.clipTrim")}</button>
+          <button type="button" class="btn ghost small" data-act="clip-share" data-path="${esc(clip.path)}" title="${esc(t("ss.clipShareTitle"))}">${icon("discord", 12)}</button>
           <button type="button" class="btn ghost small" data-act="ssp-clip-folder" data-path="${esc(clip.path)}">${icon("folder", 12)}</button>
           <button type="button" class="btn ghost danger small" data-act="ssp-clip-delete" data-path="${esc(clip.path)}">${icon("trash", 12)}</button>
         </div>
@@ -303,6 +305,7 @@ function clipDialogRoot(): HTMLElement {
 
 export function closeClipDialog(): void {
   clipTrimPath = null;
+  clipSharePath = null;
   const root = document.getElementById("ss-clip-root");
   if (root) root.innerHTML = "";
 }
@@ -429,6 +432,147 @@ export async function saveClipJoin(): Promise<void> {
     closeClipDialog();
     toast(t("ss.clipSavedAs", { name: made.name }), "ok");
     reloadClips();
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  }
+}
+
+/* ---------- Sending a clip to Discord ---------- */
+
+/** Discord refuses a webhook upload over 8 MB. Kept in step with
+ *  `DISCORD_WEBHOOK_LIMIT` on the Rust side, which is the real gate. */
+const DISCORD_CLIP_LIMIT = 8 * 1024 * 1024;
+
+/** The clip the share dialog works on. */
+let clipSharePath: string | null = null;
+
+/** What a range of a clip is worth, at the clip's own bitrate. */
+function clipRangeBytes(clip: ClipItem, start: number, end: number): number {
+  const total = Math.max(1, clip.seconds);
+  return Math.round((clip.sizeBytes * Math.max(0, end - start)) / total);
+}
+
+/** The end time that brings a range under the webhook limit, with a margin. */
+function clipFitEnd(clip: ClipItem, start: number): number {
+  const perSecond = Math.max(1, clip.sizeBytes) / Math.max(1, clip.seconds);
+  const fits = (DISCORD_CLIP_LIMIT * 0.95) / perSecond;
+  return Math.max(start + 1, Math.min(clip.seconds, start + fits));
+}
+
+function clipShareRange(clip: ClipItem): { start: number; end: number } {
+  const start = Number(
+    (document.getElementById("ss-clip-share-start") as HTMLInputElement | null)?.value ?? "0",
+  );
+  const end = Number(
+    (document.getElementById("ss-clip-share-end") as HTMLInputElement | null)?.value ?? "0",
+  );
+  return { start: Math.max(0, start), end: Math.min(Math.max(1, clip.seconds), end) };
+}
+
+/** The line under the range: what goes out, and whether it fits. */
+export function updateClipShareNote(): void {
+  const note = document.getElementById("ss-clip-share-note");
+  if (!note || !clipSharePath) return;
+  const clip = clips.find((entry) => entry.path === clipSharePath);
+  if (!clip) return;
+  const { start, end } = clipShareRange(clip);
+  const bytes = clipRangeBytes(clip, start, end);
+  const size = fmtBytes(bytes);
+  note.textContent =
+    bytes > DISCORD_CLIP_LIMIT
+      ? t("ss.clipShareTooLarge", { size })
+      : t("ss.clipShareWillSend", { time: clipLength(Math.round(end - start)), size });
+  note.classList.toggle("is-over", bytes > DISCORD_CLIP_LIMIT);
+}
+
+/** Opens the send dialog: a range, what it weighs, and one button per webhook. */
+export async function openClipShare(path: string): Promise<void> {
+  const clip = clips.find((entry) => entry.path === path);
+  if (!clip) return;
+  clipSharePath = path;
+  clipTrimPath = null;
+  const total = Math.max(1, clip.seconds);
+  const webhooks = ssWebhooks();
+  const buttons = webhooks.length
+    ? webhooks
+        .map(
+          (hook) => `
+        <button class="ss-share-btn" data-act="clip-share-send" data-webhook-id="${esc(hook.id)}">
+          <div class="ss-share-btn-icon">${icon("discord", 18)}</div>
+          <div class="ss-share-btn-text">
+            <span class="ss-btn-main">${esc(hook.name)}</span>
+            <span class="ss-btn-hint">${t("ss.shareDiscordHint")}</span>
+          </div>
+        </button>`,
+        )
+        .join("")
+    : `
+      <button class="ss-share-btn" data-act="clip-share-send">
+        <div class="ss-share-btn-icon">${icon("discord", 18)}</div>
+        <div class="ss-share-btn-text">
+          <span class="ss-btn-main">${t("ss.shareDiscord")}</span>
+          <span class="ss-btn-hint">${t("ss.shareDiscordSetup")}</span>
+        </div>
+      </button>`;
+
+  clipDialogRoot().innerHTML = `
+    <div class="modal-backdrop" data-act="clip-dialog-backdrop">
+      <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
+        <div class="selective-header"><h2>${t("ss.clipShareTitle")}</h2></div>
+        <div class="ss-clip-dialog-name" title="${esc(clip.name)}">${esc(clip.name)} · ${esc(fmtBytes(clip.sizeBytes))} · ${esc(clipLength(clip.seconds))}</div>
+        <div class="ss-clip-strip" id="ss-clip-share-strip"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="ss-clip-range">
+          <label>${t("ss.clipTrimStart")}
+            <input type="number" id="ss-clip-share-start" class="input" min="0" max="${total}" step="1" value="0" />
+          </label>
+          <label>${t("ss.clipTrimEnd")}
+            <input type="number" id="ss-clip-share-end" class="input" min="0" max="${total}" step="1" value="${total}" />
+          </label>
+        </div>
+        <div class="ss-clip-range-note" id="ss-clip-share-note"></div>
+        <div class="ss-clip-share-list">${buttons}</div>
+        <div class="playtime-footer">
+          <button class="btn ghost" data-act="clip-dialog-close">${t("common.cancel")}</button>
+          <button class="btn ghost" data-act="clip-share-fit">${t("ss.clipShareFit")}</button>
+        </div>
+      </div>
+    </div>`;
+  updateClipShareNote();
+  const strip = document.getElementById("ss-clip-share-strip");
+  if (strip) strip.innerHTML = await clipStripHtml(path, clip.seconds);
+}
+
+/** Shrinks the range so it fits the webhook limit. */
+export function fitClipShareRange(): void {
+  const clip = clips.find((entry) => entry.path === clipSharePath);
+  if (!clip) return;
+  const { start } = clipShareRange(clip);
+  const end = document.getElementById("ss-clip-share-end") as HTMLInputElement | null;
+  if (end) end.value = String(Math.floor(clipFitEnd(clip, start)));
+  updateClipShareNote();
+}
+
+/** Sends the chosen range. The range is cut on the way out, not re-encoded. */
+export async function sendClipShare(webhookId: string): Promise<void> {
+  const clip = clips.find((entry) => entry.path === clipSharePath);
+  if (!clip) return;
+  const webhook = ssWebhooks().find((hook) => hook.id === webhookId) ?? ssWebhooks()[0];
+  if (!webhook) {
+    toast(t("ss.shareDiscordSetup"), "err");
+    return;
+  }
+  const { start, end } = clipShareRange(clip);
+  const whole = start <= 0 && end >= clip.seconds;
+  try {
+    const sent = await clipShareDiscord(
+      webhook.url,
+      clip.path,
+      whole ? 0 : start,
+      whole ? 0 : end,
+      "",
+    );
+    closeClipDialog();
+    toast(t("ss.clipShareSent", { size: fmtBytes(sent) }), "ok");
   } catch (error) {
     toast(localizeMessage(String(error)), "err");
   }

@@ -97,10 +97,16 @@ Reddit via clipboard + compose window), the F9 MJPEG-AVI clip recorder, and
 cutting/joining clips (`afad22b7`): a trim copies the chosen frame range into a
 new file — MJPEG frames are their own keyframes, so nothing is re-encoded — and
 a join appends clips that share one size and frame rate, refusing the rest.
+A clip range can also go straight to a Discord webhook: the range is cut into
+the temp folder on the way out, so the upload is a real clip and nothing is left
+behind. A webhook takes 8 MB, so the dialog shows what a range weighs and has a
+button that shrinks it to fit.
 
 Left, in rough priority:
-- Upload a clip to the Discord webhook as well (the multipart path exists, the
-  8 MB webhook limit means a shorter cap or a compressed re-encode first).
+- A compressed clip for sharing: Discord takes 8 MB, which a clip at full quality
+  passes in a second or two, so `clip_share_discord` cuts the range and sends
+  that (`b1a3c1e` style lossless copy). Re-encoding the frames smaller is the
+  real answer and it belongs with section 8's encoder.
 - Screenshot `SteamGridDB` upload? Not planned; the picker already covers covers.
 - The recorder's ~30 fps ceiling and what a GPU path would take: section 8.
 

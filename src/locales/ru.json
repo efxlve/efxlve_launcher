@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "Этот файл не является клипом этого лаунчера",
   "ss.clipUnreadable": "Не удалось прочитать клип",
   "ss.clipWriteFailed": "Не удалось записать клип",
-  "ss.joinMismatch": "У клипов разный размер или частота кадров"
+  "ss.joinMismatch": "У клипов разный размер или частота кадров",
+  "ss.clipShareTitle": "Отправить в Discord",
+  "ss.clipShareFit": "Ужать до 8 МБ",
+  "ss.clipShareWillSend": "Отправка {time} · {size}",
+  "ss.clipShareTooLarge": "{size} превышает лимит 8 МБ",
+  "ss.clipShareSent": "Отправлено {size} в Discord"
 }

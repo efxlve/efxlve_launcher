@@ -1604,6 +1604,80 @@ fn decode_data_url(data_url: &str) -> Result<Vec<u8>, String> {
         .map_err(|_| "@t:ss.badImage".to_string())
 }
 
+/// Discord refuses anything over 8 MB on a webhook, which a clip passes long
+/// before it is worth sending. The share path cuts the range down first.
+pub const DISCORD_WEBHOOK_LIMIT: u64 = 8 * 1024 * 1024;
+
+/// Checks a webhook URL against Discord's own hosts. Everything shared here goes
+/// to the user's own channel address, and nowhere else.
+pub(crate) fn checked_webhook(webhook: &str) -> Result<String, String> {
+    let webhook = webhook.trim().to_string();
+    let allowed = [
+        "https://discord.com/api/webhooks/",
+        "https://discordapp.com/api/webhooks/",
+        "https://canary.discord.com/api/webhooks/",
+        "https://ptb.discord.com/api/webhooks/",
+    ];
+    if !allowed.iter().any(|prefix| webhook.starts_with(prefix)) {
+        return Err("@t:ss.badWebhook".to_string());
+    }
+    Ok(webhook)
+}
+
+/// Posts one file to a webhook, with an optional message. Shared by screenshots
+/// and clips: the multipart shape and the status mapping are the same.
+pub(crate) async fn post_webhook_file(
+    webhook: &str,
+    bytes: &[u8],
+    upload_name: &str,
+    mime: &str,
+    message: &str,
+) -> Result<(), String> {
+    let boundary = format!(
+        "----efxlve{:x}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    );
+    let payload = serde_json::json!({ "content": message }).to_string();
+    let mut body: Vec<u8> = Vec::with_capacity(bytes.len() + 512);
+    body.extend_from_slice(
+        format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"payload_json\"\r\n\r\n{payload}\r\n"
+        )
+        .as_bytes(),
+    );
+    body.extend_from_slice(
+        format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"{upload_name}\"\r\nContent-Type: {mime}\r\n\r\n"
+        )
+        .as_bytes(),
+    );
+    body.extend_from_slice(bytes);
+    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|_| "@t:ss.shareFailed".to_string())?;
+    let response = client
+        .post(webhook)
+        .header("Content-Type", format!("multipart/form-data; boundary={boundary}"))
+        .body(body)
+        .send()
+        .await
+        .map_err(|_| "@t:ss.shareFailed".to_string())?;
+
+    match response.status().as_u16() {
+        200 | 204 => Ok(()),
+        401 | 403 | 404 => Err("@t:ss.badWebhook".to_string()),
+        413 => Err("@t:ss.shareTooLarge".to_string()),
+        429 => Err("@t:ss.shareRateLimited".to_string()),
+        _ => Err("@t:ss.shareFailed".to_string()),
+    }
+}
+
 /// Posts a screenshot to the user's own Discord webhook.
 ///
 /// One-click sharing without asking anyone for API keys: the webhook is the
@@ -1617,16 +1691,7 @@ pub async fn screenshot_share_discord(
     file_name: String,
     message: String,
 ) -> Result<(), String> {
-    let webhook = webhook.trim().to_string();
-    let allowed = [
-        "https://discord.com/api/webhooks/",
-        "https://discordapp.com/api/webhooks/",
-        "https://canary.discord.com/api/webhooks/",
-        "https://ptb.discord.com/api/webhooks/",
-    ];
-    if !allowed.iter().any(|prefix| webhook.starts_with(prefix)) {
-        return Err("@t:ss.badWebhook".to_string());
-    }
+    let webhook = checked_webhook(&webhook)?;
 
     // The caller sends a path for formats Discord accepts, and a PNG data URL
     // for anything it does not (AVIF), so the upload always lands.
@@ -1662,65 +1727,14 @@ pub async fn screenshot_share_discord(
         _ => return Err("@t:ss.fileNotFound".to_string()),
     };
 
-    let boundary = format!(
-        "----efxlve{:x}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    );
-    let payload = serde_json::json!({ "content": message }).to_string();
-    let mut body: Vec<u8> = Vec::with_capacity(bytes.len() + 512);
-    body.extend_from_slice(
-        format!(
-            "--{boundary}\r\nContent-Disposition: form-data; name=\"payload_json\"\r\n\r\n{payload}\r\n"
-        )
-        .as_bytes(),
-    );
-    body.extend_from_slice(
-        format!(
-            "--{boundary}\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"{upload_name}\"\r\nContent-Type: {mime}\r\n\r\n"
-        )
-        .as_bytes(),
-    );
-    body.extend_from_slice(&bytes);
-    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
-
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|_| "@t:ss.shareFailed".to_string())?;
-    let response = client
-        .post(&webhook)
-        .header("Content-Type", format!("multipart/form-data; boundary={boundary}"))
-        .body(body)
-        .send()
-        .await
-        .map_err(|_| "@t:ss.shareFailed".to_string())?;
-
-    match response.status().as_u16() {
-        200 | 204 => Ok(()),
-        401 | 403 | 404 => Err("@t:ss.badWebhook".to_string()),
-        413 => Err("@t:ss.shareTooLarge".to_string()),
-        429 => Err("@t:ss.shareRateLimited".to_string()),
-        _ => Err("@t:ss.shareFailed".to_string()),
-    }
+    post_webhook_file(&webhook, &bytes, &upload_name, &mime, &message).await
 }
 
 /// The name Discord gives a webhook, so the list can show "#screenshots" style
 /// labels instead of raw URLs. Also proves the URL works before it is stored.
 #[tauri::command]
 pub async fn screenshot_webhook_info(webhook: String) -> Result<String, String> {
-    let webhook = webhook.trim().to_string();
-    let allowed = [
-        "https://discord.com/api/webhooks/",
-        "https://discordapp.com/api/webhooks/",
-        "https://canary.discord.com/api/webhooks/",
-        "https://ptb.discord.com/api/webhooks/",
-    ];
-    if !allowed.iter().any(|prefix| webhook.starts_with(prefix)) {
-        return Err("@t:ss.badWebhook".to_string());
-    }
+    let webhook = checked_webhook(&webhook)?;
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(20))
         .build()

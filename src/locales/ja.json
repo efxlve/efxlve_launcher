@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "このファイルはこのランチャーのクリップではありません",
   "ss.clipUnreadable": "クリップを読み込めませんでした",
   "ss.clipWriteFailed": "クリップを書き込めませんでした",
-  "ss.joinMismatch": "クリップのサイズまたはフレームレートが一致しません"
+  "ss.joinMismatch": "クリップのサイズまたはフレームレートが一致しません",
+  "ss.clipShareTitle": "Discord に送信",
+  "ss.clipShareFit": "8 MB に収める",
+  "ss.clipShareWillSend": "{time} · {size} を送信",
+  "ss.clipShareTooLarge": "{size} は 8 MB の上限を超えています",
+  "ss.clipShareSent": "Discord に {size} を送信しました"
 }

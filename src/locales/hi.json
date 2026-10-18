@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "यह फ़ाइल इस लॉन्चर की क्लिप नहीं है",
   "ss.clipUnreadable": "क्लिप पढ़ी नहीं जा सकी",
   "ss.clipWriteFailed": "क्लिप लिखी नहीं जा सकी",
-  "ss.joinMismatch": "क्लिप का आकार या फ़्रेम दर एक जैसा नहीं है"
+  "ss.joinMismatch": "क्लिप का आकार या फ़्रेम दर एक जैसा नहीं है",
+  "ss.clipShareTitle": "Discord पर भेजें",
+  "ss.clipShareFit": "8 MB में फ़िट करें",
+  "ss.clipShareWillSend": "{time} · {size} भेजा जाएगा",
+  "ss.clipShareTooLarge": "{size} 8 MB सीमा से अधिक है",
+  "ss.clipShareSent": "Discord पर {size} भेजा गया"
 }

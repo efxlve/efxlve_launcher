@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "Ten plik nie jest klipem tego launchera",
   "ss.clipUnreadable": "Nie udało się odczytać klipu",
   "ss.clipWriteFailed": "Nie udało się zapisać klipu",
-  "ss.joinMismatch": "Klipy nie mają tego samego rozmiaru i liczby klatek"
+  "ss.joinMismatch": "Klipy nie mają tego samego rozmiaru i liczby klatek",
+  "ss.clipShareTitle": "Wyślij na Discorda",
+  "ss.clipShareFit": "Dopasuj do 8 MB",
+  "ss.clipShareWillSend": "Wysyłanie {time} · {size}",
+  "ss.clipShareTooLarge": "{size} przekracza limit 8 MB",
+  "ss.clipShareSent": "Wysłano {size} na Discorda"
 }

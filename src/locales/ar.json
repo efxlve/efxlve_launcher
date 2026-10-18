@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "هذا الملف ليس مقطعًا سجّله هذا المشغّل",
   "ss.clipUnreadable": "تعذّر قراءة المقطع",
   "ss.clipWriteFailed": "تعذّر كتابة المقطع",
-  "ss.joinMismatch": "المقاطع ليست بالحجم ومعدل الإطارات نفسه"
+  "ss.joinMismatch": "المقاطع ليست بالحجم ومعدل الإطارات نفسه",
+  "ss.clipShareTitle": "إرسال إلى Discord",
+  "ss.clipShareFit": "اضبط لـ 8 ميغابايت",
+  "ss.clipShareWillSend": "سيُرسل {time} · {size}",
+  "ss.clipShareTooLarge": "{size} يتجاوز حد 8 ميغابايت",
+  "ss.clipShareSent": "أُرسل {size} إلى Discord"
 }

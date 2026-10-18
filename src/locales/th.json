@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "ไฟล์นี้ไม่ใช่คลิปที่โปรแกรมนี้บันทึก",
   "ss.clipUnreadable": "อ่านคลิปไม่ได้",
   "ss.clipWriteFailed": "เขียนคลิปไม่ได้",
-  "ss.joinMismatch": "คลิปมีขนาดหรืออัตราเฟรมไม่ตรงกัน"
+  "ss.joinMismatch": "คลิปมีขนาดหรืออัตราเฟรมไม่ตรงกัน",
+  "ss.clipShareTitle": "ส่งไป Discord",
+  "ss.clipShareFit": "ย่อให้พอดี 8 MB",
+  "ss.clipShareWillSend": "จะส่ง {time} · {size}",
+  "ss.clipShareTooLarge": "{size} เกินขีดจำกัด 8 MB",
+  "ss.clipShareSent": "ส่ง {size} ไป Discord แล้ว"
 }

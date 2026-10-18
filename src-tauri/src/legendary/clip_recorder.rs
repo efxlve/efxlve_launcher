@@ -1027,15 +1027,22 @@ fn item_for(path: &Path) -> ClipItem {
 
 /// Cuts a clip down to a range, losslessly, into a new file next to it.
 pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, String> {
+    let target = sibling_path(path, "_trim");
+    trim_to(path, start_secs, end_secs, &target)?;
+    Ok(target)
+}
+
+/// The same cut, written wherever the caller asks: the Discord share path trims
+/// into the temp folder so nothing is left in the user's Videos.
+pub fn trim_to(path: &Path, start_secs: f64, end_secs: f64, target: &Path) -> Result<PathBuf, String> {
     let header = read_clip_header(path)?;
     let from = header.frame_at(start_secs);
     let to = header.frame_at(end_secs);
     if to <= from {
         return Err("@t:ss.trimEmpty".to_string());
     }
-    let target = sibling_path(path, "_trim");
     let mut writer = AviWriter::create(
-        &target,
+        target,
         header.width,
         header.height,
         header.fps(),
@@ -1044,13 +1051,13 @@ pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, Stri
     .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
     let copied = copy_range(path, &mut writer, from, to)?;
     if copied == 0 {
-        let _ = std::fs::remove_file(&target);
+        let _ = std::fs::remove_file(target);
         return Err("@t:ss.trimEmpty".to_string());
     }
     writer
         .finish_at(header.fps(), header.micros)
         .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
-    Ok(target)
+    Ok(target.to_path_buf())
 }
 
 /// Puts clips one after another into a new file, without re-encoding.
@@ -1159,6 +1166,69 @@ pub fn clip_join(paths: Vec<String>) -> Result<ClipItem, String> {
     }
     let target = join(&sources)?;
     Ok(item_for(&target))
+}
+
+/// Sends a range of a clip to a Discord webhook.
+///
+/// A webhook takes 8 MB, which a clip passes in seconds at full quality, so the
+/// range is cut down first with the same lossless copy the trim dialog uses.
+/// Cutting a whole clip would only duplicate it, so that case sends the file
+/// itself. Returns the number of bytes that went out.
+#[tauri::command]
+pub async fn clip_share_discord(
+    webhook: String,
+    path: String,
+    start_secs: f64,
+    end_secs: f64,
+    message: String,
+) -> Result<u64, String> {
+    let webhook = crate::legendary::screenshots::checked_webhook(&webhook)?;
+    let source = PathBuf::from(&path);
+    if !source.starts_with(crate::legendary::screenshots::get_user_videos_dir().join("Efxlve")) {
+        return Err("@t:ss.outsideRoot".to_string());
+    }
+
+    // `end_secs <= 0` means "the whole clip": that is the one case where the
+    // file goes out as it is, because cutting it would only duplicate it.
+    let mut temp: Option<PathBuf> = None;
+    let upload = if end_secs <= 0.0 {
+        source.clone()
+    } else {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let target = std::env::temp_dir().join(format!("efxlve-share-{stamp}.avi"));
+        let cut = trim_to(&source, start_secs, end_secs, &target)?;
+        temp = Some(cut.clone());
+        cut
+    };
+
+    let result = async {
+        let bytes = std::fs::read(&upload).map_err(|_| "@t:ss.fileNotFound".to_string())?;
+        if bytes.len() as u64 > crate::legendary::screenshots::DISCORD_WEBHOOK_LIMIT {
+            return Err("@t:ss.shareTooLarge".to_string());
+        }
+        let name = upload
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "clip.avi".to_string());
+        crate::legendary::screenshots::post_webhook_file(
+            &webhook,
+            &bytes,
+            &name,
+            "video/x-msvideo",
+            &message,
+        )
+        .await?;
+        Ok(bytes.len() as u64)
+    }
+    .await;
+
+    if let Some(temp) = &temp {
+        let _ = std::fs::remove_file(temp);
+    }
+    result
 }
 
 /// The clips root, so the UI can open it in the file manager.
@@ -1533,6 +1603,31 @@ mod tests {
         let _ = std::fs::remove_file(&a);
         let _ = std::fs::remove_file(&b);
         let _ = std::fs::remove_file(&c);
+    }
+
+    /// The share path cuts into the temp folder, so the cut has to land exactly
+    /// where it was asked to, not next to the source.
+    #[test]
+    fn a_cut_can_be_written_wherever_it_is_asked_to() {
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let source = dir.join("share-source.avi");
+        let mut writer = AviWriter::create(&source, 160, 90, 10, None).expect("create");
+        for i in 0..10u8 {
+            writer.add_frame(&[0xFF, 0xD8, i, 0xFF, 0xD9]).expect("frame");
+        }
+        writer.finish(10, Duration::from_secs(1)).expect("finish");
+
+        let target = dir.join("share-target.avi");
+        let _ = std::fs::remove_file(&target);
+        let written = trim_to(&source, 0.0, 0.5, &target).expect("trim_to");
+        assert_eq!(written, target, "the caller's path is the one written");
+        assert!(target.is_file(), "and it exists");
+        assert_eq!(avi_seconds(&target), Some(0), "half a second of picture");
+        // Nothing appears next to the source.
+        assert!(!dir.join("share-source_trim.avi").is_file());
+        let _ = std::fs::remove_file(&target);
+        let _ = std::fs::remove_file(&source);
     }
 
     /// The frame grabber is the risky half (Win32 + GDI+): run manually on a

@@ -18,11 +18,13 @@ import {
   closePageLightbox,
   deletePageShot,
   dropClip,
+  fitClipShareRange,
   isPageBatchDeleteArmed,
   loadScreenshotsPage,
   navigatePageLightbox,
   openClipFolder,
   openClipJoin,
+  openClipShare,
   openClipTrim,
   openPageLightbox,
   openPageShotFolder,
@@ -32,6 +34,7 @@ import {
   saveClipJoin,
   saveClipTrim,
   selectedPageShots,
+  sendClipShare,
   setPageBatchDeleteArmed,
   setPageFilter,
   setPageSelectMode,
@@ -213,6 +216,20 @@ export function handleScreenshotsPageAction(
 
     case "clip-trim-save":
       void saveClipTrim();
+      return true;
+
+    case "clip-share": {
+      const path = el.dataset.path ?? "";
+      if (path) void openClipShare(path);
+      return true;
+    }
+
+    case "clip-share-fit":
+      fitClipShareRange();
+      return true;
+
+    case "clip-share-send":
+      void sendClipShare(el.dataset.webhookId ?? "");
       return true;
 
     case "clip-join":

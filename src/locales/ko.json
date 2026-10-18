@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "이 파일은 이 런처가 기록한 클립이 아닙니다",
   "ss.clipUnreadable": "클립을 읽지 못했습니다",
   "ss.clipWriteFailed": "클립을 쓰지 못했습니다",
-  "ss.joinMismatch": "클립의 크기나 프레임 속도가 같지 않습니다"
+  "ss.joinMismatch": "클립의 크기나 프레임 속도가 같지 않습니다",
+  "ss.clipShareTitle": "Discord로 보내기",
+  "ss.clipShareFit": "8MB에 맞추기",
+  "ss.clipShareWillSend": "{time} · {size} 전송",
+  "ss.clipShareTooLarge": "{size}이(가) 8MB 제한을 넘습니다",
+  "ss.clipShareSent": "Discord로 {size} 전송됨"
 }

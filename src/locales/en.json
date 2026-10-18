@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "That file is not a clip this launcher recorded",
   "ss.clipUnreadable": "The clip could not be read",
   "ss.clipWriteFailed": "The clip could not be written",
-  "ss.joinMismatch": "The clips do not share one size and frame rate"
+  "ss.joinMismatch": "The clips do not share one size and frame rate",
+  "ss.clipShareTitle": "Send to Discord",
+  "ss.clipShareFit": "Fit to 8 MB",
+  "ss.clipShareWillSend": "Sending {time} · {size}",
+  "ss.clipShareTooLarge": "{size} is over the 8 MB webhook limit",
+  "ss.clipShareSent": "Sent {size} to Discord"
 }

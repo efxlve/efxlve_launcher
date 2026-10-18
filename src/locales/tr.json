@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "Bu dosya Efxlve'in kaydettiği bir klip değil",
   "ss.clipUnreadable": "Klip okunamadı",
   "ss.clipWriteFailed": "Klip yazılamadı",
-  "ss.joinMismatch": "Kliplerin boyutu veya kare hızı aynı değil"
+  "ss.joinMismatch": "Kliplerin boyutu veya kare hızı aynı değil",
+  "ss.clipShareTitle": "Discord'a gönder",
+  "ss.clipShareFit": "8 MB'a sığdır",
+  "ss.clipShareWillSend": "{time} · {size} gönderilecek",
+  "ss.clipShareTooLarge": "{size} 8 MB webhook sınırını aşıyor",
+  "ss.clipShareSent": "Discord'a {size} gönderildi"
 }

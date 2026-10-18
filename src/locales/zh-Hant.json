@@ -2434,5 +2434,10 @@
   "ss.notOurClip": "該檔案不是本啟動器錄製的剪輯",
   "ss.clipUnreadable": "無法讀取剪輯",
   "ss.clipWriteFailed": "無法寫入剪輯",
-  "ss.joinMismatch": "剪輯的尺寸或影格率不一致"
+  "ss.joinMismatch": "剪輯的尺寸或影格率不一致",
+  "ss.clipShareTitle": "傳送到 Discord",
+  "ss.clipShareFit": "縮到 8 MB",
+  "ss.clipShareWillSend": "將傳送 {time} · {size}",
+  "ss.clipShareTooLarge": "{size} 超過 8 MB 的 webhook 上限",
+  "ss.clipShareSent": "已傳送 {size} 到 Discord"
 }

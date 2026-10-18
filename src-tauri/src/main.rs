@@ -998,6 +998,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             legendary::clip_recorder::clip_frame,
             legendary::clip_recorder::clip_trim,
             legendary::clip_recorder::clip_join,
+            legendary::clip_recorder::clip_share_discord,
             legendary::clip_recorder::clip_folder_path,
             legendary::clip_recorder::clip_delete,
             legendary::screenshots::epic_open_game_screenshots_folder,
