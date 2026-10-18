@@ -2,7 +2,7 @@
 name = "efxlve-launcher"
 version = "0.1.30"
 license = "GPL-3.0-only"
-description = "Efxlve oyun maÄŸazasÄ± launcher (Tauri v2 demo)"
+description = "Efxlve oyun mağazası launcher (Tauri v2 demo)"
 edition = "2021"
 
 [build-dependencies]

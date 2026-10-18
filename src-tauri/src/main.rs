@@ -508,10 +508,48 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// A panic in a release build leaves no trace: the window simply disappears and
+/// the user has nothing to send. This writes the message, the location and a
+/// backtrace next to the other logs, so a crash report is actionable.
+///
+/// It cannot catch a hard fault (an access violation ends the process without
+/// unwinding); for those the Windows Event Log is the only source.
+fn install_crash_logger(app: &tauri::App) {
+    use std::io::Write;
+    use tauri::Manager;
+
+    let dir = app.path().app_data_dir().ok().map(|dir| dir.join("logs"));
+    std::panic::set_hook(Box::new(move |info| {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let text = format!(
+            "[{stamp}] panic: {info}\nbacktrace:\n{}\n\n",
+            std::backtrace::Backtrace::force_capture()
+        );
+        if let Some(dir) = dir.as_ref() {
+            let _ = std::fs::create_dir_all(dir);
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(dir.join("crash.log"))
+            {
+                let _ = file.write_all(text.as_bytes());
+            }
+        }
+        eprintln!("{text}");
+    }));
+}
+
 /// `tauri dev` rebuilds by killing the `cargo run` process. On Windows that
 /// does not stop this process, so `efxlve-launcher.exe` stays locked, the next
 /// link fails, and the dev session exits. Leave as soon as that cargo parent
 /// dies so the new build can replace the exe and start again.
+///
+/// A release install is started by `explorer.exe`, so this returns immediately:
+/// only a direct `cargo.exe` parent starts the watch. (Checked when a user
+/// reported the window closing by itself; it was not this.)
 #[cfg(windows)]
 fn exit_when_cargo_parent_dies() {
     use std::mem::size_of;
@@ -672,8 +710,7 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
 /// ("Windows PowerShell"); the packaged build takes the launcher's name from
 /// its Start-menu shortcut. An explicit app id here would make Windows drop
 /// the toasts entirely, because that id has no shortcut to resolve against.
-fn main() {
-    // Rockstar's launcher only continues when a process named
+fn main() {    // Rockstar's launcher only continues when a process named
     // `EpicGamesLauncher.exe` is in its ancestor chain. This binary runs as
     // that relay copy when `legendary launch --wrapper` starts it, so Rockstar
     // titles work without the Epic Games Launcher. It has to run before the
@@ -1093,6 +1130,7 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");
 
+    install_crash_logger(&app);
     app.run(|app_handle, event| {
         if let tauri::RunEvent::Exit = event {
             // Best effort: drop the GOG presence before the process ends.
