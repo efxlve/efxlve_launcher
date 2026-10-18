@@ -29,13 +29,22 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 
 ## Yokluğunda kendim karara bağladıklarım
 
-- **Oyun sayfası ilk ekranı (Argon mockup'ı) — Aşama A uygulandı** (`slice A`):
-  hero 440 → **340 px**, alt künye 48 px, bar -28 px, başlık 30 px, scrim
-  durakları yeni yüksekliğe göre (0.38 → 0.08 → 0.48 → 0.88 → #000).
-  Künye tek satır: geliştirici · yayıncı (farklıysa) · yıl · yaş sınırı ·
-  DRM-Free/Aile · **anti-cheat ve harici başlatıcı buradan çıktı** ve **önce**
-  Özellikler kartına eklendi (yoksa bilgi kaybolurdu), tam çıkış tarihi de oraya
-  taşındı. IGDB kredileri artık yalnızca tür etiketleri + "Powered by IGDB".
+- **Oyun sayfası ilk ekranı (Argon mockup'ı)** — uygulananlar:
+  - **Aşama A** (`0554a4eb`): hero 440 → **340 px**, alt künye 48 px, bar -28 px,
+    başlık 30 px, scrim durakları yeni yüksekliğe göre (0.38 → 0.08 → 0.48 →
+    0.88 → #000). Künye tek satır: geliştirici · yayıncı (farklıysa) · yıl · yaş
+    sınırı · DRM-Free/Aile. **Anti-cheat ve harici başlatıcı önce Özellikler
+    kartına eklendi**, sonra hero'dan çıkarıldı (yoksa bilgi kaybolurdu); tam
+    çıkış tarihi de oraya taşındı. IGDB kredileri artık yalnızca tür etiketleri +
+    "Powered by IGDB".
+  - **Aşama D** (`b7dec0b0`): oyun kurulu/oynanmışsa **kişisel içerik üstte**
+    (Anların + Sıradaki kupalar), katalog bir kaydırma aşağıda; hiç oynanmamışsa
+    tersi. Kupalar artık **3'lü kompakt kart** (tam genişlik satırlar yerine).
+    Kişisel alan boşsa "Kendi kaydın buradan başlıyor" kartı.
+  - **Aşama C1** (`082f003f`): HLTB kartında **oyuncunun kendi süresi** ortalamayla
+    yan yana + ilerleme çubuğu; çok oyunculu oyunda yalnızca kendi süren
+    (ölü duran `isMultiplayerOnlyMode` devreye alındı — CS2/DbD'de "Ana Hikâye
+    15 sa" saçmalığı olmayacak).
 - **Kişisel puan (1-10)**: Argon "ölü özellik" dedi, düşürdüm; durum rozeti
   (Oynanıyor/Bitti/%100/Bırakıldı) kalıyor. Geri alması kolay.
 - **Benzer oyunlarda IGDB görselleri Genel Bakış'a düşmeyecek**: Argon'un
@@ -43,3 +52,16 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 - **Bekleyen kartlar yer tutar** (sağ panel + kişisel bloklar): uygulandı.
 - **Yönet paneli Sistem sekmesinde yaşar**, "Yönet" düğmesi sekme durumuna
   dokunmaz: uygulandı.
+- **hidaaan'ın iki raporu** düzeltildi: süre toplamı tüm mağaza kopyalarını
+  topluyor (`a790525d`), ekran görüntüsü başlıkları kartın içinde kısaltılıyor
+  (`189e128e`, `5bcf55a8`).
+
+## Sırada (yokluğunda devam edenler)
+
+- **Aşama C2**: sağ paneldeki iki kartı tek çerçeveye alma, puanların 3'lü yan
+  yana ızgarası, "Desteklenmiyor" satırlarının gizlenmesi (`.muted` sınıfına
+  göre değil — "Klavye & Fare" ve "Partner Başlatıcı Gerekli" yanlışlıkla
+  gizlenirdi).
+- **Aşama B**: eylem satırı + `⋯` menüsü. Menü durumu `S`'te tutulacak (yoksa
+  arka planda veri gelince menü kapanır), `#drawer-col-chips-container` korunacak.
+  Etkileşim içerdiği için sahibinin bir tur açıp bakması iyi olur.
