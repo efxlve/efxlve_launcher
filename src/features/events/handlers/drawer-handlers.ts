@@ -127,7 +127,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       if (id) selectGameVersion(id);
       return true;
 
-    case "toggle-version-dropdown":
+    case "game-more-menu":
       S.isGameMoreMenuOpen = !S.isGameMoreMenuOpen;
       document.getElementById("game-more-menu")?.classList.toggle("show", S.isGameMoreMenuOpen);
       document
