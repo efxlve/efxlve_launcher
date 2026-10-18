@@ -99,7 +99,7 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
     const storeChip = chips ? storeChipHtml(g.app_name) : "";
 
     return `
-      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
+      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
         <div class="profile-ach-art">
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
           ${isPlat
@@ -172,7 +172,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
         : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
 
     return `
-      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
         <div class="profile-col-game">
           ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
           <div class="profile-game-info">

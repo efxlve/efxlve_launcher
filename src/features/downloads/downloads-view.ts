@@ -195,7 +195,7 @@ function gameRow(s: EpicSummary | undefined, id: string, meta: string, actions: 
   return `
     <div class="row">
       ${lead}
-      <div class="dl-row-open" data-act="epic-detail" data-id="${esc(id)}" title="${title}">
+      <div class="dl-row-open" role="button" tabindex="0" data-act="epic-detail" data-id="${esc(id)}" title="${title}">
         ${thumbOf(s)}
         <div class="row-main"><div class="row-title">${title}</div><div class="row-meta">${meta}</div></div>
       </div>

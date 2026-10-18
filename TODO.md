@@ -27,6 +27,14 @@ touching anything:
    (`openEpicModal(appName, false)`); only the credits line and the scores card
    actually change.
 2. Keyboard and TV pass over the game page (tab order, focus ring, controller).
+   Done on 2026-10-18: the game page already uses real buttons (no click target is
+   a div), `:focus-visible` is styled globally, and the tab strip is a row of
+   buttons. What was missing app-wide was the other half of the keyboard: a card
+   could take focus and then Enter did nothing, because the router only listens
+   for clicks. `input-listeners.ts` now turns Enter/Space on a focused `[data-act]`
+   into that click, which woke up 14 targets (library cards, screenshot cards,
+   cover picks, download rows, profile rows, task rows, critic badges). The
+   controller stays TV-only by design; that page has its own focus model.
 3. Picture cache, take two: 0.1.30's version (asset protocol + a boot-time
    prefetch) is removed in the local tree — it was the prime suspect for the
    window closing on some machines a few seconds after start. Not released yet;

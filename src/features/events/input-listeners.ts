@@ -116,6 +116,18 @@ document.addEventListener("scroll", (e) => {
 window.addEventListener("resize", closeCollectionsMenu, { passive: true });
 
 document.addEventListener("keydown", (e) => {
+  // Enter and Space activate the click targets that are not buttons: a library
+  // card, a screenshot, a download row. The router only listens for clicks, and
+  // a div never fires one from the keyboard.
+  if (e.key === "Enter" || e.key === " ") {
+    const active = document.activeElement as HTMLElement | null;
+    const act = active?.dataset?.act;
+    if (act && active && !active.closest("button, a, input, select, textarea")) {
+      e.preventDefault();
+      active.click();
+      return;
+    }
+  }
   if (S.isRecordingScreenshotHotkey) {
     e.preventDefault();
     e.stopPropagation();

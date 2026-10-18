@@ -377,7 +377,7 @@ function igdbCoverPaneHtml(appName: string): string {
                         .map((item) => {
                           const selected = S.sgdbSelectedCoverUrl === item.url;
                           return `
-                          <div class="sgdb-card ${selected ? "selected" : ""}" data-act="igdb-select-image" data-url="${esc(item.url)}" title="${esc(item.label)}">
+                          <div class="sgdb-card ${selected ? "selected" : ""}" role="button" tabindex="0" data-act="igdb-select-image" data-url="${esc(item.url)}" title="${esc(item.label)}">
                             <img src="${esc(item.thumb)}" loading="lazy" alt="Cover" />
                             <div class="sgdb-card-badges"><span class="sgdb-style-tag">IGDB</span><span></span></div>
                             <div class="sgdb-card-footer">${esc(item.label)}</div>
@@ -603,7 +603,7 @@ export function renderCustomCoverModalContent(appName: string): void {
                 const styleLabel = item.style === "no_logo" ? t("cover.styleNoLogo") : item.style === "alternate" ? t("cover.styleAlternate") : item.style === "official" ? t("cover.styleOfficial") : "";
                 const showScore = item.style !== "official" || item.score > 0;
                 return `
-                <div class="sgdb-card ${isSel ? "selected" : ""}" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${showScore ? t("cover.authorScore", { author: esc(authorName), score: item.score }) : esc(authorName)}">
+                <div class="sgdb-card ${isSel ? "selected" : ""}" role="button" tabindex="0" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${showScore ? t("cover.authorScore", { author: esc(authorName), score: item.score }) : esc(authorName)}">
                   <img src="${esc(thumbUrl)}" loading="lazy" alt="Cover" />
                   <div class="sgdb-card-badges">
                     ${styleLabel ? `<span class="sgdb-style-tag">${esc(styleLabel)}</span>` : "<span></span>"}

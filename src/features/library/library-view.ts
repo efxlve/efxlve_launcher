@@ -309,7 +309,7 @@ export function epicCardPortrait(s: EpicSummary): string {
   // stats chips on the left and the running badge on the top-right).
   const storeIcon = S.showStoreIcons ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
+    <div class="pcard${s.installed ? "" : " not-installed"}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${epicArt(s)}
         ${storeIcon}
@@ -334,7 +334,7 @@ function epicListRow(s: EpicSummary): string {
   // The storefront column is always on, aligned like the achievements column.
   const storeCell = `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc(sourceLabel(source))}</span></div>`;
   return `
-    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
+    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
         <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>

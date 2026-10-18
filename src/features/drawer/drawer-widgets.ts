@@ -120,7 +120,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
         ${
           critic.opencritic_score
             ? `
-          <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="${i18nT("critic.openCriticPage")}">
+          <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="${i18nT("critic.openCriticPage")}">
             <div class="critic-badge-score ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
             <div class="critic-badge-info">
               <div class="critic-badge-name">OpenCritic</div>
@@ -133,7 +133,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
         ${
           critic.metacritic_score
             ? `
-          <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="${i18nT("critic.metacriticPage")}">
+          <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="${i18nT("critic.metacriticPage")}">
             <div class="critic-badge-score mc">${critic.metacritic_score}</div>
             <div class="critic-badge-info">
               <div class="critic-badge-name">Metacritic</div>
@@ -150,7 +150,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   let goygoyHtml = "";
   if (goygoy) {
     goygoyHtml = `
-      <div class="hub-goygoy-box clickable" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="${i18nT("critic.readOnGoygoy")}">
+      <div class="hub-goygoy-box clickable" role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="${i18nT("critic.readOnGoygoy")}">
         <div class="goygoy-box-top">
           <div class="goygoy-badge-top">
             <span class="goygoy-brand"><strong>Goygoy</strong> Engine</span>

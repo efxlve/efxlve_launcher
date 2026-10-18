@@ -227,7 +227,7 @@ function processRowHtml(row: TaskRow, cpuPeak: number, memPeak: number): string 
   const cpuPct = Math.max(2, Math.round((row.cpu / cpuPeak) * 100));
   const memPct = Math.max(2, Math.round((row.memoryMb / memPeak) * 100));
   return `
-    <div class="tm-row" data-task="${esc(row.id)}" data-act="task-detail" data-task-id="${esc(row.id)}" data-search="${esc(title)} ${esc(row.name)} PID ${row.pid}">
+    <div class="tm-row" role="button" tabindex="0" data-task="${esc(row.id)}" data-act="task-detail" data-task-id="${esc(row.id)}" data-search="${esc(title)} ${esc(row.name)} PID ${row.pid}">
       <span class="tm-row-icon${isMain ? " is-main" : ""}">${icon(isMain ? "monitor" : taskRoleIcon(row.role), 14)}</span>
       <div class="tm-row-main">
         <div class="tm-row-title">${esc(title)}</div>
