@@ -2442,5 +2442,6 @@
   "ss.clipShareSent": "{size} an Discord gesendet",
   "settings.pictureCache": "Bild-Cache",
   "settings.pictureCacheDesc": "Heldenbilder, IGDB-Screenshots und Cover ähnlicher Spiele liegen auf der Platte, damit eine Spielseite ohne Netz öffnet.",
-  "settings.pictureCacheCleared": "{size} an Bildern gelöscht"
+  "settings.pictureCacheCleared": "{size} an Bildern gelöscht",
+  "manage.playtimeAllCopies": "Alle Store-Kopien dieses Spiels zusammengerechnet."
 }

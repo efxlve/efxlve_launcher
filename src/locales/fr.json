@@ -2442,5 +2442,6 @@
   "ss.clipShareSent": "{size} envoyés sur Discord",
   "settings.pictureCache": "Cache d'images",
   "settings.pictureCacheDesc": "Visuel principal, captures IGDB et couvertures de jeux similaires restent sur le disque : la page s'ouvre sans attendre le réseau.",
-  "settings.pictureCacheCleared": "{size} d'images supprimés"
+  "settings.pictureCacheCleared": "{size} d'images supprimés",
+  "manage.playtimeAllCopies": "Toutes les copies de ce jeu, additionnées."
 }

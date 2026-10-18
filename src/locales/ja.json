@@ -2442,5 +2442,6 @@
   "ss.clipShareSent": "Discord に {size} を送信しました",
   "settings.pictureCache": "画像キャッシュ",
   "settings.pictureCacheDesc": "ヒーロー画像、IGDB のスクリーンショット、類似ゲームのカバーをディスクに保存し、通信を待たずにページを開きます。",
-  "settings.pictureCacheCleared": "{size} の画像を削除しました"
+  "settings.pictureCacheCleared": "{size} の画像を削除しました",
+  "manage.playtimeAllCopies": "各ストアのコピーの合計です。"
 }

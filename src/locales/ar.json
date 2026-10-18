@@ -2442,5 +2442,6 @@
   "ss.clipShareSent": "أُرسل {size} إلى Discord",
   "settings.pictureCache": "ذاكرة الصور",
   "settings.pictureCacheDesc": "صورة الواجهة ولقطات IGDB وأغلفة الألعاب المشابهة تُحفظ على القرص لتُفتح الصفحة دون انتظار الشبكة.",
-  "settings.pictureCacheCleared": "تم حذف {size} من الصور"
+  "settings.pictureCacheCleared": "تم حذف {size} من الصور",
+  "manage.playtimeAllCopies": "مجموع كل نسخ اللعبة في المتاجر."
 }

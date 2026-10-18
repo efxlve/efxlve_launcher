@@ -248,7 +248,8 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
  * Pass and Steam at the same time showed one number and hid the other, so the
  * total now names its parts. Silence when only one store has anything.
  */
-function playtimeBreakdownHtml(appName: string, title: string): string {
+/** Every store copy of this title with a recorded time, the game's own copy first. */
+function playtimeSources(appName: string, title: string): Array<{ label: string; seconds: number }> {
   const rows: Array<{ label: string; seconds: number }> = [];
   const seen = new Set<string>([appName]);
   const own = S.playtimeMap.get(appName);
@@ -262,6 +263,24 @@ function playtimeBreakdownHtml(appName: string, title: string): string {
     if (!record?.total_seconds) continue;
     rows.push({ label: storeVersionLabel(sourceOfKey(key)), seconds: record.total_seconds });
   }
+  return rows;
+}
+
+/**
+ * The seconds every copy of this title has recorded, added up.
+ *
+ * The breakdown under this number lists each store's own time, so the number
+ * above it has to be their sum. It used to be the current copy's time alone,
+ * which put "Total Playtime: 134 h" right above "Steam 134 h · Epic Games
+ * 316 h" — a card that contradicts itself.
+ */
+function playtimeTotalLabel(appName: string, title: string): string {
+  const total = playtimeSources(appName, title).reduce((sum, entry) => sum + entry.seconds, 0);
+  return total > 0 ? fmtPlaytime(total) : t("playtime.notPlayed");
+}
+
+function playtimeBreakdownHtml(appName: string, title: string): string {
+  const rows = playtimeSources(appName, title);
   if (rows.length < 2) return "";
   return `<div class="mg-info">${icon("clock", 12)} ${rows
     .map((entry) => `${esc(entry.label)} ${esc(fmtPlaytime(entry.seconds))}`)
@@ -273,7 +292,7 @@ function playtimeBreakdownHtml(appName: string, title: string): string {
 function companionManageBody(s: EpicSummary, source: GameSource): string {
   const brand = source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "riot" ? "Riot Client" : "Battle.net";
   const pt = S.playtimeMap.get(s.appName);
-  const playtime = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const playtime = playtimeTotalLabel(s.appName, s.title);
   const files = s.installed
     ? row(
         t("manage.installLocation"),
@@ -347,7 +366,7 @@ function ensureAmazonManageSettings(s: EpicSummary): GameLocalSettings {
 function amazonManageBody(s: EpicSummary): string {
   const id = s.appName.slice(8);
   const pt = S.playtimeMap.get(s.appName);
-  const playtime = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const playtime = playtimeTotalLabel(s.appName, s.title);
   const st = ensureAmazonManageSettings(s);
   const activeSavePath = st.customSavePath || st.savePath || st.detectedSavePath || "";
   const v = S.verifyingMap.get(s.appName);
@@ -445,7 +464,7 @@ export function renderDrawerManage(s: EpicSummary): string {
   if (s.appName.startsWith("steam::")) {
     const steamId = s.appName.slice(7);
     const ptSteam = S.playtimeMap.get(s.appName);
-    const playtimeSteam = ptSteam?.total_seconds ? fmtPlaytime(ptSteam.total_seconds) : t("playtime.notPlayed");
+    const playtimeSteam = playtimeTotalLabel(s.appName, s.title);
     // An owned-but-not-installed Steam game has no files of ours to manage:
     // the panel only hands the install request to the client.
     if (!s.installed) {
@@ -465,7 +484,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           `)}
           ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
             `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-          ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "") + playtimeBreakdownHtml(s.appName, s.title))}
+          ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, playtimeSources(s.appName, s.title).length > 1 ? t("manage.playtimeAllCopies") : t("steam.playtimeSource"), "") + playtimeBreakdownHtml(s.appName, s.title))}
           ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
             `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         </div>`;
@@ -508,7 +527,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
   if (s.appName.startsWith("gog::")) {
     const ptGog = S.playtimeMap.get(s.appName);
-    const playtimeGog = ptGog?.total_seconds ? fmtPlaytime(ptGog.total_seconds) : t("playtime.notPlayed");
+    const playtimeGog = playtimeTotalLabel(s.appName, s.title);
     return `
       <div class="manage-tab-content">
         ${group("folder", t("manage.groupFiles"), `
@@ -574,7 +593,7 @@ export function renderDrawerManage(s: EpicSummary): string {
   const activeSavePath = st.customSavePath || st.savePath || st.detectedSavePath || "";
   const v = S.verifyingMap.get(id);
   const pt = S.playtimeMap.get(id);
-  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : t("playtime.notPlayed");
+  const playtimeStr = playtimeTotalLabel(s.appName, s.title);
   const cloudDesc = S.manageSyncingSaves || S.cloudSyncProgress.has(id)
     ? t("manage.syncing")
     : st.lastCloudSync ? t("manage.lastSync", { time: esc(formatSyncStamp(st.lastCloudSync)) }) : t("manage.cloudDesc");

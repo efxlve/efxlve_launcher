@@ -2442,5 +2442,6 @@
   "ss.clipShareSent": "已发送 {size} 到 Discord",
   "settings.pictureCache": "图片缓存",
   "settings.pictureCacheDesc": "主视觉图、IGDB 截图和相似游戏封面保存在磁盘上，打开页面无需等待网络。",
-  "settings.pictureCacheCleared": "已清除 {size} 图片"
+  "settings.pictureCacheCleared": "已清除 {size} 图片",
+  "manage.playtimeAllCopies": "已汇总该游戏在各商店的副本。"
 }

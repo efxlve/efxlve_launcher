@@ -2442,5 +2442,6 @@
   "ss.clipShareSent": "Отправлено {size} в Discord",
   "settings.pictureCache": "Кэш изображений",
   "settings.pictureCacheDesc": "Обложка, скриншоты IGDB и обложки похожих игр лежат на диске, поэтому страница открывается без сети.",
-  "settings.pictureCacheCleared": "Удалено {size} изображений"
+  "settings.pictureCacheCleared": "Удалено {size} изображений",
+  "manage.playtimeAllCopies": "Суммарно по всем копиям игры в магазинах."
 }
