@@ -92,7 +92,10 @@ export function loadScreenshotsPage(force = false): void {
 
 /** The editor announces a save; the page reloads so the new file shows up. */
 window.addEventListener("screenshots-changed", () => {
-  if (S.view === "screenshots") loadScreenshotsPage(true);
+  if (S.view !== "screenshots") return;
+  loadScreenshotsPage(true);
+  // A new clip is a new row in the same page, so the same signal reloads it.
+  reloadClips();
 });
 
 /** Repaints the page in place after a toolbar or lightbox action. */

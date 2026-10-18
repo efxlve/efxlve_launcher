@@ -804,6 +804,11 @@ export async function initApp(hooks: {
           }
         }
 
+        // The page view (Settings → Screenshots) keeps its own list and listens
+        // for this: without it a capture taken while the page is open is missing
+        // until the user reloads.
+        window.dispatchEvent(new CustomEvent("screenshots-changed"));
+
         if (S.screenshotCompressionEnabled) {
           // Compression is on by default now, so the automatic pass stays silent:
           // "capturing" + "saved" toasts are enough feedback for one hotkey press.
@@ -882,6 +887,8 @@ export async function initApp(hooks: {
     const name = event.payload?.path?.split(/[\\/]/).pop() ?? "";
     toast(t("ss.clipSaved", { file: name }), "ok");
     void notifyBackgrounded(t("ss.clipNotifySavedTitle"), t("ss.clipSaved", { file: name }));
+    // The clips list on the screenshots page is loaded once; tell it to reload.
+    window.dispatchEvent(new CustomEvent("screenshots-changed"));
     hooks.scheduleRender();
   });
   listenLater<string>("clip-error", (event) => {
