@@ -16,6 +16,7 @@ import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
+import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
@@ -538,6 +539,41 @@ export function isMultiplayerOnlyMode(mode: GameMode | null): boolean {
 /** @deprecated Replaced by renderHltbCard */
 export function renderProgressStrip(s: EpicSummary): string {
   return renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName);
+}
+
+/**
+ * What the last session left behind: how long it ran and what it unlocked. The
+ * page could already say "289 hours in total"; this says "1h 40m, 3 hours ago,
+ * +2 trophies", which is the part a player comes back to look at.
+ */
+export function renderLastSession(appName: string): string {
+  const summary = sessionSummaryFor(appName);
+  if (!summary) return "";
+  const when = sessionWhen(summary.at);
+  const whenText =
+    when.unit === "minutes"
+      ? i18nT("time.minutesAgo", { n: when.n })
+      : when.unit === "hours"
+        ? i18nT("time.hoursAgo", { n: when.n })
+        : i18nT("time.daysAgo", { n: when.n });
+  return `
+    <section class="gp-section gp-last-session">
+      <div class="card gp-last-session-card">
+        <div class="gp-last-session-main">
+          <div class="gp-last-session-title">${i18nT("drawer.lastSession")}</div>
+          <div class="gp-last-session-meta">
+            <span class="num">${esc(fmtPlaytime(summary.seconds))}</span>
+            <span class="gp-last-session-dot">·</span>
+            <span>${esc(whenText)}</span>
+          </div>
+        </div>
+        ${
+          summary.unlocked > 0
+            ? `<div class="gp-last-session-trophies">${icon("trophy", 13)} ${i18nT("drawer.lastSessionTrophies", { n: summary.unlocked })}</div>`
+            : ""
+        }
+      </div>
+    </section>`;
 }
 
 export function renderNextAchievements(appName: string): string {

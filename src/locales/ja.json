@@ -2449,5 +2449,10 @@
   "drawer.personalEmptyDesc": "このゲームのスクリーンショット、クリップ、実績はまだありません。プレイ中に撮ったものがここに並びます。",
   "drawer.personalEmptyCta": "ギャラリーを開く",
   "hltb.you": "あなた: {time}",
-  "drawer.moreActions": "その他の操作"
+  "drawer.moreActions": "その他の操作",
+  "drawer.lastSession": "前回のプレイ",
+  "drawer.lastSessionTrophies": "トロフィー +{n}",
+  "time.minutesAgo": "{n} 分前",
+  "time.hoursAgo": "{n} 時間前",
+  "time.daysAgo": "{n} 日前"
 }

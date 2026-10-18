@@ -2449,5 +2449,10 @@
   "drawer.personalEmptyDesc": "Brak zrzutów, klipów lub osiągnięć dla tej gry. To, co nagrasz podczas gry, pojawi się tutaj.",
   "drawer.personalEmptyCta": "Otwórz galerię",
   "hltb.you": "Ty: {time}",
-  "drawer.moreActions": "Więcej akcji"
+  "drawer.moreActions": "Więcej akcji",
+  "drawer.lastSession": "Ostatnia sesja",
+  "drawer.lastSessionTrophies": "+{n} trofeów",
+  "time.minutesAgo": "{n} min temu",
+  "time.hoursAgo": "{n} godz. temu",
+  "time.daysAgo": "{n} dni temu"
 }

@@ -658,7 +658,7 @@ export async function initApp(hooks: {
         // The session may have unlocked achievements; refetch before the
         // duplicate-event guard, because a manual stop already cleared the flag
         // and its watcher event would otherwise return early.
-        refreshAchievementsAfterSession(id);
+        refreshAchievementsAfterSession(id, sessionSeconds);
         // A duplicate stop event must not toast or resume downloads twice.
         if (!S.runningGames.delete(id)) return;
         void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});

@@ -2449,5 +2449,10 @@
   "drawer.personalEmptyDesc": "Bu oyun için henüz ekran görüntüsü, klip veya başarım kaydı yok. Oyun sırasında aldıkların burada görünür.",
   "drawer.personalEmptyCta": "Galeriyi aç",
   "hltb.you": "Sen: {time}",
-  "drawer.moreActions": "Diğer işlemler"
+  "drawer.moreActions": "Diğer işlemler",
+  "drawer.lastSession": "Son oturum",
+  "drawer.lastSessionTrophies": "+{n} kupa",
+  "time.minutesAgo": "{n} dk önce",
+  "time.hoursAgo": "{n} sa önce",
+  "time.daysAgo": "{n} gün önce"
 }

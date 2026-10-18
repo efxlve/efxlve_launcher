@@ -885,3 +885,18 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   background: transparent; border-color: transparent; color: var(--text-2);
   padding: 0 8px; font-weight: 500; cursor: default;
 }
+
+/* ---------- Last session ---------- */
+
+.gp-last-session-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 16px;
+}
+.gp-last-session-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.gp-last-session-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 12.5px; color: var(--text-2); }
+.gp-last-session-dot { color: var(--text-3); }
+.gp-last-session-trophies {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  color: var(--text); font-variant-numeric: tabular-nums;
+}
+.gp-last-session-trophies svg { color: var(--text-3); }

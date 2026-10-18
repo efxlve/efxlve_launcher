@@ -2449,5 +2449,10 @@
   "drawer.personalEmptyDesc": "No screenshots, clips or achievements recorded for this game yet. What you take while playing shows up here.",
   "drawer.personalEmptyCta": "Open the gallery",
   "hltb.you": "You: {time}",
-  "drawer.moreActions": "More actions"
+  "drawer.moreActions": "More actions",
+  "drawer.lastSession": "Last session",
+  "drawer.lastSessionTrophies": "+{n} trophies",
+  "time.minutesAgo": "{n} min ago",
+  "time.hoursAgo": "{n} h ago",
+  "time.daysAgo": "{n} d ago"
 }

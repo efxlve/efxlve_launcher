@@ -2449,5 +2449,10 @@
   "drawer.personalEmptyDesc": "Aún no hay capturas, clips ni logros de este juego. Lo que captures mientras juegas aparecerá aquí.",
   "drawer.personalEmptyCta": "Abrir la galería",
   "hltb.you": "Tú: {time}",
-  "drawer.moreActions": "Más acciones"
+  "drawer.moreActions": "Más acciones",
+  "drawer.lastSession": "Última sesión",
+  "drawer.lastSessionTrophies": "+{n} trofeos",
+  "time.minutesAgo": "hace {n} min",
+  "time.hoursAgo": "hace {n} h",
+  "time.daysAgo": "hace {n} d"
 }

@@ -19,6 +19,7 @@ import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLib
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
+import { recordSessionSummary } from "../../core/session-summary";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
@@ -41,7 +42,7 @@ import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar, sameCompany } from "./igdb-view";
-import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderNextAchievements } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1041,7 +1042,7 @@ export function renderDrawerOverview(
           </div>
         </section>`
       : "";
-  const personal = `${moments}${nextAch}${personalEmpty}`;
+  const personal = `${renderLastSession(s.appName)}${moments}${nextAch}${personalEmpty}`;
   const about = renderAboutSection(s);
   // The two halves of the scores card, kept as separate containers: the painters
   // that fill them late must not overwrite each other's work.
@@ -1393,13 +1394,23 @@ const sessionAchRefreshAt = new Map<string, number>();
  * stores always read live sources). Called on `game-status` end events; the
  * cooldown makes duplicate stop events harmless.
  */
-export function refreshAchievementsAfterSession(appName: string): void {
+export function refreshAchievementsAfterSession(appName: string, sessionSeconds?: number): void {
   if (!isTauri) return;
+  // The length arrives with the stop event; the trophies only once the store has
+  // answered, which is why the summary is written in two steps.
+  if (sessionSeconds !== undefined && sessionSeconds > 0) {
+    recordSessionSummary(appName, { seconds: sessionSeconds, at: Date.now() });
+  }
   const now = Date.now();
   if (now - (sessionAchRefreshAt.get(appName) ?? 0) < 15_000) return;
   sessionAchRefreshAt.set(appName, now);
+  // `before` has to be read while the old answer is still here.
+  const before = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
   S.loadedAchievements.delete(appName);
-  void fetchAndRenderAchievements(appName, true);
+  void fetchAndRenderAchievements(appName, true).then(() => {
+    const after = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
+    if (after > before) recordSessionSummary(appName, { unlocked: after - before, at: Date.now() });
+  });
 }
 
 export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {

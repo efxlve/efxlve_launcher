@@ -2449,5 +2449,10 @@
   "drawer.personalEmptyDesc": "لا توجد لقطات أو مقاطع أو إنجازات لهذه اللعبة بعد. ما تلتقطه أثناء اللعب يظهر هنا.",
   "drawer.personalEmptyCta": "افتح المعرض",
   "hltb.you": "أنت: {time}",
-  "drawer.moreActions": "إجراءات أخرى"
+  "drawer.moreActions": "إجراءات أخرى",
+  "drawer.lastSession": "آخر جلسة",
+  "drawer.lastSessionTrophies": "+{n} كؤوس",
+  "time.minutesAgo": "قبل {n} دقيقة",
+  "time.hoursAgo": "قبل {n} ساعة",
+  "time.daysAgo": "قبل {n} يوم"
 }
