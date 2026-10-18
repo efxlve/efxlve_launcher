@@ -2454,5 +2454,9 @@
   "drawer.lastSessionTrophies": "ถ้วยรางวัล +{n}",
   "time.minutesAgo": "{n} นาทีที่แล้ว",
   "time.hoursAgo": "{n} ชม. ที่แล้ว",
-  "time.daysAgo": "{n} วันที่แล้ว"
+  "time.daysAgo": "{n} วันที่แล้ว",
+  "drawer.stateRunning": "ออนไลน์",
+  "drawer.stateCompleted": "เล่นจบแล้ว",
+  "drawer.statePlaying": "กำลังเล่น",
+  "drawer.stateInstalled": "ติดตั้งแล้ว"
 }

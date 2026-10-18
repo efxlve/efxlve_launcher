@@ -2454,5 +2454,9 @@
   "drawer.lastSessionTrophies": "+{n} трофеев",
   "time.minutesAgo": "{n} мин назад",
   "time.hoursAgo": "{n} ч назад",
-  "time.daysAgo": "{n} дн назад"
+  "time.daysAgo": "{n} дн назад",
+  "drawer.stateRunning": "В сети",
+  "drawer.stateCompleted": "Пройдена",
+  "drawer.statePlaying": "Играете",
+  "drawer.stateInstalled": "Установлена"
 }

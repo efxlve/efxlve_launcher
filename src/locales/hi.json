@@ -2454,5 +2454,9 @@
   "drawer.lastSessionTrophies": "+{n} ट्रॉफ़ियाँ",
   "time.minutesAgo": "{n} मिनट पहले",
   "time.hoursAgo": "{n} घंटे पहले",
-  "time.daysAgo": "{n} दिन पहले"
+  "time.daysAgo": "{n} दिन पहले",
+  "drawer.stateRunning": "ऑनलाइन",
+  "drawer.stateCompleted": "पूरी हुई",
+  "drawer.statePlaying": "खेल रहे हैं",
+  "drawer.stateInstalled": "इंस्टॉल"
 }

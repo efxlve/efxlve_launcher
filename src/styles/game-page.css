@@ -900,3 +900,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   color: var(--text); font-variant-numeric: tabular-nums;
 }
 .gp-last-session-trophies svg { color: var(--text-3); }
+
+/* The state chip in the hero line: a fact about the player's copy, not a button. */
+.gp-meta-state { color: var(--text); }
+.gp-meta-state.is-live { color: var(--ok); }
+.gp-meta-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }

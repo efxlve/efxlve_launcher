@@ -2454,5 +2454,9 @@
   "drawer.lastSessionTrophies": "トロフィー +{n}",
   "time.minutesAgo": "{n} 分前",
   "time.hoursAgo": "{n} 時間前",
-  "time.daysAgo": "{n} 日前"
+  "time.daysAgo": "{n} 日前",
+  "drawer.stateRunning": "オンライン",
+  "drawer.stateCompleted": "コンプリート",
+  "drawer.statePlaying": "プレイ中",
+  "drawer.stateInstalled": "インストール済み"
 }

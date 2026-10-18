@@ -145,9 +145,28 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
         ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
         : "")
     : "";
-  // The one line under the title: who made it, when, for whom, and whether it is
-  // running. Everything else about the copy lives in the features card.
+  // Where the player stands with it: running right now, finished, playing or just
+  // installed. Derived from what the app already knows, so nothing has to be filed
+  // by hand. Colour still means status: only "running" gets the green dot.
+  const playtimeSeconds = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const ach = S.loadedAchievements.get(s.appName);
+  const completed =
+    Boolean(ach?.is_platinum) ||
+    Boolean(ach && ach.total_achievements > 0 && ach.user_unlocked >= ach.total_achievements);
+  const stateChip = S.runningGames.has(s.appName)
+    ? `<span class="gp-meta-item gp-meta-state is-live"><span class="gp-meta-dot"></span>${esc(t("drawer.stateRunning"))}</span>`
+    : completed
+      ? `<span class="gp-meta-item gp-meta-state">${icon("check", 13)} ${esc(t("drawer.stateCompleted"))}</span>`
+      : playtimeSeconds > 0
+        ? `<span class="gp-meta-item gp-meta-state">${esc(t("drawer.statePlaying"))}</span>`
+        : s.installed
+          ? `<span class="gp-meta-item gp-meta-state">${esc(t("drawer.stateInstalled"))}</span>`
+          : "";
+  // The one line under the title: who made it, when, for whom, and where the
+  // player stands with it. Everything else about the copy lives in the features
+  // card.
   return [
+    stateChip,
     dev ? `<span>${esc(dev)}</span>` : "",
     publisher ? `<span class="gp-meta-item">${esc(publisher)}</span>` : "",
     year ? `<span class="gp-meta-item">${icon("calendar", 13)} ${year}</span>` : "",

@@ -2454,5 +2454,9 @@
   "drawer.lastSessionTrophies": "+{n} كؤوس",
   "time.minutesAgo": "قبل {n} دقيقة",
   "time.hoursAgo": "قبل {n} ساعة",
-  "time.daysAgo": "قبل {n} يوم"
+  "time.daysAgo": "قبل {n} يوم",
+  "drawer.stateRunning": "متصل",
+  "drawer.stateCompleted": "مكتملة",
+  "drawer.statePlaying": "تُلعب الآن",
+  "drawer.stateInstalled": "مثبّتة"
 }

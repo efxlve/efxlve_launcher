@@ -2454,5 +2454,9 @@
   "drawer.lastSessionTrophies": "+{n} Trophäen",
   "time.minutesAgo": "vor {n} Min.",
   "time.hoursAgo": "vor {n} Std.",
-  "time.daysAgo": "vor {n} T."
+  "time.daysAgo": "vor {n} T.",
+  "drawer.stateRunning": "Online",
+  "drawer.stateCompleted": "Abgeschlossen",
+  "drawer.statePlaying": "Wird gespielt",
+  "drawer.stateInstalled": "Installiert"
 }
