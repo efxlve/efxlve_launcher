@@ -699,9 +699,46 @@ fn collect_clips(dir: &Path, out: &mut Vec<ClipItem>) {
     }
 }
 
+/// The clip's first frame as a JPEG data URL, for the clips list.
+///
+/// The container is ours, so this is a walk to the first `00dc` chunk and a
+/// base64 of its bytes: no decoder, and nothing that depends on a codec the
+/// machine may not have. Only the head of the file is read — a clip is hundreds
+/// of megabytes and its first frame is at the front.
+pub fn first_frame_data_url(path: &Path) -> Option<String> {
+    use base64::Engine;
+    use std::io::Read;
+
+    const HEAD: u64 = 2 * 1024 * 1024;
+    let mut head = Vec::new();
+    File::open(path).ok()?.take(HEAD).read_to_end(&mut head).ok()?;
+
+    // LIST movi: [LIST][size][movi], then the chunks.
+    let movi = head.windows(4).position(|w| w == b"movi")?;
+    let mut pos = movi + 4;
+    while pos + 8 <= head.len() {
+        let size = u32::from_le_bytes([
+            head[pos + 4],
+            head[pos + 5],
+            head[pos + 6],
+            head[pos + 7],
+        ]) as usize;
+        if &head[pos..pos + 4] == b"00dc" {
+            let frame = head.get(pos + 8..pos + 8 + size)?;
+            // Only our own JPEG frames: a wrong guess would show garbage.
+            if frame.len() > 2 && frame[0] == 0xFF && frame[1] == 0xD8 {
+                let encoded = base64::engine::general_purpose::STANDARD.encode(frame);
+                return Some(format!("data:image/jpeg;base64,{encoded}"));
+            }
+            return None;
+        }
+        pos += 8 + size + (size % 2);
+    }
+    None
+}
+
 /// `dwTotalFrames / (dwRate / dwScale)` from the `avih` header.
-fn avi_seconds(path: &Path) -> Option<u64> {
-    let bytes = std::fs::read(path).ok()?;
+fn avi_seconds(path: &Path) -> Option<u64> {    let bytes = std::fs::read(path).ok()?;
     // Layout: RIFF(12) + LIST hdrl(12) + "avih" chunk header(8) → payload at 32.
     // dwMicroSecPerFrame is the first field, dwTotalFrames sits 16 bytes in.
     if bytes.len() < 52 || &bytes[0..4] != b"RIFF" {
@@ -755,6 +792,13 @@ pub fn clip_stop() -> Result<(), String> {
 #[tauri::command]
 pub fn clip_list() -> Vec<ClipItem> {
     list()
+}
+
+/// One frame of a clip, for the list's thumbnail. `None` when the file is not
+/// one of our AVIs or its first frame is unreadable.
+#[tauri::command]
+pub fn clip_thumbnail(path: String) -> Option<String> {
+    first_frame_data_url(Path::new(&path))
 }
 
 /// The clips root, so the UI can open it in the file manager.
@@ -959,7 +1003,11 @@ mod tests {
         assert!(chunks > 0, "the file has sound chunks");
         // A second of recording should bring in about a second of audio.
         assert!(blocks > 8_000, "about a second of blocks, got {blocks}");
-        println!("{}: {blocks} blocks in {chunks} chunks", path.display());
+        // The list's thumbnail comes out of the same file, from a real GDI+
+        // frame this time.
+        let thumb = first_frame_data_url(&path).expect("a thumbnail from a real clip");
+        assert!(thumb.len() > 5_000, "a real frame is more than a few kilobytes");
+        println!("{}: {blocks} blocks in {chunks} chunks, thumbnail {} KB", path.display(), thumb.len() / 1024);
     }
 
     /// What a frame costs at each height, so a requested rate can be checked
@@ -982,6 +1030,36 @@ mod tests {
                 1.0 / per_frame
             );
         }
+    }
+
+    /// The clips list wants a picture of each clip: the first frame has to come
+    /// back out of our own container, byte for byte.
+    #[test]
+    fn the_first_frame_comes_back_as_a_jpeg_data_url() {
+        use base64::Engine;
+
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("clip-thumb.avi");
+        let frame = [0xFF, 0xD8, 42, 42, 42, 0xFF, 0xD9];
+        let mut writer = AviWriter::create(&path, 64, 36, 15, None).expect("create");
+        writer.add_frame(&frame).expect("frame");
+        writer.add_frame(&[0xFF, 0xD8, 7, 7, 0xFF, 0xD9]).expect("frame");
+        writer.finish(15, Duration::from_secs(1)).expect("finish");
+
+        let url = first_frame_data_url(&path).expect("a thumbnail");
+        let encoded = url.strip_prefix("data:image/jpeg;base64,").expect("data URL");
+        assert_eq!(
+            base64::engine::general_purpose::STANDARD.decode(encoded).expect("decode"),
+            frame,
+            "the first frame, not the second"
+        );
+        // Anything that is not one of our clips reports nothing at all.
+        let other = dir.join("not-a-clip.bin");
+        std::fs::write(&other, b"RIFF not an avi").expect("write");
+        assert_eq!(first_frame_data_url(&other), None);
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(&other);
     }
 
     /// The frame grabber is the risky half (Win32 + GDI+): run manually on a

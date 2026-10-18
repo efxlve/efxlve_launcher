@@ -799,6 +799,8 @@ export const clipSetHotkey = (vkey: number) => invoke<void>("clip_set_hotkey", {
 export const clipSetOptions = (options: { fps?: number; quality?: number; maxSecs?: number; height?: number }) =>
   invoke<void>("clip_set_options", options);
 export const clipList = () => invoke<ClipItem[]>("clip_list");
+/** The clip's first frame as a JPEG data URL; null when it cannot be read. */
+export const clipThumbnail = (path: string) => invoke<string | null>("clip_thumbnail", { path });
 export const clipDelete = (path: string) => invoke<boolean>("clip_delete", { path });
 export const clipFolderPath = () => invoke<string>("clip_folder_path");
 

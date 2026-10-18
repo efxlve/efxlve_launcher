@@ -146,19 +146,31 @@ Two bugs surfaced only once the transport was real, both fixed:
 Remaining ideas: IGDB `dlcs`/`expansions` merged into the DLC tab, and a
 "power user" way back to own credentials now that the row is always visible.
 
-## 7. Screenshots — needs a pass (parked 2026-10-15)
+## 7. Screenshots — pass done (2026-10-18), the fault was the recorder
 
-The user reports the whole workstream as broken. What the machine says so far:
+The "the whole workstream is broken" report was about the clip recorder: it had
+never written a file on this machine, and the clips it did write had no sound and
+a header that drifted 20 s away from the sound track. All three are fixed
+(`de3358ac`, `71ba668c`, `19b191b4`, `cc231746`). The rest of the workstream was
+then checked against the real folders:
 
-- `Videos/Efxlve` holds **zero files**: the F9 clip recorder has never produced
-  an AVI here, so the MJPEG writer path needs a real test before anything else.
-- `Pictures/Efxlve Screenshots` holds 34 captures, the newest a `.webp`, so raw
-  capture works — the report is about the gallery, the editor, the strips and
-  sharing, not the capture itself.
-- Nothing in `<app_data>/logs` mentions a capture or a clip. A failed capture
-  should write a line there, so the next report comes with a trace.
+- Listing: 34 captures, every game title detected (`Ekran görüntüsü …`,
+  `Dead_by_Daylight_Screenshot_…`, the GTA folder with an en-dash), 85 ms, no
+  file dropped (`test_live_all_screenshots_scan`).
+- Previews: PNG and WebP both served; a file GDI+ cannot decode reports an empty
+  preview and the WebView builds and caches one (`live_preview_real_captures`).
+- Screenshots page: gallery, filters, favourites, select mode, batch buttons,
+  lightbox, editor (27 tools), share sheet, clips section — driven through the
+  DOM with no console error.
+- Game page: the Moments strip, its lightbox, navigation, the editor and the
+  share sheet — same result.
+- Sharing: the Discord webhook path answers 413/401/429 with its own message
+  instead of failing silently. The 8 MB limit still means a big PNG has to be
+  compressed first, which the compressor does.
+- Clips in the list now carry a frame: the first `00dc` chunk of our own AVI,
+  read without a decoder (`clip_thumbnail`).
 
-Ask for the concrete symptom when this comes back up.
+Still open: the concrete symptom from the user's own screen, if it returns.
 
 ## 8. GPU recorder: the way past ~30 fps (owner asked for it, later)
 

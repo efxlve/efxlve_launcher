@@ -18,6 +18,7 @@ import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
 import {
   clipList,
+  clipThumbnail,
   epicDeleteGameScreenshot,
   epicGetAllScreenshots,
   epicOpenFolderPath,
@@ -95,6 +96,7 @@ export function repaintScreenshotsPage(): void {
   if (S.view !== "screenshots") return;
   const host = document.getElementById("view");
   if (host) host.innerHTML = renderScreenshotsPage();
+  hydrateClipThumbs();
 }
 
 /* ---------- Markup ---------- */
@@ -258,7 +260,7 @@ function clipsSectionHtml(): string {
         .map(
           (clip) => `
       <div class="ss-clip" data-path="${esc(clip.path)}">
-        <span class="ss-clip-icon">${icon("play", 14)}</span>
+        <span class="ss-clip-thumb" data-clip-thumb="${esc(clip.path)}">${icon("play", 14)}</span>
         <div class="ss-clip-main">
           <div class="ss-clip-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
           <div class="ss-clip-meta">${esc(clip.dateStr)} · ${fmtBytes(clip.sizeBytes)} · ${esc(clipSeconds(clip))}</div>
@@ -282,6 +284,37 @@ function clipSeconds(clip: ClipItem): string {
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
   return minutes > 0 ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${seconds}s`;
+}
+
+/** First frames already fetched, so a repaint does not ask again. */
+const clipThumbCache = new Map<string, string>();
+
+/** Fills the clips list with a frame of each clip, one at a time: reading a
+ *  frame costs a file read, and the list is usually short. */
+function hydrateClipThumbs(): void {
+  queueMicrotask(() => {
+    const slots = [...document.querySelectorAll<HTMLElement>("[data-clip-thumb]")];
+    if (slots.length === 0) return;
+    void (async () => {
+      for (const slot of slots) {
+        const path = slot.dataset.clipThumb;
+        if (!path || slot.classList.contains("has-frame")) continue;
+        let src = clipThumbCache.get(path);
+        if (src === undefined) {
+          try {
+            src = (await clipThumbnail(path)) ?? "";
+          } catch {
+            src = "";
+          }
+          clipThumbCache.set(path, src);
+        }
+        if (src) {
+          slot.innerHTML = `<img src="${src}" alt="" />`;
+          slot.classList.add("has-frame");
+        }
+      }
+    })();
+  });
 }
 
 export function dropClip(path: string): void {
