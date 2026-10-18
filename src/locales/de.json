@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "Heldenbilder, IGDB-Screenshots und Cover ähnlicher Spiele liegen auf der Platte, damit eine Spielseite ohne Netz öffnet.",
   "settings.pictureCacheCleared": "{size} an Bildern gelöscht",
   "manage.playtimeAllCopies": "Alle Store-Kopien dieses Spiels zusammengerechnet.",
-  "feat.releaseDate": "Erscheinungsdatum"
+  "feat.releaseDate": "Erscheinungsdatum",
+  "drawer.personalEmptyTitle": "Deine eigene Aufzeichnung beginnt hier",
+  "drawer.personalEmptyDesc": "Für dieses Spiel sind noch keine Screenshots, Clips oder Erfolge festgehalten. Was du beim Spielen aufnimmst, erscheint hier.",
+  "drawer.personalEmptyCta": "Galerie öffnen"
 }

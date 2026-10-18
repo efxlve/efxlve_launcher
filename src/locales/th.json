@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "ภาพหลัก สกรีนช็อต IGDB และปกเกมที่คล้ายกันเก็บไว้บนดิสก์ เปิดหน้าได้โดยไม่รอเครือข่าย",
   "settings.pictureCacheCleared": "ลบรูปภาพ {size} แล้ว",
   "manage.playtimeAllCopies": "รวมทุกสำเนาของเกมในสโตร์ต่าง ๆ แล้ว",
-  "feat.releaseDate": "วันวางจำหน่าย"
+  "feat.releaseDate": "วันวางจำหน่าย",
+  "drawer.personalEmptyTitle": "บันทึกของคุณเริ่มที่นี่",
+  "drawer.personalEmptyDesc": "ยังไม่มีสกรีนช็อต คลิป หรือความสำเร็จของเกมนี้ สิ่งที่คุณเก็บระหว่างเล่นจะปรากฏที่นี่",
+  "drawer.personalEmptyCta": "เปิดแกลเลอรี"
 }

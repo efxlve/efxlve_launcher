@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "主視覺圖、IGDB 截圖與相似遊戲封面保存在磁碟上，開啟頁面不必等待網路。",
   "settings.pictureCacheCleared": "已清除 {size} 圖片",
   "manage.playtimeAllCopies": "已彙總該遊戲在各商店的副本。",
-  "feat.releaseDate": "發行日期"
+  "feat.releaseDate": "發行日期",
+  "drawer.personalEmptyTitle": "你的紀錄從這裡開始",
+  "drawer.personalEmptyDesc": "這款遊戲還沒有截圖、剪輯或成就紀錄。遊玩時留下的內容會顯示在這裡。",
+  "drawer.personalEmptyCta": "開啟圖庫"
 }

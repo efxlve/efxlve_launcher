@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "मुख्य चित्र, IGDB स्क्रीनशॉट और समान गेम कवर डिस्क पर रहते हैं, इसलिए पेज नेटवर्क के बिना खुलता है।",
   "settings.pictureCacheCleared": "{size} चित्र हटाए गए",
   "manage.playtimeAllCopies": "इस गेम की सभी स्टोर प्रतियाँ जोड़ी गई हैं।",
-  "feat.releaseDate": "रिलीज़ की तारीख"
+  "feat.releaseDate": "रिलीज़ की तारीख",
+  "drawer.personalEmptyTitle": "आपका अपना रिकॉर्ड यहाँ से शुरू होता है",
+  "drawer.personalEmptyDesc": "इस गेम के लिए अभी कोई स्क्रीनशॉट, क्लिप या उपलब्धि दर्ज नहीं है। खेलते समय ली गई चीज़ें यहाँ दिखेंगी।",
+  "drawer.personalEmptyCta": "गैलरी खोलें"
 }

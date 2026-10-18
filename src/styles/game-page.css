@@ -154,7 +154,9 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-moment img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gp-moment:hover { border-color: rgba(255, 255, 255, 0.28); }
 
-.gp-next-list { display: flex; flex-direction: column; gap: 6px; }
+/* Three compact cards to a row: the rows used to run the full width of the
+   column, which left a long empty band across the middle of the page. */
+.gp-next-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
 .gp-next-row {
   display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; text-align: left;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text);
@@ -822,3 +824,16 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
    shrink and ellipsize instead of pushing past the card's edge. */
 .screenshot-info-strip .ss-name,
 .screenshot-info-strip .ss-date { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* The name inside a card ellipsizes: an achievement name can be a sentence. */
+.gp-next-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-next-row .gp-next-text { min-width: 0; }
+
+/* Played but nothing personal yet: say what the space is for. */
+.gp-personal-empty-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 16px;
+}
+.gp-personal-empty-main { min-width: 0; }
+.gp-personal-empty-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.gp-personal-empty-desc { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }

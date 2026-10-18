@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "Visuel principal, captures IGDB et couvertures de jeux similaires restent sur le disque : la page s'ouvre sans attendre le réseau.",
   "settings.pictureCacheCleared": "{size} d'images supprimés",
   "manage.playtimeAllCopies": "Toutes les copies de ce jeu, additionnées.",
-  "feat.releaseDate": "Date de sortie"
+  "feat.releaseDate": "Date de sortie",
+  "drawer.personalEmptyTitle": "Ton propre suivi commence ici",
+  "drawer.personalEmptyDesc": "Aucune capture, clip ou succès enregistré pour ce jeu. Ce que tu prends en jouant apparaît ici.",
+  "drawer.personalEmptyCta": "Ouvrir la galerie"
 }

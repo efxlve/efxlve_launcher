@@ -969,12 +969,41 @@ export function renderDrawerOverview(
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
+  // A game the player has started reads as "mine": their own trail leads, and the
+  // catalogue text waits one scroll below. A game nobody has installed is the
+  // other way round — there the question is "what is this?", not "where was I?".
+  const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const personalFirst = s.installed || playtime > 0;
+  const moments = renderMomentsStrip(s.appName);
+  const nextAch = renderNextAchievements(s.appName);
+  // Both blocks hold their place while they load; when they have answered and
+  // there is genuinely nothing, the player gets a card that says what this space
+  // is for instead of a silent gap.
+  const settledEmpty =
+    S.loadedScreenshots.has(s.appName) &&
+    (S.loadedScreenshots.get(s.appName)?.length ?? 0) === 0 &&
+    S.loadedAchievements.has(s.appName) &&
+    (S.loadedAchievements.get(s.appName)?.total_achievements ?? 0) === 0;
+  const personalEmpty =
+    personalFirst && settledEmpty
+      ? `
+        <section class="gp-section gp-personal-empty">
+          <div class="card gp-personal-empty-card">
+            <div class="gp-personal-empty-main">
+              <div class="gp-personal-empty-title">${t("drawer.personalEmptyTitle")}</div>
+              <div class="gp-personal-empty-desc">${t("drawer.personalEmptyDesc")}</div>
+            </div>
+            <button type="button" class="btn ghost small" data-act="drawer-tab" data-tab="screenshots" data-id="${esc(s.appName)}">${icon("camera", 13)} ${t("drawer.personalEmptyCta")}</button>
+          </div>
+        </section>`
+      : "";
+  const personal = `${moments}${nextAch}${personalEmpty}`;
+  const about = renderAboutSection(s);
+
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
-        ${renderAboutSection(s)}
-        ${renderMomentsStrip(s.appName)}
-        ${renderNextAchievements(s.appName)}
+        ${personalFirst ? `${personal}${about}` : `${about}${personal}`}
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">

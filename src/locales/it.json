@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "Immagine principale, screenshot IGDB e copertine di giochi simili restano su disco, così la pagina si apre senza rete.",
   "settings.pictureCacheCleared": "Eliminati {size} di immagini",
   "manage.playtimeAllCopies": "Tutte le copie del gioco sugli store, sommate.",
-  "feat.releaseDate": "Data di uscita"
+  "feat.releaseDate": "Data di uscita",
+  "drawer.personalEmptyTitle": "Il tuo registro inizia qui",
+  "drawer.personalEmptyDesc": "Nessuno screenshot, clip o obiettivo registrato per questo gioco. Quello che catturi giocando compare qui.",
+  "drawer.personalEmptyCta": "Apri la galleria"
 }

@@ -2444,5 +2444,8 @@
   "settings.pictureCacheDesc": "히어로 이미지, IGDB 스크린샷, 비슷한 게임 커버를 디스크에 보관해 네트워크 없이 페이지를 엽니다.",
   "settings.pictureCacheCleared": "이미지 {size} 삭제됨",
   "manage.playtimeAllCopies": "모든 스토어 사본을 합산한 값입니다.",
-  "feat.releaseDate": "출시일"
+  "feat.releaseDate": "출시일",
+  "drawer.personalEmptyTitle": "나만의 기록이 여기서 시작됩니다",
+  "drawer.personalEmptyDesc": "이 게임의 스크린샷, 클립, 업적 기록이 아직 없습니다. 플레이 중에 남긴 것이 여기에 표시됩니다.",
+  "drawer.personalEmptyCta": "갤러리 열기"
 }
