@@ -729,7 +729,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (S.currentModalAppName !== appName) return;
     ensureIgdbOverview(s, gameReleaseYear(s), () => {
       paintGameMeta(s);
-      if (S.activeDrawerTab === "overview") openEpicModal(appName, false);
+      // Only the blocks IGDB feeds are rebuilt: a full repaint of the tab reset
+      // the reader's scroll position and rebuilt every strip on the page.
+      repaintIgdbBlocks(appName);
     });
   });
   if (companion) {
@@ -869,11 +871,14 @@ export function renderCollectionTags(appName: string): string {
   return `${pills}<button class="btn ghost small" data-act="manage-game-collections" data-id="${appName}">${icon("plus", 12)} ${gameCols.length > 0 ? t("drawer.collection") : t("drawer.addCollection")}</button>`;
 }
 
-export function renderDrawerOverview(
-  s: EpicSummary,
-  partner: ThirdPartyLauncherInfo | null = null,
-  antiCheat: string | null = null,
-): string {
+/**
+ * The About box, its source line and the credits line under it.
+ *
+ * Everything in here can change when the IGDB answer lands, which is why it is
+ * its own function: the page repaints this block alone instead of rebuilding the
+ * whole tab (and throwing the reader's scroll position away).
+ */
+function renderAboutSection(s: EpicSummary): string {
   const epicDesc = epicDescription(s);
   const igdbDesc = igdbAboutText(s);
   const key = aboutKey(s.appName);
@@ -896,22 +901,54 @@ export function renderDrawerOverview(
   const aboutLong = (effectiveDesc ?? "").length > ABOUT_CLAMP_CHARS;
 
   return `
+    <section class="gp-section" id="hub-about-section">
+      <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
+      <div class="hub-desc-text" id="hub-desc-text">${
+        aboutLoading
+          ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
+          : aboutBody.html || `<p>${t("drawer.noDescription")}</p>`
+      }</div>
+      ${!aboutLoading && aboutLong ? aboutToggleHtml(s) : ""}
+      <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
+      ${renderIgdbCredits(s)}
+    </section>`;
+}
+
+/**
+ * Repaints only what IGDB feeds: the About block, similar games and the score
+ * card. Called when the answer lands, where a full repaint used to rebuild the
+ * whole tab and reset the scroll position for four small changes.
+ */
+export function repaintIgdbBlocks(appName: string): void {
+  if (S.currentModalAppName !== appName || S.activeDrawerTab !== "overview") return;
+  const s = summaryOf(appName);
+  if (!s) return;
+  const about = document.getElementById("hub-about-section");
+  if (about) about.outerHTML = renderAboutSection(s);
+  const similar = document.getElementById("hub-igdb-similar");
+  if (similar) similar.innerHTML = renderIgdbSimilar(s);
+  const critic = document.getElementById("drawer-critic-container");
+  if (critic) {
+    critic.innerHTML = renderCriticCard(
+      S.loadedCritic.get(s.appName),
+      S.loadingCriticFor === s.appName,
+      igdbGameFor(s.appName)?.rating ?? null,
+    );
+  }
+}
+
+export function renderDrawerOverview(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null = null,
+  antiCheat: string | null = null,
+): string {
+  return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
-        <section class="gp-section">
-          <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
-          <div class="hub-desc-text" id="hub-desc-text">${
-            aboutLoading
-              ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
-              : aboutBody.html || `<p>${t("drawer.noDescription")}</p>`
-          }</div>
-          ${!aboutLoading && aboutLong ? aboutToggleHtml(s) : ""}
-          <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
-          ${renderIgdbCredits(s)}
-        </section>
+        ${renderAboutSection(s)}
         ${renderMomentsStrip(s.appName)}
         ${renderNextAchievements(s.appName)}
-        ${renderIgdbSimilar(s)}
+        <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
         <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName)}</div>
