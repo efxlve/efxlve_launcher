@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "متصل",
   "drawer.stateCompleted": "مكتملة",
   "drawer.statePlaying": "تُلعب الآن",
-  "drawer.stateInstalled": "مثبّتة"
+  "drawer.stateInstalled": "مثبّتة",
+  "drawer.officialSite": "الموقع الرسمي"
 }

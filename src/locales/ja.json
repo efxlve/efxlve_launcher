@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "オンライン",
   "drawer.stateCompleted": "コンプリート",
   "drawer.statePlaying": "プレイ中",
-  "drawer.stateInstalled": "インストール済み"
+  "drawer.stateInstalled": "インストール済み",
+  "drawer.officialSite": "公式サイト"
 }

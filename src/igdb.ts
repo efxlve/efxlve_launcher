@@ -42,6 +42,8 @@ export interface IgdbGame {
   screenshots: string[];
   similar: IgdbSearchHit[];
   website: string;
+  /** Community channels: kind is official, wikipedia, twitter, reddit or discord. */
+  links: { kind: string; url: string }[];
   /** ESRB/PEGI-style ratings. */
   ageRatings: { organization: string; rating: string }[];
 }

@@ -462,8 +462,15 @@ pub struct IgdbSearchHit {
     pub slug: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+/// One community channel from IGDB's `websites`: kind is "official",
+/// "wikipedia", "twitter", "reddit" or "discord".
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct IgdbLink {
+    pub kind: String,
+    pub url: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IgdbAgeRating {
     /// "ESRB", "PEGI", …
     pub organization: String,
@@ -510,6 +517,8 @@ pub struct IgdbGame {
     /// ESRB/PEGI-style ratings, mapped through the reference tables.
     #[serde(default)]
     pub age_ratings: Vec<IgdbAgeRating>,
+    /// Community channels, in the order the page shows them.
+    pub links: Vec<IgdbLink>,
 }
 
 /// One cover-picker row: the game's portrait cover and its key art.
@@ -640,6 +649,39 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
         })
         .unwrap_or_default();
 
+    // The community channels IGDB already carries, kept apart so the page can
+    // show one icon per channel instead of a single anonymous "website" link.
+    // Categories: 1 official, 3 Wikipedia, 5 Twitter/X, 14 Reddit, 18 Discord.
+    let links = value
+        .get("websites")
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            const WANTED: [(&str, i64); 5] = [
+                ("official", 1),
+                ("wikipedia", 3),
+                ("twitter", 5),
+                ("reddit", 14),
+                ("discord", 18),
+            ];
+            WANTED
+                .iter()
+                .filter_map(|(kind, category)| {
+                    let url = items
+                        .iter()
+                        .find(|item| item.get("category").and_then(serde_json::Value::as_i64) == Some(*category))
+                        .map(|item| string_field(item, "url"))?;
+                    if url.trim().is_empty() {
+                        return None;
+                    }
+                    Some(IgdbLink {
+                        kind: (*kind).to_string(),
+                        url,
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
     let age_ratings = value
         .get("age_ratings")
         .and_then(serde_json::Value::as_array)
@@ -695,6 +737,7 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
         screenshots,
         similar,
         website,
+        links,
         age_ratings,
     }
 }
@@ -1312,6 +1355,29 @@ mod tests {
         let game = map_game(&sample, &AgeTables::default());
         assert!(game.pc_release_date.is_empty());
         assert_eq!(game.pc_release_year, None);
+    }
+
+    /// The community row shows one icon per channel, so the mapping has to keep
+    /// the categories apart — and ignore the ones the page does not show
+    /// (Facebook, Instagram, Twitch).
+    #[test]
+    fn mapping_keeps_the_community_channels_apart() {
+        let sample = serde_json::json!({
+            "id": 1942,
+            "name": "The Witcher 3: Wild Hunt",
+            "websites": [
+                { "category": 5, "url": "https://twitter.com/witchergame" },
+                { "category": 1, "url": "https://thewitcher.com" },
+                { "category": 14, "url": "https://www.reddit.com/r/witcher" },
+                { "category": 4, "url": "https://facebook.com/thewitcher" },
+                { "category": 18, "url": "https://discord.gg/witcher" }
+            ]
+        });
+        let game = map_game(&sample, &AgeTables::default());
+        let kinds: Vec<&str> = game.links.iter().map(|link| link.kind.as_str()).collect();
+        assert_eq!(kinds, vec!["official", "twitter", "reddit", "discord"]);
+        assert_eq!(game.links[0].url, "https://thewitcher.com");
+        assert_eq!(game.website, "https://thewitcher.com");
     }
 
     #[test]

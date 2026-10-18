@@ -92,9 +92,33 @@ export function renderIgdbCredits(target: IgdbTarget): string {
   const tags = [...game.genres, ...game.themes].slice(0, 6);
   if (!tags.length) return "";
 
+  // The community channels IGDB carries, as one chip each: a link out, never an
+  // embedded feed — a game's timeline is marketing, and an iframe would drag the
+  // design system with it.
+  const links = game.links ?? [];
+  const labelOfLink = (kind: string): string =>
+    kind === "official"
+      ? t("drawer.officialSite")
+      : kind === "wikipedia"
+        ? "Wikipedia"
+        : kind === "twitter"
+          ? "X"
+          : kind === "reddit"
+            ? "Reddit"
+            : "Discord";
+  const linksHtml = links.length
+    ? `<div class="gp-links-row">${links
+        .map(
+          (link) =>
+            `<button type="button" class="gp-tag gp-link-chip" data-act="open-external-url" data-url="${esc(link.url)}" title="${esc(link.url)}">${esc(labelOfLink(link.kind))} ${icon("external", 11)}</button>`,
+        )
+        .join("")}</div>`
+    : "";
+
   return `
     <div class="igdb-credits">
       <div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>
+      ${linksHtml}
       <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
     </div>`;
 }

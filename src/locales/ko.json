@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "온라인",
   "drawer.stateCompleted": "완료",
   "drawer.statePlaying": "플레이 중",
-  "drawer.stateInstalled": "설치됨"
+  "drawer.stateInstalled": "설치됨",
+  "drawer.officialSite": "공식 사이트"
 }

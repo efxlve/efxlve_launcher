@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "線上",
   "drawer.stateCompleted": "已通關",
   "drawer.statePlaying": "遊玩中",
-  "drawer.stateInstalled": "已安裝"
+  "drawer.stateInstalled": "已安裝",
+  "drawer.officialSite": "官方網站"
 }

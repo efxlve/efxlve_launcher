@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "Online",
   "drawer.stateCompleted": "Concluído",
   "drawer.statePlaying": "Jogando",
-  "drawer.stateInstalled": "Instalado"
+  "drawer.stateInstalled": "Instalado",
+  "drawer.officialSite": "Site oficial"
 }

@@ -905,3 +905,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-meta-state { color: var(--text); }
 .gp-meta-state.is-live { color: var(--ok); }
 .gp-meta-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+/* ---------- Community links ---------- */
+
+/* A row of ways out, not a feed in: the channels IGDB knows, one chip each. */
+.gp-links-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.gp-link-chip {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--text-2);
+}
+.gp-link-chip:hover { background: var(--surface-3); color: var(--text); }
+.gp-link-chip svg { color: var(--text-3); }

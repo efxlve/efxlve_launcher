@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "ออนไลน์",
   "drawer.stateCompleted": "เล่นจบแล้ว",
   "drawer.statePlaying": "กำลังเล่น",
-  "drawer.stateInstalled": "ติดตั้งแล้ว"
+  "drawer.stateInstalled": "ติดตั้งแล้ว",
+  "drawer.officialSite": "เว็บไซต์ทางการ"
 }

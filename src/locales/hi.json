@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "ऑनलाइन",
   "drawer.stateCompleted": "पूरी हुई",
   "drawer.statePlaying": "खेल रहे हैं",
-  "drawer.stateInstalled": "इंस्टॉल"
+  "drawer.stateInstalled": "इंस्टॉल",
+  "drawer.officialSite": "आधिकारिक साइट"
 }

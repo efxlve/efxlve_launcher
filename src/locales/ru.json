@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "В сети",
   "drawer.stateCompleted": "Пройдена",
   "drawer.statePlaying": "Играете",
-  "drawer.stateInstalled": "Установлена"
+  "drawer.stateInstalled": "Установлена",
+  "drawer.officialSite": "Официальный сайт"
 }

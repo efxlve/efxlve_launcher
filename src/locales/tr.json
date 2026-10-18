@@ -2458,5 +2458,6 @@
   "drawer.stateRunning": "Çevrimiçi",
   "drawer.stateCompleted": "Tamamlandı",
   "drawer.statePlaying": "Oynanıyor",
-  "drawer.stateInstalled": "Kurulu"
+  "drawer.stateInstalled": "Kurulu",
+  "drawer.officialSite": "Resmî site"
 }
