@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "لا شيء يطابق ذلك.",
   "manage.searchTitle": "ابحث في الإعدادات",
   "sys.thisCopy": "النسخة على هذا الجهاز",
-  "critic.scoresTitle": "التقييمات"
+  "critic.scoresTitle": "التقييمات",
+  "settings.ssRootsTitle": "المجلدات التي تقرأها المعرض",
+  "settings.ssRootsDesc": "مجلدك المختار ومجلدات المتاجر وGame Bar:"
 }

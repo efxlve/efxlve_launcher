@@ -32,6 +32,7 @@ import {
   epicDefaultInstallDir,
   epicDetectEglGames,
   epicGetScreenshotDir,
+  epicGetScreenshotScanRoots,
   epicGetScreenshotMoveInfo,
   epicGetSettings,
   epicGetSteamGridKey,
@@ -773,6 +774,21 @@ function renderScreenshots(): string {
     true,
   );
 
+  // The gallery reads more than the chosen folder; say so, with the paths, so
+  // nobody has to guess where a picture came from.
+  const roots = row(
+    t("settings.ssRootsTitle"),
+    `${t("settings.ssRootsDesc")}<br>${(S.screenshotScanRoots.length
+      ? S.screenshotScanRoots
+      : [S.screenshotDir]
+    )
+      .filter(Boolean)
+      .map((path) => `<code>${esc(path)}</code>`)
+      .join("<br>")}`,
+    "",
+    true,
+  );
+
   const hotkey = row(
     t("settings.hotkeyLabel"),
     `${t("settings.activeKey")}: <strong>${esc(S.screenshotHotkeyName)}</strong>`,
@@ -956,7 +972,7 @@ function renderScreenshots(): string {
     : "";
 
   return (
-    group(folder + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
+    group(folder + roots + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
     group(compression + options, t("ss.compressionSection")) +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
@@ -1419,7 +1435,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, imgBytes] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, imgBytes, ssRoots] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -1433,6 +1449,7 @@ export async function loadSettingsView(): Promise<void> {
         amazonDefaultInstallDir().catch(() => ""),
         igdbStatus().catch(() => null),
         imageCacheSize().catch(() => null),
+        epicGetScreenshotScanRoots().catch(() => [] as string[]),
       ]);
       S.epicSettingsCache = st ?? S.epicSettingsCache;
       S.epicDefaultDir = dir ?? "";
@@ -1446,6 +1463,7 @@ export async function loadSettingsView(): Promise<void> {
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
       S.imageCacheBytes = imgBytes;
+      S.screenshotScanRoots = ssRoots;
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;

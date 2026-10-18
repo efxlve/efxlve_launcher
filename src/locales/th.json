@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน",
   "manage.searchTitle": "ค้นหาการตั้งค่า",
   "sys.thisCopy": "สำเนาบนเครื่องนี้",
-  "critic.scoresTitle": "คะแนน"
+  "critic.scoresTitle": "คะแนน",
+  "settings.ssRootsTitle": "โฟลเดอร์ที่แกลเลอรีอ่าน",
+  "settings.ssRootsDesc": "โฟลเดอร์ที่คุณเลือกและโฟลเดอร์ของสโตร์กับ Game Bar:"
 }

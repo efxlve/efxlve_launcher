@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "没有匹配项。",
   "manage.searchTitle": "搜索设置",
   "sys.thisCopy": "此电脑上的副本",
-  "critic.scoresTitle": "评分"
+  "critic.scoresTitle": "评分",
+  "settings.ssRootsTitle": "图库读取的文件夹",
+  "settings.ssRootsDesc": "你选择的文件夹，以及商店和 Game Bar 保存的位置："
 }

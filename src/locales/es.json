@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "Nada coincide con eso.",
   "manage.searchTitle": "Buscar ajustes",
   "sys.thisCopy": "La copia en este PC",
-  "critic.scoresTitle": "Puntuaciones"
+  "critic.scoresTitle": "Puntuaciones",
+  "settings.ssRootsTitle": "Carpetas de la galería",
+  "settings.ssRootsDesc": "Tu carpeta elegida y las carpetas de las tiendas y Game Bar:"
 }

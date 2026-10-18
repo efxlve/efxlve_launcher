@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "इससे कुछ मेल नहीं खाता।",
   "manage.searchTitle": "सेटिंग्स खोजें",
   "sys.thisCopy": "इस पीसी पर मौजूद कॉपी",
-  "critic.scoresTitle": "स्कोर"
+  "critic.scoresTitle": "स्कोर",
+  "settings.ssRootsTitle": "गैलरी जिन फ़ोल्डरों को पढ़ती है",
+  "settings.ssRootsDesc": "आपका चुना फ़ोल्डर और स्टोर तथा Game Bar के फ़ोल्डर:"
 }

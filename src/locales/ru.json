@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "Ничего не найдено.",
   "manage.searchTitle": "Поиск настроек",
   "sys.thisCopy": "Копия на этом ПК",
-  "critic.scoresTitle": "Оценки"
+  "critic.scoresTitle": "Оценки",
+  "settings.ssRootsTitle": "Папки галереи",
+  "settings.ssRootsDesc": "Ваша папка и папки магазинов и Game Bar:"
 }

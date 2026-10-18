@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "一致する項目はありません。",
   "manage.searchTitle": "設定を検索",
   "sys.thisCopy": "この PC のコピー",
-  "critic.scoresTitle": "スコア"
+  "critic.scoresTitle": "スコア",
+  "settings.ssRootsTitle": "ギャラリーが読むフォルダー",
+  "settings.ssRootsDesc": "選択したフォルダーと、ストアおよび Game Bar の保存先:"
 }

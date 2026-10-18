@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "Rien ne correspond.",
   "manage.searchTitle": "Rechercher des réglages",
   "sys.thisCopy": "La copie sur ce PC",
-  "critic.scoresTitle": "Notes"
+  "critic.scoresTitle": "Notes",
+  "settings.ssRootsTitle": "Dossiers de la galerie",
+  "settings.ssRootsDesc": "Ton dossier choisi et ceux des boutiques et de la Game Bar :"
 }

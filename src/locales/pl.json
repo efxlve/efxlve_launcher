@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "Nic nie pasuje.",
   "manage.searchTitle": "Szukaj ustawień",
   "sys.thisCopy": "Kopia na tym PC",
-  "critic.scoresTitle": "Oceny"
+  "critic.scoresTitle": "Oceny",
+  "settings.ssRootsTitle": "Foldery galerii",
+  "settings.ssRootsDesc": "Twój folder oraz foldery sklepów i Game Bara:"
 }

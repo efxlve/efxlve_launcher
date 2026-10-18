@@ -819,6 +819,10 @@ export const epicGetScreenshotDisabledGames = () =>
 export const epicGetScreenshotDir = () =>
   invoke<string>("epic_get_screenshot_dir");
 
+/** Every folder the gallery scans, for the settings row that lists them. */
+export const epicGetScreenshotScanRoots = () =>
+  invoke<string[]>("screenshot_scan_roots");
+
 /** Files and bytes currently stored in the screenshots root (move confirmation). */
 export interface ScreenshotMoveInfo {
   count: number;

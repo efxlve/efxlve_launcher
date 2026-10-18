@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "Nada corresponde a isso.",
   "manage.searchTitle": "Buscar configurações",
   "sys.thisCopy": "A cópia neste PC",
-  "critic.scoresTitle": "Notas"
+  "critic.scoresTitle": "Notas",
+  "settings.ssRootsTitle": "Pastas da galeria",
+  "settings.ssRootsDesc": "Sua pasta escolhida e as pastas das lojas e da Game Bar:"
 }

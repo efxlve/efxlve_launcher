@@ -2396,5 +2396,7 @@
   "manage.searchEmpty": "Dazu passt hier nichts.",
   "manage.searchTitle": "Einstellungen durchsuchen",
   "sys.thisCopy": "Die Kopie auf diesem PC",
-  "critic.scoresTitle": "Wertungen"
+  "critic.scoresTitle": "Wertungen",
+  "settings.ssRootsTitle": "Ordner der Galerie",
+  "settings.ssRootsDesc": "Dein gewählter Ordner plus die Ordner der Stores und der Game Bar:"
 }

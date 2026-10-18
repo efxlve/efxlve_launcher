@@ -481,6 +481,8 @@ export const S = {
   startWithWindows: false,
   /** Bytes the picture cache holds; null until the settings page asks. */
   imageCacheBytes: null as number | null,
+  /** Every folder the screenshot gallery scans; loaded with the settings. */
+  screenshotScanRoots: [] as string[],
   /** Default on: `!== "false"` keeps a fresh install minimizing on game start. */
   minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) !== "false") as boolean,
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
