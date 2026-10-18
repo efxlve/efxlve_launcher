@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "Site officiel",
   "drawer.news": "Actualités",
   "drawer.patchNote": "Note de patch",
-  "steam.newsFailed": "Le flux d'actualités du store n'a pas pu être lu."
+  "steam.newsFailed": "Le flux d'actualités du store n'a pas pu être lu.",
+  "drawer.inLibrary": "Dans ta bibliothèque"
 }

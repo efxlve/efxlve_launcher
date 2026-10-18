@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "公式サイト",
   "drawer.news": "ニュース",
   "drawer.patchNote": "パッチノート",
-  "steam.newsFailed": "ストアのニュースを読み込めませんでした。"
+  "steam.newsFailed": "ストアのニュースを読み込めませんでした。",
+  "drawer.inLibrary": "ライブラリにあります"
 }

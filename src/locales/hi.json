@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "आधिकारिक साइट",
   "drawer.news": "समाचार",
   "drawer.patchNote": "पैच नोट",
-  "steam.newsFailed": "स्टोर का समाचार फ़ीड पढ़ा नहीं जा सका।"
+  "steam.newsFailed": "स्टोर का समाचार फ़ीड पढ़ा नहीं जा सका।",
+  "drawer.inLibrary": "आपकी लाइब्रेरी में"
 }

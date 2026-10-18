@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "官方网站",
   "drawer.news": "新闻",
   "drawer.patchNote": "补丁说明",
-  "steam.newsFailed": "无法读取商店的新闻源。"
+  "steam.newsFailed": "无法读取商店的新闻源。",
+  "drawer.inLibrary": "在你的库中"
 }

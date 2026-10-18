@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "Sito ufficiale",
   "drawer.news": "Novità",
   "drawer.patchNote": "Note di patch",
-  "steam.newsFailed": "Impossibile leggere il feed di novità dello store."
+  "steam.newsFailed": "Impossibile leggere il feed di novità dello store.",
+  "drawer.inLibrary": "Nella tua libreria"
 }

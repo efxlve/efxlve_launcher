@@ -13,6 +13,7 @@ import { esc } from "../../core/utils";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { igdbEnrich, igdbExternalId, igdbImage, type IgdbGame } from "../../igdb";
 import { cachedImage, warmImages } from "../../core/picture-cache";
+import { storeKeysForTitle } from "../../core/selectors";
 
 interface IgdbTarget {
   appName: string;
@@ -160,9 +161,17 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
     <section class="gp-section igdb-card">
       <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
       <div class="igdb-similar">${game.similar
-        .map(
-          (hit) => `
-                 <button type="button" class="igdb-similar-item" data-act="open-external-url" data-url="${esc(igdbGameUrl(hit))}">
+        .map((hit) => {
+          // A similar game the player already owns belongs in the launcher, not in
+          // a browser tab: the match runs through the canonical title, so a "GOTY
+          // Edition" here still finds the library's copy.
+          const owned = storeKeysForTitle(hit.name)[0] ?? "";
+          const action = owned ? "epic-detail" : "open-external-url";
+          const payload = owned
+            ? `data-id="${esc(owned)}"`
+            : `data-url="${esc(igdbGameUrl(hit))}"`;
+          return `
+                 <button type="button" class="igdb-similar-item${owned ? " is-owned" : ""}" data-act="${action}" ${payload} title="${owned ? esc(t("drawer.inLibrary")) : esc(igdbGameUrl(hit))}">
                    ${
                      hit.coverId
                        ? (() => {
@@ -173,8 +182,9 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
                    }
                    <span class="igdb-similar-name">${esc(hit.name)}</span>
                    ${hit.year ? `<span class="igdb-similar-year">${hit.year}</span>` : ""}
-                 </button>`,
-        )
+                   ${owned ? `<span class="igdb-similar-owned">${icon("check", 11)}</span>` : ""}
+                 </button>`;
+        })
         .join("")}</div>
     </section>`;
 }

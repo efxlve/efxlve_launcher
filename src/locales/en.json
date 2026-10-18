@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "Official site",
   "drawer.news": "News",
   "drawer.patchNote": "Patch note",
-  "steam.newsFailed": "The store's news feed could not be read."
+  "steam.newsFailed": "The store's news feed could not be read.",
+  "drawer.inLibrary": "In your library"
 }

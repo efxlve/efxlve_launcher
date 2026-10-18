@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "Resmî site",
   "drawer.news": "Haberler",
   "drawer.patchNote": "Yama notu",
-  "steam.newsFailed": "Mağazanın haber akışı okunamadı."
+  "steam.newsFailed": "Mağazanın haber akışı okunamadı.",
+  "drawer.inLibrary": "Kütüphanende"
 }

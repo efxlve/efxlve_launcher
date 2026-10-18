@@ -936,3 +936,12 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   background: var(--surface-3); color: var(--text-2);
 }
 .gp-news-row.is-pending .gp-news-title { width: 55%; height: 11px; }
+
+/* A similar game the player already owns: the card opens the library's copy. */
+.igdb-similar-item.is-owned { border-color: var(--line-strong); }
+.igdb-similar-owned {
+  position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface-1); border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+.igdb-similar-item { position: relative; }

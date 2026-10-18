@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "เว็บไซต์ทางการ",
   "drawer.news": "ข่าว",
   "drawer.patchNote": "บันทึกแพตช์",
-  "steam.newsFailed": "อ่านฟีดข่าวของสโตร์ไม่ได้"
+  "steam.newsFailed": "อ่านฟีดข่าวของสโตร์ไม่ได้",
+  "drawer.inLibrary": "อยู่ในคลังของคุณ"
 }

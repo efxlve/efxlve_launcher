@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "الموقع الرسمي",
   "drawer.news": "الأخبار",
   "drawer.patchNote": "ملاحظات التحديث",
-  "steam.newsFailed": "تعذّر قراءة أخبار المتجر."
+  "steam.newsFailed": "تعذّر قراءة أخبار المتجر.",
+  "drawer.inLibrary": "في مكتبتك"
 }

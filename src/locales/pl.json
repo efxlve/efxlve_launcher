@@ -2462,5 +2462,6 @@
   "drawer.officialSite": "Oficjalna strona",
   "drawer.news": "Nowości",
   "drawer.patchNote": "Notatka o łatce",
-  "steam.newsFailed": "Nie udało się odczytać kanału nowości sklepu."
+  "steam.newsFailed": "Nie udało się odczytać kanału nowości sklepu.",
+  "drawer.inLibrary": "W twojej bibliotece"
 }
