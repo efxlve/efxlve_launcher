@@ -393,7 +393,9 @@ function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null,
     case "dlcs": return renderDrawerDlcs(s);
     case "screenshots": return renderDrawerScreenshots(s);
     case "notes": return renderDrawerNotes(s.appName);
-    case "manage": return renderDrawerManage(s);
+    // Kept as a fallback: a session that was left on the old "manage" state
+    // lands on the System tab, which now carries that panel.
+    case "manage": return renderDrawerSystemRequirements(s);
     default: return renderDrawerSystemRequirements(s);
   }
 }
@@ -1377,7 +1379,11 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       <h3 class="gp-section-title">${t("sys.thisCopy")}</h3>
       <div>${renderInstalledCopyFacts(s)}</div>
     </section>`;
-  const withCopy = (body: string): string => `<div class="sys-req-container">${copyCard}${body}</div>`;
+  // What this computer holds and what can be done with it belong together: the
+  // manage panel used to live behind the "Yönet" button alone, which left the
+  // drawer on a tab the strip does not show.
+  const manage = `<section class="sys-manage">${renderDrawerManage(s)}</section>`;
+  const withCopy = (body: string): string => `<div class="sys-req-container">${copyCard}${manage}${body}</div>`;
 
   if (S.loadingReqFor === s.appName) return withCopy(loadingState(t("sys.loadingStore")));
   const data = S.loadedRequirements.get(s.appName);

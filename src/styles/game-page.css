@@ -199,6 +199,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .goygoy-writer, .goygoy-read-action { display: inline-flex; align-items: center; gap: 5px; }
 
 /* HLTB */
+/* Only a card that answered "nothing found" collapses; a card that is still
+   waiting holds its place with a skeleton (see .is-pending). */
 #drawer-hltb-container:empty, #drawer-critic-container:empty { display: none; }
 .hltb-list { display: flex; flex-direction: column; gap: 6px; }
 /* Rows are fixed-size: a row without a value kept stretching into a tall empty
@@ -763,3 +765,29 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ss-clip-join-row:hover { background: var(--surface-3); }
 .ss-clip-join-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ss-clip-join-meta { color: var(--text-3); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Waiting cards (no layout shift) ---------- */
+
+/* A placeholder block: same size as the text it stands in for, no text. */
+.skel {
+  display: inline-block; border-radius: 4px; background: var(--surface-3);
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skel-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+/* The rows keep their own height, so a pending card is the height of the card
+   that replaces it. */
+.drawer-hltb-card.is-pending .hltb-row-label.skel { width: 74px; height: 11px; }
+.drawer-hltb-card.is-pending .hltb-row-val.skel { width: 46px; height: 11px; }
+
+.hub-critic-card.is-pending .hub-critic-badge { opacity: 1; }
+.hub-critic-card.is-pending .critic-badge-score.skel { width: 34px; height: 34px; border-radius: 8px; }
+.hub-critic-card.is-pending .critic-badge-name.skel { width: 68px; height: 11px; margin-bottom: 5px; }
+.hub-critic-card.is-pending .critic-badge-sub.skel { width: 52px; height: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}
+
+/* The System tab carries the manage panel now: keep the two blocks apart. */
+.sys-manage { margin-top: 14px; }

@@ -59,10 +59,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
   switch (act) {
     case "manage-game":
       if (id) {
-        if (S.activeDrawerTab === "manage") {
-          S.activeDrawerTab = "overview";
-          if (S.currentModalAppName === id) openEpicModal(id, false);
-        }
+        // The panel is a layer over the page, not a seventh tab: leaving the
+        // drawer on a tab that is not in the strip left the reader with nothing
+        // highlighted and no way back. The same content also lives in the
+        // System tab, so closing the panel never loses it.
         openManagePopup(id);
       }
       return true;

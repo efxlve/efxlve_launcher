@@ -42,7 +42,24 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
       </div>
     `;
   }
-  if (!hltb || !hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
+  // Not asked yet: the card keeps its place with three placeholder rows. It used
+  // to render nothing, so the whole right column dropped down the moment the
+  // answer arrived — the page rearranging itself while the reader looks at it.
+  if (!hltb) {
+    return `
+      <div class="hub-card drawer-hltb-card is-pending">
+        <div class="hub-card-header hltb-head">
+          <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
+        </div>
+        <div class="hltb-list">
+          <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
+          <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
+          <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
+        </div>
+      </div>
+    `;
+  }
+  if (!hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
     return "";
   }
   return `
@@ -84,6 +101,27 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   // The Goygoy Engine review is only shown to Turkish users.
   const showGoygoy = isTurkishUser() && Boolean(critic?.goygoy_review);
   const goygoy = showGoygoy ? critic?.goygoy_review : null;
+
+  // Same as the HowLongToBeat card: not asked yet is not "nothing to show", and
+  // the card holds its place so the column does not jump when the answer lands.
+  if (!critic && igdbScore == null) {
+    const badge = `
+        <div class="hub-critic-badge is-pending">
+          <div class="critic-badge-score skel"></div>
+          <div class="critic-badge-info">
+            <div class="critic-badge-name skel"></div>
+            <div class="critic-badge-sub skel"></div>
+          </div>
+        </div>`;
+    return `
+      <div class="hub-card hub-critic-card is-pending">
+        <div class="hub-card-header">
+          <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.scoresTitle")}</span></h3>
+        </div>
+        <div class="hub-critic-grid">${badge}${badge}</div>
+      </div>
+    `;
+  }
 
   if (
     !critic ||
