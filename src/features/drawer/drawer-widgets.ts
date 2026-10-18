@@ -32,7 +32,32 @@ export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silve
   if (a.xp >= 50) return "silver";
   return "bronze";
 }
-export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
+export function renderHltbCard(
+  hltb?: HltbData,
+  isLoading = false,
+  playerSeconds = 0,
+  mode: GameMode | null = null,
+): string {
+  const hours = (n: number) => i18nT("hltb.hours", { n });
+  // A competitive game has no campaign length worth comparing: "You: 450 h /
+  // Main story: 15 h" is nonsense. There the card shows only the player's own
+  // time, which is the number that means something.
+  const multiplayerOnly = isMultiplayerOnlyMode(mode);
+  const playerLine = playerSeconds > 0
+    ? `<div class="hltb-compare">
+          <span class="hltb-compare-you">${i18nT("hltb.you", { time: fmtPlaytime(playerSeconds) })}</span>
+          ${
+            multiplayerOnly || !hltb?.main_story
+              ? ""
+              : `<span class="hltb-compare-story">${i18nT("hltb.mainStory")}: ${hours(hltb.main_story)}</span>`
+          }
+        </div>
+        ${
+          multiplayerOnly || !hltb?.main_story
+            ? ""
+            : `<div class="gp-progress-track hltb-compare-track"><span class="gp-progress-fill" style="width:${Math.min(100, Math.round((playerSeconds / (hltb.main_story * 3600)) * 100))}%"></span></div>`
+        }`
+    : "";
   if (isLoading) {
     return `
       <div class="hub-card drawer-hltb-card loading">
@@ -61,13 +86,23 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     `;
   }
   if (!hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
-    return "";
+    // No averages to show: the player's own time still belongs on the page.
+    return playerLine
+      ? `
+    <div class="hub-card drawer-hltb-card">
+      <div class="hub-card-header hltb-head">
+        <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>${i18nT("manage.groupPlaytime")}</span></h3>
+      </div>
+      ${playerLine}
+    </div>`
+      : "";
   }
   return `
     <div class="hub-card drawer-hltb-card">
       <div class="hub-card-header hltb-head">
         <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
       </div>
+      ${playerLine}
       <div class="hltb-list">
         <div class="hltb-row">
           <span class="hltb-row-label">${i18nT("hltb.mainStory")}</span>

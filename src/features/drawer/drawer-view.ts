@@ -20,7 +20,7 @@ import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from 
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { presenceSync, updateGamepadHud } from "../../core/render";
-import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
@@ -41,7 +41,7 @@ import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar, sameCompany } from "./igdb-view";
-import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderNextAchievements } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -878,7 +878,16 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 export function updateHltbUI(appName: string, data?: HltbData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-hltb-container");
-  if (container) container.innerHTML = renderHltbCard(data, false);
+  const summary = summaryOf(appName);
+  if (!container || !summary) return;
+  // The same facts as the first paint: the card would otherwise change shape
+  // when the answer lands.
+  container.innerHTML = renderHltbCard(
+    data,
+    false,
+    libraryPlaytime(summary).seconds,
+    detectGameMode(summary, S.loadedRequirements.get(appName)),
+  );
 }
 
 export function updateCriticUI(appName: string, data: CriticData): void {
@@ -1007,7 +1016,7 @@ export function renderDrawerOverview(
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
-        <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName)}</div>
+        <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName, libraryPlaytime(s).seconds, detectGameMode(s, S.loadedRequirements.get(s.appName)))}</div>
         <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName, igdbGameFor(s.appName)?.rating ?? null)}</div>
         ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>

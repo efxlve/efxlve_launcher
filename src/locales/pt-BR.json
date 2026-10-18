@@ -2447,5 +2447,6 @@
   "feat.releaseDate": "Data de lançamento",
   "drawer.personalEmptyTitle": "Seu próprio registro começa aqui",
   "drawer.personalEmptyDesc": "Ainda não há capturas, clipes ou conquistas deste jogo. O que você registra jogando aparece aqui.",
-  "drawer.personalEmptyCta": "Abrir a galeria"
+  "drawer.personalEmptyCta": "Abrir a galeria",
+  "hltb.you": "Você: {time}"
 }

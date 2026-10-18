@@ -2447,5 +2447,6 @@
   "feat.releaseDate": "Çıkış Tarihi",
   "drawer.personalEmptyTitle": "Kendi kaydın buradan başlıyor",
   "drawer.personalEmptyDesc": "Bu oyun için henüz ekran görüntüsü, klip veya başarım kaydı yok. Oyun sırasında aldıkların burada görünür.",
-  "drawer.personalEmptyCta": "Galeriyi aç"
+  "drawer.personalEmptyCta": "Galeriyi aç",
+  "hltb.you": "Sen: {time}"
 }

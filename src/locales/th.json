@@ -2447,5 +2447,6 @@
   "feat.releaseDate": "วันวางจำหน่าย",
   "drawer.personalEmptyTitle": "บันทึกของคุณเริ่มที่นี่",
   "drawer.personalEmptyDesc": "ยังไม่มีสกรีนช็อต คลิป หรือความสำเร็จของเกมนี้ สิ่งที่คุณเก็บระหว่างเล่นจะปรากฏที่นี่",
-  "drawer.personalEmptyCta": "เปิดแกลเลอรี"
+  "drawer.personalEmptyCta": "เปิดแกลเลอรี",
+  "hltb.you": "คุณ: {time}"
 }

@@ -2447,5 +2447,6 @@
   "feat.releaseDate": "تاريخ الإصدار",
   "drawer.personalEmptyTitle": "سجلك الخاص يبدأ هنا",
   "drawer.personalEmptyDesc": "لا توجد لقطات أو مقاطع أو إنجازات لهذه اللعبة بعد. ما تلتقطه أثناء اللعب يظهر هنا.",
-  "drawer.personalEmptyCta": "افتح المعرض"
+  "drawer.personalEmptyCta": "افتح المعرض",
+  "hltb.you": "أنت: {time}"
 }
