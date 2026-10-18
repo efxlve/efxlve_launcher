@@ -14,6 +14,7 @@ import { icon } from "../../../core/icons";
 import { S } from "../../../core/state";
 import {
   clearPageSelection,
+  closeClipDialog,
   closePageLightbox,
   deletePageShot,
   dropClip,
@@ -21,11 +22,15 @@ import {
   loadScreenshotsPage,
   navigatePageLightbox,
   openClipFolder,
+  openClipJoin,
+  openClipTrim,
   openPageLightbox,
   openPageShotFolder,
   pageLightboxOpen,
   pageLightboxShot,
   repaintScreenshotsPage,
+  saveClipJoin,
+  saveClipTrim,
   selectedPageShots,
   setPageBatchDeleteArmed,
   setPageFilter,
@@ -199,6 +204,33 @@ export function handleScreenshotsPageAction(
         .catch((error) => toast(String(error), "err"));
       return true;
     }
+
+    case "clip-trim": {
+      const path = el.dataset.path ?? "";
+      if (path) void openClipTrim(path);
+      return true;
+    }
+
+    case "clip-trim-save":
+      void saveClipTrim();
+      return true;
+
+    case "clip-join":
+      openClipJoin();
+      return true;
+
+    case "clip-join-save":
+      void saveClipJoin();
+      return true;
+
+    case "clip-dialog-close":
+      closeClipDialog();
+      return true;
+
+    case "clip-dialog-backdrop":
+      // Only the backdrop itself closes; a click inside the card must not.
+      if (targetEl === el) closeClipDialog();
+      return true;
 
     case "ssp-lightbox-close":
       closePageLightbox();

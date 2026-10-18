@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Clipe salvo",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Não foi possível salvar o clipe",
-  "ss.clipFpsNote": "60 e 120 fps exigem o gravador por GPU; esta captura sustenta 15 e 30."
+  "ss.clipFpsNote": "60 e 120 fps exigem o gravador por GPU; esta captura sustenta 15 e 30.",
+  "ss.clipTrim": "Cortar",
+  "ss.clipTrimTitle": "Cortar o clipe",
+  "ss.clipTrimStart": "Início (s)",
+  "ss.clipTrimEnd": "Fim (s)",
+  "ss.clipTrimLength": "Selecionado: {time}",
+  "ss.clipTrimTotal": "Clipe: {time}",
+  "ss.clipTrimSave": "Salvar como novo clipe",
+  "ss.clipSavedAs": "{name} salvo",
+  "ss.clipJoinTitle": "Unir clipes",
+  "ss.clipJoinHint": "Escolha pelo menos dois; eles entram na ordem da lista.",
+  "ss.joinNeedsTwo": "Escolha pelo menos dois clipes",
+  "ss.trimEmpty": "Esse intervalo não tem quadros",
+  "ss.notOurClip": "Esse arquivo não é um clipe deste launcher",
+  "ss.clipUnreadable": "Não foi possível ler o clipe",
+  "ss.clipWriteFailed": "Não foi possível gravar o clipe",
+  "ss.joinMismatch": "Os clipes não têm o mesmo tamanho e taxa de quadros"
 }

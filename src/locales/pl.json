@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Klip zapisany",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Nie udało się zapisać klipu",
-  "ss.clipFpsNote": "60 i 120 fps wymagają rejestratora GPU; ta ścieżka przechwytuje 15 i 30."
+  "ss.clipFpsNote": "60 i 120 fps wymagają rejestratora GPU; ta ścieżka przechwytuje 15 i 30.",
+  "ss.clipTrim": "Przytnij",
+  "ss.clipTrimTitle": "Przytnij klip",
+  "ss.clipTrimStart": "Początek (s)",
+  "ss.clipTrimEnd": "Koniec (s)",
+  "ss.clipTrimLength": "Wybrano: {time}",
+  "ss.clipTrimTotal": "Klip: {time}",
+  "ss.clipTrimSave": "Zapisz jako nowy klip",
+  "ss.clipSavedAs": "Zapisano {name}",
+  "ss.clipJoinTitle": "Połącz klipy",
+  "ss.clipJoinHint": "Wybierz co najmniej dwa; zostaną dodane w kolejności listy.",
+  "ss.joinNeedsTwo": "Wybierz co najmniej dwa klipy",
+  "ss.trimEmpty": "Ten zakres nie ma klatek",
+  "ss.notOurClip": "Ten plik nie jest klipem tego launchera",
+  "ss.clipUnreadable": "Nie udało się odczytać klipu",
+  "ss.clipWriteFailed": "Nie udało się zapisać klipu",
+  "ss.joinMismatch": "Klipy nie mają tego samego rozmiaru i liczby klatek"
 }

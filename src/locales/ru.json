@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Клип сохранён",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Не удалось сохранить клип",
-  "ss.clipFpsNote": "60 и 120 fps требуют GPU-рекордера; этот путь захвата держит 15 и 30."
+  "ss.clipFpsNote": "60 и 120 fps требуют GPU-рекордера; этот путь захвата держит 15 и 30.",
+  "ss.clipTrim": "Обрезать",
+  "ss.clipTrimTitle": "Обрезать клип",
+  "ss.clipTrimStart": "Начало (с)",
+  "ss.clipTrimEnd": "Конец (с)",
+  "ss.clipTrimLength": "Выбрано: {time}",
+  "ss.clipTrimTotal": "Клип: {time}",
+  "ss.clipTrimSave": "Сохранить как новый клип",
+  "ss.clipSavedAs": "{name} сохранён",
+  "ss.clipJoinTitle": "Объединить клипы",
+  "ss.clipJoinHint": "Выберите минимум два; они добавляются в порядке списка.",
+  "ss.joinNeedsTwo": "Выберите минимум два клипа",
+  "ss.trimEmpty": "В этом диапазоне нет кадров",
+  "ss.notOurClip": "Этот файл не является клипом этого лаунчера",
+  "ss.clipUnreadable": "Не удалось прочитать клип",
+  "ss.clipWriteFailed": "Не удалось записать клип",
+  "ss.joinMismatch": "У клипов разный размер или частота кадров"
 }

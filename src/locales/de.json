@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Clip gespeichert",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Clip konnte nicht gespeichert werden",
-  "ss.clipFpsNote": "60 und 120 fps brauchen den GPU-Rekorder; dieser Aufnahmeweg schafft 15 und 30."
+  "ss.clipFpsNote": "60 und 120 fps brauchen den GPU-Rekorder; dieser Aufnahmeweg schafft 15 und 30.",
+  "ss.clipTrim": "Schneiden",
+  "ss.clipTrimTitle": "Clip schneiden",
+  "ss.clipTrimStart": "Start (s)",
+  "ss.clipTrimEnd": "Ende (s)",
+  "ss.clipTrimLength": "Ausgewählt: {time}",
+  "ss.clipTrimTotal": "Clip: {time}",
+  "ss.clipTrimSave": "Als neuen Clip speichern",
+  "ss.clipSavedAs": "{name} gespeichert",
+  "ss.clipJoinTitle": "Clips zusammenfügen",
+  "ss.clipJoinHint": "Wähle mindestens zwei; sie werden in der Reihenfolge der Liste angehängt.",
+  "ss.joinNeedsTwo": "Wähle mindestens zwei Clips",
+  "ss.trimEmpty": "Dieser Bereich enthält keine Bilder",
+  "ss.notOurClip": "Diese Datei ist kein Clip dieses Launchers",
+  "ss.clipUnreadable": "Der Clip konnte nicht gelesen werden",
+  "ss.clipWriteFailed": "Der Clip konnte nicht geschrieben werden",
+  "ss.joinMismatch": "Die Clips haben nicht dieselbe Größe und Bildrate"
 }

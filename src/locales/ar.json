@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "تم حفظ المقطع",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "تعذّر حفظ المقطع",
-  "ss.clipFpsNote": "تحتاج 60 و120 إطارًا في الثانية إلى مسجّل GPU؛ مسار الالتقاط هذا يتحمل 15 و30."
+  "ss.clipFpsNote": "تحتاج 60 و120 إطارًا في الثانية إلى مسجّل GPU؛ مسار الالتقاط هذا يتحمل 15 و30.",
+  "ss.clipTrim": "قص",
+  "ss.clipTrimTitle": "قص المقطع",
+  "ss.clipTrimStart": "البداية (ث)",
+  "ss.clipTrimEnd": "النهاية (ث)",
+  "ss.clipTrimLength": "المحدد: {time}",
+  "ss.clipTrimTotal": "المقطع: {time}",
+  "ss.clipTrimSave": "حفظ كمقطع جديد",
+  "ss.clipSavedAs": "تم حفظ {name}",
+  "ss.clipJoinTitle": "دمج المقاطع",
+  "ss.clipJoinHint": "اختر اثنين على الأقل؛ تُضاف بترتيب القائمة.",
+  "ss.joinNeedsTwo": "اختر مقطعين على الأقل",
+  "ss.trimEmpty": "لا توجد إطارات في هذا النطاق",
+  "ss.notOurClip": "هذا الملف ليس مقطعًا سجّله هذا المشغّل",
+  "ss.clipUnreadable": "تعذّر قراءة المقطع",
+  "ss.clipWriteFailed": "تعذّر كتابة المقطع",
+  "ss.joinMismatch": "المقاطع ليست بالحجم ومعدل الإطارات نفسه"
 }

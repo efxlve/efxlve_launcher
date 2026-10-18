@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "บันทึกคลิปแล้ว",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "บันทึกคลิปไม่สำเร็จ",
-  "ss.clipFpsNote": "60 และ 120 fps ต้องใช้ตัวบันทึก GPU เส้นทางนี้รองรับ 15 และ 30"
+  "ss.clipFpsNote": "60 และ 120 fps ต้องใช้ตัวบันทึก GPU เส้นทางนี้รองรับ 15 และ 30",
+  "ss.clipTrim": "ตัด",
+  "ss.clipTrimTitle": "ตัดคลิป",
+  "ss.clipTrimStart": "เริ่ม (วินาที)",
+  "ss.clipTrimEnd": "สิ้นสุด (วินาที)",
+  "ss.clipTrimLength": "เลือกไว้: {time}",
+  "ss.clipTrimTotal": "คลิป: {time}",
+  "ss.clipTrimSave": "บันทึกเป็นคลิปใหม่",
+  "ss.clipSavedAs": "บันทึก {name} แล้ว",
+  "ss.clipJoinTitle": "รวมคลิป",
+  "ss.clipJoinHint": "เลือกอย่างน้อยสองคลิป จะเรียงตามลำดับในรายการ",
+  "ss.joinNeedsTwo": "เลือกอย่างน้อยสองคลิป",
+  "ss.trimEmpty": "ช่วงนี้ไม่มีเฟรม",
+  "ss.notOurClip": "ไฟล์นี้ไม่ใช่คลิปที่โปรแกรมนี้บันทึก",
+  "ss.clipUnreadable": "อ่านคลิปไม่ได้",
+  "ss.clipWriteFailed": "เขียนคลิปไม่ได้",
+  "ss.joinMismatch": "คลิปมีขนาดหรืออัตราเฟรมไม่ตรงกัน"
 }

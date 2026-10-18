@@ -15,10 +15,13 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { t, localizeMessage } from "../../i18n";
 import {
+  clipFrame,
+  clipJoin,
   clipList,
   clipThumbnail,
+  clipTrim,
   epicDeleteGameScreenshot,
   epicGetAllScreenshots,
   epicOpenFolderPath,
@@ -263,10 +266,11 @@ function clipsSectionHtml(): string {
         <span class="ss-clip-thumb" data-clip-thumb="${esc(clip.path)}">${icon("play", 14)}</span>
         <div class="ss-clip-main">
           <div class="ss-clip-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
-          <div class="ss-clip-meta">${esc(clip.dateStr)} · ${fmtBytes(clip.sizeBytes)} · ${esc(clipSeconds(clip))}</div>
+          <div class="ss-clip-meta">${esc(clip.dateStr)} · ${fmtBytes(clip.sizeBytes)} · ${esc(clipLength(clip.seconds))}</div>
         </div>
         <div class="ss-clip-actions">
           <button type="button" class="btn ghost small" data-act="ssp-clip-play" data-path="${esc(clip.path)}">${icon("play", 12)} ${t("ss.clipPlay")}</button>
+          <button type="button" class="btn ghost small" data-act="clip-trim" data-path="${esc(clip.path)}">${icon("sliders", 12)} ${t("ss.clipTrim")}</button>
           <button type="button" class="btn ghost small" data-act="ssp-clip-folder" data-path="${esc(clip.path)}">${icon("folder", 12)}</button>
           <button type="button" class="btn ghost danger small" data-act="ssp-clip-delete" data-path="${esc(clip.path)}">${icon("trash", 12)}</button>
         </div>
@@ -275,15 +279,166 @@ function clipsSectionHtml(): string {
         .join("")
     : `<div class="settings-row-desc">${t("ss.clipEmpty")}</div>`;
   return `
-    <h3 class="section-title">${t("ss.clipSection")}</h3>
+    <div class="ss-clips-head">
+      <h3 class="section-title">${t("ss.clipSection")}</h3>
+      ${clips.length > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
+    </div>
     <div class="list settings-group ss-clips">${rows}</div>`;
 }
 
-function clipSeconds(clip: ClipItem): string {
-  const total = Math.max(0, clip.seconds);
+/* ---------- Cutting and joining clips ---------- */
+
+/** The clip the trim dialog works on. */
+let clipTrimPath: string | null = null;
+
+function clipDialogRoot(): HTMLElement {
+  let root = document.getElementById("ss-clip-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "ss-clip-root";
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+export function closeClipDialog(): void {
+  clipTrimPath = null;
+  const root = document.getElementById("ss-clip-root");
+  if (root) root.innerHTML = "";
+}
+
+/** The length the two inputs currently describe, as the dialog shows it. */
+export function updateClipRangeNote(): void {
+  const note = document.getElementById("ss-clip-range-note");
+  if (!note || !clipTrimPath) return;
+  const clip = clips.find((entry) => entry.path === clipTrimPath);
+  const start = Number((document.getElementById("ss-clip-start") as HTMLInputElement | null)?.value ?? "0");
+  const end = Number((document.getElementById("ss-clip-end") as HTMLInputElement | null)?.value ?? "0");
+  const length = Math.max(0, end - start);
+  note.textContent = `${t("ss.clipTrimLength", { time: clipLength(Math.round(length)) })} · ${t("ss.clipTrimTotal", { time: clipLength(clip?.seconds ?? 0) })}`;
+}
+
+/** A row of frames across the clip, so the cut can be aimed at something. */
+async function clipStripHtml(path: string, seconds: number): Promise<string> {
+  const count = 8;
+  const cells: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const at = seconds > 0 ? (seconds * (i + 0.5)) / count : 0;
+    let src: string | null = null;
+    try {
+      src = await clipFrame(path, at);
+    } catch {
+      src = null;
+    }
+    cells.push(src ? `<img src="${src}" alt="" />` : `<span></span>`);
+  }
+  return cells.join("");
+}
+
+/** Opens the cut dialog: a strip, two times, and a button that copies the range
+ *  into a new clip. The original is never touched. */
+export async function openClipTrim(path: string): Promise<void> {
+  const clip = clips.find((entry) => entry.path === path);
+  if (!clip) return;
+  clipTrimPath = path;
+  const total = Math.max(1, clip.seconds);
+  clipDialogRoot().innerHTML = `
+    <div class="modal-backdrop" data-act="clip-dialog-backdrop">
+      <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
+        <div class="selective-header"><h2>${t("ss.clipTrimTitle")}</h2></div>
+        <div class="ss-clip-dialog-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
+        <div class="ss-clip-strip" id="ss-clip-strip"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="ss-clip-range">
+          <label>${t("ss.clipTrimStart")}
+            <input type="number" id="ss-clip-start" class="input" min="0" max="${total}" step="1" value="0" />
+          </label>
+          <label>${t("ss.clipTrimEnd")}
+            <input type="number" id="ss-clip-end" class="input" min="0" max="${total}" step="1" value="${total}" />
+          </label>
+        </div>
+        <div class="ss-clip-range-note" id="ss-clip-range-note"></div>
+        <div class="playtime-footer">
+          <button class="btn ghost" data-act="clip-dialog-close">${t("common.cancel")}</button>
+          <button class="btn" data-act="clip-trim-save">${t("ss.clipTrimSave")}</button>
+        </div>
+      </div>
+    </div>`;
+  updateClipRangeNote();
+  const strip = document.getElementById("ss-clip-strip");
+  if (strip) strip.innerHTML = await clipStripHtml(path, clip.seconds);
+}
+
+/** Opens the join dialog: pick two or more clips, they are added in this order. */
+export function openClipJoin(): void {
+  if (clips.length < 2) {
+    toast(t("ss.joinNeedsTwo"), "err");
+    return;
+  }
+  clipDialogRoot().innerHTML = `
+    <div class="modal-backdrop" data-act="clip-dialog-backdrop">
+      <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
+        <div class="selective-header"><h2>${t("ss.clipJoinTitle")}</h2></div>
+        <div class="ss-clip-join-list">
+          ${clips
+            .map(
+              (clip) => `
+            <label class="ss-clip-join-row">
+              <input type="checkbox" data-act="clip-join-pick" data-path="${esc(clip.path)}" />
+              <span class="ss-clip-join-name" title="${esc(clip.name)}">${esc(clip.name)}</span>
+              <span class="ss-clip-join-meta">${esc(clip.dateStr)} · ${esc(clipLength(clip.seconds))}</span>
+            </label>`,
+            )
+            .join("")}
+        </div>
+        <div class="ss-clip-range-note">${t("ss.clipJoinHint")}</div>
+        <div class="playtime-footer">
+          <button class="btn ghost" data-act="clip-dialog-close">${t("common.cancel")}</button>
+          <button class="btn" data-act="clip-join-save">${t("ss.clipJoinTitle")}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+/** Runs the cut the dialog describes and adds the new clip to the list. */
+export async function saveClipTrim(): Promise<void> {
+  if (!clipTrimPath) return;
+  const start = Number((document.getElementById("ss-clip-start") as HTMLInputElement | null)?.value ?? "0");
+  const end = Number((document.getElementById("ss-clip-end") as HTMLInputElement | null)?.value ?? "0");
+  try {
+    const made = await clipTrim(clipTrimPath, start, end);
+    closeClipDialog();
+    toast(t("ss.clipSavedAs", { name: made.name }), "ok");
+    reloadClips();
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  }
+}
+
+/** Joins the checked clips, in the order they are listed. */
+export async function saveClipJoin(): Promise<void> {
+  const picked = [...document.querySelectorAll<HTMLInputElement>("[data-act='clip-join-pick']")]
+    .filter((box) => box.checked)
+    .map((box) => box.dataset.path ?? "")
+    .filter(Boolean);
+  if (picked.length < 2) {
+    toast(t("ss.joinNeedsTwo"), "err");
+    return;
+  }
+  try {
+    const made = await clipJoin(picked);
+    closeClipDialog();
+    toast(t("ss.clipSavedAs", { name: made.name }), "ok");
+    reloadClips();
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  }
+}
+
+function clipLength(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return minutes > 0 ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${seconds}s`;
+  const rest = total % 60;
+  return minutes > 0 ? `${minutes}:${String(rest).padStart(2, "0")}` : `${rest}s`;
 }
 
 /** First frames already fetched, so a repaint does not ask again. */

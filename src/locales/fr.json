@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Clip enregistré",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Impossible d'enregistrer le clip",
-  "ss.clipFpsNote": "60 et 120 fps nécessitent l'enregistreur GPU ; cette capture tient 15 et 30."
+  "ss.clipFpsNote": "60 et 120 fps nécessitent l'enregistreur GPU ; cette capture tient 15 et 30.",
+  "ss.clipTrim": "Découper",
+  "ss.clipTrimTitle": "Découper le clip",
+  "ss.clipTrimStart": "Début (s)",
+  "ss.clipTrimEnd": "Fin (s)",
+  "ss.clipTrimLength": "Sélection : {time}",
+  "ss.clipTrimTotal": "Clip : {time}",
+  "ss.clipTrimSave": "Enregistrer comme nouveau clip",
+  "ss.clipSavedAs": "{name} enregistré",
+  "ss.clipJoinTitle": "Fusionner des clips",
+  "ss.clipJoinHint": "Choisis-en au moins deux ; ils sont ajoutés dans l'ordre de la liste.",
+  "ss.joinNeedsTwo": "Choisis au moins deux clips",
+  "ss.trimEmpty": "Cette plage ne contient aucune image",
+  "ss.notOurClip": "Ce fichier n'est pas un clip de ce launcher",
+  "ss.clipUnreadable": "Le clip n'a pas pu être lu",
+  "ss.clipWriteFailed": "Le clip n'a pas pu être écrit",
+  "ss.joinMismatch": "Les clips n'ont pas la même taille ni la même cadence"
 }

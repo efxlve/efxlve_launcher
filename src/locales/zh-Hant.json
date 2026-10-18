@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "剪輯已儲存",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "剪輯儲存失敗",
-  "ss.clipFpsNote": "60/120 fps 需要 GPU 錄製器；此擷取路徑支援 15 與 30。"
+  "ss.clipFpsNote": "60/120 fps 需要 GPU 錄製器；此擷取路徑支援 15 與 30。",
+  "ss.clipTrim": "裁剪",
+  "ss.clipTrimTitle": "裁剪剪輯",
+  "ss.clipTrimStart": "開始（秒）",
+  "ss.clipTrimEnd": "結束（秒）",
+  "ss.clipTrimLength": "已選：{time}",
+  "ss.clipTrimTotal": "剪輯：{time}",
+  "ss.clipTrimSave": "另存為新剪輯",
+  "ss.clipSavedAs": "已儲存 {name}",
+  "ss.clipJoinTitle": "合併剪輯",
+  "ss.clipJoinHint": "至少選擇兩個；依列表順序拼接。",
+  "ss.joinNeedsTwo": "請至少選擇兩個剪輯",
+  "ss.trimEmpty": "該範圍沒有影格",
+  "ss.notOurClip": "該檔案不是本啟動器錄製的剪輯",
+  "ss.clipUnreadable": "無法讀取剪輯",
+  "ss.clipWriteFailed": "無法寫入剪輯",
+  "ss.joinMismatch": "剪輯的尺寸或影格率不一致"
 }

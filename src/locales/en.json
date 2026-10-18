@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Clip saved",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Clip could not be saved",
-  "ss.clipFpsNote": "60 and 120 fps need the GPU recorder; this capture path holds 15 and 30."
+  "ss.clipFpsNote": "60 and 120 fps need the GPU recorder; this capture path holds 15 and 30.",
+  "ss.clipTrim": "Trim",
+  "ss.clipTrimTitle": "Cut the clip",
+  "ss.clipTrimStart": "Start (s)",
+  "ss.clipTrimEnd": "End (s)",
+  "ss.clipTrimLength": "Selected: {time}",
+  "ss.clipTrimTotal": "Clip: {time}",
+  "ss.clipTrimSave": "Save as a new clip",
+  "ss.clipSavedAs": "Saved {name}",
+  "ss.clipJoinTitle": "Join clips",
+  "ss.clipJoinHint": "Pick at least two; they are added in the order listed.",
+  "ss.joinNeedsTwo": "Pick at least two clips",
+  "ss.trimEmpty": "That range holds no frames",
+  "ss.notOurClip": "That file is not a clip this launcher recorded",
+  "ss.clipUnreadable": "The clip could not be read",
+  "ss.clipWriteFailed": "The clip could not be written",
+  "ss.joinMismatch": "The clips do not share one size and frame rate"
 }

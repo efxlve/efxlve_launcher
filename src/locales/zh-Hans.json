@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "剪辑已保存",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "剪辑保存失败",
-  "ss.clipFpsNote": "60/120 fps 需要 GPU 录制器；此捕获路径支持 15 和 30。"
+  "ss.clipFpsNote": "60/120 fps 需要 GPU 录制器；此捕获路径支持 15 和 30。",
+  "ss.clipTrim": "裁剪",
+  "ss.clipTrimTitle": "裁剪剪辑",
+  "ss.clipTrimStart": "开始（秒）",
+  "ss.clipTrimEnd": "结束（秒）",
+  "ss.clipTrimLength": "已选：{time}",
+  "ss.clipTrimTotal": "剪辑：{time}",
+  "ss.clipTrimSave": "另存为新剪辑",
+  "ss.clipSavedAs": "已保存 {name}",
+  "ss.clipJoinTitle": "合并剪辑",
+  "ss.clipJoinHint": "至少选择两个；按列表顺序拼接。",
+  "ss.joinNeedsTwo": "请至少选择两个剪辑",
+  "ss.trimEmpty": "该范围没有帧",
+  "ss.notOurClip": "该文件不是本启动器录制的剪辑",
+  "ss.clipUnreadable": "无法读取剪辑",
+  "ss.clipWriteFailed": "无法写入剪辑",
+  "ss.joinMismatch": "剪辑的尺寸或帧率不一致"
 }

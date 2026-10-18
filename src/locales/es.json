@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Clip guardado",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "No se pudo guardar el clip",
-  "ss.clipFpsNote": "60 y 120 fps necesitan el grabador por GPU; esta ruta de captura soporta 15 y 30."
+  "ss.clipFpsNote": "60 y 120 fps necesitan el grabador por GPU; esta ruta de captura soporta 15 y 30.",
+  "ss.clipTrim": "Recortar",
+  "ss.clipTrimTitle": "Recortar el clip",
+  "ss.clipTrimStart": "Inicio (s)",
+  "ss.clipTrimEnd": "Fin (s)",
+  "ss.clipTrimLength": "Seleccionado: {time}",
+  "ss.clipTrimTotal": "Clip: {time}",
+  "ss.clipTrimSave": "Guardar como clip nuevo",
+  "ss.clipSavedAs": "{name} guardado",
+  "ss.clipJoinTitle": "Unir clips",
+  "ss.clipJoinHint": "Elige al menos dos; se añaden en el orden de la lista.",
+  "ss.joinNeedsTwo": "Elige al menos dos clips",
+  "ss.trimEmpty": "Ese rango no tiene fotogramas",
+  "ss.notOurClip": "Ese archivo no es un clip de este launcher",
+  "ss.clipUnreadable": "No se pudo leer el clip",
+  "ss.clipWriteFailed": "No se pudo escribir el clip",
+  "ss.joinMismatch": "Los clips no comparten tamaño ni velocidad de fotogramas"
 }

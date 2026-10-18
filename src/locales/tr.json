@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "Klip kaydedildi",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Klip kaydedilemedi",
-  "ss.clipFpsNote": "60 ve 120 fps için GPU kaydedicisi gerekiyor; bu yakalama yolu 15 ve 30 fps taşıyor."
+  "ss.clipFpsNote": "60 ve 120 fps için GPU kaydedicisi gerekiyor; bu yakalama yolu 15 ve 30 fps taşıyor.",
+  "ss.clipTrim": "Kes",
+  "ss.clipTrimTitle": "Klibi kes",
+  "ss.clipTrimStart": "Başlangıç (sn)",
+  "ss.clipTrimEnd": "Bitiş (sn)",
+  "ss.clipTrimLength": "Seçilen: {time}",
+  "ss.clipTrimTotal": "Klip: {time}",
+  "ss.clipTrimSave": "Yeni klip olarak kaydet",
+  "ss.clipSavedAs": "{name} kaydedildi",
+  "ss.clipJoinTitle": "Klipleri birleştir",
+  "ss.clipJoinHint": "En az iki klip seç; listedeki sırayla eklenir.",
+  "ss.joinNeedsTwo": "En az iki klip seç",
+  "ss.trimEmpty": "Seçilen aralıkta kare yok",
+  "ss.notOurClip": "Bu dosya Efxlve'in kaydettiği bir klip değil",
+  "ss.clipUnreadable": "Klip okunamadı",
+  "ss.clipWriteFailed": "Klip yazılamadı",
+  "ss.joinMismatch": "Kliplerin boyutu veya kare hızı aynı değil"
 }

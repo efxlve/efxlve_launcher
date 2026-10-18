@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "クリップを保存しました",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "クリップを保存できませんでした",
-  "ss.clipFpsNote": "60/120 fps には GPU レコーダーが必要です。この取り込み経路は 15/30 に対応します。"
+  "ss.clipFpsNote": "60/120 fps には GPU レコーダーが必要です。この取り込み経路は 15/30 に対応します。",
+  "ss.clipTrim": "切り取り",
+  "ss.clipTrimTitle": "クリップを切り取る",
+  "ss.clipTrimStart": "開始 (秒)",
+  "ss.clipTrimEnd": "終了 (秒)",
+  "ss.clipTrimLength": "選択中: {time}",
+  "ss.clipTrimTotal": "クリップ: {time}",
+  "ss.clipTrimSave": "新しいクリップとして保存",
+  "ss.clipSavedAs": "{name} を保存しました",
+  "ss.clipJoinTitle": "クリップを結合",
+  "ss.clipJoinHint": "2つ以上を選んでください。一覧の順に連結されます。",
+  "ss.joinNeedsTwo": "クリップを2つ以上選んでください",
+  "ss.trimEmpty": "この範囲にはフレームがありません",
+  "ss.notOurClip": "このファイルはこのランチャーのクリップではありません",
+  "ss.clipUnreadable": "クリップを読み込めませんでした",
+  "ss.clipWriteFailed": "クリップを書き込めませんでした",
+  "ss.joinMismatch": "クリップのサイズまたはフレームレートが一致しません"
 }

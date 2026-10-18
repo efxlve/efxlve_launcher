@@ -801,6 +801,14 @@ export const clipSetOptions = (options: { fps?: number; quality?: number; maxSec
 export const clipList = () => invoke<ClipItem[]>("clip_list");
 /** The clip's first frame as a JPEG data URL; null when it cannot be read. */
 export const clipThumbnail = (path: string) => invoke<string | null>("clip_thumbnail", { path });
+/** One frame at a time inside a clip, for the trim strip. */
+export const clipFrame = (path: string, seconds: number) =>
+  invoke<string | null>("clip_frame", { path, seconds });
+/** Cuts a clip to a range, into a new file next to it. */
+export const clipTrim = (path: string, startSecs: number, endSecs: number) =>
+  invoke<ClipItem>("clip_trim", { path, startSecs, endSecs });
+/** Puts clips together, in the order given. */
+export const clipJoin = (paths: string[]) => invoke<ClipItem>("clip_join", { paths });
 export const clipDelete = (path: string) => invoke<boolean>("clip_delete", { path });
 export const clipFolderPath = () => invoke<string>("clip_folder_path");
 

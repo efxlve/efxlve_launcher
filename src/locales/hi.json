@@ -2418,5 +2418,21 @@
   "overlay.clipSavedTitle": "क्लिप सहेजी गई",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "क्लिप सहेजी नहीं जा सकी",
-  "ss.clipFpsNote": "60 और 120 fps के लिए GPU रिकॉर्डर चाहिए; यह कैप्चर पथ 15 और 30 तक सीमित है।"
+  "ss.clipFpsNote": "60 और 120 fps के लिए GPU रिकॉर्डर चाहिए; यह कैप्चर पथ 15 और 30 तक सीमित है।",
+  "ss.clipTrim": "काटें",
+  "ss.clipTrimTitle": "क्लिप काटें",
+  "ss.clipTrimStart": "शुरू (सेकंड)",
+  "ss.clipTrimEnd": "अंत (सेकंड)",
+  "ss.clipTrimLength": "चयनित: {time}",
+  "ss.clipTrimTotal": "क्लिप: {time}",
+  "ss.clipTrimSave": "नई क्लिप के रूप में सहेजें",
+  "ss.clipSavedAs": "{name} सहेजी गई",
+  "ss.clipJoinTitle": "क्लिप जोड़ें",
+  "ss.clipJoinHint": "कम से कम दो चुनें; सूची के क्रम में जोड़ी जाएँगी।",
+  "ss.joinNeedsTwo": "कम से कम दो क्लिप चुनें",
+  "ss.trimEmpty": "इस अंतराल में कोई फ़्रेम नहीं है",
+  "ss.notOurClip": "यह फ़ाइल इस लॉन्चर की क्लिप नहीं है",
+  "ss.clipUnreadable": "क्लिप पढ़ी नहीं जा सकी",
+  "ss.clipWriteFailed": "क्लिप लिखी नहीं जा सकी",
+  "ss.joinMismatch": "क्लिप का आकार या फ़्रेम दर एक जैसा नहीं है"
 }

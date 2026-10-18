@@ -14,7 +14,7 @@
 //! between the frames.
 
 use std::fs::File;
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{BufReader, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
@@ -280,17 +280,23 @@ impl AviWriter {
     /// streams interleaved, not one after the other, so this runs between frames
     /// rather than in one go at the end. A video-only file ignores it.
     fn add_audio(&mut self, samples: &[i16]) -> std::io::Result<()> {
-        if self.audio_block_align == 0 || samples.is_empty() {
-            return Ok(());
-        }
         let mut payload = Vec::with_capacity(samples.len() * 2);
         for sample in samples {
             payload.extend_from_slice(&sample.to_le_bytes());
         }
+        self.add_audio_bytes(&payload)
+    }
+
+    /// The same, for PCM that is already in bytes: trimming copies the original
+    /// audio chunks instead of converting them again.
+    fn add_audio_bytes(&mut self, payload: &[u8]) -> std::io::Result<()> {
+        if self.audio_block_align == 0 || payload.is_empty() {
+            return Ok(());
+        }
         let offset = self.file.stream_position()?;
         self.file.write_all(b"01wb")?;
         self.file.write_all(&(payload.len() as u32).to_le_bytes())?;
-        self.file.write_all(&payload)?;
+        self.file.write_all(payload)?;
         if payload.len() % 2 == 1 {
             self.file.write_all(&[0u8])?;
         }
@@ -307,7 +313,19 @@ impl AviWriter {
     /// only grab 16 frames a second while 30 are asked for would otherwise write
     /// a picture that runs at nearly twice real speed, and every player then
     /// drifts away from the sound and clicks trying to catch up.
-    fn finish(mut self, fps: u32, elapsed: Duration) -> std::io::Result<()> {
+    fn finish(self, fps: u32, elapsed: Duration) -> std::io::Result<()> {
+        let seconds = elapsed.as_secs_f64();
+        let micros = if self.frames > 0 && seconds > 0.0 {
+            ((seconds * 1_000_000.0) / f64::from(self.frames)).round().max(1.0) as u32
+        } else {
+            1_000_000 / fps.max(1)
+        };
+        self.finish_at(fps, micros)
+    }
+
+    /// The same, with the frame duration given: a trim copies the source's own
+    /// rate instead of measuring a recording that already happened.
+    fn finish_at(mut self, fps: u32, micros: u32) -> std::io::Result<()> {
         let index_start = self.file.stream_position()?;
         self.file.write_all(b"idx1")?;
         self.file.write_all(&((self.index.len() * 16) as u32).to_le_bytes())?;
@@ -324,13 +342,6 @@ impl AviWriter {
         // Like every other list, the size counts the 4-byte type as well.
         self.file.seek(SeekFrom::Start(self.movi_start - 8))?;
         self.file.write_all(&((movi_size + 4) as u32).to_le_bytes())?;
-
-        let seconds = elapsed.as_secs_f64();
-        let micros = if self.frames > 0 && seconds > 0.0 {
-            ((seconds * 1_000_000.0) / f64::from(self.frames)).round().max(1.0) as u32
-        } else {
-            1_000_000 / fps.max(1)
-        };
 
         // avih: the frame duration and the frame count.
         self.file.seek(SeekFrom::Start(self.avih_at))?;
@@ -737,6 +748,46 @@ pub fn first_frame_data_url(path: &Path) -> Option<String> {
     None
 }
 
+/// The frame at a moment inside a clip, as a JPEG data URL. The trim dialog's
+/// strip is a handful of these, and they come out of the file the same way the
+/// thumbnail does: a walk to the wanted `00dc` chunk.
+pub fn frame_at(path: &Path, seconds: f64) -> Option<String> {
+    use base64::Engine;
+
+    let header = read_clip_header(path).ok()?;
+    let wanted = header.frame_at(seconds);
+    let mut file = File::open(path).ok()?;
+    file.seek(SeekFrom::Start(header.movi_at)).ok()?;
+    let mut reader = BufReader::with_capacity(1 << 20, file);
+    let mut buffer: Vec<u8> = Vec::new();
+    let mut frame = 0u32;
+
+    loop {
+        let mut tag = [0u8; 4];
+        reader.read_exact(&mut tag).ok()?;
+        let mut size_bytes = [0u8; 4];
+        reader.read_exact(&mut size_bytes).ok()?;
+        let size = u32::from_le_bytes(size_bytes) as usize;
+        let pad = (size % 2) as i64;
+        if &tag == b"00dc" {
+            if frame == wanted {
+                buffer.clear();
+                buffer.resize(size, 0);
+                reader.read_exact(&mut buffer).ok()?;
+                if buffer.len() > 2 && buffer[0] == 0xFF && buffer[1] == 0xD8 {
+                    let encoded = base64::engine::general_purpose::STANDARD.encode(&buffer);
+                    return Some(format!("data:image/jpeg;base64,{encoded}"));
+                }
+                return None;
+            }
+            frame += 1;
+        } else if &tag != b"01wb" {
+            return None;
+        }
+        reader.seek_relative(size as i64 + pad).ok()?;
+    }
+}
+
 /// `dwTotalFrames / (dwRate / dwScale)` from the `avih` header.
 fn avi_seconds(path: &Path) -> Option<u64> {    let bytes = std::fs::read(path).ok()?;
     // Layout: RIFF(12) + LIST hdrl(12) + "avih" chunk header(8) → payload at 32.
@@ -753,6 +804,286 @@ fn avi_seconds(path: &Path) -> Option<u64> {    let bytes = std::fs::read(path).
         return None;
     }
     Some(((frames as u64) * (micros as u64)) / 1_000_000)
+}
+
+/* ---------- Trimming and joining ---------- */
+
+/// What a copy needs to know about an existing clip, read from its header.
+struct ClipHeader {
+    width: u32,
+    height: u32,
+    /// Frame duration in microseconds: the rate the file itself measured.
+    micros: u32,
+    audio: Option<AudioInfo>,
+    /// First chunk, right after the `movi` tag.
+    movi_at: u64,
+}
+
+impl ClipHeader {
+    fn fps(&self) -> u32 {
+        (1_000_000 / self.micros.max(1)).max(1)
+    }
+
+    fn frame_at(&self, seconds: f64) -> u32 {
+        let micros = f64::from(self.micros.max(1));
+        (seconds.max(0.0) * 1_000_000.0 / micros).round() as u32
+    }
+
+    /// True when two clips can go into one file: a container has a single video
+    /// format and a single audio format, so the parts have to agree.
+    fn matches(&self, other: &ClipHeader) -> bool {
+        self.width == other.width
+            && self.height == other.height
+            && self.micros == other.micros
+            && match (&self.audio, &other.audio) {
+                (None, None) => true,
+                (Some(a), Some(b)) => a.sample_rate == b.sample_rate && a.channels == b.channels,
+                _ => false,
+            }
+    }
+}
+
+/// Reads the header of a clip this launcher wrote. Anything else — another
+/// program's AVI, a file that is not an AVI at all — is refused, because the
+/// copy path assumes our own chunk layout.
+fn read_clip_header(path: &Path) -> Result<ClipHeader, String> {
+    let mut file = File::open(path).map_err(|_| "@t:ss.fileNotFound".to_string())?;
+    let mut head = vec![0u8; 8192];
+    let read = file
+        .read(&mut head)
+        .map_err(|_| "@t:ss.clipUnreadable".to_string())?;
+    head.truncate(read);
+
+    if head.len() < 64 || &head[0..4] != b"RIFF" || &head[8..12] != b"AVI " {
+        return Err("@t:ss.notOurClip".to_string());
+    }
+    let u32_at = |at: usize| -> Option<u32> {
+        head.get(at..at + 4)
+            .map(|s| u32::from_le_bytes([s[0], s[1], s[2], s[3]]))
+    };
+    let micros = u32_at(32).filter(|m| *m > 0).ok_or("@t:ss.notOurClip")?;
+    let width = u32_at(64).ok_or("@t:ss.notOurClip")?;
+    let height = u32_at(68).ok_or("@t:ss.notOurClip")?;
+    let movi = head
+        .windows(4)
+        .position(|w| w == b"movi")
+        .ok_or("@t:ss.notOurClip")?;
+
+    // The audio format sits in the second strf, an 18-byte WAVEFORMATEX. The
+    // video strf is 40 bytes, so its size tells them apart.
+    let mut audio = None;
+    let mut at = 0usize;
+    while let Some(offset) = head[at..].windows(4).position(|w| w == b"strf") {
+        let pos = at + offset;
+        let size = head
+            .get(pos + 4..pos + 8)
+            .map(|s| u32::from_le_bytes([s[0], s[1], s[2], s[3]]))
+            .unwrap_or(0) as usize;
+        let payload = pos + 8;
+        if size == 18 {
+            if let (Some(channels), Some(rate)) = (
+                head.get(payload + 2..payload + 4)
+                    .map(|s| u16::from_le_bytes([s[0], s[1]])),
+                head.get(payload + 4..payload + 8)
+                    .map(|s| u32::from_le_bytes([s[0], s[1], s[2], s[3]])),
+            ) {
+                audio = Some(AudioInfo {
+                    sample_rate: rate,
+                    channels,
+                });
+            }
+        }
+        at = payload + size;
+        if at >= head.len() {
+            break;
+        }
+    }
+
+    Ok(ClipHeader {
+        width,
+        height,
+        micros,
+        audio,
+        movi_at: movi as u64 + 4,
+    })
+}
+
+/// Copies the frames in `[from_frame, to_frame)` and the sound that goes with
+/// them. Nothing is decoded: the chunks are the file, so a cut is a copy and the
+/// picture stays exactly as it was recorded.
+fn copy_range(
+    source: &Path,
+    writer: &mut AviWriter,
+    from_frame: u32,
+    to_frame: u32,
+) -> Result<u32, String> {
+    let header = read_clip_header(source)?;
+    let mut file = File::open(source).map_err(|_| "@t:ss.fileNotFound".to_string())?;
+    file.seek(SeekFrom::Start(header.movi_at))
+        .map_err(|_| "@t:ss.clipUnreadable".to_string())?;
+    let mut reader = BufReader::with_capacity(1 << 20, file);
+    let mut buffer: Vec<u8> = Vec::new();
+    let mut frame = 0u32;
+    let mut copied = 0u32;
+
+    loop {
+        if frame >= to_frame {
+            break;
+        }
+        let mut tag = [0u8; 4];
+        if reader.read_exact(&mut tag).is_err() {
+            break;
+        }
+        let mut size_bytes = [0u8; 4];
+        if reader.read_exact(&mut size_bytes).is_err() {
+            break;
+        }
+        let size = u32::from_le_bytes(size_bytes) as usize;
+        let keep = frame >= from_frame;
+        let is_video = &tag == b"00dc";
+        let is_audio = &tag == b"01wb";
+
+        if (is_video || is_audio) && keep {
+            buffer.clear();
+            buffer.resize(size, 0);
+            if reader.read_exact(&mut buffer).is_err() {
+                break;
+            }
+            let written = if is_video {
+                writer.add_frame(&buffer)
+            } else {
+                writer.add_audio_bytes(&buffer)
+            };
+            if written.is_err() {
+                return Err("@t:ss.clipWriteFailed".to_string());
+            }
+            if is_video {
+                copied += 1;
+            }
+            // The writer adds its own padding, but the source's has to be read
+            // past or the next chunk header starts one byte late.
+            if size % 2 == 1 && reader.seek_relative(1).is_err() {
+                break;
+            }
+        } else {
+            // Skipping is a seek: a trimmed-out minute costs nothing.
+            let skip = size as u64 + (size % 2) as u64;
+            if reader.seek_relative(skip as i64).is_err() {
+                break;
+            }
+        }
+        if is_video {
+            frame += 1;
+        }
+    }
+
+    Ok(copied)
+}
+
+/// `<stem><suffix>.avi` next to the source. Nothing is ever overwritten: a name
+/// that is taken gets a number.
+fn sibling_path(source: &Path, suffix: &str) -> PathBuf {
+    let stem = source
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "clip".to_string());
+    let dir = source.parent().map(Path::to_path_buf).unwrap_or_default();
+    let mut candidate = dir.join(format!("{stem}{suffix}.avi"));
+    let mut n = 2;
+    while candidate.exists() {
+        candidate = dir.join(format!("{stem}{suffix}{n}.avi"));
+        n += 1;
+    }
+    candidate
+}
+
+/// One entry for a clip that was just written, so the list can show it without
+/// a full rescan.
+fn item_for(path: &Path) -> ClipItem {
+    let meta = std::fs::metadata(path);
+    let size_bytes = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+    let modified = meta
+        .as_ref()
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let date_str = match meta.as_ref() {
+        Ok(meta) => crate::legendary::screenshots::get_file_local_datetime_str(path, meta, modified),
+        Err(_) => String::new(),
+    };
+    ClipItem {
+        path: path.to_string_lossy().to_string(),
+        name: path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default(),
+        size_bytes,
+        date_str,
+        seconds: avi_seconds(path).unwrap_or(0),
+    }
+}
+
+/// Cuts a clip down to a range, losslessly, into a new file next to it.
+pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, String> {
+    let header = read_clip_header(path)?;
+    let from = header.frame_at(start_secs);
+    let to = header.frame_at(end_secs);
+    if to <= from {
+        return Err("@t:ss.trimEmpty".to_string());
+    }
+    let target = sibling_path(path, "_trim");
+    let mut writer = AviWriter::create(
+        &target,
+        header.width,
+        header.height,
+        header.fps(),
+        header.audio,
+    )
+    .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
+    let copied = copy_range(path, &mut writer, from, to)?;
+    if copied == 0 {
+        let _ = std::fs::remove_file(&target);
+        return Err("@t:ss.trimEmpty".to_string());
+    }
+    writer
+        .finish_at(header.fps(), header.micros)
+        .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
+    Ok(target)
+}
+
+/// Puts clips one after another into a new file, without re-encoding.
+pub fn join(paths: &[PathBuf]) -> Result<PathBuf, String> {
+    if paths.len() < 2 {
+        return Err("@t:ss.joinNeedsTwo".to_string());
+    }
+    let first = read_clip_header(&paths[0])?;
+    for path in paths.iter().skip(1) {
+        if !first.matches(&read_clip_header(path)?) {
+            return Err("@t:ss.joinMismatch".to_string());
+        }
+    }
+
+    let target = sibling_path(&paths[0], "_joined");
+    let mut writer = AviWriter::create(
+        &target,
+        first.width,
+        first.height,
+        first.fps(),
+        first.audio,
+    )
+    .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
+    for path in paths {
+        if copy_range(path, &mut writer, 0, u32::MAX)? == 0 {
+            let _ = std::fs::remove_file(&target);
+            return Err("@t:ss.trimEmpty".to_string());
+        }
+    }
+    writer
+        .finish_at(first.fps(), first.micros)
+        .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
+    Ok(target)
 }
 
 /* ---------- Commands ---------- */
@@ -799,6 +1130,35 @@ pub fn clip_list() -> Vec<ClipItem> {
 #[tauri::command]
 pub fn clip_thumbnail(path: String) -> Option<String> {
     first_frame_data_url(Path::new(&path))
+}
+
+/// One frame at a time inside a clip, for the trim dialog's strip.
+#[tauri::command]
+pub fn clip_frame(path: String, seconds: f64) -> Option<String> {
+    frame_at(Path::new(&path), seconds)
+}
+
+/// Cuts a clip to a range and returns the new clip. The original is untouched.
+#[tauri::command]
+pub fn clip_trim(path: String, start_secs: f64, end_secs: f64) -> Result<ClipItem, String> {
+    let source = PathBuf::from(&path);
+    if !source.starts_with(crate::legendary::screenshots::get_user_videos_dir().join("Efxlve")) {
+        return Err("@t:ss.outsideRoot".to_string());
+    }
+    let target = trim(&source, start_secs, end_secs)?;
+    Ok(item_for(&target))
+}
+
+/// Puts clips together, in the order given, and returns the new clip.
+#[tauri::command]
+pub fn clip_join(paths: Vec<String>) -> Result<ClipItem, String> {
+    let root = crate::legendary::screenshots::get_user_videos_dir().join("Efxlve");
+    let sources: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+    if sources.iter().any(|path| !path.starts_with(&root)) {
+        return Err("@t:ss.outsideRoot".to_string());
+    }
+    let target = join(&sources)?;
+    Ok(item_for(&target))
 }
 
 /// The clips root, so the UI can open it in the file manager.
@@ -1007,7 +1367,31 @@ mod tests {
         // frame this time.
         let thumb = first_frame_data_url(&path).expect("a thumbnail from a real clip");
         assert!(thumb.len() > 5_000, "a real frame is more than a few kilobytes");
-        println!("{}: {blocks} blocks in {chunks} chunks, thumbnail {} KB", path.display(), thumb.len() / 1024);
+
+        // Cutting and joining the real thing, with its real sound.
+        let trimmed = trim(&path, 0.2, 0.8).expect("trim");
+        let trimmed_bytes = std::fs::read(&trimmed).expect("read");
+        let kept = u32::from_le_bytes([
+            trimmed_bytes[48],
+            trimmed_bytes[49],
+            trimmed_bytes[50],
+            trimmed_bytes[51],
+        ]);
+        assert!((14..=22).contains(&kept), "about 0.6 s at 30 fps, got {kept}");
+        let joined = join(&[trimmed.clone(), trimmed.clone()]).expect("join");
+        assert_eq!(
+            avi_seconds(&joined),
+            Some(1),
+            "two copies of the cut are one second"
+        );
+        println!(
+            "{}: {blocks} blocks in {chunks} chunks, thumbnail {} KB, cut {kept} frames",
+            path.display(),
+            thumb.len() / 1024
+        );
+        // The cut and the join stay next to the workspace (`src-tauri/tmp-*`,
+        // ignored by git) so an outside tool can check them by hand.
+        println!("left behind: {} and {}", trimmed.display(), joined.display());
     }
 
     /// What a frame costs at each height, so a requested rate can be checked
@@ -1060,6 +1444,95 @@ mod tests {
         assert_eq!(first_frame_data_url(&other), None);
         let _ = std::fs::remove_file(&path);
         let _ = std::fs::remove_file(&other);
+    }
+
+    /// A cut is a copy: the frames that survive have to be the source's own
+    /// bytes, the length has to match the range, and the sound has to come along.
+    #[test]
+    fn a_trim_copies_the_chosen_range() {
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let source = dir.join("source.avi");
+        let info = AudioInfo {
+            sample_rate: 48_000,
+            channels: 2,
+        };
+
+        // Two seconds at 10 fps: every frame is recognisable by its first byte.
+        let frames: Vec<Vec<u8>> = (0..20u8)
+            .map(|i| vec![0xFF, 0xD8, i, 0xAB, 0xFF, 0xD9])
+            .collect();
+        let mut writer = AviWriter::create(&source, 320, 180, 10, Some(info)).expect("create");
+        for (index, frame) in frames.iter().enumerate() {
+            writer.add_frame(frame).expect("frame");
+            // 4800 samples = 10 ms of 48 kHz stereo, the frame's own slice.
+            let block: Vec<i16> = vec![index as i16; 4800 * 2];
+            writer.add_audio(&block).expect("audio");
+        }
+        writer.finish(10, Duration::from_secs(2)).expect("finish");
+
+        // 0.5 s to 1.5 s: ten frames, the sixth through the fifteenth.
+        let trimmed = trim(&source, 0.5, 1.5).expect("trim");
+        let bytes = std::fs::read(&trimmed).expect("read");
+        let micros = u32::from_le_bytes([bytes[32], bytes[33], bytes[34], bytes[35]]);
+        assert_eq!(micros, 100_000, "10 fps stays 10 fps");
+        assert_eq!(avi_seconds(&trimmed), Some(1), "one second of picture");
+        // The frames are the source's own bytes, starting at the sixth.
+        let movi = bytes.windows(4).position(|w| w == b"movi").expect("movi");
+        let idx = bytes.windows(4).position(|w| w == b"idx1").expect("idx1");
+        let body = &bytes[movi + 4..idx];
+        let kept: Vec<u8> = body
+            .windows(6)
+            .filter(|w| w[0] == 0xFF && w[1] == 0xD8 && w[4] == 0xFF && w[5] == 0xD9)
+            .map(|w| w[2])
+            .collect();
+        assert_eq!(kept.len(), 10, "ten frames in, ten frames out");
+        assert_eq!(kept.first(), Some(&5), "the first frame is the sixth of the source");
+        assert_eq!(kept.last(), Some(&14), "and the last is the fifteenth");
+        // The sound came along: ten frames of audio, 9600 blocks each.
+        let chunks = body.windows(4).filter(|w| *w == b"01wb").count();
+        assert_eq!(chunks, 10, "one audio chunk per kept frame");
+        let _ = std::fs::remove_file(&trimmed);
+        let _ = std::fs::remove_file(&source);
+    }
+
+    /// Joining has to refuse what a container cannot hold: two formats in one
+    /// file is not something the header can describe.
+    #[test]
+    fn a_join_refuses_mixed_formats_and_adds_up_the_rest() {
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let make = |name: &str, frames: u8, width: u32| -> PathBuf {
+            let path = dir.join(name);
+            let mut writer = AviWriter::create(&path, width, 180, 10, None).expect("create");
+            for i in 0..frames {
+                writer.add_frame(&[0xFF, 0xD8, i, 0xFF, 0xD9]).expect("frame");
+            }
+            writer
+                .finish(10, Duration::from_millis(u64::from(frames) * 100))
+                .expect("finish");
+            path
+        };
+        let a = make("join-a.avi", 10, 320);
+        let b = make("join-b.avi", 5, 320);
+        let c = make("join-c.avi", 4, 640);
+
+        let joined = join(&[a.clone(), b.clone()]).expect("join");
+        let bytes = std::fs::read(&joined).expect("read");
+        let total = u32::from_le_bytes([bytes[48], bytes[49], bytes[50], bytes[51]]);
+        assert_eq!(total, 15, "ten plus five frames");
+        assert_eq!(avi_seconds(&joined), Some(1), "1.5 s of picture at 10 fps");
+
+        assert_eq!(join(&[a.clone()]), Err("@t:ss.joinNeedsTwo".to_string()));
+        assert_eq!(
+            join(&[a.clone(), c.clone()]),
+            Err("@t:ss.joinMismatch".to_string()),
+            "a different frame size cannot share the file"
+        );
+        let _ = std::fs::remove_file(&joined);
+        let _ = std::fs::remove_file(&a);
+        let _ = std::fs::remove_file(&b);
+        let _ = std::fs::remove_file(&c);
     }
 
     /// The frame grabber is the risky half (Win32 + GDI+): run manually on a

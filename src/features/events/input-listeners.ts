@@ -59,7 +59,7 @@ import { gogLoginWithCode } from "../auth/gog-auth-actions";
 import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
 import { closeNotifPanel } from "../notifications/notifications";
 import { closeTaskDetail } from "../settings/task-manager";
-import { closePageLightbox, pageLightboxOpen, repaintScreenshotsPage } from "../screenshots/screenshots-page";
+import { closePageLightbox, pageLightboxOpen, repaintScreenshotsPage, updateClipRangeNote } from "../screenshots/screenshots-page";
 import { closeScreenshotEditor, editorOpen } from "../screenshots/screenshot-editor";
 import { closeStoreShot, storeShotViewerOpen } from "../screenshots/store-shot-viewer";
 import { ssCleanupPolicy, ssSetCleanupPolicy } from "../screenshots/ss-settings";
@@ -447,6 +447,10 @@ document.addEventListener("input", (e) => {
     localStorage.setItem(SS_QUALITY_KEY, String(val));
     const label = document.getElementById("ss-quality-val");
     if (label) label.textContent = `%${Math.round(val * 100)}`;
+    return;
+  }
+  if (t.id === "ss-clip-start" || t.id === "ss-clip-end") {
+    updateClipRangeNote();
     return;
   }
   if (t.id === "ach-search-input" && S.currentModalAppName) {
