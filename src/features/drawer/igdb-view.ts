@@ -13,7 +13,8 @@ import { esc } from "../../core/utils";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { igdbEnrich, igdbExternalId, igdbImage, type IgdbGame } from "../../igdb";
 import { cachedImage, warmImages } from "../../core/picture-cache";
-import { storeKeysForTitle } from "../../core/selectors";
+import { canonicalGameTitle, storeKeysForTitle } from "../../core/selectors";
+import { sharedSummaries } from "../library/shared-library";
 
 interface IgdbTarget {
   appName: string;
@@ -152,6 +153,29 @@ function igdbGameUrl(hit: { id: number; name: string; slug?: string }): string {
     : `https://www.igdb.com/search?type=1&q=${encodeURIComponent(hit.name)}`;
 }
 
+/**
+ * The library's copy of a title, matched on the canonical name.
+ *
+ * The canonical map is filled while the library is built, so a game page opened
+ * straight from Home would find nothing in it; the plain scan below is the
+ * fallback, and it only ever adds a match.
+ */
+function ownedAppFor(title: string): string {
+  const canon = canonicalGameTitle(title);
+  if (!canon) return "";
+  const byKey = storeKeysForTitle(title)[0];
+  if (byKey) return byKey;
+  const entries: Array<{ title: string; appName?: string; key?: string }> = [
+    ...S.epicSummaries,
+    ...S.gogSummaries,
+    ...S.steamSummaries,
+    ...S.companionSummaries,
+    ...sharedSummaries(),
+  ];
+  const hit = entries.find((entry) => entry.title && canonicalGameTitle(entry.title) === canon);
+  return hit?.appName ?? hit?.key ?? "";
+}
+
 /** The similar-games card that closes the overview. */
 export function renderIgdbSimilar(target: IgdbTarget): string {
   const game = cache.get(target.appName);
@@ -165,7 +189,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
           // A similar game the player already owns belongs in the launcher, not in
           // a browser tab: the match runs through the canonical title, so a "GOTY
           // Edition" here still finds the library's copy.
-          const owned = storeKeysForTitle(hit.name)[0] ?? "";
+          const owned = ownedAppFor(hit.name);
           const action = owned ? "epic-detail" : "open-external-url";
           const payload = owned
             ? `data-id="${esc(owned)}"`
