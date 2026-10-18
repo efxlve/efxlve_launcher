@@ -28,10 +28,11 @@ touching anything:
    actually change.
 2. Keyboard and TV pass over the game page (tab order, focus ring, controller).
 3. Picture cache, take two: 0.1.30's version (asset protocol + a boot-time
-   prefetch) is gone in 0.1.32 — it was the prime suspect for the window closing
-   on some machines a few seconds after start. If it comes back, use the pattern
-   the screenshot gallery already proves (base64 data URLs, no new webview
-   protocol) and prefetch only while the window is idle.
+   prefetch) is removed in the local tree — it was the prime suspect for the
+   window closing on some machines a few seconds after start. Not released yet;
+   the owner asked to hold it. If it comes back, use the pattern the screenshot
+   gallery already proves (base64 data URLs, no new webview protocol) and
+   prefetch only while the window is idle.
 4. Screenshots workstream (parked, see section 7).
 5. Library covers: the grid loads every cover from the store CDN with
    `loading="lazy"`, and nothing is kept between runs beyond the WebView2 HTTP
