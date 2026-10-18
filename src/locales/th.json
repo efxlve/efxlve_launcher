@@ -2400,5 +2400,8 @@
   "settings.ssRootsTitle": "โฟลเดอร์ที่แกลเลอรีอ่าน",
   "settings.ssRootsDesc": "โฟลเดอร์ที่คุณเลือกและโฟลเดอร์ของสโตร์กับ Game Bar:",
   "settings.ssScanAllTitle": "ค้นหาโฟลเดอร์ของสโตร์ด้วย",
-  "settings.ssScanAllDesc": "เปิด: แกลเลอรีอ่านโฟลเดอร์ Game Bar, Steam, Ubisoft และ Rockstar ด้วย ปิด: อ่านเฉพาะโฟลเดอร์ด้านบน"
+  "settings.ssScanAllDesc": "เปิด: แกลเลอรีอ่านโฟลเดอร์ Game Bar, Steam, Ubisoft และ Rockstar ด้วย ปิด: อ่านเฉพาะโฟลเดอร์ด้านบน",
+  "ss.clipRes": "ความละเอียด",
+  "ss.clipResDesc": "ความสูงที่ต่ำกว่าจะได้ไฟล์เล็กลงมาก ค่าเริ่มต้นใช้ขนาดหน้าจอเดิม",
+  "ss.clipResNative": "ขนาดเดิม"
 }

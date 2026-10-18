@@ -2400,5 +2400,8 @@
   "settings.ssRootsTitle": "ギャラリーが読むフォルダー",
   "settings.ssRootsDesc": "選択したフォルダーと、ストアおよび Game Bar の保存先:",
   "settings.ssScanAllTitle": "ストアのフォルダーも検索",
-  "settings.ssScanAllDesc": "オン: Game Bar、Steam、Ubisoft、Rockstar のフォルダーも読み込みます。オフ: 上のフォルダーのみ。"
+  "settings.ssScanAllDesc": "オン: Game Bar、Steam、Ubisoft、Rockstar のフォルダーも読み込みます。オフ: 上のフォルダーのみ。",
+  "ss.clipRes": "解像度",
+  "ss.clipResDesc": "高さを下げるとファイルはずっと小さくなります。ネイティブは画面のままです。",
+  "ss.clipResNative": "ネイティブ"
 }

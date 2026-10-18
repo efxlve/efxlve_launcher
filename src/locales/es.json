@@ -2400,5 +2400,8 @@
   "settings.ssRootsTitle": "Carpetas de la galería",
   "settings.ssRootsDesc": "Tu carpeta elegida y las carpetas de las tiendas y Game Bar:",
   "settings.ssScanAllTitle": "Buscar también en las carpetas de las tiendas",
-  "settings.ssScanAllDesc": "Activado: la galería también lee las carpetas de Game Bar, Steam, Ubisoft y Rockstar. Desactivado: solo la carpeta de arriba."
+  "settings.ssScanAllDesc": "Activado: la galería también lee las carpetas de Game Bar, Steam, Ubisoft y Rockstar. Desactivado: solo la carpeta de arriba.",
+  "ss.clipRes": "Resolución",
+  "ss.clipResDesc": "Alturas menores escriben archivos mucho más pequeños; nativa deja la pantalla tal cual.",
+  "ss.clipResNative": "Nativa"
 }

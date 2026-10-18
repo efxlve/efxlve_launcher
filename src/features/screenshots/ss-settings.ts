@@ -11,6 +11,7 @@
 import {
   CLIP_ENABLED_KEY,
   CLIP_FPS_KEY,
+  CLIP_HEIGHT_KEY,
   CLIP_HOTKEY_KEY,
   CLIP_MAX_MIN_KEY,
   SS_CLEANUP_KEY,
@@ -114,8 +115,14 @@ export function clipHotkeyCode(): number {
 }
 
 export function clipFps(): number {
-  const stored = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "15");
-  return [10, 15, 30].includes(stored) ? stored : 15;
+  const stored = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "30");
+  return [15, 30, 60, 120].includes(stored) ? stored : 30;
+}
+
+/** Frame height for clips: 0 keeps the screen's own size. */
+export function clipHeight(): number {
+  const stored = Number(localStorage.getItem(CLIP_HEIGHT_KEY) ?? "0");
+  return [0, 720, 1080, 1440].includes(stored) ? stored : 0;
 }
 
 export function clipMaxSecs(): number {
@@ -128,7 +135,7 @@ export function clipMaxSecs(): number {
 export function pushClipSettings(): void {
   if (!isTauri) return;
   void clipSetHotkey(clipHotkeyCode()).catch(() => undefined);
-  void clipSetOptions({ fps: clipFps(), maxSecs: clipMaxSecs() }).catch(() => undefined);
+  void clipSetOptions({ fps: clipFps(), maxSecs: clipMaxSecs(), height: clipHeight() }).catch(() => undefined);
 }
 
 /* ---------- Discord webhooks (one or many) ---------- */

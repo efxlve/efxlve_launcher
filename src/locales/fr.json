@@ -2400,5 +2400,8 @@
   "settings.ssRootsTitle": "Dossiers de la galerie",
   "settings.ssRootsDesc": "Ton dossier choisi et ceux des boutiques et de la Game Bar :",
   "settings.ssScanAllTitle": "Chercher aussi dans les dossiers des boutiques",
-  "settings.ssScanAllDesc": "Activé : la galerie lit aussi les dossiers Game Bar, Steam, Ubisoft et Rockstar. Désactivé : uniquement le dossier ci-dessus."
+  "settings.ssScanAllDesc": "Activé : la galerie lit aussi les dossiers Game Bar, Steam, Ubisoft et Rockstar. Désactivé : uniquement le dossier ci-dessus.",
+  "ss.clipRes": "Résolution",
+  "ss.clipResDesc": "Une hauteur plus faible écrit des fichiers bien plus petits ; native garde l'écran tel quel.",
+  "ss.clipResNative": "Native"
 }

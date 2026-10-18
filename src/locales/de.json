@@ -2400,5 +2400,8 @@
   "settings.ssRootsTitle": "Ordner der Galerie",
   "settings.ssRootsDesc": "Dein gewählter Ordner plus die Ordner der Stores und der Game Bar:",
   "settings.ssScanAllTitle": "Auch die Store-Ordner durchsuchen",
-  "settings.ssScanAllDesc": "An: die Galerie liest auch Game Bar-, Steam-, Ubisoft- und Rockstar-Ordner. Aus: nur der Ordner oben."
+  "settings.ssScanAllDesc": "An: die Galerie liest auch Game Bar-, Steam-, Ubisoft- und Rockstar-Ordner. Aus: nur der Ordner oben.",
+  "ss.clipRes": "Auflösung",
+  "ss.clipResDesc": "Geringere Höhen schreiben viel kleinere Dateien; nativ lässt den Bildschirm unverändert.",
+  "ss.clipResNative": "Nativ"
 }

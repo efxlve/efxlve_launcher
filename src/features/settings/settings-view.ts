@@ -56,7 +56,7 @@ import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
-import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
+import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HEIGHT_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-settings";
 import { screenshotWebhookInfo } from "../../epic";
@@ -947,7 +947,8 @@ function renderScreenshots(): string {
   const clipHotkey = Number(localStorage.getItem(CLIP_HOTKEY_KEY) ?? "0x78");
   const clipHotkeyCode = Number.isFinite(clipHotkey) && clipHotkey > 0 ? clipHotkey : 0x78;
   const clipHotkeyName = localStorage.getItem(CLIP_HOTKEY_NAME_KEY) || "F9";
-  const clipFps = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "15");
+  const clipFps = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "30");
+  const clipHeight = Number(localStorage.getItem(CLIP_HEIGHT_KEY) ?? "0");
   const clipMaxMin = Number(localStorage.getItem(CLIP_MAX_MIN_KEY) ?? "5");
   const clipToggle = row(
     t("ss.clipTitle"),
@@ -965,7 +966,19 @@ function renderScreenshots(): string {
     ? row(
         t("ss.clipFps"),
         t("ss.clipFpsDesc"),
-        `<div class="seg">${[10, 15, 30].map((fps) => `<button type="button" class="${clipFps === fps ? "active" : ""}" data-act="set-clip-fps" data-fps="${fps}">${fps}</button>`).join("")}</div>`,
+        `<div class="seg">${[15, 30, 60, 120].map((fps) => `<button type="button" class="${clipFps === fps ? "active" : ""}" data-act="set-clip-fps" data-fps="${fps}">${fps}</button>`).join("")}</div>`,
+      ) +
+      row(
+        t("ss.clipRes"),
+        t("ss.clipResDesc"),
+        `<div class="seg">${[
+          [0, t("ss.clipResNative")],
+          [720, "720p"],
+          [1080, "1080p"],
+          [1440, "1440p"],
+        ]
+          .map(([height, label]) => `<button type="button" class="${clipHeight === height ? "active" : ""}" data-act="set-clip-height" data-height="${height}">${esc(String(label))}</button>`)
+          .join("")}</div>`,
       ) +
       row(
         t("ss.clipMax"),
@@ -1462,8 +1475,8 @@ export async function loadSettingsView(): Promise<void> {
       S.gogCometEnabled = st?.gog_comet_enabled ?? true;
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
-      S.screenshotScanRoots = ssRoots;
-      S.screenshotScanAll = ssScanAll;
+      S.screenshotScanRoots = Array.isArray(ssRoots) ? ssRoots : [];
+      S.screenshotScanAll = ssScanAll !== false;
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;
@@ -1729,6 +1742,15 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       if ([10, 15, 30].includes(fps)) {
         localStorage.setItem(CLIP_FPS_KEY, String(fps));
         void clipSetOptions({ fps });
+        render();
+      }
+      return true;
+    }
+    case "set-clip-height": {
+      const height = Number(_el.dataset.height ?? "0");
+      if ([0, 720, 1080, 1440].includes(height)) {
+        localStorage.setItem(CLIP_HEIGHT_KEY, String(height));
+        void clipSetOptions({ height });
         render();
       }
       return true;

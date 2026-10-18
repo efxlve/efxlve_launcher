@@ -2400,5 +2400,8 @@
   "settings.ssRootsTitle": "गैलरी जिन फ़ोल्डरों को पढ़ती है",
   "settings.ssRootsDesc": "आपका चुना फ़ोल्डर और स्टोर तथा Game Bar के फ़ोल्डर:",
   "settings.ssScanAllTitle": "स्टोर फ़ोल्डर भी खोजें",
-  "settings.ssScanAllDesc": "चालू: गैलरी Game Bar, Steam, Ubisoft और Rockstar फ़ोल्डर भी पढ़ती है। बंद: केवल ऊपर वाला फ़ोल्डर।"
+  "settings.ssScanAllDesc": "चालू: गैलरी Game Bar, Steam, Ubisoft और Rockstar फ़ोल्डर भी पढ़ती है। बंद: केवल ऊपर वाला फ़ोल्डर।",
+  "ss.clipRes": "रिज़ॉल्यूशन",
+  "ss.clipResDesc": "कम ऊँचाई बहुत छोटी फ़ाइलें लिखती है; मूल स्क्रीन को वैसा ही रखता है।",
+  "ss.clipResNative": "मूल"
 }

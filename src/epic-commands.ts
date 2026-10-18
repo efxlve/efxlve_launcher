@@ -796,7 +796,7 @@ export const clipStatus = () => invoke<ClipStatus>("clip_status");
 export const clipStart = () => invoke<void>("clip_start");
 export const clipStop = () => invoke<void>("clip_stop");
 export const clipSetHotkey = (vkey: number) => invoke<void>("clip_set_hotkey", { vkey });
-export const clipSetOptions = (options: { fps?: number; quality?: number; maxSecs?: number }) =>
+export const clipSetOptions = (options: { fps?: number; quality?: number; maxSecs?: number; height?: number }) =>
   invoke<void>("clip_set_options", options);
 export const clipList = () => invoke<ClipItem[]>("clip_list");
 export const clipDelete = (path: string) => invoke<boolean>("clip_delete", { path });

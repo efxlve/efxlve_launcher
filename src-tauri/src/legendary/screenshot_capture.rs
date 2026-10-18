@@ -84,7 +84,24 @@ extern "system" {
     ) -> BOOL;
     fn DeleteDC(hdc: HDC) -> BOOL;
     fn DeleteObject(ho: HGDIOBJ) -> BOOL;
+    fn SetStretchBltMode(hdc: HDC, mode: i32) -> i32;
+    fn StretchBlt(
+        hdc_dst: HDC,
+        x_dst: i32,
+        y_dst: i32,
+        w_dst: i32,
+        h_dst: i32,
+        hdc_src: HDC,
+        x_src: i32,
+        y_src: i32,
+        w_src: i32,
+        h_src: i32,
+        rop: u32,
+    ) -> BOOL;
 }
+
+/// HALFTONE: the slow, good-looking downscale for `StretchBlt`.
+const HALFTONE: i32 = 4;
 
 #[repr(C)]
 struct BITMAPINFOHEADER {
@@ -460,7 +477,19 @@ unsafe fn com_release(interface: *mut c_void) {
 /// path is the proven one behind F12 and must not be disturbed), but the image
 /// goes to an in-memory stream instead of a file, which is what makes 12 frames
 /// a second affordable.
-pub fn capture_frame_jpeg(quality: u8) -> Result<(Vec<u8>, u32, u32), String> {
+/// The frame size for a target height: keeps the aspect, never upscales, and
+/// stays even (MJPEG encoders dislike odd edges). `target_height == 0` means
+/// "native", which is the default.
+pub fn scaled_size(width: i32, height: i32, target_height: u32) -> (i32, i32) {
+    let target = target_height as i32;
+    if target <= 0 || target >= height || width <= 0 || height <= 0 {
+        return (width, height);
+    }
+    let scaled_width = ((width as f64) * (target as f64) / (height as f64)).round() as i32;
+    (((scaled_width.max(2)) / 2) * 2, (target / 2) * 2)
+}
+
+pub fn capture_frame_jpeg(quality: u8, target_height: u32) -> Result<(Vec<u8>, u32, u32), String> {
     unsafe {
         let _ = SetProcessDPIAware();
 
@@ -500,15 +529,18 @@ pub fn capture_frame_jpeg(quality: u8) -> Result<(Vec<u8>, u32, u32), String> {
             return Err("CreateCompatibleDC failed".to_string());
         }
 
+        // The frame lands in a DIB at the target size; a smaller one is drawn by
+        // StretchBlt straight from the screen, so no full-size buffer is kept.
+        let (frame_width, frame_height) = scaled_size(width, height, target_height);
         let bmi = BITMAPINFO {
             bmi_header: BITMAPINFOHEADER {
                 bi_size: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
-                bi_width: width,
-                bi_height: -height,
+                bi_width: frame_width,
+                bi_height: -frame_height,
                 bi_planes: 1,
                 bi_bit_count: 32,
                 bi_compression: 0,
-                bi_size_image: (width * height * 4) as u32,
+                bi_size_image: (frame_width * frame_height * 4) as u32,
                 bi_xpels_per_meter: 0,
                 bi_ypels_per_meter: 0,
                 bi_clr_used: 0,
@@ -529,7 +561,26 @@ pub fn capture_frame_jpeg(quality: u8) -> Result<(Vec<u8>, u32, u32), String> {
         }
 
         let h_old = SelectObject(hdc_mem, h_bitmap);
-        let blt_ok = BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, 0, 0, SRCCOPY);
+        let blt_ok = if frame_width == width && frame_height == height {
+            BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, 0, 0, SRCCOPY)
+        } else {
+            // HALFTONE is the slow, good-looking downscale; the recorder skips
+            // frames rather than blocking on it.
+            SetStretchBltMode(hdc_mem, HALFTONE);
+            StretchBlt(
+                hdc_mem,
+                0,
+                0,
+                frame_width,
+                frame_height,
+                hdc_screen,
+                0,
+                0,
+                width,
+                height,
+                SRCCOPY,
+            )
+        };
         SelectObject(hdc_mem, h_old);
         DeleteDC(hdc_mem);
         ReleaseDC(std::ptr::null_mut(), hdc_screen);
@@ -623,6 +674,27 @@ pub fn capture_frame_jpeg(quality: u8) -> Result<(Vec<u8>, u32, u32), String> {
         }
 
         let bytes = bytes?;
-        Ok((bytes, width as u32, height as u32))
+        Ok((bytes, frame_width as u32, frame_height as u32))
+    }
+}
+
+#[cfg(test)]
+mod scale_tests {
+    use super::scaled_size;
+
+    #[test]
+    fn a_target_keeps_the_aspect_and_never_upscales() {
+        // 2560x1600 to 1080p.
+        assert_eq!(scaled_size(2560, 1600, 1080), (1728, 1080));
+        // 1440p from a 1600-tall screen: 1440 is allowed.
+        assert_eq!(scaled_size(2560, 1600, 1440), (2304, 1440));
+        // Never upscale.
+        assert_eq!(scaled_size(1920, 1080, 2160), (1920, 1080));
+        // Native.
+        assert_eq!(scaled_size(2560, 1600, 0), (2560, 1600));
+        // Odd results are rounded down to even numbers.
+        let (w, h) = scaled_size(1921, 1081, 720);
+        assert_eq!(h % 2, 0);
+        assert_eq!(w % 2, 0);
     }
 }

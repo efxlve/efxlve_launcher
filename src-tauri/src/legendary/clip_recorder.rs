@@ -25,9 +25,11 @@ pub const DEFAULT_MAX_SECS: u64 = 300;
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
 static STOP: AtomicBool = AtomicBool::new(false);
-static FPS: AtomicU32 = AtomicU32::new(15);
+static FPS: AtomicU32 = AtomicU32::new(30);
 static QUALITY: AtomicU32 = AtomicU32::new(80);
 static MAX_SECS: AtomicU32 = AtomicU32::new(DEFAULT_MAX_SECS as u32);
+/// Frame height; 0 keeps the screen's own size.
+static HEIGHT: AtomicU32 = AtomicU32::new(0);
 static CLIP_HOTKEY: AtomicU32 = AtomicU32::new(0x78); // VK_F9
 static STARTED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 static TARGET: Mutex<Option<PathBuf>> = Mutex::new(None);
@@ -323,6 +325,7 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     let fps = FPS.load(Ordering::SeqCst).max(1);
     let quality = QUALITY.load(Ordering::SeqCst).clamp(10, 100) as u8;
     let max_secs = MAX_SECS.load(Ordering::SeqCst).max(5) as u64;
+    let target_height = HEIGHT.load(Ordering::SeqCst);
     let interval = Duration::from_millis(1000 / fps as u64);
 
     let mut writer: Option<AviWriter> = None;
@@ -353,7 +356,7 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
             log(&app, "loop: no game in the foreground, stopping");
             break;
         }
-        match crate::legendary::screenshots::capture_frame_jpeg(quality) {
+        match crate::legendary::screenshots::capture_frame_jpeg(quality, target_height) {
             Ok((jpeg, width, height)) => {
                 if writer.is_none() {
                     match AviWriter::create(&path, width, height, fps) {
@@ -456,15 +459,19 @@ pub fn status() -> ClipStatus {
     }
 }
 
-pub fn set_options(fps: Option<u32>, quality: Option<u8>, max_secs: Option<u64>) {
+pub fn set_options(fps: Option<u32>, quality: Option<u8>, max_secs: Option<u64>, height: Option<u32>) {
     if let Some(fps) = fps {
-        FPS.store(fps.clamp(5, 60), Ordering::SeqCst);
+        FPS.store(fps.clamp(5, 240), Ordering::SeqCst);
     }
     if let Some(quality) = quality {
         QUALITY.store(quality.clamp(10, 100) as u32, Ordering::SeqCst);
     }
     if let Some(max_secs) = max_secs {
         MAX_SECS.store(max_secs.clamp(5, 3600) as u32, Ordering::SeqCst);
+    }
+    if let Some(height) = height {
+        // 0 means native; anything else is clamped to something sane.
+        HEIGHT.store(if height == 0 { 0 } else { height.clamp(240, 4320) }, Ordering::SeqCst);
     }
 }
 
@@ -543,8 +550,8 @@ pub fn clip_status() -> ClipStatus {
 }
 
 #[tauri::command]
-pub fn clip_set_options(fps: Option<u32>, quality: Option<u8>, max_secs: Option<u64>) {
-    set_options(fps, quality, max_secs);
+pub fn clip_set_options(fps: Option<u32>, quality: Option<u8>, max_secs: Option<u64>, height: Option<u32>) {
+    set_options(fps, quality, max_secs, height);
 }
 
 #[tauri::command]
@@ -654,7 +661,7 @@ mod tests {
     #[ignore = "captures the real screen; run manually"]
     fn capture_frame_jpeg_returns_a_jpeg() {
         let (bytes, width, height) =
-            crate::legendary::screenshots::capture_frame_jpeg(80).expect("capture");
+            crate::legendary::screenshots::capture_frame_jpeg(80, 0).expect("capture");
         assert!(width > 0 && height > 0, "screen size");
         assert!(bytes.len() > 1000, "a real frame is more than a kilobyte");
         assert_eq!(&bytes[0..2], &[0xFF, 0xD8], "JPEG start-of-image");

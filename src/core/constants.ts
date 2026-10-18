@@ -55,6 +55,8 @@ export const CLIP_ENABLED_KEY = "efxlve-clip-enabled";
 export const CLIP_HOTKEY_KEY = "efxlve-clip-hotkey";
 export const CLIP_HOTKEY_NAME_KEY = "efxlve-clip-hotkey-name";
 export const CLIP_FPS_KEY = "efxlve-clip-fps";
+/** Frame height for clips; 0 keeps the screen's own size. */
+export const CLIP_HEIGHT_KEY = "efxlve-clip-height";
 export const CLIP_MAX_MIN_KEY = "efxlve-clip-max-min";
 /** Task manager: whether the WebView2 group is expanded. */
 export const TM_EXPANDED_KEY = "efxlve-tm-expanded";
