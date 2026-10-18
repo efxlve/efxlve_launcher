@@ -489,7 +489,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ss-share-btn:hover, .ss-compress-btn:hover { background: var(--surface-3); }
 .ss-delete-btn:hover { background: var(--err); }
 .ss-compressed-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(14, 15, 18, 0.85); color: var(--text-2); }
-.ss-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A file name in a card: the ellipsis only works when the flex chain lets the
+   label shrink, otherwise a long name runs over the next card. */
+.ss-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
+.screenshot-card .row-main, .screenshot-card .ss-meta { min-width: 0; }
 .ss-date { color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* --- Manage Cloud Backup Row & Badges --- */

@@ -208,8 +208,11 @@ pub fn screenshots_root() -> PathBuf {
 /// Every root the gallery reads from.
 ///
 /// The scan walks more than the configured folder — Steam's userdata, Game Bar
-/// captures, Rockstar's Documents folders — and a capture the user can see must
+/// captures, Rockstar's Documents folder — and a capture the user can see must
 /// also be editable where it lives, so the write guard accepts them all.
+///
+/// It does NOT walk the whole Documents folder: that pulled in unrelated images
+/// from every app that writes there, which a beta tester rightly reported.
 pub fn screenshot_roots() -> Vec<PathBuf> {
     let mut roots = vec![screenshots_root()];
     let legacy = get_user_pictures_dir().join("Efxlve Screenshots");
@@ -218,11 +221,22 @@ pub fn screenshot_roots() -> Vec<PathBuf> {
     }
     roots.push(get_user_videos_dir().join("Captures"));
     roots.push(get_user_pictures_dir().join("UbisoftConnect"));
-    roots.push(get_user_documents_dir());
+    // Rockstar keeps its captures under Documents\Rockstar Games\<game>\Screenshots.
+    roots.push(get_user_documents_dir().join("Rockstar Games"));
     if let Some(steam) = crate::steam::steam_install_path() {
         roots.push(steam.join("userdata"));
     }
     roots
+}
+
+/// The roots as labels for the settings row, so the user can see where the
+/// gallery reads from instead of guessing.
+#[tauri::command]
+pub fn screenshot_scan_roots() -> Vec<String> {
+    screenshot_roots()
+        .iter()
+        .map(|root| root.to_string_lossy().to_string())
+        .collect()
 }
 
 /// True when a path lives under one of the roots the gallery scans.
