@@ -791,3 +791,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The System tab carries the manage panel now: keep the two blocks apart. */
 .sys-manage { margin-top: 14px; }
+
+/* ---------- Pending personal blocks (no layout shift) ---------- */
+
+/* The same size as a real tile, so the strip keeps its height. */
+.gp-moment.is-pending { background: var(--surface-2); border-style: dashed; }
+
+/* The next-achievement rows keep the row's own padding and gap; only the
+   contents are placeholders. */
+.gp-next-row.is-pending { pointer-events: none; }
+.gp-next-row.is-pending .skel-icon { width: 28px; height: 28px; border-radius: 6px; flex: none; }
+.gp-next-row.is-pending .skel-line { width: 190px; height: 11px; }

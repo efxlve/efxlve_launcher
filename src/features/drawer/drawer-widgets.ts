@@ -535,10 +535,21 @@ export function renderProgressStrip(s: EpicSummary): string {
 export function renderNextAchievements(appName: string): string {
   const loading = S.loadingAchFor === appName && !S.loadedAchievements.has(appName);
   if (loading) {
+    // Three placeholder rows, the height of the three rows that replace them:
+    // the spinner was a different height, so everything below it moved when the
+    // store answered.
+    const rows = Array.from(
+      { length: 3 },
+      () => `
+        <div class="gp-next-row is-pending">
+          <span class="skel skel-icon"></span>
+          <span class="skel skel-line"></span>
+        </div>`,
+    ).join("");
     return `
       <section id="gp-next-ach" class="gp-section gp-next">
         <h3 class="gp-section-title">${i18nT("drawer.nextAchievements")}</h3>
-        <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("ach.loadingStore")}</div>
+        <div class="gp-next-list">${rows}</div>
       </section>`;
   }
   const data = S.loadedAchievements.get(appName);

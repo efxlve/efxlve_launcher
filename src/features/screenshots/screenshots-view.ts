@@ -260,6 +260,18 @@ export function hydrateShotPreviews(): void {
 /** Horizontal strip of the player's own captures on the overview. Hidden when empty. */
 export function renderMomentsStrip(appName: string): string {
   const items = S.loadedScreenshots.get(appName) || [];
+  // Still on its way: hold the strip's place. It used to render an empty div, so
+  // the blocks under it jumped down the moment the pictures arrived.
+  if (items.length === 0 && S.loadingScreenshotsFor === appName) {
+    const tiles = Array.from({ length: 5 }, () => `<div class="gp-moment is-pending"></div>`).join("");
+    return `
+      <section id="gp-moments" class="gp-section gp-moments">
+        <div class="gp-progress-head">
+          <h3 class="gp-section-title">${icon("camera", 13)} ${t("drawer.moments")}</h3>
+        </div>
+        <div class="gp-moments-strip">${tiles}</div>
+      </section>`;
+  }
   if (items.length === 0) return `<div id="gp-moments"></div>`;
   const shown = items.slice(0, 8);
   const thumbs = shown.map((item, idx) => `
