@@ -1383,16 +1383,22 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
   // manage panel used to live behind the "Yönet" button alone, which left the
   // drawer on a tab the strip does not show.
   const manage = `<section class="sys-manage">${renderDrawerManage(s)}</section>`;
-  const withCopy = (body: string): string => `<div class="sys-req-container">${copyCard}${manage}${body}</div>`;
+  // The store answer lands late and repaints only this part: the manage panel
+  // above it holds a launch-argument field, and rebuilding the tab would throw
+  // away whatever the reader was typing.
+  return `<div class="sys-req-container">${copyCard}${manage}<div id="sys-req-body">${renderRequirementsBody(s)}</div></div>`;
+}
 
-  if (S.loadingReqFor === s.appName) return withCopy(loadingState(t("sys.loadingStore")));
+/** The requirement cards alone, so a late answer can be painted into the tab. */
+export function renderRequirementsBody(s: EpicSummary): string {
+  if (S.loadingReqFor === s.appName) return loadingState(t("sys.loadingStore"));
   const data = S.loadedRequirements.get(s.appName);
   if (!data) {
     void fetchAndRenderRequirements(s.appName, s.title);
-    return withCopy(loadingState(t("sys.loading")));
+    return loadingState(t("sys.loading"));
   }
   if (!data.supported || data.systems.length === 0) {
-    return withCopy(emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc")));
+    return emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"));
   }
 
   const hasWin = data.systems.some((sys) => isWinSys(sys.systemType));
@@ -1415,7 +1421,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
       ${body}
     </section>`;
 
-  return withCopy(`
+  return `
       ${hasWin && hasMac ? `
         <div class="seg sys-req-platforms">
           <button class="${isWinSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Windows">${t("sys.windowsPc")}</button>
@@ -1431,7 +1437,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
         ${s.appName.startsWith("riot::") || s.appName.startsWith("amazon::")
           ? ""
           : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`}
-      </div>`);
+      </div>`;
 }
 
 export async function fetchAndRenderRequirements(appName: string, title: string, forceRefresh = false): Promise<void> {
@@ -1495,7 +1501,15 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       const settled = summaryOf(appName);
       if (settled) maybeLoadWikiAbout(settled);
     }
-    if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") openEpicModal(appName, false);
+    if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") {
+      // Only the requirement cards are repainted. The manage panel above them
+      // holds a launch-argument field, and rebuilding the whole tab would throw
+      // away whatever the reader was typing when the store answered.
+      const body = document.getElementById("sys-req-body");
+      const settled = summaryOf(appName);
+      if (body && settled) body.innerHTML = renderRequirementsBody(settled);
+      else if (settled) openEpicModal(appName, false);
+    }
   }
 }
 
