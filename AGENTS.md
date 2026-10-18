@@ -4,6 +4,15 @@ OpenCode, Cursor, and Gemini load this file every turn. The table is the task ma
 
 For a code change, open only the matching rows. Leave `docs/CHANGELOG_INTERNAL.md` and `docs/ROADMAP.md` unread.
 
+## Models
+
+Subagents and other models may be used without asking first, for exploration, review, reports and mechanical work. Two rules:
+
+- Never use a "contributor" tier model. The owner named `opencode-go/gemini-4-argon-contributor` explicitly; treat every `*-contributor` the same way.
+- Never send project code to a provider the owner has not approved. Approved so far: `opencode-go/claude-haiku-5-5`.
+
+Antigravity's own agent API (Gemini 3.8 Flash) can be driven from here when the IDE is running; the address, the token and the read-only rule are in `docs/agent/antigravity-bridge.md`.
+
 ## Done when
 
 `npm.cmd run build` (PowerShell uses `npm.cmd`). If Rust changed, `cargo test --manifest-path src-tauri/Cargo.toml`.
