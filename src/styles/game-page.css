@@ -802,3 +802,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-next-row.is-pending { pointer-events: none; }
 .gp-next-row.is-pending .skel-icon { width: 28px; height: 28px; border-radius: 6px; flex: none; }
 .gp-next-row.is-pending .skel-line { width: 190px; height: 11px; }
+
+/* The caption under a capture: a flex row, so a long file name ellipsizes
+   instead of running over the card next to it. */
+.screenshot-info-strip { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.screenshot-card { min-width: 0; }
