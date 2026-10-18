@@ -105,11 +105,11 @@ struct AviWriter {
     /// Audio block size; 0 means the file has no audio stream.
     audio_block_align: u16,
     audio_bytes: u64,
-    /// Where the sizes that are only known at the end live. With a second
-    /// stream every later offset shifts, so they are recorded while writing
-    /// the header instead of being recomputed from the layout.
-    total_frames_at: u64,
-    video_length_at: u64,
+    /// Where the header fields that are only known at the end live. With a
+    /// second stream every later offset shifts, so they are recorded while
+    /// writing the header instead of being recomputed from the layout.
+    avih_at: u64,
+    video_strh_at: u64,
     audio_length_at: Option<u64>,
 }
 
@@ -153,10 +153,9 @@ impl AviWriter {
         avih.extend_from_slice(&width.to_le_bytes());
         avih.extend_from_slice(&height.to_le_bytes());
         avih.extend_from_slice(&[0u8; 16]); // reserved
+        // avih's payload sits 8 bytes into the hdrl payload.
+        let avih_at = hdrl_payload_at(&hdrl) + 8;
         write_chunk(&mut hdrl, b"avih", &avih);
-        // avih's payload sits 8 bytes into the hdrl payload, and dwTotalFrames
-        // 16 bytes into that.
-        let total_frames_at = 24 + 8 + 16;
 
         // LIST strl { strh, strf }
         let mut strh: Vec<u8> = Vec::new();
@@ -195,8 +194,8 @@ impl AviWriter {
         write_chunk(&mut strl, b"strh", &strh);
         write_chunk(&mut strl, b"strf", &strf);
         // strh's payload sits 12 (LIST header) + 8 (chunk header) bytes into the
-        // strl list, and dwLength 32 bytes into the payload.
-        let video_length_at = hdrl_payload_at(&hdrl) + 12 + 8 + 32;
+        // strl list.
+        let video_strh_at = hdrl_payload_at(&hdrl) + 12 + 8;
         write_list(&mut hdrl, b"strl", &strl)?;
 
         let audio_length_at = match audio {
@@ -256,8 +255,8 @@ impl AviWriter {
             movi_start,
             audio_block_align: audio.map(|info| info.block_align()).unwrap_or(0),
             audio_bytes: 0,
-            total_frames_at,
-            video_length_at,
+            avih_at,
+            video_strh_at,
             audio_length_at,
         })
     }
@@ -302,7 +301,13 @@ impl AviWriter {
     }
 
     /// Patches the sizes and appends the index, leaving a playable file.
-    fn finish(mut self, fps: u32) -> std::io::Result<()> {
+    ///
+    /// `elapsed` is how long the recording actually ran. The rate written into
+    /// the header is the measured one, not the requested one: a machine that can
+    /// only grab 16 frames a second while 30 are asked for would otherwise write
+    /// a picture that runs at nearly twice real speed, and every player then
+    /// drifts away from the sound and clicks trying to catch up.
+    fn finish(mut self, fps: u32, elapsed: Duration) -> std::io::Result<()> {
         let index_start = self.file.stream_position()?;
         self.file.write_all(b"idx1")?;
         self.file.write_all(&((self.index.len() * 16) as u32).to_le_bytes())?;
@@ -320,10 +325,25 @@ impl AviWriter {
         self.file.seek(SeekFrom::Start(self.movi_start - 8))?;
         self.file.write_all(&((movi_size + 4) as u32).to_le_bytes())?;
 
-        self.file.seek(SeekFrom::Start(self.total_frames_at))?;
+        let seconds = elapsed.as_secs_f64();
+        let micros = if self.frames > 0 && seconds > 0.0 {
+            ((seconds * 1_000_000.0) / f64::from(self.frames)).round().max(1.0) as u32
+        } else {
+            1_000_000 / fps.max(1)
+        };
+
+        // avih: the frame duration and the frame count.
+        self.file.seek(SeekFrom::Start(self.avih_at))?;
+        self.file.write_all(&micros.to_le_bytes())?;
+        self.file.seek(SeekFrom::Start(self.avih_at + 16))?;
         self.file.write_all(&self.frames.to_le_bytes())?;
-        self.file.seek(SeekFrom::Start(self.video_length_at))?;
-        self.file.write_all(&self.frames.to_le_bytes())?;
+        // Video strh: dwScale is one frame and dwRate a second, so a player
+        // computes dwLength * dwScale / dwRate and lands on the real duration.
+        self.file.seek(SeekFrom::Start(self.video_strh_at + 20))?;
+        self.file.write_all(&micros.to_le_bytes())?; // dwScale
+        self.file.write_all(&1_000_000u32.to_le_bytes())?; // dwRate
+        self.file.seek(SeekFrom::Start(self.video_strh_at + 32))?;
+        self.file.write_all(&self.frames.to_le_bytes())?; // dwLength
         if let Some(at) = self.audio_length_at {
             // An audio dwLength counts blocks, not bytes.
             let blocks = (self.audio_bytes / u64::from(self.audio_block_align)) as u32;
@@ -543,8 +563,23 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     }
     if let Some(active) = writer {
         let frames = active.frames;
-        let _ = active.finish(fps);
-        log(&app, &format!("loop: finished, {frames} frames -> {}", path.display()));
+        let elapsed = started.elapsed();
+        let _ = active.finish(fps, elapsed);
+        let measured = if elapsed.as_secs_f64() > 0.0 {
+            f64::from(frames) / elapsed.as_secs_f64()
+        } else {
+            0.0
+        };
+        // The measured rate is what the file claims, so it is worth reporting:
+        // a machine that cannot hold the requested rate is visible right here.
+        log(
+            &app,
+            &format!(
+                "loop: finished, {frames} frames in {:.1}s ({measured:.1} fps, asked {fps}) -> {}",
+                elapsed.as_secs_f64(),
+                path.display()
+            ),
+        );
         if frames > 0 {
             let _ = app.emit(
                 "clip-saved",
@@ -754,7 +789,7 @@ mod tests {
         for frame in &frames {
             writer.add_frame(frame).expect("frame");
         }
-        writer.finish(15).expect("finish");
+        writer.finish(15, Duration::from_secs(2)).expect("finish");
 
         let bytes = std::fs::read(&path).expect("read");
         assert_eq!(&bytes[0..4], b"RIFF");
@@ -781,7 +816,11 @@ mod tests {
         assert_eq!(after.windows(4).filter(|w| *w == b"00dc").count(), frames.len());
         // idx1 index
         assert!(bytes.windows(4).any(|w| w == b"idx1"));
-        assert_eq!(avi_seconds(&path), Some(0));
+        // The header carries the measured rate: two frames in two seconds means
+        // a frame a second, so the file says one second, not 2 / 15.
+        let micros = u32::from_le_bytes([bytes[32], bytes[33], bytes[34], bytes[35]]);
+        assert_eq!(micros, 1_000_000);
+        assert_eq!(avi_seconds(&path), Some(2));
         let _ = std::fs::remove_file(&path);
     }
 
@@ -806,7 +845,7 @@ mod tests {
                 .expect("frame");
             writer.add_audio(&block).expect("audio");
         }
-        writer.finish(30).expect("finish");
+        writer.finish(30, Duration::from_millis(100)).expect("finish");
 
         let bytes = std::fs::read(&path).expect("read");
         assert_eq!(&bytes[0..4], b"RIFF");
@@ -873,6 +912,7 @@ mod tests {
         let path = PathBuf::from("tmp-clip-audio-check.avi");
         let mut writer = AviWriter::create(&path, width, height, 30, Some(info)).expect("create");
         let mut blocks = 0usize;
+        let started = Instant::now();
         for _ in 0..30 {
             writer.add_frame(&jpeg).expect("frame");
             std::thread::sleep(Duration::from_millis(33));
@@ -880,14 +920,24 @@ mod tests {
             blocks += samples.len() * 2 / usize::from(info.block_align());
             writer.add_audio(&samples).expect("audio");
         }
+        let elapsed = started.elapsed();
         capture.stop();
-        writer.finish(30).expect("finish");
+        writer.finish(30, elapsed).expect("finish");
 
         let bytes = std::fs::read(&path).expect("read");
         assert_eq!(
             u32::from_le_bytes([bytes[56], bytes[57], bytes[58], bytes[59]]),
             2,
             "two streams"
+        );
+        // The picture and the sound must describe the same length of time: this
+        // is exactly what was wrong when the header claimed the requested rate.
+        let micros = u32::from_le_bytes([bytes[32], bytes[33], bytes[34], bytes[35]]);
+        let video_seconds = 30.0 * f64::from(micros) / 1e6;
+        assert!(
+            (video_seconds - elapsed.as_secs_f64()).abs() < 0.2,
+            "the file says {video_seconds:.2}s of picture for {:.2}s of recording",
+            elapsed.as_secs_f64()
         );
         let movi = bytes.windows(4).position(|w| w == b"movi").expect("movi");
         let idx = bytes.windows(4).position(|w| w == b"idx1").expect("idx1");
@@ -899,6 +949,28 @@ mod tests {
         // A second of recording should bring in about a second of audio.
         assert!(blocks > 8_000, "about a second of blocks, got {blocks}");
         println!("{}: {blocks} blocks in {chunks} chunks", path.display());
+    }
+
+    /// What a frame costs at each height, so a requested rate can be checked
+    /// against the machine. Run manually (`cargo test -- --ignored --nocapture`).
+    #[test]
+    #[ignore = "captures the real screen; run manually"]
+    fn frame_cost_by_height() {
+        for target in [0u32, 1080, 720, 240] {
+            let started = Instant::now();
+            let count = 12;
+            for _ in 0..count {
+                let _ = crate::legendary::screenshots::capture_frame_jpeg(80, target)
+                    .expect("capture");
+            }
+            let per_frame = started.elapsed().as_secs_f64() / f64::from(count);
+            println!(
+                "height {:>4}: {:>6.1} ms/frame → {:>5.1} fps ceiling",
+                if target == 0 { 1600 } else { target },
+                per_frame * 1000.0,
+                1.0 / per_frame
+            );
+        }
     }
 
     /// The frame grabber is the risky half (Win32 + GDI+): run manually on a

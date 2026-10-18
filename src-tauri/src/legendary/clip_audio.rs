@@ -205,9 +205,13 @@ mod imp {
                         if let Ok(mut buffer) = samples.lock() {
                             if buffer.len() + converted.len() > MAX_SAMPLES {
                                 // The recorder is behind: drop the oldest audio
-                                // instead of growing without bound.
-                                let drop_count = (buffer.len() + converted.len() - MAX_SAMPLES)
-                                    .min(buffer.len());
+                                // instead of growing without bound. Whole frames
+                                // only — cutting one in half swaps the channels
+                                // for the rest of the clip and clicks.
+                                let align = usize::from(target.block_align()).max(1);
+                                let over = buffer.len() + converted.len() - MAX_SAMPLES;
+                                let drop_count =
+                                    ((over + align - 1) / align * align).min(buffer.len());
                                 buffer.drain(0..drop_count);
                             }
                             buffer.extend_from_slice(&converted);

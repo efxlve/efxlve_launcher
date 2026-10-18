@@ -103,6 +103,11 @@ extern "system" {
 /// HALFTONE: the slow, good-looking downscale for `StretchBlt`.
 const HALFTONE: i32 = 4;
 
+/// GDI+ `PixelFormat32bppRGB`: 32 bits per pixel, alpha ignored. BitBlt leaves
+/// the alpha byte of a screen DIB undefined, so the alpha-aware format would
+/// encode whatever garbage is there as transparency.
+const PIXEL_FORMAT_32BPP_RGB: i32 = 0x0002_2009;
+
 #[repr(C)]
 struct BITMAPINFOHEADER {
     bi_size: u32,
@@ -131,10 +136,19 @@ extern "system" {
         input: *const GdiplusStartupInput,
         output: *mut c_void,
     ) -> i32;
-    fn GdiplusShutdown(token: usize);
     fn GdipCreateBitmapFromHBITMAP(
         hbm: HBITMAP,
         hpal: *mut c_void,
+        bitmap: *mut *mut c_void,
+    ) -> i32;
+    /// Wraps caller memory instead of copying it: the DIB section the screen was
+    /// grabbed into goes straight to the encoder.
+    fn GdipCreateBitmapFromScan0(
+        width: i32,
+        height: i32,
+        stride: i32,
+        format: i32,
+        scan0: *const u8,
         bitmap: *mut *mut c_void,
     ) -> i32;
     fn GdipSaveImageToFile(
@@ -180,6 +194,31 @@ extern "system" {
         stream: *mut *mut c_void,
     ) -> i32;
     fn GetHGlobalFromStream(stream: *mut c_void, hglobal: *mut *mut c_void) -> i32;
+}
+
+/// GDI+ is started once for the process. Startup loads the image codec providers
+/// and shutdown releases them again; paying that for every single frame cost
+/// more than the screen grab itself, which is why the clip recorder could not
+/// hold even 20 fps. Nothing shuts GDI+ down: the app is long-lived and the
+/// capture paths can run at the same time.
+static GDIPLUS_READY: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+
+fn ensure_gdiplus() -> Result<(), String> {
+    let ready = *GDIPLUS_READY.get_or_init(|| unsafe {
+        let startup_input = GdiplusStartupInput {
+            gdiplus_version: 1,
+            debug_event_callback: 0,
+            suppress_background_thread: 0,
+            suppress_external_codecs: 0,
+        };
+        let mut token: usize = 0;
+        GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut()) == 0
+    });
+    if ready {
+        Ok(())
+    } else {
+        Err("GdiplusStartup failed".to_string())
+    }
 }
 
 /// GDI+'s JPEG quality knob: `EncoderQuality` = {1d5be4b5-fa4a-452d-9cdd-5db35105e7eb}.
@@ -307,18 +346,9 @@ fn capture_screen_native_thread(target_file: &Path) -> Result<(), String> {
         }
 
         // 4. Save directly as PNG at native C speed via GDI+ (~15 ms)
-        let startup_input = GdiplusStartupInput {
-            gdiplus_version: 1,
-            debug_event_callback: 0,
-            suppress_background_thread: 0,
-            suppress_external_codecs: 0,
-        };
-
-        let mut token: usize = 0;
-        let status = GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut());
-        if status != 0 {
+        if let Err(err) = ensure_gdiplus() {
             DeleteObject(h_bitmap);
-            return Err(format!("GdiplusStartup failed (status: {})", status));
+            return Err(err);
         }
 
         let mut gdip_image: *mut c_void = std::ptr::null_mut();
@@ -328,7 +358,6 @@ fn capture_screen_native_thread(target_file: &Path) -> Result<(), String> {
         DeleteObject(h_bitmap);
 
         if create_status != 0 || gdip_image.is_null() {
-            GdiplusShutdown(token);
             return Err(format!(
                 "GdipCreateBitmapFromHBITMAP failed (status: {})",
                 create_status
@@ -345,7 +374,6 @@ fn capture_screen_native_thread(target_file: &Path) -> Result<(), String> {
             GdipSaveImageToFile(gdip_image, wide_path.as_ptr(), &CLSID_PNG, std::ptr::null());
 
         GdipDisposeImage(gdip_image);
-        GdiplusShutdown(token);
 
         if !h_desk.is_null() {
             CloseDesktop(h_desk);
@@ -370,24 +398,8 @@ fn capture_screen_native_thread(target_file: &Path) -> Result<(), String> {
 /// the original is read only when the lightbox, share sheet or compressor asks
 /// for it.
 pub fn make_thumbnail(source: &Path, target: &Path, max_px: u32) -> Result<(), String> {
-    unsafe {
-        let startup_input = GdiplusStartupInput {
-            gdiplus_version: 1,
-            debug_event_callback: 0,
-            suppress_background_thread: 0,
-            suppress_external_codecs: 0,
-        };
-
-        let mut token: usize = 0;
-        let status = GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut());
-        if status != 0 {
-            return Err(format!("GdiplusStartup failed (status: {})", status));
-        }
-
-        let result = make_thumbnail_gdi(source, target, max_px);
-        GdiplusShutdown(token);
-        result
-    }
+    ensure_gdiplus()?;
+    unsafe { make_thumbnail_gdi(source, target, max_px) }
 }
 
 unsafe fn make_thumbnail_gdi(source: &Path, target: &Path, max_px: u32) -> Result<(), String> {
@@ -593,31 +605,31 @@ pub fn capture_frame_jpeg(quality: u8, target_height: u32) -> Result<(Vec<u8>, u
             return Err("BitBlt failed".to_string());
         }
 
-        let startup_input = GdiplusStartupInput {
-            gdiplus_version: 1,
-            debug_event_callback: 0,
-            suppress_background_thread: 0,
-            suppress_external_codecs: 0,
-        };
-        let mut token: usize = 0;
-        if GdiplusStartup(&mut token, &startup_input, std::ptr::null_mut()) != 0 {
+        if let Err(err) = ensure_gdiplus() {
             DeleteObject(h_bitmap);
             if !h_desk.is_null() {
                 CloseDesktop(h_desk);
             }
-            return Err("GdiplusStartup failed".to_string());
+            return Err(err);
         }
 
+        // The bitmap wraps the DIB section directly (no second full-frame copy),
+        // and the pixel format ignores the alpha byte BitBlt leaves undefined.
         let mut gdip_image: *mut c_void = std::ptr::null_mut();
-        let create_status =
-            GdipCreateBitmapFromHBITMAP(h_bitmap, std::ptr::null_mut(), &mut gdip_image);
+        let create_status = GdipCreateBitmapFromScan0(
+            frame_width,
+            frame_height,
+            frame_width * 4,
+            PIXEL_FORMAT_32BPP_RGB,
+            ppv_bits as *const u8,
+            &mut gdip_image,
+        );
         if create_status != 0 || gdip_image.is_null() {
             DeleteObject(h_bitmap);
-            GdiplusShutdown(token);
             if !h_desk.is_null() {
                 CloseDesktop(h_desk);
             }
-            return Err("GdipCreateBitmapFromHBITMAP failed".to_string());
+            return Err("GdipCreateBitmapFromScan0 failed".to_string());
         }
 
         // The quality parameter travels as an EncoderParameters block. A "Long"
@@ -668,7 +680,6 @@ pub fn capture_frame_jpeg(quality: u8, target_height: u32) -> Result<(Vec<u8>, u
 
         GdipDisposeImage(gdip_image);
         DeleteObject(h_bitmap);
-        GdiplusShutdown(token);
         if !h_desk.is_null() {
             CloseDesktop(h_desk);
         }
@@ -681,6 +692,76 @@ pub fn capture_frame_jpeg(quality: u8, target_height: u32) -> Result<(Vec<u8>, u
 #[cfg(test)]
 mod scale_tests {
     use super::scaled_size;
+
+    /// Is the screen read itself slow, or is it our path? Reads the whole screen
+    /// into a DIB with nothing else going on. Run manually.
+    #[test]
+    #[ignore = "reads the real screen; run manually"]
+    fn screen_read_cost_probe() {
+        use super::*;
+        unsafe {
+            let h_desk = OpenInputDesktop(0, 0, 0x01FF);
+            if !h_desk.is_null() {
+                let _ = SetThreadDesktop(h_desk);
+            }
+            let hdc_screen = GetDC(std::ptr::null_mut());
+            assert!(!hdc_screen.is_null(), "screen DC");
+            let width = GetDeviceCaps(hdc_screen, DESKTOPHORZRES);
+            let height = GetDeviceCaps(hdc_screen, DESKTOPVERTRES);
+            println!("screen {width}x{height}");
+
+            // A: full-size BitBlt, the way the screenshot path does it.
+            let hdc_mem = CreateCompatibleDC(hdc_screen);
+            let bmi = BITMAPINFO {
+                bmi_header: BITMAPINFOHEADER {
+                    bi_size: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                    bi_width: width,
+                    bi_height: -height,
+                    bi_planes: 1,
+                    bi_bit_count: 32,
+                    bi_compression: 0,
+                    bi_size_image: (width * height * 4) as u32,
+                    bi_xpels_per_meter: 0,
+                    bi_ypels_per_meter: 0,
+                    bi_clr_used: 0,
+                    bi_clr_important: 0,
+                },
+                bmi_colors: [0],
+            };
+            let mut bits: *mut c_void = std::ptr::null_mut();
+            let h_bitmap = CreateDIBSection(hdc_mem, &bmi, 0, &mut bits, std::ptr::null_mut(), 0);
+            assert!(!h_bitmap.is_null(), "DIB");
+            let h_old = SelectObject(hdc_mem, h_bitmap);
+            for _ in 0..5 {
+                let t = std::time::Instant::now();
+                let ok = BitBlt(hdc_mem, 0, 0, width, height, hdc_screen, 0, 0, SRCCOPY);
+                println!("  full BitBlt: {:?} (ok={ok})", t.elapsed());
+            }
+            // B: same, but grabbing a quarter of the screen.
+            for _ in 0..3 {
+                let t = std::time::Instant::now();
+                let ok = BitBlt(
+                    hdc_mem,
+                    0,
+                    0,
+                    width / 2,
+                    height / 2,
+                    hdc_screen,
+                    0,
+                    0,
+                    SRCCOPY,
+                );
+                println!("  quarter BitBlt: {:?} (ok={ok})", t.elapsed());
+            }
+            SelectObject(hdc_mem, h_old);
+            DeleteObject(h_bitmap);
+            DeleteDC(hdc_mem);
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
+            if !h_desk.is_null() {
+                CloseDesktop(h_desk);
+            }
+        }
+    }
 
     #[test]
     fn a_target_keeps_the_aspect_and_never_upscales() {
