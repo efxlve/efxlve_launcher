@@ -1,4 +1,4 @@
-//! Discord RPC worker: streams the local Discord client's voice channel
+﻿//! Discord RPC worker: streams the local Discord client's voice channel
 //! (`discord-voice-state`) and friends list (`discord-friends-state`) to the
 //! overlay.
 //!
@@ -31,10 +31,13 @@ use tauri::{AppHandle, Emitter, Manager};
 /// The launcher's Discord application; the same id the Rich Presence worker
 /// uses (`DEFAULT_DISCORD_CLIENT_ID` in `src/features/presence/presence.ts`).
 const CLIENT_ID: &str = "1551663205426794596";
-/// What the worker asks for: the RPC surface, the voice read and the friends
-/// list (`relationships.read` — part of the Social SDK scope set the app was
-/// granted). A stored token missing any of these triggers a fresh authorize.
-const SCOPES: [&str; 3] = ["rpc", "rpc.voice.read", "relationships.read"];
+/// What the worker asks for: the RPC surface and the voice read.
+///
+/// `relationships.read` used to be in this list. It belongs to the Social SDK
+/// scope set, and the RPC authorize rejects the whole request with
+/// `invalid_scope` when it is included â€” the beta log showed exactly that, plus
+/// the two prompts it caused (the PKCE shape, then the bare fallback).
+const SCOPES: [&str; 2] = ["rpc", "rpc.voice.read"];
 /// How often the worker checks the pipe and the stop flag.
 const READ_TICK: Duration = Duration::from_millis(150);
 /// Minimum wait between connection attempts (two connections a minute limit).
@@ -262,7 +265,14 @@ fn worker(app: &AppHandle) {
         if let Err(error) = session(app) {
             plog(&format!("session ended: {error}"));
             emit_voice(app, "error", None, Vec::new(), Some(error.clone()));
-            emit_friends(app, "error", Vec::new(), 0, Some(error));
+            emit_friends(app, "error", Vec::new(), 0, Some(error.clone()));
+            // A declined consent is a decision, not a hiccup: retrying put the
+            // same prompt in front of the user every 30 seconds until they gave
+            // up on the app (reported from the beta). One ask per app start.
+            if error.contains("declined") {
+                plog("consent declined; the worker stops asking until the next start");
+                break;
+            }
         }
         if !still_alive() {
             break;
@@ -809,7 +819,7 @@ fn authorize(app: &AppHandle, conn: &mut Pipe) -> Result<StoredToken, String> {
 
     for (name, args, exchange_verifier) in variants {
         plog(&format!(
-            "asking for consent [{name}] — approve the prompt in Discord"
+            "asking for consent [{name}] â€” approve the prompt in Discord"
         ));
         emit_voice(app, "authorizing", None, Vec::new(), None);
         conn.send(&json!({ "cmd": "AUTHORIZE", "args": args, "nonce": nonce() }))?;
@@ -924,12 +934,12 @@ fn probe_relationships() -> Result<(), String> {
     plog("probe: READY");
 
     let verifier = pkce_verifier();
-    plog("probe: asking for consent [rpc + relationships.read] — approve the prompt in Discord");
+    plog("probe: asking for consent [rpc + rpc.voice.read] â€” approve the prompt in Discord");
     conn.send(&json!({
         "cmd": "AUTHORIZE",
         "args": {
             "client_id": CLIENT_ID,
-            "scopes": ["rpc", "relationships.read"],
+            "scopes": SCOPES,
             "response_type": "code",
             "code_challenge": pkce_challenge(&verifier),
             "code_challenge_method": "S256"
@@ -952,7 +962,7 @@ fn probe_relationships() -> Result<(), String> {
     plog("probe: authorization code received");
 
     // The token response (logged masked by `post_token`) carries the granted
-    // scope list — the answer to "did Discord allow relationships.read?".
+    // scope list â€” the answer to "did Discord allow relationships.read?".
     let token = post_token(&[
         ("client_id", CLIENT_ID),
         ("grant_type", "authorization_code"),
@@ -1020,7 +1030,7 @@ fn probe_relationships() -> Result<(), String> {
         }
     }
     plog(&format!(
-        "probe: GET_RELATIONSHIPS ok — {} relationships ({} friends, {} pending, {} blocked)",
+        "probe: GET_RELATIONSHIPS ok â€” {} relationships ({} friends, {} pending, {} blocked)",
         items.len(),
         friends,
         pending,
@@ -1214,7 +1224,7 @@ fn mask(value: &Value) -> Value {
                 .map(|(key, inner)| {
                     let lowered = key.to_ascii_lowercase();
                     let masked = if lowered.contains("token") || lowered.contains("secret") {
-                        Value::String("…".to_string())
+                        Value::String("â€¦".to_string())
                     } else {
                         mask(inner)
                     };
@@ -1232,9 +1242,9 @@ fn mask(value: &Value) -> Value {
 pub(crate) fn mask_name(name: &str) -> String {
     let mut chars = name.chars();
     match (chars.next(), chars.next()) {
-        (Some(first), Some(second)) => format!("{first}{second}…"),
-        (Some(first), None) => format!("{first}…"),
-        _ => "…".to_string(),
+        (Some(first), Some(second)) => format!("{first}{second}â€¦"),
+        (Some(first), None) => format!("{first}â€¦"),
+        _ => "â€¦".to_string(),
     }
 }
 
@@ -1242,8 +1252,39 @@ pub(crate) fn mask_name(name: &str) -> String {
 fn compact(value: &Value) -> String {
     let text = mask(value).to_string();
     if text.chars().count() > 400 {
-        format!("{}…", text.chars().take(400).collect::<String>())
+        format!("{}â€¦", text.chars().take(400).collect::<String>())
     } else {
         text
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_rpc_scopes_are_the_ones_the_pipe_grants() {
+        // `relationships.read` belongs to the Social SDK scope set. The pipe
+        // rejects the whole authorize with `invalid_scope` when it is asked for,
+        // which put two prompts in front of a beta tester every 30 seconds.
+        assert_eq!(SCOPES, ["rpc", "rpc.voice.read"]);
+    }
+
+    #[test]
+    fn a_token_without_the_voice_scope_is_re_authorized() {
+        let covered = StoredToken {
+            access_token: "a".into(),
+            refresh_token: "r".into(),
+            scopes: vec!["rpc".into(), "rpc.voice.read".into()],
+            expires_at: 0,
+        };
+        let stale = StoredToken {
+            access_token: "a".into(),
+            refresh_token: "r".into(),
+            scopes: vec!["rpc".into()],
+            expires_at: 0,
+        };
+        assert!(token_covers(&covered));
+        assert!(!token_covers(&stale));
     }
 }
