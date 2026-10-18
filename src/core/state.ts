@@ -479,10 +479,10 @@ export const S = {
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
   /** Mirrors the HKCU Run entry; loaded from the backend in loadSettingsView. */
   startWithWindows: false,
-  /** Bytes the picture cache holds; null until the settings page asks. */
-  imageCacheBytes: null as number | null,
   /** Every folder the screenshot gallery scans; loaded with the settings. */
   screenshotScanRoots: [] as string[],
+  /** When off, the gallery reads the chosen screenshot folder only. */
+  screenshotScanAll: true,
   /** Default on: `!== "false"` keeps a fresh install minimizing on game start. */
   minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) !== "false") as boolean,
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,

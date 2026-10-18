@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "Die Kopie auf diesem PC",
   "critic.scoresTitle": "Wertungen",
   "settings.ssRootsTitle": "Ordner der Galerie",
-  "settings.ssRootsDesc": "Dein gewählter Ordner plus die Ordner der Stores und der Game Bar:"
+  "settings.ssRootsDesc": "Dein gewählter Ordner plus die Ordner der Stores und der Game Bar:",
+  "settings.ssScanAllTitle": "Auch die Store-Ordner durchsuchen",
+  "settings.ssScanAllDesc": "An: die Galerie liest auch Game Bar-, Steam-, Ubisoft- und Rockstar-Ordner. Aus: nur der Ordner oben."
 }

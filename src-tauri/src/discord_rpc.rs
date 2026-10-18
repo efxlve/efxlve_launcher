@@ -1,4 +1,4 @@
-﻿//! Discord RPC worker: streams the local Discord client's voice channel
+//! Discord RPC worker: streams the local Discord client's voice channel
 //! (`discord-voice-state`) and friends list (`discord-friends-state`) to the
 //! overlay.
 //!

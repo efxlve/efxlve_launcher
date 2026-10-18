@@ -20,7 +20,6 @@ mod nile;
 mod notes;
 mod net_diag;
 mod igdb;
-mod image_cache;
 mod perf;
 mod task_manager;
 mod game_running;
@@ -151,6 +150,9 @@ pub struct EpicSettings {
     /// Games the user turned screenshot capture off for (F12 does nothing).
     #[serde(default)]
     pub screenshot_disabled_games: Vec<String>,
+    /// When false the gallery reads the chosen screenshot folder only.
+    #[serde(default = "default_true")]
+    pub screenshot_scan_all: bool,
     /// Run Comet (the GOG Communication Service) while a GOG game plays so
     /// in-game achievements unlock without the Galaxy client. On by default.
     #[serde(default)]
@@ -749,6 +751,9 @@ fn main() {    // Rockstar's launcher only continues when a process named
             legendary::playtime_session::recover_stale();
             // The hotkey listener must already know the configured folder.
             legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
+            legendary::screenshots::set_screenshot_scan_all(
+                load_settings(app.handle()).screenshot_scan_all,
+            );
     legendary::screenshots::set_disabled_games(
         load_settings(app.handle()).screenshot_disabled_games,
     );
@@ -1000,6 +1005,8 @@ fn main() {    // Rockstar's launcher only continues when a process named
             legendary::screenshots::epic_replace_screenshot_with_compressed,
             legendary::screenshots::epic_set_screenshot_disabled_games,
             legendary::screenshots::epic_get_screenshot_disabled_games,
+            legendary::screenshots::epic_set_screenshot_scan_all,
+            legendary::screenshots::epic_get_screenshot_scan_all,
             overlay::overlay_get_state,
             overlay::overlay_set_enabled,
             overlay::overlay_set_hud,
@@ -1124,9 +1131,6 @@ fn main() {    // Rockstar's launcher only continues when a process named
             igdb::igdb_game,
             igdb::igdb_covers,
             igdb::igdb_enrich,
-            image_cache::cache_images,
-            image_cache::image_cache_size,
-            image_cache::clear_image_cache,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");

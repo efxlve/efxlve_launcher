@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "この PC のコピー",
   "critic.scoresTitle": "スコア",
   "settings.ssRootsTitle": "ギャラリーが読むフォルダー",
-  "settings.ssRootsDesc": "選択したフォルダーと、ストアおよび Game Bar の保存先:"
+  "settings.ssRootsDesc": "選択したフォルダーと、ストアおよび Game Bar の保存先:",
+  "settings.ssScanAllTitle": "ストアのフォルダーも検索",
+  "settings.ssScanAllDesc": "オン: Game Bar、Steam、Ubisoft、Rockstar のフォルダーも読み込みます。オフ: 上のフォルダーのみ。"
 }

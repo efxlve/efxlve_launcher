@@ -31,9 +31,29 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.31",
+    version: "0.1.32",
     date: "2026-10-18",
     isCurrent: true,
+    items: [
+      {
+        en: "The picture cache added in 0.1.30 is removed. It was the prime suspect for the window closing by itself a few seconds after start on some machines, and everything else from 0.1.31 stays.",
+        tr: "0.1.30'da eklenen görsel önbelleği kaldırıldı. Bazı bilgisayarlarda pencerenin açılıştan birkaç saniye sonra kendi kendine kapanmasının baş şüphelisiydi; 0.1.31'deki diğer her şey duruyor.",
+      },
+      {
+        en: "Game pages read their covers and screenshots from the store again, the way they did before the cache.",
+        tr: "Oyun sayfaları kapak ve ekran görüntülerini önbellekten önceki gibi yine mağazadan okuyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The launcher no longer switches its own image loading to a local file protocol, which is what the removed cache needed.",
+        tr: "Launcher artık görselleri yerel dosya protokolüne çevirmiyor; kaldırılan önbellek bunu gerektiriyordu.",
+      },
+    ],
+  },
+  {
+    version: "0.1.31",
+    date: "2026-10-18",
     items: [
       {
         en: "Discord asks for permission once, not on a loop: the Rich Presence worker was requesting a Social SDK scope that the RPC pipe rejects, and it retried every 30 seconds after a decline.",

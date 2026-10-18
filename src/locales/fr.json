@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "La copie sur ce PC",
   "critic.scoresTitle": "Notes",
   "settings.ssRootsTitle": "Dossiers de la galerie",
-  "settings.ssRootsDesc": "Ton dossier choisi et ceux des boutiques et de la Game Bar :"
+  "settings.ssRootsDesc": "Ton dossier choisi et ceux des boutiques et de la Game Bar :",
+  "settings.ssScanAllTitle": "Chercher aussi dans les dossiers des boutiques",
+  "settings.ssScanAllDesc": "Activé : la galerie lit aussi les dossiers Game Bar, Steam, Ubisoft et Rockstar. Désactivé : uniquement le dossier ci-dessus."
 }

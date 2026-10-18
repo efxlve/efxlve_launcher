@@ -823,6 +823,13 @@ export const epicGetScreenshotDir = () =>
 export const epicGetScreenshotScanRoots = () =>
   invoke<string[]>("screenshot_scan_roots");
 
+/** Whether the gallery also walks the store folders (default on). */
+export const epicGetScreenshotScanAll = () =>
+  invoke<boolean>("epic_get_screenshot_scan_all");
+
+export const epicSetScreenshotScanAll = (scanAll: boolean) =>
+  invoke<void>("epic_set_screenshot_scan_all", { scanAll });
+
 /** Files and bytes currently stored in the screenshots root (move confirmation). */
 export interface ScreenshotMoveInfo {
   count: number;

@@ -176,6 +176,21 @@ pub fn get_user_documents_dir() -> PathBuf {
 /// `%USERPROFILE%\Pictures\Efxlve Screenshots` layout.
 static SCREENSHOT_ROOT: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
 
+/// When off, the gallery reads the chosen folder only. The extra roots exist to
+/// keep captures from other tools visible, not to surprise anyone — a beta
+/// tester asked for the switch.
+static SCREENSHOT_SCAN_ALL: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(true);
+
+/// Stores the scan preference for this session (called at startup and on save).
+pub fn set_screenshot_scan_all(on: bool) {
+    SCREENSHOT_SCAN_ALL.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn screenshot_scan_all() -> bool {
+    SCREENSHOT_SCAN_ALL.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 /// Stores the configured root for this session (called at startup and on save).
 pub fn set_screenshot_root(root: Option<String>) {
     let cleaned = root
@@ -215,6 +230,9 @@ pub fn screenshots_root() -> PathBuf {
 /// from every app that writes there, which a beta tester rightly reported.
 pub fn screenshot_roots() -> Vec<PathBuf> {
     let mut roots = vec![screenshots_root()];
+    if !screenshot_scan_all() {
+        return roots;
+    }
     let legacy = get_user_pictures_dir().join("Efxlve Screenshots");
     if !roots.contains(&legacy) {
         roots.push(legacy);
@@ -1314,6 +1332,21 @@ pub fn epic_get_screenshot_disabled_games() -> Vec<String> {
         .read()
         .map(|list| list.clone())
         .unwrap_or_default()
+}
+
+/// Turns "read the chosen folder only" on or off. The settings file remembers it.
+#[tauri::command]
+pub fn epic_set_screenshot_scan_all(app: AppHandle, scan_all: bool) {
+    set_screenshot_scan_all(scan_all);
+    let mut settings = crate::load_settings(&app);
+    settings.screenshot_scan_all = scan_all;
+    crate::save_settings(&app, &settings);
+}
+
+/// Whether the gallery walks the extra store folders (default on).
+#[tauri::command]
+pub fn epic_get_screenshot_scan_all() -> bool {
+    screenshot_scan_all()
 }
 
 /// Background listener that captures a screenshot when the hotkey (default F12) is pressed while a game is running.

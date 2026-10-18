@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "The copy on this PC",
   "critic.scoresTitle": "Scores",
   "settings.ssRootsTitle": "Folders the gallery reads",
-  "settings.ssRootsDesc": "Your chosen folder plus the folders the stores and Game Bar capture into:"
+  "settings.ssRootsDesc": "Your chosen folder plus the folders the stores and Game Bar capture into:",
+  "settings.ssScanAllTitle": "Also scan the store folders",
+  "settings.ssScanAllDesc": "On: the gallery also reads Game Bar, Steam, Ubisoft and Rockstar folders. Off: only the folder above."
 }

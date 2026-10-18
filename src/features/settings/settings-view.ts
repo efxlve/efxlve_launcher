@@ -18,7 +18,6 @@ import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
-import { clearImageCache, imageCacheSize } from "../../core/image-cache";
 import { toast } from "../../core/toast";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
@@ -32,7 +31,9 @@ import {
   epicDefaultInstallDir,
   epicDetectEglGames,
   epicGetScreenshotDir,
+  epicGetScreenshotScanAll,
   epicGetScreenshotScanRoots,
+  epicSetScreenshotScanAll,
   epicGetScreenshotMoveInfo,
   epicGetSettings,
   epicGetSteamGridKey,
@@ -775,7 +776,14 @@ function renderScreenshots(): string {
   );
 
   // The gallery reads more than the chosen folder; say so, with the paths, so
-  // nobody has to guess where a picture came from.
+  // nobody has to guess where a picture came from. The switch above the list
+  // narrows it to the chosen folder for anyone who wants that.
+  const scanAll = row(
+    t("settings.ssScanAllTitle"),
+    t("settings.ssScanAllDesc"),
+    toggle("ss-toggle-scan-all", S.screenshotScanAll),
+    true,
+  );
   const roots = row(
     t("settings.ssRootsTitle"),
     `${t("settings.ssRootsDesc")}<br>${(S.screenshotScanRoots.length
@@ -972,7 +980,7 @@ function renderScreenshots(): string {
     : "";
 
   return (
-    group(folder + roots + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
+    group(folder + scanAll + roots + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
     group(compression + options, t("ss.compressionSection")) +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
@@ -1018,15 +1026,7 @@ function renderSystem(): string {
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
       row(t("settings.startWithWindows"), t("settings.startWithWindowsDesc"), toggle("toggle-autostart", S.startWithWindows)) +
       row(t("settings.minimizeOnGame"), t("settings.minimizeOnGameDesc"), toggle("toggle-minimize-on-game", S.minimizeOnGame)) +
-      row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)) +
-      // The pictures the game pages paint live on disk; the row shows what that
-      // costs and offers to start over.
-      row(
-        t("settings.imageCacheTitle"),
-        t("settings.imageCacheDesc"),
-        `<span class="chip">${S.imageCacheBytes == null ? "—" : esc(fmtBytes(S.imageCacheBytes))}</span>
-         <button class="btn ghost small" data-act="clear-image-cache">${t("common.delete")}</button>`,
-      ),
+      row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)),
       t("settings.secSystem"),
     ) +
     group(
@@ -1435,7 +1435,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, imgBytes, ssRoots] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -1448,8 +1448,8 @@ export async function loadSettingsView(): Promise<void> {
         amazonGetInstallDir().catch(() => null),
         amazonDefaultInstallDir().catch(() => ""),
         igdbStatus().catch(() => null),
-        imageCacheSize().catch(() => null),
         epicGetScreenshotScanRoots().catch(() => [] as string[]),
+        epicGetScreenshotScanAll().catch(() => true),
       ]);
       S.epicSettingsCache = st ?? S.epicSettingsCache;
       S.epicDefaultDir = dir ?? "";
@@ -1462,8 +1462,8 @@ export async function loadSettingsView(): Promise<void> {
       S.gogCometEnabled = st?.gog_comet_enabled ?? true;
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
-      S.imageCacheBytes = imgBytes;
       S.screenshotScanRoots = ssRoots;
+      S.screenshotScanAll = ssScanAll;
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;
@@ -1743,18 +1743,22 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       render();
       document.getElementById("settings-search")?.focus();
       return true;
-    case "clear-image-cache":
-      void clearImageCache()
-        .then((bytes) => {
-          S.imageCacheBytes = 0;
-          render();
-          toast(t("settings.imageCacheCleared", { size: fmtBytes(bytes) }), "ok");
-        })
-        .catch(() => undefined);
-      return true;
     case "toggle-ss-sound":
       localStorage.setItem(SS_SOUND_KEY, String((_el as HTMLInputElement).checked));
       return true;
+    case "ss-toggle-scan-all": {
+      const on = (_el as HTMLInputElement).checked;
+      S.screenshotScanAll = on;
+      void epicSetScreenshotScanAll(on)
+        .then(() => epicGetScreenshotScanRoots())
+        .then((list) => {
+          // The list below the switch shows what the new setting scans.
+          S.screenshotScanRoots = list;
+          render();
+        })
+        .catch(() => undefined);
+      return true;
+    }
     case "toggle-ss-notify":
       localStorage.setItem(SS_NOTIFY_KEY, String((_el as HTMLInputElement).checked));
       return true;

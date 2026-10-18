@@ -1,4 +1,4 @@
-﻿/**
+/**
  * The IGDB block on the game page: genres, companies, release date, rating,
  * screenshots and similar games â€” plus the attribution IGDB asks for.
  *
@@ -8,7 +8,6 @@
  */
 
 import { icon } from "../../core/icons";
-import { cachedImage, warmImages } from "../../core/image-cache";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
@@ -130,7 +129,6 @@ export function renderIgdbCredits(target: IgdbTarget): string {
 export function renderIgdbMedia(target: IgdbTarget): string {
   const game = cache.get(target.appName);
   if (!game || game.screenshots.length === 0) return "";
-  warmImages(game.screenshots.map((id) => igdbImage(id, "screenshot_big")));
   return `
     <section class="gp-section">
       <h3 class="gp-section-title">${icon("sparkles", 14)} ${esc(t("igdb.cardTitle"))}</h3>
@@ -138,7 +136,7 @@ export function renderIgdbMedia(target: IgdbTarget): string {
         .map((id) => {
           const url = igdbImage(id, "screenshot_big");
           // A click opens the picture here, not the IGDB page in a browser.
-          return `<button type="button" class="igdb-shot" data-act="open-store-shot" data-src="${esc(url)}" data-title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
+          return `<button type="button" class="igdb-shot" data-act="open-store-shot" data-src="${esc(url)}" data-title="${esc(game.name)}"><img src="${esc(url)}" alt="" loading="lazy" /></button>`;
         })
         .join("")}</div>
     </section>`;
@@ -156,7 +154,6 @@ function igdbGameUrl(hit: { id: number; name: string; slug?: string }): string {
 export function renderIgdbSimilar(target: IgdbTarget): string {
   const game = cache.get(target.appName);
   if (!game || game.similar.length === 0) return "";
-  warmImages(game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
   return `
     <section class="gp-section igdb-card">
       <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
@@ -168,7 +165,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
                      hit.coverId
                        ? (() => {
                            const url = igdbImage(hit.coverId, "cover_big");
-                           return `<img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" />`;
+                           return `<img src="${esc(url)}" alt="" loading="lazy" />`;
                          })()
                        : `<span class="igdb-similar-ph">${icon("gamepad-2", 16)}</span>`
                    }

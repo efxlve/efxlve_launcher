@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "La copia en este PC",
   "critic.scoresTitle": "Puntuaciones",
   "settings.ssRootsTitle": "Carpetas de la galería",
-  "settings.ssRootsDesc": "Tu carpeta elegida y las carpetas de las tiendas y Game Bar:"
+  "settings.ssRootsDesc": "Tu carpeta elegida y las carpetas de las tiendas y Game Bar:",
+  "settings.ssScanAllTitle": "Buscar también en las carpetas de las tiendas",
+  "settings.ssScanAllDesc": "Activado: la galería también lee las carpetas de Game Bar, Steam, Ubisoft y Rockstar. Desactivado: solo la carpeta de arriba."
 }

@@ -1,4 +1,4 @@
-﻿//! Updates, playtime, launcher preferences, save backups, collections, profile, and move.
+//! Updates, playtime, launcher preferences, save backups, collections, profile, and move.
 
 use super::prelude::*;
 

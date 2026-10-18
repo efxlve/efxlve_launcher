@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "Kopia na tym PC",
   "critic.scoresTitle": "Oceny",
   "settings.ssRootsTitle": "Foldery galerii",
-  "settings.ssRootsDesc": "Twój folder oraz foldery sklepów i Game Bara:"
+  "settings.ssRootsDesc": "Twój folder oraz foldery sklepów i Game Bara:",
+  "settings.ssScanAllTitle": "Szukaj też w folderach sklepów",
+  "settings.ssScanAllDesc": "Włączone: galeria czyta też foldery Game Bar, Steam, Ubisoft i Rockstar. Wyłączone: tylko folder powyżej."
 }

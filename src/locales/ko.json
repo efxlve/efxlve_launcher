@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "이 PC의 복사본",
   "critic.scoresTitle": "점수",
   "settings.ssRootsTitle": "갤러리가 읽는 폴더",
-  "settings.ssRootsDesc": "선택한 폴더와 스토어 및 게임 바가 저장하는 폴더:"
+  "settings.ssRootsDesc": "선택한 폴더와 스토어 및 게임 바가 저장하는 폴더:",
+  "settings.ssScanAllTitle": "스토어 폴더도 검색",
+  "settings.ssScanAllDesc": "켬: Game Bar, Steam, Ubisoft, Rockstar 폴더도 읽습니다. 끔: 위의 폴더만."
 }

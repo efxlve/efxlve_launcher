@@ -2398,5 +2398,7 @@
   "sys.thisCopy": "La copia su questo PC",
   "critic.scoresTitle": "Punteggi",
   "settings.ssRootsTitle": "Cartelle della galleria",
-  "settings.ssRootsDesc": "La tua cartella più quelle degli store e della Game Bar:"
+  "settings.ssRootsDesc": "La tua cartella più quelle degli store e della Game Bar:",
+  "settings.ssScanAllTitle": "Cerca anche nelle cartelle degli store",
+  "settings.ssScanAllDesc": "Attivo: la galleria legge anche le cartelle di Game Bar, Steam, Ubisoft e Rockstar. Spento: solo la cartella sopra."
 }
