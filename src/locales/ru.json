@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "Вкл.: галерея читает также папки Game Bar, Steam, Ubisoft и Rockstar. Выкл.: только папка выше.",
   "ss.clipRes": "Разрешение",
   "ss.clipResDesc": "Меньшая высота пишет гораздо меньшие файлы; исходная оставляет экран как есть.",
-  "ss.clipResNative": "Исходное"
+  "ss.clipResNative": "Исходное",
+  "overlay.tabClips": "Клипы",
+  "overlay.clipRecording": "Идёт запись",
+  "overlay.clipIdle": "Готово",
+  "overlay.clipRecord": "Начать запись",
+  "overlay.clipStop": "Остановить запись",
+  "overlay.clipFrames": "{count} кадров",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "Горячая клавиша: {key}",
+  "overlay.clipOpenFolder": "Открыть папку",
+  "overlay.clipStartedTitle": "Запись начата",
+  "overlay.clipStartedBody": "Нажмите {key} для остановки",
+  "overlay.clipSavedTitle": "Клип сохранён",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "Не удалось сохранить клип"
 }

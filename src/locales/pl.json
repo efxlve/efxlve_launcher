@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "Włączone: galeria czyta też foldery Game Bar, Steam, Ubisoft i Rockstar. Wyłączone: tylko folder powyżej.",
   "ss.clipRes": "Rozdzielczość",
   "ss.clipResDesc": "Mniejsza wysokość zapisuje znacznie mniejsze pliki; natywna zostawia ekran bez zmian.",
-  "ss.clipResNative": "Natywna"
+  "ss.clipResNative": "Natywna",
+  "overlay.tabClips": "Klipy",
+  "overlay.clipRecording": "Nagrywanie",
+  "overlay.clipIdle": "Gotowe",
+  "overlay.clipRecord": "Rozpocznij nagrywanie",
+  "overlay.clipStop": "Zatrzymaj nagrywanie",
+  "overlay.clipFrames": "{count} klatek",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "Skrót: {key}",
+  "overlay.clipOpenFolder": "Otwórz folder",
+  "overlay.clipStartedTitle": "Nagrywanie rozpoczęte",
+  "overlay.clipStartedBody": "Naciśnij {key}, aby zatrzymać",
+  "overlay.clipSavedTitle": "Klip zapisany",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "Nie udało się zapisać klipu"
 }

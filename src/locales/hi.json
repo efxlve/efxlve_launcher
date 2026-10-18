@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "चालू: गैलरी Game Bar, Steam, Ubisoft और Rockstar फ़ोल्डर भी पढ़ती है। बंद: केवल ऊपर वाला फ़ोल्डर।",
   "ss.clipRes": "रिज़ॉल्यूशन",
   "ss.clipResDesc": "कम ऊँचाई बहुत छोटी फ़ाइलें लिखती है; मूल स्क्रीन को वैसा ही रखता है।",
-  "ss.clipResNative": "मूल"
+  "ss.clipResNative": "मूल",
+  "overlay.tabClips": "क्लिप",
+  "overlay.clipRecording": "रिकॉर्ड हो रहा है",
+  "overlay.clipIdle": "तैयार",
+  "overlay.clipRecord": "रिकॉर्डिंग शुरू करें",
+  "overlay.clipStop": "रिकॉर्डिंग रोकें",
+  "overlay.clipFrames": "{count} फ़्रेम",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "शॉर्टकट: {key}",
+  "overlay.clipOpenFolder": "फ़ोल्डर खोलें",
+  "overlay.clipStartedTitle": "रिकॉर्डिंग शुरू हुई",
+  "overlay.clipStartedBody": "रोकने के लिए {key} दबाएँ",
+  "overlay.clipSavedTitle": "क्लिप सहेजी गई",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "क्लिप सहेजी नहीं जा सकी"
 }

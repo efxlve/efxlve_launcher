@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "Ligado: a galeria também lê as pastas da Game Bar, Steam, Ubisoft e Rockstar. Desligado: só a pasta acima.",
   "ss.clipRes": "Resolução",
   "ss.clipResDesc": "Alturas menores gravam arquivos bem menores; nativa mantém a tela como está.",
-  "ss.clipResNative": "Nativa"
+  "ss.clipResNative": "Nativa",
+  "overlay.tabClips": "Clipes",
+  "overlay.clipRecording": "Gravando",
+  "overlay.clipIdle": "Pronto",
+  "overlay.clipRecord": "Iniciar gravação",
+  "overlay.clipStop": "Parar gravação",
+  "overlay.clipFrames": "{count} quadros",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "Atalho: {key}",
+  "overlay.clipOpenFolder": "Abrir pasta",
+  "overlay.clipStartedTitle": "Gravação iniciada",
+  "overlay.clipStartedBody": "Pressione {key} para parar",
+  "overlay.clipSavedTitle": "Clipe salvo",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "Não foi possível salvar o clipe"
 }

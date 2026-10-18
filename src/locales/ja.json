@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "オン: Game Bar、Steam、Ubisoft、Rockstar のフォルダーも読み込みます。オフ: 上のフォルダーのみ。",
   "ss.clipRes": "解像度",
   "ss.clipResDesc": "高さを下げるとファイルはずっと小さくなります。ネイティブは画面のままです。",
-  "ss.clipResNative": "ネイティブ"
+  "ss.clipResNative": "ネイティブ",
+  "overlay.tabClips": "クリップ",
+  "overlay.clipRecording": "録画中",
+  "overlay.clipIdle": "待機中",
+  "overlay.clipRecord": "録画を開始",
+  "overlay.clipStop": "録画を停止",
+  "overlay.clipFrames": "{count} フレーム",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "ホットキー: {key}",
+  "overlay.clipOpenFolder": "フォルダーを開く",
+  "overlay.clipStartedTitle": "録画を開始しました",
+  "overlay.clipStartedBody": "停止するには {key}",
+  "overlay.clipSavedTitle": "クリップを保存しました",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "クリップを保存できませんでした"
 }

@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "Açık: galeri Game Bar, Steam, Ubisoft ve Rockstar klasörlerini de okur. Kapalı: yalnızca yukarıdaki klasör.",
   "ss.clipRes": "Çözünürlük",
   "ss.clipResDesc": "Düşük çözünürlük çok daha küçük dosya yazar; doğal, ekranı olduğu gibi bırakır.",
-  "ss.clipResNative": "Doğal"
+  "ss.clipResNative": "Doğal",
+  "overlay.tabClips": "Klipler",
+  "overlay.clipRecording": "Kayıt sürüyor",
+  "overlay.clipIdle": "Kayıt bekliyor",
+  "overlay.clipRecord": "Kaydı başlat",
+  "overlay.clipStop": "Kaydı durdur",
+  "overlay.clipFrames": "{count} kare",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "Kısayol: {key}",
+  "overlay.clipOpenFolder": "Klasörü aç",
+  "overlay.clipStartedTitle": "Kayıt başladı",
+  "overlay.clipStartedBody": "Durdurmak için {key}",
+  "overlay.clipSavedTitle": "Klip kaydedildi",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "Klip kaydedilemedi"
 }

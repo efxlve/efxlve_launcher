@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "켬: Game Bar, Steam, Ubisoft, Rockstar 폴더도 읽습니다. 끔: 위의 폴더만.",
   "ss.clipRes": "해상도",
   "ss.clipResDesc": "높이를 낮추면 파일이 훨씬 작아집니다. 기본은 화면 그대로입니다.",
-  "ss.clipResNative": "기본"
+  "ss.clipResNative": "기본",
+  "overlay.tabClips": "클립",
+  "overlay.clipRecording": "녹화 중",
+  "overlay.clipIdle": "대기 중",
+  "overlay.clipRecord": "녹화 시작",
+  "overlay.clipStop": "녹화 중지",
+  "overlay.clipFrames": "{count} 프레임",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "단축키: {key}",
+  "overlay.clipOpenFolder": "폴더 열기",
+  "overlay.clipStartedTitle": "녹화가 시작되었습니다",
+  "overlay.clipStartedBody": "중지하려면 {key}",
+  "overlay.clipSavedTitle": "클립 저장됨",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "클립을 저장하지 못했습니다"
 }

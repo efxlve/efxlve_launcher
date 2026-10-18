@@ -5393,3 +5393,73 @@
   border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-2);
   color: var(--ok); font-size: 10px; line-height: 1; display: grid; place-items: center; cursor: pointer;
 }
+
+/* ---------- Clips (recorder widget) ---------- */
+
+.ov-clip { display: flex; flex-direction: column; gap: 10px; }
+
+.ov-clip-state { display: flex; align-items: center; gap: 8px; }
+.ov-clip-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-3); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+.ov-clip-state.is-recording .ov-clip-dot {
+  background: var(--err);
+  animation: ov-clip-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ov-clip-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255, 80, 80, 0.16); opacity: 1; }
+  50% { box-shadow: 0 0 0 7px rgba(255, 80, 80, 0.03); opacity: 0.55; }
+}
+.ov-clip-state-text { font-size: 13px; font-weight: 600; color: var(--text); }
+.ov-clip-state.is-recording .ov-clip-state-text { color: var(--err); }
+.ov-clip-timer {
+  margin-left: auto; font-size: 13px; color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-clip-meta {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+
+.ov-clip-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 34px; border-radius: var(--r-sm); cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--line-strong);
+  color: var(--text); font-size: 12px; font-weight: 600;
+  transition: all var(--ease);
+}
+.ov-clip-btn:hover { background: var(--surface-3); }
+.ov-clip-btn.is-stop { border-color: var(--err); color: var(--err); }
+
+.ov-clip-hint { font-size: 11px; color: var(--text-3); text-align: center; }
+
+.ov-clip-error {
+  font-size: 11px; color: var(--err); background: rgba(255, 80, 80, 0.08);
+  border: 1px solid rgba(255, 80, 80, 0.24); border-radius: var(--r-sm); padding: 7px 9px;
+}
+
+.ov-clip-last {
+  display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
+  border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
+}
+.ov-clip-last-name {
+  font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ov-clip-last-meta { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+.ov-clip-folder {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 28px; border-radius: var(--r-sm); cursor: pointer;
+  background: transparent; border: 1px solid var(--line); color: var(--text-2); font-size: 11px;
+}
+.ov-clip-folder:hover { background: var(--surface-2); color: var(--text); }
+
+/* The dock button carries the recording dot while the widget is closed. */
+.ov-topbar-btn.is-recording { position: relative; color: var(--err); }
+.ov-topbar-btn.is-recording::after {
+  content: ""; position: absolute; top: 4px; right: 6px;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--err);
+  animation: ov-clip-pulse 1.6s ease-in-out infinite;
+}

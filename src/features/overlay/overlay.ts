@@ -23,7 +23,17 @@ import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPA
 import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
 import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
 import { ssDensity, ssFavorites, ssNotifyOn, ssSort, ssSortItems, ssSoundOn, ssToggleFavorite } from "../screenshots/ss-settings";
-import { epicGetScreenshotDisabledGames, epicSetScreenshotDisabledGames } from "../../epic";
+import { clipFps, clipHotkeyName } from "../screenshots/ss-settings";
+import { epicGetScreenshotDisabledGames, epicSetScreenshotDisabledGames, epicOpenFolderPath } from "../../epic";
+import {
+  clipList,
+  clipStart,
+  clipStatus,
+  clipStop,
+  clipFolderPath,
+  type ClipItem,
+  type ClipStatus,
+} from "../../epic";
 import { SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY } from "../../core/constants";
 import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
@@ -114,7 +124,7 @@ interface ScreenshotItem {
   size_bytes?: number;
 }
 
-type TabId = "home" | "perf" | "ach" | "shots" | "notes" | "music" | "discord" | "chat" | "browser" | "settings";
+type TabId = "home" | "perf" | "ach" | "shots" | "clip" | "notes" | "music" | "discord" | "chat" | "browser" | "settings";
 
 /**
  * The Browser tab is built and working (window, tabs, commands), but it stays
@@ -126,6 +136,7 @@ const BROWSER_TAB_ENABLED = true;
 const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "perf", icon: "activity", key: "overlay.tabPerformance" },
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
+  { id: "clip", icon: "video", key: "overlay.tabClips" },
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
   { id: "chat", icon: "discord", key: "overlay.discordReplyTitle" },
@@ -531,6 +542,10 @@ function getDefaultWidgetPos(tab: TabId): WidgetPos {
       return { x: 24, y: 72 };
     case "shots":
       return { x: 24, y: Math.min(480, winH - 360) };
+    case "clip":
+      // Bottom-left, on its own: it is the one widget worth leaving pinned
+      // while playing, so it should not sit under the performance panel.
+      return { x: 24, y: Math.max(24, winH - 320) };
     case "music":
       return { x: Math.max(24, winW - 390), y: 72 };
     case "discord":
@@ -591,6 +606,8 @@ function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
       return { minW: 310, minH: 350, maxW: 600, maxH: 600 };
     case "shots":
       return { minW: 280, minH: 240, maxW: 800, maxH: 800 };
+    case "clip":
+      return { minW: 280, minH: 220, maxW: 520, maxH: 620 };
     case "music":
       return { minW: 260, minH: 140, maxW: 600, maxH: 800 };
     case "discord":
@@ -614,6 +631,8 @@ function getDefaultWidgetSize(tab: TabId): WidgetSize {
       return { w: 350, h: 380 };
     case "shots":
       return { w: 340, h: 460 };
+    case "clip":
+      return { w: 320, h: 300 };
     case "music":
       return { w: 360, h: 480 };
     case "discord":
@@ -703,6 +722,7 @@ function renderWidgetContent(tab: TabId): void {
   if (tab === "perf") renderPerf();
   else if (tab === "ach") void loadAchievements();
   else if (tab === "shots") void loadScreenshots();
+  else if (tab === "clip") startClipPolling();
   else if (tab === "notes") renderOverlayNotes();
   else if (tab === "music") {
     renderMusicTab();
@@ -1295,7 +1315,7 @@ function setTab(tab: TabId, fromOpen = false): void {
 }
 
 /** Tabs that only make sense with a running game. */
-const GAME_ONLY_TABS: TabId[] = ["ach"];
+const GAME_ONLY_TABS: TabId[] = ["ach", "clip"];
 
 /** Friendly stand-in for a game-only tab while the overlay runs over the launcher. */
 function noGameStateHtml(tab: TabId): string {
@@ -1310,10 +1330,123 @@ function noGameStateHtml(tab: TabId): string {
     </div>`;
 }
 
+/* ---------- Clips (recorder widget) ---------- */
+
+/** Live recorder state, refreshed while the overlay is on screen. */
+let clipState: ClipStatus | null = null;
+let lastClip: ClipItem | null = null;
+let clipPollTimer: number | null = null;
+
+/** mm:ss for a clip: a clip timer has to tick every second, which the session
+ *  pill's minute-granularity format does not. */
+function clipClock(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
+}
+
+function clipWidgetHtml(): string {
+  const running = clipState?.running ?? false;
+  const seconds = clipState?.seconds ?? 0;
+  const frames = clipState?.frames ?? 0;
+  const error = clipState?.error ?? "";
+  const asked = clipState?.fps ?? clipFps();
+  // The recorder writes frames as fast as it can, so the honest number is the
+  // measured one — the same one the file's own header carries.
+  const measured = running && seconds > 0 ? frames / seconds : 0;
+  const rate = measured > 0 ? `${measured.toFixed(1)} / ${asked}` : String(asked);
+  return `
+    <div class="ov-clip">
+      <div class="ov-clip-state${running ? " is-recording" : ""}">
+        <span class="ov-clip-dot"></span>
+        <span class="ov-clip-state-text">${esc(t(running ? "overlay.clipRecording" : "overlay.clipIdle"))}</span>
+        <span class="ov-clip-timer">${clipClock(seconds)}</span>
+      </div>
+      <div class="ov-clip-meta">
+        <span>${esc(t("overlay.clipFrames", { count: String(frames) }))}</span>
+        <span>${esc(t("overlay.clipRate", { rate }))}</span>
+      </div>
+      <button class="ov-clip-btn${running ? " is-stop" : ""}" data-ov="clip-toggle">
+        ${running ? icon("square", 14) : icon("video", 14)}
+        <span>${esc(t(running ? "overlay.clipStop" : "overlay.clipRecord"))}</span>
+      </button>
+      <div class="ov-clip-hint">${esc(t("overlay.clipHotkeyHint", { key: clipHotkeyName() }))}</div>
+      ${error ? `<div class="ov-clip-error">${esc(localizeMessage(error))}</div>` : ""}
+      ${lastClip ? `
+        <div class="ov-clip-last" title="${esc(lastClip.path)}">
+          <div class="ov-clip-last-name">${esc(lastClip.name)}</div>
+          <div class="ov-clip-last-meta">${esc(clipClock(lastClip.seconds))} · ${esc(fmtMb(Math.round(lastClip.sizeBytes / (1024 * 1024))))}</div>
+        </div>` : ""}
+      <button class="ov-clip-folder" data-ov="clip-folder">${icon("folder", 12)} <span>${esc(t("overlay.clipOpenFolder"))}</span></button>
+    </div>`;
+}
+
+/** Repaints the widget, optionally asking Rust for the live state first. */
+async function refreshClipWidget(fetch: boolean): Promise<void> {
+  if (fetch) {
+    try {
+      clipState = await clipStatus();
+    } catch {
+      clipState = null;
+    }
+    // The list is only needed to show the last clip; fetch it once.
+    if (isWidgetOpen("clip") && !lastClip) await loadLastClip();
+  }
+  syncClipIndicator();
+  if (!isWidgetOpen("clip")) return;
+  const body = viewEl("clip");
+  if (body) body.innerHTML = clipWidgetHtml();
+}
+
+/** The dock button carries the recording dot, so the state shows even with the
+ *  widget itself closed. */
+function syncClipIndicator(): void {
+  const running = clipState?.running ?? false;
+  const btn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="clip"]');
+  if (btn) btn.classList.toggle("is-recording", running);
+}
+
+async function loadLastClip(): Promise<void> {
+  try {
+    const clips = await clipList();
+    lastClip = clips[0] ?? null;
+  } catch {
+    lastClip = null;
+  }
+}
+
+function startClipPolling(): void {
+  void refreshClipWidget(true);
+  void loadLastClip().then(() => refreshClipWidget(false));
+  if (clipPollTimer !== null) return;
+  clipPollTimer = window.setInterval(() => void refreshClipWidget(true), 500);
+}
+
+function stopClipPolling(): void {
+  if (clipPollTimer === null) return;
+  window.clearInterval(clipPollTimer);
+  clipPollTimer = null;
+}
+
+async function toggleClipRecording(): Promise<void> {
+  try {
+    if (clipState?.running) await clipStop();
+    else await clipStart();
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  }
+  // Rust flips the flag on its own thread; give it a moment before reading back.
+  window.setTimeout(() => void refreshClipWidget(true), 250);
+}
+
+/** The card over the game. The launcher's notification is invisible in a
+ *  full-screen game, which is exactly where a clip is taken. */
+function clipCard(titleKey: string, body: string): void {
+  void invoke("overlay_flash_hint", { title: t(titleKey), body }).catch(() => undefined);
+}
+
 /* ---------- Live Clock & Session ---------- */
 
-function updateClock(): void {
-  const now = new Date();
+function updateClock(): void {  const now = new Date();
   const hours = String(now.getHours()).padStart(2, "0");
   const mins = String(now.getMinutes()).padStart(2, "0");
   const secs = String(now.getSeconds()).padStart(2, "0");
@@ -4599,6 +4732,14 @@ function wireEvents(): void {
       const input = document.getElementById("ov-browser-hub-input") as HTMLInputElement | null;
       const url = input?.value.trim() || null;
       void invoke("overlay_browser_open", { url });
+    } else if (action === "clip-toggle") {
+      void toggleClipRecording();
+      return;
+    } else if (action === "clip-folder") {
+      void clipFolderPath()
+        .then((path) => epicOpenFolderPath(path))
+        .catch(() => undefined);
+      return;
     } else if (action === "shots-folder") {
       if (launcherMode) {
         void invoke("epic_open_screenshot_dir");
@@ -5492,6 +5633,7 @@ async function boot(): Promise<void> {
   requestAnimationFrame(pollGamepadLoop);
 
   await listen<OpenPayload>("overlay-open", (event) => {
+    startClipPolling();
     void onOpen(event.payload);
   });
 
@@ -5516,9 +5658,32 @@ async function boot(): Promise<void> {
     hideLightbox();
     removeGamepadFocus();
     document.body.classList.remove("ov-using-gamepad");
+    stopClipPolling();
     void invoke("overlay_browser_close").catch(() => undefined);
     // The voice worker is only meant to run while its tab is visible.
     void invoke("discord_voice_watch_stop").catch(() => undefined);
+  });
+
+  // The recorder announces itself: a card over the game is the only notification
+  // a player actually sees, and a recording nobody notices never gets stopped.
+  await listen<{ path: string }>("clip-started", () => {
+    clipCard("overlay.clipStartedTitle", t("overlay.clipStartedBody", { key: clipHotkeyName() }));
+    void refreshClipWidget(true);
+  });
+
+  await listen<{ path: string; frames: number; seconds?: number }>("clip-saved", (event) => {
+    const name = event.payload.path.split(/[\\/]/).pop() ?? "";
+    const seconds = event.payload.seconds ?? 0;
+    clipCard(
+      "overlay.clipSavedTitle",
+      t("overlay.clipSavedBody", { name, time: clipClock(seconds) }),
+    );
+    void loadLastClip().then(() => refreshClipWidget(true));
+  });
+
+  await listen<string>("clip-error", (event) => {
+    clipCard("overlay.clipFailedTitle", localizeMessage(event.payload));
+    void refreshClipWidget(true);
   });
 
   await listen<MetricsSample>("overlay-metrics", (event) => {

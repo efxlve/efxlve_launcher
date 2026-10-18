@@ -13,6 +13,7 @@ import {
   CLIP_FPS_KEY,
   CLIP_HEIGHT_KEY,
   CLIP_HOTKEY_KEY,
+  CLIP_HOTKEY_NAME_KEY,
   CLIP_MAX_MIN_KEY,
   SS_CLEANUP_KEY,
   SS_DENSITY_KEY,
@@ -112,6 +113,11 @@ export function clipEnabled(): boolean {
 export function clipHotkeyCode(): number {
   const stored = Number(localStorage.getItem(CLIP_HOTKEY_KEY) ?? "0");
   return Number.isFinite(stored) && stored > 0 ? stored : 0x78; // F9
+}
+
+/** The hotkey's own name ("F9"), for hints in the launcher and the overlay. */
+export function clipHotkeyName(): string {
+  return localStorage.getItem(CLIP_HOTKEY_NAME_KEY) || "F9";
 }
 
 export function clipFps(): number {

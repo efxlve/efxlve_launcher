@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "开启：图库也会读取 Game Bar、Steam、Ubisoft 和 Rockstar 文件夹。关闭：仅上面的文件夹。",
   "ss.clipRes": "分辨率",
   "ss.clipResDesc": "高度越低文件越小；原生保持屏幕原样。",
-  "ss.clipResNative": "原生"
+  "ss.clipResNative": "原生",
+  "overlay.tabClips": "剪辑",
+  "overlay.clipRecording": "正在录制",
+  "overlay.clipIdle": "就绪",
+  "overlay.clipRecord": "开始录制",
+  "overlay.clipStop": "停止录制",
+  "overlay.clipFrames": "{count} 帧",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "快捷键：{key}",
+  "overlay.clipOpenFolder": "打开文件夹",
+  "overlay.clipStartedTitle": "已开始录制",
+  "overlay.clipStartedBody": "按 {key} 停止",
+  "overlay.clipSavedTitle": "剪辑已保存",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "剪辑保存失败"
 }

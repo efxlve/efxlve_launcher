@@ -419,6 +419,13 @@ pub fn start(app: &tauri::AppHandle, title: &str) -> Result<(), String> {
 
     let app = app.clone();
     log(&app, &format!("start: {}", path.display()));
+    // The in-game overlay turns this into a card over the game: F9 is easy to
+    // press twice by accident, and a recording nobody notices is a recording
+    // nobody stops.
+    let _ = app.emit(
+        "clip-started",
+        serde_json::json!({ "path": path.to_string_lossy(), "title": title }),
+    );
     std::thread::spawn(move || record_loop(app, path));
     Ok(())
 }
@@ -583,7 +590,11 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
         if frames > 0 {
             let _ = app.emit(
                 "clip-saved",
-                serde_json::json!({ "path": path.to_string_lossy(), "frames": frames }),
+                serde_json::json!({
+                    "path": path.to_string_lossy(),
+                    "frames": frames,
+                    "seconds": elapsed.as_secs(),
+                }),
             );
         }
     } else {

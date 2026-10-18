@@ -2403,5 +2403,19 @@
   "settings.ssScanAllDesc": "เปิด: แกลเลอรีอ่านโฟลเดอร์ Game Bar, Steam, Ubisoft และ Rockstar ด้วย ปิด: อ่านเฉพาะโฟลเดอร์ด้านบน",
   "ss.clipRes": "ความละเอียด",
   "ss.clipResDesc": "ความสูงที่ต่ำกว่าจะได้ไฟล์เล็กลงมาก ค่าเริ่มต้นใช้ขนาดหน้าจอเดิม",
-  "ss.clipResNative": "ขนาดเดิม"
+  "ss.clipResNative": "ขนาดเดิม",
+  "overlay.tabClips": "คลิป",
+  "overlay.clipRecording": "กำลังบันทึก",
+  "overlay.clipIdle": "พร้อม",
+  "overlay.clipRecord": "เริ่มบันทึก",
+  "overlay.clipStop": "หยุดบันทึก",
+  "overlay.clipFrames": "{count} เฟรม",
+  "overlay.clipRate": "{rate} fps",
+  "overlay.clipHotkeyHint": "ปุ่มลัด: {key}",
+  "overlay.clipOpenFolder": "เปิดโฟลเดอร์",
+  "overlay.clipStartedTitle": "เริ่มบันทึกแล้ว",
+  "overlay.clipStartedBody": "กด {key} เพื่อหยุด",
+  "overlay.clipSavedTitle": "บันทึกคลิปแล้ว",
+  "overlay.clipSavedBody": "{name} · {time}",
+  "overlay.clipFailedTitle": "บันทึกคลิปไม่สำเร็จ"
 }
