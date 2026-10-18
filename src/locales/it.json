@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Cache immagini",
   "settings.pictureCacheDesc": "Immagine principale, screenshot IGDB e copertine di giochi simili restano su disco, così la pagina si apre senza rete.",
   "settings.pictureCacheCleared": "Eliminati {size} di immagini",
-  "manage.playtimeAllCopies": "Tutte le copie del gioco sugli store, sommate."
+  "manage.playtimeAllCopies": "Tutte le copie del gioco sugli store, sommate.",
+  "feat.releaseDate": "Data di uscita"
 }

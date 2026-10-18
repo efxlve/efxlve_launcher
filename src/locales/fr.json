@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Cache d'images",
   "settings.pictureCacheDesc": "Visuel principal, captures IGDB et couvertures de jeux similaires restent sur le disque : la page s'ouvre sans attendre le réseau.",
   "settings.pictureCacheCleared": "{size} d'images supprimés",
-  "manage.playtimeAllCopies": "Toutes les copies de ce jeu, additionnées."
+  "manage.playtimeAllCopies": "Toutes les copies de ce jeu, additionnées.",
+  "feat.releaseDate": "Date de sortie"
 }

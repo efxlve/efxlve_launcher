@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Resim önbelleği",
   "settings.pictureCacheDesc": "Kapak görselleri, IGDB ekran görüntüleri ve benzer oyun kapakları diskte tutulur; oyun sayfası ağı beklemeden açılır.",
   "settings.pictureCacheCleared": "{size} resim temizlendi",
-  "manage.playtimeAllCopies": "Bu oyunun tüm mağaza kopyaları toplanmıştır."
+  "manage.playtimeAllCopies": "Bu oyunun tüm mağaza kopyaları toplanmıştır.",
+  "feat.releaseDate": "Çıkış Tarihi"
 }

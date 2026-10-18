@@ -29,8 +29,13 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 
 ## Yokluğunda kendim karara bağladıklarım
 
-- **Oyun sayfası Aşama 1 sırası**: iki bağımsız inceleme de "kişisel içerik
-  üstte" dedi; uygulanıyor. Alternatif (katalog üstte kalsın) reddedildi.
+- **Oyun sayfası ilk ekranı (Argon mockup'ı) — Aşama A uygulandı** (`slice A`):
+  hero 440 → **340 px**, alt künye 48 px, bar -28 px, başlık 30 px, scrim
+  durakları yeni yüksekliğe göre (0.38 → 0.08 → 0.48 → 0.88 → #000).
+  Künye tek satır: geliştirici · yayıncı (farklıysa) · yıl · yaş sınırı ·
+  DRM-Free/Aile · **anti-cheat ve harici başlatıcı buradan çıktı** ve **önce**
+  Özellikler kartına eklendi (yoksa bilgi kaybolurdu), tam çıkış tarihi de oraya
+  taşındı. IGDB kredileri artık yalnızca tür etiketleri + "Powered by IGDB".
 - **Kişisel puan (1-10)**: Argon "ölü özellik" dedi, düşürdüm; durum rozeti
   (Oynanıyor/Bitti/%100/Bırakıldı) kalıyor. Geri alması kolay.
 - **Benzer oyunlarda IGDB görselleri Genel Bakış'a düşmeyecek**: Argon'un

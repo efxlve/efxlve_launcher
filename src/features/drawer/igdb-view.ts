@@ -86,42 +86,15 @@ export function renderIgdbCredits(target: IgdbTarget): string {
     return error ? igdbSetupRow(error) : "";
   }
 
-  const facts: string[] = [];
-  // The PC release is the one that matters here; the first release is the
-  // fallback for games IGDB has no PC date for.
-  const releaseDate = game.pcReleaseDate || game.releaseDate;
-  if (releaseDate) facts.push(`${icon("calendar", 12)} <span>${esc(releaseDate)}</span>`);
-  // The developer already stands in the hero line; only the publisher is added
-  // here, and only when it is a different company.
-  if (game.publisher && !sameCompany(game.publisher, game.developer)) {
-    facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
-  }
-  // One age rating in the row — the body the user's region reads first — and the
-  // rest behind a counter. Four organisations at once read as noise.
-  const rated = game.ageRatings.filter((rating) => rating.rating);
-  const preferred =
-    ageOrgOrder()
-      .map((org) => rated.find((rating) => rating.organization === org))
-      .find((rating) => rating !== undefined) ?? rated[0];
-  const others = rated.filter((rating) => rating !== preferred);
-  const labelOf = (rating: { organization: string; rating: string }) =>
-    rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
-  const ageChips = preferred
-    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" · "))}">${esc(labelOf(preferred))}</span>` +
-      (others.length
-        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
-        : "")
-    : "";
+  // The date, the publisher and the age rating now stand in the hero's single
+  // meta line, where the reader looks first; this block keeps what belongs to the
+  // description: the tags and the attribution.
   const tags = [...game.genres, ...game.themes].slice(0, 6);
-  if (!facts.length && !ageChips && !tags.length) return "";
+  if (!tags.length) return "";
 
   return `
     <div class="igdb-credits">
-      <div class="igdb-meta">
-        <div class="igdb-facts">${facts.map((fact) => `<span class="igdb-fact">${fact}</span>`).join("")}</div>
-        ${ageChips ? `<div class="igdb-ages">${ageChips}</div>` : ""}
-      </div>
-      ${tags.length ? `<div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>` : ""}
+      <div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>
       <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
     </div>`;
 }
@@ -193,7 +166,7 @@ function igdbTransportError(raw: unknown): string {
 /** Loose equality for company names: IGDB writes "Behaviour Interactive Inc."
  * where the hero shows the shorter name, and printing both reads as two
  * different companies. */
-function sameCompany(a: string, b: string): boolean {
+export function sameCompany(a: string, b: string): boolean {
   const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
   const left = norm(a);
   const right = norm(b);
@@ -204,7 +177,7 @@ function sameCompany(a: string, b: string): boolean {
 /** The age-rating bodies in the order this language reads them: the region's own
  * first, then the widely known ones. A game rated only by GRAC still shows a
  * number instead of nothing, but a Turkish user sees PEGI or ESRB first. */
-function ageOrgOrder(): string[] {
+export function ageOrgOrder(): string[] {
   const lang = currentLanguage();
   if (lang === "de") return ["USK", "PEGI", "ESRB", "ACB", "CERO", "GRAC", "CLASS_IND"];
   if (lang === "ja") return ["CERO", "PEGI", "ESRB", "USK", "ACB", "GRAC", "CLASS_IND"];

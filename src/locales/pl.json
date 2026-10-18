@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Pamięć obrazów",
   "settings.pictureCacheDesc": "Grafika główna, zrzuty IGDB i okładki podobnych gier leżą na dysku, więc strona otwiera się bez sieci.",
   "settings.pictureCacheCleared": "Usunięto {size} obrazów",
-  "manage.playtimeAllCopies": "Wszystkie kopie tej gry w sklepach, zsumowane."
+  "manage.playtimeAllCopies": "Wszystkie kopie tej gry w sklepach, zsumowane.",
+  "feat.releaseDate": "Data wydania"
 }

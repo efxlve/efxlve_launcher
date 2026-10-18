@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "이미지 캐시",
   "settings.pictureCacheDesc": "히어로 이미지, IGDB 스크린샷, 비슷한 게임 커버를 디스크에 보관해 네트워크 없이 페이지를 엽니다.",
   "settings.pictureCacheCleared": "이미지 {size} 삭제됨",
-  "manage.playtimeAllCopies": "모든 스토어 사본을 합산한 값입니다."
+  "manage.playtimeAllCopies": "모든 스토어 사본을 합산한 값입니다.",
+  "feat.releaseDate": "출시일"
 }

@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "แคชรูปภาพ",
   "settings.pictureCacheDesc": "ภาพหลัก สกรีนช็อต IGDB และปกเกมที่คล้ายกันเก็บไว้บนดิสก์ เปิดหน้าได้โดยไม่รอเครือข่าย",
   "settings.pictureCacheCleared": "ลบรูปภาพ {size} แล้ว",
-  "manage.playtimeAllCopies": "รวมทุกสำเนาของเกมในสโตร์ต่าง ๆ แล้ว"
+  "manage.playtimeAllCopies": "รวมทุกสำเนาของเกมในสโตร์ต่าง ๆ แล้ว",
+  "feat.releaseDate": "วันวางจำหน่าย"
 }

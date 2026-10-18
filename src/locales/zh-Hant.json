@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "圖片快取",
   "settings.pictureCacheDesc": "主視覺圖、IGDB 截圖與相似遊戲封面保存在磁碟上，開啟頁面不必等待網路。",
   "settings.pictureCacheCleared": "已清除 {size} 圖片",
-  "manage.playtimeAllCopies": "已彙總該遊戲在各商店的副本。"
+  "manage.playtimeAllCopies": "已彙總該遊戲在各商店的副本。",
+  "feat.releaseDate": "發行日期"
 }

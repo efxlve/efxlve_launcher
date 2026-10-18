@@ -40,7 +40,7 @@ import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreensho
 import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
-import { ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
+import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar, sameCompany } from "./igdb-view";
 import { cleanStoreDescription, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderNextAchievements } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -125,15 +125,36 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
   // date wins, so a remaster does not show its console release here.
   const igdb = igdbGameFor(s.appName);
   const year = igdb?.pcReleaseYear ?? igdb?.releaseYear ?? null;
+  // The publisher only appears when it is a different company: "Valve · Valve"
+  // reads as a bug, not as information.
+  const publisher = igdb?.publisher && !sameCompany(igdb.publisher, igdb.developer) ? igdb.publisher : "";
+  // One age rating — the one the user's region reads first — and the rest behind
+  // a counter. Four organisations at once read as noise.
+  const rated = (igdb?.ageRatings ?? []).filter((rating) => rating.rating);
+  const preferred =
+    ageOrgOrder()
+      .map((org) => rated.find((rating) => rating.organization === org))
+      .find((rating) => rating !== undefined) ?? rated[0];
+  const others = rated.filter((rating) => rating !== preferred);
+  const labelOf = (rating: { organization: string; rating: string }) =>
+    rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
+  const ageChip = preferred
+    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" · "))}">${esc(labelOf(preferred))}</span>` +
+      (others.length
+        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
+        : "")
+    : "";
+  // The one line under the title: who made it, when, for whom, and whether it is
+  // running. Everything else about the copy lives in the features card.
   return [
     dev ? `<span>${esc(dev)}</span>` : "",
+    publisher ? `<span class="gp-meta-item">${esc(publisher)}</span>` : "",
     year ? `<span class="gp-meta-item">${icon("calendar", 13)} ${year}</span>` : "",
+    ageChip,
     s.appName.startsWith("gog::") ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
     S.steamSharedIds.has(s.appName)
       ? `<span class="gp-meta-item" title="${esc(t("drawer.familySharingTip"))}">${icon("users", 13)} ${esc(t("drawer.familySharing"))}</span>`
       : "",
-    partner ? `<span class="gp-meta-item" title="${esc(t("drawer.partnerRequired", { name: partner.name }))}">${icon("layers", 13)} ${esc(partner.name)}</span>` : "",
-    antiCheat ? `<span class="gp-meta-item" title="${esc(t("drawer.anticheatTitle", { name: antiCheat }))}">${icon("shield", 13)} ${esc(antiCheat)}</span>` : "",
   ].filter(Boolean).join("");
 }
 

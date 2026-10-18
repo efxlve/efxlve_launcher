@@ -15,6 +15,7 @@ import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/select
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { formatSyncStamp, t as i18nT } from "../../i18n";
+import { igdbGameFor } from "./igdb-view";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
@@ -817,6 +818,50 @@ export function renderGameFeatures(
       <div class="hub-feature-val ${mode === "singlePlayer" ? "supported" : "accent"}">${i18nT(`feat.${mode}`)}</div>
     </div>`
         : ""
+    }
+
+    ${
+      partner
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("feat.externalLauncherTip", { name: partner.name }))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("layers", 12)}</div>
+        <span>${i18nT("feat.externalLauncher")}</span>
+      </div>
+      <div class="hub-feature-val muted">${esc(partner.name)}</div>
+    </div>`
+        : ""
+    }
+
+    ${
+      antiCheat
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("feat.antiCheatTip", { name: antiCheat }))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("shield", 12)}</div>
+        <span>${i18nT("feat.antiCheat")}</span>
+      </div>
+      <div class="hub-feature-val accent">${esc(antiCheat)}</div>
+    </div>`
+        : ""
+    }
+
+    ${
+      (() => {
+        // The full release date: the hero line carries the year, this carries the
+        // day, and the credits block no longer repeats either.
+        const igdb = igdbGameFor(s.appName);
+        const date = igdb?.pcReleaseDate || igdb?.releaseDate || "";
+        if (!date) return "";
+        return `
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("calendar", 12)}</div>
+        <span>${i18nT("feat.releaseDate")}</span>
+      </div>
+      <div class="hub-feature-val">${esc(date)}</div>
+    </div>`;
+      })()
     }
   `;
 }

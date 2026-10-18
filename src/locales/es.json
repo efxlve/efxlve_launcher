@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Caché de imágenes",
   "settings.pictureCacheDesc": "Arte principal, capturas de IGDB y carátulas de juegos similares se guardan en disco para abrir la página sin esperar a la red.",
   "settings.pictureCacheCleared": "Se borraron {size} de imágenes",
-  "manage.playtimeAllCopies": "Todas las copias de este juego en las tiendas, sumadas."
+  "manage.playtimeAllCopies": "Todas las copias de este juego en las tiendas, sumadas.",
+  "feat.releaseDate": "Fecha de lanzamiento"
 }

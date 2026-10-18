@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Кэш изображений",
   "settings.pictureCacheDesc": "Обложка, скриншоты IGDB и обложки похожих игр лежат на диске, поэтому страница открывается без сети.",
   "settings.pictureCacheCleared": "Удалено {size} изображений",
-  "manage.playtimeAllCopies": "Суммарно по всем копиям игры в магазинах."
+  "manage.playtimeAllCopies": "Суммарно по всем копиям игры в магазинах.",
+  "feat.releaseDate": "Дата выхода"
 }

@@ -2443,5 +2443,6 @@
   "settings.pictureCache": "Picture cache",
   "settings.pictureCacheDesc": "Hero art, IGDB screenshots and similar-game covers, kept on disk so a game page opens without waiting for the network.",
   "settings.pictureCacheCleared": "Cleared {size} of pictures",
-  "manage.playtimeAllCopies": "Every store copy of this game, added up."
+  "manage.playtimeAllCopies": "Every store copy of this game, added up.",
+  "feat.releaseDate": "Release Date"
 }
