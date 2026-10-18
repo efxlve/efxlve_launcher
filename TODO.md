@@ -143,10 +143,16 @@ slow start shows up again.
 
 ## 5. Bundle size
 
-`main` + `utils` + the shared feature chunk are ~1.1 MB minified (~134 ms of
-parse/eval here). Splitting the rare views (tv mode, store, discord) behind
-dynamic imports is tracked in ROADMAP 6.3; only worth it for low-end machines,
-and it touches the core render switch, so it needs care.
+Measured 2026-10-18 (`npm run build`): `main` 302 kB, `utils` 297 kB, the shared
+CSS 233 kB — the ~1.1 MB minified the plan mentions. The 597 kB `spotify-client`
+chunk is the Web Playback SDK and is already loaded lazily (only when the music
+engine starts), and each locale is its own 126-240 kB chunk, so only the active
+one is fetched.
+
+What is left is splitting the rare views (tv mode ~41 kB, store, discord) behind
+dynamic imports (ROADMAP 6.3). That is ~100-150 kB off a cold start, it touches
+the core render switch, and it only pays off on low-end machines: not worth the
+risk until something else forces a change there.
 
 ## 6. IGDB — live
 
