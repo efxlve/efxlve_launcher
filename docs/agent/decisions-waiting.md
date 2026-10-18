@@ -45,6 +45,15 @@ bağladım**, **neyi bekletiyorum**, **neden**.
     yan yana + ilerleme çubuğu; çok oyunculu oyunda yalnızca kendi süren
     (ölü duran `isMultiplayerOnlyMode` devreye alındı — CS2/DbD'de "Ana Hikâye
     15 sa" saçmalığı olmayacak).
+- **Oturum özeti** (`94e4dfd8`): oyun kapanınca "Son oturum: 1 sa 40 dk · 3 saat önce ·
+  +2 kupa" kartı. Süre `game-status` olayından, kupa farkı mağaza yanıtından
+  (iki adımlı kayıt) — `localStorage`'da oyun başına tek kayıt, 24 saatten eskiyse
+  sıfırlanır. "Bir dakikadan kısa ve kupasız" oturum gösterilmez.
+- **Durum rozeti** (`263c2932`): künye satırında **türetilmiş** durum — Çevrimiçi
+  (yeşil nokta, yalnız oyun çalışırken) / Tamamlandı (%100) / Oynanıyor / Kurulu.
+  **Elle işaretleme yok**: Argon'un "ölü özellik" uyarısından sonra "Bırakıldı"
+  gibi kullanıcı girdisi isteyen durumlar bilerek eklenmedi — uygulamanın zaten
+  bildiği şeylerden türetiliyor.
 - **Kişisel puan (1-10)**: Argon "ölü özellik" dedi, düşürdüm; durum rozeti
   (Oynanıyor/Bitti/%100/Bırakıldı) kalıyor. Geri alması kolay.
 - **Benzer oyunlarda IGDB görselleri Genel Bakış'a düşmeyecek**: Argon'un
