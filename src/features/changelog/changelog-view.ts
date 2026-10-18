@@ -31,9 +31,65 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.31",
+    date: "2026-10-18",
+    isCurrent: true,
+    items: [
+      {
+        en: "Discord asks for permission once, not on a loop: the Rich Presence worker was requesting a Social SDK scope that the RPC pipe rejects, and it retried every 30 seconds after a decline.",
+        tr: "Discord artık izni bir kez istiyor, döngüye girmiyor: Rich Presence işçisi RPC hattının reddettiği bir Social SDK kapsamı istiyordu ve reddedildikten sonra 30 saniyede bir tekrar deniyordu.",
+      },
+      {
+        en: "The store's screenshots open inside the launcher instead of a browser tab.",
+        tr: "Mağazanın ekran görüntüleri tarayıcı sekmesi yerine launcher içinde açılıyor.",
+      },
+      {
+        en: "The total playtime in Manage names the stores behind it, so hours played through another store or Game Pass are no longer invisible.",
+        tr: "Yönet'teki toplam oynama süresi hangi mağazalardan geldiğini yazıyor; başka bir mağazada ya da Game Pass'te geçen saatler artık görünmez değil.",
+      },
+      {
+        en: "Settings > Screenshots lists every folder the gallery reads, and the whole Documents folder is no longer scanned — only Rockstar's own folder inside it.",
+        tr: "Ayarlar > Ekran Görüntüleri galerinin okuduğu tüm klasörleri listeliyor; Belgeler klasörünün tamamı artık taranmıyor, yalnızca içindeki Rockstar klasörü.",
+      },
+      {
+        en: "Long screenshot file names no longer run over the next card.",
+        tr: "Uzun ekran görüntüsü dosya adları artık yanındaki kartın üstüne taşmıyor.",
+      },
+      {
+        en: "Similar games link to the right IGDB page; the numeric id used to land on an empty search.",
+        tr: "Benzer oyunlar doğru IGDB sayfasına gidiyor; eskiden sayısal kimlik boş bir arama sayfasına düşüyordu.",
+      },
+      {
+        en: "The genre chips under a description no longer light up like buttons — they are facts, not actions.",
+        tr: "Açıklamanın altındaki tür etiketleri artık düğme gibi parlamıyor; onlar bilgi, aksiyon değil.",
+      },
+      {
+        en: "A crash now writes a report to logs\\crash.log instead of leaving nothing behind, so a report from a user is actionable.",
+        tr: "Çökme artık logs\\crash.log dosyasına rapor yazıyor; kullanıcıdan gelen bir bildirim böylece tahminle değil veriyle incelenebiliyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The Discord authorization prompt no longer returns every 30 seconds after you decline it.",
+        tr: "Discord izin penceresi reddettikten sonra artık 30 saniyede bir geri gelmiyor.",
+      },
+      {
+        en: "Broken IGDB links on the similar-games row.",
+        tr: "Benzer oyunlar satırındaki kırık IGDB bağlantıları.",
+      },
+      {
+        en: "Screenshots from unrelated folders under Documents no longer appear in the gallery.",
+        tr: "Belgeler altındaki ilgisiz klasörlerden gelen görüntüler artık galeride görünmüyor.",
+      },
+      {
+        en: "Overlapping screenshot titles in the gallery.",
+        tr: "Galeride üst üste binen ekran görüntüsü başlıkları.",
+      },
+    ],
+  },
+  {
     version: "0.1.30",
     date: "2026-10-15",
-    isCurrent: true,
     items: [
       {
         en: "The game page reads its metadata from IGDB: description, genres, age rating, community score, screenshots and similar games come from the shared Efxlve server, so no Twitch key is needed. Your own credentials still work if you prefer them.",
