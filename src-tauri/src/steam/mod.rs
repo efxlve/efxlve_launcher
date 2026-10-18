@@ -10,6 +10,7 @@ mod catalog;
 mod cloud;
 mod collections;
 mod library;
+mod news;
 mod playtime;
 mod protocol;
 mod runtime;
@@ -33,11 +34,12 @@ pub use cloud::*;
 #[allow(unused_imports)]
 pub use collections::*;
 
+// news.rs: SteamNewsItem, steam_news
 #[allow(unused_imports)]
+pub use news::*;
+
 pub use library::{
     library_folders,
-    SteamGame,
-    parse_app_manifest,
     installed_games,
 };
 

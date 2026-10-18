@@ -787,6 +787,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
         })
         .invoke_handler(tauri::generate_handler![
             library_dir,
+            steam::steam_news,
             image_cache::cache_images,
             image_cache::image_cache_size,
             image_cache::clear_image_cache,
