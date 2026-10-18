@@ -30,6 +30,9 @@ src-tauri/vendor/
 # Elle çalıştırılan yakalama testlerinin çıktısı (ekran görüntüsü, klip)
 src-tauri/tmp-*
 
+# Tarayıcı doğrulaması için üretilen geçici sayfalar (kök dizin)
+/tmp-*.html
+
 # Web sitesi projesi (ayrı repo; launcher ile birlikte commit'lenmesin)
 efxlve.com/
 
