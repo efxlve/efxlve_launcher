@@ -14,11 +14,29 @@ Sistem Gereksinimleri) ve Genel Bakış'ta bir "Hakkında" kutusu, "Anların"
 şeridi (kendi ekran görüntüleri), sonraki başarımlar, benzer oyunlar ve sağda
 bir yan panel (HowLongToBeat, eleştirmen puanları, özellikler).
 
-Sahibi bu sayfanın son hâlinden memnun değil: "daha da kötüleşiyor gibi"
-demiş. Önceki dış incelemede üç medya şeridi ikiye indirildi, yan panel on iki
-satırdan üçe düştü, puanlar tek karta birleşti, IGDB bilgileri açıklamanın
-altına taşındı. İki öneri bilerek uygulanmadı: anti-cheat bilgisi hero'da
-kalıyor, başarım istatistiği hero'da kalıyor.
+**Sahibine gelen geri bildirim (kullanıcılardan):** "oyunların detay sayfası çok
+karışık ve karıştırıcı". Sahibi ne yapılacağını bilmiyor ve şunu soruyor:
+oyunun X (Twitter) hesabını mı eklesek, bir akış (feed) mi yapsak, Reddit mi?
+Sayfa şu an, 1440p'de tek ekranda: hero (~500 px), 7 eylem düğmesi, 3 istatistik,
+6 sekme, açıklama metni, 4 veritabanı öğesi (tarih, USK 18, 5 tür etiketi,
+"Powered by IGDB"), ekran görüntüsü şeridi ve 3 yan kart (9 satır) gösteriyor.
+Önceki dış incelemede üç medya şeridi ikiye indirildi, yan panel on iki satırdan
+üçe düştü, puanlar tek karta birleşti, IGDB bilgileri açıklamanın altına taşındı.
+İki öneri bilerek uygulanmadı: anti-cheat bilgisi hero'da kalıyor, başarım
+istatistiği hero'da kalıyor.
+
+## Cevapla (bu brief'in asıl sorusu)
+
+1. **Karışıklığın sebebi ne?** Ekrandaki hangi öğeler birbiriyle yarışıyor?
+   Sırayla, en çok rahatsız edenden başla.
+2. **Akış fikri**: oyunun X hesabı / Reddit akışı gömülmeli mi, sadece link mi
+   olmalı, yoksa mağazanın kendi haber servisi mi kullanılmalı? Gerekçesiyle.
+3. **Yerleşim**: Genel Bakış'ta ilk ekranda ne olmalı, ne olmamalı? Blokları
+   önem sırasına koy. Yan panel kalsın mı, tek karta mı insin, kalksın mı?
+4. **Veritabanı alanları** (tarih, yaş sınırı, türler, "Powered by IGDB"):
+   nereye gitmeli?
+5. **Aksiyon satırı**: 7 düğme var (Oyna, Yönet, favori, dış link, mağaza
+   seçici, "Online" durumu, koleksiyon). Kaç tanesi kalmalı, hangileri?
 
 ## Oku
 
