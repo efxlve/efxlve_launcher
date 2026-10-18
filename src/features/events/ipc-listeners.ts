@@ -83,7 +83,7 @@ import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
-import { openEpicModal, refreshAchievementsAfterSession } from "../drawer/drawer-view";
+import { openEpicModal, paintGameMeta, refreshAchievementsAfterSession } from "../drawer/drawer-view";
 import { rememberCloudSync } from "../drawer/drawer-widgets";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -653,6 +653,10 @@ export async function initApp(hooks: {
         }
         // Recently played covers games started outside the launcher too.
         pushRecent(id);
+        // The hero's state chip ("Online") is part of the meta line, which is
+        // painted once: without this it would keep saying "Installed" while the
+        // game is running.
+        if (sum && S.currentModalAppName === id) paintGameMeta(sum);
         hooks.scheduleRender();
       } else {
         // The session may have unlocked achievements; refetch before the
@@ -661,6 +665,7 @@ export async function initApp(hooks: {
         refreshAchievementsAfterSession(id, sessionSeconds);
         // A duplicate stop event must not toast or resume downloads twice.
         if (!S.runningGames.delete(id)) return;
+        if (sum && S.currentModalAppName === id) paintGameMeta(sum);
         void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});
         if (totalSeconds !== undefined) {
           // The local counter only knows the sessions this launcher started.

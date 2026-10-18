@@ -239,7 +239,7 @@ function gameReleaseYear(s: EpicSummary): number | null {
   return match ? Number(match[0]) : null;
 }
 
-function paintGameMeta(s: EpicSummary): void {
+export function paintGameMeta(s: EpicSummary): void {
   const el = document.getElementById("gp-meta");
   if (!el) return;
   const g = rawOf(s.appName);
