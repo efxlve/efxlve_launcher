@@ -61,3 +61,4 @@ Names exported from a folder are listed in that folder's `mod.rs` (`pub use file
 9. An account vault id passes `vault_id::is_vault_id` before `Path::join`.
 10. Code comments are English. Every `t("key")` exists in `src/locales/en.json`.
 11. Settings shows the Steam client, not a row per Steam game. A Steam app is downloading only while bytes remain and the client is actually transferring.
+12. Do not write a file with PowerShell's `Get-Content`/`Set-Content` round trip: it re-encodes the text, so "—" becomes "â€”" and a Turkish fold or a regex quietly stops matching. Use the edit tool or Node.
