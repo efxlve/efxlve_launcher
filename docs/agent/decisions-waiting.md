@@ -54,8 +54,22 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   **Elle işaretleme yok**: Argon'un "ölü özellik" uyarısından sonra "Bırakıldı"
   gibi kullanıcı girdisi isteyen durumlar bilerek eklenmedi — uygulamanın zaten
   bildiği şeylerden türetiliyor.
+- **Topluluk linkleri** (`a30d8b54`): krediler bloğunun altında kanal başına bir
+  çip — Resmî site · X · Reddit · Discord · Wikipedia. **Yeni ağ isteği yok**:
+  IGDB zaten kategorili web sitelerini istiyordu, yalnızca birini saklıyorduk.
+  Gömülü akış **yok** (iki incelemenin gerekçesiyle).
+- **Steam yama notları** (`50e18692` altyapı, `42fd1715` arayüz): uç doğrulandı
+  (`ISteamNews/GetNewsForApp`, anahtarsız), yarım saatlik Rust önbelleği, sayfada
+  About'un altında 3 maddelik "Haberler" kartı (yama notu etiketiyle). Epic'in
+  oyun başına haber akışı **doğrulanmadı**, o yüzden Steam'de kaydı olmayan oyunda
+  kart hiç görünmüyor — uydurma yok.
+- **Benzer oyunlar kütüphane farkındalığı** (`e7cc0fbd`): kütüphanede olan benzer
+  oyun tarayıcı yerine uygulamadaki sayfasını açıyor; eşleşme `storeKeysForTitle`
+  ile kanonik başlık üzerinden (GOTY/Standard farkı sorun değil).
+- **SÜRE ipucu** (`26203d4b`): "Son oynama: 12 Ekim 2026" — sayı ne kadar,
+  ipucu ne zaman.
 - **Kişisel puan (1-10)**: Argon "ölü özellik" dedi, düşürdüm; durum rozeti
-  (Oynanıyor/Bitti/%100/Bırakıldı) kalıyor. Geri alması kolay.
+  türetilmiş hâliyle kaldı. Geri alması kolay.
 - **Benzer oyunlarda IGDB görselleri Genel Bakış'a düşmeyecek**: Argon'un
   gerekçesi (sayfayı daha çok mağaza gibi gösterir + görsel takas olur) kabul.
 - **Bekleyen kartlar yer tutar** (sağ panel + kişisel bloklar): uygulandı.
