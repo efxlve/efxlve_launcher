@@ -507,8 +507,20 @@ function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): 
     : "—";
   const cloud = heroCloudStatus(s, rawOf(s.appName), partner);
   const cloudTone = cloud.synced ? "ok" : cloud.neutral ? "" : (cloud.label !== "—" ? "warn" : "");
+  // The number alone says how much; the tooltip says when — the cheapest way to
+  // make a static figure feel like the player's own history.
+  const lastPlayed = pt?.last_played_timestamp
+    ? new Date(pt.last_played_timestamp * 1000).toLocaleDateString(currentLanguage(), {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+  const timeTooltip = lastPlayed
+    ? `${t("drawer.editPlaytime")} · ${t("drawer.lastPlayed", { date: lastPlayed })}`
+    : t("drawer.editPlaytime");
   return `
-            ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${s.appName}" title="${t("drawer.editPlaytime")}"`, "drawer-stat-playtime")}
+            ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${s.appName}" title="${esc(timeTooltip)}"`, "drawer-stat-playtime")}
             ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
             ${sourceOfKey(s.appName) === "epic" || isCompanionApp(s.appName) ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}`;
 }

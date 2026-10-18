@@ -2463,5 +2463,6 @@
   "drawer.news": "ข่าว",
   "drawer.patchNote": "บันทึกแพตช์",
   "steam.newsFailed": "อ่านฟีดข่าวของสโตร์ไม่ได้",
-  "drawer.inLibrary": "อยู่ในคลังของคุณ"
+  "drawer.inLibrary": "อยู่ในคลังของคุณ",
+  "drawer.lastPlayed": "เล่นล่าสุด: {date}"
 }

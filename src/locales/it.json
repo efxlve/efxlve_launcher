@@ -2463,5 +2463,6 @@
   "drawer.news": "Novità",
   "drawer.patchNote": "Note di patch",
   "steam.newsFailed": "Impossibile leggere il feed di novità dello store.",
-  "drawer.inLibrary": "Nella tua libreria"
+  "drawer.inLibrary": "Nella tua libreria",
+  "drawer.lastPlayed": "Ultima partita: {date}"
 }

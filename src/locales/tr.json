@@ -2463,5 +2463,6 @@
   "drawer.news": "Haberler",
   "drawer.patchNote": "Yama notu",
   "steam.newsFailed": "Mağazanın haber akışı okunamadı.",
-  "drawer.inLibrary": "Kütüphanende"
+  "drawer.inLibrary": "Kütüphanende",
+  "drawer.lastPlayed": "Son oynama: {date}"
 }

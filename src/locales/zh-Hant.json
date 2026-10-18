@@ -2463,5 +2463,6 @@
   "drawer.news": "新聞",
   "drawer.patchNote": "更新說明",
   "steam.newsFailed": "無法讀取商店的新聞來源。",
-  "drawer.inLibrary": "在你的收藏庫中"
+  "drawer.inLibrary": "在你的收藏庫中",
+  "drawer.lastPlayed": "上次遊玩：{date}"
 }

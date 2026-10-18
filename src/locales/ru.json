@@ -2463,5 +2463,6 @@
   "drawer.news": "Новости",
   "drawer.patchNote": "Заметка к патчу",
   "steam.newsFailed": "Не удалось прочитать ленту новостей магазина.",
-  "drawer.inLibrary": "В вашей библиотеке"
+  "drawer.inLibrary": "В вашей библиотеке",
+  "drawer.lastPlayed": "Последний раз: {date}"
 }

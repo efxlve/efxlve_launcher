@@ -2463,5 +2463,6 @@
   "drawer.news": "الأخبار",
   "drawer.patchNote": "ملاحظات التحديث",
   "steam.newsFailed": "تعذّر قراءة أخبار المتجر.",
-  "drawer.inLibrary": "في مكتبتك"
+  "drawer.inLibrary": "في مكتبتك",
+  "drawer.lastPlayed": "آخر لعب: {date}"
 }

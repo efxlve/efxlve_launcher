@@ -2463,5 +2463,6 @@
   "drawer.news": "ニュース",
   "drawer.patchNote": "パッチノート",
   "steam.newsFailed": "ストアのニュースを読み込めませんでした。",
-  "drawer.inLibrary": "ライブラリにあります"
+  "drawer.inLibrary": "ライブラリにあります",
+  "drawer.lastPlayed": "最終プレイ: {date}"
 }
