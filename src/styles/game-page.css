@@ -805,5 +805,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The caption under a capture: a flex row, so a long file name ellipsizes
    instead of running over the card next to it. */
-.screenshot-info-strip { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.screenshot-info-strip { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }
 .screenshot-card { min-width: 0; }
+
+/* Both caption fields can be long — the file name and the game title — so both
+   shrink and ellipsize instead of pushing past the card's edge. */
+.screenshot-info-strip .ss-name,
+.screenshot-info-strip .ss-date { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
