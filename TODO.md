@@ -93,11 +93,12 @@ prewarm fix (launcher 2.5%, GPU 2.7%, renderer 5.6%).
 Done: opt-in sidebar page (filters, favorites, multi-select, batch), canvas
 editor (crop, rotate, flip, pen, arrow, rectangle, mosaic, text, undo/redo,
 save a copy or overwrite a PNG), one-click sharing (Discord webhook, X and
-Reddit via clipboard + compose window), and the F9 MJPEG-AVI clip recorder.
+Reddit via clipboard + compose window), the F9 MJPEG-AVI clip recorder, and
+cutting/joining clips (`afad22b7`): a trim copies the chosen frame range into a
+new file — MJPEG frames are their own keyframes, so nothing is re-encoded — and
+a join appends clips that share one size and frame rate, refusing the rest.
 
 Left, in rough priority:
-- Trim/join clips in the launcher (the AVI writer is already a plain container;
-  a simple cut list would be a small extension).
 - Upload a clip to the Discord webhook as well (the multipart path exists, the
   8 MB webhook limit means a shorter cap or a compressed re-encode first).
 - Screenshot `SteamGridDB` upload? Not planned; the picker already covers covers.
