@@ -60,10 +60,7 @@ export function renderHltbCard(
     : "";
   if (isLoading) {
     return `
-      <div class="hub-card drawer-hltb-card loading">
-        <div class="hub-card-header hltb-head">
-          <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
-        </div>
+      <div class="drawer-hltb-body loading">
         <div class="hltb-loading-text"><span class="hltb-spinner"></span> ${i18nT("hltb.searching")}</div>
       </div>
     `;
@@ -73,10 +70,7 @@ export function renderHltbCard(
   // answer arrived — the page rearranging itself while the reader looks at it.
   if (!hltb) {
     return `
-      <div class="hub-card drawer-hltb-card is-pending">
-        <div class="hub-card-header hltb-head">
-          <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
-        </div>
+      <div class="drawer-hltb-body is-pending">
         <div class="hltb-list">
           <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
           <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
@@ -87,21 +81,10 @@ export function renderHltbCard(
   }
   if (!hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
     // No averages to show: the player's own time still belongs on the page.
-    return playerLine
-      ? `
-    <div class="hub-card drawer-hltb-card">
-      <div class="hub-card-header hltb-head">
-        <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>${i18nT("manage.groupPlaytime")}</span></h3>
-      </div>
-      ${playerLine}
-    </div>`
-      : "";
+    return playerLine ? `<div class="drawer-hltb-body">${playerLine}</div>` : "";
   }
   return `
-    <div class="hub-card drawer-hltb-card">
-      <div class="hub-card-header hltb-head">
-        <h3 class="hub-card-title hltb-title">${icon("timer", 14)} <span>HowLongToBeat</span></h3>
-      </div>
+    <div class="drawer-hltb-body">
       ${playerLine}
       <div class="hltb-list">
         <div class="hltb-row">
@@ -125,10 +108,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   const igdbScore = igdbRating != null ? Math.round(igdbRating) : null;
   if (isLoading) {
     return `
-      <div class="hub-card hub-critic-card loading">
-        <div class="hub-card-header">
-          <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.scoresTitle")}</span></h3>
-        </div>
+      <div class="drawer-critic-body loading">
         <div class="critic-loading-text"><span class="hltb-spinner"></span> ${i18nT("critic.scanning")}</div>
       </div>
     `;
@@ -150,10 +130,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
           </div>
         </div>`;
     return `
-      <div class="hub-card hub-critic-card is-pending">
-        <div class="hub-card-header">
-          <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.scoresTitle")}</span></h3>
-        </div>
+      <div class="drawer-critic-body is-pending">
         <div class="hub-critic-grid">${badge}${badge}</div>
       </div>
     `;
@@ -256,14 +233,9 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   }
 
   return `
-    <div class="hub-card hub-critic-card">
-      <div class="hub-card-header">
-        <h3 class="hub-card-title">${icon("star", 14)} <span>${i18nT("critic.title")}</span></h3>
-        ${tierPill}
-      </div>
-      ${globalScoresHtml}
-      ${goygoyHtml}
-    </div>
+    ${tierPill ? `<div class="gp-scores-pill-row">${tierPill}</div>` : ""}
+    ${globalScoresHtml}
+    ${goygoyHtml}
   `;
 }
 

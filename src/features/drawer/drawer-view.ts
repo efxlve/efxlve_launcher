@@ -1008,6 +1008,19 @@ export function renderDrawerOverview(
       : "";
   const personal = `${moments}${nextAch}${personalEmpty}`;
   const about = renderAboutSection(s);
+  // The two halves of the scores card, kept as separate containers: the painters
+  // that fill them late must not overwrite each other's work.
+  const hltbBlock = `<div id="drawer-hltb-container">${renderHltbCard(
+    S.loadedHltb.get(s.appName),
+    S.loadingHltbFor === s.appName,
+    libraryPlaytime(s).seconds,
+    detectGameMode(s, S.loadedRequirements.get(s.appName)),
+  )}</div>`;
+  const criticBlock = `<div id="drawer-critic-container">${renderCriticCard(
+    S.loadedCritic.get(s.appName),
+    S.loadingCriticFor === s.appName,
+    igdbGameFor(s.appName)?.rating ?? null,
+  )}</div>`;
 
   return `
     <div class="hub-overview-layout">
@@ -1016,8 +1029,15 @@ export function renderDrawerOverview(
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
-        <div id="drawer-hltb-container">${renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName, libraryPlaytime(s).seconds, detectGameMode(s, S.loadedRequirements.get(s.appName)))}</div>
-        <div id="drawer-critic-container">${renderCriticCard(S.loadedCritic.get(s.appName), S.loadingCriticFor === s.appName, igdbGameFor(s.appName)?.rating ?? null)}</div>
+        <section class="card gp-side-card gp-scores-card">
+          <h3 class="gp-section-title">${icon("star", 13)} <span>${t("critic.scoresTitle")}</span></h3>
+          ${
+            // One card, two bodies: the scores and the lengths answer separately
+            // and paint into their own block, so neither can wipe the other. The
+            // player's own time leads for a game they actually play.
+            personalFirst ? `${hltbBlock}${criticBlock}` : `${criticBlock}${hltbBlock}`
+          }
+        </section>
         ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>
     </div>`;

@@ -789,13 +789,13 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The rows keep their own height, so a pending card is the height of the card
    that replaces it. */
-.drawer-hltb-card.is-pending .hltb-row-label.skel { width: 74px; height: 11px; }
-.drawer-hltb-card.is-pending .hltb-row-val.skel { width: 46px; height: 11px; }
+.drawer-hltb-body.is-pending .hltb-row-label.skel { width: 74px; height: 11px; }
+.drawer-hltb-body.is-pending .hltb-row-val.skel { width: 46px; height: 11px; }
 
-.hub-critic-card.is-pending .hub-critic-badge { opacity: 1; }
-.hub-critic-card.is-pending .critic-badge-score.skel { width: 34px; height: 34px; border-radius: 8px; }
-.hub-critic-card.is-pending .critic-badge-name.skel { width: 68px; height: 11px; margin-bottom: 5px; }
-.hub-critic-card.is-pending .critic-badge-sub.skel { width: 52px; height: 10px; }
+.drawer-critic-body.is-pending .hub-critic-badge { opacity: 1; }
+.drawer-critic-body.is-pending .critic-badge-score.skel { width: 34px; height: 34px; border-radius: 8px; }
+.drawer-critic-body.is-pending .critic-badge-name.skel { width: 68px; height: 11px; margin-bottom: 5px; }
+.drawer-critic-body.is-pending .critic-badge-sub.skel { width: 52px; height: 10px; }
 
 @media (prefers-reduced-motion: reduce) {
   .skel { animation: none; }
@@ -844,3 +844,25 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .hltb-compare-you { font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 .hltb-compare-story { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .hltb-compare-track { margin: 0 0 10px; }
+
+/* ---------- Scores & time: one card, two bodies ---------- */
+
+/* The scores and the lengths answer separately and paint into their own block,
+   so neither can wipe the other; the frame, the title and the order belong to
+   the card. */
+.gp-scores-card .drawer-critic-body, .gp-scores-card .drawer-hltb-body { min-width: 0; }
+.gp-scores-card .drawer-hltb-body {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+}
+/* Nothing to compare: the divider would hang under an empty block. */
+.gp-scores-card .drawer-critic-body:empty + .drawer-hltb-body,
+.gp-scores-card .drawer-hltb-body:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.gp-scores-pill-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+
+/* Three compact scores to a row: the badges used to stack as three wide rows. */
+.hub-critic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); gap: 6px; }
+.hub-critic-badge { gap: 8px; padding: 6px; }
+.hub-critic-badge .critic-badge-score { width: 30px; height: 30px; font-size: 13px; border-radius: 8px; }
+.hub-critic-badge .critic-badge-name { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-critic-badge .critic-badge-sub { font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-critic-badge .critic-badge-ext { display: none; }

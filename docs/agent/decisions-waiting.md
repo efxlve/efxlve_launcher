@@ -58,10 +58,15 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 
 ## Sırada (yokluğunda devam edenler)
 
-- **Aşama C2**: sağ paneldeki iki kartı tek çerçeveye alma, puanların 3'lü yan
-  yana ızgarası, "Desteklenmiyor" satırlarının gizlenmesi (`.muted` sınıfına
-  göre değil — "Klavye & Fare" ve "Partner Başlatıcı Gerekli" yanlışlıkla
-  gizlenirdi).
+- **Aşama C2 — yapıldı**: sağ paneldeki iki kart tek çerçeveye alındı
+  (`gp-scores-card`): başlık ve sıra kartın, puanlar ve süreler **kendi alt
+  kutularında** (iki asenkron boyayıcı birbirini silmiyor). Puanlar artık 3'lü
+  kompakt ızgarada. Oynanmış oyunda **önce süre, sonra dış puanlar** (Argon
+  §8.1). Ayırıcı çizgi yalnızca iki blok da doluyken görünüyor.
+- **"Desteklenmiyor" satırlarını gizleme — ertelendi**: Argon'un uyarısı haklı,
+  `.muted` sınıfı "Klavye & Fare" gibi *desteklenen* değerlerde de kullanılıyor;
+  gizlemek için satır başına açık bir bayrak gerekiyor. Bilgi gizleme riski
+  kozmetik kazançtan büyük, o yüzden dokunulmadı.
 - **Aşama B**: eylem satırı + `⋯` menüsü. Menü durumu `S`'te tutulacak (yoksa
   arka planda veri gelince menü kapanır), `#drawer-col-chips-container` korunacak.
   Etkileşim içerdiği için sahibinin bir tur açıp bakması iyi olur.
