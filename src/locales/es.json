@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "Pulsa {key} para detener",
   "overlay.clipSavedTitle": "Clip guardado",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "No se pudo guardar el clip"
+  "overlay.clipFailedTitle": "No se pudo guardar el clip",
+  "ss.clipFpsNote": "60 y 120 fps necesitan el grabador por GPU; esta ruta de captura soporta 15 y 30."
 }

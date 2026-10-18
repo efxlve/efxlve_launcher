@@ -57,7 +57,7 @@ import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
 import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HEIGHT_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
-import { pushClipSettings } from "../screenshots/ss-settings";
+import { CLIP_FPS_SUPPORTED, clipFps as clipFpsSetting, clipHeight as clipHeightSetting, pushClipSettings } from "../screenshots/ss-settings";
 import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-settings";
 import { screenshotWebhookInfo } from "../../epic";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
@@ -947,8 +947,10 @@ function renderScreenshots(): string {
   const clipHotkey = Number(localStorage.getItem(CLIP_HOTKEY_KEY) ?? "0x78");
   const clipHotkeyCode = Number.isFinite(clipHotkey) && clipHotkey > 0 ? clipHotkey : 0x78;
   const clipHotkeyName = localStorage.getItem(CLIP_HOTKEY_NAME_KEY) || "F9";
-  const clipFps = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "30");
-  const clipHeight = Number(localStorage.getItem(CLIP_HEIGHT_KEY) ?? "0");
+  // Read through the helpers, not localStorage: they clamp a rate that was
+  // stored before its button was disabled.
+  const clipFps = clipFpsSetting();
+  const clipHeight = clipHeightSetting();
   const clipMaxMin = Number(localStorage.getItem(CLIP_MAX_MIN_KEY) ?? "5");
   const clipToggle = row(
     t("ss.clipTitle"),
@@ -966,7 +968,13 @@ function renderScreenshots(): string {
     ? row(
         t("ss.clipFps"),
         t("ss.clipFpsDesc"),
-        `<div class="seg">${[15, 30, 60, 120].map((fps) => `<button type="button" class="${clipFps === fps ? "active" : ""}" data-act="set-clip-fps" data-fps="${fps}">${fps}</button>`).join("")}</div>`,
+        `<div class="seg">${[15, 30, 60, 120]
+          .map((fps) => {
+            const supported = CLIP_FPS_SUPPORTED.includes(fps);
+            const state = supported ? "" : ' disabled aria-disabled="true"';
+            return `<button type="button" class="${clipFps === fps ? "active" : ""}" data-act="set-clip-fps" data-fps="${fps}"${state}>${fps}</button>`;
+          })
+          .join("")}</div><span class="settings-hint">${esc(t("ss.clipFpsNote"))}</span>`,
       ) +
       row(
         t("ss.clipRes"),
@@ -1738,8 +1746,8 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       return true;
     }
     case "set-clip-fps": {
-      const fps = Number(_el.dataset.fps ?? "15");
-      if ([10, 15, 30].includes(fps)) {
+      const fps = Number(_el.dataset.fps ?? "30");
+      if (CLIP_FPS_SUPPORTED.includes(fps)) {
         localStorage.setItem(CLIP_FPS_KEY, String(fps));
         void clipSetOptions({ fps });
         render();

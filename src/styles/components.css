@@ -354,3 +354,8 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 }
 #totop.show { display: flex; }
 #totop:hover { color: var(--text); background: var(--surface-3); }
+
+/* A rate the recorder cannot hold yet: visible, but not selectable. */
+.seg > button:disabled { opacity: 0.35; cursor: default; }
+.seg > button:disabled:hover { color: var(--text-2); }
+.settings-hint { display: block; margin-top: 6px; font-size: 11px; color: var(--text-3); }

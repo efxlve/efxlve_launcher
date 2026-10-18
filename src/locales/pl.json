@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "Naciśnij {key}, aby zatrzymać",
   "overlay.clipSavedTitle": "Klip zapisany",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "Nie udało się zapisać klipu"
+  "overlay.clipFailedTitle": "Nie udało się zapisać klipu",
+  "ss.clipFpsNote": "60 i 120 fps wymagają rejestratora GPU; ta ścieżka przechwytuje 15 i 30."
 }

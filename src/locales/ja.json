@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "停止するには {key}",
   "overlay.clipSavedTitle": "クリップを保存しました",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "クリップを保存できませんでした"
+  "overlay.clipFailedTitle": "クリップを保存できませんでした",
+  "ss.clipFpsNote": "60/120 fps には GPU レコーダーが必要です。この取り込み経路は 15/30 に対応します。"
 }

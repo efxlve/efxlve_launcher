@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "اضغط {key} للإيقاف",
   "overlay.clipSavedTitle": "تم حفظ المقطع",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "تعذّر حفظ المقطع"
+  "overlay.clipFailedTitle": "تعذّر حفظ المقطع",
+  "ss.clipFpsNote": "تحتاج 60 و120 إطارًا في الثانية إلى مسجّل GPU؛ مسار الالتقاط هذا يتحمل 15 و30."
 }

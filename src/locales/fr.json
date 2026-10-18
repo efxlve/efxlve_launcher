@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "Appuyez sur {key} pour arrêter",
   "overlay.clipSavedTitle": "Clip enregistré",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "Impossible d'enregistrer le clip"
+  "overlay.clipFailedTitle": "Impossible d'enregistrer le clip",
+  "ss.clipFpsNote": "60 et 120 fps nécessitent l'enregistreur GPU ; cette capture tient 15 et 30."
 }

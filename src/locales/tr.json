@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "Durdurmak için {key}",
   "overlay.clipSavedTitle": "Klip kaydedildi",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "Klip kaydedilemedi"
+  "overlay.clipFailedTitle": "Klip kaydedilemedi",
+  "ss.clipFpsNote": "60 ve 120 fps için GPU kaydedicisi gerekiyor; bu yakalama yolu 15 ve 30 fps taşıyor."
 }

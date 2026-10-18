@@ -2417,5 +2417,6 @@
   "overlay.clipStartedBody": "Press {key} to stop",
   "overlay.clipSavedTitle": "Clip saved",
   "overlay.clipSavedBody": "{name} · {time}",
-  "overlay.clipFailedTitle": "Clip could not be saved"
+  "overlay.clipFailedTitle": "Clip could not be saved",
+  "ss.clipFpsNote": "60 and 120 fps need the GPU recorder; this capture path holds 15 and 30."
 }

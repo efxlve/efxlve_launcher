@@ -120,9 +120,13 @@ export function clipHotkeyName(): string {
   return localStorage.getItem(CLIP_HOTKEY_NAME_KEY) || "F9";
 }
 
+/** The rates the MJPEG/GDI recorder can actually hold. 60 and 120 need the GPU
+ *  path (see TODO.md §8), so their buttons stay disabled until then. */
+export const CLIP_FPS_SUPPORTED = [15, 30];
+
 export function clipFps(): number {
   const stored = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "30");
-  return [15, 30, 60, 120].includes(stored) ? stored : 30;
+  return CLIP_FPS_SUPPORTED.includes(stored) ? stored : 30;
 }
 
 /** Frame height for clips: 0 keeps the screen's own size. */
@@ -140,6 +144,9 @@ export function clipMaxSecs(): number {
 /** Hands the stored recorder settings to Rust: the recorder reads them there. */
 export function pushClipSettings(): void {
   if (!isTauri) return;
+  // Normalise first: a rate stored before 60/120 were disabled would otherwise
+  // sit in localStorage for ever, since nothing can select it back.
+  localStorage.setItem(CLIP_FPS_KEY, String(clipFps()));
   void clipSetHotkey(clipHotkeyCode()).catch(() => undefined);
   void clipSetOptions({ fps: clipFps(), maxSecs: clipMaxSecs(), height: clipHeight() }).catch(() => undefined);
 }

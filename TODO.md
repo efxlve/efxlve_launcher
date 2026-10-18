@@ -61,8 +61,8 @@ remaining work is pictures and prefetching:
   "faulting module name" — would settle it. `logs\crash.log` (0.1.31 and later)
   catches panics.
 - hidaaan: asked for a switch that limits the screenshot scan to the chosen
-  folder. The Documents narrowing and the folder list shipped; the switch is
-  still open.
+  folder. Shipped in the local tree (`5ce9e223`): `SCREENSHOT_SCAN_ALL` plus the
+  Settings row, off means the chosen folder only. Confirm with him at release.
 
 
 
@@ -101,6 +101,7 @@ Left, in rough priority:
 - Upload a clip to the Discord webhook as well (the multipart path exists, the
   8 MB webhook limit means a shorter cap or a compressed re-encode first).
 - Screenshot `SteamGridDB` upload? Not planned; the picker already covers covers.
+- The recorder's ~30 fps ceiling and what a GPU path would take: section 8.
 
 ## 4. Startup: what is left
 
@@ -158,3 +159,36 @@ The user reports the whole workstream as broken. What the machine says so far:
   should write a line there, so the next report comes with a trace.
 
 Ask for the concrete symptom when this comes back up.
+
+## 8. GPU recorder: the way past ~30 fps (owner asked for it, later)
+
+The MJPEG/GDI recorder cannot hold the rates the settings offer, and no amount of
+tuning changes that. Measured on the dev machine (2026-10-18, `frame_cost_by_height`
+and `screen_read_cost_probe`, both `cargo test -- --ignored`):
+
+| step | cost |
+|---|---|
+| GDI screen read (`BitBlt`), full 2560x1600 | 26-46 ms |
+| the same read at 384x240 output | 29 ms — the cost is the screen, not the frame |
+| GDI+ JPEG encode | 5-15 ms |
+
+So the ceiling is ~20 fps at native size and ~26 fps at 720p, whatever the user
+asks for. The 60 and 120 buttons in Settings are therefore disabled
+(`CLIP_FPS_SUPPORTED` in `ss-settings.ts`) and `clipFps()` falls back to 30.
+
+Getting to 60/120 means a second recorder beside the current one:
+
+- Read frames on the GPU: Desktop Duplication API (DXGI) or Windows Graphics
+  Capture, into a staging texture — the read stops costing CPU time per frame.
+- Encode with the hardware encoder: Media Foundation H.264 (the OS picks NVENC,
+  QuickSync or AMF), instead of one JPEG per frame.
+- Keep the MJPEG writer as the fallback: no codec licence, plays everywhere,
+  and it is the only path on machines without a hardware encoder.
+- The clip list, the settings rows and the overlay widget stay as they are; only
+  the recorder behind them changes.
+
+Interim state (0.1.32-local, `19b191b4`): the AVI header carries the *measured*
+frame rate, so a machine that cannot hold the requested rate still writes a file
+whose picture and sound are the same length. Before that fix, a 47 s recording
+with 779 frames claimed 30 fps, played its picture in 26 s and drifted 20.5 s
+away from its 46.5 s sound track.
