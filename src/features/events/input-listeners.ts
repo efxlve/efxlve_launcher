@@ -61,6 +61,7 @@ import { closeNotifPanel } from "../notifications/notifications";
 import { closeTaskDetail } from "../settings/task-manager";
 import { closePageLightbox, pageLightboxOpen, repaintScreenshotsPage } from "../screenshots/screenshots-page";
 import { closeScreenshotEditor, editorOpen } from "../screenshots/screenshot-editor";
+import { closeStoreShot, storeShotViewerOpen } from "../screenshots/store-shot-viewer";
 import { ssCleanupPolicy, ssSetCleanupPolicy } from "../screenshots/ss-settings";
 document.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
@@ -205,6 +206,11 @@ document.addEventListener("keydown", (e) => {
     // The screenshot editor owns Escape while it is open.
     if (editorOpen()) {
       closeScreenshotEditor();
+      return;
+    }
+    // The store-shot stage sits above the page; Escape closes it first.
+    if (storeShotViewerOpen()) {
+      closeStoreShot();
       return;
     }
     // The Screenshots page's lightbox owns Escape while it is open.

@@ -137,7 +137,8 @@ export function renderIgdbMedia(target: IgdbTarget): string {
       <div class="igdb-shots">${game.screenshots
         .map((id) => {
           const url = igdbImage(id, "screenshot_big");
-          return `<button type="button" class="igdb-shot" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
+          // A click opens the picture here, not the IGDB page in a browser.
+          return `<button type="button" class="igdb-shot" data-act="open-store-shot" data-src="${esc(url)}" data-title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
         })
         .join("")}</div>
     </section>`;

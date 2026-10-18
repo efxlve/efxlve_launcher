@@ -7,6 +7,7 @@ import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { toggleAboutExpanded } from "../../drawer/drawer-view";
+import { closeStoreShot, openStoreShot } from "../../screenshots/store-shot-viewer";
 import { gameVersionsOf, isCompanionSource, sourceOfKey, summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
 import { refreshLibraryResultsInPlace } from "../../library/library-view";
@@ -139,6 +140,14 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       if (S.currentModalAppName) openEpicModal(S.currentModalAppName, false);
       return true;
     }
+
+    case "open-store-shot":
+      openStoreShot(t.dataset.src ?? "", t.dataset.title ?? "");
+      return true;
+
+    case "close-store-shot":
+      closeStoreShot();
+      return true;
 
     case "drawer-tab": {
       const tab = t.dataset.tab as DrawerTab;
