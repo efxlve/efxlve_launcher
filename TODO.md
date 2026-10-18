@@ -27,9 +27,42 @@ touching anything:
    (`openEpicModal(appName, false)`); only the credits line and the scores card
    actually change.
 2. Keyboard and TV pass over the game page (tab order, focus ring, controller).
-3. Library cover caching + hover prefetch (the game page's own images are
-   cached already; `image_cache.rs` has the size cap and the trim).
+3. Picture cache, take two: 0.1.30's version (asset protocol + a boot-time
+   prefetch) is gone in 0.1.32 — it was the prime suspect for the window closing
+   on some machines a few seconds after start. If it comes back, use the pattern
+   the screenshot gallery already proves (base64 data URLs, no new webview
+   protocol) and prefetch only while the window is idle.
 4. Screenshots workstream (parked, see section 7).
+5. Library covers: the grid loads every cover from the store CDN with
+   `loading="lazy"`, and nothing is kept between runs beyond the WebView2 HTTP
+   cache. This is the biggest remaining caching win for a big library.
+
+## 0c. Caching and speed (owner's next focus, after the list above)
+
+Every metadata source already caches on disk (IGDB, HowLongToBeat, the critic
+service, Wikipedia, store specs — see `docs/GAME_PAGE_REWORK.md` §9), so the
+remaining work is pictures and prefetching:
+
+- Pictures: the game page's own cache comes back as item 5 above / 0b.3; the
+  library's covers are 0b.5. Both must avoid a new webview protocol.
+- Prefetch while idle: a warm pass after `boot:ready` that fills the *disk*
+  caches only (no DOM work), so a click is instant without touching the first
+  paint.
+- Idle cost first: transparency (section 2) and TV mode (section 1) are the two
+  known CPU drains; measure with the task manager page before and after.
+
+## 0d. Community follow-ups (open)
+
+- Berke: the Discord consent fix shipped in 0.1.31 (the RPC scope list plus the
+  stop-on-decline). Ask him to try it and report.
+- Gyro: his crash is still unexplained. The revert (0.1.32, prepared but not
+  released) is the prime suspect fix; the Windows Event Log entry — the
+  "faulting module name" — would settle it. `logs\crash.log` (0.1.31 and later)
+  catches panics.
+- hidaaan: asked for a switch that limits the screenshot scan to the chosen
+  folder. The Documents narrowing and the folder list shipped; the switch is
+  still open.
+
 
 
 ## 1. TV mode modernization (needs a screen)
