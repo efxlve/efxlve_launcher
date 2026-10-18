@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "Ukończona",
   "drawer.statePlaying": "W trakcie",
   "drawer.stateInstalled": "Zainstalowana",
-  "drawer.officialSite": "Oficjalna strona"
+  "drawer.officialSite": "Oficjalna strona",
+  "drawer.news": "Nowości",
+  "drawer.patchNote": "Notatka o łatce",
+  "steam.newsFailed": "Nie udało się odczytać kanału nowości sklepu."
 }

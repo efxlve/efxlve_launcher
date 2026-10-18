@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "Concluído",
   "drawer.statePlaying": "Jogando",
   "drawer.stateInstalled": "Instalado",
-  "drawer.officialSite": "Site oficial"
+  "drawer.officialSite": "Site oficial",
+  "drawer.news": "Novidades",
+  "drawer.patchNote": "Nota de patch",
+  "steam.newsFailed": "Não foi possível ler o feed de novidades da loja."
 }

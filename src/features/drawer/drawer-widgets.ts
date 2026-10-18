@@ -17,6 +17,7 @@ import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../
 import { formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
+import { type SteamNewsItem } from "../../steam";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
@@ -573,6 +574,54 @@ export function renderLastSession(appName: string): string {
             : ""
         }
       </div>
+    </section>`;
+}
+
+/**
+ * What the game's own feed says today: Steam's public news endpoint, three
+ * items, patch notes marked. This is the one block on the page that changes
+ * without the player doing anything, which is what makes the page worth opening
+ * between sessions.
+ */
+export function renderSteamNews(items: SteamNewsItem[] | null): string {
+  if (items === null) {
+    // Still on the way: two placeholder rows hold the height, like every other
+    // late block on this page.
+    return `
+      <section class="gp-section gp-news">
+        <div class="gp-progress-head"><h3 class="gp-section-title">${icon("bell", 13)} ${i18nT("drawer.news")}</h3></div>
+        <div class="gp-news-list">
+          <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
+          <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
+        </div>
+      </section>`;
+  }
+  if (items.length === 0) return "";
+  const when = (date: number): string => {
+    if (!date) return "";
+    const at = date * 1000;
+    const label = sessionWhen(at);
+    return label.unit === "minutes"
+      ? i18nT("time.minutesAgo", { n: label.n })
+      : label.unit === "hours"
+        ? i18nT("time.hoursAgo", { n: label.n })
+        : i18nT("time.daysAgo", { n: label.n });
+  };
+  return `
+    <section class="gp-section gp-news">
+      <div class="gp-progress-head"><h3 class="gp-section-title">${icon("bell", 13)} ${i18nT("drawer.news")}</h3></div>
+      <div class="gp-news-list">${items
+        .map(
+          (item) => `
+        <button type="button" class="gp-news-row" data-act="open-external-url" data-url="${esc(item.url)}" title="${esc(item.title)}">
+          <span class="gp-news-main">
+            <span class="gp-news-title">${esc(item.title)}</span>
+            <span class="gp-news-meta">${esc(item.feed)}${item.date ? ` · ${esc(when(item.date))}` : ""}</span>
+          </span>
+          ${item.patchNotes ? `<span class="gp-news-tag">${i18nT("drawer.patchNote")}</span>` : ""}
+        </button>`,
+        )
+        .join("")}</div>
     </section>`;
 }
 

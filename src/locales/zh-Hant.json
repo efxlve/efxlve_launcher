@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "已通關",
   "drawer.statePlaying": "遊玩中",
   "drawer.stateInstalled": "已安裝",
-  "drawer.officialSite": "官方網站"
+  "drawer.officialSite": "官方網站",
+  "drawer.news": "新聞",
+  "drawer.patchNote": "更新說明",
+  "steam.newsFailed": "無法讀取商店的新聞來源。"
 }

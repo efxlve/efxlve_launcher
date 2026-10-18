@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "เล่นจบแล้ว",
   "drawer.statePlaying": "กำลังเล่น",
   "drawer.stateInstalled": "ติดตั้งแล้ว",
-  "drawer.officialSite": "เว็บไซต์ทางการ"
+  "drawer.officialSite": "เว็บไซต์ทางการ",
+  "drawer.news": "ข่าว",
+  "drawer.patchNote": "บันทึกแพตช์",
+  "steam.newsFailed": "อ่านฟีดข่าวของสโตร์ไม่ได้"
 }

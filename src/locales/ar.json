@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "مكتملة",
   "drawer.statePlaying": "تُلعب الآن",
   "drawer.stateInstalled": "مثبّتة",
-  "drawer.officialSite": "الموقع الرسمي"
+  "drawer.officialSite": "الموقع الرسمي",
+  "drawer.news": "الأخبار",
+  "drawer.patchNote": "ملاحظات التحديث",
+  "steam.newsFailed": "تعذّر قراءة أخبار المتجر."
 }

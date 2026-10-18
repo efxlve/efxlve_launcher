@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "완료",
   "drawer.statePlaying": "플레이 중",
   "drawer.stateInstalled": "설치됨",
-  "drawer.officialSite": "공식 사이트"
+  "drawer.officialSite": "공식 사이트",
+  "drawer.news": "소식",
+  "drawer.patchNote": "패치 노트",
+  "steam.newsFailed": "스토어 소식을 읽지 못했습니다."
 }

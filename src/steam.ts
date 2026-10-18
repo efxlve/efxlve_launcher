@@ -70,6 +70,20 @@ export interface SteamGameDetails {
   metacriticUrl?: string | null;
 }
 
+/** One announcement from Steam's public news feed. */
+export interface SteamNewsItem {
+  title: string;
+  url: string;
+  /** Epoch seconds. */
+  date: number;
+  feed: string;
+  /** Steam tagged it as a patch note. */
+  patchNotes: boolean;
+}
+
+/** The last few announcements for a Steam app. Cached in Rust for half an hour. */
+export const steamNews = (appId: string, count = 3) => invoke<SteamNewsItem[]>("steam_news", { appId, count });
+
 export const steamStatus = () => invoke<SteamStatus>("steam_status");
 /** Opens the Steam client itself (no game launch). */
 export const steamOpenClient = () => invoke<void>("steam_open_client");

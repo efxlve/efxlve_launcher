@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "コンプリート",
   "drawer.statePlaying": "プレイ中",
   "drawer.stateInstalled": "インストール済み",
-  "drawer.officialSite": "公式サイト"
+  "drawer.officialSite": "公式サイト",
+  "drawer.news": "ニュース",
+  "drawer.patchNote": "パッチノート",
+  "steam.newsFailed": "ストアのニュースを読み込めませんでした。"
 }

@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "Пройдена",
   "drawer.statePlaying": "Играете",
   "drawer.stateInstalled": "Установлена",
-  "drawer.officialSite": "Официальный сайт"
+  "drawer.officialSite": "Официальный сайт",
+  "drawer.news": "Новости",
+  "drawer.patchNote": "Заметка к патчу",
+  "steam.newsFailed": "Не удалось прочитать ленту новостей магазина."
 }

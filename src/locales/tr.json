@@ -2459,5 +2459,8 @@
   "drawer.stateCompleted": "Tamamlandı",
   "drawer.statePlaying": "Oynanıyor",
   "drawer.stateInstalled": "Kurulu",
-  "drawer.officialSite": "Resmî site"
+  "drawer.officialSite": "Resmî site",
+  "drawer.news": "Haberler",
+  "drawer.patchNote": "Yama notu",
+  "steam.newsFailed": "Mağazanın haber akışı okunamadı."
 }

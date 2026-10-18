@@ -20,6 +20,7 @@ import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from 
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary } from "../../core/session-summary";
+import { steamNews } from "../../steam";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
@@ -42,7 +43,7 @@ import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar, sameCompany } from "./igdb-view";
-import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1028,6 +1029,25 @@ export function repaintIgdbBlocks(appName: string): void {
   }
 }
 
+/** News is asked for once per game per session; the answer fills #gp-news. */
+const newsRequested = new Set<string>();
+
+async function loadSteamNews(appName: string, appId: string): Promise<void> {
+  if (newsRequested.has(appName)) return;
+  newsRequested.add(appName);
+  try {
+    const items = await steamNews(appId, 3);
+    if (S.currentModalAppName !== appName) return;
+    const host = document.getElementById("gp-news");
+    if (host) host.innerHTML = renderSteamNews(items);
+  } catch {
+    // A feed that cannot be read is not worth an error box: the block goes away.
+    if (S.currentModalAppName !== appName) return;
+    const host = document.getElementById("gp-news");
+    if (host) host.innerHTML = "";
+  }
+}
+
 export function renderDrawerOverview(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null = null,
@@ -1063,6 +1083,13 @@ export function renderDrawerOverview(
       : "";
   const personal = `${renderLastSession(s.appName)}${moments}${nextAch}${personalEmpty}`;
   const about = renderAboutSection(s);
+  // The game's own feed, when the store that owns it publishes one: Steam is the
+  // only one here that does, so a game it does not list simply has no block.
+  const newsAppId = s.appName.startsWith("steam::")
+    ? s.appName.slice(7)
+    : (S.steamDetails.get(s.appName)?.appId ?? "");
+  if (newsAppId) void loadSteamNews(s.appName, newsAppId);
+  const news = newsAppId ? `<div id="gp-news">${renderSteamNews(null)}</div>` : "";
   // The two halves of the scores card, kept as separate containers: the painters
   // that fill them late must not overwrite each other's work.
   const hltbBlock = `<div id="drawer-hltb-container">${renderHltbCard(
@@ -1081,6 +1108,7 @@ export function renderDrawerOverview(
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
         ${personalFirst ? `${personal}${about}` : `${about}${personal}`}
+        ${news}
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
