@@ -330,6 +330,22 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     let mut next_frame = Instant::now();
     log(&app, &format!("loop: fps={fps} quality={quality} max={max_secs}s"));
 
+    // Sound: the loopback stream is opened with the video, and its samples are
+    // drained once per frame so the two stay roughly in step. A machine with no
+    // output device records video only — that is not fatal.
+    let audio = match crate::legendary::clip_audio::AudioCapture::start() {
+        Ok(capture) => {
+            let info = capture.info();
+            log(&app, &format!("audio: {} Hz, {} ch", info.sample_rate, info.channels));
+            Some(capture)
+        }
+        Err(err) => {
+            log(&app, &format!("audio: unavailable ({err}); recording video only"));
+            None
+        }
+    };
+    let mut audio_samples: u64 = 0;
+
     while !STOP.load(Ordering::SeqCst) && started.elapsed().as_secs() < max_secs {
         // No game in the foreground any more: stop instead of recording the
         // desktop (the hotkey path already knows how to find the game).
@@ -361,6 +377,10 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
                     }
                     FRAMES.store(active.frames, Ordering::SeqCst);
                 }
+                // Keep the audio clock honest even before it is muxed in.
+                if let Some(capture) = audio.as_ref() {
+                    audio_samples += capture.drain().len() as u64;
+                }
             }
             Err(err) => {
                 log(&app, &format!("loop: capture failed: {err}"));
@@ -383,6 +403,11 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
         }
     }
 
+    if let Some(capture) = audio.as_ref() {
+        audio_samples += capture.drain().len() as u64;
+        capture.stop();
+        log(&app, &format!("audio: {audio_samples} samples captured"));
+    }
     if let Some(active) = writer {
         let frames = active.frames;
         let _ = active.finish(fps);

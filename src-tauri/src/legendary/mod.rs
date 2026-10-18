@@ -8,6 +8,7 @@ pub mod accounts;
 pub mod backup;
 pub mod cache;
 pub mod clip_recorder;
+pub mod clip_audio;
 pub mod client;
 pub mod collections;
 pub mod commands;
