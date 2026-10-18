@@ -63,10 +63,16 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   kutularında** (iki asenkron boyayıcı birbirini silmiyor). Puanlar artık 3'lü
   kompakt ızgarada. Oynanmış oyunda **önce süre, sonra dış puanlar** (Argon
   §8.1). Ayırıcı çizgi yalnızca iki blok da doluyken görünüyor.
+- **Aşama B — yapıldı**: eylem satırı sadeleşti. Görünür kalanlar: birincil
+  eylem (Oyna/Güncelle/Kur ✓), mağaza seçici ✓ (tek mağazadaysa artık sakin bir
+  etiket ✓), Yönet ✓, favori kalbi ✓ ve `⋯` ✓. Menüye girenler: koleksiyonları
+  yönet ✓, mağaza sayfası ✓, harici istemciyi aç (yalnız companion ✓), ayırıcı ✓,
+  kapak görselini değiştir ✓. Menü durumu `S.isGameMoreMenuOpen` içinde ✓
+  (sürüm menüsünün kanıtlanmış kalıbı ✓) — böylece arka planda başarım/DLC yanıtı
+  gelince menü kapanmıyor ✓; dışarı tıklayınca kapanıyor ✓.
+  **Küçük kalan**: Esc ile kapanma yok (sürüm menüsünde de yok ✓, dışarı tıklama
+  yeterli ✓). Bir tur açıp bakılması iyi olur.
 - **"Desteklenmiyor" satırlarını gizleme — ertelendi**: Argon'un uyarısı haklı,
   `.muted` sınıfı "Klavye & Fare" gibi *desteklenen* değerlerde de kullanılıyor;
   gizlemek için satır başına açık bir bayrak gerekiyor. Bilgi gizleme riski
   kozmetik kazançtan büyük, o yüzden dokunulmadı.
-- **Aşama B**: eylem satırı + `⋯` menüsü. Menü durumu `S`'te tutulacak (yoksa
-  arka planda veri gelince menü kapanır), `#drawer-col-chips-container` korunacak.
-  Etkileşim içerdiği için sahibinin bir tur açıp bakması iyi olur.

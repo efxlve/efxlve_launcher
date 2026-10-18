@@ -2448,5 +2448,6 @@
   "drawer.personalEmptyTitle": "आपका अपना रिकॉर्ड यहाँ से शुरू होता है",
   "drawer.personalEmptyDesc": "इस गेम के लिए अभी कोई स्क्रीनशॉट, क्लिप या उपलब्धि दर्ज नहीं है। खेलते समय ली गई चीज़ें यहाँ दिखेंगी।",
   "drawer.personalEmptyCta": "गैलरी खोलें",
-  "hltb.you": "आप: {time}"
+  "hltb.you": "आप: {time}",
+  "drawer.moreActions": "अधिक क्रियाएँ"
 }

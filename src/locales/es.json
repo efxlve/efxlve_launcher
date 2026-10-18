@@ -2448,5 +2448,6 @@
   "drawer.personalEmptyTitle": "Tu propio registro empieza aquí",
   "drawer.personalEmptyDesc": "Aún no hay capturas, clips ni logros de este juego. Lo que captures mientras juegas aparecerá aquí.",
   "drawer.personalEmptyCta": "Abrir la galería",
-  "hltb.you": "Tú: {time}"
+  "hltb.you": "Tú: {time}",
+  "drawer.moreActions": "Más acciones"
 }

@@ -2448,5 +2448,6 @@
   "drawer.personalEmptyTitle": "你的记录从这里开始",
   "drawer.personalEmptyDesc": "这款游戏还没有截图、剪辑或成就记录。游玩时留下的内容会显示在这里。",
   "drawer.personalEmptyCta": "打开图库",
-  "hltb.you": "你：{time}"
+  "hltb.you": "你：{time}",
+  "drawer.moreActions": "更多操作"
 }

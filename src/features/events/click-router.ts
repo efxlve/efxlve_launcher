@@ -163,6 +163,10 @@ document.addEventListener("click", (e) => {
   }
 
   // Close the game page store dropdown when clicking outside it.
+  if (S.isGameMoreMenuOpen && !targetEl.closest(".gp-more-wrap")) {
+    S.isGameMoreMenuOpen = false;
+    document.getElementById("game-more-menu")?.classList.remove("show");
+  }
   if (S.isVersionDropdownOpen && !targetEl.closest(".gp-version-dropdown")) {
     S.isVersionDropdownOpen = false;
     document.getElementById("version-dropdown-menu")?.classList.remove("show");

@@ -331,6 +331,39 @@ function ubisoftCompanionFor(s: EpicSummary): import("../../core/types").Library
   return S.companionSummaries.find((g) => g.source === "ubisoft" && canonicalGameTitle(g.title) === canon);
 }
 
+/**
+ * The actions that do not belong in the row: managing collections, the store
+ * page, the partner client's own window, and the cover picker. The row keeps the
+ * play button, the store picker, Manage, the heart and this.
+ */
+function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
+  const open = S.isGameMoreMenuOpen;
+  const companion = isCompanionApp(s.appName);
+  const storeTitle = t(
+    s.appName.startsWith("gog::")
+      ? "drawer.storeTitleGog"
+      : s.appName.startsWith("steam::")
+        ? "drawer.storeTitleSteam"
+        : companion
+          ? "ctx.storePage"
+          : "drawer.storeTitle",
+  );
+  const clientItem = companion
+    ? `<button type="button" class="ps5-context-item" role="menuitem" data-act="companion-open" data-id="${esc(sourceOfKey(s.appName))}">${icon("layers", 14)} <span>${t("accounts.openClient")}</span></button>`
+    : "";
+  return `
+    <div class="gp-more-wrap">
+      <button class="btn ghost lg icon-only${open ? " active" : ""}" data-act="game-more-menu" data-id="${esc(s.appName)}" title="${esc(t("drawer.moreActions"))}" aria-haspopup="menu" aria-expanded="${open ? "true" : "false"}">${icon("dots", 16)}</button>
+      <div id="game-more-menu" class="gp-more-menu${open ? " show" : ""}" role="menu">
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("plus", 14)} <span>${t("drawer.collection")}</span></button>
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 14)} <span>${storeTitle}</span></button>
+        ${clientItem}
+        <div class="gp-more-sep"></div>
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="open-custom-cover" data-target="cover" data-id="${esc(s.appName)}">${icon("image", 14)} <span>${t("manage.coverChange")}</span></button>
+      </div>
+    </div>`;
+}
+
 /** Primary action + favorite/store/cancel buttons (re-rendered on state changes). */
 function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
   const faved = S.epicFav.has(s.appName);
@@ -344,8 +377,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `
       <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
-      ${sourceChipHtml(s.appName)}`;
+      ${sourceChipHtml(s.appName)}
+      ${moreMenuHtml(s, partner)}`;
   }
 
   // Amazon Games: the launcher owns install, update and launch.
@@ -359,7 +392,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      ${sourceChipHtml(s.appName)}`;
+      ${sourceChipHtml(s.appName)}
+      ${moreMenuHtml(s, partner)}`;
   }
 
   // Companion games stay inside their client: install, uninstall and play all
@@ -371,9 +405,9 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
-      <button class="btn ghost lg" data-act="companion-open" data-id="${store}">${icon("external", 16)} ${t("accounts.openClient")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      ${sourceChipHtml(s.appName)}`;
+      ${sourceChipHtml(s.appName)}
+      ${moreMenuHtml(s, partner)}`;
   }
 
   // Steam games are owned by the Steam client: play, update and verify all
@@ -392,8 +426,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${t("drawer.storeTitleSteam")}">${icon("external", 16)}</button>
-      ${sourceChipHtml(s.appName)}`;
+      ${sourceChipHtml(s.appName)}
+      ${moreMenuHtml(s, partner)}`;
   }
 
   const p = epicDlProgress(s.appName);
@@ -402,9 +436,9 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     ${primaryAction(s, p, partner)}
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-    <button class="btn ghost lg icon-only" data-act="epic-store-page" data-id="${s.appName}" title="${storeTitle}">${icon("external", 16)}</button>
     ${(p !== null || isDl) ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
-    ${sourceChipHtml(s.appName)}`;
+    ${sourceChipHtml(s.appName)}
+    ${moreMenuHtml(s, partner)}`;
 }
 
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
@@ -728,6 +762,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (!isSameApp && S.currentModalAppName) forgetGameScreenshots(S.currentModalAppName);
   S.currentModalAppName = appName;
   S.isVersionDropdownOpen = false;
+  S.isGameMoreMenuOpen = false;
   if (isInitialOpen) {
     S.activeDrawerTab = "overview";
     S.activeAchFilter = "all";

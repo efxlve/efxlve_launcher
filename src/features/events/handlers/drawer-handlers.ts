@@ -128,6 +128,14 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
 
     case "toggle-version-dropdown":
+      S.isGameMoreMenuOpen = !S.isGameMoreMenuOpen;
+      document.getElementById("game-more-menu")?.classList.toggle("show", S.isGameMoreMenuOpen);
+      document
+        .querySelector<HTMLElement>('[data-act="game-more-menu"]')
+        ?.setAttribute("aria-expanded", String(S.isGameMoreMenuOpen));
+      return true;
+
+    case "toggle-version-dropdown":
       S.isVersionDropdownOpen = !S.isVersionDropdownOpen;
       document.getElementById("version-dropdown-menu")?.classList.toggle("show", S.isVersionDropdownOpen);
       document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", String(S.isVersionDropdownOpen));

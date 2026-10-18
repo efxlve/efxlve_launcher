@@ -866,3 +866,22 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .hub-critic-badge .critic-badge-name { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hub-critic-badge .critic-badge-sub { font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hub-critic-badge .critic-badge-ext { display: none; }
+
+/* ---------- The "…" menu ---------- */
+
+.gp-more-wrap { position: relative; display: inline-flex; }
+.gp-more-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
+  min-width: 240px; padding: 4px; display: none;
+  background: var(--surface-1); border: 1px solid var(--line-strong);
+  border-radius: var(--r-md); box-shadow: var(--shadow-pop);
+}
+.gp-more-menu.show { display: block; }
+.gp-more-menu .ps5-context-item span { white-space: nowrap; }
+.gp-more-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+
+/* One store: the picker is not a choice, so it stops looking like a button. */
+.gp-source.static {
+  background: transparent; border-color: transparent; color: var(--text-2);
+  padding: 0 8px; font-weight: 500; cursor: default;
+}

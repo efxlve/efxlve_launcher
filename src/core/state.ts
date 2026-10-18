@@ -622,6 +622,8 @@ export const S = {
   steamAuthCodeMode: false,
   /** Game page store selector: dropdown list open state. */
   isVersionDropdownOpen: false,
+  /** The game page's "…" menu; kept here so a late repaint cannot close it. */
+  isGameMoreMenuOpen: false,
   steamOwnedCount: 0,
   /** Keys (`steam::<id>`) of games Steam Families shares with this account. */
   steamSharedIds: new Set<string>(),
