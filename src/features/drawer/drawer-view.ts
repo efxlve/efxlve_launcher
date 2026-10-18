@@ -20,7 +20,7 @@ import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from 
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary } from "../../core/session-summary";
-import { steamNews } from "../../steam";
+import { steamNews, type SteamNewsItem } from "../../steam";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
@@ -1041,7 +1041,9 @@ export function repaintIgdbBlocks(appName: string): void {
   }
 }
 
-/** News is asked for once per game per session; the answer fills #gp-news. */
+/** News is asked for once per game per session; the answer is kept so returning
+ *  to the page paints it instead of a skeleton that would never fill. */
+const newsCache = new Map<string, SteamNewsItem[]>();
 const newsRequested = new Set<string>();
 
 async function loadSteamNews(appName: string, appId: string): Promise<void> {
@@ -1049,11 +1051,14 @@ async function loadSteamNews(appName: string, appId: string): Promise<void> {
   newsRequested.add(appName);
   try {
     const items = await steamNews(appId, 3);
+    newsCache.set(appName, items);
     if (S.currentModalAppName !== appName) return;
     const host = document.getElementById("gp-news");
     if (host) host.innerHTML = renderSteamNews(items);
   } catch {
-    // A feed that cannot be read is not worth an error box: the block goes away.
+    // A feed that cannot be read is not worth an error box: the block goes away,
+    // and an empty list is remembered so it does not come back as a skeleton.
+    newsCache.set(appName, []);
     if (S.currentModalAppName !== appName) return;
     const host = document.getElementById("gp-news");
     if (host) host.innerHTML = "";
@@ -1101,7 +1106,8 @@ export function renderDrawerOverview(
     ? s.appName.slice(7)
     : (S.steamDetails.get(s.appName)?.appId ?? "");
   if (newsAppId) void loadSteamNews(s.appName, newsAppId);
-  const news = newsAppId ? `<div id="gp-news">${renderSteamNews(null)}</div>` : "";
+  const cachedNews = newsCache.get(s.appName);
+  const news = newsAppId ? `<div id="gp-news">${renderSteamNews(cachedNews ?? null)}</div>` : "";
   // The two halves of the scores card, kept as separate containers: the painters
   // that fill them late must not overwrite each other's work.
   const hltbBlock = `<div id="drawer-hltb-container">${renderHltbCard(
