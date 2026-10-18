@@ -8,6 +8,10 @@
 //!
 //! The recorder runs on its own thread while a game is in the foreground and
 //! stops on the hotkey, on the maximum duration, or when the game exits.
+//!
+//! Sound comes from the default output device through WASAPI loopback
+//! (`clip_audio`) and is written into the same file as 16-bit PCM, interleaved
+//! between the frames.
 
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
@@ -18,6 +22,8 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use tauri::Emitter;
+
+use crate::legendary::clip_audio::AudioInfo;
 
 /// Default cap: a clip stops by itself here so a forgotten recording cannot
 /// fill the disk (12 fps × ~300 KB ≈ 3.5 MB/s, 5 minutes ≈ 1 GB).
@@ -92,14 +98,38 @@ fn fourcc(text: &[u8; 4]) -> [u8; 4] {
 struct AviWriter {
     file: File,
     frames: u32,
-    index: Vec<(u32, u32)>,
+    /// One entry per chunk: offset from the start of movi, length, chunk tag.
+    index: Vec<(u32, u32, [u8; 4])>,
     frame_bytes: u32,
     movi_start: u64,
+    /// Audio block size; 0 means the file has no audio stream.
+    audio_block_align: u16,
+    audio_bytes: u64,
+    /// Where the sizes that are only known at the end live. With a second
+    /// stream every later offset shifts, so they are recorded while writing
+    /// the header instead of being recomputed from the layout.
+    total_frames_at: u64,
+    video_length_at: u64,
+    audio_length_at: Option<u64>,
+}
+
+/// Where the next chunk written into LIST hdrl lands in the file: the RIFF
+/// header (12 bytes) plus the LIST tag, size and type (12 bytes), plus
+/// everything already built.
+fn hdrl_payload_at(hdrl: &[u8]) -> u64 {
+    24 + hdrl.len() as u64
 }
 
 impl AviWriter {
     /// Writes the headers with placeholder sizes; they are patched on finish.
-    fn create(path: &Path, width: u32, height: u32, fps: u32) -> std::io::Result<Self> {
+    /// `audio` adds a PCM stream, which is what gives a clip its sound.
+    fn create(
+        path: &Path,
+        width: u32,
+        height: u32,
+        fps: u32,
+        audio: Option<AudioInfo>,
+    ) -> std::io::Result<Self> {
         let mut file = File::create(path)?;
         let micros = 1_000_000 / fps.max(1);
 
@@ -118,12 +148,15 @@ impl AviWriter {
         avih.extend_from_slice(&0x0000_0010u32.to_le_bytes()); // AVIF_HASINDEX
         avih.extend_from_slice(&0u32.to_le_bytes()); // dwTotalFrames (patched)
         avih.extend_from_slice(&0u32.to_le_bytes()); // dwInitialFrames
-        avih.extend_from_slice(&1u32.to_le_bytes()); // dwStreams
+        avih.extend_from_slice(&(if audio.is_some() { 2u32 } else { 1u32 }).to_le_bytes()); // dwStreams
         avih.extend_from_slice(&0u32.to_le_bytes()); // dwSuggestedBufferSize
         avih.extend_from_slice(&width.to_le_bytes());
         avih.extend_from_slice(&height.to_le_bytes());
         avih.extend_from_slice(&[0u8; 16]); // reserved
         write_chunk(&mut hdrl, b"avih", &avih);
+        // avih's payload sits 8 bytes into the hdrl payload, and dwTotalFrames
+        // 16 bytes into that.
+        let total_frames_at = 24 + 8 + 16;
 
         // LIST strl { strh, strf }
         let mut strh: Vec<u8> = Vec::new();
@@ -161,7 +194,52 @@ impl AviWriter {
         let mut strl: Vec<u8> = Vec::new();
         write_chunk(&mut strl, b"strh", &strh);
         write_chunk(&mut strl, b"strf", &strf);
+        // strh's payload sits 12 (LIST header) + 8 (chunk header) bytes into the
+        // strl list, and dwLength 32 bytes into the payload.
+        let video_length_at = hdrl_payload_at(&hdrl) + 12 + 8 + 32;
         write_list(&mut hdrl, b"strl", &strl)?;
+
+        let audio_length_at = match audio {
+            Some(info) => {
+                // Audio stream: 16-bit PCM at the device's own mix format.
+                let mut astrh: Vec<u8> = Vec::new();
+                astrh.extend_from_slice(&fourcc(b"auds"));
+                astrh.extend_from_slice(&0u32.to_le_bytes()); // fccHandler
+                astrh.extend_from_slice(&0u32.to_le_bytes()); // dwFlags
+                astrh.extend_from_slice(&0u16.to_le_bytes()); // wPriority
+                astrh.extend_from_slice(&0u16.to_le_bytes()); // wLanguage
+                astrh.extend_from_slice(&0u32.to_le_bytes()); // dwInitialFrames
+                // For PCM, dwScale is one block and dwRate the bytes per second,
+                // so dwRate / dwScale comes out as the sample rate.
+                astrh.extend_from_slice(&u32::from(info.block_align()).to_le_bytes()); // dwScale
+                astrh.extend_from_slice(&info.bytes_per_second().to_le_bytes()); // dwRate
+                astrh.extend_from_slice(&0u32.to_le_bytes()); // dwStart
+                astrh.extend_from_slice(&0u32.to_le_bytes()); // dwLength (patched)
+                astrh.extend_from_slice(&info.bytes_per_second().to_le_bytes()); // dwSuggestedBufferSize
+                astrh.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes()); // dwQuality = -1
+                astrh.extend_from_slice(&u32::from(info.block_align()).to_le_bytes()); // dwSampleSize
+                astrh.extend_from_slice(&[0u8; 8]); // rcFrame
+
+                // The audio strf is a WAVEFORMATEX, 18 bytes.
+                let mut astrf: Vec<u8> = Vec::new();
+                astrf.extend_from_slice(&1u16.to_le_bytes()); // WAVE_FORMAT_PCM
+                astrf.extend_from_slice(&info.channels.to_le_bytes());
+                astrf.extend_from_slice(&info.sample_rate.to_le_bytes());
+                astrf.extend_from_slice(&info.bytes_per_second().to_le_bytes());
+                astrf.extend_from_slice(&info.block_align().to_le_bytes());
+                astrf.extend_from_slice(&16u16.to_le_bytes()); // wBitsPerSample
+                astrf.extend_from_slice(&0u16.to_le_bytes()); // cbSize
+
+                let mut strl: Vec<u8> = Vec::new();
+                write_chunk(&mut strl, b"strh", &astrh);
+                write_chunk(&mut strl, b"strf", &astrf);
+                let at = hdrl_payload_at(&hdrl) + 12 + 8 + 32;
+                write_list(&mut hdrl, b"strl", &strl)?;
+                Some(at)
+            }
+            None => None,
+        };
+
         write_list(&mut file, b"hdrl", &hdrl)?;
 
         // LIST movi (size patched later); the frame data follows it.
@@ -176,6 +254,11 @@ impl AviWriter {
             index: Vec::new(),
             frame_bytes: 0,
             movi_start,
+            audio_block_align: audio.map(|info| info.block_align()).unwrap_or(0),
+            audio_bytes: 0,
+            total_frames_at,
+            video_length_at,
+            audio_length_at,
         })
     }
 
@@ -188,9 +271,33 @@ impl AviWriter {
         if jpeg.len() % 2 == 1 {
             self.file.write_all(&[0u8])?;
         }
-        self.index.push(((offset - self.movi_start) as u32, jpeg.len() as u32));
+        self.index.push(((offset - self.movi_start) as u32, jpeg.len() as u32, *b"00dc"));
         self.frames += 1;
         self.frame_bytes = self.frame_bytes.max(jpeg.len() as u32);
+        Ok(())
+    }
+
+    /// Appends the sound captured since the last frame. AVI players want the two
+    /// streams interleaved, not one after the other, so this runs between frames
+    /// rather than in one go at the end. A video-only file ignores it.
+    fn add_audio(&mut self, samples: &[i16]) -> std::io::Result<()> {
+        if self.audio_block_align == 0 || samples.is_empty() {
+            return Ok(());
+        }
+        let mut payload = Vec::with_capacity(samples.len() * 2);
+        for sample in samples {
+            payload.extend_from_slice(&sample.to_le_bytes());
+        }
+        let offset = self.file.stream_position()?;
+        self.file.write_all(b"01wb")?;
+        self.file.write_all(&(payload.len() as u32).to_le_bytes())?;
+        self.file.write_all(&payload)?;
+        if payload.len() % 2 == 1 {
+            self.file.write_all(&[0u8])?;
+        }
+        self.index
+            .push(((offset - self.movi_start) as u32, payload.len() as u32, *b"01wb"));
+        self.audio_bytes += payload.len() as u64;
         Ok(())
     }
 
@@ -199,8 +306,8 @@ impl AviWriter {
         let index_start = self.file.stream_position()?;
         self.file.write_all(b"idx1")?;
         self.file.write_all(&((self.index.len() * 16) as u32).to_le_bytes())?;
-        for (offset, length) in &self.index {
-            self.file.write_all(b"00dc")?;
+        for (offset, length, tag) in &self.index {
+            self.file.write_all(tag)?;
             self.file.write_all(&0x0000_0010u32.to_le_bytes())?; // AVIIF_KEYFRAME
             self.file.write_all(&offset.to_le_bytes())?;
             self.file.write_all(&length.to_le_bytes())?;
@@ -209,18 +316,20 @@ impl AviWriter {
 
         let movi_size = index_start - self.movi_start;
         // The LIST size field sits 8 bytes before the payload start: [LIST][size][movi].
+        // Like every other list, the size counts the 4-byte type as well.
         self.file.seek(SeekFrom::Start(self.movi_start - 8))?;
-        self.file.write_all(&(movi_size as u32).to_le_bytes())?;
+        self.file.write_all(&((movi_size + 4) as u32).to_le_bytes())?;
 
-        // avih.dwTotalFrames lives 24 bytes into the avih payload, which starts
-        // right after the 8-byte "avih" + size header that follows "LIST hdrl".
-        let avih_data = 12 /* RIFF header */ + 12 /* LIST hdrl */ + 8 /* avih hdr */;
-        self.file.seek(SeekFrom::Start(avih_data + 16))?;
+        self.file.seek(SeekFrom::Start(self.total_frames_at))?;
         self.file.write_all(&self.frames.to_le_bytes())?;
-        // strh.dwLength: after LIST hdrl → avih chunk (8 + 56) → LIST strl (12) → strh header (8) + 32 bytes.
-        let strh_length = 12 + 12 + 8 + 56 + 12 + 8 + 32;
-        self.file.seek(SeekFrom::Start(strh_length as u64))?;
+        self.file.seek(SeekFrom::Start(self.video_length_at))?;
         self.file.write_all(&self.frames.to_le_bytes())?;
+        if let Some(at) = self.audio_length_at {
+            // An audio dwLength counts blocks, not bytes.
+            let blocks = (self.audio_bytes / u64::from(self.audio_block_align)) as u32;
+            self.file.seek(SeekFrom::Start(at))?;
+            self.file.write_all(&blocks.to_le_bytes())?;
+        }
 
         let riff_size = index_start + index_size - 8;
         self.file.seek(SeekFrom::Start(4))?;
@@ -339,7 +448,15 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     let audio = match crate::legendary::clip_audio::AudioCapture::start() {
         Ok(capture) => {
             let info = capture.info();
-            log(&app, &format!("audio: {} Hz, {} ch", info.sample_rate, info.channels));
+            log(
+                &app,
+                &format!(
+                    "audio: {} Hz, {} ch, {} bytes/s",
+                    info.sample_rate,
+                    info.channels,
+                    info.bytes_per_second()
+                ),
+            );
             Some(capture)
         }
         Err(err) => {
@@ -359,7 +476,8 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
         match crate::legendary::screenshots::capture_frame_jpeg(quality, target_height) {
             Ok((jpeg, width, height)) => {
                 if writer.is_none() {
-                    match AviWriter::create(&path, width, height, fps) {
+                    let audio_info = audio.as_ref().map(|capture| capture.info());
+                    match AviWriter::create(&path, width, height, fps, audio_info) {
                         Ok(created) => {
                             log(&app, &format!("loop: first frame {width}x{height}, {}", path.display()));
                             writer = Some(created);
@@ -373,16 +491,23 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
                         }
                     }
                 }
+                // Sound collected since the previous frame goes in right after
+                // it, so the two streams stay interleaved in the file.
+                let samples = audio
+                    .as_ref()
+                    .map(|capture| capture.drain())
+                    .unwrap_or_default();
+                audio_samples += samples.len() as u64;
                 if let Some(active) = writer.as_mut() {
                     if let Err(err) = active.add_frame(&jpeg) {
                         log(&app, &format!("loop: frame write failed: {err}"));
                         break;
                     }
                     FRAMES.store(active.frames, Ordering::SeqCst);
-                }
-                // Keep the audio clock honest even before it is muxed in.
-                if let Some(capture) = audio.as_ref() {
-                    audio_samples += capture.drain().len() as u64;
+                    if let Err(err) = active.add_audio(&samples) {
+                        log(&app, &format!("loop: audio write failed: {err}"));
+                        break;
+                    }
                 }
             }
             Err(err) => {
@@ -407,7 +532,12 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     }
 
     if let Some(capture) = audio.as_ref() {
-        audio_samples += capture.drain().len() as u64;
+        // Whatever the loopback still held when the hotkey arrived.
+        let tail = capture.drain();
+        audio_samples += tail.len() as u64;
+        if let Some(active) = writer.as_mut() {
+            let _ = active.add_audio(&tail);
+        }
         capture.stop();
         log(&app, &format!("audio: {audio_samples} samples captured"));
     }
@@ -620,7 +750,7 @@ mod tests {
         let path = dir.join("clip.avi");
         let frames: Vec<Vec<u8>> = vec![vec![0xFF, 0xD8, 1, 2, 3, 0xFF, 0xD9], vec![0xFF, 0xD8, 9, 9, 0xFF, 0xD9]];
 
-        let mut writer = AviWriter::create(&path, 640, 360, 15).expect("create");
+        let mut writer = AviWriter::create(&path, 640, 360, 15, None).expect("create");
         for frame in &frames {
             writer.add_frame(frame).expect("frame");
         }
@@ -653,6 +783,122 @@ mod tests {
         assert!(bytes.windows(4).any(|w| w == b"idx1"));
         assert_eq!(avi_seconds(&path), Some(0));
         let _ = std::fs::remove_file(&path);
+    }
+
+    /// With sound the container carries two streams: an `auds` PCM stream and
+    /// `01wb` chunks interleaved between the frames, each one indexed.
+    #[test]
+    fn avi_writer_muxes_a_pcm_audio_stream() {
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("clip-audio.avi");
+        let info = AudioInfo {
+            sample_rate: 48_000,
+            channels: 2,
+        };
+        // 480 samples = 10 ms of 48 kHz stereo = 240 blocks of 4 bytes.
+        let block: Vec<i16> = (0..480).map(|i| (i % 100) as i16).collect();
+
+        let mut writer = AviWriter::create(&path, 640, 360, 30, Some(info)).expect("create");
+        for _ in 0..3 {
+            writer
+                .add_frame(&[0xFF, 0xD8, 1, 2, 0xFF, 0xD9])
+                .expect("frame");
+            writer.add_audio(&block).expect("audio");
+        }
+        writer.finish(30).expect("finish");
+
+        let bytes = std::fs::read(&path).expect("read");
+        assert_eq!(&bytes[0..4], b"RIFF");
+        let riff_size = u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]) as usize;
+        assert_eq!(riff_size + 8, bytes.len());
+        // avih.dwStreams: video plus audio.
+        assert_eq!(
+            u32::from_le_bytes([bytes[56], bytes[57], bytes[58], bytes[59]]),
+            2
+        );
+        // The audio stream header, with dwLength counted in blocks.
+        let auds = bytes.windows(4).position(|w| w == b"auds").expect("auds");
+        let blocks = u32::from_le_bytes([
+            bytes[auds + 32],
+            bytes[auds + 33],
+            bytes[auds + 34],
+            bytes[auds + 35],
+        ]);
+        assert_eq!(blocks, 240 * 3);
+        // Its WAVEFORMATEX: PCM, stereo, 48 kHz, 16-bit.
+        assert_eq!(&bytes[auds + 56..auds + 60], b"strf");
+        assert_eq!(
+            u32::from_le_bytes([
+                bytes[auds + 60],
+                bytes[auds + 61],
+                bytes[auds + 62],
+                bytes[auds + 63]
+            ]),
+            18
+        );
+        let wfx = auds + 64;
+        assert_eq!(u16::from_le_bytes([bytes[wfx], bytes[wfx + 1]]), 1);
+        assert_eq!(u16::from_le_bytes([bytes[wfx + 2], bytes[wfx + 3]]), 2);
+        assert_eq!(
+            u32::from_le_bytes([bytes[wfx + 4], bytes[wfx + 5], bytes[wfx + 6], bytes[wfx + 7]]),
+            48_000
+        );
+        assert_eq!(u16::from_le_bytes([bytes[wfx + 14], bytes[wfx + 15]]), 16);
+        // Both streams sit inside movi, interleaved.
+        let movi = bytes.windows(4).position(|w| w == b"movi").expect("movi");
+        let idx = bytes.windows(4).position(|w| w == b"idx1").expect("idx1");
+        let body = &bytes[movi + 4..idx];
+        assert_eq!(body.windows(4).filter(|w| *w == b"00dc").count(), 3);
+        assert_eq!(body.windows(4).filter(|w| *w == b"01wb").count(), 3);
+        // …and every one of the six chunks is in the index.
+        let index_size = u32::from_le_bytes([bytes[idx + 4], bytes[idx + 5], bytes[idx + 6], bytes[idx + 7]]);
+        assert_eq!(index_size, 6 * 16);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    /// The whole path on a real machine: a real screen frame plus real loopback
+    /// sound, muxed into one file. Run manually (`cargo test -- --ignored`) on a
+    /// desktop session; the file is left next to the workspace to listen to.
+    #[test]
+    #[ignore = "grabs the real screen and speakers; run manually"]
+    fn a_real_clip_gets_a_sound_track() {
+        let (jpeg, width, height) =
+            crate::legendary::screenshots::capture_frame_jpeg(70, 720).expect("capture");
+        let capture = crate::legendary::clip_audio::AudioCapture::start().expect("loopback");
+        let info = capture.info();
+        assert!(info.sample_rate >= 8_000, "a sane sample rate");
+        assert!(info.channels >= 1, "at least one channel");
+
+        let path = PathBuf::from("tmp-clip-audio-check.avi");
+        let mut writer = AviWriter::create(&path, width, height, 30, Some(info)).expect("create");
+        let mut blocks = 0usize;
+        for _ in 0..30 {
+            writer.add_frame(&jpeg).expect("frame");
+            std::thread::sleep(Duration::from_millis(33));
+            let samples = capture.drain();
+            blocks += samples.len() * 2 / usize::from(info.block_align());
+            writer.add_audio(&samples).expect("audio");
+        }
+        capture.stop();
+        writer.finish(30).expect("finish");
+
+        let bytes = std::fs::read(&path).expect("read");
+        assert_eq!(
+            u32::from_le_bytes([bytes[56], bytes[57], bytes[58], bytes[59]]),
+            2,
+            "two streams"
+        );
+        let movi = bytes.windows(4).position(|w| w == b"movi").expect("movi");
+        let idx = bytes.windows(4).position(|w| w == b"idx1").expect("idx1");
+        let chunks = bytes[movi + 4..idx]
+            .windows(4)
+            .filter(|w| *w == b"01wb")
+            .count();
+        assert!(chunks > 0, "the file has sound chunks");
+        // A second of recording should bring in about a second of audio.
+        assert!(blocks > 8_000, "about a second of blocks, got {blocks}");
+        println!("{}: {blocks} blocks in {chunks} chunks", path.display());
     }
 
     /// The frame grabber is the risky half (Win32 + GDI+): run manually on a

@@ -27,6 +27,9 @@ Thumbs.db
 # EOS SDK (Epic'in kapalı kaynak SDK'sı; repoda tutulmaz, yerelden yüklenir)
 src-tauri/vendor/
 
+# Elle çalıştırılan yakalama testlerinin çıktısı (ekran görüntüsü, klip)
+src-tauri/tmp-*
+
 # Web sitesi projesi (ayrı repo; launcher ile birlikte commit'lenmesin)
 efxlve.com/
 

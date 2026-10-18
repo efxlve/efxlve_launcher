@@ -59,13 +59,19 @@ mod imp {
         pub fn start() -> Result<Self, String> {
             let samples: Arc<Mutex<Vec<i16>>> = Arc::new(Mutex::new(Vec::new()));
             let stop = Arc::new(AtomicBool::new(false));
-            let info = probe_format()?;
+            let device = probe_format()?;
+            // The file carries stereo whatever the device mixes, so a surround
+            // setup still produces something every player opens.
+            let info = AudioInfo {
+                sample_rate: device.sample_rate,
+                channels: device.channels.min(2),
+            };
 
             let thread_samples = Arc::clone(&samples);
             let thread_stop = Arc::clone(&stop);
             std::thread::Builder::new()
                 .name("clip-audio".to_string())
-                .spawn(move || capture_loop(thread_samples, thread_stop))
+                .spawn(move || capture_loop(thread_samples, thread_stop, info))
                 .map_err(|_| "audio thread could not start".to_string())?;
 
             Ok(Self { samples, stop, info })
@@ -121,7 +127,7 @@ mod imp {
     }
 
     /// One capture thread: pull the loopback buffer, convert to i16, buffer it.
-    fn capture_loop(samples: Arc<Mutex<Vec<i16>>>, stop: Arc<AtomicBool>) {
+    fn capture_loop(samples: Arc<Mutex<Vec<i16>>>, stop: Arc<AtomicBool>, target: AudioInfo) {
         unsafe {
             let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
             let Ok(enumerator) = CoCreateInstance::<_, IMMDeviceEnumerator>(
@@ -140,6 +146,7 @@ mod imp {
             let Ok(format) = client.GetMixFormat() else {
                 return;
             };
+            let device_channels = (*format).nChannels as usize;
             let bits = (*format).wBitsPerSample;
             let is_float = (*format).wFormatTag == 3 || bits == 32;
             // 100 ms of buffer: long enough to survive a busy frame, short
@@ -178,12 +185,23 @@ mod imp {
                         .GetBuffer(&mut data, &mut count, &mut flags, None, None)
                         .is_err()
                     {
-                        frames = 0;
                         break;
                     }
-                    // AUDCLNT_BUFFERFLAGS_SILENT: no data, but the clock advanced.
-                    if flags & 0x2 == 0 && !data.is_null() && count > 0 {
-                        let converted = convert(data, count as usize, bits, is_float);
+                    // AUDCLNT_BUFFERFLAGS_SILENT: the clock advanced with
+                    // nothing to read. The silence is written out as zeros so
+                    // the track stays as long as the picture — a gap would push
+                    // the sound ahead of the video.
+                    if count > 0 {
+                        // GetBuffer counts audio frames, and a frame holds one
+                        // sample per channel: reading `count` samples would halve
+                        // everything that is not mono.
+                        let sample_count = count as usize * device_channels;
+                        let converted = if flags & 0x2 != 0 || data.is_null() {
+                            vec![0i16; sample_count]
+                        } else {
+                            convert(data, sample_count, bits, is_float)
+                        };
+                        let converted = to_stereo(converted, device_channels, target.channels as usize);
                         if let Ok(mut buffer) = samples.lock() {
                             if buffer.len() + converted.len() > MAX_SAMPLES {
                                 // The recorder is behind: drop the oldest audio
@@ -233,6 +251,29 @@ mod imp {
             }
         }
     }
+
+    /// Folds whatever the device mixes into the channel count the file carries.
+    /// Front left and right pass through; the centre and surround channels are
+    /// averaged into both at half level, which keeps them audible in a stereo
+    /// file without clipping.
+    pub(super) fn to_stereo(samples: Vec<i16>, device_channels: usize, target_channels: usize) -> Vec<i16> {
+        if device_channels <= target_channels || device_channels == 0 {
+            return samples;
+        }
+        let mut out = Vec::with_capacity(samples.len() / device_channels * target_channels);
+        for frame in samples.chunks_exact(device_channels) {
+            let mut left = i32::from(frame[0]);
+            let mut right = i32::from(frame[1]);
+            for extra in &frame[2..] {
+                let value = i32::from(*extra) / 2;
+                left += value;
+                right += value;
+            }
+            out.push(left.clamp(-32_768, 32_767) as i16);
+            out.push(right.clamp(-32_768, 32_767) as i16);
+        }
+        out
+    }
 }
 
 #[cfg(test)]
@@ -247,5 +288,21 @@ mod tests {
         };
         assert_eq!(info.block_align(), 4);
         assert_eq!(info.bytes_per_second(), 192_000);
+    }
+
+    /// A surround device still lands in a stereo file, at the same length.
+    #[cfg(windows)]
+    #[test]
+    fn surround_is_folded_into_the_front_pair() {
+        use super::imp::to_stereo;
+        // Two frames of 5.1: left 1000, right 2000, centre 100, surrounds 10.
+        let frames: Vec<i16> = vec![1000, 2000, 100, 10, 10, 10, 1000, 2000, 100, 10, 10, 10];
+        let out = to_stereo(frames, 6, 2);
+        assert_eq!(out.len(), 4, "two stereo frames");
+        assert_eq!(out[0], 1000 + 100 / 2 + 10 / 2 + 10 / 2 + 10 / 2);
+        assert_eq!(out[1], 2000 + 100 / 2 + 10 / 2 + 10 / 2 + 10 / 2);
+        // Stereo in, stereo out — untouched.
+        let stereo: Vec<i16> = vec![1, 2, 3, 4];
+        assert_eq!(to_stereo(stereo.clone(), 2, 2), stereo);
     }
 }
