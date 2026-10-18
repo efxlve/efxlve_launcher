@@ -5,7 +5,7 @@
 
 import { manageRoot } from "../../core/dom";
 import { icon, type IconName } from "../../core/icons";
-import { lastPlayedLabel, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { lastPlayedLabel, rawOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
 import { formatSyncStamp, t } from "../../i18n";
@@ -14,6 +14,7 @@ import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher,
 import { nileGameSettings } from "../../nile";
 import type { GameSource } from "../../core/types";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
+import { storeVersionLabel } from "../drawer/external-versions";
 import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
 export { updateManageCloudRowInPlace };
@@ -242,6 +243,31 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
   return `${openBtn}${resetBtn}${chooseBtn}`;
 }
 
+/**
+ * The hours each store recorded for this title. A game played through Xbox Game
+ * Pass and Steam at the same time showed one number and hid the other, so the
+ * total now names its parts. Silence when only one store has anything.
+ */
+function playtimeBreakdownHtml(appName: string, title: string): string {
+  const rows: Array<{ label: string; seconds: number }> = [];
+  const seen = new Set<string>([appName]);
+  const own = S.playtimeMap.get(appName);
+  if (own?.total_seconds) {
+    rows.push({ label: storeVersionLabel(sourceOfKey(appName)), seconds: own.total_seconds });
+  }
+  for (const key of storeKeysForTitle(title)) {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const record = S.playtimeMap.get(key);
+    if (!record?.total_seconds) continue;
+    rows.push({ label: storeVersionLabel(sourceOfKey(key)), seconds: record.total_seconds });
+  }
+  if (rows.length < 2) return "";
+  return `<div class="mg-info">${icon("clock", 12)} ${rows
+    .map((entry) => `${esc(entry.label)} ${esc(fmtPlaytime(entry.seconds))}`)
+    .join(" · ")}</div>`;
+}
+
 /** Renders the Manage tab for an installed game. */
 /** Manage panel for a game owned by EA, Ubisoft, Xbox, Battle.net or Riot. */
 function companionManageBody(s: EpicSummary, source: GameSource): string {
@@ -264,7 +290,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       ${group("folder", t("manage.groupFiles"), files)}
       ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-      ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", ""))}
+      ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "") + playtimeBreakdownHtml(s.appName, s.title))}
       ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
       ${s.installed ? `<div class="list mg-danger">
@@ -393,7 +419,7 @@ function amazonManageBody(s: EpicSummary): string {
       ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtime)}</span>`,
         pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${s.appName}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
-          "", "manage-playtime-meta"))}
+          "", "manage-playtime-meta") + playtimeBreakdownHtml(s.appName, s.title))}
       ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
       ${s.installed ? `<div class="list mg-danger">
@@ -439,7 +465,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           `)}
           ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
             `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-          ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), ""))}
+          ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "") + playtimeBreakdownHtml(s.appName, s.title))}
           ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
             `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         </div>`;
@@ -468,7 +494,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
-        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), ""))}
+        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "") + playtimeBreakdownHtml(s.appName, s.title))}
 
         ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
           `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
@@ -505,7 +531,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         `)}
         ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", ""))}
+        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "") + playtimeBreakdownHtml(s.appName, s.title))}
         ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
           `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         ${s.installed ? `<div class="list mg-danger">
@@ -620,6 +646,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${id}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
           "", "manage-playtime-meta")}
+        ${playtimeBreakdownHtml(id, s.title)}
         <div class="row mg-row stack mg-callout">
           <div class="mg-title">${t("manage.epicDataTitle")}</div>
           <div class="mg-desc">${t("manage.epicDataP1")}</div>
