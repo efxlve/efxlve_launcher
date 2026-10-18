@@ -418,7 +418,7 @@
         var s = normalizeText(title);
         // Remove edition / version phrases after a colon or dash
         s = s.replace(/\benhanced edition\b/gi, '');
-        s = s.replace(/[:\-â€“â€”]\s*(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
+        s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, '');
         
         // Remove edition words
         s = s.replace(/\b(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, '');

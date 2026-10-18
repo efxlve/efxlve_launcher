@@ -35,7 +35,7 @@ const CLIENT_ID: &str = "1551663205426794596";
 ///
 /// `relationships.read` used to be in this list. It belongs to the Social SDK
 /// scope set, and the RPC authorize rejects the whole request with
-/// `invalid_scope` when it is included â€” the beta log showed exactly that, plus
+/// `invalid_scope` when it is included — the beta log showed exactly that, plus
 /// the two prompts it caused (the PKCE shape, then the bare fallback).
 const SCOPES: [&str; 2] = ["rpc", "rpc.voice.read"];
 /// How often the worker checks the pipe and the stop flag.
@@ -819,7 +819,7 @@ fn authorize(app: &AppHandle, conn: &mut Pipe) -> Result<StoredToken, String> {
 
     for (name, args, exchange_verifier) in variants {
         plog(&format!(
-            "asking for consent [{name}] â€” approve the prompt in Discord"
+            "asking for consent [{name}] — approve the prompt in Discord"
         ));
         emit_voice(app, "authorizing", None, Vec::new(), None);
         conn.send(&json!({ "cmd": "AUTHORIZE", "args": args, "nonce": nonce() }))?;
@@ -934,7 +934,7 @@ fn probe_relationships() -> Result<(), String> {
     plog("probe: READY");
 
     let verifier = pkce_verifier();
-    plog("probe: asking for consent [rpc + rpc.voice.read] â€” approve the prompt in Discord");
+    plog("probe: asking for consent [rpc + rpc.voice.read] — approve the prompt in Discord");
     conn.send(&json!({
         "cmd": "AUTHORIZE",
         "args": {
@@ -962,7 +962,7 @@ fn probe_relationships() -> Result<(), String> {
     plog("probe: authorization code received");
 
     // The token response (logged masked by `post_token`) carries the granted
-    // scope list â€” the answer to "did Discord allow relationships.read?".
+    // scope list — the answer to "did Discord allow relationships.read?".
     let token = post_token(&[
         ("client_id", CLIENT_ID),
         ("grant_type", "authorization_code"),
@@ -1030,7 +1030,7 @@ fn probe_relationships() -> Result<(), String> {
         }
     }
     plog(&format!(
-        "probe: GET_RELATIONSHIPS ok â€” {} relationships ({} friends, {} pending, {} blocked)",
+        "probe: GET_RELATIONSHIPS ok — {} relationships ({} friends, {} pending, {} blocked)",
         items.len(),
         friends,
         pending,
@@ -1224,7 +1224,7 @@ fn mask(value: &Value) -> Value {
                 .map(|(key, inner)| {
                     let lowered = key.to_ascii_lowercase();
                     let masked = if lowered.contains("token") || lowered.contains("secret") {
-                        Value::String("â€¦".to_string())
+                        Value::String("…".to_string())
                     } else {
                         mask(inner)
                     };
@@ -1242,9 +1242,9 @@ fn mask(value: &Value) -> Value {
 pub(crate) fn mask_name(name: &str) -> String {
     let mut chars = name.chars();
     match (chars.next(), chars.next()) {
-        (Some(first), Some(second)) => format!("{first}{second}â€¦"),
-        (Some(first), None) => format!("{first}â€¦"),
-        _ => "â€¦".to_string(),
+        (Some(first), Some(second)) => format!("{first}{second}…"),
+        (Some(first), None) => format!("{first}…"),
+        _ => "…".to_string(),
     }
 }
 
@@ -1252,7 +1252,7 @@ pub(crate) fn mask_name(name: &str) -> String {
 fn compact(value: &Value) -> String {
     let text = mask(value).to_string();
     if text.chars().count() > 400 {
-        format!("{}â€¦", text.chars().take(400).collect::<String>())
+        format!("{}…", text.chars().take(400).collect::<String>())
     } else {
         text
     }

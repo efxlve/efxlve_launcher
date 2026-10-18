@@ -503,10 +503,10 @@ document.addEventListener("input", (e) => {
     if (lpSelect) {
       if (h > 0 || m > 0) {
         if (!lpSelect.value) {
-          lpSelect.value = "Daha Ã¶nce oynandÄ± (Epic Games)";
+          lpSelect.value = "Daha önce oynandı (Epic Games)";
         }
       } else {
-        if (lpSelect.value === "Daha Ã¶nce oynandÄ± (Epic Games)") {
+        if (lpSelect.value === "Daha önce oynandı (Epic Games)") {
           lpSelect.value = "";
         }
       }

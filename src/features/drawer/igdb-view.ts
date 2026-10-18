@@ -1,6 +1,6 @@
 /**
  * The IGDB block on the game page: genres, companies, release date, rating,
- * screenshots and similar games â€” plus the attribution IGDB asks for.
+ * screenshots and similar games — plus the attribution IGDB asks for.
  *
  * Shown only when the user configured IGDB credentials in Settings. The Rust
  * side caches each game on disk, so opening a page costs one request at most,
@@ -20,7 +20,7 @@ interface IgdbTarget {
 
 /** Per app name: the enriched game, or `null` when IGDB had no match. */
 const cache = new Map<string, IgdbGame | null>();
-/** App name â†’ a translated message, set only when IGDB could not be reached. */
+/** App name → a translated message, set only when IGDB could not be reached. */
 const errors = new Map<string, string>();
 const loading = new Set<string>();
 
@@ -59,7 +59,7 @@ export function igdbGameFor(appName: string): IgdbGame | null | undefined {
 }
 
 /**
- * True once IGDB cannot answer for this game any more â€” it has answered, it
+ * True once IGDB cannot answer for this game any more — it has answered, it
  * failed, or it is not configured at all. The About box waits for this before
  * it falls back to a store description or Wikipedia, so the text does not
  * appear and then get replaced.
@@ -95,7 +95,7 @@ export function renderIgdbCredits(target: IgdbTarget): string {
   if (game.publisher && !sameCompany(game.publisher, game.developer)) {
     facts.push(`${icon("layers", 12)} <span>${esc(game.publisher)}</span>`);
   }
-  // One age rating in the row â€” the body the user's region reads first â€” and the
+  // One age rating in the row — the body the user's region reads first — and the
   // rest behind a counter. Four organisations at once read as noise.
   const rated = game.ageRatings.filter((rating) => rating.rating);
   const preferred =
@@ -106,9 +106,9 @@ export function renderIgdbCredits(target: IgdbTarget): string {
   const labelOf = (rating: { organization: string; rating: string }) =>
     rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
   const ageChips = preferred
-    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" Â· "))}">${esc(labelOf(preferred))}</span>` +
+    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" · "))}">${esc(labelOf(preferred))}</span>` +
       (others.length
-        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" Â· "))}">+${others.length}</span>`
+        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
         : "")
     : "";
   const tags = [...game.genres, ...game.themes].slice(0, 6);

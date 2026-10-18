@@ -179,7 +179,7 @@ function captureOpenDetails(): void {
 
 function renderDownloads(): string {
   const savedDir = S.epicSettingsCache?.install_dir?.trim() || "";
-  const shownDir = savedDir || S.epicDefaultDir || "â€”";
+  const shownDir = savedDir || S.epicDefaultDir || "—";
   const dir = row(
     t("settings.epicInstallDirTitle"),
     `${t("settings.epicInstallDirHint")} <code>${esc(shownDir)}</code>`,
@@ -189,7 +189,7 @@ function renderDownloads(): string {
   );
 
   const gogSavedDir = S.gogInstallDir.trim();
-  const gogShownDir = gogSavedDir || S.gogDefaultDir || "â€”";
+  const gogShownDir = gogSavedDir || S.gogDefaultDir || "—";
   const gogDir = row(
     t("settings.gogInstallDirTitle"),
     `${t("settings.gogInstallDirHint")} <code>${esc(gogShownDir)}</code>`,
@@ -199,7 +199,7 @@ function renderDownloads(): string {
   );
 
   const amazonSavedDir = S.amazonInstallDir.trim();
-  const amazonShownDir = amazonSavedDir || S.amazonDefaultDir || "â€”";
+  const amazonShownDir = amazonSavedDir || S.amazonDefaultDir || "—";
   const amazonDir = row(
     t("settings.amazonInstallDirTitle"),
     `${t("settings.amazonInstallDirHint")} <code>${esc(amazonShownDir)}</code>`,
@@ -521,7 +521,7 @@ function renderIntegrations(): string {
 }
 
 /**
- * The Social section: Discord itself â€” the page, Rich Presence and staying
+ * The Social section: Discord itself — the page, Rich Presence and staying
  * open. It used to live inside Integrations, where nobody found it.
  */
 function renderSocial(): string {
@@ -734,7 +734,7 @@ function renderNotes(): string {
   const statsRow = row(
     t("notes.statsTitle"),
     t("notes.statsDesc"),
-    `<span class="settings-value">${t("notes.statsNotes", { count: String(notes.length) })} Â· ${t("notes.statsGames", { count: String(games) })}</span>`,
+    `<span class="settings-value">${t("notes.statsNotes", { count: String(notes.length) })} · ${t("notes.statsGames", { count: String(games) })}</span>`,
   );
   const openRow = row(
     t("notes.openPage"),
@@ -768,7 +768,7 @@ function renderNotes(): string {
 function renderScreenshots(): string {
   const folder = row(
     t("settings.ssDirTitle"),
-    `${t("settings.ssDirDesc")} <code>${esc(S.screenshotDir || "â€”")}</code>`,
+    `${t("settings.ssDirDesc")} <code>${esc(S.screenshotDir || "—")}</code>`,
     `<button type="button" class="btn ghost small" data-act="ss-open-dir">${t("ss.openFolder")}</button>
      <button type="button" class="btn ghost small" data-act="ss-pick-dir">${t("common.browse")}</button>
      <button type="button" class="btn ghost small" data-act="ss-reset-dir">${t("settings.ssDirReset")}</button>`,
@@ -1279,21 +1279,21 @@ function isSearchHidden(el: HTMLElement): boolean {
 }
 
 /** Case- and accent-insensitive fold: Turkish users type "sayfasi" for
- * "sayfasÄ±", and the accented locales have the same habit. */
+ * "sayfası", and the accented locales have the same habit. */
 function foldForSearch(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[Ä±iÌ‡]/g, "i")
-    .replace(/ÅŸ/g, "s")
-    .replace(/ÄŸ/g, "g")
-    .replace(/Ã§/g, "c")
-    .replace(/Ã¶/g, "o")
-    .replace(/Ã¼/g, "u")
-    .replace(/Å“/g, "oe")
-    .replace(/Ã¦/g, "ae")
-    .replace(/ÃŸ/g, "ss");
+    .replace(/[ıi̇]/g, "i")
+    .replace(/ş/g, "s")
+    .replace(/ğ/g, "g")
+    .replace(/ç/g, "c")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .replace(/ß/g, "ss");
 }
 
 function searchMatches(text: string, tokens: string[]): boolean {
