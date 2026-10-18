@@ -40,4 +40,7 @@ look in case it wrote something despite the instruction.
 ## Open briefs
 
 - `game-page-review.md` — an independent look at the game page, which the owner
-  says got worse.
+  says got worse. **Answered** by Gemini 3.8 Flash; its findings are folded into
+  the plan below.
+- `game-page-plan-review.md` — the staged plan, sent to Gemini 4 Argon inside
+  Antigravity before any of it is written.

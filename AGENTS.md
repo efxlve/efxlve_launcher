@@ -11,7 +11,7 @@ Subagents and other models may be used without asking first, for exploration, re
 - Never use a "contributor" tier model. The owner named `opencode-go/gemini-4-argon-contributor` explicitly; treat every `*-contributor` the same way.
 - Never send project code to a provider the owner has not approved. Approved so far: `opencode-go/claude-haiku-5-5`.
 
-Antigravity's own agent API (Gemini 3.8 Flash) can be driven from here when the IDE is running; the address, the token and the read-only rule are in `docs/agent/antigravity-bridge.md`.
+Antigravity's own agent API (Gemini 3.8 Flash, and the owner's Gemini 4 Argon) can be driven from here when the IDE is running; the address, the token and the read-only rule are in `docs/agent/antigravity-bridge.md`. The API needs a CSRF token the IDE keeps to itself, so in practice **the owner is the bridge**: a brief goes out, an answer comes back. Gemini 4 Argon is not reachable from this workspace at all — the plain model's provider has no funds, and the contributor tier is vetoed.
 
 ## Done when
 
