@@ -21,6 +21,28 @@ touching anything:
   from, including the two points that were deliberately not followed
   (anti-cheat stays in the hero, the achievements stat stays in the hero).
 
+Status, 2026-10-19: the page was rebuilt to the reviewed mockup (340 px hero,
+personal blocks first, one scores card with two bodies, a five-item action row
+plus the `...` menu, the news card, the community link chips, library-aware
+similar games). The three bullets above were then checked against real
+screenshots of the rendered page, taken in a plain browser through the fake
+bridge (wide layout forced, both columns):
+
+- Credits: they are tags + link chips + "Powered by IGDB" now, 119 px tall, and
+  the hairline is a 6% line — the weight is gone, so the "one muted line"
+  experiment is not needed. Resolved.
+- Similar games at the bottom: the reading order is personal → About → news →
+  similar, which reads as "what you own → what it is → what is new → what else
+  to play". Kept as it is; only the owner's eye can settle it.
+- Short sidebar: the scores card leads with "You: 14 h" and the comparison bar,
+  so it is no longer empty without HowLongToBeat. A game with no scores and no
+  lengths still leaves the column thin; the news card moved to the main column,
+  which is where the space is.
+
+Still only the owner can check: the hero with real artwork, and the `...` menu
+opened by hand (its markup, its three items and its open/close behaviour were
+verified in the browser harness, not in the app window).
+
 ## 0b. Remaining plan items
 
 1. Repaint diet: an IGDB answer repaints the whole overview tab

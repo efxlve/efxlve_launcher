@@ -964,7 +964,7 @@ export function updateCriticUI(appName: string, data: CriticData): void {
   if (container) container.innerHTML = renderCriticCard(data, false, igdbGameFor(appName)?.rating ?? null);
 }
 
-/** Collection chips + add button shown under the game description. */
+/** Collection chips + add button, in their own row under the action bar. */
 export function renderCollectionTags(appName: string): string {
   const lowerApp = appName.toLowerCase();
   const gameCols = S.epicCollections.filter((c) => c.app_names.some((name) => name.toLowerCase() === lowerApp));
