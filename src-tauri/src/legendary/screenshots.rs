@@ -1433,8 +1433,10 @@ pub fn start_f12_listener(app: AppHandle) {
                 if clip_down && !was_clip_down {
                     if crate::legendary::clip_recorder::running() {
                         crate::legendary::clip_recorder::stop();
+                        crate::legendary::clip_recorder::log(&app, "hotkey: stop requested");
                         let _ = app.emit("clip-stopping", ());
                     } else if let Some((_, title)) = get_active_running_game() {
+                        crate::legendary::clip_recorder::log(&app, "hotkey: start requested");
                         match crate::legendary::clip_recorder::start(&app, &title) {
                             Ok(()) => {
                                 let _ = app.emit("clip-started", serde_json::json!({ "title": title }));
@@ -1443,6 +1445,8 @@ pub fn start_f12_listener(app: AppHandle) {
                                 let _ = app.emit("clip-error", err);
                             }
                         }
+                    } else {
+                        crate::legendary::clip_recorder::log(&app, "hotkey: no game in the foreground");
                     }
                 }
                 was_clip_down = clip_down;

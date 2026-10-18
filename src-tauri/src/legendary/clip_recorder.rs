@@ -287,8 +287,31 @@ pub fn start(app: &tauri::AppHandle, title: &str) -> Result<(), String> {
     RUNNING.store(true, Ordering::SeqCst);
 
     let app = app.clone();
+    log(&app, &format!("start: {}", path.display()));
     std::thread::spawn(move || record_loop(app, path));
     Ok(())
+}
+
+/// Appends one line to `<app_data>/logs/clip.log`. The recorder had no trace at
+/// all, which is why a report of "F9 never wrote a file" could not be answered.
+pub fn log(app: &tauri::AppHandle, line: &str) {
+    use std::io::Write;
+    use tauri::Manager;
+    let Ok(dir) = app.path().app_data_dir().map(|dir| dir.join("logs")) else {
+        return;
+    };
+    let _ = std::fs::create_dir_all(&dir);
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(dir.join("clip.log"))
+    {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let _ = writeln!(file, "[{stamp}] {line}");
+    }
 }
 
 /// Asks the recorder to stop; the thread finalises the file by itself.
@@ -305,19 +328,25 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     let mut writer: Option<AviWriter> = None;
     let started = Instant::now();
     let mut next_frame = Instant::now();
+    log(&app, &format!("loop: fps={fps} quality={quality} max={max_secs}s"));
 
     while !STOP.load(Ordering::SeqCst) && started.elapsed().as_secs() < max_secs {
         // No game in the foreground any more: stop instead of recording the
         // desktop (the hotkey path already knows how to find the game).
         if crate::legendary::screenshots::get_active_running_game().is_none() {
+            log(&app, "loop: no game in the foreground, stopping");
             break;
         }
         match crate::legendary::screenshots::capture_frame_jpeg(quality) {
             Ok((jpeg, width, height)) => {
                 if writer.is_none() {
                     match AviWriter::create(&path, width, height, fps) {
-                        Ok(created) => writer = Some(created),
+                        Ok(created) => {
+                            log(&app, &format!("loop: first frame {width}x{height}, {}", path.display()));
+                            writer = Some(created);
+                        }
                         Err(err) => {
+                            log(&app, &format!("loop: writer failed: {err}"));
                             if let Ok(mut guard) = LAST_ERROR.lock() {
                                 *guard = Some(format!("@t:ss.recordFailed\u{1f}{err}"));
                             }
@@ -326,15 +355,21 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
                     }
                 }
                 if let Some(active) = writer.as_mut() {
-                    if active.add_frame(&jpeg).is_err() {
+                    if let Err(err) = active.add_frame(&jpeg) {
+                        log(&app, &format!("loop: frame write failed: {err}"));
                         break;
                     }
                     FRAMES.store(active.frames, Ordering::SeqCst);
                 }
             }
             Err(err) => {
+                log(&app, &format!("loop: capture failed: {err}"));
                 if let Ok(mut guard) = LAST_ERROR.lock() {
-                    *guard = Some(err);
+                    *guard = Some(err.clone());
+                }
+                if writer.is_none() {
+                    // Nothing was written: tell the UI instead of failing silently.
+                    let _ = app.emit("clip-error", err);
                 }
                 break;
             }
@@ -351,12 +386,15 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     if let Some(active) = writer {
         let frames = active.frames;
         let _ = active.finish(fps);
+        log(&app, &format!("loop: finished, {frames} frames -> {}", path.display()));
         if frames > 0 {
             let _ = app.emit(
                 "clip-saved",
                 serde_json::json!({ "path": path.to_string_lossy(), "frames": frames }),
             );
         }
+    } else {
+        log(&app, "loop: ended without a single frame");
     }
     RUNNING.store(false, Ordering::SeqCst);
     if let Ok(mut guard) = STARTED_AT.lock() {
