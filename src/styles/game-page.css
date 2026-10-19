@@ -65,8 +65,10 @@ body.sb-resizing .overlay {
 /* --- Action bar + stats --- */
 .gp-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  /* No band behind the row: the launcher's own black, with the hero's scrim
+     fading into it. A surface-coloured strip made the play button look grey. */
   margin-top: 0; padding: 14px 32px; position: relative; z-index: 4;
-  background: var(--surface-1); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  background: transparent;
 }
 .gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 /* Collection chips sit over the hero title: the user's own categories, not
