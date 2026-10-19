@@ -14,7 +14,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-Use `npm.cmd`, not `npm`, in PowerShell. Do not commit unless the user asks.
+Use `npm.cmd`, not `npm`, in PowerShell. Commit every completed change without asking (see `AGENTS.md`); never push unless the user asks.
 
 ## Where code lives
 
@@ -33,7 +33,7 @@ Use `npm.cmd`, not `npm`, in PowerShell. Do not commit unless the user asks.
 | Steam library, details, achievements | `src-tauri/src/steam/` (`mod.rs` lists each file) |
 | Steam sign-in and DPAPI vault | `src-tauri/src/steam_auth/` (`session.rs`, `wire.rs`, `vault.rs`) |
 | Embedded store webviews | `src-tauri/src/store_host.rs` and `store_extension.js` |
-| Strings | `src/locales/*.json` (15 files, same keys). Rust sends `@t:key` plus `\u{1f}` args. The UI translates them with `localizeMessage`. `npm.cmd run locales` checks that every file has the same keys |
+| Strings | `src/locales/*.json` (16 files, same keys). Rust sends `@t:key` plus `\u{1f}` args. The UI translates them with `localizeMessage`. `npm.cmd run locales` checks that every file has the same keys |
 
 `core/` must not import `features/`. Features import `core/` and call `S.field = ...` (the binding `S` is not reassigned).
 
@@ -87,6 +87,10 @@ A file past ~1,500 lines should be split on a one-way dependency. Do not cut a s
 ## Verify
 
 `cargo test` is the backend check (account-vault path tests, Steam language path tests, store bounds tests). `npm.cmd run build` is the TypeScript check. The window itself is a Tauri app; the Vite bundle is not the product UI.
+
+Most screens can also be driven in a plain browser: `docs/agent/verified.md`
+describes the fake-bridge harness and lists what has already been checked there
+and what still needs the real window.
 
 ## Release notes
 

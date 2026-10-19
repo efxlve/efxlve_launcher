@@ -1,0 +1,50 @@
+# What has been verified, and how
+
+The browser harness (`tmp-ss.html`: `index.html` plus a fake Tauri bridge, see
+`%TEMP%\opencode\build-ss-page.mjs`) boots the real app in a plain Chromium, so
+the launcher can be driven and looked at without a game or an account. Every row
+below says which way it was checked. **Harness** means the real render code ran
+with faked backend answers; **app** means it still needs the owner's own run.
+
+Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
+
+## Verified in the harness
+
+| Surface | What was checked |
+|---|---|
+| Game page, first screen | Hero measures 340 px, title 30 px, meta line "Online · Studio · 2016 · PEGI 18" with the live state chip, the five-item action row (Play, Manage, heart, store, `...`) |
+| Game page, `...` menu | Opens on click, three items, closes on a second click and on an outside click, `aria-expanded` follows, Escape closes it before the page |
+| Game page, version picker | Appears only with two or more store copies, lists both with installed state, opens and closes, does not touch the `...` menu |
+| Game page, overview order | Personal blocks first on an installed game (last session → moments → next trophies → empty card), then About, news, similar games |
+| Game page, scores card | One card, two bodies: "You: 14 h" with the comparison bar, HLTB rows, IGDB/OpenCritic/Metacritic badges |
+| Game page, lazy fetches | HLTB and critic fill their own containers and are asked for once per game; the skeletons only show while the answer is in flight |
+| Game page, personal block | Repaints in place when a session ends (same DOM node, scroll kept), shows "+2 trophies" as soon as the store reports them; does nothing on another tab or another game |
+| Game page, hero stats | Trophy count follows a finished session (5/20 → 7/20) |
+| Screenshots page | Toolbar, filters, 34-shot gallery, clips section with first-frame thumbnails that decode (112×64), five per-row actions, join button with two clips, thumbnail cache survives a repaint |
+| Screenshots page, reload | A capture and a saved clip both reload the gallery and the clip list through `screenshots-changed` |
+| Library | Real boot from `epic_setup_status` + `epic_cached_library`: grid, tabs, store filter, sort, cover placeholders, playtime and trophy chips, store marks |
+| Library, keyboard | A card takes focus and Enter opens the game page (the Enter/Space bridge), which also proves the click router is attached |
+| Downloads | Active card with progress bar, five metrics, speed chart, queue with reorder/download-now/remove and order numbers |
+| Settings → Screenshots | Folder row, "scan store folders too" switch with its explanation, watched-folders list, hotkey row |
+| Settings → Downloads | Picture cache row showing its size next to Clear |
+| Settings → System | App update rows, system toggles, backend and library folder |
+
+## Still needs the app window
+
+- The hero with **real artwork** (the harness has no cover files), and the hero's
+  look at a maximised window.
+- The `...` menu and the version picker **by hand** (their behaviour is verified,
+  their feel is not).
+- Everything that needs a real game or account: launching, installing, the
+  recorder, the overlay, Steam sign-in, the embedded store.
+- The two open design questions in `docs/agent/briefs/game-page-after-redesign.md`.
+
+## Notes for the next session
+
+- The harness answers the boot commands (`epic_setup_status`,
+  `epic_cached_library`, `library_dir`) and the game page's lazy ones, so
+  `renderEpic()`, `renderDownloads()` and the drawer all render for real.
+- The desktop browser bridge wedges after heavy scripts (a tab loop over six
+  drawer tabs timed out twice). A fresh tab recovers it; keep evaluated scripts
+  short and one surface at a time.
+- `tmp-ss.html` is gitignored; the harness builder lives in `%TEMP%\opencode`.
