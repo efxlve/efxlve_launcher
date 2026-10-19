@@ -778,6 +778,9 @@ function ensureOverviewData(s: EpicSummary): void {
 
 /** The lazily loaded IGDB transport status: `idle` until a game page asks. */
 let igdbTransport: "idle" | "loading" | "done" = "idle";
+/** A failed status probe is retried after this cooldown, not once per page. */
+let igdbTransportFailedAt = 0;
+const IGDB_TRANSPORT_RETRY_MS = 60_000;
 /** Callbacks waiting for that status, so two game pages can ask at once. */
 const igdbTransportWaiters: Array<() => void> = [];
 
@@ -788,6 +791,16 @@ const igdbTransportWaiters: Array<() => void> = [];
  */
 function ensureIgdbTransport(onReady: () => void): void {
   if (S.igdbConfigured || igdbTransport === "done") {
+    onReady();
+    return;
+  }
+  // The idle prefetch walks several games; a dead transport must not become
+  // one probe per game. A real page open retries after the cooldown.
+  if (
+    igdbTransport === "idle" &&
+    igdbTransportFailedAt > 0 &&
+    Date.now() - igdbTransportFailedAt < IGDB_TRANSPORT_RETRY_MS
+  ) {
     onReady();
     return;
   }
@@ -802,8 +815,9 @@ function ensureIgdbTransport(onReady: () => void): void {
       igdbTransport = "done";
     })
     .catch(() => {
-      // A later game page gets another try.
+      // A later game page gets another try after the cooldown.
       igdbTransport = "idle";
+      igdbTransportFailedAt = Date.now();
     })
     .finally(() => {
       for (const waiter of igdbTransportWaiters.splice(0)) waiter();
