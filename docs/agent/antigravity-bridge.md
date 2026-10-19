@@ -44,3 +44,7 @@ look in case it wrote something despite the instruction.
   the plan below.
 - `game-page-plan-review.md` — the staged plan, sent to Gemini 4 Argon inside
   Antigravity before any of it is written.
+- `game-page-after-redesign.md` — the second round, written after the mockup was
+  implemented: is the page enough to adopt now, and which of the eight open
+  decisions should change? **Not sent yet**: waiting for the owner to paste it
+  into Antigravity.

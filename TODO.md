@@ -43,6 +43,13 @@ Still only the owner can check: the hero with real artwork, and the `...` menu
 opened by hand (its markup, its three items and its open/close behaviour were
 verified in the browser harness, not in the app window).
 
+A second review brief is ready for that round:
+`docs/agent/briefs/game-page-after-redesign.md` (eight open decisions: the
+duplicated collection button, where similar games sit, the thin sidebar, the
+empty-state card, whether the news card is enough of a reason to come back, the
+feed choice, what still reads as a database, and the first three changes). Paste
+it into Antigravity and bring the answer back.
+
 ## 0b. Remaining plan items
 
 1. Repaint diet: an IGDB answer repaints the whole overview tab
