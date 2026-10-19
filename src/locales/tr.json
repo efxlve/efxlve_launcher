@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "Bu oyunun tüm mağaza kopyaları toplanmıştır.",
   "feat.releaseDate": "Çıkış Tarihi",
   "drawer.personalEmptyTitle": "Kendi kaydın buradan başlıyor",
-  "drawer.personalEmptyDesc": "Bu oyun için henüz ekran görüntüsü, klip veya başarım kaydı yok. Oyun sırasında aldıkların burada görünür.",
+  "drawer.personalEmptyDesc": "Bu oyun için henüz ekran görüntüsü veya başarım kaydı yok. Oyun sırasında aldıkların burada görünür.",
   "drawer.personalEmptyCta": "Galeriyi aç",
   "hltb.you": "Sen: {time}",
   "drawer.moreActions": "Diğer işlemler",

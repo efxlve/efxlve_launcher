@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "Todas las copias de este juego en las tiendas, sumadas.",
   "feat.releaseDate": "Fecha de lanzamiento",
   "drawer.personalEmptyTitle": "Tu propio registro empieza aquí",
-  "drawer.personalEmptyDesc": "Aún no hay capturas, clips ni logros de este juego. Lo que captures mientras juegas aparecerá aquí.",
+  "drawer.personalEmptyDesc": "Aún no hay capturas ni logros de este juego. Lo que captures mientras juegas aparecerá aquí.",
   "drawer.personalEmptyCta": "Abrir la galería",
   "hltb.you": "Tú: {time}",
   "drawer.moreActions": "Más acciones",

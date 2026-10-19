@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "Every store copy of this game, added up.",
   "feat.releaseDate": "Release Date",
   "drawer.personalEmptyTitle": "Your own record starts here",
-  "drawer.personalEmptyDesc": "No screenshots, clips or achievements recorded for this game yet. What you take while playing shows up here.",
+  "drawer.personalEmptyDesc": "No screenshots or achievements recorded for this game yet. What you take while playing shows up here.",
   "drawer.personalEmptyCta": "Open the gallery",
   "hltb.you": "You: {time}",
   "drawer.moreActions": "More actions",

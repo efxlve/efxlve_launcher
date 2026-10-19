@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "Wszystkie kopie tej gry w sklepach, zsumowane.",
   "feat.releaseDate": "Data wydania",
   "drawer.personalEmptyTitle": "Twój własny zapis zaczyna się tutaj",
-  "drawer.personalEmptyDesc": "Brak zrzutów, klipów lub osiągnięć dla tej gry. To, co nagrasz podczas gry, pojawi się tutaj.",
+  "drawer.personalEmptyDesc": "Brak zrzutów lub osiągnięć dla tej gry. To, co nagrasz podczas gry, pojawi się tutaj.",
   "drawer.personalEmptyCta": "Otwórz galerię",
   "hltb.you": "Ty: {time}",
   "drawer.moreActions": "Więcej akcji",

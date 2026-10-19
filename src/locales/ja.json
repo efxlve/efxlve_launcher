@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "各ストアのコピーの合計です。",
   "feat.releaseDate": "発売日",
   "drawer.personalEmptyTitle": "あなたの記録はここから始まります",
-  "drawer.personalEmptyDesc": "このゲームのスクリーンショット、クリップ、実績はまだありません。プレイ中に撮ったものがここに並びます。",
+  "drawer.personalEmptyDesc": "このゲームのスクリーンショットや実績はまだありません。プレイ中に撮ったものがここに並びます。",
   "drawer.personalEmptyCta": "ギャラリーを開く",
   "hltb.you": "あなた: {time}",
   "drawer.moreActions": "その他の操作",

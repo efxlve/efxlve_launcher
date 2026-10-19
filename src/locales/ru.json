@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "Суммарно по всем копиям игры в магазинах.",
   "feat.releaseDate": "Дата выхода",
   "drawer.personalEmptyTitle": "Ваша собственная летопись начинается здесь",
-  "drawer.personalEmptyDesc": "Для этой игры пока нет скриншотов, клипов или достижений. Всё, что вы снимете во время игры, появится здесь.",
+  "drawer.personalEmptyDesc": "Для этой игры пока нет скриншотов или достижений. Всё, что вы снимете во время игры, появится здесь.",
   "drawer.personalEmptyCta": "Открыть галерею",
   "hltb.you": "Вы: {time}",
   "drawer.moreActions": "Другие действия",

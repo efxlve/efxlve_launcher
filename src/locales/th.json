@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "รวมทุกสำเนาของเกมในสโตร์ต่าง ๆ แล้ว",
   "feat.releaseDate": "วันวางจำหน่าย",
   "drawer.personalEmptyTitle": "บันทึกของคุณเริ่มที่นี่",
-  "drawer.personalEmptyDesc": "ยังไม่มีสกรีนช็อต คลิป หรือความสำเร็จของเกมนี้ สิ่งที่คุณเก็บระหว่างเล่นจะปรากฏที่นี่",
+  "drawer.personalEmptyDesc": "ยังไม่มีสกรีนช็อตหรือความสำเร็จของเกมนี้ สิ่งที่คุณเก็บระหว่างเล่นจะปรากฏที่นี่",
   "drawer.personalEmptyCta": "เปิดแกลเลอรี",
   "hltb.you": "คุณ: {time}",
   "drawer.moreActions": "การทำงานอื่น ๆ",

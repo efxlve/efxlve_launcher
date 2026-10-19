@@ -2446,7 +2446,7 @@
   "manage.playtimeAllCopies": "Tutte le copie del gioco sugli store, sommate.",
   "feat.releaseDate": "Data di uscita",
   "drawer.personalEmptyTitle": "Il tuo registro inizia qui",
-  "drawer.personalEmptyDesc": "Nessuno screenshot, clip o obiettivo registrato per questo gioco. Quello che catturi giocando compare qui.",
+  "drawer.personalEmptyDesc": "Nessuno screenshot o obiettivo registrato per questo gioco. Quello che catturi giocando compare qui.",
   "drawer.personalEmptyCta": "Apri la galleria",
   "hltb.you": "Tu: {time}",
   "drawer.moreActions": "Altre azioni",
