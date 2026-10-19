@@ -216,7 +216,9 @@ function ensureCloudSyncStamp(s: EpicSummary): void {
 }
 
 function mergeSteamCritic(data: CriticData, appName: string): CriticData {
-  if (!appName.startsWith("steam::")) return data;
+  // Any store, not just Steam: the store-page lookup that fills this map runs for
+  // every game (the specs need it), so an Epic title can carry a Metacritic score
+  // it would otherwise never show.
   const details = S.steamDetails.get(appName);
   if (!details?.metacriticScore) return data;
   // Steam's own block is per app id, so it beats the wiki lookup — that one can
@@ -734,6 +736,16 @@ function ensureOverviewData(s: EpicSummary): void {
     void Promise.allSettled([detailsP, reqP]).then(() => {
       storeAboutSettled.add(appName);
       maybeLoadWikiAbout(s);
+      // The store page can land after the critic answer: its Metacritic score is
+      // worth showing, so the card is merged and painted again.
+      const loaded = S.loadedCritic.get(appName);
+      if (loaded) {
+        const merged = mergeSteamCritic(loaded, appName);
+        if (merged !== loaded) {
+          S.loadedCritic.set(appName, merged);
+          if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
+        }
+      }
     });
     if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) {
       void fetchAndRenderAchievements(appName);
@@ -946,16 +958,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 export function updateHltbUI(appName: string, data?: HltbData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-hltb-container");
-  const summary = summaryOf(appName);
-  if (!container || !summary) return;
-  // The same facts as the first paint: the card would otherwise change shape
-  // when the answer lands.
-  container.innerHTML = renderHltbCard(
-    data,
-    false,
-    libraryPlaytime(summary).seconds,
-    detectGameMode(summary, S.loadedRequirements.get(appName)),
-  );
+  if (!container) return;
+  container.innerHTML = renderHltbCard(data, false);
   syncScoresCardVisibility();
 }
 
@@ -1175,13 +1179,11 @@ export function renderDrawerOverview(
   if (newsAppId) void loadSteamNews(s.appName, newsAppId);
   const cachedNews = newsCache.get(s.appName);
   const news = newsAppId ? `<div id="gp-news">${renderSteamNews(cachedNews ?? null)}</div>` : "";
-  // The two halves of the scores card, kept as separate containers: the painters
-  // that fill them late must not overwrite each other's work.
+  // The two blocks live in their own containers: the painters that fill them late
+  // must not overwrite each other's work.
   const hltbBlock = `<div id="drawer-hltb-container">${renderHltbCard(
     S.loadedHltb.get(s.appName),
     S.loadingHltbFor === s.appName,
-    libraryPlaytime(s).seconds,
-    detectGameMode(s, S.loadedRequirements.get(s.appName)),
   )}</div>`;
   const criticBlock = `<div id="drawer-critic-container">${renderCriticCard(
     S.loadedCritic.get(s.appName),

@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "Deine eigene Aufzeichnung beginnt hier",
   "drawer.personalEmptyDesc": "Für dieses Spiel sind noch keine Screenshots oder Erfolge festgehalten. Was du beim Spielen aufnimmst, erscheint hier.",
   "drawer.personalEmptyCta": "Galerie öffnen",
-  "hltb.you": "Du: {time}",
-  "hltb.youLabel": "Du",
   "drawer.moreActions": "Weitere Aktionen",
   "drawer.lastSession": "Letzte Sitzung",
   "drawer.lastSessionTrophies": "+{n} Trophäen",

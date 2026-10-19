@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "Ton propre suivi commence ici",
   "drawer.personalEmptyDesc": "Aucune capture ou succès enregistré pour ce jeu. Ce que tu prends en jouant apparaît ici.",
   "drawer.personalEmptyCta": "Ouvrir la galerie",
-  "hltb.you": "Toi : {time}",
-  "hltb.youLabel": "Vous",
   "drawer.moreActions": "Plus d'actions",
   "drawer.lastSession": "Dernière session",
   "drawer.lastSessionTrophies": "+{n} trophées",

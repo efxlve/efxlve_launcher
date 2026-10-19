@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "Ваша собственная летопись начинается здесь",
   "drawer.personalEmptyDesc": "Для этой игры пока нет скриншотов или достижений. Всё, что вы снимете во время игры, появится здесь.",
   "drawer.personalEmptyCta": "Открыть галерею",
-  "hltb.you": "Вы: {time}",
-  "hltb.youLabel": "Вы",
   "drawer.moreActions": "Другие действия",
   "drawer.lastSession": "Последний сеанс",
   "drawer.lastSessionTrophies": "+{n} трофеев",

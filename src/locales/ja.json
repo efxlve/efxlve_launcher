@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "あなたの記録はここから始まります",
   "drawer.personalEmptyDesc": "このゲームのスクリーンショットや実績はまだありません。プレイ中に撮ったものがここに並びます。",
   "drawer.personalEmptyCta": "ギャラリーを開く",
-  "hltb.you": "あなた: {time}",
-  "hltb.youLabel": "あなた",
   "drawer.moreActions": "その他の操作",
   "drawer.lastSession": "前回のプレイ",
   "drawer.lastSessionTrophies": "トロフィー +{n}",

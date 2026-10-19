@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "Your own record starts here",
   "drawer.personalEmptyDesc": "No screenshots or achievements recorded for this game yet. What you take while playing shows up here.",
   "drawer.personalEmptyCta": "Open the gallery",
-  "hltb.you": "You: {time}",
-  "hltb.youLabel": "You",
   "drawer.moreActions": "More actions",
   "drawer.lastSession": "Last session",
   "drawer.lastSessionTrophies": "+{n} trophies",

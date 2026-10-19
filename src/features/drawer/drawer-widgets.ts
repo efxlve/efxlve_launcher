@@ -34,22 +34,8 @@ export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silve
   if (a.xp >= 50) return "silver";
   return "bronze";
 }
-export function renderHltbCard(
-  hltb?: HltbData,
-  isLoading = false,
-  playerSeconds = 0,
-  mode: GameMode | null = null,
-): string {
+export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
   const hours = (n: number) => i18nT("hltb.hours", { n: fmtHours(n) });
-  // The player's own time is a row like the others. It used to be a bar drawn
-  // against the average length, which turned a fact into a progress meter the
-  // owner never asked for.
-  const playerLine = playerSeconds > 0
-    ? `<div class="hltb-row hltb-row-you">
-          <span class="hltb-row-label">${i18nT("hltb.youLabel")}</span>
-          <span class="hltb-row-val">${fmtPlaytime(playerSeconds)}</span>
-        </div>`
-    : "";
   if (isLoading) {
     return `
       <div class="drawer-hltb-body loading">
@@ -72,12 +58,12 @@ export function renderHltbCard(
     `;
   }
   if (!hltb.supported || (!hltb.main_story && !hltb.main_extra && !hltb.completionist)) {
-    // No averages to show: the player's own time still belongs on the page.
-    return playerLine ? `<div class="drawer-hltb-body">${playerLine}</div>` : "";
+    // Nothing estimated: the card goes away rather than framing an empty list.
+    // The player's own time lives in the hero's SÜRE stat.
+    return "";
   }
   return `
     <div class="drawer-hltb-body">
-      ${playerLine}
       <div class="hltb-list">
         <div class="hltb-row">
           <span class="hltb-row-label">${i18nT("hltb.mainStory")}</span>

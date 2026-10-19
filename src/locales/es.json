@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "Tu propio registro empieza aquí",
   "drawer.personalEmptyDesc": "Aún no hay capturas ni logros de este juego. Lo que captures mientras juegas aparecerá aquí.",
   "drawer.personalEmptyCta": "Abrir la galería",
-  "hltb.you": "Tú: {time}",
-  "hltb.youLabel": "Tú",
   "drawer.moreActions": "Más acciones",
   "drawer.lastSession": "Última sesión",
   "drawer.lastSessionTrophies": "+{n} trofeos",

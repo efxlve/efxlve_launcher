@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "Kendi kaydın buradan başlıyor",
   "drawer.personalEmptyDesc": "Bu oyun için henüz ekran görüntüsü veya başarım kaydı yok. Oyun sırasında aldıkların burada görünür.",
   "drawer.personalEmptyCta": "Galeriyi aç",
-  "hltb.you": "Sen: {time}",
-  "hltb.youLabel": "Sen",
   "drawer.moreActions": "Diğer işlemler",
   "drawer.lastSession": "Son oturum",
   "drawer.lastSessionTrophies": "+{n} kupa",

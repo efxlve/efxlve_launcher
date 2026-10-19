@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "سجلك الخاص يبدأ هنا",
   "drawer.personalEmptyDesc": "لا توجد لقطات أو إنجازات لهذه اللعبة بعد. ما تلتقطه أثناء اللعب يظهر هنا.",
   "drawer.personalEmptyCta": "افتح المعرض",
-  "hltb.you": "أنت: {time}",
-  "hltb.youLabel": "أنت",
   "drawer.moreActions": "إجراءات أخرى",
   "drawer.lastSession": "آخر جلسة",
   "drawer.lastSessionTrophies": "+{n} كؤوس",

@@ -2451,8 +2451,6 @@
   "drawer.personalEmptyTitle": "나만의 기록이 여기서 시작됩니다",
   "drawer.personalEmptyDesc": "이 게임의 스크린샷과 업적 기록이 아직 없습니다. 플레이 중에 남긴 것이 여기에 표시됩니다.",
   "drawer.personalEmptyCta": "갤러리 열기",
-  "hltb.you": "나: {time}",
-  "hltb.youLabel": "내 시간",
   "drawer.moreActions": "기타 작업",
   "drawer.lastSession": "지난 플레이",
   "drawer.lastSessionTrophies": "트로피 +{n}",
