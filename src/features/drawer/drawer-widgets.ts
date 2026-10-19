@@ -716,6 +716,21 @@ export function rememberCloudSync(appName: string, stamp: string): void {
   if (appName && stamp) cloudSyncStamp.set(appName, stamp);
 }
 
+/** The provider's own name, for the hero's cloud chip. A brand reads the same in
+ *  every language, and the chip's own label already says CLOUD: "Rockstar Games
+ *  Bulut" under a BULUT heading was the same word twice, in a 300px box. */
+const CLOUD_BRANDS: Record<string, string> = {
+  ea: "EA",
+  ubisoft: "Ubisoft",
+  rockstar: "Rockstar",
+  steam: "Steam",
+  gog: "GOG",
+  epic: "Epic",
+  xbox: "Xbox",
+  battlenet: "Battle.net",
+  riot: "Riot",
+};
+
 /** Hero CLOUD chip: recorded sync, or an honest provider name — never a guessed yes/no. */
 export function heroCloudStatus(
   s: EpicSummary,
@@ -726,18 +741,17 @@ export function heroCloudStatus(
   // EA and Ubisoft titles sync through their own cloud services, so the hero
   // chip names the provider instead of a state the launcher cannot observe.
   if (partner?.type === "ea") {
-    return { label: i18nT("feat.eaCloud"), tooltip: i18nT("feat.eaCloudTip"), synced: false, neutral: true };
+    return { label: CLOUD_BRANDS.ea, tooltip: i18nT("feat.eaCloudTip"), synced: false, neutral: true };
   }
   if (partner?.type === "ubisoft") {
-    return { label: i18nT("feat.ubiCloud"), tooltip: i18nT("feat.ubiCloudTip"), synced: false, neutral: true };
+    return { label: CLOUD_BRANDS.ubisoft, tooltip: i18nT("feat.ubiCloudTip"), synced: false, neutral: true };
   }
   // The Rockstar Games Launcher owns Social Club cloud saves for its titles;
   // the launcher only relays the start and cannot observe the upload, so the
   // chip names the provider instead of claiming a sync.
   if (partner?.type === "rockstar") {
-    const pName = partner.name === "Rockstar Games Launcher" ? "Rockstar Games" : partner.name;
     return {
-      label: i18nT("feat.partnerCloud", { name: pName }),
+      label: CLOUD_BRANDS.rockstar,
       tooltip: i18nT("feat.partnerCloudTip", { name: partner.name }),
       synced: false,
       neutral: true,
@@ -761,7 +775,7 @@ export function heroCloudStatus(
   const cats = steamCategories(s.appName);
   if (s.appName.startsWith("steam::") && (cats.includes(STEAM_CAT_CLOUD) || S.steamSummariesMap.get(s.appName)?.cloudSavesSupported)) {
     return {
-      label: i18nT("feat.steamCloud"),
+      label: CLOUD_BRANDS.steam,
       tooltip: i18nT("feat.steamCloudTip"),
       synced: false,
       neutral: true,
@@ -769,7 +783,7 @@ export function heroCloudStatus(
   }
   if (s.appName.startsWith("gog::") && S.gogSummariesMap.get(s.appName.slice(5))?.cloudSavesSupported) {
     return {
-      label: i18nT("feat.gogCloud"),
+      label: CLOUD_BRANDS.gog,
       tooltip: i18nT("feat.gogCloudTip"),
       synced: false,
       neutral: true,
@@ -781,7 +795,7 @@ export function heroCloudStatus(
   if (isCompanionSource(source)) {
     const provider = cloudSaveInfo(s, g, partner, reqData);
     return {
-      label: provider.label,
+      label: CLOUD_BRANDS[source] ?? provider.label,
       tooltip: provider.tooltip,
       synced: false,
       neutral: true,
