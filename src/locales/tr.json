@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Renkli plastik çerçeve, üst mağaza şeridi, menteşe tırnakları ve açma çentiği.",
   "settings.caseStyleClearDesc": "Buzlu şeffaf polikarbonat kasa ve yarı saydam cam mağaza şeridi.",
   "settings.caseStyleSteelbookDesc": "Fırçalanmış eloksallı metal koleksiyon kutusu ve metalik sırt oluğu.",
-  "settings.caseStyleJewelDesc": "Klasik CD-ROM tarzı dikey sol sırt şeridi; kapak görselinin üst kısmını kapatmaz."
+  "settings.caseStyleJewelDesc": "Klasik CD-ROM tarzı dikey sol sırt şeridi; kapak görselinin üst kısmını kapatmaz.",
+  "settings.caseStyleHolo": "Holo Koleksiyon",
+  "settings.caseStyleHoloDesc": "Fare hareketine göre renk değiştiren prizmatik holografik folyo yansıması ve altın hatlı koleksiyoncu kutusu."
 }

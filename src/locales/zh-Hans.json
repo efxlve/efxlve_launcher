@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "彩色塑料外盒，带有顶部商店横幅、书脊卡扣与开启凹槽。",
   "settings.caseStyleClearDesc": "磨砂透明聚碳酸酯外盒，搭配半透明毛玻璃商店顶栏。",
   "settings.caseStyleSteelbookDesc": "拉丝阳极氧化金属典藏铁盒，带有金属书脊接缝。",
-  "settings.caseStyleJewelDesc": "经典 CD-ROM 左侧竖向书脊条设计，完全不遮挡封面顶部。"
+  "settings.caseStyleJewelDesc": "经典 CD-ROM 左侧竖向书脊条设计，完全不遮挡封面顶部。",
+  "settings.caseStyleHolo": "全息闪卡",
+  "settings.caseStyleHoloDesc": "随鼠标移动呈现虹彩全息箔片光泽与金边饰条的典藏版盒装外观。"
 }

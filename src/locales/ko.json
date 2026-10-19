@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "컬러 플라스틱 케이스, 상단 스토어 배너, 힌지 클립 및 오픈 홈.",
   "settings.caseStyleClearDesc": "반투명 글래스 스토어 바가 있는 투명 폴리카보네이트 케이스.",
   "settings.caseStyleSteelbookDesc": "브러시드 메탈 질감과 금속 책등 이음새가 있는 컬렉터즈 스틸북 케이스.",
-  "settings.caseStyleJewelDesc": "표지 상단을 가리지 않는 클래식 CD-ROM 좌측 세로 스파인 케이스."
+  "settings.caseStyleJewelDesc": "표지 상단을 가리지 않는 클래식 CD-ROM 좌측 세로 스파인 케이스.",
+  "settings.caseStyleHolo": "홀로그램 포일",
+  "settings.caseStyleHoloDesc": "마우스 움직임에 반응하는 무지개빛 홀로그램 포일 광택과 골드 라인이 적용된 컬렉터즈 케이스."
 }

@@ -679,7 +679,9 @@ function renderAppearance(): string {
                   ? "settings.caseStyleSteelbookDesc"
                   : S.caseCoverStyle === "jewel"
                     ? "settings.caseStyleJewelDesc"
-                    : "settings.caseStyleRetailDesc",
+                    : S.caseCoverStyle === "holo"
+                      ? "settings.caseStyleHoloDesc"
+                      : "settings.caseStyleRetailDesc",
             ),
             `<div class="seg" role="radiogroup">${(
               [
@@ -687,6 +689,7 @@ function renderAppearance(): string {
                 ["clear", "settings.caseStyleClear"],
                 ["steelbook", "settings.caseStyleSteelbook"],
                 ["jewel", "settings.caseStyleJewel"],
+                ["holo", "settings.caseStyleHolo"],
               ] as const
             )
               .map(

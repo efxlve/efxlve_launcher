@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Colored plastic shell, top store banner, spine hinge clips and opening thumb-notch.",
   "settings.caseStyleClearDesc": "Frosted crystal polycarbonate shell with a translucent glass store strip.",
   "settings.caseStyleSteelbookDesc": "Brushed anodized metal collector's case with a recessed metallic spine seam.",
-  "settings.caseStyleJewelDesc": "Classic PC CD-ROM vertical left-spine strip that leaves the full cover height unobstructed."
+  "settings.caseStyleJewelDesc": "Classic PC CD-ROM vertical left-spine strip that leaves the full cover height unobstructed.",
+  "settings.caseStyleHolo": "Holo Foil",
+  "settings.caseStyleHoloDesc": "Collector’s edition box with a mouse-reactive iridescent holographic foil sheen and gold-trimmed header."
 }

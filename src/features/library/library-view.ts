@@ -596,18 +596,84 @@ export function patchLibraryGridInPlace(): boolean {
 }
 
 let cardSettleWired = false;
+let activeTiltCard: HTMLElement | null = null;
+let tiltRaf = 0;
+let lastPointerX = 0;
+let lastPointerY = 0;
 
-/** Keep the grown cover unclipped until its shrink finishes. */
+function clearCardTilt(card: HTMLElement): void {
+  card.classList.remove("pcard-tilting");
+  card.style.removeProperty("--rx");
+  card.style.removeProperty("--ry");
+  card.style.removeProperty("--mx");
+  card.style.removeProperty("--my");
+  card.style.removeProperty("--nx");
+  card.style.removeProperty("--ny");
+  card.style.removeProperty("--glare-angle");
+  card.classList.add("pcard-settling");
+  window.setTimeout(() => card.classList.remove("pcard-settling"), 260);
+}
+
+/**
+ * Tracks cursor position over the hovered library card to drive 3D box tilt,
+ * dynamic spine extrusion, and plastic/foil specular reflections, and keeps
+ * the card unclipped until its settle animation finishes.
+ */
 function wireCardSettle(): void {
   if (cardSettleWired) return;
   cardSettleWired = true;
+
+  document.addEventListener(
+    "pointermove",
+    (e) => {
+      if (e.pointerType === "touch") return;
+      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard") ?? null;
+      if (activeTiltCard && activeTiltCard !== card) {
+        clearCardTilt(activeTiltCard);
+        activeTiltCard = null;
+      }
+      if (!card) return;
+      activeTiltCard = card;
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+      if (tiltRaf) return;
+      tiltRaf = window.requestAnimationFrame(() => {
+        tiltRaf = 0;
+        const current = activeTiltCard;
+        if (!current || !current.isConnected) return;
+        const art = current.querySelector<HTMLElement>(".pcard-art") ?? current;
+        const rect = art.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const px = Math.min(1, Math.max(0, (lastPointerX - rect.left) / rect.width));
+        const py = Math.min(1, Math.max(0, (lastPointerY - rect.top) / rect.height));
+        const nx = (px - 0.5) * 2;
+        const ny = (py - 0.5) * 2;
+        const isCase = current.classList.contains("is-case");
+        const maxRx = isCase ? 9.5 : 5;
+        const maxRy = isCase ? 11.5 : 6;
+        const rx = -ny * maxRx;
+        const ry = nx * maxRy;
+        const glareAngle = 122 + nx * 34 - ny * 18;
+        current.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+        current.style.setProperty("--ry", `${ry.toFixed(2)}deg`);
+        current.style.setProperty("--mx", `${(px * 100).toFixed(1)}%`);
+        current.style.setProperty("--my", `${(py * 100).toFixed(1)}%`);
+        current.style.setProperty("--nx", nx.toFixed(3));
+        current.style.setProperty("--ny", ny.toFixed(3));
+        current.style.setProperty("--glare-angle", `${glareAngle.toFixed(1)}deg`);
+        current.classList.add("pcard-tilting");
+      });
+    },
+    { passive: true },
+  );
+
   document.addEventListener("pointerout", (e) => {
     const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pcard");
     if (!card) return;
     const next = e.relatedTarget as Node | null;
     if (next && card.contains(next)) return;
-    card.classList.add("pcard-settling");
-    window.setTimeout(() => card.classList.remove("pcard-settling"), 150);
+    if (activeTiltCard === card) activeTiltCard = null;
+    clearCardTilt(card);
   });
 }
 

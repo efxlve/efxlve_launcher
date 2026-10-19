@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "カラープラスチックケース、上部ストア帯、背表紙ヒンジ、開閉ノッチ付き。",
   "settings.caseStyleClearDesc": "半透明ガラス風ストア帯を備えたクリアポリカーボネートケース。",
   "settings.caseStyleSteelbookDesc": "ヘアライン加工メタルと金属製背表紙溝を備えたコレクターズケース。",
-  "settings.caseStyleJewelDesc": "カバー上部を隠さないクラシックな左縦帯（CD-ROMジュエルケース風）。"
+  "settings.caseStyleJewelDesc": "カバー上部を隠さないクラシックな左縦帯（CD-ROMジュエルケース風）。",
+  "settings.caseStyleHolo": "ホロフォイル",
+  "settings.caseStyleHoloDesc": "マウスに反応して虹色に輝くホログラム箔とゴールドラインを備えたコレクターズボックス。"
 }

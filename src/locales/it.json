@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Custodia in plastica colorata con fascia superiore del negozio, cerniere e tacca di apertura.",
   "settings.caseStyleClearDesc": "Guscio in policarbonato trasparente satinato con fascia del negozio semitrasparente.",
   "settings.caseStyleSteelbookDesc": "Custodia da collezione in metallo spazzolato con scanalatura metallica sul dorso.",
-  "settings.caseStyleJewelDesc": "Fascia verticale classica sul dorso sinistro che lascia libera l'intera altezza della copertina."
+  "settings.caseStyleJewelDesc": "Fascia verticale classica sul dorso sinistro che lascia libera l'intera altezza della copertina.",
+  "settings.caseStyleHolo": "Holo Foil",
+  "settings.caseStyleHoloDesc": "Custodia da collezione con riflesso olografico iridescente reattivo al mouse e profilo dorato."
 }

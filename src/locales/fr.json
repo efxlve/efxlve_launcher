@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Boîtier plastique coloré avec bandeau supérieur, clips de charnière et encoche d'ouverture.",
   "settings.caseStyleClearDesc": "Coque en polycarbonate transparent dépoli avec bandeau vitré translucide.",
   "settings.caseStyleSteelbookDesc": "Boîtier collector en métal brossé anodisé avec rainure métallique sur la tranche.",
-  "settings.caseStyleJewelDesc": "Tranche verticale classique à gauche laissant toute la hauteur de la jaquette dégagée."
+  "settings.caseStyleJewelDesc": "Tranche verticale classique à gauche laissant toute la hauteur de la jaquette dégagée.",
+  "settings.caseStyleHolo": "Holo Foil",
+  "settings.caseStyleHoloDesc": "Boîtier collector avec reflet holographique irisé réactif à la souris et liseré doré."
 }

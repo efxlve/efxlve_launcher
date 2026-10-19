@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "กล่องพลาสติกสีพร้อมแถบร้านค้าด้านบน สันบานพับ และร่องเปิดกล่อง",
   "settings.caseStyleClearDesc": "กล่องโพลีคาร์บอเนตใสแบบด้านพร้อมแถบร้านค้าโปร่งแสง",
   "settings.caseStyleSteelbookDesc": "กล่องเหล็กขัดเงาสไตล์นักสะสมพร้อมร่องสันโลหะ",
-  "settings.caseStyleJewelDesc": "แถบสันด้านซ้ายแนวตั้งแบบกล่อง CD-ROM คลาสสิก ไม่บังส่วนบนของปกเกม"
+  "settings.caseStyleJewelDesc": "แถบสันด้านซ้ายแนวตั้งแบบกล่อง CD-ROM คลาสสิก ไม่บังส่วนบนของปกเกม",
+  "settings.caseStyleHolo": "โฮโลฟอยล์",
+  "settings.caseStyleHoloDesc": "กล่องชุดสะสมพร้อมประกายฟอยล์โฮโลแกรมสีรุ้งที่ตอบสนองต่อเมาส์และขอบทอง"
 }

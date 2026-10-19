@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "रंगीन प्लास्टिक बॉक्स, शीर्ष स्टोर पट्टी, हिंज क्लिप और ओपन नॉच।",
   "settings.caseStyleClearDesc": "पारदर्शी ग्लास स्टोर पट्टी के साथ क्लियर पॉलीकार्बोनेट केस।",
   "settings.caseStyleSteelbookDesc": "ब्रश्ड मेटल फिनिश और मेटालिक स्पाइन सीम वाला कलेक्टर्स केस।",
-  "settings.caseStyleJewelDesc": "क्लासिक CD-ROM बाईं वर्टिकल स्पाइन पट्टी जो कवर के ऊपरी हिस्से को नहीं ढकती।"
+  "settings.caseStyleJewelDesc": "क्लासिक CD-ROM बाईं वर्टिकल स्पाइन पट्टी जो कवर के ऊपरी हिस्से को नहीं ढकती।",
+  "settings.caseStyleHolo": "होलो फ़ॉइल",
+  "settings.caseStyleHoloDesc": "माउस की गति पर प्रतिक्रिया करने वाली इंद्रधनुषी होलोग्राफिक चमक और सुनहरे बॉर्डर वाला कलेक्टर्स बॉक्स।"
 }

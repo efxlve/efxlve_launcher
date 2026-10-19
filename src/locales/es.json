@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Caja de plástico de color con franja superior de tienda, clips de bisagra y muesca de apertura.",
   "settings.caseStyleClearDesc": "Carcasa de policarbonato transparente esmerilado con franja translúcida.",
   "settings.caseStyleSteelbookDesc": "Caja metálica cepillada de coleccionista con unión metálica en el lomo.",
-  "settings.caseStyleJewelDesc": "Franja vertical clásica en el lomo izquierdo sin cubrir la parte superior de la portada."
+  "settings.caseStyleJewelDesc": "Franja vertical clásica en el lomo izquierdo sin cubrir la parte superior de la portada.",
+  "settings.caseStyleHolo": "Holo Foil",
+  "settings.caseStyleHoloDesc": "Caja de edición coleccionista con brillo holográfico iridiscente reactivo al ratón y borde dorado."
 }

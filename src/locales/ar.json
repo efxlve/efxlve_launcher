@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "علبة بلاستيكية ملونة مع شريط علوي للمتجر ومفصلات جانبية وفتحة إبهام.",
   "settings.caseStyleClearDesc": "علبة شفافة مصقولة مع شريط متجر زجاجي شبه شفاف.",
   "settings.caseStyleSteelbookDesc": "علبة معدنية مصقولة للمقتنين مع خط كعب معدني غائر.",
-  "settings.caseStyleJewelDesc": "شريط جانبي عمودي كلاسيكي على اليسار يترك كامل ارتفاع الغلاف مكشوفاً."
+  "settings.caseStyleJewelDesc": "شريط جانبي عمودي كلاسيكي على اليسار يترك كامل ارتفاع الغلاف مكشوفاً.",
+  "settings.caseStyleHolo": "هولو فويل",
+  "settings.caseStyleHoloDesc": "علبة إصدار المقتنين بلمعان هولوغرافي متقزح يتفاعل مع حركة المؤشر وحافة ذهبية."
 }

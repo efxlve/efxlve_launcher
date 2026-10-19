@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Farbige Kunststoffhülle mit oberer Store-Leiste, Scharnierclips und Griffmulde.",
   "settings.caseStyleClearDesc": "Mattierte Kristall-Polycarbonathülle mit halbtransparenter Store-Leiste.",
   "settings.caseStyleSteelbookDesc": "Gebürstetes Sammler-Metallgehäuse mit vertiefter Metallrückenfalz.",
-  "settings.caseStyleJewelDesc": "Klassischer vertikaler CD-ROM-Seitenrücken; verdeckt den oberen Coverbereich nicht."
+  "settings.caseStyleJewelDesc": "Klassischer vertikaler CD-ROM-Seitenrücken; verdeckt den oberen Coverbereich nicht.",
+  "settings.caseStyleHolo": "Holo-Folie",
+  "settings.caseStyleHoloDesc": "Sammleredition-Hülle mit mausreaktivem holografischem Folienglanz und goldumrandeter Kopfzeile."
 }

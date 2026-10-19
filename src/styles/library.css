@@ -118,15 +118,18 @@
   position: relative; aspect-ratio: 3 / 4; border-radius: var(--r-md); overflow: hidden;
   background: var(--surface-2); outline: 1px solid var(--line); outline-offset: -1px;
   transform-origin: center center;
-  /* Transform only. Animating box-shadow repaints the grid on every hover frame. */
-  transition: transform 140ms ease-out;
+  /* Smooth spring settle when leaving; fast tracking while moving the pointer. */
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pgrid > .pcard.pcard-tilting .pcard-art {
+  transition: transform 65ms ease-out;
 }
 .pgrid > .pcard:hover .pcard-art,
 .pgrid > .pcard:focus-visible .pcard-art {
-  transform: scale(1.045);
+  transform: perspective(760px) translateY(-3px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.045);
   box-shadow:
     0 0 18px 1px rgba(255, 255, 255, 0.1),
-    0 16px 28px rgba(0, 0, 0, 0.45);
+    calc(var(--nx, 0) * -10px) calc(16px - var(--ny, 0) * 6px) 28px rgba(0, 0, 0, 0.48);
 }
 .pcard-art > img, .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcover { display: grid; place-items: center; color: var(--text-3); }
@@ -465,8 +468,32 @@
   --case-tint: rgba(245, 158, 11, 0.34);
 }
 
-/* Base physical box shell (default style: "retail") */
+/* Grounded shelf contact shadow under each physical box */
+.pcard.is-case::before {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -6px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 52%, transparent 78%);
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease-out;
+}
+.pgrid > .pcard.is-case:hover::before,
+.pgrid > .pcard.is-case:focus-visible::before {
+  transform: translate3d(calc(var(--nx, 0.25) * -9px), 4px, 0) scaleX(1.06);
+  opacity: 0.92;
+}
+
+/* Base physical box shell (default style: "retail").
+   Aspect ratio 3 / 4.34 accounts for the 32px top banner + 9px bottom rim so
+   the inner cover artwork slot stays a true 3:4 portrait and never crops the
+   top or bottom of game logos. */
 .pcard.is-case .pcard-art {
+  aspect-ratio: 3 / 4.34;
   padding: 32px 6px 9px 8px;
   border-radius: 4px 10px 10px 4px;
   outline: 1px solid var(--case-border);
@@ -497,22 +524,31 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.38),
     inset -1px 0 0 rgba(255, 255, 255, 0.22),
     inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    -2px 2px 0 rgba(0, 0, 0, 0.65),
-    0 10px 18px -4px rgba(0, 0, 0, 0.72),
-    0 3px 6px rgba(0, 0, 0, 0.85);
-  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease-out;
+    -2px 2px 0 var(--case-shell-bot),
+    -3px 3px 0 rgba(0, 0, 0, 0.72),
+    0 10px 18px -4px rgba(0, 0, 0, 0.75),
+    0 3px 6px rgba(0, 0, 0, 0.88);
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease-out;
+}
+.pgrid > .pcard.is-case.pcard-tilting .pcard-art {
+  transition: transform 60ms ease-out, box-shadow 80ms ease-out;
 }
 .pgrid > .pcard.is-case:hover .pcard-art,
 .pgrid > .pcard.is-case:focus-visible .pcard-art {
   outline-color: var(--case-border);
-  transform: perspective(720px) translateY(-5px) rotateX(2deg) rotateY(-5deg) scale(1.04);
+  transform: perspective(680px) translateY(-6px) rotateX(var(--rx, 3deg)) rotateY(var(--ry, -6deg)) scale(1.045);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
-    inset -1px 0 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    -4px 6px 0 var(--case-shell-bot),
-    -6px 14px 26px rgba(0, 0, 0, 0.78),
-    0 0 20px 1px var(--case-tint);
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    inset -1px 0 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.58),
+    /* Multi-layered 3D extruded box side-walls that rotate with the cursor */
+    calc(-0.8px - var(--nx, 0.35) * 1.6px) calc(1px - var(--ny, -0.2) * 1.3px) 0 var(--case-border),
+    calc(-1.8px - var(--nx, 0.35) * 3.2px) calc(2.2px - var(--ny, -0.2) * 2.5px) 0 var(--case-shell-mid),
+    calc(-3px - var(--nx, 0.35) * 4.8px) calc(3.6px - var(--ny, -0.2) * 3.8px) 0 var(--case-shell-bot),
+    calc(-4px - var(--nx, 0.35) * 5.8px) calc(4.6px - var(--ny, -0.2) * 4.6px) 0 rgba(0, 0, 0, 0.9),
+    /* Dynamic shelf drop shadow & ambient store glow */
+    calc(var(--nx, 0.35) * -14px) calc(16px - var(--ny, -0.2) * 8px) 28px rgba(0, 0, 0, 0.82),
+    0 0 22px 1px var(--case-tint);
 }
 @media (prefers-reduced-motion: reduce) {
   .pgrid > .pcard.is-case:hover .pcard-art,
@@ -536,8 +572,9 @@
   z-index: 4;
 }
 
-/* 3D physical box overlay: glossy plastic sleeve sheen, recessed insert shadow,
-   left spine hinge clips (::before) and right opening thumb-notch (::after). */
+/* 3D physical box overlay: glossy plastic sleeve sheen, cursor spotlight,
+   recessed insert shadow, left spine hinge clips (::before) and right opening
+   thumb-notch (::after). */
 .pcard-case-fx {
   position: absolute;
   inset: 32px 6px 9px 8px;
@@ -545,6 +582,14 @@
   z-index: 2;
   pointer-events: none;
   background:
+    /* Heat-welded left sleeve spine seam */
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.2) 0px,
+      rgba(0, 0, 0, 0.35) 2px,
+      transparent 5px
+    ),
+    /* Ambient diagonal glossy film reflection */
     linear-gradient(
       126deg,
       rgba(255, 255, 255, 0.16) 0%,
@@ -556,19 +601,33 @@
   box-shadow:
     inset 2px 2px 5px rgba(0, 0, 0, 0.65),
     inset -1px -1px 3px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transition: background 180ms ease-out;
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 .pcard.is-case:hover .pcard-case-fx,
 .pcard.is-case:focus-visible .pcard-case-fx {
   background:
+    /* Cursor-following overhead light reflection on the plastic film */
+    radial-gradient(
+      155px circle at var(--mx, 28%) var(--my, 24%),
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.1) 34%,
+      transparent 68%
+    ),
+    /* Heat-welded left sleeve spine seam */
     linear-gradient(
-      118deg,
+      90deg,
+      rgba(255, 255, 255, 0.26) 0px,
+      rgba(0, 0, 0, 0.38) 2px,
+      transparent 5px
+    ),
+    /* Rotating diagonal specular sheen bar driven by cursor tilt */
+    linear-gradient(
+      var(--glare-angle, 122deg),
       rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.08) 28%,
+      rgba(255, 255, 255, 0.08) 26%,
       rgba(255, 255, 255, 0) 48%,
       rgba(0, 0, 0, 0.1) 76%,
-      rgba(0, 0, 0, 0.26) 100%
+      rgba(0, 0, 0, 0.28) 100%
     );
 }
 /* Left spine molded hinge clips */
@@ -644,6 +703,25 @@
   -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.45) 22%, transparent 44%);
   pointer-events: none;
 }
+/* Dynamic cursor-tracking metallic gleam across the top store header strip */
+.pcard-case-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    95px circle at var(--mx, 30%) 50%,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.08) 48%,
+    transparent 82%
+  );
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+  pointer-events: none;
+}
+.pcard.is-case:hover .pcard-case-head::after,
+.pcard.is-case:focus-visible .pcard-case-head::after {
+  opacity: 1;
+}
 .pcard-case-brand {
   position: relative;
   z-index: 1;
@@ -701,6 +779,8 @@
   border-radius: 0 0 4px 2px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65);
   background: #08090c;
+  object-position: calc(50% + var(--nx, 0) * 2.5%) calc(50% + var(--ny, 0) * 2.5%);
+  transition: opacity var(--ease), filter var(--ease), object-position 90ms ease-out;
 }
 .pgrid.highlight-installed .pcard.is-case.not-installed .pcard-art > img,
 .pgrid.dim-uninstalled .pcard.is-case.not-installed .pcard-art > img {
@@ -755,9 +835,22 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset -1px 0 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 0 rgba(255, 255, 255, 0.2),
-    -2px 2px 0 rgba(255, 255, 255, 0.16),
+    -2px 2px 0 rgba(255, 255, 255, 0.18),
+    -3px 3px 0 rgba(0, 0, 0, 0.6),
     0 10px 18px -4px rgba(0, 0, 0, 0.72),
     0 3px 6px rgba(0, 0, 0, 0.85);
+}
+.pgrid > .pcard.is-case[data-case-style="clear"]:hover .pcard-art,
+.pgrid > .pcard.is-case[data-case-style="clear"]:focus-visible .pcard-art {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset -1px 0 0 rgba(255, 255, 255, 0.48),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.28),
+    calc(-0.8px - var(--nx, 0.35) * 1.6px) calc(1px - var(--ny, -0.2) * 1.3px) 0 rgba(255, 255, 255, 0.42),
+    calc(-1.8px - var(--nx, 0.35) * 3.2px) calc(2.2px - var(--ny, -0.2) * 2.5px) 0 rgba(200, 220, 255, 0.22),
+    calc(-3px - var(--nx, 0.35) * 4.8px) calc(3.6px - var(--ny, -0.2) * 3.8px) 0 rgba(30, 38, 52, 0.82),
+    calc(var(--nx, 0.35) * -14px) calc(16px - var(--ny, -0.2) * 8px) 28px rgba(0, 0, 0, 0.8),
+    0 0 22px 1px var(--case-tint);
 }
 .pcard.is-case[data-case-style="clear"] .pcard-case-head {
   height: 25px;
@@ -835,6 +928,24 @@
       rgba(255, 255, 255, 0.08) 100%
     );
 }
+.pcard.is-case[data-case-style="steelbook"]:hover .pcard-case-fx,
+.pcard.is-case[data-case-style="steelbook"]:focus-visible .pcard-case-fx {
+  background:
+    /* Anisotropic brushed-metal sheen band driven by cursor X/Y */
+    radial-gradient(
+      180px ellipse at var(--mx, 35%) var(--my, 30%),
+      rgba(255, 255, 255, 0.32) 0%,
+      rgba(210, 225, 255, 0.12) 38%,
+      transparent 72%
+    ),
+    linear-gradient(
+      var(--glare-angle, 115deg),
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.04) 30%,
+      rgba(0, 0, 0, 0.26) 64%,
+      rgba(255, 255, 255, 0.14) 100%
+    );
+}
 .pcard.is-case[data-case-style="steelbook"] .pcard-case-fx::before,
 .pcard.is-case[data-case-style="steelbook"] .pcard-case-fx::after {
   display: none;
@@ -847,6 +958,7 @@
 
 /* --- Style 4: Jewel / Vertical Left-Spine Case (PC CD-ROM / PS1 style) --- */
 .pcard.is-case[data-case-style="jewel"] .pcard-art {
+  aspect-ratio: 3 / 4.04;
   padding: 4px 5px 5px 27px;
   border-radius: 3px 6px 6px 3px;
 }
@@ -918,6 +1030,72 @@
   left: 27px;
   right: 5px;
   bottom: 5px;
+}
+
+/* --- Style 5: Holo Collector's Edition Case (Iridescent Prismatic Foil) --- */
+.pcard.is-case[data-case-style="holo"] .pcard-art {
+  padding: 30px 5px 7px 8px;
+  border-radius: 4px 9px 9px 4px;
+  outline-color: rgba(255, 225, 150, 0.42);
+  background:
+    linear-gradient(90deg,
+      rgba(255, 240, 195, 0.48) 0px,
+      rgba(255, 255, 255, 0.18) 2.5px,
+      rgba(0, 0, 0, 0.65) 5px,
+      rgba(255, 225, 150, 0.25) 6.5px,
+      transparent 8px
+    ),
+    linear-gradient(155deg,
+      #3b352c 0%,
+      var(--case-shell-mid) 45%,
+      #14151b 82%,
+      #2e2820 100%
+    );
+}
+.pcard.is-case[data-case-style="holo"] .pcard-case-head {
+  top: 3px;
+  left: 8px;
+  right: 5px;
+  height: 27px;
+  background:
+    linear-gradient(
+      var(--glare-angle, 115deg),
+      rgba(255, 215, 120, 0.2) 0%,
+      rgba(120, 220, 255, 0.14) 45%,
+      rgba(255, 120, 220, 0.16) 100%
+    ),
+    var(--case-head-bg);
+  border-bottom: 1.5px solid rgba(255, 218, 130, 0.72);
+}
+.pcard.is-case[data-case-style="holo"] .pcard-case-fx {
+  inset: 30px 5px 7px 8px;
+  background:
+    linear-gradient(
+      130deg,
+      rgba(255, 230, 150, 0.14) 0%,
+      rgba(100, 220, 255, 0.1) 32%,
+      rgba(255, 110, 200, 0.1) 64%,
+      rgba(0, 0, 0, 0.24) 100%
+    );
+}
+.pcard.is-case[data-case-style="holo"]:hover .pcard-case-fx,
+.pcard.is-case[data-case-style="holo"]:focus-visible .pcard-case-fx {
+  background:
+    radial-gradient(
+      165px circle at var(--mx, 35%) var(--my, 28%),
+      rgba(255, 250, 220, 0.34) 0%,
+      rgba(110, 235, 255, 0.18) 28%,
+      rgba(255, 110, 215, 0.14) 52%,
+      transparent 76%
+    ),
+    linear-gradient(
+      var(--glare-angle, 125deg),
+      rgba(255, 215, 110, 0.24) 0%,
+      rgba(80, 230, 255, 0.2) 26%,
+      rgba(195, 110, 255, 0.2) 52%,
+      rgba(90, 255, 190, 0.16) 76%,
+      rgba(0, 0, 0, 0.25) 100%
+    );
 }
 
 /* --- List view --- */

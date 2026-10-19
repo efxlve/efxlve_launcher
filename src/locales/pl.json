@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Kolorowe plastikowe pudełko z górnym paskiem sklepu, zatrzaskami i wcięciem do otwierania.",
   "settings.caseStyleClearDesc": "Przezroczysta obudowa z poliwęglanu z półprzezroczystym paskiem sklepu.",
   "settings.caseStyleSteelbookDesc": "Kolekcjonerskie pudełko ze szczotkowanego metalu z metalowym rowkiem na grzbiecie.",
-  "settings.caseStyleJewelDesc": "Klasyczny pionowy pasek na lewym grzbiecie, który nie zasłania góry okładki."
+  "settings.caseStyleJewelDesc": "Klasyczny pionowy pasek na lewym grzbiecie, który nie zasłania góry okładki.",
+  "settings.caseStyleHolo": "Holo Foil",
+  "settings.caseStyleHoloDesc": "Pudełko edycji kolekcjonerskiej z holograficznym połyskiem reagującym na ruch myszy i złotym paskiem."
 }

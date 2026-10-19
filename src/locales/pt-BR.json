@@ -2474,5 +2474,7 @@
   "settings.caseStyleRetailDesc": "Caixa plástica colorida com faixa superior da loja, presilhas na lombada e entalhe de abertura.",
   "settings.caseStyleClearDesc": "Caixa de policarbonato transparente fosco com faixa translúcida da loja.",
   "settings.caseStyleSteelbookDesc": "Caixa metálica escovada de colecionador com friso metálico na lombada.",
-  "settings.caseStyleJewelDesc": "Faixa vertical clássica na lombada esquerda que deixa toda a altura da capa livre."
+  "settings.caseStyleJewelDesc": "Faixa vertical clássica na lombada esquerda que deixa toda a altura da capa livre.",
+  "settings.caseStyleHolo": "Holo Foil",
+  "settings.caseStyleHoloDesc": "Caixa de edição de colecionador com brilho holográfico iridescente reativo ao mouse e friso dourado."
 }
