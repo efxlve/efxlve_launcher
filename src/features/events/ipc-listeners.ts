@@ -48,7 +48,7 @@ import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
-import { refreshEpicInstalled, epicPlay } from "../../core/epic-actions";
+import { clearLaunchStatus, refreshEpicInstalled, epicPlay, updateLaunchStatus } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncInstalledWatch } from "../library/installed-watch";
@@ -606,6 +606,23 @@ export async function initApp(hooks: {
       },
     );
 
+    // A layered launch spends a few seconds creating its prefix; keep the
+    // "Launching…" toast alive and show the elapsed time there.
+    listenLater<{ appName: string; phase: string; elapsedSeconds: number }>(
+      "compat-prefix-progress",
+      (event) => {
+        const { appName, phase, elapsedSeconds } = event.payload;
+        if (phase === "starting" || phase === "running") {
+          updateLaunchStatus(
+            appName,
+            t("compat.prefixPreparing", { seconds: elapsedSeconds }),
+          );
+        } else if (phase === "done" || phase === "error") {
+          updateLaunchStatus(appName, t("dl.launching"));
+        }
+      },
+    );
+
     listenLater<GameStatusEvent>("game-status", (event) => {
       const { id, running, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
       const sum = summaryOf(id);
@@ -616,6 +633,7 @@ export async function initApp(hooks: {
         // watch); only the first report announces and acts.
         if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
+        clearLaunchStatus(id);
         toast(t("status.running", { title }), "ok");
         // Point at the Shift+Tab overlay on the first start of the title, unless
         // the overlay is off globally or the user opted this game out. The game

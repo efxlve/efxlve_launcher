@@ -226,7 +226,8 @@ paketinin çıktığı anlamına gelmez.
   normal yoldan başlatılırken de oyun başlamadan önce çalışır; böylece ilk
   açılış katmanları alır. Katman yoksa bu bekleme atlanır, Wine/Proton prefix'i
   normal açılışta kurar. Bir hazırlık hatası oyunu engellemez; sonraki açılış
-  yeniden dener.
+  yeniden dener. Başlatma bildirimi hazırlık boyunca açık kalır ve geçen
+  saniyeleri gösterir; hata olursa yeniden "Başlatılıyor…" metnine döner.
 - Windows'ta `launch_spec` ve `compat_prepare_prefix` başlatma yapmaz; mevcut
   Windows yolu birebir korunur ve hazırlama komutu açık bir hata döndürür.
 

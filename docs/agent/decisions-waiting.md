@@ -149,6 +149,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   preflight yapılmıyor. Hazırlık başarısız olursa oyun yine normal yoldan
   başlıyor ve katmanlar sonraki açılışta yeniden deneniyor. `spawn_blocking` ve
   tek bir süreç-içi kilit, aynı anda iki `wineboot` çalışmasını engelliyor.
+  Başlatma bildirimi artık zamanlayıcısız bir toast: `compat-prefix-progress`
+  geldikçe aynı kutuda "hazırlanıyor… N sn" yazıyor, oyun başlayınca kapanıyor.
+  Böylece ilk katmanlı açılışın 30 saniyeye çıkabilen beklemesi "dondu" gibi
+  görünmüyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

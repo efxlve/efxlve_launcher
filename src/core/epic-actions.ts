@@ -34,7 +34,7 @@ import { pruneRecent, pushRecent } from "./recent";
 import { notify, render } from "./render";
 import { isCompanionKey, rawOf, setEpicSummaries } from "./selectors";
 import { S } from "./state";
-import { toast } from "./toast";
+import { progressToast, toast, type ProgressToast } from "./toast";
 import {
   clearEpicLauncherNotice,
   showEpicLauncherNotice,
@@ -42,6 +42,39 @@ import {
 } from "../features/epic-launcher/epic-launcher-notice";
 import { syncLibraryHeadingCount } from "../features/library/library-view";
 import { blockedOffline } from "./offline";
+
+/** A launch can spend a while creating a compatibility prefix; its toast stays
+ *  open and receives progress text until the launch call returns. */
+const launchToasts = new Map<string, ProgressToast>();
+
+function beginLaunch(appName: string): void {
+  clearLaunchStatus(appName);
+  launchToasts.set(appName, progressToast(t("dl.launching")));
+}
+
+export function updateLaunchStatus(appName: string, message: string): void {
+  launchToasts.get(appName)?.update(message);
+}
+
+export function clearLaunchStatus(appName: string): void {
+  launchToasts.get(appName)?.close();
+  launchToasts.delete(appName);
+}
+
+async function launchWithStatus(
+  appName: string,
+  run: () => Promise<string>,
+): Promise<void> {
+  beginLaunch(appName);
+  try {
+    const message = await run();
+    clearLaunchStatus(appName);
+    toast(message, "ok");
+  } catch (error) {
+    clearLaunchStatus(appName);
+    toast(String(error), "err");
+  }
+}
 
 /** Launch a game and record it in the recent list. */
 export async function epicStop(appName: string): Promise<void> {
@@ -68,13 +101,7 @@ export async function epicPlay(appName: string): Promise<void> {
   // Amazon Games is installed and launched by the launcher through Nile.
   if (appName.startsWith("amazon::")) {
     pushRecent(appName);
-    toast(t("dl.launching"), "");
-    try {
-      const msg = await nileLaunch(appName.slice(8));
-      toast(msg, "ok");
-    } catch (e) {
-      toast(String(e), "err");
-    }
+    await launchWithStatus(appName, () => nileLaunch(appName.slice(8)));
     return;
   }
   // Steam games belong to the Steam client: hand the launch over to it.
@@ -102,13 +129,7 @@ export async function epicPlay(appName: string): Promise<void> {
   }
   pushRecent(appName);
   if (appName.startsWith("gog::")) {
-    toast(t("dl.launching"), "");
-    try {
-      const msg = await gogLaunchGame(appName);
-      toast(msg, "ok");
-    } catch (e) {
-      toast(String(e), "err");
-    }
+    await launchWithStatus(appName, () => gogLaunchGame(appName));
     return;
   }
   const title = S.epicSummariesMap.get(appName)?.title || appName;
@@ -120,11 +141,13 @@ export async function epicPlay(appName: string): Promise<void> {
     if (support.epicLauncherInstalled) clearEpicLauncherNotice();
     else showEpicRelayNoticeOnce(appName, title);
   }
-  toast(t("dl.launching"), "");
+  beginLaunch(appName);
   try {
     const msg = await epicLaunchGame(appName);
+    clearLaunchStatus(appName);
     toast(msg, "ok");
   } catch (e) {
+    clearLaunchStatus(appName);
     const raw = String(e);
     if (raw.startsWith("@t:dl.needsEpicLauncher")) {
       showEpicLauncherNotice(appName, title);

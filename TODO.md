@@ -320,7 +320,9 @@ Still open:
   runs the same preparation before its normal launch (the manual "Prepare
   prefix" button remains for doing it ahead of time). Without layers, Wine/Proton
   creates the prefix during the normal start, so the common path does not wait.
-  Real Linux/macOS hardware still has to confirm the Proton/umu prefix layout.
+  The launch toast stays open and shows the elapsed seconds, then returns to
+  "Launching…" if preparation fails. Real Linux/macOS hardware still has to
+  confirm the Proton/umu prefix layout.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
 - Platform implementations for the screenshot hook, embedded store webview and

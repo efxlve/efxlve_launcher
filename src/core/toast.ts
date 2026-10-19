@@ -9,6 +9,31 @@
 import { localizeMessage } from "../i18n";
 import { toastsEl } from "./dom";
 
+export interface ProgressToast {
+  update(message: string): void;
+  close(): void;
+}
+
+/**
+ * A toast with no timer, for work whose length is not known. The caller updates
+ * the text and closes it when the work finishes; a click dismisses it early.
+ */
+export function progressToast(msg: string): ProgressToast {
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = localizeMessage(msg);
+  el.addEventListener("click", () => el.remove());
+  toastsEl.appendChild(el);
+  return {
+    update(message: string) {
+      el.textContent = localizeMessage(message);
+    },
+    close() {
+      el.remove();
+    },
+  };
+}
+
 /** Show a toast. `kind` selects the visual state (ok/err/neutral). */
 export function toast(msg: string, kind: "ok" | "err" | "" = ""): void {
   const el = document.createElement("div");
