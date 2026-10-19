@@ -166,10 +166,12 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, LegendaryError> {
 
     emit(app, "downloading", Some(0), "@t:dl.fetchingVersion".into());
     let tag = latest_tag().await?;
-    let url = paths::download_url_for_tag(&tag);
+    let asset = paths::current_asset_name()
+        .ok_or_else(|| LegendaryError::DownloadFailed("@t:dl.platformUnsupported".into()))?;
+    let url = paths::download_url_for_tag(&tag, asset);
     let dir = paths::bin_dir(app);
     tokio::fs::create_dir_all(&dir).await?;
-    let part = dir.join("legendary.exe.part");
+    let part = dir.join(format!("{}.part", paths::binary_name()));
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
@@ -218,6 +220,11 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, LegendaryError> {
     }
     drop(file);
     tokio::fs::rename(&part, &target).await?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = tokio::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o755)).await;
+    }
     binary_version(&target).await?;
 
     emit(app, "ready", Some(100), "@t:auth.legendaryReady".into());
