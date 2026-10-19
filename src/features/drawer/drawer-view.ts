@@ -1102,7 +1102,7 @@ function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
 }
 
 /** Paints the personal block again after a session ended, if its page is open. */
-export function repaintPersonalBlock(appName: string): void {
+function repaintPersonalBlock(appName: string): void {
   if (S.currentModalAppName !== appName || S.activeDrawerTab !== "overview") return;
   const host = document.getElementById("gp-personal-block");
   const s = summaryOf(appName);
@@ -1500,6 +1500,9 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
   S.loadedAchievements.delete(appName);
   void fetchAndRenderAchievements(appName, true).then(() => {
     const after = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
+    // The hero numbers repaint themselves: the fetch ends with a soft repaint of
+    // the open page. This delta is written *after* that, so the card that shows it
+    // is painted again here — otherwise it would wait for the next repaint.
     if (after > before) {
       recordSessionSummary(appName, { unlocked: after - before, at: Date.now() });
       repaintPersonalBlock(appName);
