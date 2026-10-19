@@ -950,6 +950,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             steam::steam_open_downloads,
             steam::steam_list_installed,
             steam::steam_app_metadata,
+            steam::steam_protondb_summary,
             companion::companion_installed_games,
             companion::companion_library,
             companion::companion_store_status,

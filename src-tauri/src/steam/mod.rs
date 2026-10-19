@@ -12,6 +12,7 @@ mod collections;
 mod library;
 mod news;
 mod playtime;
+mod protondb;
 mod protocol;
 mod runtime;
 mod shots;
@@ -46,6 +47,10 @@ pub use library::{
 // playtime.rs: SteamPlaytime, read_playtimes, steam_sync_playtime
 #[allow(unused_imports)]
 pub use playtime::*;
+
+// protondb.rs: ProtonDbSummary, steam_protondb_summary
+#[allow(unused_imports)]
+pub use protondb::*;
 
 // download_live.rs: SteamLiveDownload, steam_download_live
 #[allow(unused_imports)]

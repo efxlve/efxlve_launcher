@@ -231,6 +231,12 @@ paketinin çıktığı anlamına gelmez.
 - Windows'ta `launch_spec` ve `compat_prepare_prefix` başlatma yapmaz; mevcut
   Windows yolu birebir korunur ve hazırlama komutu açık bir hata döndürür.
 
+Steam oyun sayfasının "bu bilgisayardaki kopya" kartında ProtonDB topluluk
+derecesi görünür (Steam uygulama kimliğiyle). Yanıt uygulama başına bir gün
+diskte cache'lenir; ağ hatasında eski kopya, o da yoksa satır hiç gösterilmez.
+Satır ProtonDB sayfasına gider. Steam Deck "Verified" rozeti Valve'nin cihaz
+verisini gerektirdiği için kapsam dışı.
+
 ### 8.4 Arayüz
 Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştırıcılar,
 çalışma zamanları, çeviri katmanları ve yardımcılar; sürüm/boyut, kurulu sürüm,

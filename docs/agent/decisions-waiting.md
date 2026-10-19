@@ -153,6 +153,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   geldikçe aynı kutuda "hazırlanıyor… N sn" yazıyor, oyun başlayınca kapanıyor.
   Böylece ilk katmanlı açılışın 30 saniyeye çıkabilen beklemesi "dondu" gibi
   görünmüyor.
+- **ProtonDB rozeti:** Steam oyun sayfasındaki kopya kartına topluluk derecesi
+  eklendi. `protondb.com` özet uç noktası kullanılıyor; uygulama kimliği yalnız
+  rakamlardan oluşmalı. Yanıt `<app_data>/steam/protondb/<appid>.json` içinde
+  bir gün cache'leniyor; ağ hatasında eski kopya, o da yoksa satır gizli kalıyor.
+  Steam Deck "Verified" verisi Valve'de olduğu için eklenmedi; bu rozet yalnız
+  ProtonDB derecesini gösteriyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

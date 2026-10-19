@@ -2615,5 +2615,14 @@
   "compat.prefixFailed": "The prefix could not be prepared.",
   "compat.prefixTimeout": "Prefix creation timed out. Try again.",
   "compat.prepareWindows": "Prefix preparation is only available on Linux and macOS.",
-  "compat.noRunner": "No compatibility runner is selected."
+  "compat.noRunner": "No compatibility runner is selected.",
+  "protondb.title": "ProtonDB",
+  "protondb.hint": "Community Linux compatibility rating; opens the ProtonDB page.",
+  "protondb.trending": "Trending: {tier}",
+  "protondb.platinum": "Platinum",
+  "protondb.gold": "Gold",
+  "protondb.silver": "Silver",
+  "protondb.bronze": "Bronze",
+  "protondb.borked": "Borked",
+  "protondb.pending": "Pending"
 }

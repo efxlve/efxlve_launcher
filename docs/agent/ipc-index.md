@@ -360,6 +360,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_open_client` | `steamOpenClient({ ... })` | `src-tauri/src/steam/protocol.rs` |
 | `steam_open_downloads` | `steamOpenDownloads({ ... })` | `src-tauri/src/steam/protocol.rs` |
 | `steam_owned_games` | `steamOwnedGames({ ... })` | `src-tauri/src/steam_auth/session.rs` |
+| `steam_protondb_summary` | `steamProtondbSummary({ ... })` | `src-tauri/src/steam/protondb.rs` |
 | `steam_remove_saved_account` | `steamRemoveSavedAccount({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_set_api_key` | `steamSetApiKey({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_status` | `steamStatus({ ... })` | `src-tauri/src/steam/protocol.rs` |

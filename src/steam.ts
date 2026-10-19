@@ -112,6 +112,19 @@ export interface SteamAppMetadata {
 /** App id → client-cached studio, genres and release year. */
 export const steamAppMetadata = () => invoke<Record<string, SteamAppMetadata>>("steam_app_metadata");
 
+/** ProtonDB's community Linux/Steam Deck compatibility tier. */
+export interface ProtonDbSummary {
+  tier: string;
+  bestReportedTier: string | null;
+  trendingTier: string | null;
+  confidence: string | null;
+  score: number | null;
+  total: number | null;
+}
+
+export const steamProtonDbSummary = (appId: string) =>
+  invoke<ProtonDbSummary | null>("steam_protondb_summary", { appId });
+
 /** One Steam transfer, with the byte counter moved forward since the last exact sample. */
 export interface SteamLiveDownload {
   appId: string;

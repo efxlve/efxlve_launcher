@@ -34,6 +34,7 @@ import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epi
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
 import { hydrateGameCompatCard, renderGameCompatCard } from "./game-compat";
+import { hydrateProtonDbChip, renderProtonDbHost } from "./protondb";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
 import { steamGetAchievements } from "../../steam";
 import { companionAchievements } from "../../companion";
@@ -478,7 +479,7 @@ function renderSpecsTab(
     <div class="specs-grid">
       ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
       <div class="specs-side-col">
-        ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>`)}
+        ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>${renderProtonDbHost(s)}`)}
         ${card(t("feat.controller"), "gamepad-2", `<div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>`)}
       </div>
       ${card(t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`, true)}
@@ -927,7 +928,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (stats) stats.innerHTML = heroStatsHtml(s, partner);
     paintGameMeta(s);
     paintGameCloud(s);
-    if (S.activeDrawerTab === "specs") void hydrateGameCompatCard(appName);
+    if (S.activeDrawerTab === "specs") {
+      void hydrateGameCompatCard(appName);
+      void hydrateProtonDbChip(appName);
+    }
     return;
   }
 
@@ -997,7 +1001,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
       })
       .catch(() => {});
   }
-  if (S.activeDrawerTab === "specs") void hydrateGameCompatCard(appName);
+  if (S.activeDrawerTab === "specs") {
+    void hydrateGameCompatCard(appName);
+    void hydrateProtonDbChip(appName);
+  }
   syncSidebarGameActive();
   updateGamepadHud(S.gamepadPolling);
   presenceSync();

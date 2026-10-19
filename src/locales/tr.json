@@ -2615,5 +2615,14 @@
   "compat.prefixFailed": "Prefix hazırlanamadı.",
   "compat.prefixTimeout": "Prefix oluşturma zaman aşımına uğradı. Tekrar dene.",
   "compat.prepareWindows": "Prefix hazırlama yalnız Linux ve macOS'ta kullanılabilir.",
-  "compat.noRunner": "Uyumluluk çalıştırıcısı seçili değil."
+  "compat.noRunner": "Uyumluluk çalıştırıcısı seçili değil.",
+  "protondb.title": "ProtonDB",
+  "protondb.hint": "Topluluk Linux uyumluluk derecesi; ProtonDB sayfasını açar.",
+  "protondb.trending": "Eğilim: {tier}",
+  "protondb.platinum": "Platin",
+  "protondb.gold": "Altın",
+  "protondb.silver": "Gümüş",
+  "protondb.bronze": "Bronz",
+  "protondb.borked": "Çalışmıyor",
+  "protondb.pending": "Beklemede"
 }
