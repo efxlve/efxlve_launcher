@@ -72,7 +72,7 @@ fn sanitize_segment(value: &str) -> String {
             out.push('_');
         }
     }
-    if out.is_empty() {
+    if out.is_empty() || out.chars().all(|ch| ch == '.') {
         "game".to_string()
     } else {
         out
@@ -326,6 +326,8 @@ mod tests {
         assert_eq!(sanitize_segment("../../evil"), ".._.._evil");
         assert_eq!(sanitize_segment("Tom & Jerry"), "Tom___Jerry");
         assert_eq!(sanitize_segment(""), "game");
+        assert_eq!(sanitize_segment(".."), "game");
+        assert_eq!(sanitize_segment("."), "game");
     }
 
     #[test]

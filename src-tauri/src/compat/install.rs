@@ -574,6 +574,26 @@ async fn ensure_module(app: &AppHandle, id: &str) -> Result<(), String> {
     }
 }
 
+/// A release tag becomes one folder name. Git allows slashes in tags; the
+/// install tree does not, and a tag must never add a path segment of its own.
+fn safe_tag(tag: &str) -> String {
+    let value: String = tag
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | '+') {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if value.is_empty() || value.chars().all(|ch| ch == '.') {
+        "release".to_string()
+    } else {
+        value
+    }
+}
+
 fn digest_hex(digest: &Option<String>) -> Option<String> {
     let value = digest.as_deref()?.trim();
     let hex = value.strip_prefix("sha256:").unwrap_or(value);
@@ -810,9 +830,10 @@ async fn install_github(app: &AppHandle, def: &ToolDef, target: &Target) -> Resu
     if asset.url.is_empty() {
         return Err("@t:compat.noAsset".to_string());
     }
+    let tag = safe_tag(&release.tag);
     if scan_installed(app, target, def)
         .iter()
-        .any(|entry| entry.tag == release.tag)
+        .any(|entry| entry.tag == tag)
     {
         return Ok(());
     }
@@ -826,8 +847,8 @@ async fn install_github(app: &AppHandle, def: &ToolDef, target: &Target) -> Resu
         .await
         .map_err(|error| error.to_string())?;
     let safe_asset = asset.name.replace(['/', '\\'], "_");
-    let part = downloads.join(format!("{}-{}-{safe_asset}.part", def.id, release.tag));
-    let temp = temp_root.join(format!("{}-{}-{}", def.id, release.tag, std::process::id()));
+    let part = downloads.join(format!("{}-{}-{safe_asset}.part", def.id, tag));
+    let temp = temp_root.join(format!("{}-{}-{}", def.id, tag, std::process::id()));
     let _ = std::fs::remove_dir_all(&temp);
 
     download_asset(app, def.id, &asset, &part).await?;
@@ -850,12 +871,12 @@ async fn install_github(app: &AppHandle, def: &ToolDef, target: &Target) -> Resu
     .await
     .map_err(|error| error.to_string())??;
 
-    let dest = tool_root(app, target, def.id).join(&release.tag);
+    let dest = tool_root(app, target, def.id).join(&tag);
     promote(&temp, &dest)?;
     mark_executables(&dest);
     let manifest = InstallManifest {
         id: def.id.to_string(),
-        tag: release.tag.clone(),
+        tag: tag.clone(),
         asset: asset.name.clone(),
         size: asset.size,
         digest: asset.digest.clone(),
@@ -962,6 +983,14 @@ mod tests {
         );
         assert_eq!(digest_hex(&Some("sha256:xyz".into())), None);
         assert_eq!(digest_hex(&None), None);
+    }
+
+    #[test]
+    fn a_release_tag_stays_one_folder() {
+        assert_eq!(safe_tag("v1.2.3"), "v1.2.3");
+        assert_eq!(safe_tag("release/../x"), "release_.._x");
+        assert_eq!(safe_tag(".."), "release");
+        assert_eq!(safe_tag(""), "release");
     }
 
     #[test]
