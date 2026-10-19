@@ -97,6 +97,13 @@ the ones for a surface (e.g. `clip`, `live_preview_real_captures`). The clip
 audio one renders its own silent stream, so it works on a quiet machine; it
 leaves `src-tauri/tmp-clip-audio-check.avi` behind to listen to.
 
+All 26 were run on 2026-10-19. Three kinds of red are expected and say nothing
+about the code: the hardware probe (`hardware_reports_parse` needs a connected
+DualShock/DualSense), the account probes (`test_epic_get_game_dlcs_*` describe
+whatever account is signed in, down to which DLC is installed — they print the
+flags instead of asserting them), and anything that needs a client running.
+Everything else is expected green, and was.
+
 ## Release notes
 
 The workflow pushes a placeholder body (`releaseBody` in `.github/workflows/release.yml`).
