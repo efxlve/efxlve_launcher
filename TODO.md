@@ -110,7 +110,9 @@ network profile/settings/autostart in one parallel batch. Store-detail arrivals
 patch their own blocks instead of calling `openEpicModal` and rebuilding the tab.
 The achievement-summary pass is reused for 30 seconds unless a refresh or account
 switch forces it, so boot and the first background sync no longer parse the same
-150+ schemas twice.
+150+ schemas twice. Companion cover resolution, store playtime and the paged Xbox
+achievement pass now wait for the window to go idle instead of running on top of
+the first library paint.
 
 ## 0d. Community follow-ups (open)
 

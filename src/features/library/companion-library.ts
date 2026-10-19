@@ -122,9 +122,33 @@ async function loadCompanionLibraryOnce(): Promise<void> {
   rebuildAllGamesMap();
   S.libraryDataRev++;
   scheduleRender();
-  void fillCompanionCovers();
-  void fillCompanionPlaytime();
-  void fillXboxAchievements();
+  scheduleCompanionFills();
+}
+
+/**
+ * Cover resolution, store playtime and the paged Xbox achievement pass are all
+ * network-heavy. The client catalog already paints the cards, so these run
+ * after the window goes idle instead of competing with the first library pass.
+ */
+let companionFillsScheduled = false;
+
+function scheduleCompanionFills(): void {
+  if (companionFillsScheduled) return;
+  companionFillsScheduled = true;
+  const run = (): void => {
+    companionFillsScheduled = false;
+    void fillCompanionCovers();
+    void fillCompanionPlaytime();
+    void fillXboxAchievements();
+  };
+  const idleHost = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  };
+  if (typeof idleHost.requestIdleCallback === "function") {
+    idleHost.requestIdleCallback(run, { timeout: 5000 });
+  } else {
+    window.setTimeout(run, 2000);
+  }
 }
 
 let companionLibraryInFlight: Promise<void> | null = null;
