@@ -205,7 +205,7 @@ export async function refreshSteamStatus(): Promise<void> {
  * Returns the owned-library error message (or `null`), so the caller can react
  * to an expired session.
  */
-export async function loadSteamLibrary(force = false): Promise<string | null> {
+async function loadSteamLibraryOnce(force = false): Promise<string | null> {
   S.steamLibrarySyncing = true;
   // The boot hydration may not have finished yet; one cheap status check keeps
   // the owned fetch from being skipped (no network while no login is pending).
@@ -293,6 +293,22 @@ export async function loadSteamLibrary(force = false): Promise<string | null> {
   scheduleRender();
   checkAndPollSteamDownloads();
   return error;
+}
+
+let steamLibraryInFlight: Promise<string | null> | null = null;
+
+/**
+ * Boot, the account card and a post-action resync can all ask for the Steam
+ * library at once. They share the pass that is already reading the manifests
+ * instead of running four identical reads (installed list, playtime, client
+ * metadata, owned games and family sharing) in parallel.
+ */
+export function loadSteamLibrary(force = false): Promise<string | null> {
+  if (steamLibraryInFlight) return steamLibraryInFlight;
+  steamLibraryInFlight = loadSteamLibraryOnce(force).finally(() => {
+    steamLibraryInFlight = null;
+  });
+  return steamLibraryInFlight;
 }
 
 /**

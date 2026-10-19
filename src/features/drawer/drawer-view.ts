@@ -31,7 +31,8 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
-import { gogGetAchievements, gogGetGameDetails, gogGetSystemRequirements } from "../../gog";
+import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
+import { loadGogDetails } from "./game-details-cache";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
 import { steamGetAchievements } from "../../steam";
 import { companionAchievements } from "../../companion";
@@ -43,7 +44,7 @@ import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreensho
 import { cachedNotes, notesForScope } from "../notes/notes-client";
 import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
-import { igdbStatus } from "../../igdb";
+import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
 
@@ -719,7 +720,7 @@ function ensureOverviewData(s: EpicSummary): void {
   // Fetch official GOG metadata on demand
   if (appName.startsWith("gog::")) {
     const rawId = appName.slice(5);
-    const detailsP = gogGetGameDetails(rawId)
+    const detailsP = loadGogDetails(rawId)
       .then((details) => {
         if (details.requirements) {
           S.loadedRequirements.set(appName, details.requirements);
@@ -1871,6 +1872,44 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
 }
 
 /**
+ * Repaints only the blocks a store-details answer feeds. The old path called
+ * `openEpicModal` here, which rebuilt the whole tab (and re-decoded every
+ * picture) for a description, a feature row and a requirement grid.
+ */
+function repaintStoreDetails(appName: string): void {
+  if (S.currentModalAppName !== appName) return;
+  const s = summaryOf(appName);
+  if (!s) return;
+  const g = rawOf(appName);
+  const reqData = S.loadedRequirements.get(appName);
+  const featuresEl = document.getElementById("hub-features-list");
+  if (featuresEl) {
+    featuresEl.innerHTML = renderGameFeatures(
+      s,
+      g,
+      gamePartner(s, g),
+      gameAntiCheat(s, g),
+      reqData,
+      igdbTagsFor(appName),
+    );
+  }
+  const ctrlEl = document.getElementById("sys-ctrl-body");
+  if (ctrlEl) ctrlEl.innerHTML = renderControllerCard(s, g, reqData);
+  if (S.activeDrawerTab === "specs") {
+    const body = document.getElementById("sys-req-body");
+    if (body) body.innerHTML = renderRequirementsBody(s);
+  }
+  paintGameMeta(s);
+  paintGameCloud(s);
+  const critic = S.loadedCritic.get(appName);
+  if (critic) {
+    const merged = mergeSteamCritic(critic, appName);
+    if (merged !== critic) S.loadedCritic.set(appName, merged);
+    updateCriticUI(appName, merged);
+  }
+}
+
+/**
  * Steam store id resolved for a companion title (null = no exact match yet).
  * Session-lived: the store search is the only uncached network step.
  */
@@ -1927,7 +1966,7 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
     storeAboutSettled.add(appName);
     maybeLoadWikiAbout(s);
     if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
-      openEpicModal(appName, false, false);
+      repaintStoreDetails(appName);
     }
   }
 }
@@ -1988,9 +2027,85 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
     storeAboutSettled.add(appName);
     maybeLoadWikiAbout(s);
     if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
-      openEpicModal(appName, false, false);
+      repaintStoreDetails(appName);
     }
   }
+}
+
+/**
+ * Fills the metadata caches for one game without opening its page.
+ *
+ * Every source already writes a disk cache in Rust, but nothing filled those
+ * caches until the player opened the page: the first visit still waited for
+ * HLTB, the critic service, the store and IGDB. The idle prefetch walks the
+ * recent games once and lands the same answers the page would ask for, so a
+ * later open paints from memory. It is deliberately sequential (one game at a
+ * time, a caller-side pause between games) and skips a game whose page is open.
+ */
+export async function prefetchGamePage(appName: string): Promise<void> {
+  if (!isTauri || S.offlineMode) return;
+  if (S.currentModalAppName === appName) return;
+  const s = summaryOf(appName);
+  if (!s) return;
+  const year = gameReleaseYear(s);
+  const lookupTitle = S.allGamesMap.get(appName)?.title ?? s.title;
+  const jobs: Promise<unknown>[] = [];
+
+  if (!S.loadedHltb.has(appName)) {
+    jobs.push(
+      epicGetHltb(lookupTitle, appName, false, year)
+        .then((data) => { S.loadedHltb.set(appName, data); })
+        .catch(() => undefined),
+    );
+  }
+  if (!S.loadedCritic.has(appName)) {
+    jobs.push(
+      epicGetCritic(lookupTitle, appName, false, year)
+        .then((data) => { S.loadedCritic.set(appName, mergeSteamCritic(data, appName)); })
+        .catch(() => undefined),
+    );
+  }
+  if (!S.loadedRequirements.has(appName)) {
+    jobs.push(fetchAndRenderRequirements(appName, s.title).catch(() => undefined));
+  }
+  if (!S.loadedAchievements.has(appName)) {
+    jobs.push(fetchAndRenderAchievements(appName).catch(() => undefined));
+  }
+  if (!appName.includes("::") && !S.dlcCache.has(appName)) {
+    jobs.push(
+      epicGetGameDlcs(appName)
+        .then((res) => { S.dlcCache.set(appName, res); })
+        .catch(() => undefined),
+    );
+  }
+  if (s.installed && !S.loadedScreenshots.has(appName)) {
+    // Local folder scan; it paints in its own time and has no promise to await.
+    fetchAndRenderScreenshots(appName, s.title);
+  }
+  // The hero is the one picture the page waits for; the rest (IGDB screenshots,
+  // similar-game covers) is warmed once the IGDB answer lands.
+  warmImages([epicWideArt(s) || s.cover]);
+
+  // News is Steam's feed. Asking for a Steam store search on every Epic game
+  // would cost a request for nothing, so only titles with a Steam copy do it.
+  if (appName.startsWith("steam::") || gameVersionsOf(appName).some((v) => v.appName.startsWith("steam::"))) {
+    void loadGameNews(s);
+  }
+
+  await Promise.allSettled(jobs);
+
+  ensureIgdbTransport(() => {
+    if (S.currentModalAppName === appName) return;
+    ensureIgdbOverview({ appName, title: lookupTitle }, year, () => {
+      const game = igdbGameFor(appName);
+      if (!game) return;
+      const urls: Array<string | null> = [
+        ...game.screenshots.map((id) => igdbImage(id, "screenshot_big")),
+        ...game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : null)),
+      ];
+      warmImages(urls);
+    });
+  });
 }
 
 export async function epicOpenFolder(appName: string): Promise<void> {

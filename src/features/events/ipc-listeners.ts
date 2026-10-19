@@ -107,6 +107,7 @@ import { initOfflineMode } from "../../core/offline";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
+import { prefetchGamePagesWhenIdle } from "../drawer/game-prefetch";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -910,17 +911,16 @@ export async function initApp(hooks: {
         void syncEpicServerPlaytimes();
       })
       .catch(() => undefined);
-    try {
-      S.networkProfile = (await epicGetNetworkProfile()) ?? "";
-    } catch {
-      // ignore
-    }
-    try {
-      S.preferredCdn = (await epicGetSettings()).preferred_cdn ?? "";
-      S.autoDesktopShortcut = await epicGetAutoDesktopShortcut();
-    } catch {
-      // ignore
-    }
+    // Three independent disk reads; running them together removes two serial
+    // IPC round trips from the boot path.
+    const [networkProfile, settings, autoShortcut] = await Promise.all([
+      epicGetNetworkProfile().catch(() => null),
+      epicGetSettings().catch(() => null),
+      epicGetAutoDesktopShortcut().catch(() => null),
+    ]);
+    if (networkProfile !== null) S.networkProfile = networkProfile ?? "";
+    if (settings) S.preferredCdn = settings.preferred_cdn ?? "";
+    if (autoShortcut !== null) S.autoDesktopShortcut = autoShortcut;
 
     // Other accounts' games come from disk snapshots (no network) so the shared
     // library is ready as soon as the shell paints.
@@ -954,6 +954,10 @@ export async function initApp(hooks: {
     // The pictures the game pages paint are warmed only when the window is idle:
     // the first version started this at boot, which is where it hurt.
     prefetchRecentPicturesWhenIdle();
+    // Same idea for the text sources: HLTB, critic, store specs, IGDB and the
+    // recent games' screenshots. The disk caches stay warm between runs, so the
+    // next visit to a page paints from local data instead of asking again.
+    prefetchGamePagesWhenIdle();
     // Everything the boot path must do before the launcher is fully usable has
     // been kicked off; this mark is the number to compare between releases.
     perfMark("boot:ready");

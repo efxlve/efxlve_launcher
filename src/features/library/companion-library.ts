@@ -77,7 +77,7 @@ export async function syncCompanionAccounts(): Promise<void> {
   if (changed) await loadCompanionLibrary();
 }
 
-export async function loadCompanionLibrary(): Promise<void> {
+async function loadCompanionLibraryOnce(): Promise<void> {
   bindCompanionLogin();
   try {
     const [games, status] = await Promise.all([
@@ -125,6 +125,21 @@ export async function loadCompanionLibrary(): Promise<void> {
   void fillCompanionCovers();
   void fillCompanionPlaytime();
   void fillXboxAchievements();
+}
+
+let companionLibraryInFlight: Promise<void> | null = null;
+
+/**
+ * The boot pass, a store change and a finished sign-in can overlap. The second
+ * caller waits for the list already being read instead of starting the whole
+ * scan (and its cover/playtime follow-ups) again.
+ */
+export function loadCompanionLibrary(): Promise<void> {
+  if (companionLibraryInFlight) return companionLibraryInFlight;
+  companionLibraryInFlight = loadCompanionLibraryOnce().finally(() => {
+    companionLibraryInFlight = null;
+  });
+  return companionLibraryInFlight;
 }
 
 /**

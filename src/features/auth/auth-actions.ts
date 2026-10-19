@@ -116,24 +116,40 @@ export async function refreshEpic(forceSync = false): Promise<void> {
   }
 }
 
-export async function loadEpicAchSummaries(): Promise<void> {
-  if (!isTauri) return;
-  try {
-    const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
-      epicGetAchievementsSummary().catch(() => ({})),
-      gogGetAchievementsSummary().catch(() => ({})),
-      // Steam summaries come from the disk cache: no key or network needed.
-      steamGetAchievementsSummary().catch(() => ({})),
-      // Ubisoft also keeps its sets on disk, so the bulk pass is offline.
-      // Xbox and EA answer per game over the network and stay out of this map.
-      companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
-    ]);
-    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
-    S.libraryDataRev++;
-    if (S.view === "library" || S.view === "profile") scheduleRender();
-  } catch (e) {
-    console.warn("Achievement summaries could not be fetched:", e);
-  }
+let achSummariesInFlight: Promise<void> | null = null;
+
+/**
+ * One bulk achievement pass at a time.
+ *
+ * Boot, the first library sync and a manual refresh all ask for the summaries,
+ * and each call used to start four backend passes over the same disk files.
+ * Later callers now wait for the pass already running; a completed pass can be
+ * started again by a later refresh.
+ */
+export function loadEpicAchSummaries(): Promise<void> {
+  if (!isTauri) return Promise.resolve();
+  if (achSummariesInFlight) return achSummariesInFlight;
+  achSummariesInFlight = (async () => {
+    try {
+      const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
+        epicGetAchievementsSummary().catch(() => ({})),
+        gogGetAchievementsSummary().catch(() => ({})),
+        // Steam summaries come from the disk cache: no key or network needed.
+        steamGetAchievementsSummary().catch(() => ({})),
+        // Ubisoft also keeps its sets on disk, so the bulk pass is offline.
+        // Xbox and EA answer per game over the network and stay out of this map.
+        companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
+      ]);
+      S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
+      S.libraryDataRev++;
+      if (S.view === "library" || S.view === "profile") scheduleRender();
+    } catch (e) {
+      console.warn("Achievement summaries could not be fetched:", e);
+    } finally {
+      achSummariesInFlight = null;
+    }
+  })();
+  return achSummariesInFlight;
 }
 
 /** Bumps when a newer library sync should discard an in-flight one. */
