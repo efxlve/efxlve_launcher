@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "라이브러리에 있음",
   "drawer.lastPlayed": "마지막 플레이: {date}",
   "settings.caseCoversTitle": "실물 패키지 케이스 커버",
-  "settings.caseCoversDesc": "각 게임 표지를 스토어 헤더가 있는 실물 패키지 케이스 프레임으로 감쌉니다."
+  "settings.caseCoversDesc": "각 게임 표지를 스토어 헤더가 있는 실물 패키지 케이스 프레임으로 감쌉니다.",
+  "settings.caseCoverStyleTitle": "케이스 디자인",
+  "settings.caseStyleRetail": "스탠다드",
+  "settings.caseStyleClear": "클리어",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "사이드 스파인",
+  "settings.caseStyleRetailDesc": "컬러 플라스틱 케이스, 상단 스토어 배너, 힌지 클립 및 오픈 홈.",
+  "settings.caseStyleClearDesc": "반투명 글래스 스토어 바가 있는 투명 폴리카보네이트 케이스.",
+  "settings.caseStyleSteelbookDesc": "브러시드 메탈 질감과 금속 책등 이음새가 있는 컬렉터즈 스틸북 케이스.",
+  "settings.caseStyleJewelDesc": "표지 상단을 가리지 않는 클래식 CD-ROM 좌측 세로 스파인 케이스."
 }

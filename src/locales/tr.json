@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "Kütüphanende",
   "drawer.lastPlayed": "Son oynama: {date}",
   "settings.caseCoversTitle": "Fiziksel kutu kapakları",
-  "settings.caseCoversDesc": "Oyun kapaklarını mağaza başlıklı fiziksel kutu çerçevesi içinde gösterir."
+  "settings.caseCoversDesc": "Oyun kapaklarını mağaza başlıklı fiziksel kutu çerçevesi içinde gösterir.",
+  "settings.caseCoverStyleTitle": "Kutu tasarımı",
+  "settings.caseStyleRetail": "Standart",
+  "settings.caseStyleClear": "Şeffaf",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Yan Sırt",
+  "settings.caseStyleRetailDesc": "Renkli plastik çerçeve, üst mağaza şeridi, menteşe tırnakları ve açma çentiği.",
+  "settings.caseStyleClearDesc": "Buzlu şeffaf polikarbonat kasa ve yarı saydam cam mağaza şeridi.",
+  "settings.caseStyleSteelbookDesc": "Fırçalanmış eloksallı metal koleksiyon kutusu ve metalik sırt oluğu.",
+  "settings.caseStyleJewelDesc": "Klasik CD-ROM tarzı dikey sol sırt şeridi; kapak görselinin üst kısmını kapatmaz."
 }

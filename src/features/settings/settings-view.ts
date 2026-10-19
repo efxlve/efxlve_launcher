@@ -669,6 +669,33 @@ function renderAppearance(): string {
       row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +
       row(t("settings.storeIconsTitle"), t("settings.storeIconsDesc"), toggle("toggle-store-icons", S.showStoreIcons)) +
       row(t("settings.caseCoversTitle"), t("settings.caseCoversDesc"), toggle("toggle-case-covers", S.showCaseCovers)) +
+      (S.showCaseCovers
+        ? row(
+            t("settings.caseCoverStyleTitle"),
+            t(
+              S.caseCoverStyle === "clear"
+                ? "settings.caseStyleClearDesc"
+                : S.caseCoverStyle === "steelbook"
+                  ? "settings.caseStyleSteelbookDesc"
+                  : S.caseCoverStyle === "jewel"
+                    ? "settings.caseStyleJewelDesc"
+                    : "settings.caseStyleRetailDesc",
+            ),
+            `<div class="seg" role="radiogroup">${(
+              [
+                ["retail", "settings.caseStyleRetail"],
+                ["clear", "settings.caseStyleClear"],
+                ["steelbook", "settings.caseStyleSteelbook"],
+                ["jewel", "settings.caseStyleJewel"],
+              ] as const
+            )
+              .map(
+                ([style, labelKey]) =>
+                  `<button type="button" class="${S.caseCoverStyle === style ? "active" : ""}" data-act="set-case-cover-style" data-style="${style}">${t(labelKey)}</button>`,
+              )
+              .join("")}</div>`,
+          )
+        : "") +
       row(t("settings.separateCopiesTitle"), t("settings.separateCopiesDesc"), toggle("toggle-separate-copies", S.separateCopies)) +
       row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +

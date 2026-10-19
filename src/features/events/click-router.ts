@@ -37,6 +37,8 @@ import {
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
   CASE_COVERS_KEY,
+  CASE_COVER_STYLE_KEY,
+  normalizeCaseCoverStyle,
   SEPARATE_COPIES_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
@@ -876,6 +878,15 @@ document.addEventListener("click", (e) => {
     S.showCaseCovers = !S.showCaseCovers;
     localStorage.setItem(CASE_COVERS_KEY, String(S.showCaseCovers));
     if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "set-case-cover-style" && t.dataset.style) {
+    const style = normalizeCaseCoverStyle(t.dataset.style);
+    if (style !== S.caseCoverStyle || !S.showCaseCovers) {
+      S.caseCoverStyle = style;
+      S.showCaseCovers = true;
+      localStorage.setItem(CASE_COVER_STYLE_KEY, style);
+      localStorage.setItem(CASE_COVERS_KEY, "true");
+      if (!refreshLibraryResultsInPlace()) scheduleRender();
+    }
   } else if (act === "toggle-separate-copies") {
     S.separateCopies = !S.separateCopies;
     localStorage.setItem(SEPARATE_COPIES_KEY, String(S.separateCopies));

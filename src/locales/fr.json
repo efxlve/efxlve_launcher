@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "Dans ta bibliothèque",
   "drawer.lastPlayed": "Dernière partie : {date}",
   "settings.caseCoversTitle": "Jaquettes boîtier physique",
-  "settings.caseCoversDesc": "Encadre chaque couverture dans un boîtier de jeu avec le bandeau de sa boutique."
+  "settings.caseCoversDesc": "Encadre chaque couverture dans un boîtier de jeu avec le bandeau de sa boutique.",
+  "settings.caseCoverStyleTitle": "Style de boîtier",
+  "settings.caseStyleRetail": "Standard",
+  "settings.caseStyleClear": "Cristal",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Tranche latérale",
+  "settings.caseStyleRetailDesc": "Boîtier plastique coloré avec bandeau supérieur, clips de charnière et encoche d'ouverture.",
+  "settings.caseStyleClearDesc": "Coque en polycarbonate transparent dépoli avec bandeau vitré translucide.",
+  "settings.caseStyleSteelbookDesc": "Boîtier collector en métal brossé anodisé avec rainure métallique sur la tranche.",
+  "settings.caseStyleJewelDesc": "Tranche verticale classique à gauche laissant toute la hauteur de la jaquette dégagée."
 }

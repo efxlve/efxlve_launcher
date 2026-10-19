@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "In deiner Bibliothek",
   "drawer.lastPlayed": "Zuletzt gespielt: {date}",
   "settings.caseCoversTitle": "Physische Spielehüllen",
-  "settings.caseCoversDesc": "Rahmt jedes Cover in einer physischen Spielehülle mit Store-Kopfzeile ein."
+  "settings.caseCoversDesc": "Rahmt jedes Cover in einer physischen Spielehülle mit Store-Kopfzeile ein.",
+  "settings.caseCoverStyleTitle": "Hüllendesign",
+  "settings.caseStyleRetail": "Standard",
+  "settings.caseStyleClear": "Transparent",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Seitenrücken",
+  "settings.caseStyleRetailDesc": "Farbige Kunststoffhülle mit oberer Store-Leiste, Scharnierclips und Griffmulde.",
+  "settings.caseStyleClearDesc": "Mattierte Kristall-Polycarbonathülle mit halbtransparenter Store-Leiste.",
+  "settings.caseStyleSteelbookDesc": "Gebürstetes Sammler-Metallgehäuse mit vertiefter Metallrückenfalz.",
+  "settings.caseStyleJewelDesc": "Klassischer vertikaler CD-ROM-Seitenrücken; verdeckt den oberen Coverbereich nicht."
 }

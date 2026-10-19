@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "في مكتبتك",
   "drawer.lastPlayed": "آخر لعب: {date}",
   "settings.caseCoversTitle": "أغلفة العلب الفيزيائية",
-  "settings.caseCoversDesc": "يعرض كل غلاف داخل إطار علبة ألعاب فيزيائية مع شريط المتجر."
+  "settings.caseCoversDesc": "يعرض كل غلاف داخل إطار علبة ألعاب فيزيائية مع شريط المتجر.",
+  "settings.caseCoverStyleTitle": "تصميم العلبة",
+  "settings.caseStyleRetail": "قياسي",
+  "settings.caseStyleClear": "شفاف",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "عمود جانبي",
+  "settings.caseStyleRetailDesc": "علبة بلاستيكية ملونة مع شريط علوي للمتجر ومفصلات جانبية وفتحة إبهام.",
+  "settings.caseStyleClearDesc": "علبة شفافة مصقولة مع شريط متجر زجاجي شبه شفاف.",
+  "settings.caseStyleSteelbookDesc": "علبة معدنية مصقولة للمقتنين مع خط كعب معدني غائر.",
+  "settings.caseStyleJewelDesc": "شريط جانبي عمودي كلاسيكي على اليسار يترك كامل ارتفاع الغلاف مكشوفاً."
 }

@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "В вашей библиотеке",
   "drawer.lastPlayed": "Последний раз: {date}",
   "settings.caseCoversTitle": "Обложки в виде физических боксов",
-  "settings.caseCoversDesc": "Оформляет каждую обложку как коробку с диском и полосой магазина."
+  "settings.caseCoversDesc": "Оформляет каждую обложку как коробку с диском и полосой магазина.",
+  "settings.caseCoverStyleTitle": "Стиль бокса",
+  "settings.caseStyleRetail": "Стандартный",
+  "settings.caseStyleClear": "Прозрачный",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Боковой корешок",
+  "settings.caseStyleRetailDesc": "Цветной пластиковый бокс с верхней полосой магазина, петлями и выемкой для пальца.",
+  "settings.caseStyleClearDesc": "Прозрачный поликарбонатный корпус с полупрозрачной стеклянной полосой магазина.",
+  "settings.caseStyleSteelbookDesc": "Коллекционный корпус из шлифованного металла с металлическим швом на корешке.",
+  "settings.caseStyleJewelDesc": "Классическая вертикальная полоса на левом корешке, не закрывающая верх обложки."
 }

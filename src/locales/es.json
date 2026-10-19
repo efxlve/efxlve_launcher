@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "En tu biblioteca",
   "drawer.lastPlayed": "Última vez: {date}",
   "settings.caseCoversTitle": "Carátulas de caja física",
-  "settings.caseCoversDesc": "Enmarca cada portada en una caja física con la franja de su tienda."
+  "settings.caseCoversDesc": "Enmarca cada portada en una caja física con la franja de su tienda.",
+  "settings.caseCoverStyleTitle": "Estilo de caja",
+  "settings.caseStyleRetail": "Estándar",
+  "settings.caseStyleClear": "Cristal",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Lomo lateral",
+  "settings.caseStyleRetailDesc": "Caja de plástico de color con franja superior de tienda, clips de bisagra y muesca de apertura.",
+  "settings.caseStyleClearDesc": "Carcasa de policarbonato transparente esmerilado con franja translúcida.",
+  "settings.caseStyleSteelbookDesc": "Caja metálica cepillada de coleccionista con unión metálica en el lomo.",
+  "settings.caseStyleJewelDesc": "Franja vertical clásica en el lomo izquierdo sin cubrir la parte superior de la portada."
 }

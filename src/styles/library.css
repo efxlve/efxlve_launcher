@@ -366,6 +366,14 @@
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
 /* --- Optional physical retail case covers (Settings > Appearance) --- */
+.pgrid.has-case-covers {
+  row-gap: 24px;
+}
+/* Drop paint containment on case cards so the 3D spine thickness and bottom
+   shelf shadow are never clipped at rest. */
+.pgrid.has-case-covers > .pcard {
+  contain: layout style;
+}
 .pcard.is-case {
   --case-shell-top: #323640;
   --case-shell-mid: #1f2229;
@@ -373,6 +381,7 @@
   --case-border: #525866;
   --case-head-bg: linear-gradient(90deg, #262932 0%, #121418 55%, #0a0b0e 100%);
   --case-rule: #7a8294;
+  --case-tint: rgba(122, 130, 148, 0.28);
 }
 .pcard.is-case[data-source="steam"] {
   --case-shell-top: #2b63eb;
@@ -381,6 +390,7 @@
   --case-border: #4d84ff;
   --case-head-bg: linear-gradient(90deg, #163b88 0%, #092052 55%, #051336 100%);
   --case-rule: #388bff;
+  --case-tint: rgba(56, 139, 255, 0.34);
 }
 .pcard.is-case[data-source="epic"] {
   --case-shell-top: #323640;
@@ -389,6 +399,7 @@
   --case-border: #525866;
   --case-head-bg: linear-gradient(90deg, #262932 0%, #121418 55%, #0a0b0e 100%);
   --case-rule: #7a8294;
+  --case-tint: rgba(122, 130, 148, 0.28);
 }
 .pcard.is-case[data-source="gog"] {
   --case-shell-top: #7b2cbf;
@@ -397,6 +408,7 @@
   --case-border: #9d4edd;
   --case-head-bg: linear-gradient(90deg, #52168c 0%, #270947 55%, #17042b 100%);
   --case-rule: #b565f7;
+  --case-tint: rgba(181, 101, 247, 0.34);
 }
 .pcard.is-case[data-source="xbox"] {
   --case-shell-top: #168a16;
@@ -405,6 +417,7 @@
   --case-border: #2eb82e;
   --case-head-bg: linear-gradient(90deg, #115c11 0%, #073007 55%, #041f04 100%);
   --case-rule: #38d938;
+  --case-tint: rgba(56, 217, 56, 0.32);
 }
 .pcard.is-case[data-source="ea"] {
   --case-shell-top: #d62839;
@@ -413,6 +426,7 @@
   --case-border: #f25464;
   --case-head-bg: linear-gradient(90deg, #8a1622 0%, #42080f 55%, #290408 100%);
   --case-rule: #ff5c6c;
+  --case-tint: rgba(255, 92, 108, 0.34);
 }
 .pcard.is-case[data-source="ubisoft"] {
   --case-shell-top: #3350d4;
@@ -421,6 +435,7 @@
   --case-border: #5c7cfa;
   --case-head-bg: linear-gradient(90deg, #1d3194 0%, #0c164a 55%, #070d2e 100%);
   --case-rule: #6987ff;
+  --case-tint: rgba(105, 135, 255, 0.34);
 }
 .pcard.is-case[data-source="battlenet"] {
   --case-shell-top: #0084f4;
@@ -429,6 +444,7 @@
   --case-border: #38a8ff;
   --case-head-bg: linear-gradient(90deg, #0058ad 0%, #002752 55%, #001733 100%);
   --case-rule: #1fb6ff;
+  --case-tint: rgba(31, 182, 255, 0.34);
 }
 .pcard.is-case[data-source="riot"] {
   --case-shell-top: #c91e29;
@@ -437,6 +453,7 @@
   --case-border: #eb444e;
   --case-head-bg: linear-gradient(90deg, #750f16 0%, #300609 55%, #1a0204 100%);
   --case-rule: #ff4752;
+  --case-tint: rgba(255, 71, 82, 0.34);
 }
 .pcard.is-case[data-source="amazon"] {
   --case-shell-top: #cc7a14;
@@ -445,62 +462,163 @@
   --case-border: #f09c32;
   --case-head-bg: linear-gradient(90deg, #7d4608 0%, #3b1f03 55%, #241201 100%);
   --case-rule: #f59e0b;
+  --case-tint: rgba(245, 158, 11, 0.34);
 }
 
+/* Base physical box shell (default style: "retail") */
 .pcard.is-case .pcard-art {
-  padding: 31px 5px 8px 6px;
-  border-radius: 5px 10px 10px 5px;
+  padding: 32px 6px 9px 8px;
+  border-radius: 4px 10px 10px 4px;
   outline: 1px solid var(--case-border);
   outline-offset: -1px;
   background:
+    /* Left spine 3D cylindrical highlight & hinge crease */
     linear-gradient(90deg,
-      rgba(255, 255, 255, 0.28) 0px,
-      rgba(255, 255, 255, 0.08) 2px,
-      rgba(0, 0, 0, 0.36) 4px,
-      rgba(255, 255, 255, 0.12) 5px,
-      transparent 6px
+      rgba(255, 255, 255, 0.38) 0px,
+      rgba(255, 255, 255, 0.14) 2px,
+      rgba(0, 0, 0, 0.48) 5px,
+      rgba(255, 255, 255, 0.18) 6.5px,
+      transparent 8px
     ),
+    /* Top plastic rim specular bevel */
     linear-gradient(180deg,
-      rgba(255, 255, 255, 0.32) 0px,
-      rgba(255, 255, 255, 0.08) 2px,
-      rgba(0, 0, 0, 0.24) 4px,
+      rgba(255, 255, 255, 0.36) 0px,
+      rgba(255, 255, 255, 0.1) 2px,
+      rgba(0, 0, 0, 0.28) 4px,
       transparent 5px
     ),
-    linear-gradient(165deg,
+    /* Main molded plastic shell gradient */
+    linear-gradient(162deg,
       var(--case-shell-top) 0%,
-      var(--case-shell-mid) 52%,
+      var(--case-shell-mid) 50%,
       var(--case-shell-bot) 100%
     );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset -1px 0 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-    0 5px 14px rgba(0, 0, 0, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset -1px 0 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    -2px 2px 0 rgba(0, 0, 0, 0.65),
+    0 10px 18px -4px rgba(0, 0, 0, 0.72),
+    0 3px 6px rgba(0, 0, 0, 0.85);
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease-out;
 }
-.pcard.is-case:hover .pcard-art,
-.pcard.is-case:focus-visible .pcard-art {
+.pgrid > .pcard.is-case:hover .pcard-art,
+.pgrid > .pcard.is-case:focus-visible .pcard-art {
   outline-color: var(--case-border);
+  transform: perspective(720px) translateY(-5px) rotateX(2deg) rotateY(-5deg) scale(1.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    inset -1px 0 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    -4px 6px 0 var(--case-shell-bot),
+    -6px 14px 26px rgba(0, 0, 0, 0.78),
+    0 0 20px 1px var(--case-tint);
 }
+@media (prefers-reduced-motion: reduce) {
+  .pgrid > .pcard.is-case:hover .pcard-art,
+  .pgrid > .pcard.is-case:focus-visible .pcard-art {
+    transform: none;
+  }
+}
+
+/* Bottom molded latch groove */
 .pcard.is-case .pcard-art::after {
   content: "";
   position: absolute;
-  left: 13px;
-  right: 12px;
-  bottom: 3px;
+  left: 15px;
+  right: 13px;
+  bottom: 3.5px;
   height: 2px;
   border-radius: 1px;
-  background: rgba(0, 0, 0, 0.38);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.44);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
   pointer-events: none;
-  z-index: 3;
+  z-index: 4;
 }
+
+/* 3D physical box overlay: glossy plastic sleeve sheen, recessed insert shadow,
+   left spine hinge clips (::before) and right opening thumb-notch (::after). */
+.pcard-case-fx {
+  position: absolute;
+  inset: 32px 6px 9px 8px;
+  border-radius: 0 0 4px 2px;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      126deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.05) 24%,
+      rgba(255, 255, 255, 0) 42%,
+      rgba(0, 0, 0, 0.12) 74%,
+      rgba(0, 0, 0, 0.3) 100%
+    );
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: background 180ms ease-out;
+}
+.pcard.is-case:hover .pcard-case-fx,
+.pcard.is-case:focus-visible .pcard-case-fx {
+  background:
+    linear-gradient(
+      118deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.08) 28%,
+      rgba(255, 255, 255, 0) 48%,
+      rgba(0, 0, 0, 0.1) 76%,
+      rgba(0, 0, 0, 0.26) 100%
+    );
+}
+/* Left spine molded hinge clips */
+.pcard-case-fx::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 12%;
+  bottom: 12%;
+  width: 3px;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.42) 6%,
+      rgba(255, 255, 255, 0.28) 7%,
+      rgba(0, 0, 0, 0.35) 16%,
+      transparent 17%,
+      transparent 83%,
+      rgba(0, 0, 0, 0.42) 84%,
+      rgba(255, 255, 255, 0.28) 85%,
+      rgba(0, 0, 0, 0.35) 94%,
+      transparent 95%
+    );
+  pointer-events: none;
+}
+/* Right plastic rim thumb-notch (finger grip to open the box) */
+.pcard-case-fx::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3.5px;
+  height: 32px;
+  border-radius: 3px 0 0 3px;
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow:
+    inset 1px 0 1px rgba(0, 0, 0, 0.55),
+    -1px 0 0 rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
 .pcard-case-head {
   position: absolute;
   top: 4px;
-  left: 6px;
-  right: 5px;
-  height: 27px;
-  z-index: 2;
+  left: 8px;
+  right: 6px;
+  height: 28px;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -509,8 +627,8 @@
   background: var(--case-head-bg);
   border-bottom: 1.5px solid var(--case-rule);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 1px 2px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 3px rgba(0, 0, 0, 0.65);
   overflow: hidden;
   pointer-events: none;
   user-select: none;
@@ -581,7 +699,7 @@
 .pcard.is-case .pcard-art > img,
 .pcard.is-case .pcard-art > .pcover {
   border-radius: 0 0 4px 2px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65);
   background: #08090c;
 }
 .pgrid.highlight-installed .pcard.is-case.not-installed .pcard-art > img,
@@ -596,19 +714,210 @@
   filter: brightness(1.04) saturate(1);
 }
 .pcard.is-case .cover-stats {
-  top: 37px;
-  left: 12px;
-  max-width: calc(100% - 24px);
+  top: 38px;
+  left: 14px;
+  max-width: calc(100% - 26px);
 }
 .pcard.is-case .pbadge {
-  top: 37px;
-  right: 11px;
+  top: 38px;
+  right: 12px;
 }
 .pcard.is-case .card-dl-track {
-  left: 6px;
-  right: 5px;
-  bottom: 8px;
+  left: 8px;
+  right: 6px;
+  bottom: 9px;
   border-radius: 0 0 4px 2px;
+}
+
+/* --- Style 2: Clear Crystal Case (PS3 / Switch frosted polycarbonate) --- */
+.pcard.is-case[data-case-style="clear"] .pcard-art {
+  padding: 29px 6px 8px 8px;
+  outline-color: rgba(255, 255, 255, 0.36);
+  background:
+    linear-gradient(90deg,
+      rgba(255, 255, 255, 0.55) 0px,
+      rgba(255, 255, 255, 0.18) 2.5px,
+      rgba(0, 0, 0, 0.35) 5px,
+      rgba(255, 255, 255, 0.3) 7px,
+      transparent 8px
+    ),
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.45) 0px,
+      rgba(255, 255, 255, 0.14) 3px,
+      transparent 5px
+    ),
+    linear-gradient(160deg,
+      rgba(235, 242, 255, 0.28) 0%,
+      var(--case-tint) 52%,
+      rgba(18, 22, 30, 0.68) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset -1px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+    -2px 2px 0 rgba(255, 255, 255, 0.16),
+    0 10px 18px -4px rgba(0, 0, 0, 0.72),
+    0 3px 6px rgba(0, 0, 0, 0.85);
+}
+.pcard.is-case[data-case-style="clear"] .pcard-case-head {
+  height: 25px;
+  background:
+    linear-gradient(90deg, rgba(10, 12, 18, 0.72) 0%, rgba(10, 12, 18, 0.54) 100%),
+    var(--case-head-bg);
+  backdrop-filter: blur(8px) saturate(140%);
+  border-bottom: 1.5px solid var(--case-rule);
+}
+.pcard.is-case[data-case-style="clear"] .pcard-case-fx {
+  inset: 29px 6px 8px 8px;
+}
+
+/* --- Style 3: SteelBook® Collector's Brushed Metal Case --- */
+.pcard.is-case[data-case-style="steelbook"] .pcard-art {
+  padding: 28px 3px 4px 7px;
+  border-radius: 3px 7px 7px 3px;
+  outline-color: rgba(255, 255, 255, 0.26);
+  background:
+    /* Metallic spine seam channel */
+    linear-gradient(90deg,
+      rgba(255, 255, 255, 0.42) 0px,
+      rgba(180, 190, 205, 0.2) 2px,
+      rgba(0, 0, 0, 0.78) 4.5px,
+      rgba(255, 255, 255, 0.28) 6px,
+      transparent 7px
+    ),
+    /* Brushed metal micro-grain */
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(145deg,
+      #3a3f4b 0%,
+      var(--case-shell-mid) 38%,
+      #14161c 75%,
+      #2b303a 100%
+    );
+}
+.pcard.is-case[data-case-style="steelbook"] .pcard-art::after {
+  display: none;
+}
+.pcard.is-case[data-case-style="steelbook"] .pcard-case-head {
+  top: 3px;
+  left: 7px;
+  right: 3px;
+  height: 25px;
+  border-radius: 1px 4px 0 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(0, 0, 0, 0.38) 100%),
+    var(--case-head-bg);
+  border-bottom: 1px solid var(--case-rule);
+}
+.pcard.is-case[data-case-style="steelbook"] .pcard-case-head::before {
+  display: none;
+}
+.pcard.is-case[data-case-style="steelbook"] .pcard-case-fx {
+  inset: 28px 3px 4px 7px;
+  background:
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.03) 32%,
+      rgba(0, 0, 0, 0.22) 68%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+}
+.pcard.is-case[data-case-style="steelbook"] .pcard-case-fx::before,
+.pcard.is-case[data-case-style="steelbook"] .pcard-case-fx::after {
+  display: none;
+}
+.pcard.is-case[data-case-style="steelbook"] .card-dl-track {
+  left: 7px;
+  right: 3px;
+  bottom: 4px;
+}
+
+/* --- Style 4: Jewel / Vertical Left-Spine Case (PC CD-ROM / PS1 style) --- */
+.pcard.is-case[data-case-style="jewel"] .pcard-art {
+  padding: 4px 5px 5px 27px;
+  border-radius: 3px 6px 6px 3px;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-art::after {
+  display: none;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-head {
+  top: 4px;
+  bottom: 5px;
+  left: 4px;
+  right: auto;
+  width: 23px;
+  height: auto;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 0 6px;
+  border-radius: 2px 0 0 2px;
+  border-bottom: none;
+  border-right: 1.5px solid var(--case-rule);
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-head::before {
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0px,
+    rgba(255, 255, 255, 0.16) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  background-size: auto;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, transparent 38%);
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, transparent 38%);
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-brand {
+  flex-direction: column;
+  gap: 7px;
+  max-width: none;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-name {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  max-height: 130px;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-os {
+  position: static;
+  transform: none;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-os span {
+  display: none;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-fx {
+  inset: 4px 5px 5px 27px;
+  border-radius: 0 3px 3px 0;
+}
+.pcard.is-case[data-case-style="jewel"] .pcard-case-fx::before {
+  display: none;
+}
+.pcard.is-case[data-case-style="jewel"] .cover-stats {
+  top: 10px;
+  left: 33px;
+  max-width: calc(100% - 42px);
+}
+.pcard.is-case[data-case-style="jewel"] .pbadge {
+  top: 10px;
+  right: 10px;
+}
+.pcard.is-case[data-case-style="jewel"] .card-dl-track {
+  left: 27px;
+  right: 5px;
+  bottom: 5px;
 }
 
 /* --- List view --- */

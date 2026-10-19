@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "在你的库中",
   "drawer.lastPlayed": "上次游玩：{date}",
   "settings.caseCoversTitle": "实体盒装封面",
-  "settings.caseCoversDesc": "将每张游戏封面装入带有商店横幅的实体游戏盒边框中。"
+  "settings.caseCoversDesc": "将每张游戏封面装入带有商店横幅的实体游戏盒边框中。",
+  "settings.caseCoverStyleTitle": "盒装样式",
+  "settings.caseStyleRetail": "标准盒",
+  "settings.caseStyleClear": "透明水晶",
+  "settings.caseStyleSteelbook": "SteelBook 铁盒",
+  "settings.caseStyleJewel": "侧脊盒",
+  "settings.caseStyleRetailDesc": "彩色塑料外盒，带有顶部商店横幅、书脊卡扣与开启凹槽。",
+  "settings.caseStyleClearDesc": "磨砂透明聚碳酸酯外盒，搭配半透明毛玻璃商店顶栏。",
+  "settings.caseStyleSteelbookDesc": "拉丝阳极氧化金属典藏铁盒，带有金属书脊接缝。",
+  "settings.caseStyleJewelDesc": "经典 CD-ROM 左侧竖向书脊条设计，完全不遮挡封面顶部。"
 }

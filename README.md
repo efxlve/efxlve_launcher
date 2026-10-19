@@ -85,13 +85,14 @@ cargo test                 # Rust unit tests
 
 ## Special Thanks
 
-Special thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), [Hydra Launcher](https://github.com/hydralauncher/hydra), [Playnite](https://github.com/JosefNemec/Playnite) and [SteamGridDB](https://www.steamgriddb.com/) — and to every project below. The in-app legal notice (Settings → About) carries the trademark and data-source details; this section credits everything the app is inspired by and built on.
+Special thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), [Hydra Launcher](https://github.com/hydralauncher/hydra), [Playnite](https://github.com/JosefNemec/Playnite), [steam-case-covers](https://github.com/diegobergonsi/steam-case-covers) and [SteamGridDB](https://www.steamgriddb.com/) — and to every project below. The in-app legal notice (Settings → About) carries the trademark and data-source details; this section credits everything the app is inspired by and built on.
 
 ### Design & UX inspiration
 
 - [Hydra Launcher](https://github.com/hydralauncher/hydra) — the console-dark direction this UI follows: true-black surfaces, hairline borders, a single white accent, the quiet cover grid and the game-page layout.
 - [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher) — the cache-first principle (paint the library from local disk before any network call) and the legendary/gogdl wrapper approach.
 - [Playnite](https://github.com/JosefNemec/Playnite) — the 10-ft TV Mode model, and the reference for reading Xbox title history and achievement progress.
+- [steam-case-covers](https://github.com/diegobergonsi/steam-case-covers) — the physical retail game box framing and header strip design for library covers.
 - Steam Big Picture and the PS5 system UI — controller navigation patterns in TV Mode.
 
 ### Store backends

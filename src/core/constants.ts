@@ -94,6 +94,13 @@ export const STORE_BADGE_KEY = "efxlve-store-badge";
 export const STORE_ICONS_KEY = "efxlve-store-icons";
 /** Frame library covers in a physical retail box with a store header strip. Off by default. */
 export const CASE_COVERS_KEY = "efxlve-case-covers";
+/** Selected physical case frame design ("retail" | "clear" | "steelbook" | "jewel"). */
+export const CASE_COVER_STYLE_KEY = "efxlve-case-cover-style";
+export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel";
+export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel"];
+export function normalizeCaseCoverStyle(raw: string | null | undefined): CaseCoverStyle {
+  return (CASE_COVER_STYLES as readonly string[]).includes(raw ?? "") ? (raw as CaseCoverStyle) : "retail";
+}
 /** Show every store copy of a multi-store game as its own card. Off = one combined card. */
 export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
 /** In-game overlay: Shift+Tab hotkey enabled, managed by the overlay settings tab. */

@@ -328,16 +328,19 @@ export function epicCardPortrait(s: EpicSummary): string {
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
   const source = sourceOfKey(s.appName);
   const isCase = S.showCaseCovers;
+  const caseStyleAttr = isCase ? ` data-case-style="${S.caseCoverStyle}"` : "";
   const caseHead = isCase ? caseCoverHeader(source) : "";
+  const caseFx = isCase ? `<span class="pcard-case-fx" aria-hidden="true"></span>` : "";
   // Optional: the storefront mark on the cover (bottom-right, clear of the
   // stats chips on the left and the running badge on the top-right). Omitted
   // when the physical case header already carries the store brand.
   const storeIcon = S.showStoreIcons && !isCase ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
+    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}"${caseStyleAttr} data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
         ${caseHead}
         ${epicArt(s)}
+        ${caseFx}
         ${storeIcon}
         ${libraryCoverStats(s.appName)}
         ${libraryCardBadge(s)}
@@ -401,7 +404,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
-  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
+  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${S.showCaseCovers ? " has-case-covers" : ""}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
 }
 
 /**

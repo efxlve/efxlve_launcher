@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "Nella tua libreria",
   "drawer.lastPlayed": "Ultima partita: {date}",
   "settings.caseCoversTitle": "Copertine custodia fisica",
-  "settings.caseCoversDesc": "Incornicia ogni copertina in una custodia fisica con la fascia del negozio."
+  "settings.caseCoversDesc": "Incornicia ogni copertina in una custodia fisica con la fascia del negozio.",
+  "settings.caseCoverStyleTitle": "Stile custodia",
+  "settings.caseStyleRetail": "Standard",
+  "settings.caseStyleClear": "Cristallo",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Dorso laterale",
+  "settings.caseStyleRetailDesc": "Custodia in plastica colorata con fascia superiore del negozio, cerniere e tacca di apertura.",
+  "settings.caseStyleClearDesc": "Guscio in policarbonato trasparente satinato con fascia del negozio semitrasparente.",
+  "settings.caseStyleSteelbookDesc": "Custodia da collezione in metallo spazzolato con scanalatura metallica sul dorso.",
+  "settings.caseStyleJewelDesc": "Fascia verticale classica sul dorso sinistro che lascia libera l'intera altezza della copertina."
 }

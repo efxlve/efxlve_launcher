@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "W twojej bibliotece",
   "drawer.lastPlayed": "Ostatnio grane: {date}",
   "settings.caseCoversTitle": "Pudełkowe okładki gier",
-  "settings.caseCoversDesc": "Oprawia każdą okładkę w fizyczne pudełko z paskiem sklepu."
+  "settings.caseCoversDesc": "Oprawia każdą okładkę w fizyczne pudełko z paskiem sklepu.",
+  "settings.caseCoverStyleTitle": "Styl pudełka",
+  "settings.caseStyleRetail": "Standardowy",
+  "settings.caseStyleClear": "Przezroczysty",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Boczny grzbiet",
+  "settings.caseStyleRetailDesc": "Kolorowe plastikowe pudełko z górnym paskiem sklepu, zatrzaskami i wcięciem do otwierania.",
+  "settings.caseStyleClearDesc": "Przezroczysta obudowa z poliwęglanu z półprzezroczystym paskiem sklepu.",
+  "settings.caseStyleSteelbookDesc": "Kolekcjonerskie pudełko ze szczotkowanego metalu z metalowym rowkiem na grzbiecie.",
+  "settings.caseStyleJewelDesc": "Klasyczny pionowy pasek na lewym grzbiecie, który nie zasłania góry okładki."
 }

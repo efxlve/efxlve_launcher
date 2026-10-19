@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "In your library",
   "drawer.lastPlayed": "Last played: {date}",
   "settings.caseCoversTitle": "Physical case covers",
-  "settings.caseCoversDesc": "Frames each cover in a physical game box with its store header strip."
+  "settings.caseCoversDesc": "Frames each cover in a physical game box with its store header strip.",
+  "settings.caseCoverStyleTitle": "Case style",
+  "settings.caseStyleRetail": "Standard",
+  "settings.caseStyleClear": "Clear",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Side Spine",
+  "settings.caseStyleRetailDesc": "Colored plastic shell, top store banner, spine hinge clips and opening thumb-notch.",
+  "settings.caseStyleClearDesc": "Frosted crystal polycarbonate shell with a translucent glass store strip.",
+  "settings.caseStyleSteelbookDesc": "Brushed anodized metal collector's case with a recessed metallic spine seam.",
+  "settings.caseStyleJewelDesc": "Classic PC CD-ROM vertical left-spine strip that leaves the full cover height unobstructed."
 }

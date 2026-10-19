@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "Na sua biblioteca",
   "drawer.lastPlayed": "Última vez: {date}",
   "settings.caseCoversTitle": "Capas de mídia física",
-  "settings.caseCoversDesc": "Emoldura cada capa em uma caixa física com a faixa da loja."
+  "settings.caseCoversDesc": "Emoldura cada capa em uma caixa física com a faixa da loja.",
+  "settings.caseCoverStyleTitle": "Estilo da caixa",
+  "settings.caseStyleRetail": "Padrão",
+  "settings.caseStyleClear": "Cristal",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "Lombada",
+  "settings.caseStyleRetailDesc": "Caixa plástica colorida com faixa superior da loja, presilhas na lombada e entalhe de abertura.",
+  "settings.caseStyleClearDesc": "Caixa de policarbonato transparente fosco com faixa translúcida da loja.",
+  "settings.caseStyleSteelbookDesc": "Caixa metálica escovada de colecionador com friso metálico na lombada.",
+  "settings.caseStyleJewelDesc": "Faixa vertical clássica na lombada esquerda que deixa toda a altura da capa livre."
 }

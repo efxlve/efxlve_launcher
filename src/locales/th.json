@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "อยู่ในคลังของคุณ",
   "drawer.lastPlayed": "เล่นล่าสุด: {date}",
   "settings.caseCoversTitle": "ปกกล่องเกมแบบแผ่น",
-  "settings.caseCoversDesc": "แสดงปกเกมในกรอบกล่องเกมพร้อมแถบหัวข้อของร้านค้า"
+  "settings.caseCoversDesc": "แสดงปกเกมในกรอบกล่องเกมพร้อมแถบหัวข้อของร้านค้า",
+  "settings.caseCoverStyleTitle": "รูปแบบกล่องเกม",
+  "settings.caseStyleRetail": "มาตรฐาน",
+  "settings.caseStyleClear": "กล่องใส",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "สันข้าง",
+  "settings.caseStyleRetailDesc": "กล่องพลาสติกสีพร้อมแถบร้านค้าด้านบน สันบานพับ และร่องเปิดกล่อง",
+  "settings.caseStyleClearDesc": "กล่องโพลีคาร์บอเนตใสแบบด้านพร้อมแถบร้านค้าโปร่งแสง",
+  "settings.caseStyleSteelbookDesc": "กล่องเหล็กขัดเงาสไตล์นักสะสมพร้อมร่องสันโลหะ",
+  "settings.caseStyleJewelDesc": "แถบสันด้านซ้ายแนวตั้งแบบกล่อง CD-ROM คลาสสิก ไม่บังส่วนบนของปกเกม"
 }

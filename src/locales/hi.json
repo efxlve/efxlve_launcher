@@ -2465,5 +2465,14 @@
   "drawer.inLibrary": "आपकी लाइब्रेरी में",
   "drawer.lastPlayed": "अंतिम बार खेला: {date}",
   "settings.caseCoversTitle": "फ़िज़िकल केस कवर",
-  "settings.caseCoversDesc": "प्रत्येक कवर को स्टोर हेडर पट्टी वाले फ़िज़िकल गेम बॉक्स फ़्रेम में दिखाता है।"
+  "settings.caseCoversDesc": "प्रत्येक कवर को स्टोर हेडर पट्टी वाले फ़िज़िकल गेम बॉक्स फ़्रेम में दिखाता है।",
+  "settings.caseCoverStyleTitle": "केस डिज़ाइन",
+  "settings.caseStyleRetail": "स्टैंडर्ड",
+  "settings.caseStyleClear": "क्लियर",
+  "settings.caseStyleSteelbook": "SteelBook",
+  "settings.caseStyleJewel": "साइड स्पाइन",
+  "settings.caseStyleRetailDesc": "रंगीन प्लास्टिक बॉक्स, शीर्ष स्टोर पट्टी, हिंज क्लिप और ओपन नॉच।",
+  "settings.caseStyleClearDesc": "पारदर्शी ग्लास स्टोर पट्टी के साथ क्लियर पॉलीकार्बोनेट केस।",
+  "settings.caseStyleSteelbookDesc": "ब्रश्ड मेटल फिनिश और मेटालिक स्पाइन सीम वाला कलेक्टर्स केस।",
+  "settings.caseStyleJewelDesc": "क्लासिक CD-ROM बाईं वर्टिकल स्पाइन पट्टी जो कवर के ऊपरी हिस्से को नहीं ढकती।"
 }
