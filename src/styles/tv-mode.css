@@ -1355,6 +1355,532 @@ html.is-steam-deck .tv-card {
 }
 
 /* ==========================================================================
+   Console home, second pass: one compact command bar, a calm cinematic stage
+   and a labelled shelf. The dark palette is deliberately independent of the
+   desktop theme, so White Mode and Frutiger Aero do not wash out TV Mode.
+   ========================================================================== */
+
+body.tv-mode.tv-mode :is(.card, .list, .modal, .toast, .gp-side-card, .settings-group, .info-box) {
+  background: #0a0a0a;
+  background-image: none;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+body.tv-mode.tv-mode {
+  background: #05070a;
+}
+
+body.tv-mode {
+  --tv-glass: rgba(9, 12, 17, 0.6);
+  --tv-line: rgba(255, 255, 255, 0.16);
+  --tv-muted: rgba(255, 255, 255, 0.62);
+  --surface-1: #0a0a0a;
+  --surface-2: #141414;
+  --surface-3: #1e1e1e;
+  --text: #ffffff;
+  --text-2: #9a9a9a;
+  --text-3: #5c5c5c;
+  --accent: #ffffff;
+  --on-accent: #000000;
+  background: #05070a;
+}
+
+.tv-screen {
+  background:
+    radial-gradient(ellipse at 68% 18%, rgba(37, 56, 79, 0.55) 0%, rgba(5, 7, 10, 0) 58%),
+    #05070a;
+}
+
+.tv-bg-scrim {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.5) 56%, #05070a 100%),
+    linear-gradient(to top, #05070a 0%, rgba(5, 7, 10, 0.9) 28%, rgba(5, 7, 10, 0.24) 66%, rgba(5, 7, 10, 0.6) 100%);
+}
+
+/* --- Command bar --- */
+.tv-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 22px;
+  height: 76px;
+  padding: 0 40px;
+  background: linear-gradient(to bottom, rgba(4, 6, 9, 0.84) 0%, rgba(4, 6, 9, 0.3) 68%, transparent 100%);
+}
+
+.tv-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.tv-brand-word {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+}
+
+.tv-brand-tv {
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.tv-nav-tabs {
+  width: 100%;
+  max-width: none;
+  gap: 2px;
+  padding: 0;
+}
+
+.tv-bumper-glyph {
+  min-width: 24px;
+  height: 20px;
+  padding: 0 5px;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 10px;
+}
+
+.tv-cat-btn {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.tv-cat-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.tv-cat-btn.active {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #05070a;
+}
+
+.tv-cat-btn.active .tv-cat-badge {
+  background: rgba(5, 7, 10, 0.12);
+  color: #05070a;
+}
+
+.tv-cat-btn.focused {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 3px;
+}
+
+.tv-cat-badge {
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 10px;
+}
+
+.tv-status-cluster {
+  gap: 6px;
+  padding-left: 0;
+}
+
+.tv-status-chip {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 12px;
+}
+
+.tv-status-chip svg {
+  flex-shrink: 0;
+}
+
+.tv-status-chip:hover,
+.tv-status-chip.focused {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.tv-status-chip.is-profile {
+  padding: 0 10px 0 6px;
+}
+
+.tv-status-avatar {
+  width: 22px;
+  height: 22px;
+}
+
+.tv-status-username {
+  max-width: 94px;
+}
+
+.tv-status-clock {
+  padding: 0 4px;
+  font-size: 14px;
+}
+
+.tv-exit-btn {
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 12px;
+}
+
+/* --- Cinematic stage --- */
+.tv-stage {
+  padding: 0 40px 18px;
+}
+
+.tv-stage-content {
+  max-width: 860px;
+}
+
+.tv-stage-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tv-stage-kicker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3dd68c;
+  box-shadow: 0 0 12px rgba(61, 214, 140, 0.75);
+}
+
+.tv-stage-title {
+  margin-bottom: 14px;
+  padding-bottom: 0;
+  font-size: clamp(44px, 4.1vw, 66px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.72);
+}
+
+.tv-stage-meta {
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tv-meta-pill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(8, 11, 15, 0.55);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+}
+
+.tv-stage-desc {
+  display: -webkit-box;
+  max-width: 650px;
+  margin: 0 0 22px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+}
+
+.tv-stage-actions {
+  gap: 10px;
+}
+
+.tv-btn-primary {
+  height: 52px;
+  min-width: 188px;
+  padding: 0 28px;
+  border-radius: 999px;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.36);
+}
+
+.tv-btn-secondary {
+  height: 52px;
+  padding: 0 21px;
+  border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(8, 11, 15, 0.54);
+  backdrop-filter: blur(12px);
+  font-size: 14px;
+}
+
+/* --- Labelled shelf --- */
+.tv-shelf {
+  padding: 0 40px 34px;
+}
+
+.tv-shelf-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 6px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tv-shelf-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tv-shelf-kicker {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tv-shelf-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.tv-shelf-head-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 2px;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.tv-shelf-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tv-shelf-hint {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tv-shelf-track {
+  gap: 14px;
+  padding: 14px 6px 8px;
+}
+
+.tv-card {
+  flex: 0 0 clamp(160px, 11vw, 200px);
+  border-radius: 10px;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #141414;
+}
+
+.tv-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tv-card.focused {
+  outline-width: 3px;
+  transform: translateY(-6px) scale(1.03);
+  border-color: transparent;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+}
+
+.tv-card-shade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  height: 48%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+
+.tv-card-title {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  left: 10px;
+  z-index: 2;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.tv-card-badge {
+  z-index: 3;
+}
+
+.tv-card-dl-track {
+  z-index: 4;
+}
+
+.tv-shelf-empty {
+  padding: 18px 0 6px;
+}
+
+/* --- Narrow and short screens --- */
+@media (max-width: 1450px) {
+  .tv-header {
+    gap: 14px;
+    padding: 0 26px;
+  }
+
+  .tv-search-chip-text,
+  .tv-status-username,
+  .tv-status-chip[data-act="tv-open-stores"] span,
+  .tv-exit-btn span {
+    display: none;
+  }
+
+  .tv-status-chip.is-search,
+  .tv-status-chip.is-profile,
+  .tv-status-chip[data-act="tv-open-stores"],
+  .tv-status-chip[data-act="tv-open-downloads"]:not(.is-dl) {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .tv-status-chip[data-act="tv-open-downloads"]:not(.is-dl) .tv-dl-speed {
+    display: none;
+  }
+
+  .tv-key-glyph {
+    display: none;
+  }
+
+  .tv-status-chip.focused .tv-search-chip-text,
+  .tv-status-chip.focused .tv-status-username,
+  .tv-status-chip.focused[data-act="tv-open-stores"] span,
+  .tv-status-chip.focused .tv-dl-speed,
+  .tv-exit-btn.focused span {
+    display: inline;
+  }
+
+  .tv-status-chip.focused.is-search,
+  .tv-status-chip.focused.is-profile,
+  .tv-status-chip.focused[data-act="tv-open-stores"],
+  .tv-status-chip.focused[data-act="tv-open-downloads"],
+  .tv-exit-btn.focused {
+    width: auto;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 1300px), (max-height: 860px) {
+  .tv-header {
+    height: 62px;
+    padding: 0 24px;
+  }
+
+  .tv-brand-word {
+    font-size: 14px;
+  }
+
+  .tv-stage {
+    padding: 0 24px 14px;
+  }
+
+  .tv-stage-title {
+    margin-bottom: 10px;
+    font-size: clamp(34px, 4.4vw, 48px);
+  }
+
+  .tv-stage-desc {
+    margin-bottom: 16px;
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+
+  .tv-stage-meta {
+    margin-bottom: 12px;
+  }
+
+  .tv-btn-primary,
+  .tv-btn-secondary {
+    height: 44px;
+    min-width: 152px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .tv-shelf {
+    padding: 0 24px 26px;
+  }
+
+  .tv-shelf-title {
+    font-size: 19px;
+  }
+
+  .tv-card {
+    flex-basis: 128px;
+  }
+}
+
+@media (max-width: 980px) {
+  .tv-brand {
+    display: none;
+  }
+
+  .tv-shelf-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-card,
+  .tv-btn-primary,
+  .tv-btn-secondary {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
    TV Profile: Fullscreen Console Gamer Dashboard (Steam Deck / 10-ft TV)
    PS5 / Hydra Dark Aesthetic: True Black, hairline borders, tabular-nums.
    ========================================================================== */

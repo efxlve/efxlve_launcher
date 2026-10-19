@@ -94,6 +94,7 @@ let headerFocusIndex = 0;
 let stageActionIndex = 0;
 let autoEntered = false;
 let lastBgUrl = "";
+let paintedCatIndex = -1;
 let tvProfileOpenState = false;
 let openedDetailsFromProfile = false;
 let activeHubTab: TvHubTab = "overview";
@@ -432,6 +433,15 @@ function paintClock(): void {
   el.textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+function stageDescription(s: EpicSummary): string {
+  const raw = (s.description || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw || raw === "__no_description__") return "";
+  return raw.length > 220 ? `${raw.slice(0, 217).trimEnd()}…` : raw;
+}
+
 function homeStageHtml(s: EpicSummary | undefined): string {
   if (!s) {
     return `<div class="tv-stage-empty">${emptyState("gamepad-2", t("tv.emptyCategory"), "")}</div>`;
@@ -470,8 +480,13 @@ function homeStageHtml(s: EpicSummary | undefined): string {
   const isDetailsFocused = focusSection === "stage" && stageActionIndex === 1;
   const isFavFocused = focusSection === "stage" && stageActionIndex === 2;
 
+  const description = stageDescription(s);
   return `
     <div class="tv-stage-content">
+      <div class="tv-stage-kicker">
+        <span class="tv-stage-kicker-dot"></span>
+        ${s.installed ? t("tv.playNow") : t("tv.rowLibrary")}
+      </div>
       <h1 class="tv-stage-title">${esc(s.title)}</h1>
       <div class="tv-stage-meta">
         <span class="tv-meta-pill tv-store-pill">${storeLogo(source, 15)}<span>${esc(storeLabel(s.appName))}</span></span>
@@ -479,6 +494,7 @@ function homeStageHtml(s: EpicSummary | undefined): string {
         ${pt > 0 ? `<span class="tv-meta-pill">${icon("clock", 13)}<span class="tabular-nums">${esc(fmtPlaytime(pt))}</span></span>` : ""}
         ${trophyText ? `<span class="tv-meta-pill${isPlat ? " is-plat" : ""}">${isPlat ? epicPlatinumIcon(13) : icon("trophy", 13)}<span class="tabular-nums">${esc(trophyText)}</span></span>` : ""}
       </div>
+      ${description ? `<p class="tv-stage-desc">${esc(description)}</p>` : ""}
 
       <div class="tv-stage-actions">
         ${tvHubPrimaryAction(s, isCtaFocused)}
@@ -488,6 +504,23 @@ function homeStageHtml(s: EpicSummary | undefined): string {
         <button type="button" class="tv-btn-secondary${faved ? " faved" : ""}${isFavFocused ? " focused" : ""}" data-act="epic-fav" data-id="${esc(s.appName)}" title="${esc(t("drawer.favTitle"))}">
           ${icon("heart", 16)} <span>${faved ? t("common.favorited") : t("common.favorite")}</span>
         </button>
+      </div>
+    </div>`;
+}
+
+function shelfHeadHtml(): string {
+  const cat = categories[activeCatIndex];
+  const label = cat ? t(cat.labelKey as Parameters<typeof t>[0]) : "";
+  const count = activeCategoryApps().length;
+  return `
+    <div class="tv-shelf-head" id="tv-shelf-head">
+      <div class="tv-shelf-head-main">
+        <span class="tv-shelf-kicker">${t("nav.library")}</span>
+        <h2 class="tv-shelf-title">${esc(label)}</h2>
+      </div>
+      <div class="tv-shelf-head-side">
+        <span class="tv-shelf-count tabular-nums">${count}</span>
+        <span class="tv-shelf-hint">L1 / R1 · ${t("tv.hudCategories")}</span>
       </div>
     </div>`;
 }
@@ -515,6 +548,8 @@ function shelfCardsHtml(): string {
         tabindex="-1"
         title="${esc(s.title)}">
         ${epicArt(s)}
+        <span class="tv-card-shade"></span>
+        <span class="tv-card-title">${esc(s.title)}</span>
         ${isRunning ? `<span class="tv-card-badge is-running">${t("lib.running")}</span>` : ""}
         ${!isRunning && isUpdate ? `<span class="tv-card-badge is-update">${t("common.update")}</span>` : ""}
         ${p !== null ? `<div class="tv-card-dl-track"><div class="tv-card-dl-bar" data-tv-dlbar="${esc(id)}" style="width:${p}%"></div></div>` : ""}
@@ -549,6 +584,9 @@ function paintStage(): void {
 function paintShelf(): void {
   const host = document.getElementById("tv-shelf-track");
   if (host) host.innerHTML = shelfCardsHtml();
+  const head = document.getElementById("tv-shelf-head");
+  if (head) head.outerHTML = shelfHeadHtml();
+  paintedCatIndex = activeCatIndex;
 }
 
 function paintHeaderTabs(): void {
@@ -559,6 +597,7 @@ function paintHeaderTabs(): void {
 function applyFocus(): void {
   if (S.tvDetailAppName) return;
 
+  if (paintedCatIndex !== activeCatIndex) paintShelf();
   const game = focusedGame();
   paintBg(artUrl(game));
   paintStage();
@@ -649,6 +688,10 @@ export function renderTvMode(): string {
       </div>
 
       <header class="tv-header">
+        <div class="tv-brand" aria-hidden="true">
+          <span class="tv-brand-word">EFXLVE</span>
+          <span class="tv-brand-tv">TV</span>
+        </div>
         <nav class="tv-nav-tabs" id="tv-nav-tabs">
           <span class="tv-bumper-glyph">L1</span>
           ${categoryTabsHtml()}
@@ -663,6 +706,7 @@ export function renderTvMode(): string {
       </section>
 
       <div class="tv-shelf" id="tv-shelf">
+        ${shelfHeadHtml()}
         <div class="tv-shelf-track" id="tv-shelf-track">
           ${shelfCardsHtml()}
         </div>
