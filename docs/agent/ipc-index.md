@@ -66,8 +66,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `companion_unlink` | `companionUnlink({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `compat_cancel` | `compatCancel({ ... })` | `src-tauri/src/compat/install.rs` |
 | `compat_catalog` | `compatCatalog({ ... })` | `src-tauri/src/compat/install.rs` |
+| `compat_clear_partials` | `compatClearPartials({ ... })` | `src-tauri/src/compat/install.rs` |
+| `compat_disk_usage` | `compatDiskUsage({ ... })` | `src-tauri/src/compat/install.rs` |
 | `compat_get_launch_config` | `compatGetLaunchConfig({ ... })` | `src-tauri/src/compat/launch.rs` |
 | `compat_install` | `compatInstall({ ... })` | `src-tauri/src/compat/install.rs` |
+| `compat_open_prefix_root` | `compatOpenPrefixRoot({ ... })` | `src-tauri/src/compat/launch.rs` |
 | `compat_remove` | `compatRemove({ ... })` | `src-tauri/src/compat/install.rs` |
 | `compat_set_launch_config` | `compatSetLaunchConfig({ ... })` | `src-tauri/src/compat/launch.rs` |
 | `compat_tools_dir` | `compatToolsDir({ ... })` | `src-tauri/src/compat/install.rs` |
