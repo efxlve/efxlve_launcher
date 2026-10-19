@@ -26,6 +26,74 @@ pub struct SteamNewsItem {
     pub feed: String,
     /// True when Steam tagged it as a patch note.
     pub patch_notes: bool,
+    /// The first picture in the body, when it has one. Patch notes are usually
+    /// text only, so a feed has to read well without it.
+    pub image: String,
+    /// The opening of the body as plain text, tags stripped: a headline alone
+    /// tells the reader nothing about whether to open it.
+    pub snippet: String,
+}
+
+/// The first `src` of an image in the announcement body. Steam writes some of
+/// them as `{STEAM_CLAN_IMAGE}/<hash>.jpg`, a placeholder whose host the reader
+/// has to put back — the raw value is not a URL.
+fn first_image(contents: &str) -> String {
+    let Some(tag_at) = contents.find("<img") else {
+        return String::new();
+    };
+    let rest = &contents[tag_at..];
+    let Some(src_at) = rest.find("src=\"") else {
+        return String::new();
+    };
+    let after = &rest[src_at + 5..];
+    let Some(end) = after.find('"') else {
+        return String::new();
+    };
+    let raw = after[..end].trim();
+    if raw.starts_with("http://") || raw.starts_with("https://") {
+        return raw.to_string();
+    }
+    if let Some(rest) = raw.strip_prefix("{STEAM_CLAN_IMAGE}") {
+        // The placeholder alone is not a picture: the host needs a real path.
+        if rest.starts_with('/') && rest.len() > 1 {
+            return format!("https://clan.cloudflare.steamstatic.com/images{rest}");
+        }
+    }
+    String::new()
+}
+
+/// The body as a short plain-text line: tags dropped, whitespace collapsed, cut
+/// at a word boundary. Empty when the post is only a headline.
+fn snippet(contents: &str) -> String {
+    let mut out = String::new();
+    let mut in_tag = false;
+    for ch in contents.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                out.push(' ');
+            }
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    let text = out
+        .replace("&amp;", "&")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&nbsp;", " ");
+    let collapsed = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if collapsed.chars().count() <= 220 {
+        return collapsed;
+    }
+    let cut: String = collapsed.chars().take(220).collect();
+    match cut.rsplit_once(' ') {
+        Some((head, _)) => format!("{head}…"),
+        None => format!("{cut}…"),
+    }
 }
 
 static CACHE: Mutex<Option<HashMap<String, (Instant, Vec<SteamNewsItem>)>>> = Mutex::new(None);
@@ -56,6 +124,12 @@ fn parse_news(body: &serde_json::Value) -> Vec<SteamNewsItem> {
                             .and_then(|t| t.as_array())
                             .map(|tags| tags.iter().any(|tag| tag.as_str() == Some("patchnotes")))
                             .unwrap_or(false),
+                        image: first_image(
+                            item.get("contents").and_then(|c| c.as_str()).unwrap_or(""),
+                        ),
+                        snippet: snippet(
+                            item.get("contents").and_then(|c| c.as_str()).unwrap_or(""),
+                        ),
                     })
                 })
                 .collect()
@@ -152,5 +226,27 @@ mod tests {
     fn an_answer_without_items_is_empty_not_an_error() {
         assert!(parse_news(&serde_json::json!({})).is_empty());
         assert!(parse_news(&serde_json::json!({ "appnews": { "newsitems": [] } })).is_empty());
+    }
+
+    /// The feed reads like Steam's because a card carries a picture and the
+    /// opening of the body; both come out of the announcement's own HTML.
+    #[test]
+    fn the_body_gives_a_picture_and_a_snippet() {
+        // A real shape: Steam writes clan images as a placeholder path.
+        let body = "<img src=\"{STEAM_CLAN_IMAGE}/1234/abc.jpg\"> <p>Hello <b>world</b> &amp; friends</p>";
+        assert_eq!(
+            first_image(body),
+            "https://clan.cloudflare.steamstatic.com/images/1234/abc.jpg"
+        );
+        assert_eq!(snippet(body), "Hello world & friends");
+        // A plain URL stays as it is, and a post without a picture says so.
+        assert_eq!(first_image("<img src=\"https://x.test/a.png\">"), "https://x.test/a.png");
+        assert_eq!(first_image("no picture here"), "");
+        assert_eq!(first_image("<img src=\"{STEAM_CLAN_IMAGE}\">"), "");
+        // A long body is cut at a word boundary and marked as cut.
+        let long = "word ".repeat(80);
+        let cut = snippet(&long);
+        assert!(cut.ends_with('…'), "got {cut}");
+        assert!(cut.chars().count() <= 221, "{} chars", cut.chars().count());
     }
 }

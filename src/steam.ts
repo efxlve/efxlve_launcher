@@ -79,6 +79,10 @@ export interface SteamNewsItem {
   feed: string;
   /** Steam tagged it as a patch note. */
   patchNotes: boolean;
+  /** The first picture in the body, when it has one. */
+  image: string;
+  /** The opening of the body as plain text. */
+  snippet: string;
 }
 
 /** The last few announcements for a Steam app. Cached in Rust for half an hour. */

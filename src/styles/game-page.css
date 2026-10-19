@@ -979,15 +979,26 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The one part of the page that changes without the player doing anything: what
    the game's own feed says today. */
-.gp-news-list { display: flex; flex-direction: column; gap: 6px; }
+.gp-news-list { display: flex; flex-direction: column; gap: 8px; }
 .gp-news-row {
-  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; text-align: left;
+  display: flex; align-items: stretch; gap: 12px; width: 100%; padding: 10px; text-align: left;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
   color: var(--text); font: inherit; cursor: pointer;
 }
 .gp-news-row:hover { background: var(--surface-2); }
-.gp-news-main { min-width: 0; flex: 1; }
-.gp-news-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The store's feed reads like Steam's: a picture when the post has one, the feed
+   name and the patch-note chip on top, then the headline, the opening of the body
+   and the date. Patch notes are usually text only, so a row without a picture has
+   to stand on its own. */
+.gp-news-art { flex: 0 0 auto; width: 168px; height: 94px; object-fit: cover; border-radius: var(--r-sm); background: var(--surface-2); }
+.gp-news-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.gp-news-head { display: flex; align-items: center; gap: 6px; }
+.gp-news-feed { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-news-title { font-size: 13.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-news-snippet {
+  font-size: 12px; color: var(--text-2); line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .gp-news-meta { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
 .gp-news-tag {
   flex: none; font-size: 10.5px; padding: 2px 6px; border-radius: 999px;
