@@ -2603,5 +2603,7 @@
   "compat.gameRunnerHint": "Leave on the global setting unless this title needs a specific runner.",
   "compat.gameInherit": "Use the global setting",
   "compat.gameSaved": "Game runner saved.",
-  "compat.saveFailed": "Could not save the compatibility setting."
+  "compat.saveFailed": "Could not save the compatibility setting.",
+  "compat.gameLayers": "Translation layers",
+  "compat.gameLayersHint": "The global choice is inherited until you flip a switch; matching it again restores inheritance."
 }

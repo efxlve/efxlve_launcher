@@ -1459,10 +1459,17 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* ---------- The facts page ---------- */
 
 .game-compat-card { margin-bottom: 16px; }
-.game-compat-card .row { min-height: 0; padding: 0; }
+.game-compat-card .row { min-height: 0; padding: 0; border-top: none; }
+.game-compat-card .row + .row { margin-top: 10px; }
 .game-compat-card .row:hover { background: transparent; }
 .game-compat-card .row-meta { white-space: normal; }
 .game-compat-card .settings-select { max-width: 300px; }
+.game-compat-subhead {
+  margin: 16px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.game-compat-subhead .row-meta { white-space: normal; }
 @media (max-width: 700px) {
   .game-compat-card .row { flex-wrap: wrap; }
 }

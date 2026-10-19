@@ -17,6 +17,7 @@ import type { EpicSummary } from "../../epic";
 import {
   compatCatalog,
   compatGetGameConfig,
+  compatGetLaunchConfig,
   compatSetGameConfig,
   type CompatCatalog,
   type CompatToolInfo,
@@ -29,8 +30,15 @@ const RUNNER_NAMES: Record<string, string> = {
   "wine-staging": "Wine-Staging",
 };
 
+const LAYER_NAMES: Record<string, string> = {
+  dxvk: "DXVK",
+  "vkd3d-proton": "VKD3D-Proton",
+};
+
 const configs = new Map<string, GameCompatConfig>();
 let catalog: CompatCatalog | null = null;
+/** The global layer choice, shown as the inherited state of a game's switches. */
+let globalLayers: string[] = [];
 
 function runnerName(id: string): string {
   return RUNNER_NAMES[id] ?? id;
@@ -61,6 +69,24 @@ function selectedValue(config: GameCompatConfig): string {
   return config.runnerPath
     ? detectedValue(config.runner, config.runnerPath)
     : config.runner;
+}
+
+function effectiveLayers(config: GameCompatConfig): string[] {
+  return config.layers ?? globalLayers;
+}
+
+function sameLayers(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((id) => right.includes(id));
+}
+
+function layerTools(): CompatToolInfo[] {
+  return (
+    catalog?.tools.filter(
+      (tool) =>
+        (tool.id === "dxvk" || tool.id === "vkd3d-proton") &&
+        (tool.installed.length > 0 || tool.detected.length > 0),
+    ) ?? []
+  );
 }
 
 function runnerOptions(config: GameCompatConfig): string {
@@ -95,6 +121,27 @@ function runnerOptions(config: GameCompatConfig): string {
 }
 
 function cardBody(appName: string, config: GameCompatConfig): string {
+  const activeLayers = effectiveLayers(config);
+  const layers = layerTools();
+  const layerRows = layers
+    .map((tool) => {
+      const checked = activeLayers.includes(tool.id);
+      const hint = t(tool.id === "dxvk" ? "compat.layerDxvkHint" : "compat.layerVkd3dHint");
+      return `
+        <div class="row">
+          <div class="row-main">
+            <div class="row-title">${esc(LAYER_NAMES[tool.id] ?? tool.id)}</div>
+            <div class="row-meta">${esc(hint)}</div>
+          </div>
+          <div class="row-actions">
+            <label class="switch">
+              <input type="checkbox" data-act="game-compat-layer" data-id="${esc(appName)}" data-layer="${esc(tool.id)}"${checked ? " checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>`;
+    })
+    .join("");
   return `
     <div class="row">
       <div class="row-main">
@@ -106,7 +153,16 @@ function cardBody(appName: string, config: GameCompatConfig): string {
           ${runnerOptions(config)}
         </select>
       </div>
-    </div>`;
+    </div>
+    ${
+      layers.length > 0
+        ? `<div class="game-compat-subhead">
+             <div class="row-title">${esc(t("compat.gameLayers"))}</div>
+             <div class="row-meta">${esc(t("compat.gameLayersHint"))}</div>
+           </div>
+           ${layerRows}`
+        : ""
+    }`;
 }
 
 export function renderGameCompatCard(s: EpicSummary): string {
@@ -124,12 +180,15 @@ export async function hydrateGameCompatCard(appName: string): Promise<void> {
     // The catalogue only scans local folders when it is not asked to refresh;
     // call it instead of caching so a runner installed in Settings shows up on
     // the next visit to this tab.
-    catalog = await compatCatalog(null, false);
-    let config = configs.get(appName);
-    if (!config) {
-      config = await compatGetGameConfig(appName);
-      configs.set(appName, config);
-    }
+    const cached = configs.get(appName);
+    const [nextCatalog, config, launch] = await Promise.all([
+      compatCatalog(null, false),
+      cached ? Promise.resolve(cached) : compatGetGameConfig(appName),
+      compatGetLaunchConfig(),
+    ]);
+    catalog = nextCatalog;
+    globalLayers = launch.layers;
+    configs.set(appName, config);
     if (S.currentModalAppName !== appName) return;
     card.dataset.loaded = "1";
     // The compatibility controls are only meaningful where the store launch is
@@ -147,31 +206,63 @@ export async function hydrateGameCompatCard(appName: string): Promise<void> {
   }
 }
 
-export function handleGameCompatChange(el: HTMLElement): boolean {
-  if (el.dataset.act !== "game-compat-runner") return false;
-  const appName = el.dataset.id ?? "";
-  const select = el as HTMLSelectElement;
-  if (!appName) return true;
-  const config = configs.get(appName) ?? {
-    runner: null,
-    runnerPath: null,
-    runnerTag: null,
-    layers: null,
-  };
-  const parsed = parseValue(select.value);
-  const next: GameCompatConfig = {
-    ...config,
-    runner: parsed.runner,
-    runnerPath: parsed.runnerPath,
-    runnerTag: null,
-  };
+function emptyConfig(): GameCompatConfig {
+  return { runner: null, runnerPath: null, runnerTag: null, layers: null };
+}
+
+function saveGameConfig(
+  appName: string,
+  next: GameCompatConfig,
+  previous: GameCompatConfig,
+  rollback: () => void,
+): void {
   configs.set(appName, next);
   void compatSetGameConfig(appName, next)
     .then(() => toast(t("compat.gameSaved"), "ok"))
     .catch((error) => {
-      configs.delete(appName);
-      select.value = selectedValue(config);
+      configs.set(appName, previous);
+      rollback();
       toast(String(error), "err");
     });
+}
+
+export function handleGameCompatChange(el: HTMLElement): boolean {
+  const act = el.dataset.act;
+  if (act !== "game-compat-runner" && act !== "game-compat-layer") return false;
+  const appName = el.dataset.id ?? "";
+  if (!appName) return true;
+  const config = configs.get(appName) ?? emptyConfig();
+
+  if (act === "game-compat-runner") {
+    const select = el as HTMLSelectElement;
+    const parsed = parseValue(select.value);
+    const next: GameCompatConfig = {
+      ...config,
+      runner: parsed.runner,
+      runnerPath: parsed.runnerPath,
+      runnerTag: null,
+    };
+    saveGameConfig(appName, next, config, () => {
+      select.value = selectedValue(config);
+    });
+    return true;
+  }
+
+  const input = el as HTMLInputElement;
+  const layer = input.dataset.layer;
+  if (!layer) return true;
+  const active = new Set(effectiveLayers(config));
+  if (input.checked) active.add(layer);
+  else active.delete(layer);
+  // Keep the stored order stable, and fall back to "inherit" when the result
+  // matches the global choice again.
+  const ordered = Object.keys(LAYER_NAMES).filter((id) => active.has(id));
+  const next: GameCompatConfig = {
+    ...config,
+    layers: sameLayers(ordered, globalLayers) ? null : ordered,
+  };
+  saveGameConfig(appName, next, config, () => {
+    input.checked = effectiveLayers(config).includes(layer);
+  });
   return true;
 }

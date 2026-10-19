@@ -2603,5 +2603,7 @@
   "compat.gameRunnerHint": "Bu oyun özel bir çalıştırıcı gerektirmiyorsa genel ayarda bırak.",
   "compat.gameInherit": "Genel ayarı kullan",
   "compat.gameSaved": "Oyun çalıştırıcısı kaydedildi.",
-  "compat.saveFailed": "Uyumluluk ayarı kaydedilemedi."
+  "compat.saveFailed": "Uyumluluk ayarı kaydedilemedi.",
+  "compat.gameLayers": "Çeviri katmanları",
+  "compat.gameLayersHint": "Bir anahtarı değiştirene kadar genel seçim geçerlidir; genel seçimle aynı hale getirince devralma geri döner."
 }

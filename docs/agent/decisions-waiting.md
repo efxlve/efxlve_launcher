@@ -114,9 +114,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   kullan" varsayılanıyla bir seçim eklendi; yalnız istisnalar
   `<app_data>/compat/games.json` içine yazılıyor. Açık bir oyun seçimi global
   "kapalı" anahtarını aşar, böylece tek oyun için uyumluluk açılabilir; diğer
-  oyunlar etkilenmez. Katmanlar için kayıt alanı hazır ama UI şimdilik global
-  anahtarı kullanıyor; oyun bazlı katman seçimi gerçek prefix testiyle birlikte
-  sonraki tura bırakıldı.
+  oyunlar etkilenmez. Oyun kartındaki DXVK/VKD3D anahtarları da yalnız o oyun
+  için yazılır; seçim genel seçimle aynı hale gelince kayıt silinip devralmaya
+  dönülür. Oyun bazlı prefix hâlâ açık ve gerçek prefix testi istiyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve
