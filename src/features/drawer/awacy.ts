@@ -12,7 +12,11 @@ import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
-import { steamAntiCheatStatus, type AntiCheatStatus } from "../../steam";
+import {
+  epicAntiCheatStatus,
+  steamAntiCheatStatus,
+  type AntiCheatStatus,
+} from "../../steam";
 
 const statuses = new Map<string, AntiCheatStatus | null>();
 
@@ -29,7 +33,7 @@ function statusName(status: string): string {
   return key ? t(key) : t("awacy.unknown");
 }
 
-function summaryHtml(appId: string, info: AntiCheatStatus): string {
+function summaryHtml(info: AntiCheatStatus): string {
   const status = info.status.trim().toLowerCase();
   const known = status in STATUS_KEYS ? status : "unknown";
   const anticheats = info.anticheats.filter(Boolean).join(" · ");
@@ -50,20 +54,26 @@ function summaryHtml(appId: string, info: AntiCheatStatus): string {
 }
 
 export function renderAntiCheatHost(s: EpicSummary): string {
-  return sourceOfKey(s.appName) === "steam" ? `<div id="awacy-chip"></div>` : "";
+  const source = sourceOfKey(s.appName);
+  return source === "steam" || source === "epic" ? `<div id="awacy-chip"></div>` : "";
 }
 
 export async function hydrateAntiCheatChip(appName: string): Promise<void> {
-  if (sourceOfKey(appName) !== "steam" || !appName.startsWith("steam::")) return;
+  const source = sourceOfKey(appName);
+  if (source !== "steam" && source !== "epic") return;
   const host = document.getElementById("awacy-chip");
   if (!host || host.dataset.loaded === "1") return;
-  const appId = appName.slice(7);
-  let info = statuses.get(appId);
+  const steam = source === "steam";
+  const key = steam ? appName.slice(7) : appName.replace(/^epic::/, "");
+  const cacheKey = `${source}:${key}`;
+  let info = statuses.get(cacheKey);
   if (info === undefined) {
-    info = await steamAntiCheatStatus(appId).catch(() => null);
-    statuses.set(appId, info);
+    info = steam
+      ? await steamAntiCheatStatus(key).catch(() => null)
+      : await epicAntiCheatStatus(key).catch(() => null);
+    statuses.set(cacheKey, info);
   }
   if (S.currentModalAppName !== appName) return;
   host.dataset.loaded = "1";
-  if (info) host.innerHTML = summaryHtml(appId, info);
+  if (info) host.innerHTML = summaryHtml(info);
 }

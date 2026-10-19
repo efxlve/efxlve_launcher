@@ -161,8 +161,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   ProtonDB derecesini gösteriyor.
 - **Are We Anti-Cheat Yet?:** Steam oyun kartına Linux/Wine hile koruması durumu
   eklendi. Tüm katalog tek `games.json` dosyasında geldiği için bir kez indirilip
-  `<app_data>/steam/awacy/games.json` altında günlük cache'leniyor; uygulama
-  kimliği yalnız rakam. Durum, anti-cheat adları ve oyunun AWACY sayfası
+  `<app_data>/steam/awacy/games.json` altında günlük cache'leniyor. Steam
+  kimliği yalnız rakam; Epic tarafında katalog ad alanı (`fn`, 32 karakterli
+  hex) eşleştiriliyor. Durum, anti-cheat adları ve oyunun AWACY sayfası
   gösteriliyor. Kayıt yoksa veya ağ hatasında eski kopya yoksa satır gizli.
 - **Steam Deck rozeti:** Valve'nin mağaza uyumluluk uç noktası kullanılıyor;
   `resolved_category` 1/2/3 sırasıyla desteklenmiyor/oynanabilir/doğrulanmış.

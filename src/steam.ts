@@ -135,6 +135,10 @@ export interface AntiCheatStatus {
 export const steamAntiCheatStatus = (appId: string) =>
   invoke<AntiCheatStatus | null>("steam_anticheat_status", { appId });
 
+/** The same anti-cheat row for an Epic catalog namespace. */
+export const epicAntiCheatStatus = (namespace: string) =>
+  invoke<AntiCheatStatus | null>("epic_anticheat_status", { namespace });
+
 /** Valve's Steam Deck category: 1 unsupported, 2 playable, 3 verified. */
 export interface DeckStatus {
   category: number;

@@ -325,8 +325,9 @@ Still open:
   confirm the Proton/umu prefix layout.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB, Steam Deck (Valve's own Verified/Playable/Unsupported report) and
-  Are We Anti-Cheat Yet? badges shipped for Steam games, each cached for a day
-  with click-through to its source.
+  Are We Anti-Cheat Yet? badges shipped. ProtonDB and Steam Deck cover Steam;
+  anti-cheat covers Steam and the 73 Epic entries in Valve's catalogue, each
+  cached for a day with click-through to its source.
 - Platform implementations for the screenshot hook, embedded store webview and
   drive scan (F0/F5).
 - `wine-crossover` is detection-only until a maintained release source exists;

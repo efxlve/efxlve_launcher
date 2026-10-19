@@ -1,8 +1,8 @@
-//! Are We Anti-Cheat Yet? status for one Steam app.
+//! Are We Anti-Cheat Yet? status for one Steam or Epic app.
 //!
 //! The project publishes one `games.json` for the whole catalogue, so the first
 //! game page downloads it and the day-long cache serves every later page. Only
-//! the Steam app id, status, anti-cheat names and slug are kept — the notes and
+//! the store ids, status, anti-cheat names and slug are kept — the notes and
 //! update history belong on the website, not in the launcher.
 
 use std::path::{Path, PathBuf};
@@ -41,6 +41,16 @@ struct AwacyGame {
 struct AwacyStoreIds {
     #[serde(default)]
     steam: Option<serde_json::Value>,
+    #[serde(default)]
+    epic: Option<AwacyEpicStore>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+struct AwacyEpicStore {
+    #[serde(default)]
+    namespace: Option<String>,
+    #[serde(default)]
+    slug: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,6 +62,15 @@ struct CacheFile {
 
 fn valid_app_id(app_id: &str) -> bool {
     !app_id.is_empty() && app_id.len() <= 12 && app_id.bytes().all(|byte| byte.is_ascii_digit())
+}
+
+/// Epic catalog namespaces are either short names (`fn`) or 32 hex characters.
+fn valid_epic_namespace(namespace: &str) -> bool {
+    !namespace.is_empty()
+        && namespace.len() <= 64
+        && namespace
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
 }
 
 fn cache_path(app: &AppHandle) -> PathBuf {
@@ -137,11 +156,32 @@ fn find_in(games: &[AwacyGame], app_id: &str) -> Option<AntiCheatStatus> {
     })
 }
 
-fn lookup(cache: &CacheFile, app_id: &str) -> Option<AntiCheatStatus> {
-    if cache.schema != CACHE_SCHEMA {
+fn game_epic_status(game: &AwacyGame) -> Option<(String, AntiCheatStatus)> {
+    let epic = game.store_ids.as_ref()?.epic.as_ref()?;
+    let namespace = epic.namespace.as_deref()?.trim();
+    if !valid_epic_namespace(namespace) || game.status.trim().is_empty() {
         return None;
     }
-    find_in(&cache.games, app_id)
+    let slug = if game.slug.trim().is_empty() {
+        epic.slug.clone().unwrap_or_default()
+    } else {
+        game.slug.clone()
+    };
+    Some((
+        namespace.to_string(),
+        AntiCheatStatus {
+            status: game.status.clone(),
+            anticheats: game.anticheats.clone(),
+            slug,
+        },
+    ))
+}
+
+fn find_epic_in(games: &[AwacyGame], namespace: &str) -> Option<AntiCheatStatus> {
+    games.iter().find_map(|game| {
+        let (epic, status) = game_epic_status(game)?;
+        (epic == namespace).then_some(status)
+    })
 }
 
 async fn fetch_games() -> Option<Vec<AwacyGame>> {
@@ -157,6 +197,25 @@ async fn fetch_games() -> Option<Vec<AwacyGame>> {
     response.json::<Vec<AwacyGame>>().await.ok()
 }
 
+async fn load_games(app: &AppHandle) -> Option<Vec<AwacyGame>> {
+    let path = cache_path(app);
+    let cached = read_cache(&path);
+    if let Some(cache) = cached.as_ref() {
+        if cache.schema == CACHE_SCHEMA && cache_is_fresh(cache.fetched_at, now_secs()) {
+            return Some(cache.games.clone());
+        }
+    }
+
+    if let Some(games) = fetch_games().await {
+        write_cache(&path, &games);
+        return Some(games);
+    }
+
+    cached
+        .filter(|cache| cache.schema == CACHE_SCHEMA)
+        .map(|cache| cache.games)
+}
+
 /// The cached Are We Anti-Cheat Yet? row for one Steam app. `None` means the
 /// app is not in the list or the source could not be reached and no stale copy
 /// exists; the page then leaves the row out.
@@ -165,20 +224,17 @@ pub async fn steam_anticheat_status(app: AppHandle, app_id: String) -> Option<An
     if !valid_app_id(&app_id) {
         return None;
     }
-    let path = cache_path(&app);
-    let cached = read_cache(&path);
-    if let Some(cache) = cached.as_ref() {
-        if cache.schema == CACHE_SCHEMA && cache_is_fresh(cache.fetched_at, now_secs()) {
-            return lookup(cache, &app_id);
-        }
-    }
+    find_in(&load_games(&app).await?, &app_id)
+}
 
-    if let Some(games) = fetch_games().await {
-        write_cache(&path, &games);
-        return find_in(&games, &app_id);
+/// The same row for an Epic catalog namespace (the app name Legendary uses).
+#[tauri::command]
+pub async fn epic_anticheat_status(app: AppHandle, namespace: String) -> Option<AntiCheatStatus> {
+    let namespace = namespace.trim();
+    if !valid_epic_namespace(namespace) {
+        return None;
     }
-
-    cached.as_ref().and_then(|cache| lookup(cache, &app_id))
+    find_epic_in(&load_games(&app).await?, namespace)
 }
 
 #[cfg(test)]
@@ -200,6 +256,22 @@ mod tests {
         assert!(cache_is_fresh(now, now));
         assert!(cache_is_fresh(now - CACHE_TTL_SECS + 1, now));
         assert!(!cache_is_fresh(now - CACHE_TTL_SECS, now));
+    }
+
+    #[test]
+    fn epic_namespaces_are_safe_and_findable() {
+        assert!(valid_epic_namespace("fn"));
+        assert!(valid_epic_namespace("52f57f57120c440fad9bfa0e6c279317"));
+        assert!(!valid_epic_namespace("../fn"));
+        assert!(!valid_epic_namespace(""));
+        let games: Vec<AwacyGame> = serde_json::from_str(
+            r#"[{"status":"Denied","anticheats":["BattlEye"],"slug":"fortnite","storeIds":{"epic":{"namespace":"fn","slug":"fortnite"}}}]"#,
+        )
+        .expect("games");
+        let found = find_epic_in(&games, "fn").expect("fortnite");
+        assert_eq!(found.status, "Denied");
+        assert_eq!(found.slug, "fortnite");
+        assert!(find_epic_in(&games, "other").is_none());
     }
 
     #[test]

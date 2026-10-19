@@ -114,6 +114,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `egl_remove` | `eglRemove({ ... })` | `src-tauri/src/egl_removal.rs` |
 | `eos_install_redistributable` | `eosInstallRedistributable({ ... })` | `src-tauri/src/eos.rs` |
 | `eos_overlay_status` | `eosOverlayStatus({ ... })` | `src-tauri/src/eos.rs` |
+| `epic_anticheat_status` | `epicAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
 | `epic_backup_save` | `epicBackupSave({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_cached_library` | `epicCachedLibrary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_cancel_download` | `epicCancelDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
