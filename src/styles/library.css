@@ -100,7 +100,7 @@
 .col-menu-add-btn {
   display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 500;
 }
-.col-menu-add-btn:hover { color: #fff; }
+.col-menu-add-btn:hover { color: var(--text); }
 .col-dropdown-empty {
   padding: 8px 10px; font-size: 13px; color: var(--text-3); text-align: center;
 }

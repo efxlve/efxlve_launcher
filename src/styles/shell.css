@@ -921,13 +921,13 @@ html.sb-narrow .sb-toggle-label {
   transform: scale(0.96);
 }
 .store-tabs .tab.active {
-  color: #fff;
+  color: var(--text);
   background: var(--surface-3);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   padding: 0 12px 0 10px;
 }
 .store-tabs .tab.active:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--accent-tint);
 }
 .store-tabs .tab.active::after { display: none; }
 .store-tabs .store-tab-logo {
