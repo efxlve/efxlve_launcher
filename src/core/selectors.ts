@@ -634,8 +634,12 @@ export function epicWideArt(s: EpicSummary): string | null {
   const imgs = rawOf(s.appName)?.metadata?.keyImages;
   if (Array.isArray(imgs)) {
     for (const t of [
-      "OfferImageWide",
       "DieselStoreFrontWide",
+      "OfferImageWide",
+      "DieselGameBoxWide",
+      "Horizontal",
+      "featuredMedia",
+      "TakeoverArt",
       "DieselGameBox",
       "DieselGameBoxTall",
       "OfferImageTall",

@@ -747,7 +747,11 @@ function ensureOverviewData(s: EpicSummary): void {
         }
         if (details.hero_url) {
           const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
-          if (heroEl) heroEl.src = details.hero_url;
+          if (heroEl) {
+            heroEl.src = details.hero_url;
+            const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
+            if (bgEl) bgEl.style.backgroundImage = `url('${details.hero_url}')`;
+          }
         }
         if (details.developer) {
           const item = S.gogSummariesMap.get(rawId);
@@ -935,7 +939,12 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     <div class="overlay">
       <div class="game-hub">
         <div class="gp-hero">
-          ${art ? `<img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" />` : ""}
+          ${
+            art
+              ? `<div class="gp-hero-backdrop" style="background-image:url('${esc(cachedImage(art))}');"></div>
+          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="if(this.naturalWidth && this.naturalHeight && this.naturalWidth/this.naturalHeight < 1.3) this.classList.add('is-portrait')" />`
+              : ""
+          }
           <div class="gp-hero-scrim"></div>
           <div class="gp-hero-top">
             <div class="gp-hero-nav">
