@@ -18,13 +18,18 @@ body.sb-resizing .overlay {
 .game-hub { min-height: 100%; display: flex; flex-direction: column; }
 
 /* --- Hero --- */
-.gp-hero { position: relative; height: 340px; flex-shrink: 0; background: var(--bg); overflow: hidden; }
+/* Steam's library banner is a 1920x620 image (about 3.1:1), and that ratio is
+   what the eye reads as a banner. The fixed 340px the redesign shipped cropped
+   the artwork to a strip and made the page feel smaller than the version it
+   replaced, so the height follows the width again, with a floor for narrow
+   windows and a ceiling for ultrawide ones. */
+.gp-hero { position: relative; aspect-ratio: 3.1; min-height: 380px; max-height: 620px; flex-shrink: 0; background: var(--bg); overflow: hidden; }
 .gp-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .gp-hero-scrim {
   position: absolute; inset: 0;
   /* Dark where the icons, the title and the meta line sit; clear across the
-     middle of the artwork. At 340px the old stops left the two-line titles on a
-     bright cover unreadable. */
+     middle of the artwork. The stops are percentages, so they follow the taller
+     banner: two-line titles stay readable on a bright cover. */
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.38) 0%,
