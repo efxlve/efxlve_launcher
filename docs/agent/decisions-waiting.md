@@ -169,6 +169,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   `resolved_category` 1/2/3 sırasıyla desteklenmiyor/oynanabilir/doğrulanmış.
   Yanıt uygulama başına `<app_data>/steam/deck/<appid>.json` altında günlük
   cache'leniyor; bilinmeyen kategori veya ağ hatasında satır gizli.
+- **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY satırları çevrimdışı
+  modda hiç istek atmıyor; boş host kalıyor. Böylece oyun sayfası açılırken üç
+  ayrı ağ zaman aşımı beklenmiyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

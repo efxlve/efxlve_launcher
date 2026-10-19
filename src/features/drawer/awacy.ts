@@ -61,6 +61,7 @@ export function renderAntiCheatHost(s: EpicSummary): string {
 export async function hydrateAntiCheatChip(appName: string): Promise<void> {
   const source = sourceOfKey(appName);
   if (source !== "steam" && source !== "epic") return;
+  if (S.offlineMode) return;
   const host = document.getElementById("awacy-chip");
   if (!host || host.dataset.loaded === "1") return;
   const steam = source === "steam";

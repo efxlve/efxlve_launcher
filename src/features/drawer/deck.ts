@@ -50,6 +50,7 @@ export function renderDeckHost(s: EpicSummary): string {
 
 export async function hydrateDeckChip(appName: string): Promise<void> {
   if (sourceOfKey(appName) !== "steam" || !appName.startsWith("steam::")) return;
+  if (S.offlineMode) return;
   const host = document.getElementById("deck-chip");
   if (!host || host.dataset.loaded === "1") return;
   const appId = appName.slice(7);

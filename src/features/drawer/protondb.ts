@@ -56,6 +56,7 @@ export function renderProtonDbHost(s: EpicSummary): string {
 
 export async function hydrateProtonDbChip(appName: string): Promise<void> {
   if (sourceOfKey(appName) !== "steam" || !appName.startsWith("steam::")) return;
+  if (S.offlineMode) return;
   const host = document.getElementById("protondb-chip");
   if (!host || host.dataset.loaded === "1") return;
   const appId = appName.slice(7);
