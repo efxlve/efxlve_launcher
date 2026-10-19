@@ -365,6 +365,252 @@
 .card-dl-track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 5; background: rgba(0, 0, 0, 0.6); }
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
+/* --- Optional physical retail case covers (Settings > Appearance) --- */
+.pcard.is-case {
+  --case-shell-top: #323640;
+  --case-shell-mid: #1f2229;
+  --case-shell-bot: #14161b;
+  --case-border: #525866;
+  --case-head-bg: linear-gradient(90deg, #262932 0%, #121418 55%, #0a0b0e 100%);
+  --case-rule: #7a8294;
+}
+.pcard.is-case[data-source="steam"] {
+  --case-shell-top: #2b63eb;
+  --case-shell-mid: #1a49c7;
+  --case-shell-bot: #123496;
+  --case-border: #4d84ff;
+  --case-head-bg: linear-gradient(90deg, #163b88 0%, #092052 55%, #051336 100%);
+  --case-rule: #388bff;
+}
+.pcard.is-case[data-source="epic"] {
+  --case-shell-top: #323640;
+  --case-shell-mid: #1f2229;
+  --case-shell-bot: #14161b;
+  --case-border: #525866;
+  --case-head-bg: linear-gradient(90deg, #262932 0%, #121418 55%, #0a0b0e 100%);
+  --case-rule: #7a8294;
+}
+.pcard.is-case[data-source="gog"] {
+  --case-shell-top: #7b2cbf;
+  --case-shell-mid: #5a189a;
+  --case-shell-bot: #3c096c;
+  --case-border: #9d4edd;
+  --case-head-bg: linear-gradient(90deg, #52168c 0%, #270947 55%, #17042b 100%);
+  --case-rule: #b565f7;
+}
+.pcard.is-case[data-source="xbox"] {
+  --case-shell-top: #168a16;
+  --case-shell-mid: #106f10;
+  --case-shell-bot: #0a4d0a;
+  --case-border: #2eb82e;
+  --case-head-bg: linear-gradient(90deg, #115c11 0%, #073007 55%, #041f04 100%);
+  --case-rule: #38d938;
+}
+.pcard.is-case[data-source="ea"] {
+  --case-shell-top: #d62839;
+  --case-shell-mid: #a81c2a;
+  --case-shell-bot: #78111b;
+  --case-border: #f25464;
+  --case-head-bg: linear-gradient(90deg, #8a1622 0%, #42080f 55%, #290408 100%);
+  --case-rule: #ff5c6c;
+}
+.pcard.is-case[data-source="ubisoft"] {
+  --case-shell-top: #3350d4;
+  --case-shell-mid: #2238a8;
+  --case-shell-bot: #152475;
+  --case-border: #5c7cfa;
+  --case-head-bg: linear-gradient(90deg, #1d3194 0%, #0c164a 55%, #070d2e 100%);
+  --case-rule: #6987ff;
+}
+.pcard.is-case[data-source="battlenet"] {
+  --case-shell-top: #0084f4;
+  --case-shell-mid: #0062bd;
+  --case-shell-bot: #004385;
+  --case-border: #38a8ff;
+  --case-head-bg: linear-gradient(90deg, #0058ad 0%, #002752 55%, #001733 100%);
+  --case-rule: #1fb6ff;
+}
+.pcard.is-case[data-source="riot"] {
+  --case-shell-top: #c91e29;
+  --case-shell-mid: #91121b;
+  --case-shell-bot: #5e0910;
+  --case-border: #eb444e;
+  --case-head-bg: linear-gradient(90deg, #750f16 0%, #300609 55%, #1a0204 100%);
+  --case-rule: #ff4752;
+}
+.pcard.is-case[data-source="amazon"] {
+  --case-shell-top: #cc7a14;
+  --case-shell-mid: #9c590c;
+  --case-shell-bot: #6e3c06;
+  --case-border: #f09c32;
+  --case-head-bg: linear-gradient(90deg, #7d4608 0%, #3b1f03 55%, #241201 100%);
+  --case-rule: #f59e0b;
+}
+
+.pcard.is-case .pcard-art {
+  padding: 31px 5px 8px 6px;
+  border-radius: 5px 10px 10px 5px;
+  outline: 1px solid var(--case-border);
+  outline-offset: -1px;
+  background:
+    linear-gradient(90deg,
+      rgba(255, 255, 255, 0.28) 0px,
+      rgba(255, 255, 255, 0.08) 2px,
+      rgba(0, 0, 0, 0.36) 4px,
+      rgba(255, 255, 255, 0.12) 5px,
+      transparent 6px
+    ),
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.32) 0px,
+      rgba(255, 255, 255, 0.08) 2px,
+      rgba(0, 0, 0, 0.24) 4px,
+      transparent 5px
+    ),
+    linear-gradient(165deg,
+      var(--case-shell-top) 0%,
+      var(--case-shell-mid) 52%,
+      var(--case-shell-bot) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset -1px 0 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 5px 14px rgba(0, 0, 0, 0.38);
+}
+.pcard.is-case:hover .pcard-art,
+.pcard.is-case:focus-visible .pcard-art {
+  outline-color: var(--case-border);
+}
+.pcard.is-case .pcard-art::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  right: 12px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+  z-index: 3;
+}
+.pcard-case-head {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  right: 5px;
+  height: 27px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 2px 5px 0 0;
+  background: var(--case-head-bg);
+  border-bottom: 1.5px solid var(--case-rule);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.pcard-case-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.24) 1px, transparent 1.25px);
+  background-size: 4.5px 4.5px;
+  background-position: 2px 2px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.45) 22%, transparent 44%);
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.45) 22%, transparent 44%);
+  pointer-events: none;
+}
+.pcard-case-brand {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: calc(100% - 46px);
+}
+.pcard-case-logo {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
+.pcard-case-name {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.pcard-case-os {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1;
+}
+.pcard-case-os svg {
+  width: 8px;
+  height: 8px;
+  display: block;
+}
+.pcard-case-os span {
+  font-size: 5.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.82;
+}
+.pcard.is-case .pcard-art > img,
+.pcard.is-case .pcard-art > .pcover {
+  border-radius: 0 0 4px 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+  background: #08090c;
+}
+.pgrid.highlight-installed .pcard.is-case.not-installed .pcard-art > img,
+.pgrid.dim-uninstalled .pcard.is-case.not-installed .pcard-art > img {
+  opacity: 1;
+  filter: brightness(0.54) saturate(0.82);
+}
+.pgrid.highlight-installed .pcard.is-case.not-installed:hover .pcard-art > img,
+.pgrid.highlight-installed .pcard.is-case.not-installed:focus-visible .pcard-art > img,
+.pgrid.dim-uninstalled .pcard.is-case.not-installed:hover .pcard-art > img,
+.pgrid.dim-uninstalled .pcard.is-case.not-installed:focus-visible .pcard-art > img {
+  filter: brightness(1.04) saturate(1);
+}
+.pcard.is-case .cover-stats {
+  top: 37px;
+  left: 12px;
+  max-width: calc(100% - 24px);
+}
+.pcard.is-case .pbadge {
+  top: 37px;
+  right: 11px;
+}
+.pcard.is-case .card-dl-track {
+  left: 6px;
+  right: 5px;
+  bottom: 8px;
+  border-radius: 0 0 4px 2px;
+}
+
 /* --- List view --- */
 .lib-list { --lrow-store-w: 110px; --lrow-ach-w: 128px; --lrow-title-min: 0px; display: flex; flex-direction: column; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
 .lrow-head, .lrow { display: grid; grid-template-columns: 56px minmax(var(--lrow-title-min), 1fr) var(--lrow-ach-w) 116px 92px 112px; align-items: center; gap: 24px; padding: 0 16px; }

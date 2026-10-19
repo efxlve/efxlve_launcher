@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "Patch note",
   "steam.newsFailed": "The store's news feed could not be read.",
   "drawer.inLibrary": "In your library",
-  "drawer.lastPlayed": "Last played: {date}"
+  "drawer.lastPlayed": "Last played: {date}",
+  "settings.caseCoversTitle": "Physical case covers",
+  "settings.caseCoversDesc": "Frames each cover in a physical game box with its store header strip."
 }

@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "Nota de patch",
   "steam.newsFailed": "Não foi possível ler o feed de novidades da loja.",
   "drawer.inLibrary": "Na sua biblioteca",
-  "drawer.lastPlayed": "Última vez: {date}"
+  "drawer.lastPlayed": "Última vez: {date}",
+  "settings.caseCoversTitle": "Capas de mídia física",
+  "settings.caseCoversDesc": "Emoldura cada capa em uma caixa física com a faixa da loja."
 }

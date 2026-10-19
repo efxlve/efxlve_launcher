@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "更新說明",
   "steam.newsFailed": "無法讀取商店的新聞來源。",
   "drawer.inLibrary": "在你的收藏庫中",
-  "drawer.lastPlayed": "上次遊玩：{date}"
+  "drawer.lastPlayed": "上次遊玩：{date}",
+  "settings.caseCoversTitle": "實體盒裝封面",
+  "settings.caseCoversDesc": "將每張遊戲封面裝入帶有商店橫幅的實體遊戲盒邊框中。"
 }

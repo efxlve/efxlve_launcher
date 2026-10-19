@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "パッチノート",
   "steam.newsFailed": "ストアのニュースを読み込めませんでした。",
   "drawer.inLibrary": "ライブラリにあります",
-  "drawer.lastPlayed": "最終プレイ: {date}"
+  "drawer.lastPlayed": "最終プレイ: {date}",
+  "settings.caseCoversTitle": "パッケージ風カバー",
+  "settings.caseCoversDesc": "各カバーをストアヘッダー付きの物理ゲームケース風に表示します。"
 }

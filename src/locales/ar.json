@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "ملاحظات التحديث",
   "steam.newsFailed": "تعذّر قراءة أخبار المتجر.",
   "drawer.inLibrary": "في مكتبتك",
-  "drawer.lastPlayed": "آخر لعب: {date}"
+  "drawer.lastPlayed": "آخر لعب: {date}",
+  "settings.caseCoversTitle": "أغلفة العلب الفيزيائية",
+  "settings.caseCoversDesc": "يعرض كل غلاف داخل إطار علبة ألعاب فيزيائية مع شريط المتجر."
 }

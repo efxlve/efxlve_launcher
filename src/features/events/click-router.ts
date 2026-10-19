@@ -36,6 +36,7 @@ import {
   SHOW_SCREENSHOTS_SIDEBAR_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
+  CASE_COVERS_KEY,
   SEPARATE_COPIES_KEY,
   SURFACE_KEY,
   TV_AUTO_KEY,
@@ -870,6 +871,10 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-icons") {
     S.showStoreIcons = !S.showStoreIcons;
     localStorage.setItem(STORE_ICONS_KEY, String(S.showStoreIcons));
+    if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "toggle-case-covers") {
+    S.showCaseCovers = !S.showCaseCovers;
+    localStorage.setItem(CASE_COVERS_KEY, String(S.showCaseCovers));
     if (!refreshLibraryResultsInPlace()) scheduleRender();
   } else if (act === "toggle-separate-copies") {
     S.separateCopies = !S.separateCopies;

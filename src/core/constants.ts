@@ -92,6 +92,8 @@ export const COVER_TITLES_KEY = "efxlve-cover-titles";
 export const STORE_BADGE_KEY = "efxlve-store-badge";
 /** Show the storefront mark on every grid cover. Off by default. */
 export const STORE_ICONS_KEY = "efxlve-store-icons";
+/** Frame library covers in a physical retail box with a store header strip. Off by default. */
+export const CASE_COVERS_KEY = "efxlve-case-covers";
 /** Show every store copy of a multi-store game as its own card. Off = one combined card. */
 export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
 /** In-game overlay: Shift+Tab hotkey enabled, managed by the overlay settings tab. */

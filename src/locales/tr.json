@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "Yama notu",
   "steam.newsFailed": "Mağazanın haber akışı okunamadı.",
   "drawer.inLibrary": "Kütüphanende",
-  "drawer.lastPlayed": "Son oynama: {date}"
+  "drawer.lastPlayed": "Son oynama: {date}",
+  "settings.caseCoversTitle": "Fiziksel kutu kapakları",
+  "settings.caseCoversDesc": "Oyun kapaklarını mağaza başlıklı fiziksel kutu çerçevesi içinde gösterir."
 }

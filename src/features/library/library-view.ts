@@ -283,6 +283,28 @@ function canonicalGroup(s: EpicSummary): string {
   return canonicalGameTitle(s.title) || `\0${s.appName}`;
 }
 
+/** Uppercase banner titles for physical case headers across all 9 storefronts. */
+const CASE_BRAND_LABELS: Record<GameSource, string> = {
+  epic: "EPIC GAMES",
+  steam: "STEAM",
+  gog: "GOG",
+  ea: "EA",
+  ubisoft: "UBISOFT",
+  xbox: "XBOX",
+  battlenet: "BATTLE.NET",
+  riot: "RIOT GAMES",
+  amazon: "AMAZON",
+};
+
+/** Physical retail box header strip (store logo + brand name + Windows badge). */
+function caseCoverHeader(source: GameSource): string {
+  const brand = CASE_BRAND_LABELS[source] || source.toUpperCase();
+  return `<div class="pcard-case-head" aria-hidden="true">
+    <span class="pcard-case-brand">${storeLogo(source, 13, "pcard-case-logo")}<span class="pcard-case-name">${esc(brand)}</span></span>
+    <span class="pcard-case-os"><svg viewBox="0 0 12 12" width="8" height="8" fill="currentColor"><path d="M0 0h5.4v5.4H0V0zm6.6 0H12v5.4H6.6V0zM0 6.6h5.4V12H0V6.6zm6.6 0H12V12H6.6V6.6z"/></svg><span>Windows</span></span>
+  </div>`;
+}
+
 /**
  * Grid tile is the portrait only, plus an optional caption under the cover
  * ("Titles under covers" in Settings). Hover grows the cover frame, not the caption.
@@ -305,12 +327,16 @@ export function epicCardPortrait(s: EpicSummary): string {
     : "";
   const tip = S.showCoverTitles ? "" : ` title="${title}"`;
   const source = sourceOfKey(s.appName);
+  const isCase = S.showCaseCovers;
+  const caseHead = isCase ? caseCoverHeader(source) : "";
   // Optional: the storefront mark on the cover (bottom-right, clear of the
-  // stats chips on the left and the running badge on the top-right).
-  const storeIcon = S.showStoreIcons ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
+  // stats chips on the left and the running badge on the top-right). Omitted
+  // when the physical case header already carries the store brand.
+  const storeIcon = S.showStoreIcons && !isCase ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
+    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
       <div class="pcard-art" data-card-art data-badge-host>
+        ${caseHead}
         ${epicArt(s)}
         ${storeIcon}
         ${libraryCoverStats(s.appName)}

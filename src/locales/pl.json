@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "Notatka o łatce",
   "steam.newsFailed": "Nie udało się odczytać kanału nowości sklepu.",
   "drawer.inLibrary": "W twojej bibliotece",
-  "drawer.lastPlayed": "Ostatnio grane: {date}"
+  "drawer.lastPlayed": "Ostatnio grane: {date}",
+  "settings.caseCoversTitle": "Pudełkowe okładki gier",
+  "settings.caseCoversDesc": "Oprawia każdą okładkę w fizyczne pudełko z paskiem sklepu."
 }

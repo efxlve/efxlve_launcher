@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "Заметка к патчу",
   "steam.newsFailed": "Не удалось прочитать ленту новостей магазина.",
   "drawer.inLibrary": "В вашей библиотеке",
-  "drawer.lastPlayed": "Последний раз: {date}"
+  "drawer.lastPlayed": "Последний раз: {date}",
+  "settings.caseCoversTitle": "Обложки в виде физических боксов",
+  "settings.caseCoversDesc": "Оформляет каждую обложку как коробку с диском и полосой магазина."
 }

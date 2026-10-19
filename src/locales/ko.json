@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "패치 노트",
   "steam.newsFailed": "스토어 소식을 읽지 못했습니다.",
   "drawer.inLibrary": "라이브러리에 있음",
-  "drawer.lastPlayed": "마지막 플레이: {date}"
+  "drawer.lastPlayed": "마지막 플레이: {date}",
+  "settings.caseCoversTitle": "실물 패키지 케이스 커버",
+  "settings.caseCoversDesc": "각 게임 표지를 스토어 헤더가 있는 실물 패키지 케이스 프레임으로 감쌉니다."
 }

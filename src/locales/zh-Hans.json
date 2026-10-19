@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "补丁说明",
   "steam.newsFailed": "无法读取商店的新闻源。",
   "drawer.inLibrary": "在你的库中",
-  "drawer.lastPlayed": "上次游玩：{date}"
+  "drawer.lastPlayed": "上次游玩：{date}",
+  "settings.caseCoversTitle": "实体盒装封面",
+  "settings.caseCoversDesc": "将每张游戏封面装入带有商店横幅的实体游戏盒边框中。"
 }

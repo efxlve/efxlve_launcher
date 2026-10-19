@@ -2463,5 +2463,7 @@
   "drawer.patchNote": "Nota de parche",
   "steam.newsFailed": "No se pudo leer el feed de novedades de la tienda.",
   "drawer.inLibrary": "En tu biblioteca",
-  "drawer.lastPlayed": "Última vez: {date}"
+  "drawer.lastPlayed": "Última vez: {date}",
+  "settings.caseCoversTitle": "Carátulas de caja física",
+  "settings.caseCoversDesc": "Enmarca cada portada en una caja física con la franja de su tienda."
 }

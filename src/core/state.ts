@@ -47,6 +47,7 @@ import {
   COVER_TITLES_KEY,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
+  CASE_COVERS_KEY,
   SEPARATE_COPIES_KEY,
   TV_AUTO_KEY,
   isSteamDeckDevice,
@@ -495,6 +496,8 @@ export const S = {
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
   /** Optional: storefront mark on grid covers. */
   showStoreIcons: (localStorage.getItem(STORE_ICONS_KEY) === "true") as boolean,
+  /** Optional: physical retail box frame around grid covers (store header strip + plastic case). */
+  showCaseCovers: (localStorage.getItem(CASE_COVERS_KEY) === "true") as boolean,
   /** Show each store copy of a multi-store game as its own card. Off = combined. */
   separateCopies: (localStorage.getItem(SEPARATE_COPIES_KEY) === "true") as boolean,
   /** Game whose TV Mode game hub is open (the hub's own screenshots consumer). */
