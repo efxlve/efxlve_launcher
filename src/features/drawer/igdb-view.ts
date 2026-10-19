@@ -221,17 +221,6 @@ function igdbTransportError(raw: unknown): string {
     ? localizeMessage(text)
     : "";
 }
-/** Loose equality for company names: IGDB writes "Behaviour Interactive Inc."
- * where the hero shows the shorter name, and printing both reads as two
- * different companies. */
-export function sameCompany(a: string, b: string): boolean {
-  const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const left = norm(a);
-  const right = norm(b);
-  if (!left || !right) return false;
-  return left === right || left.includes(right) || right.includes(left);
-}
-
 /** The age-rating bodies in the order this language reads them: the region's own
  * first, then the widely known ones. A game rated only by GRAC still shows a
  * number instead of nothing, but a Turkish user sees PEGI or ESRB first. */

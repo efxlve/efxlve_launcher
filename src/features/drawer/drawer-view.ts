@@ -42,7 +42,7 @@ import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreensho
 import { cachedNotes } from "../notes/notes-client";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
-import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar, sameCompany } from "./igdb-view";
+import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -127,24 +127,23 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
   // date wins, so a remaster does not show its console release here.
   const igdb = igdbGameFor(s.appName);
   const year = igdb?.pcReleaseYear ?? igdb?.releaseYear ?? null;
-  // The publisher only appears when it is a different company: "Valve · Valve"
-  // reads as a bug, not as information.
-  const publisher = igdb?.publisher && !sameCompany(igdb.publisher, igdb.developer) ? igdb.publisher : "";
-  // One age rating — the one the user's region reads first — and the rest behind
-  // a counter. Four organisations at once read as noise.
+  // The publisher is the developer's stand-in, not a second name: "Grove Street
+  // Games · Rockstar Games" reads as two studios, and the line is meant to stay
+  // calm. It only shows when nothing else names the maker.
+  const publisher = !dev && igdb?.publisher ? igdb.publisher : "";
+  // One age rating — the one the user's region reads first. The others stay in
+  // its tooltip: a "+3" counter is a database habit, and the reader who wants
+  // the rest is the reader who hovers.
   const rated = (igdb?.ageRatings ?? []).filter((rating) => rating.rating);
   const preferred =
     ageOrgOrder()
       .map((org) => rated.find((rating) => rating.organization === org))
       .find((rating) => rating !== undefined) ?? rated[0];
-  const others = rated.filter((rating) => rating !== preferred);
   const labelOf = (rating: { organization: string; rating: string }) =>
     rating.organization ? `${rating.organization} ${rating.rating}` : rating.rating;
+  // Wrapped, so the meta line's separator dot stays outside the pill.
   const ageChip = preferred
-    ? `<span class="igdb-age-chip" title="${esc(rated.map(labelOf).join(" · "))}">${esc(labelOf(preferred))}</span>` +
-      (others.length
-        ? `<span class="igdb-age-chip more" title="${esc(others.map(labelOf).join(" · "))}">+${others.length}</span>`
-        : "")
+    ? `<span class="gp-meta-item" title="${esc(rated.map(labelOf).join(" · "))}"><span class="igdb-age-chip">${esc(labelOf(preferred))}</span></span>`
     : "";
   // Where the player stands with it: running right now, finished, playing or just
   // installed. Derived from what the app already knows, so nothing has to be filed
