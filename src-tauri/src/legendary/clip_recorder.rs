@@ -1384,11 +1384,17 @@ mod tests {
     /// The whole path on a real machine: a real screen frame plus real loopback
     /// sound, muxed into one file. Run manually (`cargo test -- --ignored`) on a
     /// desktop session; the file is left next to the workspace to listen to.
+    ///
+    /// The test renders its own silence first: WASAPI loopback hands out nothing
+    /// while the endpoint is idle, so on a quiet machine the capture would come
+    /// back empty and the run would look like a failure.
     #[test]
     #[ignore = "grabs the real screen and speakers; run manually"]
     fn a_real_clip_gets_a_sound_track() {
         let (jpeg, width, height) =
             crate::legendary::screenshots::capture_frame_jpeg(70, 720).expect("capture");
+        let _silence =
+            crate::legendary::clip_audio::SilencePlayer::start().expect("silent render stream");
         let capture = crate::legendary::clip_audio::AudioCapture::start().expect("loopback");
         let info = capture.info();
         assert!(info.sample_rate >= 8_000, "a sane sample rate");

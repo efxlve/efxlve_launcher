@@ -12,6 +12,14 @@
 #[cfg(windows)]
 pub use imp::AudioCapture;
 
+/// Renders silence into the default output device, for the live audio test.
+///
+/// WASAPI loopback hands out no packets while the endpoint is idle, so a test
+/// that wants to capture sound has to make the machine render some first. Every
+/// sample is zero, so nothing is audible.
+#[cfg(all(windows, test))]
+pub use imp::SilencePlayer;
+
 /// What the AVI header needs to describe the stream.
 #[derive(Clone, Copy)]
 pub struct AudioInfo {
@@ -97,6 +105,103 @@ mod imp {
     impl Drop for AudioCapture {
         fn drop(&mut self) {
             self.stop();
+        }
+    }
+
+    /// A silent render stream, for the live audio test. WASAPI loopback delivers
+    /// nothing while the endpoint is idle, so the test needs a stream of its own;
+    /// every sample is zero, so nothing is audible.
+    #[cfg(test)]
+    pub struct SilencePlayer {
+        stop: Arc<AtomicBool>,
+        thread: Option<std::thread::JoinHandle<()>>,
+    }
+
+    #[cfg(test)]
+    impl SilencePlayer {
+        pub fn start() -> Result<Self, String> {
+            let stop = Arc::new(AtomicBool::new(false));
+            let flag = Arc::clone(&stop);
+            let thread = std::thread::Builder::new()
+                .name("clip-silence".to_string())
+                .spawn(move || render_silence_loop(flag))
+                .map_err(|_| "silence thread could not start".to_string())?;
+            // Give the engine a moment to pick the stream up before the capture
+            // asks for packets.
+            std::thread::sleep(std::time::Duration::from_millis(400));
+            Ok(Self {
+                stop,
+                thread: Some(thread),
+            })
+        }
+    }
+
+    #[cfg(test)]
+    impl Drop for SilencePlayer {
+        fn drop(&mut self) {
+            self.stop.store(true, Ordering::SeqCst);
+            if let Some(thread) = self.thread.take() {
+                let _ = thread.join();
+            }
+        }
+    }
+
+    #[cfg(test)]
+    fn render_silence_loop(stop: Arc<AtomicBool>) {
+        use windows::Win32::Media::Audio::IAudioRenderClient;
+        unsafe {
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+            let Ok(enumerator) = CoCreateInstance::<_, IMMDeviceEnumerator>(
+                &MMDeviceEnumerator,
+                None,
+                CLSCTX_ALL,
+            ) else {
+                return;
+            };
+            let Ok(device) = enumerator.GetDefaultAudioEndpoint(eRender, eConsole) else {
+                return;
+            };
+            let Ok(client) = device.Activate::<IAudioClient>(CLSCTX_ALL, None) else {
+                return;
+            };
+            let Ok(format) = client.GetMixFormat() else {
+                return;
+            };
+            if client
+                .Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 1_000_000, 0, format, None)
+                .is_err()
+            {
+                windows::Win32::System::Com::CoTaskMemFree(Some(format as *const _ as *const _));
+                return;
+            }
+            let Ok(render) = client.GetService::<IAudioRenderClient>() else {
+                return;
+            };
+            let Ok(buffer_frames) = client.GetBufferSize() else {
+                return;
+            };
+            if client.Start().is_err() {
+                return;
+            }
+            while !stop.load(Ordering::SeqCst) {
+                let Ok(padding) = client.GetCurrentPadding() else {
+                    break;
+                };
+                let free = buffer_frames.saturating_sub(padding);
+                if free > 0 {
+                    let Ok(data) = render.GetBuffer(free) else {
+                        break;
+                    };
+                    if !data.is_null() {
+                        // Silence: the whole point is to render without a sound.
+                        std::ptr::write_bytes(data, 0, free as usize * (*format).nBlockAlign as usize);
+                    }
+                    let _ = render.ReleaseBuffer(free, 0);
+                }
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            let _ = client.Stop();
+            windows::Win32::System::Com::CoTaskMemFree(Some(format as *const _ as *const _));
         }
     }
 

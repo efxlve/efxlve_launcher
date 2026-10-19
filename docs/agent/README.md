@@ -92,6 +92,11 @@ Most screens can also be driven in a plain browser: `docs/agent/verified.md`
 describes the fake-bridge harness and lists what has already been checked there
 and what still needs the real window.
 
+Live checks are the `#[ignore]`d tests: `cargo test -- --ignored <filter>` runs
+the ones for a surface (e.g. `clip`, `live_preview_real_captures`). The clip
+audio one renders its own silent stream, so it works on a quiet machine; it
+leaves `src-tauri/tmp-clip-audio-check.avi` behind to listen to.
+
 ## Release notes
 
 The workflow pushes a placeholder body (`releaseBody` in `.github/workflows/release.yml`).
