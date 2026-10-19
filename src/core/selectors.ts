@@ -552,7 +552,13 @@ export function gameStoresLabel(appNameOrTitle: string): string {
  * Deduplicated library size, excluding hidden games.
  * Copies of one title on Epic, GOG and Steam count once, matching the grid.
  */
+let totalCountRev = -1;
+let totalCountValue = 0;
+
 export function totalLibraryGamesCount(): number {
+  // The header shows this outside the library too, where the visible-count
+  // cache does not apply. Recompute only when the library itself changed.
+  if (totalCountRev === S.libraryDataRev) return totalCountValue;
   const seen = new Set<string>();
   let count = 0;
   const add = (key: string, title: string): void => {
@@ -573,6 +579,8 @@ export function totalLibraryGamesCount(): number {
       if (!activeOwnsKey(g.key)) add(g.key, g.title);
     }
   }
+  totalCountRev = S.libraryDataRev;
+  totalCountValue = count;
   return count;
 }
 
