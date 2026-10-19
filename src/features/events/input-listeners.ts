@@ -289,6 +289,17 @@ document.addEventListener("keydown", (e) => {
       render();
       return;
     }
+    // An open dropdown in the game page closes first: Escape on the `...` menu
+    // must not throw the whole page away.
+    if (S.isGameMoreMenuOpen || S.isVersionDropdownOpen) {
+      S.isGameMoreMenuOpen = false;
+      S.isVersionDropdownOpen = false;
+      document.getElementById("game-more-menu")?.classList.remove("show");
+      document.getElementById("version-dropdown-menu")?.classList.remove("show");
+      document.querySelector<HTMLElement>('[data-act="game-more-menu"]')?.setAttribute("aria-expanded", "false");
+      document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
+      return;
+    }
     closeModal();
   }
   if (e.key === "Enter") {
