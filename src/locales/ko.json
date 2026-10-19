@@ -2607,5 +2607,13 @@
   "compat.gameLayers": "Translation layers",
   "compat.gameLayersHint": "The global choice is inherited until you flip a switch; matching it again restores inheritance.",
   "compat.gamePrefixHint": "Empty uses the global prefix root plus the game name. Pick an existing prefix to reuse it.",
-  "compat.badPrefix": "Choose an absolute prefix folder."
+  "compat.badPrefix": "Choose an absolute prefix folder.",
+  "compat.preparePrefix": "Prepare prefix",
+  "compat.preparePrefixHint": "Create the Wine prefix now and copy the selected layers. Without this, a fresh prefix gets the layers on its second launch.",
+  "compat.prefixPreparing": "Preparing prefix… {seconds}s",
+  "compat.prefixReady": "Prefix ready.",
+  "compat.prefixFailed": "The prefix could not be prepared.",
+  "compat.prefixTimeout": "Prefix creation timed out. Try again.",
+  "compat.prepareWindows": "Prefix preparation is only available on Linux and macOS.",
+  "compat.noRunner": "No compatibility runner is selected."
 }

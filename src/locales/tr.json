@@ -2607,5 +2607,13 @@
   "compat.gameLayers": "Çeviri katmanları",
   "compat.gameLayersHint": "Bir anahtarı değiştirene kadar genel seçim geçerlidir; genel seçimle aynı hale getirince devralma geri döner.",
   "compat.gamePrefixHint": "Boş bırakılırsa genel kök ve oyun adı kullanılır. Var olan bir prefix'i yeniden kullanmak için seç.",
-  "compat.badPrefix": "Mutlak bir prefix klasörü seç."
+  "compat.badPrefix": "Mutlak bir prefix klasörü seç.",
+  "compat.preparePrefix": "Prefix'i hazırla",
+  "compat.preparePrefixHint": "Wine prefix'ini şimdi oluştur ve seçili katmanları kopyala. Bunu yapmazsan yeni prefix katmanları ikinci açılışta alır.",
+  "compat.prefixPreparing": "Prefix hazırlanıyor… {seconds} sn",
+  "compat.prefixReady": "Prefix hazır.",
+  "compat.prefixFailed": "Prefix hazırlanamadı.",
+  "compat.prefixTimeout": "Prefix oluşturma zaman aşımına uğradı. Tekrar dene.",
+  "compat.prepareWindows": "Prefix hazırlama yalnız Linux ve macOS'ta kullanılabilir.",
+  "compat.noRunner": "Uyumluluk çalıştırıcısı seçili değil."
 }

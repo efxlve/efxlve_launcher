@@ -119,6 +119,16 @@ export const compatGetGameConfig = (appName: string) =>
 export const compatSetGameConfig = (appName: string, config: GameCompatConfig) =>
   invoke<void>("compat_set_game_config", { appName, config });
 
+export interface CompatPrefixProgress {
+  appName: string;
+  phase: "starting" | "running" | "done" | "error";
+  elapsedSeconds: number;
+}
+
+/** Creates the game's Wine prefix now and applies the selected layers. */
+export const compatPreparePrefix = (appName: string) =>
+  invoke<string>("compat_prepare_prefix", { appName });
+
 export const compatSetLaunchConfig = (config: CompatLaunchConfig) =>
   invoke<void>("compat_set_launch_config", {
     enabled: config.enabled,

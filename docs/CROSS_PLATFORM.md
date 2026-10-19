@@ -219,7 +219,14 @@ paketinin çıktığı anlamına gelmez.
   hale gelince kayıt silinir ve oyun yine genel ayarı devralır. Prefix alanı
   boşsa genel kök ve oyun adı kullanılır; doluysa klasör olduğu gibi alınır,
   böylece Steam `compatdata` gibi var olan bir prefix yeniden kullanılabilir.
-- Windows'ta `launch_spec` boş döner; mevcut Windows yolu birebir korunur.
+- Oyun sayfasındaki "Prefix'i hazırla" düğmesi `compat_prepare_prefix`
+  komutunu çağırır: seçili çalıştırıcıyla `wineboot -u` çalışır, ilerleme
+  `compat-prefix-progress` olayıyla gelir, 180 saniyede zaman aşımına uğrar ve
+  sonra katmanları gerçek prefix'e kopyalar. Böylece yeni prefix'i ikinci
+  açılışı beklemeden hazırlamak mümkün. İlk normal açılış hâlâ prefix'i kendi
+  kurar; otomatik ilk açılış entegrasyonu açık.
+- Windows'ta `launch_spec` ve `compat_prepare_prefix` başlatma yapmaz; mevcut
+  Windows yolu birebir korunur ve hazırlama komutu açık bir hata döndürür.
 
 ### 8.4 Arayüz
 Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştırıcılar,

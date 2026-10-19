@@ -137,6 +137,14 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   algılanırsa oraya kopyalanıyor; ilk açılışta prefix kurulursa katmanlar ancak
   sonraki açılışta devreye giriyor. Otomatik `wineboot` hâlâ açık. Gerçek prefix
   testi Linux/macOS donanımı istiyor.
+- **Prefix hazırlama:** Oyun kartına "Prefix'i hazırla" düğmesi eklendi. Seçili
+  çalıştırıcıyla `wineboot -u` çalışıyor; başlangıç/çalışıyor/bitti/hata
+  aşamaları `compat-prefix-progress` olayıyla, saniye sayacıyla geliyor.
+  180 saniye sonra süreç öldürülüp yeniden denenebilir bir hata dönüyor. Stderr
+  ayrı iş parçacığında boşaltılıyor, böylece dolu boru wineboot'u kilitlemiyor.
+  Düğme, kaydedilmemiş prefix alanını önce yazıyor; hızlı çalıştırıcı
+  değişiklikleri için config kayıtları sıraya alındı. Otomatik ilk açılış
+  entegrasyonu hâlâ açık.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

@@ -9,10 +9,13 @@
 //! Windows path keeps using its own wrapper/relay logic unchanged.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 use super::catalog::Target;
 use super::install::compat_root;
@@ -504,6 +507,147 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     spec
 }
 
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PrefixProgress {
+    app_name: String,
+    phase: &'static str,
+    elapsed_seconds: u64,
+}
+
+fn emit_prefix_progress(
+    app: &AppHandle,
+    app_name: &str,
+    phase: &'static str,
+    elapsed_seconds: u64,
+) {
+    let _ = app.emit(
+        "compat-prefix-progress",
+        PrefixProgress {
+            app_name: app_name.to_string(),
+            phase,
+            elapsed_seconds,
+        },
+    );
+}
+
+/// The command that creates a prefix for a runner folder. Proton uses its own
+/// script; a Wine build exposes `wine64`/`wine` and takes `wineboot` directly.
+fn prefix_init_program(dir: &Path) -> Option<(PathBuf, Vec<String>)> {
+    let proton = dir.join("proton");
+    if proton.is_file() {
+        return Some((
+            proton,
+            vec!["run".to_string(), "wineboot".to_string(), "-u".to_string()],
+        ));
+    }
+    for wine in [dir.join("bin/wine64"), dir.join("bin/wine")] {
+        if wine.is_file() {
+            return Some((wine, vec!["wineboot".to_string(), "-u".to_string()]));
+        }
+    }
+    None
+}
+
+/// Creates a game's Wine prefix now and copies the selected layers afterwards.
+/// This is the explicit alternative to waiting for the game's first launch:
+/// without it, layers enabled on a fresh prefix only apply on the second run.
+#[tauri::command]
+pub async fn compat_prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || prepare_prefix(app, app_name))
+        .await
+        .map_err(|_| "@t:compat.prefixFailed".to_string())?
+}
+
+fn prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
+    if cfg!(windows) {
+        return Err("@t:compat.prepareWindows".to_string());
+    }
+    let spec = launch_spec(&app, &app_name);
+    let Some(prefix) = spec.env.get("WINEPREFIX").map(PathBuf::from) else {
+        return Err("@t:compat.noRunner".to_string());
+    };
+    if layer_prefix_root(&prefix).is_some() {
+        // `launch_spec` runs deploy_layers now that the prefix exists.
+        let _ = launch_spec(&app, &app_name);
+        emit_prefix_progress(&app, &app_name, "done", 0);
+        return Ok(prefix.display().to_string());
+    }
+
+    let Some(runner_dir) = spec.env.get("PROTONPATH").map(PathBuf::from) else {
+        return Err("@t:compat.noRunner".to_string());
+    };
+    let Some((program, args)) = prefix_init_program(&runner_dir) else {
+        return Err("@t:compat.noRunner".to_string());
+    };
+    std::fs::create_dir_all(&prefix).map_err(|_| "@t:compat.prefixFailed".to_string())?;
+
+    emit_prefix_progress(&app, &app_name, "starting", 0);
+    let mut command = Command::new(&program);
+    command
+        .args(&args)
+        .envs(&spec.env)
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+    let mut child = command.spawn().map_err(|_| {
+        emit_prefix_progress(&app, &app_name, "error", 0);
+        "@t:compat.prefixFailed".to_string()
+    })?;
+    // Drain stderr on its own thread; a full pipe would block a chatty wineboot.
+    let stderr = child.stderr.take().map(|mut pipe| {
+        std::thread::spawn(move || {
+            let mut text = String::new();
+            let _ = pipe.read_to_string(&mut text);
+            text
+        })
+    });
+
+    let started = Instant::now();
+    let mut last_second = 0;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) => {
+                if started.elapsed() >= Duration::from_secs(180) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    emit_prefix_progress(&app, &app_name, "error", started.elapsed().as_secs());
+                    return Err("@t:compat.prefixTimeout".to_string());
+                }
+                let seconds = started.elapsed().as_secs();
+                if seconds != last_second {
+                    last_second = seconds;
+                    emit_prefix_progress(&app, &app_name, "running", seconds);
+                }
+                std::thread::sleep(Duration::from_millis(500));
+            }
+            Err(_) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                emit_prefix_progress(&app, &app_name, "error", started.elapsed().as_secs());
+                return Err("@t:compat.prefixFailed".to_string());
+            }
+        }
+    }
+
+    let detail = stderr
+        .and_then(|handle| handle.join().ok())
+        .unwrap_or_default();
+    if layer_prefix_root(&prefix).is_none() {
+        if !detail.trim().is_empty() {
+            eprintln!("[compat] wineboot failed for {app_name}: {}", detail.trim());
+        }
+        emit_prefix_progress(&app, &app_name, "error", started.elapsed().as_secs());
+        return Err("@t:compat.prefixFailed".to_string());
+    }
+
+    // The prefix now has system.reg, so the normal launcher path can copy the
+    // chosen DXVK/VKD3D DLLs into it.
+    let _ = launch_spec(&app, &app_name);
+    emit_prefix_progress(&app, &app_name, "done", started.elapsed().as_secs());
+    Ok(prefix.display().to_string())
+}
+
 pub(crate) fn valid_runner(id: &str) -> bool {
     matches!(id, "ge-proton" | "proton-cachyos" | "wine-staging")
 }
@@ -680,6 +824,37 @@ mod tests {
         assert!(args.is_empty());
 
         assert!(runner_program("ge-proton", &root.join("missing")).is_none());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_runner_folder_yields_the_prefix_init_command() {
+        let root = std::env::temp_dir().join(format!("efxlve_prefix_init_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let proton_dir = root.join("proton");
+        std::fs::create_dir_all(&proton_dir).unwrap();
+        std::fs::write(proton_dir.join("proton"), b"#!/bin/sh").unwrap();
+        let (program, args) = prefix_init_program(&proton_dir).expect("proton");
+        assert_eq!(program, proton_dir.join("proton"));
+        assert_eq!(
+            args,
+            vec!["run".to_string(), "wineboot".to_string(), "-u".to_string()]
+        );
+
+        let wine_dir = root.join("wine");
+        std::fs::create_dir_all(wine_dir.join("bin")).unwrap();
+        std::fs::write(wine_dir.join("bin/wine64"), b"#!/bin/sh").unwrap();
+        let (program, args) = prefix_init_program(&wine_dir).expect("wine");
+        assert_eq!(program, wine_dir.join("bin/wine64"));
+        assert_eq!(args, vec!["wineboot".to_string(), "-u".to_string()]);
+
+        std::fs::remove_file(wine_dir.join("bin/wine64")).unwrap();
+        std::fs::write(wine_dir.join("bin/wine"), b"#!/bin/sh").unwrap();
+        let (program, args) = prefix_init_program(&wine_dir).expect("wine32");
+        assert_eq!(program, wine_dir.join("bin/wine"));
+        assert_eq!(args, vec!["wineboot".to_string(), "-u".to_string()]);
+
+        assert!(prefix_init_program(&root.join("missing")).is_none());
         let _ = std::fs::remove_dir_all(&root);
     }
 

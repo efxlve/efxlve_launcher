@@ -8,7 +8,10 @@
  * Settings page uses.
  */
 
+import { listen } from "@tauri-apps/api/event";
+import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
+import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -18,8 +21,10 @@ import {
   compatCatalog,
   compatGetGameConfig,
   compatGetLaunchConfig,
+  compatPreparePrefix,
   compatSetGameConfig,
   type CompatCatalog,
+  type CompatPrefixProgress,
   type CompatToolInfo,
   type GameCompatConfig,
 } from "../../compat";
@@ -36,11 +41,44 @@ const LAYER_NAMES: Record<string, string> = {
 };
 
 const configs = new Map<string, GameCompatConfig>();
+/** Saves are queued so a prepare never reads an older runner than the UI. */
+const pendingSaves = new Map<string, Promise<void>>();
 let catalog: CompatCatalog | null = null;
 /** The global layer choice, shown as the inherited state of a game's switches. */
 let globalLayers: string[] = [];
 /** The global prefix root, shown as the placeholder of a game's prefix field. */
 let globalPrefixDir: string | null = null;
+/** The one game whose prefix is being created right now. */
+let preparingPrefix: string | null = null;
+let prefixListenerStarted = false;
+
+function setPrefixStatus(text: string, busy: boolean): void {
+  const el = document.querySelector<HTMLElement>(
+    "#game-compat-card .game-compat-prefix-status",
+  );
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle("busy", busy);
+}
+
+function ensurePrefixProgressListener(): void {
+  if (prefixListenerStarted || !isTauri) return;
+  prefixListenerStarted = true;
+  void listen<CompatPrefixProgress>("compat-prefix-progress", (event) => {
+    const data = event.payload;
+    if (data.appName !== S.currentModalAppName) return;
+    if (data.phase === "starting" || data.phase === "running") {
+      setPrefixStatus(
+        t("compat.prefixPreparing", { seconds: data.elapsedSeconds }),
+        true,
+      );
+    } else if (data.phase === "done") {
+      setPrefixStatus(t("compat.prefixReady"), false);
+    } else if (data.phase === "error") {
+      setPrefixStatus("", false);
+    }
+  }).catch(() => {});
+}
 
 function runnerName(id: string): string {
   return RUNNER_NAMES[id] ?? id;
@@ -160,11 +198,13 @@ function cardBody(appName: string, config: GameCompatConfig): string {
       <div class="row-main">
         <div class="row-title">${esc(t("compat.prefix"))}</div>
         <div class="row-meta">${esc(t("compat.gamePrefixHint"))}</div>
+        <div class="row-meta game-compat-prefix-status" aria-live="polite"></div>
       </div>
       <div class="row-actions game-compat-path-actions">
         <input class="input settings-path-input game-compat-prefix" value="${esc(config.prefixDir ?? "")}" placeholder="${esc(globalPrefixDir ?? "")}" spellcheck="false" autocomplete="off" aria-label="${esc(t("compat.prefix"))}" />
         <button type="button" class="btn ghost small" data-act="game-compat-prefix-pick" data-id="${esc(appName)}">${esc(t("common.browse"))}</button>
         <button type="button" class="btn primary small" data-act="game-compat-prefix-save" data-id="${esc(appName)}">${esc(t("common.save"))}</button>
+        <button type="button" class="btn ghost small" data-act="game-compat-prefix-prepare" data-id="${esc(appName)}" title="${esc(t("compat.preparePrefixHint"))}">${esc(t("compat.preparePrefix"))}</button>
       </div>
     </div>
     ${
@@ -179,6 +219,10 @@ function cardBody(appName: string, config: GameCompatConfig): string {
 }
 
 export function renderGameCompatCard(s: EpicSummary): string {
+  // Only the launcher-managed stores go through `launch_spec`; Steam and the
+  // companion clients start their own games, so the card would be inert there.
+  const source = sourceOfKey(s.appName);
+  if (source !== "epic" && source !== "gog" && source !== "amazon") return "";
   return `
     <section class="card game-compat-card" id="game-compat-card" data-app="${esc(s.appName)}">
       <h3 class="gp-section-title">${icon("settings", 14)} ${esc(t("compat.gameTitle"))}</h3>
@@ -213,6 +257,10 @@ export async function hydrateGameCompatCard(appName: string): Promise<void> {
     }
     const body = card.querySelector<HTMLElement>("#game-compat-body");
     if (body) body.innerHTML = cardBody(appName, config);
+    if (preparingPrefix === appName) {
+      setPrefixStatus(t("compat.prefixPreparing", { seconds: 0 }), true);
+    }
+    ensurePrefixProgressListener();
   } catch {
     // A missing catalogue is not worth a red box on the System tab; the global
     // settings still work and the next open retries.
@@ -237,12 +285,19 @@ function saveGameConfig(
   rollback: () => void,
 ): void {
   configs.set(appName, next);
-  void compatSetGameConfig(appName, next)
+  const queued = (pendingSaves.get(appName) ?? Promise.resolve())
+    .catch(() => {})
+    .then(() => compatSetGameConfig(appName, next));
+  pendingSaves.set(appName, queued);
+  void queued
     .then(() => toast(t("compat.gameSaved"), "ok"))
     .catch((error) => {
       configs.set(appName, previous);
       rollback();
       toast(String(error), "err");
+    })
+    .finally(() => {
+      if (pendingSaves.get(appName) === queued) pendingSaves.delete(appName);
     });
 }
 
@@ -259,11 +314,51 @@ function savePrefix(appName: string, prefixDir: string | null): void {
   });
 }
 
-export function handleGameCompatClick(act: string | undefined, el: HTMLElement): boolean {
-  if (act !== "game-compat-prefix-pick" && act !== "game-compat-prefix-save") return false;
-  const appName = el.dataset.id ?? "";
-  if (!appName) return true;
+function startPrepare(appName: string): void {
   const config = configs.get(appName) ?? emptyConfig();
+  const input = prefixInput();
+  const prefixDir = input?.value.trim() || null;
+  preparingPrefix = appName;
+  setPrefixStatus(t("compat.prefixPreparing", { seconds: 0 }), true);
+  void (async () => {
+    try {
+      await pendingSaves.get(appName)?.catch(() => {});
+      const next = {
+        ...(configs.get(appName) ?? config),
+        prefixDir: input?.value.trim() || null,
+      };
+      configs.set(appName, next);
+      await compatSetGameConfig(appName, next);
+      await compatPreparePrefix(appName);
+      setPrefixStatus(t("compat.prefixReady"), false);
+      toast(t("compat.prefixReady"), "ok");
+    } catch (error) {
+      configs.set(appName, config);
+      if (input) input.value = config.prefixDir ?? "";
+      setPrefixStatus("", false);
+      toast(String(error), "err");
+    } finally {
+      preparingPrefix = null;
+    }
+  })();
+}
+
+export function handleGameCompatClick(act: string | undefined, el: HTMLElement): boolean {
+  if (
+    act !== "game-compat-prefix-pick" &&
+    act !== "game-compat-prefix-save" &&
+    act !== "game-compat-prefix-prepare"
+  ) {
+    return false;
+  }
+  const appName = el.dataset.id ?? "";
+  if (!appName || preparingPrefix === appName) return true;
+  const config = configs.get(appName) ?? emptyConfig();
+
+  if (act === "game-compat-prefix-prepare") {
+    startPrepare(appName);
+    return true;
+  }
 
   if (act === "game-compat-prefix-pick") {
     void (async () => {
@@ -289,7 +384,7 @@ export function handleGameCompatChange(el: HTMLElement): boolean {
   const act = el.dataset.act;
   if (act !== "game-compat-runner" && act !== "game-compat-layer") return false;
   const appName = el.dataset.id ?? "";
-  if (!appName) return true;
+  if (!appName || preparingPrefix === appName) return true;
   const config = configs.get(appName) ?? emptyConfig();
 
   if (act === "game-compat-runner") {
