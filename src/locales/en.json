@@ -579,6 +579,7 @@
   "sys.languages": "Supported Languages",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "System Requirements",
   "sys.minTitle": "Minimum Requirements",
   "sys.minHint": "Baseline hardware needed to open and play the game",
   "sys.recTitle": "Recommended Requirements",

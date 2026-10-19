@@ -24,6 +24,7 @@ import { steamNews, type SteamNewsItem } from "../../steam";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
+import { sideCard } from "./side-widgets";
 import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
@@ -1199,24 +1200,16 @@ export function renderDrawerOverview(
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
-        <section class="card gp-side-card gp-scores-card gp-lengths-card">
-          <h3 class="gp-section-title">${icon("clock", 13)} <span>${t("hltb.times")}</span></h3>
-          ${hltbBlock}
-        </section>
-        <section class="card gp-side-card gp-scores-card gp-critic-card">
-          <h3 class="gp-section-title">${icon("star", 13)} <span>${t("critic.scoresTitle")}</span></h3>
-          ${criticBlock}
-        </section>
-        ${renderDrawerFeatures(s, partner, antiCheat)}
-        <section class="card gp-side-card">
-          <h3 class="gp-section-title">${icon("layers", 13)} <span>${t("sys.thisCopy")}</span></h3>
-          ${renderInstalledCopyFacts(s)}
-        </section>
-        <div id="sys-req-body">${renderRequirementsBody(s)}</div>
+        ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock)}
+        ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock)}
+        ${sideCard(s.appName, "features", t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
+        ${sideCard(s.appName, "copy", t("sys.thisCopy"), "layers", renderInstalledCopyFacts(s))}
+        ${sideCard(s.appName, "requirements", t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`)}
       </aside>
     </div>`;
 }
 
+/** The features list alone: the sidebar wraps it in a card that folds. */
 function renderDrawerFeatures(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null,
@@ -1224,11 +1217,7 @@ function renderDrawerFeatures(
 ): string {
   const g = rawOf(s.appName);
   const reqData = S.loadedRequirements.get(s.appName);
-  return `
-    <section class="card gp-side-card gp-features-card">
-      <h3 class="gp-section-title">${t("drawer.featuresSupport")}</h3>
-      <div class="hub-features-list" id="hub-features-list">${renderGameFeatures(s, g, partner, antiCheat, reqData, igdbTagsFor(s.appName))}</div>
-    </section>`;
+  return `<div class="hub-features-list" id="hub-features-list">${renderGameFeatures(s, g, partner, antiCheat, reqData, igdbTagsFor(s.appName))}</div>`;
 }
 
 export function renderDrawerDlcs(s: EpicSummary): string {

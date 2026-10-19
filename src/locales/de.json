@@ -550,6 +550,7 @@
   "sys.languages": "Unterstützte Sprachen",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "Systemanforderungen",
   "sys.minTitle": "Mindestanforderungen",
   "sys.minHint": "Hardware, die zum Öffnen und Spielen nötig ist",
   "sys.recTitle": "Empfohlene Anforderungen",

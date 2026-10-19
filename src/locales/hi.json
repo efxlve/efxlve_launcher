@@ -579,6 +579,7 @@
   "sys.languages": "समर्थित भाषाएं",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "सिस्टम आवश्यकताएँ",
   "sys.minTitle": "न्यूनतम आवश्यकताएं",
   "sys.minHint": "गेम खोलने और खेलने के लिए आवश्यक बुनियादी हार्डवेयर",
   "sys.recTitle": "अनुशंसित आवश्यकताएं",

@@ -550,6 +550,7 @@
   "sys.languages": "支持的语言",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "系统需求",
   "sys.minTitle": "最低配置",
   "sys.minHint": "打开并游玩游戏所需的基本硬件",
   "sys.recTitle": "推荐配置",

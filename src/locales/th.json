@@ -550,6 +550,7 @@
   "sys.languages": "ภาษาที่รองรับ",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "ความต้องการของระบบ",
   "sys.minTitle": "ความต้องการขั้นต่ำ",
   "sys.minHint": "ฮาร์ดแวร์พื้นฐานที่ต้องใช้เพื่อเปิดและเล่นเกม",
   "sys.recTitle": "ความต้องการที่แนะนำ",

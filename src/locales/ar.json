@@ -550,6 +550,7 @@
   "sys.languages": "اللغات المدعومة",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "متطلبات النظام",
   "sys.minTitle": "الحد الأدنى من المتطلبات",
   "sys.minHint": "العتاد الأساسي اللازم لفتح اللعبة ولعبها",
   "sys.recTitle": "المتطلبات الموصى بها",

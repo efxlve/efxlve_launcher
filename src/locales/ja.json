@@ -550,6 +550,7 @@
   "sys.languages": "対応言語",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "動作環境",
   "sys.minTitle": "最小要件",
   "sys.minHint": "ゲームを起動してプレイするために必要な基本ハードウェア",
   "sys.recTitle": "推奨要件",

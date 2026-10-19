@@ -16,6 +16,7 @@ import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
 import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
+import { toggleSideWidget } from "../../drawer/side-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
 import {
   epicAchievementsUrl,
@@ -140,6 +141,17 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       document.getElementById("version-dropdown-menu")?.classList.toggle("show", S.isVersionDropdownOpen);
       document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", String(S.isVersionDropdownOpen));
       return true;
+
+    case "toggle-side-widget": {
+      // Folded or open is the reader's choice per game, so it is remembered per
+      // game and the card toggles in place: no repaint, no scroll jump.
+      const appName = t.dataset.id ?? "";
+      const widget = t.dataset.widget ?? "";
+      const folded = toggleSideWidget(appName, widget);
+      t.closest<HTMLElement>(".gp-foldable")?.classList.toggle("is-folded", folded);
+      t.setAttribute("aria-expanded", String(!folded));
+      return true;
+    }
 
     case "toggle-about": {
       const appName = t.dataset.id ?? S.currentModalAppName ?? "";

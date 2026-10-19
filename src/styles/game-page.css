@@ -871,6 +871,23 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-scores-card .drawer-critic-body, .gp-scores-card .drawer-hltb-body { min-width: 0; }
 .gp-scores-pill-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 
+/* ---------- Folding sidebar cards ---------- */
+
+/* Every sidebar card folds, and the choice is remembered per game: a reader who
+   folds the requirements on one title still wants them on the next. */
+.gp-fold-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 0; border: none; background: transparent; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.gp-fold-head .gp-section-title { margin: 0; }
+.gp-fold-head:hover .gp-section-title { color: var(--text); }
+.gp-fold-chevron { display: inline-flex; color: var(--text-3); transition: transform 160ms ease; }
+.gp-foldable.is-folded .gp-fold-chevron { transform: rotate(-90deg); }
+.gp-fold-body { margin-top: 12px; }
+.gp-foldable.is-folded .gp-fold-body { display: none; }
+@media (prefers-reduced-motion: reduce) { .gp-fold-chevron { transition: none; } }
+
 /* A card whose own block came back empty: it has nothing to frame. */
 .gp-scores-card.is-empty { display: none; }
 

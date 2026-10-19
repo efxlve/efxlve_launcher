@@ -579,6 +579,7 @@
   "sys.languages": "Desteklenen Diller",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "Sistem Gereksinimleri",
   "sys.minTitle": "Minimum Gereksinimler",
   "sys.minHint": "Oyunu açıp oynamak için gereken temel donanım",
   "sys.recTitle": "Önerilen Gereksinimler",

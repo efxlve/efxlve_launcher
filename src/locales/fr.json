@@ -550,6 +550,7 @@
   "sys.languages": "Langues prises en charge",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "Configuration requise",
   "sys.minTitle": "Configuration minimale",
   "sys.minHint": "Matériel de base pour ouvrir et jouer",
   "sys.recTitle": "Configuration recommandée",

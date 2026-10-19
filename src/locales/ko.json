@@ -550,6 +550,7 @@
   "sys.languages": "지원 언어",
   "sys.windowsPc": "Windows (PC)",
   "sys.macos": "macOS",
+  "sys.reqCardTitle": "시스템 요구 사항",
   "sys.minTitle": "최소 사양",
   "sys.minHint": "게임을 열고 플레이하는 데 필요한 기본 하드웨어",
   "sys.recTitle": "권장 사양",
