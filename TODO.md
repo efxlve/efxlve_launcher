@@ -324,8 +324,9 @@ Still open:
   "Launching…" if preparation fails. Real Linux/macOS hardware still has to
   confirm the Proton/umu prefix layout.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
-- Hardware reports have a starting point: the game card can copy a text
-  diagnostics block (runner, prefix, Wine root, layer paths) with no credentials.
+- Hardware reports have a starting point: Settings → Compatibility and the game
+  card can copy text diagnostics (platform, runner, prefix, Wine root, tool and
+  layer paths) with no credentials.
 - ProtonDB, Steam Deck (Valve's own Verified/Playable/Unsupported report) and
   Are We Anti-Cheat Yet? badges shipped. ProtonDB and Steam Deck cover Steam;
   anti-cheat covers Steam and the 73 Epic entries in Valve's catalogue, each

@@ -116,6 +116,8 @@ export const compatGamePrefixState = (appName: string) =>
 export const compatGameDiagnostics = (appName: string) =>
   invoke<string>("compat_game_diagnostics", { appName });
 
+export const compatDiagnostics = () => invoke<string>("compat_diagnostics");
+
 export interface GameCompatConfig {
   /** `null` means "use the global runner". */
   runner: string | null;

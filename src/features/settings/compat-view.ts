@@ -25,6 +25,7 @@ import {
   compatCancel,
   compatCatalog,
   compatClearPartials,
+  compatDiagnostics,
   compatDiskUsage,
   compatGetLaunchConfig,
   compatInstall,
@@ -401,6 +402,7 @@ function renderLaunchConfig(): string {
           <div class="settings-row-desc">${esc(t("compat.diskUsageDesc", { size: diskUsage === null ? "—" : fmtBytes(diskUsage) }))}</div>
         </div>
         <div class="settings-row-control">
+          <button type="button" class="btn ghost small" data-act="compat-copy-diagnostics" title="${esc(t("compat.diagnosticsHint"))}">${icon("clipboard", 12)} ${esc(t("compat.diagnostics"))}</button>
           <button type="button" class="btn ghost small" data-act="compat-clear-partials">${esc(t("compat.clearPartials"))}</button>
         </div>
       </div>
@@ -660,6 +662,13 @@ export function handleCompatAction(act: string | undefined, el: HTMLElement): bo
     void compatToolsDir()
       .then((path) => epicOpenFolderPath(path))
       .catch(() => undefined);
+    return true;
+  }
+  if (act === "compat-copy-diagnostics") {
+    void compatDiagnostics()
+      .then((text) => navigator.clipboard.writeText(text))
+      .then(() => toast(t("compat.diagnosticsCopied"), "ok"))
+      .catch((error) => toast(String(error), "err"));
     return true;
   }
   if (act === "compat-clear-partials") {

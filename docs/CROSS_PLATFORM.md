@@ -224,6 +224,9 @@ paketinin çıktığı anlamına gelmez.
   durum yazısı prefix'in hazır olup olmadığını gösterir. "Tanılamayı kopyala"
   düğmesi çalıştırıcı, prefix, Wine kökü ve katman yollarını kimlik bilgisi
   içermeyen düz metin olarak panoya verir; Linux/macOS hata bildirimleri için.
+  Settings → Uyumluluk sayfasındaki "Tanılamayı kopyala" düğmesi de platform,
+  hedef, araç klasörü, yönetilen sürümler, algılanan sistem çalıştırıcıları ve
+  başlatma ayarlarını aynı biçimde kopyalar.
 - Oyun sayfasındaki "Prefix'i hazırla" düğmesi `compat_prepare_prefix`
   komutunu çağırır: seçili çalıştırıcıyla `wineboot -u` çalışır, ilerleme
   `compat-prefix-progress` olayıyla gelir, 180 saniyede zaman aşımına uğrar ve

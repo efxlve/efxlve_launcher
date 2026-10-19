@@ -178,7 +178,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   yolunu, `system.reg` durumunu, `launch_spec` ortamını ve katman klasörlerini
   düz metin olarak döndürüyor. Oyun kartındaki düğme bunu panoya kopyalıyor;
   kimlik bilgisi içermiyor. Linux/macOS donanım testinde hata bildirimini
-  hızlandırmak için eklendi.
+  hızlandırmak için eklendi. Settings → Uyumluluk sayfasındaki genel
+  `compat_diagnostics` ise platform, hedef, araç kökü, yönetilen sürümler,
+  algılanan sistem çalıştırıcıları ve başlatma ayarlarını listeliyor.
 - **Prefix durumu:** `compat_game_prefix_state` oyunun gerçek prefix yolunu ve
   `system.reg` var mı bilgisini döndürüyor. Kart bunu "Prefix hazır." /
   "Prefix henüz oluşturulmadı." olarak gösteriyor; prefix kaydı ve hazırlama

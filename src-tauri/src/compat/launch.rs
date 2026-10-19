@@ -740,6 +740,97 @@ pub fn compat_game_prefix_state(app: AppHandle, app_name: String) -> GamePrefixS
     }
 }
 
+/// Global compatibility facts for a bug report: configured runner, prefix root,
+/// managed tools and detected system runners. No credentials.
+#[tauri::command]
+pub fn compat_diagnostics(app: AppHandle) -> String {
+    let settings = crate::load_settings(&app);
+    let target = Target::current();
+    let root = compat_root(&app);
+    let prefix_root = settings
+        .compat_prefix_dir
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(default_prefix_dir);
+
+    let mut lines = Vec::new();
+    lines.push(format!(
+        "platform: {}-{}",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    ));
+    lines.push(format!("target: {}", target.key()));
+    lines.push(format!("tools_dir: {}", root.display()));
+    lines.push(format!("prefix_root: {}", prefix_root.display()));
+    lines.push(format!(
+        "compat_enabled: {}",
+        settings.compat_runner_enabled.unwrap_or(true)
+    ));
+    lines.push(format!(
+        "runner: {}",
+        settings.compat_runner.as_deref().unwrap_or("-")
+    ));
+    lines.push(format!(
+        "runner_path: {}",
+        settings.compat_runner_path.as_deref().unwrap_or("-")
+    ));
+    lines.push(format!(
+        "runner_tag: {}",
+        settings.compat_runner_tag.as_deref().unwrap_or("-")
+    ));
+    lines.push(format!(
+        "umu_enabled: {}",
+        settings.compat_umu_enabled.unwrap_or(true)
+    ));
+    lines.push(format!("layers: {}", settings.compat_layers.join(",")));
+
+    let target_root = root.join(target.key());
+    let mut installed = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&target_root) {
+        for entry in entries.flatten() {
+            if !entry.path().is_dir() {
+                continue;
+            }
+            let id = entry.file_name().to_string_lossy().to_string();
+            if id.starts_with('.') {
+                continue;
+            }
+            if let Ok(tags) = std::fs::read_dir(entry.path()) {
+                for tag in tags.flatten() {
+                    if tag.path().is_dir() {
+                        installed.push(format!(
+                            "installed_{id}_{}: {}",
+                            tag.file_name().to_string_lossy(),
+                            tag.path().display()
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    installed.sort();
+    lines.extend(installed);
+
+    let mut detected = Vec::new();
+    for id in [
+        "ge-proton",
+        "proton-cachyos",
+        "wine-staging",
+        "wine-crossover",
+        "umu-launcher",
+    ] {
+        for path in super::install::detected_runner_paths(id) {
+            detected.push(format!("detected_{id}: {path}"));
+        }
+    }
+    detected.sort();
+    lines.extend(detected);
+
+    lines.join("\n")
+}
+
 /// Plain-text facts for a bug report: no credentials, only paths and decisions.
 #[tauri::command]
 pub fn compat_game_diagnostics(app: AppHandle, app_name: String) -> String {
