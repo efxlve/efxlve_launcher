@@ -256,10 +256,6 @@ export function reloadClips(): void {
   loadClips();
 }
 
-export function pageClips(): ClipItem[] {
-  return clips;
-}
-
 function clipsSectionHtml(): string {
   if (!clipsLoaded) loadClips();
   const rows = clips.length

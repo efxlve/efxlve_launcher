@@ -31,11 +31,6 @@ export function cachedImage(url: string | null | undefined): string {
   return cachedPictures.get(url) ?? url;
 }
 
-/** True when this URL already paints from disk. */
-export function isImageCached(url: string): boolean {
-  return cachedPictures.has(url);
-}
-
 /**
  * Asks for a batch of pictures in the background and swaps whatever is on screen
  * when the answers land. Safe to call with duplicates, `null`s and data URLs.

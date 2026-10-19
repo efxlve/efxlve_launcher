@@ -10,7 +10,6 @@
 import { SS_DENSITY_KEY, SS_SORT_KEY } from "../../../core/constants";
 import { t } from "../../../i18n";
 import { toast } from "../../../core/toast";
-import { icon } from "../../../core/icons";
 import { S } from "../../../core/state";
 import {
   clearPageSelection,
@@ -28,7 +27,6 @@ import {
   openClipTrim,
   openPageLightbox,
   openPageShotFolder,
-  pageLightboxOpen,
   pageLightboxShot,
   repaintScreenshotsPage,
   saveClipJoin,
@@ -349,12 +347,4 @@ export function handleScreenshotsPageAction(
     default:
       return false;
   }
-}
-
-/** Exported for the page module's own lightbox markup. */
-export const pageIcons = { icon };
-
-/** True while the page's lightbox owns Escape. */
-export function pageLightboxOwnsEscape(): boolean {
-  return pageLightboxOpen();
 }

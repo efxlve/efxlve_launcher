@@ -537,11 +537,6 @@ export function isMultiplayerOnlyMode(mode: GameMode | null): boolean {
   return mode === "multiplayer" || mode === "battleRoyale" || mode === "mmo" || mode === "multi4v1" || mode === "multiAsym";
 }
 
-/** @deprecated Replaced by renderHltbCard */
-export function renderProgressStrip(s: EpicSummary): string {
-  return renderHltbCard(S.loadedHltb.get(s.appName), S.loadingHltbFor === s.appName);
-}
-
 /**
  * What the last session left behind: how long it ran and what it unlocked. The
  * page could already say "289 hours in total"; this says "1h 40m, 3 hours ago,
