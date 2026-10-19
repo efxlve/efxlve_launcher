@@ -8,10 +8,10 @@
 //! Nothing here runs on Windows: `launch_spec` returns an empty spec, so the
 //! Windows path keeps using its own wrapper/relay logic unchanged.
 
-use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Path, PathBuf};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 use super::catalog::Target;
@@ -29,6 +29,8 @@ pub struct CompatLaunchConfig {
     pub runner_path: Option<String>,
     pub prefix_dir: String,
     pub umu_enabled: bool,
+    /// Translation layers copied into each game's prefix.
+    pub layers: Vec<String>,
 }
 
 /// What the store launcher prepends to the game command.
@@ -170,6 +172,113 @@ fn detected_runner(id: &str) -> Option<PathBuf> {
         .find(|path| path.is_dir())
 }
 
+fn valid_layer(id: &str) -> bool {
+    matches!(id, "dxvk" | "vkd3d-proton")
+}
+
+fn tool_dir(app: &AppHandle, target: &Target, id: &str) -> Option<PathBuf> {
+    let tag = installed_tag(app, target, id)?;
+    let dir = compat_root(app).join(target.key()).join(id).join(tag);
+    dir.is_dir().then_some(dir)
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LayerMarker {
+    layers: Vec<String>,
+    overrides: String,
+}
+
+/// Copies the selected layer DLLs into the prefix's system folders and returns
+/// the `WINEDLLOVERRIDES` value the launch needs. This runs only when the user
+/// enabled a layer; a marker keeps later launches from copying the same files
+/// again. A missing/removed marker or DLL falls back to a fresh copy.
+fn deploy_layers(
+    prefix: &Path,
+    layers: &[String],
+    dirs: &[(String, PathBuf)],
+) -> Result<String, String> {
+    let wanted: BTreeSet<&str> = layers
+        .iter()
+        .map(String::as_str)
+        .filter(|id| valid_layer(id))
+        .collect();
+    if wanted.is_empty() {
+        return Ok(String::new());
+    }
+    let system32 = prefix.join("drive_c/windows/system32");
+    let syswow64 = prefix.join("drive_c/windows/syswow64");
+    let marker_path = prefix.join(".efxlve-layers.json");
+
+    if let Ok(text) = std::fs::read_to_string(&marker_path) {
+        if let Ok(marker) = serde_json::from_str::<LayerMarker>(&text) {
+            let got: BTreeSet<&str> = marker.layers.iter().map(String::as_str).collect();
+            let files_ok = marker
+                .overrides
+                .split(',')
+                .filter(|value| !value.is_empty())
+                .all(|value| {
+                    let name = value.split('=').next().unwrap_or("");
+                    !name.is_empty()
+                        && (system32.join(format!("{name}.dll")).is_file()
+                            || syswow64.join(format!("{name}.dll")).is_file())
+                });
+            if got == wanted && files_ok {
+                return Ok(marker.overrides);
+            }
+        }
+    }
+
+    std::fs::create_dir_all(&system32).map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(&syswow64).map_err(|error| error.to_string())?;
+    let mut overrides = BTreeSet::new();
+    let mut deployed = Vec::new();
+    for (id, dir) in dirs {
+        if !wanted.contains(id.as_str()) {
+            continue;
+        }
+        let mut copied = false;
+        for (arch, target) in [("x64", &system32), ("x32", &syswow64)] {
+            let Ok(entries) = std::fs::read_dir(dir.join(arch)) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                let source = entry.path();
+                let name = entry.file_name().to_string_lossy().to_string();
+                if !source.is_file() || !name.to_ascii_lowercase().ends_with(".dll") {
+                    continue;
+                }
+                std::fs::copy(&source, target.join(&name)).map_err(|error| error.to_string())?;
+                let stem = name
+                    .rsplit_once('.')
+                    .map(|(value, _)| value)
+                    .unwrap_or(&name);
+                overrides.insert(stem.to_string());
+                copied = true;
+            }
+        }
+        if copied {
+            deployed.push(id.clone());
+        }
+    }
+    if deployed.is_empty() {
+        return Ok(String::new());
+    }
+    let value = overrides
+        .iter()
+        .map(|name| format!("{name}=n,b"))
+        .collect::<Vec<_>>()
+        .join(",");
+    let marker = LayerMarker {
+        layers: deployed,
+        overrides: value.clone(),
+    };
+    if let Ok(text) = serde_json::to_string(&marker) {
+        let _ = std::fs::write(&marker_path, text);
+    }
+    Ok(value)
+}
+
 fn runner_for(app: &AppHandle) -> Option<String> {
     let settings = crate::load_settings(app);
     if settings.compat_runner_enabled == Some(false) {
@@ -227,6 +336,24 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         .unwrap_or_else(default_prefix_dir);
     let prefix = prefix_root.join(sanitize_segment(app_name));
     let _ = std::fs::create_dir_all(&prefix);
+
+    let layers: Vec<String> = settings
+        .compat_layers
+        .iter()
+        .filter(|id| valid_layer(id))
+        .cloned()
+        .collect();
+    if !layers.is_empty() {
+        let dirs: Vec<(String, PathBuf)> = layers
+            .iter()
+            .filter_map(|id| tool_dir(app, &target, id).map(|dir| (id.clone(), dir)))
+            .collect();
+        if let Ok(overrides) = deploy_layers(&prefix, &layers, &dirs) {
+            if !overrides.is_empty() {
+                spec.env.insert("WINEDLLOVERRIDES".to_string(), overrides);
+            }
+        }
+    }
 
     let mut runner = runner_for(app);
     let umu_enabled = settings.compat_umu_enabled.unwrap_or(true);
@@ -343,6 +470,12 @@ pub fn compat_get_launch_config(app: AppHandle) -> CompatLaunchConfig {
             .filter(|value| !value.trim().is_empty())
             .unwrap_or_else(|| default_prefix_dir().display().to_string()),
         umu_enabled: settings.compat_umu_enabled.unwrap_or(true),
+        layers: settings
+            .compat_layers
+            .iter()
+            .filter(|id| valid_layer(id))
+            .cloned()
+            .collect(),
     }
 }
 
@@ -355,6 +488,7 @@ pub fn compat_set_launch_config(
     prefix_dir: Option<String>,
     umu_enabled: Option<bool>,
     enabled: Option<bool>,
+    layers: Option<Vec<String>>,
 ) -> Result<(), String> {
     let runner = runner
         .map(|value| value.trim().to_string())
@@ -372,6 +506,21 @@ pub fn compat_set_launch_config(
             return Err("@t:compat.badRunnerPath".to_string());
         }
     }
+    let layers = match layers {
+        Some(values) => {
+            let mut clean = Vec::new();
+            for id in values {
+                if !valid_layer(&id) {
+                    return Err("@t:compat.unknownLayer".to_string());
+                }
+                if !clean.contains(&id) {
+                    clean.push(id);
+                }
+            }
+            Some(clean)
+        }
+        None => None,
+    };
     let mut settings = crate::load_settings(&app);
     settings.compat_runner = runner;
     settings.compat_runner_tag = runner_tag
@@ -386,6 +535,9 @@ pub fn compat_set_launch_config(
     }
     if let Some(enabled) = enabled {
         settings.compat_runner_enabled = Some(enabled);
+    }
+    if let Some(layers) = layers {
+        settings.compat_layers = layers;
     }
     crate::save_settings(&app, &settings);
     Ok(())
@@ -423,6 +575,43 @@ mod tests {
         assert!(args.is_empty());
 
         assert!(runner_program("ge-proton", &root.join("missing")).is_none());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn selected_layers_are_copied_into_the_prefix_once() {
+        let root = std::env::temp_dir().join(format!("efxlve_layers_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let prefix = root.join("prefix");
+        let dxvk = root.join("dxvk");
+        let vkd3d = root.join("vkd3d");
+        std::fs::create_dir_all(dxvk.join("x64")).unwrap();
+        std::fs::create_dir_all(dxvk.join("x32")).unwrap();
+        std::fs::create_dir_all(vkd3d.join("x64")).unwrap();
+        std::fs::write(dxvk.join("x64/d3d11.dll"), b"dxvk64").unwrap();
+        std::fs::write(dxvk.join("x32/d3d11.dll"), b"dxvk32").unwrap();
+        std::fs::write(vkd3d.join("x64/d3d12.dll"), b"vkd3d64").unwrap();
+        let layers = vec!["dxvk".to_string(), "vkd3d-proton".to_string()];
+        let dirs = vec![
+            ("dxvk".to_string(), dxvk.clone()),
+            ("vkd3d-proton".to_string(), vkd3d.clone()),
+        ];
+        let overrides = deploy_layers(&prefix, &layers, &dirs).expect("deploy");
+        assert!(overrides.contains("d3d11=n,b"));
+        assert!(overrides.contains("d3d12=n,b"));
+        assert_eq!(
+            std::fs::read(prefix.join("drive_c/windows/system32/d3d11.dll")).unwrap(),
+            b"dxvk64"
+        );
+        assert_eq!(
+            std::fs::read(prefix.join("drive_c/windows/syswow64/d3d11.dll")).unwrap(),
+            b"dxvk32"
+        );
+        // The marker skips the second copy; deleting a target forces it again.
+        assert_eq!(deploy_layers(&prefix, &layers, &dirs).unwrap(), overrides);
+        std::fs::remove_file(prefix.join("drive_c/windows/system32/d3d12.dll")).unwrap();
+        deploy_layers(&prefix, &layers, &dirs).expect("redeploy");
+        assert!(prefix.join("drive_c/windows/system32/d3d12.dll").is_file());
         let _ = std::fs::remove_dir_all(&root);
     }
 

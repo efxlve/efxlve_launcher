@@ -63,6 +63,8 @@ export interface CompatLaunchConfig {
   runnerPath: string | null;
   prefixDir: string;
   umuEnabled: boolean;
+  /** Translation layers copied into each game's prefix (`dxvk`, `vkd3d-proton`). */
+  layers: string[];
 }
 
 export interface CompatProgress {
@@ -98,4 +100,5 @@ export const compatSetLaunchConfig = (config: CompatLaunchConfig) =>
     runnerPath: config.runnerPath,
     prefixDir: config.prefixDir,
     umuEnabled: config.umuEnabled,
+    layers: config.layers,
   });

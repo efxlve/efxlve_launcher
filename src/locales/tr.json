@@ -2588,5 +2588,10 @@
   "drawer.igdbAddons": "IGDB'den ek paketler",
   "drawer.dlcKind": "Ek paket",
   "drawer.expansion": "Genişletme",
-  "compat.badRunnerPath": "Çalıştırıcı klasörü bulunamadı."
+  "compat.badRunnerPath": "Çalıştırıcı klasörü bulunamadı.",
+  "compat.layersTitle": "Çeviri katmanları",
+  "compat.layersHint": "Seçilen katmanlar her oyunun prefix'ine bir kez kopyalanır; DLL override'ları başlatmada ayarlanır.",
+  "compat.layerDxvkHint": "DirectX 9/10/11 oyunlarını Vulkan üzerinden çalıştırır.",
+  "compat.layerVkd3dHint": "DirectX 12 oyunlarını Vulkan üzerinden çalıştırır.",
+  "compat.unknownLayer": "Bilinmeyen çeviri katmanı."
 }

@@ -294,15 +294,16 @@ away from its 46.5 s sound track.
 ## 9. Linux/macOS compatibility layer (preparation)
 
 Shipped 2026-10-19: `src-tauri/src/compat/` (catalogue, GitHub release cache,
-download/extract/verify/remove, launch wrapper), platform-aware Legendary and
-GOGdl assets, and Settings � Compatibility with a target-platform selector so a
-Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` �8 for
+resumable download/extract/verify/remove, launch wrapper), platform-aware
+Legendary and GOGdl assets, detected system runners, DXVK/VKD3D prefix
+deployment, and Settings → Compatibility with a target-platform selector so a
+Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` §8 for
 the exact surface.
 
 Still open:
 - First-run `wineboot`/prefix creation with progress and a retry path.
-- Per-game runner/prefix selection (global default plus the existing per-game
-  wrapper is what ships today).
+- Per-game runner/prefix/layer selection (global defaults plus the existing
+  per-game wrapper is what ships today).
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
 - Platform implementations for the screenshot hook, embedded store webview and

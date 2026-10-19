@@ -176,6 +176,10 @@ pub struct EpicSettings {
     /// setting was never touched, so the first installed runner may be used.
     #[serde(default)]
     pub compat_runner_enabled: Option<bool>,
+    /// Translation layers copied into a game's prefix before launch.
+    /// Empty by default: enabling this changes how games render.
+    #[serde(default)]
+    pub compat_layers: Vec<String>,
     /// Root for per-game Wine/Proton prefixes.
     #[serde(default)]
     pub compat_prefix_dir: Option<String>,

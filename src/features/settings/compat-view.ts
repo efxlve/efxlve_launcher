@@ -304,6 +304,25 @@ function renderLaunchConfig(): string {
   const selectedValue = selectedRunnerValue();
   const prefix = config?.prefixDir ?? "";
   const umuAvailable = Boolean(umu && (umu.installed.length > 0 || umu.detected.length > 0));
+  const layerIds = ["dxvk", "vkd3d-proton"].filter((id) => {
+    const tool = toolOf(id);
+    return Boolean(tool && (tool.installed.length > 0 || tool.detected.length > 0));
+  });
+  const layers = config?.layers ?? [];
+  const layerRows = layerIds
+    .map((id) => {
+      const checked = layers.includes(id);
+      return `<div class="row settings-row">
+        <div class="row-main">
+          <div class="settings-row-title">${esc(toolName(id))}</div>
+          <div class="settings-row-desc">${esc(t(id === "dxvk" ? "compat.layerDxvkHint" : "compat.layerVkd3dHint"))}</div>
+        </div>
+        <div class="settings-row-control">
+          <label class="switch"><input type="checkbox" data-act="compat-layer" data-layer="${esc(id)}"${checked ? " checked" : ""} /><span class="track"></span></label>
+        </div>
+      </div>`;
+    })
+    .join("");
   return `
     <h3 class="section-title">${esc(t("compat.launchTitle"))}</h3>
     <div class="list settings-group">
@@ -358,6 +377,17 @@ function renderLaunchConfig(): string {
                 <label class="switch"><input type="checkbox" data-act="compat-umu"${config?.umuEnabled ? " checked" : ""} /><span class="track"></span></label>
               </div>
             </div>`
+          : ""
+      }
+      ${
+        layerIds.length > 0 && catalog.currentOs !== "windows"
+          ? `<div class="row settings-row" data-search="dxvk vkd3d translation layer">
+              <div class="row-main">
+                <div class="settings-row-title">${esc(t("compat.layersTitle"))}</div>
+                <div class="settings-row-desc">${esc(t("compat.layersHint"))}</div>
+              </div>
+            </div>
+            ${layerRows}`
           : ""
       }
       <div class="row settings-row">
@@ -513,6 +543,7 @@ function baseConfig(): CompatLaunchConfig {
       runnerPath: null,
       prefixDir: "",
       umuEnabled: true,
+      layers: [],
     }
   );
 }
@@ -635,6 +666,17 @@ export function handleCompatAction(act: string | undefined, el: HTMLElement): bo
     const enabled = (el as HTMLInputElement).checked;
     const config = baseConfig();
     void saveLaunchConfig({ ...config, umuEnabled: enabled });
+    return true;
+  }
+  if (act === "compat-layer") {
+    const layer = el.dataset.layer ?? "";
+    if (!layer) return true;
+    const enabled = (el as HTMLInputElement).checked;
+    const config = baseConfig();
+    const layers = enabled
+      ? [...new Set([...config.layers, layer])]
+      : config.layers.filter((value) => value !== layer);
+    void saveLaunchConfig({ ...config, layers });
     return true;
   }
   if (act === "compat-prefix-pick") {

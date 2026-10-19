@@ -92,9 +92,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   eşzamanlı çağrıları birleştirir; sonraki turları engellemez.
 - **Uyumluluk yöneticisi:** 16 araçlık katalog, hedef platform seçici ve gerçek
   GitHub asset'leri. `wine-crossover` yalnız algılanır (Gcenx/winecx 404),
-  `vulkan-helper-rs` kaynak-only. DXVK/VKD3D şimdilik yalnız indirilir; prefix'e
-  DLL kopyalama ve `WINEDLLOVERRIDES` kurulumu bilerek sonraki tura bırakıldı,
-  çünkü Linux/macOS'ta test edilmeden prefix'e yazmak geri alması zor bir risk.
+  `vulkan-helper-rs` kaynak-only. DXVK/VKD3D artık Compatibility sayfasından
+  açılırsa prefix'e kopyalanıyor ve `WINEDLLOVERRIDES` ayarlanıyor; varsayılan
+  kapalı, çünkü Linux/macOS'ta gerçek oyunla test edilmedi ve render yolunu
+  değiştiriyor. Açıkken her oyun prefix'inde `.efxlve-layers.json` işareti
+  tutuluyor; aynı katmanlar tekrar kopyalanmıyor.
 - **Windows'ta uyumluluk:** `launch_spec` Windows'ta boş dönüyor; mevcut
   Windows başlatma yolu birebir korunuyor. Uyumluluk sayfası Windows'tan
   Linux/macOS ağacı indirmeye izin veriyor; bu bir paketleme hazırlığı, Windows

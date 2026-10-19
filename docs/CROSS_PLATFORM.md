@@ -197,6 +197,9 @@ paketinin çıktığı anlamına gelmez.
 - Öncelik: oyunun kendi `wrapper` ayarı → uyumluluk yöneticisinin seçimi →
   (Windows'ta) Epic relay. umu-launcher kuruluysa ve açıksa Proton yerine o
   kullanılır. Her oyun `<prefix>/<appName>` altında kendi prefix'ini alır.
+- DXVK ve VKD3D-Proton, Compatibility sayfasından açılırsa oyun prefix'ine bir
+  kez kopyalanır (`system32`/`syswow64`) ve `WINEDLLOVERRIDES` başlatmada
+  ayarlanır. Varsayılan kapalıdır; oyun başına `env_vars` ile ezilebilir.
 - Açık bir seçim yoksa launcher önce kendi indirdiği, sonra sistemde bulduğu ilk
   çalıştırıcıyı (Steam `compatibilitytools.d`, Lutris, sistem Wine) kullanır.
   "Kapalı" seçimi artık gerçekten kapalıdır: `compat_runner_enabled = false`
