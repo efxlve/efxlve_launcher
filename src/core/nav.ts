@@ -242,7 +242,26 @@ export function updateSidebarGames(): void {
   const limit = sidebarRecentLimit();
   // Cheap guard first: building the installed-game array and its cover URLs
   // before checking a stamp ran on every repaint, including download patches.
-  const cheapStamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${S.libraryDataRev}`;
+  // Membership, not `libraryDataRev`: playtime or achievement updates bump the
+  // revision but never change which games belong in the sidebar.
+  const membership = [
+    ...S.epicSummaries
+      .filter((s) => s.installed && !S.hiddenGames.has(s.appName))
+      .map((s) => s.appName),
+    ...S.gogSummaries
+      .filter((g) => g.installed && !S.hiddenGames.has(g.key))
+      .map((g) => g.key),
+    ...S.amazonSummaries
+      .filter((g) => g.installed && !S.hiddenGames.has(g.key))
+      .map((g) => g.key),
+    ...S.steamSummaries
+      .filter((g) => g.installed && !S.hiddenGames.has(g.key))
+      .map((g) => g.key),
+    ...S.companionSummaries
+      .filter((g) => g.installed && !S.hiddenGames.has(g.key))
+      .map((g) => g.key),
+  ].join("\n");
+  const cheapStamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${membership}`;
   if (cheapStamp === sidebarInputs) return;
   const entries = sidebarGames();
   const stamp = `${cheapStamp}\0${entries.map((e) => e.appName).join("\n")}`;
