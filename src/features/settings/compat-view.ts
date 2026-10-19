@@ -77,6 +77,8 @@ let launchConfig: CompatLaunchConfig | null = null;
 let loading = false;
 let refreshing = false;
 let listenerBound = false;
+/** Ignores a catalogue answer that belongs to a target the user already left. */
+let loadGeneration = 0;
 let target = readTarget();
 const progress = new Map<string, CompatProgress>();
 
@@ -388,11 +390,12 @@ export async function loadCompatView(force = false): Promise<void> {
     return;
   }
   bindListener();
-  if (loading) return;
+  if (loading && !force) return;
   if (catalog && !force) {
     scheduleRender();
     return;
   }
+  const generation = ++loadGeneration;
   loading = true;
   scheduleRender();
   try {
@@ -400,28 +403,39 @@ export async function loadCompatView(force = false): Promise<void> {
       compatCatalog(target, false),
       compatGetLaunchConfig().catch(() => null),
     ]);
+    if (generation !== loadGeneration) return;
     catalog = nextCatalog;
     launchConfig = nextConfig;
   } catch (error) {
+    if (generation !== loadGeneration) return;
     catalog = null;
     toast(localizeMessage(String(error)), "err");
   } finally {
-    loading = false;
-    scheduleRender();
+    if (generation === loadGeneration) {
+      loading = false;
+      scheduleRender();
+    }
   }
-  if (catalog?.stale && !refreshing && !S.offlineMode) void refreshCatalog();
+  if (generation === loadGeneration && catalog?.stale && !refreshing && !S.offlineMode) {
+    void refreshCatalog();
+  }
 }
 
 async function refreshCatalog(): Promise<void> {
   if (!isTauri || refreshing || S.offlineMode) return;
+  const generation = loadGeneration;
+  const requestedTarget = target;
   refreshing = true;
   scheduleRender();
   try {
-    catalog = await compatCatalog(target, true);
+    const next = await compatCatalog(requestedTarget, true);
+    if (generation === loadGeneration && requestedTarget === target) catalog = next;
   } catch (error) {
     // A rate limit or an offline machine keeps the cached rows; the page does
     // not need a red banner for a version check that can wait.
-    toast(localizeMessage(String(error)), "err");
+    if (generation === loadGeneration && requestedTarget === target) {
+      toast(localizeMessage(String(error)), "err");
+    }
   } finally {
     refreshing = false;
     scheduleRender();
