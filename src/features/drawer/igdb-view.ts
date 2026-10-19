@@ -145,6 +145,19 @@ export function igdbTagsFor(appName: string): string[] {
 }
 
 /**
+ * Game genres from IGDB, falling back to Steam store details if IGDB has no match.
+ */
+export function gameGenresFor(appName: string): string[] {
+  const igdb = igdbTagsFor(appName);
+  if (igdb.length > 0) return igdb;
+  const steam = S.steamDetails.get(appName);
+  if (steam?.genres && steam.genres.length > 0) {
+    return steam.genres.slice(0, 6);
+  }
+  return [];
+}
+
+/**
  * The credit line that closes the About box: genre chips, community channels
  * and the IGDB attribution. Release date, publisher and age rating live in the
  * hero's single meta line.
@@ -198,8 +211,8 @@ export function renderIgdbMedia(target: IgdbTarget): string {
   // their cached copy, the rest keep their URL until the answer lands.
   warmImages(game.screenshots.map((id) => igdbImage(id, "screenshot_big")));
   return `
-    <section class="gp-section">
-      <h3 class="gp-section-title">${icon("sparkles", 14)} ${esc(t("igdb.cardTitle"))}</h3>
+    <div class="gp-about-shots">
+      <div class="gp-about-shots-title">${icon("sparkles", 12)} <span>${esc(t("igdb.cardTitle"))}</span></div>
       <div class="igdb-shots">${game.screenshots
         .map((id) => {
           const url = igdbImage(id, "screenshot_big");
@@ -207,7 +220,7 @@ export function renderIgdbMedia(target: IgdbTarget): string {
           return `<button type="button" class="igdb-shot" data-act="open-store-shot" data-src="${esc(url)}" data-title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
         })
         .join("")}</div>
-    </section>`;
+    </div>`;
 }
 
 /** IGDB's own page for a hit. The numeric id lands on an empty search page, so a

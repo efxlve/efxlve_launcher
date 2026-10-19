@@ -44,7 +44,7 @@ import { cachedNotes, notesForScope } from "../notes/notes-client";
 import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
-import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
+import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -674,6 +674,11 @@ function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): s
 /** Paints the About box and its source note from the current sources. */
 function paintAboutText(s: EpicSummary): void {
   if (S.currentModalAppName !== s.appName) return;
+  const aboutSec = document.getElementById("hub-about-section");
+  if (aboutSec && S.activeDrawerTab === "overview") {
+    aboutSec.outerHTML = renderAboutSection(s);
+    return;
+  }
   const descEl = document.getElementById("hub-desc-text");
   if (!descEl) return;
   const storeDesc = epicDescription(s);
@@ -1053,6 +1058,18 @@ function renderAboutSection(s: EpicSummary): string {
   // once it is open.
   const aboutLong = (effectiveDesc ?? "").length > ABOUT_CLAMP_CHARS;
 
+  const genres = gameGenresFor(s.appName);
+  const genresHtml = genres.length > 0
+    ? `
+    <div class="gp-about-genres">
+      <div class="gp-about-genres-label">${icon("hash", 12)} <span>${esc(t("feat.genres"))}</span></div>
+      <div class="gp-about-tags">
+        ${genres.map((g) => `<span class="gp-tag">${esc(g)}</span>`).join("")}
+      </div>
+    </div>`
+    : "";
+  const igdbShotsHtml = renderIgdbMedia(s);
+
   return `
     <section class="gp-section" id="hub-about-section">
       <h3 class="gp-section-title">${icon("info", 14)} ${t("drawer.aboutGame")}</h3>
@@ -1063,6 +1080,8 @@ function renderAboutSection(s: EpicSummary): string {
       }</div>
       ${!aboutLoading && aboutLong ? aboutToggleHtml(s) : ""}
       <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
+      ${genresHtml}
+      ${igdbShotsHtml}
       ${renderIgdbCredits(s)}
     </section>`;
 }

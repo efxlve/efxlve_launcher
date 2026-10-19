@@ -917,11 +917,6 @@ export function renderGameFeatures(
     offlineClass = "supported";
   }
 
-  // Deduplicate and clean genre tags
-  const cleanTags = Array.from(
-    new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 1)),
-  );
-
   return `
     ${
       mode
@@ -1004,19 +999,6 @@ export function renderGameFeatures(
       <div class="hub-feature-val">${esc(formatted)}</div>
     </div>`;
       })()
-    }
-
-    ${
-      cleanTags.length
-        ? `
-    <div class="hub-feature-row" title="${esc(cleanTags.join(", "))}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("hash", 12)}</div>
-        <span>${i18nT("feat.genres")}</span>
-      </div>
-      <div class="hub-feature-val">${esc(cleanTags.join(", "))}</div>
-    </div>`
-        : ""
     }
   `;
 }
