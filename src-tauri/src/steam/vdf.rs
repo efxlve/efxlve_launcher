@@ -42,13 +42,20 @@ impl Vdf {
 pub(super) struct VdfParser<'a> {
     bytes: &'a [u8],
     pos: usize,
+    depth: usize,
 }
+
+/// Steam's own files nest seven levels deep (`localconfig.vdf` on this machine);
+/// the parser recurses, so a limit far above that keeps a pathological file from
+/// overflowing the stack — a hard crash, not a caught error.
+const MAX_DEPTH: usize = 256;
 
 impl<'a> VdfParser<'a> {
     fn new(text: &'a str) -> Self {
         Self {
             bytes: text.as_bytes(),
             pos: 0,
+            depth: 0,
         }
     }
 
@@ -116,7 +123,14 @@ impl<'a> VdfParser<'a> {
             match self.peek() {
                 Some(b'{') => {
                     self.pos += 1;
+                    if self.depth >= MAX_DEPTH {
+                        // Deeper than anything Steam writes: stop here instead of
+                        // recursing. The tree read so far is still usable.
+                        break;
+                    }
+                    self.depth += 1;
                     let child = self.object();
+                    self.depth -= 1;
                     entries.push((key, Vdf::Obj(child)));
                 }
                 Some(b'"') => {
@@ -255,5 +269,22 @@ mod tests {
             Some("a\"b\\c"),
             "quote and backslash both come through"
         );
+    }
+
+    /// The parser recurses, so a file with hundreds of thousands of open braces
+    /// must stop rather than overflow the stack — that would take the whole app
+    /// down, not just the parse.
+    #[test]
+    fn a_pathologically_deep_document_stops_instead_of_crashing() {
+        let mut text = String::with_capacity(4 * 1024 * 1024);
+        for i in 0..200_000 {
+            text.push_str("\"k");
+            text.push_str(&i.to_string());
+            text.push_str("\"\n{\n");
+        }
+        let root = parse_vdf(&text);
+        // Reaching this line is the point: no crash. The tree that came back is
+        // still walkable, it just stops at the limit.
+        assert!(root.entries().len() >= 1, "a usable tree, not a crash");
     }
 }
