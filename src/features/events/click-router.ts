@@ -136,6 +136,7 @@ import { handleCoverAction } from "./handlers/cover-handlers";
 import { handleEglRemovalAction } from "./handlers/egl-removal-handlers";
 import { handleDownloadsAction } from "./handlers/downloads-handlers";
 import { handleDrawerAction } from "./handlers/drawer-handlers";
+import { handleGameCompatClick } from "../drawer/game-compat";
 import { handleManageAction } from "./handlers/manage-handlers";
 import { handleScreenshotAction } from "./handlers/screenshot-handlers";
 import { handleScreenshotsPageAction } from "./handlers/screenshots-page-handlers";
@@ -317,6 +318,7 @@ document.addEventListener("click", (e) => {
   if (handleCollectionAction(act, t, id, targetEl)) return;
   if (handleDownloadsAction(act, t, id, targetEl)) return;
   if (handleManageAction(act, t, id, targetEl)) return;
+  if (handleGameCompatClick(act, t)) return;
   if (handleDrawerAction(act, t, id, targetEl)) return;
   if (handleScreenshotAction(act, t, id, targetEl)) return;
   if (handleScreenshotsPageAction(act, t, targetEl)) return;

@@ -204,14 +204,16 @@ paketinin çıktığı anlamına gelmez.
   çalıştırıcıyı (Steam `compatibilitytools.d`, Lutris, sistem Wine) kullanır.
   "Kapalı" seçimi artık gerçekten kapalıdır: `compat_runner_enabled = false`,
   açık bir oyun istisnası yoksa başlatma wrapper'ını tamamen atlar.
-  umu-launcher da yalnız launcher'ın
-  indirdiği kopyadan değil, sistemde bulunan `umu-run` üzerinden de çalışabilir.
-- Oyun sayfasının Sistem sekmesinde o oyuna özel bir çalıştırıcı ve DXVK/VKD3D
-  anahtarları seçilebilir; seçim `<app_data>/compat/games.json` içinde tutulur
-  ve genel ayarı yalnız o oyun için ezer. Açık bir oyun seçimi global kapalı
-  anahtarını da aşar; böylece tek bir oyun için uyumluluk açık bırakılabilir.
-  Katman seçimi genel seçimle aynı hale gelince kayıt silinir ve oyun yine genel
-  ayarı devralır.
+  umu-launcher da yalnız launcher'ın indirdiği kopyadan değil, sistemde bulunan
+  `umu-run` üzerinden de çalışabilir.
+- Oyun sayfasının Sistem sekmesinde o oyuna özel bir çalıştırıcı, DXVK/VKD3D
+  anahtarları ve tam prefix klasörü seçilebilir; seçim
+  `<app_data>/compat/games.json` içinde tutulur ve genel ayarı yalnız o oyun
+  için ezer. Açık bir oyun seçimi global kapalı anahtarını da aşar; böylece tek
+  bir oyun için uyumluluk açık bırakılabilir. Katman seçimi genel seçimle aynı
+  hale gelince kayıt silinir ve oyun yine genel ayarı devralır. Prefix alanı
+  boşsa genel kök ve oyun adı kullanılır; doluysa klasör olduğu gibi alınır,
+  böylece Steam `compatdata` gibi var olan bir prefix yeniden kullanılabilir.
 - Windows'ta `launch_spec` boş döner; mevcut Windows yolu birebir korunur.
 
 ### 8.4 Arayüz

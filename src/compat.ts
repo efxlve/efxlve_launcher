@@ -109,6 +109,8 @@ export interface GameCompatConfig {
   runnerTag: string | null;
   /** `null` inherits the global layers; `[]` explicitly disables them. */
   layers: string[] | null;
+  /** An exact prefix folder; `null` uses the global root plus the game name. */
+  prefixDir: string | null;
 }
 
 export const compatGetGameConfig = (appName: string) =>

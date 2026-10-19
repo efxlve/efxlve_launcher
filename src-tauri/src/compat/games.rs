@@ -28,6 +28,10 @@ pub struct GameCompatConfig {
     /// `Some([])` is an explicit "no translation layers"; `None` inherits.
     #[serde(default)]
     pub layers: Option<Vec<String>>,
+    /// An exact prefix folder, used as-is. `None` uses the global root plus the
+    /// game name.
+    #[serde(default)]
+    pub prefix_dir: Option<String>,
 }
 
 impl GameCompatConfig {
@@ -36,6 +40,7 @@ impl GameCompatConfig {
             && self.runner_path.is_none()
             && self.runner_tag.is_none()
             && self.layers.is_none()
+            && self.prefix_dir.is_none()
     }
 }
 
@@ -83,6 +88,15 @@ fn clean(mut config: GameCompatConfig) -> Result<GameCompatConfig, String> {
         .runner_tag
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty());
+    config.prefix_dir = config
+        .prefix_dir
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    if let Some(path) = config.prefix_dir.as_deref() {
+        if !std::path::Path::new(path).is_absolute() {
+            return Err("@t:compat.badPrefix".to_string());
+        }
+    }
     if let Some(id) = config.runner.as_deref() {
         if !valid_runner(id) {
             return Err("@t:compat.unknownRunner".to_string());
@@ -148,6 +162,12 @@ mod tests {
         let cleaned = clean(config).expect("valid");
         assert_eq!(cleaned.runner_tag.as_deref(), Some("GE-Proton11-10"));
 
+        let prefix = std::env::temp_dir().display().to_string();
+        let with_prefix: GameCompatConfig =
+            serde_json::from_value(serde_json::json!({ "prefixDir": prefix })).expect("prefix");
+        assert_eq!(with_prefix.prefix_dir.as_deref(), Some(prefix.as_str()));
+        assert!(clean(with_prefix).is_ok());
+
         let bad = GameCompatConfig {
             runner: Some("not-a-runner".to_string()),
             ..Default::default()
@@ -155,12 +175,22 @@ mod tests {
         assert!(clean(bad).is_err());
 
         let bad_layer = GameCompatConfig {
-            runner: None,
-            runner_path: None,
-            runner_tag: None,
             layers: Some(vec!["not-a-layer".to_string()]),
+            ..Default::default()
         };
         assert!(clean(bad_layer).is_err());
+
+        let relative_prefix = GameCompatConfig {
+            prefix_dir: Some("relative/prefix".to_string()),
+            ..Default::default()
+        };
+        assert!(clean(relative_prefix).is_err());
+
+        let absolute_prefix = GameCompatConfig {
+            prefix_dir: Some(std::env::temp_dir().display().to_string()),
+            ..Default::default()
+        };
+        assert!(clean(absolute_prefix).is_ok());
     }
 
     #[test]

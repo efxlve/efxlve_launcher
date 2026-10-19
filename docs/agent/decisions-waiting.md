@@ -116,7 +116,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   "kapalı" anahtarını aşar, böylece tek oyun için uyumluluk açılabilir; diğer
   oyunlar etkilenmez. Oyun kartındaki DXVK/VKD3D anahtarları da yalnız o oyun
   için yazılır; seçim genel seçimle aynı hale gelince kayıt silinip devralmaya
-  dönülür. Oyun bazlı prefix hâlâ açık ve gerçek prefix testi istiyor.
+  dönülür. Oyun bazlı prefix klasörü tam yol olarak saklanır ve olduğu gibi
+  kullanılır; boş bırakılırsa genel kök + oyun adı geçerlidir. Böylece var olan
+  bir Steam `compatdata` prefix'i yeniden kullanılabilir. Gerçek prefix testi
+  hâlâ Linux/macOS donanımı istiyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

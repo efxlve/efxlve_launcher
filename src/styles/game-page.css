@@ -1464,6 +1464,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .game-compat-card .row:hover { background: transparent; }
 .game-compat-card .row-meta { white-space: normal; }
 .game-compat-card .settings-select { max-width: 300px; }
+.game-compat-card .game-compat-path-actions { flex-wrap: wrap; justify-content: flex-end; }
 .game-compat-subhead {
   margin: 16px 0 10px;
   padding-top: 14px;

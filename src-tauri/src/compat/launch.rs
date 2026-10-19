@@ -358,7 +358,16 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         .filter(|value| !value.is_empty())
         .map(PathBuf::from)
         .unwrap_or_else(default_prefix_dir);
-    let prefix = prefix_root.join(sanitize_segment(app_name));
+    // A per-game prefix is the exact folder the user picked, not a new child of
+    // it: reusing a Steam compatdata prefix is the common case.
+    let prefix = game
+        .prefix_dir
+        .as_deref()
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .unwrap_or_else(|| prefix_root.join(sanitize_segment(app_name)));
     let _ = std::fs::create_dir_all(&prefix);
 
     let layers: Vec<String> = game

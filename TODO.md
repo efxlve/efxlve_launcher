@@ -307,8 +307,6 @@ the exact surface.
 
 Still open:
 - First-run `wineboot`/prefix creation with progress and a retry path.
-- Per-game prefix selection. Per-game runner and DXVK/VKD3D switches shipped on
-  the game page's System tab (`compat/games.json`).
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
 - Platform implementations for the screenshot hook, embedded store webview and

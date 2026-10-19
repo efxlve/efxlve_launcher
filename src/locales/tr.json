@@ -2605,5 +2605,7 @@
   "compat.gameSaved": "Oyun çalıştırıcısı kaydedildi.",
   "compat.saveFailed": "Uyumluluk ayarı kaydedilemedi.",
   "compat.gameLayers": "Çeviri katmanları",
-  "compat.gameLayersHint": "Bir anahtarı değiştirene kadar genel seçim geçerlidir; genel seçimle aynı hale getirince devralma geri döner."
+  "compat.gameLayersHint": "Bir anahtarı değiştirene kadar genel seçim geçerlidir; genel seçimle aynı hale getirince devralma geri döner.",
+  "compat.gamePrefixHint": "Boş bırakılırsa genel kök ve oyun adı kullanılır. Var olan bir prefix'i yeniden kullanmak için seç.",
+  "compat.badPrefix": "Mutlak bir prefix klasörü seç."
 }

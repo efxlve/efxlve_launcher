@@ -13,7 +13,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import type { EpicSummary } from "../../epic";
+import { epicSelectFolderDialog, type EpicSummary } from "../../epic";
 import {
   compatCatalog,
   compatGetGameConfig,
@@ -39,6 +39,8 @@ const configs = new Map<string, GameCompatConfig>();
 let catalog: CompatCatalog | null = null;
 /** The global layer choice, shown as the inherited state of a game's switches. */
 let globalLayers: string[] = [];
+/** The global prefix root, shown as the placeholder of a game's prefix field. */
+let globalPrefixDir: string | null = null;
 
 function runnerName(id: string): string {
   return RUNNER_NAMES[id] ?? id;
@@ -154,6 +156,17 @@ function cardBody(appName: string, config: GameCompatConfig): string {
         </select>
       </div>
     </div>
+    <div class="row">
+      <div class="row-main">
+        <div class="row-title">${esc(t("compat.prefix"))}</div>
+        <div class="row-meta">${esc(t("compat.gamePrefixHint"))}</div>
+      </div>
+      <div class="row-actions game-compat-path-actions">
+        <input class="input settings-path-input game-compat-prefix" value="${esc(config.prefixDir ?? "")}" placeholder="${esc(globalPrefixDir ?? "")}" spellcheck="false" autocomplete="off" aria-label="${esc(t("compat.prefix"))}" />
+        <button type="button" class="btn ghost small" data-act="game-compat-prefix-pick" data-id="${esc(appName)}">${esc(t("common.browse"))}</button>
+        <button type="button" class="btn primary small" data-act="game-compat-prefix-save" data-id="${esc(appName)}">${esc(t("common.save"))}</button>
+      </div>
+    </div>
     ${
       layers.length > 0
         ? `<div class="game-compat-subhead">
@@ -188,6 +201,7 @@ export async function hydrateGameCompatCard(appName: string): Promise<void> {
     ]);
     catalog = nextCatalog;
     globalLayers = launch.layers;
+    globalPrefixDir = launch.prefixDir;
     configs.set(appName, config);
     if (S.currentModalAppName !== appName) return;
     card.dataset.loaded = "1";
@@ -207,7 +221,13 @@ export async function hydrateGameCompatCard(appName: string): Promise<void> {
 }
 
 function emptyConfig(): GameCompatConfig {
-  return { runner: null, runnerPath: null, runnerTag: null, layers: null };
+  return {
+    runner: null,
+    runnerPath: null,
+    runnerTag: null,
+    layers: null,
+    prefixDir: null,
+  };
 }
 
 function saveGameConfig(
@@ -224,6 +244,45 @@ function saveGameConfig(
       rollback();
       toast(String(error), "err");
     });
+}
+
+function prefixInput(): HTMLInputElement | null {
+  return document.querySelector<HTMLInputElement>("#game-compat-card .game-compat-prefix");
+}
+
+function savePrefix(appName: string, prefixDir: string | null): void {
+  const config = configs.get(appName) ?? emptyConfig();
+  const input = prefixInput();
+  if (input) input.value = prefixDir ?? "";
+  saveGameConfig(appName, { ...config, prefixDir }, config, () => {
+    if (input) input.value = config.prefixDir ?? "";
+  });
+}
+
+export function handleGameCompatClick(act: string | undefined, el: HTMLElement): boolean {
+  if (act !== "game-compat-prefix-pick" && act !== "game-compat-prefix-save") return false;
+  const appName = el.dataset.id ?? "";
+  if (!appName) return true;
+  const config = configs.get(appName) ?? emptyConfig();
+
+  if (act === "game-compat-prefix-pick") {
+    void (async () => {
+      try {
+        const picked = await epicSelectFolderDialog(
+          config.prefixDir ?? globalPrefixDir,
+          t("compat.prefix"),
+        );
+        if (picked) savePrefix(appName, picked);
+      } catch (error) {
+        toast(String(error), "err");
+      }
+    })();
+    return true;
+  }
+
+  const input = prefixInput();
+  savePrefix(appName, input?.value.trim() || null);
+  return true;
 }
 
 export function handleGameCompatChange(el: HTMLElement): boolean {
