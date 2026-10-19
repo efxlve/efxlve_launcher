@@ -51,6 +51,13 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Task manager | Launcher's own usage rows |
 | Collections | The per-game modal ("which categories will include Hades"), backdrop, new/save actions |
 | Storage manager | Disk rows: installed games, games/other/free split |
+| Game page, hero action bar | The right side shows a compact "Son oturum" summary (playtime, when, trophies) or the no-session line; the personal block no longer repeats the last-session card |
+| Settings → Appearance → Theme | Four choices: Siyah, Yumuşak Siyah, Beyaz Mod, Frutiger Aero. The active option is visibly selected in both light themes, the choice is stored under `efxlve-surface`, and the first paint reads the same key |
+| White Mode | Light background, dark text, light cards, dark active segmented control, light scrollbar; library, game page and Settings render without white-on-white text |
+| Frutiger Aero | Sky/water gradient, glass header/sidebar/cards, glossy blue primary action, dark text; Settings theme row and game page render cleanly, with the active segment tinted blue |
+| TV home, second pass | Command bar with EFXLVE TV mark, compact category pills, icon-only status chips at 1080 px, stage kicker/description/pill actions, shelf heading/count/card titles, focused card ring; search icon keeps its width |
+| TV category change | Clicking a category repaints the shelf and heading; the controller path shares the same paint guard in `applyFocus` (gamepad itself still needs the app) |
+| TV hub, themed desktop | With Aero selected, the hub's `.card` / `.gp-side-card` surfaces stay dark and readable; the desktop theme is scoped out of `body.tv-mode` |
 | TV hub | Header strip, stage, shelf, focus ring, empty category (see TODO §1) |
 | Gallery cap note | Appears at 300 captures with the right count, stays away below it |
 | Live tests | All 26 `#[ignore]`d ones; the expected reds are listed in `docs/agent/README.md` |

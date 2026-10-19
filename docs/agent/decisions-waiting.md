@@ -209,9 +209,18 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 - **IGDB DLC/genişletme listesi:** mağaza DLC satırları kurulum yüzeyi olarak
   kaldı; IGDB yalnız mağazanın adlandırmadığı ekleri ayrı blokta gösteriyor.
   Mağaza başlığıyla aynı olan (kanonik başlık) kayıtlar eleniyor.
-- **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV mode
-  görsel yönü (TODO §1), GPU kaydedici (TODO §8) ve sürüm hazırlama/yayınlama
-  bilerek değiştirilmedi.
+- **Tema seçimi:** Siyah ve Yumuşak Siyah'ın yanına **Beyaz Mod** ve **Frutiger
+  Aero** eklendi. İkisi de aynı token sözlüğünü değiştiriyor; Aero ek olarak
+  gökyüzü gradyanı, cam yüzeyler ve parlak mavi birincil düğme getiriyor.
+  Seçim `efxlve-surface` altında saklanıyor ve `index.html` ilk boyamadan önce
+  okuyor; beyaz temada segment düğmesi siyah, Aero'da mavi tonlu seçili görünüyor.
+- **TV ana ekranı:** komut çubuğu, sahne ve raf yeniden düzenlendi; raf başlığı,
+  oyun adları ve odak etiketi eklendi. TV paleti `body.tv-mode` üzerinde sabit
+  koyu; masaüstünde Beyaz/Aero seçili olsa bile hub kartları beyaza dönmüyor.
+  Kategoriler artık kumandayla değiştiğinde rafı ve başlığı yeniden çiziyor.
+- **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV
+  hub/profil/panellerin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
+  hazırlama/yayınlama bilerek değiştirilmedi.
 
 ## Sırada (yokluğunda devam edenler)
 

@@ -3,6 +3,27 @@
 Open work, in the order it should be picked up. Each item is sized so it can
 land as one commit with `npm run build` (plus `cargo test` when Rust changed).
 
+## 0a. Themes and TV home (owner asked, 2026-10-20)
+
+- **White Mode** and **Frutiger Aero** are now real surface themes next to
+  Siyah and Yumuşak Siyah in Settings → Görünüm ve Dil. They replace the token
+  palette in `src/styles/themes.css`; Aero adds the glossy sky/glass treatment
+  on top of the same tokens. The choice is stored under `efxlve-surface`, applied
+  before the first paint from `index.html`, and restored on reload.
+- The **game page hero bar** now uses the otherwise empty right side for a
+  compact last-session summary (playtime, when, trophies). The personal block no
+  longer repeats the same card.
+- **TV Mode home** was rebuilt as a console shell: compact command bar with an
+  EFXLVE TV mark, all category tabs visible, a cinematic stage with a kicker,
+  a three-line description and pill actions, and a labelled shelf with card
+  titles. The TV palette is pinned dark even when White/Aero is selected, so a
+  themed desktop cannot wash out the 10-foot surface. Category changes now
+  repaint the shelf and its heading, including when the header is driven by the
+  controller rather than L1/R1.
+- Still owner-only: the actual look at 1920 px with real artwork, and whether the
+  TV hub/profile/panels need the same visual pass. Those older surfaces keep
+  their layout for now.
+
 ## 0. Game page: revision after 0.1.30 (owner asked for this)
 
 The owner is not happy with the new game page yet ("daha da kötüleşiyor gibi"),
@@ -59,7 +80,9 @@ trophies) at the top above next achievements, and **Bulut** below it. The cloud
 card names the owner for external stores ("EA Cloud tarafından yönetilir",
 "Steam Cloud tarafından yönetilir", …) and keeps the sync state for
 launcher-managed copies. The scores card is back to scores only. The Steam genre
-fallback now uses the same Turkish dictionary.
+fallback now uses the same Turkish dictionary. The empty right side of the hero
+action bar now carries a compact last-session summary (time, when, trophies);
+the personal block no longer repeats that card.
 
 ## 0b. Remaining plan items
 
@@ -149,18 +172,26 @@ invalidates the copy and forces one new parse.
 
 
 
-## 1. TV mode modernization (needs a screen)
+## 1. TV mode: home shell rebuilt, hub pass remains
 
 The mode works — timers are cleaned up, reduced motion is respected, gamepad
-navigation and fullscreen are wired — but it is the oldest surface in the app:
-`tv-mode.css` (43 kB) predates the current design tokens, and `tv-mode.ts`
+navigation and fullscreen are wired — but it was the oldest surface in the app:
+`tv-mode.css` (43 kB) predated the current design tokens, and `tv-mode.ts`
 (41 kB) + `tv-hub.ts` + `tv-panels.ts` + `tv-profile.ts` carry their own layout
-language. A visual pass needs screenshots; it cannot be done blind.
+language.
 
-- Rebuild the home screen on the current tokens: type scale, spacing, focus ring.
-- Reuse the library card visuals (`pcard`) for the shelf instead of the bespoke
-  TV cards.
+Status, 2026-10-20: the home shell got a second pass. The command bar now has an
+EFXLVE TV mark, compact category pills and icon-first status chips that expand
+their label when focused; the stage has a live kicker, a three-line description
+and pill actions; the shelf has a category heading, a count and card titles. The
+header no longer clips the category list at a ~1080 px viewport, and changing a
+category from the controller repaints the shelf and its heading. The dark TV
+palette is scoped on `body.tv-mode`, so White Mode and Frutiger Aero do not turn
+the TV hub cards light. The old hub/profile/panels still need a visual pass.
+
 - Keep what works: gamepad navigation, boot animation, clock, battery, panels.
+- Owner check: the shelf at 1920 px with real poster art, and whether the game
+  hub should adopt the same command bar / stage language.
 
 Status, 2026-10-19: the hub was opened in the browser harness, so its structure
 is now known even though its look still needs a real screen. What is there and

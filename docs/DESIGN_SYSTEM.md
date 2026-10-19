@@ -53,7 +53,12 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
 | `--warn` | `#e0a32e` | update available, offline, paused |
 | `--err` | `#e5484d` | errors, destructive |
 
-- Radius: `--r-sm: 6px` (buttons, inputs, chips) and `--r-md: 10px` (cards, modals, covers). Nothing else. No `999px` pills except 50% avatars and status dots.
+- Surface themes: `data-surface="soft"` lives in `tokens.css`; `white` and
+  `aero` live in `themes.css` and replace the same token set. White Mode is a
+  light palette with a dark accent. Frutiger Aero adds a sky/water background,
+  glossy glass cards and a blue accent; its gradients, glow and blur are
+  intentional theme exceptions to §10 and must not leak into Siyah/Yumuşak.
+- Radius: `--r-sm: 6px` (buttons, inputs, chips) and `--r-md: 10px` (cards, modals, covers). Nothing else. No `999px` pills except 50% avatars and status dots. TV Mode uses its own pill scale.
 - Spacing: multiples of 4px.
 - Type: system UI font (`Segoe UI Variable`, `Segoe UI`, system-ui). Sizes: 12 / 13 / 14 / 18 / 26. Weights: 400, 500, 600 (700 only for the game title).
 - Numbers that change (speed, percent, playtime, counters) always use `font-variant-numeric: tabular-nums`.
