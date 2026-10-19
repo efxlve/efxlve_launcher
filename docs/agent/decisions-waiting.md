@@ -132,8 +132,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   için yazılır; seçim genel seçimle aynı hale gelince kayıt silinip devralmaya
   dönülür. Oyun bazlı prefix klasörü tam yol olarak saklanır ve olduğu gibi
   kullanılır; boş bırakılırsa genel kök + oyun adı geçerlidir. Böylece var olan
-  bir Steam `compatdata` prefix'i yeniden kullanılabilir. Gerçek prefix testi
-  hâlâ Linux/macOS donanımı istiyor.
+  bir Steam `compatdata` prefix'i yeniden kullanılabilir. Katmanlar artık
+  `system.reg` oluşmadan yazılmıyor ve Proton'un gerçek prefix'i olan `pfx`
+  algılanırsa oraya kopyalanıyor; ilk açılışta prefix kurulursa katmanlar ancak
+  sonraki açılışta devreye giriyor. Otomatik `wineboot` hâlâ açık. Gerçek prefix
+  testi Linux/macOS donanımı istiyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

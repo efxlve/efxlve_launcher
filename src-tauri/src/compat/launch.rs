@@ -189,6 +189,21 @@ struct LayerMarker {
     overrides: String,
 }
 
+/// The Wine prefix a set of layers belongs to. Proton keeps the real prefix in
+/// `<compatdata>/pfx`, while a plain Wine runner and umu use the folder itself.
+/// Nothing is written before `wineboot` has created `system.reg`: creating
+/// `drive_c` by hand made the next Proton boot overwrite the copied DLLs.
+fn layer_prefix_root(prefix: &Path) -> Option<PathBuf> {
+    let proton = prefix.join("pfx");
+    if proton.join("system.reg").is_file() {
+        return Some(proton);
+    }
+    if prefix.join("system.reg").is_file() {
+        return Some(prefix.to_path_buf());
+    }
+    None
+}
+
 /// Copies the selected layer DLLs into the prefix's system folders and returns
 /// the `WINEDLLOVERRIDES` value the launch needs. This runs only when the user
 /// enabled a layer; a marker keeps later launches from copying the same files
@@ -378,13 +393,15 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         .filter(|id| valid_layer(id))
         .collect();
     if !layers.is_empty() {
-        let dirs: Vec<(String, PathBuf)> = layers
-            .iter()
-            .filter_map(|id| tool_dir(app, &target, id).map(|dir| (id.clone(), dir)))
-            .collect();
-        if let Ok(overrides) = deploy_layers(&prefix, &layers, &dirs) {
-            if !overrides.is_empty() {
-                spec.env.insert("WINEDLLOVERRIDES".to_string(), overrides);
+        if let Some(layer_root) = layer_prefix_root(&prefix) {
+            let dirs: Vec<(String, PathBuf)> = layers
+                .iter()
+                .filter_map(|id| tool_dir(app, &target, id).map(|dir| (id.clone(), dir)))
+                .collect();
+            if let Ok(overrides) = deploy_layers(&layer_root, &layers, &dirs) {
+                if !overrides.is_empty() {
+                    spec.env.insert("WINEDLLOVERRIDES".to_string(), overrides);
+                }
             }
         }
     }
@@ -623,6 +640,25 @@ mod tests {
         assert_eq!(sanitize_segment(""), "game");
         assert_eq!(sanitize_segment(".."), "game");
         assert_eq!(sanitize_segment("."), "game");
+    }
+
+    #[test]
+    fn layers_wait_for_an_initialized_prefix_and_follow_protons_pfx() {
+        let root = std::env::temp_dir().join(format!("efxlve_layer_root_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let prefix = root.join("compatdata");
+        std::fs::create_dir_all(&prefix).unwrap();
+        assert_eq!(layer_prefix_root(&prefix), None);
+
+        let pfx = prefix.join("pfx");
+        std::fs::create_dir_all(&pfx).unwrap();
+        std::fs::write(pfx.join("system.reg"), b"wine").unwrap();
+        assert_eq!(layer_prefix_root(&prefix), Some(pfx.clone()));
+
+        std::fs::remove_dir_all(&pfx).unwrap();
+        std::fs::write(prefix.join("system.reg"), b"wine").unwrap();
+        assert_eq!(layer_prefix_root(&prefix), Some(prefix));
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

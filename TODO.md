@@ -316,7 +316,9 @@ Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` §8 fo
 the exact surface.
 
 Still open:
-- First-run `wineboot`/prefix creation with progress and a retry path.
+- First-run `wineboot`/prefix creation with progress and a retry path. Layers
+  now wait for `system.reg` and target Proton's `pfx`, so a first launch that
+  creates the prefix will not apply them until the next launch.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
 - Platform implementations for the screenshot hook, embedded store webview and

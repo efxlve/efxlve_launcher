@@ -196,10 +196,15 @@ paketinin çıktığı anlamına gelmez.
 - Amazon: `nile launch --no-wine --wrapper "<runner> [run]"` + ortam.
 - Öncelik: oyunun kendi `wrapper` ayarı → uyumluluk yöneticisinin seçimi →
   (Windows'ta) Epic relay. umu-launcher kuruluysa ve açıksa Proton yerine o
-  kullanılır. Her oyun `<prefix>/<appName>` altında kendi prefix'ini alır.
-- DXVK ve VKD3D-Proton, Compatibility sayfasından açılırsa oyun prefix'ine bir
-  kez kopyalanır (`system32`/`syswow64`) ve `WINEDLLOVERRIDES` başlatmada
-  ayarlanır. Varsayılan kapalıdır; oyun başına `env_vars` ile ezilebilir.
+  kullanılır. Varsayılan olarak her oyun `<prefix>/<appName>` altında kendi
+  prefix'ini alır; oyun sayfasından tam bir klasör seçilirse o kullanılır.
+- DXVK ve VKD3D-Proton, Compatibility sayfasından açılırsa gerçek Wine prefix'ine
+  bir kez kopyalanır (`system32`/`syswow64`) ve `WINEDLLOVERRIDES` başlatmada
+  ayarlanır. Proton prefix'i `compatdata/pfx` içinde tuttuğu için kopyalama
+  oraya yapılır; düz Wine ve umu kökü kullanır. Prefix henüz `wineboot`
+  tarafından kurulmadıysa (`system.reg` yok) katmanlar o açılışta yazılmaz,
+  böylece Proton'un ilk kurulumu DLL'leri ezmez; katmanlar sonraki açılışta
+  uygulanır. Varsayılan kapalıdır; oyun başına `env_vars` ile ezilebilir.
 - Açık bir seçim yoksa launcher önce kendi indirdiği, sonra sistemde bulduğu ilk
   çalıştırıcıyı (Steam `compatibilitytools.d`, Lutris, sistem Wine) kullanır.
   "Kapalı" seçimi artık gerçekten kapalıdır: `compat_runner_enabled = false`,
