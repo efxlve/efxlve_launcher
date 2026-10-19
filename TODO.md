@@ -108,6 +108,9 @@ library loaders (`loadSteamLibrary`, `loadCompanionLibrary`,
 `loadEpicAchSummaries`) share an in-flight promise, and the boot path reads the
 network profile/settings/autostart in one parallel batch. Store-detail arrivals
 patch their own blocks instead of calling `openEpicModal` and rebuilding the tab.
+The achievement-summary pass is reused for 30 seconds unless a refresh or account
+switch forces it, so boot and the first background sync no longer parse the same
+150+ schemas twice.
 
 ## 0d. Community follow-ups (open)
 

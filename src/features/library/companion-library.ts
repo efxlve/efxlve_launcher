@@ -28,7 +28,7 @@ function bindCompanionLogin(): void {
       render();
     });
     // A fresh link also brings new achievement sets (Ubisoft reads its cache).
-    void loadEpicAchSummaries();
+    void loadEpicAchSummaries(true);
   });
   void listen<string>("companion-signin-failed", (event) => {
     // The store child sits above the toast layer, so close it first.

@@ -279,6 +279,27 @@ fn deploy_layers(
     Ok(value)
 }
 
+/// The managed `umu-run`, or one already installed by the user/Steam.
+fn umu_program(app: &AppHandle, target: &Target) -> Option<PathBuf> {
+    if let Some(dir) = runner_dir(app, target, "umu-launcher", None) {
+        let program = dir.join("umu-run");
+        if program.is_file() {
+            return Some(program);
+        }
+    }
+    for path in super::install::detected_runner_paths("umu-launcher") {
+        let path = PathBuf::from(path);
+        if path.is_file() {
+            return Some(path);
+        }
+        let program = path.join("umu-run");
+        if program.is_file() {
+            return Some(program);
+        }
+    }
+    None
+}
+
 fn runner_for(app: &AppHandle) -> Option<String> {
     let settings = crate::load_settings(app);
     if settings.compat_runner_enabled == Some(false) {
@@ -357,7 +378,7 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
 
     let mut runner = runner_for(app);
     let umu_enabled = settings.compat_umu_enabled.unwrap_or(true);
-    let umu_dir = runner_dir(app, &target, "umu-launcher", None);
+    let umu = umu_program(app, &target);
     // A runner chosen from the system tree (Steam's compatibilitytools.d, a
     // Lutris build) wins over the launcher's own copy.
     let mut runner_dir = configured_runner_path(&settings).or_else(|| {
@@ -421,12 +442,9 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     // umu-launcher is the modern wrapper: it sets up the Steam runtime and
     // calls the Proton build, so it wins when the user has it installed.
     if umu_enabled {
-        if let Some(dir) = umu_dir.as_ref() {
-            let umu = dir.join("umu-run");
-            if umu.is_file() {
-                spec.program = Some(umu.display().to_string());
-                return spec;
-            }
+        if let Some(umu) = umu.as_ref() {
+            spec.program = Some(umu.display().to_string());
+            return spec;
         }
     }
 

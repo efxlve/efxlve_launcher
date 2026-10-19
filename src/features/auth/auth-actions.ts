@@ -117,18 +117,28 @@ export async function refreshEpic(forceSync = false): Promise<void> {
 }
 
 let achSummariesInFlight: Promise<void> | null = null;
+let achSummariesAt = 0;
+/** A boot/sync pair used to run the same four disk passes twice in a row. */
+const ACH_SUMMARIES_TTL_MS = 30_000;
 
 /**
- * One bulk achievement pass at a time.
+ * One bulk achievement pass at a time, reused for a short window.
  *
  * Boot, the first library sync and a manual refresh all ask for the summaries,
  * and each call used to start four backend passes over the same disk files.
- * Later callers now wait for the pass already running; a completed pass can be
- * started again by a later refresh.
+ * Concurrent callers share the pass; a caller inside the TTL gets the answer
+ * from the previous one. `force` is for an account switch or a new store link,
+ * where the old account's numbers must not be reused.
  */
-export function loadEpicAchSummaries(): Promise<void> {
+export function loadEpicAchSummaries(force = false): Promise<void> {
   if (!isTauri) return Promise.resolve();
-  if (achSummariesInFlight) return achSummariesInFlight;
+  if (achSummariesInFlight) {
+    if (!force) return achSummariesInFlight;
+    return achSummariesInFlight.finally(() => loadEpicAchSummaries(true));
+  }
+  if (!force && achSummariesAt > 0 && Date.now() - achSummariesAt < ACH_SUMMARIES_TTL_MS) {
+    return Promise.resolve();
+  }
   achSummariesInFlight = (async () => {
     try {
       const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
@@ -141,6 +151,7 @@ export function loadEpicAchSummaries(): Promise<void> {
         companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
       ]);
       S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
+      achSummariesAt = Date.now();
       S.libraryDataRev++;
       if (S.view === "library" || S.view === "profile") scheduleRender();
     } catch (e) {
@@ -187,7 +198,7 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     S.epicSkippedCount = eskipped.length;
     S.epicSyncNote = "";
     S.epicBusyMsg = "";
-    void loadEpicAchSummaries();
+    void loadEpicAchSummaries(manual);
     void refreshUpdates();
     // The full list may include games missing from the instant snapshot, so
     // refresh the Epic playtime merge once it is in memory.
@@ -346,7 +357,7 @@ export async function runProgressiveAuth(
     S.authProgress = 88;
     updateAuthProgressUi();
 
-    void loadEpicAchSummaries();
+    void loadEpicAchSummaries(true);
     void loadEpicCollections();
     void refreshUpdates();
 

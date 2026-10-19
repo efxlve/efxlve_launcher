@@ -203,7 +203,8 @@ paketinin çıktığı anlamına gelmez.
 - Açık bir seçim yoksa launcher önce kendi indirdiği, sonra sistemde bulduğu ilk
   çalıştırıcıyı (Steam `compatibilitytools.d`, Lutris, sistem Wine) kullanır.
   "Kapalı" seçimi artık gerçekten kapalıdır: `compat_runner_enabled = false`
-  başlatma wrapper'ını tamamen atlar.
+  başlatma wrapper'ını tamamen atlar. umu-launcher da yalnız launcher'ın
+  indirdiği kopyadan değil, sistemde bulunan `umu-run` üzerinden de çalışabilir.
 - Windows'ta `launch_spec` boş döner; mevcut Windows yolu birebir korunur.
 
 ### 8.4 Arayüz
