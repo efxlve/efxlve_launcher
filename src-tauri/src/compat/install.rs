@@ -896,6 +896,10 @@ pub async fn compat_install(
             if !target.is_current() {
                 return Err("@t:compat.moduleCurrentOnly".to_string());
             }
+            if is_installing(def.id) {
+                return Err("@t:compat.alreadyInstalling".to_string());
+            }
+            let _guard = InstallGuard(def.id.to_string());
             ensure_module(&app, def.id).await?;
         }
         ToolSource::Github => install_github(&app, def, &target).await?,

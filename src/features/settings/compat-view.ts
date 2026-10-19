@@ -17,6 +17,7 @@ import { askConfirm } from "../../core/confirm-dialog";
 import { icon } from "../../core/icons";
 import { localizeMessage, t } from "../../i18n";
 import { scheduleRender } from "../../core/render";
+import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
 import { epicOpenFolderPath, epicSelectFolderDialog } from "../../epic";
@@ -408,11 +409,11 @@ export async function loadCompatView(force = false): Promise<void> {
     loading = false;
     scheduleRender();
   }
-  if (catalog?.stale && !refreshing) void refreshCatalog();
+  if (catalog?.stale && !refreshing && !S.offlineMode) void refreshCatalog();
 }
 
 async function refreshCatalog(): Promise<void> {
-  if (!isTauri || refreshing) return;
+  if (!isTauri || refreshing || S.offlineMode) return;
   refreshing = true;
   scheduleRender();
   try {
