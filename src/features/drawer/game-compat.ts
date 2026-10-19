@@ -21,6 +21,7 @@ import {
   compatCatalog,
   compatGetGameConfig,
   compatGetLaunchConfig,
+  compatOpenGamePrefix,
   compatPreparePrefix,
   compatSetGameConfig,
   type CompatCatalog,
@@ -205,6 +206,7 @@ function cardBody(appName: string, config: GameCompatConfig): string {
         <button type="button" class="btn ghost small" data-act="game-compat-prefix-pick" data-id="${esc(appName)}">${esc(t("common.browse"))}</button>
         <button type="button" class="btn primary small" data-act="game-compat-prefix-save" data-id="${esc(appName)}">${esc(t("common.save"))}</button>
         <button type="button" class="btn ghost small" data-act="game-compat-prefix-prepare" data-id="${esc(appName)}" title="${esc(t("compat.preparePrefixHint"))}">${esc(t("compat.preparePrefix"))}</button>
+        <button type="button" class="btn ghost small" data-act="game-compat-prefix-open" data-id="${esc(appName)}" title="${esc(t("compat.openPrefix"))}">${icon("folder", 12)} ${esc(t("compat.openPrefix"))}</button>
       </div>
     </div>
     ${
@@ -347,13 +349,21 @@ export function handleGameCompatClick(act: string | undefined, el: HTMLElement):
   if (
     act !== "game-compat-prefix-pick" &&
     act !== "game-compat-prefix-save" &&
-    act !== "game-compat-prefix-prepare"
+    act !== "game-compat-prefix-prepare" &&
+    act !== "game-compat-prefix-open"
   ) {
     return false;
   }
   const appName = el.dataset.id ?? "";
   if (!appName || preparingPrefix === appName) return true;
   const config = configs.get(appName) ?? emptyConfig();
+
+  if (act === "game-compat-prefix-open") {
+    void compatOpenGamePrefix(appName)
+      .then((message) => toast(message, "ok"))
+      .catch((error) => toast(String(error), "err"));
+    return true;
+  }
 
   if (act === "game-compat-prefix-prepare") {
     startPrepare(appName);

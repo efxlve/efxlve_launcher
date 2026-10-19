@@ -354,6 +354,29 @@ fn store_of(app_name: &str) -> &'static str {
     }
 }
 
+/// The shared root, or the exact folder a game chose. Kept in one place so the
+/// launch path and the "open prefix" command cannot disagree.
+fn game_prefix(
+    app_name: &str,
+    game: &super::games::GameCompatConfig,
+    settings: &crate::EpicSettings,
+) -> PathBuf {
+    let root = settings
+        .compat_prefix_dir
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(default_prefix_dir);
+    game.prefix_dir
+        .as_deref()
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .unwrap_or_else(|| root.join(sanitize_segment(app_name)))
+}
+
 /// Builds the wrapper for one game. On Windows, and when no runner is
 /// installed, this returns an empty spec and the caller keeps its old path.
 pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
@@ -369,23 +392,7 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         return spec;
     }
     let target = Target::current();
-    let prefix_root = settings
-        .compat_prefix_dir
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(PathBuf::from)
-        .unwrap_or_else(default_prefix_dir);
-    // A per-game prefix is the exact folder the user picked, not a new child of
-    // it: reusing a Steam compatdata prefix is the common case.
-    let prefix = game
-        .prefix_dir
-        .as_deref()
-        .map(|value| value.trim())
-        .filter(|value| !value.is_empty())
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .unwrap_or_else(|| prefix_root.join(sanitize_segment(app_name)));
+    let prefix = game_prefix(app_name, &game, &settings);
     let _ = std::fs::create_dir_all(&prefix);
 
     let layers: Vec<String> = game
@@ -707,6 +714,18 @@ pub fn compat_open_prefix_root(app: AppHandle) -> Result<String, String> {
         .unwrap_or_else(default_prefix_dir);
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
     open_dir(&dir).map(|_| "@t:win.folderOpened".to_string())
+}
+
+/// Opens the game's own prefix. Proton keeps the real Wine tree under `pfx`,
+/// so an initialized prefix opens there; a fresh one opens the compatdata root.
+#[tauri::command]
+pub fn compat_open_game_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
+    let settings = crate::load_settings(&app);
+    let game = super::games::get(&app, &app_name);
+    let prefix = game_prefix(&app_name, &game, &settings);
+    let target = layer_prefix_root(&prefix).unwrap_or(prefix);
+    std::fs::create_dir_all(&target).map_err(|error| error.to_string())?;
+    open_dir(&target).map(|_| "@t:win.folderOpened".to_string())
 }
 
 #[tauri::command]

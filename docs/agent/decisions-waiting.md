@@ -169,6 +169,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   `resolved_category` 1/2/3 sırasıyla desteklenmiyor/oynanabilir/doğrulanmış.
   Yanıt uygulama başına `<app_data>/steam/deck/<appid>.json` altında günlük
   cache'leniyor; bilinmeyen kategori veya ağ hatasında satır gizli.
+- **Oyun prefix'ini aç:** Oyun kartındaki "Aç" düğmesi
+  `compat_open_game_prefix` çağırıyor. `game_prefix` yardımcısı başlatma ve bu
+  komut arasında paylaşılıyor; prefix hazırsa Proton'un `pfx` klasörü, değilse
+  compatdata kökü açılıyor. Klasör yoksa oluşturuluyor; tarayıcı harness'inde
+  çağrı ve "Klasör açıldı" bildirimi doğrulandı.
 - **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY satırları çevrimdışı
   modda hiç istek atmıyor; boş host kalıyor. Böylece oyun sayfası açılırken üç
   ayrı ağ zaman aşımı beklenmiyor.

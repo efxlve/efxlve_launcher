@@ -102,6 +102,9 @@ export const compatGetLaunchConfig = () =>
 export const compatOpenPrefixRoot = () =>
   invoke<string>("compat_open_prefix_root");
 
+export const compatOpenGamePrefix = (appName: string) =>
+  invoke<string>("compat_open_game_prefix", { appName });
+
 export interface GameCompatConfig {
   /** `null` means "use the global runner". */
   runner: string | null;

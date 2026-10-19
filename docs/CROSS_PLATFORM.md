@@ -219,6 +219,8 @@ paketinin çıktığı anlamına gelmez.
   hale gelince kayıt silinir ve oyun yine genel ayarı devralır. Prefix alanı
   boşsa genel kök ve oyun adı kullanılır; doluysa klasör olduğu gibi alınır,
   böylece Steam `compatdata` gibi var olan bir prefix yeniden kullanılabilir.
+  "Aç" düğmesi oyunun prefix'ini dosya yöneticisinde açar; prefix kurulmuşsa
+  Proton'un gerçek `pfx` klasörü, değilse compatdata kökü açılır.
 - Oyun sayfasındaki "Prefix'i hazırla" düğmesi `compat_prepare_prefix`
   komutunu çağırır: seçili çalıştırıcıyla `wineboot -u` çalışır, ilerleme
   `compat-prefix-progress` olayıyla gelir, 180 saniyede zaman aşımına uğrar ve
