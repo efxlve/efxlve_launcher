@@ -593,17 +593,7 @@ export const epicGetHltb = (
   year: number | null = null,
 ) => invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh, year });
 
-/* ---------- Critic & review scores (OpenCritic / Metacritic / Goygoy Engine) ---------- */
-
-export interface GoygoyReview {
-  title: string;
-  score?: number | null;
-  writer?: string | null;
-  summary?: string | null;
-  summary_en?: string | null;
-  url: string;
-  image?: string | null;
-}
+/* ---------- Critic scores (OpenCritic / Metacritic) ---------- */
 
 export interface CriticData {
   app_name: string;
@@ -615,7 +605,6 @@ export interface CriticData {
   metacritic_url?: string | null;
   igdb_score?: number | null;
   tier?: "Mighty" | "Strong" | "Fair" | "Weak" | null;
-  goygoy_review?: GoygoyReview | null;
 }
 
 export const epicGetCritic = (

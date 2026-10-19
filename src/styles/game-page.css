@@ -206,7 +206,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .tier-mighty, .tier-strong { color: var(--text); }
 .tier-fair { color: var(--warn); }
 .tier-weak { color: var(--err); }
-.tier-goygoy { color: var(--text-2); }
 .hub-critic-grid { display: flex; flex-direction: column; gap: 6px; }
 .hub-critic-badge { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: var(--r-sm); background: var(--surface-2); }
 .hub-critic-badge.clickable { cursor: pointer; }
@@ -220,18 +219,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .critic-badge-sub { font-size: 11px; color: var(--text-3); }
 .critic-badge-ext { color: var(--text-3); }
 .critic-loading-text, .hltb-loading-text { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-3); }
-.hub-goygoy-box { margin-top: 10px; padding: 12px; border-radius: var(--r-sm); background: var(--surface-2); cursor: pointer; }
-.hub-goygoy-box:hover { background: var(--surface-3); }
-.goygoy-box-top, .goygoy-box-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.goygoy-badge-top { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.goygoy-chip { font-size: 11px; color: var(--text-3); }
-.goygoy-score-pill { font-variant-numeric: tabular-nums; }
-.goygoy-score-num { font-size: 16px; font-weight: 700; }
-.goygoy-score-denom { font-size: 11px; color: var(--text-3); }
-.goygoy-box-title { margin: 8px 0 4px; font-size: 13px; font-weight: 600; }
-.goygoy-box-summary { font-size: 12px; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.goygoy-box-footer { margin-top: 10px; font-size: 12px; color: var(--text-3); }
-.goygoy-writer, .goygoy-read-action { display: inline-flex; align-items: center; gap: 5px; }
 
 /* HLTB */
 /* Only a card that answered "nothing found" collapses; a card that is still
@@ -885,14 +872,16 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* A card whose own block came back empty: it has nothing to frame. */
 .gp-scores-card.is-empty { display: none; }
 
-/* Three compact scores to a row: the badges used to stack as three wide rows.
-   The columns have to fit the sidebar's inner width: three 86px columns plus
-   the gaps came to 270px in a 268px card, so Metacritic wrapped on its own. */
-.hub-critic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 6px; }
-.hub-critic-badge { gap: 8px; padding: 6px; }
-.hub-critic-badge .critic-badge-score { width: 30px; height: 30px; font-size: 13px; border-radius: 8px; }
-.hub-critic-badge .critic-badge-name { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hub-critic-badge .critic-badge-sub { font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* One score per row, full width: the three-column grid cut "OpenCritic" and
+   "Metacritic" to "Ope…" and "Met…", and a reader cannot tell two truncated
+   names apart. Each badge is a row like the lengths above it. */
+.hub-critic-grid { display: flex; flex-direction: column; gap: 4px; }
+.hub-critic-badge { gap: 10px; padding: 8px 2px; background: transparent; border-radius: 0; }
+.hub-critic-badge + .hub-critic-badge { border-top: 1px solid var(--line); }
+.hub-critic-badge.clickable:hover { background: var(--surface-2); }
+.hub-critic-badge .critic-badge-score { width: 34px; height: 34px; font-size: 14px; border-radius: 8px; flex: none; }
+.hub-critic-badge .critic-badge-name { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-critic-badge .critic-badge-sub { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hub-critic-badge .critic-badge-ext { display: none; }
 
 /* ---------- The "…" menu ---------- */

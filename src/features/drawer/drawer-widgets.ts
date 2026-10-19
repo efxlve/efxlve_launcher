@@ -11,7 +11,7 @@ import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
 import { epicPlatinumIcon, icon } from "../../core/icons";
-import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
+import { isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { currentLanguage, formatSyncStamp, t as i18nT } from "../../i18n";
@@ -92,10 +92,6 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
     `;
   }
 
-  // The Goygoy Engine review is only shown to Turkish users.
-  const showGoygoy = isTurkishUser() && Boolean(critic?.goygoy_review);
-  const goygoy = showGoygoy ? critic?.goygoy_review : null;
-
   // Same as the HowLongToBeat card: not asked yet is not "nothing to show", and
   // the card holds its place so the column does not jump when the answer lands.
   if (!critic && igdbScore == null) {
@@ -117,7 +113,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   if (
     !critic ||
     !critic.supported ||
-    (!critic.opencritic_score && !critic.metacritic_score && !goygoy && igdbScore == null)
+    (!critic.opencritic_score && !critic.metacritic_score && igdbScore == null)
   ) {
     return "";
   }
@@ -126,9 +122,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
 
   const tierPill = critic.tier
     ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
-    : goygoy && !hasGlobalScores
-      ? `<span class="critic-tier-pill tier-goygoy">Goygoy Engine</span>`
-      : "";
+    : "";
 
   let globalScoresHtml = "";
   if (hasGlobalScores) {
@@ -176,44 +170,9 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
     `;
   }
 
-  let goygoyHtml = "";
-  if (goygoy) {
-    goygoyHtml = `
-      <div class="hub-goygoy-box clickable" role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(goygoy.url)}" title="${i18nT("critic.readOnGoygoy")}">
-        <div class="goygoy-box-top">
-          <div class="goygoy-badge-top">
-            <span class="goygoy-brand"><strong>Goygoy</strong> Engine</span>
-            <span class="goygoy-chip">${i18nT("critic.specialReview")}</span>
-          </div>
-          ${
-            goygoy.score
-              ? `<div class="goygoy-score-pill">
-                  <span class="goygoy-score-num">${goygoy.score}</span>
-                  <span class="goygoy-score-denom">/100</span>
-                </div>`
-              : ""
-          }
-        </div>
-        <div class="goygoy-box-title">${esc(goygoy.title)}</div>
-        ${goygoy.summary ? `<div class="goygoy-box-summary">“${esc(goygoy.summary)}”</div>` : ""}
-        <div class="goygoy-box-footer">
-          <div class="goygoy-writer">
-            ${icon("users", 12)}
-            <span>${esc(goygoy.writer || "Goygoy Engine")}</span>
-          </div>
-          <div class="goygoy-read-action">
-            <span>${i18nT("critic.readReview")}</span>
-            ${icon("external", 12)}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   return `
     ${tierPill ? `<div class="gp-scores-pill-row">${tierPill}</div>` : ""}
     ${globalScoresHtml}
-    ${goygoyHtml}
   `;
 }
 

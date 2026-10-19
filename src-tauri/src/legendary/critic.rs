@@ -2,18 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GoygoyReview {
-    pub title: String,
-    pub score: Option<u32>,
-    pub writer: Option<String>,
-    pub summary: Option<String>,
-    #[serde(default)]
-    pub summary_en: Option<String>,
-    pub url: String,
-    pub image: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CriticData {
     pub app_name: String,
     pub title: String,
@@ -24,37 +12,9 @@ pub struct CriticData {
     pub metacritic_url: Option<String>,
     pub igdb_score: Option<f64>,
     pub tier: Option<String>,
-    #[serde(default)]
-    pub goygoy_review: Option<GoygoyReview>,
     /// Bumped when the reception parser changes so stale disk rows are rebuilt.
     #[serde(default)]
     pub parser_version: u32,
-}
-
-#[derive(Debug, Clone, Default, Deserialize)]
-pub struct GoygoyRawItem {
-    #[serde(default)]
-    pub title: Option<String>,
-    #[serde(default)]
-    pub game: Option<String>,
-    #[serde(default, rename = "gameName")]
-    pub game_name: Option<String>,
-    #[serde(default)]
-    pub score: Option<u32>,
-    #[serde(default)]
-    pub writer: Option<String>,
-    #[serde(default)]
-    pub summary: Option<String>,
-    #[serde(default, rename = "summaryEn")]
-    pub summary_en: Option<String>,
-    #[serde(default)]
-    pub path: Option<String>,
-    #[serde(default)]
-    pub slug: Option<String>,
-    #[serde(default)]
-    pub image: Option<String>,
-    #[serde(default)]
-    pub tags: Vec<String>,
 }
 
 const CRITIC_PARSER_VERSION: u32 = 7;
@@ -424,129 +384,6 @@ pub fn title_matches_page(raw_title: &str, page: &str) -> bool {
     want.contains(&candidate)
 }
 
-pub fn find_goygoy_review_match(title: &str, items: &[GoygoyRawItem]) -> Option<GoygoyReview> {
-    let clean_title = clean_critic_search_term(title);
-    let norm_title = normalize_for_match(&clean_title);
-    if norm_title.is_empty() {
-        return None;
-    }
-
-    // Stage 1: exact normalized name or label match
-    for item in items {
-        if let Some(ref gn) = item.game_name {
-            if normalize_for_match(gn) == norm_title {
-                return make_goygoy_review(item);
-            }
-        }
-        if let Some(ref g) = item.game {
-            if normalize_for_match(g) == norm_title {
-                return make_goygoy_review(item);
-            }
-        }
-        for tag in &item.tags {
-            if normalize_for_match(tag) == norm_title {
-                return make_goygoy_review(item);
-            }
-        }
-    }
-
-    // Stage 2: substring match (for game names of at least 5 characters). The
-    // shorter name must cover most of the title: a bare "Spider-Man 2" is not a
-    // match for a longer, different game of the same family.
-    if norm_title.len() >= 5 {
-        for item in items {
-            if let Some(ref gn) = item.game_name {
-                let norm_gn = normalize_for_match(gn);
-                if norm_gn.len() >= 5
-                    && (norm_gn.contains(&norm_title)
-                        || (norm_title.contains(&norm_gn)
-                            && norm_gn.len() * 100 >= norm_title.len() * 65))
-                {
-                    return make_goygoy_review(item);
-                }
-            }
-            if let Some(ref g) = item.game {
-                let norm_g = normalize_for_match(g);
-                if norm_g.len() >= 5
-                    && (norm_g.contains(&norm_title)
-                        || (norm_title.contains(&norm_g)
-                            && norm_g.len() * 100 >= norm_title.len() * 65))
-                {
-                    return make_goygoy_review(item);
-                }
-            }
-        }
-    }
-
-    None
-}
-
-fn make_goygoy_review(item: &GoygoyRawItem) -> Option<GoygoyReview> {
-    let raw_path = item.path.as_deref().or(item.slug.as_deref())?;
-    let path = raw_path.trim();
-    let url = if path.starts_with("http") {
-        path.to_string()
-    } else if path.starts_with('/') {
-        format!("https://goygoyengine.com{}", path)
-    } else {
-        format!("https://goygoyengine.com/{}", path)
-    };
-
-    Some(GoygoyReview {
-        title: item
-            .title
-            .clone()
-            .unwrap_or_else(|| "@t:critic.reviewTitle".to_string()),
-        score: item.score,
-        writer: item.writer.clone(),
-        summary: item.summary.clone(),
-        summary_en: item.summary_en.clone(),
-        url,
-        image: item.image.clone(),
-    })
-}
-
-async fn fetch_goygoy_reviews(client: &reqwest::Client) -> Vec<GoygoyRawItem> {
-    let cache_file = critic_cache_dir().join("goygoy_reviews.json");
-
-    // 6 saatten taze ise yerel diskten oku
-    if let Ok(metadata) = tokio::fs::metadata(&cache_file).await {
-        if let Ok(modified) = metadata.modified() {
-            if let Ok(elapsed) = modified.elapsed() {
-                if elapsed.as_secs() < 6 * 3600 {
-                    if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
-                        if let Ok(items) = serde_json::from_str::<Vec<GoygoyRawItem>>(&content) {
-                            return items;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Fetch from the network
-    let url = "https://goygoyengine.com/incelemeler-data.json";
-    let ua = "EfxlveLauncher/1.0 (https://github.com/efxlve/launcher)";
-    if let Ok(resp) = client.get(url).header("User-Agent", ua).send().await {
-        if let Ok(text) = resp.text().await {
-            if let Ok(items) = serde_json::from_str::<Vec<GoygoyRawItem>>(&text) {
-                let _ = tokio::fs::create_dir_all(critic_cache_dir()).await;
-                let _ = tokio::fs::write(&cache_file, &text).await;
-                return items;
-            }
-        }
-    }
-
-    // On a network error, use the old cache if present
-    if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
-        if let Ok(items) = serde_json::from_str::<Vec<GoygoyRawItem>>(&content) {
-            return items;
-        }
-    }
-
-    Vec::new()
-}
-
 pub async fn get_critic_data(
     title: &str,
     app_name: &str,
@@ -576,7 +413,6 @@ pub async fn get_critic_data(
                 metacritic_url: None,
                 igdb_score: None,
                 tier: None,
-                goygoy_review: None,
                 parser_version: 0,
             };
         }
@@ -587,16 +423,6 @@ pub async fn get_critic_data(
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(mut data) = serde_json::from_str::<CriticData>(&content) {
                 if data.supported && data.parser_version >= CRITIC_PARSER_VERSION {
-                    // If goygoy_review is not in the cache yet, quickly check and enrich it
-                    if data.goygoy_review.is_none() {
-                        let goygoy_items = fetch_goygoy_reviews(&client).await;
-                        if let Some(g_rev) = find_goygoy_review_match(title, &goygoy_items) {
-                            data.goygoy_review = Some(g_rev);
-                            if let Ok(json_str) = serde_json::to_string_pretty(&data) {
-                                let _ = tokio::fs::write(&cache_file, json_str).await;
-                            }
-                        }
-                    }
                     return data;
                 }
             }
@@ -624,7 +450,6 @@ pub async fn get_critic_data(
             metacritic_url: direct_url,
             igdb_score: None,
             tier: direct_score.map(|s| calculate_tier(s).to_string()),
-            goygoy_review: None,
             parser_version: CRITIC_PARSER_VERSION,
         };
         if supported {
@@ -741,19 +566,11 @@ pub async fn get_critic_data(
         }
     }
 
-    // 4. Goygoy Engine incelemesi ara
-    let goygoy_items = fetch_goygoy_reviews(&client).await;
-    let goygoy_match = find_goygoy_review_match(title, &goygoy_items);
-
     let supported = oc_score.is_some()
         || direct_score.is_some()
         || mc_score.is_some()
-        || igdb_score.is_some()
-        || goygoy_match.is_some();
-    let effective_score = oc_score
-        .or(direct_score)
-        .or(mc_score)
-        .or_else(|| goygoy_match.as_ref().and_then(|g| g.score));
+        || igdb_score.is_some();
+    let effective_score = oc_score.or(direct_score).or(mc_score);
     let tier = effective_score.map(|s| calculate_tier(s).to_string());
 
     let result = CriticData {
@@ -766,7 +583,6 @@ pub async fn get_critic_data(
         metacritic_url: direct_url.or(mc_url),
         igdb_score,
         tier,
-        goygoy_review: goygoy_match,
         parser_version: CRITIC_PARSER_VERSION,
     };
 
@@ -901,51 +717,5 @@ mod tests {
             mc_pc_url,
             Some("https://www.metacritic.com/game/counter-strike-2/".to_string())
         );
-    }
-
-    #[test]
-    fn test_find_goygoy_review_match() {
-        let items = vec![
-            GoygoyRawItem {
-                title: Some("Watch Dogs İnceleme".to_string()),
-                game: Some("watchdogs".to_string()),
-                game_name: Some("Watch Dogs".to_string()),
-                score: Some(78),
-                writer: Some("EdgeTypE".to_string()),
-                summary: Some("Harika bir açık dünya oyunu.".to_string()),
-                summary_en: Some("Great open world game.".to_string()),
-                path: Some("/inceleme/watch-dogs".to_string()),
-                slug: None,
-                image: None,
-                tags: vec!["Watch Dogs".to_string()],
-            },
-            GoygoyRawItem {
-                title: Some("Kingdom Come: Deliverance II İnceleme".to_string()),
-                game: Some("kingdomcomedeliverance2".to_string()),
-                game_name: Some("Kingdom Come: Deliverance II".to_string()),
-                score: Some(96),
-                writer: Some("EdgeTypE".to_string()),
-                summary: Some("Başyapıt.".to_string()),
-                summary_en: Some("Masterpiece.".to_string()),
-                path: Some("/inceleme/kingdom-come-deliverance-2".to_string()),
-                slug: None,
-                image: None,
-                tags: vec!["Kingdom Come: Deliverance 2".to_string()],
-            },
-        ];
-
-        let m1 = find_goygoy_review_match("Watch Dogs: Complete Edition", &items);
-        assert!(m1.is_some());
-        let r1 = m1.unwrap();
-        assert_eq!(r1.score, Some(78));
-        assert_eq!(r1.writer.as_deref(), Some("EdgeTypE"));
-        assert_eq!(r1.url, "https://goygoyengine.com/inceleme/watch-dogs");
-
-        let m2 = find_goygoy_review_match("Kingdom Come: Deliverance II", &items);
-        assert!(m2.is_some());
-        assert_eq!(m2.unwrap().score, Some(96));
-
-        let m3 = find_goygoy_review_match("Cyberpunk 2077", &items);
-        assert!(m3.is_none());
     }
 }
