@@ -46,5 +46,9 @@ look in case it wrote something despite the instruction.
   Antigravity before any of it is written.
 - `game-page-after-redesign.md` — the second round, written after the mockup was
   implemented: is the page enough to adopt now, and which of the eight open
-  decisions should change? **Not sent yet**: waiting for the owner to paste it
-  into Antigravity.
+  decisions should change? **Answered** by Gemini 4 Argon; its ten items are
+  being applied (meta line, action row, scores card, cloud label, empty card,
+  the `...` button, the hero banner).
+- `game-page-simplify.md` — the third round, after the owner said the page has
+  become too complex. It asks what to **remove**, not what to add. **Not sent
+  yet**: waiting for the owner to paste it into Antigravity.
