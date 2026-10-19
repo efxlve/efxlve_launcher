@@ -53,11 +53,22 @@ impl<'a> VdfParser<'a> {
     }
 
     fn skip_ws(&mut self) {
-        while let Some(&b) = self.bytes.get(self.pos) {
-            if b == b' ' || b == b'\t' || b == b'\r' || b == b'\n' {
-                self.pos += 1;
-            } else {
-                break;
+        loop {
+            match self.bytes.get(self.pos) {
+                Some(b' ') | Some(b'\t') | Some(b'\r') | Some(b'\n') => self.pos += 1,
+                // Valve's format allows `//` to the end of the line, and people
+                // paste commented examples into libraryfolders.vdf. Only ever
+                // seen at a token position: a `//` inside a quoted string is
+                // read by `string`, which does not come through here.
+                Some(b'/') if self.bytes.get(self.pos + 1) == Some(&b'/') => {
+                    while let Some(&b) = self.bytes.get(self.pos) {
+                        if b == b'\n' {
+                            break;
+                        }
+                        self.pos += 1;
+                    }
+                }
+                _ => break,
             }
         }
     }
@@ -169,6 +180,80 @@ mod tests {
                 .and_then(|f| f.get("label"))
                 .and_then(Vdf::as_str),
             Some("Games")
+        );
+    }
+
+    /// People edit this file by hand, and Valve's own examples carry `//`
+    /// comments. A comment must not stop the parse where it stands: everything
+    /// after it would disappear from the library.
+    #[test]
+    fn comments_do_not_end_the_document() {
+        let text = r#"
+        "libraryfolders"
+        {
+            // the first disk
+            "0"
+            {
+                "path"		"C:\\Games"   // main library
+            }
+            "1"
+            {
+                "path"		"D:\\SteamLibrary"
+            }
+        }
+        "#;
+        let root = parse_vdf(text);
+        let folders = root.get("libraryfolders").expect("libraryfolders node");
+        assert_eq!(folders.entries().len(), 2, "both folders survive the comment");
+        assert_eq!(
+            folders
+                .get("0")
+                .and_then(|f| f.get("path"))
+                .and_then(Vdf::as_str),
+            Some(r"C:\Games")
+        );
+    }
+
+    /// A `//` inside a quoted value is part of the value: paths and labels carry
+    /// it, and cutting them there would corrupt them.
+    #[test]
+    fn a_double_slash_inside_a_value_stays() {
+        let root = parse_vdf("\"a\"\n{\n\"path\"\t\t\"http://example.com/x\"\n}\n");
+        assert_eq!(
+            root.get("a").and_then(|n| n.get("path")).and_then(Vdf::as_str),
+            Some("http://example.com/x")
+        );
+    }
+
+    /// Broken input yields an empty tree instead of a panic or a hang.
+    #[test]
+    fn broken_documents_do_not_panic() {
+        for text in [
+            "",
+            "{",
+            "}",
+            "\"unterminated",
+            "\"key\" {",
+            "\"key\" \"value\" }",
+            "no quotes at all",
+            "\"a\" \"\\",
+        ] {
+            let root = parse_vdf(text);
+            // Whatever comes back, it must be a tree the callers can walk.
+            let _ = root.get("a");
+            let _ = root.entries();
+        }
+    }
+
+    /// Escapes are unwrapped the way Valve writes them: `\"` is a quote inside a
+    /// value, `\\` a backslash.
+    #[test]
+    fn escapes_are_unwrapped() {
+        let root = parse_vdf("\"k\"\t\t\"a\\\"b\\\\c\"\n");
+        assert_eq!(
+            root.get("k").and_then(Vdf::as_str),
+            Some("a\"b\\c"),
+            "quote and backslash both come through"
         );
     }
 }
