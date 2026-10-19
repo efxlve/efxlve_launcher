@@ -123,6 +123,18 @@ language. A visual pass needs screenshots; it cannot be done blind.
   TV cards.
 - Keep what works: gamepad navigation, boot animation, clock, battery, panels.
 
+Status, 2026-10-19: the hub was opened in the browser harness, so its structure
+is now known even though its look still needs a real screen. What is there and
+works: the header strip (L1/R1 category tabs with counts, search, account chip,
+stores, downloads, battery, clock, exit), the stage (large title, store and
+installed chips, three actions, focus ring), the shelf (poster-only cards with a
+focus ring and running/update badges), the empty-category state, and the boot
+overlay. The shelf's posters come from the picture cache, which fills on the
+first library pass; in the harness that pass never ran, so the cards showed the
+placeholder. Two things only a real screen can answer: whether the shelf's
+poster cards should become the library's `pcard` visuals, and whether the
+type scale still reads at 1920 px.
+
 ## 2. Window transparency cost
 
 `tauri.conf.json` uses a frameless `transparent: true` window, so the compositor
