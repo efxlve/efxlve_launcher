@@ -1,9 +1,9 @@
 /**
  * Media Studio Hub: Every capture and recording across every game.
  *
- * Combines full screenshot management (lightbox, photo studio, compression,
- * batch export) and a professional Video Clip Studio (in-app player, visual filmstrip
- * timeline, frame grabber / photo snapshot, trim and Discord share).
+ * Unified creative workspace combining full photo studio capabilities
+ * (color grading presets, adjustments, crop ratios, annotations, watermark)
+ * and an interactive video clip studio (player, trimmer, frame snapshot grabber).
  */
 
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -41,7 +41,7 @@ import { openScreenshotEditor } from "./screenshot-editor";
 import { ssDensity, ssFavorites, ssSort, ssSortItems, ssToggleFavorite, ssWebhooks } from "./ss-settings";
 
 export type StudioTab = "all" | "photos" | "clips" | "favorites";
-export type PageFilter = "all" | "favorites" | "raw" | "compressed";
+export type PageFilter = "all" | "raw" | "compressed" | "favorites";
 
 let shots: GameScreenshotItem[] = [];
 let clips: ClipItem[] = [];
@@ -78,6 +78,10 @@ export function setSearchQuery(query: string): void {
   searchQuery = query.toLowerCase().trim();
 }
 
+export function getShotByPath(path: string): GameScreenshotItem | undefined {
+  return shots.find((item) => item.file_path === path);
+}
+
 /** Filtered and sorted shots list for the page and lightbox. */
 export function visiblePageShots(): GameScreenshotItem[] {
   const favorites = ssFavorites();
@@ -88,7 +92,7 @@ export function visiblePageShots(): GameScreenshotItem[] {
       const matchFile = item.file_name.toLowerCase().includes(q);
       if (!matchGame && !matchFile) return false;
     }
-    if (studioTab === "favorites" || filter === "favorites") return favorites.has(item.file_path);
+    if (studioTab === "favorites") return favorites.has(item.file_path);
     if (filter === "raw") return !isCompressed(item);
     if (filter === "compressed") return isCompressed(item);
     return true;
@@ -101,7 +105,7 @@ export function visiblePageClips(): ClipItem[] {
   const q = searchQuery;
   return clips.filter((clip) => {
     if (!q) return true;
-    return clip.name.toLowerCase().includes(q) || (clip.path.toLowerCase().includes(q));
+    return clip.name.toLowerCase().includes(q) || clip.path.toLowerCase().includes(q);
   });
 }
 
@@ -157,7 +161,9 @@ export function repaintScreenshotsPage(): void {
 
 /* ---------- Markup ---------- */
 
-function studioNavHtml(): string {
+function studioToolbarHtml(): string {
+  const chip = (act: string, value: string, label: string, active: boolean, data: string): string =>
+    `<button type="button" class="ss-chip-btn${active ? " active" : ""}" data-act="${act}" ${data}="${value}">${label}</button>`;
   const tabBtn = (id: StudioTab, label: string, iconName: Parameters<typeof icon>[0], count?: number): string => `
     <button type="button" class="ss-studio-pill${studioTab === id ? " active" : ""}" data-act="ssp-tab" data-tab="${id}">
       ${icon(iconName, 13)}
@@ -167,58 +173,55 @@ function studioNavHtml(): string {
 
   const favorites = ssFavorites();
   const favCount = shots.filter((item) => favorites.has(item.file_path)).length;
+  const sort = ssSort();
+  const density = ssDensity();
+  const selected = selection.size;
 
   return `
-    <div class="ss-studio-nav">
+    <div class="ss-studio-bar">
       <div class="ss-studio-pills">
         ${tabBtn("all", t("ss.tabAll"), "layers", shots.length + clips.length)}
         ${tabBtn("photos", t("ss.tabPhotos"), "image", shots.length)}
         ${tabBtn("clips", t("ss.tabClips"), "video", clips.length)}
         ${tabBtn("favorites", t("ss.tabFavorites"), "star", favCount)}
       </div>
-      <div class="ss-studio-search-wrap">
-        ${icon("search", 13)}
-        <input type="text" id="ss-studio-search" class="ss-studio-search" placeholder="${esc(t("ss.searchPlaceholder"))}" value="${esc(searchQuery)}" />
-        ${searchQuery ? `<button type="button" class="ss-search-clear" data-act="ssp-search-clear">${icon("x", 12)}</button>` : ""}
-      </div>
-    </div>`;
-}
 
-function toolbarHtml(): string {
-  const chip = (act: string, value: string, label: string, active: boolean, data: string): string =>
-    `<button type="button" class="ss-chip-btn${active ? " active" : ""}" data-act="${act}" ${data}="${value}">${label}</button>`;
-  const sort = ssSort();
-  const density = ssDensity();
-  const selected = selection.size;
-  const favorites = ssFavorites();
-  const counts = {
-    all: shots.length,
-    favorites: shots.filter((item) => favorites.has(item.file_path)).length,
-    raw: shots.filter((item) => !isCompressed(item)).length,
-    compressed: shots.filter(isCompressed).length,
-  };
+      ${
+        studioTab !== "clips"
+          ? `<div class="ss-studio-filters">
+              ${chip("ssp-filter", "all", t("ss.filterAll"), filter === "all", "data-filter")}
+              ${chip("ssp-filter", "raw", t("ss.filterRaw"), filter === "raw", "data-filter")}
+              ${chip("ssp-filter", "compressed", t("ss.filterCompressed"), filter === "compressed", "data-filter")}
+            </div>`
+          : ""
+      }
 
-  return `
-    <div class="ss-toolbar">
-      <div class="ss-toolbar-left">
-        ${chip("ssp-filter", "all", `${t("ss.filterAll")} <span class="ss-chip-count">${counts.all}</span>`, filter === "all", "data-filter")}
-        ${chip("ssp-filter", "favorites", `${t("ss.filterFavorites")} <span class="ss-chip-count">${counts.favorites}</span>`, filter === "favorites", "data-filter")}
-        ${chip("ssp-filter", "raw", t("ss.filterRaw"), filter === "raw", "data-filter")}
-        ${chip("ssp-filter", "compressed", t("ss.filterCompressed"), filter === "compressed", "data-filter")}
-      </div>
-      <div class="ss-toolbar-right">
-        ${chip("ssp-sort", "newest", t("ss.sortNewest"), sort === "newest", "data-sort")}
-        ${chip("ssp-sort", "oldest", t("ss.sortOldest"), sort === "oldest", "data-sort")}
-        ${chip("ssp-sort", "name", t("ss.sortName"), sort === "name", "data-sort")}
-        ${chip("ssp-sort", "size", t("ss.sortSize"), sort === "size", "data-sort")}
+      <div class="ss-studio-bar-right">
+        <div class="ss-studio-search-wrap">
+          ${icon("search", 13)}
+          <input type="text" id="ss-studio-search" class="ss-studio-search" placeholder="${esc(t("ss.searchPlaceholder"))}" value="${esc(searchQuery)}" />
+          ${searchQuery ? `<button type="button" class="ss-search-clear" data-act="ssp-search-clear" title="${t("common.clear")}">${icon("x", 12)}</button>` : ""}
+        </div>
+
         <span class="ss-toolbar-divider"></span>
-        ${chip("ssp-density", "s", t("ss.densitySmall"), density === "s", "data-density")}
-        ${chip("ssp-density", "m", t("ss.densityMedium"), density === "m", "data-density")}
-        ${chip("ssp-density", "l", t("ss.densityLarge"), density === "l", "data-density")}
-        <span class="ss-toolbar-divider"></span>
-        <button type="button" class="btn ghost small${selectMode ? " active" : ""}" data-act="ssp-select">
-          ${icon("check", 12)} ${t("ss.selectMode")}
-        </button>
+
+        <div class="ss-studio-sort-group">
+          ${chip("ssp-sort", "newest", t("ss.sortNewest"), sort === "newest", "data-sort")}
+          ${chip("ssp-sort", "oldest", t("ss.sortOldest"), sort === "oldest", "data-sort")}
+          ${chip("ssp-sort", "name", t("ss.sortName"), sort === "name", "data-sort")}
+          ${chip("ssp-sort", "size", t("ss.sortSize"), sort === "size", "data-sort")}
+        </div>
+
+        ${
+          studioTab !== "clips"
+            ? `<span class="ss-toolbar-divider"></span>
+               <div class="ss-studio-density-group">
+                 ${chip("ssp-density", "s", t("ss.densitySmall"), density === "s", "data-density")}
+                 ${chip("ssp-density", "m", t("ss.densityMedium"), density === "m", "data-density")}
+                 ${chip("ssp-density", "l", t("ss.densityLarge"), density === "l", "data-density")}
+               </div>`
+            : ""
+        }
       </div>
     </div>
     ${
@@ -247,6 +250,11 @@ function cardHtml(item: GameScreenshotItem, index: number): string {
           <div class="screenshot-overlay-top">
             <span class="ss-chip date">${esc(item.date_str)}</span>
             <span class="ss-chip size">${esc(item.size_str)}</span>
+          </div>
+          <div class="screenshot-overlay-center">
+            <button type="button" class="ss-card-edit-btn" data-act="ssp-card-edit" data-path="${esc(item.file_path)}" title="${esc(t("ss.edit"))}">
+              ${icon("camera", 13)} <span>${t("ss.edit")}</span>
+            </button>
           </div>
           <div class="screenshot-overlay-bottom">
             <span class="ss-view-btn">${icon("eye", 12)} ${t("ss.zoom")}</span>
@@ -305,25 +313,28 @@ function videoCardHtml(clip: ClipItem): string {
 function clipsSectionHtml(): string {
   if (!clipsLoaded) loadClips();
   const visibleClips = visiblePageClips();
+
   if (visibleClips.length === 0) {
+    if (studioTab !== "clips") return "";
     return `
-      <div class="ss-clips-head">
-        <h3 class="section-title">${icon("video", 15)} ${t("ss.tabClips")}</h3>
-      </div>
-      <div class="screenshots-empty-card" style="margin-top: 14px; padding: 28px 16px;">
-        <p class="screenshots-empty-desc">${t("ss.clipEmpty")}</p>
+      <div class="screenshots-empty-card" style="margin-top: 24px;">
+        <div class="screenshots-empty-icon">${icon("video", 40)}</div>
+        <h4 class="screenshots-empty-title">${t("ss.clipEmpty")}</h4>
+        <p class="screenshots-empty-desc">${t("ss.clipDesc")}</p>
       </div>`;
   }
 
   return `
-    <div class="ss-clips-head">
-      <div class="ss-head-info">
-        <h3 class="section-title">${icon("video", 15)} ${t("ss.tabClips")}</h3>
-        <span class="screenshots-count-chip">${visibleClips.length}</span>
+    <div class="ss-clips-section">
+      <div class="ss-clips-head">
+        <div class="ss-head-info">
+          <h3 class="section-title">${icon("video", 15)} ${t("ss.tabClips")}</h3>
+          <span class="screenshots-count-chip">${visibleClips.length}</span>
+        </div>
+        ${visibleClips.length > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
       </div>
-      ${visibleClips.length > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
-    </div>
-    <div class="ss-video-grid">${visibleClips.map((c) => videoCardHtml(c)).join("")}</div>`;
+      <div class="ss-video-grid">${visibleClips.map((c) => videoCardHtml(c)).join("")}</div>
+    </div>`;
 }
 
 const SCAN_CAP = 300;
@@ -338,7 +349,9 @@ export function renderScreenshotsPage(): string {
   const visibleShots = visiblePageShots();
   const visibleClips = visiblePageClips();
   const favorites = ssFavorites();
-  const totalBytes = shots.reduce((sum, item) => sum + shotBytes(item), 0) + clips.reduce((sum, c) => sum + c.sizeBytes, 0);
+  const totalBytes =
+    shots.reduce((sum, item) => sum + shotBytes(item), 0) +
+    clips.reduce((sum, c) => sum + c.sizeBytes, 0);
 
   const header = `
     <div class="ss-page-head">
@@ -348,6 +361,9 @@ export function renderScreenshotsPage(): string {
         ${favorites.size > 0 ? `<span class="screenshots-count-chip ss-fav-chip">${icon("star", 11)} ${favorites.size}</span>` : ""}
       </div>
       <div class="ss-page-actions">
+        <button type="button" class="btn ghost small${selectMode ? " active" : ""}" data-act="ssp-select">
+          ${icon("check", 12)} ${t("ss.selectMode")}
+        </button>
         <button type="button" class="btn ghost small" data-act="ssp-refresh">${icon("refresh", 13)} ${t("task.refresh")}</button>
         <button type="button" class="btn ghost small" data-act="ss-open-dir">${icon("folder", 13)} ${t("ss.openFolder")}</button>
       </div>
@@ -357,7 +373,7 @@ export function renderScreenshotsPage(): string {
     return `
       <div class="page screenshots-page">
         ${header}
-        ${studioNavHtml()}
+        ${studioToolbarHtml()}
         <div class="screenshots-empty-card">
           <div class="screenshots-empty-icon">${icon("clapperboard", 44)}</div>
           <h4 class="screenshots-empty-title">${t("ss.allMediaEmpty")}</h4>
@@ -371,7 +387,6 @@ export function renderScreenshotsPage(): string {
     content = clipsSectionHtml();
   } else if (studioTab === "photos") {
     content = `
-      ${toolbarHtml()}
       ${
         visibleShots.length === 0
           ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
@@ -380,7 +395,6 @@ export function renderScreenshotsPage(): string {
   } else if (studioTab === "favorites") {
     const favShots = visibleShots.filter((item) => favorites.has(item.file_path));
     content = `
-      ${toolbarHtml()}
       ${
         favShots.length === 0
           ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
@@ -390,14 +404,6 @@ export function renderScreenshotsPage(): string {
     // "all" tab
     content = `
       ${clips.length > 0 ? clipsSectionHtml() : ""}
-      <div class="ss-section-divider"></div>
-      <div class="ss-clips-head" style="margin-top: 14px;">
-        <div class="ss-head-info">
-          <h3 class="section-title">${icon("image", 15)} ${t("ss.tabPhotos")}</h3>
-          <span class="screenshots-count-chip">${visibleShots.length}</span>
-        </div>
-      </div>
-      ${toolbarHtml()}
       ${
         visibleShots.length === 0
           ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
@@ -408,7 +414,7 @@ export function renderScreenshotsPage(): string {
   return `
     <div class="page screenshots-page">
       ${header}
-      ${studioNavHtml()}
+      ${studioToolbarHtml()}
       ${content}
       ${
         shots.length >= SCAN_CAP
@@ -421,14 +427,18 @@ export function renderScreenshotsPage(): string {
 function wireSearchInput(): void {
   const input = document.getElementById("ss-studio-search") as HTMLInputElement | null;
   if (!input) return;
+  let timer: number | null = null;
   input.addEventListener("input", () => {
-    setSearchQuery(input.value);
-    repaintScreenshotsPage();
-    const repainted = document.getElementById("ss-studio-search") as HTMLInputElement | null;
-    if (repainted) {
-      repainted.focus();
-      repainted.selectionStart = repainted.selectionEnd = repainted.value.length;
-    }
+    if (timer) window.clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      setSearchQuery(input.value);
+      repaintScreenshotsPage();
+      const nextInput = document.getElementById("ss-studio-search") as HTMLInputElement | null;
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.selectionStart = nextInput.selectionEnd = nextInput.value.length;
+      }
+    }, 120);
   });
 }
 
@@ -593,7 +603,7 @@ export async function openClipStudio(path: string): Promise<void> {
     }
 
     v.addEventListener("error", () => {
-      // AVI fallback: show poster or first frame
+      // Fallback: extract frame and display poster
       void clipFrame(path, 0.5).then((frame) => {
         if (frame && v.parentElement) {
           const img = document.createElement("img");

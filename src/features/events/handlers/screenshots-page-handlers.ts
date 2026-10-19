@@ -18,6 +18,7 @@ import {
   deletePageShot,
   dropClip,
   fitClipShareRange,
+  getShotByPath,
   grabClipFrame,
   isPageBatchDeleteArmed,
   loadScreenshotsPage,
@@ -127,6 +128,15 @@ export function handleScreenshotsPageAction(
       if (path) {
         const favorite = togglePageFavorite(path);
         toast(t(favorite ? "ss.favorited" : "ss.unfavorited"), "ok");
+      }
+      return true;
+    }
+
+    case "ssp-card-edit": {
+      const path = el.dataset.path ?? "";
+      if (path) {
+        const item = getShotByPath(path);
+        if (item) openScreenshotEditor(item);
       }
       return true;
     }

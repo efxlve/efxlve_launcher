@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Application bootstrap and Tauri IPC event listeners.
  *
  * Wires the render/HUD/modal buses, hydrates settings, registers every backend
@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Download, Image, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Clapperboard, Download, Image, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -202,7 +202,7 @@ export async function initApp(hooks: {
   installArtFallback();
   updateMaxIcon();
   createIcons({
-    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, ...BRAND_ICONS },
+    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, Clapperboard, ...BRAND_ICONS },
   });
   loadNotifications();
   initAutoUpdate();
