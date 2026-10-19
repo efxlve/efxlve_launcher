@@ -68,6 +68,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `compat_catalog` | `compatCatalog({ ... })` | `src-tauri/src/compat/install.rs` |
 | `compat_clear_partials` | `compatClearPartials({ ... })` | `src-tauri/src/compat/install.rs` |
 | `compat_disk_usage` | `compatDiskUsage({ ... })` | `src-tauri/src/compat/install.rs` |
+| `compat_game_prefix_state` | `compatGamePrefixState({ ... })` | `src-tauri/src/compat/launch.rs` |
 | `compat_get_game_config` | `compatGetGameConfig({ ... })` | `src-tauri/src/compat/games.rs` |
 | `compat_get_launch_config` | `compatGetLaunchConfig({ ... })` | `src-tauri/src/compat/launch.rs` |
 | `compat_install` | `compatInstall({ ... })` | `src-tauri/src/compat/install.rs` |

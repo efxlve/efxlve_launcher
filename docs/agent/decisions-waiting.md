@@ -174,6 +174,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   komut arasında paylaşılıyor; prefix hazırsa Proton'un `pfx` klasörü, değilse
   compatdata kökü açılıyor. Klasör yoksa oluşturuluyor; tarayıcı harness'inde
   çağrı ve "Klasör açıldı" bildirimi doğrulandı.
+- **Prefix durumu:** `compat_game_prefix_state` oyunun gerçek prefix yolunu ve
+  `system.reg` var mı bilgisini döndürüyor. Kart bunu "Prefix hazır." /
+  "Prefix henüz oluşturulmadı." olarak gösteriyor; prefix kaydı ve hazırlama
+  sonrası durum yeniden okunuyor.
 - **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY satırları çevrimdışı
   modda hiç istek atmıyor; boş host kalıyor. Böylece oyun sayfası açılırken üç
   ayrı ağ zaman aşımı beklenmiyor.

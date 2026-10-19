@@ -716,6 +716,30 @@ pub fn compat_open_prefix_root(app: AppHandle) -> Result<String, String> {
     open_dir(&dir).map(|_| "@t:win.folderOpened".to_string())
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GamePrefixState {
+    /// The folder the UI should show/open: `pfx` once initialized, the
+    /// compatdata root before that.
+    pub path: String,
+    pub initialized: bool,
+}
+
+/// Whether the game's prefix has been created, without touching the disk.
+#[tauri::command]
+pub fn compat_game_prefix_state(app: AppHandle, app_name: String) -> GamePrefixState {
+    let settings = crate::load_settings(&app);
+    let game = super::games::get(&app, &app_name);
+    let prefix = game_prefix(&app_name, &game, &settings);
+    let initialized_root = layer_prefix_root(&prefix);
+    let initialized = initialized_root.is_some();
+    let path = initialized_root.unwrap_or(prefix);
+    GamePrefixState {
+        path: path.display().to_string(),
+        initialized,
+    }
+}
+
 /// Opens the game's own prefix. Proton keeps the real Wine tree under `pfx`,
 /// so an initialized prefix opens there; a fresh one opens the compatdata root.
 #[tauri::command]

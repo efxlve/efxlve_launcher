@@ -2637,5 +2637,6 @@
   "deck.verified": "Doğrulanmış",
   "deck.playable": "Oynanabilir",
   "deck.unsupported": "Desteklenmiyor",
-  "awacy.planned": "Planlandı"
+  "awacy.planned": "Planlandı",
+  "compat.prefixStateMissing": "Prefix henüz oluşturulmadı."
 }

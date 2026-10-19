@@ -2637,5 +2637,6 @@
   "deck.verified": "Verified",
   "deck.playable": "Playable",
   "deck.unsupported": "Unsupported",
-  "awacy.planned": "Planned"
+  "awacy.planned": "Planned",
+  "compat.prefixStateMissing": "Prefix not created yet."
 }

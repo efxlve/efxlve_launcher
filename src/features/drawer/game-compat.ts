@@ -19,6 +19,7 @@ import { t } from "../../i18n";
 import { epicSelectFolderDialog, type EpicSummary } from "../../epic";
 import {
   compatCatalog,
+  compatGamePrefixState,
   compatGetGameConfig,
   compatGetLaunchConfig,
   compatOpenGamePrefix,
@@ -60,6 +61,20 @@ function setPrefixStatus(text: string, busy: boolean): void {
   if (!el) return;
   el.textContent = text;
   el.classList.toggle("busy", busy);
+}
+
+async function refreshPrefixState(appName: string): Promise<void> {
+  if (preparingPrefix === appName || S.currentModalAppName !== appName) return;
+  try {
+    const state = await compatGamePrefixState(appName);
+    if (preparingPrefix === appName || S.currentModalAppName !== appName) return;
+    setPrefixStatus(
+      t(state.initialized ? "compat.prefixReady" : "compat.prefixStateMissing"),
+      false,
+    );
+  } catch {
+    // The card still works without the status line.
+  }
 }
 
 function ensurePrefixProgressListener(): void {
@@ -261,6 +276,8 @@ export async function hydrateGameCompatCard(appName: string): Promise<void> {
     if (body) body.innerHTML = cardBody(appName, config);
     if (preparingPrefix === appName) {
       setPrefixStatus(t("compat.prefixPreparing", { seconds: 0 }), true);
+    } else {
+      void refreshPrefixState(appName);
     }
     ensurePrefixProgressListener();
   } catch {
@@ -285,7 +302,7 @@ function saveGameConfig(
   next: GameCompatConfig,
   previous: GameCompatConfig,
   rollback: () => void,
-): void {
+): Promise<void> {
   configs.set(appName, next);
   const queued = (pendingSaves.get(appName) ?? Promise.resolve())
     .catch(() => {})
@@ -301,6 +318,7 @@ function saveGameConfig(
     .finally(() => {
       if (pendingSaves.get(appName) === queued) pendingSaves.delete(appName);
     });
+  return queued;
 }
 
 function prefixInput(): HTMLInputElement | null {
@@ -311,9 +329,11 @@ function savePrefix(appName: string, prefixDir: string | null): void {
   const config = configs.get(appName) ?? emptyConfig();
   const input = prefixInput();
   if (input) input.value = prefixDir ?? "";
-  saveGameConfig(appName, { ...config, prefixDir }, config, () => {
+  void saveGameConfig(appName, { ...config, prefixDir }, config, () => {
     if (input) input.value = config.prefixDir ?? "";
-  });
+  })
+    .then(() => refreshPrefixState(appName))
+    .catch(() => {});
 }
 
 function startPrepare(appName: string): void {
@@ -341,6 +361,7 @@ function startPrepare(appName: string): void {
       toast(String(error), "err");
     } finally {
       preparingPrefix = null;
+      void refreshPrefixState(appName);
     }
   })();
 }
