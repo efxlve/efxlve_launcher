@@ -10,6 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { measuredSize } from "../../core/folder-size";
+import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
 import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
@@ -248,7 +249,7 @@ function renderDownloads(): string {
       row(t("settings.autoDesktopShortcut"), t("settings.autoDesktopShortcutDesc"), toggle("toggle-auto-desktop-shortcut", S.autoDesktopShortcut)) +
       row(t("settings.offlineTitle"), t("settings.offlineDesc"), toggle("toggle-offline-mode", S.offlineMode)) +
       row(t("downloads.cacheClear"), t("settings.netCacheDesc"), `<button type="button" class="btn ghost small" data-act="dl-cleanup-cache">${t("downloads.cacheClearBtn")}</button>`) +
-      row(t("settings.pictureCache"), t("settings.pictureCacheDesc"), `<button type="button" class="btn ghost small" data-act="clear-picture-cache">${t("downloads.cacheClearBtn")}</button>`),
+      row(t("settings.pictureCache"), t("settings.pictureCacheDesc"), `<span class="settings-value tabular-nums">${S.pictureCacheBytes != null ? fmtBytes(S.pictureCacheBytes) : ""}</span><button type="button" class="btn ghost small" data-act="clear-picture-cache">${t("downloads.cacheClearBtn")}</button>`),
       t("settings.netAdvTitle"),
     )
   );
@@ -1457,7 +1458,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll, cacheBytes] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -1472,6 +1473,7 @@ export async function loadSettingsView(): Promise<void> {
         igdbStatus().catch(() => null),
         epicGetScreenshotScanRoots().catch(() => [] as string[]),
         epicGetScreenshotScanAll().catch(() => true),
+        imageCacheSize().catch(() => null),
       ]);
       S.epicSettingsCache = st ?? S.epicSettingsCache;
       S.epicDefaultDir = dir ?? "";
@@ -1486,6 +1488,7 @@ export async function loadSettingsView(): Promise<void> {
       S.amazonDefaultDir = amazonDefault || "";
       S.screenshotScanRoots = Array.isArray(ssRoots) ? ssRoots : [];
       S.screenshotScanAll = ssScanAll !== false;
+      S.pictureCacheBytes = cacheBytes ?? null;
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;

@@ -397,7 +397,12 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
     case "clear-picture-cache": {
       toast(i18nT("downloads.cacheClearing"), "");
       void clearImageCache()
-        .then((bytes) => toast(i18nT("settings.pictureCacheCleared", { size: fmtBytes(bytes) }), "ok"))
+        .then((bytes) => {
+          // The row shows the size, so it must not keep quoting the old one.
+          S.pictureCacheBytes = 0;
+          render();
+          toast(i18nT("settings.pictureCacheCleared", { size: fmtBytes(bytes) }), "ok");
+        })
         .catch((error: unknown) => toast(String(error), "err"));
       return true;
     }

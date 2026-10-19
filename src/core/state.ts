@@ -483,6 +483,8 @@ export const S = {
   screenshotScanRoots: [] as string[],
   /** When off, the gallery reads the chosen screenshot folder only. */
   screenshotScanAll: true,
+  /** Bytes the picture cache holds; null until the settings ask for it. */
+  pictureCacheBytes: null as number | null,
   /** Default on: `!== "false"` keeps a fresh install minimizing on game start. */
   minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) !== "false") as boolean,
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
