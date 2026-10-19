@@ -44,6 +44,13 @@ export function toggleSideWidget(appName: string, id: string): boolean {
   return folded;
 }
 
+export interface SideCardOptions {
+  idAttr?: string;
+  extraClass?: string;
+  metaHtml?: string;
+  actionHtml?: string;
+}
+
 /**
  * A sidebar card whose body folds. The head stays: the title is how the reader
  * knows what they folded.
@@ -54,14 +61,37 @@ export function sideCard(
   title: string,
   glyph: IconName,
   body: string,
+  opts: SideCardOptions = {},
 ): string {
   const folded = isSideWidgetFolded(appName, id);
+  const idPart = opts.idAttr ? ` id="${esc(opts.idAttr)}"` : "";
+  const clsPart = opts.extraClass ? ` ${opts.extraClass}` : "";
+  const metaPart = opts.metaHtml ? ` ${opts.metaHtml}` : "";
+  const headInner = `
+    <span class="gp-widget-glyph">${icon(glyph, 13)}</span>
+    <h3 class="gp-section-title"><span>${esc(title)}</span>${metaPart}</h3>`;
+  const headHtml = opts.actionHtml
+    ? `<div class="gp-widget-head">
+        <button type="button" class="gp-fold-head" data-act="toggle-side-widget" data-id="${esc(appName)}" data-widget="${esc(id)}" aria-expanded="${String(!folded)}">
+          ${headInner}
+        </button>
+        <div class="gp-widget-head-actions">
+          ${opts.actionHtml}
+          <button type="button" class="gp-fold-chevron-btn" data-act="toggle-side-widget" data-id="${esc(appName)}" data-widget="${esc(id)}" aria-label="${esc(title)}" aria-expanded="${String(!folded)}">
+            <span class="gp-fold-chevron">${icon("chevron-down", 14)}</span>
+          </button>
+        </div>
+      </div>`
+    : `<div class="gp-widget-head">
+        <button type="button" class="gp-fold-head" data-act="toggle-side-widget" data-id="${esc(appName)}" data-widget="${esc(id)}" aria-expanded="${String(!folded)}">
+          ${headInner}
+          <span class="gp-fold-chevron">${icon("chevron-down", 14)}</span>
+        </button>
+      </div>`;
   return `
-    <section class="card gp-side-card gp-foldable${folded ? " is-folded" : ""}" data-widget="${esc(id)}">
-      <button type="button" class="gp-fold-head" data-act="toggle-side-widget" data-id="${esc(appName)}" data-widget="${esc(id)}" aria-expanded="${String(!folded)}">
-        <h3 class="gp-section-title">${icon(glyph, 13)} <span>${esc(title)}</span></h3>
-        <span class="gp-fold-chevron">${icon("chevron-down", 14)}</span>
-      </button>
+    <section${idPart} class="card gp-side-card gp-foldable${clsPart}${folded ? " is-folded" : ""}" data-widget="${esc(id)}">
+      ${headHtml}
       <div class="gp-fold-body">${body}</div>
     </section>`;
 }
+

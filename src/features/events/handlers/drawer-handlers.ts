@@ -148,8 +148,11 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       const appName = t.dataset.id ?? "";
       const widget = t.dataset.widget ?? "";
       const folded = toggleSideWidget(appName, widget);
-      t.closest<HTMLElement>(".gp-foldable")?.classList.toggle("is-folded", folded);
-      t.setAttribute("aria-expanded", String(!folded));
+      const card = t.closest<HTMLElement>(".gp-foldable");
+      card?.classList.toggle("is-folded", folded);
+      card?.querySelectorAll<HTMLElement>('[data-act="toggle-side-widget"]').forEach((btn) => {
+        btn.setAttribute("aria-expanded", String(!folded));
+      });
       return true;
     }
 

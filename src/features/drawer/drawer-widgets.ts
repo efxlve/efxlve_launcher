@@ -16,6 +16,7 @@ import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { currentLanguage, formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
+import { sideCard } from "./side-widgets";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { type SteamNewsItem } from "../../steam";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
@@ -50,9 +51,9 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     return `
       <div class="drawer-hltb-body is-pending">
         <div class="hltb-list">
-          <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
-          <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
-          <div class="hltb-row"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div>
+          <div class="hltb-row"><div class="hltb-row-top"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div><div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:38%"></span></div></div>
+          <div class="hltb-row"><div class="hltb-row-top"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div><div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:64%"></span></div></div>
+          <div class="hltb-row"><div class="hltb-row-top"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div><div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:100%"></span></div></div>
         </div>
       </div>
     `;
@@ -62,21 +63,24 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     // The player's own time lives in the hero's SÜRE stat.
     return "";
   }
+  const maxH = Math.max(hltb.main_story || 0, hltb.main_extra || 0, hltb.completionist || 0, 1);
+  const rowHtml = (label: string, val?: number | null): string => {
+    const pct = val && val > 0 ? Math.max(8, Math.min(100, Math.round((val / maxH) * 100))) : 0;
+    return `
+        <div class="hltb-row${!val ? " is-empty" : ""}">
+          <div class="hltb-row-top">
+            <span class="hltb-row-label">${label}</span>
+            <span class="hltb-row-val num${!val ? " empty" : ""}">${val ? hours(val) : "—"}</span>
+          </div>
+          <div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:${pct}%"></span></div>
+        </div>`;
+  };
   return `
     <div class="drawer-hltb-body">
       <div class="hltb-list">
-        <div class="hltb-row">
-          <span class="hltb-row-label">${i18nT("hltb.mainStory")}</span>
-          <span class="hltb-row-val${!hltb.main_story ? " empty" : ""}">${hltb.main_story ? hours(hltb.main_story) : "—"}</span>
-        </div>
-        <div class="hltb-row">
-          <span class="hltb-row-label">${i18nT("hltb.mainExtra")}</span>
-          <span class="hltb-row-val${!hltb.main_extra ? " empty" : ""}">${hltb.main_extra ? hours(hltb.main_extra) : "—"}</span>
-        </div>
-        <div class="hltb-row">
-          <span class="hltb-row-label">${i18nT("hltb.completionist")}</span>
-          <span class="hltb-row-val${!hltb.completionist ? " empty" : ""}">${hltb.completionist ? hours(hltb.completionist) : "—"}</span>
-        </div>
+        ${rowHtml(i18nT("hltb.mainStory"), hltb.main_story)}
+        ${rowHtml(i18nT("hltb.mainExtra"), hltb.main_extra)}
+        ${rowHtml(i18nT("hltb.completionist"), hltb.completionist)}
       </div>
     </div>
   `;
@@ -99,8 +103,9 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
         <div class="hub-critic-badge is-pending">
           <div class="critic-badge-score skel"></div>
           <div class="critic-badge-info">
-            <div class="critic-badge-name skel"></div>
+            <div class="critic-badge-top"><div class="critic-badge-name skel"></div></div>
             <div class="critic-badge-sub skel"></div>
+            <div class="critic-meter-track"><span class="critic-meter-fill" style="width:76%"></span></div>
           </div>
         </div>`;
     return `
@@ -122,16 +127,21 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
 
   let globalScoresHtml = "";
   if (hasGlobalScores) {
+    const meter = (n: number) => `<div class="critic-meter-track"><span class="critic-meter-fill" style="width:${Math.max(6, Math.min(100, Math.round(n)))}%"></span></div>`;
     globalScoresHtml = `
       <div class="hub-critic-grid">
         ${
           igdbScore != null
             ? `
           <div class="hub-critic-badge igdb" title="${i18nT("critic.igdbCommunity")}">
-            <div class="critic-badge-score igdb">${igdbScore}</div>
+            <div class="critic-badge-score igdb num">${igdbScore}</div>
             <div class="critic-badge-info">
-              <div class="critic-badge-name">IGDB</div>
+              <div class="critic-badge-top">
+                <span class="critic-badge-name">IGDB</span>
+                <span class="critic-scale-pill num">/ 100</span>
+              </div>
               <div class="critic-badge-sub">${i18nT("critic.communityScore")}</div>
+              ${meter(igdbScore)}
             </div>
           </div>`
             : ""
@@ -140,10 +150,14 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
           critic.opencritic_score
             ? `
           <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="${i18nT("critic.openCriticPage")}">
-            <div class="critic-badge-score ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
+            <div class="critic-badge-score num ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
             <div class="critic-badge-info">
-              <div class="critic-badge-name">OpenCritic ${critic.tier ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>` : ""}</div>
+              <div class="critic-badge-top">
+                <span class="critic-badge-name">OpenCritic</span>
+                ${critic.tier ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${esc(critic.tier)}</span>` : `<span class="critic-scale-pill num">/ 100</span>`}
+              </div>
               <div class="critic-badge-sub">${i18nT("critic.topCritic")}</div>
+              ${meter(critic.opencritic_score)}
             </div>
             ${critic.opencritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
           </div>`
@@ -153,10 +167,14 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
           critic.metacritic_score
             ? `
           <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="${i18nT("critic.metacriticPage")}">
-            <div class="critic-badge-score mc">${critic.metacritic_score}</div>
+            <div class="critic-badge-score mc num">${critic.metacritic_score}</div>
             <div class="critic-badge-info">
-              <div class="critic-badge-name">Metacritic</div>
+              <div class="critic-badge-top">
+                <span class="critic-badge-name">Metacritic</span>
+                <span class="critic-scale-pill num">/ 100</span>
+              </div>
               <div class="critic-badge-sub">${i18nT("critic.metascore")}</div>
+              ${meter(critic.metacritic_score)}
             </div>
             ${critic.metacritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
           </div>`
@@ -617,54 +635,74 @@ export function renderNextAchievements(appName: string): string {
           <span class="skel skel-line"></span>
         </div>`,
     ).join("");
-    return `
-      <section id="gp-next-ach" class="gp-section gp-next">
-        <h3 class="gp-section-title">${i18nT("drawer.nextAchievements")}</h3>
-        <div class="gp-next-list">${rows}</div>
-      </section>`;
+    return sideCard(
+      appName,
+      "next-ach",
+      i18nT("drawer.nextAchievements"),
+      "trophy",
+      `<div class="gp-next-list">${rows}</div>`,
+      { idAttr: "gp-next-ach", extraClass: "gp-next-card" },
+    );
   }
   const data = S.loadedAchievements.get(appName);
-  if (!data || data.total_achievements === 0) return `<div id="gp-next-ach"></div>`;
+  if (!data || data.total_achievements === 0) {
+    return `<div id="gp-next-ach" class="gp-side-card gp-next-card is-empty"></div>`;
+  }
   const complete = Boolean(data.is_platinum) || data.user_unlocked >= data.total_achievements;
   const locked = data.achievements
     .filter((a) => !a.unlocked && !a.hidden)
     .sort((a, b) => (b.rarity?.percent ?? 0) - (a.rarity?.percent ?? 0))
     .slice(0, 3);
+  const actionHtml = `<button type="button" class="gp-widget-action" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}">${i18nT("drawer.momentsAll")}</button>`;
   if (locked.length === 0) {
     // Nothing left to chase: celebrate the platinum instead of an empty slot.
-    if (!complete) return `<div id="gp-next-ach"></div>`;
-    return `
-      <section id="gp-next-ach" class="gp-section gp-next">
-        <div class="gp-plat-card">
-          <span class="plat-cup">${epicPlatinumIcon(44)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 13)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 10)}</span></span>
-          <span class="gp-plat-copy">
-            <span class="gp-plat-title">${i18nT("ach.platinumEarned")}</span>
-            <span class="gp-plat-sub">${i18nT("ach.platinumEarnedDesc")}</span>
-          </span>
-        </div>
-      </section>`;
+    if (!complete) return `<div id="gp-next-ach" class="gp-side-card gp-next-card is-empty"></div>`;
+    const platBody = `
+      <div class="gp-plat-card">
+        <span class="plat-cup">${epicPlatinumIcon(40)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 12)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 10)}</span></span>
+        <span class="gp-plat-copy">
+          <span class="gp-plat-title">${i18nT("ach.platinumEarned")}</span>
+          <span class="gp-plat-sub">${i18nT("ach.platinumEarnedDesc")}</span>
+        </span>
+      </div>`;
+    return sideCard(appName, "next-ach", i18nT("drawer.nextAchievements"), "trophy", platBody, {
+      idAttr: "gp-next-ach",
+      extraClass: "gp-next-card",
+      metaHtml: `<span class="gp-widget-meta num">${data.user_unlocked}/${data.total_achievements}</span>`,
+      actionHtml,
+    });
   }
   const pct = Math.min(100, Math.round((data.user_unlocked / data.total_achievements) * 100));
-  const rows = locked.map((a) => {
-    const rarity = a.rarity?.percent;
-    return `
-      <button type="button" class="gp-next-row" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}" title="${esc(a.description || a.display_name)}">
+  const rows = locked
+    .map((a) => {
+      const rarity = a.rarity?.percent;
+      const desc = (a.description || "").trim();
+      return `
+      <button type="button" class="gp-next-row" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}" title="${esc(desc || a.display_name || a.name)}">
         ${a.icon_link ? `<img src="${esc(a.icon_link)}" alt="" />` : `<span class="gp-next-ph">${icon("trophy", 16)}</span>`}
         <span class="gp-next-text">
           <span class="gp-next-name">${esc(a.display_name || a.name)}</span>
-          ${rarity != null ? `<span class="gp-next-rarity num">${i18nT("drawer.nextAchRarity", { n: fmtDecimal1(rarity) })}</span>` : ""}
+          ${desc ? `<span class="gp-next-desc">${esc(desc)}</span>` : ""}
         </span>
+        ${rarity != null ? `<span class="gp-next-rarity-pill num">%${fmtDecimal1(rarity)}</span>` : ""}
       </button>`;
-  }).join("");
-  return `
-    <section id="gp-next-ach" class="gp-section gp-next">
-      <div class="gp-progress-head">
-        <h3 class="gp-section-title">${icon("trophy", 13)} ${i18nT("drawer.nextAchievements")} <span class="gp-section-meta num">${data.user_unlocked}/${data.total_achievements} · %${pct}</span></h3>
-        <button type="button" class="btn ghost small" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}">${i18nT("drawer.momentsAll")}</button>
-      </div>
+    })
+    .join("");
+  const body = `
+    <div class="gp-next-progress-wrap">
       <div class="gp-progress-track gp-next-progress"><span class="gp-progress-fill" style="width:${pct}%"></span></div>
-      <div class="gp-next-list">${rows}</div>
-    </section>`;
+      <div class="gp-next-progress-meta">
+        <span class="num">${data.user_unlocked} / ${data.total_achievements}</span>
+        <span class="num">%${pct}</span>
+      </div>
+    </div>
+    <div class="gp-next-list">${rows}</div>`;
+  return sideCard(appName, "next-ach", i18nT("drawer.nextAchievements"), "trophy", body, {
+    idAttr: "gp-next-ach",
+    extraClass: "gp-next-card",
+    metaHtml: `<span class="gp-widget-meta num">${data.user_unlocked}/${data.total_achievements}</span>`,
+    actionHtml,
+  });
 }
 
 export interface CloudSaveInfo {

@@ -317,7 +317,7 @@ export function epicCardPortrait(s: EpicSummary): string {
   const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const playBtnHtml = libraryInstalledIcon(s.appName, s.installed);
   const titleRow = S.showCoverTitles
-    ? `<span class="pcard-title-row"><span class="pcard-title" title="${title}">${title}</span>${playBtnHtml}</span>`
+    ? `<span class="pcard-title-row"><span class="pcard-title">${title}</span>${playBtnHtml}</span>`
     : "";
   const caption = (S.showCoverTitles || Boolean(storesLabel))
     ? `<div class="pcard-caption">
@@ -325,7 +325,6 @@ export function epicCardPortrait(s: EpicSummary): string {
         ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
       </div>`
     : "";
-  const tip = S.showCoverTitles ? "" : ` title="${title}"`;
   const source = sourceOfKey(s.appName);
   const isCase = S.showCaseCovers;
   const caseStyleAttr = isCase ? ` data-case-style="${S.caseCoverStyle}"` : "";
@@ -336,7 +335,7 @@ export function epicCardPortrait(s: EpicSummary): string {
   // when the physical case header already carries the store brand.
   const storeIcon = S.showStoreIcons && !isCase ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}"${caseStyleAttr} data-lib-item="${s.appName}" tabindex="0" role="button"${tip}>
+    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}" role="button" tabindex="0" aria-label="${title}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}"${caseStyleAttr} data-lib-item="${s.appName}">
       <div class="pcard-art" data-card-art data-badge-host>
         ${caseHead}
         ${epicArt(s)}
@@ -363,10 +362,10 @@ function epicListRow(s: EpicSummary): string {
   // The storefront column is always on, aligned like the achievements column.
   const storeCell = `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc(sourceLabel(source))}</span></div>`;
   return `
-    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" role="button" tabindex="0" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}" tabindex="0" role="button">
+    <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" role="button" tabindex="0" aria-label="${title}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
-        <div class="lrow-title" data-badge-host><span class="lrow-name" title="${title}">${title}</span>${libraryCardBadge(s)}</div>
+        <div class="lrow-title" data-badge-host><span class="lrow-name">${title}</span>${libraryCardBadge(s)}</div>
         <div class="lrow-meta">${metaText}</div>
       </div>
       ${storeCell}

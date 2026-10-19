@@ -1101,6 +1101,7 @@ export function repaintIgdbBlocks(appName: string): void {
       S.loadingCriticFor === s.appName,
       igdbGameFor(s.appName)?.rating ?? null,
     );
+    syncScoresCardVisibility();
   }
 }
 
@@ -1148,9 +1149,9 @@ function renderOverviewNote(appName: string): string {
 }
 
 /**
- * The personal half of the overview: the last session, pinned/latest note, the
- * next trophies, the moments and, when there is nothing at all, the card that
- * explains the space.
+ * The personal half of the overview main column: the last session, pinned/latest
+ * note and, when there is nothing at all, the card that explains the space.
+ * Next achievements and Moments live in the right sidebar as dedicated widgets.
  *
  * It is a function of its own because it is the one block that changes while the
  * page is open: a session ends, the recorder writes it down, and the block is
@@ -1159,9 +1160,7 @@ function renderOverviewNote(appName: string): string {
  */
 function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
   const noteCard = renderOverviewNote(s.appName);
-  const moments = renderMomentsStrip(s.appName);
-  const nextAch = renderNextAchievements(s.appName);
-  // Both blocks hold their place while they load; when they have answered and
+  // Both sidebar widgets hold their place while they load; when they have answered and
   // there is genuinely nothing, the player gets a card that says what this space
   // is for instead of a silent gap. A recorded session or a note is a record
   // too: offering "your record starts here" under a last-session card that just
@@ -1186,10 +1185,10 @@ function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
           </div>
         </section>`
       : "";
-  return `${renderLastSession(s.appName)}${noteCard}${nextAch}${moments}${personalEmpty}`;
+  return `${renderLastSession(s.appName)}${noteCard}${personalEmpty}`;
 }
 
-/** Paints the personal block again after a session ended or notes changed, if its page is open. */
+/** Paints the personal block and personal sidebar widgets again after a session ended or notes changed, if its page is open. */
 export function repaintPersonalBlock(appName: string): void {
   if (S.currentModalAppName !== appName || S.activeDrawerTab !== "overview") return;
   const host = document.getElementById("gp-personal-block");
@@ -1197,6 +1196,10 @@ export function repaintPersonalBlock(appName: string): void {
   if (!host || !s) return;
   const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   host.innerHTML = personalBlockHtml(s, s.installed || playtime > 0);
+  const nextAchEl = document.getElementById("gp-next-ach");
+  if (nextAchEl) nextAchEl.outerHTML = renderNextAchievements(appName);
+  const momentsEl = document.getElementById("gp-moments");
+  if (momentsEl) momentsEl.outerHTML = renderMomentsStrip(appName);
 }
 
 export function renderDrawerOverview(
@@ -1231,9 +1234,11 @@ export function renderDrawerOverview(
     igdbGameFor(s.appName)?.rating ?? null,
   )}</div>`;
 
-  // Two cards, not one: the estimated lengths are HowLongToBeat's answer and the
-  // scores belong to the critics. Merging them drew a bar between the player's
-  // own time and an average, and the two subjects read as one muddy block.
+  // Four dedicated sidebar widgets in order:
+  // 1. Next achievements (above estimated lengths)
+  // 2. Estimated lengths (HowLongToBeat)
+  // 3. Scores (IGDB / OpenCritic / Metacritic)
+  // 4. Moments (below scores)
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
@@ -1241,8 +1246,10 @@ export function renderDrawerOverview(
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
-        ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock)}
-        ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock)}
+        ${renderNextAchievements(s.appName)}
+        ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
+        ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, { extraClass: "gp-critic-card" })}
+        ${renderMomentsStrip(s.appName)}
       </aside>
     </div>`;
 }

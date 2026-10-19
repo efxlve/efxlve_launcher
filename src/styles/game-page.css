@@ -168,98 +168,133 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-progress-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .gp-progress-head .gp-section-title { margin: 0; display: inline-flex; align-items: center; gap: 6px; }
 .gp-progress-pct { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-2); }
-.gp-progress-track { height: 6px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
-.gp-progress-fill { display: block; height: 100%; background: #fff; }
-.gp-next-progress { height: 4px; margin-bottom: 10px; }
+.gp-progress-track { height: 6px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+.gp-progress-fill { display: block; height: 100%; background: #fff; border-radius: inherit; }
 .gp-progress-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .gp-progress-extra { margin: 8px 0 0; font-size: 11px; color: var(--text-3); }
 
-.gp-moments-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
-.gp-moment { flex: none; width: 200px; height: 112px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); cursor: pointer; }
-.gp-moment img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gp-moment:hover { border-color: rgba(255, 255, 255, 0.28); }
-
-/* Three compact cards to a row: the rows used to run the full width of the
-   column, which left a long empty band across the middle of the page. */
-.gp-next-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
-.gp-next-row {
-  display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; text-align: left;
-  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text);
-  font: inherit; cursor: pointer;
+/* Sidebar Moments widget (2x2 / bento gallery) */
+.gp-moments-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.gp-moments-grid.count-1 { grid-template-columns: 1fr; }
+.gp-moments-grid.count-3 .gp-moment:first-child { grid-column: 1 / -1; }
+.gp-moment {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; padding: 0;
+  border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden;
+  background: var(--surface-2); cursor: pointer;
+  transition: border-color 140ms ease;
 }
-.gp-next-row:hover { background: var(--surface-2); }
-.gp-next-row img, .gp-next-ph { flex: none; width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--surface-2); }
+.gp-moment img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 200ms ease; }
+.gp-moment:hover { border-color: rgba(255, 255, 255, 0.34); }
+.gp-moment:hover img { transform: scale(1.03); }
+.gp-moment-more {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(0, 0, 0, 0.68); backdrop-filter: blur(2px);
+  font-size: 13.5px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums;
+}
+
+/* Sidebar Next Achievements widget */
+.gp-next-progress-wrap {
+  margin-bottom: 8px; padding: 8px 10px;
+  border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
+}
+.gp-next-progress { height: 5px; margin-bottom: 6px; }
+.gp-next-progress-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.gp-next-list { display: flex; flex-direction: column; gap: 6px; }
+.gp-next-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text);
+  font: inherit; cursor: pointer; transition: background 140ms ease, border-color 140ms ease;
+}
+.gp-next-row:hover { background: var(--surface-3); border-color: var(--line-strong); }
+.gp-next-row img, .gp-next-ph {
+  flex: none; width: 38px; height: 38px; border-radius: 6px; object-fit: cover;
+  background: var(--surface-3); border: 1px solid var(--line);
+}
 .gp-next-ph { display: grid; place-items: center; color: var(--text-3); }
-.gp-next-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gp-next-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gp-next-rarity { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.gp-next-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gp-next-name { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-next-desc { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-next-rarity-pill {
+  flex-shrink: 0; padding: 2px 7px; border-radius: 999px;
+  background: var(--surface-3); border: 1px solid var(--line);
+  font-size: 11px; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums;
+}
 
 .hub-overview-main .gp-side-card { margin-bottom: 20px; }
 .hub-card, .drawer-hltb-card, .gp-side-card {
-  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px;
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px;
 }
+.gp-side-card { transition: border-color 140ms ease; }
+.gp-side-card:hover { border-color: var(--line-strong); }
 .hub-overview-main .hub-card { margin-bottom: 20px; }
 .hub-card-header, .hltb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .hub-card-title, .hltb-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .hub-card-title svg, .hltb-title svg { color: var(--text-3); }
 
-/* Critic */
-.critic-tier-pill { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); }
+/* Critic widget */
+.critic-tier-pill {
+  font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+  background: var(--surface-3); border: 1px solid var(--line); color: var(--text-2); flex-shrink: 0;
+}
+.critic-scale-pill {
+  font-size: 10.5px; font-weight: 500; color: var(--text-3);
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
 .tier-mighty, .tier-strong { color: var(--text); }
 .tier-fair { color: var(--warn); }
 .tier-weak { color: var(--err); }
 .hub-critic-grid { display: flex; flex-direction: column; gap: 6px; }
-.hub-critic-badge { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: var(--r-sm); background: var(--surface-2); }
-.hub-critic-badge.clickable { cursor: pointer; }
-.hub-critic-badge.clickable:hover { background: var(--surface-3); }
-.critic-badge-score {
-  width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--r-sm);
-  background: var(--surface-3); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;
+.hub-critic-badge {
+  display: flex; align-items: center; gap: 11px; padding: 9px 11px;
+  border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
+  transition: background 140ms ease, border-color 140ms ease;
 }
-.critic-badge-info { flex: 1; min-width: 0; }
-.critic-badge-name { font-size: 13px; font-weight: 500; }
-.critic-badge-sub { font-size: 11px; color: var(--text-3); }
-.critic-badge-ext { color: var(--text-3); }
+.hub-critic-badge.clickable { cursor: pointer; }
+.hub-critic-badge.clickable:hover { background: var(--surface-3); border-color: var(--line-strong); }
+.critic-badge-score {
+  width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; border-radius: 8px;
+  background: var(--surface-3); border: 1px solid var(--line-strong);
+  font-size: 14.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+}
+.critic-badge-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.critic-badge-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.critic-badge-name { font-size: 12.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.critic-badge-sub { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.critic-meter-track {
+  height: 3px; width: 100%; border-radius: 999px; background: var(--surface-3);
+  overflow: hidden; margin-top: 3px;
+}
+.critic-meter-fill { display: block; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.72); }
+.critic-badge-ext { color: var(--text-3); flex-shrink: 0; display: grid; place-items: center; }
 .critic-loading-text, .hltb-loading-text { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-3); }
 
-/* HLTB */
-/* Only a card that answered "nothing found" collapses; a card that is still
-   waiting holds its place with a skeleton (see .is-pending). */
+/* HLTB widget */
 #drawer-hltb-container:empty, #drawer-critic-container:empty { display: none; }
-/* One box per length: the title above, the hours below it. The rows used to be
-   one line each with a divider; a box reads as a card of its own and the eye
-   picks the number out of it. */
 .hltb-list { display: flex; flex-direction: column; gap: 6px; }
 .hltb-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r-sm);
   background: var(--surface-2);
 }
+.hltb-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
 .hltb-row-label {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-3);
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12.5px; font-weight: 500; color: var(--text-2);
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .hltb-row-val {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  padding: 1px 7px; border-radius: 5px; background: var(--surface-3); border: 1px solid var(--line);
 }
 .hltb-row-val.empty {
-  color: var(--text-3);
-  font-weight: 400;
+  color: var(--text-3); font-weight: 400; background: transparent; border-color: transparent; padding: 0;
 }
+.hltb-bar-track { height: 4px; width: 100%; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.hltb-bar-fill { display: block; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.72); transition: width 220ms ease; }
+.hltb-row.is-empty .hltb-bar-track { opacity: 0.35; }
 .hltb-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface-3); border-top-color: var(--accent); animation: spin 0.8s linear infinite; display: inline-block; }
 
 /* Features */
@@ -925,14 +960,58 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* Every sidebar card folds, and the choice is remembered per game: a reader who
    folds the requirements on one title still wants them on the next. */
+.gp-widget-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
 .gp-fold-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  width: 100%; padding: 0; border: none; background: transparent; color: inherit;
+  display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0;
+  padding: 0; border: none; background: transparent; color: inherit;
   font: inherit; text-align: left; cursor: pointer;
 }
-.gp-fold-head .gp-section-title { margin: 0; }
-.gp-fold-head:hover .gp-section-title { color: var(--text); }
-.gp-fold-chevron { display: inline-flex; color: var(--text-3); transition: transform 160ms ease; }
+.gp-widget-glyph {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: grid; place-items: center; border-radius: 6px;
+  background: var(--surface-2); border: 1px solid var(--line);
+  color: var(--text-2);
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.gp-fold-head:hover .gp-widget-glyph {
+  color: var(--text); background: var(--surface-3); border-color: var(--line-strong);
+}
+.gp-fold-head .gp-section-title {
+  margin: 0; flex: 1; min-width: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+}
+.gp-fold-head .gp-section-title > span:first-child {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gp-widget-meta {
+  display: inline-flex; align-items: center; padding: 1px 6px;
+  border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line);
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+.gp-widget-head-actions {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+.gp-widget-action {
+  height: 24px; padding: 0 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2);
+  font: inherit; font-size: 11px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.gp-widget-action:hover {
+  background: var(--surface-3); color: var(--text); border-color: var(--line-strong);
+}
+.gp-fold-chevron-btn {
+  width: 24px; height: 24px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--text-3);
+  display: grid; place-items: center; cursor: pointer;
+}
+.gp-fold-chevron-btn:hover { background: var(--surface-2); color: var(--text); }
+.gp-fold-chevron { display: inline-flex; color: var(--text-3); transition: transform 160ms ease; margin-left: auto; }
+.gp-fold-chevron-btn .gp-fold-chevron { margin-left: 0; }
 .gp-foldable.is-folded .gp-fold-chevron { transform: rotate(-90deg); }
 .gp-fold-body { margin-top: 12px; }
 .gp-foldable.is-folded .gp-fold-body { display: none; }
@@ -995,20 +1074,9 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ctrl-badge.is-kb { background: var(--surface-3); color: var(--text-2); }
 .ctrl-note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-2); }
 
-/* A card whose own block came back empty: it has nothing to frame. */
+/* A sidebar card whose own block came back empty: it has nothing to frame. */
+.gp-side-card.is-empty,
 .gp-scores-card.is-empty { display: none; }
-
-/* One score per row, full width: the three-column grid cut "OpenCritic" and
-   "Metacritic" to "Ope…" and "Met…", and a reader cannot tell two truncated
-   names apart. Each badge is a row like the lengths above it. */
-.hub-critic-grid { display: flex; flex-direction: column; gap: 4px; }
-.hub-critic-badge { gap: 10px; padding: 8px 2px; background: transparent; border-radius: 0; }
-.hub-critic-badge + .hub-critic-badge { border-top: 1px solid var(--line); }
-.hub-critic-badge.clickable:hover { background: var(--surface-2); }
-.hub-critic-badge .critic-badge-score { width: 34px; height: 34px; font-size: 14px; border-radius: 8px; flex: none; }
-.hub-critic-badge .critic-badge-name { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hub-critic-badge .critic-badge-sub { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hub-critic-badge .critic-badge-ext { display: none; }
 
 /* ---------- The "…" menu ---------- */
 

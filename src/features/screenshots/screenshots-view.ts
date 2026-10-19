@@ -24,6 +24,7 @@ import {
 } from "../../epic";
 import { steamGetGameScreenshots, steamGetScreenshotFullData } from "../../steam";
 import { renderIgdbMedia } from "../drawer/igdb-view";
+import { sideCard } from "../drawer/side-widgets";
 import { ssDensity, ssFavorites, ssSort, ssSortItems, ssWebhooks } from "./ss-settings";
 
 /* --- Game page gallery: the toolbar's own view state ---------------------- */
@@ -257,36 +258,53 @@ export function hydrateShotPreviews(): void {
   });
 }
 
-/** Horizontal strip of the player's own captures on the overview. Hidden when empty. */
+/** Sidebar bento gallery of the player's own captures on the overview. Hidden when empty. */
 export function renderMomentsStrip(appName: string): string {
   const items = S.loadedScreenshots.get(appName) || [];
-  // Still on its way: hold the strip's place. It used to render an empty div, so
+  // Still on its way: hold the widget's place. It used to render an empty div, so
   // the blocks under it jumped down the moment the pictures arrived.
   if (items.length === 0 && S.loadingScreenshotsFor === appName) {
-    const tiles = Array.from({ length: 5 }, () => `<div class="gp-moment is-pending"></div>`).join("");
-    return `
-      <section id="gp-moments" class="gp-section gp-moments">
-        <div class="gp-progress-head">
-          <h3 class="gp-section-title">${icon("camera", 13)} ${t("drawer.moments")}</h3>
-        </div>
-        <div class="gp-moments-strip">${tiles}</div>
-      </section>`;
+    const tiles = Array.from({ length: 4 }, () => `<div class="gp-moment is-pending"></div>`).join("");
+    return sideCard(
+      appName,
+      "moments",
+      t("drawer.moments"),
+      "camera",
+      `<div class="gp-moments-grid count-4">${tiles}</div>`,
+      { idAttr: "gp-moments", extraClass: "gp-moments-card" },
+    );
   }
-  if (items.length === 0) return `<div id="gp-moments"></div>`;
-  const shown = items.slice(0, 8);
-  const thumbs = shown.map((item, idx) => `
-    <button type="button" class="gp-moment" data-act="open-screenshot-lightbox" data-id="${esc(appName)}" data-idx="${idx}" title="${esc(item.file_name)}">
+  if (items.length === 0) return `<div id="gp-moments" class="gp-side-card gp-moments-card is-empty"></div>`;
+  const shown = items.slice(0, 4);
+  const extraCount = Math.max(0, items.length - shown.length);
+  const thumbs = shown
+    .map((item, idx) => {
+      const moreOverlay =
+        idx === shown.length - 1 && extraCount > 0
+          ? `<span class="gp-moment-more num">+${extraCount}</span>`
+          : "";
+      return `
+    <button type="button" class="gp-moment" data-act="open-screenshot-lightbox" data-id="${esc(appName)}" data-idx="${idx}" aria-label="${esc(item.file_name)}">
       ${shotThumbHtml(item)}
-    </button>`).join("");
+      ${moreOverlay}
+    </button>`;
+    })
+    .join("");
   hydrateShotPreviews();
-  return `
-    <section id="gp-moments" class="gp-section gp-moments">
-      <div class="gp-progress-head">
-        <h3 class="gp-section-title">${icon("camera", 13)} ${t("drawer.moments")}</h3>
-        <button type="button" class="btn ghost small" data-act="drawer-tab" data-tab="screenshots" data-id="${esc(appName)}">${t("drawer.momentsAll")} (${items.length})</button>
-      </div>
-      <div class="gp-moments-strip">${thumbs}</div>
-    </section>`;
+  const actionHtml = `<button type="button" class="gp-widget-action" data-act="drawer-tab" data-tab="screenshots" data-id="${esc(appName)}">${t("drawer.momentsAll")}</button>`;
+  return sideCard(
+    appName,
+    "moments",
+    t("drawer.moments"),
+    "camera",
+    `<div class="gp-moments-grid count-${shown.length}">${thumbs}</div>`,
+    {
+      idAttr: "gp-moments",
+      extraClass: "gp-moments-card",
+      metaHtml: `<span class="gp-widget-meta num">${items.length}</span>`,
+      actionHtml,
+    },
+  );
 }
 
 export function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
