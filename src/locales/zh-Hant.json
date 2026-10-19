@@ -1715,6 +1715,7 @@
   "drawer.progressOver": "已超過典型劇情",
   "feat.steamCloud": "Steam Cloud",
   "feat.gogCloud": "GOG Cloud",
+  "ctrl.fullSupport": "完全支援",
   "feat.partialPad": "部分支援手把",
   "feat.partialPadTip": "商店標明手把支援有限。主要操作方式是鍵盤和滑鼠。",
   "controller.kindSteamDeck": "Steam Deck",

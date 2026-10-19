@@ -1715,6 +1715,7 @@
   "drawer.progressOver": "일반적인 스토리를 넘었습니다",
   "feat.steamCloud": "Steam Cloud",
   "feat.gogCloud": "GOG Cloud",
+  "ctrl.fullSupport": "완벽 지원",
   "feat.partialPad": "컨트롤러 일부 지원",
   "feat.partialPadTip": "스토어에 컨트롤러 지원이 제한적이라고 나와 있습니다. 주 조작은 키보드와 마우스입니다.",
   "controller.kindSteamDeck": "Steam Deck",

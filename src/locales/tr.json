@@ -688,6 +688,7 @@
   "feat.steamCloudTip": "Kayıtlar Steam Cloud üzerinden eşitlenebilir. Steam yerelde yazdıysa son zaman gösterilir.",
   "feat.gogCloud": "GOG Cloud",
   "feat.gogCloudTip": "Bu oyunda GOG Cloud var. Oyunun kayıt klasörü olmadan son eşitleme zamanı okunamaz.",
+  "ctrl.fullSupport": "Tam destek",
   "feat.partialPad": "Kısmi kol desteği",
   "feat.partialPadTip": "Mağaza sınırlı kol desteği listeliyor. Ana kontrol klavye ve fare.",
   "feat.partnerCloud": "{name} Bulut",

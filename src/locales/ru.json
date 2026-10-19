@@ -1715,6 +1715,7 @@
   "drawer.progressOver": "Дальше типичного сюжета",
   "feat.steamCloud": "Steam Cloud",
   "feat.gogCloud": "GOG Cloud",
+  "ctrl.fullSupport": "Полная поддержка",
   "feat.partialPad": "Частичная поддержка контроллера",
   "feat.partialPadTip": "Магазин указывает ограниченную поддержку контроллера. Основные средства управления — клавиатура и мышь.",
   "controller.kindSteamDeck": "Steam Deck",

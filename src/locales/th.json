@@ -1715,6 +1715,7 @@
   "drawer.progressOver": "เกินเนื้อเรื่องทั่วไปแล้ว",
   "feat.steamCloud": "Steam Cloud",
   "feat.gogCloud": "GOG Cloud",
+  "ctrl.fullSupport": "รองรับเต็มรูปแบบ",
   "feat.partialPad": "รองรับคอนโทรลเลอร์บางส่วน",
   "feat.partialPadTip": "ร้านค้าระบุว่ารองรับคอนโทรลเลอร์จำกัด การควบคุมหลักคือแป้นพิมพ์และเมาส์",
   "controller.kindSteamDeck": "Steam Deck",

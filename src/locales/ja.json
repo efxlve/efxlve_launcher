@@ -1715,6 +1715,7 @@
   "drawer.progressOver": "典型的なストーリーを超えました",
   "feat.steamCloud": "Steam Cloud",
   "feat.gogCloud": "GOG Cloud",
+  "ctrl.fullSupport": "完全対応",
   "feat.partialPad": "コントローラー対応は一部のみ",
   "feat.partialPadTip": "ストアはコントローラー対応が限定的と示しています。主な操作はキーボードとマウスです。",
   "controller.kindSteamDeck": "Steam Deck",

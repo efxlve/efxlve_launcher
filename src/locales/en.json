@@ -688,6 +688,7 @@
   "feat.steamCloudTip": "Saves can sync through Steam Cloud. The last write time is shown when Steam recorded it locally.",
   "feat.gogCloud": "GOG Cloud",
   "feat.gogCloudTip": "GOG Cloud exists for this game. This launcher cannot see the last sync time without the game's save folder.",
+  "ctrl.fullSupport": "Full support",
   "feat.partialPad": "Partial controller support",
   "feat.partialPadTip": "The store lists limited controller support. Keyboard and mouse are the main controls.",
   "feat.partnerCloud": "{name} Cloud",

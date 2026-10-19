@@ -1715,6 +1715,7 @@
   "drawer.progressOver": "Poza typową fabułą",
   "feat.steamCloud": "Steam Cloud",
   "feat.gogCloud": "GOG Cloud",
+  "ctrl.fullSupport": "Pełna obsługa",
   "feat.partialPad": "Częściowa obsługa kontrolera",
   "feat.partialPadTip": "Sklep podaje ograniczoną obsługę kontrolera. Klawiatura i mysz są głównym sterowaniem.",
   "controller.kindSteamDeck": "Steam Deck",

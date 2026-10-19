@@ -924,6 +924,31 @@ export function renderGameFeatures(
 }
 
 /**
+ * Controller support as a card of its own: a badge that says how far the support
+ * goes, the store's own wording under it.
+ */
+export function renderControllerCard(
+  s: EpicSummary,
+  g?: EpicGame,
+  reqData?: GameRequirementsResponse,
+): string {
+  const ctrl = detectControllerSupport(s, g, reqData);
+  const badge =
+    ctrl.className === "supported"
+      ? `<span class="ctrl-badge is-full">${icon("check", 13)} ${i18nT("ctrl.fullSupport")}</span>`
+      : ctrl.iconName === "keyboard"
+        ? `<span class="ctrl-badge is-kb">${icon("keyboard", 13)} ${i18nT("feat.kbMouse")}</span>`
+        : `<span class="ctrl-badge is-partial">${i18nT("feat.partialPad")}</span>`;
+  return `
+    <div class="ctrl-card">
+      <div class="ctrl-glyph">${icon(ctrl.iconName, 34)}</div>
+      ${badge}
+      <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
+      <div class="ctrl-label">${esc(ctrl.label)}</div>
+    </div>`;
+}
+
+/**
  * The facts of the copy on this PC: platform, size and build. They used to sit
  * in the overview's features card, which made it a wall of rows — the System tab
  * is where technical facts belong.

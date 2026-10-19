@@ -45,7 +45,7 @@ import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
-import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -463,6 +463,29 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     ${sourceChipHtml(s.appName)}`;
 }
 
+/** The facts page: what the game supports, what this copy is, the controller and
+ *  the store's own requirements. Four cards in two columns on a wide window. */
+function renderSpecsTab(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null,
+  antiCheat: string | null,
+): string {
+  const g = rawOf(s.appName);
+  const reqData = S.loadedRequirements.get(s.appName);
+  const card = (title: string, glyph: IconName, body: string, wide = false): string => `
+    <section class="card specs-card${wide ? " is-wide" : ""}">
+      <h3 class="gp-section-title">${icon(glyph, 13)} <span>${title}</span></h3>
+      ${body}
+    </section>`;
+  return `
+    <div class="specs-grid">
+      ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
+      ${card(t("sys.thisCopy"), "layers", renderInstalledCopyFacts(s))}
+      ${card(t("feat.controller"), "gamepad-2", renderControllerCard(s, g, reqData))}
+      ${card(t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`, true)}
+    </div>`;
+}
+
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
   switch (S.activeDrawerTab) {
     case "overview": return renderDrawerOverview(s, partner, antiCheat);
@@ -470,8 +493,8 @@ function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null,
     case "dlcs": return renderDrawerDlcs(s);
     case "screenshots": return renderDrawerScreenshots(s);
     case "notes": return renderDrawerNotes(s.appName);
-    // A session left on the retired System tab lands on the overview: the facts
-    // it carried live in the sidebar now.
+    case "specs": return renderSpecsTab(s, partner, antiCheat);
+    // A session left on a retired tab lands on the overview.
     default: return renderDrawerOverview(s, partner, antiCheat);
   }
 }
@@ -897,7 +920,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
        ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
        ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
        ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
-       ${tabButton("notes", t("drawer.notes"), notesCount)}`;
+       ${tabButton("notes", t("drawer.notes"), notesCount)}
+       ${tabButton("specs", t("drawer.specs"))}`;
 
   modalRoot.innerHTML = `
     <div class="overlay">
@@ -1202,9 +1226,6 @@ export function renderDrawerOverview(
       <aside class="hub-overview-sidebar">
         ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock)}
         ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock)}
-        ${sideCard(s.appName, "features", t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
-        ${sideCard(s.appName, "copy", t("sys.thisCopy"), "layers", renderInstalledCopyFacts(s))}
-        ${sideCard(s.appName, "requirements", t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`)}
       </aside>
     </div>`;
 }
