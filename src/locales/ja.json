@@ -2447,6 +2447,7 @@
   "settings.pictureCacheCleared": "{size} の画像を削除しました",
   "manage.playtimeAllCopies": "各ストアのコピーの合計です。",
   "feat.releaseDate": "発売日",
+  "feat.genres": "ジャンル",
   "drawer.personalEmptyTitle": "あなたの記録はここから始まります",
   "drawer.personalEmptyDesc": "このゲームのスクリーンショットや実績はまだありません。プレイ中に撮ったものがここに並びます。",
   "drawer.personalEmptyCta": "ギャラリーを開く",

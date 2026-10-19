@@ -2447,6 +2447,7 @@
   "settings.pictureCacheCleared": "Cleared {size} of pictures",
   "manage.playtimeAllCopies": "Every store copy of this game, added up.",
   "feat.releaseDate": "Release Date",
+  "feat.genres": "Genres",
   "drawer.personalEmptyTitle": "Your own record starts here",
   "drawer.personalEmptyDesc": "No screenshots or achievements recorded for this game yet. What you take while playing shows up here.",
   "drawer.personalEmptyCta": "Open the gallery",

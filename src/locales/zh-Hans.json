@@ -2447,6 +2447,7 @@
   "settings.pictureCacheCleared": "已清除 {size} 图片",
   "manage.playtimeAllCopies": "已汇总该游戏在各商店的副本。",
   "feat.releaseDate": "发行日期",
+  "feat.genres": "类型",
   "drawer.personalEmptyTitle": "你的记录从这里开始",
   "drawer.personalEmptyDesc": "这款游戏还没有截图或成就记录。游玩时留下的内容会显示在这里。",
   "drawer.personalEmptyCta": "打开图库",

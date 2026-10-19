@@ -872,6 +872,7 @@ export function renderGameFeatures(
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
   reqData?: GameRequirementsResponse,
+  tags: string[] = [],
 ): string {
   const canRunOffline = (g?.metadata?.customAttributes as Record<string, { value?: string }> | undefined)?.CanRunOffline?.value === "true";
 
@@ -977,6 +978,22 @@ export function renderGameFeatures(
       <div class="hub-feature-val">${esc(formatted)}</div>
     </div>`;
       })()
+    }
+
+    ${
+      // Genres and themes, as one line in the sidebar the way Steam lists them.
+      // They used to sit under the About text as a row of chips, which read as
+      // database output in the middle of the page.
+      tags.length
+        ? `
+    <div class="hub-feature-row" title="${esc(tags.join(", "))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("hash", 12)}</div>
+        <span>${i18nT("feat.genres")}</span>
+      </div>
+      <div class="hub-feature-val">${esc(tags.join(", "))}</div>
+    </div>`
+        : ""
     }
   `;
 }

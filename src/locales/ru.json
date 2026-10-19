@@ -2447,6 +2447,7 @@
   "settings.pictureCacheCleared": "Удалено {size} изображений",
   "manage.playtimeAllCopies": "Суммарно по всем копиям игры в магазинах.",
   "feat.releaseDate": "Дата выхода",
+  "feat.genres": "Жанры",
   "drawer.personalEmptyTitle": "Ваша собственная летопись начинается здесь",
   "drawer.personalEmptyDesc": "Для этой игры пока нет скриншотов или достижений. Всё, что вы снимете во время игры, появится здесь.",
   "drawer.personalEmptyCta": "Открыть галерею",

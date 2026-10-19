@@ -134,6 +134,16 @@ function localizeIgdbTag(raw: string): string {
   return CLEAN_EN_TAGS[key] ?? raw;
 }
 
+/** The genre and theme tags of a game, localized and capped at six. The features
+ *  card shows them as one line, the way Steam lists a game's genres in its own
+ *  sidebar; they used to sit under the About text, where they read as database
+ *  output. */
+export function igdbTagsFor(appName: string): string[] {
+  const game = cache.get(appName);
+  if (!game) return [];
+  return [...game.genres, ...game.themes].slice(0, 6).map(localizeIgdbTag);
+}
+
 /**
  * The credit line that closes the About box: genre chips, community channels
  * and the IGDB attribution. Release date, publisher and age rating live in the
@@ -149,9 +159,8 @@ export function renderIgdbCredits(target: IgdbTarget): string {
     return error ? igdbSetupRow(error) : "";
   }
 
-  const tags = [...game.genres, ...game.themes].slice(0, 6);
   const links = game.links ?? [];
-  if (!tags.length && !links.length) return "";
+  if (!links.length) return "";
 
   const labelOfLink = (kind: string): string =>
     kind === "official"
@@ -174,7 +183,6 @@ export function renderIgdbCredits(target: IgdbTarget): string {
 
   return `
     <div class="igdb-credits">
-      ${tags.length ? `<div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(localizeIgdbTag(tag))}</span>`).join("")}</div>` : ""}
       <div class="igdb-credits-foot">
         ${linksHtml}
         <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>

@@ -2447,6 +2447,7 @@
   "settings.pictureCacheCleared": "{size} d'images supprimés",
   "manage.playtimeAllCopies": "Toutes les copies de ce jeu, additionnées.",
   "feat.releaseDate": "Date de sortie",
+  "feat.genres": "Genres",
   "drawer.personalEmptyTitle": "Ton propre suivi commence ici",
   "drawer.personalEmptyDesc": "Aucune capture ou succès enregistré pour ce jeu. Ce que tu prends en jouant apparaît ici.",
   "drawer.personalEmptyCta": "Ouvrir la galerie",

@@ -43,7 +43,7 @@ import { cachedNotes, notesForScope } from "../notes/notes-client";
 import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
-import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
+import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
@@ -1215,7 +1215,7 @@ function renderDrawerFeatures(
   return `
     <section class="card gp-side-card gp-features-card">
       <h3 class="gp-section-title">${t("drawer.featuresSupport")}</h3>
-      <div class="hub-features-list" id="hub-features-list">${renderGameFeatures(s, g, partner, antiCheat, reqData)}</div>
+      <div class="hub-features-list" id="hub-features-list">${renderGameFeatures(s, g, partner, antiCheat, reqData, igdbTagsFor(s.appName))}</div>
     </section>`;
 }
 
@@ -1745,7 +1745,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       const featuresEl = document.getElementById("hub-features-list");
       if (featuresEl) {
         const g = rawOf(appName);
-        featuresEl.innerHTML = renderGameFeatures(cur, g, gamePartner(cur, g), gameAntiCheat(cur, g), data);
+        featuresEl.innerHTML = renderGameFeatures(cur, g, gamePartner(cur, g), gameAntiCheat(cur, g), data, igdbTagsFor(cur.appName));
       }
     }
   } catch (e) {
@@ -1817,7 +1817,7 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
       const featuresEl = document.getElementById("hub-features-list");
       if (featuresEl) {
         const g = rawOf(appName);
-        featuresEl.innerHTML = renderGameFeatures(s, g, gamePartner(s, g), gameAntiCheat(s, g), S.loadedRequirements.get(appName));
+        featuresEl.innerHTML = renderGameFeatures(s, g, gamePartner(s, g), gameAntiCheat(s, g), S.loadedRequirements.get(appName), igdbTagsFor(appName));
       }
       const dlcTab = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
       if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), details.dlc.length);
