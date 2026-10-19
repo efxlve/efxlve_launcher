@@ -105,6 +105,11 @@ fn fourcc(text: &[u8; 4]) -> [u8; 4] {
 /// have wrapped.
 const MAX_CLIP_BYTES: u64 = 3_500_000_000;
 
+/// The largest chunk a reader will believe. Real MJPEG frames and audio blocks
+/// are far below this, so anything bigger is a corrupt size field — and one that
+/// was trusted would become a multi-gigabyte allocation.
+const MAX_CHUNK_BYTES: usize = 64 * 1024 * 1024;
+
 struct AviWriter {
     file: File,
     frames: u32,
@@ -804,6 +809,9 @@ pub fn frame_at(path: &Path, seconds: f64) -> Option<String> {
         let pad = (size % 2) as i64;
         if &tag == b"00dc" {
             if frame == wanted {
+                if size > MAX_CHUNK_BYTES {
+                    return None;
+                }
                 buffer.clear();
                 buffer.resize(size, 0);
                 reader.read_exact(&mut buffer).ok()?;
@@ -822,7 +830,8 @@ pub fn frame_at(path: &Path, seconds: f64) -> Option<String> {
 }
 
 /// `dwTotalFrames / (dwRate / dwScale)` from the `avih` header.
-fn avi_seconds(path: &Path) -> Option<u64> {    let bytes = std::fs::read(path).ok()?;
+fn avi_seconds(path: &Path) -> Option<u64> {
+    let bytes = std::fs::read(path).ok()?;
     // Layout: RIFF(12) + LIST hdrl(12) + "avih" chunk header(8) → payload at 32.
     // dwMicroSecPerFrame is the first field, dwTotalFrames sits 16 bytes in.
     if bytes.len() < 52 || &bytes[0..4] != b"RIFF" {
@@ -977,9 +986,6 @@ fn copy_range(
         let is_audio = &tag == b"01wb";
 
         if (is_video || is_audio) && keep {
-            // A corrupt size field must not become a four-gigabyte allocation:
-            // real MJPEG frames and audio blocks are far below this.
-            const MAX_CHUNK_BYTES: usize = 64 * 1024 * 1024;
             if size > MAX_CHUNK_BYTES {
                 return Err("@t:ss.clipUnreadable".to_string());
             }
@@ -1703,6 +1709,31 @@ mod tests {
         );
         assert!(!target.is_file(), "the half-written file is gone");
         let _ = std::fs::remove_file(&source);
+    }
+
+    /// The trim dialog's strip reads frames by walking the file. A corrupt size
+    /// there has to return nothing, not allocate what the field claims.
+    #[test]
+    fn a_frame_read_refuses_a_corrupt_size() {
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("frame-corrupt.avi");
+        let mut writer = AviWriter::create(&path, 64, 48, 10, None).expect("create");
+        for i in 0..4u8 {
+            writer
+                .add_frame(&[0xFF, 0xD8, i, 0xFF, 0xD9])
+                .expect("frame");
+        }
+        writer.finish(10, Duration::from_millis(400)).expect("finish");
+
+        let mut bytes = std::fs::read(&path).expect("read");
+        let movi = bytes.windows(4).position(|w| w == b"movi").expect("movi");
+        let size_at = movi + 8;
+        bytes[size_at..size_at + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+        std::fs::write(&path, &bytes).expect("write");
+
+        assert_eq!(frame_at(&path, 0.0), None, "no frame, and no allocation");
+        let _ = std::fs::remove_file(&path);
     }
 
     /// Joining has to refuse what a container cannot hold: two formats in one
