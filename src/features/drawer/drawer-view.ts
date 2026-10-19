@@ -941,6 +941,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   updateGamepadHud(S.gamepadPolling);
   presenceSync();
   updateNavHistoryUi();
+  // The cached answers decide whether the scores card has anything to frame.
+  syncScoresCardVisibility();
 }
 
 export function updateHltbUI(appName: string, data?: HltbData): void {
@@ -956,12 +958,25 @@ export function updateHltbUI(appName: string, data?: HltbData): void {
     libraryPlaytime(summary).seconds,
     detectGameMode(summary, S.loadedRequirements.get(appName)),
   );
+  syncScoresCardVisibility();
+}
+
+/** Hides the scores card when both of its blocks came back with nothing: a frame
+ *  around two empty bodies reads as a broken card. While an answer is on its way
+ *  the block holds a skeleton, so the card keeps its place. */
+function syncScoresCardVisibility(): void {
+  const card = document.querySelector<HTMLElement>(".gp-scores-card");
+  const hltb = document.getElementById("drawer-hltb-container");
+  const critic = document.getElementById("drawer-critic-container");
+  if (!card || !hltb || !critic) return;
+  card.classList.toggle("is-empty", hltb.children.length === 0 && critic.children.length === 0);
 }
 
 export function updateCriticUI(appName: string, data: CriticData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-critic-container");
   if (container) container.innerHTML = renderCriticCard(data, false, igdbGameFor(appName)?.rating ?? null);
+  syncScoresCardVisibility();
 }
 
 /** Collection chips + add button, in their own row under the action bar. */

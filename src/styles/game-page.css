@@ -58,7 +58,7 @@ body.sb-resizing .overlay {
    action, not a fact about it. */
 .gp-bar-tags { margin: 0; flex-wrap: wrap; }
 .gp-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.gp-actions .btn.lg:first-child { min-width: 180px; }
+.gp-actions > .btn.lg:first-child { min-width: 180px; }
 .gp-actions .btn.lg.icon-only { width: 44px; }
 .gp-actions .btn.ghost.active { background: var(--surface-2); color: var(--text); }
 
@@ -852,16 +852,31 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
    so neither can wipe the other; the frame, the title and the order belong to
    the card. */
 .gp-scores-card .drawer-critic-body, .gp-scores-card .drawer-hltb-body { min-width: 0; }
-.gp-scores-card .drawer-hltb-body {
+/* The divider belongs to whichever block comes second, not to the lengths alone:
+   with the player's own time first, the critic body is the one that follows. The
+   bodies sit inside their own wrappers, so the order is read from those. */
+.gp-scores-card > #drawer-hltb-container,
+.gp-scores-card > #drawer-critic-container {
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
 }
-/* Nothing to compare: the divider would hang under an empty block. */
-.gp-scores-card .drawer-critic-body:empty + .drawer-hltb-body,
-.gp-scores-card .drawer-hltb-body:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.gp-scores-card > #drawer-hltb-container:first-of-type,
+.gp-scores-card > #drawer-critic-container:first-of-type {
+  margin-top: 0; padding-top: 0; border-top: none;
+}
+/* An empty block leaves no divider hanging under it. */
+.gp-scores-card > #drawer-critic-container:has(.drawer-critic-body:empty) + #drawer-hltb-container,
+.gp-scores-card > #drawer-hltb-container:has(.drawer-hltb-body:empty) + #drawer-critic-container {
+  margin-top: 0; padding-top: 0; border-top: none;
+}
 .gp-scores-pill-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 
-/* Three compact scores to a row: the badges used to stack as three wide rows. */
-.hub-critic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); gap: 6px; }
+/* Both blocks came back empty: the card has nothing to frame. */
+.gp-scores-card.is-empty { display: none; }
+
+/* Three compact scores to a row: the badges used to stack as three wide rows.
+   The columns have to fit the sidebar's inner width: three 86px columns plus
+   the gaps came to 270px in a 268px card, so Metacritic wrapped on its own. */
+.hub-critic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 6px; }
 .hub-critic-badge { gap: 8px; padding: 6px; }
 .hub-critic-badge .critic-badge-score { width: 30px; height: 30px; font-size: 13px; border-radius: 8px; }
 .hub-critic-badge .critic-badge-name { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
