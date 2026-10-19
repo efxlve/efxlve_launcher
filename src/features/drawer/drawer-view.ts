@@ -19,7 +19,7 @@ import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLib
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
-import { recordSessionSummary } from "../../core/session-summary";
+import { recordSessionSummary, sessionSummaryFor } from "../../core/session-summary";
 import { steamNews, type SteamNewsItem } from "../../steam";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -1094,8 +1094,12 @@ function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
   const nextAch = renderNextAchievements(s.appName);
   // Both blocks hold their place while they load; when they have answered and
   // there is genuinely nothing, the player gets a card that says what this space
-  // is for instead of a silent gap.
+  // is for instead of a silent gap. A recorded session or a note is a record
+  // too: offering "your record starts here" under a last-session card that just
+  // said "+2 trophies" contradicts itself.
   const settledEmpty =
+    !sessionSummaryFor(s.appName) &&
+    !cachedNotes().some((note) => note.scope === s.appName) &&
     S.loadedScreenshots.has(s.appName) &&
     (S.loadedScreenshots.get(s.appName)?.length ?? 0) === 0 &&
     S.loadedAchievements.has(s.appName) &&
