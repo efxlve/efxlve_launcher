@@ -28,6 +28,15 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Settings → Screenshots | Folder row, "scan store folders too" switch with its explanation, watched-folders list, hotkey row |
 | Settings → Downloads | Picture cache row showing its size next to Clear |
 | Settings → System | App update rows, system toggles, backend and library folder |
+| Notes | Search box, scope filters, empty list state, editor panel ("pick a note"), no crash |
+| Profile | Banner, online chip, account count, game/trophy counters, recents |
+| Task manager | Launcher's own usage rows |
+| Collections | The per-game modal ("which categories will include Hades"), backdrop, new/save actions |
+| Storage manager | Disk rows: installed games, games/other/free split |
+| TV hub | Header strip, stage, shelf, focus ring, empty category (see TODO §1) |
+| Gallery cap note | Appears at 300 captures with the right count, stays away below it |
+| Live tests | All 26 `#[ignore]`d ones; the expected reds are listed in `docs/agent/README.md` |
+| Update chain | `tauri.conf.json` carries a minisign public key, the private key lives in GitHub secrets only, nothing in the repo |
 
 ## Still needs the app window
 
