@@ -1187,8 +1187,7 @@ export function renderDrawerOverview(
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
-        ${personalFirst ? `${personal}${about}` : `${about}${personal}`}
-        ${news}
+        ${personalFirst ? `${personal}${news}${about}` : `${about}${personal}${news}`}
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
