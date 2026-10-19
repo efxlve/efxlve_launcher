@@ -79,6 +79,31 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   topluyor (`a790525d`), ekran görüntüsü başlıkları kartın içinde kısaltılıyor
   (`189e128e`, `5bcf55a8`).
 
+## 2026-10-19 — önbellek ve uyumluluk turu
+
+- **Oyun sayfası ön ısıtma:** son 6 oyun, 12 saatte bir, pencere boştayken ve
+  ilk kütüphane senkronu bitince. Karar: ağ isteği sayısını 6 oyunla sınırladım;
+  daha büyük bir liste ilk açılışta Epic senkronuyla yarışır. İstenirse sabit
+  `PREFETCH_GAMES` değeri büyütülebilir.
+- **Tek uçuş:** Steam/GOG/Amazon kütüphane yüklemeleri, başarım özeti ve GOG
+  detayları aynı anda gelen çağrılarda tek promise paylaşıyor. Bunlar yalnız
+  eşzamanlı çağrıları birleştirir; sonraki turları engellemez.
+- **Uyumluluk yöneticisi:** 16 araçlık katalog, hedef platform seçici ve gerçek
+  GitHub asset'leri. `wine-crossover` yalnız algılanır (Gcenx/winecx 404),
+  `vulkan-helper-rs` kaynak-only. DXVK/VKD3D şimdilik yalnız indirilir; prefix'e
+  DLL kopyalama ve `WINEDLLOVERRIDES` kurulumu bilerek sonraki tura bırakıldı,
+  çünkü Linux/macOS'ta test edilmeden prefix'e yazmak geri alması zor bir risk.
+- **Windows'ta uyumluluk:** `launch_spec` Windows'ta boş dönüyor; mevcut
+  Windows başlatma yolu birebir korunuyor. Uyumluluk sayfası Windows'tan
+  Linux/macOS ağacı indirmeye izin veriyor; bu bir paketleme hazırlığı, Windows
+  oyunlarını Wine'a taşımıyor.
+- **IGDB DLC/genişletme listesi:** mağaza DLC satırları kurulum yüzeyi olarak
+  kaldı; IGDB yalnız mağazanın adlandırmadığı ekleri ayrı blokta gösteriyor.
+  Mağaza başlığıyla aynı olan (kanonik başlık) kayıtlar eleniyor.
+- **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV mode
+  görsel yönü (TODO §1), GPU kaydedici (TODO §8) ve sürüm hazırlama/yayınlama
+  bilerek değiştirilmedi.
+
 ## Sırada (yokluğunda devam edenler)
 
 - **Aşama C2 — yapıldı**: sağ paneldeki iki kart tek çerçeveye alındı
