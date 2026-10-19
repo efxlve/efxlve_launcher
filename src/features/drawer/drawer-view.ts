@@ -242,9 +242,18 @@ function ensureEosSupport(appName: string): void {
   void epicDetectEos(s.installPath)
     .then((has) => {
       S.eosSupportMap.set(appName, has);
-      if (has && S.currentModalAppName === appName) openEpicModal(appName, false);
+      if (has) repaintEosSupport(appName);
     })
     .catch(() => {});
+}
+
+/** The EOS row lives in the "this copy" card; the rest of the page did not change. */
+function repaintEosSupport(appName: string): void {
+  if (S.currentModalAppName !== appName) return;
+  const s = summaryOf(appName);
+  const host = document.getElementById("sys-copy-body");
+  if (!s || !host) return;
+  host.innerHTML = renderInstalledCopyFacts(s, gamePartner(s, rawOf(appName)));
 }
 
 function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLauncherInfo | null): string {

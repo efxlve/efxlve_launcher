@@ -115,7 +115,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   personal blok yerinde güncelleniyor; böylece okuma konumu ve sekme çubuğu
   korunuyor. Başarımlar sekmesindeki liste zaten sekme açılırken kurulduğundan
   yalnız gövde değişimi yeterli. DLC yanıtı da yalnız DLC sekmesinin gövdesini
-  yeniliyor; iki kez tam sayfa çizen eski yol kaldırıldı.
+  yeniliyor; iki kez tam sayfa çizen eski yol kaldırıldı. EOS taraması da yalnız
+  "bu bilgisayardaki kopya" kartını tazeliyor; sonuç gelene kadar sayfa açık
+  kalırsa artık tüm oyun sayfası yeniden kurulmuyor.
 - **Oyun bazlı çalıştırıcı:** Oyun sayfasının Sistem sekmesinde "Genel ayarı
   kullan" varsayılanıyla bir seçim eklendi; yalnız istisnalar
   `<app_data>/compat/games.json` içine yazılıyor. Açık bir oyun seçimi global
