@@ -56,13 +56,12 @@ export function renderProtonDbHost(s: EpicSummary): string {
 
 export async function hydrateProtonDbChip(appName: string): Promise<void> {
   if (sourceOfKey(appName) !== "steam" || !appName.startsWith("steam::")) return;
-  if (S.offlineMode) return;
   const host = document.getElementById("protondb-chip");
   if (!host || host.dataset.loaded === "1") return;
   const appId = appName.slice(7);
   let summary = summaries.get(appId);
   if (summary === undefined) {
-    summary = await steamProtonDbSummary(appId).catch(() => null);
+    summary = await steamProtonDbSummary(appId, S.offlineMode).catch(() => null);
     summaries.set(appId, summary);
   }
   if (S.currentModalAppName !== appName) return;

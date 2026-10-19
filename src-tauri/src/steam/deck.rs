@@ -132,21 +132,33 @@ async fn fetch_category(app_id: &str) -> Option<u8> {
 /// Valve's cached Steam Deck category for one Steam app. `None` means the app
 /// has no report or the source could not be reached and no stale copy exists.
 #[tauri::command]
-pub async fn steam_deck_status(app: AppHandle, app_id: String) -> Option<DeckStatus> {
+pub async fn steam_deck_status(
+    app: AppHandle,
+    app_id: String,
+    offline: Option<bool>,
+) -> Option<DeckStatus> {
     if !valid_app_id(&app_id) {
         return None;
     }
+    let offline = offline.unwrap_or(false);
     let path = cache_path(&app, &app_id);
     let cached = read_cache(&path);
     if let Some(cache) = cached.as_ref() {
         if cache.schema == CACHE_SCHEMA
-            && cache_is_fresh(cache.fetched_at, now_secs())
+            && (offline || cache_is_fresh(cache.fetched_at, now_secs()))
             && valid_category(cache.category)
         {
             return Some(DeckStatus {
                 category: cache.category,
             });
         }
+    }
+    if offline {
+        return cached
+            .filter(|cache| cache.schema == CACHE_SCHEMA && valid_category(cache.category))
+            .map(|cache| DeckStatus {
+                category: cache.category,
+            });
     }
 
     if let Some(category) = fetch_category(&app_id).await {

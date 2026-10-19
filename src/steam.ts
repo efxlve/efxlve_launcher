@@ -122,8 +122,8 @@ export interface ProtonDbSummary {
   total: number | null;
 }
 
-export const steamProtonDbSummary = (appId: string) =>
-  invoke<ProtonDbSummary | null>("steam_protondb_summary", { appId });
+export const steamProtonDbSummary = (appId: string, offline = false) =>
+  invoke<ProtonDbSummary | null>("steam_protondb_summary", { appId, offline });
 
 /** Are We Anti-Cheat Yet?'s Linux/Wine status for a Steam app. */
 export interface AntiCheatStatus {
@@ -132,20 +132,20 @@ export interface AntiCheatStatus {
   slug: string;
 }
 
-export const steamAntiCheatStatus = (appId: string) =>
-  invoke<AntiCheatStatus | null>("steam_anticheat_status", { appId });
+export const steamAntiCheatStatus = (appId: string, offline = false) =>
+  invoke<AntiCheatStatus | null>("steam_anticheat_status", { appId, offline });
 
 /** The same anti-cheat row for an Epic catalog namespace. */
-export const epicAntiCheatStatus = (namespace: string) =>
-  invoke<AntiCheatStatus | null>("epic_anticheat_status", { namespace });
+export const epicAntiCheatStatus = (namespace: string, offline = false) =>
+  invoke<AntiCheatStatus | null>("epic_anticheat_status", { namespace, offline });
 
 /** Valve's Steam Deck category: 1 unsupported, 2 playable, 3 verified. */
 export interface DeckStatus {
   category: number;
 }
 
-export const steamDeckStatus = (appId: string) =>
-  invoke<DeckStatus | null>("steam_deck_status", { appId });
+export const steamDeckStatus = (appId: string, offline = false) =>
+  invoke<DeckStatus | null>("steam_deck_status", { appId, offline });
 
 /** One Steam transfer, with the byte counter moved forward since the last exact sample. */
 export interface SteamLiveDownload {

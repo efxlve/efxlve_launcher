@@ -122,16 +122,24 @@ async fn fetch_summary(app_id: &str) -> Option<ProtonDbSummary> {
 pub async fn steam_protondb_summary(
     app: AppHandle,
     app_id: String,
+    offline: Option<bool>,
 ) -> Option<ProtonDbSummary> {
     if !valid_app_id(&app_id) {
         return None;
     }
+    let offline = offline.unwrap_or(false);
     let path = cache_path(&app, &app_id);
     let cached = path.as_deref().and_then(read_cache);
     if let Some(cache) = cached.as_ref() {
-        if cache.schema == CACHE_SCHEMA && cache_is_fresh(cache.fetched_at, now_secs()) {
+        if cache.schema == CACHE_SCHEMA && (offline || cache_is_fresh(cache.fetched_at, now_secs()))
+        {
             return Some(cache.summary.clone());
         }
+    }
+    if offline {
+        return cached
+            .filter(|cache| cache.schema == CACHE_SCHEMA)
+            .map(|cache| cache.summary);
     }
 
     if let Some(summary) = fetch_summary(&app_id).await {

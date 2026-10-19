@@ -197,13 +197,19 @@ async fn fetch_games() -> Option<Vec<AwacyGame>> {
     response.json::<Vec<AwacyGame>>().await.ok()
 }
 
-async fn load_games(app: &AppHandle) -> Option<Vec<AwacyGame>> {
+async fn load_games(app: &AppHandle, offline: bool) -> Option<Vec<AwacyGame>> {
     let path = cache_path(app);
     let cached = read_cache(&path);
     if let Some(cache) = cached.as_ref() {
-        if cache.schema == CACHE_SCHEMA && cache_is_fresh(cache.fetched_at, now_secs()) {
+        if cache.schema == CACHE_SCHEMA && (offline || cache_is_fresh(cache.fetched_at, now_secs()))
+        {
             return Some(cache.games.clone());
         }
+    }
+    if offline {
+        return cached
+            .filter(|cache| cache.schema == CACHE_SCHEMA)
+            .map(|cache| cache.games);
     }
 
     if let Some(games) = fetch_games().await {
@@ -220,21 +226,31 @@ async fn load_games(app: &AppHandle) -> Option<Vec<AwacyGame>> {
 /// app is not in the list or the source could not be reached and no stale copy
 /// exists; the page then leaves the row out.
 #[tauri::command]
-pub async fn steam_anticheat_status(app: AppHandle, app_id: String) -> Option<AntiCheatStatus> {
+pub async fn steam_anticheat_status(
+    app: AppHandle,
+    app_id: String,
+    offline: Option<bool>,
+) -> Option<AntiCheatStatus> {
     if !valid_app_id(&app_id) {
         return None;
     }
-    find_in(&load_games(&app).await?, &app_id)
+    let games = load_games(&app, offline.unwrap_or(false)).await?;
+    find_in(&games, &app_id)
 }
 
 /// The same row for an Epic catalog namespace (the app name Legendary uses).
 #[tauri::command]
-pub async fn epic_anticheat_status(app: AppHandle, namespace: String) -> Option<AntiCheatStatus> {
+pub async fn epic_anticheat_status(
+    app: AppHandle,
+    namespace: String,
+    offline: Option<bool>,
+) -> Option<AntiCheatStatus> {
     let namespace = namespace.trim();
     if !valid_epic_namespace(namespace) {
         return None;
     }
-    find_epic_in(&load_games(&app).await?, namespace)
+    let games = load_games(&app, offline.unwrap_or(false)).await?;
+    find_epic_in(&games, namespace)
 }
 
 #[cfg(test)]

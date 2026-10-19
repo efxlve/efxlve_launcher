@@ -61,7 +61,6 @@ export function renderAntiCheatHost(s: EpicSummary): string {
 export async function hydrateAntiCheatChip(appName: string): Promise<void> {
   const source = sourceOfKey(appName);
   if (source !== "steam" && source !== "epic") return;
-  if (S.offlineMode) return;
   const host = document.getElementById("awacy-chip");
   if (!host || host.dataset.loaded === "1") return;
   const steam = source === "steam";
@@ -70,8 +69,8 @@ export async function hydrateAntiCheatChip(appName: string): Promise<void> {
   let info = statuses.get(cacheKey);
   if (info === undefined) {
     info = steam
-      ? await steamAntiCheatStatus(key).catch(() => null)
-      : await epicAntiCheatStatus(key).catch(() => null);
+      ? await steamAntiCheatStatus(key, S.offlineMode).catch(() => null)
+      : await epicAntiCheatStatus(key, S.offlineMode).catch(() => null);
     statuses.set(cacheKey, info);
   }
   if (S.currentModalAppName !== appName) return;

@@ -178,9 +178,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   `system.reg` var mı bilgisini döndürüyor. Kart bunu "Prefix hazır." /
   "Prefix henüz oluşturulmadı." olarak gösteriyor; prefix kaydı ve hazırlama
   sonrası durum yeniden okunuyor.
-- **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY satırları çevrimdışı
-  modda hiç istek atmıyor; boş host kalıyor. Böylece oyun sayfası açılırken üç
-  ayrı ağ zaman aşımı beklenmiyor.
+- **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY komutları çevrimdışı
+  modda `offline: true` ile çağrılıyor; backend ağa çıkmıyor, yalnız disk
+  cache'ini okuyor. Cache varsa rozet eski veriyle görünüyor, yoksa satır gizli
+  kalıyor. Böylece oyun sayfası açılırken üç ayrı ağ zaman aşımı beklenmiyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve
