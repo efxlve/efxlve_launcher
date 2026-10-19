@@ -1347,6 +1347,8 @@ export function repaintPersonalBlock(appName: string): void {
   if (!host || !s) return;
   const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   host.innerHTML = personalBlockHtml(s, s.installed || playtime > 0);
+  const sessionHost = document.querySelector(".gp-bar-right");
+  if (sessionHost) sessionHost.innerHTML = renderLastSessionCompact(appName);
   const nextAchEl = document.getElementById("gp-next-ach");
   if (nextAchEl) nextAchEl.outerHTML = renderNextAchievements(appName);
   const momentsEl = document.getElementById("gp-moments");
