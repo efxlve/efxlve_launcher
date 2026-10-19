@@ -424,7 +424,7 @@ pub async fn get_critic_data(
     // 1. Cache check
     if !force_refresh && cache_file.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
-            if let Ok(mut data) = serde_json::from_str::<CriticData>(&content) {
+            if let Ok(data) = serde_json::from_str::<CriticData>(&content) {
                 if data.supported && data.parser_version >= CRITIC_PARSER_VERSION {
                     return data;
                 }
