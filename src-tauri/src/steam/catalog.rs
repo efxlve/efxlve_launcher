@@ -332,7 +332,7 @@ pub fn parse_appinfo_dlc_ids(data: &[u8], app_id: &str) -> Vec<String> {
 ///
 /// The client keeps this cache for every app it knows, so the library can
 /// offer genre/year filters and studio names without one store request per game.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SteamAppMetadata {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -502,37 +502,135 @@ pub fn read_client_dlc_ids(steam: &Path, app_id: &str) -> Vec<String> {
     parse_appinfo_dlc_ids(&data, app_id)
 }
 
+/// Bump when `SteamAppMetadata` or the cache shape changes.
+const METADATA_CACHE_SCHEMA: u32 = 1;
+
+#[derive(Serialize, Deserialize)]
+struct MetadataCacheFile {
+    schema: u32,
+    source: String,
+    source_len: u64,
+    modified_ms: u64,
+    apps: std::collections::HashMap<String, SteamAppMetadata>,
+}
+
 pub(super) static METADATA_CACHE: std::sync::Mutex<
     Option<(
+        String,
         Option<std::time::SystemTime>,
+        u64,
         std::collections::HashMap<String, SteamAppMetadata>,
     )>,
 > = std::sync::Mutex::new(None);
 
+fn metadata_cache_path(app: &tauri::AppHandle) -> Option<PathBuf> {
+    use tauri::Manager;
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("steam").join("appinfo_metadata.json"))
+}
+
+fn metadata_cache_matches(
+    cache: &MetadataCacheFile,
+    source: &str,
+    source_len: u64,
+    modified_ms: u64,
+) -> bool {
+    cache.schema == METADATA_CACHE_SCHEMA
+        && cache.source == source
+        && cache.source_len == source_len
+        && cache.modified_ms == modified_ms
+}
+
+fn write_metadata_cache(
+    path: &Path,
+    source: &str,
+    source_len: u64,
+    modified_ms: u64,
+    apps: &std::collections::HashMap<String, SteamAppMetadata>,
+) {
+    let cache = MetadataCacheFile {
+        schema: METADATA_CACHE_SCHEMA,
+        source: source.to_string(),
+        source_len,
+        modified_ms,
+        apps: apps.clone(),
+    };
+    let Ok(data) = serde_json::to_vec(&cache) else {
+        return;
+    };
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let tmp = path.with_extension("json.tmp");
+    if std::fs::write(&tmp, data).is_err() {
+        return;
+    }
+    if std::fs::rename(&tmp, path).is_err() {
+        let _ = std::fs::remove_file(path);
+        let _ = std::fs::rename(&tmp, path);
+    }
+}
+
 /// App id → client metadata from `appinfo.vdf`, reused until that file changes.
-pub(super) fn cached_app_metadata(steam: &Path) -> std::collections::HashMap<String, SteamAppMetadata> {
+///
+/// Parsing the 5 MB VDF costs ~130 ms on the dev machine; the parsed 1,800-app
+/// map is only ~125 kB of JSON. The disk copy makes a warm boot read that
+/// instead of walking the client cache again. Source path, `mtime` and length
+/// are the invalidation key, so a Steam update or a moved install forces one
+/// new parse.
+pub(super) fn cached_app_metadata(
+    steam: &Path,
+    cache_path: Option<&Path>,
+) -> std::collections::HashMap<String, SteamAppMetadata> {
     let path = steam.join("appcache").join("appinfo.vdf");
-    let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
+    let source = path.display().to_string();
+    let metadata = std::fs::metadata(&path).ok();
+    let mtime = metadata.as_ref().and_then(|m| m.modified().ok());
+    let source_len = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+    let modified_ms = mtime
+        .and_then(|value| value.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|value| value.as_millis() as u64);
+
     let mut guard = METADATA_CACHE.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some((cached_mtime, map)) = guard.as_ref() {
-        if cached_mtime == &mtime {
+    if let Some((cached_source, cached_mtime, cached_len, map)) = guard.as_ref() {
+        if cached_source == &source && cached_mtime == &mtime && *cached_len == source_len {
             return map.clone();
         }
     }
+
+    if let (Some(cache_path), Some(modified_ms)) = (cache_path, modified_ms) {
+        if let Ok(data) = std::fs::read(cache_path) {
+            if let Ok(cache) = serde_json::from_slice::<MetadataCacheFile>(&data) {
+                if metadata_cache_matches(&cache, &source, source_len, modified_ms) {
+                    *guard = Some((source.clone(), mtime, source_len, cache.apps.clone()));
+                    return cache.apps;
+                }
+            }
+        }
+    }
+
     let map = std::fs::read(&path)
         .map(|data| parse_appinfo_metadata(&data))
         .unwrap_or_default();
-    *guard = Some((mtime, map.clone()));
+    *guard = Some((source.clone(), mtime, source_len, map.clone()));
+    if let (Some(cache_path), Some(modified_ms)) = (cache_path, modified_ms) {
+        write_metadata_cache(cache_path, &source, source_len, modified_ms, &map);
+    }
     map
 }
 
 /// Studio, genres and release year for the whole Steam library, read once from
 /// the client's own app cache. Empty when Steam or its cache is missing.
 #[tauri::command]
-pub fn steam_app_metadata() -> std::collections::HashMap<String, SteamAppMetadata> {
+pub fn steam_app_metadata(
+    app: tauri::AppHandle,
+) -> std::collections::HashMap<String, SteamAppMetadata> {
     let timer = crate::perf::Timer::start("rust:steam_app_metadata");
+    let cache_path = metadata_cache_path(&app);
     let result = steam_install_path()
-        .map(|steam| cached_app_metadata(&steam))
+        .map(|steam| cached_app_metadata(&steam, cache_path.as_deref()))
         .unwrap_or_default();
     timer.done_global();
     result
@@ -942,9 +1040,83 @@ pub fn steam_set_api_key(app: tauri::AppHandle, api_key: String) -> Result<(), S
 mod tests {
     use super::*;
 
+    #[test]
+    #[ignore]
+    fn probe_appinfo_metadata_cache_cost() {
+        let Some(steam) = steam_install_path() else {
+            return;
+        };
+        let dir = std::env::temp_dir().join(format!("efxlve-appinfo-{}", std::process::id()));
+        let cache = dir.join("appinfo_metadata.json");
+        let _ = std::fs::remove_file(&cache);
+        METADATA_CACHE.lock().unwrap().take();
+
+        let started = std::time::Instant::now();
+        let first = cached_app_metadata(&steam, Some(&cache));
+        eprintln!("parse + write {:?}, {} apps", started.elapsed(), first.len());
+        assert!(cache.is_file());
+
+        METADATA_CACHE.lock().unwrap().take();
+        let started = std::time::Instant::now();
+        let second = cached_app_metadata(&steam, Some(&cache));
+        eprintln!("disk cache read {:?}, {} apps", started.elapsed(), second.len());
+        assert_eq!(first.len(), second.len());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn appinfo_metadata_cache_matches_only_the_same_source() {
+        let mut apps = std::collections::HashMap::new();
+        apps.insert(
+            "10".to_string(),
+            SteamAppMetadata {
+                developer: Some("Supergiant Games".to_string()),
+                genres: vec!["Role-playing (RPG)".to_string()],
+                release_year: Some(2020),
+                oslist: Some("windows".to_string()),
+            },
+        );
+        let cache = MetadataCacheFile {
+            schema: METADATA_CACHE_SCHEMA,
+            source: "C:\\Steam\\appcache\\appinfo.vdf".to_string(),
+            source_len: 5_441_249,
+            modified_ms: 123,
+            apps,
+        };
+        let text = serde_json::to_string(&cache).expect("cache json");
+        let decoded: MetadataCacheFile = serde_json::from_str(&text).expect("cache");
+        assert!(metadata_cache_matches(
+            &decoded,
+            "C:\\Steam\\appcache\\appinfo.vdf",
+            5_441_249,
+            123
+        ));
+        assert!(!metadata_cache_matches(
+            &decoded,
+            "D:\\Steam\\appcache\\appinfo.vdf",
+            5_441_249,
+            123
+        ));
+        assert!(!metadata_cache_matches(
+            &decoded,
+            "C:\\Steam\\appcache\\appinfo.vdf",
+            5_441_250,
+            123
+        ));
+        assert!(!metadata_cache_matches(
+            &decoded,
+            "C:\\Steam\\appcache\\appinfo.vdf",
+            5_441_249,
+            124
+        ));
+        assert_eq!(
+            decoded.apps["10"].developer.as_deref(),
+            Some("Supergiant Games")
+        );
+    }
+
     use super::super::playtime::read_playtimes;
     use super::super::runtime::steam_install_path;
-
 
     #[test]
     fn store_language_rejects_path_separators() {

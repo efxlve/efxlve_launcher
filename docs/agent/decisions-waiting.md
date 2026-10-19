@@ -110,6 +110,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   gösterilmez. "Kapalı" artık `compat_runner_enabled = false` ile gerçekten
   kapalıdır; eski sürümde `runner = null` yönetilen çalıştırıcıyı otomatik
   seçiyordu, bu bir hataydı.
+- **Steam metadata cache:** `appinfo.vdf` her açılışta yeniden yürümek yerine
+  ayrıştırılmış harita `<app_data>/steam/appinfo_metadata.json` içinde saklanıyor.
+  Anahtar kaynak yol + dosya mtime + boyut; Steam güncellemesi ya da taşınan
+  kurulum kopyayı geçersiz kılıyor. Ölçüm: soğuk ayrıştırma + yazma 134 ms,
+  sıcak okuma 29 ms (1.820 uygulama); yalnız ayrıştırma 132 ms. Dosya ~125 kB,
+  kaynak VDF 5,4 MB.
 - **Geç gelen başarım:** Başarım özeti geldiğinde tüm oyun sayfası yeniden
   çizilmiyor. Hero çipleri, açık başarımlar sekmesinin gövdesi ve ana sayfadaki
   personal blok yerinde güncelleniyor; böylece okuma konumu ve sekme çubuğu
