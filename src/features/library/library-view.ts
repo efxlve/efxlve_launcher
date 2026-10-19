@@ -391,8 +391,9 @@ function caseCoverHeader(s: EpicSummary, source: GameSource): string {
   const brand = CASE_BRAND_LABELS[source] || source.toUpperCase();
   const os = resolveCaseOs(s);
   return `<div class="pcard-case-head" aria-hidden="true">
+    <span class="pcard-case-slot is-left" aria-hidden="true"></span>
     <span class="pcard-case-brand">${storeLogo(source, 13, "pcard-case-logo")}<span class="pcard-case-name">${esc(brand)}</span></span>
-    ${caseOsBadgeHtml(os)}
+    <span class="pcard-case-slot is-right">${caseOsBadgeHtml(os)}</span>
   </div>`;
 }
 
