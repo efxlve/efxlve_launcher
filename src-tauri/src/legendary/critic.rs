@@ -143,6 +143,9 @@ pub fn clean_critic_search_term(title: &str) -> String {
     let mut s = title
         .replace(['\u{2018}', '\u{2019}', '\u{00B4}', '`'], "'")
         .replace(['™', '®', '©'], "")
+        // En and em dashes are what the stores write; the edition rules below
+        // look for a plain hyphen.
+        .replace(['\u{2013}', '\u{2014}', '\u{2212}'], "-")
         .replace('\u{00A0}', " ");
     while s.contains("  ") {
         s = s.replace("  ", " ");

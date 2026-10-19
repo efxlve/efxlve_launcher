@@ -15,6 +15,10 @@ pub struct HltbData {
 pub fn clean_hltb_search_term(title: &str) -> String {
     let mut s = title
         .replace(['\u{2018}', '\u{2019}', '\u{00B4}', '`'], "'")
+        // En and em dashes are what the stores write ("... III – The Definitive
+        // Edition"); the rules below look for a plain hyphen. Without this the
+        // suffix survived and the search asked HowLongToBeat for "III –".
+        .replace(['\u{2013}', '\u{2014}', '\u{2212}'], "-")
         .replace(['™', '®', '\u{00A0}'], " ");
 
     // Series and publisher prefixes stay: HowLongToBeat names carry them too
@@ -52,7 +56,9 @@ pub fn clean_hltb_search_term(title: &str) -> String {
         }
     }
 
-    s.trim().to_string()
+    // A stripped suffix can leave the separator behind ("Grand Theft Auto III -");
+    // the search then asks for a title ending in a dash and finds nothing.
+    s.trim().trim_end_matches(['-', ':', '\u{2013}', '\u{2014}']).trim().to_string()
 }
 
 fn hltb_cache_dir() -> PathBuf {
@@ -463,7 +469,7 @@ pub fn pick_hltb_item<'a>(
 
 #[cfg(test)]
 mod pick_tests {
-    use super::pick_hltb_item;
+    use super::{clean_hltb_search_term, pick_hltb_item};
     use serde_json::json;
 
     #[test]
@@ -489,6 +495,24 @@ mod pick_tests {
         assert_eq!(pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).is_some(), true);
     }
 
+    /// The stores write edition suffixes after an en dash; the rules look for a
+    /// hyphen, so the suffix used to survive and the search asked
+    /// HowLongToBeat for a title ending in a dash.
+    #[test]
+    fn an_en_dash_edition_suffix_is_stripped_too() {
+        assert_eq!(
+            clean_hltb_search_term("Grand Theft Auto III – The Definitive Edition"),
+            "Grand Theft Auto III"
+        );
+        assert_eq!(
+            clean_hltb_search_term("The Witcher 3: Wild Hunt - Game of the Year Edition"),
+            "The Witcher 3: Wild Hunt"
+        );
+        // A plain hyphen inside a name stays, and a bare title is untouched.
+        assert_eq!(clean_hltb_search_term("Half-Life 2"), "Half-Life 2");
+        assert_eq!(clean_hltb_search_term("Hades"), "Hades");
+    }
+
     #[test]
     fn the_most_specific_partial_name_wins() {
         let items = vec![
@@ -504,6 +528,30 @@ mod pick_tests {
     fn nothing_matching_a_known_year_yields_none() {
         let items = vec![json!({ "game_name": "Some Other Game", "release_world": 2015 })];
         assert!(pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).is_none());
+    }
+
+    /// Live probe: what does HowLongToBeat actually answer? Run it when a game
+    /// page shows no lengths, with `--nocapture` to read the lines.
+    #[test]
+    #[ignore = "talks to howlongtobeat.com"]
+    fn hltb_live_probe() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let cases: [(&str, Option<u32>); 5] = [
+                ("Grand Theft Auto III", Some(2021)),
+                ("Grand Theft Auto III", None),
+                ("Grand Theft Auto III – The Definitive Edition", Some(2021)),
+                ("Dead by Daylight", Some(2016)),
+                ("Hades", Some(2020)),
+            ];
+            for (title, year) in cases {
+                let data = super::get_hltb_data(title, "probe::hltb", true, year).await;
+                println!(
+                    "{title} (year {year:?}) -> supported={} story={:?} extra={:?} complete={:?}",
+                    data.supported, data.main_story, data.main_extra, data.completionist
+                );
+            }
+        });
     }
 }
 
