@@ -1123,6 +1123,8 @@ fn main() {    // Rockstar's launcher only continues when a process named
             compat::install::compat_tools_dir,
             compat::install::compat_disk_usage,
             compat::install::compat_clear_partials,
+            compat::games::compat_get_game_config,
+            compat::games::compat_set_game_config,
             compat::launch::compat_get_launch_config,
             compat::launch::compat_set_launch_config,
             compat::launch::compat_open_prefix_root,

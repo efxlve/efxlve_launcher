@@ -1458,6 +1458,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* ---------- The facts page ---------- */
 
+.game-compat-card { margin-bottom: 16px; }
+.game-compat-card .row { min-height: 0; padding: 0; }
+.game-compat-card .row:hover { background: transparent; }
+.game-compat-card .row-meta { white-space: normal; }
+.game-compat-card .settings-select { max-width: 300px; }
+@media (max-width: 700px) {
+  .game-compat-card .row { flex-wrap: wrap; }
+}
 .specs-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);

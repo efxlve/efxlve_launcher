@@ -2598,5 +2598,10 @@
   "compat.diskUsageDesc": "{size} used",
   "compat.clearPartials": "Clear partial downloads",
   "compat.partialsCleared": "Freed {size}.",
-  "compat.openPrefix": "Open"
+  "compat.openPrefix": "Open",
+  "compat.gameTitle": "Compatibility for this game",
+  "compat.gameRunnerHint": "Leave on the global setting unless this title needs a specific runner.",
+  "compat.gameInherit": "Use the global setting",
+  "compat.gameSaved": "Game runner saved.",
+  "compat.saveFailed": "Could not save the compatibility setting."
 }

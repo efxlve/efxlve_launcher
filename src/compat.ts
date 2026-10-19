@@ -102,6 +102,21 @@ export const compatGetLaunchConfig = () =>
 export const compatOpenPrefixRoot = () =>
   invoke<string>("compat_open_prefix_root");
 
+export interface GameCompatConfig {
+  /** `null` means "use the global runner". */
+  runner: string | null;
+  runnerPath: string | null;
+  runnerTag: string | null;
+  /** `null` inherits the global layers; `[]` explicitly disables them. */
+  layers: string[] | null;
+}
+
+export const compatGetGameConfig = (appName: string) =>
+  invoke<GameCompatConfig>("compat_get_game_config", { appName });
+
+export const compatSetGameConfig = (appName: string, config: GameCompatConfig) =>
+  invoke<void>("compat_set_game_config", { appName, config });
+
 export const compatSetLaunchConfig = (config: CompatLaunchConfig) =>
   invoke<void>("compat_set_launch_config", {
     enabled: config.enabled,

@@ -307,8 +307,9 @@ the exact surface.
 
 Still open:
 - First-run `wineboot`/prefix creation with progress and a retry path.
-- Per-game runner/prefix/layer selection (global defaults plus the existing
-  per-game wrapper is what ships today).
+- Per-game prefix and layer selection. Per-game runner selection shipped on the
+  game page's System tab (`compat/games.json`); layers are stored in the same
+  record but the UI toggle is still the global one.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
 - Platform implementations for the screenshot hook, embedded store webview and

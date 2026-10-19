@@ -11,6 +11,7 @@
 //! uses it when the launcher itself runs on that platform.
 
 mod catalog;
+pub mod games;
 pub mod install;
 pub mod launch;
 

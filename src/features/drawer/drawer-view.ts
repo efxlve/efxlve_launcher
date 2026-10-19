@@ -33,6 +33,7 @@ import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
+import { hydrateGameCompatCard, renderGameCompatCard } from "./game-compat";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
 import { steamGetAchievements } from "../../steam";
 import { companionAchievements } from "../../companion";
@@ -464,6 +465,7 @@ function renderSpecsTab(
       ${body}
     </section>`;
   return `
+    ${renderGameCompatCard(s)}
     <div class="specs-grid">
       ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
       <div class="specs-side-col">
@@ -916,6 +918,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (stats) stats.innerHTML = heroStatsHtml(s, partner);
     paintGameMeta(s);
     paintGameCloud(s);
+    if (S.activeDrawerTab === "specs") void hydrateGameCompatCard(appName);
     return;
   }
 
@@ -985,6 +988,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
       })
       .catch(() => {});
   }
+  if (S.activeDrawerTab === "specs") void hydrateGameCompatCard(appName);
   syncSidebarGameActive();
   updateGamepadHud(S.gamepadPolling);
   presenceSync();

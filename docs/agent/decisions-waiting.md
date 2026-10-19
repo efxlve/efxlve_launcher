@@ -110,6 +110,13 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   gösterilmez. "Kapalı" artık `compat_runner_enabled = false` ile gerçekten
   kapalıdır; eski sürümde `runner = null` yönetilen çalıştırıcıyı otomatik
   seçiyordu, bu bir hataydı.
+- **Oyun bazlı çalıştırıcı:** Oyun sayfasının Sistem sekmesinde "Genel ayarı
+  kullan" varsayılanıyla bir seçim eklendi; yalnız istisnalar
+  `<app_data>/compat/games.json` içine yazılıyor. Açık bir oyun seçimi global
+  "kapalı" anahtarını aşar, böylece tek oyun için uyumluluk açılabilir; diğer
+  oyunlar etkilenmez. Katmanlar için kayıt alanı hazır ama UI şimdilik global
+  anahtarı kullanıyor; oyun bazlı katman seçimi gerçek prefix testiyle birlikte
+  sonraki tura bırakıldı.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

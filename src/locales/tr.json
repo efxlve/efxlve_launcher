@@ -2598,5 +2598,10 @@
   "compat.diskUsageDesc": "{size} kullanılıyor",
   "compat.clearPartials": "Yarım indirmeleri temizle",
   "compat.partialsCleared": "{size} boşaltıldı.",
-  "compat.openPrefix": "Aç"
+  "compat.openPrefix": "Aç",
+  "compat.gameTitle": "Bu oyun için uyumluluk",
+  "compat.gameRunnerHint": "Bu oyun özel bir çalıştırıcı gerektirmiyorsa genel ayarda bırak.",
+  "compat.gameInherit": "Genel ayarı kullan",
+  "compat.gameSaved": "Oyun çalıştırıcısı kaydedildi.",
+  "compat.saveFailed": "Uyumluluk ayarı kaydedilemedi."
 }

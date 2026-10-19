@@ -172,7 +172,7 @@ fn detected_runner(id: &str) -> Option<PathBuf> {
         .find(|path| path.is_dir())
 }
 
-fn valid_layer(id: &str) -> bool {
+pub(crate) fn valid_layer(id: &str) -> bool {
     matches!(id, "dxvk" | "vkd3d-proton")
 }
 
@@ -344,7 +344,10 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         return spec;
     }
     let settings = crate::load_settings(app);
-    if settings.compat_runner_enabled == Some(false) {
+    let game = super::games::get(app, app_name);
+    // The global off switch skips the wrapper unless this title has an explicit
+    // runner; that exception is the point of the per-game override.
+    if settings.compat_runner_enabled == Some(false) && game.runner.is_none() {
         return spec;
     }
     let target = Target::current();
@@ -358,11 +361,12 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     let prefix = prefix_root.join(sanitize_segment(app_name));
     let _ = std::fs::create_dir_all(&prefix);
 
-    let layers: Vec<String> = settings
-        .compat_layers
-        .iter()
+    let layers: Vec<String> = game
+        .layers
+        .clone()
+        .unwrap_or_else(|| settings.compat_layers.clone())
+        .into_iter()
         .filter(|id| valid_layer(id))
-        .cloned()
         .collect();
     if !layers.is_empty() {
         let dirs: Vec<(String, PathBuf)> = layers
@@ -376,14 +380,27 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         }
     }
 
-    let mut runner = runner_for(app);
+    let mut runner = game.runner.clone().or_else(|| runner_for(app));
     let umu_enabled = settings.compat_umu_enabled.unwrap_or(true);
     let umu = umu_program(app, &target);
     // A runner chosen from the system tree (Steam's compatibilitytools.d, a
-    // Lutris build) wins over the launcher's own copy.
-    let mut runner_dir = configured_runner_path(&settings).or_else(|| {
+    // Lutris build) wins over the launcher's own copy. The game's own override
+    // wins over both.
+    let game_runner_path = game
+        .runner_path
+        .as_deref()
+        .map(PathBuf::from)
+        .filter(|path| path.is_dir());
+    let configured_path = if game.runner.is_some() {
+        game_runner_path
+    } else {
+        configured_runner_path(&settings)
+    };
+    let mut runner_dir = configured_path.or_else(|| {
         runner.as_deref().and_then(|id| {
-            let tag = if settings
+            let tag = if game.runner.is_some() {
+                game.runner_tag.as_deref()
+            } else if settings
                 .compat_runner
                 .as_deref()
                 .map(str::trim)
@@ -461,7 +478,7 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     spec
 }
 
-fn valid_runner(id: &str) -> bool {
+pub(crate) fn valid_runner(id: &str) -> bool {
     matches!(id, "ge-proton" | "proton-cachyos" | "wine-staging")
 }
 

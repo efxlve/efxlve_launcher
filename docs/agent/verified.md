@@ -30,6 +30,7 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Settings → Downloads | Picture cache row showing its size next to Clear |
 | Settings → System | App update rows, system toggles, backend and library folder |
 | Settings → Compatibility | Target selector (this PC / Linux / macOS), grouped store/runner/runtime/translation/helper rows, installed and detected chips, project links, runner/prefix/umu controls; a detected system runner is selectable and its path is shown; target switch hides the launch block; a large install asks for confirmation with its size |
+| Game page → System → Compatibility | A per-game runner select appears with "use global", the managed runners and detected system runners; the saved choice is selected; on Windows the card hides itself because launches are direct |
 | Notes | Search box, scope filters, empty list state, editor panel ("pick a note"), no crash |
 | Profile | Banner, online chip, account count, game/trophy counters, recents |
 | Task manager | Launcher's own usage rows |
