@@ -100,8 +100,10 @@ Status, 2026-10-19: the cache warm-up landed. `game-prefetch.ts` walks the six
 recent/first installed games once per 12 hours, after the window is idle, and
 fills HLTB, critic, requirements, achievements, DLC, screenshots, news (only for
 titles with a Steam copy) and IGDB plus its pictures. The page's in-memory maps
-are filled too, so a later open is local. The GOG details call is now one
-per-session promise (`game-details-cache.ts`) instead of one per open, the three
+are filled too, so a later open is local. A card the pointer rests on for 700 ms
+is warmed as well, so the non-recent part of a large grid is covered too. The GOG
+details call is now one per-session promise (`game-details-cache.ts`) instead of
+one per open, the three
 library loaders (`loadSteamLibrary`, `loadCompanionLibrary`,
 `loadEpicAchSummaries`) share an in-flight promise, and the boot path reads the
 network profile/settings/autostart in one parallel batch. Store-detail arrivals

@@ -29,6 +29,10 @@ const PREFETCH_TTL_MS = 12 * 60 * 60 * 1000;
 const PREFETCH_STAMP_KEY = "efxlve-game-prefetch-at";
 
 let running = false;
+let hoverBound = false;
+let hoverTimer = 0;
+let hoverId = "";
+const hoverRequested = new Set<string>();
 
 function idleRun(callback: () => void): void {
   const host = window as Window & { requestIdleCallback?: (cb: () => void) => number };
@@ -91,6 +95,55 @@ async function run(): Promise<void> {
   } finally {
     running = false;
   }
+}
+
+/**
+ * Warms a card's page after the pointer rests on it. This is the one piece the
+ * recent-game pass cannot cover: a library of hundreds of titles, where the
+ * player is about to open something that is not in the recent shelf.
+ *
+ * 700 ms is the line between "reading the grid" and "opening a page"; moving
+ * across cards keeps resetting it, so a sweep does not start a request per
+ * card. Nothing runs while a page is already open or offline, and one game is
+ * warmed at most once per session.
+ */
+export function initHoverPrefetch(): void {
+  if (!isTauri || hoverBound) return;
+  hoverBound = true;
+  document.addEventListener(
+    "pointerover",
+    (event) => {
+      const card = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-lib-item]");
+      const id = card?.dataset.libItem ?? "";
+      if (!card || !id || hoverRequested.has(id) || S.offlineMode) return;
+      if (hoverId === id) return;
+      hoverId = id;
+      if (hoverTimer) window.clearTimeout(hoverTimer);
+      hoverTimer = window.setTimeout(() => {
+        hoverTimer = 0;
+        if (hoverId !== id || S.offlineMode || S.currentModalAppName) return;
+        hoverRequested.add(id);
+        void prefetchGamePage(id);
+      }, 700);
+    },
+    { passive: true },
+  );
+  document.addEventListener(
+    "pointerout",
+    (event) => {
+      const card = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-lib-item]");
+      const id = card?.dataset.libItem ?? "";
+      if (!card || id !== hoverId) return;
+      const next = event.relatedTarget as Node | null;
+      if (next && card.contains(next)) return;
+      hoverId = "";
+      if (hoverTimer) {
+        window.clearTimeout(hoverTimer);
+        hoverTimer = 0;
+      }
+    },
+    { passive: true },
+  );
 }
 
 /**

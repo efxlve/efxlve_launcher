@@ -107,7 +107,7 @@ import { initOfflineMode } from "../../core/offline";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
-import { prefetchGamePagesWhenIdle } from "../drawer/game-prefetch";
+import { initHoverPrefetch, prefetchGamePagesWhenIdle } from "../drawer/game-prefetch";
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -958,6 +958,9 @@ export async function initApp(hooks: {
     // recent games' screenshots. The disk caches stay warm between runs, so the
     // next visit to a page paints from local data instead of asking again.
     prefetchGamePagesWhenIdle();
+    // A card the pointer rests on is the next page most of the time; warm it
+    // after a short pause so a sweep across the grid does not fire requests.
+    initHoverPrefetch();
     // Everything the boot path must do before the launcher is fully usable has
     // been kicked off; this mark is the number to compare between releases.
     perfMark("boot:ready");

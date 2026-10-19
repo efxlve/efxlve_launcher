@@ -84,7 +84,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 - **Oyun sayfası ön ısıtma:** son 6 oyun, 12 saatte bir, pencere boştayken ve
   ilk kütüphane senkronu bitince. Karar: ağ isteği sayısını 6 oyunla sınırladım;
   daha büyük bir liste ilk açılışta Epic senkronuyla yarışır. İstenirse sabit
-  `PREFETCH_GAMES` değeri büyütülebilir.
+  `PREFETCH_GAMES` değeri büyütülebilir. Son oynananlarda olmayan bir kartın
+  üzerinde 700 ms durmak da o oyunu bir kez ısıtır; fareyle hızlı tarama istek
+  üretmez.
 - **Tek uçuş:** Steam/GOG/Amazon kütüphane yüklemeleri, başarım özeti ve GOG
   detayları aynı anda gelen çağrılarda tek promise paylaşıyor. Bunlar yalnız
   eşzamanlı çağrıları birleştirir; sonraki turları engellemez.
