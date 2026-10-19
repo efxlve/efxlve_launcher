@@ -977,6 +977,12 @@ fn copy_range(
         let is_audio = &tag == b"01wb";
 
         if (is_video || is_audio) && keep {
+            // A corrupt size field must not become a four-gigabyte allocation:
+            // real MJPEG frames and audio blocks are far below this.
+            const MAX_CHUNK_BYTES: usize = 64 * 1024 * 1024;
+            if size > MAX_CHUNK_BYTES {
+                return Err("@t:ss.clipUnreadable".to_string());
+            }
             buffer.clear();
             buffer.resize(size, 0);
             if reader.read_exact(&mut buffer).is_err() {
@@ -1058,6 +1064,26 @@ fn item_for(path: &Path) -> ClipItem {
     }
 }
 
+/// Finishes a clip and, when anything goes wrong, removes the half-written file
+/// first: a broken `.avi` left in the clips folder would show up in the gallery
+/// as a real clip.
+fn finish_clip(target: &Path, writer: AviWriter, fps: u32, micros: u32) -> Result<PathBuf, String> {
+    match writer.finish_at(fps, micros) {
+        Ok(()) => Ok(target.to_path_buf()),
+        Err(_) => {
+            let _ = std::fs::remove_file(target);
+            Err("@t:ss.clipWriteFailed".to_string())
+        }
+    }
+}
+
+/// Removes a target the writer still holds open. Windows refuses to delete a
+/// file with an open handle, so the writer has to go first.
+fn drop_and_remove(writer: AviWriter, target: &Path) {
+    drop(writer);
+    let _ = std::fs::remove_file(target);
+}
+
 /// Cuts a clip down to a range, losslessly, into a new file next to it.
 pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, String> {
     let target = sibling_path(path, "_trim");
@@ -1082,15 +1108,18 @@ pub fn trim_to(path: &Path, start_secs: f64, end_secs: f64, target: &Path) -> Re
         header.audio,
     )
     .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
-    let copied = copy_range(path, &mut writer, from, to)?;
+    let copied = match copy_range(path, &mut writer, from, to) {
+        Ok(copied) => copied,
+        Err(err) => {
+            drop_and_remove(writer, target);
+            return Err(err);
+        }
+    };
     if copied == 0 {
-        let _ = std::fs::remove_file(target);
+        drop_and_remove(writer, target);
         return Err("@t:ss.trimEmpty".to_string());
     }
-    writer
-        .finish_at(header.fps(), header.micros)
-        .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
-    Ok(target.to_path_buf())
+    finish_clip(target, writer, header.fps(), header.micros)
 }
 
 /// Puts clips one after another into a new file, without re-encoding.
@@ -1115,21 +1144,25 @@ pub fn join(paths: &[PathBuf]) -> Result<PathBuf, String> {
     )
     .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
     for path in paths {
-        if copy_range(path, &mut writer, 0, u32::MAX)? == 0 {
-            let _ = std::fs::remove_file(&target);
-            return Err("@t:ss.trimEmpty".to_string());
+        match copy_range(path, &mut writer, 0, u32::MAX) {
+            Ok(0) => {
+                drop_and_remove(writer, &target);
+                return Err("@t:ss.trimEmpty".to_string());
+            }
+            Ok(_) => {}
+            Err(err) => {
+                drop_and_remove(writer, &target);
+                return Err(err);
+            }
         }
         // The result carries the same 32-bit size fields as a recording, so a
         // join that would pass the cap is refused rather than written corrupt.
         if writer.bytes() >= MAX_CLIP_BYTES {
-            let _ = std::fs::remove_file(&target);
+            drop_and_remove(writer, &target);
             return Err("@t:ss.joinTooLarge".to_string());
         }
     }
-    writer
-        .finish_at(first.fps(), first.micros)
-        .map_err(|_| "@t:ss.clipWriteFailed".to_string())?;
-    Ok(target)
+    finish_clip(&target, writer, first.fps(), first.micros)
 }
 
 /* ---------- Commands ---------- */
@@ -1282,7 +1315,6 @@ pub fn clip_folder_path() -> String {
 #[tauri::command]
 pub fn clip_delete(path: String) -> Result<bool, String> {
     let file = PathBuf::from(&path);
-    // Only clips under the Efxlve folder can be removed from the UI.
     // Only clips under the Efxlve folder can be removed from the UI.
     if !file.starts_with(crate::legendary::screenshots::get_user_videos_dir().join("Efxlve")) {
         return Err("@t:ss.outsideRoot".to_string());
@@ -1639,6 +1671,37 @@ mod tests {
         let chunks = body.windows(4).filter(|w| *w == b"01wb").count();
         assert_eq!(chunks, 10, "one audio chunk per kept frame");
         let _ = std::fs::remove_file(&trimmed);
+        let _ = std::fs::remove_file(&source);
+    }
+
+    /// A corrupt size field must not turn into a four-gigabyte allocation, and a
+    /// cut that fails must not leave a file behind for the gallery to show.
+    #[test]
+    fn a_corrupt_chunk_size_is_refused_and_leaves_no_file() {
+        let dir = std::env::temp_dir().join("efxlve-clip-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let source = dir.join("corrupt-source.avi");
+        let mut writer = AviWriter::create(&source, 64, 48, 10, None).expect("create");
+        for i in 0..6u8 {
+            writer
+                .add_frame(&[0xFF, 0xD8, i, 0xFF, 0xD9])
+                .expect("frame");
+        }
+        writer.finish(10, Duration::from_millis(600)).expect("finish");
+
+        // Claim the first frame is four gigabytes long.
+        let mut bytes = std::fs::read(&source).expect("read");
+        let movi = bytes.windows(4).position(|w| w == b"movi").expect("movi");
+        let size_at = movi + 4 + 4;
+        bytes[size_at..size_at + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+        std::fs::write(&source, &bytes).expect("write");
+
+        let target = dir.join("corrupt-trim.avi");
+        assert_eq!(
+            trim_to(&source, 0.0, 0.5, &target),
+            Err("@t:ss.clipUnreadable".to_string())
+        );
+        assert!(!target.is_file(), "the half-written file is gone");
         let _ = std::fs::remove_file(&source);
     }
 
