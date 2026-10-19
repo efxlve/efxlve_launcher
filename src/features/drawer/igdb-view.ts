@@ -152,7 +152,7 @@ export function gameGenresFor(appName: string): string[] {
   if (igdb.length > 0) return igdb;
   const steam = S.steamDetails.get(appName);
   if (steam?.genres && steam.genres.length > 0) {
-    return steam.genres.slice(0, 6);
+    return steam.genres.slice(0, 6).map(localizeIgdbTag);
   }
   return [];
 }

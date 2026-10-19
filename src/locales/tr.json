@@ -2641,5 +2641,6 @@
   "compat.prefixStateMissing": "Prefix henüz oluşturulmadı.",
   "compat.diagnostics": "Tanılamayı kopyala",
   "compat.diagnosticsHint": "Hata bildirimi için çalıştırıcı, prefix ve katman yollarını kopyalar; kimlik bilgisi içermez.",
-  "compat.diagnosticsCopied": "Tanılama kopyalandı."
+  "compat.diagnosticsCopied": "Tanılama kopyalandı.",
+  "drawer.scoresStatsTitle": "Puanlar ve istatistikler"
 }

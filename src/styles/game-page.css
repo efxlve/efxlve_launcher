@@ -178,6 +178,34 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-stat-val.ok { color: var(--ok, #3dd68c); }
 .gp-stat-val.warn { color: var(--warn); }
 .gp-stat-val.plat { color: var(--accent); }
+/* Inside the scores card the same chips become a compact three-column strip. */
+.gp-stats.is-sidebar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-bottom: 12px;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.gp-stats.is-sidebar .gp-stat {
+  min-width: 0;
+  padding: 2px 12px;
+  border-left: 1px solid var(--line);
+}
+.gp-stats.is-sidebar .gp-stat:first-child { padding-left: 0; border-left: 0; }
+.gp-stats.is-sidebar .gp-stat:last-child { padding-right: 0; }
+.gp-stats.is-sidebar .gp-stat-label { flex: 0 0 auto; }
+.gp-stats.is-sidebar .gp-stat-val {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .gp-mini-spin { width: 14px; height: 14px; display: inline-block; }
 
 /* --- Body & tabs --- */

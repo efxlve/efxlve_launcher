@@ -981,7 +981,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
           </div>
-          <div class="gp-stats">${heroStatsHtml(s, partner)}</div>
         </div>
 
         <div class="gp-body">
@@ -1033,7 +1032,6 @@ export function updateHltbUI(appName: string, data?: HltbData): void {
 function syncScoresCardVisibility(): void {
   const pairs: Array<[string, string]> = [
     [".gp-lengths-card", "drawer-hltb-container"],
-    [".gp-critic-card", "drawer-critic-container"],
   ];
   for (const [selector, hostId] of pairs) {
     const card = document.querySelector<HTMLElement>(selector);
@@ -1319,7 +1317,14 @@ export function renderDrawerOverview(
       <aside class="hub-overview-sidebar">
         ${renderNextAchievements(s.appName)}
         ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
-        ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, { extraClass: "gp-critic-card" })}
+        ${sideCard(
+          s.appName,
+          "scores",
+          t("drawer.scoresStatsTitle"),
+          "star",
+          `<div class="gp-stats is-sidebar">${heroStatsHtml(s, partner)}</div>${criticBlock}`,
+          { extraClass: "gp-critic-card" },
+        )}
         ${renderMomentsStrip(s.appName)}
       </aside>
     </div>`;

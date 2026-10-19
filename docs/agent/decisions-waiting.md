@@ -185,6 +185,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   `system.reg` var mı bilgisini döndürüyor. Kart bunu "Prefix hazır." /
   "Prefix henüz oluşturulmadı." olarak gösteriyor; prefix kaydı ve hazırlama
   sonrası durum yeniden okunuyor.
+- **Oyun sayfası sahibi turu:** Sahip, benzer oyunların altta kalmasını seçti;
+  eylem satırı, tek künye satırı ve tek koleksiyon girişi zaten mevcut kodda
+  böyleydi (eski ekran görüntüsü yanıltıcıydı). Bu turda SÜRE/KUPA/BULUT şeridi
+  hero'dan "Puanlar ve istatistikler" kartına taşındı ve Steam tür yedeği aynı
+  Türkçe sözlükten geçirildi. Puan kartı artık puan olmasa da istatistikler için
+  görünür kalıyor.
 - **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY komutları çevrimdışı
   modda `offline: true` ile çağrılıyor; backend ağa çıkmıyor, yalnız disk
   cache'ini okuyor. Cache varsa rozet eski veriyle görünüyor, yoksa satır gizli

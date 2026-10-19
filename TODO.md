@@ -50,6 +50,13 @@ empty-state card, whether the news card is enough of a reason to come back, the
 feed choice, what still reads as a database, and the first three changes). Paste
 it into Antigravity and bring the answer back.
 
+Owner review, 2026-10-20: keep similar games at the bottom; simplify the action
+row, shorten the meta line, merge the hero stats into the scores card, localize
+genre tags, and remove the duplicate collection entry. The current code already
+had the simplified row, single meta line and one collection entry (the older
+screenshot was stale); this pass merged the stat strip into the "Scores & stats"
+card and routed the Steam genre fallback through the same Turkish dictionary.
+
 ## 0b. Remaining plan items
 
 1. Repaint diet: resolved 2026-10-19. An IGDB answer repaints only the About

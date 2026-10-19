@@ -2641,5 +2641,6 @@
   "compat.prefixStateMissing": "Prefix not created yet.",
   "compat.diagnostics": "Copy diagnostics",
   "compat.diagnosticsHint": "Copies runner, prefix and layer paths for a bug report; no credentials.",
-  "compat.diagnosticsCopied": "Diagnostics copied."
+  "compat.diagnosticsCopied": "Diagnostics copied.",
+  "drawer.scoresStatsTitle": "Scores & stats"
 }
