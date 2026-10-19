@@ -72,11 +72,72 @@ export function igdbAboutSettled(appName: string): boolean {
   return cache.has(appName) || errors.has(appName);
 }
 
-/** The whole block; a short setup row while IGDB has not been configured. */
+const TR_IGDB_TAGS: Record<string, string> = {
+  "role-playing (rpg)": "RYO (RPG)",
+  "hack and slash/beat 'em up": "Hack & Slash",
+  "turn-based strategy (tbs)": "Sıra Tabanlı Strateji",
+  "real time strategy (rts)": "Gerçek Zamanlı Strateji",
+  "point-and-click": "Tıkla ve İlerle",
+  "card & board game": "Kart ve Masa Oyunu",
+  "quiz/trivia": "Bilgi Yarışması",
+  "visual novel": "Görsel Roman",
+  "4x (explore, expand, exploit, and exterminate)": "4X Strateji",
+  shooter: "Nişancı",
+  adventure: "Macera",
+  action: "Aksiyon",
+  indie: "Bağımsız",
+  strategy: "Strateji",
+  simulator: "Simülasyon",
+  puzzle: "Bulmaca",
+  racing: "Yarış",
+  sport: "Spor",
+  fighting: "Dövüş",
+  platform: "Platform",
+  tactical: "Taktiksel",
+  arcade: "Arcade",
+  music: "Müzik",
+  pinball: "Langırt",
+  moba: "MOBA",
+  "open world": "Açık Dünya",
+  "science fiction": "Bilim Kurgu",
+  horror: "Korku",
+  survival: "Hayatta Kalma",
+  stealth: "Gizlilik",
+  fantasy: "Fantastik",
+  historical: "Tarihsel",
+  warfare: "Savaş",
+  "non-fiction": "Kurgu Dışı",
+  sandbox: "Sandbox",
+  kids: "Çocuk",
+  business: "İş Dünyası",
+  drama: "Dram",
+  comedy: "Komedi",
+  thriller: "Gerilim",
+  mystery: "Gizem",
+  party: "Parti",
+  romance: "Romantik",
+  erotic: "Yetişkin",
+  educational: "Eğitici",
+};
+
+const CLEAN_EN_TAGS: Record<string, string> = {
+  "role-playing (rpg)": "RPG",
+  "hack and slash/beat 'em up": "Hack & Slash",
+  "turn-based strategy (tbs)": "Turn-Based Strategy",
+  "real time strategy (rts)": "Real-Time Strategy",
+  "4x (explore, expand, exploit, and exterminate)": "4X Strategy",
+};
+
+function localizeIgdbTag(raw: string): string {
+  const key = raw.trim().toLowerCase();
+  if (currentLanguage() === "tr" && TR_IGDB_TAGS[key]) return TR_IGDB_TAGS[key];
+  return CLEAN_EN_TAGS[key] ?? raw;
+}
+
 /**
- * The credit line that closes the About box: release date, publisher, age
- * rating, genre chips and the IGDB attribution. The facts used to live in a card
- * of their own below the description, which is where the duplication started.
+ * The credit line that closes the About box: genre chips, community channels
+ * and the IGDB attribution. Release date, publisher and age rating live in the
+ * hero's single meta line.
  */
 export function renderIgdbCredits(target: IgdbTarget): string {
   const game = cache.get(target.appName);
@@ -88,16 +149,10 @@ export function renderIgdbCredits(target: IgdbTarget): string {
     return error ? igdbSetupRow(error) : "";
   }
 
-  // The date, the publisher and the age rating now stand in the hero's single
-  // meta line, where the reader looks first; this block keeps what belongs to the
-  // description: the tags and the attribution.
   const tags = [...game.genres, ...game.themes].slice(0, 6);
-  if (!tags.length) return "";
-
-  // The community channels IGDB carries, as one chip each: a link out, never an
-  // embedded feed — a game's timeline is marketing, and an iframe would drag the
-  // design system with it.
   const links = game.links ?? [];
+  if (!tags.length && !links.length) return "";
+
   const labelOfLink = (kind: string): string =>
     kind === "official"
       ? t("drawer.officialSite")
@@ -119,9 +174,11 @@ export function renderIgdbCredits(target: IgdbTarget): string {
 
   return `
     <div class="igdb-credits">
-      <div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(tag)}</span>`).join("")}</div>
-      ${linksHtml}
-      <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
+      ${tags.length ? `<div class="gp-tags igdb-tags">${tags.map((tag) => `<span class="gp-tag">${esc(localizeIgdbTag(tag))}</span>`).join("")}</div>` : ""}
+      <div class="igdb-credits-foot">
+        ${linksHtml}
+        <button type="button" class="igdb-attrib" data-act="open-external-url" data-url="${esc(game.url)}" title="${esc(game.name)}">${esc(t("igdb.poweredBy"))}</button>
+      </div>
     </div>`;
 }
 
@@ -180,22 +237,24 @@ function ownedAppFor(title: string): string {
 export function renderIgdbSimilar(target: IgdbTarget): string {
   const game = cache.get(target.appName);
   if (!game || game.similar.length === 0) return "";
-  warmImages(game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
+  const resolved = game.similar.map((hit) => ({ hit, owned: ownedAppFor(hit.name) }));
+  // Titles already in the player's library lead the strip so they are spotted first.
+  resolved.sort((a, b) => Number(Boolean(b.owned)) - Number(Boolean(a.owned)));
+  warmImages(resolved.map(({ hit }) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
   return `
     <section class="gp-section igdb-card">
       <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
-      <div class="igdb-similar">${game.similar
-        .map((hit) => {
+      <div class="igdb-similar">${resolved
+        .map(({ hit, owned }) => {
           // A similar game the player already owns belongs in the launcher, not in
           // a browser tab: the match runs through the canonical title, so a "GOTY
           // Edition" here still finds the library's copy.
-          const owned = ownedAppFor(hit.name);
           const action = owned ? "epic-detail" : "open-external-url";
           const payload = owned
             ? `data-id="${esc(owned)}"`
             : `data-url="${esc(igdbGameUrl(hit))}"`;
           return `
-                 <button type="button" class="igdb-similar-item${owned ? " is-owned" : ""}" data-act="${action}" ${payload} title="${owned ? esc(t("drawer.inLibrary")) : esc(igdbGameUrl(hit))}">
+                 <button type="button" class="igdb-similar-item${owned ? " is-owned" : ""}" data-act="${action}" ${payload} title="${owned ? `${esc(hit.name)} · ${esc(t("drawer.inLibrary"))}` : esc(igdbGameUrl(hit))}">
                    ${
                      hit.coverId
                        ? (() => {

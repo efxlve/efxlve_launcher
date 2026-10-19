@@ -14,7 +14,7 @@ import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtPlaytime } from "../../core/utils";
-import { formatSyncStamp, t as i18nT } from "../../i18n";
+import { currentLanguage, formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { type SteamNewsItem } from "../../steam";
@@ -661,6 +661,7 @@ export function renderNextAchievements(appName: string): string {
         </div>
       </section>`;
   }
+  const pct = Math.min(100, Math.round((data.user_unlocked / data.total_achievements) * 100));
   const rows = locked.map((a) => {
     const rarity = a.rarity?.percent;
     return `
@@ -675,9 +676,10 @@ export function renderNextAchievements(appName: string): string {
   return `
     <section id="gp-next-ach" class="gp-section gp-next">
       <div class="gp-progress-head">
-        <h3 class="gp-section-title">${i18nT("drawer.nextAchievements")}</h3>
+        <h3 class="gp-section-title">${icon("trophy", 13)} ${i18nT("drawer.nextAchievements")} <span class="gp-section-meta num">${data.user_unlocked}/${data.total_achievements} · %${pct}</span></h3>
         <button type="button" class="btn ghost small" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}">${i18nT("drawer.momentsAll")}</button>
       </div>
+      <div class="gp-progress-track gp-next-progress"><span class="gp-progress-fill" style="width:${pct}%"></span></div>
       <div class="gp-next-list">${rows}</div>
     </section>`;
 }
@@ -952,15 +954,22 @@ export function renderGameFeatures(
         // The full release date: the hero line carries the year, this carries the
         // day, and the credits block no longer repeats either.
         const igdb = igdbGameFor(s.appName);
-        const date = igdb?.pcReleaseDate || igdb?.releaseDate || "";
-        if (!date) return "";
+        const rawDate = igdb?.pcReleaseDate || igdb?.releaseDate || "";
+        if (!rawDate) return "";
+        const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(rawDate.trim());
+        const formatted = isoMatch
+          ? new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3])).toLocaleDateString(
+              currentLanguage(),
+              { day: "numeric", month: "long", year: "numeric" },
+            )
+          : rawDate;
         return `
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("calendar", 12)}</div>
         <span>${i18nT("feat.releaseDate")}</span>
       </div>
-      <div class="hub-feature-val">${esc(date)}</div>
+      <div class="hub-feature-val">${esc(formatted)}</div>
     </div>`;
       })()
     }

@@ -39,7 +39,8 @@ import { buildSteamRequirements, steamLanguage } from "./steam-details";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
-import { cachedNotes } from "../notes/notes-client";
+import { cachedNotes, notesForScope } from "../notes/notes-client";
+import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
@@ -181,8 +182,6 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
 function paintGameCloud(s: EpicSummary): void {
   const el = document.getElementById("gp-stat-cloud-val");
   if (!el) return;
-  // Steam and GOG games use their own cloud row in the features card only.
-  if (s.appName.startsWith("gog::") || s.appName.startsWith("steam::")) return;
   const g = rawOf(s.appName);
   const info = heroCloudStatus(s, g, gamePartner(s, g));
   el.textContent = info.label;
@@ -521,7 +520,7 @@ function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): 
   return `
             ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${s.appName}" title="${esc(timeTooltip)}"`, "drawer-stat-playtime")}
             ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
-            ${sourceOfKey(s.appName) === "epic" || isCompanionApp(s.appName) ? stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone) : ""}`;
+            ${stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone)}`;
 }
 
 /** Split Epic's catalog blurb into readable paragraphs. */
@@ -839,7 +838,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     ensureEosSupport(appName);
   }
   // The notes tab's list and badge; the client caches, so this is one call.
-  ensureDrawerNotes(appName);
+  ensureDrawerNotes(appName, () => repaintPersonalBlock(appName));
 
   const dlcRes = S.dlcCache.get(appName);
   const dlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
@@ -1080,9 +1079,29 @@ async function loadSteamNews(appName: string, appId: string): Promise<void> {
   }
 }
 
+function renderOverviewNote(appName: string): string {
+  const notes = notesForScope(appName);
+  if (notes.length === 0) return "";
+  const top = notes[0];
+  const title = top.title.trim() || t("notes.untitled");
+  const preview = top.body.trim() ? notePreview(top.body, 160) : "";
+  return `
+    <section class="gp-section gp-overview-note">
+      <button type="button" class="card gp-overview-note-card" data-act="drawer-tab" data-tab="notes" data-id="${esc(appName)}" title="${esc(t("drawer.notes"))}">
+        <span class="gp-overview-note-icon">${icon(top.pinned ? "pin" : "edit", 14)}</span>
+        <span class="gp-overview-note-main">
+          <span class="gp-overview-note-title">${esc(title)}</span>
+          ${preview ? `<span class="gp-overview-note-body">${esc(preview)}</span>` : ""}
+        </span>
+        ${notes.length > 1 ? `<span class="gp-overview-note-count num">+${notes.length - 1}</span>` : ""}
+      </button>
+    </section>`;
+}
+
 /**
- * The personal half of the overview: the last session, the moments, the next
- * trophies and, when there is nothing at all, the card that explains the space.
+ * The personal half of the overview: the last session, pinned/latest note, the
+ * next trophies, the moments and, when there is nothing at all, the card that
+ * explains the space.
  *
  * It is a function of its own because it is the one block that changes while the
  * page is open: a session ends, the recorder writes it down, and the block is
@@ -1090,6 +1109,7 @@ async function loadSteamNews(appName: string, appId: string): Promise<void> {
  * scroll position away.
  */
 function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
+  const noteCard = renderOverviewNote(s.appName);
   const moments = renderMomentsStrip(s.appName);
   const nextAch = renderNextAchievements(s.appName);
   // Both blocks hold their place while they load; when they have answered and
@@ -1117,11 +1137,11 @@ function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
           </div>
         </section>`
       : "";
-  return `${renderLastSession(s.appName)}${moments}${nextAch}${personalEmpty}`;
+  return `${renderLastSession(s.appName)}${noteCard}${nextAch}${moments}${personalEmpty}`;
 }
 
-/** Paints the personal block again after a session ended, if its page is open. */
-function repaintPersonalBlock(appName: string): void {
+/** Paints the personal block again after a session ended or notes changed, if its page is open. */
+export function repaintPersonalBlock(appName: string): void {
   if (S.currentModalAppName !== appName || S.activeDrawerTab !== "overview") return;
   const host = document.getElementById("gp-personal-block");
   const s = summaryOf(appName);
@@ -1849,8 +1869,6 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
         heroEl.addEventListener("error", () => { heroEl.src = fallback; }, { once: true });
         if (heroEl.complete && heroEl.naturalWidth === 0) heroEl.src = fallback;
       }
-      paintGameMeta(s);
-      paintGameCloud(s);
       const cloud = details.categories.includes(23);
       const item = S.allGamesMap.get(appName) || S.steamSummariesMap.get(appName);
       if (item) {
@@ -1858,6 +1876,8 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
         item.dlcCount = details.dlc.length;
         if (!item.developer) item.developer = details.developers[0] || details.publishers[0] || "";
       }
+      paintGameMeta(s);
+      paintGameCloud(s);
       const critic = S.loadedCritic.get(appName);
       if (critic) {
         const merged = mergeSteamCritic(critic, appName);

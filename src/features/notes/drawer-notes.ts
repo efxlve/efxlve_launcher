@@ -53,12 +53,13 @@ function refreshTabButton(appName: string): void {
 }
 
 /** Loads the list once per open and keeps the tab button's count in step. */
-export function ensureDrawerNotes(appName: string): void {
+export function ensureDrawerNotes(appName: string, onLoaded?: () => void): void {
   wireDrawerNotes();
   void loadNotes().then(() => {
     if (S.currentModalAppName !== appName) return;
     refreshTabButton(appName);
     if (S.activeDrawerTab === "notes") repaint();
+    onLoaded?.();
   });
 }
 
