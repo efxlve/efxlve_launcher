@@ -59,8 +59,8 @@ export const TV_HUB_TABS: { id: TvHubTab; labelKey: string; icon: string }[] = [
 /** Fetch all lazy metadata once for the TV Game Hub. */
 export function ensureGameHubData(s: EpicSummary): void {
   const appName = s.appName;
-  if (!S.loadedHltb.has(appName) && S.loadingHltbFor !== appName) {
-    S.loadingHltbFor = appName;
+  if (!S.loadedHltb.has(appName) && !S.loadingHltbFor.has(appName)) {
+    S.loadingHltbFor.add(appName);
     epicGetHltb(s.title, appName, false, s.releaseYear ?? null)
       .then((data: HltbData) => {
         S.loadedHltb.set(appName, data);
@@ -68,12 +68,12 @@ export function ensureGameHubData(s: EpicSummary): void {
       })
       .catch(() => {})
       .finally(() => {
-        S.loadingHltbFor = null;
+        S.loadingHltbFor.delete(appName);
       });
   }
 
-  if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
-    S.loadingCriticFor = appName;
+  if (!S.loadedCritic.has(appName) && !S.loadingCriticFor.has(appName)) {
+    S.loadingCriticFor.add(appName);
     epicGetCritic(s.title, appName, false, s.releaseYear ?? null)
       .then((data: CriticData) => {
         S.loadedCritic.set(appName, data);
@@ -81,7 +81,7 @@ export function ensureGameHubData(s: EpicSummary): void {
       })
       .catch(() => {})
       .finally(() => {
-        S.loadingCriticFor = null;
+        S.loadingCriticFor.delete(appName);
       });
   }
 
@@ -93,15 +93,15 @@ export function ensureGameHubData(s: EpicSummary): void {
       .catch(() => {});
   }
 
-  if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) {
+  if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) {
     void fetchAndRenderScreenshots(appName, s.title);
   }
 
-  if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) {
+  if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) {
     void fetchAndRenderAchievements(appName);
   }
 
-  if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) {
+  if (!S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) {
     void fetchAndRenderRequirements(appName, s.title);
   }
 }
@@ -306,7 +306,7 @@ function renderOverviewTab(s: EpicSummary): string {
 /** Render Trophies Tab Content with console card layout. */
 function renderAchievementsTab(s: EpicSummary): string {
   const achData = S.loadedAchievements.get(s.appName);
-  if (S.loadingAchFor === s.appName && !achData) {
+  if (S.loadingAchFor.has(s.appName) && !achData) {
     return `<div class="tv-tab-pane"><div class="tv-hub-loading">${loadingState(t("ach.loadingStore"))}</div></div>`;
   }
   if (!achData || achData.total_achievements === 0) {

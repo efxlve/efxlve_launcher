@@ -9,7 +9,7 @@
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, PREFETCH_COVERS, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
-import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
+import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
@@ -681,7 +681,10 @@ export function patchLibraryGridInPlace(): boolean {
   for (let i = 0; i < rendered.length; i++) {
     if ((rendered[i].dataset.libItem || "") !== expected[i].appName) return false;
   }
-  for (const item of rendered) patchLibraryCardDom(item.dataset.libItem || "");
+  for (const item of rendered) {
+    const id = item.dataset.libItem;
+    if (id) patchLibraryCardElement(item, id);
+  }
   syncLibraryHeadingCount();
   return true;
 }

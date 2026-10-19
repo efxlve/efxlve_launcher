@@ -124,8 +124,8 @@ export function isAppDownloading(appName: string): boolean {
   const s = summaryOf(appName);
   if (s?.downloading) return true;
   if (appName.startsWith("steam::")) {
-    const steamId = appName.slice(7);
-    const sg = S.steamGames.find((g) => g.appId === steamId);
+    // The summary map is O(1); the old array scan ran once per rendered card.
+    const sg = S.steamSummariesMap.get(appName);
     if (sg?.downloading) return true;
   }
   return false;
@@ -185,6 +185,78 @@ function patchCoverPlayChip(item: HTMLElement, cardAppName: string, installed: b
 }
 
 /**
+ * Patches one mounted card or list row. The grid calls this directly for every
+ * rendered card, so the hot path must not query the whole document.
+ *
+ * The cheap fingerprint is the guard that matters: a data arrival (playtime,
+ * achievements, a cover resolver answer) repaints the grid, but most cards have
+ * nothing new to show. Comparing the markup this card would get to the markup
+ * it already has turns the repaint into a string compare instead of four DOM
+ * writes per card.
+ */
+export function patchLibraryCardElement(item: HTMLElement, appName: string): boolean {
+  const s = summaryOf(appName);
+  if (!s) return false;
+  const p = epicDlProgress(appName);
+  const isDl = isAppDownloading(appName);
+  const badgeHtml = libraryCardBadge(s);
+  const actions = epicActionButtons(s, "full", { primaryOnly: true });
+  const dim = !isDl && (item.classList.contains("lrow") ? libraryListDimmed(s) : !s.installed);
+  const statsHtml = libraryCoverStats(appName);
+  const achHtml = listAchievementCell(appName);
+  const secs = libraryPlaytime({ appName, title: s.title }).seconds;
+  const playText = secs > 0 ? fmtPlaytime(secs) : "-";
+  const signature = [
+    appName,
+    badgeHtml,
+    statsHtml,
+    achHtml,
+    actions,
+    playText,
+    p === null ? "" : String(p),
+    dim ? "1" : "0",
+  ].join("\u001f");
+  if (item.dataset.patchSig === signature) return true;
+  item.dataset.patchSig = signature;
+
+  item.classList.toggle("not-installed", dim);
+  const badgeHost = item.querySelector<HTMLElement>("[data-badge-host]");
+  const badge = badgeHost?.querySelector(".pbadge");
+  if (badgeHtml) {
+    if (badge) badge.outerHTML = badgeHtml;
+    else badgeHost?.insertAdjacentHTML("beforeend", badgeHtml);
+  } else if (badge) {
+    badge.remove();
+  }
+  const art = item.querySelector<HTMLElement>(".pcard-art");
+  const stats = art?.querySelector<HTMLElement>("[data-cover-stats]");
+  if (art && statsHtml) {
+    if (stats) stats.outerHTML = statsHtml;
+    else art.insertAdjacentHTML("afterbegin", statsHtml);
+  } else if (stats) {
+    stats.remove();
+  }
+  patchCoverPlayChip(item, appName, s.installed);
+  const achHost = item.querySelector<HTMLElement>("[data-lib-ach]");
+  if (achHost) achHost.innerHTML = achHtml;
+  // List view shows playtime as its own column; the grid shows the cover badge.
+  const playHost = item.querySelector<HTMLElement>("[data-lib-playtime]");
+  if (playHost) playHost.textContent = playText;
+  const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
+  if (actionHost) actionHost.innerHTML = actions;
+  const cardArt = item.querySelector<HTMLElement>("[data-card-art]");
+  const track = cardArt?.querySelector(".card-dl-track");
+  if (p !== null) {
+    const bar = track?.querySelector<HTMLElement>(".card-dl-bar");
+    if (bar) bar.style.width = `${p}%`;
+    else cardArt?.insertAdjacentHTML("beforeend", libraryDlBar(appName, p));
+  } else if (track) {
+    track.remove();
+  }
+  return true;
+}
+
+/**
  * Patch visible library items (grid cards and list rows) in place: badge,
  * installed dimming, primary action and download bar. Never rebuilds the
  * grid — a full library innerHTML is treated as a bug.
@@ -196,50 +268,8 @@ export function patchLibraryCardDom(appName: string): boolean {
   const items = document.querySelectorAll<HTMLElement>(
     `[data-lib-item="${appName}"], [data-lib-item="gog::${clean}"], [data-lib-item="${clean}"]`
   );
-  const p = epicDlProgress(appName);
-  const isDl = isAppDownloading(appName);
-  const badgeHtml = libraryCardBadge(s);
-  const actions = epicActionButtons(s, "full", { primaryOnly: true });
   items.forEach((item) => {
-    const dim = !isDl && (item.classList.contains("lrow") ? libraryListDimmed(s) : !s.installed);
-    item.classList.toggle("not-installed", dim);
-    const badgeHost = item.querySelector<HTMLElement>("[data-badge-host]");
-    const badge = badgeHost?.querySelector(".pbadge");
-    if (badgeHtml) {
-      if (badge) badge.outerHTML = badgeHtml;
-      else badgeHost?.insertAdjacentHTML("beforeend", badgeHtml);
-    } else if (badge) {
-      badge.remove();
-    }
-    const art = item.querySelector<HTMLElement>(".pcard-art");
-    const statsHtml = libraryCoverStats(appName);
-    const stats = art?.querySelector<HTMLElement>("[data-cover-stats]");
-    if (art && statsHtml) {
-      if (stats) stats.outerHTML = statsHtml;
-      else art.insertAdjacentHTML("afterbegin", statsHtml);
-    } else if (stats) {
-      stats.remove();
-    }
-    patchCoverPlayChip(item, appName, s.installed);
-    const achHost = item.querySelector<HTMLElement>("[data-lib-ach]");
-    if (achHost) achHost.innerHTML = listAchievementCell(appName);
-    // List view shows playtime as its own column; the grid shows the cover badge.
-    const playHost = item.querySelector<HTMLElement>("[data-lib-playtime]");
-    if (playHost) {
-      const secs = libraryPlaytime({ appName, title: s.title }).seconds;
-      playHost.textContent = secs > 0 ? fmtPlaytime(secs) : "-";
-    }
-    const actionHost = item.querySelector<HTMLElement>("[data-card-action]");
-    if (actionHost) actionHost.innerHTML = actions;
-    const cardArt = item.querySelector<HTMLElement>("[data-card-art]");
-    const track = cardArt?.querySelector(".card-dl-track");
-    if (p !== null) {
-      const bar = track?.querySelector<HTMLElement>(".card-dl-bar");
-      if (bar) bar.style.width = `${p}%`;
-      else cardArt?.insertAdjacentHTML("beforeend", libraryDlBar(appName, p));
-    } else if (track) {
-      track.remove();
-    }
+    patchLibraryCardElement(item, appName);
   });
   // Merged tiles keep the other store's key; refresh their cover chip without rewriting the card.
   const seen = new Set(items);

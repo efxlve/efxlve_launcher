@@ -262,7 +262,7 @@ export function renderMomentsStrip(appName: string): string {
   const items = S.loadedScreenshots.get(appName) || [];
   // Still on its way: hold the widget's place. It used to render an empty div, so
   // the blocks under it jumped down the moment the pictures arrived.
-  if (items.length === 0 && S.loadingScreenshotsFor === appName) {
+  if (items.length === 0 && S.loadingScreenshotsFor.has(appName)) {
     const tiles = Array.from({ length: 4 }, () => `<div class="gp-moment is-pending"></div>`).join("");
     return sideCard(
       appName,
@@ -308,7 +308,7 @@ export function renderMomentsStrip(appName: string): string {
 
 export function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
   if (!force && S.loadedScreenshots.has(appName)) return;
-  S.loadingScreenshotsFor = appName;
+  S.loadingScreenshotsFor.add(appName);
   const request = isSteamApp(appName)
     ? steamGetGameScreenshots(appName.slice(7))
     : epicGetGameScreenshots(appName, title);
@@ -316,8 +316,8 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
     .then((items) => {
       // A newer request for another game wins; a response landing after its
       // consumer closed is dropped instead of holding the gallery in memory.
-      if (S.loadingScreenshotsFor !== appName) return;
-      S.loadingScreenshotsFor = null;
+      if (!S.loadingScreenshotsFor.has(appName)) return;
+      S.loadingScreenshotsFor.delete(appName);
       const consumerOpen = S.currentModalAppName === appName || S.tvDetailAppName === appName;
       if (!consumerOpen) return;
       S.loadedScreenshots.set(appName, items);
@@ -340,7 +340,7 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
     .catch(() => {
       // Only the request that owns the marker clears it: a failure for another
       // game must not drop the response of the game still loading.
-      if (S.loadingScreenshotsFor === appName) S.loadingScreenshotsFor = null;
+      if (S.loadingScreenshotsFor.has(appName)) S.loadingScreenshotsFor.delete(appName);
     });
 }
 
@@ -676,7 +676,7 @@ export function closeShareModal(): void {
 
 export function renderDrawerScreenshots(s: EpicSummary): string {
   const screenshots = S.loadedScreenshots.get(s.appName) || [];
-  const isLoading = S.loadingScreenshotsFor === s.appName;
+  const isLoading = S.loadingScreenshotsFor.has(s.appName);
 
   if (isLoading && screenshots.length === 0) {
     return `

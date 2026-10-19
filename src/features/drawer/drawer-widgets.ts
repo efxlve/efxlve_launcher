@@ -622,7 +622,7 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
 }
 
 export function renderNextAchievements(appName: string): string {
-  const loading = S.loadingAchFor === appName && !S.loadedAchievements.has(appName);
+  const loading = S.loadingAchFor.has(appName) && !S.loadedAchievements.has(appName);
   if (loading) {
     // Three placeholder rows, the height of the three rows that replace them:
     // the spinner was a different height, so everything below it moved when the

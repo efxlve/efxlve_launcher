@@ -618,10 +618,10 @@ function maybeLoadWikiAbout(s: EpicSummary): void {
   if (!storeAboutSettled.has(s.appName)) return;
   if (!S.loadedRequirements.has(s.appName)) return;
   const key = aboutKey(s.appName);
-  if (aboutCache.has(key) || S.loadingAboutFor === key) return;
-  S.loadingAboutFor = key;
+  if (aboutCache.has(key) || S.loadingAboutFor.has(key)) return;
+  S.loadingAboutFor.add(key);
   void loadWikiAbout(s).finally(() => {
-    if (S.loadingAboutFor === key) S.loadingAboutFor = null;
+    if (S.loadingAboutFor.has(key)) S.loadingAboutFor.delete(key);
   });
 }
 
@@ -693,8 +693,8 @@ function ensureOverviewData(s: EpicSummary): void {
   // shows, so the score lookups use that one.
   const lookupTitle = S.allGamesMap.get(appName)?.title ?? s.title;
   const year = gameReleaseYear(s);
-  if (!S.loadedHltb.has(appName) && S.loadingHltbFor !== appName) {
-    S.loadingHltbFor = appName;
+  if (!S.loadedHltb.has(appName) && !S.loadingHltbFor.has(appName)) {
+    S.loadingHltbFor.add(appName);
     epicGetHltb(lookupTitle, appName, false, year)
       .then((data) => {
         S.loadedHltb.set(appName, data);
@@ -703,10 +703,10 @@ function ensureOverviewData(s: EpicSummary): void {
       .catch(() => {
         if (S.currentModalAppName === appName) updateHltbUI(appName, undefined);
       })
-      .finally(() => { S.loadingHltbFor = null; });
+      .finally(() => { S.loadingHltbFor.delete(appName); });
   }
-  if (!S.loadedCritic.has(appName) && S.loadingCriticFor !== appName) {
-    S.loadingCriticFor = appName;
+  if (!S.loadedCritic.has(appName) && !S.loadingCriticFor.has(appName)) {
+    S.loadingCriticFor.add(appName);
     epicGetCritic(lookupTitle, appName, false, year)
       .then((data) => {
         const merged = mergeSteamCritic(data, appName);
@@ -714,7 +714,7 @@ function ensureOverviewData(s: EpicSummary): void {
         if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
       })
       .catch(() => {})
-      .finally(() => { S.loadingCriticFor = null; });
+      .finally(() => { S.loadingCriticFor.delete(appName); });
   }
 
   // Fetch official GOG metadata on demand
@@ -747,7 +747,7 @@ function ensureOverviewData(s: EpicSummary): void {
       })
       .catch(() => {});
     const reqP =
-      !S.loadedRequirements.has(appName) && S.loadingReqFor !== appName
+      !S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)
         ? fetchAndRenderRequirements(appName, s.title)
         : Promise.resolve();
     // GOG has two store-side sources (details + requirements): the wiki may only
@@ -767,7 +767,7 @@ function ensureOverviewData(s: EpicSummary): void {
         }
       }
     });
-    if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) {
+    if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) {
       void fetchAndRenderAchievements(appName);
     }
   } else {
@@ -859,14 +859,14 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   if (companion) {
     // The client catalog often ships its own description; Wikipedia is only
     // the fallback, so the store text does not flash and get replaced.
-    if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
-    if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) void fetchAndRenderScreenshots(appName, s.title);
-    if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
+    if (!S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.title);
+    if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.title);
+    if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
   } else {
     ensureCloudSyncStamp(s);
-    if (!S.loadedRequirements.has(appName) && S.loadingReqFor !== appName) void fetchAndRenderRequirements(appName, s.title);
-    if (!S.loadedScreenshots.has(appName) && S.loadingScreenshotsFor !== appName) void fetchAndRenderScreenshots(appName, s.title);
-    if (!S.loadedAchievements.has(appName) && S.loadingAchFor !== appName) void fetchAndRenderAchievements(appName);
+    if (!S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.title);
+    if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.title);
+    if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
     ensureEosSupport(appName);
   }
   // The notes tab's list and badge; the client caches, so this is one call.
@@ -1110,7 +1110,7 @@ export function repaintIgdbBlocks(appName: string): void {
   if (critic) {
     critic.innerHTML = renderCriticCard(
       S.loadedCritic.get(s.appName),
-      S.loadingCriticFor === s.appName,
+      S.loadingCriticFor.has(s.appName),
       igdbGameFor(s.appName)?.rating ?? null,
     );
     syncScoresCardVisibility();
@@ -1246,11 +1246,11 @@ export function renderDrawerOverview(
   // must not overwrite each other's work.
   const hltbBlock = `<div id="drawer-hltb-container">${renderHltbCard(
     S.loadedHltb.get(s.appName),
-    S.loadingHltbFor === s.appName,
+    S.loadingHltbFor.has(s.appName),
   )}</div>`;
   const criticBlock = `<div id="drawer-critic-container">${renderCriticCard(
     S.loadedCritic.get(s.appName),
-    S.loadingCriticFor === s.appName,
+    S.loadingCriticFor.has(s.appName),
     igdbGameFor(s.appName)?.rating ?? null,
   )}</div>`;
 
@@ -1296,7 +1296,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   // the same title supplies the count and the browsing hand-off.
   if (isCompanionApp(s.appName)) {
     const details = S.steamDetails.get(s.appName);
-    if (!details && S.loadingReqFor !== s.appName) {
+    if (!details && !S.loadingReqFor.has(s.appName)) {
       void fetchAndRenderRequirements(s.appName, s.title);
       return loadingState(t("dlc.scanning"));
     }
@@ -1322,7 +1322,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   // tab reports the count and hands the browsing over to Steam.
   if (s.appName.startsWith("steam::")) {
     const details = S.steamDetails.get(s.appName);
-    if (!details && S.loadingReqFor !== s.appName) {
+    if (!details && !S.loadingReqFor.has(s.appName)) {
       void fetchAndRenderRequirements(s.appName, s.title);
       return loadingState(t("dlc.scanning"));
     }
@@ -1421,7 +1421,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const isDemo = S.demoPlatinumApps.has(s.appName);
   const partner = gamePartner(s, rawOf(s.appName));
 
-  if (S.loadingAchFor === s.appName) return loadingState(t("ach.loadingStore"));
+  if (S.loadingAchFor.has(s.appName)) return loadingState(t("ach.loadingStore"));
   const data = S.loadedAchievements.get(s.appName);
   if (!data) {
     void fetchAndRenderAchievements(s.appName);
@@ -1621,8 +1621,8 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
 }
 
 export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
-  if (!isTauri || S.loadingAchFor === appName) return;
-  S.loadingAchFor = appName;
+  if (!isTauri || S.loadingAchFor.has(appName)) return;
+  S.loadingAchFor.add(appName);
   if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") openEpicModal(appName, false, false);
   try {
     const isGog = appName.startsWith("gog::");
@@ -1694,7 +1694,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     console.warn("Achievements could not be fetched or this game has no achievement support:", e);
     S.loadedAchievements.set(appName, { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false });
   } finally {
-    S.loadingAchFor = null;
+    S.loadingAchFor.delete(appName);
     if (S.currentModalAppName === appName && (S.activeDrawerTab === "achievements" || S.activeDrawerTab === "overview")) {
       openEpicModal(appName, false, false);
     }
@@ -1717,7 +1717,7 @@ export function renderDrawerSystemRequirements(s: EpicSummary): string {
 
 /** The verified requirement hardware grid and localized language chips. */
 export function renderRequirementsBody(s: EpicSummary): string {
-  if (S.loadingReqFor === s.appName) return loadingState(t("sys.loadingStore"));
+  if (S.loadingReqFor.has(s.appName)) return loadingState(t("sys.loadingStore"));
   const data = S.loadedRequirements.get(s.appName);
   if (!data) {
     void fetchAndRenderRequirements(s.appName, s.title);
@@ -1798,7 +1798,7 @@ export function renderRequirementsBody(s: EpicSummary): string {
 }
 
 export async function fetchAndRenderRequirements(appName: string, title: string, forceRefresh = false): Promise<void> {
-  if (!isTauri || S.loadingReqFor === appName) return;
+  if (!isTauri || S.loadingReqFor.has(appName)) return;
   // Steam: one store call carries the description, the hero art and the specs.
   if (appName.startsWith("steam::")) {
     await loadSteamDetails(appName, forceRefresh);
@@ -1810,7 +1810,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
     await loadCompanionStoreDetails(appName, title, forceRefresh);
     return;
   }
-  S.loadingReqFor = appName;
+  S.loadingReqFor.add(appName);
   try {
     const isGog = appName.startsWith("gog::");
     const rawId = isGog ? appName.slice(5) : appName;
@@ -1834,7 +1834,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
           // Recomputes the text and its source note; the note must name the
           // store that actually supplied the description, not always Epic.
           paintAboutText(cur);
-        } else if (descEl?.querySelector(".hub-desc-loading") && S.loadingAboutFor !== aboutKey(appName)) {
+        } else if (descEl?.querySelector(".hub-desc-loading") && !S.loadingAboutFor.has(aboutKey(appName))) {
           // Store data arrived without a description and no fallback is pending.
           descEl.innerHTML = `<p>${t("drawer.noDescription")}</p>`;
         }
@@ -1853,7 +1853,7 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
     console.warn("System requirements could not be fetched:", e);
     S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
   } finally {
-    S.loadingReqFor = null;
+    S.loadingReqFor.delete(appName);
     // Epic's description arrives with this call: mark the store side settled and
     // only then decide whether the wiki fallback is needed. GOG is marked by the
     // details + requirements pair in `ensureOverviewData`.
@@ -1923,7 +1923,7 @@ const companionSteamApps = new Map<string, string | null>();
 async function loadCompanionStoreDetails(appName: string, title: string, force = false): Promise<void> {
   const s = summaryOf(appName);
   if (!s) return;
-  S.loadingReqFor = appName;
+  S.loadingReqFor.add(appName);
   try {
     const language = steamLanguage(S.appLanguage);
     let hitApp = companionSteamApps.get(appName);
@@ -1962,7 +1962,7 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
     console.warn("Companion store details could not be fetched:", e);
     S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
   } finally {
-    S.loadingReqFor = null;
+    S.loadingReqFor.delete(appName);
     storeAboutSettled.add(appName);
     maybeLoadWikiAbout(s);
     if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
@@ -1978,7 +1978,7 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
 async function loadSteamDetails(appName: string, force = false): Promise<void> {
   const s = summaryOf(appName);
   if (!s) return;
-  S.loadingReqFor = appName;
+  S.loadingReqFor.add(appName);
   try {
     const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage), force);
     S.steamDetails.set(appName, details);
@@ -2023,7 +2023,7 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
   } catch {
     S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
   } finally {
-    S.loadingReqFor = null;
+    S.loadingReqFor.delete(appName);
     storeAboutSettled.add(appName);
     maybeLoadWikiAbout(s);
     if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
