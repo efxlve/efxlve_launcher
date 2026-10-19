@@ -102,6 +102,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   `compat_runner_path` olarak saklanır ve launcher'ın kendi kopyasından önce
   gelir. Kullanıcı bir klasörü sonradan silerse `launch_spec` sessizce yönetilen
   kopyaya düşer; ayrı bir "bozuk ayar" hatası gösterilmez.
+- **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
+  deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
+  başlatmamak için seçildi. Kullanıcı vazgeçerse araç kaldırma yarım parçayı da
+  temizler; ayrı bir "önbelleği boşalt" düğmesi eklenmedi.
 - **IGDB DLC/genişletme listesi:** mağaza DLC satırları kurulum yüzeyi olarak
   kaldı; IGDB yalnız mağazanın adlandırmadığı ekleri ayrı blokta gösteriyor.
   Mağaza başlığıyla aynı olan (kanonik başlık) kayıtlar eleniyor.

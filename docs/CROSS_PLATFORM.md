@@ -180,6 +180,10 @@ paketinin çıktığı anlamına gelmez.
   destekleniyor. Arşiv yolları `..`/kök dizin kontrolünden geçiyor.
 - GitHub asset'inin `digest` alanı varsa SHA-256 doğrulanır; ayrıca indirilen
   boyut ilan edilen boyutla karşılaştırılır.
+- Yarım kalan indirmeler `.part` olarak saklanır ve sonraki denemede HTTP Range
+  ile kaldığı yerden sürer; tamamlanmış parça yeniden indirilmeden doğrulanıp
+  kullanılır. Sunucu Range'i yok sayarsa baştan başlanır. Araç kaldırılınca
+  yarım parçalar da silinir.
 - Büyük indirmeler `compat-progress` olayıyla yüzde/indirme bilgisi yayınlar,
   iptal edilebilir. Aynı araç için ikinci indirme reddedilir.
 - Windows'tan `linux-x86_64`, `linux-aarch64`, `macos-x86_64` veya

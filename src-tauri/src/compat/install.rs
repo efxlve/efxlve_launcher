@@ -600,6 +600,44 @@ fn digest_hex(digest: &Option<String>) -> Option<String> {
     (hex.len() == 64 && hex.chars().all(|c| c.is_ascii_hexdigit())).then(|| hex.to_lowercase())
 }
 
+fn sha256_file(path: &Path) -> Result<String, String> {
+    let mut file = std::fs::File::open(path).map_err(|error| error.to_string())?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 1024 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(|error| error.to_string())?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+/// A finished `.part` must match the published size and, when GitHub gave one,
+/// the SHA-256. This also validates a part left by an earlier interrupted run.
+async fn verify_part(part: &Path, asset: &CachedAsset) -> Result<(), String> {
+    if asset.size > 0 {
+        let length = tokio::fs::metadata(part)
+            .await
+            .map_err(|error| error.to_string())?
+            .len();
+        if length != asset.size {
+            return Err("@t:compat.checksum".to_string());
+        }
+    }
+    if let Some(expected) = digest_hex(&asset.digest) {
+        let path = part.to_path_buf();
+        let actual = tauri::async_runtime::spawn_blocking(move || sha256_file(&path))
+            .await
+            .map_err(|error| error.to_string())??;
+        if actual != expected {
+            return Err("@t:compat.checksum".to_string());
+        }
+    }
+    Ok(())
+}
+
 async fn download_asset(
     app: &AppHandle,
     id: &str,
@@ -614,6 +652,23 @@ async fn download_asset(
             .await
             .map_err(|error| error.to_string())?;
     }
+
+    // A half-gigabyte runner used to restart from byte zero after a dropped
+    // connection. The `.part` file is kept on network failures and continued
+    // with a Range request; a complete part is verified and reused.
+    let mut existing = tokio::fs::metadata(part)
+        .await
+        .map(|meta| meta.len())
+        .unwrap_or(0);
+    if asset.size > 0 && existing >= asset.size {
+        if existing == asset.size && verify_part(part, asset).await.is_ok() {
+            emit_progress(app, id, "download", 100, existing, asset.size);
+            return Ok(());
+        }
+        let _ = tokio::fs::remove_file(part).await;
+        existing = 0;
+    }
+
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(30))
         // A GE-Proton archive is over half a gigabyte; the timeout is a stall
@@ -621,41 +676,70 @@ async fn download_asset(
         .timeout(Duration::from_secs(60 * 60))
         .build()
         .map_err(|error| error.to_string())?;
-    let mut response = client
+    let mut request = client
         .get(&asset.url)
-        .header("User-Agent", "efxlve-launcher")
+        .header("User-Agent", "efxlve-launcher");
+    if existing > 0 {
+        request = request.header("Range", format!("bytes={existing}-"));
+    }
+    let mut response = request
         .send()
         .await
         .map_err(|error| format!("@t:compat.network\u{1f}{error}"))?;
-    if !response.status().is_success() {
-        return Err(format!(
-            "@t:compat.http\u{1f}{}",
-            response.status().as_u16()
-        ));
+    let status = response.status();
+    if status == reqwest::StatusCode::RANGE_NOT_SATISFIABLE
+        && asset.size > 0
+        && existing == asset.size
+    {
+        if verify_part(part, asset).await.is_ok() {
+            emit_progress(app, id, "download", 100, existing, asset.size);
+            return Ok(());
+        }
+        let _ = tokio::fs::remove_file(part).await;
+        return Err("@t:compat.checksum".to_string());
     }
+    if status == reqwest::StatusCode::RANGE_NOT_SATISFIABLE {
+        let _ = tokio::fs::remove_file(part).await;
+        return Err("@t:compat.checksum".to_string());
+    }
+    if !status.is_success() {
+        return Err(format!("@t:compat.http\u{1f}{}", status.as_u16()));
+    }
+
+    let resuming = status == reqwest::StatusCode::PARTIAL_CONTENT && existing > 0;
+    let mut downloaded = if resuming { existing } else { 0 };
     let total = if asset.size > 0 {
         asset.size
+    } else if resuming {
+        existing.saturating_add(response.content_length().unwrap_or(0))
     } else {
         response.content_length().unwrap_or(0)
     };
-    let mut file = tokio::fs::File::create(part)
-        .await
-        .map_err(|error| error.to_string())?;
+    let mut file = if resuming {
+        tokio::fs::OpenOptions::new()
+            .append(true)
+            .open(part)
+            .await
+            .map_err(|error| error.to_string())?
+    } else {
+        // The server ignored the range (or this is a fresh download): start over.
+        tokio::fs::File::create(part)
+            .await
+            .map_err(|error| error.to_string())?
+    };
     use tokio::io::AsyncWriteExt;
-    let mut hasher = Sha256::new();
-    let mut downloaded: u64 = 0;
     let mut last_emit = Instant::now();
     let mut last_percent = 255u8;
     loop {
         if is_cancelled(id) {
             drop(file);
-            let _ = tokio::fs::remove_file(part).await;
+            // Keep the part: a later install continues from here.
             return Err("@t:compat.cancelled".to_string());
         }
         match response.chunk().await {
             Err(error) => {
                 drop(file);
-                let _ = tokio::fs::remove_file(part).await;
+                // Keep the part for the next attempt.
                 return Err(format!("@t:compat.network\u{1f}{error}"));
             }
             Ok(None) => break,
@@ -663,7 +747,6 @@ async fn download_asset(
                 file.write_all(&chunk)
                     .await
                     .map_err(|error| error.to_string())?;
-                hasher.update(&chunk);
                 downloaded = downloaded.saturating_add(chunk.len() as u64);
                 let percent = if total > 0 {
                     (downloaded.saturating_mul(100) / total).min(100) as u8
@@ -681,16 +764,9 @@ async fn download_asset(
     file.flush().await.map_err(|error| error.to_string())?;
     drop(file);
 
-    if asset.size > 0 && downloaded != asset.size {
+    if let Err(error) = verify_part(part, asset).await {
         let _ = tokio::fs::remove_file(part).await;
-        return Err("@t:compat.checksum".to_string());
-    }
-    if let Some(expected) = digest_hex(&asset.digest) {
-        let actual = format!("{:x}", hasher.finalize());
-        if actual != expected {
-            let _ = tokio::fs::remove_file(part).await;
-            return Err("@t:compat.checksum".to_string());
-        }
+        return Err(error);
     }
     emit_progress(app, id, "download", 100, downloaded, total);
     Ok(())
@@ -847,7 +923,12 @@ async fn install_github(app: &AppHandle, def: &ToolDef, target: &Target) -> Resu
         .await
         .map_err(|error| error.to_string())?;
     let safe_asset = asset.name.replace(['/', '\\'], "_");
-    let part = downloads.join(format!("{}-{}-{safe_asset}.part", def.id, tag));
+    let part = downloads.join(format!(
+        "{}-{}-{}-{safe_asset}.part",
+        def.id,
+        target.key(),
+        tag
+    ));
     let temp = temp_root.join(format!("{}-{}-{}", def.id, tag, std::process::id()));
     let _ = std::fs::remove_dir_all(&temp);
 
@@ -952,6 +1033,16 @@ pub async fn compat_remove(
     if root.exists() {
         std::fs::remove_dir_all(&root).map_err(|error| error.to_string())?;
     }
+    // A cancelled or interrupted download leaves a resumable part behind; a
+    // removed tool should not keep a half-gigabyte file forever.
+    let prefix = format!("{}-{}-", def.id, target.key());
+    if let Ok(entries) = std::fs::read_dir(compat_root(&app).join(".downloads")) {
+        for entry in entries.flatten() {
+            if entry.file_name().to_string_lossy().starts_with(&prefix) {
+                let _ = std::fs::remove_file(entry.path());
+            }
+        }
+    }
     Ok(())
 }
 
@@ -983,6 +1074,17 @@ mod tests {
         );
         assert_eq!(digest_hex(&Some("sha256:xyz".into())), None);
         assert_eq!(digest_hex(&None), None);
+    }
+
+    #[test]
+    fn a_part_hash_reads_the_whole_file() {
+        let path = std::env::temp_dir().join(format!("efxlve_hash_{}", std::process::id()));
+        std::fs::write(&path, b"abc").unwrap();
+        assert_eq!(
+            sha256_file(&path).unwrap(),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
