@@ -2636,5 +2636,6 @@
   "deck.hint": "Valve's Steam Deck compatibility rating; opens the Steam store page.",
   "deck.verified": "Verified",
   "deck.playable": "Playable",
-  "deck.unsupported": "Unsupported"
+  "deck.unsupported": "Unsupported",
+  "awacy.planned": "Planned"
 }

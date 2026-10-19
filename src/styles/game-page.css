@@ -1487,6 +1487,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .awacy-pill.supported { color: #7ddba8; border-color: #3d7b58; background: rgba(80, 190, 130, 0.12); }
 .awacy-pill.running { color: #f0c96b; border-color: #8a7134; background: rgba(224, 179, 78, 0.12); }
 .awacy-pill.broken, .awacy-pill.denied { color: #f08a8a; border-color: #8d4444; background: rgba(208, 92, 92, 0.12); }
+.awacy-pill.planned { color: #b9a7df; border-color: #67588b; background: rgba(150, 125, 210, 0.12); }
 .awacy-pill.unknown { color: var(--text-3); }
 .deck-pill.verified { color: #7ddba8; border-color: #3d7b58; background: rgba(80, 190, 130, 0.12); }
 .deck-pill.playable { color: #f0c96b; border-color: #8a7134; background: rgba(224, 179, 78, 0.12); }

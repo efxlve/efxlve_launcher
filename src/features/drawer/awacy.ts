@@ -21,6 +21,7 @@ const STATUS_KEYS: Record<string, string> = {
   running: "awacy.running",
   broken: "awacy.broken",
   denied: "awacy.denied",
+  planned: "awacy.planned",
 };
 
 function statusName(status: string): string {
