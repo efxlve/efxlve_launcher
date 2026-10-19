@@ -603,6 +603,7 @@
   "ss.scanning": "Ekran görüntüleri taranıyor…",
   "ss.title": "Oyun Ekran Görüntüleri",
   "ss.photoCount": "{count} Fotoğraf",
+  "ss.capNote": "En yeni {count} kayda kadar gösterilir; eskileri diskte kalır.",
   "ss.capture": "Ekran Görüntüsü Al",
   "ss.compressAllTip": "Tüm ham PNG ekran görüntülerini sıkıştırıp disk alanı kazanın",
   "ss.compressAll": "Tümünü Sıkıştır",

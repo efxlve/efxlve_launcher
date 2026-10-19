@@ -187,6 +187,11 @@ function cardHtml(item: GameScreenshotItem, index: number): string {
     </div>`;
 }
 
+/** The backend truncates the scan to the newest this many captures
+ *  (`results.truncate(300)` in `screenshots.rs`); keep the two in step, the note
+ *  under the grid quotes it. */
+const SCAN_CAP = 300;
+
 export function renderScreenshotsPage(): string {
   if (!isTauri) {
     return `<div class="page screenshots-page"><div class="info-box">${icon("info", 14)}<span>${t("task.desktopOnly")}</span></div></div>`;
@@ -230,6 +235,13 @@ export function renderScreenshotsPage(): string {
         visible.length === 0
           ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
           : `<div class="screenshots-grid ss-density-${ssDensity()}">${visible.map((item, index) => cardHtml(item, index)).join("")}</div>`
+      }
+      ${
+        // Only the newest SCAN_CAP captures come back from the scan, so a long
+        // list has to say so: otherwise the rest look like they are gone.
+        shots.length >= SCAN_CAP
+          ? `<p class="page-sub ss-cap-note">${icon("info", 13)} ${t("ss.capNote", { count: String(SCAN_CAP) })}</p>`
+          : ""
       }
       ${clipsSectionHtml()}
     </div>`;

@@ -574,6 +574,7 @@
   "ss.scanning": "Skanowanie zrzutów ekranu…",
   "ss.title": "Zrzuty ekranu z gry",
   "ss.photoCount": "{count} zdjęć",
+  "ss.capNote": "Pokazywanych jest do {count} najnowszych zrzutów; starsze pozostają na dysku.",
   "ss.capture": "Zrób zrzut ekranu",
   "ss.compressAllTip": "Skompresuj wszystkie surowe PNG, aby oszczędzić miejsce",
   "ss.compressAll": "Kompresuj wszystkie",

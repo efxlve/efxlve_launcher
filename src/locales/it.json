@@ -574,6 +574,7 @@
   "ss.scanning": "Scansione delle schermate…",
   "ss.title": "Schermate di gioco",
   "ss.photoCount": "{count} foto",
+  "ss.capNote": "Vengono mostrate fino a {count} delle catture più recenti; le più vecchie restano sul disco.",
   "ss.capture": "Scatta schermata",
   "ss.compressAllTip": "Comprimi tutti i PNG originali per risparmiare spazio",
   "ss.compressAll": "Comprimi tutto",

@@ -574,6 +574,7 @@
   "ss.scanning": "جارٍ فحص لقطات الشاشة…",
   "ss.title": "لقطات شاشة اللعبة",
   "ss.photoCount": "{count} صورة",
+  "ss.capNote": "يتم عرض أحدث {count} لقطة كحد أقصى؛ تبقى الأقدم على القرص.",
   "ss.capture": "التقاط لقطة شاشة",
   "ss.compressAllTip": "ضغط كل لقطات PNG الخام لتوفير مساحة القرص",
   "ss.compressAll": "ضغط الكل",

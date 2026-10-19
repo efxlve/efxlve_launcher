@@ -603,6 +603,7 @@
   "ss.scanning": "Scanning screenshots…",
   "ss.title": "Game Screenshots",
   "ss.photoCount": "{count} Photos",
+  "ss.capNote": "Up to {count} of the newest captures are shown; older ones stay on disk.",
   "ss.capture": "Take Screenshot",
   "ss.compressAllTip": "Compress all raw PNG screenshots to save disk space",
   "ss.compressAll": "Compress All",

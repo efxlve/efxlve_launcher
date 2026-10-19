@@ -574,6 +574,7 @@
   "ss.scanning": "Screenshots werden gesucht…",
   "ss.title": "Spiel-Screenshots",
   "ss.photoCount": "{count} Fotos",
+  "ss.capNote": "Es werden bis zu {count} der neuesten Aufnahmen gezeigt; ältere bleiben auf der Festplatte.",
   "ss.capture": "Screenshot aufnehmen",
   "ss.compressAllTip": "Alle rohen PNG-Screenshots komprimieren, um Speicher zu sparen",
   "ss.compressAll": "Alle komprimieren",

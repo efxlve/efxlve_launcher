@@ -574,6 +574,7 @@
   "ss.scanning": "正在扫描截图…",
   "ss.title": "游戏截图",
   "ss.photoCount": "{count} 张照片",
+  "ss.capNote": "最多显示最新的 {count} 张；更早的仍保留在磁盘上。",
   "ss.capture": "截图",
   "ss.compressAllTip": "压缩所有原始 PNG 截图以节省磁盘空间",
   "ss.compressAll": "全部压缩",

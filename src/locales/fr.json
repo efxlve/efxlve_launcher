@@ -574,6 +574,7 @@
   "ss.scanning": "Recherche des captures…",
   "ss.title": "Captures du jeu",
   "ss.photoCount": "{count} photos",
+  "ss.capNote": "Jusqu'à {count} des captures les plus récentes sont affichées ; les plus anciennes restent sur le disque.",
   "ss.capture": "Prendre une capture",
   "ss.compressAllTip": "Compresser toutes les captures PNG brutes pour gagner de l'espace",
   "ss.compressAll": "Tout compresser",

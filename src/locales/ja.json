@@ -574,6 +574,7 @@
   "ss.scanning": "スクリーンショットをスキャン中…",
   "ss.title": "ゲームのスクリーンショット",
   "ss.photoCount": "{count} 枚",
+  "ss.capNote": "最新の {count} 件まで表示されます。それより古いものはディスクに残ります。",
   "ss.capture": "スクリーンショットを撮る",
   "ss.compressAllTip": "無圧縮 PNG をすべて圧縮してディスク容量を節約します",
   "ss.compressAll": "すべて圧縮",

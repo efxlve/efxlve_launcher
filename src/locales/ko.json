@@ -574,6 +574,7 @@
   "ss.scanning": "스크린샷 검색 중…",
   "ss.title": "게임 스크린샷",
   "ss.photoCount": "사진 {count}장",
+  "ss.capNote": "최신 {count}개까지 표시됩니다. 더 오래된 항목은 디스크에 남아 있습니다.",
   "ss.capture": "스크린샷 찍기",
   "ss.compressAllTip": "원본 PNG 스크린샷을 모두 압축해 디스크 공간을 절약합니다",
   "ss.compressAll": "모두 압축",
