@@ -447,8 +447,25 @@ fn detect_system(def: &ToolDef) -> Vec<String> {
 }
 
 /// Detected runner folders for one tool, for the launch fallback and the UI.
+///
+/// The scan walks Steam's compatibilitytools.d and a few known folders; it is
+/// cached briefly because the catalogue asks for four tools and every launch
+/// asks for a fallback.
 pub(crate) fn detected_runner_paths(id: &str) -> Vec<String> {
-    catalog::find(id).map(detect_system).unwrap_or_default()
+    static CACHE: OnceLock<Mutex<HashMap<String, (Instant, Vec<String>)>>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Ok(map) = cache.lock() {
+        if let Some((at, paths)) = map.get(id) {
+            if at.elapsed() < Duration::from_secs(60) {
+                return paths.clone();
+            }
+        }
+    }
+    let paths = catalog::find(id).map(detect_system).unwrap_or_default();
+    if let Ok(mut map) = cache.lock() {
+        map.insert(id.to_string(), (Instant::now(), paths.clone()));
+    }
+    paths
 }
 
 fn latest_for(cache: &ReleaseCache, def: &ToolDef, target: &Target) -> Option<CompatLatest> {
