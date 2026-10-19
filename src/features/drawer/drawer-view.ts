@@ -36,6 +36,7 @@ import { loadGogDetails } from "./game-details-cache";
 import { hydrateGameCompatCard, renderGameCompatCard } from "./game-compat";
 import { hydrateProtonDbChip, renderProtonDbHost } from "./protondb";
 import { hydrateAntiCheatChip, renderAntiCheatHost } from "./awacy";
+import { hydrateDeckChip, renderDeckHost } from "./deck";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
 import { steamGetAchievements } from "../../steam";
 import { companionAchievements } from "../../companion";
@@ -480,7 +481,7 @@ function renderSpecsTab(
     <div class="specs-grid">
       ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
       <div class="specs-side-col">
-        ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>${renderProtonDbHost(s)}${renderAntiCheatHost(s)}`)}
+        ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}`)}
         ${card(t("feat.controller"), "gamepad-2", `<div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>`)}
       </div>
       ${card(t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`, true)}
@@ -931,6 +932,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     paintGameCloud(s);
     if (S.activeDrawerTab === "specs") {
       void hydrateGameCompatCard(appName);
+      void hydrateDeckChip(appName);
       void hydrateProtonDbChip(appName);
       void hydrateAntiCheatChip(appName);
     }
@@ -1005,6 +1007,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   }
   if (S.activeDrawerTab === "specs") {
     void hydrateGameCompatCard(appName);
+    void hydrateDeckChip(appName);
     void hydrateProtonDbChip(appName);
     void hydrateAntiCheatChip(appName);
   }

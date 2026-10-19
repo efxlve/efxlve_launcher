@@ -324,9 +324,9 @@ Still open:
   "Launching…" if preparation fails. Real Linux/macOS hardware still has to
   confirm the Proton/umu prefix layout.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
-- ProtonDB badge and Are We Anti-Cheat Yet? status shipped for Steam games
-  (both cached for a day, with click-through to the source). A real Steam Deck
-  "Verified" badge needs Valve's per-device data and is still open.
+- ProtonDB, Steam Deck (Valve's own Verified/Playable/Unsupported report) and
+  Are We Anti-Cheat Yet? badges shipped for Steam games, each cached for a day
+  with click-through to its source.
 - Platform implementations for the screenshot hook, embedded store webview and
   drive scan (F0/F5).
 - `wine-crossover` is detection-only until a maintained release source exists;

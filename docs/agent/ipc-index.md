@@ -338,6 +338,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_anticheat_status` | `steamAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
 | `steam_app_metadata` | `steamAppMetadata({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_cloud_status` | `steamCloudStatus({ ... })` | `src-tauri/src/steam/cloud.rs` |
+| `steam_deck_status` | `steamDeckStatus({ ... })` | `src-tauri/src/steam/deck.rs` |
 | `steam_download_live` | `steamDownloadLive({ ... })` | `src-tauri/src/steam/download_live.rs` |
 | `steam_family_shared_apps` | `steamFamilySharedApps({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_find_store_app` | `steamFindStoreApp({ ... })` | `src-tauri/src/steam/catalog.rs` |

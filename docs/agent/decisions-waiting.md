@@ -164,6 +164,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   `<app_data>/steam/awacy/games.json` altında günlük cache'leniyor; uygulama
   kimliği yalnız rakam. Durum, anti-cheat adları ve oyunun AWACY sayfası
   gösteriliyor. Kayıt yoksa veya ağ hatasında eski kopya yoksa satır gizli.
+- **Steam Deck rozeti:** Valve'nin mağaza uyumluluk uç noktası kullanılıyor;
+  `resolved_category` 1/2/3 sırasıyla desteklenmiyor/oynanabilir/doğrulanmış.
+  Yanıt uygulama başına `<app_data>/steam/deck/<appid>.json` altında günlük
+  cache'leniyor; bilinmeyen kategori veya ağ hatasında satır gizli.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

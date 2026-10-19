@@ -38,6 +38,7 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Game page late data | An IGDB answer leaves the About section and scores card in place and does not rebuild the tab; a delayed achievement answer changes the hero from "—" to "7/20" while the tab strip and content element keep their harness markers, so the overview was not repainted; a delayed DLC answer turns "Eklentiler taranıyor…" into the add-on list while the tab strip keeps its marker; a delayed EOS scan adds the "EOS Desteği" row to the copy card while the tab strip and card element keep their markers |
 | Steam → System → ProtonDB | A fake Steam game resolves a gold summary; the copy card shows a gold "Altın" pill linking to `https://www.protondb.com/app/1091500` with the community-rating tooltip; the command is called once per app |
 | Steam → System → Anti-cheat | A fake Halo app resolves "Supported" with Easy Anti-Cheat; the copy card shows a green "Destekliyor" pill linking to `https://areweanticheatyet.com/game/halo-the-master-chief-collection`; the command is called once per app |
+| Steam → System → Steam Deck | A fake category-3 report shows a green "Doğrulanmış" pill linking to the Steam store page; the command is called once per app |
 | Notes | Search box, scope filters, empty list state, editor panel ("pick a note"), no crash |
 | Profile | Banner, online chip, account count, game/trophy counters, recents |
 | Task manager | Launcher's own usage rows |

@@ -135,6 +135,14 @@ export interface AntiCheatStatus {
 export const steamAntiCheatStatus = (appId: string) =>
   invoke<AntiCheatStatus | null>("steam_anticheat_status", { appId });
 
+/** Valve's Steam Deck category: 1 unsupported, 2 playable, 3 verified. */
+export interface DeckStatus {
+  category: number;
+}
+
+export const steamDeckStatus = (appId: string) =>
+  invoke<DeckStatus | null>("steam_deck_status", { appId });
+
 /** One Steam transfer, with the byte counter moved forward since the last exact sample. */
 export interface SteamLiveDownload {
   appId: string;

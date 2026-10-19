@@ -237,8 +237,10 @@ diskte cache'lenir; ağ hatasında eski kopya, o da yoksa satır hiç gösterilm
 Satır ProtonDB sayfasına gider. Aynı kartta Are We Anti-Cheat Yet? durumu da
 görünür: tek `games.json` dosyası günde bir kez indirilip uygulama kimliğine
 göre aranıyor; durum, hile koruması adları ve oyun sayfası bağlantısı gösteriliyor.
-Kayıt yoksa veya kaynak ulaşılamıyorsa satır gizli kalıyor. Steam Deck "Verified"
-rozeti Valve'nin cihaz verisini gerektirdiği için kapsam dışı.
+Kayıt yoksa veya kaynak ulaşılamıyorsa satır gizli kalıyor. Valve'nin kendi Steam
+Deck uyumluluk raporu da aynı kartta gösteriliyor: `resolved_category` 1
+desteklenmiyor, 2 oynanabilir, 3 doğrulanmış anlamına geliyor; yanıt uygulama
+başına günlük cache'leniyor.
 
 ### 8.4 Arayüz
 Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştırıcılar,

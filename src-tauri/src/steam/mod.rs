@@ -6,6 +6,7 @@
 
 mod achievements;
 mod awacy;
+mod deck;
 mod download_live;
 mod catalog;
 mod cloud;
@@ -27,6 +28,10 @@ pub use achievements::*;
 // awacy.rs: AntiCheatStatus, steam_anticheat_status
 #[allow(unused_imports)]
 pub use awacy::*;
+
+// deck.rs: DeckStatus, steam_deck_status
+#[allow(unused_imports)]
+pub use deck::*;
 
 // catalog.rs: SteamAppMetadata, SteamGameDetails, parse_appinfo_dlc_ids, parse_appinfo_metadata, parse_appinfo_preload_ids, read_client_dlc_ids, strip_html, join_label_lines, parse_app_details, steam_app_metadata, steam_get_game_details, steam_get_api_key, steam_set_api_key
 #[allow(unused_imports)]

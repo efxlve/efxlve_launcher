@@ -2631,5 +2631,10 @@
   "awacy.running": "Çalışıyor",
   "awacy.broken": "Bozuk",
   "awacy.denied": "Reddedildi",
-  "awacy.unknown": "Bilinmiyor"
+  "awacy.unknown": "Bilinmiyor",
+  "deck.title": "Steam Deck",
+  "deck.hint": "Valve'nin Steam Deck uyumluluk derecesi; Steam mağaza sayfasını açar.",
+  "deck.verified": "Doğrulanmış",
+  "deck.playable": "Oynanabilir",
+  "deck.unsupported": "Desteklenmiyor"
 }

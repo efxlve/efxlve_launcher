@@ -2631,5 +2631,10 @@
   "awacy.running": "Running",
   "awacy.broken": "Broken",
   "awacy.denied": "Denied",
-  "awacy.unknown": "Unknown"
+  "awacy.unknown": "Unknown",
+  "deck.title": "Steam Deck",
+  "deck.hint": "Valve's Steam Deck compatibility rating; opens the Steam store page.",
+  "deck.verified": "Verified",
+  "deck.playable": "Playable",
+  "deck.unsupported": "Unsupported"
 }
