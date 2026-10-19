@@ -1068,6 +1068,33 @@ mod tests {
     }
 
     #[test]
+    fn a_per_game_prefix_wins_over_the_shared_root() {
+        let root =
+            std::env::temp_dir().join(format!("efxlve_prefix_choice_{}", std::process::id()));
+        let mut settings = crate::EpicSettings::default();
+        settings.compat_prefix_dir = Some(root.display().to_string());
+
+        let shared = crate::compat::games::GameCompatConfig::default();
+        assert_eq!(game_prefix("Hades", &shared, &settings), root.join("Hades"));
+
+        let exact = root.join("exact");
+        let chosen = crate::compat::games::GameCompatConfig {
+            prefix_dir: Some(exact.display().to_string()),
+            ..Default::default()
+        };
+        assert_eq!(game_prefix("Hades", &chosen, &settings), exact);
+
+        let relative = crate::compat::games::GameCompatConfig {
+            prefix_dir: Some("relative/pfx".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            game_prefix("Hades", &relative, &settings),
+            root.join("Hades")
+        );
+    }
+
+    #[test]
     fn a_system_runner_folder_resolves_to_its_program() {
         let root = std::env::temp_dir().join(format!("efxlve_runner_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
