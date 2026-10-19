@@ -1135,6 +1135,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             compat::launch::compat_open_prefix_root,
             compat::launch::compat_open_game_prefix,
             compat::launch::compat_game_prefix_state,
+            compat::launch::compat_game_diagnostics,
             nile::auth::nile_auth_status,
             nile::auth::nile_login_begin,
             nile::auth::nile_login_finish,

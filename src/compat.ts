@@ -113,6 +113,9 @@ export interface GamePrefixState {
 export const compatGamePrefixState = (appName: string) =>
   invoke<GamePrefixState>("compat_game_prefix_state", { appName });
 
+export const compatGameDiagnostics = (appName: string) =>
+  invoke<string>("compat_game_diagnostics", { appName });
+
 export interface GameCompatConfig {
   /** `null` means "use the global runner". */
   runner: string | null;

@@ -740,6 +740,102 @@ pub fn compat_game_prefix_state(app: AppHandle, app_name: String) -> GamePrefixS
     }
 }
 
+/// Plain-text facts for a bug report: no credentials, only paths and decisions.
+#[tauri::command]
+pub fn compat_game_diagnostics(app: AppHandle, app_name: String) -> String {
+    let settings = crate::load_settings(&app);
+    let game = super::games::get(&app, &app_name);
+    let prefix = game_prefix(&app_name, &game, &settings);
+    let wine_root = layer_prefix_root(&prefix);
+    let target = Target::current();
+    let spec = launch_spec(&app, &app_name);
+    let layers: Vec<String> = game
+        .layers
+        .clone()
+        .unwrap_or_else(|| settings.compat_layers.clone())
+        .into_iter()
+        .filter(|id| valid_layer(id))
+        .collect();
+
+    let mut lines = Vec::new();
+    lines.push(format!("app: {app_name}"));
+    lines.push(format!(
+        "platform: {}-{}",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    ));
+    lines.push(format!(
+        "compat_enabled: {}",
+        settings.compat_runner_enabled.unwrap_or(true)
+    ));
+    lines.push(format!(
+        "configured_runner: {}",
+        game.runner
+            .as_deref()
+            .or(settings.compat_runner.as_deref())
+            .unwrap_or("-")
+    ));
+    lines.push(format!(
+        "configured_runner_path: {}",
+        game.runner_path
+            .as_deref()
+            .or(settings.compat_runner_path.as_deref())
+            .unwrap_or("-")
+    ));
+    lines.push(format!(
+        "configured_runner_tag: {}",
+        game.runner_tag
+            .as_deref()
+            .or(settings.compat_runner_tag.as_deref())
+            .unwrap_or("-")
+    ));
+    lines.push(format!("prefix: {}", prefix.display()));
+    lines.push(format!("prefix_exists: {}", prefix.is_dir()));
+    lines.push(format!(
+        "wine_root: {}",
+        wine_root
+            .as_ref()
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|| "-".to_string())
+    ));
+    lines.push(format!("prefix_initialized: {}", wine_root.is_some()));
+    lines.push(format!(
+        "env_wineprefix: {}",
+        spec.env
+            .get("WINEPREFIX")
+            .map(String::as_str)
+            .unwrap_or("-")
+    ));
+    lines.push(format!(
+        "env_protonpath: {}",
+        spec.env
+            .get("PROTONPATH")
+            .map(String::as_str)
+            .unwrap_or("-")
+    ));
+    lines.push(format!(
+        "env_compat_data: {}",
+        spec.env
+            .get("STEAM_COMPAT_DATA_PATH")
+            .map(String::as_str)
+            .unwrap_or("-")
+    ));
+    lines.push(format!(
+        "program: {}",
+        spec.program.as_deref().unwrap_or("-")
+    ));
+    lines.push(format!("layers: {}", layers.join(",")));
+    for id in &layers {
+        lines.push(format!(
+            "layer_{id}: {}",
+            tool_dir(&app, &target, id)
+                .map(|path| path.display().to_string())
+                .unwrap_or_else(|| "missing".to_string())
+        ));
+    }
+    lines.join("\n")
+}
+
 /// Opens the game's own prefix. Proton keeps the real Wine tree under `pfx`,
 /// so an initialized prefix opens there; a fresh one opens the compatdata root.
 #[tauri::command]

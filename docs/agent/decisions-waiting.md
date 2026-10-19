@@ -174,6 +174,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   komut arasında paylaşılıyor; prefix hazırsa Proton'un `pfx` klasörü, değilse
   compatdata kökü açılıyor. Klasör yoksa oluşturuluyor; tarayıcı harness'inde
   çağrı ve "Klasör açıldı" bildirimi doğrulandı.
+- **Oyun tanılaması:** `compat_game_diagnostics` çalıştırıcı seçimini, prefix
+  yolunu, `system.reg` durumunu, `launch_spec` ortamını ve katman klasörlerini
+  düz metin olarak döndürüyor. Oyun kartındaki düğme bunu panoya kopyalıyor;
+  kimlik bilgisi içermiyor. Linux/macOS donanım testinde hata bildirimini
+  hızlandırmak için eklendi.
 - **Prefix durumu:** `compat_game_prefix_state` oyunun gerçek prefix yolunu ve
   `system.reg` var mı bilgisini döndürüyor. Kart bunu "Prefix hazır." /
   "Prefix henüz oluşturulmadı." olarak gösteriyor; prefix kaydı ve hazırlama

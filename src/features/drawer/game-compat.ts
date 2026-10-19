@@ -19,6 +19,7 @@ import { t } from "../../i18n";
 import { epicSelectFolderDialog, type EpicSummary } from "../../epic";
 import {
   compatCatalog,
+  compatGameDiagnostics,
   compatGamePrefixState,
   compatGetGameConfig,
   compatGetLaunchConfig,
@@ -222,6 +223,7 @@ function cardBody(appName: string, config: GameCompatConfig): string {
         <button type="button" class="btn primary small" data-act="game-compat-prefix-save" data-id="${esc(appName)}">${esc(t("common.save"))}</button>
         <button type="button" class="btn ghost small" data-act="game-compat-prefix-prepare" data-id="${esc(appName)}" title="${esc(t("compat.preparePrefixHint"))}">${esc(t("compat.preparePrefix"))}</button>
         <button type="button" class="btn ghost small" data-act="game-compat-prefix-open" data-id="${esc(appName)}" title="${esc(t("compat.openPrefix"))}">${icon("folder", 12)} ${esc(t("compat.openPrefix"))}</button>
+        <button type="button" class="btn ghost small" data-act="game-compat-prefix-diagnostics" data-id="${esc(appName)}" title="${esc(t("compat.diagnosticsHint"))}">${icon("clipboard", 12)} ${esc(t("compat.diagnostics"))}</button>
       </div>
     </div>
     ${
@@ -371,13 +373,22 @@ export function handleGameCompatClick(act: string | undefined, el: HTMLElement):
     act !== "game-compat-prefix-pick" &&
     act !== "game-compat-prefix-save" &&
     act !== "game-compat-prefix-prepare" &&
-    act !== "game-compat-prefix-open"
+    act !== "game-compat-prefix-open" &&
+    act !== "game-compat-prefix-diagnostics"
   ) {
     return false;
   }
   const appName = el.dataset.id ?? "";
   if (!appName || preparingPrefix === appName) return true;
   const config = configs.get(appName) ?? emptyConfig();
+
+  if (act === "game-compat-prefix-diagnostics") {
+    void compatGameDiagnostics(appName)
+      .then((text) => navigator.clipboard.writeText(text))
+      .then(() => toast(t("compat.diagnosticsCopied"), "ok"))
+      .catch((error) => toast(String(error), "err"));
+    return true;
+  }
 
   if (act === "game-compat-prefix-open") {
     void compatOpenGamePrefix(appName)

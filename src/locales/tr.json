@@ -2638,5 +2638,8 @@
   "deck.playable": "Oynanabilir",
   "deck.unsupported": "Desteklenmiyor",
   "awacy.planned": "Planlandı",
-  "compat.prefixStateMissing": "Prefix henüz oluşturulmadı."
+  "compat.prefixStateMissing": "Prefix henüz oluşturulmadı.",
+  "compat.diagnostics": "Tanılamayı kopyala",
+  "compat.diagnosticsHint": "Hata bildirimi için çalıştırıcı, prefix ve katman yollarını kopyalar; kimlik bilgisi içermez.",
+  "compat.diagnosticsCopied": "Tanılama kopyalandı."
 }
