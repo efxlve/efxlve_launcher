@@ -13,7 +13,7 @@ import { measuredSize } from "../../core/folder-size";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtPlaytime } from "../../core/utils";
+import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtPlaytime } from "../../core/utils";
 import { formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
@@ -668,7 +668,7 @@ export function renderNextAchievements(appName: string): string {
         ${a.icon_link ? `<img src="${esc(a.icon_link)}" alt="" />` : `<span class="gp-next-ph">${icon("trophy", 16)}</span>`}
         <span class="gp-next-text">
           <span class="gp-next-name">${esc(a.display_name || a.name)}</span>
-          ${rarity != null ? `<span class="gp-next-rarity num">${i18nT("drawer.nextAchRarity", { n: rarity.toFixed(1) })}</span>` : ""}
+          ${rarity != null ? `<span class="gp-next-rarity num">${i18nT("drawer.nextAchRarity", { n: fmtDecimal1(rarity) })}</span>` : ""}
         </span>
       </button>`;
   }).join("");
@@ -1155,7 +1155,7 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
           ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${fmtAchDate(a.unlock_date)}</span>` : ""}
           ${a.rarity?.percent != null && a.rarity.percent < 10 ? `
             <span class="ach-pill rarity ultra-rare">
-              ${icon("sparkles", 10)} %${a.rarity.percent.toFixed(1)} ${i18nT("ach.rare")}
+              ${icon("sparkles", 10)} %${fmtDecimal1(a.rarity.percent)} ${i18nT("ach.rare")}
             </span>` : ""}
         </div>
       </div>

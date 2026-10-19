@@ -12,7 +12,7 @@ import { achSummaryOf, epicDlProgress, isAppPlatinum } from "../../core/game-vie
 import { emptyState, epicPlatinumIcon, icon, loadingState } from "../../core/icons";
 import { epicWideArt, isCompanionKey, isCompanionSource, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
+import { esc, fmtBytes, fmtDecimal1, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 import {
   epicGetCritic,
@@ -343,7 +343,7 @@ function renderAchievementsTab(s: EpicSummary): string {
             </div>
             ${desc ? `<p class="tv-trophy-desc">${esc(desc)}</p>` : ""}
             <div class="tv-trophy-meta">
-              ${rarity != null ? `<span class="tv-trophy-rarity tabular-nums">${rarity.toFixed(1)}%</span>` : ""}
+              ${rarity != null ? `<span class="tv-trophy-rarity tabular-nums">${fmtDecimal1(rarity)}%</span>` : ""}
               <span class="tv-trophy-state">${isUnlocked ? t("ach.earned") : t("ach.locked")}</span>
             </div>
           </div>

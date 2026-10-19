@@ -41,6 +41,37 @@ ikinci turudur. İlk turda istediğin yerleşim yazıldı; şimdi soru "yeterli 
 
 ## Hâlâ açık olan kararlar (bunlara cevap istiyorum)
 
+### Gerçek ekrandan gelen bulgular (sahibinin 1440p görüntüleri, gerçek veri)
+
+Bunlar tasarımın *gerçek* hâli; yukarıdaki ölçümler harness'tan, aşağıdakiler
+uygulamanın kendisinden:
+
+1. **Künye altı öğeye çıkmış**: "Oynanıyor · Grove Street Games · Rockstar Games ·
+   2021 · PEGI 18 · **+3**". Yayıncı ile geliştirici ayrı şirket olunca ikisi de
+   giriyor ve yaş sınırları "+3" sayacına düşüyor. Tek sakin satır fikri bu hâliyle
+   tutuyor mu, yoksa "+3" tam da ilk turda kaçındığımız sayaç kokusu mu?
+2. **Eylem satırı gerçekte yedi öğe**: Hemen Oyna · Yönet · ♡ · Epic Games · `⋯` ·
+   **Hikaye** · **+ Koleksiyon**. "Hikaye" bir düğme gibi duruyor ama bir mod
+   bilgisi; "+ Koleksiyon" da aynı satıra girmiş. İlk turun kuralı "durum düğme
+   değildir" idi — bu satırda hangisi kalmalı, hangisi menüye/alt satıra inmeli?
+3. **İstatistik kutusu geniş**: "SÜRE 53 dk · KUPA 2/29 · BULUT Rockstar Games
+   Bulut" — bulut etiketi uzun ve kutuyu şişiriyor. Etiket kısaltılsın mı, bulut
+   satırı taşınsın mı?
+4. **Tür etiketleri İngilizce**: "Shooter Racing Adventure Action Business Open
+   world" — arayüz Türkçe, etiketler IGDB'nin İngilizce adları. Çevrilsin mi,
+   olduğu gibi mi kalsın (kaynak IGDB yazıyor)?
+5. **Kupalar kartları**: "Sıradaki kupalar" üç kart hâlinde ve okunur; yüzdesi
+   "%43,0'ı bunu açmış" biçiminde (bu bir metin hatası, düzeltiyoruz). Kartın
+   kendisi doğru mu, yoksa tek satır mı olmalı?
+6. **Anların şeridi** oyuncunun kendi görüntülerini gösteriyor (bir hata
+   penceresi görüntüsü bile olabilir — onun içeriği). Filtrelenmeli mi, yoksa
+   dokunulmamalı mı?
+7. Bu sayfa, 0.1.31'de yayınlanan hâlinden **daha mı iyi**, yoksa hâlâ "veritabanı
+   sayfası" mı okunuyor? En çok rahatsız edenden başlayarak söyle.
+8. İlk üç değişiklik: sırayla ne yapardın?
+
+### Ölçülmüş hâl (harness, örnek veri)
+
 1. "Koleksiyon Ekle" düğmesi eylem satırının altında ayrı bir satırda duruyor ve
    `⋯` menüsündeki "Koleksiyon" ile **aynı işi** yapıyor. Hangisi kalmalı?
 2. "Benzer oyunlar" sayfanın **en altında** (Hakkında → Haberler → Benzer).

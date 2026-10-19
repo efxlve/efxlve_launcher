@@ -85,6 +85,17 @@ export function fmtAchDate(iso: string | null): string {
 }
 
 /**
+ * One decimal in the reader's own notation. `toFixed` always writes a dot, so a
+ * Turkish page said "%43.0" where it should say "%43,0".
+ */
+export function fmtDecimal1(value: number): string {
+  return value.toLocaleString(currentLanguage(), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
+/**
  * Format a screenshot epoch timestamp (seconds) as `DD.MM.YYYY HH:MM:SS`.
  * Falls back to the provided string when the timestamp is missing/invalid.
  */
