@@ -17,6 +17,7 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Game page, version picker | Appears only with two or more store copies, lists both with installed state, opens and closes, does not touch the `...` menu |
 | Game page, overview order | Personal blocks first on an installed game (last session → moments → next trophies → empty card), then About, news, similar games |
 | Game page, scores card | One card, two bodies: "You: 14 h" with the comparison bar, HLTB rows, IGDB/OpenCritic/Metacritic badges |
+| Game page, DLC tab | Store rows stay the install surface; IGDB's `dlcs`/`expansions` appear below them as a separate block, duplicate titles are dropped, the block follows the DLC search, and the IGDB link opens the right game page |
 | Game page, lazy fetches | HLTB and critic fill their own containers and are asked for once per game; the skeletons only show while the answer is in flight |
 | Game page, personal block | Repaints in place when a session ends (same DOM node, scroll kept), shows "+2 trophies" as soon as the store reports them; does nothing on another tab or another game |
 | Game page, hero stats | Trophy count follows a finished session (5/20 → 7/20) |

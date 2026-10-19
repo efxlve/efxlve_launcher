@@ -223,8 +223,12 @@ Two bugs surfaced only once the transport was real, both fixed:
   opened before Settings enriched nothing. The game page now loads the status
   once by itself.
 
-Remaining ideas: IGDB `dlcs`/`expansions` merged into the DLC tab, and a
-"power user" way back to own credentials now that the row is always visible.
+IGDB `dlcs`/`expansions` now fill the DLC tab (2026-10-19): the backend asks
+for both lists (`CACHE_SCHEMA` 5), and the tab adds an "IGDB'den ek paketler"
+block under the store's install rows. Titles the store already lists are
+dropped; the block follows the DLC search and repaints in place when the IGDB
+answer lands. Remaining idea: a "power user" way back to own credentials now
+that the row is always visible.
 
 ## 7. Screenshots â€” pass done (2026-10-18), the fault was the recorder
 
@@ -289,8 +293,8 @@ away from its 46.5 s sound track.
 
 Shipped 2026-10-19: `src-tauri/src/compat/` (catalogue, GitHub release cache,
 download/extract/verify/remove, launch wrapper), platform-aware Legendary and
-GOGdl assets, and Settings › Compatibility with a target-platform selector so a
-Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` §8 for
+GOGdl assets, and Settings ï¿½ Compatibility with a target-platform selector so a
+Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` ï¿½8 for
 the exact surface.
 
 Still open:

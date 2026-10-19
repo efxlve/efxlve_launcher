@@ -1623,3 +1623,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   color: var(--text);
 }
 .igdb-similar-item { position: relative; }
+
+/* IGDB's add-on names sit under the store's install rows. */
+.dlc-igdb-block { margin-top: 18px; }
+.dlc-igdb-block > .gp-section-title { margin-bottom: 8px; }
+.dlc-igdb-block .row-thumb { width: 46px; height: 62px; object-fit: cover; border-radius: var(--r-sm); }

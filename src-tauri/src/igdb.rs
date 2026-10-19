@@ -31,6 +31,8 @@ const MIN_REQUEST_GAP: Duration = Duration::from_millis(260);
 /// How many screenshots / similar games a game page shows.
 const MAX_SCREENSHOTS: usize = 6;
 const MAX_SIMILAR: usize = 6;
+/// DLC/expansion names IGDB returns; the page filters and caps them again.
+const MAX_EXTRAS: usize = 40;
 
 static TOKEN: Mutex<Option<CachedToken>> = Mutex::new(None);
 static LAST_REQUEST: Mutex<Option<Instant>> = Mutex::new(None);
@@ -354,6 +356,8 @@ fn game_query(id: i64) -> String {
          franchises.name, collection.name, cover.image_id, screenshots.image_id, \
          similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
          similar_games.slug, \
+         dlcs.name, dlcs.first_release_date, dlcs.cover.image_id, dlcs.slug, \
+         expansions.name, expansions.first_release_date, expansions.cover.image_id, expansions.slug, \
          websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
          release_dates.platform, release_dates.date; \
          where id = {id};"
@@ -513,6 +517,12 @@ pub struct IgdbGame {
     /// `images.igdb.com` image ids for the size templates.
     pub screenshots: Vec<String>,
     pub similar: Vec<IgdbSearchHit>,
+    /// Add-ons IGDB knows under `dlcs` / `expansions`. The store's own DLC list
+    /// is the installation surface; these names fill the gaps it leaves.
+    #[serde(default)]
+    pub dlcs: Vec<IgdbSearchHit>,
+    #[serde(default)]
+    pub expansions: Vec<IgdbSearchHit>,
     pub website: String,
     /// ESRB/PEGI-style ratings, mapped through the reference tables.
     #[serde(default)]
@@ -636,6 +646,22 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
         })
         .unwrap_or_default();
 
+    let extras = |key: &str| -> Vec<IgdbSearchHit> {
+        value
+            .get(key)
+            .and_then(serde_json::Value::as_array)
+            .map(|items| {
+                items
+                    .iter()
+                    .take(MAX_EXTRAS)
+                    .map(map_search_hit)
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let dlcs = extras("dlcs");
+    let expansions = extras("expansions");
+
     let website = value
         .get("websites")
         .and_then(serde_json::Value::as_array)
@@ -735,6 +761,8 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
             .unwrap_or_default(),
         screenshots,
         similar,
+        dlcs,
+        expansions,
         website,
         links,
         age_ratings,
@@ -870,7 +898,7 @@ fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Va
 
 /// Bumped whenever `IgdbGame` gains a field: entries written by an older build
 /// are fetched again instead of showing up half empty.
-const CACHE_SCHEMA: u32 = 4;
+const CACHE_SCHEMA: u32 = 5;
 
 /// What actually lands on disk: the schema marker next to the game itself.
 #[derive(Serialize, Deserialize)]
@@ -1404,6 +1432,12 @@ mod tests {
             "similar_games": [
                 { "id": 10, "name": "Skyrim", "first_release_date": 1_320_624_000_i64, "cover": { "image_id": "sky" } }
             ],
+            "dlcs": [
+                { "id": 11, "name": "Hearts of Stone", "first_release_date": 1_445_020_800_i64, "cover": { "image_id": "hos" }, "slug": "hearts-of-stone" }
+            ],
+            "expansions": [
+                { "id": 12, "name": "Blood and Wine", "first_release_date": 1_464_566_400_i64, "cover": { "image_id": "baw" }, "slug": "blood-and-wine" }
+            ],
             "websites": [
                 { "category": 3, "url": "https://store.example" },
                 { "category": 1, "url": "https://thewitcher.com" }
@@ -1417,6 +1451,11 @@ mod tests {
         assert_eq!(game.screenshots.len(), MAX_SCREENSHOTS);
         assert_eq!(game.similar.len(), 1);
         assert_eq!(game.similar[0].name, "Skyrim");
+        assert_eq!(game.dlcs.len(), 1);
+        assert_eq!(game.dlcs[0].name, "Hearts of Stone");
+        assert_eq!(game.dlcs[0].cover_id, "hos");
+        assert_eq!(game.expansions.len(), 1);
+        assert_eq!(game.expansions[0].slug, "blood-and-wine");
         assert_eq!(game.franchises, vec!["The Witcher".to_string()]);
         assert_eq!(game.website, "https://thewitcher.com");
         assert_eq!(game.genres, vec!["Role-playing (RPG)".to_string()]);

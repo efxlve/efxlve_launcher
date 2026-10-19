@@ -41,6 +41,9 @@ export interface IgdbGame {
   coverId: string;
   screenshots: string[];
   similar: IgdbSearchHit[];
+  /** Add-ons IGDB lists; the store's own DLC list stays the install surface. */
+  dlcs?: IgdbSearchHit[];
+  expansions?: IgdbSearchHit[];
   website: string;
   /** Community channels: kind is official, wikipedia, twitter, reddit or discord. */
   links: { kind: string; url: string }[];

@@ -2584,5 +2584,8 @@
   "compat.notRemovable": "Bu araç launcher üzerinden kaldırılamaz.",
   "compat.unknownRunner": "Bilinmeyen çalıştırıcı.",
   "dl.platformUnsupported": "Bu platform için binary yayınlanmıyor.",
-  "compat.update": "Güncelle"
+  "compat.update": "Güncelle",
+  "drawer.igdbAddons": "IGDB'den ek paketler",
+  "drawer.dlcKind": "Ek paket",
+  "drawer.expansion": "Genişletme"
 }

@@ -2584,5 +2584,8 @@
   "compat.notRemovable": "This tool cannot be removed from the launcher.",
   "compat.unknownRunner": "Unknown runner.",
   "dl.platformUnsupported": "No binary is published for this platform.",
-  "compat.update": "Update"
+  "compat.update": "Update",
+  "drawer.igdbAddons": "Add-ons from IGDB",
+  "drawer.dlcKind": "DLC",
+  "drawer.expansion": "Expansion"
 }
