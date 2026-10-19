@@ -662,9 +662,11 @@ function renderAppearance(): string {
     </button>`).join("");
   return (
     group(
-      row(t("settings.surfaceTitle"), t("settings.surfaceDesc"), `<div class="seg">
+      row(t("settings.themeTitle"), t("settings.themeDesc"), `<div class="seg theme-seg">
         <button type="button" class="${S.surface === "black" ? "active" : ""}" data-act="set-surface" data-surface="black">${t("settings.surfaceBlack")}</button>
         <button type="button" class="${S.surface === "soft" ? "active" : ""}" data-act="set-surface" data-surface="soft">${t("settings.surfaceSoft")}</button>
+        <button type="button" class="${S.surface === "white" ? "active" : ""}" data-act="set-surface" data-surface="white">${t("settings.surfaceWhite")}</button>
+        <button type="button" class="${S.surface === "aero" ? "active" : ""}" data-act="set-surface" data-surface="aero">${t("settings.surfaceAero")}</button>
       </div>`) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +

@@ -1,0 +1,147 @@
+/* ==========================================================================
+   Named themes. Black and soft live in tokens.css; these two replace the same
+   token set and add only the component touches the flat palette cannot express.
+   ========================================================================== */
+
+/* ---------- White Mode ---------- */
+
+:root[data-surface="white"] {
+  color-scheme: light;
+  --bg: #f3f4f6;
+  --surface-1: #ffffff;
+  --surface-2: #eef0f4;
+  --surface-3: #e4e7ec;
+  --line: rgba(15, 23, 42, 0.08);
+  --line-strong: rgba(15, 23, 42, 0.16);
+  --text: #111318;
+  --text-2: #4b5563;
+  --text-3: #7b8492;
+  --accent: #111318;
+  --accent-hover: #000000;
+  --accent-tint: rgba(17, 19, 24, 0.07);
+  --on-accent: #ffffff;
+  --ok: #15803d;
+  --ok-hover: #166534;
+  --ok-tint: rgba(21, 128, 61, 0.12);
+  --warn: #a16207;
+  --warn-tint: rgba(161, 98, 7, 0.12);
+  --err: #b91c1c;
+  --err-tint: rgba(185, 28, 28, 0.1);
+  --shadow-pop: 0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+:root[data-surface="white"] body { background: var(--bg); }
+:root[data-surface="white"] * { scrollbar-color: rgba(15, 23, 42, 0.28) transparent; }
+:root[data-surface="white"] ::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.22); }
+:root[data-surface="white"] ::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.36); }
+:root[data-surface="white"] #winbar,
+:root[data-surface="white"] #sidebar,
+:root[data-surface="white"] #page-header { border-color: var(--line); }
+:root[data-surface="white"] .pbadge { color: #f8fafc; }
+:root[data-surface="white"] :is(.ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn) { color: #f8fafc; }
+:root[data-surface="white"] :is(.ss-compressed-tag) { color: #cbd5e1; }
+:root[data-surface="white"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
+  background: rgba(15, 23, 42, 0.55);
+}
+:root[data-surface="white"] .seg > button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+:root[data-surface="white"] .gp-store-menu,
+:root[data-surface="white"] .gp-more-menu,
+:root[data-surface="white"] .col-dropdown-menu,
+:root[data-surface="white"] .sort-dropdown-menu,
+:root[data-surface="white"] .store-dropdown-menu {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+
+/* ---------- Frutiger Aero ---------- */
+
+:root[data-surface="aero"] {
+  color-scheme: light;
+  --bg: #b9edff;
+  --surface-1: rgba(255, 255, 255, 0.84);
+  --surface-2: rgba(255, 255, 255, 0.62);
+  --surface-3: rgba(255, 255, 255, 0.44);
+  --line: rgba(255, 255, 255, 0.72);
+  --line-strong: rgba(255, 255, 255, 0.95);
+  --text: #08394a;
+  --text-2: #2d6579;
+  --text-3: #5d8798;
+  --accent: #0b8fb8;
+  --accent-hover: #067a9e;
+  --accent-tint: rgba(11, 143, 184, 0.14);
+  --on-accent: #ffffff;
+  --ok: #168a5b;
+  --ok-hover: #12744d;
+  --ok-tint: rgba(22, 138, 91, 0.14);
+  --warn: #bd7a0b;
+  --warn-tint: rgba(189, 122, 11, 0.16);
+  --err: #cf3f4b;
+  --err-tint: rgba(207, 63, 75, 0.14);
+  --r-sm: 10px;
+  --r-md: 16px;
+  --shadow-pop: 0 18px 40px rgba(6, 70, 100, 0.22);
+}
+
+:root[data-surface="aero"] body {
+  background:
+    radial-gradient(ellipse at 12% 16%, rgba(255, 255, 255, 0.92) 0 6%, rgba(255, 255, 255, 0) 7%),
+    radial-gradient(ellipse at 84% 9%, rgba(255, 255, 255, 0.65) 0 4%, rgba(255, 255, 255, 0) 5%),
+    radial-gradient(ellipse at 73% 78%, rgba(255, 255, 255, 0.55) 0 8%, rgba(255, 255, 255, 0) 9%),
+    radial-gradient(ellipse at 26% 88%, rgba(255, 255, 255, 0.48) 0 5%, rgba(255, 255, 255, 0) 6%),
+    linear-gradient(180deg, #5fc7f0 0%, #9ee4ff 30%, #e5faff 62%, #b7e7d2 100%);
+  background-attachment: fixed;
+  font-family: "Segoe UI Variable Text", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+}
+:root[data-surface="aero"] * { scrollbar-color: rgba(8, 57, 74, 0.3) transparent; }
+:root[data-surface="aero"] ::-webkit-scrollbar-thumb { background: rgba(8, 57, 74, 0.24); }
+:root[data-surface="aero"] ::-webkit-scrollbar-thumb:hover { background: rgba(8, 57, 74, 0.4); }
+:root[data-surface="aero"] #main-col,
+:root[data-surface="aero"] #view { background: transparent; }
+:root[data-surface="aero"] #winbar,
+:root[data-surface="aero"] #sidebar,
+:root[data-surface="aero"] #page-header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.5));
+  border-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+:root[data-surface="aero"] #sidebar { box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55); }
+:root[data-surface="aero"] :is(.card, .list, .modal, .toast, .gp-side-card, .settings-group, .info-box) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.62));
+  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 28px rgba(6, 70, 100, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px) saturate(1.18);
+}
+:root[data-surface="aero"] .seg > button.active {
+  background: rgba(11, 143, 184, 0.16);
+  color: #075d78;
+  box-shadow: inset 0 0 0 1px rgba(11, 143, 184, 0.35);
+}
+:root[data-surface="aero"] .page-search,
+:root[data-surface="aero"] :is(.seg, input, select, textarea) {
+  background: rgba(255, 255, 255, 0.66);
+  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-surface="aero"] :is(.btn.primary, .btn.install, .btn.play) {
+  background: linear-gradient(180deg, #56c8f2 0%, #0b8fb8 58%, #08799b 100%);
+  color: #ffffff;
+  border-color: #08799b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 6px 16px rgba(11, 143, 184, 0.28);
+}
+:root[data-surface="aero"] :is(.btn.primary, .btn.install, .btn.play):hover {
+  background: linear-gradient(180deg, #6fd3f8 0%, #0d9fc9 58%, #0884a8 100%);
+}
+:root[data-surface="aero"] .btn.ghost {
+  background: rgba(255, 255, 255, 0.38);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+:root[data-surface="aero"] .btn.ghost:hover { background: rgba(255, 255, 255, 0.7); }
+:root[data-surface="aero"] .pcard-caption { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75); }
+:root[data-surface="aero"] .gp-title {
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgba(0, 40, 60, 0.55);
+}

@@ -824,11 +824,15 @@ document.addEventListener("click", (e) => {
     render();
     void loadSettingsView();
   } else if (act === "set-surface") {
-    const surface = t.dataset.surface === "soft" ? "soft" : "black";
+    const wanted = t.dataset.surface;
+    const surface =
+      wanted === "soft" || wanted === "white" || wanted === "aero"
+        ? wanted
+        : "black";
     S.surface = surface;
     localStorage.setItem(SURFACE_KEY, surface);
-    if (surface === "soft") document.documentElement.dataset.surface = "soft";
-    else delete document.documentElement.dataset.surface;
+    if (surface === "black") delete document.documentElement.dataset.surface;
+    else document.documentElement.dataset.surface = surface;
     render();
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;

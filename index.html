@@ -1,20 +1,26 @@
 <!doctype html>
-<html lang="tr" style="background-color: #000000; color-scheme: dark;">
+<html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#000000" />
     <title>Efxlve Launcher</title>
     <style>
       /* Hold the shell until the stylesheet is applied. Otherwise the first frame is raw browser buttons. */
       html, body { margin: 0; height: 100%; background-color: #000000; color-scheme: dark; overflow: hidden; }
+      html[data-surface="white"], html[data-surface="white"] body { background-color: #f3f4f6; color-scheme: light; }
+      html[data-surface="aero"], html[data-surface="aero"] body { background-color: #9ee4ff; color-scheme: light; }
       html:not(.ready) body > * { visibility: hidden; }
     </style>
     <script>
       (function () {
         document.documentElement.classList.add("sb-no-anim");
         try {
+          var surface = localStorage.getItem("efxlve-surface") || "";
+          if (surface === "soft" || surface === "white" || surface === "aero") {
+            document.documentElement.dataset.surface = surface;
+          }
           var w = parseInt(localStorage.getItem("efxlve-sidebar-w") || "", 10);
           if (w >= 72 && w <= 400) {
             document.documentElement.style.setProperty("--sidebar-w", w + "px");
@@ -24,7 +30,7 @@
       })();
     </script>
   </head>
-  <body style="background-color: #000000;">
+  <body>
     <div id="app">
       <header id="winbar" data-tauri-drag-region>
         <span class="winbar-title" data-tauri-drag-region>Efxlve Launcher</span>

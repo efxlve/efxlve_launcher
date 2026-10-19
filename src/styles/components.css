@@ -158,6 +158,8 @@ select option { background: var(--surface-1); color: var(--text); }
 .seg > button:hover { color: var(--text); }
 .seg > button.active { background: var(--surface-3); color: var(--text); }
 .seg > button svg { width: 14px; height: 14px; }
+.seg.theme-seg { flex-wrap: wrap; height: auto; max-width: 100%; }
+.seg.theme-seg > button { height: 26px; }
 
 /* --- Chips & badges --- */
 .chip {

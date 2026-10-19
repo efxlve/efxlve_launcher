@@ -550,6 +550,8 @@ export const S = {
       // Explicit user choice always wins. "epic" was the legacy key for "soft".
       if (v === "soft" || v === "epic") return "soft";
       if (v === "black") return "black";
+      if (v === "white") return "white";
+      if (v === "aero") return "aero";
 
       // For existing installations without an explicit SURFACE_KEY, preserve
       // their previous experience (black) so this change does not affect current users.
@@ -571,7 +573,13 @@ export const S = {
       localStorage.setItem(SURFACE_KEY, "soft");
       return "soft";
     } catch {
-      return (v === "black" ? "black" : "soft") as "black" | "soft";
+      return (v === "black"
+        ? "black"
+        : v === "white"
+          ? "white"
+          : v === "aero"
+            ? "aero"
+            : "soft") as "black" | "soft" | "white" | "aero";
     }
   })(),
   autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) === "true",
