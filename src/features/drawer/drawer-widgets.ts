@@ -462,11 +462,6 @@ export function detectGameMode(s: EpicSummary, reqData?: GameRequirementsRespons
   return modeFromFlags(single, multi, coop);
 }
 
-/** True for games where a campaign length makes no sense (HLTB card is hidden). */
-export function isMultiplayerOnlyMode(mode: GameMode | null): boolean {
-  return mode === "multiplayer" || mode === "battleRoyale" || mode === "mmo" || mode === "multi4v1" || mode === "multiAsym";
-}
-
 /**
  * What the last session left behind: how long it ran and what it unlocked. The
  * page could already say "289 hours in total"; this says "1h 40m, 3 hours ago,
@@ -1154,18 +1149,6 @@ export function fmtTierName(name: string): string {
   if (n === "gold") return i18nT("trophy.gold");
   if (n === "platinum") return i18nT("trophy.plat");
   return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
-export function getHardwareIcon(title: string): string {
-  const t = title.toLowerCase();
-  if (t.includes("os") || t.includes("işletim") || t.includes("windows") || t.includes("system")) return icon("layers", 13);
-  if (t.includes("processor") || t.includes("işlemci") || t.includes("cpu")) return icon("cpu", 13);
-  if (t.includes("memory") || t.includes("bellek") || t.includes("ram")) return icon("server", 13);
-  if (t.includes("storage") || t.includes("depolama") || t.includes("disk") || t.includes("hdd") || t.includes("ssd") || t.includes("space")) return icon("hard-drive", 13);
-  if (t.includes("graphics") || t.includes("ekran") || t.includes("gpu") || t.includes("video") || t.includes("direct")) return icon("monitor", 13);
-  if (t.includes("sound") || t.includes("ses") || t.includes("audio")) return icon("volume-2", 13);
-  if (t.includes("net") || t.includes("ağ") || t.includes("broadband") || t.includes("internet")) return icon("globe", 13);
-  return icon("shield", 13);
 }
 
 export function getHardwareLabel(title: string): string {

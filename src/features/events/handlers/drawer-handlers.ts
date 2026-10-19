@@ -14,7 +14,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp } from "../../drawer/drawer-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { toggleSideWidget } from "../../drawer/side-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
@@ -232,6 +232,19 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         S.activeSystemPlatform = val;
         openEpicModal(S.currentModalAppName, false, false);
       }
+      return true;
+    }
+
+    case "req-tab": {
+      // One requirements table at a time; the choice is remembered for every
+      // game and only the body is painted again.
+      const val = t.dataset.val === "rec" ? "rec" : "min";
+      if (S.reqTab === val) return true;
+      S.reqTab = val;
+      const appName = t.dataset.id ?? S.currentModalAppName ?? "";
+      const summary = appName ? summaryOf(appName) : undefined;
+      const body = document.getElementById("sys-req-body");
+      if (body && summary) body.innerHTML = renderRequirementsBody(summary);
       return true;
     }
 

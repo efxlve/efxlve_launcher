@@ -226,23 +226,22 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* Only a card that answered "nothing found" collapses; a card that is still
    waiting holds its place with a skeleton (see .is-pending). */
 #drawer-hltb-container:empty, #drawer-critic-container:empty { display: none; }
-/* One row per length: the label on the left, the number on the right, the way a
-   sidebar reads. Three side-by-side boxes cut "100% Completion" to an ellipsis. */
-.hltb-list { display: flex; flex-direction: column; gap: 2px; }
+/* One box per length: the title above, the hours below it. The rows used to be
+   one line each with a divider; a box reads as a card of its own and the eye
+   picks the number out of it. */
+.hltb-list { display: flex; flex-direction: column; gap: 6px; }
 .hltb-row {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
-  padding: 6px 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
 }
-.hltb-row + .hltb-row { border-top: 1px solid var(--line); }
-/* The player's own time leads: it is the number they came for. */
-.hltb-row-you .hltb-row-label { color: var(--text-2); font-weight: 600; }
-.hltb-row-you .hltb-row-val { color: var(--text); }
 .hltb-row-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--text-3);
   min-width: 0;
@@ -251,12 +250,11 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   text-overflow: ellipsis;
 }
 .hltb-row-val {
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  flex: none;
 }
 .hltb-row-val.empty {
   color: var(--text-3);
@@ -414,14 +412,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* --- System requirements --- */
 .sys-req-container { display: flex; flex-direction: column; gap: 16px; }
 .sys-req-platforms { align-self: flex-start; }
-.sys-req-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-.sys-req-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-.sys-req-hint { font-size: 12px; color: var(--text-3); }
-.sys-req-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
-.sys-req-card-head + .sys-req-row { border-top: none; }
-.sys-req-label { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
-.sys-req-label svg { color: var(--text-3); flex-shrink: 0; }
-.sys-req-val { color: var(--text); word-break: break-word; }
+/* One table at a time behind a switch, as a bulleted list: two stacked tables of
+   label/value rows made the sidebar twice as long. */
+.sys-req-tabs { align-self: flex-start; margin-bottom: 10px; }
+.sys-req-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sys-req-row { display: flex; gap: 7px; align-items: baseline; font-size: 12.5px; line-height: 1.45; }
+.sys-req-row::before { content: "•"; flex: none; color: var(--text-3); }
+.sys-req-label { flex: none; color: var(--text); font-weight: 600; }
+.sys-req-val { color: var(--text-2); min-width: 0; word-break: break-word; }
 .sys-req-lang p { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.6; }
 
 /* --- Manage tab --- */

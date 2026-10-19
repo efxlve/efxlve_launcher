@@ -45,7 +45,7 @@ import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
-import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareIcon, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1670,17 +1670,24 @@ export function renderRequirementsBody(s: EpicSummary): string {
 
   const rows = (items: SystemDetailItem[], isMin: boolean): string =>
     items.length === 0
-      ? `<div class="sys-req-row"><span class="sys-req-val">${t("sys.unspecified")}</span></div>`
+      ? `<li class="sys-req-row"><span class="sys-req-val">${t("sys.unspecified")}</span></li>`
       : items.map((d) => `
-          <div class="sys-req-row">
-            <div class="sys-req-label">${getHardwareIcon(d.title)}<span>${esc(getHardwareLabel(d.title))}</span></div>
-            <div class="sys-req-val">${esc((isMin ? d.minimum : d.recommended) || "")}</div>
-          </div>`).join("");
-  const card = (title: string, hint: string, body: string): string => `
-    <section class="card sys-req-card">
-      <div class="sys-req-card-head"><h3 class="gp-section-title">${title}</h3><span class="sys-req-hint">${hint}</span></div>
-      ${body}
-    </section>`;
+          <li class="sys-req-row">
+            <span class="sys-req-label">${esc(getHardwareLabel(d.title))}:</span>
+            <span class="sys-req-val">${esc((isMin ? d.minimum : d.recommended) || "")}</span>
+          </li>`).join("");
+
+  // One table at a time, behind a segmented switch: the two lists side by side
+  // made the sidebar twice as long, and a reader compares them one at a time
+  // anyway.
+  const showingMin = S.reqTab !== "rec";
+  const activeItems = showingMin ? minItems : recItems;
+  const requirements = `
+    <div class="seg sys-req-tabs">
+      <button class="${showingMin ? "active" : ""}" data-act="req-tab" data-val="min" data-id="${esc(s.appName)}">${t("sys.minTitle")}</button>
+      <button class="${!showingMin ? "active" : ""}" data-act="req-tab" data-val="rec" data-id="${esc(s.appName)}">${t("sys.recTitle")}</button>
+    </div>
+    <ul class="sys-req-list">${rows(activeItems, showingMin)}</ul>`;
 
   return `
       ${hasWin && hasMac ? `
@@ -1688,10 +1695,7 @@ export function renderRequirementsBody(s: EpicSummary): string {
           <button class="${isWinSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Windows">${t("sys.windowsPc")}</button>
           <button class="${isMacSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Mac">${t("sys.macos")}</button>
         </div>` : ""}
-      <div class="sys-req-cards-grid">
-        ${card(t("sys.minTitle"), t("sys.minHint"), rows(minItems, true))}
-        ${recItems.length > 0 ? card(t("sys.recTitle"), t("sys.recHint"), rows(recItems, false)) : ""}
-      </div>
+      ${requirements}
       ${data.languages.length > 0 ? `<section class="card sys-req-lang"><h3 class="gp-section-title">${t("sys.languages")}</h3><p>${esc(data.languages.join(" · "))}</p></section>` : ""}
       <div class="page-actions">
         <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>

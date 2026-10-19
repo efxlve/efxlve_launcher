@@ -345,6 +345,9 @@ export const S = {
   loadedRequirements: (new Map()) as Map<string, GameRequirementsResponse>,
   loadingReqFor: (null) as string | null,
   activeSystemPlatform: ("Windows") as string,
+  /** Which requirements table the sidebar shows: the minimum or the recommended
+   *  one. One choice for every game, the way a reader tends to look at one. */
+  reqTab: ("min") as "min" | "rec",
   playtimeMap: (new Map()) as Map<string, PlaytimeRecord>,
   runningGames: (new Set()) as Set<string>,
   playerProfileData: (null) as EpicPlayerProfile | null,
