@@ -159,6 +159,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   bir gün cache'leniyor; ağ hatasında eski kopya, o da yoksa satır gizli kalıyor.
   Steam Deck "Verified" verisi Valve'de olduğu için eklenmedi; bu rozet yalnız
   ProtonDB derecesini gösteriyor.
+- **Are We Anti-Cheat Yet?:** Steam oyun kartına Linux/Wine hile koruması durumu
+  eklendi. Tüm katalog tek `games.json` dosyasında geldiği için bir kez indirilip
+  `<app_data>/steam/awacy/games.json` altında günlük cache'leniyor; uygulama
+  kimliği yalnız rakam. Durum, anti-cheat adları ve oyunun AWACY sayfası
+  gösteriliyor. Kayıt yoksa veya ağ hatasında eski kopya yoksa satır gizli.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

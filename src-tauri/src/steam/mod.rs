@@ -5,6 +5,7 @@
 //! back through `steam://`. It does not replace the Steam client.
 
 mod achievements;
+mod awacy;
 mod download_live;
 mod catalog;
 mod cloud;
@@ -22,6 +23,10 @@ mod vdf;
 // achievements.rs: unix_date, read_local_achievements, steam_get_achievements, steam_get_achievements_summary
 #[allow(unused_imports)]
 pub use achievements::*;
+
+// awacy.rs: AntiCheatStatus, steam_anticheat_status
+#[allow(unused_imports)]
+pub use awacy::*;
 
 // catalog.rs: SteamAppMetadata, SteamGameDetails, parse_appinfo_dlc_ids, parse_appinfo_metadata, parse_appinfo_preload_ids, read_client_dlc_ids, strip_html, join_label_lines, parse_app_details, steam_app_metadata, steam_get_game_details, steam_get_api_key, steam_set_api_key
 #[allow(unused_imports)]

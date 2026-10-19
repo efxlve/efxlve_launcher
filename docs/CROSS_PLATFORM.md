@@ -234,8 +234,11 @@ paketinin çıktığı anlamına gelmez.
 Steam oyun sayfasının "bu bilgisayardaki kopya" kartında ProtonDB topluluk
 derecesi görünür (Steam uygulama kimliğiyle). Yanıt uygulama başına bir gün
 diskte cache'lenir; ağ hatasında eski kopya, o da yoksa satır hiç gösterilmez.
-Satır ProtonDB sayfasına gider. Steam Deck "Verified" rozeti Valve'nin cihaz
-verisini gerektirdiği için kapsam dışı.
+Satır ProtonDB sayfasına gider. Aynı kartta Are We Anti-Cheat Yet? durumu da
+görünür: tek `games.json` dosyası günde bir kez indirilip uygulama kimliğine
+göre aranıyor; durum, hile koruması adları ve oyun sayfası bağlantısı gösteriliyor.
+Kayıt yoksa veya kaynak ulaşılamıyorsa satır gizli kalıyor. Steam Deck "Verified"
+rozeti Valve'nin cihaz verisini gerektirdiği için kapsam dışı.
 
 ### 8.4 Arayüz
 Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştırıcılar,

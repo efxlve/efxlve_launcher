@@ -125,6 +125,16 @@ export interface ProtonDbSummary {
 export const steamProtonDbSummary = (appId: string) =>
   invoke<ProtonDbSummary | null>("steam_protondb_summary", { appId });
 
+/** Are We Anti-Cheat Yet?'s Linux/Wine status for a Steam app. */
+export interface AntiCheatStatus {
+  status: string;
+  anticheats: string[];
+  slug: string;
+}
+
+export const steamAntiCheatStatus = (appId: string) =>
+  invoke<AntiCheatStatus | null>("steam_anticheat_status", { appId });
+
 /** One Steam transfer, with the byte counter moved forward since the last exact sample. */
 export interface SteamLiveDownload {
   appId: string;

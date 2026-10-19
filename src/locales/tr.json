@@ -2624,5 +2624,12 @@
   "protondb.silver": "Gümüş",
   "protondb.bronze": "Bronz",
   "protondb.borked": "Çalışmıyor",
-  "protondb.pending": "Beklemede"
+  "protondb.pending": "Beklemede",
+  "awacy.title": "Hile koruması (Linux)",
+  "awacy.hint": "Are We Anti-Cheat Yet? Linux/Wine durumu; oyunun sayfasını açar.",
+  "awacy.supported": "Destekliyor",
+  "awacy.running": "Çalışıyor",
+  "awacy.broken": "Bozuk",
+  "awacy.denied": "Reddedildi",
+  "awacy.unknown": "Bilinmiyor"
 }

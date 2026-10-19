@@ -2624,5 +2624,12 @@
   "protondb.silver": "Silver",
   "protondb.bronze": "Bronze",
   "protondb.borked": "Borked",
-  "protondb.pending": "Pending"
+  "protondb.pending": "Pending",
+  "awacy.title": "Anti-cheat (Linux)",
+  "awacy.hint": "Are We Anti-Cheat Yet? Linux/Wine status; opens the game's page.",
+  "awacy.supported": "Supported",
+  "awacy.running": "Running",
+  "awacy.broken": "Broken",
+  "awacy.denied": "Denied",
+  "awacy.unknown": "Unknown"
 }
