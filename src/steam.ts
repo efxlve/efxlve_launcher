@@ -68,6 +68,8 @@ export interface SteamGameDetails {
   drmNotice: string;
   metacriticScore?: number | null;
   metacriticUrl?: string | null;
+  /** Store-reported supported operating systems (`windows`, `mac`, `linux`). */
+  platforms?: string[];
 }
 
 /** One announcement from Steam's public news feed. */
@@ -104,6 +106,7 @@ export interface SteamAppMetadata {
   developer?: string;
   genres: string[];
   releaseYear?: number;
+  oslist?: string;
 }
 
 /** App id → client-cached studio, genres and release year. */

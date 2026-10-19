@@ -5,13 +5,13 @@
    ========================================================================== */
 
 /* --- Header --- */
-.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; min-height: 48px; }
-.lib-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.lib-head { display: flex; align-items: center; justify-content: space-between; gap: clamp(10px, 1.4vw, 16px); margin-bottom: 18px; min-height: 48px; }
+.lib-tools { display: flex; align-items: center; gap: clamp(5px, 0.7vw, 8px); flex-shrink: 0; }
 .lib-tools .btn { height: 40px; font-size: 14px; }
 .lib-tools .seg { height: 40px; }
 .lib-tools .seg > button { height: 34px; }
 .lib-filters .tab { height: 48px; font-size: 16px; }
-.lib-filters.tabs { gap: 28px; }
+.lib-filters.tabs { gap: clamp(14px, 2vw, 28px); }
 .lib-tools .lib-hide-btn { width: 40px; height: 40px; }
 /* Stepped on purpose: a smooth 60 fps rotation repaints the header every frame
    (measured ~70% of a core plus the GPU). Twelve steps per turn keeps the
@@ -39,6 +39,14 @@
 .lib-sort-btn { gap: 8px; padding: 0 10px 0 12px; }
 .lib-sort-kicker { color: var(--text-3); font-weight: 400; }
 .lib-sort-btn .sort-btn-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+@media (max-width: 1220px) {
+  .lib-filters .tab { font-size: 14.5px; }
+  .lib-tools .lib-sort-btn { gap: 6px; padding: 0 8px 0 10px; }
+  .lib-tools .lib-sort-btn .sort-btn-label { max-width: 120px; }
+}
+@media (max-width: 1100px) {
+  .lib-tools .sort-dropdown-container .lib-sort-kicker { display: none; }
+}
 .sort-dropdown-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; min-width: 196px; padding: 6px;
   background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px;
@@ -98,7 +106,14 @@
 }
 
 /* --- Cover grid --- */
-.pgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; }
+/* Six columns on a wide window; below ~156 px per card the grid drops a column
+   instead of squeezing the covers (the case header needs that width). */
+.pgrid {
+  --grid-gap: clamp(12px, 1.4vw, 18px);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(156px, calc((100% - 5 * var(--grid-gap)) / 6.01)), 1fr));
+  gap: var(--grid-gap);
+}
 .lib-sentinel { grid-column: 1 / -1; height: 24px; pointer-events: none; }
 .pcard {
   position: relative; cursor: pointer; min-width: 0;
@@ -493,6 +508,7 @@
    the inner cover artwork slot stays a true 3:4 portrait and never crops the
    top or bottom of game logos. */
 .pcard.is-case .pcard-art {
+  container-type: inline-size;
   aspect-ratio: 3 / 4.34;
   padding: 32px 6px 9px 8px;
   border-radius: 4px 10px 10px 4px;
@@ -680,8 +696,9 @@
   z-index: 3;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 6px;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 5px 0 6px;
   border-radius: 2px 5px 0 0;
   background: var(--case-head-bg);
   border-bottom: 1.5px solid var(--case-rule);
@@ -725,23 +742,25 @@
 .pcard-case-brand {
   position: relative;
   z-index: 1;
-  display: inline-flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  max-width: calc(100% - 46px);
+  gap: clamp(3.5px, 2.4cqi, 5px);
+  padding-left: clamp(0px, calc((100cqi - 165px) * 0.7), 22px);
 }
 .pcard-case-logo {
-  width: 13px;
-  height: 13px;
+  width: clamp(10px, 6.8cqi, 13px);
+  height: clamp(10px, 6.8cqi, 13px);
   object-fit: contain;
   flex-shrink: 0;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 .pcard-case-name {
-  font-size: 10.5px;
+  font-size: clamp(8px, 5.4cqi, 10.5px);
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: clamp(0.03em, 0.42cqi, 0.08em);
   color: #ffffff;
   text-transform: uppercase;
   white-space: nowrap;
@@ -751,11 +770,9 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 .pcard-case-os {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
+  position: relative;
   z-index: 1;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -764,12 +781,12 @@
   line-height: 1;
 }
 .pcard-case-os svg {
-  width: 8px;
-  height: 8px;
+  width: clamp(7px, 4.6cqi, 8.5px);
+  height: clamp(7px, 4.6cqi, 8.5px);
   display: block;
 }
 .pcard-case-os span {
-  font-size: 5.5px;
+  font-size: clamp(5px, 3.2cqi, 5.5px);
   font-weight: 600;
   letter-spacing: 0.02em;
   opacity: 0.82;
@@ -992,16 +1009,18 @@
   -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, transparent 38%);
 }
 .pcard.is-case[data-case-style="jewel"] .pcard-case-brand {
+  flex: 0 1 auto;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   max-width: none;
+  padding-left: 0;
 }
 .pcard.is-case[data-case-style="jewel"] .pcard-case-name {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
-  max-height: 130px;
+  font-size: clamp(8px, 5.2cqi, 9.5px);
+  letter-spacing: clamp(0.06em, 0.6cqi, 0.12em);
+  max-height: calc(100% - 22px);
 }
 .pcard.is-case[data-case-style="jewel"] .pcard-case-os {
   position: static;

@@ -11,7 +11,7 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardDom } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, sourceOfKey, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 import { S, applyTabSort } from "../../core/state";
@@ -22,6 +22,7 @@ import { epicReorderCollections, type EpicSummary } from "../../epic";
 import type { EpicSort, GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
+import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
 import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
 /** Sort options shown in the library sort dropdown, in the menu order. */
@@ -296,12 +297,102 @@ const CASE_BRAND_LABELS: Record<GameSource, string> = {
   amazon: "AMAZON",
 };
 
-/** Physical retail box header strip (store logo + brand name + Windows badge). */
-function caseCoverHeader(source: GameSource): string {
+type CaseOsKind = "windows" | "linux" | "macos";
+
+/** Detects the host operating system running the launcher (with optional override key). */
+function detectHostOs(): CaseOsKind {
+  try {
+    const override = localStorage.getItem("efxlve-host-os")?.trim().toLowerCase();
+    if (override === "linux" || override === "macos" || override === "windows") return override;
+  } catch {
+    // ignore storage errors
+  }
+  const ua = `${navigator.userAgent || ""} ${navigator.platform || ""}`.toLowerCase();
+  if (ua.includes("linux") && !ua.includes("android")) return "linux";
+  if (ua.includes("mac") || ua.includes("darwin")) return "macos";
+  return "windows";
+}
+
+function matchesTargetOs(value: string, targetOs: "linux" | "macos"): boolean {
+  return targetOs === "linux"
+    ? /\b(linux|steamos|ubuntu)\b/i.test(value)
+    : /\b(mac|macos|os\s*x|osx|darwin|apple)\b/i.test(value);
+}
+
+function keySupportsOs(key: string, targetOs: "linux" | "macos"): boolean {
+  if (key.startsWith("steam::")) {
+    const appId = key.slice(7);
+    const oslist = steamAppOsList(appId);
+    if (oslist && matchesTargetOs(oslist, targetOs)) return true;
+    const details = S.steamDetails.get(key);
+    if (details?.platforms?.some((p) => matchesTargetOs(p, targetOs))) return true;
+  }
+
+  const req = S.loadedRequirements.get(key);
+  if (req?.systems?.some((sys) => matchesTargetOs(sys.systemType || "", targetOs))) {
+    return true;
+  }
+
+  const raw = rawOf(key);
+  if (raw) {
+    if (Object.keys(raw.asset_infos || {}).some((k) => matchesTargetOs(k, targetOs))) {
+      return true;
+    }
+    const meta = raw.metadata;
+    if (meta) {
+      const releaseInfo = Array.isArray(meta.releaseInfo) ? meta.releaseInfo : [];
+      for (const rel of releaseInfo) {
+        const plat = (rel as { platform?: unknown })?.platform;
+        if (Array.isArray(plat) && plat.some((p) => matchesTargetOs(String(p), targetOs))) return true;
+        if (typeof plat === "string" && matchesTargetOs(plat, targetOs)) return true;
+      }
+      const direct = meta.platforms ?? meta.platform ?? meta.supportedPlatforms;
+      if (Array.isArray(direct) && direct.some((p) => matchesTargetOs(String(p), targetOs))) return true;
+      if (typeof direct === "string" && matchesTargetOs(direct, targetOs)) return true;
+    }
+  }
+  return false;
+}
+
+/** True when the game (or any owned store copy of it) natively supports `targetOs`. */
+function gameSupportsOs(s: EpicSummary, targetOs: "linux" | "macos"): boolean {
+  if (keySupportsOs(s.appName, targetOs)) return true;
+  for (const copyKey of storeKeysForTitle(s.title)) {
+    if (copyKey !== s.appName && keySupportsOs(copyKey, targetOs)) return true;
+  }
+  return false;
+}
+
+/**
+ * Resolves the OS badge shown on a physical game case:
+ * - On Linux: shows `Linux` if the game supports Linux, otherwise falls back to `Windows`.
+ * - On macOS: shows `macOS` if the game supports macOS, otherwise falls back to `Windows`.
+ * - On Windows: shows `Windows`.
+ */
+function resolveCaseOs(s: EpicSummary): CaseOsKind {
+  const hostOs = detectHostOs();
+  if (hostOs === "linux" && gameSupportsOs(s, "linux")) return "linux";
+  if (hostOs === "macos" && gameSupportsOs(s, "macos")) return "macos";
+  return "windows";
+}
+
+function caseOsBadgeHtml(os: CaseOsKind): string {
+  if (os === "linux") {
+    return `<span class="pcard-case-os" data-os="linux"><svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M12 2c-2.5 0-4.2 1.9-4.2 4.6 0 1.3.4 2.4.9 3.2-.9 1.2-2.2 3.1-2.2 5.4 0 2.1 1 3.7 2.3 4.5-.3.6-.8 1.4-.8 1.8 0 .3.3.5.8.5h1.9c.6 0 1-.4 1.2-.9.3.1.7.1 1.1.1s.8 0 1.1-.1c.2.5.6.9 1.2.9h1.9c.5 0 .8-.2.8-.5 0-.4-.5-1.2-.8-1.8 1.3-.8 2.3-2.4 2.3-4.5 0-2.3-1.3-4.2-2.2-5.4.5-.8.9-1.9.9-3.2C16.2 3.9 14.5 2 12 2zm-1.4 4.2c.5 0 .9.5.9 1.1s-.4 1.1-.9 1.1-.9-.5-.9-1.1.4-1.1.9-1.1zm2.8 0c.5 0 .9.5.9 1.1s-.4 1.1-.9 1.1-.9-.5-.9-1.1.4-1.1.9-1.1zM12 9.1c1 0 1.9.4 1.9.9s-.9.9-1.9.9-1.9-.4-1.9-.9.9-.9 1.9-.9zm0 2.6c1.9 0 3.2 1.8 3.2 4 0 2-1.3 3.5-3.2 3.5s-3.2-1.5-3.2-3.5c0-2.2 1.3-4 3.2-4z"/></svg><span>Linux</span></span>`;
+  }
+  if (os === "macos") {
+    return `<span class="pcard-case-os" data-os="macos"><svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83zM15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z"/></svg><span>macOS</span></span>`;
+  }
+  return `<span class="pcard-case-os" data-os="windows"><svg viewBox="0 0 12 12" width="8" height="8" fill="currentColor"><path d="M0 0h5.4v5.4H0V0zm6.6 0H12v5.4H6.6V0zM0 6.6h5.4V12H0V6.6zm6.6 0H12V12H6.6V6.6z"/></svg><span>Windows</span></span>`;
+}
+
+/** Physical retail box header strip (store logo + brand name + OS badge). */
+function caseCoverHeader(s: EpicSummary, source: GameSource): string {
   const brand = CASE_BRAND_LABELS[source] || source.toUpperCase();
+  const os = resolveCaseOs(s);
   return `<div class="pcard-case-head" aria-hidden="true">
     <span class="pcard-case-brand">${storeLogo(source, 13, "pcard-case-logo")}<span class="pcard-case-name">${esc(brand)}</span></span>
-    <span class="pcard-case-os"><svg viewBox="0 0 12 12" width="8" height="8" fill="currentColor"><path d="M0 0h5.4v5.4H0V0zm6.6 0H12v5.4H6.6V0zM0 6.6h5.4V12H0V6.6zm6.6 0H12V12H6.6V6.6z"/></svg><span>Windows</span></span>
+    ${caseOsBadgeHtml(os)}
   </div>`;
 }
 
@@ -328,7 +419,7 @@ export function epicCardPortrait(s: EpicSummary): string {
   const source = sourceOfKey(s.appName);
   const isCase = S.showCaseCovers;
   const caseStyleAttr = isCase ? ` data-case-style="${S.caseCoverStyle}"` : "";
-  const caseHead = isCase ? caseCoverHeader(source) : "";
+  const caseHead = isCase ? caseCoverHeader(s, source) : "";
   const caseFx = isCase ? `<span class="pcard-case-fx" aria-hidden="true"></span>` : "";
   // Optional: the storefront mark on the cover (bottom-right, clear of the
   // stats chips on the left and the running badge on the top-right). Omitted

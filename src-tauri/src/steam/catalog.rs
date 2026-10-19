@@ -48,6 +48,9 @@ pub struct SteamGameDetails {
     pub metacritic_score: Option<u32>,
     #[serde(default)]
     pub metacritic_url: Option<String>,
+    /// Store-reported supported operating systems (`windows`, `mac`, `linux`).
+    #[serde(default)]
+    pub platforms: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -60,7 +63,7 @@ pub(super) struct CachedDetails {
 }
 
 /// Bump whenever the parsed shape changes so stale entries refetch once.
-pub(super) const DETAILS_CACHE_VERSION: u32 = 6;
+pub(super) const DETAILS_CACHE_VERSION: u32 = 7;
 
 /* ---------- appinfo.vdf: the Steam client's own app metadata ---------- */
 
@@ -338,6 +341,8 @@ pub struct SteamAppMetadata {
     pub genres: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub release_year: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub oslist: Option<String>,
 }
 
 /// Metadata for every app in the client's own `appcache/appinfo.vdf`.
@@ -396,13 +401,17 @@ pub fn parse_appinfo_metadata(data: &[u8]) -> std::collections::HashMap<String, 
             .collect::<Vec<_>>();
         let release_year = appinfo_find_string(blob, &table, "release_date")
             .and_then(|text| year_from_text(&text));
-        if developer.is_some() || !genres.is_empty() || release_year.is_some() {
+        let oslist = appinfo_find_string(blob, &table, "oslist")
+            .map(|value| value.trim().to_ascii_lowercase())
+            .filter(|value| !value.is_empty());
+        if developer.is_some() || !genres.is_empty() || release_year.is_some() || oslist.is_some() {
             out.insert(
                 entry_id.to_string(),
                 SteamAppMetadata {
                     developer,
                     genres,
                     release_year,
+                    oslist,
                 },
             );
         }
@@ -699,6 +708,16 @@ pub fn parse_app_details(app_id: &str, data: &serde_json::Value) -> SteamGameDet
             .and_then(|m| m.get("url"))
             .and_then(|v| v.as_str())
             .map(str::to_string),
+        platforms: ["windows", "mac", "linux"]
+            .into_iter()
+            .filter(|os| {
+                data.get("platforms")
+                    .and_then(|p| p.get(*os))
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false)
+            })
+            .map(str::to_string)
+            .collect(),
     }
 }
 

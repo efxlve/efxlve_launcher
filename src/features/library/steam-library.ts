@@ -52,10 +52,15 @@ const steamMeta = new Map<string, SteamAppMetadata>();
 function setSteamMetadata(map: Record<string, SteamAppMetadata>): void {
   steamMeta.clear();
   for (const [appId, meta] of Object.entries(map)) {
-    if (meta && (meta.developer || (meta.genres && meta.genres.length) || meta.releaseYear)) {
+    if (meta && (meta.developer || (meta.genres && meta.genres.length) || meta.releaseYear || meta.oslist)) {
       steamMeta.set(appId, meta);
     }
   }
+}
+
+/** Client-cached OS list (`windows,macos,linux`) for a Steam app id. */
+export function steamAppOsList(appId: string): string {
+  return steamMeta.get(appId)?.oslist ?? "";
 }
 
 function steamDeveloper(appId: string): string {
