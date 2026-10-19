@@ -50,6 +50,15 @@ async function run(): Promise<void> {
   running = true;
   let completed = 0;
   try {
+    if (S.offlineMode) return;
+    // The first library sync owns the network/disk for its first seconds. A
+    // cache warm-up that starts on top of it makes the launcher feel slower,
+    // not faster; wait for the pass to settle (up to half a minute).
+    for (let i = 0; i < 30; i++) {
+      if (!S.epicSyncing && !S.gogSyncing && !S.steamLibrarySyncing) break;
+      await sleep(1000);
+      if (S.offlineMode || userIsReading()) return;
+    }
     const ids = S.epicRecent
       .filter((id) => Boolean(summaryOf(id)?.installed))
       .slice(0, PREFETCH_GAMES);
