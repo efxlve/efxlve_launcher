@@ -62,19 +62,26 @@ fn first_image(contents: &str) -> String {
     String::new()
 }
 
-/// The body as a short plain-text line: tags dropped, whitespace collapsed, cut
-/// at a word boundary. Empty when the post is only a headline.
+/// The body as a short plain-text line: HTML and BBCode tags dropped, whitespace
+/// collapsed, cut at a word boundary. Empty when the post is only a headline.
 fn snippet(contents: &str) -> String {
     let mut out = String::new();
-    let mut in_tag = false;
+    let mut in_html = false;
+    let mut in_bbcode = false;
     for ch in contents.chars() {
         match ch {
-            '<' => in_tag = true,
-            '>' => {
-                in_tag = false;
+            '<' => in_html = true,
+            '>' if in_html => {
+                in_html = false;
                 out.push(' ');
             }
-            _ if !in_tag => out.push(ch),
+            '[' if !in_html => in_bbcode = true,
+            ']' if in_bbcode => {
+                in_bbcode = false;
+                out.push(' ');
+            }
+            '\\' if !in_html && !in_bbcode => out.push(' '),
+            _ if !in_html && !in_bbcode => out.push(ch),
             _ => {}
         }
     }
@@ -96,9 +103,49 @@ fn snippet(contents: &str) -> String {
     }
 }
 
+fn has_non_english_script(s: &str) -> bool {
+    s.chars().any(|c| {
+        matches!(
+            c as u32,
+            0x0400..=0x052F // Cyrillic & Cyrillic Supplement (Russian, etc.)
+            | 0x2DE0..=0x2DFF
+            | 0xA640..=0xA69F
+            | 0x0590..=0x06FF // Hebrew & Arabic
+            | 0x0E00..=0x0E7F // Thai
+            | 0x3040..=0x9FFF // Hiragana, Katakana, CJK
+            | 0xAC00..=0xD7AF // Hangul
+        )
+    })
+}
+
+/// True when the announcement is from an English source (filters out Russian
+/// curator feeds like PlayGround.ru and non-English scripts).
+fn is_english_news_item(title: &str, feed: &str, url: &str, snippet_text: &str) -> bool {
+    if has_non_english_script(title)
+        || has_non_english_script(feed)
+        || has_non_english_script(snippet_text)
+    {
+        return false;
+    }
+    let lower_feed = feed.to_lowercase();
+    let lower_url = url.to_lowercase();
+    if lower_feed.contains(".ru")
+        || lower_feed.contains("playground")
+        || lower_feed.contains("igromania")
+        || lower_feed.contains("stopgame")
+        || lower_url.contains(".ru/")
+    {
+        return false;
+    }
+    let alpha_total = title.chars().filter(|c| c.is_alphabetic()).count();
+    let ascii_alpha = title.chars().filter(|c| c.is_ascii_alphabetic()).count();
+    alpha_total == 0 || ascii_alpha * 10 >= alpha_total * 8
+}
+
 static CACHE: Mutex<Option<HashMap<String, (Instant, Vec<SteamNewsItem>)>>> = Mutex::new(None);
 
-/// Reads the endpoint's answer. Pure, so the shape is testable without a network.
+/// Reads the endpoint's answer and keeps only English news items. Pure, so the
+/// shape is testable without a network.
 fn parse_news(body: &serde_json::Value) -> Vec<SteamNewsItem> {
     body.get("appnews")
         .and_then(|news| news.get("newsitems"))
@@ -110,26 +157,29 @@ fn parse_news(body: &serde_json::Value) -> Vec<SteamNewsItem> {
                     if title.is_empty() {
                         return None;
                     }
+                    let url = item.get("url").and_then(|u| u.as_str()).unwrap_or("").to_string();
+                    let feed = item
+                        .get("feedlabel")
+                        .and_then(|f| f.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let raw_contents = item.get("contents").and_then(|c| c.as_str()).unwrap_or("");
+                    let snippet_text = snippet(raw_contents);
+                    if !is_english_news_item(&title, &feed, &url, &snippet_text) {
+                        return None;
+                    }
                     Some(SteamNewsItem {
                         title,
-                        url: item.get("url").and_then(|u| u.as_str()).unwrap_or("").to_string(),
+                        url,
                         date: item.get("date").and_then(|d| d.as_i64()).unwrap_or(0),
-                        feed: item
-                            .get("feedlabel")
-                            .and_then(|f| f.as_str())
-                            .unwrap_or("")
-                            .to_string(),
+                        feed,
                         patch_notes: item
                             .get("tags")
                             .and_then(|t| t.as_array())
                             .map(|tags| tags.iter().any(|tag| tag.as_str() == Some("patchnotes")))
                             .unwrap_or(false),
-                        image: first_image(
-                            item.get("contents").and_then(|c| c.as_str()).unwrap_or(""),
-                        ),
-                        snippet: snippet(
-                            item.get("contents").and_then(|c| c.as_str()).unwrap_or(""),
-                        ),
+                        image: first_image(raw_contents),
+                        snippet: snippet_text,
                     })
                 })
                 .collect()
@@ -137,7 +187,7 @@ fn parse_news(body: &serde_json::Value) -> Vec<SteamNewsItem> {
         .unwrap_or_default()
 }
 
-/// The last few announcements for a Steam app, newest first.
+/// The last few announcements for a Steam app, newest first (English only).
 #[tauri::command]
 pub async fn steam_news(app_id: String, count: u32) -> Result<Vec<SteamNewsItem>, String> {
     let app_id = app_id.trim().to_string();
@@ -145,7 +195,7 @@ pub async fn steam_news(app_id: String, count: u32) -> Result<Vec<SteamNewsItem>
         return Err("@t:steam.newsFailed".to_string());
     }
     let count = count.clamp(1, MAX_COUNT);
-    let key = format!("{app_id}:{count}");
+    let key = format!("{app_id}:{count}:en");
 
     if let Ok(guard) = CACHE.lock() {
         if let Some(map) = guard.as_ref() {
@@ -157,8 +207,11 @@ pub async fn steam_news(app_id: String, count: u32) -> Result<Vec<SteamNewsItem>
         }
     }
 
+    // Request a wider window from Steam so filtering out non-English curator
+    // posts (e.g. PlayGround.ru) still leaves `count` English announcements.
+    let fetch_count = (count * 5).clamp(15, 30);
     let url = format!(
-        "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid={app_id}&count={count}&maxlength=400&format=json"
+        "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid={app_id}&count={fetch_count}&maxlength=400&format=json&l=english"
     );
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(15))
@@ -176,7 +229,7 @@ pub async fn steam_news(app_id: String, count: u32) -> Result<Vec<SteamNewsItem>
         .json()
         .await
         .map_err(|_| "@t:steam.newsFailed".to_string())?;
-    let items = parse_news(&body);
+    let items: Vec<SteamNewsItem> = parse_news(&body).into_iter().take(count as usize).collect();
 
     if let Ok(mut guard) = CACHE.lock() {
         guard
@@ -191,7 +244,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_endpoint_shape_is_read_into_items() {
+    fn the_endpoint_shape_is_read_into_items_and_russian_sources_are_dropped() {
         let body = serde_json::json!({
             "appnews": {
                 "appid": 730,
@@ -202,6 +255,13 @@ mod tests {
                         "date": 1792018968,
                         "feedlabel": "Community Announcements",
                         "tags": ["patchnotes", "mod_reviewed"]
+                    },
+                    {
+                        "title": "Valve ускорила перезарядку AUG в Counter-Strike 2",
+                        "url": "https://store.steampowered.com/news/ru",
+                        "date": 1791500000,
+                        "feedlabel": "PlayGround.ru - официальная группа",
+                        "contents": "Valve выпустила небольшое обновление для Counter-Strike 2"
                     },
                     { "title": "   ", "url": "https://x", "date": 1 },
                     {
@@ -214,7 +274,7 @@ mod tests {
             }
         });
         let items = parse_news(&body);
-        assert_eq!(items.len(), 2, "the blank title is dropped");
+        assert_eq!(items.len(), 2, "blank and Russian items are dropped");
         assert_eq!(items[0].title, "Counter-Strike 2 Update");
         assert!(items[0].patch_notes, "the patchnotes tag is read");
         assert_eq!(items[0].feed, "Community Announcements");
@@ -250,3 +310,4 @@ mod tests {
         assert!(cut.chars().count() <= 221, "{} chars", cut.chars().count());
     }
 }
+

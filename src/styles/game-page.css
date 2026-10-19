@@ -137,7 +137,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-toolbar-right { display: flex; align-items: center; gap: 8px; }
 .gp-search { width: 260px; }
 .gp-section { margin-bottom: 28px; }
-.gp-section-title { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.gp-section-title { margin: 0 0 10px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+.gp-section-title svg { color: var(--text-3); flex-shrink: 0; }
 .gp-section-meta { margin-left: 4px; font-size: 12px; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .gp-thumb-ph { display: grid; place-items: center; color: var(--text-3); }
 

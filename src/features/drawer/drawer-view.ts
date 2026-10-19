@@ -1055,7 +1055,7 @@ function renderAboutSection(s: EpicSummary): string {
 
   return `
     <section class="gp-section" id="hub-about-section">
-      <h3 class="gp-section-title">${t("drawer.aboutGame")}</h3>
+      <h3 class="gp-section-title">${icon("info", 14)} ${t("drawer.aboutGame")}</h3>
       <div class="hub-desc-text" id="hub-desc-text">${
         aboutLoading
           ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
@@ -1110,11 +1110,27 @@ export function repaintIgdbBlocks(appName: string): void {
 const newsCache = new Map<string, SteamNewsItem[]>();
 const newsRequested = new Set<string>();
 
-async function loadSteamNews(appName: string, appId: string): Promise<void> {
+async function resolveNewsAppId(s: EpicSummary): Promise<string> {
+  if (s.appName.startsWith("steam::")) return s.appName.slice(7);
+  const fromDetails = S.steamDetails.get(s.appName)?.appId;
+  if (fromDetails) return fromDetails;
+  const steamCopy = gameVersionsOf(s.appName).find((v) => v.appName.startsWith("steam::"));
+  if (steamCopy) return steamCopy.appName.slice(7);
+  try {
+    const hit = await steamFindStoreApp(s.title, "english");
+    return hit?.appId ?? "";
+  } catch {
+    return "";
+  }
+}
+
+async function loadGameNews(s: EpicSummary): Promise<void> {
+  const appName = s.appName;
   if (newsRequested.has(appName)) return;
   newsRequested.add(appName);
   try {
-    const items = await steamNews(appId, 3);
+    const appId = await resolveNewsAppId(s);
+    const items = appId ? await steamNews(appId, 3) : [];
     newsCache.set(appName, items);
     if (S.currentModalAppName !== appName) return;
     const host = document.getElementById("gp-news");
@@ -1207,21 +1223,13 @@ export function renderDrawerOverview(
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
-  // A game the player has started reads as "mine": their own trail leads, and the
-  // catalogue text waits one scroll below. A game nobody has installed is the
-  // other way round — there the question is "what is this?", not "where was I?".
   const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   const personalFirst = s.installed || playtime > 0;
   const personal = `<div id="gp-personal-block">${personalBlockHtml(s, personalFirst)}</div>`;
   const about = renderAboutSection(s);
-  // The game's own feed, when the store that owns it publishes one: Steam is the
-  // only one here that does, so a game it does not list simply has no block.
-  const newsAppId = s.appName.startsWith("steam::")
-    ? s.appName.slice(7)
-    : (S.steamDetails.get(s.appName)?.appId ?? "");
-  if (newsAppId) void loadSteamNews(s.appName, newsAppId);
+  void loadGameNews(s);
   const cachedNews = newsCache.get(s.appName);
-  const news = newsAppId ? `<div id="gp-news">${renderSteamNews(cachedNews ?? null)}</div>` : "";
+  const news = `<div id="gp-news">${renderSteamNews(cachedNews ?? null)}</div>`;
   // The two blocks live in their own containers: the painters that fill them late
   // must not overwrite each other's work.
   const hltbBlock = `<div id="drawer-hltb-container">${renderHltbCard(
@@ -1234,6 +1242,10 @@ export function renderDrawerOverview(
     igdbGameFor(s.appName)?.rating ?? null,
   )}</div>`;
 
+  // Main column order:
+  // 1. About Game (top)
+  // 2. News
+  // 3. Similar games
   // Four dedicated sidebar widgets in order:
   // 1. Next achievements (above estimated lengths)
   // 2. Estimated lengths (HowLongToBeat)
@@ -1242,8 +1254,10 @@ export function renderDrawerOverview(
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
-        ${personalFirst ? `${personal}${news}${about}` : `${about}${personal}${news}`}
+        ${about}
+        ${news}
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
+        ${personal}
       </div>
       <aside class="hub-overview-sidebar">
         ${renderNextAchievements(s.appName)}
