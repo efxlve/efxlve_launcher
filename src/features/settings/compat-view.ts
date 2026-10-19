@@ -28,6 +28,7 @@ import {
   compatDiskUsage,
   compatGetLaunchConfig,
   compatInstall,
+  compatOpenPrefixRoot,
   compatRemove,
   compatSetLaunchConfig,
   compatToolsDir,
@@ -365,6 +366,7 @@ function renderLaunchConfig(): string {
         </div>
         <div class="settings-row-control">
           <input id="compat-prefix-dir" class="input settings-path-input" value="${esc(prefix)}" spellcheck="false" autocomplete="off" />
+          <button type="button" class="btn ghost small" data-act="compat-prefix-open">${esc(t("compat.openPrefix"))}</button>
           <button type="button" class="btn ghost small" data-act="compat-prefix-pick">${esc(t("common.browse"))}</button>
           <button type="button" class="btn primary small" data-act="compat-prefix-save">${esc(t("common.save"))}</button>
         </div>
@@ -477,6 +479,17 @@ function patchProgress(entry: CompatProgress): void {
  * Loads the inventory and the launch config. The first paint is local (the
  * catalogue is static); a stale release cache refreshes in the background.
  */
+async function loadDiskUsage(generation: number): Promise<void> {
+  try {
+    const bytes = await compatDiskUsage();
+    if (generation !== loadGeneration) return;
+    diskUsage = bytes;
+    scheduleRender();
+  } catch {
+    // A folder that cannot be measured keeps the previous number.
+  }
+}
+
 export async function loadCompatView(force = false): Promise<void> {
   if (!isTauri) {
     loading = false;
@@ -493,15 +506,16 @@ export async function loadCompatView(force = false): Promise<void> {
   loading = true;
   scheduleRender();
   try {
-    const [nextCatalog, nextConfig, nextUsage] = await Promise.all([
+    const [nextCatalog, nextConfig] = await Promise.all([
       compatCatalog(target, false),
       compatGetLaunchConfig().catch(() => null),
-      compatDiskUsage().catch(() => null),
     ]);
     if (generation !== loadGeneration) return;
     catalog = nextCatalog;
     launchConfig = nextConfig;
-    diskUsage = nextUsage;
+    // The folder walk can take seconds on a large HDD-backed runner; it must
+    // not hold up the catalogue rows.
+    void loadDiskUsage(generation);
   } catch (error) {
     if (generation !== loadGeneration) return;
     catalog = null;
@@ -703,6 +717,12 @@ export function handleCompatAction(act: string | undefined, el: HTMLElement): bo
       ? [...new Set([...config.layers, layer])]
       : config.layers.filter((value) => value !== layer);
     void saveLaunchConfig({ ...config, layers });
+    return true;
+  }
+  if (act === "compat-prefix-open") {
+    void compatOpenPrefixRoot()
+      .then((message) => toast(localizeMessage(message), "ok"))
+      .catch((error) => toast(localizeMessage(String(error)), "err"));
     return true;
   }
   if (act === "compat-prefix-pick") {

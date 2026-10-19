@@ -2597,5 +2597,6 @@
   "compat.diskUsage": "Araç klasörü",
   "compat.diskUsageDesc": "{size} kullanılıyor",
   "compat.clearPartials": "Yarım indirmeleri temizle",
-  "compat.partialsCleared": "{size} boşaltıldı."
+  "compat.partialsCleared": "{size} boşaltıldı.",
+  "compat.openPrefix": "Aç"
 }

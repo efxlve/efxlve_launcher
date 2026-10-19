@@ -465,6 +465,31 @@ fn valid_runner(id: &str) -> bool {
     matches!(id, "ge-proton" | "proton-cachyos" | "wine-staging")
 }
 
+fn open_dir(path: &Path) -> Result<(), String> {
+    #[cfg(windows)]
+    let result = std::process::Command::new("explorer").arg(path).spawn();
+    #[cfg(target_os = "macos")]
+    let result = std::process::Command::new("open").arg(path).spawn();
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    let result = std::process::Command::new("xdg-open").arg(path).spawn();
+    result.map(|_| ()).map_err(|error| error.to_string())
+}
+
+/// Opens the shared prefix root, creating it when this is the first visit.
+#[tauri::command]
+pub fn compat_open_prefix_root(app: AppHandle) -> Result<String, String> {
+    let settings = crate::load_settings(&app);
+    let dir = settings
+        .compat_prefix_dir
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(default_prefix_dir);
+    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    open_dir(&dir).map(|_| "@t:win.folderOpened".to_string())
+}
+
 #[tauri::command]
 pub fn compat_get_launch_config(app: AppHandle) -> CompatLaunchConfig {
     let settings = crate::load_settings(&app);

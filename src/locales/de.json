@@ -2597,5 +2597,6 @@
   "compat.diskUsage": "Tool folder",
   "compat.diskUsageDesc": "{size} used",
   "compat.clearPartials": "Clear partial downloads",
-  "compat.partialsCleared": "Freed {size}."
+  "compat.partialsCleared": "Freed {size}.",
+  "compat.openPrefix": "Open"
 }

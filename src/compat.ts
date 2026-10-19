@@ -98,6 +98,10 @@ export const compatClearPartials = () => invoke<number>("compat_clear_partials")
 export const compatGetLaunchConfig = () =>
   invoke<CompatLaunchConfig>("compat_get_launch_config");
 
+/** Opens (and creates) the shared prefix root. */
+export const compatOpenPrefixRoot = () =>
+  invoke<string>("compat_open_prefix_root");
+
 export const compatSetLaunchConfig = (config: CompatLaunchConfig) =>
   invoke<void>("compat_set_launch_config", {
     enabled: config.enabled,
