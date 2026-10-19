@@ -188,7 +188,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 - **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY komutları çevrimdışı
   modda `offline: true` ile çağrılıyor; backend ağa çıkmıyor, yalnız disk
   cache'ini okuyor. Cache varsa rozet eski veriyle görünüyor, yoksa satır gizli
-  kalıyor. Böylece oyun sayfası açılırken üç ayrı ağ zaman aşımı beklenmiyor.
+  kalıyor. Çevrimdışıyken gelen boş yanıt oturum boyunca "başarısız" olarak
+  saklanmıyor; sonraki açılışta veya bağlantı geri gelince yeniden deneniyor.
+  Böylece oyun sayfası açılırken üç ayrı ağ zaman aşımı beklenmiyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

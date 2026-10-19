@@ -71,7 +71,8 @@ export async function hydrateAntiCheatChip(appName: string): Promise<void> {
     info = steam
       ? await steamAntiCheatStatus(key, S.offlineMode).catch(() => null)
       : await epicAntiCheatStatus(key, S.offlineMode).catch(() => null);
-    statuses.set(cacheKey, info);
+    // An offline miss is not a permanent answer; a later online open retries.
+    if (info !== null || !S.offlineMode) statuses.set(cacheKey, info);
   }
   if (S.currentModalAppName !== appName) return;
   host.dataset.loaded = "1";

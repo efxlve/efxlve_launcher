@@ -56,7 +56,8 @@ export async function hydrateDeckChip(appName: string): Promise<void> {
   let info = statuses.get(appId);
   if (info === undefined) {
     info = await steamDeckStatus(appId, S.offlineMode).catch(() => null);
-    statuses.set(appId, info);
+    // Keep an offline cache miss retryable once the connection is back.
+    if (info !== null || !S.offlineMode) statuses.set(appId, info);
   }
   if (S.currentModalAppName !== appName) return;
   host.dataset.loaded = "1";

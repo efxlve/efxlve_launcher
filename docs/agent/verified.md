@@ -44,7 +44,7 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Steam → System → Anti-cheat | A fake Halo app resolves "Supported" with Easy Anti-Cheat; the copy card shows a green "Destekliyor" pill linking to `https://areweanticheatyet.com/game/halo-the-master-chief-collection`; the command is called once per app |
 | Epic → System → Anti-cheat | A fake Hades app resolves "Broken" via the Epic namespace; the copy card shows a red "Bozuk" pill linking to `https://areweanticheatyet.com/game/hades`; the command receives `{namespace:"hades"}` |
 | Steam → System → Steam Deck | A fake category-3 report shows a green "Doğrulanmış" pill linking to the Steam store page; the command is called once per app |
-| Offline compatibility rows | With `S.offlineMode` set, the three badge commands are called with `offline:true`; a fake cached answer still paints the Deck, ProtonDB and anti-cheat pills, and no network path is entered |
+| Offline compatibility rows | With `S.offlineMode` set, the three badge commands are called with `offline:true`; a fake cached answer still paints the Deck, ProtonDB and anti-cheat pills, and no network path is entered. A null cache-only answer is not remembered: reopening the System tab calls again, and going online retries the fetch |
 | Notes | Search box, scope filters, empty list state, editor panel ("pick a note"), no crash |
 | Profile | Banner, online chip, account count, game/trophy counters, recents |
 | Task manager | Launcher's own usage rows |

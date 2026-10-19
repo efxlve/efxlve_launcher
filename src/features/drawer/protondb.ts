@@ -62,7 +62,9 @@ export async function hydrateProtonDbChip(appName: string): Promise<void> {
   let summary = summaries.get(appId);
   if (summary === undefined) {
     summary = await steamProtonDbSummary(appId, S.offlineMode).catch(() => null);
-    summaries.set(appId, summary);
+    // A cache-only miss must not be remembered as a failure: when the network
+    // comes back the badge may still be fetched.
+    if (summary !== null || !S.offlineMode) summaries.set(appId, summary);
   }
   if (S.currentModalAppName !== appName) return;
   host.dataset.loaded = "1";
