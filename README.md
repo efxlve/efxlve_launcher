@@ -33,7 +33,8 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 - **Cloud & Local Save Backups:** Automated local backups on game exit, plus WebDAV and Google Drive cloud integration.
 - **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression, an editor, and a clip recorder.
 - **SteamGridDB Integration:** Automatic high-resolution covers and support for custom user artwork.
-- **Compatibility Toolbox:** Wine/Proton runners (GE-Proton, Proton-CachyOS), umu-launcher, DXVK/VKD3D-Proton and the macOS toolchain can be downloaded, inventoried and selected from Settings → Compatibility. Detected Steam/Lutris/Wine runners are usable too, and selected layers are copied into each game's prefix.
+- **Compatibility Toolbox:** Wine/Proton runners (GE-Proton, Proton-CachyOS), umu-launcher, DXVK/VKD3D-Proton and the macOS toolchain can be downloaded, inventoried and selected from Settings → Compatibility. Detected Steam/Lutris/Wine runners are usable too, and selected layers are copied into each game's prefix. The game page's System tab adds per-title runner, layer and exact-prefix overrides, a Prepare prefix action with progress, and an open-folder button.
+- **Compatibility Signals:** Steam game pages show Valve's Steam Deck category, the ProtonDB community tier and Are We Anti-Cheat Yet? status. Each answer is cached for a day and links back to its source.
 - **16 Languages:** Full interface parity across 16 languages with automatic system language detection.
 - **Self-Updating:** In-app updates powered by signed GitHub Releases.
 
@@ -118,6 +119,8 @@ These are downloaded on demand from Settings → Compatibility and used only on 
 - [Heroic Epic Integration](https://github.com/Etaash-mathamsetty/heroic-epic-integration) — the Epic Games Launcher stand-in used inside a prefix.
 - [vulkan-helper-rs](https://github.com/imLinguin/vulkan-helper-rs) — Vulkan capability probe used by the Heroic stack.
 - CrossOver is detected when installed; its Wine build is not redistributed by this launcher.
+
+On a game page, the System tab can override the global runner, choose DXVK/VKD3D for that title, select an exact prefix folder, show whether the prefix exists, prepare it with `wineboot` progress and open it in the file manager. Layers are applied only after the prefix has been initialized; with layers enabled, the launch path prepares the prefix before starting the game, so the first launch already gets them. The explicit Prepare action does the same wait ahead of time.
 
 ### Frontend libraries & tooling
 
