@@ -454,7 +454,9 @@ mod win_process {
         let mut pids = Vec::new();
         for (pid, exe_name, full_path) in process_snapshot().iter() {
             let is_self = *pid == self_pid
-                || full_path.as_ref().is_some_and(|p| self_exe.as_ref() == Some(p));
+                || full_path
+                    .as_ref()
+                    .is_some_and(|p| self_exe.as_ref() == Some(p));
             let inside = full_path.as_deref().is_some_and(|p| {
                 norm_install_path
                     .as_deref()
@@ -661,6 +663,9 @@ pub(super) async fn spawn_launched(
 
     // Linux/macOS: the compatibility manager picks the Wine/Proton wrapper and
     // prefix. On Windows this is an empty spec and the old path is untouched.
+    // With layers enabled, create the prefix first so the first launch already
+    // gets DXVK/VKD3D instead of waiting for the second.
+    crate::compat::prepare_prefix_for_launch(app, app_name).await;
     let compat = crate::compat::launch_spec(app, app_name);
 
     // Per-game wrapper + environment variables (applied to legendary so the
@@ -1005,10 +1010,16 @@ mod tests {
     fn rockstar_stub_titles_are_flagged_for_the_epic_handoff() {
         let dir = stub_dir("handoff");
         std::fs::write(dir.join("PlayGTA3.exe"), vec![0u8; 64]).expect("stub");
-        assert!(needs_epic_handoff(&installed_game("Sugar", &dir, "PlayGTA3.exe")));
+        assert!(needs_epic_handoff(&installed_game(
+            "Sugar",
+            &dir,
+            "PlayGTA3.exe"
+        )));
         // A title that starts its own binary never needs the handoff.
         std::fs::write(dir.join("Game.exe"), vec![0u8; 64]).expect("exe");
-        assert!(!needs_epic_handoff(&installed_game("Other", &dir, "Game.exe")));
+        assert!(!needs_epic_handoff(&installed_game(
+            "Other", &dir, "Game.exe"
+        )));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

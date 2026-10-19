@@ -76,6 +76,7 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
 
     // Linux/macOS: hand the PE to the selected Wine/Proton wrapper. Windows
     // gets an empty spec, and the executable starts directly as before.
+    crate::compat::prepare_prefix_for_launch(&app, &composite_id).await;
     let compat = crate::compat::launch_spec(&app, &composite_id);
     let mut cmd = match compat.program.as_ref() {
         Some(program) => {

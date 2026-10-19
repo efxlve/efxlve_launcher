@@ -316,11 +316,11 @@ Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` §8 fo
 the exact surface.
 
 Still open:
-- Automatic first-run `wineboot`: the game page now has a "Prepare prefix"
-  button with progress events and retry, and layers target Proton's `pfx` after
-  `system.reg` exists. A normal first launch still creates the prefix itself and
-  gets the layers on the second launch; make the launch path offer the same
-  initialization instead of making the user do it from the card.
+- Automatic first-run `wineboot`: shipped. A game launched with layers enabled
+  runs the same preparation before its normal launch (the manual "Prepare
+  prefix" button remains for doing it ahead of time). Without layers, Wine/Proton
+  creates the prefix during the normal start, so the common path does not wait.
+  Real Linux/macOS hardware still has to confirm the Proton/umu prefix layout.
 - Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
 - ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
 - Platform implementations for the screenshot hook, embedded store webview and

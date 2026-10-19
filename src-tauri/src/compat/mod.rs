@@ -15,4 +15,4 @@ pub mod games;
 pub mod install;
 pub mod launch;
 
-pub use launch::launch_spec;
+pub use launch::{launch_spec, prepare_prefix_for_launch};

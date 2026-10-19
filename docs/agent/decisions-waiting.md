@@ -143,8 +143,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   180 saniye sonra süreç öldürülüp yeniden denenebilir bir hata dönüyor. Stderr
   ayrı iş parçacığında boşaltılıyor, böylece dolu boru wineboot'u kilitlemiyor.
   Düğme, kaydedilmemiş prefix alanını önce yazıyor; hızlı çalıştırıcı
-  değişiklikleri için config kayıtları sıraya alındı. Otomatik ilk açılış
-  entegrasyonu hâlâ açık.
+  değişiklikleri için config kayıtları sıraya alındı. Aynı hazırlık, katman
+  açık bir oyun Epic/GOG/Amazon normal yolundan başlatılırken de oyun süreci
+  doğmadan önce çalışıyor; böylece ilk açılış katmanları alıyor. Katman yoksa
+  preflight yapılmıyor. Hazırlık başarısız olursa oyun yine normal yoldan
+  başlıyor ve katmanlar sonraki açılışta yeniden deneniyor. `spawn_blocking` ve
+  tek bir süreç-içi kilit, aynı anda iki `wineboot` çalışmasını engelliyor.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve

@@ -552,25 +552,57 @@ fn prefix_init_program(dir: &Path) -> Option<(PathBuf, Vec<String>)> {
 /// Creates a game's Wine prefix now and copies the selected layers afterwards.
 /// This is the explicit alternative to waiting for the game's first launch:
 /// without it, layers enabled on a fresh prefix only apply on the second run.
+/// One prefix may be created at a time. The manual button and a launch
+/// preflight can race; the second waits, then sees the finished prefix.
+static PREFIX_PREPARE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 #[tauri::command]
 pub async fn compat_prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(move || prepare_prefix(app, app_name))
+    tauri::async_runtime::spawn_blocking(move || prepare_prefix_inner(&app, &app_name))
         .await
         .map_err(|_| "@t:compat.prefixFailed".to_string())?
 }
 
-fn prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
+/// Runs before a real game launch. Only titles with translation layers need a
+/// prepared prefix; without layers Wine can create it during the normal start,
+/// so this does not add a wait for the common case. A failure is non-fatal:
+/// the game still gets its normal launch and the next run retries the layers.
+pub async fn prepare_prefix_for_launch(app: &AppHandle, app_name: &str) {
+    if cfg!(windows) {
+        return;
+    }
+    let settings = crate::load_settings(app);
+    let game = super::games::get(app, app_name);
+    let layers = game
+        .layers
+        .clone()
+        .unwrap_or_else(|| settings.compat_layers.clone());
+    if layers.is_empty() {
+        return;
+    }
+    let app = app.clone();
+    let app_name = app_name.to_string();
+    let _ = tauri::async_runtime::spawn_blocking(move || {
+        let _ = prepare_prefix_inner(&app, &app_name);
+    })
+    .await;
+}
+
+fn prepare_prefix_inner(app: &AppHandle, app_name: &str) -> Result<String, String> {
+    let _guard = PREFIX_PREPARE_LOCK
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
     if cfg!(windows) {
         return Err("@t:compat.prepareWindows".to_string());
     }
-    let spec = launch_spec(&app, &app_name);
+    let spec = launch_spec(app, app_name);
     let Some(prefix) = spec.env.get("WINEPREFIX").map(PathBuf::from) else {
         return Err("@t:compat.noRunner".to_string());
     };
     if layer_prefix_root(&prefix).is_some() {
         // `launch_spec` runs deploy_layers now that the prefix exists.
-        let _ = launch_spec(&app, &app_name);
-        emit_prefix_progress(&app, &app_name, "done", 0);
+        let _ = launch_spec(app, app_name);
+        emit_prefix_progress(app, app_name, "done", 0);
         return Ok(prefix.display().to_string());
     }
 
@@ -582,7 +614,7 @@ fn prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
     };
     std::fs::create_dir_all(&prefix).map_err(|_| "@t:compat.prefixFailed".to_string())?;
 
-    emit_prefix_progress(&app, &app_name, "starting", 0);
+    emit_prefix_progress(app, app_name, "starting", 0);
     let mut command = Command::new(&program);
     command
         .args(&args)
@@ -590,7 +622,7 @@ fn prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
     let mut child = command.spawn().map_err(|_| {
-        emit_prefix_progress(&app, &app_name, "error", 0);
+        emit_prefix_progress(app, app_name, "error", 0);
         "@t:compat.prefixFailed".to_string()
     })?;
     // Drain stderr on its own thread; a full pipe would block a chatty wineboot.
@@ -611,20 +643,20 @@ fn prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
                 if started.elapsed() >= Duration::from_secs(180) {
                     let _ = child.kill();
                     let _ = child.wait();
-                    emit_prefix_progress(&app, &app_name, "error", started.elapsed().as_secs());
+                    emit_prefix_progress(app, app_name, "error", started.elapsed().as_secs());
                     return Err("@t:compat.prefixTimeout".to_string());
                 }
                 let seconds = started.elapsed().as_secs();
                 if seconds != last_second {
                     last_second = seconds;
-                    emit_prefix_progress(&app, &app_name, "running", seconds);
+                    emit_prefix_progress(app, app_name, "running", seconds);
                 }
                 std::thread::sleep(Duration::from_millis(500));
             }
             Err(_) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                emit_prefix_progress(&app, &app_name, "error", started.elapsed().as_secs());
+                emit_prefix_progress(app, app_name, "error", started.elapsed().as_secs());
                 return Err("@t:compat.prefixFailed".to_string());
             }
         }
@@ -637,14 +669,14 @@ fn prepare_prefix(app: AppHandle, app_name: String) -> Result<String, String> {
         if !detail.trim().is_empty() {
             eprintln!("[compat] wineboot failed for {app_name}: {}", detail.trim());
         }
-        emit_prefix_progress(&app, &app_name, "error", started.elapsed().as_secs());
+        emit_prefix_progress(app, app_name, "error", started.elapsed().as_secs());
         return Err("@t:compat.prefixFailed".to_string());
     }
 
     // The prefix now has system.reg, so the normal launcher path can copy the
     // chosen DXVK/VKD3D DLLs into it.
-    let _ = launch_spec(&app, &app_name);
-    emit_prefix_progress(&app, &app_name, "done", started.elapsed().as_secs());
+    let _ = launch_spec(app, app_name);
+    emit_prefix_progress(app, app_name, "done", started.elapsed().as_secs());
     Ok(prefix.display().to_string())
 }
 

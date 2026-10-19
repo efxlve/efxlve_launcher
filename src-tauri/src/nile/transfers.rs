@@ -191,10 +191,7 @@ pub async fn nile_install(
             progress_emitter(app.clone(), event_id),
         )
         .await;
-        let healed = retry
-            .as_ref()
-            .map(|v| v.status.success())
-            .unwrap_or(false)
+        let healed = retry.as_ref().map(|v| v.status.success()).unwrap_or(false)
             && super::library::installed_game(&app, &id).is_some();
         if !healed {
             let detail = match retry {
@@ -254,6 +251,7 @@ pub async fn nile_launch(app: AppHandle, id: String) -> Result<String, String> {
     cmd.args(["launch", &id]);
     // Linux/macOS: Nile can hand the PE to the same Wine/Proton wrapper the
     // other stores use. Windows gets an empty spec, so this is a no-op there.
+    crate::compat::prepare_prefix_for_launch(&app, &composite).await;
     let compat = crate::compat::launch_spec(&app, &composite);
     if let Some(wrapper) = compat.wrapper_command() {
         cmd.args(["--no-wine", "--wrapper", &wrapper]);
@@ -290,10 +288,7 @@ pub async fn nile_launch(app: AppHandle, id: String) -> Result<String, String> {
         let _ = crate::legendary::playtime::record_session(&comp_id, elapsed);
         crate::legendary::playtime_session::finish();
         with_pids(|pids| pids.remove(&comp_id));
-        let _ = app_clone.emit(
-            "game-status",
-            json!({ "id": comp_id, "running": false }),
-        );
+        let _ = app_clone.emit("game-status", json!({ "id": comp_id, "running": false }));
     });
 
     // The screenshot hotkey follows the same running game as the playtime watch.
@@ -332,10 +327,7 @@ pub async fn nile_stop(app: AppHandle, id: String) -> Result<String, String> {
 
     crate::legendary::playtime_session::finish();
     crate::legendary::screenshots::clear_active_running_game(&composite);
-    let _ = app.emit(
-        "game-status",
-        json!({ "id": composite, "running": false }),
-    );
+    let _ = app.emit("game-status", json!({ "id": composite, "running": false }));
     Ok("@t:dl.stopped".to_string())
 }
 

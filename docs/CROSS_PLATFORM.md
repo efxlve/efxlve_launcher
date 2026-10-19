@@ -222,9 +222,11 @@ paketinin çıktığı anlamına gelmez.
 - Oyun sayfasındaki "Prefix'i hazırla" düğmesi `compat_prepare_prefix`
   komutunu çağırır: seçili çalıştırıcıyla `wineboot -u` çalışır, ilerleme
   `compat-prefix-progress` olayıyla gelir, 180 saniyede zaman aşımına uğrar ve
-  sonra katmanları gerçek prefix'e kopyalar. Böylece yeni prefix'i ikinci
-  açılışı beklemeden hazırlamak mümkün. İlk normal açılış hâlâ prefix'i kendi
-  kurar; otomatik ilk açılış entegrasyonu açık.
+  sonra katmanları gerçek prefix'e kopyalar. Aynı hazırlık, katman açık bir oyun
+  normal yoldan başlatılırken de oyun başlamadan önce çalışır; böylece ilk
+  açılış katmanları alır. Katman yoksa bu bekleme atlanır, Wine/Proton prefix'i
+  normal açılışta kurar. Bir hazırlık hatası oyunu engellemez; sonraki açılış
+  yeniden dener.
 - Windows'ta `launch_spec` ve `compat_prepare_prefix` başlatma yapmaz; mevcut
   Windows yolu birebir korunur ve hazırlama komutu açık bir hata döndürür.
 
