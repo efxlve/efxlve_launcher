@@ -2452,6 +2452,7 @@
   "drawer.personalEmptyDesc": "इस गेम के लिए अभी कोई स्क्रीनशॉट या उपलब्धि दर्ज नहीं है। खेलते समय ली गई चीज़ें यहाँ दिखेंगी।",
   "drawer.personalEmptyCta": "गैलरी खोलें",
   "hltb.you": "आप: {time}",
+  "hltb.youLabel": "आप",
   "drawer.moreActions": "अधिक क्रियाएँ",
   "drawer.lastSession": "पिछला सत्र",
   "drawer.lastSessionTrophies": "+{n} ट्रॉफ़ियाँ",

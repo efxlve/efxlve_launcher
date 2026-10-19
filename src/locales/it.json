@@ -2452,6 +2452,7 @@
   "drawer.personalEmptyDesc": "Nessuno screenshot o obiettivo registrato per questo gioco. Quello che catturi giocando compare qui.",
   "drawer.personalEmptyCta": "Apri la galleria",
   "hltb.you": "Tu: {time}",
+  "hltb.youLabel": "Tu",
   "drawer.moreActions": "Altre azioni",
   "drawer.lastSession": "Ultima sessione",
   "drawer.lastSessionTrophies": "+{n} trofei",

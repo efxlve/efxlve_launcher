@@ -237,35 +237,37 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* Only a card that answered "nothing found" collapses; a card that is still
    waiting holds its place with a skeleton (see .is-pending). */
 #drawer-hltb-container:empty, #drawer-critic-container:empty { display: none; }
-.hltb-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+/* One row per length: the label on the left, the number on the right, the way a
+   sidebar reads. Three side-by-side boxes cut "100% Completion" to an ellipsis. */
+.hltb-list { display: flex; flex-direction: column; gap: 2px; }
 .hltb-row {
   display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
   min-width: 0;
-  overflow: hidden;
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
+  padding: 6px 2px;
 }
+.hltb-row + .hltb-row { border-top: 1px solid var(--line); }
+/* The player's own time leads: it is the number they came for. */
+.hltb-row-you .hltb-row-label { color: var(--text-2); font-weight: 600; }
+.hltb-row-you .hltb-row-val { color: var(--text); }
 .hltb-row-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-3);
   min-width: 0;
-  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .hltb-row-val {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex: none;
 }
 .hltb-row-val.empty {
   color: var(--text-3);
@@ -868,36 +870,19 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The player's own time next to the average: the one line that turns a static
    number into a position. */
-.hltb-compare { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 2px 0 6px; }
-.hltb-compare-you { font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
-.hltb-compare-story { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
-.hltb-compare-track { margin: 0 0 10px; }
+/* The comparison bar is gone: the player's own time is a row in the list now,
+   not a meter drawn against an average. */
 
-/* ---------- Scores & time: one card, two bodies ---------- */
 
-/* The scores and the lengths answer separately and paint into their own block,
-   so neither can wipe the other; the frame, the title and the order belong to
-   the card. */
+/* ---------- Scores and lengths: two cards ---------- */
+
+/* HowLongToBeat answers for the lengths and the critic services for the scores;
+   each paints into its own container inside its own card, so neither can wipe
+   the other and the two subjects read apart. */
 .gp-scores-card .drawer-critic-body, .gp-scores-card .drawer-hltb-body { min-width: 0; }
-/* The divider belongs to whichever block comes second, not to the lengths alone:
-   with the player's own time first, the critic body is the one that follows. The
-   bodies sit inside their own wrappers, so the order is read from those. */
-.gp-scores-card > #drawer-hltb-container,
-.gp-scores-card > #drawer-critic-container {
-  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
-}
-.gp-scores-card > #drawer-hltb-container:first-of-type,
-.gp-scores-card > #drawer-critic-container:first-of-type {
-  margin-top: 0; padding-top: 0; border-top: none;
-}
-/* An empty block leaves no divider hanging under it. */
-.gp-scores-card > #drawer-critic-container:has(.drawer-critic-body:empty) + #drawer-hltb-container,
-.gp-scores-card > #drawer-hltb-container:has(.drawer-hltb-body:empty) + #drawer-critic-container {
-  margin-top: 0; padding-top: 0; border-top: none;
-}
 .gp-scores-pill-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 
-/* Both blocks came back empty: the card has nothing to frame. */
+/* A card whose own block came back empty: it has nothing to frame. */
 .gp-scores-card.is-empty { display: none; }
 
 /* Three compact scores to a row: the badges used to stack as three wide rows.

@@ -2452,6 +2452,7 @@
   "drawer.personalEmptyDesc": "Ainda não há capturas ou conquistas deste jogo. O que você registra jogando aparece aqui.",
   "drawer.personalEmptyCta": "Abrir a galeria",
   "hltb.you": "Você: {time}",
+  "hltb.youLabel": "Você",
   "drawer.moreActions": "Mais ações",
   "drawer.lastSession": "Última sessão",
   "drawer.lastSessionTrophies": "+{n} troféus",

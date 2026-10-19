@@ -2452,6 +2452,7 @@
   "drawer.personalEmptyDesc": "這款遊戲還沒有截圖或成就紀錄。遊玩時留下的內容會顯示在這裡。",
   "drawer.personalEmptyCta": "開啟圖庫",
   "hltb.you": "你：{time}",
+  "hltb.youLabel": "你",
   "drawer.moreActions": "更多操作",
   "drawer.lastSession": "上次遊玩",
   "drawer.lastSessionTrophies": "+{n} 個獎盃",

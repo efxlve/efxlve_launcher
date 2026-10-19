@@ -959,15 +959,20 @@ export function updateHltbUI(appName: string, data?: HltbData): void {
   syncScoresCardVisibility();
 }
 
-/** Hides the scores card when both of its blocks came back with nothing: a frame
- *  around two empty bodies reads as a broken card. While an answer is on its way
- *  the block holds a skeleton, so the card keeps its place. */
+/** Hides each sidebar card when its own block came back with nothing: a frame
+ *  around an empty body reads as a broken card. While an answer is on its way the
+ *  block holds a skeleton, so the card keeps its place. */
 function syncScoresCardVisibility(): void {
-  const card = document.querySelector<HTMLElement>(".gp-scores-card");
-  const hltb = document.getElementById("drawer-hltb-container");
-  const critic = document.getElementById("drawer-critic-container");
-  if (!card || !hltb || !critic) return;
-  card.classList.toggle("is-empty", hltb.children.length === 0 && critic.children.length === 0);
+  const pairs: Array<[string, string]> = [
+    [".gp-lengths-card", "drawer-hltb-container"],
+    [".gp-critic-card", "drawer-critic-container"],
+  ];
+  for (const [selector, hostId] of pairs) {
+    const card = document.querySelector<HTMLElement>(selector);
+    const host = document.getElementById(hostId);
+    if (!card || !host) continue;
+    card.classList.toggle("is-empty", host.children.length === 0);
+  }
 }
 
 export function updateCriticUI(appName: string, data: CriticData): void {
@@ -1184,6 +1189,9 @@ export function renderDrawerOverview(
     igdbGameFor(s.appName)?.rating ?? null,
   )}</div>`;
 
+  // Two cards, not one: the estimated lengths are HowLongToBeat's answer and the
+  // scores belong to the critics. Merging them drew a bar between the player's
+  // own time and an average, and the two subjects read as one muddy block.
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
@@ -1191,14 +1199,13 @@ export function renderDrawerOverview(
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>
       </div>
       <aside class="hub-overview-sidebar">
-        <section class="card gp-side-card gp-scores-card">
+        <section class="card gp-side-card gp-scores-card gp-lengths-card">
+          <h3 class="gp-section-title">${icon("clock", 13)} <span>${t("hltb.times")}</span></h3>
+          ${hltbBlock}
+        </section>
+        <section class="card gp-side-card gp-scores-card gp-critic-card">
           <h3 class="gp-section-title">${icon("star", 13)} <span>${t("critic.scoresTitle")}</span></h3>
-          ${
-            // One card, two bodies: the scores and the lengths answer separately
-            // and paint into their own block, so neither can wipe the other. The
-            // player's own time leads for a game they actually play.
-            personalFirst ? `${hltbBlock}${criticBlock}` : `${criticBlock}${hltbBlock}`
-          }
+          ${criticBlock}
         </section>
         ${renderDrawerFeatures(s, partner, antiCheat)}
       </aside>

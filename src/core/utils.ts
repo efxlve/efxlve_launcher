@@ -95,6 +95,14 @@ export function fmtDecimal1(value: number): string {
   });
 }
 
+/** Hours the way the language writes them: 29 stays 29, 17.9 becomes 17,9 in
+ *  Turkish. Whole numbers keep no decimal at all. */
+export function fmtHours(value: number): string {
+  return Number.isInteger(value)
+    ? value.toLocaleString(currentLanguage())
+    : fmtDecimal1(value);
+}
+
 /**
  * Format a screenshot epoch timestamp (seconds) as `DD.MM.YYYY HH:MM:SS`.
  * Falls back to the provided string when the timestamp is missing/invalid.

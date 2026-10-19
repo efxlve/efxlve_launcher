@@ -13,7 +13,7 @@ import { measuredSize } from "../../core/folder-size";
 import { epicPlatinumIcon, icon } from "../../core/icons";
 import { isTurkishUser, isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtPlaytime } from "../../core/utils";
+import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { currentLanguage, formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
@@ -40,25 +40,15 @@ export function renderHltbCard(
   playerSeconds = 0,
   mode: GameMode | null = null,
 ): string {
-  const hours = (n: number) => i18nT("hltb.hours", { n });
-  // A competitive game has no campaign length worth comparing: "You: 450 h /
-  // Main story: 15 h" is nonsense. There the card shows only the player's own
-  // time, which is the number that means something.
-  const multiplayerOnly = isMultiplayerOnlyMode(mode);
+  const hours = (n: number) => i18nT("hltb.hours", { n: fmtHours(n) });
+  // The player's own time is a row like the others. It used to be a bar drawn
+  // against the average length, which turned a fact into a progress meter the
+  // owner never asked for.
   const playerLine = playerSeconds > 0
-    ? `<div class="hltb-compare">
-          <span class="hltb-compare-you">${i18nT("hltb.you", { time: fmtPlaytime(playerSeconds) })}</span>
-          ${
-            multiplayerOnly || !hltb?.main_story
-              ? ""
-              : `<span class="hltb-compare-story">${i18nT("hltb.mainStory")}: ${hours(hltb.main_story)}</span>`
-          }
-        </div>
-        ${
-          multiplayerOnly || !hltb?.main_story
-            ? ""
-            : `<div class="gp-progress-track hltb-compare-track"><span class="gp-progress-fill" style="width:${Math.min(100, Math.round((playerSeconds / (hltb.main_story * 3600)) * 100))}%"></span></div>`
-        }`
+    ? `<div class="hltb-row hltb-row-you">
+          <span class="hltb-row-label">${i18nT("hltb.youLabel")}</span>
+          <span class="hltb-row-val">${fmtPlaytime(playerSeconds)}</span>
+        </div>`
     : "";
   if (isLoading) {
     return `
@@ -91,15 +81,15 @@ export function renderHltbCard(
       <div class="hltb-list">
         <div class="hltb-row">
           <span class="hltb-row-label">${i18nT("hltb.mainStory")}</span>
-          <span class="hltb-row-val${!hltb.main_story ? " empty" : ""}">${hltb.main_story ? i18nT("hltb.hours", { n: hltb.main_story }) : "—"}</span>
+          <span class="hltb-row-val${!hltb.main_story ? " empty" : ""}">${hltb.main_story ? hours(hltb.main_story) : "—"}</span>
         </div>
         <div class="hltb-row">
           <span class="hltb-row-label">${i18nT("hltb.mainExtra")}</span>
-          <span class="hltb-row-val${!hltb.main_extra ? " empty" : ""}">${hltb.main_extra ? i18nT("hltb.hours", { n: hltb.main_extra }) : "—"}</span>
+          <span class="hltb-row-val${!hltb.main_extra ? " empty" : ""}">${hltb.main_extra ? hours(hltb.main_extra) : "—"}</span>
         </div>
         <div class="hltb-row">
           <span class="hltb-row-label">${i18nT("hltb.completionist")}</span>
-          <span class="hltb-row-val${!hltb.completionist ? " empty" : ""}">${hltb.completionist ? i18nT("hltb.hours", { n: hltb.completionist }) : "—"}</span>
+          <span class="hltb-row-val${!hltb.completionist ? " empty" : ""}">${hltb.completionist ? hours(hltb.completionist) : "—"}</span>
         </div>
       </div>
     </div>

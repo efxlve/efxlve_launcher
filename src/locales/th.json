@@ -2452,6 +2452,7 @@
   "drawer.personalEmptyDesc": "ยังไม่มีสกรีนช็อตหรือความสำเร็จของเกมนี้ สิ่งที่คุณเก็บระหว่างเล่นจะปรากฏที่นี่",
   "drawer.personalEmptyCta": "เปิดแกลเลอรี",
   "hltb.you": "คุณ: {time}",
+  "hltb.youLabel": "คุณ",
   "drawer.moreActions": "การทำงานอื่น ๆ",
   "drawer.lastSession": "ครั้งล่าสุด",
   "drawer.lastSessionTrophies": "ถ้วยรางวัล +{n}",
