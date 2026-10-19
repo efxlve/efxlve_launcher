@@ -396,8 +396,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `
       <button class="btn primary lg" data-act="shared-switch" data-id="${sharedOwner.ownerKey}" title="${t("shared.detailNote", { name: esc(sharedOwner.ownerName) })}">${icon("arrow-left-right", 16)} ${t("shared.switchTo", { name: esc(sharedOwner.ownerName) })}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      ${sourceChipHtml(s.appName)}
-      ${moreMenuHtml(s, partner)}`;
+      ${moreMenuHtml(s, partner)}
+      ${sourceChipHtml(s.appName)}`;
   }
 
   // Amazon Games: the launcher owns install, update and launch.
@@ -411,8 +411,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      ${sourceChipHtml(s.appName)}
-      ${moreMenuHtml(s, partner)}`;
+      ${moreMenuHtml(s, partner)}
+      ${sourceChipHtml(s.appName)}`;
   }
 
   // Companion games stay inside their client: install, uninstall and play all
@@ -425,8 +425,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      ${sourceChipHtml(s.appName)}
-      ${moreMenuHtml(s, partner)}`;
+      ${moreMenuHtml(s, partner)}
+      ${sourceChipHtml(s.appName)}`;
   }
 
   // Steam games are owned by the Steam client: play, update and verify all
@@ -445,8 +445,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-      ${sourceChipHtml(s.appName)}
-      ${moreMenuHtml(s, partner)}`;
+      ${moreMenuHtml(s, partner)}
+      ${sourceChipHtml(s.appName)}`;
   }
 
   const p = epicDlProgress(s.appName);
@@ -456,8 +456,8 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
     ${(p !== null || isDl) ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
-    ${sourceChipHtml(s.appName)}
-    ${moreMenuHtml(s, partner)}`;
+    ${moreMenuHtml(s, partner)}
+    ${sourceChipHtml(s.appName)}`;
 }
 
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
