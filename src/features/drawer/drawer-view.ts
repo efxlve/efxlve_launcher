@@ -1053,10 +1053,6 @@ function renderAboutSection(s: EpicSummary): string {
     (!effectiveDesc && !(aboutCache.has(key) || S.loadedRequirements.has(s.appName) || Boolean(epicDesc)));
   const sourceText = aboutSourceText(s, epicDesc, wikiText);
   const sourceHidden = aboutLoading || !effectiveDesc;
-  const aboutBody = aboutBodyHtml(s, effectiveDesc ?? "");
-  // Long blurb = a toggle either way: "read more" while clamped, "show less"
-  // once it is open.
-  const aboutLong = (effectiveDesc ?? "").length > ABOUT_CLAMP_CHARS;
 
   const genres = gameGenresFor(s.appName);
   const genresHtml = genres.length > 0
@@ -1069,20 +1065,26 @@ function renderAboutSection(s: EpicSummary): string {
     </div>`
     : "";
   const igdbShotsHtml = renderIgdbMedia(s);
+  const creditsHtml = renderIgdbCredits(s);
+  const footHtml = (sourceText || creditsHtml)
+    ? `
+    <div class="gp-about-foot">
+      <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
+      ${creditsHtml}
+    </div>`
+    : "";
 
   return `
-    <section class="gp-section" id="hub-about-section">
-      <h3 class="gp-section-title">${icon("info", 14)} ${t("drawer.aboutGame")}</h3>
+    <section class="card gp-about-card" id="hub-about-section">
+      <h3 class="gp-section-title">${icon("info", 14)} <span>${t("drawer.aboutGame")}</span></h3>
       <div class="hub-desc-text" id="hub-desc-text">${
         aboutLoading
           ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
-          : aboutBody.html || `<p>${t("drawer.noDescription")}</p>`
+          : aboutMarkup(effectiveDesc ?? "") || `<p>${t("drawer.noDescription")}</p>`
       }</div>
-      ${!aboutLoading && aboutLong ? aboutToggleHtml(s) : ""}
-      <p class="hub-desc-source" id="hub-desc-source"${sourceHidden ? " hidden" : ""}>${sourceText}</p>
       ${genresHtml}
       ${igdbShotsHtml}
-      ${renderIgdbCredits(s)}
+      ${footHtml}
     </section>`;
 }
 

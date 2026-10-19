@@ -212,7 +212,7 @@ export function renderIgdbMedia(target: IgdbTarget): string {
   warmImages(game.screenshots.map((id) => igdbImage(id, "screenshot_big")));
   return `
     <div class="gp-about-shots">
-      <div class="gp-about-shots-title">${icon("sparkles", 12)} <span>${esc(t("igdb.cardTitle"))}</span></div>
+      <div class="gp-about-shots-title">${icon("image", 13)} <span>${esc(t("igdb.cardTitle"))}</span></div>
       <div class="igdb-shots">${game.screenshots
         .map((id) => {
           const url = igdbImage(id, "screenshot_big");
