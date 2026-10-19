@@ -14,7 +14,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody } from "../../drawer/drawer-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintDlcsTab } from "../../drawer/drawer-view";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { toggleSideWidget } from "../../drawer/side-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
@@ -188,16 +188,13 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
             epicGetGameDlcs(S.currentModalAppName)
               .then((res) => {
                 S.dlcCache.set(S.currentModalAppName!, res);
-                if (S.activeDrawerTab === "dlcs" && S.currentModalAppName) {
-                  openEpicModal(S.currentModalAppName, false, true);
-                }
               })
               .catch(() => {})
               .finally(() => {
                 S.dlcLoading = false;
-                if (S.activeDrawerTab === "dlcs" && S.currentModalAppName) {
-                  openEpicModal(S.currentModalAppName, false, true);
-                }
+                // Only the DLC body changed; rebuilding the whole modal reset the
+                // page scroll and re-decoded pictures for one list.
+                if (S.currentModalAppName) repaintDlcsTab(S.currentModalAppName);
               });
           }
         } else if (tab === "manage") {

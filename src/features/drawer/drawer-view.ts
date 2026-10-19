@@ -1825,6 +1825,14 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
  * A full `openEpicModal` here rebuilt the overview (and reset its scroll) for
  * three numbers.
  */
+export function repaintDlcsTab(appName: string): void {
+  if (S.currentModalAppName !== appName || S.activeDrawerTab !== "dlcs") return;
+  const s = summaryOf(appName);
+  const content = document.getElementById("drawer-tab-content");
+  if (!s || !content) return;
+  content.innerHTML = renderDrawerDlcs(s);
+}
+
 function repaintAchievementSummary(appName: string): void {
   if (S.currentModalAppName !== appName) return;
   const s = summaryOf(appName);

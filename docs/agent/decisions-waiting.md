@@ -114,7 +114,8 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   çizilmiyor. Hero çipleri, açık başarımlar sekmesinin gövdesi ve ana sayfadaki
   personal blok yerinde güncelleniyor; böylece okuma konumu ve sekme çubuğu
   korunuyor. Başarımlar sekmesindeki liste zaten sekme açılırken kurulduğundan
-  yalnız gövde değişimi yeterli.
+  yalnız gövde değişimi yeterli. DLC yanıtı da yalnız DLC sekmesinin gövdesini
+  yeniliyor; iki kez tam sayfa çizen eski yol kaldırıldı.
 - **Oyun bazlı çalıştırıcı:** Oyun sayfasının Sistem sekmesinde "Genel ayarı
   kullan" varsayılanıyla bir seçim eklendi; yalnız istisnalar
   `<app_data>/compat/games.json` içine yazılıyor. Açık bir oyun seçimi global
