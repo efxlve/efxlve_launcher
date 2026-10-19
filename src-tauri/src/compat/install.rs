@@ -1065,6 +1065,45 @@ pub fn compat_tools_dir(app: AppHandle) -> String {
     compat_root(&app).display().to_string()
 }
 
+/// Bytes used by the managed runners and layers, measured off the filesystem.
+#[tauri::command]
+pub async fn compat_disk_usage(app: AppHandle) -> u64 {
+    let root = compat_root(&app);
+    tauri::async_runtime::spawn_blocking(move || crate::storage_usage::dir_size(&root, 0))
+        .await
+        .unwrap_or(0)
+}
+
+/// Removes interrupted `.part` files and extraction temp folders. Installed
+/// tools are untouched; a running download blocks the cleanup.
+#[tauri::command]
+pub async fn compat_clear_partials(app: AppHandle) -> Result<u64, String> {
+    if is_installing_any() {
+        return Err("@t:compat.alreadyInstalling".to_string());
+    }
+    let root = compat_root(&app);
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut freed = 0;
+        for name in [".downloads", ".tmp"] {
+            let dir = root.join(name);
+            if dir.exists() {
+                freed += crate::storage_usage::dir_size(&dir, 0);
+                let _ = std::fs::remove_dir_all(&dir);
+            }
+        }
+        freed
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+fn is_installing_any() -> bool {
+    installing()
+        .lock()
+        .map(|set| !set.is_empty())
+        .unwrap_or(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -20,7 +20,7 @@ fn cache() -> &'static Mutex<HashMap<String, (u64, Instant)>> {
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-fn dir_size(path: &Path, depth: u32) -> u64 {
+pub(crate) fn dir_size(path: &Path, depth: u32) -> u64 {
     if depth > MAX_DEPTH {
         return 0;
     }

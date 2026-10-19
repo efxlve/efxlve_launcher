@@ -89,6 +89,12 @@ export const compatCancel = (id: string) => invoke<void>("compat_cancel", { id }
 
 export const compatToolsDir = () => invoke<string>("compat_tools_dir");
 
+/** Bytes used by the managed runners/layers under `<app_data>/compat`. */
+export const compatDiskUsage = () => invoke<number>("compat_disk_usage");
+
+/** Removes interrupted `.part` files and extraction temp folders. */
+export const compatClearPartials = () => invoke<number>("compat_clear_partials");
+
 export const compatGetLaunchConfig = () =>
   invoke<CompatLaunchConfig>("compat_get_launch_config");
 

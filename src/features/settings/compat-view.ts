@@ -24,6 +24,8 @@ import { epicOpenFolderPath, epicSelectFolderDialog } from "../../epic";
 import {
   compatCancel,
   compatCatalog,
+  compatClearPartials,
+  compatDiskUsage,
   compatGetLaunchConfig,
   compatInstall,
   compatRemove,
@@ -74,6 +76,7 @@ const KIND_KEYS: Record<string, string> = {
 
 let catalog: CompatCatalog | null = null;
 let launchConfig: CompatLaunchConfig | null = null;
+let diskUsage: number | null = null;
 let loading = false;
 let refreshing = false;
 let listenerBound = false;
@@ -392,6 +395,15 @@ function renderLaunchConfig(): string {
       }
       <div class="row settings-row">
         <div class="row-main">
+          <div class="settings-row-title">${esc(t("compat.diskUsage"))}</div>
+          <div class="settings-row-desc">${esc(t("compat.diskUsageDesc", { size: diskUsage === null ? "—" : fmtBytes(diskUsage) }))}</div>
+        </div>
+        <div class="settings-row-control">
+          <button type="button" class="btn ghost small" data-act="compat-clear-partials">${esc(t("compat.clearPartials"))}</button>
+        </div>
+      </div>
+      <div class="row settings-row">
+        <div class="row-main">
           <div class="settings-row-desc">${esc(t("compat.toolsFolderHint"))}</div>
         </div>
         <div class="settings-row-control">
@@ -481,13 +493,15 @@ export async function loadCompatView(force = false): Promise<void> {
   loading = true;
   scheduleRender();
   try {
-    const [nextCatalog, nextConfig] = await Promise.all([
+    const [nextCatalog, nextConfig, nextUsage] = await Promise.all([
       compatCatalog(target, false),
       compatGetLaunchConfig().catch(() => null),
+      compatDiskUsage().catch(() => null),
     ]);
     if (generation !== loadGeneration) return;
     catalog = nextCatalog;
     launchConfig = nextConfig;
+    diskUsage = nextUsage;
   } catch (error) {
     if (generation !== loadGeneration) return;
     catalog = null;
@@ -632,6 +646,18 @@ export function handleCompatAction(act: string | undefined, el: HTMLElement): bo
     void compatToolsDir()
       .then((path) => epicOpenFolderPath(path))
       .catch(() => undefined);
+    return true;
+  }
+  if (act === "compat-clear-partials") {
+    void (async () => {
+      try {
+        const freed = await compatClearPartials();
+        toast(t("compat.partialsCleared", { size: fmtBytes(freed) }), "ok");
+        await loadCompatView(true);
+      } catch (error) {
+        toast(localizeMessage(String(error)), "err");
+      }
+    })();
     return true;
   }
   if (act === "compat-runner") {

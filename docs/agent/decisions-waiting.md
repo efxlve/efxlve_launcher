@@ -112,8 +112,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   seçiyordu, bu bir hataydı.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
-  başlatmamak için seçildi. Kullanıcı vazgeçerse araç kaldırma yarım parçayı da
-  temizler; ayrı bir "önbelleği boşalt" düğmesi eklenmedi.
+  başlatmamak için seçildi. Compatibility sayfasında araç klasörünün boyutu ve
+  "yarım indirmeleri temizle" düğmesi var; indirme sürerken temizlik reddediliyor.
+  Araç kaldırma da o araca ait yarım parçaları temizliyor.
 - **IGDB DLC/genişletme listesi:** mağaza DLC satırları kurulum yüzeyi olarak
   kaldı; IGDB yalnız mağazanın adlandırmadığı ekleri ayrı blokta gösteriyor.
   Mağaza başlığıyla aynı olan (kanonik başlık) kayıtlar eleniyor.

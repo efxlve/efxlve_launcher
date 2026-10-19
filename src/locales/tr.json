@@ -2593,5 +2593,9 @@
   "compat.layersHint": "Seçilen katmanlar her oyunun prefix'ine bir kez kopyalanır; DLL override'ları başlatmada ayarlanır.",
   "compat.layerDxvkHint": "DirectX 9/10/11 oyunlarını Vulkan üzerinden çalıştırır.",
   "compat.layerVkd3dHint": "DirectX 12 oyunlarını Vulkan üzerinden çalıştırır.",
-  "compat.unknownLayer": "Bilinmeyen çeviri katmanı."
+  "compat.unknownLayer": "Bilinmeyen çeviri katmanı.",
+  "compat.diskUsage": "Araç klasörü",
+  "compat.diskUsageDesc": "{size} kullanılıyor",
+  "compat.clearPartials": "Yarım indirmeleri temizle",
+  "compat.partialsCleared": "{size} boşaltıldı."
 }

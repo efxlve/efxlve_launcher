@@ -214,7 +214,8 @@ bilgisayar için varsayılan çalıştırıcı, sürüm, prefix klasörü ve umu
 Çalıştırıcı listesi launcher'ın indirdiği sürümlerin yanında Steam
 `compatibilitytools.d`, Lutris ve sistem Wine kopyalarını da gösterir; seçilen
 klasör `compat_runner_path` olarak saklanır ve başlatmada launcher'ın kendi
-kopyasından önce gelir.
+kopyasından önce gelir. Sayfa ayrıca araç klasörünün gerçek boyutunu gösterir ve
+yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 
 ### 8.5 Kalan işler
 - Flatpak/AppImage/.deb/.rpm paketleme ve macOS `.app`/notarization.

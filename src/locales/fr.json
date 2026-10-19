@@ -2593,5 +2593,9 @@
   "compat.layersHint": "Selected layers are copied into each game's prefix once; DLL overrides are set at launch.",
   "compat.layerDxvkHint": "Runs DirectX 9/10/11 games through Vulkan.",
   "compat.layerVkd3dHint": "Runs DirectX 12 games through Vulkan.",
-  "compat.unknownLayer": "Unknown translation layer."
+  "compat.unknownLayer": "Unknown translation layer.",
+  "compat.diskUsage": "Tool folder",
+  "compat.diskUsageDesc": "{size} used",
+  "compat.clearPartials": "Clear partial downloads",
+  "compat.partialsCleared": "Freed {size}."
 }
