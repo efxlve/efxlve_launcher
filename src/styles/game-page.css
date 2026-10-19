@@ -178,22 +178,21 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-stat-val.ok { color: var(--ok, #3dd68c); }
 .gp-stat-val.warn { color: var(--warn); }
 .gp-stat-val.plat { color: var(--accent); }
-/* Inside the scores card the same chips become a compact three-column strip. */
+/* The stats widget: the same chips as the old hero strip, in its own card. */
 .gp-stats.is-sidebar {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
   gap: 0;
-  margin-bottom: 12px;
-  padding: 0 0 10px;
+  margin: 0;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
 }
 .gp-stats.is-sidebar .gp-stat {
+  flex: 1 1 0;
   min-width: 0;
-  padding: 2px 12px;
+  padding: 2px 14px;
   border-left: 1px solid var(--line);
 }
 .gp-stats.is-sidebar .gp-stat:first-child { padding-left: 0; border-left: 0; }
@@ -206,6 +205,18 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.gp-cloud-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.gp-cloud-main svg { flex-shrink: 0; color: var(--text-3); }
+.gp-cloud-main.ok { color: var(--ok, #3dd68c); }
+.gp-cloud-main.ok svg { color: var(--ok, #3dd68c); }
+.gp-cloud-note { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-3); }
 .gp-mini-spin { width: 14px; height: 14px; display: inline-block; }
 
 /* --- Body & tabs --- */

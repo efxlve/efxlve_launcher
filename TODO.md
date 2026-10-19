@@ -51,11 +51,15 @@ feed choice, what still reads as a database, and the first three changes). Paste
 it into Antigravity and bring the answer back.
 
 Owner review, 2026-10-20: keep similar games at the bottom; simplify the action
-row, shorten the meta line, merge the hero stats into the scores card, localize
-genre tags, and remove the duplicate collection entry. The current code already
-had the simplified row, single meta line and one collection entry (the older
-screenshot was stale); this pass merged the stat strip into the "Scores & stats"
-card and routed the Steam genre fallback through the same Turkish dictionary.
+row, shorten the meta line, localize genre tags, and remove the duplicate
+collection entry. The current code already had the simplified row, single meta
+line and one collection entry (the older screenshot was stale). A follow-up
+split the personal facts into two sidebar widgets: **İstatistikler** (time and
+trophies) at the top above next achievements, and **Bulut** below it. The cloud
+card names the owner for external stores ("EA Cloud tarafından yönetilir",
+"Steam Cloud tarafından yönetilir", …) and keeps the sync state for
+launcher-managed copies. The scores card is back to scores only. The Steam genre
+fallback now uses the same Turkish dictionary.
 
 ## 0b. Remaining plan items
 

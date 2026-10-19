@@ -24,6 +24,7 @@ import {
   updateVerifyProgressInPlace,
 } from "../../manage/manage-view";
 import { rememberCloudSync, renderBackupListHtml } from "../../drawer/drawer-widgets";
+import { repaintCloudWidget } from "../../drawer/drawer-view";
 import {
   browseMoveTarget,
   cancelMoveGame,
@@ -168,14 +169,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
               S.activeManageSettings.lastCloudSync = now;
             }
             if (cloudSub) cloudSub.textContent = i18nT("manage.lastSync", { time: formatSyncStamp(now) });
-            const cloudVal = document.getElementById("gp-stat-cloud-val");
-            if (cloudVal && S.currentModalAppName === id) {
-              cloudVal.textContent = i18nT("drawer.cloudSynced");
-              cloudVal.classList.add("ok");
-              cloudVal.classList.remove("warn");
-              const wrap = cloudVal.closest(".gp-stat");
-              if (wrap) wrap.setAttribute("title", i18nT("manage.lastSync", { time: now }));
-            }
+            repaintCloudWidget(id);
           })
           .catch((err) => {
             toast(i18nT("manage.syncFailed", { msg: localizeMessage(String(err)) }), "err");

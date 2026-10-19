@@ -2642,5 +2642,14 @@
   "compat.diagnostics": "Copy diagnostics",
   "compat.diagnosticsHint": "Copies runner, prefix and layer paths for a bug report; no credentials.",
   "compat.diagnosticsCopied": "Diagnostics copied.",
-  "drawer.scoresStatsTitle": "Scores & stats"
+  "drawer.statsTitle": "Stats",
+  "drawer.cloudTitle": "Cloud",
+  "cloud.managedBy": "Managed by {provider}",
+  "cloud.rockstar": "Rockstar Games Cloud",
+  "cloud.xbox": "Xbox Cloud",
+  "cloud.battlenet": "Battle.net Cloud",
+  "cloud.riot": "Riot Cloud",
+  "cloud.epic": "Epic Games Cloud",
+  "cloud.amazon": "Amazon Games Cloud",
+  "cloud.externalTip": "Sync is handled by {provider}; the launcher cannot read its last sync time."
 }

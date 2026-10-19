@@ -169,16 +169,97 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
   ].filter(Boolean).join("");
 }
 
-function paintGameCloud(s: EpicSummary): void {
-  const el = document.getElementById("gp-stat-cloud-val");
-  if (!el) return;
+/** Who owns cloud saves for this copy, and whether the launcher can observe it. */
+function cloudProvider(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null,
+): { name: string; external: boolean; tip: string } {
+  const source = sourceOfKey(s.appName);
+  if (partner?.type === "ea" || source === "ea") {
+    return { name: t("feat.eaCloud"), external: true, tip: t("feat.eaCloudTip") };
+  }
+  if (partner?.type === "ubisoft" || source === "ubisoft") {
+    return { name: t("feat.ubiCloud"), external: true, tip: t("feat.ubiCloudTip") };
+  }
+  if (partner?.type === "rockstar") {
+    return {
+      name: t("cloud.rockstar"),
+      external: true,
+      tip: t("feat.partnerCloudTip", { name: "Rockstar Games" }),
+    };
+  }
+  if (source === "steam") {
+    return { name: t("feat.steamCloud"), external: true, tip: t("feat.steamCloudTip") };
+  }
+  if (source === "gog") {
+    return { name: t("feat.gogCloud"), external: true, tip: t("feat.gogCloudTip") };
+  }
+  if (source === "xbox") {
+    return {
+      name: t("cloud.xbox"),
+      external: true,
+      tip: t("cloud.externalTip", { provider: t("cloud.xbox") }),
+    };
+  }
+  if (source === "battlenet") {
+    return {
+      name: t("cloud.battlenet"),
+      external: true,
+      tip: t("cloud.externalTip", { provider: t("cloud.battlenet") }),
+    };
+  }
+  if (source === "riot") {
+    return {
+      name: t("cloud.riot"),
+      external: true,
+      tip: t("cloud.externalTip", { provider: t("cloud.riot") }),
+    };
+  }
+  if (partner) {
+    const name = t("feat.partnerCloud", { name: partner.name });
+    return {
+      name,
+      external: true,
+      tip: t("feat.partnerCloudTip", { name: partner.name }),
+    };
+  }
+  if (source === "epic") return { name: t("cloud.epic"), external: false, tip: "" };
+  if (source === "amazon") return { name: t("cloud.amazon"), external: false, tip: "" };
+  return { name: "", external: false, tip: "" };
+}
+
+function cloudWidgetBody(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
   const g = rawOf(s.appName);
-  const info = heroCloudStatus(s, g, gamePartner(s, g));
-  el.textContent = info.label;
-  el.classList.toggle("ok", info.synced);
-  el.classList.toggle("warn", !info.synced && !info.neutral && info.label !== "—");
-  const wrap = el.closest(".gp-stat");
-  if (wrap) wrap.setAttribute("title", info.tooltip);
+  const status = heroCloudStatus(s, g, partner, S.loadedRequirements.get(s.appName));
+  const provider = cloudProvider(s, partner);
+  let main = status.label;
+  let note = status.tooltip;
+  if (provider.external) {
+    main = t("cloud.managedBy", { provider: provider.name });
+    note = provider.tip;
+  } else {
+    if (main === "—") {
+      main = t("feat.localSave");
+      note = t("feat.localSaveTip");
+    } else if (!status.synced && status.label === t("drawer.cloudNotSynced")) {
+      main = `${provider.name} · ${status.label}`;
+    }
+  }
+  return `<div class="gp-cloud-main${status.synced ? " ok" : ""}">${icon("cloud", 16)}<span>${esc(main)}</span></div>
+    <p class="gp-cloud-note">${esc(note)}</p>`;
+}
+
+function paintGameCloud(s: EpicSummary): void {
+  const host = document.getElementById("gp-cloud-widget-body");
+  if (!host) return;
+  host.innerHTML = cloudWidgetBody(s, gamePartner(s, rawOf(s.appName)));
+}
+
+/** Repaints the cloud card after a sync/decision elsewhere on the page. */
+export function repaintCloudWidget(appName: string): void {
+  if (S.currentModalAppName !== appName) return;
+  const s = summaryOf(appName);
+  if (s) paintGameCloud(s);
 }
 
 const cloudStampAsked = new Set<string>();
@@ -521,7 +602,7 @@ function tabButton(tab: string, label: string, extraClass = ""): string {
  * achievements, service playtime, cloud stamp) arrives, so the open page never
  * keeps a stale dash.
  */
-function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
+function heroStatsHtml(s: EpicSummary): string {
   const stat = (label: string, value: string, attrs = "", valId = "", valCls = ""): string =>
     `<div class="gp-stat${attrs.includes("data-act") ? " clickable" : ""}" ${attrs}><span class="gp-stat-label">${label}</span><span class="gp-stat-val ${valCls}"${valId ? ` id="${valId}"` : ""}>${value}</span></div>`;
   const isPlat = isAppPlatinum(s.appName);
@@ -530,8 +611,6 @@ function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): 
   const achVal = achSum && achSum.total_achievements > 0
     ? `${achSum.user_unlocked}/${achSum.total_achievements}`
     : "—";
-  const cloud = heroCloudStatus(s, rawOf(s.appName), partner);
-  const cloudTone = cloud.synced ? "ok" : cloud.neutral ? "" : (cloud.label !== "—" ? "warn" : "");
   // The number alone says how much; the tooltip says when — the cheapest way to
   // make a static figure feel like the player's own history.
   const lastPlayed = pt?.last_played_timestamp
@@ -546,8 +625,7 @@ function heroStatsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): 
     : t("drawer.editPlaytime");
   return `
             ${stat(t("drawer.statTime"), esc(pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—"), `data-act="open-edit-playtime" data-id="${s.appName}" title="${esc(timeTooltip)}"`, "drawer-stat-playtime")}
-            ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}
-            ${stat(t("drawer.statCloud"), esc(cloud.label), `title="${esc(cloud.tooltip)}"`, "gp-stat-cloud-val", cloudTone)}`;
+            ${stat(isPlat ? t("drawer.statPlat") : t("drawer.statTrophy"), achVal, achSum && achSum.total_achievements > 0 ? `data-act="drawer-tab" data-tab="achievements" data-id="${s.appName}" title="${t("drawer.viewAchievements")}"` : "", "", isPlat ? "plat" : "")}`;
 }
 
 /** Split Epic's catalog blurb into readable paragraphs. */
@@ -927,7 +1005,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     const actions = modalRoot.querySelector(".gp-actions");
     if (actions) actions.innerHTML = actionsHtml(s, partner);
     const stats = modalRoot.querySelector(".gp-stats");
-    if (stats) stats.innerHTML = heroStatsHtml(s, partner);
+    if (stats) stats.innerHTML = heroStatsHtml(s);
     paintGameMeta(s);
     paintGameCloud(s);
     if (S.activeDrawerTab === "specs") {
@@ -1032,6 +1110,7 @@ export function updateHltbUI(appName: string, data?: HltbData): void {
 function syncScoresCardVisibility(): void {
   const pairs: Array<[string, string]> = [
     [".gp-lengths-card", "drawer-hltb-container"],
+    [".gp-critic-card", "drawer-critic-container"],
   ];
   for (const [selector, hostId] of pairs) {
     const card = document.querySelector<HTMLElement>(selector);
@@ -1315,16 +1394,25 @@ export function renderDrawerOverview(
         ${personal}
       </div>
       <aside class="hub-overview-sidebar">
-        ${renderNextAchievements(s.appName)}
-        ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
         ${sideCard(
           s.appName,
-          "scores",
-          t("drawer.scoresStatsTitle"),
-          "star",
-          `<div class="gp-stats is-sidebar">${heroStatsHtml(s, partner)}</div>${criticBlock}`,
-          { extraClass: "gp-critic-card" },
+          "stats",
+          t("drawer.statsTitle"),
+          "activity",
+          `<div class="gp-stats is-sidebar">${heroStatsHtml(s)}</div>`,
+          { extraClass: "gp-stats-card", idAttr: "gp-stats-widget" },
         )}
+        ${sideCard(
+          s.appName,
+          "cloud",
+          t("drawer.cloudTitle"),
+          "cloud",
+          `<div id="gp-cloud-widget-body">${cloudWidgetBody(s, partner)}</div>`,
+          { extraClass: "gp-cloud-card", idAttr: "gp-cloud-widget" },
+        )}
+        ${renderNextAchievements(s.appName)}
+        ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
+        ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, { extraClass: "gp-critic-card" })}
         ${renderMomentsStrip(s.appName)}
       </aside>
     </div>`;
@@ -1865,7 +1953,7 @@ function repaintAchievementSummary(appName: string): void {
   const s = summaryOf(appName);
   if (!s) return;
   const stats = document.querySelector<HTMLElement>(".gp-stats");
-  if (stats) stats.innerHTML = heroStatsHtml(s, gamePartner(s, rawOf(appName)));
+  if (stats) stats.innerHTML = heroStatsHtml(s);
   const tab = document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]');
   if (tab) tab.classList.toggle("plat", isAppPlatinum(appName));
   if (S.activeDrawerTab === "achievements") {

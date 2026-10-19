@@ -187,10 +187,14 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   sonrası durum yeniden okunuyor.
 - **Oyun sayfası sahibi turu:** Sahip, benzer oyunların altta kalmasını seçti;
   eylem satırı, tek künye satırı ve tek koleksiyon girişi zaten mevcut kodda
-  böyleydi (eski ekran görüntüsü yanıltıcıydı). Bu turda SÜRE/KUPA/BULUT şeridi
-  hero'dan "Puanlar ve istatistikler" kartına taşındı ve Steam tür yedeği aynı
-  Türkçe sözlükten geçirildi. Puan kartı artık puan olmasa da istatistikler için
-  görünür kalıyor.
+  böyleydi (eski ekran görüntüsü yanıltıcıydı). Takip turunda kişisel bilgiler
+  iki ayrı sidebar widget'ına ayrıldı: "İstatistikler" (SÜRE/KUPA) en üstte,
+  başarımların üstünde; "Bulut" ikinci widget. Dış mağazalarda bulut sahibi
+  adıyla gösteriliyor ("EA Cloud tarafından yönetilir", "Steam Cloud tarafından
+  yönetilir"; Rockstar/Xbox/Battle.net/Riot için kendi adları). Launcher'ın
+  yönettiği kopyalarda senkron durumu, yoksa "Yerel Kayıt" gösteriliyor. Puan
+  kartı yeniden yalnız puanlardan oluşuyor; Steam tür yedeği aynı Türkçe
+  sözlükten geçiyor.
 - **Çevrimdışı rozetler:** Steam Deck, ProtonDB ve AWACY komutları çevrimdışı
   modda `offline: true` ile çağrılıyor; backend ağa çıkmıyor, yalnız disk
   cache'ini okuyor. Cache varsa rozet eski veriyle görünüyor, yoksa satır gizli

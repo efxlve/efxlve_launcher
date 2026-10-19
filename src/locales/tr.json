@@ -2642,5 +2642,14 @@
   "compat.diagnostics": "Tanılamayı kopyala",
   "compat.diagnosticsHint": "Hata bildirimi için çalıştırıcı, prefix ve katman yollarını kopyalar; kimlik bilgisi içermez.",
   "compat.diagnosticsCopied": "Tanılama kopyalandı.",
-  "drawer.scoresStatsTitle": "Puanlar ve istatistikler"
+  "drawer.statsTitle": "İstatistikler",
+  "drawer.cloudTitle": "Bulut",
+  "cloud.managedBy": "{provider} tarafından yönetilir",
+  "cloud.rockstar": "Rockstar Games Cloud",
+  "cloud.xbox": "Xbox Cloud",
+  "cloud.battlenet": "Battle.net Cloud",
+  "cloud.riot": "Riot Cloud",
+  "cloud.epic": "Epic Games Cloud",
+  "cloud.amazon": "Amazon Games Cloud",
+  "cloud.externalTip": "Senkronizasyonu {provider} yönetir; launcher son senkron zamanını okuyamaz."
 }
