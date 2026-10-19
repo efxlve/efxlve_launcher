@@ -3,6 +3,7 @@
 
 mod cloud_backup;
 mod comet;
+mod compat;
 mod companion;
 mod controller;
 mod controller_bridge;
@@ -161,6 +162,18 @@ pub struct EpicSettings {
     /// Base folder for Amazon Games installs (empty = Nile's default).
     #[serde(default)]
     pub amazon_install_dir: Option<String>,
+    /// Linux/macOS compatibility manager: the runner used for new launches.
+    #[serde(default)]
+    pub compat_runner: Option<String>,
+    /// Specific installed runner tag (empty = newest installed).
+    #[serde(default)]
+    pub compat_runner_tag: Option<String>,
+    /// Root for per-game Wine/Proton prefixes.
+    #[serde(default)]
+    pub compat_prefix_dir: Option<String>,
+    /// Prefer umu-launcher when it is installed (Linux).
+    #[serde(default)]
+    pub compat_umu_enabled: Option<bool>,
     #[serde(default = "default_true")]
     pub auto_desktop_shortcut: bool,
 }
@@ -1091,6 +1104,13 @@ fn main() {    // Rockstar's launcher only continues when a process named
             gogdl::commands::gog_import_galaxy_tags,
             comet::epic_set_gog_comet,
             comet::comet_prepare,
+            compat::install::compat_catalog,
+            compat::install::compat_install,
+            compat::install::compat_remove,
+            compat::install::compat_cancel,
+            compat::install::compat_tools_dir,
+            compat::launch::compat_get_launch_config,
+            compat::launch::compat_set_launch_config,
             nile::auth::nile_auth_status,
             nile::auth::nile_login_begin,
             nile::auth::nile_login_finish,

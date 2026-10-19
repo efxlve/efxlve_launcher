@@ -56,6 +56,11 @@ export interface EpicSettings {
   screenshot_disabled_games?: string[] | null;
   /** Run Comet (GOG Communication Service) during GOG sessions. */
   gog_comet_enabled?: boolean | null;
+  /** Linux/macOS compatibility manager (managed by its own commands). */
+  compat_runner?: string | null;
+  compat_runner_tag?: string | null;
+  compat_prefix_dir?: string | null;
+  compat_umu_enabled?: boolean | null;
 }
 
 export const epicInstallGame = (appName: string, installDir?: string) =>

@@ -252,7 +252,16 @@ pub async fn nile_launch(app: AppHandle, id: String) -> Result<String, String> {
         .map(|lp| lp.split_whitespace().map(|a| a.to_string()).collect())
         .unwrap_or_default();
     cmd.args(["launch", &id]);
+    // Linux/macOS: Nile can hand the PE to the same Wine/Proton wrapper the
+    // other stores use. Windows gets an empty spec, so this is a no-op there.
+    let compat = crate::compat::launch_spec(&app, &composite);
+    if let Some(wrapper) = compat.wrapper_command() {
+        cmd.args(["--no-wine", "--wrapper", &wrapper]);
+    }
     cmd.args(&extra_args);
+    for (name, value) in &compat.env {
+        cmd.env(name, value);
+    }
     if let Some(env) = cfg.and_then(|c| c.env_vars.as_ref()) {
         for (name, value) in env {
             cmd.env(name, value);

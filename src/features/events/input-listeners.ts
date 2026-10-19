@@ -40,6 +40,7 @@ import {
   renderDrawerDlcs,
 } from "../drawer/drawer-view";
 import { getAchTier, renderAchievementSections } from "../drawer/drawer-widgets";
+import { handleCompatAction } from "../settings/compat-view";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
 import { updateInstallFinalPath } from "../install/install-dialog";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
@@ -622,6 +623,9 @@ document.addEventListener("change", (e) => {
     return;
   }
   const act = t.dataset.act;
+  // Compatibility selects (target, runner, runner version, umu toggle) live in
+  // the settings page but are answered by their own module.
+  if (act?.startsWith("compat-") && handleCompatAction(act, t)) return;
   if (act === "lib-page-size") {
     // Shared by the library pagination bar and the Settings > Appearance row.
     S.libPageSize = normalizeLibraryPageSize((t as HTMLSelectElement).value);

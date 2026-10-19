@@ -74,8 +74,21 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
     // stands in for it while the official client is closed.
     crate::comet::start_for_session(&app).await;
 
-    // Spawn the game detached from launcher window
-    let mut cmd = tokio::process::Command::new(&target_exe);
+    // Linux/macOS: hand the PE to the selected Wine/Proton wrapper. Windows
+    // gets an empty spec, and the executable starts directly as before.
+    let compat = crate::compat::launch_spec(&app, &composite_id);
+    let mut cmd = match compat.program.as_ref() {
+        Some(program) => {
+            let mut cmd = tokio::process::Command::new(program);
+            cmd.args(&compat.args);
+            cmd.arg(&target_exe);
+            cmd
+        }
+        None => tokio::process::Command::new(&target_exe),
+    };
+    for (name, value) in &compat.env {
+        cmd.env(name, value);
+    }
     cmd.current_dir(&install_dir);
 
     #[cfg(windows)]

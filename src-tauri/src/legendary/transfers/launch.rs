@@ -659,6 +659,10 @@ pub(super) async fn spawn_launched(
         cmd
     };
 
+    // Linux/macOS: the compatibility manager picks the Wine/Proton wrapper and
+    // prefix. On Windows this is an empty spec and the old path is untouched.
+    let compat = crate::compat::launch_spec(app, app_name);
+
     // Per-game wrapper + environment variables (applied to legendary so the
     // launched game inherits them).
     let cfgs = crate::legendary::commands::load_all_game_custom_configs();
@@ -670,6 +674,8 @@ pub(super) async fn spawn_launched(
             .filter(|w| !w.is_empty());
         if let Some(wrapper) = custom_wrapper {
             cmd.arg("--wrapper").arg(wrapper);
+        } else if let Some(wrapper) = compat.wrapper_command() {
+            cmd.arg("--wrapper").arg(wrapper);
         } else if let Some(relay_exe) = relay.as_ref() {
             // No wrapper of the user's own: the relay copy stands in for the
             // Epic Games Launcher, which Rockstar wants in the parent chain.
@@ -678,6 +684,11 @@ pub(super) async fn spawn_launched(
             // to arrive quoted.
             cmd.arg("--wrapper")
                 .arg(format!("\"{}\"", relay_exe.display()));
+        }
+        // Compatibility env first, then the game's own vars: an explicit
+        // per-game override must win over the runner default.
+        for (key, value) in &compat.env {
+            cmd.env(key, value);
         }
         if let Some(envs) = cfg.and_then(|c| c.env_vars.as_ref()) {
             for (key, value) in envs {

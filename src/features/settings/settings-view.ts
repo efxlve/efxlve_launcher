@@ -63,6 +63,7 @@ import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-set
 import { screenshotWebhookInfo } from "../../epic";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
@@ -81,6 +82,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "integrations", labelKey: "settings.secIntegrations" },
   { id: "social", labelKey: "settings.secSocial" },
   { id: "launchers", labelKey: "settings.secLaunchers" },
+  { id: "compat", labelKey: "settings.secCompat" },
   { id: "collections", labelKey: "settings.secCollections" },
   { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
@@ -107,7 +109,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navApp",
-    sections: ["controller", "appearance", "screenshots", "notes", "system", "tasks", "about"],
+    sections: ["compat", "controller", "appearance", "screenshots", "notes", "system", "tasks", "about"],
   },
 ];
 
@@ -1211,6 +1213,7 @@ function renderSection(section: SettingsSection): string {
     case "integrations": return renderIntegrations();
     case "social": return renderSocial();
     case "launchers": return renderLaunchers();
+    case "compat": return renderCompatSection();
     case "collections": return renderCollections();
     case "controller": return renderController();
     case "appearance": return renderAppearance();
@@ -1540,6 +1543,7 @@ export async function loadSettingsView(): Promise<void> {
   if (S.settingsSection === "integrations") void loadIntegrationsView();
   if (S.settingsSection === "controller") void loadControllerView(true);
   if (S.settingsSection === "launchers") void loadLaunchersView();
+  if (S.settingsSection === "compat") void loadCompatView();
 }
 
 /**
@@ -1738,6 +1742,7 @@ async function applyCleanup(): Promise<void> {
  * does not grow. Returns true when the action was handled.
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement, _targetEl?: HTMLElement): boolean {
+  if (handleCompatAction(act, _el)) return true;
   switch (act) {
     case "add-ss-webhook": {
       const nameInput = document.getElementById("ss-webhook-name") as HTMLInputElement | null;

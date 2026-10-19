@@ -96,6 +96,17 @@ remaining work is pictures and prefetching:
 - Idle cost first: transparency (section 2) and TV mode (section 1) are the two
   known CPU drains; measure with the task manager page before and after.
 
+Status, 2026-10-19: the cache warm-up landed. `game-prefetch.ts` walks the six
+recent/first installed games once per 12 hours, after the window is idle, and
+fills HLTB, critic, requirements, achievements, DLC, screenshots, news (only for
+titles with a Steam copy) and IGDB plus its pictures. The page's in-memory maps
+are filled too, so a later open is local. The GOG details call is now one
+per-session promise (`game-details-cache.ts`) instead of one per open, the three
+library loaders (`loadSteamLibrary`, `loadCompanionLibrary`,
+`loadEpicAchSummaries`) share an in-flight promise, and the boot path reads the
+network profile/settings/autostart in one parallel batch. Store-detail arrivals
+patch their own blocks instead of calling `openEpicModal` and rebuilding the tab.
+
 ## 0d. Community follow-ups (open)
 
 - Berke: the Discord consent fix shipped in 0.1.31 (the RPC scope list plus the
@@ -273,3 +284,22 @@ frame rate, so a machine that cannot hold the requested rate still writes a file
 whose picture and sound are the same length. Before that fix, a 47 s recording
 with 779 frames claimed 30 fps, played its picture in 26 s and drifted 20.5 s
 away from its 46.5 s sound track.
+
+## 9. Linux/macOS compatibility layer (preparation)
+
+Shipped 2026-10-19: `src-tauri/src/compat/` (catalogue, GitHub release cache,
+download/extract/verify/remove, launch wrapper), platform-aware Legendary and
+GOGdl assets, and Settings › Compatibility with a target-platform selector so a
+Linux/macOS tree can be staged from Windows. See `docs/CROSS_PLATFORM.md` §8 for
+the exact surface.
+
+Still open:
+- First-run `wineboot`/prefix creation with progress and a retry path.
+- Per-game runner/prefix selection (global default plus the existing per-game
+  wrapper is what ships today).
+- Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization.
+- ProtonDB/Steam Deck badges and anti-cheat notices on the game page.
+- Platform implementations for the screenshot hook, embedded store webview and
+  drive scan (F0/F5).
+- `wine-crossover` is detection-only until a maintained release source exists;
+  `vulkan-helper-rs` is source-only.

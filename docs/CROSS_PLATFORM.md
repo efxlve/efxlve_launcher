@@ -154,7 +154,66 @@ Heroic modeli: `legendary launch <app> --no-wine --wrapper "<runner> run"`.
 
 ---
 
-## 8. Referanslar
+## 8. Uygulanan ilk katman (2026-10-19)
+
+Bu bölüm tasarımın hangi parçalarının kodda olduğunu söyler; Linux/macOS
+paketinin çıktığı anlamına gelmez.
+
+### 8.1 Platforma göre mağaza CLI'ları
+- `legendary/paths.rs` ve `gogdl/paths.rs` artık işletim sistemi + mimariye göre
+  doğru release asset'ini seçiyor (Windows x64/ARM64, Linux x64/ARM64, macOS
+  x64/ARM64). İndirilen dosya Unix'te çalıştırılabilir işaretleniyor.
+- Nile ve Comet zaten tüm platformlar için pinlenmiş asset'lere sahipti; davranış
+  değişmedi.
+
+### 8.2 Uyumluluk araç yöneticisi
+`src-tauri/src/compat/` üç işe ayrıldı:
+
+| Dosya | İş |
+|---|---|
+| `catalog.rs` | 16 araçlık katalog, platform/asset eşlemesi, arşiv türü |
+| `install.rs` | GitHub sürüm kontrolü (6 saat önbellek), indirme, SHA-256, arşiv açma, klasör kaydı, kaldırma, IPC |
+| `launch.rs` | Wine/Proton/umu wrapper'ı, `WINEPREFIX`, `STEAM_COMPAT_*`, `PROTONPATH`, `GAMEID`, `STORE` |
+
+- Araçlar `<app_data>/compat/<os>-<arch>/<tool>/<tag>` altına iner; her kurulum
+  `manifest.json` taşır. `.tar.gz`, `.tar.xz`, `.tar.zst`, `.tar` ve düz dosya
+  destekleniyor. Arşiv yolları `..`/kök dizin kontrolünden geçiyor.
+- GitHub asset'inin `digest` alanı varsa SHA-256 doğrulanır; ayrıca indirilen
+  boyut ilan edilen boyutla karşılaştırılır.
+- Büyük indirmeler `compat-progress` olayıyla yüzde/indirme bilgisi yayınlar,
+  iptal edilebilir. Aynı araç için ikinci indirme reddedilir.
+- Windows'tan `linux-x86_64`, `linux-aarch64`, `macos-x86_64` veya
+  `macos-aarch64` hedefi seçilebilir; bu, paketleme öncesi araç ağacını
+  hazırlamak için. Başlatma her zaman çalışan platformun ağacını kullanır.
+
+### 8.3 Başlatma zinciri
+- Epic: `legendary launch --wrapper "<runner> [run]"` + ortam değişkenleri.
+- GOG: oyun exe'si seçilen wrapper'ın arkasından başlatılır.
+- Amazon: `nile launch --no-wine --wrapper "<runner> [run]"` + ortam.
+- Öncelik: oyunun kendi `wrapper` ayarı → uyumluluk yöneticisinin seçimi →
+  (Windows'ta) Epic relay. umu-launcher kuruluysa ve açıksa Proton yerine o
+  kullanılır. Her oyun `<prefix>/<appName>` altında kendi prefix'ini alır.
+- Windows'ta `launch_spec` boş döner; mevcut Windows yolu birebir korunur.
+
+### 8.4 Arayüz
+Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştırıcılar,
+çalışma zamanları, çeviri katmanları ve yardımcılar; sürüm/boyut, kurulu sürüm,
+sistemde bulunan kopyalar, indir/kaldır/güncelle ve canlı ilerleme. Altta bu
+bilgisayar için varsayılan çalıştırıcı, sürüm, prefix klasörü ve umu anahtarı.
+
+### 8.5 Kalan işler
+- Flatpak/AppImage/.deb/.rpm paketleme ve macOS `.app`/notarization.
+- GPTK/D3DMetal lisansı: binary paketlenmez, kullanıcı kendi kurulumunu yönetir.
+- Prefix'i `wineboot` ile ilk açılışta hazırlama ve hata akışı.
+- Oyun başına runner/prefix seçimi (bugün global varsayılan + oyunun kendi
+  wrapper'ı var).
+- ProtonDB/Steam Deck rozetleri, Gamescope/GameMode, anti-cheat uyarıları.
+- Ekran görüntüsü kancası, gömülü mağaza webview'i ve sürücü taraması için
+  platform implementasyonları (F0/F5).
+- `wine-crossover` yalnızca algılanır (Gcenx/winecx deposu 404); `vulkan-helper-rs`
+  kaynak-only olduğu için indirilmez.
+
+## 9. Referanslar
 
 - Heroic Games Launcher — https://heroicgameslauncher.com (GPL-3.0)
 - GE-Proton — https://github.com/GloriousEggroll/proton-ge-custom

@@ -404,3 +404,20 @@
 .ss-webhook-howto-title { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
 .ss-webhook-howto ol { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.7; color: var(--text-2); }
 .ss-webhook-safe { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11.5px; color: var(--text-3); }
+
+/* Compatibility toolbox: the catalog rows and their live download bar. */
+.compat-tool .settings-row-control { flex-wrap: wrap; justify-content: flex-end; }
+.compat-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.compat-chip {
+  padding: 1px 7px; border: 1px solid var(--line); border-radius: 999px;
+  font-size: 10.5px; letter-spacing: 0.02em; color: var(--text-3);
+}
+.compat-status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; }
+.compat-state { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
+.compat-state.ok { color: var(--text); }
+.compat-state.muted { color: var(--text-3); }
+.compat-meta { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.compat-progress-wrap { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.compat-progress { width: 150px; height: 4px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.compat-progress > span { display: block; height: 100%; background: var(--accent); transition: width 0.2s linear; }
+.compat-progress-label { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }

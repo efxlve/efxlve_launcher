@@ -119,6 +119,7 @@ import {
   renderNotificationPanel,
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
+import { loadCompatView } from "../settings/compat-view";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
@@ -794,6 +795,7 @@ document.addEventListener("click", (e) => {
     if (S.settingsSection === "integrations") void loadIntegrationsView();
     if (S.settingsSection === "controller") void loadControllerView(true);
     if (S.settingsSection === "launchers") void loadLaunchersView();
+    if (S.settingsSection === "compat") void loadCompatView();
   } else if (act === "controller-refresh") {
     void loadControllerView(true);
   } else if (act === "toggle-controller-bridge") {

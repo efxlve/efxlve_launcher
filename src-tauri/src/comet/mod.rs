@@ -11,6 +11,7 @@ mod binary;
 mod service;
 
 pub use binary::ensure_binary;
+pub use binary::resolve_binary;
 pub use service::{start_for_session, stop};
 
 /// Whether Comet should run for GOG sessions. On unless the user opted out.
