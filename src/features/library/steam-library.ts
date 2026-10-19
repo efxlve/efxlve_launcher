@@ -234,7 +234,8 @@ async function loadSteamLibraryOnce(force = false): Promise<string | null> {
     setSteamSummaries(games.filter((g) => !isSteamLibraryNoise(g.appId, g.name)).map(steamGameToItem));
   } catch {
     S.steamLibrarySyncing = false;
-    setSteamSummaries([]);
+    // A locked/missing manifest is not "Steam has no games": keep the last
+    // snapshot and let the next client watcher pass replace it.
     scheduleRender();
     return null;
   }

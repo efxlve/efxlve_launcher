@@ -116,8 +116,8 @@ async function loadCompanionLibraryOnce(): Promise<void> {
       if (g.storeId) storeIds.set(`${g.store}::${g.id}`, g.storeId);
     }
   } catch {
-    S.companionSummaries = [];
-    S.companionAchSummaries = {};
+    // A transient read/session error must not erase the cards the user already
+    // has. An actual unlink answers with an empty list, which is handled above.
   }
   rebuildAllGamesMap();
   S.libraryDataRev++;
