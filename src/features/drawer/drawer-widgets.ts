@@ -568,6 +568,32 @@ export function renderLastSession(appName: string): string {
     </section>`;
 }
 
+/** The same session fact in the hero bar, where it fills the right-hand space. */
+export function renderLastSessionCompact(appName: string): string {
+  const summary = sessionSummaryFor(appName);
+  if (!summary) {
+    return `<div class="gp-hero-session is-empty">
+      <span class="gp-hero-session-label">${i18nT("drawer.lastSession")}</span>
+      <span class="gp-hero-session-meta">${i18nT("playtime.noSession")}</span>
+    </div>`;
+  }
+  const when = sessionWhen(summary.at);
+  const whenText =
+    when.unit === "minutes"
+      ? i18nT("time.minutesAgo", { n: when.n })
+      : when.unit === "hours"
+        ? i18nT("time.hoursAgo", { n: when.n })
+        : i18nT("time.daysAgo", { n: when.n });
+  const trophies =
+    summary.unlocked > 0
+      ? ` <span class="gp-hero-session-trophies">${icon("trophy", 11)} ${i18nT("drawer.lastSessionTrophies", { n: summary.unlocked })}</span>`
+      : "";
+  return `<div class="gp-hero-session">
+    <span class="gp-hero-session-label">${i18nT("drawer.lastSession")}</span>
+    <span class="gp-hero-session-meta"><span class="num">${esc(fmtPlaytime(summary.seconds))}</span> &middot; ${esc(whenText)}${trophies}</span>
+  </div>`;
+}
+
 /**
  * What the game's own feed says today: Steam's public news endpoint, three
  * items, patch notes marked. This is the one block on the page that changes

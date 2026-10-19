@@ -93,6 +93,33 @@ body.sb-resizing .overlay {
   background: transparent;
 }
 .gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.gp-bar-right { display: flex; align-items: center; justify-content: flex-end; margin-left: auto; min-width: 0; }
+.gp-hero-session {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  text-align: right;
+}
+.gp-hero-session-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.gp-hero-session-meta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.gp-hero-session-meta .num { color: var(--text); font-variant-numeric: tabular-nums; }
+.gp-hero-session-trophies { color: var(--text-3); }
+.gp-hero-session.is-empty .gp-hero-session-meta { color: var(--text-3); }
 /* Collection chips sit in the metadata line under the title */
 .gp-hero-tags { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
 .gp-hero-tags:empty { display: none !important; }

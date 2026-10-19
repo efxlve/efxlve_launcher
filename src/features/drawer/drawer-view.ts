@@ -50,7 +50,7 @@ import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
-import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1059,6 +1059,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
           </div>
+          <div class="gp-bar-right">${renderLastSessionCompact(s.appName)}</div>
         </div>
 
         <div class="gp-body">
@@ -1335,7 +1336,7 @@ function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
           </div>
         </section>`
       : "";
-  return `${renderLastSession(s.appName)}${noteCard}${personalEmpty}`;
+  return `${noteCard}${personalEmpty}`;
 }
 
 /** Paints the personal block and personal sidebar widgets again after a session ended or notes changed, if its page is open. */
