@@ -73,8 +73,15 @@ body.sb-resizing .overlay {
   padding-bottom: 2px;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
 }
-.gp-meta { display: flex; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--text-2); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+.gp-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 0; font-size: 13px; color: var(--text-2); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 .gp-meta > * + *::before { content: "·"; margin: 0 8px; color: var(--text-3); }
+.gp-meta > :first-child:empty + *::before,
+.gp-meta > :first-child[style*="display: none"] + *::before,
+.gp-meta > :first-child[style*="display:none"] + *::before {
+  content: "" !important;
+  margin: 0 !important;
+  display: none !important;
+}
 .gp-meta-item { display: inline-flex; align-items: center; gap: 5px; }
 
 /* --- Action bar + stats --- */
@@ -86,11 +93,40 @@ body.sb-resizing .overlay {
   background: transparent;
 }
 .gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-/* Collection chips sit over the hero title: the user's own categories, not
-   actions. The add action lives in the `...` menu, so the action row stays at
-   five items. */
-.gp-hero-tags { margin: 0 0 10px; }
-.gp-hero-tags:empty { display: none; }
+/* Collection chips sit in the metadata line under the title */
+.gp-hero-tags { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.gp-hero-tags:empty { display: none !important; }
+.gp-col-chip {
+  height: 22px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease), border-color var(--ease);
+}
+.gp-col-chip:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.gp-col-chip svg {
+  width: 12px;
+  height: 12px;
+  color: var(--text-3);
+  transition: color var(--ease);
+}
+.gp-col-chip:hover svg {
+  color: var(--text);
+}
 .gp-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .gp-actions > .btn.lg:first-child { min-width: 180px; }
 .gp-actions .btn.lg.icon-only { width: 44px; }
@@ -130,14 +166,15 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-store-row.selected .gp-store-trail { color: #fff; }
 .gp-stats {
   display: flex; align-items: stretch; gap: 0;
-  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 4px;
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 3px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 .gp-stat { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 4px 18px; border-left: 1px solid var(--line); min-width: 96px; }
 .gp-stat:first-child { border-left: none; }
-.gp-stat.clickable { cursor: pointer; border-radius: var(--r-sm); }
-.gp-stat.clickable:hover { background: var(--surface-2); }
-.gp-stat-label { font-size: 10.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-.gp-stat-val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gp-stat.clickable { cursor: pointer; border-radius: var(--r-sm); transition: background var(--ease); }
+.gp-stat.clickable:hover { background: var(--surface-3); }
+.gp-stat-label { font-size: 10.5px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
+.gp-stat-val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
 .gp-stat-val.ok { color: var(--ok, #3dd68c); }
 .gp-stat-val.warn { color: var(--warn); }
 .gp-stat-val.plat { color: var(--accent); }

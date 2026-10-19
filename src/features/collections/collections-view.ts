@@ -327,7 +327,11 @@ export async function saveGameCollectionsFromModal(): Promise<void> {
 
 export function updateDrawerCollectionsBoxInPlace(appName: string): void {
   const container = document.getElementById("drawer-col-chips-container");
-  if (container) container.innerHTML = renderCollectionTags(appName);
+  if (container) {
+    const html = renderCollectionTags(appName);
+    container.innerHTML = html;
+    container.style.display = html ? "" : "none";
+  }
 }
 
 /** Load the user's collections from Epic and refresh the library if visible. */
