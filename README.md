@@ -12,13 +12,13 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20x86__64-222" alt="Windows" />
-  <img src="https://img.shields.io/badge/version-0.1.29-222" alt="Version 0.1.29" />
+  <img src="https://img.shields.io/badge/version-0.1.31-222" alt="Version 0.1.31" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
 Efxlve Launcher eliminates the need to keep multiple heavy launchers running in the background. It opens instantly from local disk cache, so your library is immediately accessible even offline. Installs, updates, and launches for managed stores are powered by native Rust wrappers around the `legendary`, `gogdl` and Nile CLIs, while client-owned stores keep using their own apps.
 
-> **Platform note:** The launcher currently ships for Windows 10/11 (x64). Linux and macOS support is in the works and coming soon.
+> **Platform note:** The launcher ships for Windows 10/11 (x64). Linux and macOS are being prepared in the same tree: Settings → Compatibility already manages Wine/Proton runners, umu-launcher, DXVK, VKD3D-Proton and the macOS tools, and the store CLIs download the right build per platform. The Linux/macOS bundles themselves are not released yet.
 
 ---
 
@@ -31,16 +31,17 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 - **Multi-Account Vault:** Connect multiple Epic, GOG, Steam and Amazon accounts. Fast 1-click account switching without re-entering credentials.
 - **Downloads & Transfers:** Real-time bandwidth and disk write metrics, speed limiter, concurrent download control, and pause/resume capability.
 - **Cloud & Local Save Backups:** Automated local backups on game exit, plus WebDAV and Google Drive cloud integration.
-- **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression.
+- **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression, an editor, and a clip recorder.
 - **SteamGridDB Integration:** Automatic high-resolution covers and support for custom user artwork.
-- **15 Languages:** Full interface parity across 15 languages with automatic system language detection.
+- **Compatibility Toolbox:** Wine/Proton runners (GE-Proton, Proton-CachyOS), umu-launcher, DXVK/VKD3D-Proton and the macOS toolchain can be downloaded, inventoried and selected from Settings → Compatibility. Detected Steam/Lutris/Wine runners are usable too, and selected layers are copied into each game's prefix.
+- **16 Languages:** Full interface parity across 16 languages with automatic system language detection.
 - **Self-Updating:** In-app updates powered by signed GitHub Releases.
 
 ---
 
 ## Download & Install
 
-The current release is **v0.1.29**.
+The current release is **v0.1.31**.
 
 1. Download the latest installer (`.exe`) from [Releases](https://github.com/efxlve/efxlve_launcher/releases/latest).
 2. Requirements: Windows 10 or 11 (64-bit). Microsoft Edge WebView2 (pre-installed on Windows 11).
@@ -78,7 +79,8 @@ cargo test                 # Rust unit tests
 - [docs/GOOGLE_DRIVE_SETUP_GUIDE.md](./docs/GOOGLE_DRIVE_SETUP_GUIDE.md) — Step-by-step Google Drive Cloud Save Backup setup guide.
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) — Hydra console dark tokens, layout contracts, and UI invariants.
 - [docs/OVERLAY_ROADMAP.md](./docs/OVERLAY_ROADMAP.md) — In-game overlay research, architecture and milestones.
-- [docs/TAURI_IPC_REFERENCE.md](./docs/TAURI_IPC_REFERENCE.md) — 236 Tauri IPC commands and event schemas.
+- [docs/CROSS_PLATFORM.md](./docs/CROSS_PLATFORM.md) — Linux/macOS compatibility layer, runners and packaging plan.
+- [docs/agent/ipc-index.md](./docs/agent/ipc-index.md) — Generated index of the Tauri IPC commands.
 - [AGENTS.md](./AGENTS.md) — Operational guidelines for AI agents and core developers.
 
 ---
@@ -105,6 +107,18 @@ These open-source tools ship with the launcher or are downloaded once at first u
 - [Comet](https://github.com/imLinguin/comet) — open-source GOG Galaxy Communication Service, run while a GOG game plays so achievements unlock without the Galaxy client.
 - [SteamGridDB](https://www.steamgriddb.com/) — high-resolution cover art for the library grid.
 
+### Compatibility runtimes
+
+These are downloaded on demand from Settings → Compatibility and used only on the platform they target:
+
+- [GE-Proton](https://github.com/GloriousEggroll/proton-ge-custom) and [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) — Wine/Proton runners.
+- [umu-launcher](https://github.com/Open-Wine-Components/umu-launcher) — runs Proton inside the Steam Runtime.
+- [DXVK](https://github.com/doitsujin/dxvk) and [VKD3D-Proton](https://github.com/HansKristian-Work/vkd3d-proton) — DirectX 9/10/11 and 12 to Vulkan.
+- [Game Porting Toolkit](https://github.com/Gcenx/game-porting-toolkit), [macOS Wine builds](https://github.com/Gcenx/macOS_Wine_builds), [DXVK-macOS](https://github.com/Gcenx/DXVK-macOS) and [DXMT](https://github.com/3Shain/dxmt) — macOS toolchain.
+- [Heroic Epic Integration](https://github.com/Etaash-mathamsetty/heroic-epic-integration) — the Epic Games Launcher stand-in used inside a prefix.
+- [vulkan-helper-rs](https://github.com/imLinguin/vulkan-helper-rs) — Vulkan capability probe used by the Heroic stack.
+- CrossOver is detected when installed; its Wine build is not redistributed by this launcher.
+
 ### Frontend libraries & tooling
 
 - [Tauri 2](https://github.com/tauri-apps/tauri) JS API and its [plugins](https://github.com/tauri-apps/plugins-workspace) — opener, process, updater, notification.
@@ -123,6 +137,7 @@ Direct dependencies of the backend; each crate keeps its own license:
 - [notify](https://github.com/notify-rs/notify) — file watching (Steam manifests).
 - [discord-rich-presence](https://github.com/vionya/discord-rich-presence) — Discord activity while a game runs.
 - [flate2](https://github.com/rust-lang/flate2) / [tar](https://github.com/alexcrichton/tar-rs) — archive extraction for store tools.
+- [xz2](https://github.com/alexcrichton/xz2-rs) / [zstd](https://github.com/gyscos/zstd-rs) — `.tar.xz` and `.tar.zst` runtime archives.
 - [sha2](https://github.com/RustCrypto/hashes) — checksums for downloaded binaries.
 - [rsa](https://github.com/RustCrypto/RSA) — Steam sign-in encryption.
 - [zeroize](https://github.com/RustCrypto/utils) — wiping secrets from memory.
