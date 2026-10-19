@@ -323,16 +323,7 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       S.loadedScreenshots.set(appName, items);
       if (S.currentModalAppName === appName) {
         const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
-        const tabBtn = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"]');
-        if (items.length > 0) {
-          if (badgeEl) {
-            badgeEl.textContent = `(${items.length})`;
-          } else if (tabBtn) {
-            tabBtn.insertAdjacentHTML("beforeend", ` <span class="drawer-tab-badge">(${items.length})</span>`);
-          }
-        } else if (badgeEl) {
-          badgeEl.remove();
-        }
+        if (badgeEl) badgeEl.remove();
 
         if (S.activeDrawerTab === "screenshots") {
           const contentEl = document.getElementById("drawer-tab-content");

@@ -47,9 +47,8 @@ function repaint(): void {
 function refreshTabButton(appName: string): void {
   const btn = document.querySelector<HTMLElement>('.drawer-tab[data-tab="notes"]');
   if (!btn) return;
-  const count = cachedNotes().filter((note) => note.scope === appName).length;
   const active = btn.classList.contains("active");
-  btn.outerHTML = `<button class="tab drawer-tab${active ? " active" : ""}" data-act="drawer-tab" data-tab="notes" data-id="${esc(appName)}">${icon("edit", 14)}${esc(t("drawer.notes"))}${count > 0 ? `<span class="count drawer-tab-badge">${count}</span>` : ""}</button>`;
+  btn.outerHTML = `<button class="tab drawer-tab${active ? " active" : ""}" data-act="drawer-tab" data-tab="notes" data-id="${esc(appName)}">${icon("edit", 14)}${esc(t("drawer.notes"))}</button>`;
 }
 
 /** Loads the list once per open and keeps the tab button's count in step. */

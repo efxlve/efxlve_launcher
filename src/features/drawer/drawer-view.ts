@@ -496,9 +496,9 @@ const TAB_ICON: Record<string, IconName> = {
   specs: "cpu",
 };
 
-function tabButton(tab: string, label: string, count = 0, extraClass = ""): string {
+function tabButton(tab: string, label: string, extraClass = ""): string {
   const glyph = TAB_ICON[tab] ? icon(TAB_ICON[tab], 14) : "";
-  return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${glyph}${label}${count > 0 ? `<span class="count drawer-tab-badge">${count}</span>` : ""}</button>`;
+  return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${glyph}${label}</button>`;
 }
 
 /**
@@ -894,7 +894,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
       if (next) next.scrollTop = achScroll;
     }
     const dlcTab = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
-    if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), dlcCount);
+    if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"));
     const actions = modalRoot.querySelector(".gp-actions");
     if (actions) actions.innerHTML = actionsHtml(s, partner);
     const stats = modalRoot.querySelector(".gp-stats");
@@ -913,10 +913,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const meta = gameMetaHtml(s, partner, antiCheat);
 
   const tabs = `${tabButton("overview", t("drawer.overview"))}
-       ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
-       ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
-       ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
-       ${tabButton("notes", t("drawer.notes"), notesCount)}
+       ${tabButton("achievements", t("drawer.achievements"), isPlat ? "plat" : "")}
+       ${tabButton("dlcs", t("drawer.dlcs"))}
+       ${tabButton("screenshots", t("drawer.screenshots"))}
+       ${tabButton("notes", t("drawer.notes"))}
        ${tabButton("specs", t("drawer.specs"))}`;
 
   modalRoot.innerHTML = `
@@ -966,7 +966,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         if (cur) cur.dlcCount = res.dlcs.length;
         if (S.currentModalAppName !== appName) return;
         const dlcTab = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
-        if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), res.dlcs.length);
+        if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"));
       })
       .catch(() => {});
   }
@@ -1917,7 +1917,7 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
         featuresEl.innerHTML = renderGameFeatures(s, g, gamePartner(s, g), gameAntiCheat(s, g), S.loadedRequirements.get(appName), igdbTagsFor(appName));
       }
       const dlcTab = modalRoot.querySelector('.drawer-tab[data-tab="dlcs"]');
-      if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"), details.dlc.length);
+      if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"));
     }
   } catch (e) {
     console.warn("Companion store details could not be fetched:", e);

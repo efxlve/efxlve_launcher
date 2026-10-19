@@ -301,16 +301,12 @@ function igdbTransportError(raw: unknown): string {
     ? localizeMessage(text)
     : "";
 }
-/** The age-rating bodies in the order this language reads them: the region's own
- * first, then the widely known ones. A game rated only by GRAC still shows a
- * number instead of nothing, but a Turkish user sees PEGI or ESRB first. */
+/** The age-rating bodies in prioritized order: PEGI first, then ESRB, then
+ *  widely used regional bodies (USK, ACB, CERO, GRAC, CLASS_IND). */
 export function ageOrgOrder(): string[] {
   const lang = currentLanguage();
-  if (lang === "de") return ["USK", "PEGI", "ESRB", "ACB", "CERO", "GRAC", "CLASS_IND"];
-  if (lang === "ja") return ["CERO", "PEGI", "ESRB", "USK", "ACB", "GRAC", "CLASS_IND"];
-  if (lang === "ko") return ["GRAC", "PEGI", "ESRB", "USK", "CERO", "ACB", "CLASS_IND"];
-  if (lang === "pt" || lang === "pt-BR") return ["CLASS_IND", "PEGI", "ESRB", "USK", "ACB", "CERO", "GRAC"];
-  if (lang === "en") return ["ESRB", "PEGI", "USK", "ACB", "CERO", "GRAC", "CLASS_IND"];
+  if (lang === "ja") return ["PEGI", "ESRB", "CERO", "USK", "ACB", "GRAC", "CLASS_IND"];
+  if (lang === "ko") return ["PEGI", "ESRB", "GRAC", "USK", "CERO", "ACB", "CLASS_IND"];
   return ["PEGI", "ESRB", "USK", "ACB", "CERO", "GRAC", "CLASS_IND"];
 }
 

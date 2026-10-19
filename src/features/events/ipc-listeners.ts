@@ -783,14 +783,8 @@ export async function initApp(hooks: {
         S.loadedScreenshots.set(id, [item, ...existing.filter((x) => x.file_path !== item.file_path)]);
 
         if (S.currentModalAppName === id) {
-          const list = S.loadedScreenshots.get(id) || [];
           const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
-          const tabBtn = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"]');
-          if (badgeEl) {
-            badgeEl.textContent = `(${list.length})`;
-          } else if (tabBtn) {
-            tabBtn.insertAdjacentHTML("beforeend", ` <span class="drawer-tab-badge">(${list.length})</span>`);
-          }
+          if (badgeEl) badgeEl.remove();
 
           if (S.activeDrawerTab === "screenshots") {
             const contentEl = document.getElementById("drawer-tab-content");

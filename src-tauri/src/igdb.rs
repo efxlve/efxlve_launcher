@@ -705,7 +705,6 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
                         rating: rating.clone(),
                     })
                 })
-                .take(4)
                 .collect()
         })
         .unwrap_or_default();
@@ -871,7 +870,7 @@ fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Va
 
 /// Bumped whenever `IgdbGame` gains a field: entries written by an older build
 /// are fetched again instead of showing up half empty.
-const CACHE_SCHEMA: u32 = 3;
+const CACHE_SCHEMA: u32 = 4;
 
 /// What actually lands on disk: the schema marker next to the game itself.
 #[derive(Serialize, Deserialize)]
