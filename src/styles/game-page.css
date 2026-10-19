@@ -142,8 +142,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-thumb-ph { display: grid; place-items: center; color: var(--text-3); }
 
 /* --- Overview --- */
-.hub-overview-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
-@media (max-width: 1200px) { .hub-overview-layout { grid-template-columns: 1fr; } }
+/* The sidebar carries the facts of this copy and the store's requirements now, so
+   it is wider: at 300px those rows wrapped into two lines each. */
+.hub-overview-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; align-items: start; }
+@media (max-width: 1280px) { .hub-overview-layout { grid-template-columns: 1fr; } }
 .hub-overview-sidebar { display: flex; flex-direction: column; gap: 16px; }
 #gp-personal-block:not(:empty) { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
 #gp-personal-block > .gp-section { margin-bottom: 0; }

@@ -469,10 +469,9 @@ function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null,
     case "dlcs": return renderDrawerDlcs(s);
     case "screenshots": return renderDrawerScreenshots(s);
     case "notes": return renderDrawerNotes(s.appName);
-    // Kept as a fallback: a session that was left on the old "manage" state
-    // lands on the System tab, which now carries that panel.
-    case "manage": return renderDrawerSystemRequirements(s);
-    default: return renderDrawerSystemRequirements(s);
+    // A session left on the retired System tab lands on the overview: the facts
+    // it carried live in the sidebar now.
+    default: return renderDrawerOverview(s, partner, antiCheat);
   }
 }
 
@@ -897,8 +896,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
        ${tabButton("achievements", t("drawer.achievements"), 0, isPlat ? "plat" : "")}
        ${tabButton("dlcs", t("drawer.dlcs"), dlcCount)}
        ${tabButton("screenshots", t("drawer.screenshots"), ssCount)}
-       ${tabButton("notes", t("drawer.notes"), notesCount)}
-       ${tabButton("specs", t("drawer.specs"))}`;
+       ${tabButton("notes", t("drawer.notes"), notesCount)}`;
 
   modalRoot.innerHTML = `
     <div class="overlay">
@@ -1210,6 +1208,11 @@ export function renderDrawerOverview(
           ${criticBlock}
         </section>
         ${renderDrawerFeatures(s, partner, antiCheat)}
+        <section class="card gp-side-card">
+          <h3 class="gp-section-title">${icon("layers", 13)} <span>${t("sys.thisCopy")}</span></h3>
+          ${renderInstalledCopyFacts(s)}
+        </section>
+        <div id="sys-req-body">${renderRequirementsBody(s)}</div>
       </aside>
     </div>`;
 }

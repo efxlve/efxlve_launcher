@@ -120,10 +120,6 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
 
   const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score || igdbScore != null);
 
-  const tierPill = critic.tier
-    ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>`
-    : "";
-
   let globalScoresHtml = "";
   if (hasGlobalScores) {
     globalScoresHtml = `
@@ -146,7 +142,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
           <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="${i18nT("critic.openCriticPage")}">
             <div class="critic-badge-score ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
             <div class="critic-badge-info">
-              <div class="critic-badge-name">OpenCritic</div>
+              <div class="critic-badge-name">OpenCritic ${critic.tier ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${critic.tier}</span>` : ""}</div>
               <div class="critic-badge-sub">${i18nT("critic.topCritic")}</div>
             </div>
             ${critic.opencritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
@@ -171,7 +167,6 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   }
 
   return `
-    ${tierPill ? `<div class="gp-scores-pill-row">${tierPill}</div>` : ""}
     ${globalScoresHtml}
   `;
 }
