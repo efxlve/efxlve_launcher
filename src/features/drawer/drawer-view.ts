@@ -45,7 +45,7 @@ import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
-import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
+import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSession, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -463,8 +463,9 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     ${sourceChipHtml(s.appName)}`;
 }
 
-/** The facts page: what the game supports, what this copy is, the controller and
- *  the store's own requirements. Four cards in two columns on a wide window. */
+/** The facts page: what the game supports on the left, this PC's copy and
+ *  controller support stacked on the right, and the verified hardware
+ *  requirements grid across the bottom. */
 function renderSpecsTab(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null,
@@ -480,8 +481,10 @@ function renderSpecsTab(
   return `
     <div class="specs-grid">
       ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
-      ${card(t("sys.thisCopy"), "layers", renderInstalledCopyFacts(s))}
-      ${card(t("feat.controller"), "gamepad-2", renderControllerCard(s, g, reqData))}
+      <div class="specs-side-col">
+        ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>`)}
+        ${card(t("feat.controller"), "gamepad-2", `<div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>`)}
+      </div>
       ${card(t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`, true)}
     </div>`;
 }
@@ -1070,9 +1073,23 @@ function renderAboutSection(s: EpicSummary): string {
  * whole tab and reset the scroll position for four small changes.
  */
 export function repaintIgdbBlocks(appName: string): void {
-  if (S.currentModalAppName !== appName || S.activeDrawerTab !== "overview") return;
+  if (S.currentModalAppName !== appName) return;
   const s = summaryOf(appName);
   if (!s) return;
+  if (S.activeDrawerTab === "specs") {
+    const g = rawOf(appName);
+    const reqData = S.loadedRequirements.get(appName);
+    const featuresEl = document.getElementById("hub-features-list");
+    if (featuresEl) {
+      featuresEl.innerHTML = renderGameFeatures(s, g, gamePartner(s, g), gameAntiCheat(s, g), reqData, igdbTagsFor(appName));
+    }
+    const ctrlEl = document.getElementById("sys-ctrl-body");
+    if (ctrlEl) {
+      ctrlEl.innerHTML = renderControllerCard(s, g, reqData);
+    }
+    return;
+  }
+  if (S.activeDrawerTab !== "overview") return;
   const about = document.getElementById("hub-about-section");
   if (about) about.outerHTML = renderAboutSection(s);
   const similar = document.getElementById("hub-igdb-similar");
@@ -1654,24 +1671,18 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
 /* ---------- System requirements ---------- */
 
 export function renderDrawerSystemRequirements(s: EpicSummary): string {
-  // The facts of this copy are known whatever the store answers, so they lead
-  // every state of this tab — loading, missing requirements, or a full list.
+  const g = rawOf(s.appName);
+  const partner = gamePartner(s, g);
   const copyCard = `
     <section class="card sys-req-copy">
       <h3 class="gp-section-title">${t("sys.thisCopy")}</h3>
-      <div>${renderInstalledCopyFacts(s)}</div>
+      <div>${renderInstalledCopyFacts(s, partner)}</div>
     </section>`;
-  // What this computer holds and what can be done with it belong together: the
-  // manage panel used to live behind the "Yönet" button alone, which left the
-  // drawer on a tab the strip does not show.
   const manage = `<section class="sys-manage">${renderDrawerManage(s)}</section>`;
-  // The store answer lands late and repaints only this part: the manage panel
-  // above it holds a launch-argument field, and rebuilding the tab would throw
-  // away whatever the reader was typing.
   return `<div class="sys-req-container">${copyCard}${manage}<div id="sys-req-body">${renderRequirementsBody(s)}</div></div>`;
 }
 
-/** The requirement cards alone, so a late answer can be painted into the tab. */
+/** The verified requirement hardware grid and localized language chips. */
 export function renderRequirementsBody(s: EpicSummary): string {
   if (S.loadingReqFor === s.appName) return loadingState(t("sys.loadingStore"));
   const data = S.loadedRequirements.get(s.appName);
@@ -1679,51 +1690,78 @@ export function renderRequirementsBody(s: EpicSummary): string {
     void fetchAndRenderRequirements(s.appName, s.title);
     return loadingState(t("sys.loading"));
   }
+
+  const actionsHtml = `
+    <div class="sys-req-actions">
+      <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
+      ${s.appName.startsWith("riot::") || s.appName.startsWith("amazon::")
+        ? ""
+        : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`}
+    </div>`;
+
   if (!data.supported || data.systems.length === 0) {
-    return emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"));
+    return `${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}<div class="page-actions">${actionsHtml}</div>`;
   }
 
   const hasWin = data.systems.some((sys) => isWinSys(sys.systemType));
   const hasMac = data.systems.some((sys) => isMacSys(sys.systemType));
-  const currentSys = data.systems.find((sys) => (S.activeSystemPlatform === "Windows" ? isWinSys(sys.systemType) : isMacSys(sys.systemType))) || data.systems[0];
-  const minItems = currentSys.details.filter((d) => d.minimum?.trim());
-  const recItems = currentSys.details.filter((d) => d.recommended?.trim());
+  const currentSys =
+    data.systems.find((sys) =>
+      S.activeSystemPlatform === "Windows" ? isWinSys(sys.systemType) : isMacSys(sys.systemType),
+    ) || data.systems[0];
 
-  const rows = (items: SystemDetailItem[], isMin: boolean): string =>
-    items.length === 0
-      ? `<li class="sys-req-row"><span class="sys-req-val">${t("sys.unspecified")}</span></li>`
-      : items.map((d) => `
-          <li class="sys-req-row">
-            <span class="sys-req-label">${esc(getHardwareLabel(d.title))}:</span>
-            <span class="sys-req-val">${esc((isMin ? d.minimum : d.recommended) || "")}</span>
-          </li>`).join("");
+  const verified = verifySystemDetails(currentSys.details);
+  const minItems = verified.filter((d) => d.minimum);
+  const recItems = verified.filter((d) => d.recommended);
 
-  // One table at a time, behind a segmented switch: the two lists side by side
-  // made the sidebar twice as long, and a reader compares them one at a time
-  // anyway.
-  const showingMin = S.reqTab !== "rec";
+  if (minItems.length === 0 && recItems.length === 0) {
+    return `${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}<div class="page-actions">${actionsHtml}</div>`;
+  }
+
+  const hasBothTiers = minItems.length > 0 && recItems.length > 0;
+  const showingMin = !hasBothTiers ? minItems.length > 0 : S.reqTab !== "rec";
   const activeItems = showingMin ? minItems : recItems;
-  const requirements = `
-    <div class="seg sys-req-tabs">
-      <button class="${showingMin ? "active" : ""}" data-act="req-tab" data-val="min" data-id="${esc(s.appName)}">${t("sys.minTitle")}</button>
-      <button class="${!showingMin ? "active" : ""}" data-act="req-tab" data-val="rec" data-id="${esc(s.appName)}">${t("sys.recTitle")}</button>
-    </div>
-    <ul class="sys-req-list">${rows(activeItems, showingMin)}</ul>`;
 
-  return `
-      ${hasWin && hasMac ? `
-        <div class="seg sys-req-platforms">
+  const cellsHtml = activeItems
+    .map(
+      (item) => `
+        <div class="sys-hw-cell">
+          <div class="sys-hw-icon">${icon(item.iconName, 15)}</div>
+          <div class="sys-hw-main">
+            <div class="sys-hw-label">${esc(item.label)}</div>
+            <div class="sys-hw-val">${esc(showingMin ? item.minimum : item.recommended)}</div>
+          </div>
+        </div>`,
+    )
+    .join("");
+
+  const platformSwitch =
+    hasWin && hasMac
+      ? `<div class="seg sys-req-platforms">
           <button class="${isWinSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Windows">${t("sys.windowsPc")}</button>
           <button class="${isMacSys(currentSys.systemType) ? "active" : ""}" data-act="sys-plat" data-val="Mac">${t("sys.macos")}</button>
-        </div>` : ""}
-      ${requirements}
-      ${data.languages.length > 0 ? `<section class="card sys-req-lang"><h3 class="gp-section-title">${t("sys.languages")}</h3><p>${esc(data.languages.join(" · "))}</p></section>` : ""}
-      <div class="page-actions">
-        <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
-        ${s.appName.startsWith("riot::") || s.appName.startsWith("amazon::")
-          ? ""
-          : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`}
+        </div>`
+      : "";
+
+  const tierSwitch = hasBothTiers
+    ? `<div class="seg sys-req-tabs">
+        <button class="${showingMin ? "active" : ""}" data-act="req-tab" data-val="min" data-id="${esc(s.appName)}">${t("sys.minTitle")}</button>
+        <button class="${!showingMin ? "active" : ""}" data-act="req-tab" data-val="rec" data-id="${esc(s.appName)}">${t("sys.recTitle")}</button>
+      </div>`
+    : `<div class="seg sys-req-tabs">
+        <button class="active" disabled>${t(showingMin ? "sys.minTitle" : "sys.recTitle")}</button>
       </div>`;
+
+  return `
+    <div class="sys-req-toolbar">
+      <div class="sys-req-controls">
+        ${platformSwitch}
+        ${tierSwitch}
+      </div>
+      ${actionsHtml}
+    </div>
+    <div class="sys-hw-grid">${cellsHtml}</div>
+    ${renderSupportedLanguages(data.languages)}`;
 }
 
 export async function fetchAndRenderRequirements(appName: string, title: string, forceRefresh = false): Promise<void> {
@@ -1768,10 +1806,14 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
           descEl.innerHTML = `<p>${t("drawer.noDescription")}</p>`;
         }
       }
+      const g = rawOf(appName);
       const featuresEl = document.getElementById("hub-features-list");
       if (featuresEl) {
-        const g = rawOf(appName);
         featuresEl.innerHTML = renderGameFeatures(cur, g, gamePartner(cur, g), gameAntiCheat(cur, g), data, igdbTagsFor(cur.appName));
+      }
+      const ctrlEl = document.getElementById("sys-ctrl-body");
+      if (ctrlEl) {
+        ctrlEl.innerHTML = renderControllerCard(cur, g, data);
       }
     }
   } catch (e) {
@@ -1788,9 +1830,6 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
       if (settled) maybeLoadWikiAbout(settled);
     }
     if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") {
-      // Only the requirement cards are repainted. The manage panel above them
-      // holds a launch-argument field, and rebuilding the whole tab would throw
-      // away whatever the reader was typing when the store answered.
       const body = document.getElementById("sys-req-body");
       const settled = summaryOf(appName);
       if (body && settled) body.innerHTML = renderRequirementsBody(settled);

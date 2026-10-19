@@ -411,16 +411,68 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* --- System requirements --- */
 .sys-req-container { display: flex; flex-direction: column; gap: 16px; }
-.sys-req-platforms { align-self: flex-start; }
-/* One table at a time behind a switch, as a bulleted list: two stacked tables of
-   label/value rows made the sidebar twice as long. */
-.sys-req-tabs { align-self: flex-start; margin-bottom: 10px; }
-.sys-req-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.sys-req-row { display: flex; gap: 7px; align-items: baseline; font-size: 12.5px; line-height: 1.45; }
-.sys-req-row::before { content: "•"; flex: none; color: var(--text-3); }
-.sys-req-label { flex: none; color: var(--text); font-weight: 600; }
-.sys-req-val { color: var(--text-2); min-width: 0; word-break: break-word; }
-.sys-req-lang p { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.sys-req-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.sys-req-controls, .sys-req-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.sys-req-platforms, .sys-req-tabs { align-self: flex-start; margin: 0; }
+.sys-hw-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 960px) {
+  .sys-hw-grid { grid-template-columns: 1fr; }
+}
+.sys-hw-cell {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  min-width: 0;
+}
+.sys-hw-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: grid; place-items: center; border-radius: 6px;
+  background: var(--surface-3); color: var(--text-2);
+}
+.sys-hw-main {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;
+}
+.sys-hw-label {
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.sys-hw-val {
+  font-size: 13px; font-weight: 500; color: var(--text);
+  line-height: 1.45; font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+.sys-lang-block {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.sys-lang-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sys-lang-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-2);
+}
+.sys-lang-title svg { color: var(--text-3); }
+.sys-lang-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sys-lang-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 26px; padding: 0 10px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--line);
+  font-size: 12px; color: var(--text-2);
+}
+.sys-lang-chip svg { color: var(--text-3); flex-shrink: 0; }
+.sys-lang-chip.is-user-lang {
+  background: var(--surface-3); border-color: var(--line-strong);
+  color: var(--text); font-weight: 600;
+}
+.sys-lang-chip.is-user-lang svg { color: var(--ok); }
+.sys-lang-audio { display: inline-flex; color: var(--text-2); }
 
 /* --- Manage tab --- */
 .manage-tab-content { max-width: 960px; }
@@ -888,25 +940,60 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* ---------- The facts page ---------- */
 
-.specs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
-.specs-card { display: flex; flex-direction: column; gap: 12px; }
-/* The requirements list is long: it takes the whole row. */
+.specs-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .specs-grid { grid-template-columns: 1fr; }
+}
+.specs-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.specs-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.specs-card > .gp-section-title {
+  margin: 0; display: inline-flex; align-items: center; gap: 8px;
+}
+.specs-card > .gp-section-title svg { color: var(--text-3); }
+/* The requirements list takes the whole bottom row. */
 .specs-card.is-wide { grid-column: 1 / -1; }
 
-/* Controller support: one glyph, a badge that says how far it goes, and the
-   store's own wording under it. */
-.ctrl-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 0 4px; text-align: center; }
-.ctrl-glyph { color: var(--text-2); }
+/* Controller support: horizontal hardware block with framed icon tile on the left,
+   verified controller type + badge on top, and explanation below. */
+.ctrl-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 12px 14px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  text-align: left;
+}
+.ctrl-glyph {
+  width: 42px; height: 42px; flex-shrink: 0;
+  display: grid; place-items: center; border-radius: var(--r-sm);
+  background: var(--surface-3); border: 1px solid var(--line);
+  color: var(--text);
+}
+.ctrl-main {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;
+}
+.ctrl-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+}
+.ctrl-label { font-size: 13.5px; font-weight: 600; color: var(--text); }
 .ctrl-badge {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
-  border-radius: 999px; font-size: 11px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+  border-radius: 999px; font-size: 10.5px; font-weight: 700;
   letter-spacing: 0.04em; text-transform: uppercase;
 }
 .ctrl-badge.is-full { background: var(--ok-tint); color: var(--ok); }
 .ctrl-badge.is-partial { background: var(--warn-tint); color: var(--warn); }
-.ctrl-badge.is-kb { background: var(--surface-2); color: var(--text-2); }
-.ctrl-note { margin: 0; max-width: 44ch; font-size: 12.5px; line-height: 1.5; color: var(--text-2); }
-.ctrl-label { font-size: 12px; color: var(--text-3); }
+.ctrl-badge.is-kb { background: var(--surface-3); color: var(--text-2); }
+.ctrl-note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-2); }
 
 /* A card whose own block came back empty: it has nothing to frame. */
 .gp-scores-card.is-empty { display: none; }

@@ -10,7 +10,7 @@
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
-import { epicPlatinumIcon, icon } from "../../core/icons";
+import { epicPlatinumIcon, icon, type IconName } from "../../core/icons";
 import { isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
@@ -18,7 +18,7 @@ import { currentLanguage, formatSyncStamp, t as i18nT } from "../../i18n";
 import { igdbGameFor } from "./igdb-view";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { type SteamNewsItem } from "../../steam";
-import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type ThirdPartyLauncherInfo } from "../../epic";
+import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. */
 export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silver" | "bronze" {
@@ -185,49 +185,35 @@ export function cleanStoreDescription(raw: string): string {
 export function detectControllerSupport(
   s: EpicSummary,
   g?: EpicGame,
-  _reqData?: GameRequirementsResponse,
+  reqData?: GameRequirementsResponse,
 ): { label: string; tooltip: string; iconName: "gamepad-2" | "keyboard"; className: string } {
   const titleLower = s.title.toLowerCase();
+  const igdb = igdbGameFor(s.appName);
   const devRaw = (g?.metadata as { developer?: unknown } | undefined)?.developer;
-  const devLower = typeof devRaw === "string" ? devRaw.toLowerCase() : "";
+  const devLower = [
+    typeof devRaw === "string" ? devRaw : "",
+    igdb?.developer ?? "",
+    igdb?.publisher ?? "",
+  ].join(" ").toLowerCase();
   const cats = steamCategories(s.appName);
 
-  // 1. Sony / PlayStation PC titles and games with native DualSense PC implementation
-  const isDualSenseNative =
-    devLower.includes("playstation") ||
-    devLower.includes("sony interactive") ||
-    titleLower.includes("spider-man") ||
-    titleLower.includes("god of war") ||
-    titleLower.includes("last of us") ||
-    titleLower.includes("horizon zero dawn") ||
-    titleLower.includes("horizon forbidden west") ||
-    titleLower.includes("days gone") ||
-    titleLower.includes("ratchet & clank") ||
-    titleLower.includes("returnal") ||
-    titleLower.includes("ghost of tsushima") ||
-    titleLower.includes("uncharted") ||
-    titleLower.includes("sackboy") ||
-    titleLower.includes("helldivers") ||
-    titleLower.includes("death stranding") ||
-    titleLower.includes("cyberpunk 2077") ||
-    titleLower.includes("alan wake 2") ||
-    titleLower.includes("metro exodus") ||
-    titleLower.includes("witcher 3") ||
-    titleLower.includes("grand theft auto") ||
-    titleLower.includes("gta") ||
-    titleLower.includes("red dead");
+  // Gather requirement and catalog text so controller claims are verified against
+  // actual store specifications before falling back to heuristics.
+  const reqDetailsText = (reqData?.systems ?? [])
+    .flatMap((sys) => sys.details.map((d) => `${d.title ?? ""} ${d.minimum ?? ""} ${d.recommended ?? ""}`))
+    .join(" ");
+  const storeText = [
+    reqDetailsText,
+    ...(reqData?.tags ?? []),
+    ...(igdb?.genres ?? []),
+    reqData?.shortDescription ?? "",
+    reqData?.description ?? "",
+  ].join(" ").toLowerCase();
 
-  if (isDualSenseNative) {
-    return {
-      label: i18nT("feat.dualSense"),
-      tooltip: i18nT("feat.dualSenseTip"),
-      iconName: "gamepad-2",
-      className: "supported",
-    };
-  }
-
-  // 2. Pure Keyboard & Mouse titles (Strategy, RTS, Simulation, City Builder)
+  // 1. Pure Keyboard & Mouse titles (Strategy, RTS, Management, City Builder, Tactical FPS)
   const isKbMouseOnly =
+    storeText.includes("keyboard and mouse only") ||
+    storeText.includes("mouse and keyboard only") ||
     titleLower.includes("civilization") ||
     titleLower.includes("total war") ||
     titleLower.includes("cities: skylines") ||
@@ -240,9 +226,14 @@ export function detectControllerSupport(
     titleLower.includes("command & conquer") ||
     titleLower.includes("simcity") ||
     titleLower.includes("factorio") ||
-    titleLower.includes("rimworld");
+    titleLower.includes("rimworld") ||
+    titleLower.includes("valorant") ||
+    titleLower.includes("starcraft") ||
+    titleLower.includes("warcraft iii") ||
+    titleLower.includes("anno 1800") ||
+    titleLower.includes("frostpunk");
 
-  if (isKbMouseOnly) {
+  if (isKbMouseOnly && !cats.includes(STEAM_CAT_FULL_PAD)) {
     return {
       label: i18nT("feat.kbMouse"),
       tooltip: i18nT("feat.kbMouseTip"),
@@ -251,6 +242,52 @@ export function detectControllerSupport(
     };
   }
 
+  // 2. Verified PC titles with native DualSense implementation (haptics / adaptive
+  // triggers / lightbar on PC). Generic "gta" / "grand theft auto" / "red dead"
+  // matches are excluded because the Definitive Trilogy and RDR use XInput on PC.
+  const hasExplicitDualSense =
+    storeText.includes("dualsense") ||
+    storeText.includes("adaptive trigger") ||
+    storeText.includes("haptic feedback");
+  const isDualSenseNative =
+    hasExplicitDualSense ||
+    devLower.includes("playstation") ||
+    devLower.includes("sony interactive") ||
+    devLower.includes("nixxes") ||
+    devLower.includes("insomniac") ||
+    titleLower.includes("spider-man") ||
+    titleLower.includes("god of war") ||
+    titleLower.includes("last of us") ||
+    titleLower.includes("horizon zero dawn") ||
+    titleLower.includes("horizon forbidden west") ||
+    titleLower.includes("days gone") ||
+    titleLower.includes("ratchet & clank") ||
+    titleLower.includes("returnal") ||
+    titleLower.includes("ghost of tsushima") ||
+    titleLower.includes("uncharted") ||
+    titleLower.includes("sackboy") ||
+    titleLower.includes("helldivers") ||
+    titleLower.includes("until dawn") ||
+    titleLower.includes("stellar blade") ||
+    titleLower.includes("death stranding") ||
+    titleLower.includes("cyberpunk 2077") ||
+    titleLower.includes("alan wake 2") ||
+    titleLower.includes("metro exodus") ||
+    titleLower.includes("witcher 3") ||
+    titleLower.includes("silent hill 2") ||
+    titleLower.includes("avatar: frontiers of pandora") ||
+    titleLower.includes("star wars outlaws");
+
+  if (isDualSenseNative) {
+    return {
+      label: i18nT("feat.dualSense"),
+      tooltip: i18nT("feat.dualSenseTip"),
+      iconName: "gamepad-2",
+      className: "supported",
+    };
+  }
+
+  // 3. Authoritative Steam store categories (when available for any store via lookup)
   if (cats.length > 0) {
     if (cats.includes(STEAM_CAT_FULL_PAD)) {
       return {
@@ -276,7 +313,23 @@ export function detectControllerSupport(
     };
   }
 
-  if (s.appName.startsWith("steam::")) {
+  // 4. Requirement text & genre verification when Steam categories are absent
+  if (storeText.includes("partial controller") || storeText.includes("kısmi kontrolcü")) {
+    return {
+      label: i18nT("feat.partialPad"),
+      tooltip: i18nT("feat.partialPadTip"),
+      iconName: "gamepad-2",
+      className: "muted",
+    };
+  }
+
+  const isStrategyOnlyGenre =
+    (igdb?.genres ?? []).some((genre) => /real time strategy|turn-based strategy|tactical|point-and-click|moba/i.test(genre)) &&
+    !storeText.includes("controller") &&
+    !storeText.includes("gamepad") &&
+    !storeText.includes("xinput");
+
+  if (s.appName.startsWith("steam::") || isStrategyOnlyGenre) {
     return {
       label: i18nT("feat.kbMouse"),
       tooltip: i18nT("feat.kbMouseTip"),
@@ -285,7 +338,7 @@ export function detectControllerSupport(
     };
   }
 
-  // 3. Standard PC Games: Xbox / XInput Gamepad (e.g. Dead by Daylight, etc.)
+  // 5. Standard PC Games: Xbox / XInput Gamepad
   return {
     label: i18nT("feat.xboxGamepad"),
     tooltip: i18nT("feat.xboxGamepadTip"),
@@ -800,11 +853,16 @@ export function renderGameFeatures(
   tags: string[] = [],
 ): string {
   const canRunOffline = (g?.metadata?.customAttributes as Record<string, { value?: string }> | undefined)?.CanRunOffline?.value === "true";
+  const mode = detectGameMode(s, reqData);
+  const modeRequiresOnline =
+    mode === "mmo" ||
+    mode === "battleRoyale" ||
+    mode === "multi4v1" ||
+    mode === "multiAsym";
+  const isOnlineOnly = isOnlineOnlyGame(s, g, reqData) || modeRequiresOnline;
+  const cloud = cloudSaveInfo(s, g, partner, reqData);
 
-  const isOnlineOnly = isOnlineOnlyGame(s, g, reqData);
-  const ctrl = detectControllerSupport(s, g, reqData);
-
-  // 4. Offline play
+  // Offline playability cross-checked against online-only mode and partner launchers
   let offlineVal = i18nT("feat.supportedOffline");
   let offlineClass = "supported";
   let offlineTooltip = i18nT("feat.supportedOfflineTip");
@@ -821,26 +879,12 @@ export function renderGameFeatures(
     offlineClass = "supported";
   }
 
-  // 5. Game mode (row hidden when the mode cannot be determined)
-  const mode = detectGameMode(s, reqData);
+  // Deduplicate and clean genre tags
+  const cleanTags = Array.from(
+    new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 1)),
+  );
 
   return `
-    <div class="hub-feature-row" title="${esc(ctrl.tooltip)}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon(ctrl.iconName, 12)}</div>
-        <span>${i18nT("feat.controller")}</span>
-      </div>
-      <div class="hub-feature-val ${ctrl.className}">${ctrl.label}</div>
-    </div>
-
-    <div class="hub-feature-row" title="${esc(offlineTooltip)}">
-      <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon(isOnlineOnly ? "wifi" : "globe", 12)}</div>
-        <span>${i18nT("feat.offline")}</span>
-      </div>
-      <div class="hub-feature-val ${offlineClass}">${offlineVal}</div>
-    </div>
-
     ${
       mode
         ? `
@@ -853,6 +897,22 @@ export function renderGameFeatures(
     </div>`
         : ""
     }
+
+    <div class="hub-feature-row" title="${esc(offlineTooltip)}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon(isOnlineOnly ? "wifi" : "globe", 12)}</div>
+        <span>${i18nT("feat.offline")}</span>
+      </div>
+      <div class="hub-feature-val ${offlineClass}">${offlineVal}</div>
+    </div>
+
+    <div class="hub-feature-row" title="${esc(cloud.tooltip)}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("cloud", 12)}</div>
+        <span>${i18nT("feat.cloud")}</span>
+      </div>
+      <div class="hub-feature-val ${cloud.synced ? "supported" : "muted"}">${esc(cloud.label)}</div>
+    </div>
 
     ${
       partner
@@ -882,12 +942,15 @@ export function renderGameFeatures(
 
     ${
       (() => {
-        // The full release date: the hero line carries the year, this carries the
-        // day, and the credits block no longer repeats either.
         const igdb = igdbGameFor(s.appName);
-        const rawDate = igdb?.pcReleaseDate || igdb?.releaseDate || "";
+        const rawDate = (igdb?.pcReleaseDate || igdb?.releaseDate || "").trim();
         if (!rawDate) return "";
-        const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(rawDate.trim());
+        const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(rawDate);
+        if (isoMatch) {
+          const year = Number(isoMatch[1]);
+          const maxYear = new Date().getFullYear() + 5;
+          if (year < 1975 || year > maxYear) return "";
+        }
         const formatted = isoMatch
           ? new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3])).toLocaleDateString(
               currentLanguage(),
@@ -906,17 +969,14 @@ export function renderGameFeatures(
     }
 
     ${
-      // Genres and themes, as one line in the sidebar the way Steam lists them.
-      // They used to sit under the About text as a row of chips, which read as
-      // database output in the middle of the page.
-      tags.length
+      cleanTags.length
         ? `
-    <div class="hub-feature-row" title="${esc(tags.join(", "))}">
+    <div class="hub-feature-row" title="${esc(cleanTags.join(", "))}">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("hash", 12)}</div>
         <span>${i18nT("feat.genres")}</span>
       </div>
-      <div class="hub-feature-val">${esc(tags.join(", "))}</div>
+      <div class="hub-feature-val">${esc(cleanTags.join(", "))}</div>
     </div>`
         : ""
     }
@@ -924,8 +984,8 @@ export function renderGameFeatures(
 }
 
 /**
- * Controller support as a card of its own: a badge that says how far the support
- * goes, the store's own wording under it.
+ * Controller support as a structured hardware card: icon tile on the left,
+ * verified controller type + support badge on top, and explanation below.
  */
 export function renderControllerCard(
   s: EpicSummary,
@@ -935,28 +995,52 @@ export function renderControllerCard(
   const ctrl = detectControllerSupport(s, g, reqData);
   const badge =
     ctrl.className === "supported"
-      ? `<span class="ctrl-badge is-full">${icon("check", 13)} ${i18nT("ctrl.fullSupport")}</span>`
+      ? `<span class="ctrl-badge is-full">${icon("check", 12)} ${i18nT("ctrl.fullSupport")}</span>`
       : ctrl.iconName === "keyboard"
-        ? `<span class="ctrl-badge is-kb">${icon("keyboard", 13)} ${i18nT("feat.kbMouse")}</span>`
+        ? `<span class="ctrl-badge is-kb">${icon("keyboard", 12)} ${i18nT("feat.kbMouse")}</span>`
         : `<span class="ctrl-badge is-partial">${i18nT("feat.partialPad")}</span>`;
   return `
     <div class="ctrl-card">
-      <div class="ctrl-glyph">${icon(ctrl.iconName, 34)}</div>
-      ${badge}
-      <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
-      <div class="ctrl-label">${esc(ctrl.label)}</div>
+      <div class="ctrl-glyph">${icon(ctrl.iconName, 22)}</div>
+      <div class="ctrl-main">
+        <div class="ctrl-head">
+          <span class="ctrl-label">${esc(ctrl.label)}</span>
+          ${badge}
+        </div>
+        <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
+      </div>
     </div>`;
 }
 
 /**
- * The facts of the copy on this PC: platform, size and build. They used to sit
- * in the overview's features card, which made it a wall of rows — the System tab
- * is where technical facts belong.
+ * The verified facts of the copy on this PC: platform, disk size, build version
+ * and native EOS overlay support.
  */
-export function renderInstalledCopyFacts(s: EpicSummary): string {
+export function renderInstalledCopyFacts(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null = null,
+): string {
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
-  const versionOk = Boolean(versionInfo.display && /\d/.test(versionInfo.display));
-  const sizeBytes = measuredSize(s.appName) ?? s.installSize;
+  const rawDisplay = versionInfo.display.trim();
+  const isBogusVersion =
+    !rawDisplay ||
+    !/\d/.test(rawDisplay) ||
+    /^(v?0(\.0+)*|unknown|none|null|undefined|default|n\/a)$/i.test(rawDisplay) ||
+    /^[0-9a-f]{32,}$/i.test(rawDisplay);
+  const versionOk = !isBogusVersion;
+
+  const rawBytes = measuredSize(s.appName) ?? s.installSize;
+  const validBytes =
+    typeof rawBytes === "number" && Number.isFinite(rawBytes) && rawBytes >= 100 * 1024 && rawBytes < 2 * 1024 ** 4
+      ? rawBytes
+      : 0;
+
+  // Games delegated to Rockstar / EA / Ubisoft launchers run that client's own
+  // overlay and only ship EOSSDK as a store ticket bridge, not for Shift+F3.
+  const hasNativeEos =
+    S.eosSupportMap.get(s.appName) === true &&
+    (!partner || (partner.type !== "rockstar" && partner.type !== "ea" && partner.type !== "ubisoft"));
+
   return `
     <div class="hub-feature-row">
       <div class="hub-feature-label">
@@ -966,7 +1050,7 @@ export function renderInstalledCopyFacts(s: EpicSummary): string {
       <div class="hub-feature-val supported">Windows (PC x64)</div>
     </div>
     ${
-      S.eosSupportMap.get(s.appName) === true
+      hasNativeEos
         ? `
     <div class="hub-feature-row" title="${esc(i18nT("feat.eosTip"))}">
       <div class="hub-feature-label">
@@ -985,8 +1069,8 @@ export function renderInstalledCopyFacts(s: EpicSummary): string {
       <div class="hub-feature-val">
         ${
           s.installed
-            ? `<span class="hub-size-val">${sizeBytes ? fmtBytes(sizeBytes) : i18nT("common.installed")}</span>`
-            : i18nT("common.notInstalled")
+            ? `<span class="hub-size-val">${validBytes > 0 ? fmtBytes(validBytes) : i18nT("common.installed")}</span>`
+            : `<span class="muted">${i18nT("common.notInstalled")}</span>`
         }
       </div>
     </div>
@@ -998,7 +1082,7 @@ export function renderInstalledCopyFacts(s: EpicSummary): string {
         <div class="hub-feature-icon">${icon("hash", 12)}</div>
         <span>${i18nT("feat.build")}</span>
       </div>
-      <div class="hub-feature-val hub-build-val">${esc(versionInfo.display)}</div>
+      <div class="hub-feature-val hub-build-val">${esc(rawDisplay)}</div>
     </div>`
         : ""
     }
@@ -1176,18 +1260,375 @@ export function fmtTierName(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-export function getHardwareLabel(title: string): string {
+export type HardwareKind =
+  | "os"
+  | "cpu"
+  | "ram"
+  | "gpu"
+  | "directx"
+  | "storage"
+  | "sound"
+  | "network"
+  | "other";
+
+export interface VerifiedHardwareItem {
+  kind: HardwareKind;
+  label: string;
+  iconName: IconName;
+  minimum: string;
+  recommended: string;
+}
+
+const HW_ORDER: HardwareKind[] = [
+  "os",
+  "cpu",
+  "ram",
+  "gpu",
+  "directx",
+  "storage",
+  "sound",
+  "network",
+  "other",
+];
+
+const HW_ICON: Record<HardwareKind, IconName> = {
+  os: "monitor",
+  cpu: "cpu",
+  ram: "layers",
+  gpu: "sliders",
+  directx: "zap",
+  storage: "hard-drive",
+  sound: "volume-2",
+  network: "globe",
+  other: "info",
+};
+
+export function classifyHardwareKind(title: string, sampleValue = ""): HardwareKind {
   const h = title.toLowerCase().trim();
-  if (h.includes("os") || h.includes("işletim")) return i18nT("hw.os");
-  if (h.includes("processor") || h.includes("işlemci") || h.includes("cpu")) return i18nT("hw.cpu");
-  if (h.includes("memory") || h.includes("bellek") || h.includes("ram")) return i18nT("hw.ram");
-  if (h.includes("storage") || h.includes("depolama") || h.includes("space")) return i18nT("hw.storage");
-  if (h.includes("graphics") || h.includes("ekran") || h.includes("gpu")) return i18nT("hw.gpu");
-  if (h.includes("direct")) return i18nT("hw.directx");
-  if (h.includes("sound") || h.includes("ses") || h.includes("audio")) return i18nT("hw.sound");
-  if (h.includes("net") || h.includes("ağ") || h.includes("internet")) return i18nT("hw.net");
-  if (h.includes("other") || h.includes("ek")) return i18nT("hw.other");
-  return title;
+  if (h.includes("os") || h.includes("operating") || h.includes("işletim") || h.includes("système") || h.includes("betriebssystem") || h.includes("sistema")) return "os";
+  if (h.includes("processor") || h.includes("işlemci") || h.includes("cpu") || h.includes("processeur") || h.includes("prozessor") || h.includes("procesador")) return "cpu";
+  if (h.includes("memory") || h.includes("bellek") || h.includes("ram") || h.includes("mémoire") || h.includes("arbeitsspeicher") || h.includes("memoria")) return "ram";
+  if (h.includes("storage") || h.includes("depolama") || h.includes("space") || h.includes("disk") || h.includes("hard drive") || h.includes("hdd") || h.includes("ssd") || h.includes("alan") || h.includes("speicherplatz") || h.includes("espace")) return "storage";
+  if (h.includes("graphics") || h.includes("video") || h.includes("ekran") || h.includes("gpu") || h.includes("grafik") || h.includes("carte graphique") || h.includes("tarjet")) return "gpu";
+  if (h.includes("direct") || h.includes("vulkan") || h.includes("opengl") || h.includes("shader")) return "directx";
+  if (h.includes("sound") || h.includes("ses") || h.includes("audio")) return "sound";
+  if (h.includes("net") || h.includes("ağ") || h.includes("internet") || h.includes("broadband") || h.includes("réseau")) return "network";
+
+  // Second-pass content verification for generic or mislabeled store rows
+  const v = sampleValue.toLowerCase().trim();
+  if (v) {
+    if (/^(windows|win\s*\d|macos|os\s*x|ubuntu|linux|64-bit\s+windows)\b/i.test(v)) return "os";
+    if (/^(directx|dx\s*\d|version\s*(9|10|11|12)|11|12)\b/i.test(v)) return "directx";
+    if (/^\d+\s*(gb|mb)\s*(ram|bellek|memory)?$/i.test(v)) return "ram";
+    if (/^\d+([.,]\d+)?\s*(gb|mb|tb)\s*(available|free|boş|disk|ssd|hdd)\b/i.test(v)) return "storage";
+    if (/^(nvidia|geforce|amd\s+radeon|radeon|intel\s+(arc|hd|iris|uhd)|gtx|rtx)\b/i.test(v)) return "gpu";
+    if (/^(intel|amd\s+(ryzen|fx|phenom|athlon)|core\s+i[3579])\b/i.test(v) && !/radeon|geforce|gtx|rtx/i.test(v)) return "cpu";
+  }
+
+  return "other";
+}
+
+export function hardwareLabelForKind(kind: HardwareKind, fallbackTitle = ""): string {
+  switch (kind) {
+    case "os": return i18nT("hw.os");
+    case "cpu": return i18nT("hw.cpu");
+    case "ram": return i18nT("hw.ram");
+    case "storage": return i18nT("hw.storage");
+    case "gpu": return i18nT("hw.gpu");
+    case "directx": return i18nT("hw.directx");
+    case "sound": return i18nT("hw.sound");
+    case "network": return i18nT("hw.net");
+    case "other":
+      return fallbackTitle && !/^(other|ek|additional|notes)$/i.test(fallbackTitle.trim())
+        ? fallbackTitle.trim()
+        : i18nT("hw.other");
+  }
+}
+
+export function getHardwareLabel(title: string): string {
+  const kind = classifyHardwareKind(title);
+  return hardwareLabelForKind(kind, title);
+}
+
+function sanitizeRequirementText(raw: string | undefined, rawTitle: string, kind: HardwareKind): string {
+  if (!raw) return "";
+  let s = raw
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&reg;/gi, "®")
+    .replace(/&trade;/gi, "™")
+    .replace(/&amp;/gi, "&")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/^[•·\-*:]+\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!s) return "";
+  // Reject placeholder / garbage values
+  if (/^(n\/?a|none|null|undefined|tbd|to be (announced|determined)|unknown|unspecified|yok|belirtilmemi[şs]|—|-|\?)+$/i.test(s)) {
+    return "";
+  }
+  const localizedLabel = hardwareLabelForKind(kind, rawTitle).toLowerCase();
+  if (s.toLowerCase() === rawTitle.toLowerCase().trim() || s.toLowerCase() === localizedLabel) {
+    return "";
+  }
+
+  // Normalize unit spacing: "8GB" -> "8 GB", "5GB" -> "5 GB", "3.2GHz" -> "3.2 GHz"
+  s = s.replace(/(\d+(?:[.,]\d+)?)\s*(GB|MB|TB|GHz|MHz|KB)\b/gi, (_, num: string, unit: string) => {
+    const u = unit.toUpperCase();
+    const formattedUnit = u === "GHZ" ? "GHz" : u === "MHZ" ? "MHz" : u;
+    return `${num} ${formattedUnit}`;
+  });
+
+  if (kind === "ram" && /^\d+$/.test(s)) {
+    s = `${s} GB`;
+  }
+
+  if (kind === "directx") {
+    const lower = s.toLowerCase();
+    if (lower === "directx compatible" || lower === "directx uyumlu" || lower === "directx") {
+      return "DirectX 11 / 12";
+    }
+    const verMatch = /^(?:directx\s*)?(?:version\s*|sürüm\s*|dx\s*)?(9\.0c|9|10|11|12)$/i.exec(s);
+    if (verMatch) {
+      return `DirectX ${verMatch[1]}`;
+    }
+  }
+
+  return s;
+}
+
+function mergeHardwareValues(existing: string, incoming: string): string {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+  const exLower = existing.toLowerCase();
+  const inLower = incoming.toLowerCase();
+  if (exLower === inLower || exLower.includes(inLower)) return existing;
+  if (inLower.includes(exLower)) return incoming;
+  return `${existing} / ${incoming}`;
+}
+
+/**
+ * Validates, normalizes, deduplicates and orders store system requirement rows.
+ * Also inherits shared baseline fields (OS, DirectX, Storage) into Recommended
+ * when a store omits them on the second column.
+ */
+export function verifySystemDetails(details: SystemDetailItem[]): VerifiedHardwareItem[] {
+  const byKind = new Map<HardwareKind, VerifiedHardwareItem>();
+
+  for (const d of details) {
+    const rawTitle = (d.title || "").trim();
+    const sample = d.minimum || d.recommended || "";
+    const kind = classifyHardwareKind(rawTitle, sample);
+    const minVal = sanitizeRequirementText(d.minimum, rawTitle, kind);
+    const recVal = sanitizeRequirementText(d.recommended, rawTitle, kind);
+    if (!minVal && !recVal) continue;
+
+    const existing = byKind.get(kind);
+    if (existing) {
+      existing.minimum = mergeHardwareValues(existing.minimum, minVal);
+      existing.recommended = mergeHardwareValues(existing.recommended, recVal);
+    } else {
+      byKind.set(kind, {
+        kind,
+        label: hardwareLabelForKind(kind, rawTitle),
+        iconName: HW_ICON[kind],
+        minimum: minVal,
+        recommended: recVal,
+      });
+    }
+  }
+
+  const list = Array.from(byKind.values()).sort(
+    (a, b) => HW_ORDER.indexOf(a.kind) - HW_ORDER.indexOf(b.kind),
+  );
+
+  // If the game has real recommended hardware rows (e.g. CPU/GPU/RAM), inherit
+  // shared baseline specs (OS, DirectX, Storage) when the store left them blank.
+  const hasRecSpecs = list.some((item) => item.recommended && (item.kind === "cpu" || item.kind === "gpu" || item.kind === "ram"));
+  if (hasRecSpecs) {
+    for (const item of list) {
+      if (!item.recommended && item.minimum && (item.kind === "os" || item.kind === "directx" || item.kind === "storage")) {
+        item.recommended = item.minimum;
+      }
+    }
+  }
+
+  return list;
+}
+
+const STORE_LANG_TO_BCP47: Record<string, string> = {
+  english: "en",
+  turkish: "tr",
+  "türkçe": "tr",
+  french: "fr",
+  français: "fr",
+  german: "de",
+  deutsch: "de",
+  italian: "it",
+  italiano: "it",
+  japanese: "ja",
+  korean: "ko",
+  koreana: "ko",
+  polish: "pl",
+  polski: "pl",
+  russian: "ru",
+  arabic: "ar",
+  "portuguese - brazil": "pt-BR",
+  "portuguese (brazil)": "pt-BR",
+  "portuguese-brazil": "pt-BR",
+  "brazilian portuguese": "pt-BR",
+  brazilian: "pt-BR",
+  portuguese: "pt-PT",
+  "portuguese - portugal": "pt-PT",
+  "spanish - spain": "es-ES",
+  "spanish (spain)": "es-ES",
+  spanish: "es-ES",
+  "spanish - latin america": "es-419",
+  "spanish (latin america)": "es-419",
+  "latin american spanish": "es-419",
+  latam: "es-419",
+  "chinese - simplified": "zh-Hans",
+  "simplified chinese": "zh-Hans",
+  schinese: "zh-Hans",
+  "chinese (simplified)": "zh-Hans",
+  "chinese - traditional": "zh-Hant",
+  "traditional chinese": "zh-Hant",
+  tchinese: "zh-Hant",
+  "chinese (traditional)": "zh-Hant",
+  chinese: "zh",
+  dutch: "nl",
+  czech: "cs",
+  hungarian: "hu",
+  ukrainian: "uk",
+  thai: "th",
+  vietnamese: "vi",
+  swedish: "sv",
+  danish: "da",
+  finnish: "fi",
+  norwegian: "no",
+  greek: "el",
+  romanian: "ro",
+  bulgarian: "bg",
+  hindi: "hi",
+  indonesian: "id",
+};
+
+function localizeLanguageToken(rawToken: string, locale: string): { code: string; name: string } | null {
+  const cleaned = rawToken
+    .replace(/<[^>]*>/g, "")
+    .replace(/\*+/g, "")
+    .replace(/\(full audio\)/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned || cleaned.length < 2) return null;
+
+  const key = cleaned.toLowerCase();
+  const code = STORE_LANG_TO_BCP47[key] || "";
+  if (code) {
+    try {
+      const dn = new Intl.DisplayNames([locale], { type: "language" });
+      const localized = dn.of(code);
+      if (localized) {
+        const cap = localized.charAt(0).toLocaleUpperCase(locale) + localized.slice(1);
+        return { code, name: cap };
+      }
+    } catch {
+      // Fallback to cleaned token if Intl.DisplayNames rejects a tag
+    }
+  }
+  return { code: key, name: cleaned };
+}
+
+/**
+ * Parses raw store language strings (including Epic's "AUDIO: ... TEXT: ..."
+ * format), deduplicates them, localizes every language name into the active UI
+ * language, and marks full-audio languages and the user's own language.
+ */
+export function renderSupportedLanguages(rawLanguages: string[]): string {
+  if (!rawLanguages || rawLanguages.length === 0) return "";
+  const locale = currentLanguage();
+  const userBaseLang = locale.toLowerCase().split("-")[0];
+
+  const joined = rawLanguages.join(" · ");
+  const audioCodes = new Set<string>();
+  const allLangs = new Map<string, { code: string; name: string; hasAudio: boolean }>();
+
+  const addTokens = (chunk: string, isAudio: boolean) => {
+    for (const part of chunk.split(/[,;•·]+/)) {
+      const parsed = localizeLanguageToken(part, locale);
+      if (!parsed) continue;
+      if (isAudio) audioCodes.add(parsed.code);
+      const existing = allLangs.get(parsed.code);
+      if (existing) {
+        if (isAudio) existing.hasAudio = true;
+      } else {
+        allLangs.set(parsed.code, {
+          code: parsed.code,
+          name: parsed.name,
+          hasAudio: isAudio || audioCodes.has(parsed.code),
+        });
+      }
+    }
+  };
+
+  // Detect explicit AUDIO: / TEXT: segments from Epic / store catalogs
+  const hasExplicitAudioText = /\b(audio|voice|ses|text|subtitles|interface|metin)\s*:/i.test(joined);
+  if (hasExplicitAudioText) {
+    const segments = joined.split(/\s*(?:·|\n|\|)\s*|\s+(?=(?:AUDIO|TEXT|VOICE|SUBTITLES|INTERFACE)\s*:)/i);
+    for (const seg of segments) {
+      const m = /^(audio|full audio|voice|ses|text|subtitles|interface|metin)\s*:\s*(.+)$/i.exec(seg.trim());
+      if (m) {
+        const kind = m[1].toLowerCase();
+        const isAudio = kind.includes("audio") || kind.includes("voice") || kind.includes("ses");
+        addTokens(m[2], isAudio);
+      } else {
+        addTokens(seg, false);
+      }
+    }
+  } else {
+    for (const raw of rawLanguages) {
+      addTokens(raw, false);
+    }
+  }
+
+  if (allLangs.size === 0) return "";
+
+  const isUserLang = (code: string): boolean => {
+    const c = code.toLowerCase();
+    if (c === locale.toLowerCase()) return true;
+    return c.split("-")[0] === userBaseLang;
+  };
+
+  const sorted = Array.from(allLangs.values()).sort((a, b) => {
+    const aUser = isUserLang(a.code) ? 1 : 0;
+    const bUser = isUserLang(b.code) ? 1 : 0;
+    if (aUser !== bUser) return bUser - aUser;
+    if (a.hasAudio !== b.hasAudio) return a.hasAudio ? -1 : 1;
+    return a.name.localeCompare(b.name, locale);
+  });
+
+  const chips = sorted
+    .map((item) => {
+      const active = isUserLang(item.code);
+      const leadIcon = active
+        ? icon("check", 11)
+        : item.hasAudio
+          ? icon("volume-2", 11)
+          : "";
+      const audioBadge = active && item.hasAudio ? `<span class="sys-lang-audio">${icon("volume-2", 11)}</span>` : "";
+      return `<span class="sys-lang-chip${active ? " is-user-lang" : ""}${item.hasAudio ? " has-audio" : ""}">${leadIcon}<span>${esc(item.name)}</span>${audioBadge}</span>`;
+    })
+    .join("");
+
+  return `
+    <div class="sys-lang-block">
+      <div class="sys-lang-head">
+        <span class="sys-lang-title">${icon("globe", 13)} <span>${i18nT("sys.languages")}</span> <span class="gp-section-meta num">${sorted.length}</span></span>
+      </div>
+      <div class="sys-lang-chips">${chips}</div>
+    </div>`;
 }
 
 export function isWinSys(type: string): boolean {
