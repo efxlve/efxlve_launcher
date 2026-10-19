@@ -197,6 +197,10 @@ paketinin çıktığı anlamına gelmez.
 - Öncelik: oyunun kendi `wrapper` ayarı → uyumluluk yöneticisinin seçimi →
   (Windows'ta) Epic relay. umu-launcher kuruluysa ve açıksa Proton yerine o
   kullanılır. Her oyun `<prefix>/<appName>` altında kendi prefix'ini alır.
+- Açık bir seçim yoksa launcher önce kendi indirdiği, sonra sistemde bulduğu ilk
+  çalıştırıcıyı (Steam `compatibilitytools.d`, Lutris, sistem Wine) kullanır.
+  "Kapalı" seçimi artık gerçekten kapalıdır: `compat_runner_enabled = false`
+  başlatma wrapper'ını tamamen atlar.
 - Windows'ta `launch_spec` boş döner; mevcut Windows yolu birebir korunur.
 
 ### 8.4 Arayüz

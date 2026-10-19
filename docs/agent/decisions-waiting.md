@@ -102,8 +102,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 - **Sistem çalıştırıcıları:** Steam `compatibilitytools.d`, Lutris ve sistem
   Wine kopyaları algılanınca çalıştırıcı listesine eklenir; seçim
   `compat_runner_path` olarak saklanır ve launcher'ın kendi kopyasından önce
-  gelir. Kullanıcı bir klasörü sonradan silerse `launch_spec` sessizce yönetilen
-  kopyaya düşer; ayrı bir "bozuk ayar" hatası gösterilmez.
+  gelir. Açık seçim yoksa önce yönetilen, sonra sistemdeki ilk çalıştırıcı
+  kullanılır. Kullanıcı bir klasörü sonradan silerse `launch_spec` sırayla
+  yönetilen kopyaya ve sistem kopyasına düşer; ayrı bir "bozuk ayar" hatası
+  gösterilmez. "Kapalı" artık `compat_runner_enabled = false` ile gerçekten
+  kapalıdır; eski sürümde `runner = null` yönetilen çalıştırıcıyı otomatik
+  seçiyordu, bu bir hataydı.
 - **Yarıda kalan indirme:** ağ hatası/iptal `.part` dosyasını silmez; sonraki
   deneme Range ile devam eder. Bu, 500 MB'lık GE-Proton indirmesini baştan
   başlatmamak için seçildi. Kullanıcı vazgeçerse araç kaldırma yarım parçayı da

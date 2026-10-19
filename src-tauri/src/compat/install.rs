@@ -446,6 +446,11 @@ fn detect_system(def: &ToolDef) -> Vec<String> {
     out
 }
 
+/// Detected runner folders for one tool, for the launch fallback and the UI.
+pub(crate) fn detected_runner_paths(id: &str) -> Vec<String> {
+    catalog::find(id).map(detect_system).unwrap_or_default()
+}
+
 fn latest_for(cache: &ReleaseCache, def: &ToolDef, target: &Target) -> Option<CompatLatest> {
     let release = cache.entries.get(def.id)?;
     let asset = catalog::select_asset(def.id, &target.arch, &release.assets)?;

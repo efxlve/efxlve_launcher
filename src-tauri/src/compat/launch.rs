@@ -21,6 +21,8 @@ use super::install::compat_root;
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompatLaunchConfig {
+    /// False is the explicit "start like Windows" choice.
+    pub enabled: bool,
     pub runner: Option<String>,
     pub runner_tag: Option<String>,
     /// A runner outside the launcher's folder; empty means the managed copy.
@@ -158,8 +160,21 @@ fn configured_runner_path(settings: &crate::EpicSettings) -> Option<PathBuf> {
         .filter(|path| path.is_dir())
 }
 
+fn detected_runner(id: &str) -> Option<PathBuf> {
+    if cfg!(windows) {
+        return None;
+    }
+    super::install::detected_runner_paths(id)
+        .into_iter()
+        .map(PathBuf::from)
+        .find(|path| path.is_dir())
+}
+
 fn runner_for(app: &AppHandle) -> Option<String> {
     let settings = crate::load_settings(app);
+    if settings.compat_runner_enabled == Some(false) {
+        return None;
+    }
     if let Some(runner) = settings
         .compat_runner
         .as_deref()
@@ -199,6 +214,9 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
         return spec;
     }
     let settings = crate::load_settings(app);
+    if settings.compat_runner_enabled == Some(false) {
+        return spec;
+    }
     let target = Target::current();
     let prefix_root = settings
         .compat_prefix_dir
@@ -210,12 +228,12 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     let prefix = prefix_root.join(sanitize_segment(app_name));
     let _ = std::fs::create_dir_all(&prefix);
 
-    let runner = runner_for(app);
+    let mut runner = runner_for(app);
     let umu_enabled = settings.compat_umu_enabled.unwrap_or(true);
     let umu_dir = runner_dir(app, &target, "umu-launcher", None);
     // A runner chosen from the system tree (Steam's compatibilitytools.d, a
     // Lutris build) wins over the launcher's own copy.
-    let runner_dir = configured_runner_path(&settings).or_else(|| {
+    let mut runner_dir = configured_runner_path(&settings).or_else(|| {
         runner.as_deref().and_then(|id| {
             let tag = if settings
                 .compat_runner
@@ -231,6 +249,23 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
             runner_dir(app, &target, id, tag)
         })
     });
+    // The managed copy may be missing while Steam already has the same runner.
+    if runner_dir.is_none() {
+        if let Some(id) = runner.as_deref() {
+            runner_dir = detected_runner(id);
+        }
+    }
+    // No explicit choice and nothing managed: use the first system runner the
+    // machine already has, so a first launch is not a dead end.
+    if runner_dir.is_none() {
+        for candidate in ["ge-proton", "proton-cachyos", "wine-staging"] {
+            if let Some(path) = detected_runner(candidate) {
+                runner = Some(candidate.to_string());
+                runner_dir = Some(path);
+                break;
+            }
+        }
+    }
 
     // The environment is shared by both paths: umu and Proton both read it.
     spec.env
@@ -289,6 +324,7 @@ fn valid_runner(id: &str) -> bool {
 pub fn compat_get_launch_config(app: AppHandle) -> CompatLaunchConfig {
     let settings = crate::load_settings(&app);
     CompatLaunchConfig {
+        enabled: settings.compat_runner_enabled.unwrap_or(true),
         runner: settings
             .compat_runner
             .clone()
@@ -318,6 +354,7 @@ pub fn compat_set_launch_config(
     runner_path: Option<String>,
     prefix_dir: Option<String>,
     umu_enabled: Option<bool>,
+    enabled: Option<bool>,
 ) -> Result<(), String> {
     let runner = runner
         .map(|value| value.trim().to_string())
@@ -346,6 +383,9 @@ pub fn compat_set_launch_config(
         .filter(|value| !value.is_empty());
     if let Some(enabled) = umu_enabled {
         settings.compat_umu_enabled = Some(enabled);
+    }
+    if let Some(enabled) = enabled {
+        settings.compat_runner_enabled = Some(enabled);
     }
     crate::save_settings(&app, &settings);
     Ok(())

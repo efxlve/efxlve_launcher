@@ -172,6 +172,10 @@ pub struct EpicSettings {
     /// Lutris, a system Wine build). Empty = use the managed copy.
     #[serde(default)]
     pub compat_runner_path: Option<String>,
+    /// False is the explicit "start like Windows" choice. `None` means the
+    /// setting was never touched, so the first installed runner may be used.
+    #[serde(default)]
+    pub compat_runner_enabled: Option<bool>,
     /// Root for per-game Wine/Proton prefixes.
     #[serde(default)]
     pub compat_prefix_dir: Option<String>,

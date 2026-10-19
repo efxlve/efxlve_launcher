@@ -55,6 +55,8 @@ export interface CompatCatalog {
 }
 
 export interface CompatLaunchConfig {
+  /** False is the explicit "start like Windows" choice. */
+  enabled: boolean;
   runner: string | null;
   runnerTag: string | null;
   /** A runner outside the launcher's folder; null means the managed copy. */
@@ -90,6 +92,7 @@ export const compatGetLaunchConfig = () =>
 
 export const compatSetLaunchConfig = (config: CompatLaunchConfig) =>
   invoke<void>("compat_set_launch_config", {
+    enabled: config.enabled,
     runner: config.runner,
     runnerTag: config.runnerTag,
     runnerPath: config.runnerPath,

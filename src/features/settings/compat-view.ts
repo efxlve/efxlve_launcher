@@ -258,7 +258,7 @@ function runnerOptions(): Array<{ value: string; label: string }> {
   }
   // A saved runner can disappear when its folder is removed; keep it visible so
   // the select still says what the setting points at.
-  const configured = launchConfig?.runner;
+  const configured = launchConfig?.enabled ? launchConfig.runner : null;
   if (configured && launchConfig?.runnerPath) {
     const value = detectedOptionValue(configured, launchConfig.runnerPath);
     if (!options.some((option) => option.value === value)) {
@@ -278,7 +278,7 @@ function runnerOptions(): Array<{ value: string; label: string }> {
 
 function selectedRunnerValue(): string {
   const config = launchConfig;
-  if (!config?.runner) return "";
+  if (!config?.enabled || !config.runner) return "";
   return config.runnerPath
     ? detectedOptionValue(config.runner, config.runnerPath)
     : config.runner;
@@ -286,7 +286,7 @@ function selectedRunnerValue(): string {
 
 function selectedRunnerTags(): Array<{ value: string; label: string }> {
   const id = launchConfig?.runner;
-  if (!id || launchConfig?.runnerPath) return [];
+  if (!launchConfig?.enabled || !id || launchConfig?.runnerPath) return [];
   return toolOf(id)?.installed.map((entry) => ({ value: entry.tag, label: entry.tag })) ?? [];
 }
 
@@ -311,7 +311,7 @@ function renderLaunchConfig(): string {
         <div class="row-main">
           <div class="settings-row-title">${esc(t("compat.runner"))}</div>
           <div class="settings-row-desc">${esc(t("compat.runnerHint"))}${
-            config?.runnerPath ? ` <code>${esc(config.runnerPath)}</code>` : ""
+            config?.enabled && config.runnerPath ? ` <code>${esc(config.runnerPath)}</code>` : ""
           }</div>
         </div>
         <div class="settings-row-control">
@@ -507,6 +507,7 @@ async function saveLaunchConfig(next: CompatLaunchConfig): Promise<void> {
 function baseConfig(): CompatLaunchConfig {
   return (
     launchConfig ?? {
+      enabled: true,
       runner: null,
       runnerTag: null,
       runnerPath: null,
@@ -605,12 +606,23 @@ export function handleCompatAction(act: string | undefined, el: HTMLElement): bo
   if (act === "compat-runner") {
     const parsed = parseRunnerValue((el as HTMLSelectElement).value);
     const config = baseConfig();
-    void saveLaunchConfig({
-      ...config,
-      runner: parsed.runner,
-      runnerPath: parsed.runnerPath,
-      runnerTag: null,
-    });
+    void saveLaunchConfig(
+      parsed.runner
+        ? {
+            ...config,
+            enabled: true,
+            runner: parsed.runner,
+            runnerPath: parsed.runnerPath,
+            runnerTag: null,
+          }
+        : {
+            ...config,
+            enabled: false,
+            runner: null,
+            runnerPath: null,
+            runnerTag: null,
+          },
+    );
     return true;
   }
   if (act === "compat-runner-tag") {
