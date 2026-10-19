@@ -18,12 +18,14 @@ import {
   deletePageShot,
   dropClip,
   fitClipShareRange,
+  grabClipFrame,
   isPageBatchDeleteArmed,
   loadScreenshotsPage,
   navigatePageLightbox,
   openClipFolder,
   openClipJoin,
   openClipShare,
+  openClipStudio,
   openClipTrim,
   openPageLightbox,
   openPageShotFolder,
@@ -33,11 +35,17 @@ import {
   saveClipTrim,
   selectedPageShots,
   sendClipShare,
+  setClipTrimIn,
+  setClipTrimOut,
   setPageBatchDeleteArmed,
   setPageFilter,
   setPageSelectMode,
+  setSearchQuery,
+  setStudioTab,
+  toggleClipPlayback,
   togglePageFavorite,
   togglePageSelection,
+  type StudioTab,
 } from "../../screenshots/screenshots-page";
 import { clipDelete } from "../../../epic";
 import { openPath } from "@tauri-apps/plugin-opener";
@@ -59,6 +67,20 @@ export function handleScreenshotsPageAction(
   targetEl?: HTMLElement,
 ): boolean {
   switch (act) {
+    case "ssp-tab": {
+      const tab = el.dataset.tab as StudioTab | undefined;
+      if (tab) {
+        setStudioTab(tab);
+        repaint();
+      }
+      return true;
+    }
+
+    case "ssp-search-clear":
+      setSearchQuery("");
+      repaint();
+      return true;
+
     case "ssp-filter": {
       const value = el.dataset.filter;
       if (value === "all" || value === "favorites" || value === "raw" || value === "compressed") {
@@ -180,11 +202,34 @@ export function handleScreenshotsPageAction(
 
     /* ---------- Lightbox ---------- */
 
+    case "ssp-clip-studio":
     case "ssp-clip-play": {
+      const path = el.dataset.path ?? "";
+      if (path) void openClipStudio(path);
+      return true;
+    }
+
+    case "clip-open-external": {
       const path = el.dataset.path ?? "";
       if (path) void openPath(path).catch(() => toast(path, ""));
       return true;
     }
+
+    case "clip-toggle-play":
+      toggleClipPlayback();
+      return true;
+
+    case "clip-set-in":
+      setClipTrimIn();
+      return true;
+
+    case "clip-set-out":
+      setClipTrimOut();
+      return true;
+
+    case "clip-frame-grab":
+      void grabClipFrame();
+      return true;
 
     case "ssp-clip-folder": {
       const path = el.dataset.path ?? "";

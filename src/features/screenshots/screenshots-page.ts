@@ -1,15 +1,13 @@
 /**
- * The Screenshots page: every capture, across every game.
+ * Media Studio Hub: Every capture and recording across every game.
  *
- * The game page's tab shows one game's shots; this page is the library-wide
- * view — same shared defaults (sort, density, favorites) plus its own filter,
- * selection and lightbox. The sidebar entry is opt-in (Settings → Screenshots),
- * like Notes.
- *
- * Editing, sharing and the recorder all hang off this page, so the lightbox
- * here is the place where those actions live.
+ * Combines full screenshot management (lightbox, photo studio, compression,
+ * batch export) and a professional Video Clip Studio (in-app player, visual filmstrip
+ * timeline, frame grabber / photo snapshot, trim and Discord share).
  */
 
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
@@ -17,6 +15,7 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes } from "../../core/utils";
 import { t, localizeMessage } from "../../i18n";
 import {
+  clipDelete,
   clipFrame,
   clipJoin,
   clipList,
@@ -26,6 +25,7 @@ import {
   epicDeleteGameScreenshot,
   epicGetAllScreenshots,
   epicOpenFolderPath,
+  epicSaveEditedScreenshot,
   type ClipItem,
   type GameScreenshotItem,
 } from "../../epic";
@@ -37,17 +37,25 @@ import {
   shotPreviewSrc,
   shotThumbHtml,
 } from "./screenshots-view";
+import { openScreenshotEditor } from "./screenshot-editor";
 import { ssDensity, ssFavorites, ssSort, ssSortItems, ssToggleFavorite, ssWebhooks } from "./ss-settings";
 
-type PageFilter = "all" | "favorites" | "raw" | "compressed";
+export type StudioTab = "all" | "photos" | "clips" | "favorites";
+export type PageFilter = "all" | "favorites" | "raw" | "compressed";
 
 let shots: GameScreenshotItem[] = [];
+let clips: ClipItem[] = [];
 let loading = false;
 let loadedOnce = false;
+let clipsLoaded = false;
+
+let studioTab: StudioTab = "all";
 let filter: PageFilter = "all";
+let searchQuery = "";
 let selectMode = false;
 let batchDeleteArmed = false;
 const selection = new Set<string>();
+
 /** The open lightbox: an index into the filtered list. */
 let lightboxIndex: number | null = null;
 
@@ -58,16 +66,43 @@ function isCompressed(item: GameScreenshotItem): boolean {
   return item.file_name.endsWith(".avif") || item.file_name.endsWith(".webp");
 }
 
-/** The filtered, sorted list the page draws and the lightbox walks. */
+export function setStudioTab(tab: StudioTab): void {
+  studioTab = tab;
+}
+
+export function getStudioTab(): StudioTab {
+  return studioTab;
+}
+
+export function setSearchQuery(query: string): void {
+  searchQuery = query.toLowerCase().trim();
+}
+
+/** Filtered and sorted shots list for the page and lightbox. */
 export function visiblePageShots(): GameScreenshotItem[] {
   const favorites = ssFavorites();
+  const q = searchQuery;
   const filtered = shots.filter((item) => {
-    if (filter === "favorites") return favorites.has(item.file_path);
+    if (q) {
+      const matchGame = item.game_title ? item.game_title.toLowerCase().includes(q) : false;
+      const matchFile = item.file_name.toLowerCase().includes(q);
+      if (!matchGame && !matchFile) return false;
+    }
+    if (studioTab === "favorites" || filter === "favorites") return favorites.has(item.file_path);
     if (filter === "raw") return !isCompressed(item);
     if (filter === "compressed") return isCompressed(item);
     return true;
   });
   return ssSortItems(filtered, (item) => item.timestamp, shotName, shotBytes);
+}
+
+/** Filtered clips list. */
+export function visiblePageClips(): ClipItem[] {
+  const q = searchQuery;
+  return clips.filter((clip) => {
+    if (!q) return true;
+    return clip.name.toLowerCase().includes(q) || (clip.path.toLowerCase().includes(q));
+  });
 }
 
 export function loadScreenshotsPage(force = false): void {
@@ -90,23 +125,64 @@ export function loadScreenshotsPage(force = false): void {
     });
 }
 
-/** The editor announces a save; the page reloads so the new file shows up. */
+export function loadClips(): void {
+  if (!isTauri || clipsLoaded) return;
+  clipsLoaded = true;
+  void clipList()
+    .then((items) => {
+      clips = items ?? [];
+      repaintScreenshotsPage();
+    })
+    .catch(() => undefined);
+}
+
+export function reloadClips(): void {
+  clipsLoaded = false;
+  loadClips();
+}
+
 window.addEventListener("screenshots-changed", () => {
   if (S.view !== "screenshots") return;
   loadScreenshotsPage(true);
-  // A new clip is a new row in the same page, so the same signal reloads it.
   reloadClips();
 });
 
-/** Repaints the page in place after a toolbar or lightbox action. */
 export function repaintScreenshotsPage(): void {
   if (S.view !== "screenshots") return;
   const host = document.getElementById("view");
   if (host) host.innerHTML = renderScreenshotsPage();
   hydrateClipThumbs();
+  wireSearchInput();
 }
 
 /* ---------- Markup ---------- */
+
+function studioNavHtml(): string {
+  const tabBtn = (id: StudioTab, label: string, iconName: Parameters<typeof icon>[0], count?: number): string => `
+    <button type="button" class="ss-studio-pill${studioTab === id ? " active" : ""}" data-act="ssp-tab" data-tab="${id}">
+      ${icon(iconName, 13)}
+      <span>${esc(label)}</span>
+      ${count !== undefined ? `<span class="ss-pill-count">${count}</span>` : ""}
+    </button>`;
+
+  const favorites = ssFavorites();
+  const favCount = shots.filter((item) => favorites.has(item.file_path)).length;
+
+  return `
+    <div class="ss-studio-nav">
+      <div class="ss-studio-pills">
+        ${tabBtn("all", t("ss.tabAll"), "layers", shots.length + clips.length)}
+        ${tabBtn("photos", t("ss.tabPhotos"), "image", shots.length)}
+        ${tabBtn("clips", t("ss.tabClips"), "video", clips.length)}
+        ${tabBtn("favorites", t("ss.tabFavorites"), "star", favCount)}
+      </div>
+      <div class="ss-studio-search-wrap">
+        ${icon("search", 13)}
+        <input type="text" id="ss-studio-search" class="ss-studio-search" placeholder="${esc(t("ss.searchPlaceholder"))}" value="${esc(searchQuery)}" />
+        ${searchQuery ? `<button type="button" class="ss-search-clear" data-act="ssp-search-clear">${icon("x", 12)}</button>` : ""}
+      </div>
+    </div>`;
+}
 
 function toolbarHtml(): string {
   const chip = (act: string, value: string, label: string, active: boolean, data: string): string =>
@@ -121,6 +197,7 @@ function toolbarHtml(): string {
     raw: shots.filter((item) => !isCompressed(item)).length,
     compressed: shots.filter(isCompressed).length,
   };
+
   return `
     <div class="ss-toolbar">
       <div class="ss-toolbar-left">
@@ -187,9 +264,68 @@ function cardHtml(item: GameScreenshotItem, index: number): string {
     </div>`;
 }
 
-/** The backend truncates the scan to the newest this many captures
- *  (`results.truncate(300)` in `screenshots.rs`); keep the two in step, the note
- *  under the grid quotes it. */
+function videoCardHtml(clip: ClipItem): string {
+  return `
+    <div class="ss-video-card" data-path="${esc(clip.path)}">
+      <div class="ss-video-thumb-wrap" data-act="ssp-clip-studio" data-path="${esc(clip.path)}" title="${esc(clip.name)}">
+        <span class="ss-video-thumb" data-clip-thumb="${esc(clip.path)}">
+          ${icon("play", 18)}
+        </span>
+        <div class="ss-video-overlay-badge">${clipLength(clip.seconds)}</div>
+        <div class="ss-video-hover-play">
+          <span class="ss-play-circle">${icon("play", 20)}</span>
+          <span class="ss-play-label">${t("ss.clipPlayStudio")}</span>
+        </div>
+      </div>
+      <div class="ss-video-info">
+        <div class="ss-video-title" title="${esc(clip.name)}">${esc(clip.name)}</div>
+        <div class="ss-video-meta">
+          <span>${esc(clip.dateStr)}</span>
+          <span>•</span>
+          <span>${fmtBytes(clip.sizeBytes)}</span>
+        </div>
+        <div class="ss-video-actions">
+          <button type="button" class="btn ghost small ss-btn-studio" data-act="ssp-clip-studio" data-path="${esc(clip.path)}">
+            ${icon("sliders", 12)} ${t("ss.clipTrim")}
+          </button>
+          <button type="button" class="btn ghost small" data-act="clip-share" data-path="${esc(clip.path)}" title="${esc(t("ss.clipShareTitle"))}">
+            ${icon("discord", 12)}
+          </button>
+          <button type="button" class="btn ghost small" data-act="ssp-clip-folder" data-path="${esc(clip.path)}" title="${esc(t("ss.showInFolderShort"))}">
+            ${icon("folder", 12)}
+          </button>
+          <button type="button" class="btn ghost danger small" data-act="ssp-clip-delete" data-path="${esc(clip.path)}" title="${esc(t("common.delete"))}">
+            ${icon("trash", 12)}
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function clipsSectionHtml(): string {
+  if (!clipsLoaded) loadClips();
+  const visibleClips = visiblePageClips();
+  if (visibleClips.length === 0) {
+    return `
+      <div class="ss-clips-head">
+        <h3 class="section-title">${icon("video", 15)} ${t("ss.tabClips")}</h3>
+      </div>
+      <div class="screenshots-empty-card" style="margin-top: 14px; padding: 28px 16px;">
+        <p class="screenshots-empty-desc">${t("ss.clipEmpty")}</p>
+      </div>`;
+  }
+
+  return `
+    <div class="ss-clips-head">
+      <div class="ss-head-info">
+        <h3 class="section-title">${icon("video", 15)} ${t("ss.tabClips")}</h3>
+        <span class="screenshots-count-chip">${visibleClips.length}</span>
+      </div>
+      ${visibleClips.length > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
+    </div>
+    <div class="ss-video-grid">${visibleClips.map((c) => videoCardHtml(c)).join("")}</div>`;
+}
+
 const SCAN_CAP = 300;
 
 export function renderScreenshotsPage(): string {
@@ -197,15 +333,18 @@ export function renderScreenshotsPage(): string {
     return `<div class="page screenshots-page"><div class="info-box">${icon("info", 14)}<span>${t("task.desktopOnly")}</span></div></div>`;
   }
   if (!loadedOnce) loadScreenshotsPage();
-  const visible = visiblePageShots();
+  if (!clipsLoaded) loadClips();
+
+  const visibleShots = visiblePageShots();
+  const visibleClips = visiblePageClips();
   const favorites = ssFavorites();
-  const totalBytes = shots.reduce((sum, item) => sum + shotBytes(item), 0);
+  const totalBytes = shots.reduce((sum, item) => sum + shotBytes(item), 0) + clips.reduce((sum, c) => sum + c.sizeBytes, 0);
+
   const header = `
     <div class="ss-page-head">
       <div class="ss-page-info">
-        <h2 class="ss-page-title">${icon("image", 18)} <span>${t("ss.title")}</span></h2>
-        <span class="screenshots-count-chip">${t("ss.photoCount", { count: String(shots.length) })}</span>
-        <span class="screenshots-count-chip">${fmtBytes(totalBytes)}</span>
+        <h2 class="ss-page-title">${icon("clapperboard", 20)} <span>${t("ss.studio")}</span></h2>
+        <span class="screenshots-count-chip">${t("ss.statsSummary", { photos: String(shots.length), clips: String(clips.length), size: fmtBytes(totalBytes) })}</span>
         ${favorites.size > 0 ? `<span class="screenshots-count-chip ss-fav-chip">${icon("star", 11)} ${favorites.size}</span>` : ""}
       </div>
       <div class="ss-page-actions">
@@ -214,95 +353,89 @@ export function renderScreenshotsPage(): string {
       </div>
     </div>`;
 
-  if (shots.length === 0) {
+  if (shots.length === 0 && clips.length === 0) {
     return `
       <div class="page screenshots-page">
         ${header}
+        ${studioNavHtml()}
         <div class="screenshots-empty-card">
-          <div class="screenshots-empty-icon">${icon("image", 44)}</div>
-          <h4 class="screenshots-empty-title">${t("ss.emptyTitle")}</h4>
-          <p class="screenshots-empty-desc">${t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}</p>
+          <div class="screenshots-empty-icon">${icon("clapperboard", 44)}</div>
+          <h4 class="screenshots-empty-title">${t("ss.allMediaEmpty")}</h4>
+          <p class="screenshots-empty-desc">${t("ss.allMediaEmptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}</p>
         </div>
-        ${clipsSectionHtml()}
       </div>`;
+  }
+
+  let content = "";
+  if (studioTab === "clips") {
+    content = clipsSectionHtml();
+  } else if (studioTab === "photos") {
+    content = `
+      ${toolbarHtml()}
+      ${
+        visibleShots.length === 0
+          ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
+          : `<div class="screenshots-grid ss-density-${ssDensity()}">${visibleShots.map((item, index) => cardHtml(item, index)).join("")}</div>`
+      }`;
+  } else if (studioTab === "favorites") {
+    const favShots = visibleShots.filter((item) => favorites.has(item.file_path));
+    content = `
+      ${toolbarHtml()}
+      ${
+        favShots.length === 0
+          ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
+          : `<div class="screenshots-grid ss-density-${ssDensity()}">${favShots.map((item, index) => cardHtml(item, index)).join("")}</div>`
+      }`;
+  } else {
+    // "all" tab
+    content = `
+      ${clips.length > 0 ? clipsSectionHtml() : ""}
+      <div class="ss-section-divider"></div>
+      <div class="ss-clips-head" style="margin-top: 14px;">
+        <div class="ss-head-info">
+          <h3 class="section-title">${icon("image", 15)} ${t("ss.tabPhotos")}</h3>
+          <span class="screenshots-count-chip">${visibleShots.length}</span>
+        </div>
+      </div>
+      ${toolbarHtml()}
+      ${
+        visibleShots.length === 0
+          ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
+          : `<div class="screenshots-grid ss-density-${ssDensity()}">${visibleShots.map((item, index) => cardHtml(item, index)).join("")}</div>`
+      }`;
   }
 
   return `
     <div class="page screenshots-page">
       ${header}
-      ${toolbarHtml()}
+      ${studioNavHtml()}
+      ${content}
       ${
-        visible.length === 0
-          ? `<div class="screenshots-empty-card"><p class="screenshots-empty-desc">${t("ss.filterEmpty")}</p></div>`
-          : `<div class="screenshots-grid ss-density-${ssDensity()}">${visible.map((item, index) => cardHtml(item, index)).join("")}</div>`
-      }
-      ${
-        // Only the newest SCAN_CAP captures come back from the scan, so a long
-        // list has to say so: otherwise the rest look like they are gone.
         shots.length >= SCAN_CAP
           ? `<p class="page-sub ss-cap-note">${icon("info", 13)} ${t("ss.capNote", { count: String(SCAN_CAP) })}</p>`
           : ""
       }
-      ${clipsSectionHtml()}
     </div>`;
 }
 
-/* ---------- Game clips ---------- */
-
-let clips: ClipItem[] = [];
-let clipsLoaded = false;
-
-export function loadClips(): void {
-  if (!isTauri || clipsLoaded) return;
-  clipsLoaded = true;
-  void clipList()
-    .then((items) => {
-      clips = items ?? [];
-      repaintScreenshotsPage();
-    })
-    .catch(() => undefined);
+function wireSearchInput(): void {
+  const input = document.getElementById("ss-studio-search") as HTMLInputElement | null;
+  if (!input) return;
+  input.addEventListener("input", () => {
+    setSearchQuery(input.value);
+    repaintScreenshotsPage();
+    const repainted = document.getElementById("ss-studio-search") as HTMLInputElement | null;
+    if (repainted) {
+      repainted.focus();
+      repainted.selectionStart = repainted.selectionEnd = repainted.value.length;
+    }
+  });
 }
 
-export function reloadClips(): void {
-  clipsLoaded = false;
-  loadClips();
-}
+/* ---------- Clip Studio Player & Trimmer Modal ---------- */
 
-function clipsSectionHtml(): string {
-  if (!clipsLoaded) loadClips();
-  const rows = clips.length
-    ? clips
-        .map(
-          (clip) => `
-      <div class="ss-clip" data-path="${esc(clip.path)}">
-        <span class="ss-clip-thumb" data-clip-thumb="${esc(clip.path)}">${icon("play", 14)}</span>
-        <div class="ss-clip-main">
-          <div class="ss-clip-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
-          <div class="ss-clip-meta">${esc(clip.dateStr)} · ${fmtBytes(clip.sizeBytes)} · ${esc(clipLength(clip.seconds))}</div>
-        </div>
-        <div class="ss-clip-actions">
-          <button type="button" class="btn ghost small" data-act="ssp-clip-play" data-path="${esc(clip.path)}">${icon("play", 12)} ${t("ss.clipPlay")}</button>
-          <button type="button" class="btn ghost small" data-act="clip-trim" data-path="${esc(clip.path)}">${icon("sliders", 12)} ${t("ss.clipTrim")}</button>
-          <button type="button" class="btn ghost small" data-act="clip-share" data-path="${esc(clip.path)}" title="${esc(t("ss.clipShareTitle"))}">${icon("discord", 12)}</button>
-          <button type="button" class="btn ghost small" data-act="ssp-clip-folder" data-path="${esc(clip.path)}">${icon("folder", 12)}</button>
-          <button type="button" class="btn ghost danger small" data-act="ssp-clip-delete" data-path="${esc(clip.path)}">${icon("trash", 12)}</button>
-        </div>
-      </div>`,
-        )
-        .join("")
-    : `<div class="settings-row-desc">${t("ss.clipEmpty")}</div>`;
-  return `
-    <div class="ss-clips-head">
-      <h3 class="section-title">${t("ss.clipSection")}</h3>
-      ${clips.length > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
-    </div>
-    <div class="list settings-group ss-clips">${rows}</div>`;
-}
-
-/* ---------- Cutting and joining clips ---------- */
-
-/** The clip the trim dialog works on. */
-let clipTrimPath: string | null = null;
+let studioClipPath: string | null = null;
+let studioVideoEl: HTMLVideoElement | null = null;
 
 function clipDialogRoot(): HTMLElement {
   let root = document.getElementById("ss-clip-root");
@@ -315,24 +448,25 @@ function clipDialogRoot(): HTMLElement {
 }
 
 export function closeClipDialog(): void {
-  clipTrimPath = null;
+  studioClipPath = null;
+  studioVideoEl = null;
   clipSharePath = null;
   const root = document.getElementById("ss-clip-root");
   if (root) root.innerHTML = "";
 }
 
-/** The length the two inputs currently describe, as the dialog shows it. */
 export function updateClipRangeNote(): void {
   const note = document.getElementById("ss-clip-range-note");
-  if (!note || !clipTrimPath) return;
-  const clip = clips.find((entry) => entry.path === clipTrimPath);
+  if (!note || !studioClipPath) return;
+  const clip = clips.find((entry) => entry.path === studioClipPath);
   const start = Number((document.getElementById("ss-clip-start") as HTMLInputElement | null)?.value ?? "0");
   const end = Number((document.getElementById("ss-clip-end") as HTMLInputElement | null)?.value ?? "0");
   const length = Math.max(0, end - start);
-  note.textContent = `${t("ss.clipTrimLength", { time: clipLength(Math.round(length)) })} · ${t("ss.clipTrimTotal", { time: clipLength(clip?.seconds ?? 0) })}`;
+  const total = clip?.seconds ?? 0;
+  const estBytes = clip ? Math.round((clip.sizeBytes * length) / Math.max(1, total)) : 0;
+  note.textContent = `${t("ss.clipTrimLength", { time: clipLength(Math.round(length)) })} • ${fmtBytes(estBytes)} / ${t("ss.clipTrimTotal", { time: clipLength(total) })}`;
 }
 
-/** A row of frames across the clip, so the cut can be aimed at something. */
 async function clipStripHtml(path: string, seconds: number): Promise<string> {
   const count = 8;
   const cells: string[] = [];
@@ -349,40 +483,195 @@ async function clipStripHtml(path: string, seconds: number): Promise<string> {
   return cells.join("");
 }
 
-/** Opens the cut dialog: a strip, two times, and a button that copies the range
- *  into a new clip. The original is never touched. */
-export async function openClipTrim(path: string): Promise<void> {
+export async function openClipStudio(path: string): Promise<void> {
   const clip = clips.find((entry) => entry.path === path);
   if (!clip) return;
-  clipTrimPath = path;
+  studioClipPath = path;
   const total = Math.max(1, clip.seconds);
+  const videoSrc = convertFileSrc(path);
+
   clipDialogRoot().innerHTML = `
-    <div class="modal-backdrop" data-act="clip-dialog-backdrop">
-      <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
-        <div class="selective-header"><h2>${t("ss.clipTrimTitle")}</h2></div>
-        <div class="ss-clip-dialog-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
-        <div class="ss-clip-strip" id="ss-clip-strip"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="ss-clip-range">
-          <label>${t("ss.clipTrimStart")}
-            <input type="number" id="ss-clip-start" class="input" min="0" max="${total}" step="1" value="0" />
-          </label>
-          <label>${t("ss.clipTrimEnd")}
-            <input type="number" id="ss-clip-end" class="input" min="0" max="${total}" step="1" value="${total}" />
-          </label>
+    <div class="modal-backdrop ss-clip-backdrop" data-act="clip-dialog-backdrop">
+      <div class="modal-box ss-clip-studio-modal" role="dialog" aria-modal="true">
+        <div class="ss-clip-studio-head">
+          <div class="ss-studio-head-title">
+            ${icon("clapperboard", 16)}
+            <span>${t("ss.clipStudioTitle")}</span>
+          </div>
+          <div class="ss-clip-studio-name" title="${esc(clip.name)}">${esc(clip.name)} • ${fmtBytes(clip.sizeBytes)}</div>
+          <button type="button" class="btn ghost small" data-act="clip-dialog-close" title="${t("common.close")} (ESC)">${icon("x", 14)}</button>
         </div>
-        <div class="ss-clip-range-note" id="ss-clip-range-note"></div>
-        <div class="playtime-footer">
+
+        <div class="ss-clip-stage">
+          <video id="ss-studio-video" class="ss-studio-video" src="${esc(videoSrc)}" playsinline preload="auto"></video>
+          <div class="ss-video-play-overlay" data-act="clip-toggle-play">${icon("play", 36)}</div>
+        </div>
+
+        <div class="ss-clip-controls-bar">
+          <button type="button" class="btn ghost small ss-play-btn" data-act="clip-toggle-play">${icon("play", 14)}</button>
+          <span class="ss-timecode" id="ss-clip-timecode">0:00 / ${clipLength(clip.seconds)}</span>
+          <input type="range" id="ss-clip-scrubber" class="ss-clip-scrubber" min="0" max="${total}" step="0.05" value="0" />
+          <button type="button" class="btn ghost small ss-frame-grab-btn" data-act="clip-frame-grab" title="${esc(t("ss.clipCaptureFrame"))}">
+            ${icon("camera", 13)} ${t("ss.clipCaptureFrame")}
+          </button>
+          <select id="ss-clip-speed" class="ss-clip-speed-select" data-act="clip-speed-change">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+        </div>
+
+        <div class="ss-clip-trim-box">
+          <div class="ss-trim-strip-label">
+            <span>${icon("sliders", 12)} ${t("ss.clipTrimTitle")}</span>
+            <div class="ss-trim-quick-btns">
+              <button type="button" class="btn ghost small" data-act="clip-set-in">${icon("arrow-right", 11)} ${t("ss.clipSetIn")}</button>
+              <button type="button" class="btn ghost small" data-act="clip-set-out">${t("ss.clipSetOut")} ${icon("arrow-left", 11)}</button>
+            </div>
+          </div>
+          <div class="ss-clip-strip" id="ss-clip-strip">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="ss-clip-range">
+            <label>${t("ss.clipTrimStart")}
+              <input type="number" id="ss-clip-start" class="input" min="0" max="${total}" step="0.5" value="0" />
+            </label>
+            <label>${t("ss.clipTrimEnd")}
+              <input type="number" id="ss-clip-end" class="input" min="0" max="${total}" step="0.5" value="${total}" />
+            </label>
+          </div>
+          <div class="ss-clip-range-note" id="ss-clip-range-note"></div>
+        </div>
+
+        <div class="playtime-footer ss-clip-footer">
+          <button type="button" class="btn ghost small" data-act="clip-open-external" data-path="${esc(clip.path)}">
+            ${icon("external", 12)} ${t("ss.clipOpenExternal")}
+          </button>
+          <button type="button" class="btn ghost small" data-act="clip-share" data-path="${esc(clip.path)}">
+            ${icon("discord", 12)} ${t("ss.clipShareTitle")}
+          </button>
+          <span style="flex:1"></span>
           <button class="btn ghost" data-act="clip-dialog-close">${t("common.cancel")}</button>
-          <button class="btn" data-act="clip-trim-save">${t("ss.clipTrimSave")}</button>
+          <button class="btn primary" data-act="clip-trim-save">${icon("check", 13)} ${t("ss.clipTrimSave")}</button>
         </div>
       </div>
     </div>`;
+
+  studioVideoEl = document.getElementById("ss-studio-video") as HTMLVideoElement | null;
+  if (studioVideoEl) {
+    const v = studioVideoEl;
+    const playBtn = document.querySelector<HTMLElement>(".ss-play-btn");
+    const playOverlay = document.querySelector<HTMLElement>(".ss-video-play-overlay");
+    const timecode = document.getElementById("ss-clip-timecode");
+    const scrubber = document.getElementById("ss-clip-scrubber") as HTMLInputElement | null;
+
+    v.addEventListener("timeupdate", () => {
+      if (timecode) timecode.textContent = `${clipLength(v.currentTime)} / ${clipLength(clip.seconds)}`;
+      if (scrubber && !scrubber.matches(":active")) scrubber.value = String(v.currentTime);
+    });
+
+    v.addEventListener("play", () => {
+      if (playBtn) playBtn.innerHTML = `${icon("pause", 14)}`;
+      if (playOverlay) playOverlay.classList.add("hidden");
+    });
+
+    v.addEventListener("pause", () => {
+      if (playBtn) playBtn.innerHTML = `${icon("play", 14)}`;
+      if (playOverlay) playOverlay.classList.remove("hidden");
+    });
+
+    v.addEventListener("ended", () => {
+      if (playBtn) playBtn.innerHTML = `${icon("play", 14)}`;
+      if (playOverlay) playOverlay.classList.remove("hidden");
+    });
+
+    if (scrubber) {
+      scrubber.addEventListener("input", () => {
+        v.currentTime = Number(scrubber.value);
+      });
+    }
+
+    v.addEventListener("error", () => {
+      // AVI fallback: show poster or first frame
+      void clipFrame(path, 0.5).then((frame) => {
+        if (frame && v.parentElement) {
+          const img = document.createElement("img");
+          img.src = frame;
+          img.className = "ss-studio-video-fallback";
+          v.replaceWith(img);
+        }
+      });
+    });
+  }
+
   updateClipRangeNote();
+  const startInput = document.getElementById("ss-clip-start");
+  const endInput = document.getElementById("ss-clip-end");
+  startInput?.addEventListener("input", updateClipRangeNote);
+  endInput?.addEventListener("input", updateClipRangeNote);
+
   const strip = document.getElementById("ss-clip-strip");
   if (strip) strip.innerHTML = await clipStripHtml(path, clip.seconds);
 }
 
-/** Opens the join dialog: pick two or more clips, they are added in this order. */
+export async function openClipTrim(path: string): Promise<void> {
+  return openClipStudio(path);
+}
+
+export function toggleClipPlayback(): void {
+  if (!studioVideoEl) return;
+  if (studioVideoEl.paused) void studioVideoEl.play();
+  else studioVideoEl.pause();
+}
+
+export function setClipTrimIn(): void {
+  const current = studioVideoEl ? Math.floor(studioVideoEl.currentTime * 10) / 10 : 0;
+  const input = document.getElementById("ss-clip-start") as HTMLInputElement | null;
+  if (input) {
+    input.value = String(current);
+    updateClipRangeNote();
+  }
+}
+
+export function setClipTrimOut(): void {
+  const current = studioVideoEl ? Math.ceil(studioVideoEl.currentTime * 10) / 10 : 0;
+  const input = document.getElementById("ss-clip-end") as HTMLInputElement | null;
+  if (input) {
+    input.value = String(current);
+    updateClipRangeNote();
+  }
+}
+
+export async function grabClipFrame(): Promise<void> {
+  if (!studioClipPath) return;
+  try {
+    let dataUrl: string | null = null;
+    if (studioVideoEl && studioVideoEl.videoWidth > 0) {
+      const c = document.createElement("canvas");
+      c.width = studioVideoEl.videoWidth;
+      c.height = studioVideoEl.videoHeight;
+      const context = c.getContext("2d");
+      if (context) {
+        context.drawImage(studioVideoEl, 0, 0, c.width, c.height);
+        dataUrl = c.toDataURL("image/png");
+      }
+    }
+    if (!dataUrl) {
+      const at = studioVideoEl ? studioVideoEl.currentTime : 0.5;
+      dataUrl = await clipFrame(studioClipPath, at);
+    }
+    if (dataUrl) {
+      const destName = studioClipPath.replace(/\.[^.]+$/, `_snap_${Date.now()}.png`);
+      await epicSaveEditedScreenshot(destName, dataUrl, false);
+      toast(t("ss.clipFrameSaved"), "ok");
+      window.dispatchEvent(new CustomEvent("screenshots-changed"));
+    }
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
 export function openClipJoin(): void {
   if (clips.length < 2) {
     toast(t("ss.joinNeedsTwo"), "err");
@@ -399,7 +688,7 @@ export function openClipJoin(): void {
             <label class="ss-clip-join-row">
               <input type="checkbox" data-act="clip-join-pick" data-path="${esc(clip.path)}" />
               <span class="ss-clip-join-name" title="${esc(clip.name)}">${esc(clip.name)}</span>
-              <span class="ss-clip-join-meta">${esc(clip.dateStr)} · ${esc(clipLength(clip.seconds))}</span>
+              <span class="ss-clip-join-meta">${esc(clip.dateStr)} • ${esc(clipLength(clip.seconds))}</span>
             </label>`,
             )
             .join("")}
@@ -413,13 +702,12 @@ export function openClipJoin(): void {
     </div>`;
 }
 
-/** Runs the cut the dialog describes and adds the new clip to the list. */
 export async function saveClipTrim(): Promise<void> {
-  if (!clipTrimPath) return;
+  if (!studioClipPath) return;
   const start = Number((document.getElementById("ss-clip-start") as HTMLInputElement | null)?.value ?? "0");
   const end = Number((document.getElementById("ss-clip-end") as HTMLInputElement | null)?.value ?? "0");
   try {
-    const made = await clipTrim(clipTrimPath, start, end);
+    const made = await clipTrim(studioClipPath, start, end);
     closeClipDialog();
     toast(t("ss.clipSavedAs", { name: made.name }), "ok");
     reloadClips();
@@ -428,7 +716,6 @@ export async function saveClipTrim(): Promise<void> {
   }
 }
 
-/** Joins the checked clips, in the order they are listed. */
 export async function saveClipJoin(): Promise<void> {
   const picked = [...document.querySelectorAll<HTMLInputElement>("[data-act='clip-join-pick']")]
     .filter((box) => box.checked)
@@ -448,22 +735,16 @@ export async function saveClipJoin(): Promise<void> {
   }
 }
 
-/* ---------- Sending a clip to Discord ---------- */
+/* ---------- Discord Clip Share ---------- */
 
-/** Discord refuses a webhook upload over 8 MB. Kept in step with
- *  `DISCORD_WEBHOOK_LIMIT` on the Rust side, which is the real gate. */
 const DISCORD_CLIP_LIMIT = 8 * 1024 * 1024;
-
-/** The clip the share dialog works on. */
 let clipSharePath: string | null = null;
 
-/** What a range of a clip is worth, at the clip's own bitrate. */
 function clipRangeBytes(clip: ClipItem, start: number, end: number): number {
   const total = Math.max(1, clip.seconds);
   return Math.round((clip.sizeBytes * Math.max(0, end - start)) / total);
 }
 
-/** The end time that brings a range under the webhook limit, with a margin. */
 function clipFitEnd(clip: ClipItem, start: number): number {
   const perSecond = Math.max(1, clip.sizeBytes) / Math.max(1, clip.seconds);
   const fits = (DISCORD_CLIP_LIMIT * 0.95) / perSecond;
@@ -471,16 +752,11 @@ function clipFitEnd(clip: ClipItem, start: number): number {
 }
 
 function clipShareRange(clip: ClipItem): { start: number; end: number } {
-  const start = Number(
-    (document.getElementById("ss-clip-share-start") as HTMLInputElement | null)?.value ?? "0",
-  );
-  const end = Number(
-    (document.getElementById("ss-clip-share-end") as HTMLInputElement | null)?.value ?? "0",
-  );
+  const start = Number((document.getElementById("ss-clip-share-start") as HTMLInputElement | null)?.value ?? "0");
+  const end = Number((document.getElementById("ss-clip-share-end") as HTMLInputElement | null)?.value ?? "0");
   return { start: Math.max(0, start), end: Math.min(Math.max(1, clip.seconds), end) };
 }
 
-/** The line under the range: what goes out, and whether it fits. */
 export function updateClipShareNote(): void {
   const note = document.getElementById("ss-clip-share-note");
   if (!note || !clipSharePath) return;
@@ -496,12 +772,10 @@ export function updateClipShareNote(): void {
   note.classList.toggle("is-over", bytes > DISCORD_CLIP_LIMIT);
 }
 
-/** Opens the send dialog: a range, what it weighs, and one button per webhook. */
 export async function openClipShare(path: string): Promise<void> {
   const clip = clips.find((entry) => entry.path === path);
   if (!clip) return;
   clipSharePath = path;
-  clipTrimPath = null;
   const total = Math.max(1, clip.seconds);
   const webhooks = ssWebhooks();
   const buttons = webhooks.length
@@ -530,7 +804,7 @@ export async function openClipShare(path: string): Promise<void> {
     <div class="modal-backdrop" data-act="clip-dialog-backdrop">
       <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
         <div class="selective-header"><h2>${t("ss.clipShareTitle")}</h2></div>
-        <div class="ss-clip-dialog-name" title="${esc(clip.name)}">${esc(clip.name)} · ${esc(fmtBytes(clip.sizeBytes))} · ${esc(clipLength(clip.seconds))}</div>
+        <div class="ss-clip-dialog-name" title="${esc(clip.name)}">${esc(clip.name)} • ${esc(fmtBytes(clip.sizeBytes))} • ${esc(clipLength(clip.seconds))}</div>
         <div class="ss-clip-strip" id="ss-clip-share-strip"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
         <div class="ss-clip-range">
           <label>${t("ss.clipTrimStart")}
@@ -553,7 +827,6 @@ export async function openClipShare(path: string): Promise<void> {
   if (strip) strip.innerHTML = await clipStripHtml(path, clip.seconds);
 }
 
-/** Shrinks the range so it fits the webhook limit. */
 export function fitClipShareRange(): void {
   const clip = clips.find((entry) => entry.path === clipSharePath);
   if (!clip) return;
@@ -563,7 +836,6 @@ export function fitClipShareRange(): void {
   updateClipShareNote();
 }
 
-/** Sends the chosen range. The range is cut on the way out, not re-encoded. */
 export async function sendClipShare(webhookId: string): Promise<void> {
   const clip = clips.find((entry) => entry.path === clipSharePath);
   if (!clip) return;
@@ -575,13 +847,7 @@ export async function sendClipShare(webhookId: string): Promise<void> {
   const { start, end } = clipShareRange(clip);
   const whole = start <= 0 && end >= clip.seconds;
   try {
-    const sent = await clipShareDiscord(
-      webhook.url,
-      clip.path,
-      whole ? 0 : start,
-      whole ? 0 : end,
-      "",
-    );
+    const sent = await clipShareDiscord(webhook.url, clip.path, whole ? 0 : start, whole ? 0 : end, "");
     closeClipDialog();
     toast(t("ss.clipShareSent", { size: fmtBytes(sent) }), "ok");
   } catch (error) {
@@ -596,11 +862,8 @@ function clipLength(seconds: number): string {
   return minutes > 0 ? `${minutes}:${String(rest).padStart(2, "0")}` : `${rest}s`;
 }
 
-/** First frames already fetched, so a repaint does not ask again. */
 const clipThumbCache = new Map<string, string>();
 
-/** Fills the clips list with a frame of each clip, one at a time: reading a
- *  frame costs a file read, and the list is usually short. */
 function hydrateClipThumbs(): void {
   queueMicrotask(() => {
     const slots = [...document.querySelectorAll<HTMLElement>("[data-clip-thumb]")];
@@ -653,8 +916,6 @@ export function pageLightboxOpen(): boolean {
   return lightboxIndex !== null;
 }
 
-/** Opens the full-screen viewer on the filtered list; the original loads when
- * it lands, the grid preview shows until then. */
 export function openPageLightbox(index: number): void {
   const visible = visiblePageShots();
   const item = visible[index];
@@ -677,7 +938,7 @@ export function openPageLightbox(index: number): void {
           </div>
           <div class="lightbox-tools">
             <button class="btn ghost small" data-act="ssp-lightbox-favorite">${icon("star", 13)} ${esc(isFavorite ? t("ss.unfavorite") : t("ss.favorite"))}</button>
-            <button class="btn ghost small" data-act="ssp-lightbox-edit" title="${t("ss.editTip")}">${icon("edit", 13)} ${t("ss.edit")}</button>
+            <button class="btn ghost small" data-act="ssp-lightbox-edit" title="${t("ss.editTip")}">${icon("camera", 13)} ${t("ss.edit")}</button>
             <button class="btn ghost small" data-act="ssp-lightbox-share" title="${t("ss.shareTip2")}">${icon("share-2", 13)} ${t("ss.share")}</button>
             <button class="btn ghost small" data-act="ssp-lightbox-copy" title="${t("ss.copyTip")}">${icon("copy", 13)} ${t("ss.copy")}</button>
             ${isCompressed(item) ? `<span class="lightbox-badge-avif">${item.file_name.endsWith(".avif") ? "AVIF" : "WebP"}</span>` : `<button class="btn ghost small" data-act="ssp-lightbox-compress" title="${t("ss.compressTip2")}">${icon("minimize-2", 13)} ${t("ss.compress")}</button>`}
@@ -710,12 +971,11 @@ export function navigatePageLightbox(step: number): void {
   openPageLightbox(next);
 }
 
-/** The shot the lightbox (or the page) currently points at. */
 export function pageLightboxShot(): GameScreenshotItem | null {
   return currentLightboxShot();
 }
 
-/* ---------- Actions used by the handler ---------- */
+/* ---------- Actions used by the handlers ---------- */
 
 export function setPageFilter(next: PageFilter): void {
   filter = next;
@@ -752,7 +1012,6 @@ export function selectedPageShots(): GameScreenshotItem[] {
   return shots.filter((item) => selection.has(item.file_path));
 }
 
-/** Flips one favorite and repaints whatever is on screen. */
 export function togglePageFavorite(filePath: string): boolean {
   const favorite = ssToggleFavorite(filePath);
   if (pageLightboxOpen()) {
@@ -763,7 +1022,6 @@ export function togglePageFavorite(filePath: string): boolean {
   return favorite;
 }
 
-/** Removes one file from the list (after a delete) and closes the lightbox. */
 export function dropPageShot(filePath: string): void {
   shots = shots.filter((item) => item.file_path !== filePath);
   selection.delete(filePath);
@@ -787,4 +1045,4 @@ export function openPageShotFolder(item: GameScreenshotItem): void {
   void epicOpenFolderPath(dir).catch(() => toast(item.file_path, ""));
 }
 
-export { openShareModal, compressScreenshotItem };
+export { openShareModal, compressScreenshotItem, openScreenshotEditor };
