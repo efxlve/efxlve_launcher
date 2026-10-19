@@ -29,7 +29,7 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Settings → Screenshots | Folder row, "scan store folders too" switch with its explanation, watched-folders list, hotkey row |
 | Settings → Downloads | Picture cache row showing its size next to Clear |
 | Settings → System | App update rows, system toggles, backend and library folder |
-| Settings → Compatibility | Target selector (this PC / Linux / macOS), grouped store/runner/runtime/translation/helper rows, installed and detected chips, project links, runner/prefix/umu controls; target switch hides the launch block; a large install asks for confirmation with its size |
+| Settings → Compatibility | Target selector (this PC / Linux / macOS), grouped store/runner/runtime/translation/helper rows, installed and detected chips, project links, runner/prefix/umu controls; a detected system runner is selectable and its path is shown; target switch hides the launch block; a large install asks for confirmation with its size |
 | Notes | Search box, scope filters, empty list state, editor panel ("pick a note"), no crash |
 | Profile | Banner, online chip, account count, game/trophy counters, recents |
 | Task manager | Launcher's own usage rows |

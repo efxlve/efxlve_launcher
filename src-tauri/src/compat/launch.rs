@@ -23,6 +23,8 @@ use super::install::compat_root;
 pub struct CompatLaunchConfig {
     pub runner: Option<String>,
     pub runner_tag: Option<String>,
+    /// A runner outside the launcher's folder; empty means the managed copy.
+    pub runner_path: Option<String>,
     pub prefix_dir: String,
     pub umu_enabled: bool,
 }
@@ -126,6 +128,36 @@ fn runner_dir(app: &AppHandle, target: &Target, id: &str, tag: Option<&str>) -> 
     dir.is_dir().then_some(dir)
 }
 
+/// The executable and leading arguments for one runner folder. Kept separate
+/// from `launch_spec` so the choice can be tested without a Tauri handle.
+fn runner_program(id: &str, dir: &std::path::Path) -> Option<(PathBuf, Vec<String>)> {
+    match id {
+        "ge-proton" | "proton-cachyos" => {
+            let proton = dir.join("proton");
+            proton.is_file().then(|| (proton, vec!["run".to_string()]))
+        }
+        "wine-staging" => {
+            let wine = if dir.join("bin/wine64").is_file() {
+                dir.join("bin/wine64")
+            } else {
+                dir.join("bin/wine")
+            };
+            wine.is_file().then_some((wine, Vec::new()))
+        }
+        _ => None,
+    }
+}
+
+fn configured_runner_path(settings: &crate::EpicSettings) -> Option<PathBuf> {
+    settings
+        .compat_runner_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .filter(|path| path.is_dir())
+}
+
 fn runner_for(app: &AppHandle) -> Option<String> {
     let settings = crate::load_settings(app);
     if let Some(runner) = settings
@@ -181,19 +213,23 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     let runner = runner_for(app);
     let umu_enabled = settings.compat_umu_enabled.unwrap_or(true);
     let umu_dir = runner_dir(app, &target, "umu-launcher", None);
-    let runner_dir = runner.as_deref().and_then(|id| {
-        let tag = if settings
-            .compat_runner
-            .as_deref()
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .is_some()
-        {
-            settings.compat_runner_tag.as_deref()
-        } else {
-            None
-        };
-        runner_dir(app, &target, id, tag)
+    // A runner chosen from the system tree (Steam's compatibilitytools.d, a
+    // Lutris build) wins over the launcher's own copy.
+    let runner_dir = configured_runner_path(&settings).or_else(|| {
+        runner.as_deref().and_then(|id| {
+            let tag = if settings
+                .compat_runner
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .is_some()
+            {
+                settings.compat_runner_tag.as_deref()
+            } else {
+                None
+            };
+            runner_dir(app, &target, id, tag)
+        })
     });
 
     // The environment is shared by both paths: umu and Proton both read it.
@@ -238,25 +274,9 @@ pub fn launch_spec(app: &AppHandle, app_name: &str) -> CompatLaunchSpec {
     let Some(dir) = runner_dir else {
         return spec;
     };
-    match runner.as_str() {
-        "ge-proton" | "proton-cachyos" => {
-            let proton = dir.join("proton");
-            if proton.is_file() {
-                spec.program = Some(proton.display().to_string());
-                spec.args.push("run".to_string());
-            }
-        }
-        "wine-staging" => {
-            let wine = if dir.join("bin/wine64").is_file() {
-                dir.join("bin/wine64")
-            } else {
-                dir.join("bin/wine")
-            };
-            if wine.is_file() {
-                spec.program = Some(wine.display().to_string());
-            }
-        }
-        _ => {}
+    if let Some((program, args)) = runner_program(&runner, &dir) {
+        spec.program = Some(program.display().to_string());
+        spec.args = args;
     }
     spec
 }
@@ -277,6 +297,10 @@ pub fn compat_get_launch_config(app: AppHandle) -> CompatLaunchConfig {
             .compat_runner_tag
             .clone()
             .filter(|value| !value.trim().is_empty()),
+        runner_path: settings
+            .compat_runner_path
+            .clone()
+            .filter(|value| !value.trim().is_empty()),
         prefix_dir: settings
             .compat_prefix_dir
             .clone()
@@ -291,6 +315,7 @@ pub fn compat_set_launch_config(
     app: AppHandle,
     runner: Option<String>,
     runner_tag: Option<String>,
+    runner_path: Option<String>,
     prefix_dir: Option<String>,
     umu_enabled: Option<bool>,
 ) -> Result<(), String> {
@@ -302,11 +327,20 @@ pub fn compat_set_launch_config(
             return Err("@t:compat.unknownRunner".to_string());
         }
     }
+    let runner_path = runner_path
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    if let Some(path) = runner_path.as_deref() {
+        if runner.is_none() || !std::path::Path::new(path).is_dir() {
+            return Err("@t:compat.badRunnerPath".to_string());
+        }
+    }
     let mut settings = crate::load_settings(&app);
     settings.compat_runner = runner;
     settings.compat_runner_tag = runner_tag
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty());
+    settings.compat_runner_path = runner_path;
     settings.compat_prefix_dir = prefix_dir
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty());
@@ -328,6 +362,28 @@ mod tests {
         assert_eq!(sanitize_segment(""), "game");
         assert_eq!(sanitize_segment(".."), "game");
         assert_eq!(sanitize_segment("."), "game");
+    }
+
+    #[test]
+    fn a_system_runner_folder_resolves_to_its_program() {
+        let root = std::env::temp_dir().join(format!("efxlve_runner_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let proton_dir = root.join("GE-Proton11-10");
+        std::fs::create_dir_all(&proton_dir).unwrap();
+        std::fs::write(proton_dir.join("proton"), b"#!/bin/sh").unwrap();
+        let (program, args) = runner_program("ge-proton", &proton_dir).expect("proton");
+        assert_eq!(program, proton_dir.join("proton"));
+        assert_eq!(args, vec!["run".to_string()]);
+
+        let wine_dir = root.join("Wine-Staging");
+        std::fs::create_dir_all(wine_dir.join("bin")).unwrap();
+        std::fs::write(wine_dir.join("bin/wine64"), b"#!/bin/sh").unwrap();
+        let (program, args) = runner_program("wine-staging", &wine_dir).expect("wine");
+        assert_eq!(program, wine_dir.join("bin/wine64"));
+        assert!(args.is_empty());
+
+        assert!(runner_program("ge-proton", &root.join("missing")).is_none());
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

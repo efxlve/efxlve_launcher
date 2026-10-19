@@ -2587,5 +2587,6 @@
   "compat.update": "Update",
   "drawer.igdbAddons": "Add-ons from IGDB",
   "drawer.dlcKind": "DLC",
-  "drawer.expansion": "Expansion"
+  "drawer.expansion": "Expansion",
+  "compat.badRunnerPath": "The runner folder could not be found."
 }

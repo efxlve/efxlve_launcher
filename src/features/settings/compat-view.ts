@@ -217,16 +217,57 @@ function renderGroups(): string {
   }).join("");
 }
 
+function detectedOptionValue(id: string, path: string): string {
+  return `@path:${id}:${path}`;
+}
+
+function parseRunnerValue(value: string): { runner: string | null; runnerPath: string | null } {
+  if (!value) return { runner: null, runnerPath: null };
+  if (value.startsWith("@path:")) {
+    const rest = value.slice(6);
+    const separator = rest.indexOf(":");
+    if (separator > 0) {
+      return { runner: rest.slice(0, separator), runnerPath: rest.slice(separator + 1) };
+    }
+  }
+  return { runner: value, runnerPath: null };
+}
+
+function pathName(path: string): string {
+  return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+}
+
 function runnerOptions(): Array<{ value: string; label: string }> {
   const options = [{ value: "", label: t("compat.runnerNone") }];
   const runners = catalog?.tools.filter((tool) => tool.kind === "runner" && tool.installed.length > 0) ?? [];
   for (const runner of runners) {
     options.push({ value: runner.id, label: `${toolName(runner.id)} · ${runner.installed[0].tag}` });
   }
+  // Runners found in Steam's compatibilitytools.d, Lutris or a system Wine
+  // install are usable too; the path is what tells them apart.
+  if (catalog && catalog.target === `${catalog.currentOs}-${catalog.currentArch}`) {
+    for (const runner of catalog.tools) {
+      if (runner.kind !== "runner") continue;
+      for (const path of runner.detected) {
+        const value = detectedOptionValue(runner.id, path);
+        if (!options.some((option) => option.value === value)) {
+          options.push({ value, label: `${toolName(runner.id)} · ${pathName(path)}` });
+        }
+      }
+    }
+  }
   // A saved runner can disappear when its folder is removed; keep it visible so
   // the select still says what the setting points at.
   const configured = launchConfig?.runner;
-  if (configured && !runners.some((runner) => runner.id === configured)) {
+  if (configured && launchConfig?.runnerPath) {
+    const value = detectedOptionValue(configured, launchConfig.runnerPath);
+    if (!options.some((option) => option.value === value)) {
+      options.push({
+        value,
+        label: `${toolName(configured)} · ${pathName(launchConfig.runnerPath)}`,
+      });
+    }
+  } else if (configured && !runners.some((runner) => runner.id === configured)) {
     options.push({
       value: configured,
       label: `${toolName(configured)} · ${t("compat.notInstalled")}`,
@@ -235,9 +276,17 @@ function runnerOptions(): Array<{ value: string; label: string }> {
   return options;
 }
 
+function selectedRunnerValue(): string {
+  const config = launchConfig;
+  if (!config?.runner) return "";
+  return config.runnerPath
+    ? detectedOptionValue(config.runner, config.runnerPath)
+    : config.runner;
+}
+
 function selectedRunnerTags(): Array<{ value: string; label: string }> {
   const id = launchConfig?.runner;
-  if (!id) return [];
+  if (!id || launchConfig?.runnerPath) return [];
   return toolOf(id)?.installed.map((entry) => ({ value: entry.tag, label: entry.tag })) ?? [];
 }
 
@@ -252,6 +301,7 @@ function renderLaunchConfig(): string {
   const config = launchConfig;
   const runner = config?.runner ?? "";
   const runnerTag = config?.runnerTag ?? "";
+  const selectedValue = selectedRunnerValue();
   const prefix = config?.prefixDir ?? "";
   const umuAvailable = Boolean(umu && (umu.installed.length > 0 || umu.detected.length > 0));
   return `
@@ -260,12 +310,14 @@ function renderLaunchConfig(): string {
       <div class="row settings-row" data-search="runner wine proton prefix">
         <div class="row-main">
           <div class="settings-row-title">${esc(t("compat.runner"))}</div>
-          <div class="settings-row-desc">${esc(t("compat.runnerHint"))}</div>
+          <div class="settings-row-desc">${esc(t("compat.runnerHint"))}${
+            config?.runnerPath ? ` <code>${esc(config.runnerPath)}</code>` : ""
+          }</div>
         </div>
         <div class="settings-row-control">
           <select class="settings-select" data-act="compat-runner" aria-label="${esc(t("compat.runner"))}">
             ${runnerOptions()
-              .map((option) => `<option value="${esc(option.value)}"${option.value === runner ? " selected" : ""}>${esc(option.label)}</option>`)
+              .map((option) => `<option value="${esc(option.value)}"${option.value === selectedValue ? " selected" : ""}>${esc(option.label)}</option>`)
               .join("")}
           </select>
         </div>
@@ -457,6 +509,7 @@ function baseConfig(): CompatLaunchConfig {
     launchConfig ?? {
       runner: null,
       runnerTag: null,
+      runnerPath: null,
       prefixDir: "",
       umuEnabled: true,
     }
@@ -550,9 +603,14 @@ export function handleCompatAction(act: string | undefined, el: HTMLElement): bo
     return true;
   }
   if (act === "compat-runner") {
-    const value = (el as HTMLSelectElement).value;
+    const parsed = parseRunnerValue((el as HTMLSelectElement).value);
     const config = baseConfig();
-    void saveLaunchConfig({ ...config, runner: value || null, runnerTag: null });
+    void saveLaunchConfig({
+      ...config,
+      runner: parsed.runner,
+      runnerPath: parsed.runnerPath,
+      runnerTag: null,
+    });
     return true;
   }
   if (act === "compat-runner-tag") {

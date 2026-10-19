@@ -57,6 +57,8 @@ export interface CompatCatalog {
 export interface CompatLaunchConfig {
   runner: string | null;
   runnerTag: string | null;
+  /** A runner outside the launcher's folder; null means the managed copy. */
+  runnerPath: string | null;
   prefixDir: string;
   umuEnabled: boolean;
 }
@@ -90,6 +92,7 @@ export const compatSetLaunchConfig = (config: CompatLaunchConfig) =>
   invoke<void>("compat_set_launch_config", {
     runner: config.runner,
     runnerTag: config.runnerTag,
+    runnerPath: config.runnerPath,
     prefixDir: config.prefixDir,
     umuEnabled: config.umuEnabled,
   });

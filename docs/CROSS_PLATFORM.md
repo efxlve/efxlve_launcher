@@ -200,6 +200,10 @@ Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştır�
 çalışma zamanları, çeviri katmanları ve yardımcılar; sürüm/boyut, kurulu sürüm,
 sistemde bulunan kopyalar, indir/kaldır/güncelle ve canlı ilerleme. Altta bu
 bilgisayar için varsayılan çalıştırıcı, sürüm, prefix klasörü ve umu anahtarı.
+Çalıştırıcı listesi launcher'ın indirdiği sürümlerin yanında Steam
+`compatibilitytools.d`, Lutris ve sistem Wine kopyalarını da gösterir; seçilen
+klasör `compat_runner_path` olarak saklanır ve başlatmada launcher'ın kendi
+kopyasından önce gelir.
 
 ### 8.5 Kalan işler
 - Flatpak/AppImage/.deb/.rpm paketleme ve macOS `.app`/notarization.

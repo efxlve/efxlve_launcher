@@ -2587,5 +2587,6 @@
   "compat.update": "Güncelle",
   "drawer.igdbAddons": "IGDB'den ek paketler",
   "drawer.dlcKind": "Ek paket",
-  "drawer.expansion": "Genişletme"
+  "drawer.expansion": "Genişletme",
+  "compat.badRunnerPath": "Çalıştırıcı klasörü bulunamadı."
 }

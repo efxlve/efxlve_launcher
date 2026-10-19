@@ -168,6 +168,10 @@ pub struct EpicSettings {
     /// Specific installed runner tag (empty = newest installed).
     #[serde(default)]
     pub compat_runner_tag: Option<String>,
+    /// A runner outside the launcher's folder (Steam compatibilitytools.d,
+    /// Lutris, a system Wine build). Empty = use the managed copy.
+    #[serde(default)]
+    pub compat_runner_path: Option<String>,
     /// Root for per-game Wine/Proton prefixes.
     #[serde(default)]
     pub compat_prefix_dir: Option<String>,

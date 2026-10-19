@@ -59,6 +59,7 @@ export interface EpicSettings {
   /** Linux/macOS compatibility manager (managed by its own commands). */
   compat_runner?: string | null;
   compat_runner_tag?: string | null;
+  compat_runner_path?: string | null;
   compat_prefix_dir?: string | null;
   compat_umu_enabled?: boolean | null;
 }

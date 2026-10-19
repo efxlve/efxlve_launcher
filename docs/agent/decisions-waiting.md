@@ -97,6 +97,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   Windows başlatma yolu birebir korunuyor. Uyumluluk sayfası Windows'tan
   Linux/macOS ağacı indirmeye izin veriyor; bu bir paketleme hazırlığı, Windows
   oyunlarını Wine'a taşımıyor.
+- **Sistem çalıştırıcıları:** Steam `compatibilitytools.d`, Lutris ve sistem
+  Wine kopyaları algılanınca çalıştırıcı listesine eklenir; seçim
+  `compat_runner_path` olarak saklanır ve launcher'ın kendi kopyasından önce
+  gelir. Kullanıcı bir klasörü sonradan silerse `launch_spec` sessizce yönetilen
+  kopyaya düşer; ayrı bir "bozuk ayar" hatası gösterilmez.
 - **IGDB DLC/genişletme listesi:** mağaza DLC satırları kurulum yüzeyi olarak
   kaldı; IGDB yalnız mağazanın adlandırmadığı ekleri ayrı blokta gösteriyor.
   Mağaza başlığıyla aynı olan (kanonik başlık) kayıtlar eleniyor.
