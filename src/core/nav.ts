@@ -239,9 +239,13 @@ function fillRank(id: string): number {
 export function updateSidebarGames(): void {
   const host = document.getElementById("sb-games");
   if (!host) return;
-  const entries = sidebarGames();
   const limit = sidebarRecentLimit();
-  const stamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${entries.map((e) => e.appName).join("\n")}`;
+  // Cheap guard first: building the installed-game array and its cover URLs
+  // before checking a stamp ran on every repaint, including download patches.
+  const cheapStamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${S.libraryDataRev}`;
+  if (cheapStamp === sidebarInputs) return;
+  const entries = sidebarGames();
+  const stamp = `${cheapStamp}\0${entries.map((e) => e.appName).join("\n")}`;
   if (stamp === sidebarInputs) return;
   sidebarInputs = stamp;
 
