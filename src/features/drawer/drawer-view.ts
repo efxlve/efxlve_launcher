@@ -902,6 +902,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
             <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
           </div>
           <div class="gp-hero-bottom">
+            <div id="drawer-col-chips-container" class="gp-tags gp-hero-tags">${renderCollectionTags(s.appName)}</div>
             <h1 class="gp-title">${esc(s.title)}</h1>
             <div class="gp-meta" id="gp-meta">${meta}</div>
           </div>
@@ -910,7 +911,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         <div class="gp-bar">
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
-            <div id="drawer-col-chips-container" class="gp-tags gp-bar-tags">${renderCollectionTags(s.appName)}</div>
           </div>
           <div class="gp-stats">${heroStatsHtml(s, partner)}</div>
         </div>
@@ -978,15 +978,16 @@ export function updateCriticUI(appName: string, data: CriticData): void {
   syncScoresCardVisibility();
 }
 
-/** Collection chips + add button, in their own row under the action bar. */
+/** The collections this game belongs to, as chips over the hero title. The add
+ *  action lives in the `...` menu: a second button in the action row was the
+ *  same job twice, and it pushed the row to seven items. */
 export function renderCollectionTags(appName: string): string {
   const lowerApp = appName.toLowerCase();
   const gameCols = S.epicCollections.filter((c) => c.app_names.some((name) => name.toLowerCase() === lowerApp));
-  const pills = gameCols.map((c) => `
+  return gameCols.map((c) => `
     <button class="chip gp-tag" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(t("drawer.collectionShow", { name: c.name }))}">
       ${isCollectionIcon(c.emoji) ? collectionMarker(c.emoji, 12) : ""}${esc(c.name)}
     </button>`).join("");
-  return `${pills}<button class="btn ghost small" data-act="manage-game-collections" data-id="${appName}">${icon("plus", 12)} ${gameCols.length > 0 ? t("drawer.collection") : t("drawer.addCollection")}</button>`;
 }
 
 /**

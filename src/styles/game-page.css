@@ -54,9 +54,10 @@ body.sb-resizing .overlay {
   margin-top: -28px; padding: 0 32px 16px; position: relative; z-index: 4; background: transparent;
 }
 .gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-/* Collection chips sit with the actions: adding a game to a collection is an
-   action, not a fact about it. */
-.gp-bar-tags { margin: 0; flex-wrap: wrap; }
+/* Collection chips sit over the hero title: the user's own categories, not
+   actions. The add action lives in the `...` menu, so the action row stays at
+   five items. */
+.gp-hero-tags { margin: 0 0 10px; }
 .gp-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .gp-actions > .btn.lg:first-child { min-width: 180px; }
 .gp-actions .btn.lg.icon-only { width: 44px; }
