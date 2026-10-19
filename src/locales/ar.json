@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "تعذّر قراءة المقطع",
   "ss.clipWriteFailed": "تعذّر كتابة المقطع",
   "ss.joinMismatch": "المقاطع ليست بالحجم ومعدل الإطارات نفسه",
+  "ss.joinTooLarge": "دمج هذه المقاطع سيتجاوز حد 4 غيغابايت للملف",
   "ss.clipShareTitle": "إرسال إلى Discord",
   "ss.clipShareFit": "اضبط لـ 8 ميغابايت",
   "ss.clipShareWillSend": "سيُرسل {time} · {size}",

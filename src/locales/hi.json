@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "क्लिप पढ़ी नहीं जा सकी",
   "ss.clipWriteFailed": "क्लिप लिखी नहीं जा सकी",
   "ss.joinMismatch": "क्लिप का आकार या फ़्रेम दर एक जैसा नहीं है",
+  "ss.joinTooLarge": "इन क्लिपों को जोड़ने पर फ़ाइल की 4 GB सीमा पार हो जाएगी",
   "ss.clipShareTitle": "Discord पर भेजें",
   "ss.clipShareFit": "8 MB में फ़िट करें",
   "ss.clipShareWillSend": "{time} · {size} भेजा जाएगा",

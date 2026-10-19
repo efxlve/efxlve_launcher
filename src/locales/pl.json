@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "Nie udało się odczytać klipu",
   "ss.clipWriteFailed": "Nie udało się zapisać klipu",
   "ss.joinMismatch": "Klipy nie mają tego samego rozmiaru i liczby klatek",
+  "ss.joinTooLarge": "Połączenie tych klipów przekroczy limit 4 GB pliku",
   "ss.clipShareTitle": "Wyślij na Discorda",
   "ss.clipShareFit": "Dopasuj do 8 MB",
   "ss.clipShareWillSend": "Wysyłanie {time} · {size}",

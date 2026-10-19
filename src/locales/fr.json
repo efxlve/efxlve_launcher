@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "Le clip n'a pas pu être lu",
   "ss.clipWriteFailed": "Le clip n'a pas pu être écrit",
   "ss.joinMismatch": "Les clips n'ont pas la même taille ni la même cadence",
+  "ss.joinTooLarge": "Réunir ces clips dépasserait la limite de 4 Go du fichier",
   "ss.clipShareTitle": "Envoyer sur Discord",
   "ss.clipShareFit": "Ajuster à 8 Mo",
   "ss.clipShareWillSend": "Envoi de {time} · {size}",

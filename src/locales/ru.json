@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "Не удалось прочитать клип",
   "ss.clipWriteFailed": "Не удалось записать клип",
   "ss.joinMismatch": "У клипов разный размер или частота кадров",
+  "ss.joinTooLarge": "Объединение этих клипов превысит лимит файла в 4 ГБ",
   "ss.clipShareTitle": "Отправить в Discord",
   "ss.clipShareFit": "Ужать до 8 МБ",
   "ss.clipShareWillSend": "Отправка {time} · {size}",

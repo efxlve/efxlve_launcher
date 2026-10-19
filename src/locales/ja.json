@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "クリップを読み込めませんでした",
   "ss.clipWriteFailed": "クリップを書き込めませんでした",
   "ss.joinMismatch": "クリップのサイズまたはフレームレートが一致しません",
+  "ss.joinTooLarge": "これらのクリップを結合すると、ファイルの 4 GB 制限を超えます",
   "ss.clipShareTitle": "Discord に送信",
   "ss.clipShareFit": "8 MB に収める",
   "ss.clipShareWillSend": "{time} · {size} を送信",

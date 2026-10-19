@@ -1212,10 +1212,6 @@ mod tests {
             let phantom = res
                 .dlcs
                 .iter()
-                .find(|d| d.title.contains("Phantom Liberty"));
-            let phantom = res
-                .dlcs
-                .iter()
                 .find(|d| d.title.contains("Phantom Liberty"))
                 .expect("Phantom Liberty DLC must be found");
             // The flags of one DLC describe this machine and this account —

@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "Klip okunamadı",
   "ss.clipWriteFailed": "Klip yazılamadı",
   "ss.joinMismatch": "Kliplerin boyutu veya kare hızı aynı değil",
+  "ss.joinTooLarge": "Bu klipleri birleştirmek dosyanın 4 GB sınırını aşar",
   "ss.clipShareTitle": "Discord'a gönder",
   "ss.clipShareFit": "8 MB'a sığdır",
   "ss.clipShareWillSend": "{time} · {size} gönderilecek",

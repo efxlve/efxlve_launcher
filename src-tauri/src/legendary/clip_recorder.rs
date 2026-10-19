@@ -95,12 +95,24 @@ fn fourcc(text: &[u8; 4]) -> [u8; 4] {
     *text
 }
 
+/// The largest clip the container can describe: every size field in an AVI is
+/// 32-bit, so a file past 4 GB gets a wrapped RIFF header and players stop
+/// reading it where the number went wrong. The cap leaves room for the index.
+///
+/// It is reachable: at quality 80 a 720p frame measures 83 KB, so 30 fps is
+/// about 2.4 MB/s — 0.7 GB for the default five minutes. Scale that by pixels
+/// and 1440p lands at 2.9 GB and 4K at 6.6 GB, which is where the header would
+/// have wrapped.
+const MAX_CLIP_BYTES: u64 = 3_500_000_000;
+
 struct AviWriter {
     file: File,
     frames: u32,
     /// One entry per chunk: offset from the start of movi, length, chunk tag.
     index: Vec<(u32, u32, [u8; 4])>,
     frame_bytes: u32,
+    /// Everything written so far, header included: what the RIFF size will be.
+    bytes: u64,
     movi_start: u64,
     /// Audio block size; 0 means the file has no audio stream.
     audio_block_align: u16,
@@ -252,6 +264,7 @@ impl AviWriter {
             frames: 0,
             index: Vec::new(),
             frame_bytes: 0,
+            bytes: movi_start,
             movi_start,
             audio_block_align: audio.map(|info| info.block_align()).unwrap_or(0),
             audio_bytes: 0,
@@ -273,7 +286,14 @@ impl AviWriter {
         self.index.push(((offset - self.movi_start) as u32, jpeg.len() as u32, *b"00dc"));
         self.frames += 1;
         self.frame_bytes = self.frame_bytes.max(jpeg.len() as u32);
+        // Chunk header, payload, padding.
+        self.bytes += 8 + jpeg.len() as u64 + (jpeg.len() % 2) as u64;
         Ok(())
+    }
+
+    /// Everything in the file so far, header included.
+    fn bytes(&self) -> u64 {
+        self.bytes
     }
 
     /// Appends the sound captured since the last frame. AVI players want the two
@@ -303,6 +323,7 @@ impl AviWriter {
         self.index
             .push(((offset - self.movi_start) as u32, payload.len() as u32, *b"01wb"));
         self.audio_bytes += payload.len() as u64;
+        self.bytes += 8 + payload.len() as u64 + (payload.len() % 2) as u64;
         Ok(())
     }
 
@@ -544,6 +565,18 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
                     FRAMES.store(active.frames, Ordering::SeqCst);
                     if let Err(err) = active.add_audio(&samples) {
                         log(&app, &format!("loop: audio write failed: {err}"));
+                        break;
+                    }
+                    // Past the cap the 32-bit sizes would wrap and the file would
+                    // stop playing where the number went wrong: end it cleanly.
+                    if active.bytes() >= MAX_CLIP_BYTES {
+                        log(
+                            &app,
+                            &format!(
+                                "loop: size cap reached ({} MB), stopping",
+                                active.bytes() / 1_000_000
+                            ),
+                        );
                         break;
                     }
                 }
@@ -1086,6 +1119,12 @@ pub fn join(paths: &[PathBuf]) -> Result<PathBuf, String> {
             let _ = std::fs::remove_file(&target);
             return Err("@t:ss.trimEmpty".to_string());
         }
+        // The result carries the same 32-bit size fields as a recording, so a
+        // join that would pass the cap is refused rather than written corrupt.
+        if writer.bytes() >= MAX_CLIP_BYTES {
+            let _ = std::fs::remove_file(&target);
+            return Err("@t:ss.joinTooLarge".to_string());
+        }
     }
     writer
         .finish_at(first.fps(), first.micros)
@@ -1378,6 +1417,37 @@ mod tests {
         // …and every one of the six chunks is in the index.
         let index_size = u32::from_le_bytes([bytes[idx + 4], bytes[idx + 5], bytes[idx + 6], bytes[idx + 7]]);
         assert_eq!(index_size, 6 * 16);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    /// The foundation of the size cap: the running count has to agree with what
+    /// is on disk, or the recorder would stop at the wrong moment — too early on
+    /// a slow clip, too late on one that would wrap the 32-bit sizes.
+    #[test]
+    fn the_writer_counts_the_bytes_it_writes() {
+        let path = std::env::temp_dir().join("efxlve-avi-bytes.avi");
+        let mut writer = AviWriter::create(
+            &path,
+            64,
+            48,
+            30,
+            Some(AudioInfo {
+                sample_rate: 48_000,
+                channels: 2,
+            }),
+        )
+        .expect("create");
+        for i in 0..7u32 {
+            // Odd and even lengths both, so the padding is counted too.
+            writer.add_frame(&vec![0x11u8; 100 + i as usize]).expect("frame");
+            writer.add_audio(&[0i16; 96]).expect("audio");
+        }
+        let on_disk = writer.file.metadata().expect("metadata").len();
+        assert_eq!(
+            writer.bytes(),
+            on_disk,
+            "the running count and the file agree before the index is written"
+        );
         let _ = std::fs::remove_file(&path);
     }
 

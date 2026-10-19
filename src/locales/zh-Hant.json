@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "無法讀取剪輯",
   "ss.clipWriteFailed": "無法寫入剪輯",
   "ss.joinMismatch": "剪輯的尺寸或影格率不一致",
+  "ss.joinTooLarge": "合併這些剪輯會超過檔案的 4 GB 上限",
   "ss.clipShareTitle": "傳送到 Discord",
   "ss.clipShareFit": "縮到 8 MB",
   "ss.clipShareWillSend": "將傳送 {time} · {size}",

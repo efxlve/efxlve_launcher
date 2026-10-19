@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "Der Clip konnte nicht gelesen werden",
   "ss.clipWriteFailed": "Der Clip konnte nicht geschrieben werden",
   "ss.joinMismatch": "Die Clips haben nicht dieselbe Größe und Bildrate",
+  "ss.joinTooLarge": "Diese Clips zusammen würden das 4-GB-Limit der Datei überschreiten",
   "ss.clipShareTitle": "An Discord senden",
   "ss.clipShareFit": "Auf 8 MB kürzen",
   "ss.clipShareWillSend": "Sendet {time} · {size}",

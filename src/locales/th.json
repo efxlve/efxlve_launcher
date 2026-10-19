@@ -2435,6 +2435,7 @@
   "ss.clipUnreadable": "อ่านคลิปไม่ได้",
   "ss.clipWriteFailed": "เขียนคลิปไม่ได้",
   "ss.joinMismatch": "คลิปมีขนาดหรืออัตราเฟรมไม่ตรงกัน",
+  "ss.joinTooLarge": "การรวมคลิปเหล่านี้จะเกินขีดจำกัดไฟล์ 4 GB",
   "ss.clipShareTitle": "ส่งไป Discord",
   "ss.clipShareFit": "ย่อให้พอดี 8 MB",
   "ss.clipShareWillSend": "จะส่ง {time} · {size}",
