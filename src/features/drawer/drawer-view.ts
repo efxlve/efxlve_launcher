@@ -1065,16 +1065,16 @@ async function loadSteamNews(appName: string, appId: string): Promise<void> {
   }
 }
 
-export function renderDrawerOverview(
-  s: EpicSummary,
-  partner: ThirdPartyLauncherInfo | null = null,
-  antiCheat: string | null = null,
-): string {
-  // A game the player has started reads as "mine": their own trail leads, and the
-  // catalogue text waits one scroll below. A game nobody has installed is the
-  // other way round — there the question is "what is this?", not "where was I?".
-  const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
-  const personalFirst = s.installed || playtime > 0;
+/**
+ * The personal half of the overview: the last session, the moments, the next
+ * trophies and, when there is nothing at all, the card that explains the space.
+ *
+ * It is a function of its own because it is the one block that changes while the
+ * page is open: a session ends, the recorder writes it down, and the block is
+ * painted again in place — repainting the whole tab would throw the reader's
+ * scroll position away.
+ */
+function personalBlockHtml(s: EpicSummary, personalFirst: boolean): string {
   const moments = renderMomentsStrip(s.appName);
   const nextAch = renderNextAchievements(s.appName);
   // Both blocks hold their place while they load; when they have answered and
@@ -1098,7 +1098,30 @@ export function renderDrawerOverview(
           </div>
         </section>`
       : "";
-  const personal = `${renderLastSession(s.appName)}${moments}${nextAch}${personalEmpty}`;
+  return `${renderLastSession(s.appName)}${moments}${nextAch}${personalEmpty}`;
+}
+
+/** Paints the personal block again after a session ended, if its page is open. */
+export function repaintPersonalBlock(appName: string): void {
+  if (S.currentModalAppName !== appName || S.activeDrawerTab !== "overview") return;
+  const host = document.getElementById("gp-personal-block");
+  const s = summaryOf(appName);
+  if (!host || !s) return;
+  const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  host.innerHTML = personalBlockHtml(s, s.installed || playtime > 0);
+}
+
+export function renderDrawerOverview(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null = null,
+  antiCheat: string | null = null,
+): string {
+  // A game the player has started reads as "mine": their own trail leads, and the
+  // catalogue text waits one scroll below. A game nobody has installed is the
+  // other way round — there the question is "what is this?", not "where was I?".
+  const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+  const personalFirst = s.installed || playtime > 0;
+  const personal = `<div id="gp-personal-block">${personalBlockHtml(s, personalFirst)}</div>`;
   const about = renderAboutSection(s);
   // The game's own feed, when the store that owns it publishes one: Steam is the
   // only one here that does, so a game it does not list simply has no block.
@@ -1465,6 +1488,9 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
   // answered, which is why the summary is written in two steps.
   if (sessionSeconds !== undefined && sessionSeconds > 0) {
     recordSessionSummary(appName, { seconds: sessionSeconds, at: Date.now() });
+    // The card that shows it is part of the overview, which may be the page the
+    // player is looking at right now.
+    repaintPersonalBlock(appName);
   }
   const now = Date.now();
   if (now - (sessionAchRefreshAt.get(appName) ?? 0) < 15_000) return;
@@ -1474,7 +1500,10 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
   S.loadedAchievements.delete(appName);
   void fetchAndRenderAchievements(appName, true).then(() => {
     const after = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
-    if (after > before) recordSessionSummary(appName, { unlocked: after - before, at: Date.now() });
+    if (after > before) {
+      recordSessionSummary(appName, { unlocked: after - before, at: Date.now() });
+      repaintPersonalBlock(appName);
+    }
   });
 }
 
