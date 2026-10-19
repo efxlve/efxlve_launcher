@@ -52,9 +52,11 @@ it into Antigravity and bring the answer back.
 
 ## 0b. Remaining plan items
 
-1. Repaint diet: an IGDB answer repaints the whole overview tab
-   (`openEpicModal(appName, false)`); only the credits line and the scores card
-   actually change.
+1. Repaint diet: resolved 2026-10-19. An IGDB answer repaints only the About
+   block, similar games and the scores card (`repaintIgdbBlocks`); a late
+   achievement answer repaints the hero chips, the open achievements body and
+   the personal block, not the whole overview. Full repaints here used to reset
+   the reader's scroll position for two or three numbers.
 2. Keyboard and TV pass over the game page (tab order, focus ring, controller).
    Done on 2026-10-18: the game page already uses real buttons (no click target is
    a div), `:focus-visible` is styled globally, and the tab strip is a row of

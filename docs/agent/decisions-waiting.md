@@ -110,6 +110,11 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   gösterilmez. "Kapalı" artık `compat_runner_enabled = false` ile gerçekten
   kapalıdır; eski sürümde `runner = null` yönetilen çalıştırıcıyı otomatik
   seçiyordu, bu bir hataydı.
+- **Geç gelen başarım:** Başarım özeti geldiğinde tüm oyun sayfası yeniden
+  çizilmiyor. Hero çipleri, açık başarımlar sekmesinin gövdesi ve ana sayfadaki
+  personal blok yerinde güncelleniyor; böylece okuma konumu ve sekme çubuğu
+  korunuyor. Başarımlar sekmesindeki liste zaten sekme açılırken kurulduğundan
+  yalnız gövde değişimi yeterli.
 - **Oyun bazlı çalıştırıcı:** Oyun sayfasının Sistem sekmesinde "Genel ayarı
   kullan" varsayılanıyla bir seçim eklendi; yalnız istisnalar
   `<app_data>/compat/games.json` içine yazılıyor. Açık bir oyun seçimi global

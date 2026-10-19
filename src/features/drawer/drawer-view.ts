@@ -1737,7 +1737,13 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
 export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
   if (!isTauri || S.loadingAchFor.has(appName)) return;
   S.loadingAchFor.add(appName);
-  if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") openEpicModal(appName, false, false);
+  if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") {
+    // The tab is already open: repaint its body for the spinner instead of
+    // rebuilding the hero and every other tab behind it.
+    const content = document.getElementById("drawer-tab-content");
+    const s = summaryOf(appName);
+    if (content && s) content.innerHTML = renderDrawerAchievements(s);
+  }
   try {
     const isGog = appName.startsWith("gog::");
     const isSteam = appName.startsWith("steam::");
@@ -1809,9 +1815,29 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     S.loadedAchievements.set(appName, { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false });
   } finally {
     S.loadingAchFor.delete(appName);
-    if (S.currentModalAppName === appName && (S.activeDrawerTab === "achievements" || S.activeDrawerTab === "overview")) {
-      openEpicModal(appName, false, false);
-    }
+    repaintAchievementSummary(appName);
+  }
+}
+
+/**
+ * Paints the late achievement answer where it is visible: the hero chips, the
+ * achievements tab when it is open, and the personal block's next-trophy row.
+ * A full `openEpicModal` here rebuilt the overview (and reset its scroll) for
+ * three numbers.
+ */
+function repaintAchievementSummary(appName: string): void {
+  if (S.currentModalAppName !== appName) return;
+  const s = summaryOf(appName);
+  if (!s) return;
+  const stats = document.querySelector<HTMLElement>(".gp-stats");
+  if (stats) stats.innerHTML = heroStatsHtml(s, gamePartner(s, rawOf(appName)));
+  const tab = document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]');
+  if (tab) tab.classList.toggle("plat", isAppPlatinum(appName));
+  if (S.activeDrawerTab === "achievements") {
+    const content = document.getElementById("drawer-tab-content");
+    if (content) content.innerHTML = renderDrawerAchievements(s);
+  } else if (S.activeDrawerTab === "overview") {
+    repaintPersonalBlock(appName);
   }
 }
 
