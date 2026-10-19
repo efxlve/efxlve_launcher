@@ -77,10 +77,12 @@ pub async fn binary_version_cached(bin: &Path) -> Result<String, LegendaryError>
 fn binary_stamp(bin: &Path) -> String {
     let meta = std::fs::metadata(bin).ok();
     let len = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+    // Nanoseconds, not seconds: a rebuilt binary can have the same size, and a
+    // replacement inside the same second used to keep the old cached version.
     let mtime = meta
         .and_then(|m| m.modified().ok())
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
+        .map(|d| d.as_nanos())
         .unwrap_or(0);
     format!("{}|{len}|{mtime}", bin.to_string_lossy())
 }
@@ -124,7 +126,10 @@ mod tests {
             "an untouched file keeps its stamp"
         );
 
-        std::fs::write(&path, b"second-content").unwrap();
+        // Same size, replaced a few milliseconds later: the old second-based
+        // stamp could not tell these two files apart.
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::fs::write(&path, b"other").unwrap();
         let second = binary_stamp(&path);
         assert_ne!(first, second, "a replaced binary must invalidate the cache");
         assert!(second.contains(&path.to_string_lossy().to_string()));
