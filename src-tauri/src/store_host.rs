@@ -517,17 +517,6 @@ fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
 }
 
-fn extract_steam_app_id(url: &str) -> Option<String> {
-    let parsed = url::Url::parse(url).ok()?;
-    let segments: Vec<&str> = parsed.path_segments()?.collect();
-    for window in segments.windows(2) {
-        if window[0] == "app" && window[1].chars().all(|c| c.is_ascii_digit()) {
-            return Some(window[1].to_string());
-        }
-    }
-    None
-}
-
 fn create_store_builder(
     app: &AppHandle,
     target_label: String,
@@ -556,25 +545,6 @@ fn create_store_builder(
             // finished load; the store is a single-page app.
             if store_id == "xbox" {
                 let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
-            }
-            if store_id == "steam" && steamdb {
-                let wv = webview.clone();
-                let url_str = payload.url().as_str().to_string();
-                if let Some(app_id) = extract_steam_app_id(&url_str) {
-                    tauri::async_runtime::spawn(async move {
-                        let api_url = format!("https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid={app_id}");
-                        if let Ok(res) = reqwest::get(&api_url).await {
-                            if let Ok(data) = res.json::<serde_json::Value>().await {
-                                if let Some(player_count) = data["response"]["player_count"].as_i64() {
-                                    let script = format!(
-                                        "if (typeof window.efxlveSetPlayerCount === 'function') window.efxlveSetPlayerCount({player_count});"
-                                    );
-                                    let _ = wv.eval(&script);
-                                }
-                            }
-                        }
-                    });
-                }
             }
             // A storefront that navigated away from a sign-in page becomes
             // visible now, once the store has actually painted.
@@ -1221,26 +1191,6 @@ mod tests {
         assert_eq!(
             store_hold_effect(true, true, false, false),
             StoreHoldEffect::ReleaseHidden
-        );
-    }
-
-    #[test]
-    fn steam_app_ids_are_extracted_from_urls() {
-        assert_eq!(
-            super::extract_steam_app_id("https://store.steampowered.com/app/730/CounterStrike_2/"),
-            Some("730".into())
-        );
-        assert_eq!(
-            super::extract_steam_app_id("https://store.steampowered.com/agecheck/app/292030/"),
-            Some("292030".into())
-        );
-        assert_eq!(
-            super::extract_steam_app_id("https://store.steampowered.com/app/10"),
-            Some("10".into())
-        );
-        assert_eq!(
-            super::extract_steam_app_id("https://store.steampowered.com/search/?term=action"),
-            None
         );
     }
 
