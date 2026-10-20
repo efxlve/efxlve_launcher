@@ -17,8 +17,26 @@ import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import type { SettingsSection } from "../../core/types";
-import type { CaseCoverStyle } from "../../core/constants";
+import type { GameSource, SettingsSection } from "../../core/types";
+import {
+  CASE_COVERS_KEY,
+  CASE_COVER_STYLE_KEY,
+  CASE_SHOW_LOGO_KEY,
+  CASE_SHOW_NAME_KEY,
+  CASE_SHOW_OS_KEY,
+  CASE_GLARE_KEY,
+  CASE_TILT_KEY,
+  CASE_SHELF_SHADOW_KEY,
+  CASE_GLOSS_KEY,
+  CASE_COLOR_MODE_KEY,
+  CASE_STORE_COLORS_KEY,
+  normalizeCaseCoverStyle,
+  normalizeCaseGloss,
+  normalizeCaseColorMode,
+  type CaseCoverStyle,
+} from "../../core/constants";
+import { refreshLibraryResultsInPlace } from "../library/library-view";
+import { DEFAULT_STORE_COLORS, syncCaseCustomStoreColors } from "../library/case-colors";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
 import { toast } from "../../core/toast";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
@@ -850,6 +868,18 @@ function renderStores(): string {
 }
 
 
+const CASE_STORE_NAMES: Record<GameSource, string> = {
+  steam: "Steam",
+  epic: "Epic Games",
+  gog: "GOG",
+  xbox: "Xbox",
+  ea: "EA App",
+  ubisoft: "Ubisoft Connect",
+  battlenet: "Battle.net",
+  riot: "Riot Games",
+  amazon: "Amazon Games",
+};
+
 function renderCasesSection(): string {
   const styles: { id: CaseCoverStyle; titleKey: string; descKey: string; badge: string }[] = [
     { id: "retail", titleKey: "settings.caseStyleRetail", descKey: "settings.caseStyleRetailDesc", badge: "DVD / Blu-ray" },
@@ -883,6 +913,13 @@ function renderCasesSection(): string {
     t("settings.secCases"),
   );
 
+  const disabledBanner = !S.showCaseCovers ? `
+    <div class="case-disabled-banner">
+      ${icon("info", 16)}
+      <span>${t("settings.caseDisabledNote")}</span>
+    </div>
+  ` : "";
+
   const galleryGroup = group(
     `<div class="case-styles-gallery">${styleCards}</div>`,
     t("settings.caseStyleTitle"),
@@ -898,6 +935,7 @@ function renderCasesSection(): string {
       </div>`
     ) +
     row(t("settings.caseShowLogo"), t("settings.caseShowLogoDesc"), toggle("toggle-case-show-logo", S.caseShowLogo)) +
+    row(t("settings.caseShowName"), t("settings.caseShowNameDesc"), toggle("toggle-case-show-name", S.caseShowName)) +
     row(t("settings.caseShowOs"), t("settings.caseShowOsDesc"), toggle("toggle-case-show-os", S.caseShowOs)),
     t("settings.caseHeaderGroup"),
   );
@@ -918,7 +956,55 @@ function renderCasesSection(): string {
     t("settings.caseEffectsGroup"),
   );
 
-  return infoBox("settings.casesScopeInfo") + mainGroup + galleryGroup + headerGroup + effectsGroup;
+  const storeRows = (["steam", "epic", "gog", "xbox", "ea", "ubisoft", "battlenet", "riot", "amazon"] as GameSource[]).map((store) => {
+    const defaultColor = DEFAULT_STORE_COLORS[store];
+    const currentColor = S.caseStoreColors?.[store] || defaultColor;
+    const isCustom = Boolean(S.caseStoreColors?.[store]);
+    const storeLabel = CASE_STORE_NAMES[store] || store.toUpperCase();
+    const logo = storeLogo(store, 20, "case-store-row-logo");
+    return `
+      <div class="case-store-color-row">
+        <div class="case-store-info">
+          ${logo}
+          <span class="case-store-name">${esc(storeLabel)}</span>
+        </div>
+        <div class="case-store-ctrls">
+          <label class="case-color-picker-wrap">
+            <input type="color" class="case-color-input" data-act="set-case-store-color" data-store="${store}" value="${currentColor}" />
+            <span class="case-color-swatch" style="background-color: ${currentColor};"></span>
+          </label>
+          <span class="case-color-hex">${currentColor.toUpperCase()}</span>
+          <button type="button" class="btn ghost small case-store-reset-btn" data-act="reset-case-store-color" data-store="${store}" title="${t("settings.caseStoreReset")}" ${isCustom ? "" : "disabled"}>
+            ${icon("refresh", 12)}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const hasAnyCustom = Object.keys(S.caseStoreColors || {}).length > 0;
+  const storeColorsGroup = group(
+    `<div class="case-store-colors-desc">${t("settings.caseStoreColorsDesc")}</div>
+     <div class="case-store-color-list">${storeRows}</div>
+     <div class="case-store-color-actions">
+       <button type="button" class="btn ghost small" data-act="reset-all-case-store-colors" ${hasAnyCustom ? "" : "disabled"}>
+         ${icon("refresh", 13)} <span>${t("settings.caseStoreResetAll")}</span>
+       </button>
+     </div>`,
+    t("settings.caseStoreColorsTitle"),
+  );
+
+  const subOptionsClass = S.showCaseCovers ? "" : " case-settings-disabled";
+
+  return infoBox("settings.casesScopeInfo") +
+    mainGroup +
+    disabledBanner +
+    `<div class="case-settings-body${subOptionsClass}">` +
+    galleryGroup +
+    headerGroup +
+    effectsGroup +
+    storeColorsGroup +
+    `</div>`;
 }
 
 function renderAppearance(): string {
@@ -2184,6 +2270,107 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "ss-move-backdrop":
       closeScreenshotMoveConfirm();
       return true;
+    case "toggle-case-covers": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.showCaseCovers = isInput ? _el.checked : !S.showCaseCovers;
+      localStorage.setItem(CASE_COVERS_KEY, String(S.showCaseCovers));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "set-case-cover-style": {
+      const style = normalizeCaseCoverStyle(_el.dataset.style);
+      S.caseCoverStyle = style;
+      S.showCaseCovers = true;
+      localStorage.setItem(CASE_COVER_STYLE_KEY, style);
+      localStorage.setItem(CASE_COVERS_KEY, "true");
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "set-case-color-mode": {
+      const mode = normalizeCaseColorMode(_el.dataset.mode);
+      S.caseColorMode = mode;
+      localStorage.setItem(CASE_COLOR_MODE_KEY, mode);
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-show-logo": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseShowLogo = isInput ? _el.checked : !S.caseShowLogo;
+      localStorage.setItem(CASE_SHOW_LOGO_KEY, String(S.caseShowLogo));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-show-name": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseShowName = isInput ? _el.checked : !S.caseShowName;
+      localStorage.setItem(CASE_SHOW_NAME_KEY, String(S.caseShowName));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-show-os": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseShowOs = isInput ? _el.checked : !S.caseShowOs;
+      localStorage.setItem(CASE_SHOW_OS_KEY, String(S.caseShowOs));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-glare": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseGlare = isInput ? _el.checked : !S.caseGlare;
+      localStorage.setItem(CASE_GLARE_KEY, String(S.caseGlare));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-tilt": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseTilt = isInput ? _el.checked : !S.caseTilt;
+      localStorage.setItem(CASE_TILT_KEY, String(S.caseTilt));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-shelf-shadow": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseShelfShadow = isInput ? _el.checked : !S.caseShelfShadow;
+      localStorage.setItem(CASE_SHELF_SHADOW_KEY, String(S.caseShelfShadow));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "set-case-gloss": {
+      const gloss = normalizeCaseGloss(_el.dataset.gloss);
+      S.caseGloss = gloss;
+      localStorage.setItem(CASE_GLOSS_KEY, gloss);
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "reset-case-store-color": {
+      const store = _el.dataset.store;
+      if (store && S.caseStoreColors?.[store]) {
+        delete S.caseStoreColors[store];
+        try {
+          if (Object.keys(S.caseStoreColors).length === 0) {
+            localStorage.removeItem(CASE_STORE_COLORS_KEY);
+          } else {
+            localStorage.setItem(CASE_STORE_COLORS_KEY, JSON.stringify(S.caseStoreColors));
+          }
+        } catch {
+          /* ignore */
+        }
+        syncCaseCustomStoreColors();
+        render();
+      }
+      return true;
+    }
+    case "reset-all-case-store-colors": {
+      S.caseStoreColors = {};
+      try {
+        localStorage.removeItem(CASE_STORE_COLORS_KEY);
+      } catch {
+        /* ignore */
+      }
+      syncCaseCustomStoreColors();
+      render();
+      return true;
+    }
     default:
       return false;
   }

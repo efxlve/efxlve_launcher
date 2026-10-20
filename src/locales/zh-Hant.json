@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "將外層塑膠保護膜質感調節為高光、緞面或啞光。",
   "settings.caseGlossHigh": "高光亮面",
   "settings.caseGlossSatin": "緞面半光",
-  "settings.caseGlossMatte": "啞光磨砂"
+  "settings.caseGlossMatte": "啞光磨砂",
+  "settings.caseShowName": "Store name on header",
+  "settings.caseShowNameDesc": "Display the storefront name (Steam, Epic Games, etc.) on the retail header.",
+  "settings.caseStoreColorsTitle": "Storefront Colors",
+  "settings.caseStoreColorsDesc": "Customize the box header and accent colors for each storefront.",
+  "settings.caseStoreReset": "Reset to default color",
+  "settings.caseStoreResetAll": "Reset All Store Colors",
+  "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library."
 }

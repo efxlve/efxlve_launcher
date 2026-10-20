@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Réglez la finition du film plastique extérieur de très brillant à mat.",
   "settings.caseGlossHigh": "Très brillant",
   "settings.caseGlossSatin": "Satiné",
-  "settings.caseGlossMatte": "Mat"
+  "settings.caseGlossMatte": "Mat",
+  "settings.caseShowName": "Nom du magasin sur l'en-tête",
+  "settings.caseShowNameDesc": "Affiche le nom de la boutique (Steam, Epic Games, etc.) sur le bandeau supérieur.",
+  "settings.caseStoreColorsTitle": "Couleurs des boutiques",
+  "settings.caseStoreColorsDesc": "Personnalisez l'en-tête et les couleurs d'accentuation des boîtes pour chaque magasin.",
+  "settings.caseStoreReset": "Rétablir la couleur par défaut",
+  "settings.caseStoreResetAll": "Réinitialiser toutes les couleurs",
+  "settings.caseDisabledNote": "Les boîtiers physiques sont actuellement désactivés. Activez l'interrupteur ci-dessus pour appliquer ces options."
 }

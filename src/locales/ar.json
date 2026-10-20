@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "ضبط لمعان الغلاف الخارجي من شديد اللمعان إلى ساتان أو مطفي.",
   "settings.caseGlossHigh": "شديد اللمعان",
   "settings.caseGlossSatin": "ساتان",
-  "settings.caseGlossMatte": "مطفي"
+  "settings.caseGlossMatte": "مطفي",
+  "settings.caseShowName": "اسم المتجر في الشريط العلوي",
+  "settings.caseShowNameDesc": "عرض اسم المتجر (Steam، Epic Games، إلخ) على الشريط العلوي للعلبة.",
+  "settings.caseStoreColorsTitle": "ألوان المتاجر",
+  "settings.caseStoreColorsDesc": "تخصيص ألوان الشريط العلوي والتفاصيل لكل متجر ألعاب.",
+  "settings.caseStoreReset": "إعادة التعيين إلى اللون الافتراضي",
+  "settings.caseStoreResetAll": "إعادة ضبط جميع ألوان المتاجر",
+  "settings.caseDisabledNote": "أغلفة العلب الفيزيائية معطلة حالياً. فعّل المفتاح أعلاه لتطبيق هذه التخصيصات في مكتبتك."
 }

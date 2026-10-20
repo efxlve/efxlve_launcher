@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Adjust the finish of the outer plastic film from high gloss to satin or matte.",
   "settings.caseGlossHigh": "High Gloss",
   "settings.caseGlossSatin": "Satin",
-  "settings.caseGlossMatte": "Matte"
+  "settings.caseGlossMatte": "Matte",
+  "settings.caseShowName": "Store name on header",
+  "settings.caseShowNameDesc": "Display the storefront name (Steam, Epic Games, etc.) on the retail header.",
+  "settings.caseStoreColorsTitle": "Storefront Colors",
+  "settings.caseStoreColorsDesc": "Customize the box header and accent colors for each storefront.",
+  "settings.caseStoreReset": "Reset to default color",
+  "settings.caseStoreResetAll": "Reset All Store Colors",
+  "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library."
 }

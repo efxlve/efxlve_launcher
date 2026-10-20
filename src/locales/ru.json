@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Настройка глянца внешней пленки: от высокого глянца до сатинового или матового.",
   "settings.caseGlossHigh": "Высокий глянец",
   "settings.caseGlossSatin": "Сатиновый",
-  "settings.caseGlossMatte": "Матовый"
+  "settings.caseGlossMatte": "Матовый",
+  "settings.caseShowName": "Название магазина на полосе",
+  "settings.caseShowNameDesc": "Отображать название магазина (Steam, Epic Games и т. д.) на полосе заголовка коробки.",
+  "settings.caseStoreColorsTitle": "Цвета магазинов",
+  "settings.caseStoreColorsDesc": "Настройте цвет заголовка и акценты физических коробок для каждого магазина.",
+  "settings.caseStoreReset": "Сбросить цвет по умолчанию",
+  "settings.caseStoreResetAll": "Сбросить цвета всех магазинов",
+  "settings.caseDisabledNote": "Физические коробки сейчас отключены. Включите переключатель выше, чтобы применить настройки к библиотеке."
 }

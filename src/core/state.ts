@@ -52,6 +52,7 @@ import {
   normalizeCaseCoverStyle,
   type CaseCoverStyle,
   CASE_SHOW_LOGO_KEY,
+  CASE_SHOW_NAME_KEY,
   CASE_SHOW_OS_KEY,
   CASE_GLARE_KEY,
   CASE_TILT_KEY,
@@ -60,6 +61,7 @@ import {
   normalizeCaseGloss,
   type CaseGloss,
   CASE_COLOR_MODE_KEY,
+  CASE_STORE_COLORS_KEY,
   normalizeCaseColorMode,
   type CaseColorMode,
   SEPARATE_COPIES_KEY,
@@ -517,12 +519,22 @@ export const S = {
   /** Visual design of the physical case cover when showCaseCovers is enabled. */
   caseCoverStyle: normalizeCaseCoverStyle(localStorage.getItem(CASE_COVER_STYLE_KEY)) as CaseCoverStyle,
   caseShowLogo: (localStorage.getItem(CASE_SHOW_LOGO_KEY) !== "false") as boolean,
+  caseShowName: (localStorage.getItem(CASE_SHOW_NAME_KEY) !== "false") as boolean,
   caseShowOs: (localStorage.getItem(CASE_SHOW_OS_KEY) !== "false") as boolean,
   caseGlare: (localStorage.getItem(CASE_GLARE_KEY) !== "false") as boolean,
   caseTilt: (localStorage.getItem(CASE_TILT_KEY) !== "false") as boolean,
   caseShelfShadow: (localStorage.getItem(CASE_SHELF_SHADOW_KEY) !== "false") as boolean,
   caseGloss: normalizeCaseGloss(localStorage.getItem(CASE_GLOSS_KEY)) as CaseGloss,
   caseColorMode: normalizeCaseColorMode(localStorage.getItem(CASE_COLOR_MODE_KEY)) as CaseColorMode,
+  caseStoreColors: (() => {
+    try {
+      const raw = localStorage.getItem(CASE_STORE_COLORS_KEY);
+      if (raw) return JSON.parse(raw) as Record<string, string>;
+    } catch {
+      /* ignore */
+    }
+    return {} as Record<string, string>;
+  })(),
   /** Show each store copy of a multi-store game as its own card. Off = combined. */
   separateCopies: (localStorage.getItem(SEPARATE_COPIES_KEY) === "true") as boolean,
   /** Game whose TV Mode game hub is open (the hub's own screenshots consumer). */

@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "保護フィルムの質感をハイグロス、サテン、マットから調整します。",
   "settings.caseGlossHigh": "ハイグロス",
   "settings.caseGlossSatin": "サテン",
-  "settings.caseGlossMatte": "マット"
+  "settings.caseGlossMatte": "マット",
+  "settings.caseShowName": "ヘッダーのストア名",
+  "settings.caseShowNameDesc": "ケース上部のヘッダー帯にストア名（Steam、Epic Games等）を表示します。",
+  "settings.caseStoreColorsTitle": "ストアカラーのカスタマイズ",
+  "settings.caseStoreColorsDesc": "各ストアの物理ケースのヘッダーおよびアクセントカラーを自由にカスタマイズできます。",
+  "settings.caseStoreReset": "デフォルトカラーに戻す",
+  "settings.caseStoreResetAll": "すべてのストアカラーを初期化",
+  "settings.caseDisabledNote": "物理ケース表示は現在無効です。ライブラリに反映するには上のスイッチをオンにしてください。"
 }

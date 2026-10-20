@@ -122,6 +122,8 @@ export function normalizeCaseCoverStyle(raw: string | null | undefined): CaseCov
 }
 /** Case Covers: Show store logo in header (default true). */
 export const CASE_SHOW_LOGO_KEY = "efxlve-case-show-logo";
+/** Case Covers: Show store name in header (default true). */
+export const CASE_SHOW_NAME_KEY = "efxlve-case-show-name";
 /** Case Covers: Show OS badge in header (default true). */
 export const CASE_SHOW_OS_KEY = "efxlve-case-show-os";
 /** Case Covers: Interactive cursor light & glare reflections (default true). */
@@ -139,6 +141,8 @@ export function normalizeCaseGloss(raw: string | null | undefined): CaseGloss {
 }
 /** Case Covers: Store header color mode ("store" | "monochrome", default "store"). */
 export const CASE_COLOR_MODE_KEY = "efxlve-case-color-mode";
+/** Case Covers: Custom store colors mapping JSON string. */
+export const CASE_STORE_COLORS_KEY = "efxlve-case-store-colors";
 export type CaseColorMode = "store" | "monochrome";
 export function normalizeCaseColorMode(raw: string | null | undefined): CaseColorMode {
   return raw === "monochrome" ? "monochrome" : "store";

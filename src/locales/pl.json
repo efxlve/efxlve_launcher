@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Dostosuj wykończenie zewnętrznej folii od wysokiego połysku po satynę lub mat.",
   "settings.caseGlossHigh": "Wysoki połysk",
   "settings.caseGlossSatin": "Satyna",
-  "settings.caseGlossMatte": "Mat"
+  "settings.caseGlossMatte": "Mat",
+  "settings.caseShowName": "Nazwa sklepu na nagłówku",
+  "settings.caseShowNameDesc": "Wyświetlaj nazwę sklepu (Steam, Epic Games itp.) na górnym pasku pudełka.",
+  "settings.caseStoreColorsTitle": "Kolory sklepów",
+  "settings.caseStoreColorsDesc": "Dostosuj kolory nagłówka i akcentów pudełek dla każdego sklepu.",
+  "settings.caseStoreReset": "Przywróć domyślny kolor",
+  "settings.caseStoreResetAll": "Zresetuj kolory wszystkich sklepów",
+  "settings.caseDisabledNote": "Fizyczne pudełka są obecnie wyłączone. Włącz powyższy przełącznik, aby zastosować te ustawienia."
 }

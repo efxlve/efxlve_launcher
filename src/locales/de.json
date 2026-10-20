@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Passen Sie den Glanz der äußeren Schutzfolie von Hochglanz bis Matt an.",
   "settings.caseGlossHigh": "Hochglanz",
   "settings.caseGlossSatin": "Seidenmatt",
-  "settings.caseGlossMatte": "Matt"
+  "settings.caseGlossMatte": "Matt",
+  "settings.caseShowName": "Shop-Name im Header",
+  "settings.caseShowNameDesc": "Zeigt den Namen des Stores (Steam, Epic Games usw.) im Header-Band an.",
+  "settings.caseStoreColorsTitle": "Store-Farben",
+  "settings.caseStoreColorsDesc": "Passen Sie die Box-Header- und Akzentfarben für jeden Store individuell an.",
+  "settings.caseStoreReset": "Auf Standardfarbe zurücksetzen",
+  "settings.caseStoreResetAll": "Alle Store-Farben zurücksetzen",
+  "settings.caseDisabledNote": "Physische Box-Cover sind derzeit deaktiviert. Schalten Sie den obigen Schalter ein, um diese Anpassungen anzuwenden."
 }

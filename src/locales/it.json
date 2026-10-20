@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Regola la finitura della pellicola esterna da molto lucida a satinata o opaca.",
   "settings.caseGlossHigh": "Molto lucido",
   "settings.caseGlossSatin": "Satinato",
-  "settings.caseGlossMatte": "Opaco"
+  "settings.caseGlossMatte": "Opaco",
+  "settings.caseShowName": "Nome del negozio nell'intestazione",
+  "settings.caseShowNameDesc": "Mostra il nome del negozio (Steam, Epic Games, ecc.) sulla fascia superiore.",
+  "settings.caseStoreColorsTitle": "Colori dei negozi",
+  "settings.caseStoreColorsDesc": "Personalizza i colori dell'intestazione e degli accenti per ciascun negozio.",
+  "settings.caseStoreReset": "Ripristina colore predefinito",
+  "settings.caseStoreResetAll": "Ripristina tutti i colori dei negozi",
+  "settings.caseDisabledNote": "Le custodie fisiche sono attualmente disattivate. Attiva l'interruttore sopra per applicare queste opzioni."
 }

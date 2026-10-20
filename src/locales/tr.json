@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Dış koruyucu naylon kaplamanın parlaklığını yüksek, saten veya mat olarak ayarlar.",
   "settings.caseGlossHigh": "Çok Parlak",
   "settings.caseGlossSatin": "Saten",
-  "settings.caseGlossMatte": "Mat"
+  "settings.caseGlossMatte": "Mat",
+  "settings.caseShowName": "Başlıkta mağaza adı",
+  "settings.caseShowNameDesc": "Kutu başlık bandında mağaza adını (Steam, Epic Games vb.) göster.",
+  "settings.caseStoreColorsTitle": "Mağaza Renkleri",
+  "settings.caseStoreColorsDesc": "Her oyun mağazasının fiziksel kutu başlık ve vurgu rengini dilediğiniz gibi özelleştirin.",
+  "settings.caseStoreReset": "Varsayılan renge sıfırla",
+  "settings.caseStoreResetAll": "Tüm Mağaza Renklerini Sıfırla",
+  "settings.caseDisabledNote": "Fiziksel kutu kapakları şu an kapalı. Bu özelleştirmelerin oyun kütüphanenizde görünmesi için yukarıdaki anahtarı açın."
 }

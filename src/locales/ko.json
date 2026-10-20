@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "보호 필름 마감을 고광택, 새틴 또는 매트로 조절합니다.",
   "settings.caseGlossHigh": "고광택",
   "settings.caseGlossSatin": "새틴",
-  "settings.caseGlossMatte": "매트"
+  "settings.caseGlossMatte": "매트",
+  "settings.caseShowName": "헤더 스토어 이름 표시",
+  "settings.caseShowNameDesc": "케이스 상단 헤더 스트립에 스토어 이름(Steam, Epic Games 등)을 표시합니다.",
+  "settings.caseStoreColorsTitle": "스토어별 색상",
+  "settings.caseStoreColorsDesc": "각 게임 스토어의 물리 패키지 헤더 및 강조 색상을 자유롭게 변경합니다.",
+  "settings.caseStoreReset": "기본 색상으로 재설정",
+  "settings.caseStoreResetAll": "모든 스토어 색상 재설정",
+  "settings.caseDisabledNote": "물리 케이스 커버가 비활성화되어 있습니다. 라이브러리에 적용하려면 상단 스위치를 켜세요."
 }

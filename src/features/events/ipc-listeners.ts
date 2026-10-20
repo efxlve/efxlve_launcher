@@ -82,6 +82,7 @@ import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
+import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import { openEpicModal, paintGameMeta, refreshAchievementsAfterSession } from "../drawer/drawer-view";
 import { rememberCloudSync } from "../drawer/drawer-widgets";
@@ -201,6 +202,7 @@ export async function initApp(hooks: {
   closeAllModals: () => void;
 }): Promise<void> {
   installArtFallback();
+  syncCaseCustomStoreColors();
   updateMaxIcon();
   createIcons({
     icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, Clapperboard, ...BRAND_ICONS },

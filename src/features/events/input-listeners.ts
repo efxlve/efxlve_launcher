@@ -5,7 +5,8 @@ import { summaryOf } from "../../core/selectors";
  * form change/input delegation and the scroll-to-top button.
  */
 
-import { AUTO_UPDATE_TIME_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
+import { AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
+import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelConfirm } from "../../core/confirm-dialog";
@@ -356,6 +357,23 @@ document.addEventListener("keydown", (e) => {
 
 document.addEventListener("change", (e) => {
   const target = e.target as HTMLInputElement;
+  const caseColorInput = target?.closest?.<HTMLInputElement>('input[data-act="set-case-store-color"]');
+  if (caseColorInput) {
+    const store = caseColorInput.dataset.store;
+    const hex = caseColorInput.value;
+    if (store && /^#[0-9a-fA-F]{6}$/.test(hex)) {
+      if (!S.caseStoreColors) S.caseStoreColors = {};
+      S.caseStoreColors[store] = hex;
+      try {
+        localStorage.setItem(CASE_STORE_COLORS_KEY, JSON.stringify(S.caseStoreColors));
+      } catch {
+        /* ignore */
+      }
+      syncCaseCustomStoreColors();
+      render();
+    }
+    return;
+  }
   if (target?.classList?.contains("selective-checkbox") && target.closest(".settings-hidden-list")) {
     const btn = document.getElementById("hidden-show-selected") as HTMLButtonElement | null;
     if (btn) btn.disabled = !document.querySelector(".settings-hidden-list .selective-checkbox:checked");
@@ -451,6 +469,31 @@ let profileSearchTimer = 0;
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  const colorInput = t?.closest?.<HTMLInputElement>('input[data-act="set-case-store-color"]');
+  if (colorInput) {
+    const store = colorInput.dataset.store;
+    const hex = colorInput.value;
+    if (store && /^#[0-9a-fA-F]{6}$/.test(hex)) {
+      if (!S.caseStoreColors) S.caseStoreColors = {};
+      S.caseStoreColors[store] = hex;
+      try {
+        localStorage.setItem(CASE_STORE_COLORS_KEY, JSON.stringify(S.caseStoreColors));
+      } catch {
+        /* ignore */
+      }
+      syncCaseCustomStoreColors();
+      const wrap = colorInput.closest(".case-store-ctrls");
+      const swatch = colorInput.parentElement?.querySelector<HTMLElement>(".case-color-swatch");
+      if (swatch) swatch.style.backgroundColor = hex;
+      const hexSpan = wrap?.querySelector<HTMLElement>(".case-color-hex");
+      if (hexSpan) hexSpan.textContent = hex.toUpperCase();
+      const resetBtn = wrap?.querySelector<HTMLButtonElement>('[data-act="reset-case-store-color"]');
+      if (resetBtn) resetBtn.disabled = false;
+      const resetAllBtn = document.querySelector<HTMLButtonElement>('[data-act="reset-all-case-store-colors"]');
+      if (resetAllBtn) resetAllBtn.disabled = false;
+    }
+    return;
+  }
   // Facet search boxes only hide rows inside their own filter section; they
   // must not trigger a re-render or the input would lose focus.
   const facetInput = t?.closest?.("[data-facet-search]") as HTMLInputElement | null;

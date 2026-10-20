@@ -943,19 +943,6 @@ document.addEventListener("click", (e) => {
     S.showStoreIcons = !S.showStoreIcons;
     localStorage.setItem(STORE_ICONS_KEY, String(S.showStoreIcons));
     if (!refreshLibraryResultsInPlace()) scheduleRender();
-  } else if (act === "toggle-case-covers") {
-    S.showCaseCovers = !S.showCaseCovers;
-    localStorage.setItem(CASE_COVERS_KEY, String(S.showCaseCovers));
-    if (!refreshLibraryResultsInPlace()) scheduleRender();
-  } else if (act === "set-case-cover-style" && t.dataset.style) {
-    const style = normalizeCaseCoverStyle(t.dataset.style);
-    if (style !== S.caseCoverStyle || !S.showCaseCovers) {
-      S.caseCoverStyle = style;
-      S.showCaseCovers = true;
-      localStorage.setItem(CASE_COVER_STYLE_KEY, style);
-      localStorage.setItem(CASE_COVERS_KEY, "true");
-      if (!refreshLibraryResultsInPlace()) scheduleRender();
-    }
   } else if (act === "toggle-separate-copies") {
     S.separateCopies = !S.separateCopies;
     localStorage.setItem(SEPARATE_COPIES_KEY, String(S.separateCopies));

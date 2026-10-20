@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Ajusta el acabado de la lámina protectora de alto brillo a satinado o mate.",
   "settings.caseGlossHigh": "Alto brillo",
   "settings.caseGlossSatin": "Satinado",
-  "settings.caseGlossMatte": "Mate"
+  "settings.caseGlossMatte": "Mate",
+  "settings.caseShowName": "Nombre de la tienda en el encabezado",
+  "settings.caseShowNameDesc": "Muestra el nombre de la tienda (Steam, Epic Games, etc.) en la franja del encabezado.",
+  "settings.caseStoreColorsTitle": "Colores de tiendas",
+  "settings.caseStoreColorsDesc": "Personaliza los colores de encabezado y detalles de las cajas de cada tienda.",
+  "settings.caseStoreReset": "Restablecer a color predeterminado",
+  "settings.caseStoreResetAll": "Restablecer todos los colores",
+  "settings.caseDisabledNote": "Las carátulas físicas están desactivadas. Activa el interruptor superior para aplicar estos ajustes a tu biblioteca."
 }

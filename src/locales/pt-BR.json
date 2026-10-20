@@ -2758,5 +2758,12 @@
   "settings.caseGlossDesc": "Ajuste o acabamento da película plástica de alto brilho a acetinado ou fosco.",
   "settings.caseGlossHigh": "Alto Brilho",
   "settings.caseGlossSatin": "Acetinado",
-  "settings.caseGlossMatte": "Fosco"
+  "settings.caseGlossMatte": "Fosco",
+  "settings.caseShowName": "Store name on header",
+  "settings.caseShowNameDesc": "Display the storefront name (Steam, Epic Games, etc.) on the retail header.",
+  "settings.caseStoreColorsTitle": "Storefront Colors",
+  "settings.caseStoreColorsDesc": "Customize the box header and accent colors for each storefront.",
+  "settings.caseStoreReset": "Reset to default color",
+  "settings.caseStoreResetAll": "Reset All Store Colors",
+  "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library."
 }
