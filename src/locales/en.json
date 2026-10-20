@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "Steam Turkish Lira (TRY) Converter",
   "settings.storeSteamCurrencyDesc": "Converts USD store prices to Turkish Lira using live exchange rates (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB & Community Statistics",
-  "settings.storeSteamDbDesc": "Displays live concurrent player counts and quick access buttons to SteamDB and ProtonDB on game pages."
+  "settings.storeSteamDbDesc": "Displays live concurrent player counts and quick access buttons to SteamDB and ProtonDB on game pages.",
+  "settings.storeNativeBadge": "Efxlve Native",
+  "settings.storeThirdPartyBadge": "3rd Party",
+  "settings.storeAuthorEfxlve": "Developed by Efxlve Launcher",
+  "settings.storeSteamDbAuthor": "Open-source extension by SteamDatabase community",
+  "settings.storeSteamDbOptionsBtn": "Options",
+  "settings.storeSteamDbOptionsTitle": "SteamDB Extension Features",
+  "settings.storeSteamDbOptLowestPrice": "Lowest Recorded Price Banner",
+  "settings.storeSteamDbOptOnlineStats": "Live Player & Community Stats",
+  "settings.storeSteamDbOptRating": "SteamDB Rating Score",
+  "settings.storeSteamDbOptButtonApp": "\"View on SteamDB\" Button",
+  "settings.storeSteamDbOptButtonPcgw": "\"View on PCGamingWiki\" Button",
+  "settings.storeSteamDbOptDevPub": "Developer & Publisher Search Links",
+  "settings.storeSteamDbOptSubid": "Package SubID Badges",
+  "settings.storeSteamDbOptLastUpdate": "Last Depots Update Date",
+  "settings.storeSteamDbOptHideInstall": "Hide 'Install Steam' Header Button"
 }

@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "Steam Türk Lirası (TRY) Çevirici",
   "settings.storeSteamCurrencyDesc": "Steam USD mağaza fiyatlarının yanına güncel kurla tahmini TL karşılığını ekler (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB & Topluluk İstatistikleri",
-  "settings.storeSteamDbDesc": "Steam oyun sayfalarında anlık çevrimiçi oyuncu sayısı, SteamDB ve ProtonDB hızlı erişim butonları sunar."
+  "settings.storeSteamDbDesc": "Steam oyun sayfalarında anlık çevrimiçi oyuncu sayısı, SteamDB ve ProtonDB hızlı erişim butonları sunar.",
+  "settings.storeNativeBadge": "Efxlve Yerel",
+  "settings.storeThirdPartyBadge": "3. Parti",
+  "settings.storeAuthorEfxlve": "Efxlve Launcher tarafından geliştirildi",
+  "settings.storeSteamDbAuthor": "SteamDatabase topluluğu tarafından geliştirilen açık kaynak eklenti",
+  "settings.storeSteamDbOptionsBtn": "Ayarlar",
+  "settings.storeSteamDbOptionsTitle": "SteamDB Eklenti Özellikleri",
+  "settings.storeSteamDbOptLowestPrice": "Tarihi En Düşük Fiyat Bandı",
+  "settings.storeSteamDbOptOnlineStats": "Canlı Oyuncu ve İstatistik Tablosu",
+  "settings.storeSteamDbOptRating": "SteamDB Puanı Rozeti",
+  "settings.storeSteamDbOptButtonApp": "\"SteamDB'de Görüntüle\" Butonu",
+  "settings.storeSteamDbOptButtonPcgw": "\"PCGamingWiki'de Görüntüle\" Butonu",
+  "settings.storeSteamDbOptDevPub": "Geliştirici & Yayıncı Arama Bağlantıları",
+  "settings.storeSteamDbOptSubid": "Paket SubID Numaraları",
+  "settings.storeSteamDbOptLastUpdate": "Son Güncelleme Tarihi",
+  "settings.storeSteamDbOptHideInstall": "'Steam Yükle' Butonunu Gizle"
 }

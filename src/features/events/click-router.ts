@@ -903,6 +903,17 @@ document.addEventListener("click", (e) => {
     setStoreSteamDb(!storeSteamDbEnabled());
     if (isTauri) invoke("destroy_store_view").catch(() => {});
     render();
+  } else if (act === "toggle-steamdb-settings") {
+    S.steamDbSettingsOpen = !S.steamDbSettingsOpen;
+    render();
+  } else if (act === "toggle-steamdb-sub-option") {
+    const key = t.dataset.key;
+    if (key) {
+      const cur = localStorage.getItem('steamdb_opt_' + key) !== 'false';
+      localStorage.setItem('steamdb_opt_' + key, String(!cur));
+      if (isTauri) invoke("destroy_store_view").catch(() => {});
+      render();
+    }
   } else if (act === "toggle-store-prewarm") {
     setStorePrewarm(!storePrewarmEnabled());
     render();

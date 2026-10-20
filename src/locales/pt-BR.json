@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "Conversor Steam para Lira Turca (TRY)",
   "settings.storeSteamCurrencyDesc": "Converte os preços em USD na Steam para liras turcas com a cotação atual (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB e Estatísticas da Comunidade",
-  "settings.storeSteamDbDesc": "Mostra contagem de jogadores online e atalhos para SteamDB e ProtonDB nas páginas dos jogos."
+  "settings.storeSteamDbDesc": "Mostra contagem de jogadores online e atalhos para SteamDB e ProtonDB nas páginas dos jogos.",
+  "settings.storeNativeBadge": "Efxlve Nativo",
+  "settings.storeThirdPartyBadge": "Terceiros",
+  "settings.storeAuthorEfxlve": "Desenvolvido por Efxlve Launcher",
+  "settings.storeSteamDbAuthor": "Extensão de código aberto da comunidade SteamDatabase",
+  "settings.storeSteamDbOptionsBtn": "Opções",
+  "settings.storeSteamDbOptionsTitle": "Recursos da extensão SteamDB",
+  "settings.storeSteamDbOptLowestPrice": "Faixa de menor preço registrado",
+  "settings.storeSteamDbOptOnlineStats": "Jogadores online e estatísticas da comunidade",
+  "settings.storeSteamDbOptRating": "Nota de avaliação SteamDB",
+  "settings.storeSteamDbOptButtonApp": "Botão \"Ver no SteamDB\"",
+  "settings.storeSteamDbOptButtonPcgw": "Botão \"Ver no PCGamingWiki\"",
+  "settings.storeSteamDbOptDevPub": "Links de busca para desenvolvedor e distribuidora",
+  "settings.storeSteamDbOptSubid": "Identificadores SubID de pacotes",
+  "settings.storeSteamDbOptLastUpdate": "Data da última atualização de depots",
+  "settings.storeSteamDbOptHideInstall": "Ocultar botão \"Instalar o Steam\""
 }

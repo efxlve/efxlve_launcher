@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "محول الليرة التركية (TRY) لمتجر Steam",
   "settings.storeSteamCurrencyDesc": "تحويل أسعار متجر Steam من الدولار إلى الليرة التركية بسعر الصرف الحالي (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "إحصائيات SteamDB والمجتمع",
-  "settings.storeSteamDbDesc": "عرض عدد اللاعبين الحاليين وروابط سريعة إلى SteamDB و ProtonDB على صفحات الألعاب."
+  "settings.storeSteamDbDesc": "عرض عدد اللاعبين الحاليين وروابط سريعة إلى SteamDB و ProtonDB على صفحات الألعاب.",
+  "settings.storeNativeBadge": "Efxlve أصلي",
+  "settings.storeThirdPartyBadge": "طرف ثالث",
+  "settings.storeAuthorEfxlve": "تم تطويره بواسطة مشغل Efxlve",
+  "settings.storeSteamDbAuthor": "ملحق مفتوح المصدر من مجتمع SteamDatabase",
+  "settings.storeSteamDbOptionsBtn": "خيارات",
+  "settings.storeSteamDbOptionsTitle": "ميزات ملحق SteamDB",
+  "settings.storeSteamDbOptLowestPrice": "شريط أدنى سعر مسجل",
+  "settings.storeSteamDbOptOnlineStats": "إحصائيات اللاعبين والمجتمع المباشرة",
+  "settings.storeSteamDbOptRating": "درجة تقييم SteamDB",
+  "settings.storeSteamDbOptButtonApp": "زر \"عرض على SteamDB\"",
+  "settings.storeSteamDbOptButtonPcgw": "زر \"عرض على PCGamingWiki\"",
+  "settings.storeSteamDbOptDevPub": "روابط بحث المطور والناشر",
+  "settings.storeSteamDbOptSubid": "شارات SubID للحزم",
+  "settings.storeSteamDbOptLastUpdate": "تاريخ آخر تحديث للمستودعات",
+  "settings.storeSteamDbOptHideInstall": "إخفاء زر \"تثبيت Steam\""
 }

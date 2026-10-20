@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "Steam तुर्की लीरा (TRY) कनवर्टर",
   "settings.storeSteamCurrencyDesc": "मौजूदा विनिमय दर पर Steam USD कीमतों को तुर्की लीरा में बदलता है (~1 USD ≈ {rate} ₺)।",
   "settings.storeSteamDbTitle": "SteamDB और समुदाय आँकड़े",
-  "settings.storeSteamDbDesc": "गेम पृष्ठों पर लाइव ऑनलाइन खिलाड़ियों की संख्या और SteamDB व ProtonDB के त्वरित बटन प्रदर्शित करता है।"
+  "settings.storeSteamDbDesc": "गेम पृष्ठों पर लाइव ऑनलाइन खिलाड़ियों की संख्या और SteamDB व ProtonDB के त्वरित बटन प्रदर्शित करता है।",
+  "settings.storeNativeBadge": "Efxlve मूल",
+  "settings.storeThirdPartyBadge": "तृतीय पक्ष",
+  "settings.storeAuthorEfxlve": "Efxlve लॉन्चर द्वारा विकसित",
+  "settings.storeSteamDbAuthor": "SteamDatabase समुदाय द्वारा ओपन-सोर्स एक्सटेंशन",
+  "settings.storeSteamDbOptionsBtn": "विकल्प",
+  "settings.storeSteamDbOptionsTitle": "SteamDB एक्सटेंशन सुविधाएं",
+  "settings.storeSteamDbOptLowestPrice": "न्यूनतम रिकॉर्ड किया गया मूल्य बैनर",
+  "settings.storeSteamDbOptOnlineStats": "लाइव प्लेयर और कम्युनिटी आँकड़े",
+  "settings.storeSteamDbOptRating": "SteamDB रेटिंग स्कोर",
+  "settings.storeSteamDbOptButtonApp": "\"SteamDB पर देखें\" बटन",
+  "settings.storeSteamDbOptButtonPcgw": "\"PCGamingWiki पर देखें\" बटन",
+  "settings.storeSteamDbOptDevPub": "डेवलपर और प्रकाशक खोज लिंक",
+  "settings.storeSteamDbOptSubid": "पैकेज SubID बैज",
+  "settings.storeSteamDbOptLastUpdate": "अंतिम डिपो अपडेट तिथि",
+  "settings.storeSteamDbOptHideInstall": "'Steam इंस्टॉल करें' बटन छुपाएं"
 }

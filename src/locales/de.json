@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "Steam Türkische Lira (TRY) Umrechner",
   "settings.storeSteamCurrencyDesc": "Rechnet USD-Preise im Steam-Shop mit aktuellem Kurs in Türkische Lira um (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB & Community-Statistiken",
-  "settings.storeSteamDbDesc": "Zeigt aktuelle Spielerzahlen sowie Schnellzugriff auf SteamDB und ProtonDB auf Spieleseiten an."
+  "settings.storeSteamDbDesc": "Zeigt aktuelle Spielerzahlen sowie Schnellzugriff auf SteamDB und ProtonDB auf Spieleseiten an.",
+  "settings.storeNativeBadge": "Efxlve Nativ",
+  "settings.storeThirdPartyBadge": "Drittanbieter",
+  "settings.storeAuthorEfxlve": "Entwickelt von Efxlve Launcher",
+  "settings.storeSteamDbAuthor": "Open-Source-Erweiterung der SteamDatabase-Community",
+  "settings.storeSteamDbOptionsBtn": "Optionen",
+  "settings.storeSteamDbOptionsTitle": "SteamDB-Erweiterungsfunktionen",
+  "settings.storeSteamDbOptLowestPrice": "Niedrigster erfasster Preis",
+  "settings.storeSteamDbOptOnlineStats": "Live-Spieler & Community-Statistiken",
+  "settings.storeSteamDbOptRating": "SteamDB-Bewertungsanzeige",
+  "settings.storeSteamDbOptButtonApp": "„Auf SteamDB anzeigen“-Schaltfläche",
+  "settings.storeSteamDbOptButtonPcgw": "„Auf PCGamingWiki anzeigen“-Schaltfläche",
+  "settings.storeSteamDbOptDevPub": "Entwickler- & Publisher-Suchlinks",
+  "settings.storeSteamDbOptSubid": "Paket-SubID-Kennzeichnungen",
+  "settings.storeSteamDbOptLastUpdate": "Datum der letzten Depot-Aktualisierung",
+  "settings.storeSteamDbOptHideInstall": "„Steam installieren“-Schaltfläche ausblenden"
 }

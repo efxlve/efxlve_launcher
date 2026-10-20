@@ -438,6 +438,14 @@ export function setStoreSteamDb(enabled: boolean): void {
   localStorage.setItem(STORE_STEAMDB_KEY, String(enabled));
 }
 
+export function getSteamDbOption(key: string): boolean {
+  return localStorage.getItem('steamdb_opt_' + key) !== 'false';
+}
+
+export function setSteamDbOption(key: string, value: boolean): void {
+  localStorage.setItem('steamdb_opt_' + key, String(value));
+}
+
 export function getSteamTryRate(): number {
   const stored = localStorage.getItem(STEAM_TRY_RATE_KEY);
   if (stored) {

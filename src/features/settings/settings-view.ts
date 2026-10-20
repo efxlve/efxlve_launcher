@@ -67,7 +67,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, storeSteamDbEnabled, getSteamTryRate } from "../store/store-view";
+import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, storeSteamDbEnabled, getSteamTryRate, getSteamDbOption } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -682,10 +682,67 @@ function renderStores(): string {
   const steamDb = storeSteamDbEnabled();
   const steamRate = getSteamTryRate();
 
+  const authorBadgeEfxlve = `<span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.28);font-size:10.5px;padding:1px 6px;border-radius:4px;margin-left:8px;font-weight:600;">${t("settings.storeNativeBadge")}</span>`;
+  const authorBadgeThirdParty = `<span class="badge" style="background:rgba(234,179,8,0.15);color:#facc15;border:1px solid rgba(234,179,8,0.28);font-size:10.5px;padding:1px 6px;border-radius:4px;margin-left:8px;font-weight:600;">${t("settings.storeThirdPartyBadge")}</span>`;
+
+  const epicTitle = `<span>${t("settings.storeEpicAssistantTitle")}</span>${authorBadgeEfxlve}`;
+  const epicDesc = `${t("settings.storeEpicAssistantDesc")}<div style="margin-top:4px;font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">${icon("sparkles", 12)} <span>${t("settings.storeAuthorEfxlve")}</span></div>`;
+
+  const currencyTitle = `<span>${t("settings.storeSteamCurrencyTitle")}</span>${authorBadgeEfxlve}`;
+  const currencyDesc = `${t("settings.storeSteamCurrencyDesc", { rate: String(steamRate) })}<div style="margin-top:4px;font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">${icon("sparkles", 12)} <span>${t("settings.storeAuthorEfxlve")}</span></div>`;
+
+  const steamDbTitle = `<span>${t("settings.storeSteamDbTitle")}</span>${authorBadgeThirdParty}`;
+  const steamDbDesc = `
+    ${t("settings.storeSteamDbDesc")}
+    <div style="margin-top:6px;font-size:11.5px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+      <span style="color:var(--text-muted);">${t("settings.storeSteamDbAuthor")}</span>
+      <a href="https://github.com/SteamDatabase/BrowserExtension" target="_blank" rel="noopener noreferrer" style="color:#60a5fa;display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-weight:500;">${icon("github", 12)} GitHub ${icon("external", 10)}</a>
+      <a href="https://steamdb.info/extension/" target="_blank" rel="noopener noreferrer" style="color:#60a5fa;display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-weight:500;">${icon("globe", 12)} steamdb.info ${icon("external", 10)}</a>
+    </div>`;
+
+  const steamDbControl = `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button type="button" class="btn ghost small ${S.steamDbSettingsOpen ? "active" : ""}" data-act="toggle-steamdb-settings" style="font-size:11.5px;padding:4px 9px;" title="${t("settings.storeSteamDbOptionsBtn")}">
+        ${icon("settings", 12)} <span>${t("settings.storeSteamDbOptionsBtn")}</span>
+      </button>
+      ${toggle("toggle-store-steamdb", steamDb)}
+    </div>`;
+
+  const subOpts = [
+    { key: "steamdb-lowest-price", label: t("settings.storeSteamDbOptLowestPrice") },
+    { key: "online-stats", label: t("settings.storeSteamDbOptOnlineStats") },
+    { key: "steamdb-rating", label: t("settings.storeSteamDbOptRating") },
+    { key: "button-app", label: t("settings.storeSteamDbOptButtonApp") },
+    { key: "button-pcgw", label: t("settings.storeSteamDbOptButtonPcgw") },
+    { key: "steamdb-dev-pub-links", label: t("settings.storeSteamDbOptDevPub") },
+    { key: "link-subid", label: t("settings.storeSteamDbOptSubid") },
+    { key: "steamdb-last-update", label: t("settings.storeSteamDbOptLastUpdate") },
+    { key: "enhancement-hide-install-button", label: t("settings.storeSteamDbOptHideInstall") },
+  ];
+
+  const steamDbSubPanel = (S.steamDbSettingsOpen && steamDb) ? `
+    <div style="margin: 6px 0 14px 0; padding: 14px 18px; background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+      <div style="font-size: 12px; font-weight: 600; color: #60a5fa; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+        ${icon("settings", 13)} <span>${t("settings.storeSteamDbOptionsTitle")}</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px 16px;">
+        ${subOpts.map(opt => `
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <span style="font-size: 12px; color: var(--text-normal);">${opt.label}</span>
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-steamdb-sub-option" data-key="${opt.key}" ${getSteamDbOption(opt.key) ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        `).join("")}
+      </div>
+    </div>` : "";
+
   const extRows =
-    row(t("settings.storeEpicAssistantTitle"), t("settings.storeEpicAssistantDesc"), toggle("toggle-store-epic-assistant", epicAssistant)) +
-    row(t("settings.storeSteamCurrencyTitle"), t("settings.storeSteamCurrencyDesc", { rate: String(steamRate) }), toggle("toggle-store-steam-currency", steamCurrency)) +
-    row(t("settings.storeSteamDbTitle"), t("settings.storeSteamDbDesc"), toggle("toggle-store-steamdb", steamDb));
+    row(epicTitle, epicDesc, toggle("toggle-store-epic-assistant", epicAssistant)) +
+    row(currencyTitle, currencyDesc, toggle("toggle-store-steam-currency", steamCurrency)) +
+    row(steamDbTitle, steamDbDesc, steamDbControl) +
+    steamDbSubPanel;
 
 
   const perfRows =

@@ -420,6 +420,7 @@ export const S = {
   prevRenderedColId: (undefined) as string | null | undefined,
   isSortDropdownOpen: false,
   isStoreDropdownOpen: false,
+  steamDbSettingsOpen: false,
   isColDropdownOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   /** Live cloud-sync progress per app while Legendary packs and transfers saves. */

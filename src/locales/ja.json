@@ -2697,5 +2697,20 @@
   "settings.storeSteamCurrencyTitle": "Steam トルコリラ（TRY）換算",
   "settings.storeSteamCurrencyDesc": "Steamの米ドル価格を最新の為替レートでトルコリラに自動換算します（~1 USD ≈ {rate} ₺）。",
   "settings.storeSteamDbTitle": "SteamDB＆コミュニティ統計",
-  "settings.storeSteamDbDesc": "ゲームページに現在のオンラインプレイヤー数とSteamDB、ProtonDBへのクイックリンクを表示します。"
+  "settings.storeSteamDbDesc": "ゲームページに現在のオンラインプレイヤー数とSteamDB、ProtonDBへのクイックリンクを表示します。",
+  "settings.storeNativeBadge": "Efxlve ネイティブ",
+  "settings.storeThirdPartyBadge": "サードパーティ",
+  "settings.storeAuthorEfxlve": "Efxlve Launcher によって開発",
+  "settings.storeSteamDbAuthor": "SteamDatabase コミュニティによるオープンソース拡張機能",
+  "settings.storeSteamDbOptionsBtn": "設定",
+  "settings.storeSteamDbOptionsTitle": "SteamDB 拡張機能の機能",
+  "settings.storeSteamDbOptLowestPrice": "最安値記録バナー",
+  "settings.storeSteamDbOptOnlineStats": "リアルタイムプレイヤー数＆統計",
+  "settings.storeSteamDbOptRating": "SteamDB 評価スコア",
+  "settings.storeSteamDbOptButtonApp": "「SteamDB で見る」ボタン",
+  "settings.storeSteamDbOptButtonPcgw": "「PCGamingWiki で見る」ボタン",
+  "settings.storeSteamDbOptDevPub": "開発元・パブリッシャーの検索リンク",
+  "settings.storeSteamDbOptSubid": "パッケージ SubID バッジ",
+  "settings.storeSteamDbOptLastUpdate": "最終デポ更新日",
+  "settings.storeSteamDbOptHideInstall": "「Steam をインストール」ボタンを非表示"
 }
