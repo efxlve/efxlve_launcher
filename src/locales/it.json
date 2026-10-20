@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "Acrilico scuro futuristico con bordi al neon incisi al laser.",
   "settings.caseStyleAcrylic": "Vetro senza cornice",
   "settings.caseStyleAcrylicDesc": "Moderno blocco acrilico fluttuante con bordi in cristallo smussati.",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "Custodia in cristallo aqua dei primi anni 2000 con riflessi lucidi e sfumature a bolla.",
   "settings.caseHeaderGroup": "Intestazione e Brand",
   "settings.caseShowLogo": "Logo negozio su intestazione",
   "settings.caseShowLogoDesc": "Mostra il logo ufficiale del negozio sull'intestazione superiore.",

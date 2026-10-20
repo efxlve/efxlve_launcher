@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "Acrílico oscuro futurista con bordes de neón grabados con láser.",
   "settings.caseStyleAcrylic": "Cristal sin marco",
   "settings.caseStyleAcrylicDesc": "Bloque acrílico flotante moderno y ultra limpio con bordes biselados.",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "Funda de cristal aguamarina estilo años 2000 con reflejos brillantes y efectos de burbuja.",
   "settings.caseHeaderGroup": "Encabezado y marca",
   "settings.caseShowLogo": "Logotipo de la tienda en encabezado",
   "settings.caseShowLogoDesc": "Muestra el logotipo oficial de la tienda en el encabezado superior.",

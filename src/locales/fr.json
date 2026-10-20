@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "Acrylique teinté sombre futuriste avec bordures néon lumineuses.",
   "settings.caseStyleAcrylic": "Verre épuré",
   "settings.caseStyleAcrylicDesc": "Bloc acrylique flottant moderne ultra-propre aux arêtes biseautées.",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "Boîtier en verre cristal turquoise du milieu des années 2000 avec reflets brillants et bulles.",
   "settings.caseHeaderGroup": "Bandeau & Marque",
   "settings.caseShowLogo": "Logo du magasin sur le bandeau",
   "settings.caseShowLogoDesc": "Afficher le logo officiel du magasin sur le bandeau supérieur.",

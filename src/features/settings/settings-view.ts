@@ -861,6 +861,7 @@ function renderCasesSection(): string {
     { id: "retro", titleKey: "settings.caseStyleRetro", descKey: "settings.caseStyleRetroDesc", badge: "90s Big Box" },
     { id: "neon", titleKey: "settings.caseStyleNeon", descKey: "settings.caseStyleNeonDesc", badge: "Cyber Acrylic" },
     { id: "acrylic", titleKey: "settings.caseStyleAcrylic", descKey: "settings.caseStyleAcrylicDesc", badge: "Crystal Glass" },
+    { id: "aero", titleKey: "settings.caseStyleAero", descKey: "settings.caseStyleAeroDesc", badge: "Aqua Glass" },
   ];
 
   const styleCards = styles.map((st) => {

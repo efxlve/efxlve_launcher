@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "带有激光蚀刻发光霓虹边缘的未来主义深色亚克力盒。",
   "settings.caseStyleAcrylic": "无框水晶玻璃",
   "settings.caseStyleAcrylicDesc": "斜切水晶边缘、极简通透的现代悬浮亚克力块。",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "Mid-2000s skeuomorphic aqua-crystal glass sleeve with glossy bubble reflections and vibrant cyan sheen.",
   "settings.caseHeaderGroup": "顶栏与品牌标识",
   "settings.caseShowLogo": "顶栏显示商店图标",
   "settings.caseShowLogoDesc": "在包装盒顶栏显示官方商店图标。",

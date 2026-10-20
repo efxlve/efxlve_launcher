@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "Futuristic dark tinted acrylic with glowing laser-etched neon borders.",
   "settings.caseStyleAcrylic": "Frameless Glass",
   "settings.caseStyleAcrylicDesc": "Modern ultra-clean floating acrylic block with beveled crystal edges.",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "Mid-2000s skeuomorphic aqua-crystal glass sleeve with glossy bubble reflections and vibrant cyan sheen.",
   "settings.caseHeaderGroup": "Header & Branding",
   "settings.caseShowLogo": "Store logo on header",
   "settings.caseShowLogoDesc": "Display the official storefront logo on the retail header.",

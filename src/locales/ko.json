@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "발광 네온 테두리를 지닌 미래형 다크 틴티드 아크릴 케이스.",
   "settings.caseStyleAcrylic": "프레임리스 글래스",
   "settings.caseStyleAcrylicDesc": "모따기된 크리스탈 엣지가 돋보이는 모던한 플로팅 아크릴 블록.",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "2000년대 중반 특유의 아쿠아 크리스털 유리 슬리브와 유광 버블 반사 효과.",
   "settings.caseHeaderGroup": "헤더 및 브랜딩",
   "settings.caseShowLogo": "헤더에 스토어 로고 표시",
   "settings.caseShowLogoDesc": "케이스 상단 헤더에 공식 스토어 로고를 표시합니다.",

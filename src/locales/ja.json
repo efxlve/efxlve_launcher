@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "ネオンエッジがレーザー発光する近未来ダークアクリルケース。",
   "settings.caseStyleAcrylic": "フレームレスガラス",
   "settings.caseStyleAcrylicDesc": "面取りされたクリスタルエッジが美しいモダンで透明なアクリルブロック。",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "2000年代半ばのアクアクリスタルガラス風スリーブ。光沢のある気泡と水面の反射を再現。",
   "settings.caseHeaderGroup": "ヘッダーとブランド",
   "settings.caseShowLogo": "ヘッダーにストアロゴ表示",
   "settings.caseShowLogoDesc": "ケース上部ヘッダーに公式ストアロゴを表示します。",

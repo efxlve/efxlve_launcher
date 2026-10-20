@@ -2736,6 +2736,8 @@
   "settings.caseStyleNeonDesc": "Футуристический затемненный акрил со светящимися лазерными неоновыми гранями.",
   "settings.caseStyleAcrylic": "Бескаркасное стекло",
   "settings.caseStyleAcrylicDesc": "Современный парящий акриловый блок со скошенными кристальными гранями.",
+  "settings.caseStyleAero": "Frutiger Aero",
+  "settings.caseStyleAeroDesc": "Глянцевый аквамариновый стеклянный бокс в стиле середины 2000-х с бликами и пузырьками.",
   "settings.caseHeaderGroup": "Шапка и брендинг",
   "settings.caseShowLogo": "Логотип магазина в шапке",
   "settings.caseShowLogoDesc": "Отображать официальный логотип магазина в верхней шапке.",
