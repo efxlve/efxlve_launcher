@@ -58,6 +58,11 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | TV home, second pass | Command bar with EFXLVE TV mark, compact category pills, icon-only status chips at 1080 px, stage kicker/description/pill actions, shelf heading/count/card titles, focused card ring; search icon keeps its width |
 | TV category change | Clicking a category repaints the shelf and heading; the controller path shares the same paint guard in `applyFocus` (gamepad itself still needs the app) |
 | TV hub, themed desktop | With Aero selected, the hub's `.card` / `.gp-side-card` surfaces stay dark and readable; the desktop theme is scoped out of `body.tv-mode` |
+| Overlay, boot isolation | `overlay.html` loads `browser-shared.ts` only; `browser-window.ts` is no longer in the resource graph, so its top-level boot cannot fire `overlay_browser_tabs` / `overlay_browser_show` inside the panel |
+| Overlay, default layout | At 1083×873 the performance widget sits at 24/72, the captures widget stacks below it at 24/464, and music sits at the right edge; none overlap the command bar or each other. At 1280×800 the three default widgets form one row |
+| Overlay, saved layout | Deliberately saved `{x:8,y:8}` positions are treated as the old hidden-window clamp and replaced by the tiled defaults; dragging cannot put a header under the command bar or a widget below the viewport |
+| Overlay, popover | The recent-games popover opens below the command bar and is not clipped by the topbar |
+| Overlay, hidden work | Clock/media/clip intervals and the gamepad rAF are stopped by `overlay-close` and by `document.hidden`; with no controller the loop falls back to a 250 ms check |
 | TV hub | Header strip, stage, shelf, focus ring, empty category (see TODO §1) |
 | Gallery cap note | Appears at 300 captures with the right count, stays away below it |
 | Live tests | All 26 `#[ignore]`d ones; the expected reds are listed in `docs/agent/README.md` |

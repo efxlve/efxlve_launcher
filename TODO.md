@@ -3,6 +3,17 @@
 Open work, in the order it should be picked up. Each item is sized so it can
 land as one commit with `npm run build` (plus `cargo test` when Rust changed).
 
+**In-game overlay pass (2026-10-20):** the panel no longer imports the browser
+chrome just to read its bookmark helpers, so `overlay.html` no longer boots the
+browser window or emits stray `overlay_browser_show` calls. Widgets are tiled
+into a safe default (performance left, captures under it on narrow surfaces,
+music right), old `8/8` positions are repaired, and drag/clamp ignores the 1x1
+hidden window. The clock, media poll, clip poll and gamepad rAF stop with the
+hidden panel; the gamepad loop checks every 250 ms instead of every frame
+when no controller is connected. Blur was removed from the overlay surfaces.
+The remaining overlay work is the launcher-side Discord panel and a final
+in-game visual check with real art.
+
 ## 0a. Themes and TV home (owner asked, 2026-10-20)
 
 - **White Mode** and **Frutiger Aero** are now real surface themes next to

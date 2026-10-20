@@ -5,6 +5,13 @@ achievements, Spotify + SMTC music, Discord status). Controller-first navigation
 ETW FPS is API-agnostic but needs the Windows "Performance Log Users" permission:
 the overlay offers a one-time enable action and explains the sign-out. Discord
 voice read/write still waits on the Discord app review noted below.
+
+Stability pass, 2026-10-20: the panel no longer imports `browser-window.ts` for
+its bookmark helpers (that used to boot the whole browser chrome and sync its
+bounds inside the panel), the hidden window’s clock/media/clip/gamepad work is
+stopped, and widget placement is clamped below the floating command bar with a
+repaired default tiling. The next visual check is with real game art at the
+target 1280×800 and 1920×1080 sizes.
 Target platform: Windows first (Linux/macOS later) · Owner: core team
 
 A Steam-like overlay hosted by Efxlve Launcher: one hotkey opens a panel over any

@@ -32,6 +32,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 - **Downloads & Transfers:** Real-time bandwidth and disk write metrics, speed limiter, concurrent download control, and pause/resume capability.
 - **Cloud & Local Save Backups:** Automated local backups on game exit, plus WebDAV and Google Drive cloud integration.
 - **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression, an editor, and a clip recorder.
+- **In-Game Overlay:** Shift+Tab opens a controller-friendly panel over borderless games with performance telemetry, captures, notes, achievements, Spotify/SMTC music, Discord status and a browser. Floating widgets stay clear of the command bar, remember their place, and idle when the panel is hidden.
 - **SteamGridDB Integration:** Automatic high-resolution covers and support for custom user artwork.
 - **Compatibility Toolbox:** Wine/Proton runners (GE-Proton, Proton-CachyOS), umu-launcher, DXVK/VKD3D-Proton and the macOS toolchain can be downloaded, inventoried and selected from Settings → Compatibility. Detected Steam/Lutris/Wine runners are usable too, and selected layers are copied into each game's prefix. The game page's System tab adds per-title runner, layer and exact-prefix overrides, a Prepare prefix action with progress, and an open-folder button.
 - **Compatibility Signals:** Steam game pages show Valve's Steam Deck category, the ProtonDB community tier and Are We Anti-Cheat Yet? status. Each answer is cached for a day and links back to its source.

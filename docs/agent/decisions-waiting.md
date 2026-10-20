@@ -218,6 +218,15 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   oyun adları ve odak etiketi eklendi. TV paleti `body.tv-mode` üzerinde sabit
   koyu; masaüstünde Beyaz/Aero seçili olsa bile hub kartları beyaza dönmüyor.
   Kategoriler artık kumandayla değiştiğinde rafı ve başlığı yeniden çiziyor.
+- **Oyun içi overlay:** panel artık tarayıcı penceresinin bookmark yardımcılarını
+  `browser-window.ts` üzerinden almıyor; bu import overlay açılırken tarayıcı
+  chrome'unu da başlatıyor ve sahte `overlay_browser_show` çağrıları üretiyordu.
+  Varsayılan yerleşim performans solda, ekran görüntüleri dar yüzeyde altında,
+  müzik sağda olacak şekilde döşeniyor; gizli 1×1 pencereden gelen 8/8 kayıtları
+  onarılıyor. Gizli panelde clock/media/clip/gamepad döngüleri duruyor; kumanda
+  yokken oyun kolu döngüsü 250 ms'de bir kontrol ediyor. Overlay yüzeylerinden
+  blur kaldırıldı. Gerçek oyun sanatıyla 1280×800 ve 1920×1080 görsel turu
+  sahibe kalıyor.
 - **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV
   hub/profil/panellerin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
   hazırlama/yayınlama bilerek değiştirilmedi.
