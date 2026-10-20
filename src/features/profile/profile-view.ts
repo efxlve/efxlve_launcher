@@ -767,6 +767,14 @@ function renderStat(stat: ProfileStat): string {
   return `<div class="profile-stat"><span class="profile-stat-val tabular-nums">${ico}${stat.value}</span><span class="profile-stat-label">${esc(stat.label)}</span></div>`;
 }
 
+function heroChipStoreName(kind: StoreKind): string {
+  if (kind === "amazon") return "Amazon";
+  if (kind === "ubisoft") return "Ubisoft";
+  if (kind === "ea") return "EA";
+  if (kind === "riot") return "Riot";
+  return STORE_LABELS[kind as keyof typeof STORE_LABELS] || "Riot";
+}
+
 /** Store chips under the identity: status marks and the scope filter. */
 function renderHeroStoreChips(scope: "all" | StoreKind): string {
   const stores = overviewStores();
@@ -785,7 +793,7 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
   const all = stores.length > 1 ? chip("all", t("profile.storeAll"), libraryCount("all"), true, true) : "";
   return `<div class="profile-hero-stores">
     ${all}
-    ${stores.map((s) => chip(s, storeName(s), libraryCount(s), isStoreConnected(s), isStoreInstalled(s))).join("")}
+    ${stores.map((s) => chip(s, heroChipStoreName(s), libraryCount(s), isStoreConnected(s), isStoreInstalled(s))).join("")}
   </div>`;
 }
 
@@ -872,10 +880,10 @@ function renderProfileHero(
             </div>
             <div class="profile-hero-actions">
               ${!combined
-                ? `<button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
+                ? `<button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
                 : ""}
-              <button type="button" class="btn ghost small" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
-              <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
+              <button type="button" class="btn ghost small profile-hero-action-btn" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+              <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
             </div>
           </div>
           ${storesHtml}

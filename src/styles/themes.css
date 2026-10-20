@@ -67,14 +67,42 @@
   filter: brightness(0);
   opacity: 0.85;
 }
-:root[data-surface="white"] .profile-hero-store-chip {
-  background: rgba(255, 255, 255, 0.9);
+:root[data-surface="white"] .profile-hero-action-btn,
+:root[data-surface="white"] .profile-refresh-btn {
+  background: #ffffff;
   border-color: var(--line);
   color: var(--text-2);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+:root[data-surface="white"] .profile-hero-action-btn:hover,
+:root[data-surface="white"] .profile-refresh-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+:root[data-surface="white"] .profile-presence {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text-2);
+}
+:root[data-surface="white"] .profile-banner-edit-btn {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+:root[data-surface="white"] .profile-banner-edit-btn:hover {
+  background: #ffffff;
+  color: #000000;
+}
+:root[data-surface="white"] .profile-hero-store-chip {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--text-2);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 :root[data-surface="white"] .profile-hero-store-chip:hover {
-  background: #ffffff;
+  background: var(--surface-2);
   color: var(--text);
   border-color: var(--line-strong);
 }
@@ -89,8 +117,16 @@
   color: var(--text-2);
 }
 :root[data-surface="white"] .profile-hero-store-chip.selected .profile-hero-chip-count {
-  background: rgba(37, 99, 235, 0.12);
+  background: var(--accent-tint);
   color: var(--accent);
+}
+:root[data-surface="white"] .profile-stats {
+  background: var(--surface-1);
+  border-color: var(--line);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+:root[data-surface="white"] .profile-stat {
+  border-left-color: var(--line);
 }
 :root[data-surface="white"] .settings-nav-scroll::-webkit-scrollbar-thumb {
   background: rgba(15, 23, 42, 0.2);
@@ -689,32 +725,80 @@
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
-:root[data-surface="aero"] .profile-hero-store-chip {
+:root[data-surface="aero"] .profile-hero-action-btn,
+:root[data-surface="aero"] .profile-refresh-btn {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(43, 143, 239, 0.35);
+  color: #0b4a8c;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+:root[data-surface="aero"] .profile-hero-action-btn:hover,
+:root[data-surface="aero"] .profile-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(43, 143, 239, 0.6);
+  color: #003366;
+  box-shadow: 0 2px 8px rgba(43, 143, 239, 0.2), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="aero"] .profile-presence {
   background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(43, 143, 239, 0.25);
+  color: #0b4a8c;
+}
+:root[data-surface="aero"] .profile-banner-edit-btn {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  color: #0b4a8c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="aero"] .profile-banner-edit-btn:hover {
+  background: #ffffff;
+  color: #003366;
+  box-shadow: 0 4px 12px rgba(43, 143, 239, 0.25), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="aero"] .profile-hero-store-chip {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(43, 143, 239, 0.28);
+  color: #0d2b45;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+:root[data-surface="aero"] .profile-hero-store-chip:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(43, 143, 239, 0.55);
+  color: #001f3f;
+  box-shadow: 0 3px 8px rgba(43, 143, 239, 0.18), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="aero"] .profile-hero-store-chip.selected {
+  background: linear-gradient(180deg, #d8eeff 0%, #b3dcff 100%);
+  color: #003366;
+  border-color: #2b8fef;
+  box-shadow: 0 0 0 1px #2b8fef, 0 3px 10px rgba(43, 143, 239, 0.3), inset 0 1px 0 #ffffff;
+  font-weight: 600;
+}
+:root[data-surface="aero"] .profile-hero-chip-count {
+  background: rgba(43, 143, 239, 0.12);
+  color: #0b4a8c;
+}
+:root[data-surface="aero"] .profile-hero-store-chip.selected .profile-hero-chip-count {
+  background: #2b8fef;
+  color: #ffffff;
+}
+:root[data-surface="aero"] .profile-stats {
+  background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: rgba(255, 255, 255, 0.85);
-  color: var(--text-2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-:root[data-surface="aero"] .profile-hero-store-chip:hover {
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
+:root[data-surface="aero"] .profile-stat {
+  border-left-color: rgba(43, 143, 239, 0.15);
 }
-:root[data-surface="aero"] .profile-hero-store-chip.selected {
-  background: linear-gradient(180deg, rgba(220, 240, 255, 0.9) 0%, rgba(185, 220, 250, 0.95) 100%);
-  color: #0b4a8c;
-  border-color: rgba(43, 143, 239, 0.85);
-  box-shadow: 0 0 0 1px rgba(43, 143, 239, 0.6), 0 3px 10px rgba(43, 143, 239, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-}
-:root[data-surface="aero"] .profile-hero-chip-count {
-  background: rgba(0, 0, 0, 0.07);
-  color: var(--text-2);
-}
-:root[data-surface="aero"] .profile-hero-store-chip.selected .profile-hero-chip-count {
-  background: rgba(43, 143, 239, 0.2);
+:root[data-surface="aero"] .profile-stat-val {
   color: #0b4a8c;
 }
 :root[data-surface="aero"] .settings-nav-scroll::-webkit-scrollbar-thumb {
