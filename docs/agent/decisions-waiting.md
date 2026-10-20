@@ -231,8 +231,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   etiketi, beyaz aktif sekme ve kısaltılmış "İnceleme" istatistiği eklendi;
   sıradaki kupalar kartı ikinci bir çerçevenin içinden çıkarıldı. Profil ve
   mağaza/indirme panelleri eski düzenini koruyor.
+- **TV mağaza/indirme panelleri:** panel yüzeyi düz `#05070a` oldu; sekiz mağaza
+  sekmesi dar ekranda ikon + tooltip'e düşüyor ve L1/R1 ile çakışmıyor. Geri
+  düğmesi dar üst barda da "Geri" etiketini koruyor. Profil paneli eski
+  düzeninde bırakıldı.
 - **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV
-  profil/panellerin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
+  profil panelinin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
   hazırlama/yayınlama bilerek değiştirilmedi.
 
 ## Sırada (yokluğunda devam edenler)

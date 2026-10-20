@@ -66,6 +66,8 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Overlay, Discord first screen | With no SDK session, friends or call, the social widget shows one centered connect card (Discord mark, "Bağlı değil", feature row, connect + open Discord) instead of the old profile row and dead empty list; the chat widget uses the same card. Checked at 480×580 in the harness and laid out for the default 330×540 widget |
 | Overlay, Discord colours | Outgoing message, unread count and send button use the launcher accent/on-accent tokens; composer focus uses the accent border; no Discord purple remains in the overlay CSS |
 | TV hub | Header strip, stage, shelf, focus ring, empty category (see TODO §1). Second pass: "Oyun Merkezi" kicker above the title, white active tab pill, the long critic label shortened to "İnceleme", and the next-trophies card sits directly on the page instead of inside a second bordered box |
+| TV stores | At 1083 px the eight storefront tabs collapse to labelled icons and the L1/R1 glyphs no longer collide with the labels; the back control keeps "Geri"; each icon keeps its storefront name as a tooltip |
+| TV downloads | The empty download panel uses the flat `#05070a` console surface instead of inheriting the home screen's blue-black radial wash; header title, back and exit remain readable |
 | Gallery cap note | Appears at 300 captures with the right count, stays away below it |
 | Live tests | All 26 `#[ignore]`d ones; the expected reds are listed in `docs/agent/README.md` |
 | Update chain | `tauri.conf.json` carries a minisign public key, the private key lives in GitHub secrets only, nothing in the repo |

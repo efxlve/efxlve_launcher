@@ -35,10 +35,13 @@ real Discord account and a final in-game visual check with real art.
   controller rather than L1/R1.
 - The **TV game hub** got the first consistency pass: an "Oyun Merkezi" kicker,
   white active tab pill, shorter "İnceleme" stat label and the achievements
-  card no longer nested inside a second bordered box. Profile and the store /
-  download panels keep their layout for now.
+  card no longer nested inside a second bordered box.
+- The **store and downloads panels** now share the flat console background;
+  storefront tabs collapse to labelled icons when eight of them would overflow
+  the header, keep their labels as tooltips, and the back control keeps "Geri"
+  even on the narrow bar. Profile keeps its layout for now.
 - Still owner-only: the actual look at 1920 px with real artwork, and whether
-  the profile and panels need the same visual pass.
+  the profile and the real embedded storefront need the same visual pass.
 
 ## 0. Game page: revision after 0.1.30 (owner asked for this)
 
