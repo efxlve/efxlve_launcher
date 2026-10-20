@@ -2419,3 +2419,20 @@ v0.1.17'den bu yana Steam hesabı ve sahip olunan kütüphane, yedi gömülü ma
 - **Stop:** oyun süreci artık yalnızca kurulum klasörünün içinden eşleşiyor; WebView2 ve başlatıcının kendi süreci öldürülmüyor. Kapanıştan sonra pencere yeniden çiziliyor.
 - **Yayın:** `v0.1.18` etiketi `.github/workflows/release.yml` ile imzalı kurulumu ve `latest.json` dosyasını GitHub Releases'a bırakır.
 
+## 186. v0.1.32 Yayını
+
+v0.1.31'den bu yana 280 commit var: oyun sayfası baştan kuruldu, fiziksel kutular ve iki yeni tema geldi, TV Modu yerini Tam Ekran Modu'na bıraktı, Steam mağazası gerçek Chrome eklentilerini çalıştırıyor ve uyumluluk merkezi Linux/macOS çalıştırıcılarını yönetiyor.
+
+- **Temalar:** White Mode ve Frutiger Aero eklendi. Kütüphane, oyun sayfası, profil, notlar, koleksiyonlar, ayarlar, mağaza sekmeleri ve uyumluluk kartlarında açık tema kontrastı düzeltildi; Aero'ya kendi gökyüzü sahnesi ve opak kartlar verildi.
+- **Tam ekran:** TV Modu kaldırıldı, yerine Tam Ekran Modu geldi. Pencere görev çubuğunu native topmost + monitör sınırlarıyla kaplıyor; kontrolcü gezinmesi ve konsol kabuğu korunuyor.
+- **Fiziksel kutular:** Kütüphanedeki dokuz mağaza için fiziksel kutu görünümü; dört yeni kutu stili (Frutiger Aero dahil), holografik 3D kutu ve imleç tepkili eğim, mağaza bazlı kapaklar, 2x Steam görselleri ve ayrı bir Fiziksel Kutular ayar bölümü.
+- **Oyun sayfası:** Daha büyük hero, tek puan kartı, gerçekler/sistem sekmesi, son oturum, haber ve yama notları, topluluk bağlantıları, IGDB ek paketleri, medya stüdyosu (ekran görüntüsü görüntüleyici/düzenleyici, klip kesme/birleştirme) ve çökmeyen kademeli kartlar.
+- **Steam mağaza eklentileri:** SteamDB ve Augmented Steam artık elle yazılmış taklitler değil; Chrome Web Store CRX'i indirilip WebView2'nin gerçek eklenti desteğiyle yükleniyor. Ayarlar > Mağazalar'dan kurulum, güncelleme, devre dışı bırakma ve kaldırma var; TL fiyat çevirici korunuyor.
+- **Uyumluluk:** Wine/Proton çalıştırıcıları, umu-launcher, DXVK ve VKD3D-Proton yönetimi; oyun bazlı çalıştırıcı/prefix/katman seçimi; ilerlemeli prefix hazırlığı; tanılama kopyalama; HTTP Range ile devam eden indirmeler; sistemde bulunan çalıştırıcıları kullanma. GOGdl, GOG hesabı bağlıysa açılışta arka planda hazırlanıyor. Heroic Epic Integration katalogdan kaldırıldı ve her araç için açıklama metinleri eklendi.
+- **Koleksiyonlar:** Koleksiyonlar ve akıllı görünümler varsayılan kütüphane sekmesi olabiliyor; Ayarlar > Kütüphane'den açılış görünümü seçilebiliyor.
+- **Steam sinyalleri:** Steam Deck derecesi, ProtonDB seviyesi ve Are We Anti-Cheat Yet? durumu oyun sayfasında; yanıtlar bir gün önbellekte.
+- **Overlay:** Widget döşeme ve düzen sıfırlama, sunucuya göre gruplanmış Discord ses kanalları, yeni Discord ilk ekranı, komut çubuğuna kapatma düğmesi, gizli widget'ların yoklamayı bırakması, Spotify alıcısının yalnızca gerektiğinde başlaması.
+- **Performans:** Steam uygulama metadata'sı diskte önbellekte; oyun sayfaları önceden ısıtılıyor; kütüphane, DLC ve başarım yanıtları yalnızca değişen blokları çiziyor; kenar çubuğu kurulu oyun listesi değişmedikçe yeniden kurulmuyor; görsel önbelleği Ayarlar > Sistem'den temizlenebiliyor.
+- **Düzeltmeler:** Yukarı çık düğmesinin sayfalamayla çakışması, uyumluluk platform seçicisinin açılmaması, açık temada okunmayan anahtar/logo/not/profil alanları, Edge otomatik doldurma balonu, Tam Ekran'da görev çubuğu, bozuk VDF dosyaları ve hatalı klip boyutları.
+- **Sürüm:** `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `README.md` rozeti ve `CHANGELOG_DATA` 0.1.32 olarak güncellendi.
+- **Doğrulama:** `npm.cmd run build` başarılı, `cargo test` 446 geçti / 0 başarısız (29 ignored), `npm.cmd run locales` 16 dosyada 2761 anahtar eşleşti.

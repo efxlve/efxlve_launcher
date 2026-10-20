@@ -31,9 +31,97 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.32",
+    date: "2026-10-21",
+    isCurrent: true,
+    items: [
+      {
+        en: "White Mode and Frutiger Aero themes, with a full light-theme pass across the library, game pages, profile, notes, collections and settings.",
+        tr: "White Mode ve Frutiger Aero temaları; kütüphane, oyun sayfaları, profil, notlar, koleksiyonlar ve ayarlarda tam açık tema geçişi.",
+      },
+      {
+        en: "Full Screen Mode replaces TV Mode: the window covers the taskbar and keeps the controller-first console layout.",
+        tr: "TV Modu'nun yerini Tam Ekran Modu aldı: pencere artık görev çubuğunu kaplıyor ve konsol düzeni kontrolcüyle kullanılmaya devam ediyor.",
+      },
+      {
+        en: "Physical cases for every library game: four new case styles, a holographic 3D box effect, per-store covers and 2x Steam artwork.",
+        tr: "Kütüphanedeki her oyun için fiziksel kutular: dört yeni kutu stili, holografik 3D kutu efekti, mağaza bazlı kapaklar ve 2x Steam görselleri.",
+      },
+      {
+        en: "The game page is rebuilt around the player: a larger hero, one scores card, a facts/system tab, the last session, news and patch notes, community links and IGDB add-ons.",
+        tr: "Oyun sayfası oyuncuya göre yeniden kuruldu: daha büyük bir hero, tek puan kartı, gerçekler/sistem sekmesi, son oturum, haberler ve yama notları, topluluk bağlantıları ve IGDB ek paketleri.",
+      },
+      {
+        en: "The Media tab is now a studio: screenshot viewer and editor, clip playback, trimming and joining without re-encoding.",
+        tr: "Medya sekmesi artık bir stüdyo: ekran görüntüsü görüntüleyici ve düzenleyici, klip oynatma, yeniden kodlamadan kesme ve birleştirme.",
+      },
+      {
+        en: "The Steam store runs the real SteamDB and Augmented Steam Chrome extensions; install, update, disable or remove them from Settings > Stores. The TRY price converter stays.",
+        tr: "Steam mağazası gerçek SteamDB ve Augmented Steam Chrome eklentilerini çalıştırıyor; Ayarlar > Mağazalar'dan kur, güncelle, devre dışı bırak veya kaldır. TL fiyat çevirici korunuyor.",
+      },
+      {
+        en: "Compatibility now manages Wine/Proton runners, umu-launcher, DXVK and VKD3D: per-game runner, prefix and layer overrides, prefix preparation with progress, diagnostics and resumable downloads.",
+        tr: "Uyumluluk artık Wine/Proton çalıştırıcılarını, umu-launcher'ı, DXVK ve VKD3D'yi yönetiyor: oyun bazlı çalıştırıcı, prefix ve katman seçimi, ilerlemeli prefix hazırlığı, tanılama ve devam eden indirmeler.",
+      },
+      {
+        en: "Steam game pages show Valve's Steam Deck rating, the ProtonDB tier and the anti-cheat status; answers are cached for a day.",
+        tr: "Steam oyun sayfaları Valve'ın Steam Deck derecesini, ProtonDB seviyesini ve anti-cheat durumunu gösteriyor; yanıtlar bir gün önbellekte kalıyor.",
+      },
+      {
+        en: "Collections and smart views can be the default library tab, and Settings > Library lets you choose any tab as the startup view.",
+        tr: "Koleksiyonlar ve akıllı görünümler varsayılan kütüphane sekmesi olabiliyor; Ayarlar > Kütüphane'den açılıştaki görünümü seçebiliyorsun.",
+      },
+      {
+        en: "The in-game overlay got a layout reset, tiled widgets, a grouped Discord voice list, a cleaner first screen and a close button; hidden widgets stop polling and Spotify only starts when needed.",
+        tr: "Oyun içi overlay'e düzen sıfırlama, döşenmiş widget'lar, sunucuya göre gruplanmış Discord ses listesi, daha temiz bir ilk ekran ve kapatma düğmesi geldi; gizli widget'lar yoklamayı bırakıyor, Spotify yalnızca gerektiğinde başlıyor.",
+      },
+      {
+        en: "Settings > Stores now lets you reorder store tabs, explains which clients the launcher downloads itself, and the compatibility target picker works again.",
+        tr: "Ayarlar > Mağazalar'da mağaza sekmelerini sıralayabiliyorsun; hangi istemcileri launcher'ın kendi indirdiği açıklanıyor ve uyumluluk hedef seçicisi yeniden çalışıyor.",
+      },
+      {
+        en: "The launcher paints faster: cached Steam metadata, warm game pages, fewer full repaints, a faster sidebar and an image cache that Settings > System can clear.",
+        tr: "Launcher daha hızlı açılıyor: önbelleklenmiş Steam verisi, önceden ısıtılan oyun sayfaları, daha az tam yeniden çizim, daha hızlı kenar çubuğu ve Ayarlar > Sistem'den temizlenebilen görsel önbelleği.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The back-to-top button no longer overlaps pagination controls.",
+        tr: "Yukarı çık düğmesi artık sayfalama kontrollerinin üstüne binmiyor.",
+      },
+      {
+        en: "The compatibility platform picker opens and reacts to the selected target.",
+        tr: "Uyumluluk platform seçicisi açılıyor ve seçilen hedefe göre yenileniyor.",
+      },
+      {
+        en: "GOGdl is prepared automatically for linked GOG accounts instead of showing as missing.",
+        tr: "GOGdl, bağlı GOG hesapları için eksik görünmek yerine otomatik hazırlanıyor.",
+      },
+      {
+        en: "Steam store extension widgets render correctly, and installed copies update with the launcher.",
+        tr: "Steam mağaza eklentisi widget'ları doğru çiziliyor ve kurulu kopyalar launcher ile güncelleniyor.",
+      },
+      {
+        en: "Light themes keep switches, store logos, collection fields, notes and profile cards readable.",
+        tr: "Açık temalarda anahtarlar, mağaza logoları, koleksiyon alanları, notlar ve profil kartları okunabilir kalıyor.",
+      },
+      {
+        en: "Edge no longer shows its autofill popup over the settings search field.",
+        tr: "Edge, ayarlar arama alanının üstünde otomatik doldurma penceresini göstermiyor.",
+      },
+      {
+        en: "Full screen mode covers the taskbar on multi-monitor setups.",
+        tr: "Tam ekran modu çoklu monitör kurulumlarında görev çubuğunu kaplıyor.",
+      },
+      {
+        en: "Malformed VDF files and corrupt clip sizes no longer take down the parser or leave a broken clip.",
+        tr: "Bozuk VDF dosyaları ve hatalı klip boyutları artık ayrıştırıcıyı düşürmüyor veya bozuk klip bırakmıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.31",
     date: "2026-10-18",
-    isCurrent: true,
     items: [
       {
         en: "Discord asks for permission once, not on a loop: the Rich Presence worker was requesting a Social SDK scope that the RPC pipe rejects, and it retried every 30 seconds after a decline.",

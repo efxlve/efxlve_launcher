@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20x86__64-222" alt="Windows" />
-  <img src="https://img.shields.io/badge/version-0.1.31-222" alt="Version 0.1.31" />
+  <img src="https://img.shields.io/badge/version-0.1.32-222" alt="Version 0.1.32" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
