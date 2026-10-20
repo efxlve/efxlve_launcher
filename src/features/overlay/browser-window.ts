@@ -535,4 +535,6 @@ async function boot(): Promise<void> {
   await syncBounds();
 }
 
-void boot();
+// `browser.html` owns this module. Guard the boot so a future import for a
+// helper cannot start the browser chrome inside the overlay panel again.
+if (document.getElementById("ov-browser-frame")) void boot();
