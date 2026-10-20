@@ -12,7 +12,29 @@
   flex: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px;
   border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-3);
 }
-.notes-search-input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--text); font: inherit; font-size: 13px; outline: none; }
+.notes-search-input,
+.notes-search-input:focus {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+}
+.notes-search-input::-webkit-search-cancel-button,
+.notes-search-input::-webkit-search-decoration,
+.notes-search-input::-webkit-search-results-button,
+.notes-search-input::-webkit-search-results-decoration,
+.notes-search-input::-ms-clear {
+  display: none !important;
+  -webkit-appearance: none;
+}
 .notes-filter { display: grid; grid-template-columns: repeat(3, 1fr); }
 .notes-filter button { height: 28px; font-size: 12px; }
 
