@@ -572,9 +572,26 @@ export function renderLastSession(appName: string): string {
 export function renderLastSessionCompact(appName: string): string {
   const summary = sessionSummaryFor(appName);
   if (!summary) {
+    // The launcher may not have tracked a session, but the store still knows
+    // when the game was last played. That date is more useful in the hero bar
+    // than a second copy of the playtime stat.
+    const pt = S.playtimeMap.get(appName);
+    const lastPlayedAt = pt?.last_played_timestamp
+      ? new Date(pt.last_played_timestamp * 1000).toLocaleDateString(currentLanguage(), {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "";
+    if (lastPlayedAt) {
+      return `<div class="gp-hero-session">
+        <span class="gp-hero-session-label">${i18nT("drawer.lastPlayedLabel")}</span>
+        <span class="gp-hero-session-meta">${esc(lastPlayedAt)}</span>
+      </div>`;
+    }
     return `<div class="gp-hero-session is-empty">
       <span class="gp-hero-session-label">${i18nT("drawer.lastSession")}</span>
-      <span class="gp-hero-session-meta">${i18nT("playtime.noSession")}</span>
+      <span class="gp-hero-session-meta">${i18nT(pt?.total_seconds ? "playtime.noSession" : "playtime.notPlayedYet")}</span>
     </div>`;
   }
   const when = sessionWhen(summary.at);

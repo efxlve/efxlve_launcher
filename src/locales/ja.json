@@ -2658,5 +2658,6 @@
   "settings.surfaceAero": "Frutiger Aero",
   "overlay.resetLayoutTitle": "Reset widget layout",
   "overlay.resetLayoutDesc": "Put the open widgets back into their default tiled positions.",
-  "overlay.resetLayoutAction": "Reset layout"
+  "overlay.resetLayoutAction": "Reset layout",
+  "drawer.lastPlayedLabel": "Last played"
 }
