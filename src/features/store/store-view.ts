@@ -431,7 +431,7 @@ export function setStoreSteamCurrency(enabled: boolean): void {
 }
 
 export function storeSteamDbEnabled(): boolean {
-  return localStorage.getItem(STORE_STEAMDB_KEY) === "true";
+  return localStorage.getItem(STORE_STEAMDB_KEY) !== "false";
 }
 
 export function setStoreSteamDb(enabled: boolean): void {
@@ -447,7 +447,7 @@ export function setSteamDbOption(key: string, value: boolean): void {
 }
 
 export function storeAugmentedSteamEnabled(): boolean {
-  return localStorage.getItem(STORE_AUGMENTED_STEAM_KEY) === "true";
+  return localStorage.getItem(STORE_AUGMENTED_STEAM_KEY) !== "false";
 }
 
 export function setStoreAugmentedSteam(enabled: boolean): void {

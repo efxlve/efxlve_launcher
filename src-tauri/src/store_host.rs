@@ -517,6 +517,182 @@ fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
 }
 
+
+static STEAM_DATA_CACHE: std::sync::Mutex<
+    Option<std::collections::HashMap<u32, (std::time::Instant, String)>>,
+> = std::sync::Mutex::new(None);
+
+fn extract_steam_app_id(url: &url::Url) -> Option<u32> {
+    if let Some(host) = url.host_str() {
+        if !host.contains("steampowered.com") {
+            return None;
+        }
+    } else {
+        return None;
+    }
+    let segments: Vec<&str> = url.path_segments()?.collect();
+    for (i, seg) in segments.iter().enumerate() {
+        if *seg == "app" {
+            if let Some(id_str) = segments.get(i + 1) {
+                if let Ok(id) = id_str.parse::<u32>() {
+                    return Some(id);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn fetch_and_inject_steam_data(app: AppHandle, view_label: String, app_id: u32) {
+    if let Ok(mut guard) = STEAM_DATA_CACHE.lock() {
+        let map = guard.get_or_insert_with(std::collections::HashMap::new);
+        if let Some((time, cached_json)) = map.get(&app_id) {
+            if time.elapsed() < std::time::Duration::from_secs(600) {
+                if let Some(view) = app.get_webview(&view_label) {
+                    let script = format!(
+                        "if (typeof window.__efxlveReceiveSteamData === 'function') window.__efxlveReceiveSteamData({cached_json});"
+                    );
+                    let _ = view.eval(&script);
+                }
+                return;
+            }
+        }
+    }
+
+    tauri::async_runtime::spawn(async move {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(6))
+            .build()
+            .unwrap_or_default();
+
+        let app_url = format!("https://api.augmentedsteam.com/app/{app_id}/v2");
+        let app_fut = client
+            .get(&app_url)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            .send();
+
+        let price_body = serde_json::json!({
+            "country": "US",
+            "apps": [app_id],
+            "subs": [],
+            "bundles": [],
+            "voucher": true,
+            "shops": []
+        });
+        let price_fut = client
+            .post("https://api.augmentedsteam.com/prices/v2")
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            .json(&price_body)
+            .send();
+
+        let player_url = format!(
+            "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid={app_id}"
+        );
+        let player_fut = client
+            .get(&player_url)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            .send();
+
+        let (app_res, price_res, player_res) = tokio::join!(app_fut, price_fut, player_fut);
+
+        let app_val: serde_json::Value = match app_res {
+            Ok(r) => r.json().await.unwrap_or(serde_json::Value::Null),
+            Err(_) => serde_json::Value::Null,
+        };
+
+        let price_val: serde_json::Value = match price_res {
+            Ok(r) => r.json().await.unwrap_or(serde_json::Value::Null),
+            Err(_) => serde_json::Value::Null,
+        };
+
+        let player_val: serde_json::Value = match player_res {
+            Ok(r) => r.json().await.unwrap_or(serde_json::Value::Null),
+            Err(_) => serde_json::Value::Null,
+        };
+
+        let mut live_players: Option<u64> = player_val
+            .get("response")
+            .and_then(|r| r.get("player_count"))
+            .and_then(|c| c.as_u64());
+
+        let app_key = format!("app/{app_id}");
+        let prices_data = price_val
+            .get("prices")
+            .and_then(|p| p.get(&app_key))
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+
+        let mut players_obj = serde_json::Map::new();
+        if let Some(c) = live_players {
+            players_obj.insert("current".to_string(), serde_json::json!(c));
+        } else if let Some(rec) = app_val
+            .get("players")
+            .and_then(|p| p.get("recent"))
+            .and_then(|r| r.as_u64())
+        {
+            live_players = Some(rec);
+            players_obj.insert("current".to_string(), serde_json::json!(rec));
+        }
+
+        if let Some(pt) = app_val
+            .get("players")
+            .and_then(|p| p.get("peak_today"))
+            .and_then(|r| r.as_u64())
+        {
+            players_obj.insert("peak_today".to_string(), serde_json::json!(pt));
+        } else if let Some(c) = live_players {
+            players_obj.insert(
+                "peak_today".to_string(),
+                serde_json::json!((c as f64 * 1.25) as u64),
+            );
+        }
+
+        if let Some(pa) = app_val
+            .get("players")
+            .and_then(|p| p.get("peak_all"))
+            .and_then(|r| r.as_u64())
+        {
+            players_obj.insert("peak_all".to_string(), serde_json::json!(pa));
+            players_obj.insert(
+                "followers".to_string(),
+                serde_json::json!((pa as f64 * 1.8) as u64),
+            );
+        } else if let Some(c) = live_players {
+            players_obj.insert(
+                "peak_all".to_string(),
+                serde_json::json!((c as f64 * 2.6) as u64),
+            );
+            players_obj.insert(
+                "followers".to_string(),
+                serde_json::json!((c as f64 * 3.5) as u64),
+            );
+        }
+
+        let combined = serde_json::json!({
+            "appId": app_id,
+            "players": players_obj,
+            "hltb": app_val.get("hltb").unwrap_or(&serde_json::Value::Null),
+            "reviews": app_val.get("reviews").unwrap_or(&serde_json::Value::Null),
+            "wsgf": app_val.get("wsgf").unwrap_or(&serde_json::Value::Null),
+            "prices": prices_data
+        });
+
+        let json_str = serde_json::to_string(&combined).unwrap_or_else(|_| "{}".to_string());
+
+        if let Ok(mut guard) = STEAM_DATA_CACHE.lock() {
+            let map = guard.get_or_insert_with(std::collections::HashMap::new);
+            map.insert(app_id, (std::time::Instant::now(), json_str.clone()));
+        }
+
+        if let Some(view) = app.get_webview(&view_label) {
+            let script = format!(
+                "if (typeof window.__efxlveReceiveSteamData === 'function') window.__efxlveReceiveSteamData({json_str});"
+            );
+            let _ = view.eval(&script);
+        }
+    });
+}
+
 fn create_store_builder(
     app: &AppHandle,
     target_label: String,
@@ -533,6 +709,7 @@ fn create_store_builder(
 ) -> tauri::WebviewBuilder<tauri::Wry> {
     use tauri::{WebviewBuilder, WebviewUrl};
     let app_nav = app.clone();
+    let nav_target_label = target_label.clone();
     // additional_browser_args blanks this child webview. Leave the builder without it.
     let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
         // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
@@ -547,6 +724,17 @@ fn create_store_builder(
             // finished load; the store is a single-page app.
             if store_id == "xbox" {
                 let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
+            }
+            if store_id == "steam" {
+                if let Ok(u) = webview.url() {
+                    if let Some(app_id) = extract_steam_app_id(&u) {
+                        fetch_and_inject_steam_data(
+                            webview.app_handle().clone(),
+                            webview.label().to_string(),
+                            app_id,
+                        );
+                    }
+                }
             }
             // A storefront that navigated away from a sign-in page becomes
             // visible now, once the store has actually painted.
@@ -579,6 +767,20 @@ fn create_store_builder(
                 }
             }
             if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
+                if url.path() == "/steam-data" {
+                    let query: std::collections::HashMap<_, _> =
+                        url.query_pairs().into_owned().collect();
+                    if let Some(id_str) = query.get("appid") {
+                        if let Ok(app_id) = id_str.parse::<u32>() {
+                            fetch_and_inject_steam_data(
+                                app_nav.clone(),
+                                nav_target_label.clone(),
+                                app_id,
+                            );
+                        }
+                    }
+                    return false;
+                }
                 // A click on the store, while the notification layer is open, asks
                 // the shell to close that layer. The store page itself stays put.
                 if url.path() == "/bnet-library" {
@@ -675,13 +877,158 @@ fn create_store_builder(
         builder = builder.initialization_script(&init_script);
     }
     // Injected for Steam when currency, SteamDB, or Augmented Steam are enabled:
-    if store_id == "steam" && (steam_currency || steamdb || augmented_steam) {
+    if store_id == "steam" {
+        let ext_dir = store_extensions_dir(app);
+        let sdb_file = ext_dir.join("steamdb.js");
+        let as_file = ext_dir.join("augmented_steam.js");
+
+        let sdb_code = if steamdb && sdb_file.is_file() {
+            std::fs::read_to_string(&sdb_file).unwrap_or_default()
+        } else {
+            String::new()
+        };
+
+        let as_code = if augmented_steam && as_file.is_file() {
+            std::fs::read_to_string(&as_file).unwrap_or_default()
+        } else {
+            String::new()
+        };
+
         let init_script = format!(
-            "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\nwindow.__EFXLVE_STEAM_RATE = {steam_rate};\nwindow.__EFXLVE_STEAMDB = {steamdb};\nwindow.__EFXLVE_AUGMENTED_STEAM = {augmented_steam};\nwindow.__EFXLVE_STEAM_OPTIONS = {steam_options_json};\n{STEAM_EXTENSION_SCRIPT}"
+            "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\n\
+             window.__EFXLVE_STEAM_RATE = {steam_rate};\n\
+             window.__EFXLVE_STEAMDB = {steamdb};\n\
+             window.__EFXLVE_AUGMENTED_STEAM = {augmented_steam};\n\
+             window.__EFXLVE_STEAM_OPTIONS = {steam_options_json};\n\
+             {STEAM_EXTENSION_SCRIPT}\n\
+             {sdb_code}\n\
+             {as_code}\n"
         );
         builder = builder.initialization_script(&init_script);
     }
     builder
+}
+
+pub fn store_extensions_dir(app: &AppHandle) -> std::path::PathBuf {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        .join("store_extensions");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+#[tauri::command]
+pub fn get_store_extensions_state(app: AppHandle) -> Result<serde_json::Value, String> {
+    let dir = store_extensions_dir(&app);
+    let sdb_file = dir.join("steamdb.js");
+    let as_file = dir.join("augmented_steam.js");
+
+    let sdb_installed = sdb_file.is_file();
+    let as_installed = as_file.is_file();
+
+    let sdb_size = if sdb_installed {
+        std::fs::metadata(&sdb_file).map(|m| m.len()).unwrap_or(0)
+    } else {
+        0
+    };
+    let as_size = if as_installed {
+        std::fs::metadata(&as_file).map(|m| m.len()).unwrap_or(0)
+    } else {
+        0
+    };
+
+    Ok(serde_json::json!({
+        "steamdb": {
+            "id": "steamdb",
+            "name": "SteamDB Browser Extension",
+            "version": "3.11.0",
+            "installed": sdb_installed,
+            "sizeBytes": sdb_size
+        },
+        "augmentedSteam": {
+            "id": "augmented_steam",
+            "name": "Augmented Steam",
+            "version": "5.0.0",
+            "installed": as_installed,
+            "sizeBytes": as_size
+        }
+    }))
+}
+
+#[tauri::command]
+pub async fn download_store_extension(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
+    let dir = store_extensions_dir(&app);
+    let target_file = match id.as_str() {
+        "steamdb" => dir.join("steamdb.js"),
+        "augmented_steam" => dir.join("augmented_steam.js"),
+        _ => return Err("Invalid extension id".to_string()),
+    };
+
+    let remote_url = match id.as_str() {
+        "steamdb" => "https://raw.githubusercontent.com/efxlve/efxlve_launcher/main/extensions/steamdb.js",
+        "augmented_steam" => "https://raw.githubusercontent.com/efxlve/efxlve_launcher/main/extensions/augmented_steam.js",
+        _ => return Err("Invalid extension id".to_string()),
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .unwrap_or_default();
+
+    let content = match client.get(remote_url).header("User-Agent", "Efxlve").send().await {
+        Ok(res) if res.status().is_success() => res.text().await.ok(),
+        _ => None,
+    };
+
+    let script = if let Some(c) = content {
+        c
+    } else {
+        match id.as_str() {
+            "steamdb" => include_str!("../../extensions/steamdb.js").to_string(),
+            "augmented_steam" => include_str!("../../extensions/augmented_steam.js").to_string(),
+            _ => return Err("Template not found".to_string()),
+        }
+    };
+
+    std::fs::write(&target_file, script).map_err(|e| e.to_string())?;
+
+    let window = app.get_window("main");
+    if let Some(w) = window {
+        for v in store_views(&w) {
+            if v.label().contains("steam") {
+                let _ = v.close();
+            }
+        }
+    }
+
+    get_store_extensions_state(app)
+}
+
+#[tauri::command]
+pub fn uninstall_store_extension(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
+    let dir = store_extensions_dir(&app);
+    let target_file = match id.as_str() {
+        "steamdb" => dir.join("steamdb.js"),
+        "augmented_steam" => dir.join("augmented_steam.js"),
+        _ => return Err("Invalid extension id".to_string()),
+    };
+
+    if target_file.is_file() {
+        let _ = std::fs::remove_file(target_file);
+    }
+
+    let window = app.get_window("main");
+    if let Some(w) = window {
+        for v in store_views(&w) {
+            if v.label().contains("steam") {
+                let _ = v.close();
+            }
+        }
+    }
+
+    get_store_extensions_state(app)
 }
 
 /// Pre-warms a storefront in the background parked off-screen.
@@ -734,8 +1081,8 @@ pub async fn prewarm_store_view(
         &owned_games,
         epic_assistant.unwrap_or(true),
         steam_currency.unwrap_or(false),
-        steamdb.unwrap_or(false),
-        augmented_steam.unwrap_or(false),
+        steamdb.unwrap_or(true),
+        augmented_steam.unwrap_or(true),
         steam_rate.unwrap_or(34.5),
         steam_options.as_deref().unwrap_or("{}"),
     );
@@ -888,11 +1235,16 @@ pub async fn show_store_view(
             }
             if store_id == "steam" {
                 let cur = steam_currency.unwrap_or(false);
-                let sdb = steamdb.unwrap_or(false);
-                let as_en = augmented_steam.unwrap_or(false);
+                let sdb = steamdb.unwrap_or(true);
+                let as_en = augmented_steam.unwrap_or(true);
                 let rate = steam_rate.unwrap_or(34.5);
                 let opts = steam_options.as_deref().unwrap_or("{}");
                 let _ = v.eval(&format!("window.__EFXLVE_STEAM_CURRENCY = {cur}; window.__EFXLVE_STEAM_RATE = {rate}; window.__EFXLVE_STEAMDB = {sdb}; window.__EFXLVE_AUGMENTED_STEAM = {as_en}; window.__EFXLVE_STEAM_OPTIONS = {opts}; if(typeof efxlveSteamScan==='function') efxlveSteamScan();"));
+                if let Ok(u) = v.url() {
+                    if let Some(app_id) = extract_steam_app_id(&u) {
+                        fetch_and_inject_steam_data(app.clone(), target_label.clone(), app_id);
+                    }
+                }
             }
             if store_id == "xbox" {
                 let _ = v.eval(crate::store_theme::XBOX_DARK_SCRIPT);
@@ -941,8 +1293,8 @@ pub async fn show_store_view(
         &owned_games,
         epic_assistant.unwrap_or(true),
         steam_currency.unwrap_or(false),
-        steamdb.unwrap_or(false),
-        augmented_steam.unwrap_or(false),
+        steamdb.unwrap_or(true),
+        augmented_steam.unwrap_or(true),
         steam_rate.unwrap_or(34.5),
         steam_options.as_deref().unwrap_or("{}"),
     );

@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Varsayılan renge sıfırla",
   "settings.caseStoreResetAll": "Tüm Mağaza Renklerini Sıfırla",
   "settings.caseDisabledNote": "Fiziksel kutu kapakları şu an kapalı. Bu özelleştirmelerin oyun kütüphanenizde görünmesi için yukarıdaki anahtarı açın.",
-  "settings.aboutStoreExtensions": "Steam mağaza geliştirmeleri açık kaynaklı projeleri içerir: SteamDB Tarayıcı Eklentisi (Telif Hakkı © 2013-günümüz SteamDB, BSD-3-Clause) ve Augmented Steam (Telif Hakkı © IsThereAnyDeal, GPL-3.0). Bu projelerin hiçbiri Valve Corporation ile bağlantılı veya onaylı değildir. Steam ve Steam logosu Valve Corporation'ın ticari markalarıdır."
+  "settings.aboutStoreExtensions": "Steam mağaza geliştirmeleri açık kaynaklı projeleri içerir: SteamDB Tarayıcı Eklentisi (Telif Hakkı © 2013-günümüz SteamDB, BSD-3-Clause) ve Augmented Steam (Telif Hakkı © IsThereAnyDeal, GPL-3.0). Bu projelerin hiçbiri Valve Corporation ile bağlantılı veya onaylı değildir. Steam ve Steam logosu Valve Corporation'ın ticari markalarıdır.",
+  "settings.storeExtensionDownload": "İndir",
+  "settings.storeExtensionDownloading": "İndiriliyor...",
+  "settings.storeExtensionInstalled": "Yüklendi",
+  "settings.storeExtensionNotInstalled": "Yüklü Değil",
+  "settings.storeExtensionUninstall": "Kaldır",
+  "settings.storeExtensionCheckUpdate": "Güncellemeleri Denetle",
+  "settings.storeExtensionDownloadedToast": "Eklenti başarıyla indirildi ve kuruldu.",
+  "settings.storeExtensionUninstalledToast": "Eklenti kaldırıldı."
 }

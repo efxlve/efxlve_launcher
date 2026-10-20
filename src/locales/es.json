@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Restablecer a color predeterminado",
   "settings.caseStoreResetAll": "Restablecer todos los colores",
   "settings.caseDisabledNote": "Las carátulas físicas están desactivadas. Activa el interruptor superior para aplicar estos ajustes a tu biblioteca.",
-  "settings.aboutStoreExtensions": "Las mejoras de la tienda de Steam incorporan proyectos de código abierto: SteamDB Browser Extension (Copyright © 2013-presente SteamDB, BSD-3-Clause) y Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Ninguno de los proyectos está afiliado ni respaldado por Valve Corporation. Steam y el logotipo de Steam son marcas comerciales de Valve Corporation."
+  "settings.aboutStoreExtensions": "Las mejoras de la tienda de Steam incorporan proyectos de código abierto: SteamDB Browser Extension (Copyright © 2013-presente SteamDB, BSD-3-Clause) y Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Ninguno de los proyectos está afiliado ni respaldado por Valve Corporation. Steam y el logotipo de Steam son marcas comerciales de Valve Corporation.",
+  "settings.storeExtensionDownload": "Descargar",
+  "settings.storeExtensionDownloading": "Descargando...",
+  "settings.storeExtensionInstalled": "Instalado",
+  "settings.storeExtensionNotInstalled": "No instalado",
+  "settings.storeExtensionUninstall": "Desinstalar",
+  "settings.storeExtensionCheckUpdate": "Buscar actualizaciones",
+  "settings.storeExtensionDownloadedToast": "Extensión descargada e instalada.",
+  "settings.storeExtensionUninstalledToast": "Extensión desinstalada."
 }

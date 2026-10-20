@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Rétablir la couleur par défaut",
   "settings.caseStoreResetAll": "Réinitialiser toutes les couleurs",
   "settings.caseDisabledNote": "Les boîtiers physiques sont actuellement désactivés. Activez l'interrupteur ci-dessus pour appliquer ces options.",
-  "settings.aboutStoreExtensions": "Les améliorations de la boutique Steam intègrent des projets open source : SteamDB Browser Extension (Copyright © 2013-présent SteamDB, BSD-3-Clause) et Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Aucun de ces projets n'est affilié à Valve Corporation ni approuvé par celle-ci. Steam et le logo Steam sont des marques commerciales de Valve Corporation."
+  "settings.aboutStoreExtensions": "Les améliorations de la boutique Steam intègrent des projets open source : SteamDB Browser Extension (Copyright © 2013-présent SteamDB, BSD-3-Clause) et Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Aucun de ces projets n'est affilié à Valve Corporation ni approuvé par celle-ci. Steam et le logo Steam sont des marques commerciales de Valve Corporation.",
+  "settings.storeExtensionDownload": "Télécharger",
+  "settings.storeExtensionDownloading": "Téléchargement...",
+  "settings.storeExtensionInstalled": "Installé",
+  "settings.storeExtensionNotInstalled": "Non installé",
+  "settings.storeExtensionUninstall": "Désinstaller",
+  "settings.storeExtensionCheckUpdate": "Vérifier les mises à jour",
+  "settings.storeExtensionDownloadedToast": "Extension téléchargée et installée.",
+  "settings.storeExtensionUninstalledToast": "Extension désinstallée."
 }

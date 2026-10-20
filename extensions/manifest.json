@@ -1,0 +1,22 @@
+{
+  "extensions": [
+    {
+      "id": "steamdb",
+      "name": "SteamDB Browser Extension",
+      "version": "3.11.0",
+      "author": "SteamDB",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/SteamDatabase/BrowserExtension",
+      "downloadUrl": "https://raw.githubusercontent.com/efxlve/efxlve_launcher/main/extensions/steamdb.js"
+    },
+    {
+      "id": "augmented_steam",
+      "name": "Augmented Steam",
+      "version": "5.0.0",
+      "author": "IsThereAnyDeal / Augmented Steam",
+      "license": "GPL-3.0",
+      "url": "https://github.com/IsThereAnyDeal/AugmentedSteam",
+      "downloadUrl": "https://raw.githubusercontent.com/efxlve/efxlve_launcher/main/extensions/augmented_steam.js"
+    }
+  ]
+}

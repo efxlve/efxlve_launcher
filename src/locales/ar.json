@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "إعادة التعيين إلى اللون الافتراضي",
   "settings.caseStoreResetAll": "إعادة ضبط جميع ألوان المتاجر",
   "settings.caseDisabledNote": "أغلفة العلب الفيزيائية معطلة حالياً. فعّل المفتاح أعلاه لتطبيق هذه التخصيصات في مكتبتك.",
-  "settings.aboutStoreExtensions": "تتضمن تحسينات متجر Steam مشاريع مفتوحة المصدر: SteamDB Browser Extension (حقوق النشر © 2013-الحالي SteamDB، BSD-3-Clause) و Augmented Steam (حقوق النشر © IsThereAnyDeal، GPL-3.0). لا ينتمي أي من المشروعين إلى شركة Valve Corporation أو يحظى بتأييدها. Steam وشعار Steam هما علامتان تجاريتان لشركة Valve Corporation."
+  "settings.aboutStoreExtensions": "تتضمن تحسينات متجر Steam مشاريع مفتوحة المصدر: SteamDB Browser Extension (حقوق النشر © 2013-الحالي SteamDB، BSD-3-Clause) و Augmented Steam (حقوق النشر © IsThereAnyDeal، GPL-3.0). لا ينتمي أي من المشروعين إلى شركة Valve Corporation أو يحظى بتأييدها. Steam وشعار Steam هما علامتان تجاريتان لشركة Valve Corporation.",
+  "settings.storeExtensionDownload": "تنزيل",
+  "settings.storeExtensionDownloading": "جارٍ التنزيل...",
+  "settings.storeExtensionInstalled": "مثبت",
+  "settings.storeExtensionNotInstalled": "غير مثبت",
+  "settings.storeExtensionUninstall": "إلغاء التثبيت",
+  "settings.storeExtensionCheckUpdate": "التحقق من التحديثات",
+  "settings.storeExtensionDownloadedToast": "تم تنزيل الملحق وتثبيته.",
+  "settings.storeExtensionUninstalledToast": "تمت إزالة الملحق."
 }

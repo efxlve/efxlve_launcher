@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "デフォルトカラーに戻す",
   "settings.caseStoreResetAll": "すべてのストアカラーを初期化",
   "settings.caseDisabledNote": "物理ケース表示は現在無効です。ライブラリに反映するには上のスイッチをオンにしてください。",
-  "settings.aboutStoreExtensions": "Steamストアの機能拡張にはオープンソースプロジェクトが含まれています: SteamDB Browser Extension (Copyright © 2013-現在 SteamDB, BSD-3-Clause) および Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0)。いずれのプロジェクトもValve Corporationと提携または承認されていません。SteamおよびSteamロゴはValve Corporationの商標です。"
+  "settings.aboutStoreExtensions": "Steamストアの機能拡張にはオープンソースプロジェクトが含まれています: SteamDB Browser Extension (Copyright © 2013-現在 SteamDB, BSD-3-Clause) および Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0)。いずれのプロジェクトもValve Corporationと提携または承認されていません。SteamおよびSteamロゴはValve Corporationの商標です。",
+  "settings.storeExtensionDownload": "ダウンロード",
+  "settings.storeExtensionDownloading": "ダウンロード中...",
+  "settings.storeExtensionInstalled": "インストール済み",
+  "settings.storeExtensionNotInstalled": "未インストール",
+  "settings.storeExtensionUninstall": "アンインストール",
+  "settings.storeExtensionCheckUpdate": "アップデートを確認",
+  "settings.storeExtensionDownloadedToast": "拡張機能がダウンロードされインストールされました。",
+  "settings.storeExtensionUninstalledToast": "拡張機能がアンインストールされました。"
 }

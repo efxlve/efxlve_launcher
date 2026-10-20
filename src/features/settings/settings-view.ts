@@ -676,6 +676,16 @@ function pageSizeSelect(): string {
 }
 
 
+export function loadStoreExtensionsState(): void {
+  if (!isTauri) return;
+  invoke<Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }>>("get_store_extensions_state")
+    .then(st => {
+      S.storeExtensionsState = st;
+      if (S.view === "settings") render();
+    })
+    .catch(() => {});
+}
+
 function renderStores(): string {
   const warmLimit = storeWarmLimit();
   const idleTimeout = storeIdleTimeout();
@@ -709,6 +719,33 @@ function renderStores(): string {
     <div style="margin-top:5px;font-size:11.5px;color:var(--text-muted);line-height:1.4;">${t("settings.storeSteamCurrencyRegionNote")}</div>
     <div style="margin-top:3px;font-size:11px;color:var(--text-muted);opacity:0.75;">${t("settings.storeAuthorEfxlve")}</div>`;
 
+  if (S.storeExtensionsState === null && isTauri) {
+    loadStoreExtensionsState();
+  }
+
+  const sdbExt = S.storeExtensionsState?.steamdb;
+  const sdbInstalled = sdbExt ? sdbExt.installed : false;
+  const sdbDownloading = S.storeExtensionDownloading === "steamdb";
+
+  let sdbControl: string;
+  if (!sdbInstalled) {
+    sdbControl = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted);font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionNotInstalled")}</span>
+        <button type="button" class="btn primary small" data-act="download-store-extension" data-id="steamdb" ${sdbDownloading ? "disabled" : ""} style="padding:4px 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:6px;">
+          ${sdbDownloading ? `<span class="spinner" style="width:12px;height:12px;"></span> <span>${t("settings.storeExtensionDownloading")}</span>` : `${icon("download", 12)} <span>${t("settings.storeExtensionDownload")}</span>`}
+        </button>
+      </div>`;
+  } else {
+    sdbControl = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge" style="background:rgba(76,175,80,0.15);color:#81c784;font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionInstalled")} (v${sdbExt?.version || ""})</span>
+        <button type="button" class="btn ghost small" data-act="download-store-extension" data-id="steamdb" title="${t("settings.storeExtensionCheckUpdate")}" style="padding:4px 8px;">${icon("refresh", 12)}</button>
+        <button type="button" class="btn ghost small danger" data-act="uninstall-store-extension" data-id="steamdb" title="${t("settings.storeExtensionUninstall")}" style="padding:4px 8px;color:#f44336;">${icon("trash", 12)}</button>
+        ${toggle("toggle-store-steamdb", steamDb)}
+      </div>`;
+  }
+
   const subOpts = [
     { key: "steamdb-lowest-price", label: t("settings.storeSteamDbOptLowestPrice") },
     { key: "online-stats", label: t("settings.storeSteamDbOptOnlineStats") },
@@ -721,7 +758,7 @@ function renderStores(): string {
     { key: "enhancement-hide-install-button", label: t("settings.storeSteamDbOptHideInstall") },
   ];
 
-  const steamDbConfigureBtn = steamDb ? `
+  const steamDbConfigureBtn = (sdbInstalled && steamDb) ? `
     <div style="margin-top:8px;">
       <button type="button" class="btn ghost tiny ${S.steamDbSettingsOpen ? "active" : ""}" data-act="toggle-steamdb-settings" style="font-size:11.5px;padding:3px 10px;border-radius:5px;">
         ${icon("sliders", 11)} <span>${S.steamDbSettingsOpen ? t("settings.storeSteamDbHideOptions") : t("settings.storeSteamDbConfigure")}</span> ${icon(S.steamDbSettingsOpen ? "chevron-up" : "chevron-down", 10)}
@@ -737,7 +774,7 @@ function renderStores(): string {
     </div>
     ${steamDbConfigureBtn}`;
 
-  const steamDbSubPanel = (S.steamDbSettingsOpen && steamDb) ? `
+  const steamDbSubPanel = (sdbInstalled && S.steamDbSettingsOpen && steamDb) ? `
     <div style="margin: 2px 14px 14px 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: var(--r-sm, 6px);">
       <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);">
         <span style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">
@@ -758,6 +795,28 @@ function renderStores(): string {
     </div>` : "";
 
   const augmentedSteam = storeAugmentedSteamEnabled();
+  const asExt = S.storeExtensionsState?.augmentedSteam;
+  const asInstalled = asExt ? asExt.installed : false;
+  const asDownloading = S.storeExtensionDownloading === "augmented_steam";
+
+  let asControl: string;
+  if (!asInstalled) {
+    asControl = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted);font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionNotInstalled")}</span>
+        <button type="button" class="btn primary small" data-act="download-store-extension" data-id="augmented_steam" ${asDownloading ? "disabled" : ""} style="padding:4px 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:6px;">
+          ${asDownloading ? `<span class="spinner" style="width:12px;height:12px;"></span> <span>${t("settings.storeExtensionDownloading")}</span>` : `${icon("download", 12)} <span>${t("settings.storeExtensionDownload")}</span>`}
+        </button>
+      </div>`;
+  } else {
+    asControl = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge" style="background:rgba(76,175,80,0.15);color:#81c784;font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionInstalled")} (v${asExt?.version || ""})</span>
+        <button type="button" class="btn ghost small" data-act="download-store-extension" data-id="augmented_steam" title="${t("settings.storeExtensionCheckUpdate")}" style="padding:4px 8px;">${icon("refresh", 12)}</button>
+        <button type="button" class="btn ghost small danger" data-act="uninstall-store-extension" data-id="augmented_steam" title="${t("settings.storeExtensionUninstall")}" style="padding:4px 8px;color:#f44336;">${icon("trash", 12)}</button>
+        ${toggle("toggle-store-augmented-steam", augmentedSteam)}
+      </div>`;
+  }
 
   const asSubOpts = [
     { key: "as-hltb", label: t("settings.storeAugmentedSteamOptHltb") },
@@ -768,7 +827,7 @@ function renderStores(): string {
     { key: "as-wsgf", label: t("settings.storeAugmentedSteamOptWsgf") },
   ];
 
-  const augmentedSteamConfigureBtn = augmentedSteam ? `
+  const augmentedSteamConfigureBtn = (asInstalled && augmentedSteam) ? `
     <div style="margin-top: 8px;">
       <button class="btn ghost small" data-act="toggle-augmented-steam-settings" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 10px;height:26px;">
         ${icon("sliders", 12)}
@@ -786,7 +845,7 @@ function renderStores(): string {
     </div>
     ${augmentedSteamConfigureBtn}`;
 
-  const augmentedSteamSubPanel = (S.augmentedSteamSettingsOpen && augmentedSteam) ? `
+  const augmentedSteamSubPanel = (asInstalled && S.augmentedSteamSettingsOpen && augmentedSteam) ? `
     <div style="margin: 2px 14px 14px 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: var(--r-sm, 6px);">
       <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);">
         <span style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">
@@ -809,10 +868,10 @@ function renderStores(): string {
   const extRows =
     row(t("settings.storeEpicAssistantTitle"), epicDesc, toggle("toggle-store-epic-assistant", epicAssistant)) +
     row(t("settings.storeSteamCurrencyTitle"), currencyDesc, toggle("toggle-store-steam-currency", steamCurrency)) +
-    row(t("settings.storeSteamDbTitle"), steamDbDesc, toggle("toggle-store-steamdb", steamDb)) +
-    steamDbSubPanel +
-    row(t("settings.storeAugmentedSteamTitle"), augmentedSteamDesc, toggle("toggle-store-augmented-steam", augmentedSteam)) +
-    augmentedSteamSubPanel;
+    row(t("settings.storeSteamDbTitle"), steamDbDesc, sdbControl) +
+    (sdbInstalled ? steamDbSubPanel : "") +
+    row(t("settings.storeAugmentedSteamTitle"), augmentedSteamDesc, asControl) +
+    (asInstalled ? augmentedSteamSubPanel : "");
 
   const perfRows =
     row(t("settings.storePrewarmTitle"), t("settings.storePrewarmDesc"), toggle("toggle-store-prewarm", prewarm)) +

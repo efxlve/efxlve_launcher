@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Reset to default color",
   "settings.caseStoreResetAll": "Reset All Store Colors",
   "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library.",
-  "settings.aboutStoreExtensions": "Steam 商店增強功能整合了開源專案：SteamDB Browser Extension（版權所有 © 2013-至今 SteamDB，BSD-3-Clause）與 Augmented Steam（版權所有 © IsThereAnyDeal，GPL-3.0）。這些專案均未獲得 Valve Corporation 的附屬或認可。Steam 及 Steam 標誌為 Valve Corporation 的商標。"
+  "settings.aboutStoreExtensions": "Steam 商店增強功能整合了開源專案：SteamDB Browser Extension（版權所有 © 2013-至今 SteamDB，BSD-3-Clause）與 Augmented Steam（版權所有 © IsThereAnyDeal，GPL-3.0）。這些專案均未獲得 Valve Corporation 的附屬或認可。Steam 及 Steam 標誌為 Valve Corporation 的商標。",
+  "settings.storeExtensionDownload": "下載",
+  "settings.storeExtensionDownloading": "正在下載...",
+  "settings.storeExtensionInstalled": "已安裝",
+  "settings.storeExtensionNotInstalled": "未安裝",
+  "settings.storeExtensionUninstall": "解除安裝",
+  "settings.storeExtensionCheckUpdate": "檢查更新",
+  "settings.storeExtensionDownloadedToast": "擴充功能已下載並安裝。",
+  "settings.storeExtensionUninstalledToast": "擴充功能已解除安裝。"
 }

@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Сбросить цвет по умолчанию",
   "settings.caseStoreResetAll": "Сбросить цвета всех магазинов",
   "settings.caseDisabledNote": "Физические коробки сейчас отключены. Включите переключатель выше, чтобы применить настройки к библиотеке.",
-  "settings.aboutStoreExtensions": "Улучшения магазина Steam включают проекты с открытым исходным кодом: SteamDB Browser Extension (Copyright © 2013-настоящее время SteamDB, BSD-3-Clause) и Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Ни один из проектов не связан с Valve Corporation и не одобрен ею. Steam и логотип Steam являются товарными знаками Valve Corporation."
+  "settings.aboutStoreExtensions": "Улучшения магазина Steam включают проекты с открытым исходным кодом: SteamDB Browser Extension (Copyright © 2013-настоящее время SteamDB, BSD-3-Clause) и Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Ни один из проектов не связан с Valve Corporation и не одобрен ею. Steam и логотип Steam являются товарными знаками Valve Corporation.",
+  "settings.storeExtensionDownload": "Скачать",
+  "settings.storeExtensionDownloading": "Загрузка...",
+  "settings.storeExtensionInstalled": "Установлено",
+  "settings.storeExtensionNotInstalled": "Не установлено",
+  "settings.storeExtensionUninstall": "Удалить",
+  "settings.storeExtensionCheckUpdate": "Проверить обновления",
+  "settings.storeExtensionDownloadedToast": "Расширение успешно загружено и установлено.",
+  "settings.storeExtensionUninstalledToast": "Расширение удалено."
 }

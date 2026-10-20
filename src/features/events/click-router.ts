@@ -914,6 +914,41 @@ document.addEventListener("click", (e) => {
       if (isTauri) invoke("destroy_store_view").catch(() => {});
       render();
     }
+  } else if (act === "download-store-extension") {
+    const id = t.dataset.id;
+    if (id && isTauri) {
+      S.storeExtensionDownloading = id;
+      render();
+      invoke<Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }>>("download_store_extension", { id })
+        .then((state) => {
+          S.storeExtensionsState = state;
+          if (id === "steamdb") setStoreSteamDb(true);
+          if (id === "augmented_steam") setStoreAugmentedSteam(true);
+          toast(i18nT("settings.storeExtensionDownloadedToast"), "ok");
+        })
+        .catch((e: unknown) => {
+          toast(String(e), "err");
+        })
+        .finally(() => {
+          S.storeExtensionDownloading = null;
+          render();
+        });
+    }
+  } else if (act === "uninstall-store-extension") {
+    const id = t.dataset.id;
+    if (id && isTauri) {
+      invoke<Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }>>("uninstall_store_extension", { id })
+        .then((state) => {
+          S.storeExtensionsState = state;
+          if (id === "steamdb") setStoreSteamDb(false);
+          if (id === "augmented_steam") setStoreAugmentedSteam(false);
+          toast(i18nT("settings.storeExtensionUninstalledToast"), "ok");
+          render();
+        })
+        .catch((e: unknown) => {
+          toast(String(e), "err");
+        });
+    }
   } else if (act === "toggle-store-augmented-steam") {
     setStoreAugmentedSteam(!storeAugmentedSteamEnabled());
     if (isTauri) invoke("destroy_store_view").catch(() => {});

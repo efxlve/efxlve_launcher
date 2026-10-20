@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Reset to default color",
   "settings.caseStoreResetAll": "Reset All Store Colors",
   "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library.",
-  "settings.aboutStoreExtensions": "Steam स्टोर संवर्द्धन ओपन-सोर्स परियोजनाओं को शामिल करते हैं: SteamDB Browser Extension (कॉपीराइट © 2013-वर्तमान SteamDB, BSD-3-Clause) और Augmented Steam (कॉपीराइट © IsThereAnyDeal, GPL-3.0)। इनमें से कोई भी परियोजना Valve Corporation से संबद्ध या समर्थित नहीं है। Steam और Steam लोगो Valve Corporation के ट्रेडमार्क हैं।"
+  "settings.aboutStoreExtensions": "Steam स्टोर संवर्द्धन ओपन-सोर्स परियोजनाओं को शामिल करते हैं: SteamDB Browser Extension (कॉपीराइट © 2013-वर्तमान SteamDB, BSD-3-Clause) और Augmented Steam (कॉपीराइट © IsThereAnyDeal, GPL-3.0)। इनमें से कोई भी परियोजना Valve Corporation से संबद्ध या समर्थित नहीं है। Steam और Steam लोगो Valve Corporation के ट्रेडमार्क हैं।",
+  "settings.storeExtensionDownload": "डाउनलोड",
+  "settings.storeExtensionDownloading": "डाउनलोड हो रहा है...",
+  "settings.storeExtensionInstalled": "स्थापित",
+  "settings.storeExtensionNotInstalled": "स्थापित नहीं",
+  "settings.storeExtensionUninstall": "अनइंस्टॉल",
+  "settings.storeExtensionCheckUpdate": "अपडेट के लिए जांचें",
+  "settings.storeExtensionDownloadedToast": "एक्सटेंशन डाउनलोड और इंस्टॉल हो गया।",
+  "settings.storeExtensionUninstalledToast": "एक्सटेंशन अनइंस्टॉल हो गया।"
 }

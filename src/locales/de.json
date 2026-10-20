@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Auf Standardfarbe zurücksetzen",
   "settings.caseStoreResetAll": "Alle Store-Farben zurücksetzen",
   "settings.caseDisabledNote": "Physische Box-Cover sind derzeit deaktiviert. Schalten Sie den obigen Schalter ein, um diese Anpassungen anzuwenden.",
-  "settings.aboutStoreExtensions": "Verbesserungen des Steam-Storefronts nutzen Open-Source-Projekte: SteamDB Browser Extension (Copyright © 2013-heute SteamDB, BSD-3-Clause) und Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Keines der Projekte steht in Verbindung mit Valve Corporation oder wird von dieser unterstützt. Steam und das Steam-Logo sind Marken der Valve Corporation."
+  "settings.aboutStoreExtensions": "Verbesserungen des Steam-Storefronts nutzen Open-Source-Projekte: SteamDB Browser Extension (Copyright © 2013-heute SteamDB, BSD-3-Clause) und Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Keines der Projekte steht in Verbindung mit Valve Corporation oder wird von dieser unterstützt. Steam und das Steam-Logo sind Marken der Valve Corporation.",
+  "settings.storeExtensionDownload": "Herunterladen",
+  "settings.storeExtensionDownloading": "Wird heruntergeladen...",
+  "settings.storeExtensionInstalled": "Installiert",
+  "settings.storeExtensionNotInstalled": "Nicht installiert",
+  "settings.storeExtensionUninstall": "Deinstallieren",
+  "settings.storeExtensionCheckUpdate": "Nach Updates suchen",
+  "settings.storeExtensionDownloadedToast": "Erweiterung heruntergeladen und installiert.",
+  "settings.storeExtensionUninstalledToast": "Erweiterung deinstalliert."
 }

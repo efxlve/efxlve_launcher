@@ -435,6 +435,8 @@ export const S = {
   isStoreDropdownOpen: false,
   steamDbSettingsOpen: false,
   augmentedSteamSettingsOpen: false,
+  storeExtensionsState: (null) as Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }> | null,
+  storeExtensionDownloading: (null) as string | null,
   isColDropdownOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   /** Live cloud-sync progress per app while Legendary packs and transfers saves. */

@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Przywróć domyślny kolor",
   "settings.caseStoreResetAll": "Zresetuj kolory wszystkich sklepów",
   "settings.caseDisabledNote": "Fizyczne pudełka są obecnie wyłączone. Włącz powyższy przełącznik, aby zastosować te ustawienia.",
-  "settings.aboutStoreExtensions": "Ulepszenia sklepu Steam zawierają projekty open source: SteamDB Browser Extension (Copyright © 2013-obecnie SteamDB, BSD-3-Clause) oraz Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Żaden z projektów nie jest powiązany z firmą Valve Corporation ani przez nią promowany. Steam i logo Steam są znakami towarowymi firmy Valve Corporation."
+  "settings.aboutStoreExtensions": "Ulepszenia sklepu Steam zawierają projekty open source: SteamDB Browser Extension (Copyright © 2013-obecnie SteamDB, BSD-3-Clause) oraz Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Żaden z projektów nie jest powiązany z firmą Valve Corporation ani przez nią promowany. Steam i logo Steam są znakami towarowymi firmy Valve Corporation.",
+  "settings.storeExtensionDownload": "Pobierz",
+  "settings.storeExtensionDownloading": "Pobieranie...",
+  "settings.storeExtensionInstalled": "Zainstalowano",
+  "settings.storeExtensionNotInstalled": "Nie zainstalowano",
+  "settings.storeExtensionUninstall": "Odinstaluj",
+  "settings.storeExtensionCheckUpdate": "Sprawdź aktualizacje",
+  "settings.storeExtensionDownloadedToast": "Rozszerzenie pobrane i zainstalowane.",
+  "settings.storeExtensionUninstalledToast": "Rozszerzenie odinstalowane."
 }

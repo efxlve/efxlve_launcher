@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Reset to default color",
   "settings.caseStoreResetAll": "Reset All Store Colors",
   "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library.",
-  "settings.aboutStoreExtensions": "การปรับปรุงหน้าร้านค้า Steam ได้รวมโครงการโอเพนซอร์ส: SteamDB Browser Extension (ลิขสิทธิ์ © 2013-ปัจจุบัน SteamDB, BSD-3-Clause) และ Augmented Steam (ลิขสิทธิ์ © IsThereAnyDeal, GPL-3.0) ทั้งสองโครงการไม่มีความเกี่ยวข้องหรือได้รับการรับรองจาก Valve Corporation โดย Steam และโลโก้ Steam เป็นเครื่องหมายการค้าของ Valve Corporation"
+  "settings.aboutStoreExtensions": "การปรับปรุงหน้าร้านค้า Steam ได้รวมโครงการโอเพนซอร์ส: SteamDB Browser Extension (ลิขสิทธิ์ © 2013-ปัจจุบัน SteamDB, BSD-3-Clause) และ Augmented Steam (ลิขสิทธิ์ © IsThereAnyDeal, GPL-3.0) ทั้งสองโครงการไม่มีความเกี่ยวข้องหรือได้รับการรับรองจาก Valve Corporation โดย Steam และโลโก้ Steam เป็นเครื่องหมายการค้าของ Valve Corporation",
+  "settings.storeExtensionDownload": "ดาวน์โหลด",
+  "settings.storeExtensionDownloading": "กำลังดาวน์โหลด...",
+  "settings.storeExtensionInstalled": "ติดตั้งแล้ว",
+  "settings.storeExtensionNotInstalled": "ยังไม่ได้ติดตั้ง",
+  "settings.storeExtensionUninstall": "ถอนการติดตั้ง",
+  "settings.storeExtensionCheckUpdate": "ตรวจสอบการอัปเดต",
+  "settings.storeExtensionDownloadedToast": "ดาวน์โหลดและติดตั้งส่วนขยายแล้ว",
+  "settings.storeExtensionUninstalledToast": "ถอนการติดตั้งส่วนขยายแล้ว"
 }

@@ -2766,5 +2766,13 @@
   "settings.caseStoreReset": "Reset to default color",
   "settings.caseStoreResetAll": "Reset All Store Colors",
   "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library.",
-  "settings.aboutStoreExtensions": "Steam storefront enhancements incorporate open-source projects: SteamDB Browser Extension (Copyright © 2013-present SteamDB, BSD-3-Clause) and Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Neither project is affiliated with or endorsed by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation."
+  "settings.aboutStoreExtensions": "Steam storefront enhancements incorporate open-source projects: SteamDB Browser Extension (Copyright © 2013-present SteamDB, BSD-3-Clause) and Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Neither project is affiliated with or endorsed by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.",
+  "settings.storeExtensionDownload": "Download",
+  "settings.storeExtensionDownloading": "Downloading...",
+  "settings.storeExtensionInstalled": "Installed",
+  "settings.storeExtensionNotInstalled": "Not Installed",
+  "settings.storeExtensionUninstall": "Uninstall",
+  "settings.storeExtensionCheckUpdate": "Check for Updates",
+  "settings.storeExtensionDownloadedToast": "Extension downloaded and installed.",
+  "settings.storeExtensionUninstalledToast": "Extension uninstalled."
 }
