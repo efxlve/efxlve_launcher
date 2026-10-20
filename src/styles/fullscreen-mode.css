@@ -4,6 +4,11 @@ body.fullscreen-mode {
   user-select: none;
 }
 
+/* In Fullscreen Mode, hide the desktop window controls (_ [] X) */
+body.fullscreen-mode .win-controls {
+  display: none !important;
+}
+
 /* Slightly scale up cards and spacing in Fullscreen Mode for couch / big screen viewing */
 body.fullscreen-mode .pgrid {
   gap: 20px !important;

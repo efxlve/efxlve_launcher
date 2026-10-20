@@ -419,13 +419,129 @@ fn hide_accent_border(window: &tauri::Window) {
 #[cfg(not(windows))]
 fn hide_accent_border(_window: &tauri::Window) {}
 
+#[cfg(windows)]
+fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
+    let Ok(raw_hwnd) = window.hwnd() else {
+        return;
+    };
+    let hwnd = raw_hwnd.0;
+
+    #[repr(C)]
+    struct RECT {
+        left: i32,
+        top: i32,
+        right: i32,
+        bottom: i32,
+    }
+    #[repr(C)]
+    struct MONITORINFO {
+        cb_size: u32,
+        rc_monitor: RECT,
+        rc_work: RECT,
+        dw_flags: u32,
+    }
+    #[link(name = "user32")]
+    extern "system" {
+        fn MonitorFromWindow(hwnd: *mut core::ffi::c_void, flags: u32) -> *mut core::ffi::c_void;
+        fn GetMonitorInfoW(hmon: *mut core::ffi::c_void, mi: *mut MONITORINFO) -> i32;
+        fn SetWindowPos(
+            hwnd: *mut core::ffi::c_void,
+            insert_after: *mut core::ffi::c_void,
+            x: i32,
+            y: i32,
+            cx: i32,
+            cy: i32,
+            flags: u32,
+        ) -> i32;
+    }
+
+    const MONITOR_DEFAULTTONEAREST: u32 = 2;
+    const HWND_TOPMOST: *mut core::ffi::c_void = -1isize as *mut core::ffi::c_void;
+    const HWND_NOTOPMOST: *mut core::ffi::c_void = -2isize as *mut core::ffi::c_void;
+    const SWP_NOSIZE: u32 = 0x0001;
+    const SWP_NOMOVE: u32 = 0x0002;
+    const SWP_FRAMECHANGED: u32 = 0x0020;
+    const SWP_SHOWWINDOW: u32 = 0x0040;
+
+    unsafe {
+        if enabled {
+            let hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            if !hmon.is_null() {
+                let mut mi = MONITORINFO {
+                    cb_size: std::mem::size_of::<MONITORINFO>() as u32,
+                    rc_monitor: RECT {
+                        left: 0,
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                    },
+                    rc_work: RECT {
+                        left: 0,
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                    },
+                    dw_flags: 0,
+                };
+                if GetMonitorInfoW(hmon, &mut mi) != 0 {
+                    let x = mi.rc_monitor.left;
+                    let y = mi.rc_monitor.top;
+                    let w = mi.rc_monitor.right - mi.rc_monitor.left;
+                    let h = mi.rc_monitor.bottom - mi.rc_monitor.top;
+                    let _ = SetWindowPos(
+                        hwnd,
+                        HWND_TOPMOST,
+                        x,
+                        y,
+                        w,
+                        h,
+                        SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+                    );
+                }
+            }
+        } else {
+            let _ = SetWindowPos(
+                hwnd,
+                HWND_NOTOPMOST,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+            );
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn set_fullscreen_native(_window: &tauri::Window, _enabled: bool) {}
+
 #[tauri::command]
 fn app_set_fullscreen(app: AppHandle, enabled: bool) -> Result<bool, String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
-    window.set_fullscreen(enabled).map_err(|e| e.to_string())?;
-    hide_accent_border(&window);
+
+    if enabled {
+        window.set_fullscreen(true).map_err(|e| e.to_string())?;
+        hide_accent_border(&window);
+        set_fullscreen_native(&window, true);
+        let win = window.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+            set_fullscreen_native(&win, true);
+        });
+    } else {
+        set_fullscreen_native(&window, false);
+        window.set_fullscreen(false).map_err(|e| e.to_string())?;
+        hide_accent_border(&window);
+        let win = window.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+            set_fullscreen_native(&win, false);
+        });
+    }
+
     Ok(enabled)
 }
 
@@ -808,6 +924,49 @@ fn main() {    // Rockstar's launcher only continues when a process named
             }
             if let tauri::WindowEvent::Resized(physical_size) = event {
                 store_host::on_main_window_resized(window, *physical_size);
+            }
+            if let tauri::WindowEvent::Focused(focused) = event {
+                #[cfg(windows)]
+                if let Ok(is_fs) = window.is_fullscreen() {
+                    if is_fs {
+                        if let Ok(raw_hwnd) = window.hwnd() {
+                            let hwnd = raw_hwnd.0;
+                            #[link(name = "user32")]
+                            extern "system" {
+                                fn SetWindowPos(
+                                    hwnd: *mut core::ffi::c_void,
+                                    insert_after: *mut core::ffi::c_void,
+                                    x: i32,
+                                    y: i32,
+                                    cx: i32,
+                                    cy: i32,
+                                    flags: u32,
+                                ) -> i32;
+                            }
+                            const HWND_TOPMOST: *mut core::ffi::c_void =
+                                -1isize as *mut core::ffi::c_void;
+                            const HWND_NOTOPMOST: *mut core::ffi::c_void =
+                                -2isize as *mut core::ffi::c_void;
+                            const SWP_NOSIZE: u32 = 0x0001;
+                            const SWP_NOMOVE: u32 = 0x0002;
+                            const SWP_FRAMECHANGED: u32 = 0x0020;
+                            const SWP_SHOWWINDOW: u32 = 0x0040;
+
+                            let target_z = if *focused { HWND_TOPMOST } else { HWND_NOTOPMOST };
+                            unsafe {
+                                let _ = SetWindowPos(
+                                    hwnd,
+                                    target_z,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+                                );
+                            }
+                        }
+                    }
+                }
             }
         })
         .invoke_handler(tauri::generate_handler![
