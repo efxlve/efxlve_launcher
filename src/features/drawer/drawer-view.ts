@@ -19,7 +19,7 @@ import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLib
 import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
-import { recordSessionSummary, sessionSummaryFor } from "../../core/session-summary";
+import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { steamNews, type SteamNewsItem } from "../../steam";
 import { presenceSync, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -251,10 +251,116 @@ function cloudWidgetBody(s: EpicSummary, partner: ThirdPartyLauncherInfo | null)
     <p class="gp-cloud-note">${esc(note)}</p>`;
 }
 
-function paintGameCloud(s: EpicSummary): void {
-  const host = document.getElementById("gp-cloud-widget-body");
+export function renderGameHeaderMeta(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null = null,
+): string {
+  const g = rawOf(s.appName);
+  const status = heroCloudStatus(s, g, partner, S.loadedRequirements.get(s.appName));
+  const provider = cloudProvider(s, partner);
+  let cloudMain = status.label;
+  let cloudNote = status.tooltip;
+  if (provider.external) {
+    cloudMain = provider.name;
+    cloudNote = provider.tip;
+  } else {
+    if (cloudMain === "—") {
+      cloudMain = t("feat.localSave");
+      cloudNote = t("feat.localSaveTip");
+    } else if (!status.synced && status.label === t("drawer.cloudNotSynced")) {
+      cloudMain = `${provider.name} · ${status.label}`;
+    }
+  }
+
+  const pt = S.playtimeMap.get(s.appName);
+  const playtimeStr = pt?.total_seconds ? fmtPlaytime(pt.total_seconds) : "—";
+  const lastPlayed = pt?.last_played_timestamp
+    ? new Date(pt.last_played_timestamp * 1000).toLocaleDateString(currentLanguage(), {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+  const timeTooltip = lastPlayed
+    ? `${t("drawer.editPlaytime")} · ${t("drawer.lastPlayed", { date: lastPlayed })}`
+    : t("drawer.editPlaytime");
+
+  const summary = sessionSummaryFor(s.appName);
+  let sessionLabel = t("drawer.lastPlayedLabel");
+  let sessionVal = "";
+  let sessionTooltip = "";
+
+  if (summary) {
+    sessionLabel = t("drawer.lastSession");
+    const when = sessionWhen(summary.at);
+    const whenText =
+      when.unit === "minutes"
+        ? t("time.minutesAgo", { n: when.n })
+        : when.unit === "hours"
+          ? t("time.hoursAgo", { n: when.n })
+          : t("time.daysAgo", { n: when.n });
+    sessionVal = `${fmtPlaytime(summary.seconds)} · ${whenText}`;
+    sessionTooltip = t("drawer.lastSession");
+  } else if (lastPlayed) {
+    sessionLabel = t("drawer.lastPlayedLabel");
+    sessionVal = lastPlayed;
+    sessionTooltip = lastPlayed;
+  } else {
+    sessionLabel = t("drawer.lastPlayedLabel");
+    sessionVal = t(pt?.total_seconds ? "playtime.noSession" : "playtime.notPlayedYet");
+    sessionTooltip = sessionVal;
+  }
+
+  const isSynced = Boolean(status.synced);
+
+  return `
+    <div class="gp-bar-meta-group">
+      <div class="gp-bar-meta-item gp-bar-meta-cloud" title="${esc(cloudNote)}">
+        <div class="gp-bar-meta-icon${isSynced ? " is-synced" : ""}">
+          ${icon("cloud", 14)}
+        </div>
+        <div class="gp-bar-meta-text">
+          <span class="gp-bar-meta-label">${t("drawer.cloudTitle")}</span>
+          <span class="gp-bar-meta-val">${esc(cloudMain)}</span>
+        </div>
+      </div>
+      <div class="gp-bar-meta-sep" aria-hidden="true"></div>
+      <div class="gp-bar-meta-item gp-bar-meta-time is-clickable" data-act="open-edit-playtime" data-id="${s.appName}" title="${esc(timeTooltip)}">
+        <div class="gp-bar-meta-icon">
+          ${icon("clock", 14)}
+        </div>
+        <div class="gp-bar-meta-text">
+          <span class="gp-bar-meta-label">${t("drawer.statTime")}</span>
+          <span class="gp-bar-meta-val" id="drawer-stat-playtime">${esc(playtimeStr)}</span>
+        </div>
+      </div>
+      <div class="gp-bar-meta-sep" aria-hidden="true"></div>
+      <div class="gp-bar-meta-item gp-bar-meta-session" title="${esc(sessionTooltip)}">
+        <div class="gp-bar-meta-icon">
+          ${icon("calendar", 14)}
+        </div>
+        <div class="gp-bar-meta-text">
+          <span class="gp-bar-meta-label">${esc(sessionLabel)}</span>
+          <span class="gp-bar-meta-val" id="drawer-stat-last-activity">${esc(sessionVal)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function paintGameHeaderMeta(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null = null,
+): void {
+  const host = document.querySelector(".gp-bar-right");
   if (!host) return;
-  host.innerHTML = cloudWidgetBody(s, gamePartner(s, rawOf(s.appName)));
+  host.innerHTML = renderGameHeaderMeta(s, partner ?? gamePartner(s, rawOf(s.appName)));
+}
+
+function paintGameCloud(s: EpicSummary): void {
+  const partner = gamePartner(s, rawOf(s.appName));
+  paintGameHeaderMeta(s, partner);
+  const host = document.getElementById("gp-cloud-widget-body");
+  if (host) host.innerHTML = cloudWidgetBody(s, partner);
 }
 
 /** Repaints the cloud card after a sync/decision elsewhere on the page. */
@@ -1006,8 +1112,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (dlcTab) dlcTab.outerHTML = tabButton("dlcs", t("drawer.dlcs"));
     const actions = modalRoot.querySelector(".gp-actions");
     if (actions) actions.innerHTML = actionsHtml(s, partner);
-    const stats = modalRoot.querySelector(".gp-stats");
-    if (stats) stats.innerHTML = heroStatsHtml(s);
+    paintGameHeaderMeta(s, partner);
     paintGameMeta(s);
     paintGameCloud(s);
     if (S.activeDrawerTab === "specs") {
@@ -1061,7 +1166,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           <div class="gp-bar-left">
             <div class="gp-actions">${actionsHtml(s, partner)}</div>
           </div>
-          <div class="gp-bar-right">${renderLastSessionCompact(s.appName)}</div>
+          <div class="gp-bar-right">${renderGameHeaderMeta(s, partner)}</div>
         </div>
 
         <div class="gp-body">
@@ -1349,8 +1454,7 @@ export function repaintPersonalBlock(appName: string): void {
   if (!host || !s) return;
   const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   host.innerHTML = personalBlockHtml(s, s.installed || playtime > 0);
-  const sessionHost = document.querySelector(".gp-bar-right");
-  if (sessionHost) sessionHost.innerHTML = renderLastSessionCompact(appName);
+  paintGameHeaderMeta(s, gamePartner(s, rawOf(appName)));
   const nextAchEl = document.getElementById("gp-next-ach");
   if (nextAchEl) nextAchEl.outerHTML = renderNextAchievements(appName);
   const momentsEl = document.getElementById("gp-moments");
@@ -1399,22 +1503,6 @@ export function renderDrawerOverview(
         ${personal}
       </div>
       <aside class="hub-overview-sidebar">
-        ${sideCard(
-          s.appName,
-          "stats",
-          t("drawer.statsTitle"),
-          "activity",
-          `<div class="gp-stats is-sidebar">${heroStatsHtml(s)}</div>`,
-          { extraClass: "gp-stats-card", idAttr: "gp-stats-widget" },
-        )}
-        ${sideCard(
-          s.appName,
-          "cloud",
-          t("drawer.cloudTitle"),
-          "cloud",
-          `<div id="gp-cloud-widget-body">${cloudWidgetBody(s, partner)}</div>`,
-          { extraClass: "gp-cloud-card", idAttr: "gp-cloud-widget" },
-        )}
         ${renderNextAchievements(s.appName)}
         ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
         ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, { extraClass: "gp-critic-card" })}
@@ -1957,8 +2045,6 @@ function repaintAchievementSummary(appName: string): void {
   if (S.currentModalAppName !== appName) return;
   const s = summaryOf(appName);
   if (!s) return;
-  const stats = document.querySelector<HTMLElement>(".gp-stats");
-  if (stats) stats.innerHTML = heroStatsHtml(s);
   const tab = document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]');
   if (tab) tab.classList.toggle("plat", isAppPlatinum(appName));
   if (S.activeDrawerTab === "achievements") {

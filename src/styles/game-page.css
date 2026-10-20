@@ -94,6 +94,89 @@ body.sb-resizing .overlay {
 }
 .gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .gp-bar-right { display: flex; align-items: center; justify-content: flex-end; margin-left: auto; min-width: 0; }
+.gp-bar-meta-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: 4px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-width: 100%;
+}
+.gp-bar-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 12px;
+  border-radius: var(--r-sm);
+  transition: background var(--ease), border-color var(--ease);
+  user-select: none;
+  min-width: 0;
+}
+.gp-bar-meta-item.is-clickable {
+  cursor: pointer;
+}
+.gp-bar-meta-item.is-clickable:hover {
+  background: var(--surface-3);
+}
+.gp-bar-meta-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  flex-shrink: 0;
+  transition: color var(--ease), background var(--ease);
+}
+.gp-bar-meta-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.gp-bar-meta-item.is-clickable:hover .gp-bar-meta-icon {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+.gp-bar-meta-icon.is-synced {
+  color: var(--ok, #3dd68c);
+  background: rgba(61, 214, 140, 0.12);
+}
+.gp-bar-meta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.gp-bar-meta-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.gp-bar-meta-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  max-width: 180px;
+}
+.gp-bar-meta-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
 .gp-hero-session {
   display: flex;
   flex-direction: column;
