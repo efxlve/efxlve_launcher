@@ -235,7 +235,9 @@ function cloudWidgetBody(s: EpicSummary, partner: ThirdPartyLauncherInfo | null)
   let main = status.label;
   let note = status.tooltip;
   if (provider.external) {
-    main = t("cloud.managedBy", { provider: provider.name });
+    // Keep the provider itself as the headline; the note explains ownership
+    // without repeating the name in a sentence above it.
+    main = provider.name;
     note = provider.tip;
   } else {
     if (main === "—") {
