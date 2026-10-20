@@ -26,6 +26,10 @@ real Discord account and a final in-game visual check with real art.
 - The **game page hero bar** now uses the otherwise empty right side for a
   compact last-session summary (playtime, when, trophies). The personal block no
   longer repeats the same card.
+- Light-theme text that sits on a deliberately dark overlay (hero tools, cover
+  badges, screenshot controls, SGDB tags, profile banner chips, the version
+  picker and the account-switch veil) now stays light instead of inheriting the
+  light theme's dark text token.
 - **TV Mode home** was rebuilt as a console shell: compact command bar with an
   EFXLVE TV mark, all category tabs visible, a cinematic stage with a kicker,
   a three-line description and pill actions, and a labelled shelf with card

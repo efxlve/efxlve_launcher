@@ -235,6 +235,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   sekmesi dar ekranda ikon + tooltip'e düşüyor ve L1/R1 ile çakışmıyor. Geri
   düğmesi dar üst barda da "Geri" etiketini koruyor. Profil paneli eski
   düzeninde bırakıldı.
+- **Açık temalarda koyu katman metni:** Beyaz/Aero seçiliyken hero araçları,
+  kapak rozetleri, ekran görüntüsü düğmeleri, SGDB etiketleri, profil banner
+  çipleri, sürüm seçici ve hesap geçiş perdesi artık `--text` yerine açık renk
+  kullanıyor. Koyu zeminli bu katmanlar bilinçli olarak koyu kalıyor.
 - **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV
   profil panelinin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
   hazırlama/yayınlama bilerek değiştirilmedi.
