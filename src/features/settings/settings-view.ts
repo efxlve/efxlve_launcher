@@ -730,6 +730,7 @@ function renderStores(): string {
   </div>`;
 
   return (
+    group(extRows, t("settings.storeExtGroupTitle"), infoBox("settings.storeExtNote")) +
     group(perfRows, t("settings.storePerfGroupTitle"), infoBox("settings.storePerfNote")) +
     group(tabsRows, t("settings.secStoreTabs"), infoBox("settings.storeOrderNote")) +
     group(
