@@ -249,7 +249,7 @@ body.sb-resizing .overlay {
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-sm);
   color: var(--text); font: inherit; font-size: 13px; font-weight: 600;
 }
-.gp-source img { display: block; width: 18px; height: 18px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.gp-source img { display: block; width: 18px; height: 18px; object-fit: contain; }
 .gp-source svg { color: var(--text-3); transition: transform 0.15s ease; }
 button.gp-source { cursor: pointer; }
 button.gp-source:hover, button.gp-source[aria-expanded="true"] { background: var(--surface-2); }
@@ -268,7 +268,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 }
 .gp-store-row:hover { background: var(--surface-2); }
 .gp-store-row.selected { background: var(--surface-3); }
-.gp-store-row img { flex: none; width: 28px; height: 28px; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+.gp-store-row img { flex: none; width: 28px; height: 28px; object-fit: contain; }
 .gp-store-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .gp-store-name { font-size: 13px; font-weight: 600; color: var(--text); }
 .gp-store-sub { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
