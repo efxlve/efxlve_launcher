@@ -4,17 +4,23 @@
 (function () {
     'use strict';
 
-    if (window.__EFXLVE_STEAM_EXT_LOADED) {
-        if (typeof window.efxlveSteamScan === 'function') {
-            window.efxlveSteamScan();
+    var cachedPlayerCount = null;
+
+    window.efxlveSetPlayerCount = function (count) {
+        cachedPlayerCount = count;
+        var countEl = document.getElementById('efxlve-steam-player-count');
+        if (!countEl) return;
+        var num = typeof count === 'number' ? count : parseInt(count, 10);
+        if (!isNaN(num)) {
+            var isTr = (document.documentElement.lang || '').toLowerCase().indexOf('tr') !== -1 || (navigator.language || '').toLowerCase().indexOf('tr') !== -1;
+            countEl.textContent = num.toLocaleString(isTr ? 'tr-TR' : 'en-US');
+        } else {
+            countEl.textContent = String(count || '0');
         }
-        return;
-    }
-    window.__EFXLVE_STEAM_EXT_LOADED = true;
+    };
 
     function parseUsd(text) {
         if (!text) return null;
-        // Matches "$19.99", "$ 19.99", "$1,299.00", "19.99 USD", "$19.99 USD"
         var m = text.match(/\$\s*([\d,]+(?:\.\d{2})?)/) || text.match(/([\d,]+(?:\.\d{2})?)\s*USD/i);
         if (!m) return null;
         var rawNum = m[1].replace(/,/g, '');
@@ -67,7 +73,6 @@
             if (el.getAttribute('data-efxlve-converted') === '1') continue;
             if (el.classList.contains('efxlve-steam-try-badge')) continue;
 
-            // Handle search rows with strike and final price
             if (el.classList.contains('search_price')) {
                 var strike = el.querySelector('strike');
                 if (strike && strike.getAttribute('data-efxlve-converted') !== '1') {
@@ -81,7 +86,7 @@
                 if (!el.querySelector('.efxlve-steam-try-badge:not(strike .efxlve-steam-try-badge)')) {
                     for (var j = 0; j < el.childNodes.length; j++) {
                         var node = el.childNodes[j];
-                        if (node.nodeType === 3 /* TEXT_NODE */) {
+                        if (node.nodeType === 3) {
                             var usdVal = parseUsd(node.textContent);
                             if (usdVal) {
                                 var tryFinal = Math.round(usdVal * rate).toLocaleString('tr-TR');
@@ -100,7 +105,6 @@
                 continue;
             }
 
-            // Skip container elements that have price children
             if (el.querySelector('.discount_original_price, .discount_final_price, [class*="StoreOriginalPrice"], [class*="DiscountFinalPrice"], [class*="StoreSalePriceBox"]')) {
                 continue;
             }
@@ -119,6 +123,50 @@
         }
     }
 
+    function getSteamAppId() {
+        var m = window.location.pathname.match(/\/app\/(\d+)/i) || window.location.href.match(/\/app\/(\d+)/i);
+        if (m) return m[1];
+        var og = document.querySelector('meta[property="og:url"]');
+        if (og) {
+            var m2 = (og.getAttribute('content') || '').match(/\/app\/(\d+)/i);
+            if (m2) return m2[1];
+        }
+        var appTag = document.querySelector('[data-appid]');
+        if (appTag) {
+            var id = appTag.getAttribute('data-appid');
+            if (id && /^\d+$/.test(id)) return id;
+        }
+        return null;
+    }
+
+    function findSteamDbInsertionPoint() {
+        // Priority 1: Above the purchase block (standard wide area visible on all games)
+        var purchase = document.getElementById('game_area_purchase') || document.querySelector('.game_area_purchase');
+        if (purchase && purchase.parentNode) {
+            return { parent: purchase.parentNode, before: purchase };
+        }
+
+        // Priority 2: Below the media highlights carousel
+        var highlights = document.getElementById('game_highlights');
+        if (highlights && highlights.parentNode) {
+            return { parent: highlights.parentNode, before: highlights.nextSibling };
+        }
+
+        // Priority 3: Inside metadata column
+        var meta = document.querySelector('.rightcol.game_meta_data');
+        if (meta) {
+            return { parent: meta, before: meta.firstChild };
+        }
+
+        // Priority 4: Main page content
+        var page = document.querySelector('.page_content');
+        if (page) {
+            return { parent: page, before: page.firstChild };
+        }
+
+        return null;
+    }
+
     function injectSteamDbCard() {
         if (window.__EFXLVE_STEAMDB === false) {
             var existingCard = document.getElementById('efxlve-steamdb-card');
@@ -126,38 +174,22 @@
             return;
         }
 
-        var m = window.location.pathname.match(/\/app\/(\d+)/);
-        if (!m) return;
-        var appId = m[1];
+        var appId = getSteamAppId();
+        if (!appId) return;
 
         var existing = document.getElementById('efxlve-steamdb-card');
         if (existing) {
-            if (existing.getAttribute('data-appid') === appId) return;
+            if (existing.getAttribute('data-appid') === appId && existing.parentNode) {
+                return;
+            }
             existing.remove();
         }
 
-        var glanceCtn = document.querySelector('.glance_ctn');
-        var rightCol = document.querySelector('#game_highlights .rightcol');
-        var purchaseArea = document.getElementById('game_area_purchase');
-
-        var container = null;
-        var insertBeforeNode = null;
-
-        if (glanceCtn) {
-            container = glanceCtn;
-            insertBeforeNode = null;
-        } else if (rightCol) {
-            container = rightCol;
-            insertBeforeNode = rightCol.firstChild;
-        } else if (purchaseArea && purchaseArea.parentNode) {
-            container = purchaseArea.parentNode;
-            insertBeforeNode = purchaseArea;
-        }
-
-        if (!container) return;
+        var target = findSteamDbInsertionPoint();
+        if (!target || !target.parent) return;
 
         var isTr = (document.documentElement.lang || '').toLowerCase().indexOf('tr') !== -1 || (navigator.language || '').toLowerCase().indexOf('tr') !== -1;
-        var titleText = isTr ? 'SteamDB & Topluluk' : 'SteamDB & Community';
+        var titleText = isTr ? 'SteamDB & Topluluk İstatistikleri' : 'SteamDB & Community Statistics';
         var playersLabel = isTr ? 'oyuncu şu an oyunda' : 'players in-game';
         var loadingText = isTr ? 'Yükleniyor...' : 'Loading...';
 
@@ -165,74 +197,81 @@
         card.id = 'efxlve-steamdb-card';
         card.setAttribute('data-appid', appId);
         card.style.cssText = [
-            'background: linear-gradient(135deg, rgba(22, 32, 48, 0.95), rgba(15, 22, 34, 0.98)) !important;',
-            'border: 1px solid rgba(102, 192, 244, 0.28) !important;',
-            'border-radius: 6px !important;',
-            'padding: 10px 12px !important;',
-            'margin: 12px 0 8px 0 !important;',
-            'box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;',
+            'background: linear-gradient(135deg, rgba(22, 34, 52, 0.96), rgba(15, 22, 34, 0.98)) !important;',
+            'border: 1px solid rgba(102, 192, 244, 0.35) !important;',
+            'border-radius: 8px !important;',
+            'padding: 12px 16px !important;',
+            'margin: 16px 0 18px 0 !important;',
+            'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;',
             'font-family: "Motiva Sans", "Segoe UI", sans-serif !important;',
             'color: #c6d4df !important;',
             'box-sizing: border-box !important;',
             'display: block !important;',
-            'clear: both !important;'
+            'clear: both !important;',
+            'position: relative !important;',
+            'z-index: 10 !important;'
         ].join('');
 
         var html = [
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.08);">',
-            '  <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#66c0f4;letter-spacing:0.3px;">',
-            '    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#66c0f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);">',
+            '  <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#66c0f4;letter-spacing:0.3px;">',
+            '    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#66c0f4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">',
             '      <circle cx="12" cy="12" r="10"></circle>',
             '      <line x1="2" y1="12" x2="22" y2="12"></line>',
             '      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>',
             '    </svg>',
             '    <span>' + titleText + '</span>',
             '  </div>',
-            '  <span style="font-family:monospace;font-size:11px;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:3px;color:#8f98a0;font-variant-numeric:tabular-nums;">AppID: ' + appId + '</span>',
+            '  <span style="font-family:monospace;font-size:11px;background:rgba(255,255,255,0.09);padding:2px 8px;border-radius:4px;color:#8f98a0;font-variant-numeric:tabular-nums;">AppID: ' + appId + '</span>',
             '</div>',
-            '<div style="display:flex;align-items:center;margin-bottom:10px;font-size:12px;">',
-            '  <span style="display:inline-block;width:7px;height:7px;background:#a4d007;border-radius:50%;margin-right:7px;box-shadow:0 0 6px #a4d007;"></span>',
-            '  <span id="efxlve-steam-player-count" style="font-weight:700;color:#a4d007;margin-right:5px;font-variant-numeric:tabular-nums;">' + loadingText + '</span>',
-            '  <span style="color:#8f98a0;">' + playersLabel + '</span>',
-            '</div>',
-            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">',
-            '  <a href="https://steamdb.info/app/' + appId + '/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;background:rgba(102,192,244,0.12);border:1px solid rgba(102,192,244,0.25);border-radius:4px;padding:5px 4px;color:#66c0f4;text-decoration:none;font-size:11px;font-weight:600;">',
-            '    <span>SteamDB</span>',
-            '    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>',
-            '  </a>',
-            '  <a href="https://protondb.com/app/' + appId + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;background:rgba(102,192,244,0.12);border:1px solid rgba(102,192,244,0.25);border-radius:4px;padding:5px 4px;color:#66c0f4;text-decoration:none;font-size:11px;font-weight:600;">',
-            '    <span>ProtonDB</span>',
-            '    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>',
-            '  </a>',
-            '  <a href="https://www.pcgamingwiki.com/api/appid.php?appid=' + appId + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;background:rgba(102,192,244,0.12);border:1px solid rgba(102,192,244,0.25);border-radius:4px;padding:5px 4px;color:#66c0f4;text-decoration:none;font-size:11px;font-weight:600;">',
-            '    <span>PCGW</span>',
-            '    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>',
-            '  </a>',
+            '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">',
+            '  <div style="display:flex;align-items:center;gap:10px;">',
+            '    <span style="display:inline-block;width:9px;height:9px;background:#a4d007;border-radius:50%;box-shadow:0 0 8px #a4d007;"></span>',
+            '    <div>',
+            '      <span id="efxlve-steam-player-count" style="font-size:17px;font-weight:700;color:#ffffff;font-variant-numeric:tabular-nums;line-height:1.1;">' + loadingText + '</span>',
+            '      <span style="color:#8f98a0;font-size:12px;margin-left:6px;">' + playersLabel + '</span>',
+            '    </div>',
+            '  </div>',
+            '  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">',
+            '    <a href="https://steamdb.info/app/' + appId + '/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;background:rgba(102,192,244,0.14);border:1px solid rgba(102,192,244,0.3);border-radius:5px;padding:6px 12px;color:#66c0f4;text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s ease;">',
+            '      <span>SteamDB</span>',
+            '      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>',
+            '    </a>',
+            '    <a href="https://protondb.com/app/' + appId + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;background:rgba(102,192,244,0.14);border:1px solid rgba(102,192,244,0.3);border-radius:5px;padding:6px 12px;color:#66c0f4;text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s ease;">',
+            '      <span>ProtonDB</span>',
+            '      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>',
+            '    </a>',
+            '    <a href="https://www.pcgamingwiki.com/api/appid.php?appid=' + appId + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;background:rgba(102,192,244,0.14);border:1px solid rgba(102,192,244,0.3);border-radius:5px;padding:6px 12px;color:#66c0f4;text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s ease;">',
+            '      <span>PCGW</span>',
+            '      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>',
+            '    </a>',
+            '  </div>',
             '</div>'
         ].join('\n');
 
         card.innerHTML = html;
 
-        if (insertBeforeNode) {
-            container.insertBefore(card, insertBeforeNode);
+        if (target.before) {
+            target.parent.insertBefore(card, target.before);
         } else {
-            container.appendChild(card);
+            target.parent.appendChild(card);
         }
 
+        // If we already have the count from Rust on_page_load
+        if (cachedPlayerCount !== null) {
+            window.efxlveSetPlayerCount(cachedPlayerCount);
+        }
+
+        // Also attempt direct fetch as fallback
         fetch('https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=' + appId)
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                var countEl = document.getElementById('efxlve-steam-player-count');
-                if (!countEl) return;
                 if (data && data.response && typeof data.response.player_count === 'number') {
-                    countEl.textContent = data.response.player_count.toLocaleString(isTr ? 'tr-TR' : 'en-US');
-                } else {
-                    countEl.textContent = '0';
+                    window.efxlveSetPlayerCount(data.response.player_count);
                 }
             })
             .catch(function () {
-                var countEl = document.getElementById('efxlve-steam-player-count');
-                if (countEl) countEl.textContent = '—';
+                // If direct fetch is blocked by CORS, Rust on_page_load will provide the value
             });
     }
 
@@ -240,9 +279,17 @@
     function scan() {
         if (scanTimeout) clearTimeout(scanTimeout);
         scanTimeout = setTimeout(function () {
-            convertPrices();
-            injectSteamDbCard();
-        }, 120);
+            try {
+                convertPrices();
+            } catch (e) {
+                console.error('[Efxlve Steam Currency error]', e);
+            }
+            try {
+                injectSteamDbCard();
+            } catch (e2) {
+                console.error('[Efxlve SteamDB error]', e2);
+            }
+        }, 100);
     }
 
     window.efxlveSteamScan = scan;
@@ -252,6 +299,21 @@
     } else {
         scan();
     }
+
+    // Hook history pushState / replaceState to catch client-side URL changes
+    try {
+        var origPush = history.pushState;
+        history.pushState = function () {
+            origPush.apply(this, arguments);
+            scan();
+        };
+        var origReplace = history.replaceState;
+        history.replaceState = function () {
+            origReplace.apply(this, arguments);
+            scan();
+        };
+        window.addEventListener('popstate', scan);
+    } catch (_) {}
 
     var observer = new MutationObserver(function (mutations) {
         var needsScan = false;
