@@ -2100,7 +2100,10 @@ async function applyCleanup(): Promise<void> {
  * does not grow. Returns true when the action was handled.
  */
 export function handleSettingsAction(act: string | undefined, _el: HTMLElement, _targetEl?: HTMLElement): boolean {
-  if (handleCompatAction(act, _el)) return true;
+  // A <select> is answered by the document's `change` listener. Handling it
+  // here on click re-rendered the page while the native dropdown was opening,
+  // which made the platform picker appear dead.
+  if (_el.tagName !== "SELECT" && handleCompatAction(act, _el)) return true;
   switch (act) {
     case "add-ss-webhook": {
       const nameInput = document.getElementById("ss-webhook-name") as HTMLInputElement | null;
