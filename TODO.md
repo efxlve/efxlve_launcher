@@ -44,6 +44,9 @@ real Discord account and a final in-game visual check with real art.
   storefront tabs collapse to labelled icons when eight of them would overflow
   the header, keep their labels as tooltips, and the back control keeps "Geri"
   even on the narrow bar. Profile keeps its layout for now.
+- The **TV profile** now shows an em dash instead of the contradictory
+  "OYNANDI / Oynanmadı" pair when there is no tracked playtime; its layout is
+  otherwise unchanged.
 - Still owner-only: the actual look at 1920 px with real artwork, and whether
   the profile and the real embedded storefront need the same visual pass.
 

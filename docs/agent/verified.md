@@ -69,6 +69,7 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | TV hub | Header strip, stage, shelf, focus ring, empty category (see TODO §1). Second pass: "Oyun Merkezi" kicker above the title, white active tab pill, the long critic label shortened to "İnceleme", and the next-trophies card sits directly on the page instead of inside a second bordered box |
 | TV stores | At 1083 px the eight storefront tabs collapse to labelled icons and the L1/R1 glyphs no longer collide with the labels; the back control keeps "Geri"; each icon keeps its storefront name as a tooltip |
 | TV downloads | The empty download panel uses the flat `#05070a` console surface instead of inheriting the home screen's blue-black radial wash; header title, back and exit remain readable |
+| TV profile | With zero tracked playtime the "Oynandı" stat shows an em dash instead of repeating "Oynanmadı"; the rest of the profile layout is unchanged |
 | Gallery cap note | Appears at 300 captures with the right count, stays away below it |
 | Live tests | All 26 `#[ignore]`d ones; the expected reds are listed in `docs/agent/README.md` |
 | Update chain | `tauri.conf.json` carries a minisign public key, the private key lives in GitHub secrets only, nothing in the repo |
