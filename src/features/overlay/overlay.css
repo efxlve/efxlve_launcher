@@ -62,7 +62,15 @@
   padding: 0 8px;
   gap: 6px;
   z-index: 1000;
+  max-width: calc(100vw - 20px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   user-select: none;
+}
+
+.ov-topbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* --- Game Hub Trigger (Topbar Left) --- */
@@ -191,8 +199,7 @@
   top: calc(100% + 8px);
   left: 0;
   width: 290px;
-  background: rgba(18, 20, 26, 0.94);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: #12141a;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -1518,7 +1525,6 @@
   display: none;
   flex-direction: column;
   overflow: hidden;
-  backdrop-filter: blur(20px);
 }
 
 .ov-shots-filter-popover.open {
@@ -1671,8 +1677,7 @@
   left: 6px;
   max-width: calc(100% - 12px);
   padding: 2px 6px;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.78);
   border-radius: var(--r-xs);
   font-size: 9.5px;
   font-weight: 600;
@@ -5463,3 +5468,15 @@
   width: 7px; height: 7px; border-radius: 50%; background: var(--err);
   animation: ov-clip-pulse 1.6s ease-in-out infinite;
 }
+
+@media (max-width: 1100px) {
+  .ov-topbar { gap: 4px; }
+  .ov-topbar-btn { padding: 0 8px; }
+  .ov-topbar-btn-label { display: none; }
+}
+
+
+@media (max-width: 1100px) {
+  .ov-topbar-btn.ov-controller-focus .ov-topbar-btn-label { display: inline; }
+}
+

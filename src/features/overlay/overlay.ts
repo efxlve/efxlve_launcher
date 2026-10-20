@@ -18,7 +18,7 @@ import {
   HOMEPAGE_STORAGE_KEY,
   getHomepage,
   loadBookmarks,
-} from "./browser-window";
+} from "./browser-shared";
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
 import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
 import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
@@ -311,6 +311,7 @@ let webVoice: WebVoiceState | null = null;
 
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
+let gamepadRaf: number | null = null;
 
 /* ---------- Helpers ---------- */
 
@@ -456,7 +457,7 @@ async function enableFps(): Promise<void> {
 
 /* ---------- Xbox Game Bar Floating Widget System ---------- */
 
-const DEFAULT_WIDGETS: TabId[] = ["perf", "shots", "music"];
+const DEFAULT_WIDGETS: TabId[] = ["perf", "music"];
 let openWidgets = new Set<TabId>();
 
 function loadOpenWidgets(): Set<TabId> {
@@ -534,20 +535,33 @@ interface WidgetPos {
   y: number;
 }
 
+/** The floating bar ends at 56px; a widget header must start below it. */
+const OVERLAY_SAFE_TOP = 64;
+const WIDGET_MARGIN = 8;
+
 function getDefaultWidgetPos(tab: TabId): WidgetPos {
   const winW = typeof window !== "undefined" ? window.innerWidth || 1920 : 1920;
   const winH = typeof window !== "undefined" ? window.innerHeight || 1080 : 1080;
+  const musicX = Math.max(WIDGET_MARGIN, winW - 384);
+  // The three default widgets form one row on a 1280px panel: performance,
+  // captures, music. Below that the captures column goes under performance
+  // instead of being clipped by the music widget.
+  const topRowShotsX = 24 + 350 + 16;
+  const topRowFits = topRowShotsX + 340 + 16 <= musicX;
+  const shotsX = topRowFits ? topRowShotsX : 24;
+  const shotsY = topRowFits ? 72 : 72 + 380 + 12;
+  const lowerY = Math.max(OVERLAY_SAFE_TOP, winH - 328);
   switch (tab) {
     case "perf":
       return { x: 24, y: 72 };
     case "shots":
-      return { x: 24, y: Math.min(480, winH - 360) };
+      return { x: shotsX, y: shotsY };
     case "clip":
       // Bottom-left, on its own: it is the one widget worth leaving pinned
       // while playing, so it should not sit under the performance panel.
-      return { x: 24, y: Math.max(24, winH - 320) };
+      return { x: 24, y: lowerY };
     case "music":
-      return { x: Math.max(24, winW - 390), y: 72 };
+      return { x: musicX, y: 72 };
     case "discord":
       return { x: Math.max(24, winW - 740), y: 72 };
     case "chat":
@@ -557,11 +571,11 @@ function getDefaultWidgetPos(tab: TabId): WidgetPos {
     case "browser":
       return { x: Math.max(24, Math.floor((winW - 500) / 2)), y: 80 };
     case "notes":
-      return { x: Math.max(24, winW - 360), y: Math.min(480, winH - 380) };
+      return { x: Math.max(24, winW - 360), y: Math.max(OVERLAY_SAFE_TOP, winH - 400) };
     case "settings":
       return { x: Math.max(24, Math.floor((winW - 440) / 2)), y: 90 };
     default:
-      return { x: 100, y: 100 };
+      return { x: 24, y: 72 };
   }
 }
 
@@ -571,10 +585,17 @@ function loadWidgetPos(tab: TabId): WidgetPos {
     if (raw) {
       const parsed = JSON.parse(raw) as { x?: number; y?: number };
       if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+        // Older builds could persist a clamp performed while the hidden window
+        // was 1x1. Those 8/8 entries stacked every widget in one corner; treat
+        // them as missing and let the tiled default win.
+        if (parsed.y < OVERLAY_SAFE_TOP) return getDefaultWidgetPos(tab);
         const winW = window.innerWidth || 1920;
         const winH = window.innerHeight || 1080;
-        const clampedX = Math.max(8, Math.min(winW - 120, parsed.x));
-        const clampedY = Math.max(8, Math.min(winH - 60, parsed.y));
+        const size = loadWidgetSize(tab);
+        const maxX = Math.max(WIDGET_MARGIN, winW - size.w - WIDGET_MARGIN);
+        const maxY = Math.max(OVERLAY_SAFE_TOP, winH - size.h - WIDGET_MARGIN);
+        const clampedX = Math.max(WIDGET_MARGIN, Math.min(maxX, parsed.x));
+        const clampedY = Math.max(OVERLAY_SAFE_TOP, Math.min(maxY, parsed.y));
         return { x: clampedX, y: clampedY };
       }
     }
@@ -630,11 +651,16 @@ function getDefaultWidgetSize(tab: TabId): WidgetSize {
     case "perf":
       return { w: 350, h: 380 };
     case "shots":
-      return { w: 340, h: 460 };
+      // The narrow fallback places captures under performance; keep it short
+      // enough to stay above the taskbar on a 1080p monitor.
+      return {
+        w: 340,
+        h: (window.innerWidth || 1920) < 1200 && (window.innerHeight || 1080) < 920 ? 360 : 420,
+      };
     case "clip":
       return { w: 320, h: 300 };
     case "music":
-      return { w: 360, h: 480 };
+      return { w: 360, h: 420 };
     case "discord":
       return { w: 330, h: 540 };
     case "chat":
@@ -688,12 +714,19 @@ function syncWidgetSizeClasses(tab: TabId, w: number, h: number): void {
 function clampWidgetsIntoView(): void {
   const winW = window.innerWidth || 1920;
   const winH = window.innerHeight || 1080;
+  // A hidden overlay is often resized to a 1x1 helper surface. Clamping then
+  // writes 8/8 over every saved position, which is exactly how all widgets
+  // ended up stacked in the corner. Never persist a layout from that state.
+  if (document.hidden || winW < 480 || winH < 320) return;
   for (const tab of TABS) {
     const el = document.getElementById(`ov-widget-${tab.id}`);
     if (!el || el.style.display === "none") continue;
     const width = el.offsetWidth || 320;
-    const x = Math.max(8, Math.min(Math.max(8, winW - width - 8), el.offsetLeft));
-    const y = Math.max(8, Math.min(Math.max(8, winH - 44), el.offsetTop));
+    const height = el.offsetHeight || 300;
+    const maxX = Math.max(WIDGET_MARGIN, winW - width - WIDGET_MARGIN);
+    const maxY = Math.max(OVERLAY_SAFE_TOP, winH - height - WIDGET_MARGIN);
+    const x = Math.max(WIDGET_MARGIN, Math.min(maxX, el.offsetLeft));
+    const y = Math.max(OVERLAY_SAFE_TOP, Math.min(maxY, el.offsetTop));
     if (x === el.offsetLeft && y === el.offsetTop) continue;
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
@@ -751,6 +784,13 @@ function openWidget(tab: TabId, render = true): void {
     const size = loadWidgetSize(tab);
     widget.style.width = `${size.w}px`;
     widget.style.height = `${size.h}px`;
+    // The open event positions every widget, but a widget toggled from the
+    // launcher harness or a restored shell can arrive without an inline place.
+    if (!widget.style.left || !widget.style.top) {
+      const pos = loadWidgetPos(tab);
+      widget.style.left = `${pos.x}px`;
+      widget.style.top = `${pos.y}px`;
+    }
     syncWidgetSizeClasses(tab, size.w, size.h);
     widget.style.display = "flex";
     bringToFront(tab);
@@ -879,9 +919,10 @@ function initWidgetDragging(): void {
     const winW = window.innerWidth || 1920;
     const winH = window.innerHeight || 1080;
     const width = el.offsetWidth || 320;
+    const height = el.offsetHeight || 300;
 
-    const newX = Math.max(8, Math.min(winW - width - 8, widgetStartLeft + dx));
-    const newY = Math.max(8, Math.min(winH - 44, widgetStartTop + dy));
+    const newX = Math.max(WIDGET_MARGIN, Math.min(Math.max(WIDGET_MARGIN, winW - width - WIDGET_MARGIN), widgetStartLeft + dx));
+    const newY = Math.max(OVERLAY_SAFE_TOP, Math.min(Math.max(OVERLAY_SAFE_TOP, winH - height - WIDGET_MARGIN), widgetStartTop + dy));
 
     el.style.left = `${newX}px`;
     el.style.top = `${newY}px`;
@@ -1418,7 +1459,12 @@ function startClipPolling(): void {
   void refreshClipWidget(true);
   void loadLastClip().then(() => refreshClipWidget(false));
   if (clipPollTimer !== null) return;
-  clipPollTimer = window.setInterval(() => void refreshClipWidget(true), 500);
+  clipPollTimer = window.setInterval(() => {
+    if (document.hidden) return;
+    // The dock dot only needs live polling while the recorder is running; a
+    // closed, idle clip widget should not ask Rust for its state twice a second.
+    if (isWidgetOpen("clip") || clipState?.running) void refreshClipWidget(true);
+  }, 1000);
 }
 
 function stopClipPolling(): void {
@@ -5169,7 +5215,14 @@ function wireEvents(): void {
   document.addEventListener("visibilitychange", () => {
     // The panel and the browser window never share the screen — Rust hides the
     // browser whenever the panel hides or shows — so this only re-arms the pad.
-    if (!document.hidden) gamepadSuppressUntil = performance.now() + 450;
+    if (document.hidden) {
+      stopOverlayLoops();
+      stopClipPolling();
+      return;
+    }
+    gamepadSuppressUntil = performance.now() + 450;
+    startOverlayLoops();
+    startClipPolling();
   });
 
   // The panel is re-placed over the game on every open and the game can change
@@ -5384,8 +5437,14 @@ function goBack(): void {
   void invoke("overlay_hide");
 }
 
+function scheduleGamepadFrame(): void {
+  if (gamepadRaf === null && !document.hidden) {
+    gamepadRaf = requestAnimationFrame(pollGamepadLoop);
+  }
+}
+
 function pollGamepadLoop(): void {
-  requestAnimationFrame(pollGamepadLoop);
+  gamepadRaf = null;
   if (document.hidden) return;
 
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -5398,6 +5457,7 @@ function pollGamepadLoop(): void {
       topbarPadEl.style.display = "none";
     }
     prevButtons = [];
+    scheduleGamepadFrame();
     return;
   }
 
@@ -5411,6 +5471,7 @@ function pollGamepadLoop(): void {
   // (Guide, Start+Back) is usually still held on the first frames.
   if (performance.now() < gamepadSuppressUntil) {
     prevButtons = buttons;
+    scheduleGamepadFrame();
     return;
   }
 
@@ -5418,6 +5479,7 @@ function pollGamepadLoop(): void {
   // drifting stick or a stray button press.
   if (isTextEntryFocused()) {
     prevButtons = buttons;
+    scheduleGamepadFrame();
     return;
   }
 
@@ -5491,9 +5553,44 @@ function pollGamepadLoop(): void {
   }
 
   prevButtons = buttons;
+  scheduleGamepadFrame();
 }
 
 /* ---------- Lifecycle ---------- */
+
+/**
+ * Timers and the gamepad rAF only run while the overlay is actually visible.
+ * The hidden WebView is kept warm for instant opening; it must not wake the
+ * compositor or poll a pad between sessions.
+ */
+function startOverlayLoops(): void {
+  if (document.hidden) return;
+  if (clockTimer === null) {
+    clockTimer = window.setInterval(() => updateClock(), 1000);
+  }
+  if (mediaPollTimer === null) {
+    mediaPollTimer = window.setInterval(() => {
+      if (!document.hidden && isWidgetOpen("music")) void refreshMedia();
+    }, 2500);
+  }
+  scheduleGamepadFrame();
+}
+
+function stopOverlayLoops(): void {
+  if (clockTimer !== null) {
+    window.clearInterval(clockTimer);
+    clockTimer = null;
+  }
+  if (mediaPollTimer !== null) {
+    window.clearInterval(mediaPollTimer);
+    mediaPollTimer = null;
+  }
+  if (gamepadRaf !== null) {
+    cancelAnimationFrame(gamepadRaf);
+    gamepadRaf = null;
+  }
+  prevButtons = [];
+}
 
 async function onOpen(payload: OpenPayload): Promise<void> {
   // The overlay page outlives a Settings language change: pull the current
@@ -5620,19 +5717,10 @@ async function boot(): Promise<void> {
     initWidgetResizing();
   }
 
-  // A hidden panel (the overlay lives in one window that hides when closed)
-  // needs neither a ticking clock nor an IPC media poll.
-  clockTimer = window.setInterval(() => {
-    if (!document.hidden) updateClock();
-  }, 1000);
-  mediaPollTimer = window.setInterval(() => {
-    if (document.hidden) return;
-    if (document.getElementById("ov-shell")) void refreshMedia();
-  }, 2500);
-
-  requestAnimationFrame(pollGamepadLoop);
+  startOverlayLoops();
 
   await listen<OpenPayload>("overlay-open", (event) => {
+    startOverlayLoops();
     startClipPolling();
     void onOpen(event.payload);
   });
@@ -5658,6 +5746,7 @@ async function boot(): Promise<void> {
     hideLightbox();
     removeGamepadFocus();
     document.body.classList.remove("ov-using-gamepad");
+    stopOverlayLoops();
     stopClipPolling();
     void invoke("overlay_browser_close").catch(() => undefined);
     // The voice worker is only meant to run while its tab is visible.
