@@ -1674,7 +1674,7 @@ html.win-compact .lrow-ach-track { display: none; }
 /* Collection tabs live in the filter row. The folder gallery is gone. */
 
 /* --- Optional pagination bar (Settings > Appearance) --- */
-.lib-pager { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+.lib-pager { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; margin-bottom: 16px; padding-right: 56px; flex-wrap: wrap; }
 .lib-pager-range { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .lib-pager-pages { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .lib-pager-pages .btn { min-width: 32px; padding: 0 8px; font-variant-numeric: tabular-nums; }
