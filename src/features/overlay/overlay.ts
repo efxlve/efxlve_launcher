@@ -3232,7 +3232,7 @@ let editingEntryId: number | null = null;
 /** The compose draft put aside while editing, per friend. */
 const editStash = new Map<string, string>();
 /** Which takeover borrows the picker column, if any. */
-type PickerMode = "friends" | "requests" | "add" | "status";
+type PickerMode = "friends" | "requests" | "add" | "status" | "channels";
 let pickerMode: PickerMode = "friends";
 /** The add-friend search's state. */
 let searchQuery = "";
@@ -3333,6 +3333,10 @@ function renderDiscordSocial(): void {
   }
   if (pickerMode === "status") {
     el.innerHTML = takeoverSocialHtml(t("overlay.discordStatusLabel"), statusBodyHtml());
+    return;
+  }
+  if (pickerMode === "channels") {
+    el.innerHTML = takeoverSocialHtml(t("overlay.discordChannels"), channelsBodyHtml());
     return;
   }
 
@@ -3723,6 +3727,11 @@ function socialSearchStripHtml(pendingCount: number): string {
         <input id="ov-dc-friends-filter" class="ov-dc-search-input" placeholder="${esc(t("overlay.discordSearchPlaceholder"))}" value="${esc(friendsFilterQuery)}" spellcheck="false" />
         ${friendsFilterQuery ? `<button class="ov-dc-search-clear" data-ov="discord-clear-filter">${icon("x", 11)}</button>` : ""}
       </div>
+      ${(webVoice?.channels?.length ?? 0) > 0 ? `
+        <button class="ov-dc-add-btn" data-ov="discord-picker" data-mode="channels" title="${esc(t("overlay.discordChannelsShort"))}">
+          ${icon("hash", 13)}
+        </button>
+      ` : ""}
       <button class="ov-dc-add-btn" data-ov="discord-picker" data-mode="add" title="${esc(t("overlay.discordAddFriend"))}">
         ${icon("plus", 13)}
       </button>
@@ -3829,6 +3838,52 @@ function socialGroupItemHtml(conv: WebGroupConversation): string {
       ${conv.unread > 0 ? `<span class="ov-dc-unread-pill">${conv.unread}</span>` : ""}
       <span class="ov-dc-item-chat-icon">${icon("external", 13)}</span>
     </button>`;
+}
+
+/** Voice channels grouped by server: duplicate channel names stay unambiguous. */
+function channelsBodyHtml(): string {
+  const channels = webVoice?.channels ?? [];
+  if (channels.length === 0) {
+    return `
+      <div class="ov-dc-empty-list">
+        ${icon("hash", 24)}
+        <span>${esc(t("overlay.discordNoChannel"))}</span>
+      </div>`;
+  }
+  const groups = new Map<string, typeof channels>();
+  for (const channel of channels) {
+    const key = channel.guild || t("overlay.discordChannelsShort");
+    const list = groups.get(key) ?? [];
+    list.push(channel);
+    groups.set(key, list);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(
+      ([guild, list]) => `
+      <div class="ov-dc-channel-group">
+        <div class="ov-dc-group-header"><span>${esc(guild)}</span></div>
+        <div class="ov-dc-group-items">
+          ${list
+            .map(
+              (channel) => `
+            <button
+              class="ov-dc-channel-row"
+              data-ov="discord-open-channel"
+              data-id="${esc(channel.id)}"
+              data-guild="${esc(channel.guildId)}"
+              title="${esc(t("overlay.discordOpenChannel"))}"
+            >
+              <span class="ov-dc-channel-ico">${icon("volume-2", 13)}</span>
+              <span class="ov-dc-channel-name">${esc(channel.name)}</span>
+              <span class="ov-dc-channel-open">${icon("external", 12)}</span>
+            </button>`,
+            )
+            .join("")}
+        </div>
+      </div>`,
+    )
+    .join("");
 }
 
 /** Everything in the picker's scroll area: group DMs first, then the friends. */
@@ -4934,6 +4989,17 @@ function wireEvents(): void {
     } else if (action === "discord-open-group") {
       const channelId = target.closest<HTMLElement>("[data-ov]")?.dataset.id;
       if (channelId) void openDiscordInLauncher(`https://discord.com/channels/@me/${channelId}`);
+    } else if (action === "discord-open-channel") {
+      const row = target.closest<HTMLElement>("[data-ov]");
+      const channelId = row?.dataset.id;
+      const guildId = row?.dataset.guild;
+      if (channelId) {
+        void openDiscordInLauncher(
+          guildId
+            ? `https://discord.com/channels/${guildId}/${channelId}`
+            : `https://discord.com/channels/@me/${channelId}`,
+        );
+      }
     } else if (action === "restore-game") {
       const key = target.closest<HTMLElement>("[data-ov]")?.dataset.key;
       if (key) {
