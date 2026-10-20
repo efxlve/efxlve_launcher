@@ -67,6 +67,18 @@
   color: rgba(248, 250, 252, 0.72);
 }
 
+/* The collection editor keeps two deliberately dark fields inside its light
+   frame; their text has to stay light in both themes. */
+:root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn),
+:root[data-surface="aero"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn) {
+  color: #f8fafc;
+}
+
+:root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder,
+:root[data-surface="aero"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder {
+  color: rgba(248, 250, 252, 0.56);
+}
+
 :root[data-surface="white"] .profile-banner-store-pill,
 :root[data-surface="aero"] .profile-banner-store-pill {
   color: rgba(248, 250, 252, 0.72);
