@@ -744,6 +744,21 @@ function clampWidgetsIntoView(): void {
   }
 }
 
+/** Puts every open widget back on its default tile and forgets saved places. */
+function resetWidgetLayout(): void {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith("efxlve-ov-pos-")) localStorage.removeItem(key);
+  }
+  for (const tab of TABS) {
+    const widget = document.getElementById(`ov-widget-${tab.id}`);
+    if (!widget || widget.style.display === "none") continue;
+    const pos = getDefaultWidgetPos(tab.id);
+    widget.style.left = `${pos.x}px`;
+    widget.style.top = `${pos.y}px`;
+  }
+  clampWidgetsIntoView();
+}
+
 let highestZIndex = 100;
 
 function bringToFront(tab: TabId): void {
@@ -4483,6 +4498,17 @@ function renderSettings(): void {
               <span id="ov-opacity-val" style="font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-2); min-width: 34px; text-align: right;">${opacity}%</span>
             </div>
           </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.resetLayoutTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.resetLayoutDesc"))}</div>
+            </div>
+            <button class="btn ghost small" data-ov="reset-widget-layout">
+              ${icon("refresh", 12)}
+              <span>${esc(t("overlay.resetLayoutAction"))}</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -5029,6 +5055,9 @@ function wireEvents(): void {
         saveDisabled(disabledGames().filter((g) => g.key !== key));
         renderSettings();
       }
+    } else if (action === "reset-widget-layout") {
+      resetWidgetLayout();
+      toast(t("overlay.saved"), "ok");
     } else if (action === "media-toggle" || action === "sp-toggle") {
       if (spotifyNow) void overlaySpotifyControl(spotifyNow.isPlaying ? "pause" : "play");
     } else if (action === "media-prev" || action === "sp-prev") {

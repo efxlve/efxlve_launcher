@@ -2655,5 +2655,8 @@
   "settings.themeTitle": "Theme",
   "settings.themeDesc": "Choose the launcher's surface palette.",
   "settings.surfaceWhite": "White Mode",
-  "settings.surfaceAero": "Frutiger Aero"
+  "settings.surfaceAero": "Frutiger Aero",
+  "overlay.resetLayoutTitle": "Reset widget layout",
+  "overlay.resetLayoutDesc": "Put the open widgets back into their default tiled positions.",
+  "overlay.resetLayoutAction": "Reset layout"
 }

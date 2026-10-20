@@ -2655,5 +2655,8 @@
   "settings.themeTitle": "Tema",
   "settings.themeDesc": "Launcher'ın yüzey paletini seç.",
   "settings.surfaceWhite": "Beyaz Mod",
-  "settings.surfaceAero": "Frutiger Aero"
+  "settings.surfaceAero": "Frutiger Aero",
+  "overlay.resetLayoutTitle": "Widget düzenini sıfırla",
+  "overlay.resetLayoutDesc": "Açık widget'ları varsayılan döşenmiş konumlarına geri koy.",
+  "overlay.resetLayoutAction": "Düzeni sıfırla"
 }
