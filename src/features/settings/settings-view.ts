@@ -1273,6 +1273,8 @@ function renderHidden(): string {
 function renderSection(section: SettingsSection): string {
   switch (section) {
     case "account": return renderAccountSettings();
+    case "downloads": return renderDownloads();
+    case "stores": return renderStores();
     case "cloud": return renderCloud();
     case "integrations": return renderIntegrations();
     case "social": return renderSocial();
