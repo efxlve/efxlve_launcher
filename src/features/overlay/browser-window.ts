@@ -229,7 +229,8 @@ async function activateTab(id: number): Promise<void> {
 
 /** Hides the browser window and emits close state to the overlay. */
 function closeWindow(): void {
-  void getCurrentWindow().hide().catch(() => undefined);
+  // Let the owner hide the browser and update IS_OPEN in one place. Hiding the
+  // WebView locally as well made close run twice and woke the panel afterwards.
   void invoke("overlay_browser_close").catch(() => undefined);
 }
 
@@ -480,9 +481,11 @@ function wire(): void {
   }
   window.addEventListener("resize", scheduleSyncBounds);
 
-  // Synchronize when the overlay itself closes: hide this window immediately!
+  // The panel owner already hid this window through `browser::hide_window`
+  // before emitting overlay-close. Keep a local hide as a safety net, but do
+  // not call overlay_browser_close a second time.
   void listen("overlay-close", () => {
-    closeWindow();
+    void getCurrentWindow().hide().catch(() => undefined);
   }).catch(() => undefined);
 
   // Tabs and URL events from Rust
