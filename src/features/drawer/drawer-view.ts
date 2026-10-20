@@ -660,21 +660,22 @@ function renderSpecsTab(
 ): string {
   const g = rawOf(s.appName);
   const reqData = S.loadedRequirements.get(s.appName);
-  const card = (title: string, glyph: IconName, body: string, wide = false): string => `
-    <section class="card specs-card${wide ? " is-wide" : ""}">
+  const card = (title: string, glyph: IconName, body: string, extraClass = ""): string => `
+    <section class="card specs-card ${extraClass}">
       <h3 class="gp-section-title">${icon(glyph, 13)} <span>${title}</span></h3>
-      ${body}
+      <div class="specs-card-content">${body}</div>
     </section>`;
   return `
     ${renderGameCompatCard(s)}
-    <div class="specs-grid">
-      ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat))}
-      <div class="specs-side-col">
-        ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}`)}
-        ${card(t("feat.controller"), "gamepad-2", `<div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>`)}
-      </div>
-      ${card(t("sys.reqCardTitle"), "cpu", `<div id="sys-req-body">${renderRequirementsBody(s)}</div>`, true)}
-    </div>`;
+    <div class="specs-top-grid">
+      ${card(t("drawer.featuresSupport"), "sliders", renderDrawerFeatures(s, partner, antiCheat), "specs-card-features")}
+      ${card(t("sys.thisCopy"), "layers", `<div class="hub-features-list" id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}`, "specs-card-copy")}
+      ${card(t("feat.controller"), "gamepad-2", `<div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>`, "specs-card-ctrl")}
+    </div>
+    <section class="card specs-card specs-card-req">
+      <h3 class="gp-section-title">${icon("cpu", 13)} <span>${t("sys.reqCardTitle")}</span></h3>
+      <div id="sys-req-body">${renderRequirementsBody(s)}</div>
+    </section>`;
 }
 
 function renderActiveTab(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, antiCheat: string | null): string {
@@ -2113,7 +2114,7 @@ export function renderRequirementsBody(s: EpicSummary): string {
     .map(
       (item) => `
         <div class="sys-hw-cell">
-          <div class="sys-hw-icon">${icon(item.iconName, 15)}</div>
+          <div class="sys-hw-icon">${icon(item.iconName, 18)}</div>
           <div class="sys-hw-main">
             <div class="sys-hw-label">${esc(item.label)}</div>
             <div class="sys-hw-val">${esc(showingMin ? item.minimum : item.recommended)}</div>

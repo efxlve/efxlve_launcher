@@ -1062,15 +1062,32 @@ export function renderControllerCard(
       : ctrl.iconName === "keyboard"
         ? `<span class="ctrl-badge is-kb">${icon("keyboard", 12)} ${i18nT("feat.kbMouse")}</span>`
         : `<span class="ctrl-badge is-partial">${i18nT("feat.partialPad")}</span>`;
+  const isGamepad = ctrl.iconName === "gamepad-2";
   return `
     <div class="ctrl-card">
-      <div class="ctrl-glyph">${icon(ctrl.iconName, 22)}</div>
-      <div class="ctrl-main">
-        <div class="ctrl-head">
-          <span class="ctrl-label">${esc(ctrl.label)}</span>
-          ${badge}
+      <div class="ctrl-hero">
+        <div class="ctrl-glyph">${icon(ctrl.iconName, 22)}</div>
+        <div class="ctrl-main">
+          <div class="ctrl-head">
+            <span class="ctrl-label">${esc(ctrl.label)}</span>
+            ${badge}
+          </div>
+          <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
         </div>
-        <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
+      </div>
+      <div class="ctrl-facts">
+        <div class="ctrl-fact-row">
+          <span class="ctrl-fact-label">${icon("gamepad-2", 13)} <span>Xbox / XInput</span></span>
+          <span class="ctrl-fact-val ${isGamepad ? "supported" : "muted"}">${isGamepad ? i18nT("ctrl.fullSupport") : "—"}</span>
+        </div>
+        <div class="ctrl-fact-row">
+          <span class="ctrl-fact-label">${icon("gamepad-2", 13)} <span>PlayStation (DualSense)</span></span>
+          <span class="ctrl-fact-val ${isGamepad ? "supported" : "muted"}">${isGamepad ? i18nT("ctrl.fullSupport") : "—"}</span>
+        </div>
+        <div class="ctrl-fact-row">
+          <span class="ctrl-fact-label">${icon("keyboard", 13)} <span>${i18nT("feat.kbMouse")}</span></span>
+          <span class="ctrl-fact-val supported">${i18nT("ctrl.fullSupport")}</span>
+        </div>
       </div>
     </div>`;
 }
