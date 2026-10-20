@@ -461,6 +461,12 @@ async function enableFps(): Promise<void> {
 const DEFAULT_WIDGETS: TabId[] = ["perf", "music"];
 let openWidgets = new Set<TabId>();
 
+/** The default set follows the pages the user kept enabled. */
+function defaultWidgets(): TabId[] {
+  const allowed = new Set(visibleTabs().map((tab) => tab.id));
+  return DEFAULT_WIDGETS.filter((id) => allowed.has(id));
+}
+
 function loadOpenWidgets(): Set<TabId> {
   try {
     const raw = localStorage.getItem("efxlve-overlay-widgets");
@@ -473,7 +479,7 @@ function loadOpenWidgets(): Set<TabId> {
   } catch {
     // fallback
   }
-  return new Set(DEFAULT_WIDGETS);
+  return new Set(defaultWidgets());
 }
 
 function saveOpenWidgets(): void {
@@ -1353,7 +1359,7 @@ function setTab(tab: TabId, fromOpen = false): void {
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
   if (tab === "home") {
-    for (const t of DEFAULT_WIDGETS) openWidget(t);
+    for (const t of defaultWidgets()) openWidget(t);
     return;
   }
   openWidget(tab);
