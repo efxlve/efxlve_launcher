@@ -10,10 +10,12 @@ Stability pass, 2026-10-20: the panel no longer imports `browser-window.ts` for
 its bookmark helpers (that used to boot the whole browser chrome and sync its
 bounds inside the panel), the hidden window’s clock/media/clip/gamepad work is
 stopped, and widget placement is clamped below the floating command bar with a
-repaired default tiling. The next visual check is with real game art at the
-target 1280×800 and 1920×1080 sizes. The overlay Discord tab now opens with one
-centered connect card instead of a profile row over an empty list, and its
-message/send accents follow the launcher tokens instead of Discord purple.
+repaired default tiling. Settings → Appearance now has a widget-layout reset
+that clears saved positions and returns open widgets to the tiled defaults. The
+next visual check is with real game art at the target 1280×800 and 1920×1080
+sizes. The overlay Discord tab now opens with one centered connect card instead
+of a profile row over an empty list, and its message/send accents follow the
+launcher tokens instead of Discord purple.
 Target platform: Windows first (Linux/macOS later) · Owner: core team
 
 A Steam-like overlay hosted by Efxlve Launcher: one hotkey opens a panel over any

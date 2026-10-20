@@ -225,8 +225,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   müzik sağda olacak şekilde döşeniyor; gizli 1×1 pencereden gelen 8/8 kayıtları
   onarılıyor. Gizli panelde clock/media/clip/gamepad döngüleri duruyor; kumanda
   yokken oyun kolu döngüsü 250 ms'de bir kontrol ediyor. Overlay yüzeylerinden
-  blur kaldırıldı. Gerçek oyun sanatıyla 1280×800 ve 1920×1080 görsel turu
-  sahibe kalıyor.
+  blur kaldırıldı. Ayarlar → Görünüm'deki **Düzeni sıfırla** kayıtlı widget
+  konumlarını temizleyip açık widget'ları varsayılan döşemeye döndürüyor.
+  Gerçek oyun sanatıyla 1280×800 ve 1920×1080 görsel turu sahibe kalıyor.
 - **TV oyun merkezi:** ana ekranla aynı dil için başlığın üstüne "Oyun Merkezi"
   etiketi, beyaz aktif sekme ve kısaltılmış "İnceleme" istatistiği eklendi;
   sıradaki kupalar kartı ikinci bir çerçevenin içinden çıkarıldı. Profil ve
