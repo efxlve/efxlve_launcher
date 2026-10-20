@@ -5718,7 +5718,9 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     if (openWidgets.has("shots")) void loadScreenshots();
   }
 
-  ensureSpotifyEngine();
+  // The receiver starts only when the music widget is opened; opening the
+  // panel for performance or captures must not start a Spotify session.
+  if (isWidgetOpen("music")) ensureSpotifyEngine();
   void refreshMedia();
 
   // A connected pad means the user wants controller affordances right away.
