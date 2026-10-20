@@ -2765,5 +2765,6 @@
   "settings.caseStoreColorsDesc": "Customize the box header and accent colors for each storefront.",
   "settings.caseStoreReset": "Reset to default color",
   "settings.caseStoreResetAll": "Reset All Store Colors",
-  "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library."
+  "settings.caseDisabledNote": "Physical case covers are currently disabled. Turn on the switch above to apply these customizations to your library.",
+  "settings.aboutStoreExtensions": "Steam 商店增强功能集成了开源项目：SteamDB Browser Extension（版权所有 © 2013-至今 SteamDB，BSD-3-Clause）和 Augmented Steam（版权所有 © IsThereAnyDeal，GPL-3.0）。这些项目均未获得 Valve Corporation 的附属或认可。Steam 和 Steam 徽标是 Valve Corporation 的商标。"
 }

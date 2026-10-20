@@ -707,7 +707,7 @@ a.steamdb_rating:hover {
 
         if (query === 'GetAppPrice') {
             var priceMeta = document.querySelector('meta[itemprop="price"]');
-            var curVal = priceMeta ? parseFloat(priceMeta.content.replace(',', '.')) : 0;
+            var curVal = (priceMeta && priceMeta.content) ? parseFloat(priceMeta.content.replace(',', '.')) : 0;
             if (isNaN(curVal) || curVal <= 0.01) {
                 var pEl = document.querySelector('.discount_final_price, .game_purchase_price');
                 if (pEl) {
@@ -751,6 +751,14 @@ a.steamdb_rating:hover {
                 container = document.createElement('div');
                 container.className = 'apphub_OtherSiteInfo';
                 headerTop.prepend(container);
+            } else {
+                var titleArea = document.querySelector('.game_title_area, #appHubAppName');
+                if (titleArea) {
+                    container = document.createElement('div');
+                    container.className = 'apphub_OtherSiteInfo';
+                    container.style.cssText = 'display:inline-flex;gap:6px;margin-top:6px;';
+                    titleArea.appendChild(container);
+                }
             }
         }
 
@@ -806,7 +814,7 @@ a.steamdb_rating:hover {
         if (!container || container.querySelector('.steamdb_prices')) return;
 
         var priceMeta = document.querySelector('meta[itemprop="price"]');
-        var parsedPrice = priceMeta ? parseFloat(priceMeta.content.replace(',', '.')) : 0;
+        var parsedPrice = (priceMeta && priceMeta.content) ? parseFloat(priceMeta.content.replace(',', '.')) : 0;
         if (isNaN(parsedPrice) || parsedPrice <= 0.01) {
             var priceEl = document.querySelector('.discount_final_price, .game_purchase_price');
             if (priceEl) {
@@ -869,7 +877,7 @@ a.steamdb_rating:hover {
     function injectOnlineStatsWidget(appId) {
         if (!isOptionEnabled('online-stats', true)) return;
 
-        var container = document.querySelector('.game_meta_data') || document.querySelector('.rightcol.game_meta_data');
+        var container = document.querySelector('.game_meta_data, .rightcol.game_meta_data, .glance_ctn_responsive_right, .rightcol');
         if (!container || container.querySelector('.steamdb_stats')) return;
 
         var blockInner = document.createElement('div');
@@ -934,7 +942,7 @@ a.steamdb_rating:hover {
         container.insertBefore(block, container.firstChild);
 
         var responsiveHeader = document.createElement('div');
-        responsiveHeader.className = 'responsive_block_header responsive_apppage_details_left';
+        responsiveHeader.className = 'responsive_block_header responsive_apppage_details_left steamdb_stats_header';
         responsiveHeader.textContent = _t('app_stats_online');
         container.insertBefore(responsiveHeader, block);
 
@@ -968,10 +976,21 @@ a.steamdb_rating:hover {
         var total = positive + negative;
 
         if (total <= 0) {
-            // Check meta tags or summary
-            var metaDesc = document.querySelector('meta[itemprop="description"]');
-            return;
+            var summaryRow = document.querySelector('.user_reviews_summary_row[data-tooltip-html], .user_reviews_summary_row');
+            if (summaryRow) {
+                var tooltip = summaryRow.getAttribute('data-tooltip-html') || summaryRow.textContent || '';
+                var pctMatch = tooltip.match(/(\d+)%/);
+                var countMatch = tooltip.match(/([\d,\.]+)\s*(?:user reviews|kullanıcı)/i) || tooltip.match(/\(([\d,\.]+)\)/);
+                if (pctMatch) {
+                    var pct = parseInt(pctMatch[1], 10);
+                    var count = countMatch ? parseInt(countMatch[1].replace(/[,\.]/g, ''), 10) : 1000;
+                    positive = Math.round(count * (pct / 100));
+                    total = count;
+                }
+            }
         }
+
+        if (total <= 0) return;
 
         var average = positive / total;
         var score = average - (average - 0.5) * Math.pow(2, -Math.log10(total + 1));
@@ -1202,7 +1221,7 @@ a.steamdb_rating:hover {
     };
 
     function _as_t(key) {
-        var lang = getStoreLang();
+        var lang = getUILang();
         if (AUGMENTED_STEAM_MESSAGES[lang] && AUGMENTED_STEAM_MESSAGES[lang][key]) {
             return AUGMENTED_STEAM_MESSAGES[lang][key];
         }
@@ -1221,7 +1240,7 @@ a.steamdb_rating:hover {
     function formatHltb(minutes) {
         if (!minutes || minutes <= 0) return '—';
         var hrs = Math.round(minutes / 60);
-        var lang = getStoreLang();
+        var lang = getUILang();
         var unit = lang === 'tr' ? ' sa' : (hrs === 1 ? ' hr' : ' hrs');
         return hrs + unit;
     }
@@ -1425,7 +1444,7 @@ a.steamdb_rating:hover {
         if (!hltb || (!hltb.story && !hltb.extras && !hltb.complete)) return;
         if (document.querySelector('.es_hltb_block')) return;
 
-        var container = document.querySelector('.game_meta_data') || document.querySelector('.rightcol.game_meta_data');
+        var container = document.querySelector('.game_meta_data, .rightcol.game_meta_data, .glance_ctn_responsive_right, .rightcol');
         if (!container) return;
 
         var block = document.createElement('div');
@@ -1477,7 +1496,7 @@ a.steamdb_rating:hover {
         if (!reviews || !reviews.opencritic || !reviews.opencritic.score) return;
         if (document.querySelector('.es_review_row.es_opencritic')) return;
 
-        var desktopReviews = document.querySelector('#userReviews') || document.querySelector('.user_reviews');
+        var desktopReviews = document.querySelector('#userReviews, .user_reviews, .glance_ctn_responsive_left');
         if (!desktopReviews) return;
 
         var row = document.createElement('a');
@@ -1506,7 +1525,7 @@ a.steamdb_rating:hover {
         if (!reviews || !reviews.metauser || !reviews.metauser.score) return;
         if (document.querySelector('.es_review_row.es_metauser')) return;
 
-        var desktopReviews = document.querySelector('#userReviews') || document.querySelector('.user_reviews');
+        var desktopReviews = document.querySelector('#userReviews, .user_reviews, .glance_ctn_responsive_left');
         if (!desktopReviews) return;
 
         var row = document.createElement('a');
@@ -1536,7 +1555,7 @@ a.steamdb_rating:hover {
         if (!wsgf || !wsgf.ultrawide) return;
         if (document.querySelector('.es_wsgf_row')) return;
 
-        var desktopReviews = document.querySelector('#userReviews') || document.querySelector('.user_reviews');
+        var desktopReviews = document.querySelector('#userReviews, .user_reviews, .glance_ctn_responsive_left');
         if (!desktopReviews) return;
 
         var row = document.createElement('a');
@@ -1568,7 +1587,7 @@ a.steamdb_rating:hover {
         if (!pData || (!pData.current && !pData.lowest)) return;
         if (document.querySelector('.es_itad_prices')) return;
 
-        var purchaseArea = document.querySelector('#game_area_purchase') || document.querySelector('.game_area_purchase_margin');
+        var purchaseArea = document.querySelector('#game_area_purchase') || document.querySelector('.game_area_purchase_margin') || document.querySelector('.game_area_purchase');
         if (!purchaseArea) return;
 
         var current = pData.current;
@@ -1651,8 +1670,8 @@ a.steamdb_rating:hover {
             return;
         }
 
-        var appId = getAppId();
-        if (!appId) return;
+        var appId = getCurrentAppId();
+        if (!appId || appId <= 0) return;
 
         injectAugmentedSteamStyles();
 
@@ -1690,7 +1709,7 @@ a.steamdb_rating:hover {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        country: 'TR',
+                        country: 'US',
                         apps: [Number(appId)],
                         subs: [],
                         bundles: [],

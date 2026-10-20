@@ -89,7 +89,7 @@ cargo test                 # Rust unit tests
 
 ## Special Thanks
 
-Special thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), [Hydra Launcher](https://github.com/hydralauncher/hydra), [Playnite](https://github.com/JosefNemec/Playnite), [steam-case-covers](https://github.com/diegobergonsi/steam-case-covers) and [SteamGridDB](https://www.steamgriddb.com/) — and to every project below. The in-app legal notice (Settings → About) carries the trademark and data-source details; this section credits everything the app is inspired by and built on.
+Special thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher), [Hydra Launcher](https://github.com/hydralauncher/hydra), [Playnite](https://github.com/JosefNemec/Playnite), [steam-case-covers](https://github.com/diegobergonsi/steam-case-covers), [SteamGridDB](https://www.steamgriddb.com/), [SteamDB Browser Extension](https://github.com/SteamDatabase/BrowserExtension) and [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam) — and to every project below. The in-app legal notice (Settings → About) carries the trademark and data-source details; this section credits everything the app is inspired by and built on.
 
 ### Design & UX inspiration
 
@@ -108,6 +108,11 @@ These open-source tools ship with the launcher or are downloaded once at first u
 - [Nile](https://github.com/imLinguin/nile) — Amazon Games library, installs and updates.
 - [Comet](https://github.com/imLinguin/comet) — open-source GOG Galaxy Communication Service, run while a GOG game plays so achievements unlock without the Galaxy client.
 - [SteamGridDB](https://www.steamgriddb.com/) — high-resolution cover art for the library grid.
+
+### Storefront extensions & community tooling
+
+- [SteamDB Browser Extension](https://github.com/SteamDatabase/BrowserExtension) (BSD-3-Clause, Copyright © 2013-present SteamDB) — community pricing history, concurrent player stats, SteamDB rating metrics, and direct links injected into the Steam store view.
+- [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam) (GPL-3.0, Copyright © IsThereAnyDeal / Augmented Steam contributors) — digital store price comparisons via IsThereAnyDeal, HowLongToBeat completion times, OpenCritic & Metacritic user scores, and DRM alert styling.
 
 ### Compatibility runtimes
 

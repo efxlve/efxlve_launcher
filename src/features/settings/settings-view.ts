@@ -1442,6 +1442,7 @@ function renderAbout(): string {
       <p class="settings-about-text">${t("settings.aboutMarks")}</p>
       <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
       <p class="settings-about-text">${t("settings.aboutThirdParty")}</p>
+      <p class="settings-about-text">${t("settings.aboutStoreExtensions")}</p>
       <p class="settings-about-text">${t("settings.aboutPrivacy")}</p>
       <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>
     </div>`;

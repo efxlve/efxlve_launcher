@@ -570,6 +570,9 @@ fn create_store_builder(
                     || host.contains("isthereanydeal.com")
                     || host.contains("howlongtobeat.com")
                     || host.contains("opencritic.com")
+                    || host.contains("metacritic.com")
+                    || host.contains("wsgf.org")
+                    || host.contains("itad.link")
                 {
                     let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
                     return false;
@@ -627,6 +630,13 @@ fn create_store_builder(
                     if host.contains("steamdb.info")
                         || host.contains("protondb.com")
                         || host.contains("pcgamingwiki.com")
+                        || host.contains("augmentedsteam.com")
+                        || host.contains("isthereanydeal.com")
+                        || host.contains("howlongtobeat.com")
+                        || host.contains("opencritic.com")
+                        || host.contains("metacritic.com")
+                        || host.contains("wsgf.org")
+                        || host.contains("itad.link")
                     {
                         let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
                         return tauri::webview::NewWindowResponse::Deny;

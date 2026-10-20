@@ -2765,5 +2765,6 @@
   "settings.caseStoreColorsDesc": "各ストアの物理ケースのヘッダーおよびアクセントカラーを自由にカスタマイズできます。",
   "settings.caseStoreReset": "デフォルトカラーに戻す",
   "settings.caseStoreResetAll": "すべてのストアカラーを初期化",
-  "settings.caseDisabledNote": "物理ケース表示は現在無効です。ライブラリに反映するには上のスイッチをオンにしてください。"
+  "settings.caseDisabledNote": "物理ケース表示は現在無効です。ライブラリに反映するには上のスイッチをオンにしてください。",
+  "settings.aboutStoreExtensions": "Steamストアの機能拡張にはオープンソースプロジェクトが含まれています: SteamDB Browser Extension (Copyright © 2013-現在 SteamDB, BSD-3-Clause) および Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0)。いずれのプロジェクトもValve Corporationと提携または承認されていません。SteamおよびSteamロゴはValve Corporationの商標です。"
 }
