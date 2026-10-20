@@ -593,9 +593,12 @@ function loadWidgetPos(tab: TabId): WidgetPos {
       const parsed = JSON.parse(raw) as { x?: number; y?: number };
       if (typeof parsed.x === "number" && typeof parsed.y === "number") {
         // Older builds could persist a clamp performed while the hidden window
-        // was 1x1. Those 8/8 entries stacked every widget in one corner; treat
-        // them as missing and let the tiled default win.
-        if (parsed.y < OVERLAY_SAFE_TOP) return getDefaultWidgetPos(tab);
+        // was 1x1. Those 8/8 (or 8/64 after the topbar guard) entries stacked
+        // every widget in one corner; treat them as missing and let the tiled
+        // default win.
+        if (parsed.y < OVERLAY_SAFE_TOP || (parsed.x <= WIDGET_MARGIN && parsed.y <= OVERLAY_SAFE_TOP)) {
+          return getDefaultWidgetPos(tab);
+        }
         const winW = window.innerWidth || 1920;
         const winH = window.innerHeight || 1080;
         const size = loadWidgetSize(tab);
