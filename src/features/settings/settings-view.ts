@@ -718,11 +718,11 @@ function renderStores(): string {
     ${steamDbConfigureBtn}`;
 
   const steamDbSubPanel = (S.steamDbSettingsOpen && steamDb) ? `
-    <div style="margin: 4px 0 12px 14px; padding: 6px 0 6px 16px; border-left: 2px solid rgba(255,255,255,0.14);">
+    <div style="margin: 6px 0 12px 14px; padding: 8px 16px 8px 16px; border-left: 2px solid rgba(255,255,255,0.14);">
       <div style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
         ${t("settings.storeSteamDbOptionsTitle")}
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px 20px;">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 36px;">
         ${subOpts.map(opt => `
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
             <span style="font-size: 12px; color: var(--text-normal); font-weight: 500;">${opt.label}</span>
