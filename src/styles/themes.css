@@ -86,14 +86,17 @@
   color: var(--text-2);
 }
 :root[data-surface="white"] .profile-banner-edit-btn {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.95);
-  color: #0f172a;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 :root[data-surface="white"] .profile-banner-edit-btn:hover {
-  background: #ffffff;
-  color: #000000;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.38);
 }
 :root[data-surface="white"] .profile-hero-store-chip {
   background: #ffffff;
@@ -747,17 +750,18 @@
   color: #0b4a8c;
 }
 :root[data-surface="aero"] .profile-banner-edit-btn {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  color: #0b4a8c;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 #ffffff;
+  background: rgba(10, 20, 36, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 :root[data-surface="aero"] .profile-banner-edit-btn:hover {
-  background: #ffffff;
-  color: #003366;
-  box-shadow: 0 4px 12px rgba(43, 143, 239, 0.25), inset 0 1px 0 #ffffff;
+  background: rgba(14, 30, 54, 0.9);
+  border-color: rgba(43, 143, 239, 0.7);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 12px rgba(43, 143, 239, 0.4);
 }
 :root[data-surface="aero"] .profile-hero-store-chip {
   background: rgba(255, 255, 255, 0.72);

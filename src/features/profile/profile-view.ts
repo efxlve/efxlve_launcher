@@ -864,19 +864,23 @@ function renderProfileHero(
         ` : ""}
       </div>
       <div class="profile-hero-top">
-        <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
-          <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>
-          <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
-        </button>
+        <div class="profile-avatar-wrap">
+          <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
+            <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>
+            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
+          </button>
+        </div>
         <div class="profile-hero-identity">
-          <div class="profile-name-row">
-            <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
-              <h1 class="profile-name">${esc(displayName)}</h1>
-              <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
-            </button>
-            <div class="profile-presence">
-              <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
-              <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
+          <div class="profile-identity-head">
+            <div class="profile-name-row">
+              <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+                <h1 class="profile-name">${esc(displayName)}</h1>
+                <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
+              </button>
+              <div class="profile-presence">
+                <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
+                <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
+              </div>
             </div>
             <div class="profile-hero-actions">
               ${!combined

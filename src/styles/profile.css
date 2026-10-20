@@ -70,18 +70,27 @@
   height: 30px;
   padding: 0 12px;
   border-radius: 15px;
-  background: rgba(10, 10, 10, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: var(--text);
+  background: rgba(10, 10, 10, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   transition: all var(--ease);
+}
+
+.profile-banner-edit-btn svg {
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .profile-banner-edit-btn:hover {
   background: rgba(22, 22, 24, 0.95);
-  border-color: var(--accent);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   transform: translateY(-1px);
 }
@@ -89,10 +98,16 @@
 .profile-hero-top {
   position: relative;
   z-index: 2;
-  margin-top: -48px;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 20px;
+  padding-top: 14px;
+}
+
+.profile-avatar-wrap {
+  margin-top: -62px;
+  flex-shrink: 0;
+  display: flex;
 }
 
 .profile-avatar-btn {
@@ -177,7 +192,14 @@
   gap: 10px;
   flex: 1;
   min-width: 0;
-  padding-bottom: 2px;
+}
+
+.profile-identity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
 }
 
 .profile-name-row {
@@ -185,6 +207,7 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .profile-name-edit-btn {
