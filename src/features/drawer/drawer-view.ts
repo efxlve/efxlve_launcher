@@ -307,8 +307,8 @@ export function renderGameHeaderMeta(
     sessionTooltip = lastPlayed;
   } else {
     sessionLabel = t("drawer.lastPlayedLabel");
-    sessionVal = t(pt?.total_seconds ? "playtime.noSession" : "playtime.notPlayedYet");
-    sessionTooltip = sessionVal;
+    sessionVal = "—";
+    sessionTooltip = t(pt?.total_seconds ? "playtime.noSession" : "playtime.notPlayedYet");
   }
 
   const isSynced = Boolean(status.synced);
@@ -2088,7 +2088,11 @@ export function renderRequirementsBody(s: EpicSummary): string {
     </div>`;
 
   if (!data.supported || data.systems.length === 0) {
-    return `${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}<div class="page-actions">${actionsHtml}</div>`;
+    return `
+      <div class="sys-empty-container">
+        ${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}
+        <div class="sys-empty-actions">${actionsHtml}</div>
+      </div>`;
   }
 
   const hasWin = data.systems.some((sys) => isWinSys(sys.systemType));
@@ -2103,7 +2107,11 @@ export function renderRequirementsBody(s: EpicSummary): string {
   const recItems = verified.filter((d) => d.recommended);
 
   if (minItems.length === 0 && recItems.length === 0) {
-    return `${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}<div class="page-actions">${actionsHtml}</div>`;
+    return `
+      <div class="sys-empty-container">
+        ${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}
+        <div class="sys-empty-actions">${actionsHtml}</div>
+      </div>`;
   }
 
   const hasBothTiers = minItems.length > 0 && recItems.length > 0;
@@ -2111,16 +2119,18 @@ export function renderRequirementsBody(s: EpicSummary): string {
   const activeItems = showingMin ? minItems : recItems;
 
   const cellsHtml = activeItems
-    .map(
-      (item) => `
-        <div class="sys-hw-cell">
+    .map((item) => {
+      const val = showingMin ? item.minimum : item.recommended;
+      const isWide = item.kind === "other" || val.length > 70;
+      return `
+        <div class="sys-hw-cell${isWide ? " is-wide" : ""}">
           <div class="sys-hw-icon">${icon(item.iconName, 18)}</div>
           <div class="sys-hw-main">
             <div class="sys-hw-label">${esc(item.label)}</div>
-            <div class="sys-hw-val">${esc(showingMin ? item.minimum : item.recommended)}</div>
+            <div class="sys-hw-val">${esc(val)}</div>
           </div>
-        </div>`,
-    )
+        </div>`;
+    })
     .join("");
 
   const platformSwitch =

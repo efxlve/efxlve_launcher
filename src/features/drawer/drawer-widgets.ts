@@ -1062,7 +1062,6 @@ export function renderControllerCard(
       : ctrl.iconName === "keyboard"
         ? `<span class="ctrl-badge is-kb">${icon("keyboard", 12)} ${i18nT("feat.kbMouse")}</span>`
         : `<span class="ctrl-badge is-partial">${i18nT("feat.partialPad")}</span>`;
-  const isGamepad = ctrl.iconName === "gamepad-2";
   return `
     <div class="ctrl-card">
       <div class="ctrl-hero">
@@ -1075,19 +1074,10 @@ export function renderControllerCard(
           <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
         </div>
       </div>
-      <div class="ctrl-facts">
-        <div class="ctrl-fact-row">
-          <span class="ctrl-fact-label">${icon("gamepad-2", 13)} <span>Xbox / XInput</span></span>
-          <span class="ctrl-fact-val ${isGamepad ? "supported" : "muted"}">${isGamepad ? i18nT("ctrl.fullSupport") : "—"}</span>
-        </div>
-        <div class="ctrl-fact-row">
-          <span class="ctrl-fact-label">${icon("gamepad-2", 13)} <span>PlayStation (DualSense)</span></span>
-          <span class="ctrl-fact-val ${isGamepad ? "supported" : "muted"}">${isGamepad ? i18nT("ctrl.fullSupport") : "—"}</span>
-        </div>
-        <div class="ctrl-fact-row">
-          <span class="ctrl-fact-label">${icon("keyboard", 13)} <span>${i18nT("feat.kbMouse")}</span></span>
-          <span class="ctrl-fact-val supported">${i18nT("ctrl.fullSupport")}</span>
-        </div>
+      <div class="ctrl-tags">
+        <span class="ctrl-tag">${icon("gamepad-2", 12)} <span>Xbox / XInput</span></span>
+        <span class="ctrl-tag">${icon("gamepad-2", 12)} <span>DualSense</span></span>
+        <span class="ctrl-tag">${icon("keyboard", 12)} <span>${i18nT("feat.kbMouse")}</span></span>
       </div>
     </div>`;
 }
@@ -1100,6 +1090,8 @@ export function renderInstalledCopyFacts(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null = null,
 ): string {
+  const source = sourceOfKey(s.appName);
+  const storeLabel = source === "steam" ? "Steam" : source === "gog" ? "GOG" : source === "epic" ? "Epic Games" : source === "amazon" ? "Amazon" : (source || "—");
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
   const rawDisplay = versionInfo.display.trim();
   const isBogusVersion =
@@ -1124,7 +1116,14 @@ export function renderInstalledCopyFacts(
   return `
     <div class="hub-feature-row">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("monitor", 12)}</div>
+        <div class="hub-feature-icon">${icon("package", 13)}</div>
+        <span>${i18nT("filter.source")}</span>
+      </div>
+      <div class="hub-feature-val">${esc(storeLabel)}</div>
+    </div>
+    <div class="hub-feature-row">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("monitor", 13)}</div>
         <span>${i18nT("feat.platform")}</span>
       </div>
       <div class="hub-feature-val supported">Windows (PC x64)</div>
@@ -1134,7 +1133,7 @@ export function renderInstalledCopyFacts(
         ? `
     <div class="hub-feature-row" title="${esc(i18nT("feat.eosTip"))}">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("users", 12)}</div>
+        <div class="hub-feature-icon">${icon("users", 13)}</div>
         <span>${i18nT("feat.eos")}</span>
       </div>
       <div class="hub-feature-val supported">${i18nT("feat.eosSupported")}</div>
@@ -1143,7 +1142,7 @@ export function renderInstalledCopyFacts(
     }
     <div class="hub-feature-row" title="${esc(i18nT("feat.installedSizeTip"))}">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("hard-drive", 12)}</div>
+        <div class="hub-feature-icon">${icon("hard-drive", 13)}</div>
         <span>${i18nT("feat.installedSize")}</span>
       </div>
       <div class="hub-feature-val">
@@ -1159,7 +1158,7 @@ export function renderInstalledCopyFacts(
         ? `
     <div class="hub-feature-row" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("hash", 12)}</div>
+        <div class="hub-feature-icon">${icon("hash", 13)}</div>
         <span>${i18nT("feat.build")}</span>
       </div>
       <div class="hub-feature-val hub-build-val">${esc(rawDisplay)}</div>
