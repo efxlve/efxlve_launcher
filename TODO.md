@@ -24,7 +24,8 @@ and a final in-game visual check with real art.
 ## 0a. Themes and TV home (owner asked, 2026-10-20)
 
 - **White Mode** and **Frutiger Aero** are now real surface themes next to
-  Siyah and Yumuşak Siyah in Settings → Görünüm ve Dil. They replace the token
+  Siyah and Yumuşak Siyah in Settings → Görünüm ve Dil; each option carries a
+  colour swatch so the palette is visible before selecting it. They replace the token
   palette in `src/styles/themes.css`; Aero adds the glossy sky/glass treatment
   on top of the same tokens. Its chrome uses opaque gradient tints now; no
   `backdrop-filter` remains in the app. The choice is stored under

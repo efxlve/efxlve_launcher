@@ -218,6 +218,7 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   gökyüzü gradyanı, cam yüzeyler ve parlak mavi birincil düğme getiriyor.
   Seçim `efxlve-surface` altında saklanıyor ve `index.html` ilk boyamadan önce
   okuyor; beyaz temada segment düğmesi siyah, Aero'da mavi tonlu seçili görünüyor.
+  Dört seçenek de kendi renk yuvarlağını gösteriyor.
   Aero'nun üst bar/kenar çubuğu artık blur kullanmıyor; aynı görünüm opak beyaz
   gradyanla korunuyor.
 - **TV ana ekranı:** komut çubuğu, sahne ve raf yeniden düzenlendi; raf başlığı,
