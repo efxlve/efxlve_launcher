@@ -473,7 +473,19 @@ function loadOpenWidgets(): Set<TabId> {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return new Set(parsed.filter((id) => TABS.some((t) => t.id === id)) as TabId[]);
+        // Do not resurrect a widget whose page was disabled in the launcher:
+        // it would float without a topbar toggle. Settings and the DM companion
+        // are not regular pages, so keep them out of this filter.
+        const pages = new Set(visibleTabs().map((tab) => tab.id));
+        const allowed = (id: TabId): boolean =>
+          id === "settings" ||
+          (id === "chat" ? pages.has("discord") : pages.has(id));
+        const next = new Set(
+          parsed.filter(
+            (id) => TABS.some((t) => t.id === id) && allowed(id as TabId),
+          ) as TabId[],
+        );
+        return next.size > 0 ? next : new Set(defaultWidgets());
       }
     }
   } catch {
