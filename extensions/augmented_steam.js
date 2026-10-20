@@ -257,18 +257,16 @@
         (document.head || document.documentElement).appendChild(style);
     }
 
-    var requestedAppIds = {};
     function requestSteamData(appId) {
         if (!appId || appId <= 0) return;
         if (window.__efxlveSteamCache && window.__efxlveSteamCache[appId]) {
             applyData(window.__efxlveSteamCache[appId]);
             return;
         }
-        if (requestedAppIds[appId]) return;
-        requestedAppIds[appId] = true;
-        try {
-            location.assign('https://efxlve.local/steam-data?appid=' + encodeURIComponent(appId));
-        } catch (_) {}
+        if (window.__efxlveSteamData && (window.__efxlveSteamData.appId == appId || String(window.__efxlveSteamData.appId) == String(appId))) {
+            applyData(window.__efxlveSteamData);
+            return;
+        }
     }
 
     function injectHltb(appId, hltb) {
@@ -509,6 +507,8 @@
         }
     };
 
+    window.efxlveAugmentedSteamApplyData = applyData;
+
     function run() {
         injectAugmentedSteamStyles();
         highlightDrmNotices();
@@ -517,14 +517,20 @@
         requestSteamData(appId);
     }
 
+    window.efxlveAugmentedSteamRun = run;
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', run);
     } else {
         run();
     }
 
-    var obs = new MutationObserver(function () {
-        run();
-    });
+    var runTimer = null;
+    function debouncedRun() {
+        if (runTimer) clearTimeout(runTimer);
+        runTimer = setTimeout(run, 120);
+    }
+    var obs = new MutationObserver(debouncedRun);
     obs.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    window.addEventListener('popstate', run);
 })();

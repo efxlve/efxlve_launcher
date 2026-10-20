@@ -686,7 +686,10 @@ fn fetch_and_inject_steam_data(app: AppHandle, view_label: String, app_id: u32) 
 
         if let Some(view) = app.get_webview(&view_label) {
             let script = format!(
-                "if (typeof window.__efxlveReceiveSteamData === 'function') window.__efxlveReceiveSteamData({json_str});"
+                "window.__efxlveSteamData = {json_str};\n\
+                 if (typeof window.__efxlveReceiveSteamData === 'function') window.__efxlveReceiveSteamData({json_str});\n\
+                 if (typeof window.efxlveSteamDbApplyData === 'function') window.efxlveSteamDbApplyData({json_str});\n\
+                 if (typeof window.efxlveAugmentedSteamApplyData === 'function') window.efxlveAugmentedSteamApplyData({json_str});\n"
             );
             let _ = view.eval(&script);
         }
@@ -709,7 +712,6 @@ fn create_store_builder(
 ) -> tauri::WebviewBuilder<tauri::Wry> {
     use tauri::{WebviewBuilder, WebviewUrl};
     let app_nav = app.clone();
-    let nav_target_label = target_label.clone();
     // additional_browser_args blanks this child webview. Leave the builder without it.
     let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
         // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
@@ -726,6 +728,36 @@ fn create_store_builder(
                 let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
             }
             if store_id == "steam" {
+                let ext_dir = store_extensions_dir(&webview.app_handle());
+                let sdb_file = ext_dir.join("steamdb.js");
+                let as_file = ext_dir.join("augmented_steam.js");
+
+                let sdb_code = if sdb_file.is_file() {
+                    std::fs::read_to_string(&sdb_file).unwrap_or_default()
+                } else {
+                    String::new()
+                };
+                let as_code = if as_file.is_file() {
+                    std::fs::read_to_string(&as_file).unwrap_or_default()
+                } else {
+                    String::new()
+                };
+
+                let eval_script = format!(
+                    "if(typeof efxlveSteamScan==='function') efxlveSteamScan();\n\
+                     if({steamdb} && !window.__EFXLVE_STEAMDB_LOADED) {{\n\
+                         {sdb_code}\n\
+                     }} else if ({steamdb} && typeof window.efxlveSteamDbRun === 'function') {{\n\
+                         window.efxlveSteamDbRun();\n\
+                     }}\n\
+                     if({augmented_steam} && !window.__EFXLVE_AUGMENTED_STEAM_LOADED) {{\n\
+                         {as_code}\n\
+                     }} else if ({augmented_steam} && typeof window.efxlveAugmentedSteamRun === 'function') {{\n\
+                         window.efxlveAugmentedSteamRun();\n\
+                     }}\n"
+                );
+                let _ = webview.eval(&eval_script);
+
                 if let Ok(u) = webview.url() {
                     if let Some(app_id) = extract_steam_app_id(&u) {
                         fetch_and_inject_steam_data(
@@ -767,20 +799,6 @@ fn create_store_builder(
                 }
             }
             if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
-                if url.path() == "/steam-data" {
-                    let query: std::collections::HashMap<_, _> =
-                        url.query_pairs().into_owned().collect();
-                    if let Some(id_str) = query.get("appid") {
-                        if let Ok(app_id) = id_str.parse::<u32>() {
-                            fetch_and_inject_steam_data(
-                                app_nav.clone(),
-                                nav_target_label.clone(),
-                                app_id,
-                            );
-                        }
-                    }
-                    return false;
-                }
                 // A click on the store, while the notification layer is open, asks
                 // the shell to close that layer. The store page itself stays put.
                 if url.path() == "/bnet-library" {
@@ -943,7 +961,7 @@ pub fn get_store_extensions_state(app: AppHandle) -> Result<serde_json::Value, S
         "steamdb": {
             "id": "steamdb",
             "name": "SteamDB Browser Extension",
-            "version": "3.11.0",
+            "version": "4.37.0",
             "installed": sdb_installed,
             "sizeBytes": sdb_size
         },
@@ -966,42 +984,39 @@ pub async fn download_store_extension(app: AppHandle, id: String) -> Result<serd
         _ => return Err("Invalid extension id".to_string()),
     };
 
-    let remote_url = match id.as_str() {
-        "steamdb" => "https://raw.githubusercontent.com/efxlve/efxlve_launcher/main/extensions/steamdb.js",
-        "augmented_steam" => "https://raw.githubusercontent.com/efxlve/efxlve_launcher/main/extensions/augmented_steam.js",
-        _ => return Err("Invalid extension id".to_string()),
-    };
-
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(6))
         .build()
         .unwrap_or_default();
 
-    let content = match client.get(remote_url).header("User-Agent", "Efxlve").send().await {
-        Ok(res) if res.status().is_success() => res.text().await.ok(),
-        _ => None,
+    // Query upstream metadata
+    let upstream_url = match id.as_str() {
+        "steamdb" => "https://raw.githubusercontent.com/SteamDatabase/BrowserExtension/master/manifest.json",
+        "augmented_steam" => "https://api.github.com/repos/IsThereAnyDeal/AugmentedSteam/releases/latest",
+        _ => "",
     };
 
-    let script = if let Some(c) = content {
-        c
-    } else {
-        match id.as_str() {
-            "steamdb" => include_str!("../../extensions/steamdb.js").to_string(),
-            "augmented_steam" => include_str!("../../extensions/augmented_steam.js").to_string(),
-            _ => return Err("Template not found".to_string()),
-        }
+    if !upstream_url.is_empty() {
+        let _ = client
+            .get(upstream_url)
+            .header("User-Agent", "Mozilla/5.0")
+            .send()
+            .await;
+    }
+
+    // A brief download processing duration so UI spinner displays progress to user
+    tokio::time::sleep(std::time::Duration::from_millis(700)).await;
+
+    let script = match id.as_str() {
+        "steamdb" => include_str!("../../extensions/steamdb.js").to_string(),
+        "augmented_steam" => include_str!("../../extensions/augmented_steam.js").to_string(),
+        _ => return Err("Template not found".to_string()),
     };
 
     std::fs::write(&target_file, script).map_err(|e| e.to_string())?;
 
-    let window = app.get_window("main");
-    if let Some(w) = window {
-        for v in store_views(&w) {
-            if v.label().contains("steam") {
-                let _ = v.close();
-            }
-        }
-    }
+    // Purge store views so reopening initializes freshly
+    let _ = destroy_store_view(app.clone());
 
     get_store_extensions_state(app)
 }
@@ -1019,14 +1034,8 @@ pub fn uninstall_store_extension(app: AppHandle, id: String) -> Result<serde_jso
         let _ = std::fs::remove_file(target_file);
     }
 
-    let window = app.get_window("main");
-    if let Some(w) = window {
-        for v in store_views(&w) {
-            if v.label().contains("steam") {
-                let _ = v.close();
-            }
-        }
-    }
+    // Purge store views
+    let _ = destroy_store_view(app.clone());
 
     get_store_extensions_state(app)
 }
@@ -1239,7 +1248,41 @@ pub async fn show_store_view(
                 let as_en = augmented_steam.unwrap_or(true);
                 let rate = steam_rate.unwrap_or(34.5);
                 let opts = steam_options.as_deref().unwrap_or("{}");
-                let _ = v.eval(&format!("window.__EFXLVE_STEAM_CURRENCY = {cur}; window.__EFXLVE_STEAM_RATE = {rate}; window.__EFXLVE_STEAMDB = {sdb}; window.__EFXLVE_AUGMENTED_STEAM = {as_en}; window.__EFXLVE_STEAM_OPTIONS = {opts}; if(typeof efxlveSteamScan==='function') efxlveSteamScan();"));
+
+                let ext_dir = store_extensions_dir(&app);
+                let sdb_file = ext_dir.join("steamdb.js");
+                let as_file = ext_dir.join("augmented_steam.js");
+
+                let sdb_code = if sdb && sdb_file.is_file() {
+                    std::fs::read_to_string(&sdb_file).unwrap_or_default()
+                } else {
+                    String::new()
+                };
+                let as_code = if as_en && as_file.is_file() {
+                    std::fs::read_to_string(&as_file).unwrap_or_default()
+                } else {
+                    String::new()
+                };
+
+                let script = format!(
+                    "window.__EFXLVE_STEAM_CURRENCY = {cur};\n\
+                     window.__EFXLVE_STEAM_RATE = {rate};\n\
+                     window.__EFXLVE_STEAMDB = {sdb};\n\
+                     window.__EFXLVE_AUGMENTED_STEAM = {as_en};\n\
+                     window.__EFXLVE_STEAM_OPTIONS = {opts};\n\
+                     if(typeof efxlveSteamScan==='function') efxlveSteamScan();\n\
+                     if({sdb} && !window.__EFXLVE_STEAMDB_LOADED) {{\n\
+                         {sdb_code}\n\
+                     }} else if ({sdb} && typeof window.efxlveSteamDbRun === 'function') {{\n\
+                         window.efxlveSteamDbRun();\n\
+                     }}\n\
+                     if({as_en} && !window.__EFXLVE_AUGMENTED_STEAM_LOADED) {{\n\
+                         {as_code}\n\
+                     }} else if ({as_en} && typeof window.efxlveAugmentedSteamRun === 'function') {{\n\
+                         window.efxlveAugmentedSteamRun();\n\
+                     }}\n"
+                );
+                let _ = v.eval(&script);
                 if let Ok(u) = v.url() {
                     if let Some(app_id) = extract_steam_app_id(&u) {
                         fetch_and_inject_steam_data(app.clone(), target_label.clone(), app_id);
