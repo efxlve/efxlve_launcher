@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "Aşağı Taşı",
   "settings.storeResetOrder": "Sıralamayı Sıfırla",
   "settings.storeHiddenBadge": "Gizli",
-  "settings.storeOrderNote": "Ok butonlarını kullanarak mağaza sekmelerini dilediğiniz sıraya taşıyabilirsiniz. En üstteki görünür mağaza varsayılan olarak açılır."
+  "settings.storeOrderNote": "Ok butonlarını kullanarak mağaza sekmelerini dilediğiniz sıraya taşıyabilirsiniz. En üstteki görünür mağaza varsayılan olarak açılır.",
+  "settings.storeExtGroupTitle": "Mağaza Eklentileri ve Geliştirmeleri",
+  "settings.storeExtNote": "Gömülü mağaza sayfalarını topluluk istatistikleri, kur çevirici ve kütüphane entegrasyonuyla zenginleştirin.",
+  "settings.storeEpicAssistantTitle": "Epic Games Mağaza Asistanı",
+  "settings.storeEpicAssistantDesc": "Kütüphanendeki oyunları Epic Store'da tespit ederek 'Kütüphanede' etiketi ve doğrudan başlatma butonları ekler.",
+  "settings.storeSteamCurrencyTitle": "Steam Türk Lirası (TRY) Çevirici",
+  "settings.storeSteamCurrencyDesc": "Steam USD mağaza fiyatlarının yanına güncel kurla tahmini TL karşılığını ekler (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "SteamDB & Topluluk İstatistikleri",
+  "settings.storeSteamDbDesc": "Steam oyun sayfalarında anlık çevrimiçi oyuncu sayısı, SteamDB ve ProtonDB hızlı erişim butonları sunar."
 }

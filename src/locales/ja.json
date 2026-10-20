@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "下に移動",
   "settings.storeResetOrder": "並び順をリセット",
   "settings.storeHiddenBadge": "非表示",
-  "settings.storeOrderNote": "矢印ボタンでストアタブの並び順を変更できます。最上位の表示中ストアがデフォルトで開きます。"
+  "settings.storeOrderNote": "矢印ボタンでストアタブの並び順を変更できます。最上位の表示中ストアがデフォルトで開きます。",
+  "settings.storeExtGroupTitle": "ストア拡張機能と追加機能",
+  "settings.storeExtNote": "コミュニティ統計、通貨換算、ランチャー連携でストアページを強化します。",
+  "settings.storeEpicAssistantTitle": "Epic Games ストアアシスタント",
+  "settings.storeEpicAssistantDesc": "Epic Storeで所持ゲームを検出し、「ライブラリ内」バッジと直接起動ボタンを追加します。",
+  "settings.storeSteamCurrencyTitle": "Steam トルコリラ（TRY）換算",
+  "settings.storeSteamCurrencyDesc": "Steamの米ドル価格を最新の為替レートでトルコリラに自動換算します（~1 USD ≈ {rate} ₺）。",
+  "settings.storeSteamDbTitle": "SteamDB＆コミュニティ統計",
+  "settings.storeSteamDbDesc": "ゲームページに現在のオンラインプレイヤー数とSteamDB、ProtonDBへのクイックリンクを表示します。"
 }

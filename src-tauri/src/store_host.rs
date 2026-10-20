@@ -510,6 +510,8 @@ fn owned_games_payload() -> String {
 
 /// Page script for the embedded store (`store_extension.js`).
 const STORE_EXTENSION_SCRIPT: &str = include_str!("store_extension.js");
+/// Page script for Steam features (`steam_extension.js`).
+const STEAM_EXTENSION_SCRIPT: &str = include_str!("steam_extension.js");
 
 fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
@@ -522,6 +524,10 @@ fn create_store_builder(
     store_id: &'static str,
     owned_label_js: &str,
     owned_games: &str,
+    epic_assistant: bool,
+    steam_currency: bool,
+    steamdb: bool,
+    steam_rate: f64,
 ) -> tauri::WebviewBuilder<tauri::Wry> {
     use tauri::{WebviewBuilder, WebviewUrl};
     let app_nav = app.clone();
@@ -554,6 +560,15 @@ fn create_store_builder(
             );
         })
         .on_navigation(move |url| {
+            if let Some(host) = url.host_str() {
+                if host.contains("steamdb.info")
+                    || host.contains("protondb.com")
+                    || host.contains("pcgamingwiki.com")
+                {
+                    let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
+                    return false;
+                }
+            }
             if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
                 // A click on the store, while the notification layer is open, asks
                 // the shell to close that layer. The store page itself stays put.
@@ -602,6 +617,15 @@ fn create_store_builder(
             let app_popup = app.clone();
             let popup_label = target_label.clone();
             move |url, _features| {
+                if let Some(host) = url.host_str() {
+                    if host.contains("steamdb.info")
+                        || host.contains("protondb.com")
+                        || host.contains("pcgamingwiki.com")
+                    {
+                        let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
+                        return tauri::webview::NewWindowResponse::Deny;
+                    }
+                }
                 if store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
                     if let Some(view) = app_popup.get_webview(&popup_label) {
                         if let Ok(target) = UBISOFT_OVERLAY_LOGIN.parse::<url::Url>() {
@@ -627,12 +651,17 @@ fn create_store_builder(
     if store_id == "xbox" {
         builder = builder.initialization_script(crate::store_theme::XBOX_DARK_SCRIPT);
     }
-    // The 44 KB storefront decoration only exists for the Epic store: injecting it
-    // into the other storefronts meant parsing and running a script that finds
-    // nothing, on every document load.
-    if store_id == "epic" {
+    // Injected only when Epic Assistant is enabled:
+    if store_id == "epic" && epic_assistant {
         let init_script = format!(
             "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
+        );
+        builder = builder.initialization_script(&init_script);
+    }
+    // Injected for Steam when currency or SteamDB enhancements are enabled:
+    if store_id == "steam" && (steam_currency || steamdb) {
+        let init_script = format!(
+            "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\nwindow.__EFXLVE_STEAM_RATE = {steam_rate};\nwindow.__EFXLVE_STEAMDB = {steamdb};\n{STEAM_EXTENSION_SCRIPT}"
         );
         builder = builder.initialization_script(&init_script);
     }
@@ -646,6 +675,10 @@ pub async fn prewarm_store_view(
     app: AppHandle,
     url: String,
     owned_label: Option<String>,
+    epic_assistant: Option<bool>,
+    steam_currency: Option<bool>,
+    steamdb: Option<bool>,
+    steam_rate: Option<f64>,
 ) -> Result<String, String> {
     let window = app
         .get_window("main")
@@ -674,7 +707,18 @@ pub async fn prewarm_store_view(
     };
     let owned_label_js = js_string(owned_label.as_deref().unwrap_or(""));
 
-    let builder = create_store_builder(&app, target_label.clone(), parsed, store_id, &owned_label_js, &owned_games);
+    let builder = create_store_builder(
+        &app,
+        target_label.clone(),
+        parsed,
+        store_id,
+        &owned_label_js,
+        &owned_games,
+        epic_assistant.unwrap_or(true),
+        steam_currency.unwrap_or(true),
+        steamdb.unwrap_or(true),
+        steam_rate.unwrap_or(34.5),
+    );
     let (width, height) = parked_content_size(&window);
     let pos = tauri::Position::Logical(tauri::LogicalPosition::new(-10000.0, -10000.0));
     let size = tauri::Size::Logical(tauri::LogicalSize::new(width, height));
@@ -702,6 +746,10 @@ pub async fn show_store_view(
     url: String,
     recreate: bool,
     owned_label: Option<String>,
+    epic_assistant: Option<bool>,
+    steam_currency: Option<bool>,
+    steamdb: Option<bool>,
+    steam_rate: Option<f64>,
 ) -> Result<String, String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size};
 
@@ -813,8 +861,14 @@ pub async fn show_store_view(
             if STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst) {
                 let _ = park_store_offscreen(&window);
             }
-            if store_id == "epic" {
+            if store_id == "epic" && epic_assistant.unwrap_or(true) {
                 let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
+            }
+            if store_id == "steam" {
+                let cur = steam_currency.unwrap_or(true);
+                let sdb = steamdb.unwrap_or(true);
+                let rate = steam_rate.unwrap_or(34.5);
+                let _ = v.eval(&format!("window.__EFXLVE_STEAM_CURRENCY = {cur}; window.__EFXLVE_STEAM_RATE = {rate}; window.__EFXLVE_STEAMDB = {sdb}; if(typeof efxlveSteamScan==='function') efxlveSteamScan();"));
             }
             if store_id == "xbox" {
                 let _ = v.eval(crate::store_theme::XBOX_DARK_SCRIPT);
@@ -854,7 +908,18 @@ pub async fn show_store_view(
         _ => return Err("@t:win.onlyHttp".to_string()),
     }
 
-    let builder = create_store_builder(&app, target_label.clone(), parsed, store_id, &owned_label_js, &owned_games);
+    let builder = create_store_builder(
+        &app,
+        target_label.clone(),
+        parsed,
+        store_id,
+        &owned_label_js,
+        &owned_games,
+        epic_assistant.unwrap_or(true),
+        steam_currency.unwrap_or(true),
+        steamdb.unwrap_or(true),
+        steam_rate.unwrap_or(34.5),
+    );
     // add_child posts work to the main thread and waits; to avoid locking the UI
     // on a possible hang, it runs on a separate thread with a timeout.
     let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));

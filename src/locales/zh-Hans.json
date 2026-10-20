@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "下移",
   "settings.storeResetOrder": "重置排序",
   "settings.storeHiddenBadge": "已隐藏",
-  "settings.storeOrderNote": "使用箭头按钮调整商店标签顺序。排在首位的可见商店将默认打开。"
+  "settings.storeOrderNote": "使用箭头按钮调整商店标签顺序。排在首位的可见商店将默认打开。",
+  "settings.storeExtGroupTitle": "商店扩展与增强功能",
+  "settings.storeExtNote": "通过社区统计、货币换算和启动器集成增强商店页面。",
+  "settings.storeEpicAssistantTitle": "Epic Games 商店助手",
+  "settings.storeEpicAssistantDesc": "在 Epic Store 中识别已拥有游戏，显示“在库中”标签并提供直接启动按钮。",
+  "settings.storeSteamCurrencyTitle": "Steam 土耳其里拉 (TRY) 转换器",
+  "settings.storeSteamCurrencyDesc": "使用实时汇率将 Steam 上的美元价格转换为土耳其里拉 (~1 USD ≈ {rate} ₺)。",
+  "settings.storeSteamDbTitle": "SteamDB 与社区统计",
+  "settings.storeSteamDbDesc": "在游戏页面展示实时在线玩家人数以及直达 SteamDB 和 ProtonDB 的快捷按钮。"
 }

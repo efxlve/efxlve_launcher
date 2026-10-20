@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "ย้ายลง",
   "settings.storeResetOrder": "รีเซ็ตลำดับ",
   "settings.storeHiddenBadge": "ซ่อนอยู่",
-  "settings.storeOrderNote": "ใช้ปุ่มลูกศรเพื่อเรียงลำดับแท็บร้านค้า ร้านค้าแรกที่มองเห็นจะเปิดขึ้นตามค่าเริ่มต้น"
+  "settings.storeOrderNote": "ใช้ปุ่มลูกศรเพื่อเรียงลำดับแท็บร้านค้า ร้านค้าแรกที่มองเห็นจะเปิดขึ้นตามค่าเริ่มต้น",
+  "settings.storeExtGroupTitle": "ส่วนขยายและฟีเจอร์ร้านค้า",
+  "settings.storeExtNote": "ยกระดับหน้าร้านค้าด้วยสถิติชุมชน ตัวแปลงสกุลเงิน และการผสานรวมกับลอนเชอร์",
+  "settings.storeEpicAssistantTitle": "ผู้ช่วย Epic Games Store",
+  "settings.storeEpicAssistantDesc": "ตรวจจับเกมที่คุณเป็นเจ้าของใน Epic Store พร้อมแสดงป้าย 'ในคลัง' และปุ่มเริ่มเล่นทันที",
+  "settings.storeSteamCurrencyTitle": "ตัวแปลงค่าเงินลีราตุรกี (TRY) สำหรับ Steam",
+  "settings.storeSteamCurrencyDesc": "แปลงราคา USD บน Steam เป็นลีราตุรกีตามอัตราแลกเปลี่ยนปัจจุบัน (~1 USD ≈ {rate} ₺)",
+  "settings.storeSteamDbTitle": "SteamDB และสถิติชุมชน",
+  "settings.storeSteamDbDesc": "แสดงจำนวนผู้เล่นที่ออนไลน์อยู่และปุ่มลัดไปยัง SteamDB และ ProtonDB บนหน้ารายละเอียดเกม"
 }

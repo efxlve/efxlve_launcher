@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "Descendre",
   "settings.storeResetOrder": "Réinitialiser l'ordre",
   "settings.storeHiddenBadge": "Masqué",
-  "settings.storeOrderNote": "Utilisez les flèches pour réorganiser les onglets des boutiques. La première boutique visible s'ouvre par défaut."
+  "settings.storeOrderNote": "Utilisez les flèches pour réorganiser les onglets des boutiques. La première boutique visible s'ouvre par défaut.",
+  "settings.storeExtGroupTitle": "Extensions & Fonctionnalités de Magasin",
+  "settings.storeExtNote": "Enrichissez les boutiques avec des statistiques communautaires, des convertisseurs et l'intégration du lanceur.",
+  "settings.storeEpicAssistantTitle": "Assistant Epic Games Store",
+  "settings.storeEpicAssistantDesc": "Identifie vos jeux dans l'Epic Store, affiche le badge 'Dans la bibliothèque' et des boutons de lancement direct.",
+  "settings.storeSteamCurrencyTitle": "Convertisseur Steam en Livres Turques (TRY)",
+  "settings.storeSteamCurrencyDesc": "Convertit les prix USD de Steam en livres turques au taux actuel (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "SteamDB & Statistiques Communautaires",
+  "settings.storeSteamDbDesc": "Affiche le nombre de joueurs en direct et des liens rapides vers SteamDB et ProtonDB sur les fiches de jeux."
 }

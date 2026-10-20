@@ -80,6 +80,15 @@ export const STORE_PREWARM_KEY = "efxlve-store-prewarm";
 export const STORE_WARM_LIMIT_KEY = "efxlve-store-warm-limit";
 /** Inactivity timeout in minutes before idle store webviews are destroyed (default 5, 0 = never). */
 export const STORE_IDLE_TIMEOUT_KEY = "efxlve-store-idle-timeout";
+/** Epic Games Store Assistant (owned badges & launcher integration). On by default. */
+export const STORE_EPIC_ASSISTANT_KEY = "efxlve-store-epic-assistant";
+/** Steam Store Turkish Lira (TRY) currency converter. On by default. */
+export const STORE_STEAM_CURRENCY_KEY = "efxlve-store-steam-currency";
+/** SteamDB live player counts and community links. On by default. */
+export const STORE_STEAMDB_KEY = "efxlve-store-steamdb";
+/** Cached USD to TRY exchange rate. */
+export const STEAM_TRY_RATE_KEY = "efxlve-steam-try-rate";
+export const STEAM_TRY_RATE_TIME_KEY = "efxlve-steam-try-rate-time";
 
 /** Settings > System: send the launcher to the taskbar when a game starts. */
 export const MINIMIZE_ON_GAME_KEY = "efxlve-minimize-on-game";

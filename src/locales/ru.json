@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "Вниз",
   "settings.storeResetOrder": "Сбросить порядок",
   "settings.storeHiddenBadge": "Скрыт",
-  "settings.storeOrderNote": "Используйте стрелки для изменения порядка вкладок магазинов. Первый видимый магазин открывается по умолчанию."
+  "settings.storeOrderNote": "Используйте стрелки для изменения порядка вкладок магазинов. Первый видимый магазин открывается по умолчанию.",
+  "settings.storeExtGroupTitle": "Расширения и функции магазинов",
+  "settings.storeExtNote": "Дополняйте страницы магазинов статистикой сообщества, конвертером валют и интеграцией с лаунчером.",
+  "settings.storeEpicAssistantTitle": "Помощник Epic Games Store",
+  "settings.storeEpicAssistantDesc": "Определяет купленные игры в Epic Store, показывает отметку 'В библиотеке' и кнопки быстрого запуска.",
+  "settings.storeSteamCurrencyTitle": "Конвертер цен Steam в турецкие лиры (TRY)",
+  "settings.storeSteamCurrencyDesc": "Конвертирует цены Steam из USD в турецкие лиры по текущему курсу (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "Статистика SteamDB и сообщества",
+  "settings.storeSteamDbDesc": "Показывает онлайн игроков в реальном времени и кнопки быстрого перехода на SteamDB и ProtonDB."
 }

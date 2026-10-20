@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "Move Down",
   "settings.storeResetOrder": "Reset Order",
   "settings.storeHiddenBadge": "Hidden",
-  "settings.storeOrderNote": "Use the arrow buttons to reorder storefront tabs. The top visible store opens by default."
+  "settings.storeOrderNote": "Use the arrow buttons to reorder storefront tabs. The top visible store opens by default.",
+  "settings.storeExtGroupTitle": "Store Extensions & Features",
+  "settings.storeExtNote": "Enhance store pages with community statistics, currency converters, and launcher integration.",
+  "settings.storeEpicAssistantTitle": "Epic Games Store Assistant",
+  "settings.storeEpicAssistantDesc": "Integrates launcher ownership with Epic Games Store, showing 'In Library' tags and direct play buttons.",
+  "settings.storeSteamCurrencyTitle": "Steam Turkish Lira (TRY) Converter",
+  "settings.storeSteamCurrencyDesc": "Converts USD store prices to Turkish Lira using live exchange rates (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "SteamDB & Community Statistics",
+  "settings.storeSteamDbDesc": "Displays live concurrent player counts and quick access buttons to SteamDB and ProtonDB on game pages."
 }

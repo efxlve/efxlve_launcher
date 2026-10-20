@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "नीचे ले जाएं",
   "settings.storeResetOrder": "क्रम रीसेट करें",
   "settings.storeHiddenBadge": "छिपा हुआ",
-  "settings.storeOrderNote": "स्टोर टैब का क्रम बदलने के लिए तीरों का उपयोग करें। शीर्ष दृश्यमान स्टोर डिफ़ॉल्ट रूप से खुलता है।"
+  "settings.storeOrderNote": "स्टोर टैब का क्रम बदलने के लिए तीरों का उपयोग करें। शीर्ष दृश्यमान स्टोर डिफ़ॉल्ट रूप से खुलता है।",
+  "settings.storeExtGroupTitle": "स्टोर एक्सटेंशन और सुविधाएं",
+  "settings.storeExtNote": "सामुदायिक आँकड़ों, मुद्रा परिवर्तक और लॉन्चर एकीकरण के साथ स्टोर पृष्ठों को बेहतर बनाएं।",
+  "settings.storeEpicAssistantTitle": "Epic Games स्टोर सहायक",
+  "settings.storeEpicAssistantDesc": "Epic Store पर स्वामित्व वाले गेम की पहचान करता है, 'लाइब्रेरी में' टैग और सीधे खेलने के बटन जोड़ता है।",
+  "settings.storeSteamCurrencyTitle": "Steam तुर्की लीरा (TRY) कनवर्टर",
+  "settings.storeSteamCurrencyDesc": "मौजूदा विनिमय दर पर Steam USD कीमतों को तुर्की लीरा में बदलता है (~1 USD ≈ {rate} ₺)।",
+  "settings.storeSteamDbTitle": "SteamDB और समुदाय आँकड़े",
+  "settings.storeSteamDbDesc": "गेम पृष्ठों पर लाइव ऑनलाइन खिलाड़ियों की संख्या और SteamDB व ProtonDB के त्वरित बटन प्रदर्शित करता है।"
 }

@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY } from "../../core/constants";
+import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STORE_STEAMDB_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -414,6 +414,64 @@ export function setStorePrewarm(enabled: boolean): void {
   localStorage.setItem(STORE_PREWARM_KEY, String(enabled));
 }
 
+export function storeEpicAssistantEnabled(): boolean {
+  return localStorage.getItem(STORE_EPIC_ASSISTANT_KEY) !== "false";
+}
+
+export function setStoreEpicAssistant(enabled: boolean): void {
+  localStorage.setItem(STORE_EPIC_ASSISTANT_KEY, String(enabled));
+}
+
+export function storeSteamCurrencyEnabled(): boolean {
+  return localStorage.getItem(STORE_STEAM_CURRENCY_KEY) !== "false";
+}
+
+export function setStoreSteamCurrency(enabled: boolean): void {
+  localStorage.setItem(STORE_STEAM_CURRENCY_KEY, String(enabled));
+}
+
+export function storeSteamDbEnabled(): boolean {
+  return localStorage.getItem(STORE_STEAMDB_KEY) !== "false";
+}
+
+export function setStoreSteamDb(enabled: boolean): void {
+  localStorage.setItem(STORE_STEAMDB_KEY, String(enabled));
+}
+
+export function getSteamTryRate(): number {
+  const stored = localStorage.getItem(STEAM_TRY_RATE_KEY);
+  if (stored) {
+    const val = parseFloat(stored);
+    if (!isNaN(val) && val > 0) return val;
+  }
+  return 34.5;
+}
+
+export async function refreshSteamTryRate(): Promise<number> {
+  const lastTime = parseInt(localStorage.getItem(STEAM_TRY_RATE_TIME_KEY) ?? "0", 10);
+  const now = Date.now();
+  if (now - lastTime < 6 * 60 * 60 * 1000) {
+    return getSteamTryRate();
+  }
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.rates?.TRY && typeof data.rates.TRY === "number") {
+        const rate = Math.round(data.rates.TRY * 100) / 100;
+        localStorage.setItem(STEAM_TRY_RATE_KEY, String(rate));
+        localStorage.setItem(STEAM_TRY_RATE_TIME_KEY, String(now));
+        return rate;
+      }
+    }
+  } catch {
+    // network failure, preserve cached rate
+  }
+  return getSteamTryRate();
+}
+
+void refreshSteamTryRate();
+
 export function storeWarmLimit(): number {
   const val = parseInt(localStorage.getItem(STORE_WARM_LIMIT_KEY) || "3", 10);
   return [1, 2, 3, 5].includes(val) ? val : 3;
@@ -444,7 +502,7 @@ export function triggerStorePrewarmIfEnabled(): void {
   window.setTimeout(() => {
     if (S.view !== "store") {
       const topStore = visibleHeaderStores()[0] ?? "epic";
-      invoke("prewarm_store_view", { url: storeUrlFor(topStore), ownedLabel: t("store.inLibrary") }).catch(() => {});
+      invoke("prewarm_store_view", { url: storeUrlFor(topStore), ownedLabel: t("store.inLibrary"), epicAssistant: storeEpicAssistantEnabled(), steamCurrency: storeSteamCurrencyEnabled(), steamdb: storeSteamDbEnabled(), steamRate: getSteamTryRate() }).catch(() => {});
     }
   }, 4000);
 }
@@ -505,7 +563,7 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   setStoreProgress(!warm);
   render();
   try {
-    const result = await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary") });
+    const result = await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary"), epicAssistant: storeEpicAssistantEnabled(), steamCurrency: storeSteamCurrencyEnabled(), steamdb: storeSteamDbEnabled(), steamRate: getSteamTryRate() });
     if (epoch !== storeOpenEpoch || S.view !== "store") {
       setStoreProgress(false);
       // Only the player leaving the store takes it down. A newer openStoreUrl owns
@@ -631,6 +689,10 @@ export async function showEmbeddedStore(url: string, rect: StoreRect): Promise<v
       url,
       recreate: false,
       ownedLabel: t("store.inLibrary"),
+      epicAssistant: storeEpicAssistantEnabled(),
+      steamCurrency: storeSteamCurrencyEnabled(),
+      steamdb: storeSteamDbEnabled(),
+      steamRate: getSteamTryRate(),
     });
     if (epoch !== storeOpenEpoch || embeddedStoreRect === null) {
       if (embeddedStoreRect === null && S.view !== "store") {

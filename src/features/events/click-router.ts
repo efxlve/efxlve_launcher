@@ -109,7 +109,7 @@ import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeSteamDbEnabled, setStoreSteamDb, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -891,6 +891,18 @@ document.addEventListener("click", (e) => {
   } else if (act === "store-order-reset") {
     resetStoreOrder();
     scheduleRender();
+  } else if (act === "toggle-store-epic-assistant") {
+    setStoreEpicAssistant(!storeEpicAssistantEnabled());
+    if (isTauri) invoke("destroy_store_view").catch(() => {});
+    render();
+  } else if (act === "toggle-store-steam-currency") {
+    setStoreSteamCurrency(!storeSteamCurrencyEnabled());
+    if (isTauri) invoke("destroy_store_view").catch(() => {});
+    render();
+  } else if (act === "toggle-store-steamdb") {
+    setStoreSteamDb(!storeSteamDbEnabled());
+    if (isTauri) invoke("destroy_store_view").catch(() => {});
+    render();
   } else if (act === "toggle-store-prewarm") {
     setStorePrewarm(!storePrewarmEnabled());
     render();

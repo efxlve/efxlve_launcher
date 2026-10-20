@@ -67,7 +67,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit } from "../store/store-view";
+import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, storeSteamDbEnabled, getSteamTryRate } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -676,6 +676,17 @@ function renderStores(): string {
   </select>`;
 
   const purgeBtn = `<button class="btn ghost small" data-act="purge-store-views">${icon("trash", 13)} ${t("settings.storePurgeBtn")}</button>`;
+
+  const epicAssistant = storeEpicAssistantEnabled();
+  const steamCurrency = storeSteamCurrencyEnabled();
+  const steamDb = storeSteamDbEnabled();
+  const steamRate = getSteamTryRate();
+
+  const extRows =
+    row(t("settings.storeEpicAssistantTitle"), t("settings.storeEpicAssistantDesc"), toggle("toggle-store-epic-assistant", epicAssistant)) +
+    row(t("settings.storeSteamCurrencyTitle"), t("settings.storeSteamCurrencyDesc", { rate: String(steamRate) }), toggle("toggle-store-steam-currency", steamCurrency)) +
+    row(t("settings.storeSteamDbTitle"), t("settings.storeSteamDbDesc"), toggle("toggle-store-steamdb", steamDb));
+
 
   const perfRows =
     row(t("settings.storePrewarmTitle"), t("settings.storePrewarmDesc"), toggle("toggle-store-prewarm", prewarm)) +

@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "تحريك لأسفل",
   "settings.storeResetOrder": "إعادة تعيين الترتيب",
   "settings.storeHiddenBadge": "مخفي",
-  "settings.storeOrderNote": "استخدم الأسهم لإعادة ترتيب علامات تبويب المتاجر. يتم فتح أول متجر مرئي افتراضياً."
+  "settings.storeOrderNote": "استخدم الأسهم لإعادة ترتيب علامات تبويب المتاجر. يتم فتح أول متجر مرئي افتراضياً.",
+  "settings.storeExtGroupTitle": "ملحقات وميزات المتجر",
+  "settings.storeExtNote": "تحسين صفحات المتجر بإحصائيات المجتمع ومحولات العملات والتكامل مع المشغل.",
+  "settings.storeEpicAssistantTitle": "مساعد متجر Epic Games",
+  "settings.storeEpicAssistantDesc": "يكتشف الألعاب المملوكة في متجر Epic ويعرض شارة 'في المكتبة' وأزرار التشغيل المباشر.",
+  "settings.storeSteamCurrencyTitle": "محول الليرة التركية (TRY) لمتجر Steam",
+  "settings.storeSteamCurrencyDesc": "تحويل أسعار متجر Steam من الدولار إلى الليرة التركية بسعر الصرف الحالي (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "إحصائيات SteamDB والمجتمع",
+  "settings.storeSteamDbDesc": "عرض عدد اللاعبين الحاليين وروابط سريعة إلى SteamDB و ProtonDB على صفحات الألعاب."
 }

@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "Mover abajo",
   "settings.storeResetOrder": "Restablecer orden",
   "settings.storeHiddenBadge": "Oculto",
-  "settings.storeOrderNote": "Usa los botones de flecha para reordenar las pestañas de las tiendas. La primera tienda visible se abre por defecto."
+  "settings.storeOrderNote": "Usa los botones de flecha para reordenar las pestañas de las tiendas. La primera tienda visible se abre por defecto.",
+  "settings.storeExtGroupTitle": "Extensiones y Mejoras de Tienda",
+  "settings.storeExtNote": "Mejora las páginas de la tienda con estadísticas comunitarias, conversión de divisas e integración con el lanzador.",
+  "settings.storeEpicAssistantTitle": "Asistente de Epic Games Store",
+  "settings.storeEpicAssistantDesc": "Detecta juegos en propiedad en Epic Store, muestra 'En la biblioteca' y botones de inicio directo.",
+  "settings.storeSteamCurrencyTitle": "Conversor de Steam a Lira Turca (TRY)",
+  "settings.storeSteamCurrencyDesc": "Convierte los precios en USD de Steam a liras turcas según el cambio actual (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "SteamDB y Estadísticas de la Comunidad",
+  "settings.storeSteamDbDesc": "Muestra el recuento de jugadores en vivo y accesos directos a SteamDB y ProtonDB en las fichas de juegos."
 }

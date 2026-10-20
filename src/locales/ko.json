@@ -2689,5 +2689,13 @@
   "settings.storeMoveDown": "아래로 이동",
   "settings.storeResetOrder": "순서 초기화",
   "settings.storeHiddenBadge": "숨김",
-  "settings.storeOrderNote": "화살표 버튼을 사용하여 스토어 탭의 순서를 변경할 수 있습니다. 가장 위에 있는 스토어가 기본으로 열립니다."
+  "settings.storeOrderNote": "화살표 버튼을 사용하여 스토어 탭의 순서를 변경할 수 있습니다. 가장 위에 있는 스토어가 기본으로 열립니다.",
+  "settings.storeExtGroupTitle": "스토어 확장 기능 및 추가 기능",
+  "settings.storeExtNote": "커뮤니티 통계, 환율 변환기, 런처 연동으로 스토어 페이지를 더욱 풍부하게 만듭니다.",
+  "settings.storeEpicAssistantTitle": "Epic Games 스토어 어시스턴트",
+  "settings.storeEpicAssistantDesc": "Epic Store에서 보유 중인 게임을 감지하여 '라이브러리에 있음' 표시 및 바로 실행 버튼을 추가합니다.",
+  "settings.storeSteamCurrencyTitle": "Steam 터키 리라(TRY) 변환기",
+  "settings.storeSteamCurrencyDesc": "Steam의 USD 가격을 실시간 환율을 반영하여 터키 리라로 환산 표시합니다 (~1 USD ≈ {rate} ₺).",
+  "settings.storeSteamDbTitle": "SteamDB 및 커뮤니티 통계",
+  "settings.storeSteamDbDesc": "게임 페이지에 실시간 접속자 수와 SteamDB 및 ProtonDB 바로가기 버튼을 표시합니다."
 }
