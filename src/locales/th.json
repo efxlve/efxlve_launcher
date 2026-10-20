@@ -2758,5 +2758,6 @@
   "compat.desc.dxvk-macos": "Runs Direct3D 9/10/11 games on macOS through a Vulkan/Metal translation layer.",
   "compat.desc.dxmt": "Translates Direct3D 12 to Metal on macOS.",
   "compat.desc.vulkan-helper-rs": "Manages Vulkan drivers and layers on Linux and macOS. Detected from the system, not installed here.",
-  "compat.managedOnDemand": "Managed by the launcher · Prepared on first use"
+  "compat.managedOnDemand": "Managed by the launcher · Prepared on first use",
+  "compat.storeClientsNote": "These clients are managed by the launcher and downloaded in the background on first use. You do not need to install them separately."
 }

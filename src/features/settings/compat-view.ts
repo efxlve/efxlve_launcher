@@ -229,6 +229,7 @@ function renderGroups(): string {
     const tools = catalog?.tools.filter((tool) => tool.kind === kind) ?? [];
     if (tools.length === 0) return "";
     return `<h3 class="section-title">${esc(t(GROUP_KEYS[kind] ?? "compat.groupHelpers"))}</h3>
+      ${kind === "store" ? `<div class="compat-note">${esc(t("compat.storeClientsNote"))}</div>` : ""}
       <div class="list settings-group">${tools.map(renderTool).join("")}</div>`;
   }).join("");
 }

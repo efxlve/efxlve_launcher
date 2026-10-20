@@ -416,6 +416,16 @@
 .compat-state { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
 .compat-state.ok { color: var(--text); }
 .compat-state.muted { color: var(--text-3); }
+.compat-note {
+  margin: 0 0 8px;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm, 6px);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
 .compat-meta { color: var(--text-3); font-variant-numeric: tabular-nums; }
 .compat-progress-wrap { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .compat-progress { width: 150px; height: 4px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }

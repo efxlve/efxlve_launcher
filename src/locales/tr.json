@@ -2758,5 +2758,6 @@
   "compat.desc.dxvk-macos": "macOS'ta Direct3D 9/10/11 oyunlarını Vulkan/Metal çeviri katmanıyla çalıştırır.",
   "compat.desc.dxmt": "macOS'ta Direct3D 12'yi Metal'e çevirir.",
   "compat.desc.vulkan-helper-rs": "Linux ve macOS'ta Vulkan sürücülerini ve katmanlarını yönetir. Sistemde aranır, launcher kurmaz.",
-  "compat.managedOnDemand": "Launcher yönetiyor · İlk kullanımda hazırlanır"
+  "compat.managedOnDemand": "Launcher yönetiyor · İlk kullanımda hazırlanır",
+  "compat.storeClientsNote": "Bu istemciler launcher tarafından yönetilir ve ilk kullanımda arka planda indirilir. Ayrıca kurman gerekmez."
 }
