@@ -31,8 +31,9 @@ pub fn cover_url_from_assets(assets: &serde_json::Value) -> Option<String> {
     asset_file_url(
         assets,
         &[
-            "library_capsule",
             "library_capsule_2x",
+            "library_capsule",
+            "main_capsule_2x",
             "main_capsule",
             "header",
         ],
@@ -43,10 +44,10 @@ pub fn hero_url_from_assets(assets: &serde_json::Value) -> Option<String> {
     asset_file_url(
         assets,
         &[
-            "library_hero",
             "library_hero_2x",
-            "hero_capsule",
+            "library_hero",
             "hero_capsule_2x",
+            "hero_capsule",
             "header",
         ],
     )
@@ -145,7 +146,7 @@ mod tests {
         let url = cover_url_from_assets(&assets).unwrap();
         assert_eq!(
             url,
-            "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1580790/67e60b0125feb2f0cc6964f0acb785faf1207fbd/library_600x900.jpg?t=1751503462"
+            "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1580790/b52322f78cbdc7e6c267d873056abba7916f7ff3/library_600x900_2x.jpg?t=1751503462"
         );
     }
 

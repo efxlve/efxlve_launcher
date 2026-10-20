@@ -8,7 +8,7 @@
 
 import { scheduleRender } from "./render";
 
-const STORAGE_KEY = "efx.steamArt.v1";
+const STORAGE_KEY = "efx.steamArt.v2";
 const HERO_KEY = "efx.steamHero.v1";
 
 const memory = new Map<string, string>();
@@ -19,7 +19,27 @@ const heroDisk = loadDisk(HERO_KEY);
 function loadDisk(key: string): Map<string, string> {
   const map = new Map<string, string>();
   try {
-    const raw = localStorage.getItem(key);
+    let raw = localStorage.getItem(key);
+    if (!raw && key === STORAGE_KEY) {
+      const v1 = localStorage.getItem("efx.steamArt.v1");
+      if (v1) {
+        const parsed = JSON.parse(v1) as Record<string, string>;
+        const upgraded: Record<string, string> = {};
+        for (const [id, url] of Object.entries(parsed)) {
+          if (id && typeof url === "string" && url) {
+            const hq = url.includes("library_600x900.jpg")
+              ? url.replace("library_600x900.jpg", "library_600x900_2x.jpg")
+              : url.includes("library_capsule.jpg")
+                ? url.replace("library_capsule.jpg", "library_capsule_2x.jpg")
+                : url;
+            upgraded[id] = hq;
+            map.set(id, hq);
+          }
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(upgraded));
+        return map;
+      }
+    }
     if (!raw) return map;
     const parsed = JSON.parse(raw) as Record<string, string>;
     for (const [id, url] of Object.entries(parsed)) {
@@ -109,7 +129,7 @@ export function rememberSteamHero(appId: string, url: string): void {
 }
 
 export function steamCdnPortrait(appId: string): string {
-  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`;
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900_2x.jpg`;
 }
 
 export function steamHeaderPortrait(appId: string): string {

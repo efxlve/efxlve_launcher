@@ -121,6 +121,11 @@ function onArtError(ev: Event): void {
   }
 
   const step = img.dataset.artStep || "0";
+  if (step === "0" && img.src.includes("library_600x900_2x.jpg")) {
+    img.dataset.artStep = "1x";
+    img.src = img.src.replace("library_600x900_2x.jpg", "library_600x900.jpg");
+    return;
+  }
   if (step === "header") {
     rememberSteamCover(appId, "");
     showPlaceholder(img);
