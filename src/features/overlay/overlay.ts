@@ -3280,9 +3280,43 @@ function presenceWord(status: string): string {
 
 let friendsFilterQuery = "";
 
+/** One intentional first screen instead of a profile row above a dead list. */
+function discordConnectStateHtml(): string {
+  const starting = sdkState.status === "starting";
+  const failed = sdkState.status === "error";
+  const body = starting
+    ? t("overlay.discordApprove")
+    : failed
+      ? sdkState.error || t("common.unknownError")
+      : t("overlay.discordSdkDesc");
+  return `
+    <div class="ov-dc-onboard">
+      <div class="ov-dc-onboard-mark">${icon("discord", 30)}</div>
+      <h2 class="ov-dc-onboard-title">${esc(starting ? t("overlay.discordConnecting") : t("overlay.discordNotConnected"))}</h2>
+      <p class="ov-dc-onboard-desc">${esc(body)}</p>
+      <div class="ov-dc-onboard-features">
+        <span>${icon("users", 14)} ${esc(t("overlay.discordFriendsTitle"))}</span>
+        <span>${icon("mail", 14)} ${esc(t("overlay.discordReplyTitle"))}</span>
+        <span>${icon("mic", 14)} ${esc(t("overlay.discordVoiceTitle"))}</span>
+      </div>
+      <button class="btn primary ov-dc-onboard-connect" data-ov="discord-sdk-start" ${starting ? "disabled" : ""}>
+        ${icon("discord", 14)} <span>${esc(starting ? t("overlay.discordConnecting") : t("overlay.discordConnect"))}</span>
+      </button>
+      <button class="btn ghost small" data-ov="discord-open-launcher">
+        ${icon("external", 13)} <span>${esc(t("overlay.openDiscord"))}</span>
+      </button>
+    </div>`;
+}
+
 function renderDiscordSocial(): void {
   const el = viewEl("discord");
   if (!el) return;
+  // With no SDK session, no RPC friend list and no active call there is nothing
+  // useful to list: show the single connect surface instead of an empty column.
+  if (sdkState.status !== "ready" && friendEntries().length === 0 && !webVoice?.inCall) {
+    el.innerHTML = `<div class="ov-dc-social-body">${discordConnectStateHtml()}</div>`;
+    return;
+  }
   const requests = sdkFriends.pendingUsers ?? [];
   if (pickerMode === "requests") {
     el.innerHTML = takeoverSocialHtml(
@@ -4038,13 +4072,7 @@ function chatComposerHtml(target: { id: string; name: string }, draft: string, e
 
 /** Before the session exists: one clear way in, never a dead end. */
 function connectHtml(): string {
-  const failed = sdkState.status === "error";
-  return `
-    <div class="empty-conv-wrap">
-      <div class="empty-conv-title">${esc(t("overlay.discordConnect"))}</div>
-      <p class="empty-conv-desc">${esc(failed ? sdkState.error || t("common.unknownError") : t("overlay.discordSdkDesc"))}</p>
-      <button class="connect-button" data-ov="discord-sdk-start">${icon("discord", 14)} ${esc(t("overlay.discordConnect"))}</button>
-    </div>`;
+  return discordConnectStateHtml();
 }
 
 /* --- SDK calls the tab drives --- */
