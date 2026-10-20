@@ -2447,11 +2447,7 @@ async function loadScreenshots(force = false): Promise<void> {
         </button>
       </div>
     </div>
-    ${visibleShots.length === 0 ? `
-      <div class="ov-empty">
-        <div>${esc(t("overlay.noShots"))}</div>
-        <div style="font-size:12px;color:var(--text-3);margin-top:6px">${esc(t("overlay.captureHint"))}</div>
-      </div>` : `
+    ${visibleShots.length === 0 ? emptyBlockHtml("camera", t("overlay.noShots"), t("overlay.captureHint")) : `
       <div class="ov-shots-grid" style="grid-template-columns:repeat(auto-fill, minmax(${overlayDensityPx()}px, 1fr));gap:12px">
         ${visibleShots.map((item) => {
           const tooltip = item.game_title ? `${item.game_title} • ${item.date_str}` : item.date_str;
