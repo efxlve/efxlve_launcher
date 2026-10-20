@@ -10,7 +10,10 @@ into a safe default (performance left, captures under it on narrow surfaces,
 music right), old `8/8` positions are repaired, and drag/clamp ignores the 1x1
 hidden window. The clock, media poll, clip poll and gamepad rAF stop with the
 hidden panel; the gamepad loop checks every 250 ms instead of every frame
-when no controller is connected. Blur was removed from the overlay surfaces.
+when no controller is connected. Saved widgets for pages the user disabled
+(Spotify, Discord, browser) are dropped when the panel restores, so no
+orphaned floating widget is left without a topbar toggle. Blur was removed
+from the overlay surfaces.
 The overlay Discord tab now has a single connect surface instead of a profile
 row above a dead friend list; Discord purple was replaced by the launcher's
 monochrome accent. Overlay Settings also has a **Reset widget layout** action:
