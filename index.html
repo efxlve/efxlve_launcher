@@ -42,15 +42,16 @@
         <button id="btn-offline-mode" class="winbar-btn net-chip online" data-act="toggle-offline-mode" data-i18n-title="nav.onlineTip" title="Online">
           <span class="net-dot"></span><span class="net-label" data-i18n="nav.online">Online</span>
         </button>
-        <button type="button" id="btn-tv-mode" class="winbar-btn" data-act="open-tv-mode" data-i18n-title="tv.open" title="TV Mode">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect width="20" height="12" x="2" y="6" rx="2"/>
-            <line x1="6" x2="10" y1="12" y2="12"/>
-            <line x1="8" x2="8" y1="10" y2="14"/>
-            <line x1="15" x2="15.01" y1="13" y2="13"/>
-            <line x1="18" x2="18.01" y1="11" y2="11"/>
-          </svg>
-          <span data-i18n="tv.mode">TV Mode</span>
+        <button type="button" id="btn-fullscreen-mode" class="winbar-btn" data-act="toggle-fullscreen-mode" data-i18n-title="fullscreen.mode" title="Full Screen">
+          <span class="fullscreen-icon-wrap" style="display:inline-flex;align-items:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="15 3 21 3 21 9"/>
+              <polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </span>
+          <span data-i18n="fullscreen.mode">Full Screen</span>
         </button>
         <div class="win-controls">
           <button class="win-btn" data-act="win-minimize" data-i18n-title="win.minimize" title="Minimize">

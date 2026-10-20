@@ -650,7 +650,7 @@ export async function initApp(hooks: {
         }
         // Opt-in: get the launcher out of the way when a game starts. TV Mode
         // is a fullscreen couch UI and stays where it is.
-        if (S.minimizeOnGame && S.view !== "tv") {
+        if (S.minimizeOnGame && !S.isFullscreen) {
           void appMinimize().catch(() => {});
         }
         // Opt-in: pause the active download while a game is running so it does not

@@ -161,8 +161,10 @@ export const OVERLAY_DISABLED_KEY = "efxlve-overlay-disabled-games";
 export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 /** Canonical game title → library key of the store version the player picked. */
 export const PREFERRED_VERSION_KEY = "efxlve-preferred-version";
-/** Enter TV Mode automatically when a controller connects. Missing = Steam Deck only. */
-export const TV_AUTO_KEY = "efxlve-tv-auto";
+/** Enter Full Screen Mode automatically when a controller connects. */
+export const FULLSCREEN_AUTO_KEY = "efxlve-fullscreen-auto";
+/** Saved full screen state. */
+export const FULLSCREEN_MODE_KEY = "efxlve-fullscreen-mode";
 
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";

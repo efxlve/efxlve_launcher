@@ -808,7 +808,7 @@ export function hideStore(): void {
 export function setView(next: View): void {
   if (next !== "store") {
     hideStore();
-    if (next !== "tv") S.lastNonStoreView = next;
+    S.lastNonStoreView = next;
   }
   S.view = next;
 }

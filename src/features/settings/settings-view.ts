@@ -630,10 +630,10 @@ function renderController(): string {
   const deckNote = isSteamDeckDevice() || pads.some((g) => controllerKind(g.id) === "steamdeck")
     ? `<p class="page-sub">${t("controller.deckNote")}</p>`
     : "";
-  const tv = row(
-    t("controller.tvAutoTitle"),
-    t("controller.tvAutoDesc"),
-    toggle("toggle-tv-auto", S.tvAutoEnter),
+  const fullscreenAuto = row(
+    t("controller.fullscreenAutoTitle"),
+    t("controller.fullscreenAutoDesc"),
+    toggle("toggle-fullscreen-auto", S.fullscreenAutoEnter),
   );
   const bridge = row(
     t("controller.bridgeTitle"),
@@ -645,7 +645,7 @@ function renderController(): string {
   const virtualNote = status?.bridgeRunning
     ? infoBox("controller.bridgeVirtualNote")
     : "";
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(tv, t("tv.mode")) + deckNote + group(bridge, t("settings.secController"));
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenAuto, t("fullscreen.mode")) + deckNote + group(bridge, t("settings.secController"));
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */
@@ -1093,7 +1093,7 @@ function renderAppearance(): string {
       row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
-      row(t("tv.open"), t("controller.tvModeDesc"), `<button class="btn ghost small" data-act="open-tv-mode">${icon("gamepad-2", 14)} ${t("tv.open")}</button>`) +
+      row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`) +
       row(t("overlay.overlayLabel"), t("overlay.startHint"), `<button class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>`) +
       (overlayBlockedGames().length > 0
         ? row(

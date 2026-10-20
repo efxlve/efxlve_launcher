@@ -151,21 +151,7 @@ function presenceContext(): {
   if (S.view === "store") {
     return { details: t("presence.store"), state: t("presence.storeState"), image: LAUNCHER_ICON, hover: "Efxlve Launcher", small: "", start: 0 };
   }
-  if (S.view === "tv") {
-    // The console shell has its own detail state; a game hub open wins.
-    if (S.tvDetailAppName) {
-      const { image, title } = gameArt(S.tvDetailAppName);
-      return {
-        details: t("presence.viewing", { title }),
-        state: t("presence.tv"),
-        image: image || LAUNCHER_ICON,
-        hover: title,
-        small: image ? LAUNCHER_ICON : "",
-        start: 0,
-      };
-    }
-    return { details: t("presence.tv"), state: t("presence.tvState"), image: LAUNCHER_ICON, hover: "Efxlve Launcher", small: "", start: 0 };
-  }
+  if (S.isFullscreen) { return { details: t("presence.library"), state: t("fullscreen.mode"), image: LAUNCHER_ICON, hover: "Efxlve Launcher", small: "", start: 0 }; }
   if (S.view === "accounts") {
     return { details: t("presence.accounts"), state: t("presence.accountsState"), image: LAUNCHER_ICON, hover: "Efxlve Launcher", small: "", start: 0 };
   }

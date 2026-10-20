@@ -1,0 +1,111 @@
+/* Fullscreen Mode & Controller Focus Styling */
+
+body.fullscreen-mode {
+  user-select: none;
+}
+
+/* Slightly scale up cards and spacing in Fullscreen Mode for couch / big screen viewing */
+body.fullscreen-mode .pgrid {
+  gap: 20px !important;
+  padding: 16px 24px 80px 24px !important;
+}
+
+body.fullscreen-mode .pcard {
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1), outline 0.15s ease !important;
+}
+
+/* Glowing controller focus ring */
+.gp-focused,
+.pcard.gp-focused,
+.lrow.gp-focused,
+.btn.gp-focused,
+button.gp-focused {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.65), 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+  transform: scale(1.04) !important;
+  z-index: 25 !important;
+}
+
+/* Gamepad HUD Floating Bar */
+.gamepad-hud-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: rgba(18, 20, 26, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 8px 22px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.2);
+  z-index: 9999;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-normal, #e4e4e7);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.gamepad-hud-bar.hidden {
+  opacity: 0;
+  transform: translate(-50%, 15px);
+  pointer-events: none;
+}
+
+.gp-hud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.gp-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #fff;
+  line-height: 1;
+}
+
+.gp-glyph.btn-a {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+}
+
+.gp-glyph.btn-b {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.gp-glyph.btn-x {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #60a5fa;
+}
+
+.gp-glyph.btn-y {
+  background: rgba(234, 179, 8, 0.25);
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #facc15;
+}
+
+.gp-glyph.btn-bumper {
+  font-size: 10px;
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.08);
+}

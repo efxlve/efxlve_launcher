@@ -318,7 +318,7 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       // consumer closed is dropped instead of holding the gallery in memory.
       if (!S.loadingScreenshotsFor.has(appName)) return;
       S.loadingScreenshotsFor.delete(appName);
-      const consumerOpen = S.currentModalAppName === appName || S.tvDetailAppName === appName;
+      const consumerOpen = S.currentModalAppName === appName;
       if (!consumerOpen) return;
       S.loadedScreenshots.set(appName, items);
       if (S.currentModalAppName === appName) {

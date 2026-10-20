@@ -41,7 +41,7 @@ import {
   normalizeCaseCoverStyle,
   SEPARATE_COPIES_KEY,
   SURFACE_KEY,
-  TV_AUTO_KEY,
+  FULLSCREEN_AUTO_KEY,
   CONTROLLER_BRIDGE_KEY,
   MINIMIZE_ON_GAME_KEY,
   AUTOSTART_INIT_KEY,
@@ -105,7 +105,7 @@ import { rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
-import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
+import { toggleFullscreenMode } from "../gamepad/fullscreen-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
@@ -588,12 +588,10 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "open-palette") {
     openPalette();
-  } else if (act === "open-tv-mode") {
-    openTvMode();
+  } else if (act === "toggle-fullscreen-mode") {
+    void toggleFullscreenMode();
   } else if (act === "open-overlay") {
     void invoke("overlay_show");
-  } else if (act === "close-tv-mode") {
-    closeTvMode();
   } else if (act === "lib-clear-search") {
     S.query = "";
     const input = document.getElementById("search") as HTMLInputElement | null;
@@ -984,9 +982,9 @@ document.addEventListener("click", (e) => {
     // The result set itself changes (one card per title vs one per copy).
     S.libraryDataRev++;
     if (!refreshLibraryResultsInPlace()) scheduleRender();
-  } else if (act === "toggle-tv-auto") {
-    S.tvAutoEnter = !S.tvAutoEnter;
-    localStorage.setItem(TV_AUTO_KEY, String(S.tvAutoEnter));
+  } else if (act === "toggle-fullscreen-auto") {
+    S.fullscreenAutoEnter = !S.fullscreenAutoEnter;
+    localStorage.setItem(FULLSCREEN_AUTO_KEY, String(S.fullscreenAutoEnter));
     render();
   } else if (act === "toggle-shared-library") {
     S.showSharedLibrary = !S.showSharedLibrary;

@@ -44,7 +44,6 @@ import { renderScreenshotsPage } from "./features/screenshots/screenshots-page";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
-import { hydrateTvMode, renderTvMode } from "./features/gamepad/tv-mode";
 
 if (S.surface !== "black") document.documentElement.dataset.surface = S.surface;
 document.documentElement.classList.add("ready");
@@ -80,15 +79,13 @@ function scheduleRender(): void {
 /** Render the active view and refresh the surrounding chrome. */
 function render(): void {
   // TV Mode is a full-screen shell state; a single place toggles its body class.
-  document.body.classList.toggle("tv-mode", S.view === "tv");
-  // The Spotify page is an embedded web player: it owns the whole content area.
+    // The Spotify page is an embedded web player: it owns the whole content area.
   document.body.classList.toggle("spotify-page", S.view === "music");
   // The Discord page is an embedded web client: it owns the whole content area.
   document.body.classList.toggle("discord-page", S.view === "discord");
 
   // When leaving the store, hard-hide the native webview to avoid overlap.
-  // TV Mode keeps the child on screen while its store panel is open.
-  if (S.view !== "store" && S.storeShown && !embeddedStoreHeld()) hideStore();
+    if (S.view !== "store" && S.storeShown && !embeddedStoreHeld()) hideStore();
 
   // Same for the Spotify child, and this must run before the early returns
   // below: the store and patched-library branches would otherwise skip it and
@@ -150,8 +147,7 @@ function render(): void {
     : S.view === "discord" ? renderDiscordPage()
     : S.view === "notes" ? renderNotesPage()
     : S.view === "screenshots" ? renderScreenshotsPage()
-    : S.view === "tv" ? renderTvMode()
-    : renderSettings();
+        : renderSettings();
   if (S.view === "library") {
     setupLibScrollObserver();
     if (S.isColDropdownOpen) positionColDropdownMenu();
@@ -160,10 +156,7 @@ function render(): void {
       if (strip) strip.scrollLeft = libStripScroll;
     }
   }
-  if (S.view === "tv") {
-    hydrateTvMode();
-  }
-  if (S.view === "music") {
+    if (S.view === "music") {
     hydrateMusic();
   }
   if (S.view === "discord") {

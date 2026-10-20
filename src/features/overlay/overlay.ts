@@ -1090,7 +1090,7 @@ function paintBattery(): void {
   const showPct = showBatteryPercent();
   if (!cachedBattery) {
     el.innerHTML = `<span class="ov-battery-icon">${icon("battery", 15)}</span>`;
-    el.title = t("tv.battery");
+    el.title = t("common.battery");
     return;
   }
   const ic = cachedBattery.charging ? icon("battery-charging", 15) : icon("battery", 15);
@@ -1098,7 +1098,7 @@ function paintBattery(): void {
     <span class="ov-battery-icon">${ic}</span>
     ${showPct ? `<span class="ov-battery-level">${cachedBattery.level}%</span>` : ""}
   `;
-  el.title = `${t("tv.battery")}: ${cachedBattery.level}%${cachedBattery.charging ? " (Şarj oluyor)" : ""}`;
+  el.title = `${t("common.battery")}: ${cachedBattery.level}%${cachedBattery.charging ? " (Şarj oluyor)" : ""}`;
 }
 
 /* ---------- Recent Games (Top Bar Left) ---------- */
@@ -1303,7 +1303,7 @@ function shellHtml(): string {
 
         <div class="ov-topbar-divider"></div>
 
-        <div class="ov-topbar-battery" id="ov-topbar-battery" title="${esc(t("tv.battery"))}">
+        <div class="ov-topbar-battery" id="ov-topbar-battery" title="${esc(t("common.battery"))}">
           <span class="ov-battery-icon">${icon("battery", 15)}</span>
           ${showBatteryPercent() && cachedBattery ? `<span class="ov-battery-level">${cachedBattery.level}%</span>` : ""}
         </div>

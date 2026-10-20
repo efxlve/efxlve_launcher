@@ -65,7 +65,8 @@ import {
   normalizeCaseColorMode,
   type CaseColorMode,
   SEPARATE_COPIES_KEY,
-  TV_AUTO_KEY,
+  FULLSCREEN_AUTO_KEY,
+  FULLSCREEN_MODE_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
@@ -539,11 +540,11 @@ export const S = {
   })(),
   /** Show each store copy of a multi-store game as its own card. Off = combined. */
   separateCopies: (localStorage.getItem(SEPARATE_COPIES_KEY) === "true") as boolean,
-  /** Game whose TV Mode game hub is open (the hub's own screenshots consumer). */
-  tvDetailAppName: (null) as string | null,
-  tvAutoEnter: (() => {
+  /** Full Screen Mode state and auto-enter preference. */
+  isFullscreen: false,
+  fullscreenAutoEnter: (() => {
     try {
-      const v = localStorage.getItem(TV_AUTO_KEY);
+      const v = localStorage.getItem(FULLSCREEN_AUTO_KEY);
       if (v === "true") return true;
       if (v === "false") return false;
     } catch {
