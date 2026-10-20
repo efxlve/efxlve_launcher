@@ -326,7 +326,7 @@
                     el.style.setProperty('display', 'none', 'important');
                     el.style.setProperty('visibility', 'hidden', 'important');
                     el.style.setProperty('pointer-events', 'none', 'important');
-                    if (el.parentElement && (el.parentElement.tagName === 'LI' || el.parentElement.tagName === 'DIV')) {
+                    if (el.parentElement && (el.parentElement.tagName === 'LI' || (el.parentElement.tagName === 'DIV' && el.parentElement.children.length <= 1))) {
                         el.parentElement.style.setProperty('display', 'none', 'important');
                     }
                 }
@@ -355,7 +355,7 @@
                         c.style.setProperty('display', 'none', 'important');
                         c.style.setProperty('visibility', 'hidden', 'important');
                         c.style.setProperty('pointer-events', 'none', 'important');
-                        if (c.parentElement && (c.parentElement.tagName === 'LI' || c.parentElement.tagName === 'DIV')) {
+                        if (c.parentElement && (c.parentElement.tagName === 'LI' || (c.parentElement.tagName === 'DIV' && c.parentElement.children.length <= 1))) {
                             c.parentElement.style.setProperty('display', 'none', 'important');
                         }
                     }
@@ -582,11 +582,7 @@
             }
         }
 
-        // 4. Title container fallback
-        var titleEl = card.querySelector('[data-testid*="title" i], [class*="title" i], [class*="Title" i], h2, h3, h4');
-        if (titleEl && titleEl.parentElement && !isCardRoot(titleEl.parentElement)) {
-            return titleEl.parentElement;
-        }
+        // No price container found (cards without prices like carousel items must not be overwritten)
 
         return null;
     }
@@ -669,7 +665,7 @@
             for (var i = 0; i < links.length; i++) {
                 var link = links[i];
 
-                if (link.closest('nav, header, [role="tablist"], [role="tab"], [data-component*="Tab"], [data-component*="Breadcrumb"], [class*="breadcrumb" i]')) {
+                if (link.closest('nav, header, [role="tablist"], [role="tab"], [data-component*="Tab"], [data-component*="Breadcrumb"], [class*="breadcrumb" i], [class*="carousel" i], [class*="slider" i], [class*="Hero" i] aside, [class*="Hero" i] ul, [aria-roledescription="carousel" i], [data-component*="HeroCarousel" i], [data-component*="Carousel" i]')) {
                     continue;
                 }
 
@@ -684,6 +680,10 @@
                 if (match) {
                     var priceContainer = getPriceContainer(card);
                     if (priceContainer) {
+                        // Safety guard: if the container contains images, titles, or headings, it is NOT a price container.
+                        if (priceContainer.querySelector('img, picture, h1, h2, h3, h4, [data-testid*="title" i]')) {
+                            continue;
+                        }
                         var isInstalled = !!match.i;
                         var existingTag = priceContainer.querySelector('.efxlve-price-tag');
                         var needsRender = (priceContainer.getAttribute('data-efxlve-owned') !== match.a) ||
