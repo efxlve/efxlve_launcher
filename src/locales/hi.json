@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "मौजूदा विनिमय दर पर Steam USD कीमतों को तुर्की लीरा में बदलता है (~1 USD ≈ {rate} ₺)।",
   "settings.storeSteamDbTitle": "SteamDB और समुदाय आँकड़े",
   "settings.storeSteamDbDesc": "गेम पृष्ठों पर लाइव ऑनलाइन खिलाड़ियों की संख्या और SteamDB व ProtonDB के त्वरित बटन प्रदर्शित करता है।",
-  "settings.storeNativeBadge": "Efxlve मूल",
-  "settings.storeThirdPartyBadge": "तृतीय पक्ष",
   "settings.storeAuthorEfxlve": "Efxlve लॉन्चर द्वारा विकसित",
-  "settings.storeSteamDbAuthor": "SteamDatabase समुदाय द्वारा ओपन-सोर्स एक्सटेंशन",
+  "settings.storeSteamDbAuthor": "SteamDatabase समुदाय द्वारा ओपन-सोर्स एक्सटेंशन (तृतीय पक्ष)",
   "settings.storeSteamDbOptionsBtn": "विकल्प",
   "settings.storeSteamDbOptionsTitle": "SteamDB एक्सटेंशन सुविधाएं",
   "settings.storeSteamDbOptLowestPrice": "न्यूनतम रिकॉर्ड किया गया मूल्य बैनर",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "डेवलपर और प्रकाशक खोज लिंक",
   "settings.storeSteamDbOptSubid": "पैकेज SubID बैज",
   "settings.storeSteamDbOptLastUpdate": "अंतिम डिपो अपडेट तिथि",
-  "settings.storeSteamDbOptHideInstall": "'Steam इंस्टॉल करें' बटन छुपाएं"
+  "settings.storeSteamDbOptHideInstall": "'Steam इंस्टॉल करें' बटन छुपाएं",
+  "settings.storeSteamCurrencyRegionNote": "Steam के क्षेत्रीय मुद्रा परिवर्तन के बाद तुर्की / MENA-USD क्षेत्र के उपयोगकर्ताओं के लिए विकसित किया गया।",
+  "settings.storeSteamDbConfigure": "सुविधाएं कॉन्फ़िगर करें",
+  "settings.storeSteamDbHideOptions": "सुविधाएं छुपाएं"
 }

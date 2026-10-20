@@ -423,7 +423,7 @@ export function setStoreEpicAssistant(enabled: boolean): void {
 }
 
 export function storeSteamCurrencyEnabled(): boolean {
-  return localStorage.getItem(STORE_STEAM_CURRENCY_KEY) !== "false";
+  return localStorage.getItem(STORE_STEAM_CURRENCY_KEY) === "true";
 }
 
 export function setStoreSteamCurrency(enabled: boolean): void {
@@ -431,7 +431,7 @@ export function setStoreSteamCurrency(enabled: boolean): void {
 }
 
 export function storeSteamDbEnabled(): boolean {
-  return localStorage.getItem(STORE_STEAMDB_KEY) !== "false";
+  return localStorage.getItem(STORE_STEAMDB_KEY) === "true";
 }
 
 export function setStoreSteamDb(enabled: boolean): void {

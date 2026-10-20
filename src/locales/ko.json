@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "Steam의 USD 가격을 실시간 환율을 반영하여 터키 리라로 환산 표시합니다 (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB 및 커뮤니티 통계",
   "settings.storeSteamDbDesc": "게임 페이지에 실시간 접속자 수와 SteamDB 및 ProtonDB 바로가기 버튼을 표시합니다.",
-  "settings.storeNativeBadge": "Efxlve 기본 제공",
-  "settings.storeThirdPartyBadge": "타사 제공",
   "settings.storeAuthorEfxlve": "Efxlve Launcher에서 개발함",
-  "settings.storeSteamDbAuthor": "SteamDatabase 커뮤니티의 오픈 소스 확장 프로그램",
+  "settings.storeSteamDbAuthor": "SteamDatabase 커뮤니티의 오픈 소스 확장 프로그램 (타사 제공)",
   "settings.storeSteamDbOptionsBtn": "옵션",
   "settings.storeSteamDbOptionsTitle": "SteamDB 확장 기능",
   "settings.storeSteamDbOptLowestPrice": "역대 최저가 배너",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "개발사 및 배급사 검색 링크",
   "settings.storeSteamDbOptSubid": "패키지 SubID 배지",
   "settings.storeSteamDbOptLastUpdate": "마지막 디포 업데이트 날짜",
-  "settings.storeSteamDbOptHideInstall": "\"Steam 설치\" 버튼 숨기기"
+  "settings.storeSteamDbOptHideInstall": "\"Steam 설치\" 버튼 숨기기",
+  "settings.storeSteamCurrencyRegionNote": "Steam의 지역 통화 변경에 따라 튀르키예 / MENA-USD 지역 사용자를 위해 개발되었습니다.",
+  "settings.storeSteamDbConfigure": "기능 설정",
+  "settings.storeSteamDbHideOptions": "기능 숨기기"
 }

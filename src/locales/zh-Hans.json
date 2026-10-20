@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "使用实时汇率将 Steam 上的美元价格转换为土耳其里拉 (~1 USD ≈ {rate} ₺)。",
   "settings.storeSteamDbTitle": "SteamDB 与社区统计",
   "settings.storeSteamDbDesc": "在游戏页面展示实时在线玩家人数以及直达 SteamDB 和 ProtonDB 的快捷按钮。",
-  "settings.storeNativeBadge": "Efxlve 原生",
-  "settings.storeThirdPartyBadge": "第三方",
   "settings.storeAuthorEfxlve": "由 Efxlve Launcher 开发",
-  "settings.storeSteamDbAuthor": "SteamDatabase 社区开源扩展",
+  "settings.storeSteamDbAuthor": "SteamDatabase 社区开源扩展（第三方）",
   "settings.storeSteamDbOptionsBtn": "选项",
   "settings.storeSteamDbOptionsTitle": "SteamDB 扩展功能",
   "settings.storeSteamDbOptLowestPrice": "历史最低价横幅",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "开发商与发行商搜索链接",
   "settings.storeSteamDbOptSubid": "安装包 SubID 徽标",
   "settings.storeSteamDbOptLastUpdate": "最后仓库更新日期",
-  "settings.storeSteamDbOptHideInstall": "隐藏“安装 Steam”按钮"
+  "settings.storeSteamDbOptHideInstall": "隐藏“安装 Steam”按钮",
+  "settings.storeSteamCurrencyRegionNote": "在 Steam 更改区域货币后，专为土耳其 / MENA-USD 地区的用户开发。",
+  "settings.storeSteamDbConfigure": "配置功能",
+  "settings.storeSteamDbHideOptions": "隐藏功能"
 }

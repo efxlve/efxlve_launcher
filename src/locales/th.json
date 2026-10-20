@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "แปลงราคา USD บน Steam เป็นลีราตุรกีตามอัตราแลกเปลี่ยนปัจจุบัน (~1 USD ≈ {rate} ₺)",
   "settings.storeSteamDbTitle": "SteamDB และสถิติชุมชน",
   "settings.storeSteamDbDesc": "แสดงจำนวนผู้เล่นที่ออนไลน์อยู่และปุ่มลัดไปยัง SteamDB และ ProtonDB บนหน้ารายละเอียดเกม",
-  "settings.storeNativeBadge": "Efxlve ดั้งเดิม",
-  "settings.storeThirdPartyBadge": "บุคคลที่สาม",
   "settings.storeAuthorEfxlve": "พัฒนาโดย Efxlve Launcher",
-  "settings.storeSteamDbAuthor": "ส่วนขยายโอเพนซอร์สโดยชุมชน SteamDatabase",
+  "settings.storeSteamDbAuthor": "ส่วนขยายโอเพนซอร์สโดยชุมชน SteamDatabase (บุคคลที่สาม)",
   "settings.storeSteamDbOptionsBtn": "ตัวเลือก",
   "settings.storeSteamDbOptionsTitle": "คุณสมบัติส่วนขยาย SteamDB",
   "settings.storeSteamDbOptLowestPrice": "แบนเนอร์ราคาต่ำสุดที่เป็นประวัติการณ์",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "ลิงก์ค้นหาผู้พัฒนาและผู้จัดจำหน่าย",
   "settings.storeSteamDbOptSubid": "ป้าย SubID ของแพ็กเกจ",
   "settings.storeSteamDbOptLastUpdate": "วันที่อัปเดตดีโปครั้งล่าสุด",
-  "settings.storeSteamDbOptHideInstall": "ซ่อนปุ่ม 'ติดตั้ง Steam'"
+  "settings.storeSteamDbOptHideInstall": "ซ่อนปุ่ม 'ติดตั้ง Steam'",
+  "settings.storeSteamCurrencyRegionNote": "พัฒนาขึ้นสำหรับผู้ใช้ในภูมิภาคตุรกี / MENA-USD หลังจากการเปลี่ยนแปลงสกุลเงินของ Steam",
+  "settings.storeSteamDbConfigure": "กำหนดค่าคุณสมบัติ",
+  "settings.storeSteamDbHideOptions": "ซ่อนคุณสมบัติ"
 }

@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "Convertit les prix USD de Steam en livres turques au taux actuel (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB & Statistiques Communautaires",
   "settings.storeSteamDbDesc": "Affiche le nombre de joueurs en direct et des liens rapides vers SteamDB et ProtonDB sur les fiches de jeux.",
-  "settings.storeNativeBadge": "Efxlve Natif",
-  "settings.storeThirdPartyBadge": "Tiers",
   "settings.storeAuthorEfxlve": "Développé par Efxlve Launcher",
-  "settings.storeSteamDbAuthor": "Extension open source par la communauté SteamDatabase",
+  "settings.storeSteamDbAuthor": "Extension open source par la communauté SteamDatabase (Tiers)",
   "settings.storeSteamDbOptionsBtn": "Options",
   "settings.storeSteamDbOptionsTitle": "Fonctionnalités de l'extension SteamDB",
   "settings.storeSteamDbOptLowestPrice": "Bannière du prix le plus bas enregistré",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "Liens de recherche développeur et éditeur",
   "settings.storeSteamDbOptSubid": "Identifiants de sous-package (SubID)",
   "settings.storeSteamDbOptLastUpdate": "Date de dernière mise à jour des dépôts",
-  "settings.storeSteamDbOptHideInstall": "Masquer le bouton « Installer Steam »"
+  "settings.storeSteamDbOptHideInstall": "Masquer le bouton « Installer Steam »",
+  "settings.storeSteamCurrencyRegionNote": "Développé pour les utilisateurs de la région Turquie / MENA-USD après le changement de devise de Steam.",
+  "settings.storeSteamDbConfigure": "Configurer les fonctionnalités",
+  "settings.storeSteamDbHideOptions": "Masquer les fonctionnalités"
 }

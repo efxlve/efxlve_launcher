@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "تحويل أسعار متجر Steam من الدولار إلى الليرة التركية بسعر الصرف الحالي (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "إحصائيات SteamDB والمجتمع",
   "settings.storeSteamDbDesc": "عرض عدد اللاعبين الحاليين وروابط سريعة إلى SteamDB و ProtonDB على صفحات الألعاب.",
-  "settings.storeNativeBadge": "Efxlve أصلي",
-  "settings.storeThirdPartyBadge": "طرف ثالث",
   "settings.storeAuthorEfxlve": "تم تطويره بواسطة مشغل Efxlve",
-  "settings.storeSteamDbAuthor": "ملحق مفتوح المصدر من مجتمع SteamDatabase",
+  "settings.storeSteamDbAuthor": "ملحق مفتوح المصدر من مجتمع SteamDatabase (طرف ثالث)",
   "settings.storeSteamDbOptionsBtn": "خيارات",
   "settings.storeSteamDbOptionsTitle": "ميزات ملحق SteamDB",
   "settings.storeSteamDbOptLowestPrice": "شريط أدنى سعر مسجل",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "روابط بحث المطور والناشر",
   "settings.storeSteamDbOptSubid": "شارات SubID للحزم",
   "settings.storeSteamDbOptLastUpdate": "تاريخ آخر تحديث للمستودعات",
-  "settings.storeSteamDbOptHideInstall": "إخفاء زر \"تثبيت Steam\""
+  "settings.storeSteamDbOptHideInstall": "إخفاء زر \"تثبيت Steam\"",
+  "settings.storeSteamCurrencyRegionNote": "تم تطويره للمستخدمين في منطقة تركيا / MENA-USD بعد تغيير العملة الإقليمية في Steam.",
+  "settings.storeSteamDbConfigure": "تكوين الميزات",
+  "settings.storeSteamDbHideOptions": "إخفاء الميزات"
 }

@@ -2698,10 +2698,8 @@
   "settings.storeSteamCurrencyDesc": "Rechnet USD-Preise im Steam-Shop mit aktuellem Kurs in Türkische Lira um (~1 USD ≈ {rate} ₺).",
   "settings.storeSteamDbTitle": "SteamDB & Community-Statistiken",
   "settings.storeSteamDbDesc": "Zeigt aktuelle Spielerzahlen sowie Schnellzugriff auf SteamDB und ProtonDB auf Spieleseiten an.",
-  "settings.storeNativeBadge": "Efxlve Nativ",
-  "settings.storeThirdPartyBadge": "Drittanbieter",
   "settings.storeAuthorEfxlve": "Entwickelt von Efxlve Launcher",
-  "settings.storeSteamDbAuthor": "Open-Source-Erweiterung der SteamDatabase-Community",
+  "settings.storeSteamDbAuthor": "Open-Source-Erweiterung der SteamDatabase-Community (Drittanbieter)",
   "settings.storeSteamDbOptionsBtn": "Optionen",
   "settings.storeSteamDbOptionsTitle": "SteamDB-Erweiterungsfunktionen",
   "settings.storeSteamDbOptLowestPrice": "Niedrigster erfasster Preis",
@@ -2712,5 +2710,8 @@
   "settings.storeSteamDbOptDevPub": "Entwickler- & Publisher-Suchlinks",
   "settings.storeSteamDbOptSubid": "Paket-SubID-Kennzeichnungen",
   "settings.storeSteamDbOptLastUpdate": "Datum der letzten Depot-Aktualisierung",
-  "settings.storeSteamDbOptHideInstall": "„Steam installieren“-Schaltfläche ausblenden"
+  "settings.storeSteamDbOptHideInstall": "„Steam installieren“-Schaltfläche ausblenden",
+  "settings.storeSteamCurrencyRegionNote": "Entwickelt für Nutzer in der Region Türkei / MENA-USD nach Steams Währungsumstellung.",
+  "settings.storeSteamDbConfigure": "Funktionen konfigurieren",
+  "settings.storeSteamDbHideOptions": "Funktionen ausblenden"
 }

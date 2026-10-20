@@ -715,8 +715,8 @@ pub async fn prewarm_store_view(
         &owned_label_js,
         &owned_games,
         epic_assistant.unwrap_or(true),
-        steam_currency.unwrap_or(true),
-        steamdb.unwrap_or(true),
+        steam_currency.unwrap_or(false),
+        steamdb.unwrap_or(false),
         steam_rate.unwrap_or(34.5),
     );
     let (width, height) = parked_content_size(&window);
@@ -865,8 +865,8 @@ pub async fn show_store_view(
                 let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
             }
             if store_id == "steam" {
-                let cur = steam_currency.unwrap_or(true);
-                let sdb = steamdb.unwrap_or(true);
+                let cur = steam_currency.unwrap_or(false);
+                let sdb = steamdb.unwrap_or(false);
                 let rate = steam_rate.unwrap_or(34.5);
                 let _ = v.eval(&format!("window.__EFXLVE_STEAM_CURRENCY = {cur}; window.__EFXLVE_STEAM_RATE = {rate}; window.__EFXLVE_STEAMDB = {sdb}; if(typeof efxlveSteamScan==='function') efxlveSteamScan();"));
             }
@@ -916,8 +916,8 @@ pub async fn show_store_view(
         &owned_label_js,
         &owned_games,
         epic_assistant.unwrap_or(true),
-        steam_currency.unwrap_or(true),
-        steamdb.unwrap_or(true),
+        steam_currency.unwrap_or(false),
+        steamdb.unwrap_or(false),
         steam_rate.unwrap_or(34.5),
     );
     // add_child posts work to the main thread and waits; to avoid locking the UI
