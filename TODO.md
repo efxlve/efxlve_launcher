@@ -115,12 +115,12 @@ collection entry. The current code already had the simplified row, single meta
 line and one collection entry (the older screenshot was stale). A follow-up
 split the personal facts into two sidebar widgets: **İstatistikler** (time and
 trophies) at the top above next achievements, and **Bulut** below it. The cloud
-card names the owner for external stores ("EA Cloud tarafından yönetilir",
-"Steam Cloud tarafından yönetilir", …) and keeps the sync state for
-launcher-managed copies. The scores card is back to scores only. The Steam genre
-fallback now uses the same Turkish dictionary. The empty right side of the hero
-action bar now carries a compact last-session summary (time, when, trophies);
-the personal block no longer repeats that card.
+card leads with the owner for external stores ("EA Cloud", "Steam Cloud", …)
+and the note explains the ownership; launcher-managed copies keep the sync
+state. The scores card is back to scores only. The Steam genre fallback now uses
+the same Turkish dictionary. The empty right side of the hero action bar now
+carries a compact last-session summary (time, when, trophies); the personal
+block no longer repeats that card.
 
 ## 0b. Remaining plan items
 

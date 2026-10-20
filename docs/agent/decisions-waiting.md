@@ -190,8 +190,8 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   böyleydi (eski ekran görüntüsü yanıltıcıydı). Takip turunda kişisel bilgiler
   iki ayrı sidebar widget'ına ayrıldı: "İstatistikler" (SÜRE/KUPA) en üstte,
   başarımların üstünde; "Bulut" ikinci widget. Dış mağazalarda bulut sahibi
-  adıyla gösteriliyor ("EA Cloud tarafından yönetilir", "Steam Cloud tarafından
-  yönetilir"; Rockstar/Xbox/Battle.net/Riot için kendi adları). Launcher'ın
+  artık kartın ana satırı ("EA Cloud", "Steam Cloud"; Rockstar/Xbox/Battle.net/
+  Riot için kendi adları), sahiplik açıklaması ise alt notta. Launcher'ın
   yönettiği kopyalarda senkron durumu, yoksa "Yerel Kayıt" gösteriliyor. Puan
   kartı yeniden yalnız puanlardan oluşuyor; Steam tür yedeği aynı Türkçe
   sözlükten geçiyor.
