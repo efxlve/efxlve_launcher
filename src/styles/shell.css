@@ -815,7 +815,8 @@ html.sb-narrow .sb-game-title {
 html.sb-narrow .sb-toggle {
   width: 48px;
 }
-html.sb-narrow .sb-toggle-icon {
+html.sb-narrow .sb-toggle-icon,
+#sb-toggle[aria-expanded="false"] .sb-toggle-icon {
   transform: rotate(180deg);
 }
 html.sb-narrow .sb-toggle-label {

@@ -81,13 +81,16 @@ function syncToggleUi(width: number): void {
 let drawerTimer = 0;
 let drawerLocked = false;
 
-function finishDrawerAnim(): void {
+function finishDrawerAnim(targetWidth?: number): void {
   const root = document.documentElement;
   root.classList.remove("sb-animating");
   root.classList.add("sb-no-anim");
   const el = sidebarEl();
   if (el) el.style.transition = "";
   drawerLocked = false;
+  if (typeof targetWidth === "number") {
+    root.classList.toggle("sb-narrow", targetWidth < SIDEBAR_COLLAPSE_AT);
+  }
   handleWindowResize();
 }
 
@@ -131,7 +134,9 @@ export function toggleSidebarDrawer(): void {
   }
   root.classList.remove("sb-no-anim");
   root.classList.add("sb-animating");
-  root.classList.toggle("sb-narrow", target < SIDEBAR_COLLAPSE_AT);
+  if (collapsing) {
+    root.classList.add("sb-narrow");
+  }
   syncToggleUi(target);
 
   paintWidth(target);
@@ -139,7 +144,7 @@ export function toggleSidebarDrawer(): void {
   if (target >= SIDEBAR_COLLAPSE_AT) persist(SIDEBAR_EXPANDED_W_KEY, target);
 
   drawerTimer = window.setTimeout(() => {
-    finishDrawerAnim();
+    finishDrawerAnim(target);
   }, DRAWER_MS);
 }
 

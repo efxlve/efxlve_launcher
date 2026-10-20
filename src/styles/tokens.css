@@ -9,6 +9,14 @@
   initial-value: 252px;
 }
 
+:root.sb-animating {
+  transition: --sidebar-w var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+:root.sb-no-anim,
+:root.sb-resizing {
+  transition: none !important;
+}
+
 :root {
   color-scheme: dark;
 

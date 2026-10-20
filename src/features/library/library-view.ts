@@ -700,6 +700,8 @@ let activeTiltCard: HTMLElement | null = null;
 let tiltRaf = 0;
 let lastPointerX = 0;
 let lastPointerY = 0;
+let cachedCardRect: DOMRect | null = null;
+let lastRectCard: HTMLElement | null = null;
 
 function clearCardTilt(card: HTMLElement): void {
   card.classList.remove("pcard-tilting");
@@ -711,6 +713,8 @@ function clearCardTilt(card: HTMLElement): void {
   card.style.removeProperty("--ny");
   card.style.removeProperty("--glare-angle");
   card.classList.add("pcard-settling");
+  cachedCardRect = null;
+  lastRectCard = null;
   window.setTimeout(() => card.classList.remove("pcard-settling"), 260);
 }
 
@@ -722,6 +726,9 @@ function clearCardTilt(card: HTMLElement): void {
 function wireCardSettle(): void {
   if (cardSettleWired) return;
   cardSettleWired = true;
+
+  window.addEventListener("scroll", () => { cachedCardRect = null; }, { passive: true });
+  window.addEventListener("resize", () => { cachedCardRect = null; }, { passive: true });
 
   document.addEventListener(
     "pointermove",
@@ -741,9 +748,12 @@ function wireCardSettle(): void {
         tiltRaf = 0;
         const current = activeTiltCard;
         if (!current || !current.isConnected) return;
-        const art = current.querySelector<HTMLElement>(".pcard-art") ?? current;
-        const rect = art.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) return;
+        if (current !== lastRectCard || !cachedCardRect) {
+          lastRectCard = current;
+          cachedCardRect = current.getBoundingClientRect();
+        }
+        const rect = cachedCardRect;
+        if (!rect || rect.width <= 0 || rect.height <= 0) return;
         const px = Math.min(1, Math.max(0, (lastPointerX - rect.left) / rect.width));
         const py = Math.min(1, Math.max(0, (lastPointerY - rect.top) / rect.height));
         const nx = (px - 0.5) * 2;

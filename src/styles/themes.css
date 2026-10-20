@@ -452,6 +452,7 @@
   bottom: 0;
   background: #8fd6fa url("../assets/aero-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
+  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
 :root[data-surface="aero"] * { scrollbar-color: rgba(13, 47, 79, 0.28) transparent; }
