@@ -777,8 +777,8 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
     const tooltip = `${label}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? ` (${count})` : ""}`;
     return `
       <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" title="${esc(tooltip)}">
-        ${val === "all" ? icon("layers", 13) : storeLogo(val, 14)}
-        ${selected ? `<span class="profile-hero-chip-name">${esc(label)}</span>` : ""}
+        ${val === "all" ? icon("layers", 13) : storeLogo(val, 15, "profile-store-chip-logo")}
+        <span class="profile-hero-chip-name">${esc(label)}</span>
         ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
       </button>`;
   };
@@ -832,7 +832,7 @@ function renderProfileHero(
   const storesHtml = combined
     ? renderHeroStoreChips(scope)
     : account
-      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "" : "offline"}" aria-hidden="true"></span>${esc(storeName(account.kind))}</span></div>`
+      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "" : "offline"}" aria-hidden="true"></span>${storeLogo(account.kind, 15, "profile-store-chip-logo")}${esc(storeName(account.kind))}</span></div>`
       : "";
 
   const statsHtml = showData
@@ -870,15 +870,15 @@ function renderProfileHero(
               <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
               <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
             </div>
+            <div class="profile-hero-actions">
+              ${!combined
+                ? `<button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
+                : ""}
+              <button type="button" class="btn ghost small" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+              <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
+            </div>
           </div>
           ${storesHtml}
-        </div>
-        <div class="profile-hero-actions">
-          ${!combined
-            ? `<button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
-            : ""}
-          <button type="button" class="btn ghost small" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
-          <button class="icon-btn lib-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 16)}</button>
         </div>
       </div>
       ${statsHtml}

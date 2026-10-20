@@ -63,9 +63,34 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img) {
+:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
   filter: brightness(0);
   opacity: 0.85;
+}
+:root[data-surface="white"] .profile-hero-store-chip {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--line);
+  color: var(--text-2);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+:root[data-surface="white"] .profile-hero-store-chip:hover {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+:root[data-surface="white"] .profile-hero-store-chip.selected {
+  background: #ffffff;
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(37, 99, 235, 0.16);
+}
+:root[data-surface="white"] .profile-hero-chip-count {
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-2);
+}
+:root[data-surface="white"] .profile-hero-store-chip.selected .profile-hero-chip-count {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--accent);
 }
 :root[data-surface="white"] button.gp-source {
   background: #ffffff;
@@ -654,9 +679,37 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img) {
+:root[data-surface="aero"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
+}
+:root[data-surface="aero"] .profile-hero-store-chip {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.85);
+  color: var(--text-2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-surface="aero"] .profile-hero-store-chip:hover {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+:root[data-surface="aero"] .profile-hero-store-chip.selected {
+  background: linear-gradient(180deg, rgba(220, 240, 255, 0.9) 0%, rgba(185, 220, 250, 0.95) 100%);
+  color: #0b4a8c;
+  border-color: rgba(43, 143, 239, 0.85);
+  box-shadow: 0 0 0 1px rgba(43, 143, 239, 0.6), 0 3px 10px rgba(43, 143, 239, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+:root[data-surface="aero"] .profile-hero-chip-count {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--text-2);
+}
+:root[data-surface="aero"] .profile-hero-store-chip.selected .profile-hero-chip-count {
+  background: rgba(43, 143, 239, 0.2);
+  color: #0b4a8c;
 }
 :root[data-surface="aero"] .tab.active::after {
   background: linear-gradient(90deg, #5cbdf3, #0a78c8);
