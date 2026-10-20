@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "Massimizza il launcher e ottimizza la navigazione con controller.",
   "controller.fullscreenAutoTitle": "Schermo intero alla connessione del controller",
   "controller.fullscreenAutoDesc": "Passa automaticamente a schermo intero quando si collega un controller.",
-  "controller.fullscreenModeDesc": "Abilita la visualizzazione a schermo intero e la navigazione controller."
+  "controller.fullscreenModeDesc": "Abilita la visualizzazione a schermo intero e la navigazione controller.",
+  "settings.startupTabTitle": "Scheda iniziale",
+  "settings.startupTabDesc": "Scegli quale scheda della libreria aprire per impostazione predefinita all'avvio."
 }

@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "تكبير المشغل وتحسين التنقل باستخدام وحدة التحكم.",
   "controller.fullscreenAutoTitle": "فتح وضع ملء الشاشة عند توصيل وحدة التحكم",
   "controller.fullscreenAutoDesc": "التبديل تلقائيًا إلى ملء الشاشة عند توصيل وحدة التحكم.",
-  "controller.fullscreenModeDesc": "تمكين عرض ملء الشاشة والتنقل المحسن بوحدة التحكم."
+  "controller.fullscreenModeDesc": "تمكين عرض ملء الشاشة والتنقل المحسن بوحدة التحكم.",
+  "settings.startupTabTitle": "علامة تبويب بدء التشغيل",
+  "settings.startupTabDesc": "اختر علامة تبويب المكتبة التي تفتح افتراضيًا عند تشغيل التطبيق."
 }

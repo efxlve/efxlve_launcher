@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "Maximiza el launcher y optimiza la navegación con mando.",
   "controller.fullscreenAutoTitle": "Abrir Pantalla Completa al conectar mando",
   "controller.fullscreenAutoDesc": "Cambia automáticamente a Pantalla Completa al conectar un mando.",
-  "controller.fullscreenModeDesc": "Activa la vista de pantalla completa y navegación con mando."
+  "controller.fullscreenModeDesc": "Activa la vista de pantalla completa y navegación con mando.",
+  "settings.startupTabTitle": "Pestaña de inicio",
+  "settings.startupTabDesc": "Elige qué pestaña de la biblioteca se abre de forma predeterminada al iniciar."
 }

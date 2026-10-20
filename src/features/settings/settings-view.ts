@@ -669,6 +669,15 @@ function renderSteamGroup(): string {
 }
 
 /** Page-size picker shared by Settings and the library pagination bar. */
+/** Startup library tab preference picker. */
+function startupTabSelect(): string {
+  return `<select class="settings-select" data-act="startup-tab" aria-label="${t("settings.startupTabTitle")}">
+    <option value="all" ${S.startupTab === "all" ? "selected" : ""}>${t("library.all")}</option>
+    <option value="installed" ${S.startupTab === "installed" ? "selected" : ""}>${t("library.installed")}</option>
+    <option value="fav" ${S.startupTab === "fav" ? "selected" : ""}>${t("library.favorites")}</option>
+  </select>`;
+}
+
 function pageSizeSelect(): string {
   return `<select class="settings-select" data-act="lib-page-size" aria-label="${t("settings.libPageSizeTitle")}">
     ${LIB_PAGE_SIZES.map((n) => `<option value="${n}" ${n === S.libPageSize ? "selected" : ""}>${n}</option>`).join("")}
@@ -1093,6 +1102,7 @@ function renderAppearance(): string {
       row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
+      row(t("settings.startupTabTitle"), t("settings.startupTabDesc"), startupTabSelect()) +
       row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`) +
       row(t("overlay.overlayLabel"), t("overlay.startHint"), `<button class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>`) +
       (overlayBlockedGames().length > 0

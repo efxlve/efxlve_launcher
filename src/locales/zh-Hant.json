@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "最大化啟動器並最佳化控制器瀏覽體驗。",
   "controller.fullscreenAutoTitle": "連接控制器時自動進入全螢幕模式",
   "controller.fullscreenAutoDesc": "連接遊戲控制器後自動切換至全螢幕模式。",
-  "controller.fullscreenModeDesc": "開啟全螢幕檢視與控制器瀏覽體驗。"
+  "controller.fullscreenModeDesc": "開啟全螢幕檢視與控制器瀏覽體驗。",
+  "settings.startupTabTitle": "啟動標籤頁",
+  "settings.startupTabDesc": "選擇啟動應用程式時預設開啟的媒體庫標籤頁。"
 }

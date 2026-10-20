@@ -5,7 +5,7 @@ import { summaryOf } from "../../core/selectors";
  * form change/input delegation and the scroll-to-top button.
  */
 
-import { AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
+import { AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
@@ -13,6 +13,7 @@ import { cancelConfirm } from "../../core/confirm-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
+import type { StartupTab } from "../../core/types";
 import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -690,6 +691,15 @@ document.addEventListener("change", (e) => {
     localStorage.setItem(LIB_PAGE_SIZE_KEY, String(S.libPageSize));
     S.libPage = 1;
     render();
+    return;
+  }
+  if (act === "startup-tab") {
+    const val = (t as HTMLSelectElement).value as StartupTab;
+    if (val === "all" || val === "installed" || val === "fav") {
+      S.startupTab = val;
+      localStorage.setItem(STARTUP_TAB_KEY, val);
+      render();
+    }
     return;
   }
   if (act === "manage-toggle-autoupdate" && S.activeManageSettings) {

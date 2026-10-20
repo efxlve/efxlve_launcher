@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "Başlatıcıyı tam ekrana alır ve kumandayla rahat kullanımı etkinleştirir.",
   "controller.fullscreenAutoTitle": "Gamepad bağlandığında Tam Ekran Moduna geç",
   "controller.fullscreenAutoDesc": "Bir oyun kolu bağlandığında başlatıcıyı otomatik olarak Tam Ekran Moduna alır.",
-  "controller.fullscreenModeDesc": "Tam ekran görünümünü ve optimize kontrolcü gezinmesini etkinleştirir."
+  "controller.fullscreenModeDesc": "Tam ekran görünümünü ve optimize kontrolcü gezinmesini etkinleştirir.",
+  "settings.startupTabTitle": "Başlangıç sekmesi",
+  "settings.startupTabDesc": "Uygulama açıldığında varsayılan olarak hangi kütüphane sekmesinin gösterileceğini seçin."
 }

@@ -74,6 +74,7 @@ import {
   DIM_UNINSTALLED_KEY,
   CONTRAST_TITLES_KEY,
   LIB_PAGE_SIZE_KEY,
+  STARTUP_TAB_KEY,
   PREFERRED_VERSION_KEY,
   SOURCE_FILTER_KEY,
   LIB_PAGINATION_KEY,
@@ -84,7 +85,7 @@ import {
   saveTabSort,
   type SortTab,
 } from "./constants";
-import type { AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -152,6 +153,13 @@ function normalizeEpicSort(saved: string | null): EpicSort {
 
 /** Sort orders restored from storage, one per library tab. */
 const savedTabSorts = loadTabSorts(normalizeEpicSort(localStorage.getItem("efxlve-sort")));
+
+function readStartupTab(): StartupTab {
+  const saved = localStorage.getItem(STARTUP_TAB_KEY);
+  if (saved === "installed" || saved === "fav" || saved === "all") return saved;
+  return "all";
+}
+const initialStartupTab = readStartupTab();
 
 /** Library tab whose sort order is in effect right now. */
 export function currentSortTab(): SortTab {
@@ -315,11 +323,12 @@ export const S = {
   loadingAboutFor: new Set<string>(),
   appLanguage: initialLanguage(),
   epicCollections: ([]) as GameCollection[],
-  activeCollectionId: (null) as string | null,
-  epicFilter: "all" as EpicFilter,
+  startupTab: initialStartupTab as StartupTab,
+  activeCollectionId: (initialStartupTab === "fav" ? "fav" : null) as string | null,
+  epicFilter: (initialStartupTab === "installed" ? "installed" : "all") as EpicFilter,
   /** Sort order remembered per library tab (All, Installed, Favorites, ...). */
   tabSorts: savedTabSorts,
-  epicSort: savedTabSorts.all,
+  epicSort: savedTabSorts[initialStartupTab],
   epicViewMode: (localStorage.getItem("efxlve-view-mode") === "list" ? "list" : "grid") as EpicViewMode,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   demoPlatinumApps: (loadStrSet(DEMO_PLAT_KEY)) as Set<string>,

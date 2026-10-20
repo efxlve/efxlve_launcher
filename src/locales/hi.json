@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "लॉन्चर को बड़ा करें और नियंत्रक नेविगेशन को सक्षम करें।",
   "controller.fullscreenAutoTitle": "कंट्रोलर कनेक्ट होने पर पूर्ण स्क्रीन मोड खोलें",
   "controller.fullscreenAutoDesc": "गेम कंट्रोलर कनेक्ट होने पर स्वचालित रूप से पूर्ण स्क्रीन मोड में स्विच करें।",
-  "controller.fullscreenModeDesc": "पूर्ण स्क्रीन दृश्य और अनुकूलित कंट्रोलर नेविगेशन सक्षम करता है।"
+  "controller.fullscreenModeDesc": "पूर्ण स्क्रीन दृश्य और अनुकूलित कंट्रोलर नेविगेशन सक्षम करता है।",
+  "settings.startupTabTitle": "स्टार्टअप टैब",
+  "settings.startupTabDesc": "चुनें कि ऐप लॉन्च करते समय कौन सा लाइब्रेरी टैब डिफ़ॉल्ट रूप से खुले।"
 }

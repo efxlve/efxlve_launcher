@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "Maximise le lanceur et optimise la navigation à la manette.",
   "controller.fullscreenAutoTitle": "Plein écran lors de la connexion d'une manette",
   "controller.fullscreenAutoDesc": "Bascule automatiquement en plein écran lorsqu'une manette est connectée.",
-  "controller.fullscreenModeDesc": "Active le plein écran et la navigation fluide à la manette."
+  "controller.fullscreenModeDesc": "Active le plein écran et la navigation fluide à la manette.",
+  "settings.startupTabTitle": "Onglet de démarrage",
+  "settings.startupTabDesc": "Choisissez quel onglet de la bibliothèque s'ouvre par défaut au lancement."
 }

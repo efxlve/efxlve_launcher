@@ -2738,5 +2738,7 @@
   "fullscreen.desc": "Maximiza o inicializador e otimiza a navegação com controle.",
   "controller.fullscreenAutoTitle": "Abrir Tela Cheia ao conectar controle",
   "controller.fullscreenAutoDesc": "Alterna automaticamente para Tela Cheia ao conectar um controle.",
-  "controller.fullscreenModeDesc": "Ativa a visualização em tela cheia e navegação por controle."
+  "controller.fullscreenModeDesc": "Ativa a visualização em tela cheia e navegação por controle.",
+  "settings.startupTabTitle": "Aba inicial",
+  "settings.startupTabDesc": "Escolha qual aba da biblioteca abre por padrão ao iniciar o aplicativo."
 }

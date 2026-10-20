@@ -202,6 +202,8 @@ export const CONTRAST_TITLES_KEY = "efxlve-contrast-titles";
 export const LIB_PAGINATION_KEY = "efxlve-lib-pagination";
 /** Games rendered per library page when pagination is on. */
 export const LIB_PAGE_SIZE_KEY = "efxlve-lib-page-size";
+/** Default library tab on startup (all | installed | fav). */
+export const STARTUP_TAB_KEY = "efxlve-startup-tab";
 /** Allowed library page sizes (games per page). */
 export const LIB_PAGE_SIZES = [24, 48, 96] as const;
 /** Coerce a stored page size onto LIB_PAGE_SIZES (defaults to the smallest). */
