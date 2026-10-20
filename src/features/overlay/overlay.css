@@ -63,14 +63,7 @@
   gap: 6px;
   z-index: 1000;
   max-width: calc(100vw - 20px);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
   user-select: none;
-}
-
-.ov-topbar::-webkit-scrollbar {
-  display: none;
 }
 
 /* --- Game Hub Trigger (Topbar Left) --- */
