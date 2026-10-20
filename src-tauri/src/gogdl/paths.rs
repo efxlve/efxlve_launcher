@@ -9,7 +9,7 @@ use super::GogError;
 pub const GOGDL_RELEASES_URL: &str =
     "https://github.com/Heroic-Games-Launcher/heroic-gogdl/releases/latest";
 /// Pinned gogdl release. Bumping the tag re-downloads the binary on the next run.
-pub const GOGDL_VERSION: &str = "v1.3.0";
+pub const GOGDL_VERSION: &str = "v1.3.1";
 
 /// Release asset for one platform, or `None` when gogdl publishes none.
 pub fn asset_for(os: &str, arch: &str) -> Option<&'static str> {
@@ -75,7 +75,14 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, GogError> {
     let target = downloaded_binary(app);
     let dir = bin_dir(app);
     let _ = tokio::fs::create_dir_all(&dir).await;
-    let part = dir.join(format!("{}.part", binary_name()));
+    // A startup prepare and a first transfer can both reach this point. Give
+    // each attempt its own part file and let the loser accept the winner's
+    // binary instead of failing on the rename.
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|value| value.as_nanos())
+        .unwrap_or(0);
+    let part = dir.join(format!("{}.{stamp}.part", binary_name()));
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(120))
@@ -103,9 +110,15 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, GogError> {
         .await
         .map_err(|e| GogError::Io(e.to_string()))?;
 
-    tokio::fs::rename(&part, &target)
-        .await
-        .map_err(|e| GogError::Io(e.to_string()))?;
+    if let Err(error) = tokio::fs::rename(&part, &target).await {
+        let _ = tokio::fs::remove_file(&part).await;
+        if target.is_file() {
+            // Another concurrent prepare finished first; its file is the same
+            // pinned release, so use it.
+            return Ok(target);
+        }
+        return Err(GogError::Io(error.to_string()));
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -169,8 +182,8 @@ mod tests {
     #[test]
     fn url_matches_the_release_layout() {
         assert_eq!(
-            download_url_for_tag("v1.3.0", "gogdl_linux_x86_64"),
-            "https://github.com/Heroic-Games-Launcher/heroic-gogdl/releases/download/v1.3.0/gogdl_linux_x86_64"
+            download_url_for_tag("v1.3.1", "gogdl_linux_x86_64"),
+            "https://github.com/Heroic-Games-Launcher/heroic-gogdl/releases/download/v1.3.1/gogdl_linux_x86_64"
         );
     }
 }

@@ -56,7 +56,6 @@ const NAMES: Record<string, string> = {
   "wine-crossover": "CrossOver (Wine-CX)",
   "dxvk-macos": "DXVK-macOS",
   dxmt: "DXMT",
-  "heroic-epic-integration": "Heroic Epic Integration",
   "vulkan-helper-rs": "vulkan-helper-rs",
 };
 
@@ -140,6 +139,11 @@ function statusLine(tool: CompatToolInfo): string {
   if (!tool.supported) {
     return `<span class="compat-state muted">${esc(t("compat.notForTarget"))}</span>`;
   }
+  if (tool.source === "module") {
+    // The launcher downloads these CLIs itself. A missing binary is not an
+    // error: the first GOG/Epic/Amazon transfer (or "Prepare") fetches it.
+    return `<span class="compat-state">${icon("settings", 11)} ${esc(t("compat.managedOnDemand"))}</span>`;
+  }
   return `<span class="compat-state muted">${esc(t("compat.notInstalled"))}</span>`;
 }
 
@@ -156,7 +160,10 @@ function actions(tool: CompatToolInfo): string {
     return `<button type="button" class="btn ghost small" data-act="compat-cancel" data-id="${esc(tool.id)}">${esc(t("compat.cancel"))}</button>`;
   }
   const parts: string[] = [];
-  if (tool.installable && tool.supported) {
+  // A module tool is updated by the launcher itself; there is no archive to
+  // fetch here. Offer "Prepare" only while the binary is missing.
+  const moduleNeedsPrepare = tool.source === "module" && tool.installed.length === 0;
+  if (tool.installable && tool.supported && (tool.source !== "module" || moduleNeedsPrepare)) {
     const label =
       tool.installed.length > 0
         ? t("compat.update")
@@ -196,12 +203,16 @@ function progressBar(tool: CompatToolInfo): string {
 }
 
 function renderTool(tool: CompatToolInfo): string {
-  const search = `${toolName(tool.id)} ${tool.kind} ${tool.repo}`;
+  const descriptionKey = `compat.desc.${tool.id}`;
+  const translated = t(descriptionKey);
+  const description = translated === descriptionKey ? "" : translated;
+  const search = `${toolName(tool.id)} ${tool.kind} ${tool.repo} ${description}`;
   return `
     <div class="row settings-row compat-tool" data-search="${esc(search)}">
       <div class="row-main">
         <div class="settings-row-title">${esc(toolName(tool.id))}</div>
         <div class="settings-row-desc">${esc(t(KIND_KEYS[tool.kind] ?? "compat.kind.helper"))}${tool.repo ? ` · <code>${esc(tool.repo)}</code>` : ""}</div>
+        ${description ? `<div class="settings-row-desc" style="margin-top:4px;">${esc(description)}</div>` : ""}
         <div class="compat-badges">${badges(tool)}</div>
         <div class="compat-status">${statusLine(tool)}${latestLine(tool)}</div>
         ${progressBar(tool)}

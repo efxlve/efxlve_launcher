@@ -146,14 +146,6 @@ pub const TOOLS: &[ToolDef] = &[
         source: ToolSource::Github,
     },
     ToolDef {
-        id: "heroic-epic-integration",
-        repo: "Etaash-mathamsetty/heroic-epic-integration",
-        homepage: "https://github.com/Etaash-mathamsetty/heroic-epic-integration",
-        kind: "helper",
-        platforms: &["windows", "linux", "macos"],
-        source: ToolSource::Github,
-    },
-    ToolDef {
         id: "vulkan-helper-rs",
         repo: "imLinguin/vulkan-helper-rs",
         homepage: "https://github.com/imLinguin/vulkan-helper-rs",
@@ -359,7 +351,6 @@ fn asset_score(id: &str, arch: &str, name: &str) -> Option<u32> {
                 Some(100)
             }
         }
-        "heroic-epic-integration" => (name == "EpicGamesLauncher.exe").then_some(100),
         // Store CLIs are owned by their modules; external tools have no asset.
         _ => None,
     }

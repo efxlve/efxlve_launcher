@@ -2742,5 +2742,21 @@
   "settings.startupTabTitle": "Onglet de bibliothèque par défaut",
   "settings.startupTabDesc": "Choisissez l'onglet, la vue ou la collection affiché par défaut à l'ouverture de la bibliothèque.",
   "settings.startupTabGroupStandard": "Vues standard",
-  "settings.startupTabUncategorized": "Jeux non catégorisés"
+  "settings.startupTabUncategorized": "Jeux non catégorisés",
+  "compat.desc.legendary": "Downloads, updates and launches your Epic Games library.",
+  "compat.desc.gogdl": "Downloads and launches GOG games. The binary is fetched automatically the first time a GOG transfer needs it.",
+  "compat.desc.nile": "Downloads and launches Amazon Games (Luna) titles.",
+  "compat.desc.comet": "Prepares and runs the Amazon Games client and its games.",
+  "compat.desc.ge-proton": "Community Proton build with extra game fixes for running Windows titles on Linux.",
+  "compat.desc.proton-cachyos": "CachyOS Proton build tuned for gaming performance.",
+  "compat.desc.umu-launcher": "Launches Proton and Wine games through one modern runner.",
+  "compat.desc.dxvk": "Translates Direct3D 9/10/11 to Vulkan for better Linux gaming performance.",
+  "compat.desc.vkd3d-proton": "Translates Direct3D 12 to Vulkan for Steam Play titles.",
+  "compat.desc.game-porting-toolkit": "Apple's translation layer for running Windows games on macOS.",
+  "compat.desc.wine-staging": "Experimental Wine build for macOS compatibility work.",
+  "compat.desc.wine-crossover": "CodeWeavers' commercial Wine build for macOS. The launcher only detects it.",
+  "compat.desc.dxvk-macos": "Runs Direct3D 9/10/11 games on macOS through a Vulkan/Metal translation layer.",
+  "compat.desc.dxmt": "Translates Direct3D 12 to Metal on macOS.",
+  "compat.desc.vulkan-helper-rs": "Manages Vulkan drivers and layers on Linux and macOS. Detected from the system, not installed here.",
+  "compat.managedOnDemand": "Managed by the launcher · Prepared on first use"
 }

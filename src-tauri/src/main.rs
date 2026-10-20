@@ -905,6 +905,15 @@ fn main() {    // Rockstar's launcher only continues when a process named
             overlay::start(app.handle().clone());
             // Keeps the GOG account visible as online while the launcher runs.
             gogdl::presence::spawn(app.handle().clone());
+            // A linked GOG account needs gogdl for installs and launches.
+            // Prepare it in the background instead of making the first GOG
+            // transfer wait for a 12 MB download.
+            if gogdl::cache::load_auth_tokens(app.handle()).is_some() {
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    let _ = gogdl::paths::ensure_binary(&handle).await;
+                });
+            }
             // Refreshes linked companion accounts (today: Ubisoft) on a timer.
             companion::start_ubi_sync(app.handle().clone());
             build_tray(app)?;

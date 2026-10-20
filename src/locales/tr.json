@@ -2742,5 +2742,21 @@
   "settings.startupTabTitle": "Varsayılan Kütüphane Sekmesi",
   "settings.startupTabDesc": "Uygulama açıldığında veya Kütüphane'ye geçildiğinde varsayılan olarak gösterilecek sekmeyi, görünümü veya koleksiyonu belirleyin.",
   "settings.startupTabGroupStandard": "Standart Görünümler",
-  "settings.startupTabUncategorized": "Kategorisiz Oyunlar"
+  "settings.startupTabUncategorized": "Kategorisiz Oyunlar",
+  "compat.desc.legendary": "Epic Games kitaplığını indirir, günceller ve başlatır.",
+  "compat.desc.gogdl": "GOG oyunlarını indirir ve başlatır. Gerekli ikili dosya ilk GOG aktarımında otomatik indirilir.",
+  "compat.desc.nile": "Amazon Games (Luna) oyunlarını indirir ve başlatır.",
+  "compat.desc.comet": "Amazon Games istemcisini ve oyunlarını hazırlar ve çalıştırır.",
+  "compat.desc.ge-proton": "Windows oyunlarını Linux'ta çalıştırmak için ek düzeltmeler içeren topluluk Proton sürümü.",
+  "compat.desc.proton-cachyos": "Oyun performansı için ayarlanmış CachyOS Proton sürümü.",
+  "compat.desc.umu-launcher": "Proton ve Wine oyunlarını tek bir modern çalıştırıcıyla başlatır.",
+  "compat.desc.dxvk": "Direct3D 9/10/11 çağrılarını Vulkan'a çevirir; Linux'ta oyun performansını artırır.",
+  "compat.desc.vkd3d-proton": "Direct3D 12 çağrılarını Vulkan'a çevirir; Steam Play oyunları için kullanılır.",
+  "compat.desc.game-porting-toolkit": "Apple'ın macOS üzerinde Windows oyunlarını çalıştıran çeviri katmanı.",
+  "compat.desc.wine-staging": "macOS uyumluluğu için deneysel Wine sürümü.",
+  "compat.desc.wine-crossover": "CodeWeavers'ın macOS için ticari Wine sürümü. Launcher yalnızca sistemde arar.",
+  "compat.desc.dxvk-macos": "macOS'ta Direct3D 9/10/11 oyunlarını Vulkan/Metal çeviri katmanıyla çalıştırır.",
+  "compat.desc.dxmt": "macOS'ta Direct3D 12'yi Metal'e çevirir.",
+  "compat.desc.vulkan-helper-rs": "Linux ve macOS'ta Vulkan sürücülerini ve katmanlarını yönetir. Sistemde aranır, launcher kurmaz.",
+  "compat.managedOnDemand": "Launcher yönetiyor · İlk kullanımda hazırlanır"
 }
