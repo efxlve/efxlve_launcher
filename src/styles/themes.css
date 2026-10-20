@@ -130,6 +130,111 @@
   background: var(--line);
 }
 
+/* White Mode: Card elevation & depth */
+:root[data-surface="white"] :is(.card, .list, .lib-list, .settings-group, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .igdb-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box) {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* White Mode: Title bar chip & library cards */
+:root[data-surface="white"] .winbar-beta-chip {
+  background: var(--text);
+  color: var(--bg);
+}
+:root[data-surface="white"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+:root[data-surface="white"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.1);
+}
+:root[data-surface="white"] .pcard-play-btn {
+  border-color: rgba(15, 23, 42, 0.16);
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-2);
+}
+:root[data-surface="white"] .pcard:hover .pcard-play-btn {
+  border-color: rgba(15, 23, 42, 0.28);
+  background: rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+:root[data-surface="white"] .pcard-play-btn:hover {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+/* White Mode: Inputs & focus rings */
+:root[data-surface="white"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+:root[data-surface="white"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-surface="white"] .search:focus-within,
+:root[data-surface="white"] .install-path-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(17, 19, 24, 0.08);
+}
+
+/* White Mode: Dialogs, overlays & backdrops */
+:root[data-surface="white"] :is(.selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card, .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog, .changelog-dialog) {
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+:root[data-surface="white"] :is(.selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop, .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay, .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop) {
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* White Mode: Storage manager & music & context menu */
+:root[data-surface="white"] .storage-stat-dot.dot-games {
+  background: var(--accent);
+  box-shadow: none;
+}
+:root[data-surface="white"] .storage-meter-seg.seg-games {
+  background: var(--accent);
+}
+:root[data-surface="white"] .storage-drive-tab-badge {
+  background: rgba(15, 23, 42, 0.07);
+}
+:root[data-surface="white"] .storage-drive-tab.active .storage-drive-tab-badge {
+  background: rgba(15, 23, 42, 0.14);
+}
+:root[data-surface="white"] :is(.music-art, .music-track img, .music-track-art) {
+  background: var(--surface-3);
+}
+:root[data-surface="white"] .ps5-context-item.is-current {
+  background: var(--surface-2);
+}
+:root[data-surface="white"] .sb-resize:hover,
+:root[data-surface="white"] body.sb-resizing .sb-resize {
+  background: rgba(15, 23, 42, 0.08);
+}
+:root[data-surface="white"] .notif-panel {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+:root[data-surface="white"] .notif-item.unread {
+  background: rgba(17, 19, 24, 0.04);
+}
+:root[data-surface="white"] .lib-filter-panel {
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.12);
+}
+:root[data-surface="white"] .col-modal-card:not(.ced) .col-game-item:hover {
+  background: var(--surface-2);
+}
+:root[data-surface="white"] .col-modal-card:not(.ced) .col-game-item.selected {
+  background: var(--surface-3);
+}
+:root[data-surface="white"] .col-modal-card:not(.ced) .col-custom-cb {
+  border-color: var(--line-strong);
+}
+:root[data-surface="white"] .col-modal-card:not(.ced) .col-custom-cb.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+:root[data-surface="white"] .lrow-plat-cup::before {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%);
+}
+
 /* White Theme: System Specs Tab */
 :root[data-surface="white"] .hub-feature-row {
   background: var(--surface-2);
@@ -424,20 +529,59 @@
 }
 
 /* Panels: frosted white with a bright top edge and a thin blue outer rim. */
-:root[data-surface="aero"] :is(.card, .list, .modal, .toast, .gp-side-card, .settings-group, .info-box) {
+:root[data-surface="aero"] :is(
+  .card, .list, .lib-list, .modal, .toast, .gp-side-card, .settings-group, .info-box,
+  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
+  .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .igdb-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .notif-panel, .lib-filter-panel
+) {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0, rgba(255, 255, 255, 0.86) 44px, rgba(244, 251, 255, 0.82) 100%);
   border-color: rgba(255, 255, 255, 0.95);
   box-shadow: var(--aero-glass-edge), 0 8px 24px rgba(8, 62, 110, 0.14), inset 0 1px 0 #ffffff;
 }
 
+/* Modal Backdrops & Overlays */
+:root[data-surface="aero"] :is(
+  .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
+  .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay,
+  .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop
+) {
+  background: rgba(8, 45, 85, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Aero Headings & Section Titles */
+:root[data-surface="aero"] :is(
+  .section-title, .hub-card-title, .hltb-title, .gp-section-title,
+  .notif-title, .lib-filter-title-main, .storage-overview-title,
+  .modal-box h2, .col-modal-title h2, .playtime-header h2,
+  .selective-header h2, .cover-dialog-header h2, .changelog-head-text h2
+) {
+  color: var(--aero-heading);
+}
+
 /* Fields: sunken white with the Windows 7 blue focus glow. */
-:root[data-surface="aero"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search) {
+:root[data-surface="aero"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(16, 78, 130, 0.24);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] :is(input, select, textarea, .input, .text-input):focus,
-:root[data-surface="aero"] .search:focus-within {
+:root[data-surface="aero"] :is(
+  input, select, textarea, .input, .text-input,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+):focus,
+:root[data-surface="aero"] .search:focus-within,
+:root[data-surface="aero"] .install-path-input-wrap:focus-within {
   border-color: #3d9de4;
   box-shadow: 0 0 0 3px rgba(61, 157, 228, 0.22), inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
@@ -557,6 +701,24 @@
   filter: saturate(0.3) brightness(1.04);
 }
 :root[data-surface="aero"] .pcard-caption { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75); }
+:root[data-surface="aero"] .pcard-play-btn {
+  background: var(--aero-gloss-white);
+  border-color: rgba(16, 78, 130, 0.28);
+  color: #104e82;
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.1);
+}
+:root[data-surface="aero"] .pcard:hover .pcard-play-btn {
+  background: var(--aero-gloss-hover);
+  border-color: #4aa6e6;
+  color: #0c4a8c;
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(10, 90, 160, 0.2);
+}
+:root[data-surface="aero"] .pcard-play-btn:hover {
+  background: var(--aero-gloss-blue);
+  border-color: #0b5fa5;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 6px rgba(10, 90, 160, 0.3);
+}
 
 /* Game page hero: a navy scrim instead of black, and a lit glass edge where
    the art meets the sky. */
@@ -851,6 +1013,99 @@
   background: var(--aero-gloss-hover);
   color: var(--text);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
+}
+
+/* Frutiger Aero: Notifications, Overlays & Panels */
+:root[data-surface="aero"] .notif-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 251, 255, 0.92) 100%);
+  border: 1px solid rgba(16, 78, 130, 0.2);
+  box-shadow: 0 14px 34px rgba(8, 60, 110, 0.22), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="aero"] .notif-item.unread {
+  background: rgba(10, 120, 200, 0.08);
+}
+:root[data-surface="aero"] .notif-action:hover {
+  background: var(--aero-gloss-hover);
+  box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
+}
+
+/* Frutiger Aero: Storage Manager */
+:root[data-surface="aero"] .storage-stat-dot.dot-games {
+  background: #0a78c8;
+  box-shadow: 0 0 6px rgba(10, 120, 200, 0.5);
+}
+:root[data-surface="aero"] .storage-meter-seg.seg-games {
+  background: var(--aero-gloss-blue);
+}
+:root[data-surface="aero"] .storage-drive-tab-badge {
+  background: rgba(16, 78, 130, 0.1);
+  color: var(--text-2);
+}
+:root[data-surface="aero"] .storage-drive-tab.active .storage-drive-tab-badge {
+  background: rgba(10, 120, 200, 0.18);
+  color: var(--aero-heading);
+}
+
+/* Frutiger Aero: Library List View */
+:root[data-surface="aero"] .lrow:hover {
+  background: var(--aero-gloss-hover);
+}
+:root[data-surface="aero"] .lrow-action .btn.install {
+  background: var(--aero-gloss-white);
+  border-color: rgba(16, 78, 130, 0.28);
+  color: var(--text);
+}
+:root[data-surface="aero"] .lrow-action .btn.install:hover {
+  background: var(--aero-gloss-hover);
+  border-color: #4aa6e6;
+}
+:root[data-surface="aero"] .lrow-plat-cup::before {
+  background: radial-gradient(circle, rgba(92, 189, 243, 0.45) 0%, rgba(92, 189, 243, 0) 70%);
+}
+
+/* Frutiger Aero: Collections Dialog */
+:root[data-surface="aero"] .col-modal-card:not(.ced) .col-game-item:hover {
+  background: var(--aero-gloss-hover);
+}
+:root[data-surface="aero"] .col-modal-card:not(.ced) .col-game-item.selected {
+  background: linear-gradient(180deg, #f2fbff 0%, #d9f0fd 100%);
+}
+:root[data-surface="aero"] .col-modal-card:not(.ced) .col-custom-cb {
+  border-color: rgba(16, 78, 130, 0.35);
+  background: rgba(255, 255, 255, 0.8);
+}
+:root[data-surface="aero"] .col-modal-card:not(.ced) .col-custom-cb.checked {
+  background: var(--aero-gloss-blue);
+  border-color: #0b5fa5;
+  color: #ffffff;
+}
+
+/* Frutiger Aero: Library Filter Drawer & Facets */
+:root[data-surface="aero"] .lib-filter-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 248, 255, 0.92) 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: -1px 0 0 rgba(16, 78, 130, 0.14), -14px 0 34px rgba(8, 60, 110, 0.2);
+}
+:root[data-surface="aero"] .lib-filter-badge {
+  background: var(--aero-gloss-blue);
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
+}
+:root[data-surface="aero"] :is(.lib-facet-row:hover, .lib-facet-row.is-on) {
+  background: var(--aero-gloss-hover);
+  box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.35);
+}
+
+/* Frutiger Aero: Context Menu, Music & Resizing */
+:root[data-surface="aero"] .ps5-context-item.is-current {
+  background: rgba(16, 78, 130, 0.08);
+}
+:root[data-surface="aero"] :is(.music-art, .music-track img, .music-track-art) {
+  background: rgba(16, 78, 130, 0.1);
+}
+:root[data-surface="aero"] .sb-resize:hover,
+:root[data-surface="aero"] body.sb-resizing .sb-resize {
+  background: rgba(16, 78, 130, 0.2);
 }
 
 
