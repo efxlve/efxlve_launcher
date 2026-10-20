@@ -425,6 +425,7 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
         return;
     };
     let hwnd = raw_hwnd.0;
+    let hwnd_isize = hwnd as isize;
 
     #[repr(C)]
     struct RECT {
@@ -438,12 +439,12 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
         cb_size: u32,
         rc_monitor: RECT,
         rc_work: RECT,
-        dw_flags: u32,
+        flags: u32,
     }
     #[link(name = "user32")]
     extern "system" {
-        fn MonitorFromWindow(hwnd: *mut core::ffi::c_void, flags: u32) -> *mut core::ffi::c_void;
-        fn GetMonitorInfoW(hmon: *mut core::ffi::c_void, mi: *mut MONITORINFO) -> i32;
+        fn MonitorFromWindow(hwnd: isize, flags: u32) -> isize;
+        fn GetMonitorInfoW(monitor: isize, info: *mut MONITORINFO) -> i32;
         fn SetWindowPos(
             hwnd: *mut core::ffi::c_void,
             insert_after: *mut core::ffi::c_void,
@@ -465,8 +466,8 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
 
     unsafe {
         if enabled {
-            let hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-            if !hmon.is_null() {
+            let hmon = MonitorFromWindow(hwnd_isize, MONITOR_DEFAULTTONEAREST);
+            if hmon != 0 {
                 let mut mi = MONITORINFO {
                     cb_size: std::mem::size_of::<MONITORINFO>() as u32,
                     rc_monitor: RECT {
@@ -481,7 +482,7 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
                         right: 0,
                         bottom: 0,
                     },
-                    dw_flags: 0,
+                    flags: 0,
                 };
                 if GetMonitorInfoW(hmon, &mut mi) != 0 {
                     let x = mi.rc_monitor.left;
@@ -527,8 +528,8 @@ fn app_set_fullscreen(app: AppHandle, enabled: bool) -> Result<bool, String> {
         hide_accent_border(&window);
         set_fullscreen_native(&window, true);
         let win = window.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(60));
             set_fullscreen_native(&win, true);
         });
     } else {
@@ -536,8 +537,8 @@ fn app_set_fullscreen(app: AppHandle, enabled: bool) -> Result<bool, String> {
         window.set_fullscreen(false).map_err(|e| e.to_string())?;
         hide_accent_border(&window);
         let win = window.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(60));
             set_fullscreen_native(&win, false);
         });
     }
