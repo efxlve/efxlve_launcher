@@ -144,7 +144,11 @@
         scan();
     });
 
-    observer.observe(document.documentElement || document.body, {
+    // At document-start `document.documentElement` and `document.body` are both
+    // null. Observing the document itself is valid and still catches the root
+    // element being inserted, so the script never throws before the store
+    // extension scripts that follow it get to run.
+    observer.observe(document, {
         childList: true,
         subtree: true
     });

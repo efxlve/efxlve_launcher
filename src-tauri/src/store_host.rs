@@ -512,11 +512,95 @@ fn owned_games_payload() -> String {
 const STORE_EXTENSION_SCRIPT: &str = include_str!("store_extension.js");
 /// Page script for Steam features (`steam_extension.js`).
 const STEAM_EXTENSION_SCRIPT: &str = include_str!("steam_extension.js");
+/// Bundled copies of the optional third-party store extensions. The installed
+/// copies live in the app data directory so they can be removed, and this is
+/// the source that an install or an update writes there.
+const STEAMDB_EXTENSION: &str = include_str!("../../extensions/steamdb.js");
+const AUGMENTED_STEAM_EXTENSION: &str = include_str!("../../extensions/augmented_steam.js");
+const STEAMDB_EXTENSION_VERSION: &str = "4.37.0";
+const AUGMENTED_STEAM_EXTENSION_VERSION: &str = "5.0.0";
 
 fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
 }
 
+/// Frontend preferences arrive as a JSON string. Passing that string through
+/// raw would turn one malformed value into a syntax error for the whole
+/// document-start script, so the object is parsed and re-serialised here.
+fn js_object_literal(value: &str) -> String {
+    serde_json::from_str::<serde_json::Value>(value)
+        .map(|value| value.to_string())
+        .unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Flags the Steam page scripts read. This is a document-start script of its
+/// own so the extensions below always see them, even if one of those scripts
+/// throws.
+fn steam_boot_script(
+    steam_currency: bool,
+    steam_rate: f64,
+    steamdb: bool,
+    augmented_steam: bool,
+    steam_options_json: &str,
+) -> String {
+    format!(
+        "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\n\
+         window.__EFXLVE_STEAM_RATE = {steam_rate};\n\
+         window.__EFXLVE_STEAMDB = {steamdb};\n\
+         window.__EFXLVE_AUGMENTED_STEAM = {augmented_steam};\n\
+         window.__EFXLVE_STEAM_OPTIONS = {};\n",
+        js_object_literal(steam_options_json)
+    )
+}
+
+/// An installed extension script, or an empty string when it is switched off
+/// or its file is missing. Installed scripts are third-party code read from
+/// disk, so each one is injected inside its own error boundary.
+fn store_extension_source(app: &tauri::AppHandle, file: &str, enabled: bool) -> String {
+    if !enabled {
+        return String::new();
+    }
+    std::fs::read_to_string(store_extensions_dir(app).join(file)).unwrap_or_default()
+}
+
+fn guarded_script(label: &str, source: &str) -> String {
+    format!("try {{\n{source}\n}} catch (e) {{ console.error('[efxlve] {label} failed', e); }}")
+}
+
+/// Runs the installed Steam extensions in a page that may already exist. The
+/// first half of each branch installs the script if the document-start copy
+/// was skipped (child webviews sometimes miss it); the second half only asks
+/// an already installed copy to rescan the current page.
+fn run_steam_extensions(
+    app: &tauri::AppHandle,
+    webview: &tauri::Webview,
+    steamdb: bool,
+    augmented_steam: bool,
+) {
+    let _ = webview.eval("if (typeof efxlveSteamScan === 'function') efxlveSteamScan();");
+
+    if steamdb {
+        let source = store_extension_source(app, "steamdb.js", true);
+        if !source.is_empty() {
+            let _ = webview.eval(&format!(
+                "if (!window.__EFXLVE_STEAMDB_LOADED) {{\n{}\n}} \
+                 else if (typeof window.efxlveSteamDbRun === 'function') {{ window.efxlveSteamDbRun(); }}",
+                guarded_script("steamdb", &source)
+            ));
+        }
+    }
+
+    if augmented_steam {
+        let source = store_extension_source(app, "augmented_steam.js", true);
+        if !source.is_empty() {
+            let _ = webview.eval(&format!(
+                "if (!window.__EFXLVE_AUGMENTED_STEAM_LOADED) {{\n{}\n}} \
+                 else if (typeof window.efxlveAugmentedSteamRun === 'function') {{ window.efxlveAugmentedSteamRun(); }}",
+                guarded_script("augmented_steam", &source)
+            ));
+        }
+    }
+}
 
 static STEAM_DATA_CACHE: std::sync::Mutex<
     Option<std::collections::HashMap<u32, (std::time::Instant, String)>>,
@@ -610,7 +694,7 @@ fn fetch_and_inject_steam_data(app: AppHandle, view_label: String, app_id: u32) 
             Err(_) => serde_json::Value::Null,
         };
 
-        let mut live_players: Option<u64> = player_val
+        let live_players: Option<u64> = player_val
             .get("response")
             .and_then(|r| r.get("player_count"))
             .and_then(|c| c.as_u64());
@@ -622,50 +706,26 @@ fn fetch_and_inject_steam_data(app: AppHandle, view_label: String, app_id: u32) 
             .cloned()
             .unwrap_or(serde_json::Value::Null);
 
+        // Only measured values reach the page. A current count is not a
+        // 24-hour or all-time peak, and a missing figure must stay missing
+        // instead of being scaled into a plausible-looking number.
         let mut players_obj = serde_json::Map::new();
         if let Some(c) = live_players {
             players_obj.insert("current".to_string(), serde_json::json!(c));
-        } else if let Some(rec) = app_val
-            .get("players")
-            .and_then(|p| p.get("recent"))
-            .and_then(|r| r.as_u64())
-        {
-            live_players = Some(rec);
-            players_obj.insert("current".to_string(), serde_json::json!(rec));
         }
-
         if let Some(pt) = app_val
             .get("players")
             .and_then(|p| p.get("peak_today"))
             .and_then(|r| r.as_u64())
         {
             players_obj.insert("peak_today".to_string(), serde_json::json!(pt));
-        } else if let Some(c) = live_players {
-            players_obj.insert(
-                "peak_today".to_string(),
-                serde_json::json!((c as f64 * 1.25) as u64),
-            );
         }
-
         if let Some(pa) = app_val
             .get("players")
             .and_then(|p| p.get("peak_all"))
             .and_then(|r| r.as_u64())
         {
             players_obj.insert("peak_all".to_string(), serde_json::json!(pa));
-            players_obj.insert(
-                "followers".to_string(),
-                serde_json::json!((pa as f64 * 1.8) as u64),
-            );
-        } else if let Some(c) = live_players {
-            players_obj.insert(
-                "peak_all".to_string(),
-                serde_json::json!((c as f64 * 2.6) as u64),
-            );
-            players_obj.insert(
-                "followers".to_string(),
-                serde_json::json!((c as f64 * 3.5) as u64),
-            );
         }
 
         let combined = serde_json::json!({
@@ -712,6 +772,9 @@ fn create_store_builder(
 ) -> tauri::WebviewBuilder<tauri::Wry> {
     use tauri::{WebviewBuilder, WebviewUrl};
     let app_nav = app.clone();
+    // The page-load closure outlives this call, so the borrowed preferences
+    // string is copied before it can be captured by the `'static` callback.
+    let steam_options_owned = steam_options_json.to_string();
     // additional_browser_args blanks this child webview. Leave the builder without it.
     let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
         // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
@@ -728,35 +791,23 @@ fn create_store_builder(
                 let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
             }
             if store_id == "steam" {
-                let ext_dir = store_extensions_dir(&webview.app_handle());
-                let sdb_file = ext_dir.join("steamdb.js");
-                let as_file = ext_dir.join("augmented_steam.js");
-
-                let sdb_code = if sdb_file.is_file() {
-                    std::fs::read_to_string(&sdb_file).unwrap_or_default()
-                } else {
-                    String::new()
-                };
-                let as_code = if as_file.is_file() {
-                    std::fs::read_to_string(&as_file).unwrap_or_default()
-                } else {
-                    String::new()
-                };
-
-                let eval_script = format!(
-                    "if(typeof efxlveSteamScan==='function') efxlveSteamScan();\n\
-                     if({steamdb} && !window.__EFXLVE_STEAMDB_LOADED) {{\n\
-                         {sdb_code}\n\
-                     }} else if ({steamdb} && typeof window.efxlveSteamDbRun === 'function') {{\n\
-                         window.efxlveSteamDbRun();\n\
-                     }}\n\
-                     if({augmented_steam} && !window.__EFXLVE_AUGMENTED_STEAM_LOADED) {{\n\
-                         {as_code}\n\
-                     }} else if ({augmented_steam} && typeof window.efxlveAugmentedSteamRun === 'function') {{\n\
-                         window.efxlveAugmentedSteamRun();\n\
-                     }}\n"
+                // Child webviews have been observed to miss the document-start
+                // scripts, so the flags are set again before the extensions
+                // rescan. Without this the toggles and options would fall back
+                // to their defaults on such a load.
+                let _ = webview.eval(&steam_boot_script(
+                    steam_currency,
+                    steam_rate,
+                    steamdb,
+                    augmented_steam,
+                    steam_options_owned.as_str(),
+                ));
+                run_steam_extensions(
+                    &webview.app_handle(),
+                    &webview,
+                    steamdb,
+                    augmented_steam,
                 );
-                let _ = webview.eval(&eval_script);
 
                 if let Ok(u) = webview.url() {
                     if let Some(app_id) = extract_steam_app_id(&u) {
@@ -894,35 +945,31 @@ fn create_store_builder(
         );
         builder = builder.initialization_script(&init_script);
     }
-    // Injected for Steam when currency, SteamDB, or Augmented Steam are enabled:
+    // Injected for Steam when currency, SteamDB, or Augmented Steam are enabled.
+    // Each script is its own document-start script: before this split, an
+    // exception at the end of the currency script (its MutationObserver target
+    // is null at document-start) aborted the combined script and neither
+    // installed extension ever ran.
     if store_id == "steam" {
-        let ext_dir = store_extensions_dir(app);
-        let sdb_file = ext_dir.join("steamdb.js");
-        let as_file = ext_dir.join("augmented_steam.js");
+        sync_installed_extensions(app);
+        builder = builder.initialization_script(steam_boot_script(
+            steam_currency,
+            steam_rate,
+            steamdb,
+            augmented_steam,
+            steam_options_json,
+        ));
+        builder = builder.initialization_script(guarded_script("currency", STEAM_EXTENSION_SCRIPT));
 
-        let sdb_code = if steamdb && sdb_file.is_file() {
-            std::fs::read_to_string(&sdb_file).unwrap_or_default()
-        } else {
-            String::new()
-        };
+        let sdb_code = store_extension_source(app, "steamdb.js", steamdb);
+        if !sdb_code.is_empty() {
+            builder = builder.initialization_script(guarded_script("steamdb", &sdb_code));
+        }
 
-        let as_code = if augmented_steam && as_file.is_file() {
-            std::fs::read_to_string(&as_file).unwrap_or_default()
-        } else {
-            String::new()
-        };
-
-        let init_script = format!(
-            "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\n\
-             window.__EFXLVE_STEAM_RATE = {steam_rate};\n\
-             window.__EFXLVE_STEAMDB = {steamdb};\n\
-             window.__EFXLVE_AUGMENTED_STEAM = {augmented_steam};\n\
-             window.__EFXLVE_STEAM_OPTIONS = {steam_options_json};\n\
-             {STEAM_EXTENSION_SCRIPT}\n\
-             {sdb_code}\n\
-             {as_code}\n"
-        );
-        builder = builder.initialization_script(&init_script);
+        let as_code = store_extension_source(app, "augmented_steam.js", augmented_steam);
+        if !as_code.is_empty() {
+            builder = builder.initialization_script(guarded_script("augmented_steam", &as_code));
+        }
     }
     builder
 }
@@ -937,8 +984,29 @@ pub fn store_extensions_dir(app: &AppHandle) -> std::path::PathBuf {
     dir
 }
 
+/// Keeps an installed extension current with the copy bundled in the launcher.
+/// Without this, a launcher update that fixes an extension never reaches a
+/// user who installed the old version, because the app-data copy wins.
+fn sync_installed_extensions(app: &AppHandle) {
+    let dir = store_extensions_dir(app);
+    for (file, bundled) in [
+        ("steamdb.js", STEAMDB_EXTENSION),
+        ("augmented_steam.js", AUGMENTED_STEAM_EXTENSION),
+    ] {
+        let path = dir.join(file);
+        if !path.is_file() {
+            continue;
+        }
+        let current = std::fs::read_to_string(&path).unwrap_or_default();
+        if current != bundled {
+            let _ = std::fs::write(&path, bundled);
+        }
+    }
+}
+
 #[tauri::command]
 pub fn get_store_extensions_state(app: AppHandle) -> Result<serde_json::Value, String> {
+    sync_installed_extensions(&app);
     let dir = store_extensions_dir(&app);
     let sdb_file = dir.join("steamdb.js");
     let as_file = dir.join("augmented_steam.js");
@@ -961,14 +1029,14 @@ pub fn get_store_extensions_state(app: AppHandle) -> Result<serde_json::Value, S
         "steamdb": {
             "id": "steamdb",
             "name": "SteamDB Browser Extension",
-            "version": "4.37.0",
+            "version": STEAMDB_EXTENSION_VERSION,
             "installed": sdb_installed,
             "sizeBytes": sdb_size
         },
         "augmentedSteam": {
             "id": "augmented_steam",
             "name": "Augmented Steam",
-            "version": "5.0.0",
+            "version": AUGMENTED_STEAM_EXTENSION_VERSION,
             "installed": as_installed,
             "sizeBytes": as_size
         }
@@ -976,41 +1044,15 @@ pub fn get_store_extensions_state(app: AppHandle) -> Result<serde_json::Value, S
 }
 
 #[tauri::command]
-pub async fn download_store_extension(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
+pub fn download_store_extension(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
     let dir = store_extensions_dir(&app);
-    let target_file = match id.as_str() {
-        "steamdb" => dir.join("steamdb.js"),
-        "augmented_steam" => dir.join("augmented_steam.js"),
+    // Install is a local copy: the upstream projects ship browser-extension
+    // bundles, not this launcher page script, so fetching from GitHub only
+    // delayed the UI and never supplied the file.
+    let (target_file, script) = match id.as_str() {
+        "steamdb" => (dir.join("steamdb.js"), STEAMDB_EXTENSION),
+        "augmented_steam" => (dir.join("augmented_steam.js"), AUGMENTED_STEAM_EXTENSION),
         _ => return Err("Invalid extension id".to_string()),
-    };
-
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(6))
-        .build()
-        .unwrap_or_default();
-
-    // Query upstream metadata
-    let upstream_url = match id.as_str() {
-        "steamdb" => "https://raw.githubusercontent.com/SteamDatabase/BrowserExtension/master/manifest.json",
-        "augmented_steam" => "https://api.github.com/repos/IsThereAnyDeal/AugmentedSteam/releases/latest",
-        _ => "",
-    };
-
-    if !upstream_url.is_empty() {
-        let _ = client
-            .get(upstream_url)
-            .header("User-Agent", "Mozilla/5.0")
-            .send()
-            .await;
-    }
-
-    // A brief download processing duration so UI spinner displays progress to user
-    tokio::time::sleep(std::time::Duration::from_millis(700)).await;
-
-    let script = match id.as_str() {
-        "steamdb" => include_str!("../../extensions/steamdb.js").to_string(),
-        "augmented_steam" => include_str!("../../extensions/augmented_steam.js").to_string(),
-        _ => return Err("Template not found".to_string()),
     };
 
     std::fs::write(&target_file, script).map_err(|e| e.to_string())?;
@@ -1243,46 +1285,17 @@ pub async fn show_store_view(
                 let _ = v.eval(&format!("window.__EFXLVE_OWNED_LABEL = {owned_label_js}; window.__EFXLVE_GAMES = {owned_games}; if(typeof scanAndDecorate==='function') scanAndDecorate();"));
             }
             if store_id == "steam" {
-                let cur = steam_currency.unwrap_or(false);
                 let sdb = steamdb.unwrap_or(true);
                 let as_en = augmented_steam.unwrap_or(true);
-                let rate = steam_rate.unwrap_or(34.5);
-                let opts = steam_options.as_deref().unwrap_or("{}");
-
-                let ext_dir = store_extensions_dir(&app);
-                let sdb_file = ext_dir.join("steamdb.js");
-                let as_file = ext_dir.join("augmented_steam.js");
-
-                let sdb_code = if sdb && sdb_file.is_file() {
-                    std::fs::read_to_string(&sdb_file).unwrap_or_default()
-                } else {
-                    String::new()
-                };
-                let as_code = if as_en && as_file.is_file() {
-                    std::fs::read_to_string(&as_file).unwrap_or_default()
-                } else {
-                    String::new()
-                };
-
-                let script = format!(
-                    "window.__EFXLVE_STEAM_CURRENCY = {cur};\n\
-                     window.__EFXLVE_STEAM_RATE = {rate};\n\
-                     window.__EFXLVE_STEAMDB = {sdb};\n\
-                     window.__EFXLVE_AUGMENTED_STEAM = {as_en};\n\
-                     window.__EFXLVE_STEAM_OPTIONS = {opts};\n\
-                     if(typeof efxlveSteamScan==='function') efxlveSteamScan();\n\
-                     if({sdb} && !window.__EFXLVE_STEAMDB_LOADED) {{\n\
-                         {sdb_code}\n\
-                     }} else if ({sdb} && typeof window.efxlveSteamDbRun === 'function') {{\n\
-                         window.efxlveSteamDbRun();\n\
-                     }}\n\
-                     if({as_en} && !window.__EFXLVE_AUGMENTED_STEAM_LOADED) {{\n\
-                         {as_code}\n\
-                     }} else if ({as_en} && typeof window.efxlveAugmentedSteamRun === 'function') {{\n\
-                         window.efxlveAugmentedSteamRun();\n\
-                     }}\n"
+                let boot = steam_boot_script(
+                    steam_currency.unwrap_or(false),
+                    steam_rate.unwrap_or(34.5),
+                    sdb,
+                    as_en,
+                    steam_options.as_deref().unwrap_or("{}"),
                 );
-                let _ = v.eval(&script);
+                let _ = v.eval(&boot);
+                run_steam_extensions(&app, &v, sdb, as_en);
                 if let Ok(u) = v.url() {
                     if let Some(app_id) = extract_steam_app_id(&u) {
                         fetch_and_inject_steam_data(app.clone(), target_label.clone(), app_id);
@@ -1661,6 +1674,26 @@ mod tests {
             "steam"
         );
         assert_eq!(super::store_id_for_url("https://example.com/"), "epic");
+    }
+
+    #[test]
+    fn malformed_steam_options_cannot_break_the_page_scripts() {
+        assert_eq!(super::js_object_literal("not json"), "{}");
+        assert_eq!(
+            super::js_object_literal("{\"steamdb\":{\"portal\":true}}"),
+            "{\"steamdb\":{\"portal\":true}}"
+        );
+        let boot = super::steam_boot_script(true, 34.5, true, false, "not json");
+        assert!(boot.contains("window.__EFXLVE_STEAM_OPTIONS = {};"));
+        assert!(boot.contains("window.__EFXLVE_STEAMDB = true;"));
+        assert!(boot.contains("window.__EFXLVE_AUGMENTED_STEAM = false;"));
+    }
+
+    #[test]
+    fn one_extension_error_is_contained_by_its_own_guard() {
+        let guarded = super::guarded_script("steamdb", "throw new Error('boom')");
+        assert!(guarded.starts_with("try {"));
+        assert!(guarded.contains("console.error('[efxlve] steamdb failed', e)"));
     }
 
     #[test]

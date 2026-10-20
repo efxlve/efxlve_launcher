@@ -22,22 +22,20 @@
             app_stats_online_now: "Online now:",
             app_stats_peak_today: "24-hour peak:",
             app_stats_alL_time_peak: "All-time peak:",
-            app_stats_followers: "Followers:",
             app_stats_online: "Online Stats",
             app_depots_update: "Last Update:"
         },
         tr: {
             view_on_steamdb: "SteamDB'de görüntüle",
             view_on_pcgamingwiki: "PCGamingWiki'de görüntüle",
-            app_steamdb_rating_tooltip: "$total$ incelemenin $positive$ adedi olumludur (tüm satın alma türleri dâhil)",
+            app_steamdb_rating_tooltip: "$positive$ inceleme olumlu (toplam $total$ inceleme, tüm satın alma türleri dâhil)",
             app_steamdb_rating: "SteamDB Puanı:",
             app_lowest_price: "SteamDB verilerine göre en düşük fiyatı <b>$price$</b>",
             app_lowest_date: "$date$ ($relative$) tarihinde görülen fiyat",
-            app_lowest_price_discount: "SteamDB verilerine göre en düşük fiyatı <b>-$discount$%</b> indirimle <b>$price$</b>",
+            app_lowest_price_discount: "SteamDB verilerine göre en düşük fiyatı <b>$price$</b> (<b>%$discount$</b> indirimle)",
             app_stats_online_now: "Şimdi çevrim içi:",
             app_stats_peak_today: "Son 24 saat:",
             app_stats_alL_time_peak: "En fazla:",
-            app_stats_followers: "Takipçi:",
             app_stats_online: "Çevrim İçi İstatistik",
             app_depots_update: "Son Güncelleme:"
         }
@@ -236,12 +234,70 @@
             btnPcgw.appendChild(spanPcgw);
             container.insertBefore(btnPcgw, container.children[1] || null);
         }
+
+        // The settings copy promises a ProtonDB shortcut next to the SteamDB
+        // button, so both share the "view on SteamDB" option.
+        if (isOptionEnabled('button-app', true) && !container.querySelector('.btn_protondb_site')) {
+            var btnProton = document.createElement('a');
+            btnProton.className = 'btn_steamdb btn_protondb_site';
+            btnProton.href = 'https://www.protondb.com/app/' + appId + '/';
+            btnProton.target = '_blank';
+            btnProton.rel = 'noopener noreferrer';
+            btnProton.title = 'ProtonDB';
+            btnProton.textContent = 'ProtonDB';
+            container.insertBefore(btnProton, container.children[2] || null);
+        }
+    }
+
+    // Link every purchase package to its SteamDB SubID page. The sub id lives
+    // in the add-to-cart form, which is the only stable hook the store page
+    // exposes for a package.
+    function injectSubIdBadges() {
+        if (!isOptionEnabled('link-subid', true)) return;
+        var inputs = document.querySelectorAll('form[name^="add_to_cart_"] input[name="subid"]');
+        for (var i = 0; i < inputs.length; i++) {
+            var input = inputs[i];
+            var subid = (input.value || '').trim();
+            if (!subid) continue;
+            var form = input.form || input.parentNode;
+            if (!form || !form.parentNode) continue;
+            if (form.parentNode.querySelector('.steamdb_subid[data-subid="' + subid + '"]')) continue;
+            var link = document.createElement('a');
+            link.className = 'btn_steamdb steamdb_subid';
+            link.dataset.subid = subid;
+            link.href = 'https://steamdb.info/sub/' + encodeURIComponent(subid) + '/';
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.title = 'SteamDB SubID ' + subid;
+            link.textContent = 'SubID ' + subid;
+            link.style.cssText = 'font-size:10px;line-height:18px;padding:0 6px;margin:2px 0 6px;';
+            // Prefer the package title row: the form is the first child of the
+            // purchase block, so inserting after it would put the badge above
+            // the title and platform icons.
+            var game = form.closest('.game_area_purchase_game') || form.parentNode;
+            var title = game.querySelector('h2.title, .title');
+            var anchor = title || game.querySelector('.game_area_purchase_platform') || form;
+            anchor.parentNode.insertBefore(link, anchor.nextSibling);
+        }
+    }
+
+    function hideInstallSteamButton() {
+        if (!isOptionEnabled('enhancement-hide-install-button', true)) return;
+        var buttons = document.querySelectorAll('.header_installsteam_btn');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].style.display = 'none';
+        }
     }
 
     function injectOnlineStatsWidget(appId) {
         if (!isOptionEnabled('online-stats', true)) return;
+        // The store page carries two `.game_meta_data` nodes (the right column
+        // and an empty review block) and React may replace either of them, so
+        // the dedupe check is document-wide, not container-wide. With a
+        // container-wide check the stats block was rendered twice.
+        if (document.querySelector('.steamdb_stats')) return;
         var container = document.querySelector('.game_meta_data, .rightcol.game_meta_data, .glance_ctn_responsive_right, .rightcol');
-        if (!container || container.querySelector('.steamdb_stats')) return;
+        if (!container) return;
 
         var blockInner = document.createElement('div');
         blockInner.className = 'block_content_inner';
@@ -289,14 +345,6 @@
         l3.textContent = _t('app_stats_alL_time_peak');
         grid.append(l3, peakAll);
 
-        var followers = document.createElement('span');
-        followers.className = 'steamdb_stats_number steamdb_stat_followers';
-        followers.textContent = '...';
-        var l4 = document.createElement('span');
-        l4.className = 'steamdb_stats_name';
-        l4.textContent = _t('app_stats_followers');
-        grid.append(l4, followers);
-
         container.insertBefore(block, container.firstChild);
         var responsiveHeader = document.createElement('div');
         responsiveHeader.className = 'responsive_block_header responsive_apppage_details_left steamdb_stats_header';
@@ -340,6 +388,20 @@
         requestSteamData(appId);
     }
 
+    // Store pages write "96%" in English and "%96" in Turkish, and the review
+    // count can use either a comma or a dot as its thousands separator. A
+    // single order-sensitive regex missed every Turkish page, so the rating
+    // row silently never appeared there.
+    function parseReviewSummary(text) {
+        if (!text) return null;
+        var pctMatch = text.match(/(\d+(?:[.,]\d+)?)\s*%/) || text.match(/%\s*(\d+(?:[.,]\d+)?)/);
+        if (!pctMatch) return null;
+        var countMatch = text.match(/([\d.,]+)\s*(?:user reviews|kullanıcı|inceleme)/i)
+            || text.match(/\(([\d.,]+)\)/);
+        var count = countMatch ? parseInt(countMatch[1].replace(/[.,]/g, ''), 10) : 0;
+        return { pct: parseFloat(pctMatch[1].replace(',', '.')), count: count };
+    }
+
     function injectSteamDbRating(appId) {
         if (!isOptionEnabled('steamdb-rating', true)) return;
         var desktopReviews = document.querySelector('#userReviews, .user_reviews');
@@ -349,25 +411,39 @@
         var total = 0;
         var reviewSummary = document.querySelector('[data-featuretarget="appreviews"]');
         if (reviewSummary) {
-            var raw = reviewSummary.getAttribute('data-tooltip-html') || '';
-            var m = raw.match(/([\d,\.]+)\s*%\s*.*?\s*([\d,\.]+)/);
-            if (m) {
-                var pct = parseFloat(m[1].replace(/,/g, ''));
-                total = parseInt(m[2].replace(/[,\.]/g, ''), 10);
-                positive = Math.round(total * (pct / 100));
+            // The all-time counts sit in data-props. The tooltip on the same
+            // node only describes the last 30 days, so using it scored the
+            // extension against a different (much smaller) sample.
+            try {
+                var props = JSON.parse(reviewSummary.getAttribute('data-props') || '{}');
+                var allTotal = Number(props.summary_num_reviews);
+                var allPositive = Number(props.summary_num_positive_reviews);
+                if (!(allTotal > 0) && props.summaryDisplayed) {
+                    allTotal = Number(props.summaryDisplayed.nReviews);
+                    allPositive = Number(props.summaryDisplayed.nReviewsPositive);
+                }
+                if (allTotal > 0 && allPositive >= 0) {
+                    total = allTotal;
+                    positive = allPositive;
+                }
+            } catch (_) {}
+            if (total <= 0) {
+                var parsed = parseReviewSummary(reviewSummary.getAttribute('data-tooltip-html') || '');
+                if (parsed && parsed.count > 0) {
+                    total = parsed.count;
+                    positive = Math.round(total * (parsed.pct / 100));
+                }
             }
         }
         if (total <= 0) {
             var summaryRow = document.querySelector('.user_reviews_summary_row[data-tooltip-html], .user_reviews_summary_row');
             if (summaryRow) {
                 var tooltip = summaryRow.getAttribute('data-tooltip-html') || summaryRow.textContent || '';
-                var pctMatch = tooltip.match(/(\d+)%/);
-                var countMatch = tooltip.match(/([\d,\.]+)\s*(?:user reviews|kullanıcı)/i) || tooltip.match(/\(([\d,\.]+)\)/);
-                if (pctMatch) {
-                    var pP = parseInt(pctMatch[1], 10);
-                    var cC = countMatch ? parseInt(countMatch[1].replace(/[,\.]/g, ''), 10) : 1000;
-                    positive = Math.round(cC * (pP / 100));
-                    total = cC;
+                var fallback = parseReviewSummary(tooltip);
+                if (fallback && fallback.pct) {
+                    // Older pages without a review count still get a score.
+                    total = fallback.count > 0 ? fallback.count : 1000;
+                    positive = Math.round(total * (fallback.pct / 100));
                 }
             }
         }
@@ -473,8 +549,6 @@
             if (tdEl && data.players.peak_today) tdEl.textContent = formatNumber(data.players.peak_today);
             var pkEl = document.querySelector('.steamdb_stat_peak_all');
             if (pkEl && data.players.peak_all) pkEl.textContent = formatNumber(data.players.peak_all);
-            var flEl = document.querySelector('.steamdb_stat_followers');
-            if (flEl && data.players.followers) flEl.textContent = formatNumber(data.players.followers);
         }
 
         if (data.prices) {
@@ -527,6 +601,7 @@
 
     function run() {
         injectSteamDbStyles();
+        hideInstallSteamButton();
         var appId = getCurrentAppId();
         if (appId <= 0) return;
         injectHeaderButtons(appId);
@@ -535,6 +610,7 @@
         injectSteamDbRating(appId);
         injectLastDepotsUpdate(appId);
         injectDevPubLinks();
+        injectSubIdBadges();
         requestSteamData(appId);
     }
 
@@ -552,6 +628,8 @@
         runTimer = setTimeout(run, 120);
     }
     var obs = new MutationObserver(debouncedRun);
-    obs.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    // Document-start has no root element yet; observe the document so the
+    // observer registration cannot throw and abort the rest of the injection.
+    obs.observe(document, { childList: true, subtree: true });
     window.addEventListener('popstate', run);
 })();

@@ -531,6 +531,8 @@
         runTimer = setTimeout(run, 120);
     }
     var obs = new MutationObserver(debouncedRun);
-    obs.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    // Document-start has no root element yet; observe the document so the
+    // observer registration cannot throw and abort the rest of the injection.
+    obs.observe(document, { childList: true, subtree: true });
     window.addEventListener('popstate', run);
 })();
