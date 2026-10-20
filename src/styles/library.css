@@ -900,7 +900,6 @@
   background:
     linear-gradient(90deg, rgba(10, 12, 18, 0.72) 0%, rgba(10, 12, 18, 0.54) 100%),
     var(--case-head-bg);
-  backdrop-filter: blur(8px) saturate(140%);
   border-bottom: 1.5px solid var(--case-rule);
 }
 .pcard.is-case[data-case-style="clear"] .pcard-case-fx {

@@ -413,7 +413,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-moment:hover img { transform: scale(1.03); }
 .gp-moment-more {
   position: absolute; inset: 0; display: grid; place-items: center;
-  background: rgba(0, 0, 0, 0.68); backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.68);
   font-size: 13.5px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums;
 }
 
@@ -1148,7 +1148,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   padding: 0 14px;
   border-radius: var(--r-sm);
   background: rgba(14, 15, 18, 0.88);
-  backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #ffffff;
   font: inherit;
@@ -1282,13 +1281,13 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 }
 .ss-video-overlay-badge {
   position: absolute; bottom: 8px; right: 8px; padding: 2px 7px;
-  border-radius: 4px; background: rgba(10, 12, 16, 0.85); backdrop-filter: blur(4px);
+  border-radius: 4px; background: rgba(10, 12, 16, 0.85);
   color: #fff; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2;
 }
 .ss-video-hover-play {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 6px;
-  background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.5);
   opacity: 0; transition: opacity var(--ease); z-index: 1;
 }
 .ss-video-thumb-wrap:hover .ss-video-hover-play { opacity: 1; }
