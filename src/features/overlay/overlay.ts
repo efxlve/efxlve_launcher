@@ -853,6 +853,8 @@ function closeWidget(tab: TabId): void {
   openWidgets.delete(tab);
   saveOpenWidgets();
 
+  if (tab === "clip") stopClipPolling();
+
   const widget = document.getElementById(`ov-widget-${tab}`);
   if (widget) widget.style.display = "none";
 
@@ -1502,9 +1504,13 @@ function startClipPolling(): void {
   if (clipPollTimer !== null) return;
   clipPollTimer = window.setInterval(() => {
     if (document.hidden) return;
-    // The dock dot only needs live polling while the recorder is running; a
-    // closed, idle clip widget should not ask Rust for its state twice a second.
-    if (isWidgetOpen("clip") || clipState?.running) void refreshClipWidget(true);
+    // Events update the dock dot when the recorder starts or stops; there is
+    // nothing to poll while the clip widget is closed.
+    if (!isWidgetOpen("clip")) {
+      stopClipPolling();
+      return;
+    }
+    void refreshClipWidget(true);
   }, 1000);
 }
 
