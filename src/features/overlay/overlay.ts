@@ -3437,7 +3437,22 @@ function repaintDiscordChat(): void {
 }
 
 function repaintDiscord(): void {
-  if (isWidgetOpen("discord")) renderDiscordSocial();
+  if (isWidgetOpen("discord")) {
+    const social = viewEl("discord");
+    const active = document.activeElement as HTMLElement | null;
+    // Presence events must not pull the caret out of the friend filter or the
+    // add-friend box. While those own focus, patch only the list underneath.
+    if (
+      social &&
+      active &&
+      social.contains(active) &&
+      (active.tagName === "INPUT" || active.tagName === "TEXTAREA")
+    ) {
+      if (pickerMode === "friends") repaintFriendsList();
+    } else {
+      renderDiscordSocial();
+    }
+  }
   if (isWidgetOpen("chat")) repaintDiscordChat();
 }
 
