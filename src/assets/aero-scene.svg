@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+  <!-- Frutiger Aero backdrop: morning sky, sun bloom, light ribbons, two hills
+       and a few soap bubbles. Gradients only, no filters: it is rasterised once
+       behind the app and must stay cheap on low-end machines. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1678cc"/>
+      <stop offset="0.22" stop-color="#3fa6ea"/>
+      <stop offset="0.48" stop-color="#8fd6fa"/>
+      <stop offset="0.7" stop-color="#d9f4ff"/>
+      <stop offset="0.86" stop-color="#f4fcff"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="1290" cy="40" r="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffdf0" stop-opacity="0.95"/>
+      <stop offset="0.14" stop-color="#fff7d6" stop-opacity="0.6"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="0.7" stop-color="#e8fbff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ribbonGreen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b9f5a0" stop-opacity="0"/>
+      <stop offset="0.45" stop-color="#d8ffb8" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fe07a"/>
+      <stop offset="1" stop-color="#4fae3c"/>
+    </linearGradient>
+    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7fd23c"/>
+      <stop offset="0.55" stop-color="#4caf2a"/>
+      <stop offset="1" stop-color="#2e8a22"/>
+    </linearGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4fcff" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#f4fcff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="bubble" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="0.72" stop-color="#e6fbff" stop-opacity="0.1"/>
+      <stop offset="0.9" stop-color="#bff0ff" stop-opacity="0.38"/>
+      <stop offset="0.97" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glint" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <g id="b">
+      <circle r="1" fill="url(#bubble)"/>
+      <ellipse cx="-0.38" cy="-0.42" rx="0.34" ry="0.2" transform="rotate(-38 -0.38 -0.42)" fill="url(#glint)"/>
+      <ellipse cx="0.46" cy="0.5" rx="0.12" ry="0.06" transform="rotate(-40 0.46 0.5)" fill="#ffffff" fill-opacity="0.55"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#sun)"/>
+
+  <!-- Light ribbons sweeping up toward the sun. -->
+  <path d="M-80 640 C 260 520 520 610 820 470 S 1340 210 1700 170 L 1700 210 C 1360 250 1090 420 830 520 S 300 600 -80 700 Z" fill="url(#ribbon)"/>
+  <path d="M-80 720 C 300 640 620 700 920 560 S 1400 330 1700 300 L 1700 318 C 1420 350 1150 520 930 590 S 330 690 -80 742 Z" fill="url(#ribbonGreen)"/>
+  <path d="M200 560 C 520 470 760 520 1020 400 S 1420 190 1700 120" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"/>
+
+  <!-- Hills. The haze keeps the far one airy; the rim catches the light. -->
+  <path d="M-40 1000 L -40 840 C 220 760 460 790 700 830 C 940 870 1180 790 1400 760 C 1500 748 1580 756 1640 770 L 1640 1000 Z" fill="url(#hillBack)"/>
+  <rect y="740" width="1600" height="130" fill="url(#haze)"/>
+  <path d="M-40 1000 L -40 900 C 180 850 420 846 640 880 C 900 920 1180 900 1400 870 C 1500 858 1580 860 1640 868 L 1640 1000 Z" fill="url(#hillFront)"/>
+  <path d="M-40 900 C 180 850 420 846 640 880 C 900 920 1180 900 1400 870 C 1500 858 1580 860 1640 868" fill="none" stroke="#e9ffd0" stroke-opacity="0.75" stroke-width="3"/>
+
+  <!-- Bubbles. -->
+  <use href="#b" transform="translate(1390 560) scale(92)"/>
+  <use href="#b" transform="translate(1268 690) scale(40)"/>
+  <use href="#b" transform="translate(1500 420) scale(28)"/>
+  <use href="#b" transform="translate(1180 360) scale(18)"/>
+  <use href="#b" transform="translate(150 470) scale(56)"/>
+  <use href="#b" transform="translate(250 640) scale(22)"/>
+  <use href="#b" transform="translate(70 300) scale(14)"/>
+  <use href="#b" transform="translate(860 760) scale(16)"/>
+</svg>

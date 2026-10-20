@@ -170,7 +170,7 @@ select option { background: var(--surface-1); color: var(--text); }
 .theme-swatch-black { background: #000000; }
 .theme-swatch-soft { background: #18181c; }
 .theme-swatch-white { background: #ffffff; border-color: rgba(0, 0, 0, 0.28); }
-.theme-swatch-aero { background: linear-gradient(180deg, #5fc7f0 0%, #9ee4ff 48%, #b7e7d2 100%); }
+.theme-swatch-aero { background: linear-gradient(180deg, #1678cc 0%, #8fd6fa 58%, #6cc93a 60%, #2e8a22 100%); }
 
 /* --- Chips & badges --- */
 .chip {
