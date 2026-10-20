@@ -180,7 +180,7 @@ function renderTvProfileHero(
         </div>
         <div class="tv-pstat-card">
           <span class="tv-pstat-title">${icon("clock", 13)} ${t("profile.played")}</span>
-          <span class="tv-pstat-val tabular-nums">${esc(fmtPlaytime(playtimeSeconds))}</span>
+          <span class="tv-pstat-val tabular-nums">${playtimeSeconds > 0 ? esc(fmtPlaytime(playtimeSeconds)) : "—"}</span>
         </div>
         <div class="tv-pstat-card">
           <span class="tv-pstat-title">${icon("trophy", 13)} ${t("profile.trophies")}</span>
