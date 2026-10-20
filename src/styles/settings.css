@@ -447,3 +447,79 @@
   justify-content: flex-end;
   padding: 10px 14px 4px;
 }
+
+
+/* Physical Case Style Visual Picker in Settings */
+.case-styles-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+}
+.case-style-card {
+  display: flex;
+  flex-direction: column;
+  padding: 11px 13px;
+  border-radius: var(--r-sm, 6px);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  user-select: none;
+}
+.case-style-card:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.case-style-card.active {
+  border-color: var(--accent);
+  background: var(--accent-subtle, rgba(56, 139, 255, 0.12));
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.case-style-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.case-style-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-3, rgba(255, 255, 255, 0.08));
+  color: var(--text-3);
+}
+.case-style-card.active .case-style-badge {
+  background: var(--accent);
+  color: var(--on-accent, #ffffff);
+}
+.case-style-radio {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--ease), background var(--ease);
+}
+.case-style-radio.checked {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--surface-1, #1e222b);
+}
+.case-style-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.case-style-desc {
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.4;
+}

@@ -390,10 +390,12 @@ function caseOsBadgeHtml(os: CaseOsKind): string {
 function caseCoverHeader(s: EpicSummary, source: GameSource): string {
   const brand = CASE_BRAND_LABELS[source] || source.toUpperCase();
   const os = resolveCaseOs(s);
+  const logoHtml = S.caseShowLogo ? storeLogo(source, 13, "pcard-case-logo") : "";
+  const osHtml = S.caseShowOs ? caseOsBadgeHtml(os) : "";
   return `<div class="pcard-case-head" aria-hidden="true">
     <span class="pcard-case-slot is-left" aria-hidden="true"></span>
-    <span class="pcard-case-brand">${storeLogo(source, 13, "pcard-case-logo")}<span class="pcard-case-name">${esc(brand)}</span></span>
-    <span class="pcard-case-slot is-right">${caseOsBadgeHtml(os)}</span>
+    <span class="pcard-case-brand">${logoHtml}<span class="pcard-case-name">${esc(brand)}</span></span>
+    <span class="pcard-case-slot is-right">${osHtml}</span>
   </div>`;
 }
 
@@ -419,7 +421,7 @@ export function epicCardPortrait(s: EpicSummary): string {
     : "";
   const source = sourceOfKey(s.appName);
   const isCase = S.showCaseCovers;
-  const caseStyleAttr = isCase ? ` data-case-style="${S.caseCoverStyle}"` : "";
+  const caseStyleAttr = isCase ? ` data-case-style="${S.caseCoverStyle}" data-case-gloss="${S.caseGloss}" data-case-color="${S.caseColorMode}"` : "";
   const caseHead = isCase ? caseCoverHeader(s, source) : "";
   const caseFx = isCase ? `<span class="pcard-case-fx" aria-hidden="true"></span>` : "";
   // Optional: the storefront mark on the cover (bottom-right, clear of the
@@ -495,7 +497,10 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
         ${itemsHtml}${sentinelHtml}
       </div>`;
   }
-  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${S.showCaseCovers ? " has-case-covers" : ""}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
+  const caseClasses = S.showCaseCovers
+    ? ` has-case-covers${!S.caseShelfShadow ? " no-shelf-shadow" : ""}${!S.caseGlare ? " no-case-glare" : ""}`
+    : "";
+  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${caseClasses}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
 }
 
 /**
@@ -743,8 +748,8 @@ function wireCardSettle(): void {
         const nx = (px - 0.5) * 2;
         const ny = (py - 0.5) * 2;
         const isCase = current.classList.contains("is-case");
-        const maxRx = isCase ? 9.5 : 5;
-        const maxRy = isCase ? 11.5 : 6;
+        const maxRx = isCase ? (S.caseTilt ? 9.5 : 0) : 5;
+        const maxRy = isCase ? (S.caseTilt ? 11.5 : 0) : 6;
         const rx = -ny * maxRx;
         const ry = nx * maxRy;
         const glareAngle = 122 + nx * 34 - ny * 18;

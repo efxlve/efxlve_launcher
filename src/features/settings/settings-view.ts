@@ -18,6 +18,7 @@ import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { SettingsSection } from "../../core/types";
+import type { CaseCoverStyle } from "../../core/constants";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
 import { toast } from "../../core/toast";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
@@ -85,6 +86,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "launchers", labelKey: "settings.secLaunchers" },
   { id: "compat", labelKey: "settings.secCompat" },
   { id: "collections", labelKey: "settings.secCollections" },
+  { id: "cases", labelKey: "settings.secCases" },
   { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
   { id: "screenshots", labelKey: "settings.secScreenshots" },
@@ -106,7 +108,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navLibrary",
-    sections: ["downloads", "stores", "collections", "hidden"],
+    sections: ["downloads", "stores", "collections", "cases", "hidden"],
   },
   {
     labelKey: "settings.navApp",
@@ -847,6 +849,77 @@ function renderStores(): string {
   );
 }
 
+
+function renderCasesSection(): string {
+  const styles: { id: CaseCoverStyle; titleKey: string; descKey: string; badge: string }[] = [
+    { id: "retail", titleKey: "settings.caseStyleRetail", descKey: "settings.caseStyleRetailDesc", badge: "DVD / Blu-ray" },
+    { id: "clear", titleKey: "settings.caseStyleClear", descKey: "settings.caseStyleClearDesc", badge: "Frosted PS3 / Switch" },
+    { id: "steelbook", titleKey: "settings.caseStyleSteelbook", descKey: "settings.caseStyleSteelbookDesc", badge: "Metal Collector" },
+    { id: "jewel", titleKey: "settings.caseStyleJewel", descKey: "settings.caseStyleJewelDesc", badge: "PC CD-ROM / PS1" },
+    { id: "holo", titleKey: "settings.caseStyleHolo", descKey: "settings.caseStyleHoloDesc", badge: "Prismatic Foil" },
+    { id: "gold", titleKey: "settings.caseStyleGold", descKey: "settings.caseStyleGoldDesc", badge: "24K Limited" },
+    { id: "retro", titleKey: "settings.caseStyleRetro", descKey: "settings.caseStyleRetroDesc", badge: "90s Big Box" },
+    { id: "neon", titleKey: "settings.caseStyleNeon", descKey: "settings.caseStyleNeonDesc", badge: "Cyber Acrylic" },
+    { id: "acrylic", titleKey: "settings.caseStyleAcrylic", descKey: "settings.caseStyleAcrylicDesc", badge: "Crystal Glass" },
+  ];
+
+  const styleCards = styles.map((st) => {
+    const isAct = S.caseCoverStyle === st.id;
+    return `
+      <div class="case-style-card ${isAct ? "active" : ""}" data-act="set-case-cover-style" data-style="${st.id}" role="button" tabindex="0">
+        <div class="case-style-card-header">
+          <span class="case-style-badge">${st.badge}</span>
+          <span class="case-style-radio ${isAct ? "checked" : ""}"></span>
+        </div>
+        <div class="case-style-title">${t(st.titleKey)}</div>
+        <div class="case-style-desc">${t(st.descKey)}</div>
+      </div>
+    `;
+  }).join("");
+
+  const mainGroup = group(
+    row(t("settings.caseCoversTitle"), t("settings.caseCoversDesc"), toggle("toggle-case-covers", S.showCaseCovers)),
+    t("settings.secCases"),
+  );
+
+  const galleryGroup = group(
+    `<div class="case-styles-gallery">${styleCards}</div>`,
+    t("settings.caseStyleTitle"),
+  );
+
+  const headerGroup = group(
+    row(
+      t("settings.caseColorMode"),
+      t("settings.caseColorModeDesc"),
+      `<div class="seg" role="radiogroup">
+        <button type="button" class="${S.caseColorMode === "store" ? "active" : ""}" data-act="set-case-color-mode" data-mode="store">${t("settings.caseColorStore")}</button>
+        <button type="button" class="${S.caseColorMode === "monochrome" ? "active" : ""}" data-act="set-case-color-mode" data-mode="monochrome">${t("settings.caseColorMonochrome")}</button>
+      </div>`
+    ) +
+    row(t("settings.caseShowLogo"), t("settings.caseShowLogoDesc"), toggle("toggle-case-show-logo", S.caseShowLogo)) +
+    row(t("settings.caseShowOs"), t("settings.caseShowOsDesc"), toggle("toggle-case-show-os", S.caseShowOs)),
+    t("settings.caseHeaderGroup"),
+  );
+
+  const effectsGroup = group(
+    row(t("settings.caseGlare"), t("settings.caseGlareDesc"), toggle("toggle-case-glare", S.caseGlare)) +
+    row(t("settings.caseTilt"), t("settings.caseTiltDesc"), toggle("toggle-case-tilt", S.caseTilt)) +
+    row(t("settings.caseShelfShadow"), t("settings.caseShelfShadowDesc"), toggle("toggle-case-shelf-shadow", S.caseShelfShadow)) +
+    row(
+      t("settings.caseGloss"),
+      t("settings.caseGlossDesc"),
+      `<div class="seg" role="radiogroup">
+        <button type="button" class="${S.caseGloss === "high" ? "active" : ""}" data-act="set-case-gloss" data-gloss="high">${t("settings.caseGlossHigh")}</button>
+        <button type="button" class="${S.caseGloss === "satin" ? "active" : ""}" data-act="set-case-gloss" data-gloss="satin">${t("settings.caseGlossSatin")}</button>
+        <button type="button" class="${S.caseGloss === "matte" ? "active" : ""}" data-act="set-case-gloss" data-gloss="matte">${t("settings.caseGlossMatte")}</button>
+      </div>`
+    ),
+    t("settings.caseEffectsGroup"),
+  );
+
+  return infoBox("settings.casesScopeInfo") + mainGroup + galleryGroup + headerGroup + effectsGroup;
+}
+
 function renderAppearance(): string {
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
@@ -865,37 +938,11 @@ function renderAppearance(): string {
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
       row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +
       row(t("settings.storeIconsTitle"), t("settings.storeIconsDesc"), toggle("toggle-store-icons", S.showStoreIcons)) +
-      row(t("settings.caseCoversTitle"), t("settings.caseCoversDesc"), toggle("toggle-case-covers", S.showCaseCovers)) +
-      (S.showCaseCovers
-        ? row(
-            t("settings.caseCoverStyleTitle"),
-            t(
-              S.caseCoverStyle === "clear"
-                ? "settings.caseStyleClearDesc"
-                : S.caseCoverStyle === "steelbook"
-                  ? "settings.caseStyleSteelbookDesc"
-                  : S.caseCoverStyle === "jewel"
-                    ? "settings.caseStyleJewelDesc"
-                    : S.caseCoverStyle === "holo"
-                      ? "settings.caseStyleHoloDesc"
-                      : "settings.caseStyleRetailDesc",
-            ),
-            `<div class="seg" role="radiogroup">${(
-              [
-                ["retail", "settings.caseStyleRetail"],
-                ["clear", "settings.caseStyleClear"],
-                ["steelbook", "settings.caseStyleSteelbook"],
-                ["jewel", "settings.caseStyleJewel"],
-                ["holo", "settings.caseStyleHolo"],
-              ] as const
-            )
-              .map(
-                ([style, labelKey]) =>
-                  `<button type="button" class="${S.caseCoverStyle === style ? "active" : ""}" data-act="set-case-cover-style" data-style="${style}">${t(labelKey)}</button>`,
-              )
-              .join("")}</div>`,
-          )
-        : "") +
+      row(
+        t("settings.caseCoversTitle"),
+        `${t("settings.caseCoversDesc")}${S.showCaseCovers ? `<div style="margin-top:6px;"><button type="button" class="btn ghost small" data-act="settings-section" data-section="cases" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 10px;height:26px;">${icon("sliders", 12)} <span>${t("settings.caseCustomizeBtn")}</span> →</button></div>` : ""}`,
+        toggle("toggle-case-covers", S.showCaseCovers),
+      ) +
       row(t("settings.separateCopiesTitle"), t("settings.separateCopiesDesc"), toggle("toggle-separate-copies", S.separateCopies)) +
       row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
@@ -1399,6 +1446,7 @@ function renderSection(section: SettingsSection): string {
     case "launchers": return renderLaunchers();
     case "compat": return renderCompatSection();
     case "collections": return renderCollections();
+    case "cases": return renderCasesSection();
     case "controller": return renderController();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();

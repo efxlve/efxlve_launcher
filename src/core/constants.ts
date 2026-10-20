@@ -115,10 +115,33 @@ export const STORE_ICONS_KEY = "efxlve-store-icons";
 export const CASE_COVERS_KEY = "efxlve-case-covers";
 /** Selected physical case frame design ("retail" | "clear" | "steelbook" | "jewel" | "holo"). */
 export const CASE_COVER_STYLE_KEY = "efxlve-case-cover-style";
-export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel" | "holo";
-export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel", "holo"];
+export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel" | "holo" | "gold" | "retro" | "neon" | "acrylic";
+export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel", "holo", "gold", "retro", "neon", "acrylic"];
 export function normalizeCaseCoverStyle(raw: string | null | undefined): CaseCoverStyle {
   return (CASE_COVER_STYLES as readonly string[]).includes(raw ?? "") ? (raw as CaseCoverStyle) : "retail";
+}
+/** Case Covers: Show store logo in header (default true). */
+export const CASE_SHOW_LOGO_KEY = "efxlve-case-show-logo";
+/** Case Covers: Show OS badge in header (default true). */
+export const CASE_SHOW_OS_KEY = "efxlve-case-show-os";
+/** Case Covers: Interactive cursor light & glare reflections (default true). */
+export const CASE_GLARE_KEY = "efxlve-case-glare";
+/** Case Covers: 3D perspective tilt on hover (default true). */
+export const CASE_TILT_KEY = "efxlve-case-tilt";
+/** Case Covers: Shelf contact shadow under boxes (default true). */
+export const CASE_SHELF_SHADOW_KEY = "efxlve-case-shelf-shadow";
+/** Case Covers: Surface gloss level ("high" | "satin" | "matte", default "high"). */
+export const CASE_GLOSS_KEY = "efxlve-case-gloss";
+export type CaseGloss = "high" | "satin" | "matte";
+export const CASE_GLOSS_LEVELS: readonly CaseGloss[] = ["high", "satin", "matte"];
+export function normalizeCaseGloss(raw: string | null | undefined): CaseGloss {
+  return (CASE_GLOSS_LEVELS as readonly string[]).includes(raw ?? "") ? (raw as CaseGloss) : "high";
+}
+/** Case Covers: Store header color mode ("store" | "monochrome", default "store"). */
+export const CASE_COLOR_MODE_KEY = "efxlve-case-color-mode";
+export type CaseColorMode = "store" | "monochrome";
+export function normalizeCaseColorMode(raw: string | null | undefined): CaseColorMode {
+  return raw === "monochrome" ? "monochrome" : "store";
 }
 /** Show every store copy of a multi-store game as its own card. Off = one combined card. */
 export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
