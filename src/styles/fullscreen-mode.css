@@ -15,7 +15,8 @@ body.fullscreen-mode .lib-pager {
 }
 
 body.fullscreen-mode:has(.lib-pager) #totop {
-  bottom: 84px !important;
+  bottom: 96px !important;
+  right: 28px !important;
 }
 
 body.fullscreen-mode .pgrid {

@@ -363,7 +363,7 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .toast.warn { border-left-color: var(--warn); }
 
 #totop {
-  position: fixed; right: 20px; bottom: 20px; z-index: 50; display: none;
+  position: fixed; right: 28px; bottom: 28px; z-index: 50; display: none;
   width: 36px; height: 36px; align-items: center; justify-content: center;
   background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
   color: var(--text-2); cursor: pointer;
@@ -373,7 +373,7 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 
 /* When the library pagination bar is present at the bottom, float #totop above it */
 body:has(.lib-pager) #totop {
-  bottom: 72px;
+  bottom: 84px;
 }
 
 /* A rate the recorder cannot hold yet: visible, but not selectable. */
