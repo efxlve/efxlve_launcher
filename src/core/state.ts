@@ -156,10 +156,37 @@ const savedTabSorts = loadTabSorts(normalizeEpicSort(localStorage.getItem("efxlv
 
 function readStartupTab(): StartupTab {
   const saved = localStorage.getItem(STARTUP_TAB_KEY);
-  if (saved === "installed" || saved === "fav" || saved === "all") return saved;
+  if (saved && typeof saved === "string") return saved;
   return "all";
 }
 const initialStartupTab = readStartupTab();
+
+function initialLibraryConfig(tab: string, sorts: Record<SortTab, EpicSort>): {
+  activeCol: string | null;
+  filter: EpicFilter;
+  sort: EpicSort;
+} {
+  if (tab === "installed") {
+    return { activeCol: null, filter: "installed", sort: sorts.installed ?? sorts.all };
+  }
+  if (tab === "fav") {
+    return { activeCol: "fav", filter: "all", sort: sorts.fav ?? sorts.all };
+  }
+  if (tab === "recent") {
+    return { activeCol: null, filter: "all", sort: "recent" };
+  }
+  if (tab === "platinum") {
+    return { activeCol: null, filter: "platinum", sort: sorts.platinum ?? sorts.all };
+  }
+  if (tab === "uncategorized") {
+    return { activeCol: "uncategorized", filter: "all", sort: sorts.collections ?? sorts.all };
+  }
+  if (tab.startsWith("col:")) {
+    return { activeCol: tab.slice(4), filter: "all", sort: sorts.collections ?? sorts.all };
+  }
+  return { activeCol: null, filter: "all", sort: sorts.all };
+}
+const initialLibConfig = initialLibraryConfig(initialStartupTab, savedTabSorts);
 
 /** Library tab whose sort order is in effect right now. */
 export function currentSortTab(): SortTab {
@@ -324,11 +351,11 @@ export const S = {
   appLanguage: initialLanguage(),
   epicCollections: ([]) as GameCollection[],
   startupTab: initialStartupTab as StartupTab,
-  activeCollectionId: (initialStartupTab === "fav" ? "fav" : null) as string | null,
-  epicFilter: (initialStartupTab === "installed" ? "installed" : "all") as EpicFilter,
+  activeCollectionId: initialLibConfig.activeCol as string | null,
+  epicFilter: initialLibConfig.filter as EpicFilter,
   /** Sort order remembered per library tab (All, Installed, Favorites, ...). */
   tabSorts: savedTabSorts,
-  epicSort: savedTabSorts[initialStartupTab],
+  epicSort: initialLibConfig.sort,
   epicViewMode: (localStorage.getItem("efxlve-view-mode") === "list" ? "list" : "grid") as EpicViewMode,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   demoPlatinumApps: (loadStrSet(DEMO_PLAT_KEY)) as Set<string>,

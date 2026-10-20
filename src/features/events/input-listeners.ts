@@ -695,9 +695,38 @@ document.addEventListener("change", (e) => {
   }
   if (act === "startup-tab") {
     const val = (t as HTMLSelectElement).value as StartupTab;
-    if (val === "all" || val === "installed" || val === "fav") {
+    if (val) {
       S.startupTab = val;
       localStorage.setItem(STARTUP_TAB_KEY, val);
+      if (val === "installed") {
+        S.activeCollectionId = null;
+        S.epicFilter = "installed";
+        S.epicSort = S.tabSorts.installed ?? S.tabSorts.all;
+      } else if (val === "fav") {
+        S.activeCollectionId = "fav";
+        S.epicFilter = "all";
+        S.epicSort = S.tabSorts.fav ?? S.tabSorts.all;
+      } else if (val === "recent") {
+        S.activeCollectionId = null;
+        S.epicFilter = "all";
+        S.epicSort = "recent";
+      } else if (val === "platinum") {
+        S.activeCollectionId = null;
+        S.epicFilter = "platinum";
+        S.epicSort = S.tabSorts.platinum ?? S.tabSorts.all;
+      } else if (val === "uncategorized") {
+        S.activeCollectionId = "uncategorized";
+        S.epicFilter = "all";
+        S.epicSort = S.tabSorts.collections ?? S.tabSorts.all;
+      } else if (val.startsWith("col:")) {
+        S.activeCollectionId = val.slice(4);
+        S.epicFilter = "all";
+        S.epicSort = S.tabSorts.collections ?? S.tabSorts.all;
+      } else {
+        S.activeCollectionId = null;
+        S.epicFilter = "all";
+        S.epicSort = S.tabSorts.all;
+      }
       render();
     }
     return;

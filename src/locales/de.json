@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Vollbildmodus bei Controller-Verbindung öffnen",
   "controller.fullscreenAutoDesc": "Schaltet automatisch in den Vollbildmodus, sobald ein Controller verbunden wird.",
   "controller.fullscreenModeDesc": "Aktiviert Vollbildansicht und optimierte Controller-Navigation.",
-  "settings.startupTabTitle": "Start-Tab",
-  "settings.startupTabDesc": "Wählen Sie, welcher Bibliotheks-Tab beim Start standardmäßig geöffnet wird."
+  "settings.startupTabTitle": "Standard-Bibliotheks-Tab",
+  "settings.startupTabDesc": "Wählen Sie, welcher Tab, welche Ansicht oder Sammlung beim Starten der Bibliothek standardmäßig angezeigt wird.",
+  "settings.startupTabGroupStandard": "Standardansichten",
+  "settings.startupTabUncategorized": "Nicht kategorisierte Spiele"
 }

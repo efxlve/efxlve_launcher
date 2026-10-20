@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Abrir Pantalla Completa al conectar mando",
   "controller.fullscreenAutoDesc": "Cambia automáticamente a Pantalla Completa al conectar un mando.",
   "controller.fullscreenModeDesc": "Activa la vista de pantalla completa y navegación con mando.",
-  "settings.startupTabTitle": "Pestaña de inicio",
-  "settings.startupTabDesc": "Elige qué pestaña de la biblioteca se abre de forma predeterminada al iniciar."
+  "settings.startupTabTitle": "Pestaña predeterminada de la biblioteca",
+  "settings.startupTabDesc": "Elige qué pestaña, vista o colección se muestra de forma predeterminada al abrir la biblioteca.",
+  "settings.startupTabGroupStandard": "Vistas estándar",
+  "settings.startupTabUncategorized": "Juegos sin categorizar"
 }

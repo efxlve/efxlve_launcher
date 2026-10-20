@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "เปิดโหมดเต็มหน้าจอเมื่อเชื่อมต่อคอนโทรลเลอร์",
   "controller.fullscreenAutoDesc": "สลับไปที่โหมดเต็มหน้าจอโดยอัตโนมัติเมื่อเชื่อมต่อคอนโทรลเลอร์",
   "controller.fullscreenModeDesc": "เปิดใช้งานมุมมองเต็มหน้าจอและการนำทางด้วยคอนโทรลเลอร์",
-  "settings.startupTabTitle": "แท็บเริ่มต้น",
-  "settings.startupTabDesc": "เลือกแท็บคลังที่จะเปิดเป็นค่าเริ่มต้นเมื่อเริ่มแอป"
+  "settings.startupTabTitle": "แท็บไลบรารีเริ่มต้น",
+  "settings.startupTabDesc": "เลือกแท็บ มุมมอง หรือคอลเลกชันที่จะแสดงเป็นค่าเริ่มต้นเมื่อเปิดไลบรารี",
+  "settings.startupTabGroupStandard": "มุมมองมาตรฐาน",
+  "settings.startupTabUncategorized": "เกมที่ไม่ได้จัดหมวดหมู่"
 }

@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "فتح وضع ملء الشاشة عند توصيل وحدة التحكم",
   "controller.fullscreenAutoDesc": "التبديل تلقائيًا إلى ملء الشاشة عند توصيل وحدة التحكم.",
   "controller.fullscreenModeDesc": "تمكين عرض ملء الشاشة والتنقل المحسن بوحدة التحكم.",
-  "settings.startupTabTitle": "علامة تبويب بدء التشغيل",
-  "settings.startupTabDesc": "اختر علامة تبويب المكتبة التي تفتح افتراضيًا عند تشغيل التطبيق."
+  "settings.startupTabTitle": "علامة تبويب المكتبة الافتراضية",
+  "settings.startupTabDesc": "اختر علامة التبويب أو طريقة العرض أو المجموعة التي يتم عرضها افتراضيًا عند فتح المكتبة.",
+  "settings.startupTabGroupStandard": "طرق العرض القياسية",
+  "settings.startupTabUncategorized": "ألعاب غير مصنفة"
 }

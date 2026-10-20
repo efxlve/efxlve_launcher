@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Plein écran lors de la connexion d'une manette",
   "controller.fullscreenAutoDesc": "Bascule automatiquement en plein écran lorsqu'une manette est connectée.",
   "controller.fullscreenModeDesc": "Active le plein écran et la navigation fluide à la manette.",
-  "settings.startupTabTitle": "Onglet de démarrage",
-  "settings.startupTabDesc": "Choisissez quel onglet de la bibliothèque s'ouvre par défaut au lancement."
+  "settings.startupTabTitle": "Onglet de bibliothèque par défaut",
+  "settings.startupTabDesc": "Choisissez l'onglet, la vue ou la collection affiché par défaut à l'ouverture de la bibliothèque.",
+  "settings.startupTabGroupStandard": "Vues standard",
+  "settings.startupTabUncategorized": "Jeux non catégorisés"
 }

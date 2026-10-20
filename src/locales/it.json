@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Schermo intero alla connessione del controller",
   "controller.fullscreenAutoDesc": "Passa automaticamente a schermo intero quando si collega un controller.",
   "controller.fullscreenModeDesc": "Abilita la visualizzazione a schermo intero e la navigazione controller.",
-  "settings.startupTabTitle": "Scheda iniziale",
-  "settings.startupTabDesc": "Scegli quale scheda della libreria aprire per impostazione predefinita all'avvio."
+  "settings.startupTabTitle": "Scheda predefinita della libreria",
+  "settings.startupTabDesc": "Scegli quale scheda, visualizzazione o raccolta mostrare per impostazione predefinita all'avvio della libreria.",
+  "settings.startupTabGroupStandard": "Visualizzazioni standard",
+  "settings.startupTabUncategorized": "Giochi non categorizzati"
 }

@@ -669,13 +669,42 @@ function renderSteamGroup(): string {
 }
 
 /** Page-size picker shared by Settings and the library pagination bar. */
-/** Startup library tab preference picker. */
+/** Startup library tab/view preference picker. */
 function startupTabSelect(): string {
-  return `<select class="settings-select" data-act="startup-tab" aria-label="${t("settings.startupTabTitle")}">
-    <option value="all" ${S.startupTab === "all" ? "selected" : ""}>${t("library.all")}</option>
-    <option value="installed" ${S.startupTab === "installed" ? "selected" : ""}>${t("library.installed")}</option>
-    <option value="fav" ${S.startupTab === "fav" ? "selected" : ""}>${t("library.favorites")}</option>
-  </select>`;
+  const current = S.startupTab;
+  const stdOpts = [
+    { id: "all", label: t("library.all") },
+    { id: "installed", label: t("library.installed") },
+    { id: "fav", label: t("library.favorites") },
+    { id: "recent", label: t("sidebar.recent") },
+  ];
+
+  let html = `<select class="settings-select" data-act="startup-tab" aria-label="${t("settings.startupTabTitle")}">`;
+  html += `<optgroup label="${t("settings.startupTabGroupStandard")}">`;
+  for (const opt of stdOpts) {
+    html += `<option value="${opt.id}" ${current === opt.id ? "selected" : ""}>${esc(opt.label)}</option>`;
+  }
+  html += `</optgroup>`;
+
+  const cols = S.epicCollections;
+  if (cols.length > 0) {
+    html += `<optgroup label="${t("col.allCollections")}">`;
+    for (const c of cols) {
+      const val = `col:${c.id}`;
+      const count = Array.isArray(c.app_names) ? ` (${c.app_names.length})` : "";
+      html += `<option value="${val}" ${current === val ? "selected" : ""}>${esc(c.name)}${count}</option>`;
+    }
+    html += `<option value="uncategorized" ${current === "uncategorized" ? "selected" : ""}>${t("settings.startupTabUncategorized")}</option>`;
+    html += `</optgroup>`;
+  } else if (current === "uncategorized" || current.startsWith("col:")) {
+    // Retain selected collection if collections have not loaded yet
+    html += `<optgroup label="${t("col.allCollections")}">`;
+    html += `<option value="${esc(current)}" selected>${current === "uncategorized" ? t("settings.startupTabUncategorized") : t("col.defaultName")}</option>`;
+    html += `</optgroup>`;
+  }
+
+  html += `</select>`;
+  return html;
 }
 
 function pageSizeSelect(): string {

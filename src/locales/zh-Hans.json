@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "连接手柄时自动进入全屏模式",
   "controller.fullscreenAutoDesc": "连接游戏手柄后自动切换至全屏模式。",
   "controller.fullscreenModeDesc": "开启全屏视图与针对手柄优化的导航。",
-  "settings.startupTabTitle": "启动标签页",
-  "settings.startupTabDesc": "选择启动应用时默认打开的库标签页。"
+  "settings.startupTabTitle": "默认游戏库标签页",
+  "settings.startupTabDesc": "选择启动时游戏库默认显示的标签页、视图或收藏夹。",
+  "settings.startupTabGroupStandard": "标准视图",
+  "settings.startupTabUncategorized": "未分类游戏"
 }

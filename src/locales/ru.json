@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Включать полный экран при подключении геймпада",
   "controller.fullscreenAutoDesc": "Автоматически переходит в полноэкранный режим при подключении геймпада.",
   "controller.fullscreenModeDesc": "Включает полноэкранный вид и оптимизированную навигацию геймпадом.",
-  "settings.startupTabTitle": "Вкладка при запуске",
-  "settings.startupTabDesc": "Выберите, какая вкладка библиотеки открывается по умолчанию при запуске приложения."
+  "settings.startupTabTitle": "Вкладка библиотеки по умолчанию",
+  "settings.startupTabDesc": "Выберите вкладку, представление или коллекцию, которая будет открываться по умолчанию в библиотеке.",
+  "settings.startupTabGroupStandard": "Стандартные виды",
+  "settings.startupTabUncategorized": "Игры без категории"
 }

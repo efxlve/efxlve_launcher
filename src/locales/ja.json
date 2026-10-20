@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "コントローラー接続時に全画面モードにする",
   "controller.fullscreenAutoDesc": "コントローラーが接続されると自動的に全画面モードに切り替えます。",
   "controller.fullscreenModeDesc": "全画面表示とコントローラー操作を有効にします。",
-  "settings.startupTabTitle": "起動時のタブ",
-  "settings.startupTabDesc": "アプリ起動時にデフォルトで表示するライブラリタブを選択します。"
+  "settings.startupTabTitle": "デフォルトのライブラリタブ",
+  "settings.startupTabDesc": "起動時にライブラリでデフォルトで表示するタブ、表示、またはコレクションを選択します。",
+  "settings.startupTabGroupStandard": "標準表示",
+  "settings.startupTabUncategorized": "未分類のゲーム"
 }

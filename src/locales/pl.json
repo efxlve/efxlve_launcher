@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Włącz pełny ekran po podłączeniu kontrolera",
   "controller.fullscreenAutoDesc": "Automatycznie przełącza na pełny ekran po podłączeniu kontrolera.",
   "controller.fullscreenModeDesc": "Włącza widok pełnoekranowy i nawigację padem.",
-  "settings.startupTabTitle": "Karta startowa",
-  "settings.startupTabDesc": "Wybierz, która karta biblioteki otwiera się domyślnie podczas uruchamiania."
+  "settings.startupTabTitle": "Domyślna zakładka biblioteki",
+  "settings.startupTabDesc": "Wybierz zakładkę, widok lub kolekcję wyświetlaną domyślnie po uruchomieniu biblioteki.",
+  "settings.startupTabGroupStandard": "Widoki standardowe",
+  "settings.startupTabUncategorized": "Gry bez kategorii"
 }

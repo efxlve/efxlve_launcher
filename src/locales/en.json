@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "Enter Full Screen Mode when a controller connects",
   "controller.fullscreenAutoDesc": "Automatically switches the launcher to Full Screen Mode upon connecting a game controller.",
   "controller.fullscreenModeDesc": "Enables full screen view and optimized controller navigation.",
-  "settings.startupTabTitle": "Startup tab",
-  "settings.startupTabDesc": "Choose which library tab opens by default when launching the app."
+  "settings.startupTabTitle": "Default Library Tab",
+  "settings.startupTabDesc": "Choose which tab, view, or collection is displayed by default when opening the library on startup.",
+  "settings.startupTabGroupStandard": "Standard Views",
+  "settings.startupTabUncategorized": "Uncategorized Games"
 }

@@ -2739,6 +2739,8 @@
   "controller.fullscreenAutoTitle": "컨트롤러 연결 시 전체 화면 모드 실행",
   "controller.fullscreenAutoDesc": "컨트롤러가 연결되면 자동으로 전체 화면 모드로 전환합니다.",
   "controller.fullscreenModeDesc": "전체 화면 보기 및 최적화된 컨트롤러 탐색을 활성화합니다.",
-  "settings.startupTabTitle": "시작 탭",
-  "settings.startupTabDesc": "앱 실행 시 기본으로 열리는 라이브러리 탭을 선택합니다."
+  "settings.startupTabTitle": "기본 라이브러리 탭",
+  "settings.startupTabDesc": "시작 시 라이브러리에서 기본으로 표시할 탭, 보기 또는 컬렉션을 선택합니다.",
+  "settings.startupTabGroupStandard": "기본 보기",
+  "settings.startupTabUncategorized": "분류되지 않은 게임"
 }
