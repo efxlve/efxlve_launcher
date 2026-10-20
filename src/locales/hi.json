@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "'Steam इंस्टॉल करें' बटन छुपाएं",
   "settings.storeSteamCurrencyRegionNote": "Steam के क्षेत्रीय मुद्रा परिवर्तन के बाद तुर्की / MENA-USD क्षेत्र के उपयोगकर्ताओं के लिए विकसित किया गया।",
   "settings.storeSteamDbConfigure": "सुविधाएं कॉन्फ़िगर करें",
-  "settings.storeSteamDbHideOptions": "सुविधाएं छुपाएं"
+  "settings.storeSteamDbHideOptions": "सुविधाएं छुपाएं",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "डिजिटल स्टोर मूल्य तुलना (IsThereAnyDeal के माध्यम से), HowLongToBeat खेलने का समय, OpenCritic रेटिंग और DRM सूचनाएं।",
+  "settings.storeAugmentedSteamAuthor": "IsThereAnyDeal समुदाय द्वारा ओपन-सोर्स एक्सटेंशन (तृतीय पक्ष)",
+  "settings.storeAugmentedSteamOptionsTitle": "Augmented Steam सुविधाएं",
+  "settings.storeAugmentedSteamOptHltb": "HowLongToBeat खेल समय",
+  "settings.storeAugmentedSteamOptItad": "IsThereAnyDeal स्टोर डील और न्यूनतम मूल्य",
+  "settings.storeAugmentedSteamOptOpenCritic": "OpenCritic समीक्षा स्कोर और फैसला",
+  "settings.storeAugmentedSteamOptMetaUser": "Metacritic उपयोगकर्ता स्कोर",
+  "settings.storeAugmentedSteamOptDrm": "Denuvo और तृतीय-पक्ष DRM सूचनाएं",
+  "settings.storeAugmentedSteamOptWsgf": "वाइडस्क्रीन गेमिंग (WSGF) रेटिंग"
 }

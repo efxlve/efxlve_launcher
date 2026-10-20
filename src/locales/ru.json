@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "Скрыть кнопку «Установить Steam»",
   "settings.storeSteamCurrencyRegionNote": "Разработано для пользователей из Турции и региона MENA-USD после изменения валюты в Steam.",
   "settings.storeSteamDbConfigure": "Настроить функции",
-  "settings.storeSteamDbHideOptions": "Скрыть функции"
+  "settings.storeSteamDbHideOptions": "Скрыть функции",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "Сравнение цен в цифровых магазинах (через IsThereAnyDeal), время прохождения HowLongToBeat, рейтинги OpenCritic и уведомления о DRM.",
+  "settings.storeAugmentedSteamAuthor": "Расширение с открытым исходным кодом от сообщества IsThereAnyDeal (Стороннее)",
+  "settings.storeAugmentedSteamOptionsTitle": "Функции Augmented Steam",
+  "settings.storeAugmentedSteamOptHltb": "Время игры HowLongToBeat",
+  "settings.storeAugmentedSteamOptItad": "Цены в магазинах и минимум IsThereAnyDeal",
+  "settings.storeAugmentedSteamOptOpenCritic": "Рейтинг и вердикт OpenCritic",
+  "settings.storeAugmentedSteamOptMetaUser": "Оценка пользователей Metacritic",
+  "settings.storeAugmentedSteamOptDrm": "Предупреждения о Denuvo и сторонней DRM",
+  "settings.storeAugmentedSteamOptWsgf": "Совместимость с ультраширокими мониторами (WSGF)"
 }

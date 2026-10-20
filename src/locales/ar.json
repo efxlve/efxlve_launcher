@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "إخفاء زر \"تثبيت Steam\"",
   "settings.storeSteamCurrencyRegionNote": "تم تطويره للمستخدمين في منطقة تركيا / MENA-USD بعد تغيير العملة الإقليمية في Steam.",
   "settings.storeSteamDbConfigure": "تكوين الميزات",
-  "settings.storeSteamDbHideOptions": "إخفاء الميزات"
+  "settings.storeSteamDbHideOptions": "إخفاء الميزات",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "مقارنة أسعار المتاجر الرقمية (عبر IsThereAnyDeal)، أوقات لعب HowLongToBeat، تقييمات OpenCritic وإشعارات DRM.",
+  "settings.storeAugmentedSteamAuthor": "ملحق مفتوح المصدر من مجتمع IsThereAnyDeal (طرف ثالث)",
+  "settings.storeAugmentedSteamOptionsTitle": "ميزات Augmented Steam",
+  "settings.storeAugmentedSteamOptHltb": "أوقات لعب HowLongToBeat",
+  "settings.storeAugmentedSteamOptItad": "صفقات وأدنى سعر IsThereAnyDeal",
+  "settings.storeAugmentedSteamOptOpenCritic": "تقييم وحكم OpenCritic",
+  "settings.storeAugmentedSteamOptMetaUser": "تقييم مستخدمي Metacritic",
+  "settings.storeAugmentedSteamOptDrm": "تنبيهات Denuvo و DRM الخارجية",
+  "settings.storeAugmentedSteamOptWsgf": "توافق الشاشات العريضة (WSGF)"
 }

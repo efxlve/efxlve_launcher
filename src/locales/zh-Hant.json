@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "隱藏「安裝 Steam」按鈕",
   "settings.storeSteamCurrencyRegionNote": "在 Steam 變更區域貨幣後，專為土耳其 / MENA-USD 地區的使用者開發。",
   "settings.storeSteamDbConfigure": "設定功能",
-  "settings.storeSteamDbHideOptions": "隱藏功能"
+  "settings.storeSteamDbHideOptions": "隱藏功能",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "透過 IsThereAnyDeal 比較各數位商城價格，顯示 HowLongToBeat 通關時長、OpenCritic 評分與 DRM 提示。",
+  "settings.storeAugmentedSteamAuthor": "IsThereAnyDeal 社群開源擴充功能（第三方）",
+  "settings.storeAugmentedSteamOptionsTitle": "Augmented Steam 功能",
+  "settings.storeAugmentedSteamOptHltb": "HowLongToBeat 遊戲時長",
+  "settings.storeAugmentedSteamOptItad": "IsThereAnyDeal 商店優惠與歷史最低",
+  "settings.storeAugmentedSteamOptOpenCritic": "OpenCritic 媒體評分與評語",
+  "settings.storeAugmentedSteamOptMetaUser": "Metacritic 玩家評分",
+  "settings.storeAugmentedSteamOptDrm": "Denuvo 與第三方 DRM 提示",
+  "settings.storeAugmentedSteamOptWsgf": "寬螢幕遊戲 (WSGF) 相容性"
 }

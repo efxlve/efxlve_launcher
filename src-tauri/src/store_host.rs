@@ -527,7 +527,9 @@ fn create_store_builder(
     epic_assistant: bool,
     steam_currency: bool,
     steamdb: bool,
+    augmented_steam: bool,
     steam_rate: f64,
+    steam_options_json: &str,
 ) -> tauri::WebviewBuilder<tauri::Wry> {
     use tauri::{WebviewBuilder, WebviewUrl};
     let app_nav = app.clone();
@@ -564,6 +566,10 @@ fn create_store_builder(
                 if host.contains("steamdb.info")
                     || host.contains("protondb.com")
                     || host.contains("pcgamingwiki.com")
+                    || host.contains("augmentedsteam.com")
+                    || host.contains("isthereanydeal.com")
+                    || host.contains("howlongtobeat.com")
+                    || host.contains("opencritic.com")
                 {
                     let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
                     return false;
@@ -658,10 +664,10 @@ fn create_store_builder(
         );
         builder = builder.initialization_script(&init_script);
     }
-    // Injected for Steam when currency or SteamDB enhancements are enabled:
-    if store_id == "steam" && (steam_currency || steamdb) {
+    // Injected for Steam when currency, SteamDB, or Augmented Steam are enabled:
+    if store_id == "steam" && (steam_currency || steamdb || augmented_steam) {
         let init_script = format!(
-            "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\nwindow.__EFXLVE_STEAM_RATE = {steam_rate};\nwindow.__EFXLVE_STEAMDB = {steamdb};\n{STEAM_EXTENSION_SCRIPT}"
+            "window.__EFXLVE_STEAM_CURRENCY = {steam_currency};\nwindow.__EFXLVE_STEAM_RATE = {steam_rate};\nwindow.__EFXLVE_STEAMDB = {steamdb};\nwindow.__EFXLVE_AUGMENTED_STEAM = {augmented_steam};\nwindow.__EFXLVE_STEAM_OPTIONS = {steam_options_json};\n{STEAM_EXTENSION_SCRIPT}"
         );
         builder = builder.initialization_script(&init_script);
     }
@@ -678,7 +684,9 @@ pub async fn prewarm_store_view(
     epic_assistant: Option<bool>,
     steam_currency: Option<bool>,
     steamdb: Option<bool>,
+    augmented_steam: Option<bool>,
     steam_rate: Option<f64>,
+    steam_options: Option<String>,
 ) -> Result<String, String> {
     let window = app
         .get_window("main")
@@ -717,7 +725,9 @@ pub async fn prewarm_store_view(
         epic_assistant.unwrap_or(true),
         steam_currency.unwrap_or(false),
         steamdb.unwrap_or(false),
+        augmented_steam.unwrap_or(false),
         steam_rate.unwrap_or(34.5),
+        steam_options.as_deref().unwrap_or("{}"),
     );
     let (width, height) = parked_content_size(&window);
     let pos = tauri::Position::Logical(tauri::LogicalPosition::new(-10000.0, -10000.0));
@@ -749,7 +759,9 @@ pub async fn show_store_view(
     epic_assistant: Option<bool>,
     steam_currency: Option<bool>,
     steamdb: Option<bool>,
+    augmented_steam: Option<bool>,
     steam_rate: Option<f64>,
+    steam_options: Option<String>,
 ) -> Result<String, String> {
     use tauri::{LogicalPosition, LogicalSize, Position, Size};
 
@@ -867,8 +879,10 @@ pub async fn show_store_view(
             if store_id == "steam" {
                 let cur = steam_currency.unwrap_or(false);
                 let sdb = steamdb.unwrap_or(false);
+                let as_en = augmented_steam.unwrap_or(false);
                 let rate = steam_rate.unwrap_or(34.5);
-                let _ = v.eval(&format!("window.__EFXLVE_STEAM_CURRENCY = {cur}; window.__EFXLVE_STEAM_RATE = {rate}; window.__EFXLVE_STEAMDB = {sdb}; if(typeof efxlveSteamScan==='function') efxlveSteamScan();"));
+                let opts = steam_options.as_deref().unwrap_or("{}");
+                let _ = v.eval(&format!("window.__EFXLVE_STEAM_CURRENCY = {cur}; window.__EFXLVE_STEAM_RATE = {rate}; window.__EFXLVE_STEAMDB = {sdb}; window.__EFXLVE_AUGMENTED_STEAM = {as_en}; window.__EFXLVE_STEAM_OPTIONS = {opts}; if(typeof efxlveSteamScan==='function') efxlveSteamScan();"));
             }
             if store_id == "xbox" {
                 let _ = v.eval(crate::store_theme::XBOX_DARK_SCRIPT);
@@ -918,7 +932,9 @@ pub async fn show_store_view(
         epic_assistant.unwrap_or(true),
         steam_currency.unwrap_or(false),
         steamdb.unwrap_or(false),
+        augmented_steam.unwrap_or(false),
         steam_rate.unwrap_or(34.5),
+        steam_options.as_deref().unwrap_or("{}"),
     );
     // add_child posts work to the main thread and waits; to avoid locking the UI
     // on a possible hang, it runs on a separate thread with a timeout.

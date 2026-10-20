@@ -109,7 +109,7 @@ import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeSteamDbEnabled, setStoreSteamDb, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeSteamDbEnabled, setStoreSteamDb, storeAugmentedSteamEnabled, setStoreAugmentedSteam, getAugmentedSteamOption, setAugmentedSteamOption, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -911,6 +911,21 @@ document.addEventListener("click", (e) => {
     if (key) {
       const cur = localStorage.getItem('steamdb_opt_' + key) !== 'false';
       localStorage.setItem('steamdb_opt_' + key, String(!cur));
+      if (isTauri) invoke("destroy_store_view").catch(() => {});
+      render();
+    }
+  } else if (act === "toggle-store-augmented-steam") {
+    setStoreAugmentedSteam(!storeAugmentedSteamEnabled());
+    if (isTauri) invoke("destroy_store_view").catch(() => {});
+    render();
+  } else if (act === "toggle-augmented-steam-settings") {
+    S.augmentedSteamSettingsOpen = !S.augmentedSteamSettingsOpen;
+    render();
+  } else if (act === "toggle-augmented-steam-sub-option") {
+    const key = t.dataset.key;
+    if (key) {
+      const cur = getAugmentedSteamOption(key);
+      setAugmentedSteamOption(key, !cur);
       if (isTauri) invoke("destroy_store_view").catch(() => {});
       render();
     }

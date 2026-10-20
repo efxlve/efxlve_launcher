@@ -84,8 +84,10 @@ export const STORE_IDLE_TIMEOUT_KEY = "efxlve-store-idle-timeout";
 export const STORE_EPIC_ASSISTANT_KEY = "efxlve-store-epic-assistant";
 /** Steam Store Turkish Lira (TRY) currency converter. On by default. */
 export const STORE_STEAM_CURRENCY_KEY = "efxlve-store-steam-currency";
-/** SteamDB live player counts and community links. On by default. */
+/** SteamDB live player counts and community links. Off by default. */
 export const STORE_STEAMDB_KEY = "efxlve-store-steamdb";
+/** Augmented Steam pricing, reviews, and HowLongToBeat integration. Off by default. */
+export const STORE_AUGMENTED_STEAM_KEY = "efxlve-store-augmented-steam";
 /** Cached USD to TRY exchange rate. */
 export const STEAM_TRY_RATE_KEY = "efxlve-steam-try-rate";
 export const STEAM_TRY_RATE_TIME_KEY = "efxlve-steam-try-rate-time";

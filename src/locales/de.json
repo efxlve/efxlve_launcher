@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "„Steam installieren“-Schaltfläche ausblenden",
   "settings.storeSteamCurrencyRegionNote": "Entwickelt für Nutzer in der Region Türkei / MENA-USD nach Steams Währungsumstellung.",
   "settings.storeSteamDbConfigure": "Funktionen konfigurieren",
-  "settings.storeSteamDbHideOptions": "Funktionen ausblenden"
+  "settings.storeSteamDbHideOptions": "Funktionen ausblenden",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "Preisvergleiche digitaler Stores (über IsThereAnyDeal), HowLongToBeat-Spielzeiten, OpenCritic-Bewertungen und DRM-Hinweise.",
+  "settings.storeAugmentedSteamAuthor": "Open-Source-Erweiterung der IsThereAnyDeal-Community (Drittanbieter)",
+  "settings.storeAugmentedSteamOptionsTitle": "Augmented Steam-Funktionen",
+  "settings.storeAugmentedSteamOptHltb": "HowLongToBeat-Spielzeiten",
+  "settings.storeAugmentedSteamOptItad": "IsThereAnyDeal-Angebote & Tiefstpreis",
+  "settings.storeAugmentedSteamOptOpenCritic": "OpenCritic-Wertung & Urteil",
+  "settings.storeAugmentedSteamOptMetaUser": "Metacritic-Benutzerbewertung",
+  "settings.storeAugmentedSteamOptDrm": "Denuvo- & Drittanbieter-DRM-Hinweise",
+  "settings.storeAugmentedSteamOptWsgf": "Widescreen Gaming (WSGF)-Bewertung"
 }

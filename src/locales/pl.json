@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "Ukryj przycisk „Zainstaluj Steam”",
   "settings.storeSteamCurrencyRegionNote": "Opracowano dla użytkowników z regionu Turcji / MENA-USD po zmianie waluty przez Steam.",
   "settings.storeSteamDbConfigure": "Konfiguruj funkcje",
-  "settings.storeSteamDbHideOptions": "Ukryj funkcje"
+  "settings.storeSteamDbHideOptions": "Ukryj funkcje",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "Porównywanie cen w sklepach cyfrowych (przez IsThereAnyDeal), czasy gry HowLongToBeat, oceny OpenCritic i alerty DRM.",
+  "settings.storeAugmentedSteamAuthor": "Rozszerzenie open source społeczności IsThereAnyDeal (Inny twórca)",
+  "settings.storeAugmentedSteamOptionsTitle": "Funkcje Augmented Steam",
+  "settings.storeAugmentedSteamOptHltb": "Czas gry HowLongToBeat",
+  "settings.storeAugmentedSteamOptItad": "Oferty i najniższa cena IsThereAnyDeal",
+  "settings.storeAugmentedSteamOptOpenCritic": "Ocena i werdykt OpenCritic",
+  "settings.storeAugmentedSteamOptMetaUser": "Ocena użytkowników Metacritic",
+  "settings.storeAugmentedSteamOptDrm": "Ostrzeżenia o Denuvo i DRM firm trzecich",
+  "settings.storeAugmentedSteamOptWsgf": "Certyfikat Widescreen (WSGF)"
 }

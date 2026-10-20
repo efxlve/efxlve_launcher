@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "\"Steam 설치\" 버튼 숨기기",
   "settings.storeSteamCurrencyRegionNote": "Steam의 지역 통화 변경에 따라 튀르키예 / MENA-USD 지역 사용자를 위해 개발되었습니다.",
   "settings.storeSteamDbConfigure": "기능 설정",
-  "settings.storeSteamDbHideOptions": "기능 숨기기"
+  "settings.storeSteamDbHideOptions": "기능 숨기기",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "IsThereAnyDeal 스토어 가격 비교, HowLongToBeat 플레이 시간, OpenCritic 평점 및 DRM 알림을 제공합니다.",
+  "settings.storeAugmentedSteamAuthor": "IsThereAnyDeal 커뮤니티의 오픈 소스 확장 프로그램 (타사 제공)",
+  "settings.storeAugmentedSteamOptionsTitle": "Augmented Steam 기능",
+  "settings.storeAugmentedSteamOptHltb": "HowLongToBeat 플레이 타임",
+  "settings.storeAugmentedSteamOptItad": "IsThereAnyDeal 스토어 최저가 정보",
+  "settings.storeAugmentedSteamOptOpenCritic": "OpenCritic 리뷰 점수 및 평가",
+  "settings.storeAugmentedSteamOptMetaUser": "Metacritic 유저 점수",
+  "settings.storeAugmentedSteamOptDrm": "Denuvo 및 타사 DRM 알림",
+  "settings.storeAugmentedSteamOptWsgf": "와이드스크린 (WSGF) 호환성"
 }

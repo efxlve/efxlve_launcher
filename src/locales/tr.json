@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "'Steam Yükle' Butonunu Gizle",
   "settings.storeSteamCurrencyRegionNote": "Steam'in MENA-USD bölgesine geçişi sonrası Türk kullanıcılarımız için geliştirilmiştir.",
   "settings.storeSteamDbConfigure": "Eklenti Özelliklerini Özelleştir",
-  "settings.storeSteamDbHideOptions": "Özellikleri Gizle"
+  "settings.storeSteamDbHideOptions": "Özellikleri Gizle",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "IsThereAnyDeal mağaza fiyat karşılaştırması, HowLongToBeat oynanış süreleri, OpenCritic puanları ve DRM uyarıları.",
+  "settings.storeAugmentedSteamAuthor": "IsThereAnyDeal topluluğunun açık kaynaklı eklentisidir (3. Parti)",
+  "settings.storeAugmentedSteamOptionsTitle": "Augmented Steam Özellikleri",
+  "settings.storeAugmentedSteamOptHltb": "HowLongToBeat Oynanış Süreleri",
+  "settings.storeAugmentedSteamOptItad": "IsThereAnyDeal Mağaza Fiyatları & En Düşük",
+  "settings.storeAugmentedSteamOptOpenCritic": "OpenCritic İnceleme Puanı ve Kararı",
+  "settings.storeAugmentedSteamOptMetaUser": "Metacritic Kullanıcı Puanı",
+  "settings.storeAugmentedSteamOptDrm": "Denuvo ve 3. Parti DRM Uyarıları",
+  "settings.storeAugmentedSteamOptWsgf": "Geniş Ekran (WSGF) Uyumluluğu"
 }

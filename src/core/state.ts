@@ -421,6 +421,7 @@ export const S = {
   isSortDropdownOpen: false,
   isStoreDropdownOpen: false,
   steamDbSettingsOpen: false,
+  augmentedSteamSettingsOpen: false,
   isColDropdownOpen: false,
   verifyingMap: new Map<string, { current: number; total: number; percent: number; speed: string; detail?: string }>(),
   /** Live cloud-sync progress per app while Legendary packs and transfers saves. */

@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "「Steam をインストール」ボタンを非表示",
   "settings.storeSteamCurrencyRegionNote": "Steamの地域通貨変更に伴い、トルコ/MENA-USD地域のユーザー向けに開発されました。",
   "settings.storeSteamDbConfigure": "機能を設定",
-  "settings.storeSteamDbHideOptions": "機能を隠す"
+  "settings.storeSteamDbHideOptions": "機能を隠す",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "IsThereAnyDeal による他ストア価格比較、HowLongToBeat プレイ時間、OpenCritic スコア、DRM 警告を表示します。",
+  "settings.storeAugmentedSteamAuthor": "IsThereAnyDeal コミュニティによるオープンソース拡張機能（サードパーティ）",
+  "settings.storeAugmentedSteamOptionsTitle": "Augmented Steam 機能",
+  "settings.storeAugmentedSteamOptHltb": "HowLongToBeat プレイ時間",
+  "settings.storeAugmentedSteamOptItad": "IsThereAnyDeal 最安値＆セール情報",
+  "settings.storeAugmentedSteamOptOpenCritic": "OpenCritic レビュースコア",
+  "settings.storeAugmentedSteamOptMetaUser": "Metacritic ユーザースコア",
+  "settings.storeAugmentedSteamOptDrm": "Denuvo & サードパーティ DRM 警告",
+  "settings.storeAugmentedSteamOptWsgf": "ウルトラワイド (WSGF) 対応情報"
 }

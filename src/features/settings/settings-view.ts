@@ -67,7 +67,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, storeSteamDbEnabled, getSteamTryRate, getSteamDbOption } from "../store/store-view";
+import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, storeSteamDbEnabled, storeAugmentedSteamEnabled, getSteamTryRate, getSteamDbOption, getAugmentedSteamOption } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -718,16 +718,67 @@ function renderStores(): string {
     ${steamDbConfigureBtn}`;
 
   const steamDbSubPanel = (S.steamDbSettingsOpen && steamDb) ? `
-    <div style="margin: 6px 0 12px 14px; padding: 8px 16px 8px 16px; border-left: 2px solid rgba(255,255,255,0.14);">
-      <div style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-        ${t("settings.storeSteamDbOptionsTitle")}
+    <div style="margin: 2px 14px 14px 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: var(--r-sm, 6px);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);">
+        <span style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">
+          ${t("settings.storeSteamDbOptionsTitle")}
+        </span>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 36px;">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px;">
         ${subOpts.map(opt => `
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line);">
             <span style="font-size: 12px; color: var(--text-normal); font-weight: 500;">${opt.label}</span>
             <label class="switch">
               <input type="checkbox" data-act="toggle-steamdb-sub-option" data-key="${opt.key}" ${getSteamDbOption(opt.key) ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        `).join("")}
+      </div>
+    </div>` : "";
+
+  const augmentedSteam = storeAugmentedSteamEnabled();
+
+  const asSubOpts = [
+    { key: "as-hltb", label: t("settings.storeAugmentedSteamOptHltb") },
+    { key: "as-itad-prices", label: t("settings.storeAugmentedSteamOptItad") },
+    { key: "as-opencritic", label: t("settings.storeAugmentedSteamOptOpenCritic") },
+    { key: "as-metauser", label: t("settings.storeAugmentedSteamOptMetaUser") },
+    { key: "as-drm-warnings", label: t("settings.storeAugmentedSteamOptDrm") },
+    { key: "as-wsgf", label: t("settings.storeAugmentedSteamOptWsgf") },
+  ];
+
+  const augmentedSteamConfigureBtn = augmentedSteam ? `
+    <div style="margin-top: 8px;">
+      <button class="btn ghost small" data-act="toggle-augmented-steam-settings" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 10px;height:26px;">
+        ${icon("sliders", 12)}
+        <span>${t("settings.storeAugmentedSteamOptionsTitle")}</span>
+        <span style="font-size:10px;opacity:0.7;">${S.augmentedSteamSettingsOpen ? "▲" : "▼"}</span>
+      </button>
+    </div>` : "";
+
+  const augmentedSteamDesc = `
+    ${t("settings.storeAugmentedSteamDesc")}
+    <div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+      <span>${t("settings.storeAugmentedSteamAuthor")}</span>
+      <a href="https://github.com/IsThereAnyDeal/AugmentedSteam" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("github", 12)} GitHub ${icon("external", 10)}</a>
+      <a href="https://augmentedsteam.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("globe", 12)} augmentedsteam.com ${icon("external", 10)}</a>
+    </div>
+    ${augmentedSteamConfigureBtn}`;
+
+  const augmentedSteamSubPanel = (S.augmentedSteamSettingsOpen && augmentedSteam) ? `
+    <div style="margin: 2px 14px 14px 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: var(--r-sm, 6px);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);">
+        <span style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">
+          ${t("settings.storeAugmentedSteamOptionsTitle")}
+        </span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px;">
+        ${asSubOpts.map(opt => `
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line);">
+            <span style="font-size: 12px; color: var(--text-normal); font-weight: 500;">${opt.label}</span>
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-augmented-steam-sub-option" data-key="${opt.key}" ${getAugmentedSteamOption(opt.key) ? "checked" : ""} />
               <span class="track"></span>
             </label>
           </div>
@@ -739,7 +790,9 @@ function renderStores(): string {
     row(t("settings.storeEpicAssistantTitle"), epicDesc, toggle("toggle-store-epic-assistant", epicAssistant)) +
     row(t("settings.storeSteamCurrencyTitle"), currencyDesc, toggle("toggle-store-steam-currency", steamCurrency)) +
     row(t("settings.storeSteamDbTitle"), steamDbDesc, toggle("toggle-store-steamdb", steamDb)) +
-    steamDbSubPanel;
+    steamDbSubPanel +
+    row(t("settings.storeAugmentedSteamTitle"), augmentedSteamDesc, toggle("toggle-store-augmented-steam", augmentedSteam)) +
+    augmentedSteamSubPanel;
 
   const perfRows =
     row(t("settings.storePrewarmTitle"), t("settings.storePrewarmDesc"), toggle("toggle-store-prewarm", prewarm)) +

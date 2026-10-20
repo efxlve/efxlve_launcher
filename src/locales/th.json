@@ -2713,5 +2713,15 @@
   "settings.storeSteamDbOptHideInstall": "ซ่อนปุ่ม 'ติดตั้ง Steam'",
   "settings.storeSteamCurrencyRegionNote": "พัฒนาขึ้นสำหรับผู้ใช้ในภูมิภาคตุรกี / MENA-USD หลังจากการเปลี่ยนแปลงสกุลเงินของ Steam",
   "settings.storeSteamDbConfigure": "กำหนดค่าคุณสมบัติ",
-  "settings.storeSteamDbHideOptions": "ซ่อนคุณสมบัติ"
+  "settings.storeSteamDbHideOptions": "ซ่อนคุณสมบัติ",
+  "settings.storeAugmentedSteamTitle": "Augmented Steam",
+  "settings.storeAugmentedSteamDesc": "เปรียบเทียบราคาร้านค้าดิจิทัล (ผ่าน IsThereAnyDeal), เวลาเล่น HowLongToBeat, คะแนน OpenCritic และการแจ้งเตือน DRM",
+  "settings.storeAugmentedSteamAuthor": "ส่วนขยายโอเพนซอร์สโดยชุมชน IsThereAnyDeal (บุคคลที่สาม)",
+  "settings.storeAugmentedSteamOptionsTitle": "คุณสมบัติ Augmented Steam",
+  "settings.storeAugmentedSteamOptHltb": "เวลาการเล่น HowLongToBeat",
+  "settings.storeAugmentedSteamOptItad": "ดีลร้านค้าและราคาต่ำสุด IsThereAnyDeal",
+  "settings.storeAugmentedSteamOptOpenCritic": "คะแนนและผลสรุป OpenCritic",
+  "settings.storeAugmentedSteamOptMetaUser": "คะแนนผู้ใช้ Metacritic",
+  "settings.storeAugmentedSteamOptDrm": "การแจ้งเตือน Denuvo และ DRM บุคคลที่สาม",
+  "settings.storeAugmentedSteamOptWsgf": "การรับรองจอไวด์สกรีน (WSGF)"
 }
