@@ -109,7 +109,7 @@ import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, scrollStoreTabs, setStoreHidden, setView, UBISOFT_LOGIN_URL } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, purgeStoreViews, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, UBISOFT_LOGIN_URL } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -873,6 +873,11 @@ document.addEventListener("click", (e) => {
       setStoreHidden(id, !S.hiddenStores.has(id));
       scheduleRender();
     }
+  } else if (act === "toggle-store-prewarm") {
+    setStorePrewarm(!storePrewarmEnabled());
+    render();
+  } else if (act === "purge-store-views") {
+    void purgeStoreViews();
   } else if (act === "toggle-store-badge") {
     S.showStoreBadge = !S.showStoreBadge;
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));

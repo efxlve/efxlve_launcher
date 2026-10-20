@@ -67,7 +67,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS } from "../store/store-view";
+import { HEADER_STORES, STORE_LABELS, storeIdleTimeout, storePrewarmEnabled, storeWarmLimit } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -78,6 +78,7 @@ import { igdbProbeProxy, igdbStatus } from "../../igdb";
 const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "account", labelKey: "settings.secAccount" },
   { id: "downloads", labelKey: "settings.secDownloads" },
+  { id: "stores", labelKey: "settings.secStores" },
   { id: "cloud", labelKey: "settings.secCloud" },
   { id: "integrations", labelKey: "settings.secIntegrations" },
   { id: "social", labelKey: "settings.secSocial" },
@@ -105,7 +106,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navLibrary",
-    sections: ["downloads", "collections", "hidden"],
+    sections: ["downloads", "stores", "collections", "hidden"],
   },
   {
     labelKey: "settings.navApp",
@@ -654,6 +655,55 @@ function pageSizeSelect(): string {
   </select>`;
 }
 
+
+function renderStores(): string {
+  const warmLimit = storeWarmLimit();
+  const idleTimeout = storeIdleTimeout();
+  const prewarm = storePrewarmEnabled();
+
+  const warmLimitSelect = `<select class="settings-select" data-act="change-store-warm-limit" aria-label="${t("settings.storeWarmLimitTitle")}">
+    <option value="1" ${warmLimit === 1 ? "selected" : ""}>1 · ${t("settings.storeWarmLimit1")}</option>
+    <option value="2" ${warmLimit === 2 ? "selected" : ""}>2 · ${t("settings.storeWarmLimit2")}</option>
+    <option value="3" ${warmLimit === 3 ? "selected" : ""}>3 · ${t("settings.storeWarmLimit3")}</option>
+    <option value="5" ${warmLimit === 5 ? "selected" : ""}>5 · ${t("settings.storeWarmLimit5")}</option>
+  </select>`;
+
+  const idleTimeoutSelect = `<select class="settings-select" data-act="change-store-idle-timeout" aria-label="${t("settings.storeIdleTimeoutTitle")}">
+    <option value="2" ${idleTimeout === 2 ? "selected" : ""}>2 ${t("settings.storeIdle2m")}</option>
+    <option value="5" ${idleTimeout === 5 ? "selected" : ""}>5 ${t("settings.storeIdle5m")}</option>
+    <option value="15" ${idleTimeout === 15 ? "selected" : ""}>15 ${t("settings.storeIdle15m")}</option>
+    <option value="0" ${idleTimeout === 0 ? "selected" : ""}>${t("settings.storeIdleNever")}</option>
+  </select>`;
+
+  const purgeBtn = `<button class="btn ghost small" data-act="purge-store-views">${icon("trash", 13)} ${t("settings.storePurgeBtn")}</button>`;
+
+  const perfRows =
+    row(t("settings.storePrewarmTitle"), t("settings.storePrewarmDesc"), toggle("toggle-store-prewarm", prewarm)) +
+    row(t("settings.storeWarmLimitTitle"), t("settings.storeWarmLimitDesc"), warmLimitSelect) +
+    row(t("settings.storeIdleTimeoutTitle"), t("settings.storeIdleTimeoutDesc"), idleTimeoutSelect) +
+    row(t("settings.storePurgeTitle"), t("settings.storePurgeDesc"), purgeBtn);
+
+  const tabsRows = HEADER_STORES.map((id) => {
+    const hidden = S.hiddenStores.has(id);
+    const lastVisible = !hidden && HEADER_STORES.every((store) => store === id || S.hiddenStores.has(store));
+    return row(
+      `${storeLogo(id, 18, "settings-store-logo")}${STORE_LABELS[id]}`,
+      null,
+      `<label class="switch"><input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} /><span class="track"></span></label>`,
+    );
+  }).join("");
+
+  return (
+    group(perfRows, t("settings.storePerfGroupTitle"), infoBox("settings.storePerfNote")) +
+    group(tabsRows, t("settings.secStoreTabs"), infoBox("settings.storeTabsNote")) +
+    group(
+      row(t("settings.storeCacheTitle"), t("settings.storeCacheDesc"), ""),
+      t("settings.storeCacheGroupTitle"),
+      infoBox("settings.storeCacheNote"),
+    )
+  );
+}
+
 function renderAppearance(): string {
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
@@ -726,20 +776,7 @@ function renderAppearance(): string {
       t("settings.secPages"),
       infoBox("settings.pagesNote"),
     ) +
-    group(
-      HEADER_STORES.map((id) => {
-        const hidden = S.hiddenStores.has(id);
-        // The last visible store stays: an empty bar would have nothing to open.
-        const lastVisible = !hidden && HEADER_STORES.every((store) => store === id || S.hiddenStores.has(store));
-        return row(
-          `${storeLogo(id, 18, "settings-store-logo")}${STORE_LABELS[id]}`,
-          null,
-          `<label class="switch"><input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} /><span class="track"></span></label>`,
-        );
-      }).join(""),
-      t("settings.secStoreTabs"),
-      infoBox("settings.storeTabsNote"),
-    ) +
+    
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group" data-search="${esc(LANGUAGES.map((l) => l.label).join(" "))}">${languages}</div>`
   );
 }

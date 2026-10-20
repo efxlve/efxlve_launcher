@@ -285,13 +285,14 @@
                 el.classList.add('gone');
                 setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
             }
-            if (document.readyState === 'complete') {
+            if (document.readyState === 'interactive' || document.readyState === 'complete') {
                 requestAnimationFrame(reveal);
             } else {
+                document.addEventListener('DOMContentLoaded', function() { requestAnimationFrame(reveal); }, { once: true });
                 window.addEventListener('load', function() { requestAnimationFrame(reveal); }, { once: true });
             }
             // Safety net: even on a very slow network the overlay never stays permanently.
-            setTimeout(reveal, 2500);
+            setTimeout(reveal, 1500);
         } catch(e) {}
     }
     installVeil();

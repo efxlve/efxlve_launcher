@@ -72,6 +72,12 @@ export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";
 
 /** Store ids the user hid from the Stores bar (JSON array). */
 export const HIDDEN_STORES_KEY = "efxlve-hidden-stores";
+/** Pre-warm default store webview on startup (disabled by default to preserve RAM). */
+export const STORE_PREWARM_KEY = "efxlve-store-prewarm";
+/** Number of store child webviews kept warm in memory (1 to 5, default 3). */
+export const STORE_WARM_LIMIT_KEY = "efxlve-store-warm-limit";
+/** Inactivity timeout in minutes before idle store webviews are destroyed (default 5, 0 = never). */
+export const STORE_IDLE_TIMEOUT_KEY = "efxlve-store-idle-timeout";
 
 /** Settings > System: send the launcher to the taskbar when a game starts. */
 export const MINIMIZE_ON_GAME_KEY = "efxlve-minimize-on-game";

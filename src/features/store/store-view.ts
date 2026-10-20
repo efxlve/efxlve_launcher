@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK } from "../../core/constants";
+import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -364,6 +364,62 @@ const STORE_IDLE_DESTROY_MS = 5 * 60 * 1000;
 let storeOpenEpoch = 0;
 
 /** Cancels a pending idle destroy (the store is being used again). */
+
+export function storePrewarmEnabled(): boolean {
+  return localStorage.getItem(STORE_PREWARM_KEY) === "true";
+}
+
+export function setStorePrewarm(enabled: boolean): void {
+  localStorage.setItem(STORE_PREWARM_KEY, String(enabled));
+}
+
+export function storeWarmLimit(): number {
+  const val = parseInt(localStorage.getItem(STORE_WARM_LIMIT_KEY) || "3", 10);
+  return [1, 2, 3, 5].includes(val) ? val : 3;
+}
+
+export function setStoreWarmLimit(limit: number): void {
+  const norm = [1, 2, 3, 5].includes(limit) ? limit : 3;
+  localStorage.setItem(STORE_WARM_LIMIT_KEY, String(norm));
+  if (isTauri) {
+    invoke("set_store_warm_limit", { limit: norm }).catch(() => {});
+  }
+}
+
+export function storeIdleTimeout(): number {
+  const raw = localStorage.getItem(STORE_IDLE_TIMEOUT_KEY);
+  if (raw === null) return 5;
+  const val = parseInt(raw, 10);
+  return [0, 2, 5, 15].includes(val) ? val : 5;
+}
+
+export function setStoreIdleTimeout(minutes: number): void {
+  const norm = [0, 2, 5, 15].includes(minutes) ? minutes : 5;
+  localStorage.setItem(STORE_IDLE_TIMEOUT_KEY, String(norm));
+}
+
+export function triggerStorePrewarmIfEnabled(): void {
+  if (!isTauri || !storePrewarmEnabled()) return;
+  window.setTimeout(() => {
+    if (S.view !== "store") {
+      invoke("prewarm_store_view", { url: EPIC_STORE_URL, ownedLabel: t("store.inLibrary") }).catch(() => {});
+    }
+  }, 4000);
+}
+
+export async function purgeStoreViews(): Promise<void> {
+  if (!isTauri) return;
+  cancelStoreDestroy();
+  warmStores.clear();
+  S.storeShown = false;
+  await invoke("destroy_store_view").catch(() => {});
+  toast(t("settings.storePurgedToast"), "ok");
+  if (S.view === "store") {
+    S.view = "library";
+  }
+  render();
+}
+
 function cancelStoreDestroy(): void {
   if (S.storeDestroyTimer !== null) {
     window.clearTimeout(S.storeDestroyTimer);
@@ -374,14 +430,15 @@ function cancelStoreDestroy(): void {
 /** Schedules destroying the store webview after a period of inactivity. */
 function scheduleStoreDestroy(): void {
   cancelStoreDestroy();
+  const minutes = storeIdleTimeout();
+  if (minutes <= 0) return;
   S.storeDestroyTimer = window.setTimeout(() => {
     S.storeDestroyTimer = null;
     if (!S.storeShown && isTauri) {
-      // Every storefront goes away, so nothing is warm until one loads again.
       warmStores.clear();
       invoke<string>("destroy_store_view").catch(() => {});
     }
-  }, STORE_IDLE_DESTROY_MS);
+  }, minutes * 60 * 1000);
 }
 
 function setStoreProgress(visible: boolean): void {
@@ -756,4 +813,9 @@ export function scrollStoreTabs(direction: number): void {
     }
   };
   requestAnimationFrame(step);
+}
+
+if (isTauri) {
+  invoke("set_store_warm_limit", { limit: storeWarmLimit() }).catch(() => {});
+  triggerStorePrewarmIfEnabled();
 }

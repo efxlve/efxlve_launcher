@@ -907,6 +907,8 @@ fn main() {    // Rockstar's launcher only continues when a process named
             store_host::hide_store_view,
             store_host::set_store_palette_hold,
             store_host::destroy_store_view,
+            store_host::set_store_warm_limit,
+            store_host::prewarm_store_view,
             discord_host::discord_view_show,
             discord_host::discord_view_hide,
             discord_host::discord_view_reload,

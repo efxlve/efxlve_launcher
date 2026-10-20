@@ -243,9 +243,20 @@ fn show_pending_store(app: &tauri::AppHandle, label: &str, epoch: u64) {
 }
 
 /// How many storefronts may stay alive at once. Each one is a renderer process
-/// (measured at roughly 60-260 MB working set), so the three most recently used
-/// storefronts are kept warm in memory while older ones are closed.
-const MAX_WARM_STORES: usize = 3;
+/// (measured at roughly 60-260 MB working set), so the configured number of most
+/// recently used storefronts are kept warm in memory while older ones are closed.
+static STORE_WARM_LIMIT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(3);
+
+pub fn get_store_warm_limit() -> usize {
+    STORE_WARM_LIMIT.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+#[tauri::command]
+pub fn set_store_warm_limit(limit: usize) -> Result<(), String> {
+    let clamped = limit.clamp(1, 10);
+    STORE_WARM_LIMIT.store(clamped, std::sync::atomic::Ordering::Relaxed);
+    Ok(())
+}
 
 /// Alive storefront labels, most recently used first.
 static STORE_WARM_ORDER: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
@@ -258,15 +269,16 @@ fn touch_store_warm(label: &str) {
     }
 }
 
-/// Closes the storefronts beyond `MAX_WARM_STORES` and returns their ids.
+/// Closes the storefronts beyond the warm limit and returns their ids.
 fn prune_store_views() -> Vec<String> {
+    let limit = get_store_warm_limit();
     let mut closed = Vec::new();
     let labels: Vec<String> = match STORE_WARM_ORDER.lock() {
         Ok(mut order) => {
-            if order.len() <= MAX_WARM_STORES {
+            if order.len() <= limit {
                 return closed;
             }
-            order.split_off(MAX_WARM_STORES)
+            order.split_off(limit)
         }
         Err(_) => return closed,
     };
@@ -503,6 +515,182 @@ fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
 }
 
+fn create_store_builder(
+    app: &AppHandle,
+    target_label: String,
+    parsed: url::Url,
+    store_id: &'static str,
+    owned_label_js: &str,
+    owned_games: &str,
+) -> tauri::WebviewBuilder<tauri::Wry> {
+    use tauri::{WebviewBuilder, WebviewUrl};
+    let app_nav = app.clone();
+    // additional_browser_args blanks this child webview. Leave the builder without it.
+    let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
+        // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
+        .background_color(tauri::webview::Color(14, 15, 18, 255))
+        .on_page_load(move |webview, payload| {
+            if payload.event() != tauri::webview::PageLoadEvent::Finished {
+                return;
+            }
+            // The Xbox storefront only ships a light theme. The initialization
+            // script alone does not stick for child webviews (the Epic store
+            // needs the same belt-and-braces eval), so re-apply it on every
+            // finished load; the store is a single-page app.
+            if store_id == "xbox" {
+                let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
+            }
+            // A storefront that navigated away from a sign-in page becomes
+            // visible now, once the store has actually painted.
+            let pending = SHOW_AFTER_LOAD_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
+            if pending != NO_PENDING_LOAD {
+                show_pending_store(webview.app_handle(), webview.label(), pending);
+            }
+            // The storefront painted: the frontend can drop its progress sweep.
+            use tauri::Emitter;
+            let _ = webview.app_handle().emit(
+                "efxlve-store-ready",
+                serde_json::json!({ "store": store_id_for_label(webview.label()) }),
+            );
+        })
+        .on_navigation(move |url| {
+            if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
+                // A click on the store, while the notification layer is open, asks
+                // the shell to close that layer. The store page itself stays put.
+                if url.path() == "/bnet-library" {
+                    crate::companion::accept_bnet_library(&app_nav, url.fragment().unwrap_or(""));
+                    return false;
+                }
+                if url.path() == "/ubi-session" {
+                    crate::companion::accept_ubi_session(&app_nav, url.fragment().unwrap_or(""));
+                    return false;
+                }
+                if url.path() == "/notif-close" {
+                    let _ = app_nav.emit(
+                        "notif-overlay-act",
+                        serde_json::json!({ "act": "overlay-close" }),
+                    );
+                    return false;
+                }
+                let query: std::collections::HashMap<_, _> =
+                    url.query_pairs().into_owned().collect();
+                let app_name = query.get("app").cloned().unwrap_or_default();
+                let title = query.get("title").cloned().unwrap_or_default();
+                let slug = query.get("slug").cloned().unwrap_or_default();
+                use tauri::Emitter;
+                let _ = app_nav.emit(
+                    "efxlve-open-game-from-store",
+                    serde_json::json!({
+                        "appName": app_name,
+                        "title": title,
+                        "slug": slug
+                    }),
+                );
+                return false;
+            }
+            if url.path().contains("/download")
+                || url.host_str() == Some("launcher-public-service-prod06.ol.epicgames.com")
+            {
+                return false;
+            }
+            true
+        })
+        .on_new_window({
+            // Fallback for popups that bypass the injected script (`target=_blank`
+            // links). A child webview cannot show them, so the Ubisoft tab goes to
+            // the overlay login page; every other popup stays denied.
+            let app_popup = app.clone();
+            let popup_label = target_label.clone();
+            move |url, _features| {
+                if store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
+                    if let Some(view) = app_popup.get_webview(&popup_label) {
+                        if let Ok(target) = UBISOFT_OVERLAY_LOGIN.parse::<url::Url>() {
+                            let _ = view.navigate(target);
+                        }
+                    }
+                }
+                tauri::webview::NewWindowResponse::Deny
+            }
+        });
+    if store_id == "battlenet" {
+        builder = builder.initialization_script(crate::companion::bnet_watch_script());
+    }
+    if store_id == "ubisoft" {
+        // The overlay URL is filled into the script so the storefront's LOG IN
+        // popup can continue on the page the session capture understands.
+        let ubi_script = crate::companion::ubi_watch_script()
+            .replace("__EFXLVE_UBI_OVERLAY__", UBISOFT_OVERLAY_LOGIN);
+        builder = builder.initialization_script(ubi_script);
+    }
+    // The Xbox storefront only ships a light theme; this paints it with the
+    // launcher's dark surface and flips its header to Microsoft's dark theme.
+    if store_id == "xbox" {
+        builder = builder.initialization_script(crate::store_theme::XBOX_DARK_SCRIPT);
+    }
+    // The 44 KB storefront decoration only exists for the Epic store: injecting it
+    // into the other storefronts meant parsing and running a script that finds
+    // nothing, on every document load.
+    if store_id == "epic" {
+        let init_script = format!(
+            "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
+        );
+        builder = builder.initialization_script(&init_script);
+    }
+    builder
+}
+
+/// Pre-warms a storefront in the background parked off-screen.
+/// Used if the user enables "Arka Planda Ön Yükleme" in Settings.
+#[tauri::command]
+pub async fn prewarm_store_view(
+    app: AppHandle,
+    url: String,
+    owned_label: Option<String>,
+) -> Result<String, String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+
+    let store_id = store_id_for_url(&url);
+    let target_label = format!("store-view-{store_id}");
+
+    if store_views(&window)
+        .into_iter()
+        .any(|w| w.label() == target_label)
+    {
+        return Ok("already_warm".into());
+    }
+
+    let parsed: url::Url = url.parse().map_err(|_| "@t:win.invalidUrl".to_string())?;
+    match parsed.scheme() {
+        "http" | "https" => {}
+        _ => return Err("@t:win.onlyHttp".to_string()),
+    }
+
+    let owned_games = if store_id == "epic" {
+        owned_games_payload()
+    } else {
+        "[]".to_string()
+    };
+    let owned_label_js = js_string(owned_label.as_deref().unwrap_or(""));
+
+    let builder = create_store_builder(&app, target_label.clone(), parsed, store_id, &owned_label_js, &owned_games);
+    let (width, height) = parked_content_size(&window);
+    let pos = tauri::Position::Logical(tauri::LogicalPosition::new(-10000.0, -10000.0));
+    let size = tauri::Size::Logical(tauri::LogicalSize::new(width, height));
+
+    let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));
+    match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
+        Ok(Ok(Ok(_))) => {
+            touch_store_warm(&target_label);
+            Ok("prewarmed".into())
+        }
+        Ok(Ok(Err(e))) => Err(e.to_string()),
+        Ok(Err(join_err)) => Err(join_err.to_string()),
+        Err(_) => Err("timeout".into()),
+    }
+}
+
 #[tauri::command]
 pub async fn show_store_view(
     app: AppHandle,
@@ -515,7 +703,7 @@ pub async fn show_store_view(
     recreate: bool,
     owned_label: Option<String>,
 ) -> Result<String, String> {
-    use tauri::{LogicalPosition, LogicalSize, Position, Size, WebviewBuilder, WebviewUrl};
+    use tauri::{LogicalPosition, LogicalSize, Position, Size};
 
     let window = app
         .get_window("main")
@@ -666,118 +854,7 @@ pub async fn show_store_view(
         _ => return Err("@t:win.onlyHttp".to_string()),
     }
 
-    let app_nav = app.clone();
-    // additional_browser_args blanks this child webview. Leave the builder without it.
-    let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
-        // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
-        .background_color(tauri::webview::Color(14, 15, 18, 255))
-        .on_page_load(move |webview, payload| {
-            if payload.event() != tauri::webview::PageLoadEvent::Finished {
-                return;
-            }
-            // The Xbox storefront only ships a light theme. The initialization
-            // script alone does not stick for child webviews (the Epic store
-            // needs the same belt-and-braces eval), so re-apply it on every
-            // finished load; the store is a single-page app.
-            if store_id == "xbox" {
-                let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
-            }
-            // A storefront that navigated away from a sign-in page becomes
-            // visible now, once the store has actually painted.
-            let pending = SHOW_AFTER_LOAD_EPOCH.load(std::sync::atomic::Ordering::SeqCst);
-            if pending != NO_PENDING_LOAD {
-                show_pending_store(webview.app_handle(), webview.label(), pending);
-            }
-            // The storefront painted: the frontend can drop its progress sweep.
-            use tauri::Emitter;
-            let _ = webview.app_handle().emit(
-                "efxlve-store-ready",
-                serde_json::json!({ "store": store_id_for_label(webview.label()) }),
-            );
-        })
-        .on_navigation(move |url| {
-            if url.scheme() == "https" && url.host_str() == Some("efxlve.local") {
-                // A click on the store, while the notification layer is open, asks
-                // the shell to close that layer. The store page itself stays put.
-                if url.path() == "/bnet-library" {
-                    crate::companion::accept_bnet_library(&app_nav, url.fragment().unwrap_or(""));
-                    return false;
-                }
-                if url.path() == "/ubi-session" {
-                    crate::companion::accept_ubi_session(&app_nav, url.fragment().unwrap_or(""));
-                    return false;
-                }
-                if url.path() == "/notif-close" {
-                    let _ = app_nav.emit(
-                        "notif-overlay-act",
-                        serde_json::json!({ "act": "overlay-close" }),
-                    );
-                    return false;
-                }
-                let query: std::collections::HashMap<_, _> =
-                    url.query_pairs().into_owned().collect();
-                let app_name = query.get("app").cloned().unwrap_or_default();
-                let title = query.get("title").cloned().unwrap_or_default();
-                let slug = query.get("slug").cloned().unwrap_or_default();
-                use tauri::Emitter;
-                let _ = app_nav.emit(
-                    "efxlve-open-game-from-store",
-                    serde_json::json!({
-                        "appName": app_name,
-                        "title": title,
-                        "slug": slug
-                    }),
-                );
-                return false;
-            }
-            if url.path().contains("/download")
-                || url.host_str() == Some("launcher-public-service-prod06.ol.epicgames.com")
-            {
-                return false;
-            }
-            true
-        })
-        .on_new_window({
-            // Fallback for popups that bypass the injected script (`target=_blank`
-            // links). A child webview cannot show them, so the Ubisoft tab goes to
-            // the overlay login page; every other popup stays denied.
-            let app_popup = app.clone();
-            let popup_label = target_label.clone();
-            move |url, _features| {
-                if store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
-                    if let Some(view) = app_popup.get_webview(&popup_label) {
-                        if let Ok(target) = UBISOFT_OVERLAY_LOGIN.parse::<url::Url>() {
-                            let _ = view.navigate(target);
-                        }
-                    }
-                }
-                tauri::webview::NewWindowResponse::Deny
-            }
-        });
-    if store_id == "battlenet" {
-        builder = builder.initialization_script(crate::companion::bnet_watch_script());
-    }
-    if store_id == "ubisoft" {
-        // The overlay URL is filled into the script so the storefront's LOG IN
-        // popup can continue on the page the session capture understands.
-        let ubi_script = crate::companion::ubi_watch_script()
-            .replace("__EFXLVE_UBI_OVERLAY__", UBISOFT_OVERLAY_LOGIN);
-        builder = builder.initialization_script(ubi_script);
-    }
-    // The Xbox storefront only ships a light theme; this paints it with the
-    // launcher's dark surface and flips its header to Microsoft's dark theme.
-    if store_id == "xbox" {
-        builder = builder.initialization_script(crate::store_theme::XBOX_DARK_SCRIPT);
-    }
-    // The 44 KB storefront decoration only exists for the Epic store: injecting it
-    // into the other storefronts meant parsing and running a script that finds
-    // nothing, on every document load.
-    if store_id == "epic" {
-        let init_script = format!(
-            "window.__EFXLVE_OWNED_LABEL = {owned_label_js};\nwindow.__EFXLVE_GAMES = {owned_games};\n{STORE_EXTENSION_SCRIPT}"
-        );
-        builder = builder.initialization_script(&init_script);
-    }
+    let builder = create_store_builder(&app, target_label.clone(), parsed, store_id, &owned_label_js, &owned_games);
     // add_child posts work to the main thread and waits; to avoid locking the UI
     // on a possible hang, it runs on a separate thread with a timeout.
     let handle = tokio::task::spawn_blocking(move || window.add_child(builder, pos, size));
@@ -1144,26 +1221,27 @@ mod tests {
                 *warm = order.into_iter().map(str::to_string).collect();
             }
         };
-        // The test follows the budget constant instead of hard-coding it: the
+        // The test follows the budget setting instead of hard-coding it: the
         // window stays responsive by keeping very few storefronts alive.
+        let limit = super::get_store_warm_limit();
         let labels = [
             "store-view-epic",
             "store-view-gog",
             "store-view-steam",
             "store-view-ubisoft",
         ];
-        reset(labels[..super::MAX_WARM_STORES].to_vec());
+        reset(labels[..limit].to_vec());
         assert!(
             super::prune_store_views().is_empty(),
             "the warm budget fits"
         );
 
         // One more closes the oldest one (the tail of the list).
-        let newest = labels[super::MAX_WARM_STORES];
+        let newest = labels[limit];
         super::touch_store_warm(newest);
         assert_eq!(
             super::prune_store_views(),
-            vec![super::store_id_for_label(labels[super::MAX_WARM_STORES - 1])]
+            vec![super::store_id_for_label(labels[limit - 1])]
         );
         let order = super::STORE_WARM_ORDER
             .lock()

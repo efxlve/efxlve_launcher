@@ -1,3 +1,4 @@
+import { setStoreIdleTimeout, setStoreWarmLimit } from "../store/store-view";
 import { summaryOf } from "../../core/selectors";
 /**
  * Non-click global listeners: wheel zoom guard, resize, keyboard shortcuts,
@@ -628,6 +629,18 @@ document.addEventListener("change", (e) => {
   // Compatibility selects (target, runner, runner version, umu toggle) live in
   // the settings page but are answered by their own module.
   if (act?.startsWith("compat-") && handleCompatAction(act, t)) return;
+  if (act === "change-store-warm-limit") {
+    const limit = parseInt((t as HTMLSelectElement).value, 10);
+    setStoreWarmLimit(limit);
+    render();
+    return;
+  }
+  if (act === "change-store-idle-timeout") {
+    const timeout = parseInt((t as HTMLSelectElement).value, 10);
+    setStoreIdleTimeout(timeout);
+    render();
+    return;
+  }
   if (act === "lib-page-size") {
     // Shared by the library pagination bar and the Settings > Appearance row.
     S.libPageSize = normalizeLibraryPageSize((t as HTMLSelectElement).value);
