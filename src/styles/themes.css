@@ -74,6 +74,20 @@
   color: #f8fafc;
 }
 
+/* Aero's global input tint is lighter than the editor's own dark field. */
+:root[data-surface="white"] .ced .col-name-input,
+:root[data-surface="aero"] .ced .col-name-input {
+  background: #1a1a1a;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-surface="white"] .ced .col-search-wrap .text-input,
+:root[data-surface="aero"] .ced .col-search-wrap .text-input {
+  background: transparent !important;
+  border: none;
+  color: #f8fafc;
+}
+
 :root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder,
 :root[data-surface="aero"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder {
   color: rgba(248, 250, 252, 0.56);
