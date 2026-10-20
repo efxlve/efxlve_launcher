@@ -961,7 +961,7 @@ function renderCasesSection(): string {
     const currentColor = S.caseStoreColors?.[store] || defaultColor;
     const isCustom = Boolean(S.caseStoreColors?.[store]);
     const storeLabel = CASE_STORE_NAMES[store] || store.toUpperCase();
-    const logo = storeLogo(store, 20, "case-store-row-logo");
+    const logo = storeLogo(store, 18, "settings-store-logo case-store-row-logo");
     return `
       <div class="case-store-color-row">
         <div class="case-store-info">

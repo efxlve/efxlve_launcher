@@ -574,10 +574,13 @@
   min-width: 0;
 }
 .case-store-row-logo {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
   flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  transition: filter var(--ease), opacity var(--ease);
 }
 .case-store-name {
   font-size: 13.5px;
