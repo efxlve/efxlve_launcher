@@ -810,6 +810,7 @@ document.addEventListener("click", (e) => {
     resetSettingsSearch();
     pushNavHistory({ view: "settings", settingsSection: S.settingsSection });
     render();
+    viewEl.scrollTop = 0;
     if (S.settingsSection === "integrations") void loadIntegrationsView();
     if (S.settingsSection === "controller") void loadControllerView(true);
     if (S.settingsSection === "launchers") void loadLaunchersView();

@@ -1606,18 +1606,39 @@ export function renderSettings(): string {
   wireSettingsSearch();
   // The paint applies the filter to the fresh DOM; the call also restores the
   // match state after any in-page re-render (a toggle, a section switch).
-  queueMicrotask(() => applySettingsSearch(settingsQuery));
+  queueMicrotask(() => {
+    applySettingsSearch(settingsQuery);
+    const activeItem = document.querySelector<HTMLElement>(".settings-nav-item.active");
+    activeItem?.scrollIntoView({ block: "nearest" });
+  });
   return `
     <div class="page settings-page">
       <div class="settings-layout">
         <nav class="settings-nav">
-          <div class="settings-nav-search">
-            ${icon("search", 13)}
-            <input id="settings-search" class="settings-search" type="text" value="${esc(settingsQuery)}" placeholder="${esc(t("settings.searchPlaceholder"))}" spellcheck="false" />
-            ${settingsQuery ? `<button type="button" class="settings-search-clear" data-act="settings-search-clear">${icon("x", 12)}</button>` : ""}
+          <div class="settings-nav-header">
+            <div class="settings-nav-search">
+              ${icon("search", 13)}
+              <input
+                id="settings-search"
+                class="settings-search"
+                type="search"
+                value="${esc(settingsQuery)}"
+                placeholder="${esc(t("settings.searchPlaceholder"))}"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                name="settings-search-field"
+                data-form-type="other"
+                data-lpignore="true"
+              />
+              ${settingsQuery ? `<button type="button" class="settings-search-clear" data-act="settings-search-clear">${icon("x", 12)}</button>` : ""}
+            </div>
+            <span class="settings-search-count" id="settings-search-count" hidden></span>
           </div>
-          <span class="settings-search-count" id="settings-search-count" hidden></span>
-          ${nav}
+          <div class="settings-nav-scroll">
+            ${nav}
+          </div>
         </nav>
         <div class="settings-panel">
           ${
