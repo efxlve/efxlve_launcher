@@ -2704,6 +2704,12 @@ body:has(.gamepad-hud-bar:not(.hidden)) .tv-osk {
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* The selected storefront already has a filled pill, so an extra outline
+   would draw a second white ring around it. */
+.tv-store-tab.active.focused {
+  outline: none !important;
+}
+
 /* The back control is the only orientation cue in the store panel, so keep
    its label even when the home bar’s exit label collapses. */
 .tv-panel-back span {
