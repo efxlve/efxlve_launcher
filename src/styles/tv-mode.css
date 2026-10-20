@@ -2663,6 +2663,22 @@ body:has(.gamepad-hud-bar:not(.hidden)) .tv-osk {
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.tv-screen.tv-panel {
+  background: #05070a;
+}
+
+/* Eight storefronts plus back/exit do not fit with labels on a 1080p panel;
+   the icons and tooltips carry the same information until there is room. */
+@media (max-width: 1300px) {
+  .tv-store-tab {
+    padding: 0 11px;
+  }
+
+  .tv-store-tab > span {
+    display: none;
+  }
+}
+
 .tv-panel-title {
   flex: 1;
   min-width: 0;
@@ -2686,6 +2702,12 @@ body:has(.gamepad-hud-bar:not(.hidden)) .tv-osk {
   color: #ffffff;
   border-color: #ffffff;
   background: rgba(255, 255, 255, 0.12);
+}
+
+/* The back control is the only orientation cue in the store panel, so keep
+   its label even when the home bar’s exit label collapses. */
+.tv-panel-back span {
+  display: inline;
 }
 
 .tv-store-frame {

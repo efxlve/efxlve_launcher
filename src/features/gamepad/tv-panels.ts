@@ -168,7 +168,7 @@ export function renderTvDownloads(): string {
 
 export function renderTvStores(): string {
   const tabs = visibleHeaderStores().map((id, i) => `
-    <button type="button" class="tv-cat-btn tv-store-tab${i === storeFocus ? " active focused" : ""}" data-tv-store="${id}">
+    <button type="button" class="tv-cat-btn tv-store-tab${i === storeFocus ? " active focused" : ""}" data-tv-store="${id}" title="${esc(STORE_LABELS[id])}">
       ${storeLogo(id, 18)}
       <span>${STORE_LABELS[id]}</span>
     </button>`).join("");
