@@ -26,8 +26,10 @@ and a final in-game visual check with real art.
   on top of the same tokens. The choice is stored under `efxlve-surface`, applied
   before the first paint from `index.html`, and restored on reload.
 - The **game page hero bar** now uses the otherwise empty right side for a
-  compact last-session summary (playtime, when, trophies). The personal block no
-  longer repeats the same card.
+  compact last-session summary (playtime, when, trophies). If the launcher never
+  tracked a session but the store has a last-played timestamp, that date fills
+  the same slot; a never-played title gets the short "Henüz oynanmadı" state.
+  The personal block no longer repeats the same card.
 - Light-theme text that sits on a deliberately dark overlay (hero tools, cover
   badges, screenshot controls, SGDB tags, profile banner chips, the version
   picker and the account-switch veil) now stays light instead of inheriting the

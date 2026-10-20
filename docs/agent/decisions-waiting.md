@@ -209,6 +209,10 @@ bağladım**, **neyi bekletiyorum**, **neden**.
 - **IGDB DLC/genişletme listesi:** mağaza DLC satırları kurulum yüzeyi olarak
   kaldı; IGDB yalnız mağazanın adlandırmadığı ekleri ayrı blokta gösteriyor.
   Mağaza başlığıyla aynı olan (kanonik başlık) kayıtlar eleniyor.
+- **Oyun sayfası sağ üst bilgisi:** Launcher oturumu yoksa mağazanın
+  `last_played_timestamp` değeri "Son oynanma" olarak gösteriliyor; hiç
+  oynanmamış oyunda uzun "oturum kaydedilmedi" satırı yerine kısa
+  "Henüz oynanmadı" durumu var.
 - **Tema seçimi:** Siyah ve Yumuşak Siyah'ın yanına **Beyaz Mod** ve **Frutiger
   Aero** eklendi. İkisi de aynı token sözlüğünü değiştiriyor; Aero ek olarak
   gökyüzü gradyanı, cam yüzeyler ve parlak mavi birincil düğme getiriyor.
