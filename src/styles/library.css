@@ -825,6 +825,17 @@
   object-position: calc(50% + var(--nx, 0) * 2.5%) calc(50% + var(--ny, 0) * 2.5%);
   transition: opacity var(--ease), filter var(--ease), object-position 90ms ease-out;
 }
+/* Steam 2:3 capsule vertical framing in physical cases:
+   Steam capsules are 600x900 (2:3 aspect ratio) with game titles and logos
+   positioned near the upper edge. Because the physical case artwork window is 3:4,
+   centering vertically (50% Y) crops ~6% off the top, colliding with or partially
+   hiding titles (like Counter-Strike 2, GTA V, 3D Puzzle). Aligning to the top (0% Y)
+   preserves the full top margin of the artwork so titles sit comfortably below
+   the header with generous breathing room, while preserving edge-to-edge sleeve coverage. */
+.pcard.is-case[data-source="steam"] .pcard-art > img,
+.pcard.is-case[data-source="steam"] .pcard-art > .pcover {
+  object-position: calc(50% + var(--nx, 0) * 2.5%) calc(0% + var(--ny, 0) * 1.5%);
+}
 .pgrid.highlight-installed .pcard.is-case.not-installed .pcard-art > img,
 .pgrid.dim-uninstalled .pcard.is-case.not-installed .pcard-art > img {
   opacity: 1;
