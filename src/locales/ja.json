@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "ディスクキャッシュ",
   "settings.storeCacheTitle": "自動ウェブキャッシュ",
   "settings.storeCacheDesc": "WebView2は以降の高速読み込みのため、ストアページやメディアを自動的にディスクにキャッシュします。",
-  "settings.storeCacheNote": "ストアのディスクキャッシュはアプリデータフォルダに保存されます。"
+  "settings.storeCacheNote": "ストアのディスクキャッシュはアプリデータフォルダに保存されます。",
+  "settings.storeMoveUp": "上に移動",
+  "settings.storeMoveDown": "下に移動",
+  "settings.storeResetOrder": "並び順をリセット",
+  "settings.storeHiddenBadge": "非表示",
+  "settings.storeOrderNote": "矢印ボタンでストアタブの並び順を変更できます。最上位の表示中ストアがデフォルトで開きます。"
 }

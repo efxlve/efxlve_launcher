@@ -421,3 +421,29 @@
 .compat-progress { width: 150px; height: 4px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
 .compat-progress > span { display: block; height: 100%; background: var(--accent); transition: width 0.2s linear; }
 .compat-progress-label { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* Store ordering controls in Settings > Stores */
+.store-order-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.store-order-controls .btn.icon-only {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+}
+.store-order-controls .btn.icon-only:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.store-order-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px 4px;
+}

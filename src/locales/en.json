@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Disk Cache",
   "settings.storeCacheTitle": "Automatic Web Cache",
   "settings.storeCacheDesc": "WebView2 automatically caches store pages, scripts, and assets on disk for fast subsequent loads.",
-  "settings.storeCacheNote": "Store disk cache is stored in the application data directory and preserved between sessions."
+  "settings.storeCacheNote": "Store disk cache is stored in the application data directory and preserved between sessions.",
+  "settings.storeMoveUp": "Move Up",
+  "settings.storeMoveDown": "Move Down",
+  "settings.storeResetOrder": "Reset Order",
+  "settings.storeHiddenBadge": "Hidden",
+  "settings.storeOrderNote": "Use the arrow buttons to reorder storefront tabs. The top visible store opens by default."
 }

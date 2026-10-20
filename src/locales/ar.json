@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "ذاكرة التخزين المؤقت على القرص",
   "settings.storeCacheTitle": "التخزين المؤقت التلقائي",
   "settings.storeCacheDesc": "يقوم WebView2 بتخزين صفحات المتاجر والوسائط مؤقتاً على القرص للتحميل السريع.",
-  "settings.storeCacheNote": "يتم تخزين الذاكرة المؤقتة في مجلد بيانات التطبيق."
+  "settings.storeCacheNote": "يتم تخزين الذاكرة المؤقتة في مجلد بيانات التطبيق.",
+  "settings.storeMoveUp": "تحريك لأعلى",
+  "settings.storeMoveDown": "تحريك لأسفل",
+  "settings.storeResetOrder": "إعادة تعيين الترتيب",
+  "settings.storeHiddenBadge": "مخفي",
+  "settings.storeOrderNote": "استخدم الأسهم لإعادة ترتيب علامات تبويب المتاجر. يتم فتح أول متجر مرئي افتراضياً."
 }

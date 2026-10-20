@@ -109,7 +109,7 @@ import { closeTvMode, openTvMode } from "../gamepad/tv-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, openProfile, openStore, openStoreUrl, purgeStoreViews, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, UBISOFT_LOGIN_URL } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -347,8 +347,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    let store = (t.dataset.store as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "luna") || S.activeStore || "epic";
-    if (!t.dataset.store && !isHeaderStore(store)) store = "epic";
+    let store = (t.dataset.store as any) || S.activeStore;
+    const firstVisible = visibleHeaderStores()[0] ?? "epic";
+    if (!store || S.hiddenStores.has(store)) {
+      store = firstVisible;
+    }
     if (S.activeStore !== store) {
       S.activeStore = store;
       updatePageHeader();
@@ -873,6 +876,21 @@ document.addEventListener("click", (e) => {
       setStoreHidden(id, !S.hiddenStores.has(id));
       scheduleRender();
     }
+  } else if (act === "store-order-up") {
+    const store = t.dataset.store as any;
+    if (store) {
+      moveStoreOrder(store, -1);
+      scheduleRender();
+    }
+  } else if (act === "store-order-down") {
+    const store = t.dataset.store as any;
+    if (store) {
+      moveStoreOrder(store, 1);
+      scheduleRender();
+    }
+  } else if (act === "store-order-reset") {
+    resetStoreOrder();
+    scheduleRender();
   } else if (act === "toggle-store-prewarm") {
     setStorePrewarm(!storePrewarmEnabled());
     render();

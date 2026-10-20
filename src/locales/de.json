@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Festplatten-Cache",
   "settings.storeCacheTitle": "Automatischer Web-Cache",
   "settings.storeCacheDesc": "WebView2 speichert Store-Seiten, Skripte und Medien automatisch auf der Festplatte für schnelle Folgeaufrufe.",
-  "settings.storeCacheNote": "Der Store-Festplatten-Cache wird im Anwendungsdatenordner gespeichert."
+  "settings.storeCacheNote": "Der Store-Festplatten-Cache wird im Anwendungsdatenordner gespeichert.",
+  "settings.storeMoveUp": "Nach oben verschieben",
+  "settings.storeMoveDown": "Nach unten verschieben",
+  "settings.storeResetOrder": "Reihenfolge zurücksetzen",
+  "settings.storeHiddenBadge": "Ausgeblendet",
+  "settings.storeOrderNote": "Verwenden Sie die Pfeile, um Storefront-Tabs neu anzuordnen. Der oberste sichtbare Store öffnet standardmäßig."
 }

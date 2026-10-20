@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Pamięć podręczna dysku",
   "settings.storeCacheTitle": "Automatyczna pamięć podręczna",
   "settings.storeCacheDesc": "WebView2 automatycznie zapisuje strony sklepów, skrypty i multimedia na dysku.",
-  "settings.storeCacheNote": "Pamięć podręczna jest przechowywana w katalogu danych aplikacji."
+  "settings.storeCacheNote": "Pamięć podręczna jest przechowywana w katalogu danych aplikacji.",
+  "settings.storeMoveUp": "Przesuń w górę",
+  "settings.storeMoveDown": "Przesuń w dół",
+  "settings.storeResetOrder": "Zresetuj kolejność",
+  "settings.storeHiddenBadge": "Ukryty",
+  "settings.storeOrderNote": "Użyj strzałek, aby zmienić kolejność kart sklepów. Pierwszy widoczny sklep otwiera się domyślnie."
 }

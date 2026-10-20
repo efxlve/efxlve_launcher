@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Cache su disco",
   "settings.storeCacheTitle": "Cache web automatica",
   "settings.storeCacheDesc": "WebView2 memorizza automaticamente nella cache pagine, script e contenuti su disco.",
-  "settings.storeCacheNote": "La cache su disco viene salvata nella cartella dei dati dell'app."
+  "settings.storeCacheNote": "La cache su disco viene salvata nella cartella dei dati dell'app.",
+  "settings.storeMoveUp": "Sposta su",
+  "settings.storeMoveDown": "Sposta giù",
+  "settings.storeResetOrder": "Ripristina ordine",
+  "settings.storeHiddenBadge": "Nascosto",
+  "settings.storeOrderNote": "Usa i pulsanti freccia per riordinare le schede dei negozi. Il primo negozio visibile si apre per impostazione predefinita."
 }

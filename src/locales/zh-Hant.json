@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "磁碟快取",
   "settings.storeCacheTitle": "自動 Web 快取",
   "settings.storeCacheDesc": "WebView2 會自動在磁碟快取商店頁面、指令碼和媒體，加速後續載入。",
-  "settings.storeCacheNote": "商店磁碟快取儲存於應用程式資料資料夾中。"
+  "settings.storeCacheNote": "商店磁碟快取儲存於應用程式資料資料夾中。",
+  "settings.storeMoveUp": "上移",
+  "settings.storeMoveDown": "下移",
+  "settings.storeResetOrder": "重設排序",
+  "settings.storeHiddenBadge": "已隱藏",
+  "settings.storeOrderNote": "使用箭頭按鈕調整商店分頁順序。排在首位的可見商店將預設開啟。"
 }

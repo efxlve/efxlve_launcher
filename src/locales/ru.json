@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Дисковый кэш",
   "settings.storeCacheTitle": "Автоматический веб-кэш",
   "settings.storeCacheDesc": "WebView2 автоматически кэширует страницы, скрипты и медиафайлы на диске для быстрой загрузки.",
-  "settings.storeCacheNote": "Дисковый кэш сохраняется в папке данных приложения."
+  "settings.storeCacheNote": "Дисковый кэш сохраняется в папке данных приложения.",
+  "settings.storeMoveUp": "Вверх",
+  "settings.storeMoveDown": "Вниз",
+  "settings.storeResetOrder": "Сбросить порядок",
+  "settings.storeHiddenBadge": "Скрыт",
+  "settings.storeOrderNote": "Используйте стрелки для изменения порядка вкладок магазинов. Первый видимый магазин открывается по умолчанию."
 }

@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Cache em disco",
   "settings.storeCacheTitle": "Cache web automático",
   "settings.storeCacheDesc": "O WebView2 armazena automaticamente em cache páginas, scripts e mídia no disco para carregamento rápido.",
-  "settings.storeCacheNote": "O cache em disco das lojas é armazenado na pasta de dados do aplicativo."
+  "settings.storeCacheNote": "O cache em disco das lojas é armazenado na pasta de dados do aplicativo.",
+  "settings.storeMoveUp": "Mover para cima",
+  "settings.storeMoveDown": "Mover para baixo",
+  "settings.storeResetOrder": "Redefinir ordem",
+  "settings.storeHiddenBadge": "Oculto",
+  "settings.storeOrderNote": "Use as setas para reordenar as abas das lojas. A primeira loja visível é aberta por padrão."
 }

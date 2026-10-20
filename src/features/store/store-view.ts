@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY } from "../../core/constants";
+import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -221,15 +221,56 @@ export const STORE_LABELS: Record<StoreId, string> = {
 };
 
 /** Storefronts shown in the Stores header. */
-export const HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "luna"];
+export const DEFAULT_HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "luna"];
+export const HEADER_STORES: StoreId[] = DEFAULT_HEADER_STORES;
 
-/** Header stores the user kept visible (Settings > Appearance). */
+export function storeOrder(): StoreId[] {
+  try {
+    const raw = localStorage.getItem(STORE_ORDER_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const valid = parsed.filter((id): id is StoreId => (DEFAULT_HEADER_STORES as string[]).includes(id));
+        const missing = DEFAULT_HEADER_STORES.filter((id) => !valid.includes(id));
+        return [...valid, ...missing];
+      }
+    }
+  } catch {}
+  return [...DEFAULT_HEADER_STORES];
+}
+
+export function setStoreOrder(order: StoreId[]): void {
+  const valid = order.filter((id): id is StoreId => (DEFAULT_HEADER_STORES as string[]).includes(id));
+  const missing = DEFAULT_HEADER_STORES.filter((id) => !valid.includes(id));
+  const combined = [...valid, ...missing];
+  localStorage.setItem(STORE_ORDER_KEY, JSON.stringify(combined));
+  applyStoreTabs();
+}
+
+export function moveStoreOrder(id: StoreId, direction: -1 | 1): void {
+  const current = storeOrder();
+  const idx = current.indexOf(id);
+  if (idx < 0) return;
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= current.length) return;
+  const next = [...current];
+  const [removed] = next.splice(idx, 1);
+  next.splice(targetIdx, 0, removed);
+  setStoreOrder(next);
+}
+
+export function resetStoreOrder(): void {
+  localStorage.removeItem(STORE_ORDER_KEY);
+  applyStoreTabs();
+}
+
+/** Header stores the user kept visible, sorted in custom user order. */
 export function visibleHeaderStores(): StoreId[] {
-  return HEADER_STORES.filter((id) => !S.hiddenStores.has(id));
+  return storeOrder().filter((id) => !S.hiddenStores.has(id));
 }
 
 export function isHeaderStore(id: string): boolean {
-  return (HEADER_STORES as string[]).includes(id);
+  return (DEFAULT_HEADER_STORES as string[]).includes(id);
 }
 
 export const GOG_STORE_URL = "https://www.gog.com/";
@@ -402,7 +443,8 @@ export function triggerStorePrewarmIfEnabled(): void {
   if (!isTauri || !storePrewarmEnabled()) return;
   window.setTimeout(() => {
     if (S.view !== "store") {
-      invoke("prewarm_store_view", { url: EPIC_STORE_URL, ownedLabel: t("store.inLibrary") }).catch(() => {});
+      const topStore = visibleHeaderStores()[0] ?? "epic";
+      invoke("prewarm_store_view", { url: storeUrlFor(topStore), ownedLabel: t("store.inLibrary") }).catch(() => {});
     }
   }, 4000);
 }

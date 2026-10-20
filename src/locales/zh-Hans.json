@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "磁盘缓存",
   "settings.storeCacheTitle": "自动 Web 缓存",
   "settings.storeCacheDesc": "WebView2 自动在磁盘上缓存商店页面、脚本和资源，加速后续加载。",
-  "settings.storeCacheNote": "商店磁盘缓存保存在应用数据目录中。"
+  "settings.storeCacheNote": "商店磁盘缓存保存在应用数据目录中。",
+  "settings.storeMoveUp": "上移",
+  "settings.storeMoveDown": "下移",
+  "settings.storeResetOrder": "重置排序",
+  "settings.storeHiddenBadge": "已隐藏",
+  "settings.storeOrderNote": "使用箭头按钮调整商店标签顺序。排在首位的可见商店将默认打开。"
 }

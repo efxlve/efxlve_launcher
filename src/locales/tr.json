@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Disk Önbelleği",
   "settings.storeCacheTitle": "Otomatik Web Önbelleği",
   "settings.storeCacheDesc": "WebView2 motoru mağaza sayfalarını, komut dosyalarını ve ortamları sonraki açılışlarda hızlı yükleme için otomatik olarak diskte önbelleğe kaydeder.",
-  "settings.storeCacheNote": "Mağaza disk önbelleği uygulama verileri klasöründe saklanır ve oturumlar arasında korunur."
+  "settings.storeCacheNote": "Mağaza disk önbelleği uygulama verileri klasöründe saklanır ve oturumlar arasında korunur.",
+  "settings.storeMoveUp": "Yukarı Taşı",
+  "settings.storeMoveDown": "Aşağı Taşı",
+  "settings.storeResetOrder": "Sıralamayı Sıfırla",
+  "settings.storeHiddenBadge": "Gizli",
+  "settings.storeOrderNote": "Ok butonlarını kullanarak mağaza sekmelerini dilediğiniz sıraya taşıyabilirsiniz. En üstteki görünür mağaza varsayılan olarak açılır."
 }

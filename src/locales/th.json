@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "แคชบนดิสก์",
   "settings.storeCacheTitle": "แคชเว็บอัตโนมัติ",
   "settings.storeCacheDesc": "WebView2 บันทึกแคชหน้าร้านค้า สคริปต์ และสื่อลงในดิสก์โดยอัตโนมัติเพื่อการโหลดที่รวดเร็ว",
-  "settings.storeCacheNote": "แคชดิสก์จะถูกเก็บไว้ในโฟลเดอร์ข้อมูลแอปพลิเคชัน"
+  "settings.storeCacheNote": "แคชดิสก์จะถูกเก็บไว้ในโฟลเดอร์ข้อมูลแอปพลิเคชัน",
+  "settings.storeMoveUp": "ย้ายขึ้น",
+  "settings.storeMoveDown": "ย้ายลง",
+  "settings.storeResetOrder": "รีเซ็ตลำดับ",
+  "settings.storeHiddenBadge": "ซ่อนอยู่",
+  "settings.storeOrderNote": "ใช้ปุ่มลูกศรเพื่อเรียงลำดับแท็บร้านค้า ร้านค้าแรกที่มองเห็นจะเปิดขึ้นตามค่าเริ่มต้น"
 }

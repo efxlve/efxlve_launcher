@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "Cache disque",
   "settings.storeCacheTitle": "Cache web automatique",
   "settings.storeCacheDesc": "WebView2 met automatiquement en cache les pages, scripts et médias sur disque pour un chargement rapide.",
-  "settings.storeCacheNote": "Le cache disque est conservé dans le dossier de données d'application."
+  "settings.storeCacheNote": "Le cache disque est conservé dans le dossier de données d'application.",
+  "settings.storeMoveUp": "Monter",
+  "settings.storeMoveDown": "Descendre",
+  "settings.storeResetOrder": "Réinitialiser l'ordre",
+  "settings.storeHiddenBadge": "Masqué",
+  "settings.storeOrderNote": "Utilisez les flèches pour réorganiser les onglets des boutiques. La première boutique visible s'ouvre par défaut."
 }

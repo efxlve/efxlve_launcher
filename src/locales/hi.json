@@ -2684,5 +2684,10 @@
   "settings.storeCacheGroupTitle": "डिस्क कैश",
   "settings.storeCacheTitle": "स्वचालित वेब कैश",
   "settings.storeCacheDesc": "WebView2 तेज़ी से लोड होने के लिए स्टोर पेजों और मीडिया को डिस्क पर कैश करता है।",
-  "settings.storeCacheNote": "स्टोर डिस्क कैश ऐप डेटा फ़ोल्डर में सहेजा जाता है।"
+  "settings.storeCacheNote": "स्टोर डिस्क कैश ऐप डेटा फ़ोल्डर में सहेजा जाता है।",
+  "settings.storeMoveUp": "ऊपर ले जाएं",
+  "settings.storeMoveDown": "नीचे ले जाएं",
+  "settings.storeResetOrder": "क्रम रीसेट करें",
+  "settings.storeHiddenBadge": "छिपा हुआ",
+  "settings.storeOrderNote": "स्टोर टैब का क्रम बदलने के लिए तीरों का उपयोग करें। शीर्ष दृश्यमान स्टोर डिफ़ॉल्ट रूप से खुलता है।"
 }

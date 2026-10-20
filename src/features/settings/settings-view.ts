@@ -67,7 +67,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS, storeIdleTimeout, storePrewarmEnabled, storeWarmLimit } from "../store/store-view";
+import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -683,19 +683,44 @@ function renderStores(): string {
     row(t("settings.storeIdleTimeoutTitle"), t("settings.storeIdleTimeoutDesc"), idleTimeoutSelect) +
     row(t("settings.storePurgeTitle"), t("settings.storePurgeDesc"), purgeBtn);
 
-  const tabsRows = HEADER_STORES.map((id) => {
+  const order = storeOrder();
+  const tabsRows = order.map((id, idx) => {
     const hidden = S.hiddenStores.has(id);
-    const lastVisible = !hidden && HEADER_STORES.every((store) => store === id || S.hiddenStores.has(store));
+    const lastVisible = !hidden && order.every((store) => store === id || S.hiddenStores.has(store));
+    const isFirst = idx === 0;
+    const isLast = idx === order.length - 1;
+
+    const controls = `
+      <div class="store-order-controls">
+        <button type="button" class="btn icon-only ghost tiny" data-act="store-order-up" data-store="${id}" ${isFirst ? "disabled" : ""} title="${t("settings.storeMoveUp")}" aria-label="${t("settings.storeMoveUp")}">
+          ${icon("chevron-up", 13)}
+        </button>
+        <button type="button" class="btn icon-only ghost tiny" data-act="store-order-down" data-store="${id}" ${isLast ? "disabled" : ""} title="${t("settings.storeMoveDown")}" aria-label="${t("settings.storeMoveDown")}">
+          ${icon("chevron-down", 13)}
+        </button>
+        <label class="switch">
+          <input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} />
+          <span class="track"></span>
+        </label>
+      </div>`;
+
+    const statusBadge = hidden ? ` <span class="badge muted" style="margin-left:8px;font-size:11px;opacity:0.75;">${t("settings.storeHiddenBadge")}</span>` : "";
+
     return row(
-      `${storeLogo(id, 18, "settings-store-logo")}${STORE_LABELS[id]}`,
+      `<div style="display:flex;align-items:center;gap:4px;${hidden ? "opacity:0.6;" : ""}">${storeLogo(id, 18, "settings-store-logo")}<span>${STORE_LABELS[id]}</span>${statusBadge}</div>`,
       null,
-      `<label class="switch"><input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} /><span class="track"></span></label>`,
+      controls,
     );
-  }).join("");
+  }).join("") +
+  `<div class="store-order-footer">
+    <button type="button" class="btn ghost small" data-act="store-order-reset">
+      ${icon("refresh", 13)} ${t("settings.storeResetOrder")}
+    </button>
+  </div>`;
 
   return (
     group(perfRows, t("settings.storePerfGroupTitle"), infoBox("settings.storePerfNote")) +
-    group(tabsRows, t("settings.secStoreTabs"), infoBox("settings.storeTabsNote")) +
+    group(tabsRows, t("settings.secStoreTabs"), infoBox("settings.storeOrderNote")) +
     group(
       row(t("settings.storeCacheTitle"), t("settings.storeCacheDesc"), ""),
       t("settings.storeCacheGroupTitle"),
