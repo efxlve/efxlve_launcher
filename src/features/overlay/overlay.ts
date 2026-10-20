@@ -312,6 +312,7 @@ let webVoice: WebVoiceState | null = null;
 let mediaPollTimer: number | null = null;
 let clockTimer: number | null = null;
 let gamepadRaf: number | null = null;
+let gamepadWakeTimer: number | null = null;
 
 /* ---------- Helpers ---------- */
 
@@ -5209,6 +5210,12 @@ function wireEvents(): void {
   window.addEventListener("mousemove", onMouseActivity);
   document.addEventListener("mousedown", onMouseActivity);
 
+  // A controller can be connected after the panel opened; wake the idle poll
+  // immediately instead of waiting for the 250ms fallback.
+  window.addEventListener("gamepadconnected", () => {
+    if (!document.hidden) scheduleGamepadFrame();
+  });
+
   // The window is hidden while the panel is closed: rAF pauses and the pad
   // state (prevButtons) goes stale. Suppress input briefly on every re-show so
   // the button that opened the panel cannot close it on the first frame.
@@ -5438,9 +5445,22 @@ function goBack(): void {
 }
 
 function scheduleGamepadFrame(): void {
+  if (gamepadWakeTimer !== null) {
+    window.clearTimeout(gamepadWakeTimer);
+    gamepadWakeTimer = null;
+  }
   if (gamepadRaf === null && !document.hidden) {
     gamepadRaf = requestAnimationFrame(pollGamepadLoop);
   }
+}
+
+/** No pad connected: check again shortly instead of waking the GPU at 60 Hz. */
+function scheduleGamepadWake(): void {
+  if (gamepadRaf !== null || gamepadWakeTimer !== null) return;
+  gamepadWakeTimer = window.setTimeout(() => {
+    gamepadWakeTimer = null;
+    scheduleGamepadFrame();
+  }, 250);
 }
 
 function pollGamepadLoop(): void {
@@ -5457,7 +5477,7 @@ function pollGamepadLoop(): void {
       topbarPadEl.style.display = "none";
     }
     prevButtons = [];
-    scheduleGamepadFrame();
+    scheduleGamepadWake();
     return;
   }
 
@@ -5588,6 +5608,10 @@ function stopOverlayLoops(): void {
   if (gamepadRaf !== null) {
     cancelAnimationFrame(gamepadRaf);
     gamepadRaf = null;
+  }
+  if (gamepadWakeTimer !== null) {
+    window.clearTimeout(gamepadWakeTimer);
+    gamepadWakeTimer = null;
   }
   prevButtons = [];
 }

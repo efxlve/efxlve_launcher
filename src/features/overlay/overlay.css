@@ -5462,14 +5462,14 @@
   animation: ov-clip-pulse 1.6s ease-in-out infinite;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1120px) {
   .ov-topbar { gap: 4px; }
   .ov-topbar-btn { padding: 0 8px; }
   .ov-topbar-btn-label { display: none; }
 }
 
 
-@media (max-width: 1100px) {
+@media (max-width: 1120px) {
   .ov-topbar-btn.ov-controller-focus .ov-topbar-btn-label { display: inline; }
 }
 
