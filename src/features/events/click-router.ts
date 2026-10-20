@@ -109,7 +109,7 @@ import { toggleFullscreenMode } from "../gamepad/fullscreen-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeSteamDbEnabled, setStoreSteamDb, storeAugmentedSteamEnabled, setStoreAugmentedSteam, getAugmentedSteamOption, setAugmentedSteamOption, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -142,6 +142,21 @@ import { handleScreenshotAction } from "./handlers/screenshot-handlers";
 import { handleScreenshotsPageAction } from "./handlers/screenshots-page-handlers";
 import { handleScreenshotEditorAction } from "../screenshots/screenshot-editor";
 import { handleSteamAction } from "./handlers/steam-handlers";
+
+type StoreExtensionState = Record<string, { id: string; name: string; version: string; installed: boolean; enabled: boolean; sizeBytes: number }>;
+
+/** Enables or disables a real extension; the next store view loads the change. */
+function toggleStoreExtension(id: "steamdb" | "augmented_steam"): void {
+  if (!isTauri) return;
+  const ext = id === "steamdb" ? S.storeExtensionsState?.steamdb : S.storeExtensionsState?.augmentedSteam;
+  if (!ext?.installed) return;
+  invoke<StoreExtensionState>("set_store_extension_enabled", { id, enabled: !ext.enabled })
+    .then((state) => {
+      S.storeExtensionsState = state;
+      render();
+    })
+    .catch((e: unknown) => toast(String(e), "err"));
+}
 
 document.addEventListener("click", (e) => {
   const targetEl = e.target as HTMLElement;
@@ -898,30 +913,15 @@ document.addEventListener("click", (e) => {
     if (isTauri) invoke("destroy_store_view").catch(() => {});
     render();
   } else if (act === "toggle-store-steamdb") {
-    setStoreSteamDb(!storeSteamDbEnabled());
-    if (isTauri) invoke("destroy_store_view").catch(() => {});
-    render();
-  } else if (act === "toggle-steamdb-settings") {
-    S.steamDbSettingsOpen = !S.steamDbSettingsOpen;
-    render();
-  } else if (act === "toggle-steamdb-sub-option") {
-    const key = t.dataset.key;
-    if (key) {
-      const cur = localStorage.getItem('steamdb_opt_' + key) !== 'false';
-      localStorage.setItem('steamdb_opt_' + key, String(!cur));
-      if (isTauri) invoke("destroy_store_view").catch(() => {});
-      render();
-    }
+    toggleStoreExtension("steamdb");
   } else if (act === "download-store-extension") {
     const id = t.dataset.id;
     if (id && isTauri) {
       S.storeExtensionDownloading = id;
       render();
-      invoke<Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }>>("download_store_extension", { id })
+      invoke<StoreExtensionState>("download_store_extension", { id })
         .then((state) => {
           S.storeExtensionsState = state;
-          if (id === "steamdb") setStoreSteamDb(true);
-          if (id === "augmented_steam") setStoreAugmentedSteam(true);
           toast(i18nT("settings.storeExtensionDownloadedToast"), "ok");
         })
         .catch((e: unknown) => {
@@ -935,11 +935,9 @@ document.addEventListener("click", (e) => {
   } else if (act === "uninstall-store-extension") {
     const id = t.dataset.id;
     if (id && isTauri) {
-      invoke<Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }>>("uninstall_store_extension", { id })
+      invoke<StoreExtensionState>("uninstall_store_extension", { id })
         .then((state) => {
           S.storeExtensionsState = state;
-          if (id === "steamdb") setStoreSteamDb(false);
-          if (id === "augmented_steam") setStoreAugmentedSteam(false);
           toast(i18nT("settings.storeExtensionUninstalledToast"), "ok");
           render();
         })
@@ -948,20 +946,7 @@ document.addEventListener("click", (e) => {
         });
     }
   } else if (act === "toggle-store-augmented-steam") {
-    setStoreAugmentedSteam(!storeAugmentedSteamEnabled());
-    if (isTauri) invoke("destroy_store_view").catch(() => {});
-    render();
-  } else if (act === "toggle-augmented-steam-settings") {
-    S.augmentedSteamSettingsOpen = !S.augmentedSteamSettingsOpen;
-    render();
-  } else if (act === "toggle-augmented-steam-sub-option") {
-    const key = t.dataset.key;
-    if (key) {
-      const cur = getAugmentedSteamOption(key);
-      setAugmentedSteamOption(key, !cur);
-      if (isTauri) invoke("destroy_store_view").catch(() => {});
-      render();
-    }
+    toggleStoreExtension("augmented_steam");
   } else if (act === "toggle-store-prewarm") {
     setStorePrewarm(!storePrewarmEnabled());
     render();

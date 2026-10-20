@@ -86,7 +86,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, storeSteamDbEnabled, storeAugmentedSteamEnabled, getSteamTryRate, getSteamDbOption, getAugmentedSteamOption } from "../store/store-view";
+import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import { steamGetApiKey, steamStatus } from "../../steam";
@@ -716,7 +716,7 @@ function pageSizeSelect(): string {
 
 export function loadStoreExtensionsState(): void {
   if (!isTauri) return;
-  invoke<Record<string, { id: string; name: string; version: string; installed: boolean; sizeBytes: number }>>("get_store_extensions_state")
+  invoke<Record<string, { id: string; name: string; version: string; installed: boolean; enabled: boolean; sizeBytes: number }>>("get_store_extensions_state")
     .then(st => {
       S.storeExtensionsState = st;
       if (S.view === "settings") render();
@@ -747,7 +747,6 @@ function renderStores(): string {
 
   const epicAssistant = storeEpicAssistantEnabled();
   const steamCurrency = storeSteamCurrencyEnabled();
-  const steamDb = storeSteamDbEnabled();
   const steamRate = getSteamTryRate();
 
   const epicDesc = `${t("settings.storeEpicAssistantDesc")}<div style="margin-top:4px;font-size:11.5px;color:var(--text-muted);opacity:0.75;">${t("settings.storeAuthorEfxlve")}</div>`;
@@ -763,6 +762,7 @@ function renderStores(): string {
 
   const sdbExt = S.storeExtensionsState?.steamdb;
   const sdbInstalled = sdbExt ? sdbExt.installed : false;
+  const steamDb = sdbExt?.enabled ?? false;
   const sdbDownloading = S.storeExtensionDownloading === "steamdb";
 
   let sdbControl: string;
@@ -784,57 +784,17 @@ function renderStores(): string {
       </div>`;
   }
 
-  const subOpts = [
-    { key: "steamdb-lowest-price", label: t("settings.storeSteamDbOptLowestPrice") },
-    { key: "online-stats", label: t("settings.storeSteamDbOptOnlineStats") },
-    { key: "steamdb-rating", label: t("settings.storeSteamDbOptRating") },
-    { key: "button-app", label: t("settings.storeSteamDbOptButtonApp") },
-    { key: "button-pcgw", label: t("settings.storeSteamDbOptButtonPcgw") },
-    { key: "steamdb-dev-pub-links", label: t("settings.storeSteamDbOptDevPub") },
-    { key: "link-subid", label: t("settings.storeSteamDbOptSubid") },
-    { key: "steamdb-last-update", label: t("settings.storeSteamDbOptLastUpdate") },
-    { key: "enhancement-hide-install-button", label: t("settings.storeSteamDbOptHideInstall") },
-  ];
-
-  const steamDbConfigureBtn = (sdbInstalled && steamDb) ? `
-    <div style="margin-top:8px;">
-      <button type="button" class="btn ghost tiny ${S.steamDbSettingsOpen ? "active" : ""}" data-act="toggle-steamdb-settings" style="font-size:11.5px;padding:3px 10px;border-radius:5px;">
-        ${icon("sliders", 11)} <span>${S.steamDbSettingsOpen ? t("settings.storeSteamDbHideOptions") : t("settings.storeSteamDbConfigure")}</span> ${icon(S.steamDbSettingsOpen ? "chevron-up" : "chevron-down", 10)}
-      </button>
-    </div>` : "";
-
   const steamDbDesc = `
     ${t("settings.storeSteamDbDesc")}
     <div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
       <span>${t("settings.storeSteamDbAuthor")}</span>
       <a href="https://github.com/SteamDatabase/BrowserExtension" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("github", 12)} GitHub ${icon("external", 10)}</a>
       <a href="https://steamdb.info/extension/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("globe", 12)} steamdb.info ${icon("external", 10)}</a>
-    </div>
-    ${steamDbConfigureBtn}`;
+    </div>`;
 
-  const steamDbSubPanel = (sdbInstalled && S.steamDbSettingsOpen && steamDb) ? `
-    <div style="margin: 2px 14px 14px 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: var(--r-sm, 6px);">
-      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);">
-        <span style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">
-          ${t("settings.storeSteamDbOptionsTitle")}
-        </span>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px;">
-        ${subOpts.map(opt => `
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line);">
-            <span style="font-size: 12px; color: var(--text-normal); font-weight: 500;">${opt.label}</span>
-            <label class="switch">
-              <input type="checkbox" data-act="toggle-steamdb-sub-option" data-key="${opt.key}" ${getSteamDbOption(opt.key) ? "checked" : ""} />
-              <span class="track"></span>
-            </label>
-          </div>
-        `).join("")}
-      </div>
-    </div>` : "";
-
-  const augmentedSteam = storeAugmentedSteamEnabled();
   const asExt = S.storeExtensionsState?.augmentedSteam;
   const asInstalled = asExt ? asExt.installed : false;
+  const augmentedSteam = asExt?.enabled ?? false;
   const asDownloading = S.storeExtensionDownloading === "augmented_steam";
 
   let asControl: string;
@@ -856,60 +816,19 @@ function renderStores(): string {
       </div>`;
   }
 
-  const asSubOpts = [
-    { key: "as-hltb", label: t("settings.storeAugmentedSteamOptHltb") },
-    { key: "as-itad-prices", label: t("settings.storeAugmentedSteamOptItad") },
-    { key: "as-opencritic", label: t("settings.storeAugmentedSteamOptOpenCritic") },
-    { key: "as-metauser", label: t("settings.storeAugmentedSteamOptMetaUser") },
-    { key: "as-drm-warnings", label: t("settings.storeAugmentedSteamOptDrm") },
-    { key: "as-wsgf", label: t("settings.storeAugmentedSteamOptWsgf") },
-  ];
-
-  const augmentedSteamConfigureBtn = (asInstalled && augmentedSteam) ? `
-    <div style="margin-top: 8px;">
-      <button class="btn ghost small" data-act="toggle-augmented-steam-settings" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 10px;height:26px;">
-        ${icon("sliders", 12)}
-        <span>${t("settings.storeAugmentedSteamOptionsTitle")}</span>
-        <span style="font-size:10px;opacity:0.7;">${S.augmentedSteamSettingsOpen ? "▲" : "▼"}</span>
-      </button>
-    </div>` : "";
-
   const augmentedSteamDesc = `
     ${t("settings.storeAugmentedSteamDesc")}
     <div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
       <span>${t("settings.storeAugmentedSteamAuthor")}</span>
       <a href="https://github.com/IsThereAnyDeal/AugmentedSteam" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("github", 12)} GitHub ${icon("external", 10)}</a>
       <a href="https://augmentedsteam.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("globe", 12)} augmentedsteam.com ${icon("external", 10)}</a>
-    </div>
-    ${augmentedSteamConfigureBtn}`;
-
-  const augmentedSteamSubPanel = (asInstalled && S.augmentedSteamSettingsOpen && augmentedSteam) ? `
-    <div style="margin: 2px 14px 14px 14px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: var(--r-sm, 6px);">
-      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);">
-        <span style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">
-          ${t("settings.storeAugmentedSteamOptionsTitle")}
-        </span>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px;">
-        ${asSubOpts.map(opt => `
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line);">
-            <span style="font-size: 12px; color: var(--text-normal); font-weight: 500;">${opt.label}</span>
-            <label class="switch">
-              <input type="checkbox" data-act="toggle-augmented-steam-sub-option" data-key="${opt.key}" ${getAugmentedSteamOption(opt.key) ? "checked" : ""} />
-              <span class="track"></span>
-            </label>
-          </div>
-        `).join("")}
-      </div>
-    </div>` : "";
+    </div>`;
 
   const extRows =
     row(t("settings.storeEpicAssistantTitle"), epicDesc, toggle("toggle-store-epic-assistant", epicAssistant)) +
     row(t("settings.storeSteamCurrencyTitle"), currencyDesc, toggle("toggle-store-steam-currency", steamCurrency)) +
     row(t("settings.storeSteamDbTitle"), steamDbDesc, sdbControl) +
-    (sdbInstalled ? steamDbSubPanel : "") +
-    row(t("settings.storeAugmentedSteamTitle"), augmentedSteamDesc, asControl) +
-    (asInstalled ? augmentedSteamSubPanel : "");
+    row(t("settings.storeAugmentedSteamTitle"), augmentedSteamDesc, asControl);
 
   const perfRows =
     row(t("settings.storePrewarmTitle"), t("settings.storePrewarmDesc"), toggle("toggle-store-prewarm", prewarm)) +

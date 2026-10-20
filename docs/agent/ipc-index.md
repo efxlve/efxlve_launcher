@@ -111,6 +111,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `discord_voice_watch_start` | `discordVoiceWatchStart({ ... })` | `src-tauri/src/discord_rpc.rs` |
 | `discord_voice_watch_stop` | `discordVoiceWatchStop({ ... })` | `src-tauri/src/discord_rpc.rs` |
 | `discord_web_voice_state` | `discordWebVoiceState({ ... })` | `src-tauri/src/discord_host.rs` |
+| `download_store_extension` | `downloadStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
 | `ea_login_hide` | `eaLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_login_open` | `eaLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `egl_launcher_present` | `eglLauncherPresent({ ... })` | `src-tauri/src/egl_removal.rs` |
@@ -221,6 +222,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_uninstall_game` | `epicUninstallGame({ ... })` | `src-tauri/src/legendary/transfers/uninstall.rs` |
 | `epic_verify_game` | `epicVerifyGame({ ... })` | `src-tauri/src/legendary/commands/verify.rs` |
 | `game_watch_installed` | `gameWatchInstalled({ ... })` | `src-tauri/src/game_running.rs` |
+| `get_store_extensions_state` | `getStoreExtensionsState({ ... })` | `src-tauri/src/store_host.rs` |
 | `gog_auth_code` | `gogAuthCode({ ... })` | `src-tauri/src/gogdl/commands.rs` |
 | `gog_auth_status` | `gogAuthStatus({ ... })` | `src-tauri/src/gogdl/commands.rs` |
 | `gog_cached_library` | `gogCachedLibrary({ ... })` | `src-tauri/src/gogdl/commands.rs` |
@@ -316,11 +318,14 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_show` | `overlayShow({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_show_launcher` | `overlayShowLauncher({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
+| `prewarm_store_view` | `prewarmStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `resize_store_view` | `resizeStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `screenshot_scan_roots` | `screenshotScanRoots({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `screenshot_share_discord` | `screenshotShareDiscord({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `screenshot_webhook_info` | `screenshotWebhookInfo({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `set_store_extension_enabled` | `setStoreExtensionEnabled({ ... })` | `src-tauri/src/store_host.rs` |
 | `set_store_palette_hold` | `setStorePaletteHold({ ... })` | `src-tauri/src/store_host.rs` |
+| `set_store_warm_limit` | `setStoreWarmLimit({ ... })` | `src-tauri/src/store_host.rs` |
 | `shared_library_index` | `sharedLibraryIndex({ ... })` | `src-tauri/src/shared_library.rs` |
 | `show_notif_overlay` | `showNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `show_store_view` | `showStoreView({ ... })` | `src-tauri/src/store_host.rs` |
@@ -379,5 +384,6 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `storage_path_size` | `storagePathSize({ ... })` | `src-tauri/src/storage_usage.rs` |
 | `task_manager_snapshot` | `taskManagerSnapshot({ ... })` | `src-tauri/src/task_manager.rs` |
 | `task_manager_stop` | `taskManagerStop({ ... })` | `src-tauri/src/task_manager.rs` |
+| `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
 | `xbox_login_hide` | `xboxLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_login_open` | `xboxLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |

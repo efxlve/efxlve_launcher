@@ -23,6 +23,7 @@ url = "2"
 base64 = "0.22"
 discord-rich-presence = "1.1"
 flate2 = "1"
+zip = { version = "4", default-features = false, features = ["deflate-flate2"] }
 tar = "0.4"
 xz2 = "0.1"
 zstd = "0.13"
