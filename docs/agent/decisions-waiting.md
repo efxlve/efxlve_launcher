@@ -227,8 +227,12 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   yokken oyun kolu döngüsü 250 ms'de bir kontrol ediyor. Overlay yüzeylerinden
   blur kaldırıldı. Gerçek oyun sanatıyla 1280×800 ve 1920×1080 görsel turu
   sahibe kalıyor.
+- **TV oyun merkezi:** ana ekranla aynı dil için başlığın üstüne "Oyun Merkezi"
+  etiketi, beyaz aktif sekme ve kısaltılmış "İnceleme" istatistiği eklendi;
+  sıradaki kupalar kartı ikinci bir çerçevenin içinden çıkarıldı. Profil ve
+  mağaza/indirme panelleri eski düzenini koruyor.
 - **Dokunulmayan sahip kararları:** şeffaflık/düz arka plan (TODO §2), TV
-  hub/profil/panellerin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
+  profil/panellerin görsel turu (TODO §1), GPU kaydedici (TODO §8) ve sürüm
   hazırlama/yayınlama bilerek değiştirilmedi.
 
 ## Sırada (yokluğunda devam edenler)

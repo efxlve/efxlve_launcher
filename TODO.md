@@ -33,9 +33,12 @@ real Discord account and a final in-game visual check with real art.
   themed desktop cannot wash out the 10-foot surface. Category changes now
   repaint the shelf and its heading, including when the header is driven by the
   controller rather than L1/R1.
-- Still owner-only: the actual look at 1920 px with real artwork, and whether the
-  TV hub/profile/panels need the same visual pass. Those older surfaces keep
-  their layout for now.
+- The **TV game hub** got the first consistency pass: an "Oyun Merkezi" kicker,
+  white active tab pill, shorter "İnceleme" stat label and the achievements
+  card no longer nested inside a second bordered box. Profile and the store /
+  download panels keep their layout for now.
+- Still owner-only: the actual look at 1920 px with real artwork, and whether
+  the profile and panels need the same visual pass.
 
 ## 0. Game page: revision after 0.1.30 (owner asked for this)
 
