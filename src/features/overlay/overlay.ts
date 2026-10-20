@@ -1277,6 +1277,10 @@ function shellHtml(): string {
         <button class="ov-topbar-btn ov-topbar-settings-btn ${isWidgetOpen("settings") ? "active" : ""}" data-ov-widget-toggle="settings" title="${esc(t("overlay.tabSettings"))}">
           ${icon("settings", 15)}
         </button>
+
+        <button class="ov-topbar-btn ov-topbar-close-btn" data-ov="close" title="${esc(t("common.close"))}">
+          ${icon("x", 15)}
+        </button>
       </header>
 
       <!-- Floating Widgets Container -->

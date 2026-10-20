@@ -437,6 +437,11 @@
   white-space: nowrap;
 }
 
+.ov-topbar-close-btn:hover {
+  background: rgba(229, 72, 77, 0.16);
+  color: var(--err);
+}
+
 .ov-topbar-clock {
   font-variant-numeric: tabular-nums;
   font-size: 13px;
@@ -5462,14 +5467,14 @@
   animation: ov-clip-pulse 1.6s ease-in-out infinite;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1160px) {
   .ov-topbar { gap: 4px; }
   .ov-topbar-btn { padding: 0 8px; }
   .ov-topbar-btn-label { display: none; }
 }
 
 
-@media (max-width: 1120px) {
+@media (max-width: 1160px) {
   .ov-topbar-btn.ov-controller-focus .ov-topbar-btn-label { display: inline; }
 }
 
