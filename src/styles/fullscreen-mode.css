@@ -12,7 +12,10 @@ body.fullscreen-mode .win-controls {
 /* Slightly scale up cards and spacing in Fullscreen Mode for couch / big screen viewing */
 body.fullscreen-mode .lib-pager {
   margin-bottom: 40px !important;
-  padding-right: 64px !important;
+}
+
+body.fullscreen-mode:has(.lib-pager) #totop {
+  bottom: 84px !important;
 }
 
 body.fullscreen-mode .pgrid {
