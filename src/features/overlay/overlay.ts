@@ -3450,7 +3450,12 @@ function repaintDiscord(): void {
     ) {
       if (pickerMode === "friends") repaintFriendsList();
     } else {
+      const scrollTop = social?.querySelector<HTMLElement>(".ov-dc-friends-scroll")?.scrollTop ?? 0;
       renderDiscordSocial();
+      if (scrollTop > 0) {
+        const next = viewEl("discord")?.querySelector<HTMLElement>(".ov-dc-friends-scroll");
+        if (next) next.scrollTop = scrollTop;
+      }
     }
   }
   if (isWidgetOpen("chat")) repaintDiscordChat();
@@ -3865,21 +3870,24 @@ function channelsBodyHtml(): string {
         <span>${esc(t("overlay.discordNoChannel"))}</span>
       </div>`;
   }
-  const groups = new Map<string, typeof channels>();
+  const groups = new Map<string, { label: string; items: typeof channels }>();
   for (const channel of channels) {
-    const key = channel.guild || t("overlay.discordChannelsShort");
-    const list = groups.get(key) ?? [];
-    list.push(channel);
-    groups.set(key, list);
+    const key = channel.guildId || `name:${channel.guild}`;
+    const group = groups.get(key) ?? {
+      label: channel.guild || t("overlay.discordChannelsShort"),
+      items: [],
+    };
+    group.items.push(channel);
+    groups.set(key, group);
   }
-  return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+  return [...groups.values()]
+    .sort((a, b) => a.label.localeCompare(b.label))
     .map(
-      ([guild, list]) => `
+      (group) => `
       <div class="ov-dc-channel-group">
-        <div class="ov-dc-group-header"><span>${esc(guild)}</span></div>
+        <div class="ov-dc-group-header"><span>${esc(group.label)}</span></div>
         <div class="ov-dc-group-items">
-          ${list
+          ${group.items
             .map(
               (channel) => `
             <button
