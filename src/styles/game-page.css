@@ -241,6 +241,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   color: var(--text-2);
 }
 .gp-cloud-main svg { flex-shrink: 0; color: var(--text-3); }
+.gp-cloud-main.is-provider { color: var(--text); font-weight: 600; }
 .gp-cloud-main.ok { color: var(--ok, #3dd68c); }
 .gp-cloud-main.ok svg { color: var(--ok, #3dd68c); }
 .gp-cloud-note { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-3); }

@@ -247,7 +247,7 @@ function cloudWidgetBody(s: EpicSummary, partner: ThirdPartyLauncherInfo | null)
       main = `${provider.name} · ${status.label}`;
     }
   }
-  return `<div class="gp-cloud-main${status.synced ? " ok" : ""}">${icon("cloud", 16)}<span>${esc(main)}</span></div>
+  return `<div class="gp-cloud-main${status.synced ? " ok" : ""}${provider.external ? " is-provider" : ""}">${icon("cloud", 16)}<span>${esc(main)}</span></div>
     <p class="gp-cloud-note">${esc(note)}</p>`;
 }
 
