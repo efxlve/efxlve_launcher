@@ -63,6 +63,8 @@ Written 2026-10-19, after the game-page redesign and the screenshots/clips work.
 | Overlay, saved layout | Deliberately saved `{x:8,y:8}` positions are treated as the old hidden-window clamp and replaced by the tiled defaults; dragging cannot put a header under the command bar or a widget below the viewport |
 | Overlay, popover | The recent-games popover opens below the command bar and is not clipped by the topbar |
 | Overlay, hidden work | Clock/media/clip intervals and the gamepad rAF are stopped by `overlay-close` and by `document.hidden`; with no controller the loop falls back to a 250 ms check |
+| Overlay, Discord first screen | With no SDK session, friends or call, the social widget shows one centered connect card (Discord mark, "Bağlı değil", feature row, connect + open Discord) instead of the old profile row and dead empty list; the chat widget uses the same card. The card fits the default 330×540 widget |
+| Overlay, Discord colours | Outgoing message, unread count and send button use the launcher accent/on-accent tokens; composer focus uses the accent border; no Discord purple remains in the overlay CSS |
 | TV hub | Header strip, stage, shelf, focus ring, empty category (see TODO §1) |
 | Gallery cap note | Appears at 300 captures with the right count, stays away below it |
 | Live tests | All 26 `#[ignore]`d ones; the expected reds are listed in `docs/agent/README.md` |

@@ -11,8 +11,10 @@ music right), old `8/8` positions are repaired, and drag/clamp ignores the 1x1
 hidden window. The clock, media poll, clip poll and gamepad rAF stop with the
 hidden panel; the gamepad loop checks every 250 ms instead of every frame
 when no controller is connected. Blur was removed from the overlay surfaces.
-The remaining overlay work is the launcher-side Discord panel and a final
-in-game visual check with real art.
+The overlay Discord tab now has a single connect surface instead of a profile
+row above a dead friend list; Discord purple was replaced by the launcher's
+monochrome accent. Remaining overlay work is the connected-state check with a
+real Discord account and a final in-game visual check with real art.
 
 ## 0a. Themes and TV home (owner asked, 2026-10-20)
 
