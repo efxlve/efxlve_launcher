@@ -7,7 +7,7 @@
   top: 0;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - var(--winbar-h, 34px) - var(--header-h, 60px) - 64px);
 }
 .settings-nav-header {
   flex-shrink: 0;
@@ -22,6 +22,7 @@
   flex-direction: column;
   gap: 2px;
   padding-right: 6px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
 }
 .settings-nav-scroll::-webkit-scrollbar {
@@ -44,7 +45,7 @@
 }
 .settings-nav-item:hover { background: var(--surface-1); color: var(--text); }
 .settings-nav-item.active { background: var(--surface-2); color: var(--text); }
-.settings-panel { min-width: 0; max-width: 920px; }
+.settings-panel { min-width: 0; max-width: 920px; padding-bottom: 48px; }
 .settings-accounts { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
 .settings-accounts .acc-actions { width: 100%; }
 .settings-accounts .acc-actions .btn.danger { margin-left: auto; }
@@ -464,14 +465,7 @@
 .compat-state.ok { color: var(--text); }
 .compat-state.muted { color: var(--text-3); }
 .compat-note {
-  margin: 0 0 8px;
-  padding: 9px 13px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm, 6px);
-  background: var(--surface-2);
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--text-2);
+  margin: 0 0 10px;
 }
 .compat-meta { color: var(--text-3); font-variant-numeric: tabular-nums; }
 .compat-progress-wrap { display: flex; align-items: center; gap: 8px; margin-top: 8px; }

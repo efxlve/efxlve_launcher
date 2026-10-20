@@ -52,7 +52,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.6) 60%, var(--surface-1) 100%);
+  background: linear-gradient(180deg, transparent 72%, rgba(0, 0, 0, 0.28) 100%);
+  pointer-events: none;
 }
 
 .profile-hero-banner.is-plain {
