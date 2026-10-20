@@ -767,15 +767,24 @@ body.tv-mode .tv-osk-key:focus {
 }
 
 .tv-hub-tab.active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.28);
+  color: #05070a;
+  background: #ffffff;
+  border-color: #ffffff;
 }
 
 .tv-hub-hero {
   position: relative;
   z-index: 2;
   padding: 24px 48px 32px;
+}
+
+.tv-hub-kicker {
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .tv-hub-title {
@@ -872,6 +881,12 @@ body.tv-mode .tv-osk-key:focus {
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--r-md, 8px);
   padding: 22px;
+  margin-bottom: 20px;
+}
+
+/* The achievements component already brings its own card; do not nest it in
+   another bordered box. */
+.tv-hub-plain {
   margin-bottom: 20px;
 }
 

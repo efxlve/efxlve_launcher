@@ -249,7 +249,7 @@ export function renderConsoleStatCards(s: EpicSummary): string {
       </div>
 
       <div class="tv-stat-card">
-        <span class="tv-stat-title">${icon("star", 13)} ${t("critic.title")}</span>
+        <span class="tv-stat-title">${icon("star", 13)} ${t("drawer.statReview")}</span>
         <div class="tv-stat-value-group">
           <span class="tv-stat-value tabular-nums">${esc(criticVal)}</span>
           ${criticSub ? `<span class="tv-stat-sub">${esc(criticSub)}</span>` : ""}
@@ -293,7 +293,7 @@ function renderOverviewTab(s: EpicSummary): string {
             <h3 class="tv-hub-box-title">${icon("info", 15)} ${t("drawer.overview")}</h3>
             <div class="tv-overview-body">${descHtml}</div>
           </div>
-          ${nextAchHtml ? `<div class="tv-hub-box">${nextAchHtml}</div>` : ""}
+          ${nextAchHtml ? `<div class="tv-hub-plain">${nextAchHtml}</div>` : ""}
         </div>
         <div class="tv-overview-aside">
           ${featuresHtml ? `<div class="tv-hub-box">${featuresHtml}</div>` : ""}
@@ -555,6 +555,7 @@ export function renderTvGameHub(s: EpicSummary, activeTab: TvHubTab = "overview"
       </header>
 
       <section class="tv-hub-hero">
+        <div class="tv-hub-kicker">${esc(t("tv.hudDetails"))}</div>
         <h1 class="tv-hub-title">${esc(s.title)}</h1>
         <div class="tv-hub-cta-bar">
           ${tvHubPrimaryAction(s)}
