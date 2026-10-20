@@ -3794,6 +3794,9 @@ function socialFriendsListHtml(): string {
       <div class="ov-dc-empty-list">
         ${icon("users", 24)}
         <span>${esc(sdkState.status === "ready" ? t("overlay.discordFriendsEmpty") : t("overlay.discordFriendsEmptyHint"))}</span>
+        <button class="btn ghost small" data-ov="discord-picker" data-mode="add">
+          ${icon("plus", 12)} ${esc(t("overlay.discordAddFriend"))}
+        </button>
       </div>`;
   }
 
@@ -3801,6 +3804,9 @@ function socialFriendsListHtml(): string {
     return `
       <div class="ov-dc-empty-list">
         <span>${esc(t("overlay.discordNoResults"))}</span>
+        <button class="btn ghost small" data-ov="discord-clear-filter">
+          ${esc(t("lib.clearSearch"))}
+        </button>
       </div>`;
   }
 

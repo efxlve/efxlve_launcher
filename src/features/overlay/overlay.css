@@ -5029,6 +5029,10 @@
   opacity: 1;
 }
 
+.ov-dc-empty-list .btn {
+  margin-top: 6px;
+}
+
 .ov-dc-empty-list {
   display: flex;
   flex-direction: column;
