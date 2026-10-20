@@ -29,9 +29,10 @@ and a final in-game visual check with real art.
 - **White Mode** and **Frutiger Aero** are now real surface themes next to
   Siyah and Yumuşak Siyah in Settings → Görünüm ve Dil; each option carries a
   colour swatch so the palette is visible before selecting it. They replace the token
-  palette in `src/styles/themes.css`; Aero adds the glossy sky/glass treatment
-  on top of the same tokens. Its chrome uses opaque gradient tints now; no
-  `backdrop-filter` remains in the app. The choice is stored under
+  palette in `src/styles/themes.css`; Aero now draws its own SVG sky/hills scene
+  (`src/assets/aero-scene.svg`) with glossy glass chrome, split-gradient buttons
+  and a reflected-cover hover. Its chrome uses gradient tints, not
+  `backdrop-filter`; none remains in the app. The choice is stored under
   `efxlve-surface`, applied before the first paint from `index.html`, and
   restored on reload.
 - The **game page hero bar** now uses the otherwise empty right side for a

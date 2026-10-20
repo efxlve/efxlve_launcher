@@ -220,7 +220,9 @@ bağladım**, **neyi bekletiyorum**, **neden**.
   okuyor; beyaz temada segment düğmesi siyah, Aero'da mavi tonlu seçili görünüyor.
   Dört seçenek de kendi renk yuvarlağını gösteriyor.
   Aero'nun üst bar/kenar çubuğu artık blur kullanmıyor; aynı görünüm opak beyaz
-  gradyanla korunuyor.
+  gradyanla korunuyor. Aero ayrıca kendi SVG gökyüzü/tepe sahnesini
+  (`src/assets/aero-scene.svg`) kullanıyor; cam chrome, parlak mavi bölünmüş
+  gradyan düğmeler ve kapak hover yansıması bu sahnenin üstünde duruyor.
 - **TV ana ekranı:** komut çubuğu, sahne ve raf yeniden düzenlendi; raf başlığı,
   oyun adları ve odak etiketi eklendi. TV paleti `body.tv-mode` üzerinde sabit
   koyu; masaüstünde Beyaz/Aero seçili olsa bile hub kartları beyaza dönmüyor.
