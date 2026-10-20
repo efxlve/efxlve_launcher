@@ -55,6 +55,40 @@
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
 }
 
+/* Dark media overlays and popovers deliberately keep their own dark surface.
+   Their text must not inherit the light theme's dark --text token. */
+:root[data-surface="white"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name),
+:root[data-surface="aero"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name) {
+  color: #f8fafc;
+}
+
+:root[data-surface="white"] .store-shot-name,
+:root[data-surface="aero"] .store-shot-name {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+:root[data-surface="white"] .profile-banner-store-pill,
+:root[data-surface="aero"] .profile-banner-store-pill {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+:root[data-surface="white"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer),
+:root[data-surface="aero"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer) {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+:root[data-surface="white"] .gp-version-menu .gp-store-row,
+:root[data-surface="aero"] .gp-version-menu .gp-store-row {
+  color: #f8fafc;
+}
+
+:root[data-surface="white"] .gp-version-menu .gp-store-sub,
+:root[data-surface="white"] .gp-version-menu .gp-store-trail,
+:root[data-surface="aero"] .gp-version-menu .gp-store-sub,
+:root[data-surface="aero"] .gp-version-menu .gp-store-trail {
+  color: rgba(248, 250, 252, 0.62);
+}
+
 /* ---------- Frutiger Aero ---------- */
 
 :root[data-surface="aero"] {
@@ -83,6 +117,18 @@
   --r-md: 16px;
   --shadow-pop: 0 18px 40px rgba(6, 70, 100, 0.22);
 }
+
+:root[data-surface="white"] :is(.pbadge.running, .pbadge.now),
+:root[data-surface="aero"] :is(.pbadge.running, .pbadge.now) {
+  color: var(--ok);
+}
+
+:root[data-surface="white"] .pbadge.update,
+:root[data-surface="aero"] .pbadge.update {
+  color: var(--warn);
+}
+
+:root[data-surface="aero"] .pbadge { color: #f8fafc; }
 
 :root[data-surface="aero"] body {
   background:
