@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Position de la notification",
   "settings.achPositionDesc": "Coin où apparaît la carte de notification en jeu.",
   "settings.achPositionTopLeft": "En haut à gauche",
+  "settings.achPositionCenterTop": "Haut centre",
+  "settings.achPositionCenterBottom": "Bas centre",
   "settings.achPositionTopRight": "En haut à droite",
   "settings.achPositionBottomLeft": "En bas à gauche",
   "settings.achPositionBottomRight": "En bas à droite",

@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "알림 위치",
   "settings.achPositionDesc": "게임 내 알림 카드가 표시될 위치입니다.",
   "settings.achPositionTopLeft": "왼쪽 위",
+  "settings.achPositionCenterTop": "가운데 위",
+  "settings.achPositionCenterBottom": "가운데 아래",
   "settings.achPositionTopRight": "오른쪽 위",
   "settings.achPositionBottomLeft": "왼쪽 아래",
   "settings.achPositionBottomRight": "오른쪽 아래",

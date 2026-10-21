@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Pozycja powiadomienia",
   "settings.achPositionDesc": "Róg, w którym pojawia się karta powiadomienia w grze.",
   "settings.achPositionTopLeft": "Lewy górny",
+  "settings.achPositionCenterTop": "Góra na środku",
+  "settings.achPositionCenterBottom": "Dół na środku",
   "settings.achPositionTopRight": "Prawy górny",
   "settings.achPositionBottomLeft": "Lewy dolny",
   "settings.achPositionBottomRight": "Prawy dolny",

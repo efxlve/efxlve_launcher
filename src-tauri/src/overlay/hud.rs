@@ -40,7 +40,8 @@ const NOTIF_BODY_PX: i32 = 13;
 const NOTIF_ALPHA: u8 = 242;
 static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(5200);
-/// 0 top-right, 1 top-left, 2 bottom-right, 3 bottom-left.
+/// 0 top-right, 1 top-left, 2 bottom-right, 3 bottom-left, 4 center-top,
+/// 5 center-bottom.
 static NOTIF_POSITION: AtomicU8 = AtomicU8::new(0);
 /// Text column: 16px pad + 32px icon disc + 14px gap.
 const NOTIF_TEXT_LEFT: i32 = 62;
@@ -50,8 +51,12 @@ fn notification_is_left(position: u8) -> bool {
     position == 1 || position == 3
 }
 
+fn notification_is_center(position: u8) -> bool {
+    position == 4 || position == 5
+}
+
 fn notification_is_bottom(position: u8) -> bool {
-    position >= 2
+    position == 2 || position == 3 || position == 5
 }
 
 /// Card rect in the requested monitor corner. Pure math, unit-tested.
@@ -69,6 +74,8 @@ fn notif_rect(
     let width = (NOTIF_TEXT_LEFT + NOTIF_TEXT_RIGHT + text_width).clamp(NOTIF_MIN_WIDTH, max_width);
     let x = if notification_is_left(position) {
         mon_x + NOTIF_MARGIN
+    } else if notification_is_center(position) {
+        mon_x + (mon_w as i32 - width) / 2
     } else {
         mon_x + mon_w as i32 - width - NOTIF_MARGIN
     };
@@ -113,6 +120,8 @@ pub fn set_notification_position(position: &str) {
         "top-left" => 1,
         "bottom-right" => 2,
         "bottom-left" => 3,
+        "center-top" => 4,
+        "center-bottom" => 5,
         _ => 0,
     };
     NOTIF_POSITION.store(code, Ordering::Relaxed);
@@ -154,7 +163,9 @@ pub fn notify(title: &str, body: &str) {
         let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), NOTIF_TITLE_PX);
         let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), NOTIF_BODY_PX);
         let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
-        let start_x = if notification_is_left(position) {
+        let start_x = if notification_is_center(position) {
+            x
+        } else if notification_is_left(position) {
             mon_x - w - 8
         } else {
             mon_x + mon_w as i32 + 8
@@ -944,6 +955,15 @@ mod tests {
         assert_eq!(x, 100 + NOTIF_MARGIN);
         assert_eq!(y + height + NOTIF_MARGIN, 50 + 1080);
         assert!(width >= 360);
+    }
+
+    #[test]
+    fn notification_card_can_sit_centered() {
+        let (x, y, width, _) = notif_rect(0, 0, 1920, 1080, 4, 200, 400);
+        assert_eq!(x, (1920 - width) / 2);
+        assert_eq!(y, NOTIF_MARGIN);
+        let (_, bottom_y, _, height) = notif_rect(0, 0, 1920, 1080, 5, 200, 400);
+        assert_eq!(bottom_y + height + NOTIF_MARGIN, 1080);
     }
 
     #[test]

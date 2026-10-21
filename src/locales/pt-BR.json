@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Posição da notificação",
   "settings.achPositionDesc": "Canto onde o cartão de notificação aparece no jogo.",
   "settings.achPositionTopLeft": "Superior esquerdo",
+  "settings.achPositionCenterTop": "Centro superior",
+  "settings.achPositionCenterBottom": "Centro inferior",
   "settings.achPositionTopRight": "Superior direito",
   "settings.achPositionBottomLeft": "Inferior esquerdo",
   "settings.achPositionBottomRight": "Inferior direito",

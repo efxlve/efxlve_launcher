@@ -129,6 +129,13 @@ export function loadScreenshotsPage(force = false): void {
     });
 }
 
+/** Drops the cached listing after the scan roots change. */
+export function reloadScreenshotsPage(): void {
+  loadedOnce = false;
+  shots = [];
+  loadScreenshotsPage(true);
+}
+
 export function loadClips(): void {
   if (!isTauri || clipsLoaded) return;
   clipsLoaded = true;

@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Bildirim konumu",
   "settings.achPositionDesc": "Oyun içi bildirim kartının görüneceği köşe.",
   "settings.achPositionTopLeft": "Sol üst",
+  "settings.achPositionCenterTop": "Üst orta",
+  "settings.achPositionCenterBottom": "Alt orta",
   "settings.achPositionTopRight": "Sağ üst",
   "settings.achPositionBottomLeft": "Sol alt",
   "settings.achPositionBottomRight": "Sağ alt",

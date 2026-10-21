@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "सूचना स्थिति",
   "settings.achPositionDesc": "गेम में सूचना कार्ड किस कोने में दिखे।",
   "settings.achPositionTopLeft": "ऊपर बाएँ",
+  "settings.achPositionCenterTop": "ऊपर मध्य",
+  "settings.achPositionCenterBottom": "नीचे मध्य",
   "settings.achPositionTopRight": "ऊपर दाएँ",
   "settings.achPositionBottomLeft": "नीचे बाएँ",
   "settings.achPositionBottomRight": "नीचे दाएँ",

@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Posición de la notificación",
   "settings.achPositionDesc": "Esquina donde aparece la tarjeta en el juego.",
   "settings.achPositionTopLeft": "Arriba a la izquierda",
+  "settings.achPositionCenterTop": "Centro arriba",
+  "settings.achPositionCenterBottom": "Centro abajo",
   "settings.achPositionTopRight": "Arriba a la derecha",
   "settings.achPositionBottomLeft": "Abajo a la izquierda",
   "settings.achPositionBottomRight": "Abajo a la derecha",

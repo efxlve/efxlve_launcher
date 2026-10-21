@@ -1550,8 +1550,11 @@ fn default_notification_position() -> String {
 fn normalize_notification_position(value: Option<&str>) -> String {
     match value {
         Some("top-left") => "top-left",
-        Some("bottom-right") => "bottom-right",
+        Some("center-top") => "center-top",
+        Some("top-right") => "top-right",
         Some("bottom-left") => "bottom-left",
+        Some("center-bottom") => "center-bottom",
+        Some("bottom-right") => "bottom-right",
         _ => "top-right",
     }
     .to_string()

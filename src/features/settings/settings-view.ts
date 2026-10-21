@@ -76,6 +76,7 @@ import { eglLauncherPresent } from "../../egl-removal";
 import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
+import { reloadScreenshotsPage } from "../screenshots/screenshots-page";
 import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
 import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HEIGHT_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
 import { CLIP_FPS_SUPPORTED, clipFps as clipFpsSetting, clipHeight as clipHeightSetting, pushClipSettings } from "../screenshots/ss-settings";
@@ -1132,8 +1133,10 @@ function renderAchievementsSettings(): string {
     .join("");
   const positionButtons = [
     ["top-left", "TopLeft", "↖"],
+    ["center-top", "CenterTop", "↑"],
     ["top-right", "TopRight", "↗"],
     ["bottom-left", "BottomLeft", "↙"],
+    ["center-bottom", "CenterBottom", "↓"],
     ["bottom-right", "BottomRight", "↘"],
   ]
     .map(
@@ -2323,7 +2326,7 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       return true;
     }
     case "set-ach-position": {
-      const allowed = ["top-left", "top-right", "bottom-left", "bottom-right"];
+      const allowed = ["top-left", "center-top", "top-right", "bottom-left", "center-bottom", "bottom-right"];
       const position = allowed.includes(_el.dataset.val ?? "")
         ? (_el.dataset.val as string)
         : "top-right";
@@ -2389,6 +2392,9 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
         .then((list) => {
           // The list below the switch shows what the new setting scans.
           S.screenshotScanRoots = list;
+          // Drop the previous scan so the media tab cannot keep showing files
+          // from roots the user just turned off.
+          reloadScreenshotsPage();
           render();
         })
         .catch(() => undefined);

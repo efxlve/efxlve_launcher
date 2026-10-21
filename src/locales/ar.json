@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "موضع الإشعار",
   "settings.achPositionDesc": "الزاوية التي تظهر فيها بطاقة الإشعار داخل اللعبة.",
   "settings.achPositionTopLeft": "أعلى اليسار",
+  "settings.achPositionCenterTop": "أعلى الوسط",
+  "settings.achPositionCenterBottom": "أسفل الوسط",
   "settings.achPositionTopRight": "أعلى اليمين",
   "settings.achPositionBottomLeft": "أسفل اليسار",
   "settings.achPositionBottomRight": "أسفل اليمين",

@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Положение уведомления",
   "settings.achPositionDesc": "Угол, в котором появляется карточка уведомления в игре.",
   "settings.achPositionTopLeft": "Сверху слева",
+  "settings.achPositionCenterTop": "Сверху по центру",
+  "settings.achPositionCenterBottom": "Снизу по центру",
   "settings.achPositionTopRight": "Сверху справа",
   "settings.achPositionBottomLeft": "Снизу слева",
   "settings.achPositionBottomRight": "Снизу справа",

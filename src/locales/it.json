@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Posizione della notifica",
   "settings.achPositionDesc": "Angolo in cui appare la scheda in gioco.",
   "settings.achPositionTopLeft": "In alto a sinistra",
+  "settings.achPositionCenterTop": "Centro in alto",
+  "settings.achPositionCenterBottom": "Centro in basso",
   "settings.achPositionTopRight": "In alto a destra",
   "settings.achPositionBottomLeft": "In basso a sinistra",
   "settings.achPositionBottomRight": "In basso a destra",

@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "ตำแหน่งการแจ้งเตือน",
   "settings.achPositionDesc": "มุมที่การ์ดแจ้งเตือนจะแสดงในเกม",
   "settings.achPositionTopLeft": "ซ้ายบน",
+  "settings.achPositionCenterTop": "กลางบน",
+  "settings.achPositionCenterBottom": "กลางล่าง",
   "settings.achPositionTopRight": "ขวาบน",
   "settings.achPositionBottomLeft": "ซ้ายล่าง",
   "settings.achPositionBottomRight": "ขวาล่าง",

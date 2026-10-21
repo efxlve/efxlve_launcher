@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "Position der Benachrichtigung",
   "settings.achPositionDesc": "Ecke, in der die Benachrichtigung im Spiel erscheint.",
   "settings.achPositionTopLeft": "Oben links",
+  "settings.achPositionCenterTop": "Oben Mitte",
+  "settings.achPositionCenterBottom": "Unten Mitte",
   "settings.achPositionTopRight": "Oben rechts",
   "settings.achPositionBottomLeft": "Unten links",
   "settings.achPositionBottomRight": "Unten rechts",

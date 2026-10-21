@@ -970,6 +970,15 @@ pub async fn epic_get_all_screenshots(
             }
         }
 
+        // The extra roots below are exactly what the "scan all" setting
+        // controls. Without this early return the media tab kept showing Steam,
+        // Game Bar and Documents captures even when the switch was off.
+        if !screenshot_scan_all() {
+            results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+            results.truncate(300);
+            return Ok(results);
+        }
+
         // 2. Legacy screenshots root (if different from root)
         let legacy_root = get_user_pictures_dir().join("Efxlve Screenshots");
         if legacy_root != root && legacy_root.is_dir() {

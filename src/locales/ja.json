@@ -2087,6 +2087,8 @@
   "settings.achPositionTitle": "通知の位置",
   "settings.achPositionDesc": "ゲーム内で通知カードが表示される位置。",
   "settings.achPositionTopLeft": "左上",
+  "settings.achPositionCenterTop": "中央上",
+  "settings.achPositionCenterBottom": "中央下",
   "settings.achPositionTopRight": "右上",
   "settings.achPositionBottomLeft": "左下",
   "settings.achPositionBottomRight": "右下",
