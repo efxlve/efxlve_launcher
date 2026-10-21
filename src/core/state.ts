@@ -296,6 +296,11 @@ export const S = {
   amazonSummaries: ([]) as LibraryItem[],
   steamSummaries: ([]) as LibraryItem[],
   steamSummariesMap: (new Map()) as Map<string, LibraryItem>,
+  achievementNotificationOptions: {
+    enabled: true,
+    sound: true,
+    overlay: true,
+  } as import("../steam").AchievementNotificationOptions,
   customGames: ([]) as import("../custom-games").CustomGame[],
   customSummaries: ([]) as LibraryItem[],
   customSummariesMap: (new Map()) as Map<string, LibraryItem>,

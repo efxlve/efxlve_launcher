@@ -310,7 +310,7 @@
 }
 
 /* White Mode: Card elevation & depth */
-:root[data-surface="white"] :is(.card, .list, .lib-list, .settings-group, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .igdb-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box) {
+:root[data-surface="white"] :is(.card, .list, .lib-list, .settings-group, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box) {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
@@ -718,7 +718,7 @@
   .card, .list, .lib-list, .modal, .toast, .gp-side-card, .settings-group, .info-box,
   .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
   .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
-  .news-card, .igdb-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
   .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
   .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
   .changelog-dialog, .notif-panel, .lib-filter-panel, .custom-game-modal
@@ -818,6 +818,18 @@
 :root[data-surface="aero"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active:not(:disabled) {
   background: linear-gradient(180deg, #74c0ea 0%, #3598da 48%, #0e73c0 50%, #106db3 100%);
   box-shadow: inset 0 2px 4px rgba(0, 40, 90, 0.35);
+}
+/* Destructive actions still use the glass body, with red ink instead of the
+   flat dark-theme danger fill. */
+:root[data-surface="aero"] .btn.danger {
+  background: var(--aero-gloss-white);
+  border-color: rgba(204, 47, 53, 0.35);
+  color: #b3262c;
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.1);
+}
+:root[data-surface="aero"] .btn.danger:hover {
+  background: linear-gradient(180deg, #fff7f7 0%, #ffe9e9 48%, #ffdada 50%, #ffeded 100%);
+  border-color: rgba(204, 47, 53, 0.6);
 }
 :root[data-surface="aero"] .icon-btn:hover {
   background: var(--aero-gloss-hover);

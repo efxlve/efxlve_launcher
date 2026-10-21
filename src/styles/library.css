@@ -790,6 +790,8 @@
   height: clamp(10px, 6.8cqi, 13px);
   object-fit: contain;
   flex-shrink: 0;
+  /* Inline SVG marks (Custom) use currentColor; the strip is always dark. */
+  color: #ffffff;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 .pcard-case-name {

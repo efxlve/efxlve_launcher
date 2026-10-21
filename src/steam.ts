@@ -242,8 +242,26 @@ export const steamSetAchievementSource = (appId: string, mode: string, customPat
 export const steamDetectAchievementPath = (appId: string) =>
   invoke<string | null>("steam_detect_achievement_path", { appId });
 
+export interface AchievementNotificationOptions {
+  enabled: boolean;
+  sound: boolean;
+  overlay: boolean;
+}
+
+export const achievementGetNotificationOptions = () =>
+  invoke<AchievementNotificationOptions>("achievement_get_notification_options");
+
+export const achievementSetNotificationOptions = (options: AchievementNotificationOptions) =>
+  invoke<void>("achievement_set_notification_options", { options });
+
+export const achievementTestNotification = (title: string, body: string) =>
+  invoke<void>("achievement_test_notification", { title, body });
+
 export const steamStartAchievementWatcher = (appId: string) =>
   invoke<void>("steam_start_achievement_watcher", { appId });
+
+export const steamStartEmulatorWatcher = (appId: string, installDir?: string) =>
+  invoke<void>("steam_start_emulator_watcher", { appId, installDir: installDir ?? null });
 
 export const steamStopAchievementWatcher = (appId: string) =>
   invoke<void>("steam_stop_achievement_watcher", { appId });

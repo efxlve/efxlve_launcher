@@ -89,7 +89,13 @@ import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
-import { steamGetApiKey, steamStatus } from "../../steam";
+import {
+  achievementGetNotificationOptions,
+  achievementSetNotificationOptions,
+  achievementTestNotification,
+  steamGetApiKey,
+  steamStatus,
+} from "../../steam";
 import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 import { igdbProbeProxy, igdbStatus } from "../../igdb";
@@ -108,6 +114,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
   { id: "controller", labelKey: "settings.secController" },
   { id: "appearance", labelKey: "settings.secAppearance" },
   { id: "screenshots", labelKey: "settings.secScreenshots" },
+  { id: "achievements", labelKey: "settings.secAchievements" },
   { id: "notes", labelKey: "settings.secNotes" },
   { id: "system", labelKey: "settings.secSystem" },
   { id: "tasks", labelKey: "settings.secTasks" },
@@ -130,7 +137,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navApp",
-    sections: ["compat", "controller", "appearance", "screenshots", "notes", "system", "tasks", "about"],
+    sections: ["compat", "controller", "appearance", "screenshots", "achievements", "notes", "system", "tasks", "about"],
   },
 ];
 
@@ -1076,6 +1083,34 @@ function renderAppearance(): string {
   );
 }
 
+function renderAchievementsSettings(): string {
+  const options = S.achievementNotificationOptions;
+  return group(
+    row(
+      t("settings.achNotifyTitle"),
+      t("settings.achNotifyDesc"),
+      toggle("toggle-ach-notifications", options.enabled),
+    ) +
+      row(
+        t("settings.achSoundTitle"),
+        t("settings.achSoundDesc"),
+        toggle("toggle-ach-sound", options.sound),
+      ) +
+      row(
+        t("settings.achOverlayTitle"),
+        t("settings.achOverlayDesc"),
+        toggle("toggle-ach-overlay", options.overlay),
+      ) +
+      row(
+        t("settings.achTestTitle"),
+        t("settings.achTestDesc"),
+        `<button type="button" class="btn primary small" data-act="ach-test-notification">${icon("bell", 13)} ${t("settings.achTestTitle")}</button>`,
+      ),
+    t("settings.secAchievements"),
+    infoBox("settings.achNotificationsNote"),
+  );
+}
+
 function renderNotes(): string {
   // The list is needed for the stats; one cached call, then a single repaint.
   if (!notesSettingsLoaded) {
@@ -1556,6 +1591,7 @@ function renderSection(section: SettingsSection): string {
     case "controller": return renderController();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
+    case "achievements": return renderAchievementsSettings();
     case "notes": return renderNotes();
     case "tasks": return renderTasks();
     case "system": return renderSystem();
@@ -1851,7 +1887,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll, cacheBytes] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll, cacheBytes, achOptions] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -1867,6 +1903,7 @@ export async function loadSettingsView(): Promise<void> {
         epicGetScreenshotScanRoots().catch(() => [] as string[]),
         epicGetScreenshotScanAll().catch(() => true),
         imageCacheSize().catch(() => null),
+        achievementGetNotificationOptions().catch(() => null),
       ]);
       S.epicSettingsCache = st ?? S.epicSettingsCache;
       S.epicDefaultDir = dir ?? "";
@@ -1882,6 +1919,7 @@ export async function loadSettingsView(): Promise<void> {
       S.screenshotScanRoots = Array.isArray(ssRoots) ? ssRoots : [];
       S.screenshotScanAll = ssScanAll !== false;
       S.pictureCacheBytes = cacheBytes ?? null;
+      if (achOptions) S.achievementNotificationOptions = achOptions;
       if (igdb) {
         S.igdbConfigured = igdb.configured;
         S.igdbClientId = igdb.clientId;
@@ -2174,6 +2212,42 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       resetSettingsSearch();
       render();
       document.getElementById("settings-search")?.focus();
+      return true;
+    case "toggle-ach-notifications": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        enabled: (_el as HTMLInputElement).checked,
+      };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+    case "toggle-ach-sound": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        sound: (_el as HTMLInputElement).checked,
+      };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+    case "toggle-ach-overlay": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        overlay: (_el as HTMLInputElement).checked,
+      };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+    case "ach-test-notification":
+      void achievementTestNotification(
+        t("ach.unlockedNotification", { name: t("settings.achTestTitle") }),
+        t("settings.achTestDesc"),
+      ).catch((e) => toast(String(e), "err"));
       return true;
     case "toggle-ss-sound":
       localStorage.setItem(SS_SOUND_KEY, String((_el as HTMLInputElement).checked));

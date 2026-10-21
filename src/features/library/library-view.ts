@@ -616,7 +616,8 @@ export function renderEpicItems(): string {
       t("lib.noGames"),
       "",
       `<button class="btn primary" data-act="open-store">${t("nav.store")}</button>
-       <button class="btn ghost" data-act="open-add-custom-game-modal">${icon("plus", 14)} ${esc(t("customGames.addBtn"))}</button>`,
+       <button class="btn ghost" data-act="open-add-custom-game-modal">${icon("plus", 14)} ${esc(t("customGames.addBtn"))}</button>
+       <button class="btn ghost" data-act="import-custom-games-folder">${icon("folder", 14)} ${esc(t("customGames.importFolderBtn"))}</button>`,
     );
   }
 
@@ -1041,7 +1042,8 @@ export function renderEpic(): string {
       t("lib.connectTitle"),
       t("lib.connectDesc"),
       `<button class="btn primary" data-view="accounts">${t("accounts.connectCta")}</button>
-       <button class="btn ghost" data-act="open-add-custom-game-modal">${icon("plus", 14)} ${esc(t("customGames.addBtn"))}</button>`,
+       <button class="btn ghost" data-act="open-add-custom-game-modal">${icon("plus", 14)} ${esc(t("customGames.addBtn"))}</button>
+       <button class="btn ghost" data-act="import-custom-games-folder">${icon("folder", 14)} ${esc(t("customGames.importFolderBtn"))}</button>`,
     );
   }
   if (S.epicPhase === "error" && !hasGames) {
@@ -1102,6 +1104,9 @@ export function renderEpic(): string {
   const tools = `
     <button class="btn ghost lib-sort-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}">
       ${icon("plus", 14)} <span>${esc(t("customGames.addBtn"))}</span>
+    </button>
+    <button class="btn ghost lib-sort-btn" data-act="import-custom-games-folder" title="${esc(t("customGames.importFolderTitle"))}">
+      ${icon("folder", 14)} <span>${esc(t("customGames.importFolderBtn"))}</span>
     </button>
     ${sourceDropdown}
     ${filterButton}

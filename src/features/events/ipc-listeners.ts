@@ -79,6 +79,7 @@ import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
+import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
@@ -673,6 +674,15 @@ export async function initApp(hooks: {
               .catch(() => {});
           }
         }
+        if (id.startsWith("custom::")) {
+          const game = S.customGames.find((item) => item.id === id);
+          if (game?.steamAppId) {
+            void steamStartEmulatorWatcher(
+              game.steamAppId,
+              game.exePath?.replace(/[\\/][^\\/]*$/, ""),
+            );
+          }
+        }
         // Recently played covers games started outside the launcher too.
         pushRecent(id);
         // The hero's state chip ("Online") is part of the meta line, which is
@@ -681,6 +691,10 @@ export async function initApp(hooks: {
         if (sum && S.currentModalAppName === id) paintGameMeta(sum);
         hooks.scheduleRender();
       } else {
+        if (id.startsWith("custom::")) {
+          const game = S.customGames.find((item) => item.id === id);
+          if (game?.steamAppId) void steamStopAchievementWatcher(game.steamAppId);
+        }
         // The session may have unlocked achievements; refetch before the
         // duplicate-event guard, because a manual stop already cleared the flag
         // and its watcher event would otherwise return early.
@@ -896,8 +910,9 @@ export async function initApp(hooks: {
     displayName: string;
     description: string;
     iconUrl: string;
+    notification?: boolean;
   }>("achievement-unlocked", (event) => {
-    const { appId, name, displayName, description } = event.payload;
+    const { appId, name, displayName, description, notification = true } = event.payload;
     const appKeys = [
       `steam::${appId}`,
       ...S.customGames.filter((g) => g.steamAppId === appId).map((g) => g.id),
@@ -908,12 +923,14 @@ export async function initApp(hooks: {
       .map((key) => S.loadedAchievements.get(key)?.achievements.find((ach) => ach.name === name))
       .find((ach) => Boolean(ach));
     const label = displayName || cachedItem?.display_name || name;
-    pushNotification({
-      kind: "info",
-      title: t("ach.unlockedNotification", { name: label }),
-      body: description || cachedItem?.description || "",
-      toast: true,
-    });
+    if (notification) {
+      pushNotification({
+        kind: "info",
+        title: t("ach.unlockedNotification", { name: label }),
+        body: description || cachedItem?.description || "",
+        toast: true,
+      });
+    }
     for (const key of appKeys) {
       const list = S.loadedAchievements.get(key);
       const entry = list?.achievements.find((ach) => ach.name === name);

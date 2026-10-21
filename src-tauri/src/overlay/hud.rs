@@ -38,7 +38,8 @@ const NOTIF_RADIUS: i32 = 12;
 const NOTIF_TITLE_PX: i32 = 15;
 const NOTIF_BODY_PX: i32 = 13;
 const NOTIF_ALPHA: u8 = 242;
-const NOTIF_HOLD_MS: u64 = 5200;
+static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(5200);
 /// Text column: 16px pad + 32px icon disc + 14px gap.
 const NOTIF_TEXT_LEFT: i32 = 62;
 const NOTIF_TEXT_RIGHT: i32 = 18;
@@ -100,7 +101,10 @@ pub fn notify(title: &str, body: &str) {
             }
         }
         NOTIF_ON.store(true, Ordering::SeqCst);
-        NOTIF_UNTIL.store(now_ms() + NOTIF_HOLD_MS, Ordering::Relaxed);
+        NOTIF_UNTIL.store(
+            now_ms() + NOTIF_HOLD_MS.load(Ordering::Relaxed),
+            Ordering::Relaxed,
+        );
         let generation = NOTIF_GEN.fetch_add(1, Ordering::Relaxed) + 1;
         let hwnd = HWND.load(Ordering::SeqCst);
         if hwnd == 0 {

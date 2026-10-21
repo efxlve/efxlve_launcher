@@ -189,6 +189,13 @@ pub struct EpicSettings {
     pub compat_umu_enabled: Option<bool>,
     #[serde(default = "default_true")]
     pub auto_desktop_shortcut: bool,
+    /// Achievement notification preferences (`None` = on).
+    #[serde(default)]
+    pub achievement_notifications_enabled: Option<bool>,
+    #[serde(default)]
+    pub achievement_notifications_sound: Option<bool>,
+    #[serde(default)]
+    pub achievement_notifications_overlay: Option<bool>,
 }
 
 fn default_true() -> bool {
@@ -1174,6 +1181,10 @@ fn main() {    // Rockstar's launcher only continues when a process named
             steam::steam_set_achievement_source,
             steam::steam_detect_achievement_path,
             steam::steam_get_emulator_achievements,
+            steam::achievement_get_notification_options,
+            steam::achievement_set_notification_options,
+            steam::achievement_test_notification,
+            steam::steam_start_emulator_watcher,
             steam::steam_start_achievement_watcher,
             steam::steam_stop_achievement_watcher,
             custom_games::custom_games_list,
@@ -1182,6 +1193,8 @@ fn main() {    // Rockstar's launcher only continues when a process named
             custom_games::custom_games_remove,
             custom_games::custom_games_launch,
             custom_games::custom_games_stop,
+            custom_games::custom_games_import_folder,
+            custom_games::custom_games_pick_folder,
             custom_games::custom_games_pick_file,
             custom_games::custom_games_search_steam,
             custom_games::custom_games_steam_details,

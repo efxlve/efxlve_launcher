@@ -1502,6 +1502,82 @@ pub struct AchievementUnlockedPayload {
     pub display_name: String,
     pub description: String,
     pub icon_url: String,
+    /// False when the user silenced notifications; the UI still records the
+    /// unlock so the achievement list stays correct.
+    #[serde(default)]
+    pub notification: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementNotificationOptions {
+    pub enabled: bool,
+    pub sound: bool,
+    pub overlay: bool,
+}
+
+impl Default for AchievementNotificationOptions {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            sound: true,
+            overlay: true,
+        }
+    }
+}
+
+pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNotificationOptions {
+    let settings = crate::load_settings(app);
+    AchievementNotificationOptions {
+        enabled: settings.achievement_notifications_enabled.unwrap_or(true),
+        sound: settings.achievement_notifications_sound.unwrap_or(true),
+        overlay: settings.achievement_notifications_overlay.unwrap_or(true),
+    }
+}
+
+#[tauri::command]
+pub fn achievement_get_notification_options(
+    app: tauri::AppHandle,
+) -> AchievementNotificationOptions {
+    achievement_notification_options(&app)
+}
+
+#[tauri::command]
+pub fn achievement_set_notification_options(
+    app: tauri::AppHandle,
+    options: AchievementNotificationOptions,
+) -> Result<(), String> {
+    let mut settings = crate::load_settings(&app);
+    settings.achievement_notifications_enabled = Some(options.enabled);
+    settings.achievement_notifications_sound = Some(options.sound);
+    settings.achievement_notifications_overlay = Some(options.overlay);
+    crate::save_settings(&app, &settings);
+    Ok(())
+}
+
+/// Settings > Achievements: preview the current notification settings. The
+/// payload goes through the same frontend listener as a real unlock.
+#[tauri::command]
+pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body: String) {
+    let options = achievement_notification_options(&app);
+    if options.overlay {
+        crate::overlay::hud::notify(&title, &body);
+    }
+    #[cfg(windows)]
+    if options.sound {
+        unsafe {
+            MessageBeep(0x00000040);
+        }
+    }
+    let payload = AchievementUnlockedPayload {
+        app_id: "0".into(),
+        name: "TEST_ACHIEVEMENT".into(),
+        display_name: title,
+        description: body,
+        icon_url: String::new(),
+        notification: true,
+    };
+    let _ = app.emit("achievement-unlocked", payload);
 }
 
 #[cfg(windows)]
@@ -1542,6 +1618,26 @@ pub fn steam_start_custom_achievement_watcher(app: tauri::AppHandle, app_id: Str
     // "Disabled (Steam client only)" must fall back to the client watcher.
     let emulator_only = get_achievement_source_config(&app, &app_id).mode != "disabled";
     start_achievement_watcher(app, app_id, emulator_only);
+}
+
+/// Frontend entry point for external custom launches: registers the install
+/// root (some emulators keep achievements next to the exe) and starts the watch.
+#[tauri::command]
+pub fn steam_start_emulator_watcher(
+    app: tauri::AppHandle,
+    app_id: String,
+    install_dir: Option<String>,
+) {
+    if let Some(dir) = install_dir.filter(|dir| !dir.trim().is_empty()) {
+        let path = Path::new(dir.trim());
+        let root = if path.is_file() {
+            path.parent().unwrap_or(path)
+        } else {
+            path
+        };
+        remember_achievement_dir(&app_id, root);
+    }
+    steam_start_custom_achievement_watcher(app, app_id);
 }
 
 fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
@@ -1639,22 +1735,31 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                     } else {
                         ach.display_name.clone()
                     };
-                    let title_text = format!("🏆 {display}");
-                    crate::overlay::hud::notify(&title_text, &ach.description);
-
-                    // 2. Play Windows notification sound
-                    #[cfg(windows)]
-                    unsafe {
-                        MessageBeep(0x00000040); // MB_ICONASTERISK
+                    let options = achievement_notification_options(&app_handle);
+                    if options.enabled {
+                        // 1. Native in-game HUD toast card
+                        if options.overlay {
+                            let title_text = format!("🏆 {display}");
+                            crate::overlay::hud::notify(&title_text, &ach.description);
+                        }
+                        // 2. Play Windows notification sound
+                        #[cfg(windows)]
+                        if options.sound {
+                            unsafe {
+                                MessageBeep(0x00000040); // MB_ICONASTERISK
+                            }
+                        }
                     }
 
-                    // 3. Emit event to frontend
+                    // 3. Emit event to frontend; the UI records the unlock even
+                    // when the user silenced the visible notification.
                     let payload = AchievementUnlockedPayload {
                         app_id: target_app_id.clone(),
                         name: ach.name,
                         display_name: display,
                         description: ach.description,
                         icon_url: ach.icon_link,
+                        notification: options.enabled,
                     };
                     let _ = app_handle.emit("achievement-unlocked", payload);
                 }

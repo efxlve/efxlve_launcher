@@ -348,8 +348,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `custom_games_add` | `customGamesAdd({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_edit` | `customGamesEdit({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_launch` | `customGamesLaunch({ ... })` | `src-tauri/src/custom_games.rs` |
+| `custom_games_import_folder` | `customGamesImportFolder({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_list` | `customGamesList({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_pick_file` | `customGamesPickFile({ ... })` | `src-tauri/src/custom_games.rs` |
+| `custom_games_pick_folder` | `customGamesPickFolder({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_remove` | `customGamesRemove({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_search_steam` | `customGamesSearchSteam({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_steam_details` | `customGamesSteamDetails({ ... })` | `src-tauri/src/custom_games.rs` |
@@ -362,6 +364,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_family_shared_apps` | `steamFamilySharedApps({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_find_store_app` | `steamFindStoreApp({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_game_action` | `steamGameAction({ ... })` | `src-tauri/src/steam/protocol.rs` |
+| `achievement_get_notification_options` | `achievementGetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
+| `achievement_set_notification_options` | `achievementSetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
+| `achievement_test_notification` | `achievementTestNotification({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_detect_achievement_path` | `steamDetectAchievementPath({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_get_achievement_source` | `steamGetAchievementSource({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_get_achievements` | `steamGetAchievements({ ... })` | `src-tauri/src/steam/achievements.rs` |
@@ -369,6 +374,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_get_emulator_achievements` | `steamGetEmulatorAchievements({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_set_achievement_source` | `steamSetAchievementSource({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_start_achievement_watcher` | `steamStartAchievementWatcher({ ... })` | `src-tauri/src/steam/achievements.rs` |
+| `steam_start_emulator_watcher` | `steamStartEmulatorWatcher({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_stop_achievement_watcher` | `steamStopAchievementWatcher({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_get_api_key` | `steamGetApiKey({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_get_game_details` | `steamGetGameDetails({ ... })` | `src-tauri/src/steam/catalog.rs` |

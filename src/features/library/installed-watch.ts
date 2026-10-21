@@ -23,6 +23,9 @@ function installedGames(): { id: string; path: string }[] {
   for (const g of S.gogSummaries) if (g.installed) push(g.key, g.installPath);
   for (const g of S.amazonSummaries) if (g.installed) push(g.key, g.installPath);
   for (const g of S.companionSummaries) if (g.installed) push(g.key, g.installPath);
+  // Custom games can be started outside the launcher too; the process watcher
+  // gives them the same Running state and local playtime as a shortcut launch.
+  for (const g of S.customSummaries) if (g.installed) push(g.key, g.installPath);
   return out;
 }
 

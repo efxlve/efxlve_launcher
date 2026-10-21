@@ -10,7 +10,7 @@ import {
   handlePickExeForGame,
   handleSaveCustomGame,
 } from "../../custom-games/add-game-dialog";
-import { customGamesRemove } from "../../../custom-games";
+import { customGamesImportFolder, customGamesPickFolder, customGamesRemove } from "../../../custom-games";
 import { loadCustomGamesLibrary } from "../../custom-games/custom-games-library";
 import { toast } from "../../../core/toast";
 import { t } from "../../../i18n";
@@ -28,6 +28,26 @@ export function handleCustomGamesAction(act: string | undefined, id?: string): b
 
     case "edit-custom-game":
       if (id) openEditCustomGameModal(id);
+      return true;
+
+    case "import-custom-games-folder":
+      void (async () => {
+        const folder = await customGamesPickFolder(undefined, t("customGames.importFolderTitle"));
+        if (!folder) return;
+        try {
+          const imported = await customGamesImportFolder(folder);
+          await loadCustomGamesLibrary();
+          toast(
+            imported.length
+              ? t("customGames.importedCount", { count: imported.length })
+              : t("customGames.importEmpty"),
+            imported.length ? "ok" : "",
+          );
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
       return true;
 
     case "close-custom-game-modal":

@@ -2170,18 +2170,28 @@ export function renderRequirementsBody(s: EpicSummary): string {
     return loadingState(t("sys.loading"));
   }
 
+  const igdb = s.appName.startsWith("custom::") ? igdbGameFor(s.appName) : null;
+  const customSource = s.appName.startsWith("custom::") && igdb?.url
+    ? `<button class="btn ghost small" data-act="open-external-url" data-url="${esc(igdb.url)}">${icon("external", 13)} ${t("sys.openIgdb")}</button>`
+    : "";
+  const storeSource =
+    s.appName.startsWith("riot::") || s.appName.startsWith("amazon::") || s.appName.startsWith("custom::")
+      ? ""
+      : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`;
   const actionsHtml = `
     <div class="sys-req-actions">
       <button class="btn ghost small" data-act="req-refresh" data-id="${s.appName}">${icon("refresh", 13)} ${t("sys.requery")}</button>
-      ${s.appName.startsWith("riot::") || s.appName.startsWith("amazon::")
-        ? ""
-        : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t(s.appName.startsWith("gog::") ? "sys.openGogStore" : s.appName.startsWith("steam::") ? "drawer.storeTitleSteam" : isCompanionApp(s.appName) ? "ctx.storePage" : "sys.openEpicStore")}</button>`}
+      ${customSource || storeSource}
     </div>`;
 
   if (!data.supported || data.systems.length === 0) {
     return `
       <div class="sys-empty-container">
-        ${emptyState("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}
+        ${emptyState(
+          "cpu",
+          t("sys.notFoundTitle"),
+          s.appName.startsWith("custom::") ? t("sys.noSource") : t("sys.notFoundDesc"),
+        )}
         <div class="sys-empty-actions">${actionsHtml}</div>
       </div>`;
   }
@@ -2264,6 +2274,25 @@ export async function fetchAndRenderRequirements(appName: string, title: string,
   // store lookup supplies the requirements, developer and add-on count.
   if (isCompanionApp(appName)) {
     await loadCompanionStoreDetails(appName, title, forceRefresh);
+    return;
+  }
+  // Custom games have no store requirements API. The Epic slug lookup would
+  // otherwise attach another game's table (or offer an Epic store page that
+  // does not exist); the empty state points at IGDB or says there is no source.
+  if (appName.startsWith("custom::")) {
+    if (!S.loadedRequirements.has(appName)) {
+      S.loadedRequirements.set(appName, {
+        supported: false,
+        systems: [],
+        languages: [],
+        appName,
+      });
+    }
+    if (S.currentModalAppName === appName && S.activeDrawerTab === "specs") {
+      const current = summaryOf(appName);
+      const content = document.getElementById("drawer-tab-content");
+      if (current && content) content.innerHTML = renderDrawerSystemRequirements(current);
+    }
     return;
   }
   S.loadingReqFor.add(appName);

@@ -63,6 +63,12 @@ fn watch_loop(app: AppHandle) {
         let games = WATCHED.lock().map(|g| g.clone()).unwrap_or_default();
         let mut now = HashSet::new();
         for (id, path) in &games {
+            // The launcher's own launch thread owns the event and the playtime
+            // record for games it started; only external launches are counted
+            // here, otherwise a session would be written twice.
+            if id.starts_with("custom::") && crate::custom_games::is_launcher_running(id) {
+                continue;
+            }
             let list = exes_for(&mut exes, path);
             if !list.is_empty() && is_game_process_running(Some(path), list) {
                 now.insert(id.clone());
@@ -75,11 +81,40 @@ fn watch_loop(app: AppHandle) {
         }
         for id in now.difference(&last) {
             emit_status(&app, id, true);
-            if tracked_locally(id) {
+            if tracked_locally(id) || id.starts_with("custom::") {
                 started.insert(id.clone(), Instant::now());
             }
         }
         for id in last.difference(&now) {
+            if id.starts_with("custom::") && crate::custom_games::is_launcher_running(id) {
+                continue;
+            }
+            // Custom games launched outside the launcher have no store backend:
+            // record the session here and send the totals with the stop event.
+            if id.starts_with("custom::") {
+                let seconds = started
+                    .remove(id)
+                    .map(|at| at.elapsed().as_secs())
+                    .unwrap_or(0);
+                let record = if seconds >= 5 {
+                    crate::legendary::playtime::record_session(id, seconds).ok()
+                } else {
+                    None
+                };
+                let mut payload = serde_json::json!({
+                    "id": id,
+                    "running": false,
+                    "sessionSeconds": seconds,
+                });
+                if let Some(record) = record {
+                    payload["totalSeconds"] = serde_json::json!(record.total_seconds);
+                    payload["sessionCount"] = serde_json::json!(record.session_count);
+                    payload["lastPlayed"] = serde_json::json!(record.last_played);
+                    payload["lastPlayedTimestamp"] = serde_json::json!(record.last_played_timestamp);
+                }
+                let _ = app.emit("game-status", payload);
+                continue;
+            }
             emit_status(&app, id, false);
             if let Some(at) = started.remove(id) {
                 let seconds = at.elapsed().as_secs();

@@ -56,6 +56,12 @@ export const customGamesStop = (id: string) =>
 export const customGamesPickFile = (defaultPath?: string, title?: string) =>
   invoke<string | null>("custom_games_pick_file", { defaultPath, title });
 
+export const customGamesPickFolder = (defaultPath?: string, title?: string) =>
+  invoke<string | null>("custom_games_pick_folder", { defaultPath, title });
+
+export const customGamesImportFolder = (path: string) =>
+  invoke<CustomGame[]>("custom_games_import_folder", { path });
+
 export const customGamesSearchSteam = (query: string) =>
   invoke<SteamStoreSearchHit[]>("custom_games_search_steam", { query });
 

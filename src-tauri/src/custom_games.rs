@@ -1,7 +1,7 @@
 //! Custom games management: manual game addition, metadata search, launch, and tracking.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
@@ -23,6 +23,17 @@ fn forget_pid(id: &str, pid: u32) {
             }
         }
     }
+}
+
+/// True while this launcher owns the game process; the generic process watcher
+/// then leaves the start/stop event (and the playtime record) to the launch
+/// thread instead of counting the session twice.
+pub fn is_launcher_running(id: &str) -> bool {
+    RUNNING_PIDS
+        .lock()
+        .ok()
+        .and_then(|lock| lock.as_ref().and_then(|map| map.get(id).copied()))
+        .is_some()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -256,7 +267,6 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
         // Emulator achievement files often sit next to the exe
         // (`steam_settings/achievements.ini`), so teach the detector that root.
         crate::steam::remember_achievement_dir(aid, working_dir);
-        crate::steam::steam_start_custom_achievement_watcher(app_clone.clone(), aid.clone());
     }
 
     let started = std::time::Instant::now();
@@ -267,11 +277,9 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
 
     std::thread::spawn(move || {
         let _ = child.wait();
-        forget_pid(&app_key, child_pid);
         let elapsed = started.elapsed().as_secs();
-        if let Some(ref aid) = steam_app_id {
-            crate::steam::steam_stop_achievement_watcher(aid.clone());
-        }
+        // The frontend starts/stops the watcher from the game-status event, so
+        // both launcher and external launches use the same path.
         crate::legendary::screenshots::clear_active_running_game(&app_key);
 
         // Custom games have no store backend to report hours, so the launcher
@@ -293,11 +301,231 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
             payload["lastPlayedTimestamp"] = serde_json::json!(record.last_played_timestamp);
         }
         let _ = app_clone.emit("game-status", payload);
+        // Release the launcher-owned marker only after the stop event so the
+        // generic process watcher cannot count the same session again.
+        forget_pid(&app_key, child_pid);
         let _ = app_clone.emit("custom-games-changed", ());
     });
 
     let _ = app.emit("custom-games-changed", ());
     Ok(())
+}
+
+/// A folder import only needs a plausible main binary per game folder: the
+/// largest non-installer `.exe` two levels down. The user can fine-tune it with
+/// the edit dialog afterwards.
+fn best_game_exe(dir: &Path) -> Option<PathBuf> {
+    const SKIP: &[&str] = &[
+        "unins", "setup", "install", "vcredist", "vc_redist", "dxsetup", "dotnet",
+        "crashreport", "unitycrashhandler", "unrealcefsubprocess", "eac_launcher",
+        "easyanticheat", "launcher_installer", "redist", "dxwebsetup",
+    ];
+    let mut best: Option<(u64, PathBuf)> = None;
+    let mut walk = vec![(dir.to_path_buf(), 0usize)];
+    while let Some((folder, depth)) = walk.pop() {
+        if depth > 2 {
+            continue;
+        }
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                if depth < 2 {
+                    walk.push((path, depth + 1));
+                }
+                continue;
+            }
+            let name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            if !name.ends_with(".exe") || SKIP.iter().any(|marker| name.contains(marker)) {
+                continue;
+            }
+            let size = entry.metadata().map(|meta| meta.len()).unwrap_or(0);
+            if size >= 16 * 1024
+                && best
+                    .as_ref()
+                    .map_or(true, |(best_size, _)| size > *best_size)
+            {
+                best = Some((size, path));
+            }
+        }
+    }
+    best.map(|(_, path)| path)
+}
+
+fn import_title(folder: &Path, exe: &Path) -> String {
+    let raw = folder
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.trim().is_empty())
+        .or_else(|| exe.file_stem().and_then(|name| name.to_str()))
+        .unwrap_or("Game");
+    let cleaned = raw
+        .replace('_', " ")
+        .replace('-', " ")
+        .replace('.', " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if cleaned.is_empty() {
+        "Game".to_string()
+    } else {
+        cleaned
+    }
+}
+
+#[tauri::command]
+pub fn custom_games_import_folder(
+    app: AppHandle,
+    path: String,
+) -> Result<Vec<CustomGame>, String> {
+    let root = PathBuf::from(path.trim());
+    if !root.is_dir() {
+        return Err("The selected folder does not exist".into());
+    }
+    let mut list = load_custom_games(&app);
+    let mut known_paths: std::collections::HashSet<String> = list
+        .iter()
+        .map(|game| game.exe_path.to_lowercase())
+        .collect();
+    let mut known_ids: std::collections::HashSet<String> =
+        list.iter().map(|game| game.id.clone()).collect();
+
+    // A folder with an exe of its own is one game; otherwise a folder of game
+    // folders is imported as one game per subfolder.
+    let has_direct_exe = std::fs::read_dir(&root)
+        .map_err(|e| e.to_string())?
+        .flatten()
+        .any(|entry| {
+            entry.path().is_file()
+                && entry
+                    .path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("exe"))
+        });
+    let mut subdirs: Vec<PathBuf> = std::fs::read_dir(&root)
+        .map_err(|e| e.to_string())?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .collect();
+    subdirs.sort();
+    // A game folder often keeps its exe in `Binaries/Win64`; a parent folder
+    // holding several games has titled subfolders instead. Only the latter is
+    // imported one game per child.
+    const ENGINE_DIRS: &[&str] = &[
+        "bin", "bin32", "bin64", "binaries", "win32", "win64", "x64", "x86",
+        "engine", "system", "launcher", "retail", "game", "games",
+    ];
+    let has_engine_dir = subdirs.iter().any(|dir| {
+        dir.file_name()
+            .and_then(|name| name.to_str())
+            .map(|name| ENGINE_DIRS.contains(&name.to_lowercase().as_str()))
+            .unwrap_or(false)
+    });
+    let candidates: Vec<PathBuf> = if has_direct_exe || subdirs.is_empty() || has_engine_dir {
+        vec![root.clone()]
+    } else {
+        subdirs
+    };
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    let mut imported = Vec::new();
+    for folder in candidates.into_iter().take(200) {
+        let Some(exe) = best_game_exe(&folder) else {
+            continue;
+        };
+        let exe_key = exe.to_string_lossy().to_lowercase();
+        if known_paths.contains(&exe_key) {
+            continue;
+        }
+        let title = import_title(&folder, &exe);
+        let slug = slugify(&title);
+        let mut id = format!("custom::{slug}");
+        let mut counter = 2;
+        while known_ids.contains(&id) {
+            id = format!("custom::{slug}-{counter}");
+            counter += 1;
+        }
+        known_paths.insert(exe_key);
+        known_ids.insert(id.clone());
+        let game = CustomGame {
+            id,
+            title,
+            exe_path: exe.to_string_lossy().to_string(),
+            launch_args: None,
+            cover_url: None,
+            header_url: None,
+            hero_url: None,
+            description: None,
+            developer: None,
+            release_year: None,
+            genres: Vec::new(),
+            steam_app_id: None,
+            added_at: now,
+        };
+        list.push(game.clone());
+        imported.push(game);
+    }
+
+    if !imported.is_empty() {
+        save_custom_games(&app, &list)?;
+    }
+    Ok(imported)
+}
+
+#[tauri::command]
+pub async fn custom_games_pick_folder(
+    default_path: Option<String>,
+    title: Option<String>,
+) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    {
+        let picker_title = title
+            .unwrap_or_else(|| "Select Game Folder".to_string())
+            .replace('\'', "''");
+        tokio::task::spawn_blocking(move || {
+            let clean_default_path = default_path.unwrap_or_default().replace('\'', "''");
+            let script = format!(
+                r#"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+Add-Type -AssemblyName System.Windows.Forms;
+$f = New-Object System.Windows.Forms.FolderBrowserDialog;
+$f.Description = '{picker_title}';
+if ('{clean_default_path}' -ne '') {{ $f.SelectedPath = '{clean_default_path}' }};
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
+    Write-Output $f.SelectedPath
+}}
+"#
+            );
+            let mut cmd = std::process::Command::new("powershell");
+            cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+            let output = cmd.output().map_err(|e| e.to_string())?;
+            let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok::<Option<String>, String>(if stdout.is_empty() {
+                None
+            } else {
+                Some(stdout)
+            })
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (default_path, title);
+        Ok(None)
+    }
 }
 
 #[tauri::command]
