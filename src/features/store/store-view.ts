@@ -773,9 +773,19 @@ decorateStoreTabs();
 export function applyStoreTabs(): void {
   const switcher = document.getElementById("store-switcher");
   if (!switcher) return;
-  let activeVisible = false;
+  // The buttons are static markup, so the saved order is applied by moving
+  // them. Hiding alone left the Stores bar in its built-in order.
+  const byStore = new Map<string, HTMLElement>();
   switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
-    const id = btn.dataset.store || "";
+    const id = btn.dataset.store;
+    if (id) byStore.set(id, btn);
+  });
+  for (const id of storeOrder()) {
+    const btn = byStore.get(id);
+    if (btn) switcher.append(btn);
+  }
+  let activeVisible = false;
+  byStore.forEach((btn, id) => {
     const hidden = S.hiddenStores.has(id);
     btn.hidden = hidden;
     if (!hidden && id === S.activeStore) activeVisible = true;
