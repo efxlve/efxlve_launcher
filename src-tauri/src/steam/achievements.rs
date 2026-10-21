@@ -436,9 +436,20 @@ pub fn candidate_emulator_dirs() -> Vec<PathBuf> {
     // 2) %APPDATA%
     if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
         dirs.push(appdata.join("Goldberg SteamEmu Saves"));
+        dirs.push(appdata.join("GSE Saves"));
         dirs.push(appdata.join("ALI213"));
         dirs.push(appdata.join("SmartSteamEmu"));
         dirs.push(appdata.join("FLT"));
+    }
+    // 3) Newer Goldberg builds and portable emulators keep saves elsewhere.
+    if let Some(local) = std::env::var_os("LOCALAPPDATA").map(PathBuf::from) {
+        dirs.push(local.join("Goldberg SteamEmu Saves"));
+        dirs.push(local.join("GSE Saves"));
+        dirs.push(local.join("SmartSteamEmu"));
+    }
+    if let Some(program_data) = std::env::var_os("PROGRAMDATA").map(PathBuf::from) {
+        dirs.push(program_data.join("Goldberg SteamEmu Saves"));
+        dirs.push(program_data.join("GSE Saves"));
     }
 
     dirs
@@ -603,8 +614,13 @@ pub fn get_achievement_source_config(
         .as_ref()
         .filter(|p| !p.trim().is_empty())
         .map(Path::new);
-    config.detected_path = find_emulator_achievement_file(app_id, custom)
-        .map(|p| p.to_string_lossy().to_string());
+    let remembered = ACHIEVEMENT_DIRS
+        .lock()
+        .ok()
+        .and_then(|lock| lock.as_ref().and_then(|map| map.get(app_id).cloned()));
+    config.detected_path =
+        find_emulator_achievement_file(app_id, custom.or(remembered.as_deref()))
+            .map(|p| p.to_string_lossy().to_string());
     config
 }
 
