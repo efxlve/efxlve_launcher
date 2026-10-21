@@ -55,6 +55,7 @@ Names exported from a Rust folder are listed in that folder's `mod.rs`
 
 ```powershell
 npm.cmd run build                          # tsc --noEmit && vite build
+npm.cmd run test                           # Vitest, src/**/*.test.ts
 npm.cmd run locales                        # every locale has the same keys
 cargo check --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml
@@ -75,7 +76,7 @@ is also read, and `.dsh` wins a duplicate name.
 
 The check that covers the change passes:
 
-- Frontend or shared code: `npm.cmd run build`.
+- Frontend or shared code: `npm.cmd run build` and `npm.cmd run test`.
 - Rust changed: `cargo test --manifest-path src-tauri/Cargo.toml`.
 
 One task, one commit. Stop when the check passes, commit, and do not ask first.

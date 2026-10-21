@@ -37,6 +37,7 @@ Before submitting changes, ensure the following commands pass with zero errors:
 
 ```powershell
 npm.cmd run build                              # Typecheck (tsc --noEmit) and Vite production build
+npm.cmd run test                               # Frontend unit tests (Vitest, src/**/*.test.ts)
 npm.cmd run locales                            # Locale key parity
 cargo test --manifest-path src-tauri/Cargo.toml # Rust unit tests
 ```
