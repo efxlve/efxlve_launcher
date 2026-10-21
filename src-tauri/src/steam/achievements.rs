@@ -347,7 +347,12 @@ pub fn parse_achievements_ini(text: &str) -> ParsedEmulatorAchievements {
                     parsed.order_mapping.push(val.to_string());
                 }
             } else if key.eq_ignore_ascii_case("Achieved") {
-                current_entry.achieved = val == "1" || val.eq_ignore_ascii_case("true");
+                // RUNE writes 1, some builds write 1.000000 or true.
+                current_entry.achieved = val.eq_ignore_ascii_case("true")
+                    || val
+                        .parse::<f64>()
+                        .map(|value| value > 0.0)
+                        .unwrap_or(false);
             } else if key.eq_ignore_ascii_case("UnlockTime") {
                 current_entry.unlock_time = val.parse::<i64>().unwrap_or(0);
             } else if key.eq_ignore_ascii_case("CurProgress") {
@@ -1872,6 +1877,15 @@ mod tests {
         assert_eq!(response.achievements[0].display_name, "First");
         assert_eq!(response.achievements[0].icon_link, "on.jpg");
         assert_eq!(response.achievements[0].unlock_date.as_deref(), Some("2023-11-14"));
+    }
+
+    #[test]
+    fn emulator_ini_accepts_float_achieved_values() {
+        let parsed = parse_achievements_ini("[ACH_ONE]\nAchieved=1.000000\nUnlockTime=1700000000\n");
+        assert_eq!(
+            is_emulator_unlocked(&parsed, "ACH_ONE", 0, "0"),
+            Some((true, 1_700_000_000, 1.0))
+        );
     }
 
     #[test]
