@@ -542,6 +542,16 @@ fn set_fullscreen_native(_window: &tauri::Window, _enabled: bool) {}
 
 #[tauri::command]
 fn app_set_fullscreen(app: AppHandle, enabled: bool) -> Result<bool, String> {
+    // Controller auto-fullscreen calls this soon after boot. A panic here used
+    // to unwind through Tauri's IPC callback and abort the whole process, which
+    // looked like the launcher closing by itself. Keep the failure local.
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        set_fullscreen_mode(&app, enabled)
+    }))
+    .unwrap_or_else(|_| Err("fullscreen failed".to_string()))
+}
+
+fn set_fullscreen_mode(app: &AppHandle, enabled: bool) -> Result<bool, String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;

@@ -465,6 +465,8 @@ export interface PlaytimeRecord {
 export interface GameStatusEvent {
   id: string;
   running: boolean;
+  /** True for a game that was already open when the process watch started. */
+  initial?: boolean;
   sessionSeconds?: number;
   totalSeconds?: number;
   sessionCount?: number;

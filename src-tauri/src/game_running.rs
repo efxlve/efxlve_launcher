@@ -38,11 +38,12 @@ fn tracked_locally(id: &str) -> bool {
     id.starts_with("riot::") || id.starts_with("battlenet::")
 }
 
-fn emit_status(app: &AppHandle, id: &str, running: bool) {
-    let _ = app.emit(
-        "game-status",
-        serde_json::json!({ "id": id, "running": running }),
-    );
+fn status_payload(id: &str, running: bool, initial: bool) -> serde_json::Value {
+    serde_json::json!({ "id": id, "running": running, "initial": initial })
+}
+
+fn emit_status(app: &AppHandle, id: &str, running: bool, initial: bool) {
+    let _ = app.emit("game-status", status_payload(id, running, initial));
 }
 
 /// Executable names for one game folder, discovered once and cached.
@@ -58,6 +59,9 @@ fn watch_loop(app: AppHandle) {
     let mut exes: HashMap<PathBuf, Vec<String>> = HashMap::new();
     // Start instant per running game, for the stores tracked locally.
     let mut started: HashMap<String, Instant> = HashMap::new();
+    // Games found on the first pass were already open before the launcher
+    // booted; the UI marks them running without treating them as a fresh start.
+    let mut initial_tick = true;
     loop {
         thread::sleep(POLL);
         let games = WATCHED.lock().map(|g| g.clone()).unwrap_or_default();
@@ -80,7 +84,7 @@ fn watch_loop(app: AppHandle) {
             exes.retain(|path, _| keep.contains(path));
         }
         for id in now.difference(&last) {
-            emit_status(&app, id, true);
+            emit_status(&app, id, true, initial_tick);
             if tracked_locally(id) || id.starts_with("custom::") {
                 started.insert(id.clone(), Instant::now());
             }
@@ -115,7 +119,7 @@ fn watch_loop(app: AppHandle) {
                 let _ = app.emit("game-status", payload);
                 continue;
             }
-            emit_status(&app, id, false);
+            emit_status(&app, id, false, false);
             if let Some(at) = started.remove(id) {
                 let seconds = at.elapsed().as_secs();
                 if seconds >= 5 {
@@ -127,6 +131,7 @@ fn watch_loop(app: AppHandle) {
             }
         }
         last = now;
+        initial_tick = false;
     }
 }
 
@@ -148,4 +153,17 @@ pub fn game_watch_installed(app: AppHandle, games: Vec<WatchGame>) {
     let _ = thread::Builder::new()
         .name("game-running".into())
         .spawn(move || watch_loop(app));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::status_payload;
+
+    #[test]
+    fn boot_status_is_marked_initial() {
+        let payload = status_payload("gog::123", true, true);
+        assert_eq!(payload["id"], "gog::123");
+        assert_eq!(payload["running"], true);
+        assert_eq!(payload["initial"], true);
+    }
 }

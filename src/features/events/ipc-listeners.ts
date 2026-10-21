@@ -79,8 +79,7 @@ import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
-import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";
-import { loadSavedAccounts } from "../auth/account-switcher";
+import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
@@ -111,6 +110,10 @@ import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
 import { initHoverPrefetch, prefetchGamePagesWhenIdle } from "../drawer/game-prefetch";
+
+/** A game seen this soon after boot was usually already open before the launcher. */
+const GAME_WATCH_BOOT_GRACE_MS = 12_000;
+const GAME_WATCH_BOOT_AT = Date.now();
 
 let dlDomRaf = 0;
 let dlDomId = "";
@@ -628,9 +631,10 @@ export async function initApp(hooks: {
     );
 
     listenLater<GameStatusEvent>("game-status", (event) => {
-      const { id, running, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
+      const { id, running, initial, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
       const sum = summaryOf(id);
       const title = sum?.title || id;
+      const bootQuiet = Date.now() - GAME_WATCH_BOOT_AT < GAME_WATCH_BOOT_GRACE_MS;
 
       if (running) {
         // Two watchers can see the same game (Steam's flag and the process
@@ -638,22 +642,27 @@ export async function initApp(hooks: {
         if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
         clearLaunchStatus(id);
-        toast(t("status.running", { title }), "ok");
-        // Point at the Shift+Tab overlay on the first start of the title, unless
-        // the overlay is off globally or the user opted this game out. The game
-        // gets a PS5-like card; the launcher keeps its own toast.
-        if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
-          toast(t("overlay.startHint"), "");
-          void invoke("overlay_set_active_game", { appName: id, title }).catch(() => {});
-          void invoke("overlay_flash_hint", {
-            title: t("overlay.enabledTitle"),
-            body: t("overlay.startHint"),
-          }).catch(() => {});
-        }
-        // Opt-in: get the launcher out of the way when a game starts. TV Mode
-        // is a fullscreen couch UI and stays where it is.
-        if (S.minimizeOnGame && !S.isFullscreen) {
-          void appMinimize().catch(() => {});
+        // A game that was already open before the launcher booted is not a
+        // fresh start: show its Running state, but do not toast, flash the
+        // overlay, or minimize the window the user just opened.
+        if (!initial && !bootQuiet) {
+          toast(t("status.running", { title }), "ok");
+          // Point at the Shift+Tab overlay on the first start of the title, unless
+          // the overlay is off globally or the user opted this game out. The game
+          // gets a PS5-like card; the launcher keeps its own toast.
+          if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
+            toast(t("overlay.startHint"), "");
+            void invoke("overlay_set_active_game", { appName: id, title }).catch(() => {});
+            void invoke("overlay_flash_hint", {
+              title: t("overlay.enabledTitle"),
+              body: t("overlay.startHint"),
+            }).catch(() => {});
+          }
+          // Opt-in: get the launcher out of the way when a game starts. TV Mode
+          // is a fullscreen couch UI and stays where it is.
+          if (S.minimizeOnGame && !S.isFullscreen) {
+            void appMinimize().catch(() => {});
+          }
         }
         // Opt-in: pause the active download while a game is running so it does not
         // steal bandwidth/disk from gameplay. Covers Epic and GOG downloads, and
