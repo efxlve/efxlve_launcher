@@ -1102,17 +1102,17 @@ export function renderEpic(): string {
     </button>`
     : "";
   const tools = `
-    <button class="btn ghost lib-sort-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}">
-      ${icon("plus", 14)} <span>${esc(t("customGames.addBtn"))}</span>
+    <button class="icon-btn lib-create-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}" aria-label="${esc(t("customGames.addTitle"))}">
+      ${icon("plus", 17)}
     </button>
-    <button class="btn ghost lib-sort-btn" data-act="import-custom-games-folder" title="${esc(t("customGames.importFolderTitle"))}">
-      ${icon("folder", 14)} <span>${esc(t("customGames.importFolderBtn"))}</span>
+    <button class="icon-btn lib-create-btn" data-act="import-custom-games-folder" title="${esc(t("customGames.importFolderTitle"))}" aria-label="${esc(t("customGames.importFolderTitle"))}">
+      ${icon("folder", 17)}
     </button>
     ${sourceDropdown}
     ${filterButton}
     <div class="sort-dropdown-container">
-      <button class="btn ghost lib-sort-btn" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
-        <span class="lib-sort-kicker">${esc(t("lib.sortBy"))}</span>
+      <button class="btn ghost lib-sort-btn lib-sort-trigger" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
+        <span class="lib-sort-icon">${icon("arrow-down-a-z", 13)}</span>
         <span class="sort-btn-label">${esc(currentSort.label)}</span>
         ${icon(S.isSortDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>

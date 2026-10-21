@@ -13,6 +13,9 @@
 .lib-filters .tab { height: 48px; font-size: 16px; }
 .lib-filters.tabs { gap: clamp(14px, 2vw, 28px); }
 .lib-tools .lib-hide-btn { width: 40px; height: 40px; }
+.lib-tools .lib-create-btn { width: 40px; height: 40px; border: 1px solid var(--line); background: var(--surface-1); }
+.lib-tools .lib-create-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.lib-sort-icon { display: inline-flex; color: var(--text-3); }
 /* Stepped on purpose: a smooth 60 fps rotation repaints the header every frame
    (measured ~70% of a core plus the GPU). Twelve steps per turn keeps the
    "working" hint for a fraction of that. */
