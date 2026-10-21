@@ -1,7 +1,7 @@
 # AGENTS.md
 
-The only agent instruction file in this repository. It is loaded every turn by
-DeepSeek Harness.
+The only agent instruction file in this repository. DeepSeek Harness loads it at
+the start of every session.
 
 ## Model policy
 
@@ -62,6 +62,14 @@ npm.cmd run tauri dev                      # the real app window
 ```
 
 Use `npm.cmd`, not `npm`, in PowerShell.
+
+## Harness
+
+The model is DeepSeek-V4.1-Flash (`deepseek-flash`) on the DeepSeek route. Start
+the Web UI with `npx.cmd @deepseek-ai/dsh@latest web`; bare `npx` resolves to the
+blocked `npx.ps1` shim in this PowerShell. Select this repository as the
+workspace. Project skills live in `.dsh/skills/<name>/SKILL.md`; `.agents/skills/`
+is also read, and `.dsh` wins a duplicate name.
 
 ## Done when
 

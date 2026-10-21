@@ -43,3 +43,7 @@ tools/store-check/fixtures.js
 tools/store-check/report*.png
 tools/store-check/.tmp-chrome-profile-*/
 
+# DeepSeek Harness yerel talimat ve worktree dosyaları
+AGENTS.local.md
+.agents/worktrees/
+
