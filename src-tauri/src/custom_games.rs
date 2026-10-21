@@ -256,7 +256,7 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
         // Emulator achievement files often sit next to the exe
         // (`steam_settings/achievements.ini`), so teach the detector that root.
         crate::steam::remember_achievement_dir(aid, working_dir);
-        crate::steam::steam_start_achievement_watcher(app_clone.clone(), aid.clone());
+        crate::steam::steam_start_custom_achievement_watcher(app_clone.clone(), aid.clone());
     }
 
     let started = std::time::Instant::now();

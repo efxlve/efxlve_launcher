@@ -1363,11 +1363,14 @@ pub async fn steam_get_emulator_achievements(
         return Err("Invalid Steam app id".into());
     }
     let config = get_achievement_source_config(&app, &app_id);
+    // "Disabled" means emulator files are ignored, not that the game has no
+    // achievements at all: the Steam client's own stats still count.
     if config.mode == "disabled" {
-        return Ok(GameAchievementsResponse {
-            supported: Some(false),
-            ..Default::default()
-        });
+        if let Some(local) = steam_install_path().and_then(|steam| {
+            read_local_achievements_with_app(Some(&app), &steam, &app_id)
+        }) {
+            return Ok(local);
+        }
     }
 
     let community = fetch_community_schema(&app, &app_id, force == Some(true)).await;
@@ -1483,18 +1486,32 @@ fn watcher_snapshot(
     app_id: &str,
     steam: Option<&Path>,
     community: Option<&[CommunityAchievement]>,
+    emulator_only: bool,
 ) -> Option<GameAchievementsResponse> {
-    if let Some(steam) = steam {
-        if let Some(response) = read_local_achievements_with_app(Some(app), steam, app_id) {
-            return Some(response);
+    if !emulator_only {
+        if let Some(steam) = steam {
+            if let Some(response) = read_local_achievements_with_app(Some(app), steam, app_id) {
+                return Some(response);
+            }
         }
     }
     let emu = read_emulator_achievements(Some(app), app_id)?;
     community.map(|schema| build_emulator_achievements(schema, &emu))
 }
 
+/// Starts the watch for a Steam client game.
 #[tauri::command]
 pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
+    start_achievement_watcher(app, app_id, false);
+}
+
+/// Starts the watch for a custom game: the emulator file is the truth, even
+/// when the same AppID also has Steam client stats on this PC.
+pub fn steam_start_custom_achievement_watcher(app: tauri::AppHandle, app_id: String) {
+    start_achievement_watcher(app, app_id, true);
+}
+
+fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return;
     }
@@ -1514,9 +1531,13 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
 
     std::thread::spawn(move || {
         let steam = steam_install_path();
-        let local_snapshot = steam.as_deref().and_then(|path| {
-            read_local_achievements_with_app(Some(&app_handle), path, &target_app_id)
-        });
+        let local_snapshot = if emulator_only {
+            None
+        } else {
+            steam.as_deref().and_then(|path| {
+                read_local_achievements_with_app(Some(&app_handle), path, &target_app_id)
+            })
+        };
         // A custom game usually has no Steam client schema. Only ask the public
         // page when the local snapshot is missing; the answer is cached on disk.
         let community = if local_snapshot.is_none() {
@@ -1535,6 +1556,7 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
                 &target_app_id,
                 steam.as_deref(),
                 community.as_deref(),
+                emulator_only,
             )
         });
         let mut initialised = initial.is_some();
@@ -1560,6 +1582,7 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
                 &target_app_id,
                 steam.as_deref(),
                 community.as_deref(),
+                emulator_only,
             ) else {
                 continue;
             };
