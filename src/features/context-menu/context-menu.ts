@@ -85,7 +85,8 @@ const isRiot = source === "riot";
                 ? `<button class="ps5-context-item" role="menuitem" disabled><span class="running-dot"></span><span>${esc(t("lib.running"))}</span></button>`
                 : installed
                   ? item("epic-play", t("common.play"), "play")
-                  : item("pick-custom-exe-for", t("customGames.setExe"), "folder")}`
+                  : item("pick-custom-exe-for", t("customGames.setExe"), "folder")}
+    ${item("edit-custom-game", t("common.edit"), "edit")}`
             : `${installed
                 ? item("epic-play", t("common.play"), "play")
                 : isCompanion

@@ -2784,6 +2784,7 @@
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
   "customGames.save": "Save Game",
   "customGames.delete": "Delete Game",
+  "customGames.updatedSuccess": "อัปเดต {title} แล้ว",
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",

@@ -2784,6 +2784,7 @@
   "customGames.fieldSteamAppId": "Steam AppID (başarımlar için)",
   "customGames.save": "Oyunu Kaydet",
   "customGames.delete": "Oyunu Sil",
+  "customGames.updatedSuccess": "{title} güncellendi",
   "customGames.addedSuccess": "{title} kütüphaneye eklendi",
   "customGames.deletedSuccess": "{title} kütüphaneden kaldırıldı",
   "customGames.storeLabel": "Özel",

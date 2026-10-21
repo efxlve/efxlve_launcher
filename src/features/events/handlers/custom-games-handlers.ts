@@ -4,6 +4,7 @@
 
 import {
   openAddCustomGameModal,
+  openEditCustomGameModal,
   closeAddCustomGameModal,
   handlePickCustomExe,
   handlePickExeForGame,
@@ -22,6 +23,10 @@ export function handleCustomGamesAction(act: string | undefined, id?: string): b
   switch (act) {
     case "open-add-custom-game-modal":
       openAddCustomGameModal();
+      return true;
+
+    case "edit-custom-game":
+      if (id) openEditCustomGameModal(id);
       return true;
 
     case "close-custom-game-modal":

@@ -11,14 +11,37 @@ import {
   customGamesPickFile,
   customGamesSearchSteam,
   customGamesSteamDetails,
+  type CustomGame,
+  type SteamGameStoreDetails,
   type SteamStoreSearchHit,
 } from "../../custom-games";
 import { loadCustomGamesLibrary } from "./custom-games-library";
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 let currentHits: SteamStoreSearchHit[] = [];
+/** The game being edited; null while adding a new one. */
+let editingId: string | null = null;
+/** Metadata of the store hit selected in this session, if any. */
+let pickedHit: SteamStoreSearchHit | null = null;
+let pickedDetails: SteamGameStoreDetails | null = null;
 
 export function openAddCustomGameModal(): void {
+  editingId = null;
+  pickedHit = null;
+  pickedDetails = null;
+  S.isAddCustomGameOpen = true;
+  renderCustomGameModal();
+}
+
+/** Opens the same form prefilled with an existing custom game. */
+export function openEditCustomGameModal(id: string): void {
+  const game = S.customGames.find((item) => item.id === id);
+  if (!game) return;
+  editingId = id;
+  pickedHit = null;
+  pickedDetails = game.genres?.length
+    ? { name: game.title, shortDescription: "", headerImage: "", developers: [], genres: game.genres }
+    : null;
   S.isAddCustomGameOpen = true;
   renderCustomGameModal();
 }
@@ -26,6 +49,9 @@ export function openAddCustomGameModal(): void {
 export function closeAddCustomGameModal(): void {
   S.isAddCustomGameOpen = false;
   currentHits = [];
+  editingId = null;
+  pickedHit = null;
+  pickedDetails = null;
   const root = customGameRoot;
   const el = root?.querySelector(".custom-game-backdrop");
   if (el) el.remove();
@@ -42,10 +68,11 @@ export function renderCustomGameModal(): void {
     root.appendChild(backdrop);
   }
 
+  const game = editingId ? S.customGames.find((item) => item.id === editingId) : undefined;
   backdrop.innerHTML = `
     <div class="modal custom-game-modal" data-act="prevent-modal-close">
       <div class="custom-game-head">
-        <div class="custom-game-title">${icon("plus", 18)} ${esc(t("customGames.addTitle"))}</div>
+        <div class="custom-game-title">${icon(editingId ? "edit" : "plus", 18)} ${esc(t(editingId ? "customGames.editTitle" : "customGames.addTitle"))}</div>
         <button class="modal-close-btn" data-act="close-custom-game-modal" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
       </div>
 
@@ -59,21 +86,21 @@ export function renderCustomGameModal(): void {
       <div class="custom-game-form">
         <div class="custom-form-row preview-row">
           <div class="custom-cover-preview" id="custom-cover-preview">
-            <div class="cover-placeholder">${icon("gamepad-2", 36)}</div>
+            ${game?.coverUrl ? `<img src="${esc(game.coverUrl)}" alt="Cover" />` : `<div class="cover-placeholder">${icon("gamepad-2", 36)}</div>`}
           </div>
           <div class="custom-form-meta">
             <label class="custom-field">
               <span>${esc(t("customGames.fieldTitle"))} <strong class="req">*</strong></span>
-              <input type="text" id="custom-title-input" required />
+              <input type="text" id="custom-title-input" value="${esc(game?.title ?? "")}" required />
             </label>
             <div class="custom-field-split">
               <label class="custom-field">
                 <span>${esc(t("customGames.fieldYear"))}</span>
-                <input type="number" id="custom-year-input" placeholder="2005" />
+                <input type="number" id="custom-year-input" placeholder="2005" value="${game?.releaseYear ?? ""}" />
               </label>
               <label class="custom-field">
                 <span>${esc(t("customGames.fieldSteamAppId"))}</span>
-                <input type="text" id="custom-appid-input" placeholder="e.g. 1262540" />
+                <input type="text" id="custom-appid-input" placeholder="e.g. 1262540" value="${esc(game?.steamAppId ?? "")}" />
               </label>
             </div>
           </div>
@@ -82,24 +109,24 @@ export function renderCustomGameModal(): void {
         <label class="custom-field">
           <span>${esc(t("customGames.fieldExe"))}</span>
           <div class="custom-exe-input-wrap">
-            <input type="text" id="custom-exe-input" placeholder="C:\\Games\\...\\game.exe" />
+            <input type="text" id="custom-exe-input" placeholder="C:\\Games\\...\\game.exe" value="${esc(game?.exePath ?? "")}" />
             <button type="button" class="btn ghost small" data-act="pick-custom-exe">${icon("folder", 13)} ${esc(t("customGames.browse"))}</button>
           </div>
         </label>
 
         <label class="custom-field">
           <span>${esc(t("customGames.fieldArgs"))}</span>
-          <input type="text" id="custom-args-input" placeholder="-windowed -novid" />
+          <input type="text" id="custom-args-input" placeholder="-windowed -novid" value="${esc(game?.launchArgs ?? "")}" />
         </label>
 
         <label class="custom-field">
           <span>${esc(t("customGames.fieldCoverUrl"))}</span>
-          <input type="text" id="custom-cover-input" placeholder="https://..." />
+          <input type="text" id="custom-cover-input" placeholder="https://..." value="${esc(game?.coverUrl ?? "")}" />
         </label>
 
         <label class="custom-field">
           <span>${esc(t("customGames.fieldDesc"))}</span>
-          <textarea id="custom-desc-input" rows="3"></textarea>
+          <textarea id="custom-desc-input" rows="3">${esc(game?.description ?? "")}</textarea>
         </label>
       </div>
 
@@ -122,6 +149,8 @@ function attachSearchListeners(modalEl: HTMLElement): void {
   if (coverInput && coverPreview) {
     coverInput.addEventListener("input", () => {
       const url = coverInput.value.trim();
+      // A hand-typed cover is no longer the selected store hit's artwork.
+      pickedHit = null;
       if (url) {
         coverPreview.innerHTML = `<img src="${esc(url)}" alt="Cover" onerror="this.parentElement.innerHTML='${icon("gamepad-2", 36)}'" />`;
       } else {
@@ -181,6 +210,7 @@ function attachSearchListeners(modalEl: HTMLElement): void {
 
       if (titleInput) titleInput.value = hit.name;
       if (appidInput) appidInput.value = String(hit.id);
+      pickedHit = hit;
       if (coverInput) {
         coverInput.value = hit.coverUrl;
         if (coverPreview) {
@@ -194,6 +224,7 @@ function attachSearchListeners(modalEl: HTMLElement): void {
       // Fetch store details in background to auto-fill description and year
       try {
         const details = await customGamesSteamDetails(String(hit.id));
+        pickedDetails = details;
         if (descInput && !descInput.value && details.shortDescription) {
           descInput.value = details.shortDescription;
         }
@@ -245,25 +276,31 @@ export async function handleSaveCustomGame(): Promise<void> {
   const releaseYear = yearInput?.value ? Number(yearInput.value) : undefined;
   const steamAppId = appidInput?.value.trim() || undefined;
 
-  try {
-    const saved = await customGamesAdd({
-      id: "",
-      title,
-      exePath,
-      launchArgs,
-      coverUrl,
-      headerUrl: coverUrl,
-      heroUrl: coverUrl,
-      description,
-      releaseYear,
-      genres: [],
-      steamAppId,
-      addedAt: 0,
-    });
+  const base = editingId ? S.customGames.find((item) => item.id === editingId) : undefined;
+  const payload: CustomGame = {
+    id: base?.id ?? "",
+    title,
+    exePath,
+    launchArgs,
+    coverUrl,
+    headerUrl: pickedHit?.headerUrl || base?.headerUrl || coverUrl,
+    heroUrl: pickedHit?.heroUrl || base?.heroUrl || coverUrl,
+    description,
+    developer: pickedDetails?.developers?.filter(Boolean).join(", ") || base?.developer,
+    releaseYear: releaseYear ?? base?.releaseYear,
+    genres: pickedDetails?.genres?.length ? pickedDetails.genres : (base?.genres ?? []),
+    steamAppId,
+    addedAt: base?.addedAt ?? 0,
+  };
 
+  try {
+    const saved = base ? await customGamesEdit(payload) : await customGamesAdd(payload);
     await loadCustomGamesLibrary();
     closeAddCustomGameModal();
-    toast(t("customGames.addedSuccess", { title: saved.title }), "ok");
+    toast(
+      t(base ? "customGames.updatedSuccess" : "customGames.addedSuccess", { title: saved.title }),
+      "ok",
+    );
     render();
   } catch (e) {
     toast(String(e), "err");

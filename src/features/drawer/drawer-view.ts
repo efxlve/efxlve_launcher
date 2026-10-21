@@ -630,6 +630,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
         : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`;
     return `${primary}
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
+      <button class="btn ghost lg icon-only" data-act="edit-custom-game" data-id="${s.appName}" title="${esc(t("common.edit"))}">${icon("edit", 16)}</button>
       <button class="btn ghost lg danger" data-act="custom-game-remove" data-id="${s.appName}" title="${esc(t("customGames.delete"))}">${icon("trash", 16)} ${esc(t("customGames.delete"))}</button>
       ${sourceChipHtml(s.appName)}`;
   }
