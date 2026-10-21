@@ -18,8 +18,13 @@
 > - Özel oyun düzenleme penceresi, IGDB arama yedeği, kapak/hero yedeği, Steam
 >   meta verisinden tür/geliştirici aktarımı, süre kaydı, launcher’dan durdurma,
 >   silme onayı ve profil listesi eklendi.
-> - Bilinen tek sınır: Launcher dışından başlatılan özel oyunun canlı izlenmesi ve
->   emülatör dosyası olmayan oyunda yalnızca tanımların gösterilmesi.
+> - Launcher dışından başlatılan özel oyunlar süreç izleyicisiyle yakalanıyor;
+>   süre ve başarım izleme aynı yoldan başlıyor. Klasörden toplu oyun içe aktarma
+>   da eklendi.
+> - Ayarlar > Başarımlar bölümü bildirim açma/kapama, ses, oyun içi overlay
+>   bildirimi ve canlı test imkânı veriyor.
+> - Emülatör dosyası olmayan oyunda yalnızca tanımlar gösterilir; arayüz bunun
+>   yerine güvenilir kaynak olmadığını söyler.
 
 ---
 
