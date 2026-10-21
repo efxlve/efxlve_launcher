@@ -155,7 +155,11 @@ function editorHtml(): string {
   const rendered = preview ? renderMarkdownLite(draftBody).html : "";
   return `
     <div class="notes-editor-head">
-      <input id="notes-title" class="notes-title-input" type="text" value="${esc(draftTitle)}" placeholder="${esc(t("notes.titlePlaceholder"))}" spellcheck="false" />
+      ${
+        preview
+          ? `<div class="notes-title-view" title="${esc(t("notes.edit"))}">${esc(draftTitle.trim() || t("notes.untitled"))}</div>`
+          : `<input id="notes-title" class="notes-title-input" type="text" value="${esc(draftTitle)}" placeholder="${esc(t("notes.titlePlaceholder"))}" spellcheck="false" />`
+      }
       <div class="notes-editor-actions">
         <button class="icon-btn${draftPinned ? " active" : ""}" data-act="notes-pin-editor" title="${esc(draftPinned ? t("notes.unpin") : t("notes.pin"))}">${icon("pin", 15)}</button>
         <button class="icon-btn" data-act="notes-mode" title="${esc(preview ? t("notes.edit") : t("notes.preview"))}">${icon(preview ? "edit" : "eye", 15)}</button>
@@ -176,6 +180,7 @@ function editorHtml(): string {
         ? `<div class="notes-preview">${rendered || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
         : `<div class="notes-toolbar">
             ${TOOLS.map((tool) => `<button type="button" class="notes-tool-btn" data-act="notes-tool" data-md="${tool.kind}" title="${esc(t(tool.titleKey))}">${esc(tool.label)}</button>`).join("")}
+            <button type="button" class="btn ghost small notes-tool-done" data-act="notes-mode">${icon("eye", 12)} ${esc(t("notes.preview"))}</button>
           </div>
           <textarea id="notes-body" class="notes-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draftBody)}</textarea>`
     }
@@ -393,11 +398,19 @@ function applyTool(kind: string): void {
   }
 }
 
-/** Opens the editor and puts the caret at the end of the note. */
-function enterEditMode(): void {
+/** Opens the editor and puts the caret at the end of the clicked field. */
+function enterEditMode(focus: "title" | "body" = "body"): void {
   if (editorMode === "edit") return;
   editorMode = "edit";
   render();
+  if (focus === "title") {
+    const title = document.getElementById("notes-title") as HTMLInputElement | null;
+    if (!title) return;
+    title.focus();
+    const end = title.value.length;
+    title.setSelectionRange(end, end);
+    return;
+  }
   const body = document.getElementById("notes-body") as HTMLTextAreaElement | null;
   if (!body) return;
   body.focus();
@@ -420,6 +433,9 @@ export function handleNotesAction(act: string | undefined, el: HTMLElement): boo
       return true;
     case "notes-mode":
       if (editorMode === "edit") {
+        // Leaving the editor saves immediately instead of waiting for the next
+        // autosave tick, then shows the rendered note.
+        void flushSave();
         editorMode = "preview";
         render();
       } else {
@@ -495,10 +511,14 @@ function wireNotesView(): void {
       void flushSave();
       return;
     }
-    // The note opens as rendered markdown; a click on its text starts editing,
-    // while links and checklist boxes keep their own action.
+    // The note opens as rendered markdown; a click on the title or body starts
+    // editing, while links and checklist boxes keep their own action.
+    if (target?.closest(".notes-title-view")) {
+      enterEditMode("title");
+      return;
+    }
     if (target?.closest(".notes-preview") && !target.closest("a, button")) {
-      enterEditMode();
+      enterEditMode("body");
     }
   });
 
