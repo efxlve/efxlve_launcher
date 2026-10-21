@@ -38,6 +38,8 @@ export const storageRoot = document.getElementById("storage-root");
 export const changelogRoot = document.getElementById("changelog-root");
 /** Custom games modal root. */
 export const customGameRoot = document.getElementById("custom-game-root") as HTMLElement;
+/** Feedback report dialog root. */
+export const feedbackRoot = document.getElementById("feedback-root") as HTMLElement;
 /** Confirmation dialog root. Owns its own high layer so an ask always paints
  * above whichever modal opened it (the manage popup included). */
 export const confirmRoot = document.getElementById("confirm-root") as HTMLElement;

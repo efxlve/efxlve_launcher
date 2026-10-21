@@ -15,6 +15,7 @@ mod discord_sdk;
 mod eos;
 mod egl_removal;
 mod epic_shim;
+mod feedback;
 mod gogdl;
 mod launchers;
 mod legendary;
@@ -114,6 +115,12 @@ mod launch_arg_tests {
 #[derive(Default)]
 pub struct TrayPref {
     pub minimize_to_tray: std::sync::atomic::AtomicBool,
+}
+
+/// Path of the current-run marker, plus whether the previous run left one.
+pub struct RunMarker {
+    pub path: Option<std::path::PathBuf>,
+    pub recovery: bool,
 }
 
 #[tauri::command]
@@ -918,6 +925,25 @@ fn main() {    // Rockstar's launcher only continues when a process named
             if let Ok(dir) = app.path().app_data_dir() {
                 perf::init(dir);
             }
+            let marker_path = app
+                .path()
+                .app_data_dir()
+                .ok()
+                .map(|dir| dir.join("run.marker"));
+            let recovery = marker_path
+                .as_ref()
+                .map(|path| path.is_file())
+                .unwrap_or(false);
+            if let Some(path) = marker_path.as_ref() {
+                if let Some(parent) = path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                let _ = std::fs::write(path, b"running");
+            }
+            app.manage(RunMarker {
+                path: marker_path,
+                recovery,
+            });
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
                 hide_accent_border(&win);
@@ -1030,6 +1056,9 @@ fn main() {    // Rockstar's launcher only continues when a process named
             app_set_decorations,
             app_set_minimize_to_tray,
             app_set_tray_labels,
+            feedback::feedback_create_report,
+            feedback::feedback_has_crash,
+            feedback::feedback_recovery_pending,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,
             legendary::commands::epic_list_games,
@@ -1425,6 +1454,13 @@ fn main() {    // Rockstar's launcher only continues when a process named
     install_crash_logger(&app);
     app.run(|app_handle, event| {
         if let tauri::RunEvent::Exit = event {
+            // A clean exit means the next boot should not show the recovery
+            // feedback prompt.
+            if let Some(marker) = app_handle.try_state::<RunMarker>() {
+                if let Some(path) = &marker.path {
+                    let _ = std::fs::remove_file(path);
+                }
+            }
             // Best effort: drop the GOG presence before the process ends.
             tauri::async_runtime::block_on(gogdl::presence::go_offline(app_handle));
             // Best effort: close the Spotify Connect receiver cleanly.

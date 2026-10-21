@@ -31,7 +31,6 @@ import {
 
 let playback: SpotifyPlaybackStatus = { paired: false, running: false, deviceName: "Efxlve Launcher" };
 let engineBusy = false;
-let engineAttempted = false;
 let pollTimer: number | null = null;
 let playerVisible = false;
 
@@ -79,10 +78,13 @@ function paintHeaderActions(): void {
   const pairBtn = !playback.paired
     ? `<button class="btn ghost small" data-music="player-pair" title="${esc(t("music.playbackPairingToast"))}">${icon("music", 14)} ${esc(t("accounts.openMusic"))}</button>`
     : "";
+  const startBtn = playback.paired && !playback.running
+    ? `<button class="btn ghost small" data-music="player-start">${icon("play", 14)} ${esc(t("music.startEngine"))}</button>`
+    : "";
   // Back and Reload live in the player's own bar now (spotify_extension.js
   // injects them there); only the pairing hint stays in the launcher header.
-  host.innerHTML = pairBtn;
-  host.classList.toggle("has-actions", Boolean(pairBtn));
+  host.innerHTML = pairBtn + startBtn;
+  host.classList.toggle("has-actions", Boolean(pairBtn || startBtn));
 }
 
 /* ---------- Embedded player placement ---------- */
@@ -94,11 +96,9 @@ export function hydrateMusic(): void {
   void refreshStatus();
   paintHeaderActions();
   syncPlayer();
-  // Warm the receiver while the page is open: a song click then skips the cold
-  // start and only waits for the Connect round-trip.
-  void spotifyPlaybackStatus()
-    .then((status) => (status.paired && !status.running ? spotifyPlaybackStart() : null))
-    .catch(() => undefined);
+  // The Spotify receiver is started only when the user asks for it. Starting
+  // librespot while the Music page paints could take the whole launcher down on
+  // machines where its audio backend fails before any interaction happened.
   // The page-enter animation slides the view for a moment; re-apply the
   // rectangle afterwards so the webview sits flush under the header.
   window.setTimeout(() => {
@@ -189,14 +189,12 @@ async function refreshStatus(): Promise<void> {
   const status = await spotifyPlaybackStatus().catch(() => null);
   if (!status) return;
   const wasPaired = playback.paired;
+  const wasRunning = playback.running;
   playback = status;
-  if (wasPaired !== status.paired) paintHeaderActions();
-  // Only start automatically if already paired; avoids unprompted browser popups.
-  if (playback.paired && !playback.running && !engineBusy && !engineAttempted) {
-    engineAttempted = true;
-    void startEngine();
-  }
+  if (wasPaired !== status.paired || wasRunning !== status.running) paintHeaderActions();
 }
+
+/* ---------- Playback engine (explicit) ---------- */
 
 async function startEngine(): Promise<void> {
   engineBusy = true;
@@ -204,7 +202,6 @@ async function startEngine(): Promise<void> {
     playback = await spotifyPlaybackStart();
     paintHeaderActions();
   } catch (error) {
-    engineAttempted = false;
     toast(String(error).replace(/^Error: /, ""), "err");
   }
   engineBusy = false;
@@ -227,6 +224,10 @@ document.addEventListener("click", (event) => {
   }
   if (action === "player-pair") {
     toast(t("music.playbackPairingToast"), "");
+    void startEngine();
+    return;
+  }
+  if (action === "player-start") {
     void startEngine();
   }
 });

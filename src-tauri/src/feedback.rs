@@ -1,0 +1,286 @@
+//! User-triggered feedback reports.
+//!
+//! A report is a small zip the user can attach to a GitHub issue. It contains
+//! the note, environment details, the performance log, and a sanitized copy of
+//! the settings. Logs are copied only when the user leaves diagnostics enabled;
+//! account vaults and Spotify tokens are never included.
+
+use std::io::Write;
+use std::path::Path;
+
+use serde::Serialize;
+use serde_json::Value;
+use tauri::{AppHandle, Manager};
+
+const NOTE_LIMIT: usize = 8_000;
+const LOG_LIMIT: u64 = 4 * 1024 * 1024;
+const SETTINGS_FILE: &str = "settings.json";
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedbackReport {
+    pub path: String,
+    pub folder: String,
+    pub files: Vec<String>,
+    pub issue_title: String,
+    pub issue_body: String,
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0)
+}
+
+fn report_stamp() -> String {
+    format!("efxlve-feedback-{}", now_secs())
+}
+
+fn first_line(note: &str) -> String {
+    let line = note
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .unwrap_or("Feedback");
+    line.chars().take(72).collect()
+}
+
+/// Removes secrets from a settings tree while keeping harmless preferences and
+/// paths. The key check is deliberately broad: a token must never slip through.
+fn redact_settings(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            for (key, child) in map.iter_mut() {
+                let lower = key.to_ascii_lowercase();
+                if ["key", "token", "secret", "password", "auth", "cookie", "session"]
+                    .iter()
+                    .any(|needle| lower.contains(needle))
+                {
+                    *child = Value::String("<redacted>".into());
+                } else {
+                    redact_settings(child);
+                }
+            }
+        }
+        Value::Array(rows) => {
+            for row in rows {
+                redact_settings(row);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn redacted_settings(app: &AppHandle) -> Option<String> {
+    let path = app.path().app_data_dir().ok()?.join(SETTINGS_FILE);
+    let text = std::fs::read_to_string(path).ok()?;
+    let mut value: Value = serde_json::from_str(&text).ok()?;
+    redact_settings(&mut value);
+    serde_json::to_string_pretty(&value).ok()
+}
+
+fn read_limited(path: &Path) -> Option<Vec<u8>> {
+    let bytes = std::fs::read(path).ok()?;
+    if bytes.len() as u64 <= LOG_LIMIT {
+        return Some(bytes);
+    }
+    let start = bytes.len().saturating_sub(LOG_LIMIT as usize);
+    let mut tail = b"[... earlier log lines omitted ...]\n".to_vec();
+    tail.extend_from_slice(&bytes[start..]);
+    Some(tail)
+}
+
+fn add_bytes(
+    archive: &mut zip::ZipWriter<std::io::Cursor<Vec<u8>>>,
+    options: zip::write::SimpleFileOptions,
+    name: &str,
+    bytes: &[u8],
+    files: &mut Vec<String>,
+) -> Result<(), String> {
+    archive
+        .start_file(name, options)
+        .map_err(|error| error.to_string())?;
+    archive
+        .write_all(bytes)
+        .map_err(|error| error.to_string())?;
+    files.push(name.to_string());
+    Ok(())
+}
+
+fn system_text(app: &AppHandle) -> String {
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map(|path| path.to_string_lossy().to_string())
+        .unwrap_or_else(|_| "<unknown>".into());
+    let processors = std::env::var("NUMBER_OF_PROCESSORS").unwrap_or_else(|_| "?".into());
+    let architecture = std::env::var("PROCESSOR_ARCHITECTURE").unwrap_or_else(|_| "?".into());
+    format!(
+        "Efxlve Launcher: v{}\nOS: {} ({})\nArchitecture: {}\nProcessors: {}\nApp data: {}\nCreated (unix): {}\n",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        architecture,
+        processors,
+        data_dir,
+        now_secs(),
+    )
+}
+
+#[tauri::command]
+pub fn feedback_create_report(
+    app: AppHandle,
+    note: String,
+    include_logs: bool,
+) -> Result<FeedbackReport, String> {
+    let note: String = note.trim().chars().take(NOTE_LIMIT).collect();
+    if note.is_empty() {
+        return Err("feedback.noteRequired".to_string());
+    }
+
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?;
+    let folder = data_dir.join("feedback");
+    std::fs::create_dir_all(&folder).map_err(|error| error.to_string())?;
+
+    let mut path = folder.join(format!("{}.zip", report_stamp()));
+    let mut suffix = 1;
+    while path.exists() {
+        path = folder.join(format!("{}-{}.zip", report_stamp(), suffix));
+        suffix += 1;
+    }
+
+    let title = format!("[Feedback] {}", first_line(&note));
+    let body = format!(
+        "### What happened\n{}\n\n### Environment\n- Efxlve Launcher: v{}\n- OS: {} ({})\n- Report: `{}`\n\n> Diagnostics were generated by the launcher. Settings are redacted and account tokens are not included; please review the zip before attaching it.\n",
+        note,
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        path.file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("report.zip"),
+    );
+
+    let report_text = format!(
+        "Efxlve Launcher feedback\n\
+         Version: {}\n\
+         OS: {} ({})\n\
+         Note:\n{}\n\n\
+         Attach this zip to the GitHub issue.\n\
+         Diagnostics: {}\n",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        note,
+        if include_logs {
+            "included"
+        } else {
+            "not included"
+        },
+    );
+
+    let mut files = Vec::new();
+    let mut archive = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options =
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+    add_bytes(
+        &mut archive,
+        options,
+        "report.txt",
+        report_text.as_bytes(),
+        &mut files,
+    )?;
+    add_bytes(
+        &mut archive,
+        options,
+        "system.txt",
+        system_text(&app).as_bytes(),
+        &mut files,
+    )?;
+
+    if include_logs {
+        if let Some(settings) = redacted_settings(&app) {
+            add_bytes(
+                &mut archive,
+                options,
+                "settings-redacted.json",
+                settings.as_bytes(),
+                &mut files,
+            )?;
+        }
+        let perf = data_dir.join("perf.log");
+        if let Some(bytes) = read_limited(&perf) {
+            add_bytes(&mut archive, options, "perf.log", &bytes, &mut files)?;
+        }
+        for name in ["crash.log", "legendary-error.log", "clip.log", "discord-rpc.log"] {
+            let log = data_dir.join("logs").join(name);
+            if let Some(bytes) = read_limited(&log) {
+                add_bytes(
+                    &mut archive,
+                    options,
+                    &format!("logs/{name}"),
+                    &bytes,
+                    &mut files,
+                )?;
+            }
+        }
+    }
+
+    let bytes = archive
+        .finish()
+        .map_err(|error| error.to_string())?
+        .into_inner();
+    std::fs::write(&path, bytes).map_err(|error| error.to_string())?;
+
+    Ok(FeedbackReport {
+        path: path.to_string_lossy().to_string(),
+        folder: folder.to_string_lossy().to_string(),
+        files,
+        issue_title: title,
+        issue_body: body,
+    })
+}
+
+/// True when a previous run wrote a crash log. The feedback dialog can use this
+/// to tell the user that there is something worth attaching.
+#[tauri::command]
+pub fn feedback_has_crash(app: AppHandle) -> bool {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("logs").join("crash.log"))
+        .and_then(|path| std::fs::metadata(path).ok())
+        .map(|meta| meta.len() > 0)
+        .unwrap_or(false)
+}
+
+/// True when the previous process ended without reaching a clean exit.
+#[tauri::command]
+pub fn feedback_recovery_pending(state: tauri::State<'_, crate::RunMarker>) -> bool {
+    state.recovery
+}
+
+#[cfg(test)]
+mod tests {
+    use super::redact_settings;
+    use serde_json::json;
+
+    #[test]
+    fn settings_secrets_are_redacted_but_paths_stay() {
+        let mut value = json!({
+            "steam_api_key": "secret",
+            "install_dir": "D:/Games",
+            "nested": { "refresh_token": "token", "theme": "aero" }
+        });
+        redact_settings(&mut value);
+        assert_eq!(value["steam_api_key"], "<redacted>");
+        assert_eq!(value["nested"]["refresh_token"], "<redacted>");
+        assert_eq!(value["install_dir"], "D:/Games");
+        assert_eq!(value["nested"]["theme"], "aero");
+    }
+}

@@ -128,6 +128,7 @@ import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
+import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
 import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
 
 // Feature action handlers
@@ -384,6 +385,16 @@ document.addEventListener("click", (e) => {
     openProfile();
   } else if (act === "open-changelog") {
     openChangelogModal();
+  } else if (act === "open-feedback") {
+    openFeedback();
+  } else if (act === "feedback-close") {
+    closeFeedback();
+  } else if (act === "feedback-create") {
+    void createFeedbackReport();
+  } else if (act === "feedback-open-github") {
+    openFeedbackIssue();
+  } else if (act === "feedback-open-folder") {
+    void openFeedbackFolder();
   } else if (act === "close-changelog-modal") {
     closeChangelogModal();
   } else if (act === "changelog-backdrop") {

@@ -1555,6 +1555,7 @@ function renderAbout(): string {
         <div class="settings-row-desc">${t("settings.aboutTagline")}</div>
         <div style="margin-top: 10px;">
           <button type="button" class="btn ghost small" data-act="open-changelog">${icon("clock", 13)} <span>${t("settings.viewChangelog")}</span></button>
+          <button type="button" class="btn ghost small" data-act="open-feedback">${icon("mail", 13)} <span>${t("settings.feedbackOpen")}</span></button>
         </div>
       </div>
     </div>

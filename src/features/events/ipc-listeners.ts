@@ -110,6 +110,8 @@ import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
 import { initHoverPrefetch, prefetchGamePagesWhenIdle } from "../drawer/game-prefetch";
+import { feedbackRecoveryPending } from "../../feedback";
+import { openFeedback } from "../feedback/feedback-view";
 
 /** A game seen this soon after boot was usually already open before the launcher. */
 const GAME_WATCH_BOOT_GRACE_MS = 12_000;
@@ -1060,5 +1062,15 @@ export async function initApp(hooks: {
     // Everything the boot path must do before the launcher is fully usable has
     // been kicked off; this mark is the number to compare between releases.
     perfMark("boot:ready");
+    // A marker left by a killed or crashed process means the last run did not
+    // finish cleanly. Offer the feedback report automatically, after the shell
+    // has painted so the dialog is usable immediately.
+    window.setTimeout(() => {
+      void feedbackRecoveryPending()
+        .then((pending) => {
+          if (pending) openFeedback();
+        })
+        .catch(() => undefined);
+    }, 900);
   }
 }
