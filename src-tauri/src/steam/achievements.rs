@@ -764,6 +764,7 @@ pub fn read_local_achievements_with_app(
 /// `appcache/stats/UserGameStatsSchema_<app>.bin` (definitions, icons) and
 /// `UserGameStats_<account>_<app>.bin` (unlock times). Works offline, needs no
 /// Web API key and no public profile; `None` when the client has no schema.
+#[allow(dead_code)]
 pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchievementsResponse> {
     read_local_achievements_with_app(None, steam, app_id)
 }

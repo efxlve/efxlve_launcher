@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "تم فتح الإنجاز: {name}"
+  "ach.unlockedNotification": "تم فتح الإنجاز: {name}",
+  "customGames.setExe": "اختر ملف التشغيل",
+  "customGames.setExeHint": "اختر الملف التنفيذي لتشغيل هذه اللعبة",
+  "customGames.exeSetSuccess": "تم ربط الملف التنفيذي لـ {title}"
 }

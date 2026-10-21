@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "Obiettivo sbloccato: {name}"
+  "ach.unlockedNotification": "Obiettivo sbloccato: {name}",
+  "customGames.setExe": "Scegli eseguibile",
+  "customGames.setExeHint": "Scegli il file eseguibile per avviare questo gioco",
+  "customGames.exeSetSuccess": "Eseguibile collegato per {title}"
 }

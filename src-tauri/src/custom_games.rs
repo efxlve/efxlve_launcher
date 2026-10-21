@@ -110,9 +110,6 @@ pub fn custom_games_add(app: AppHandle, mut game: CustomGame) -> Result<CustomGa
     if game.title.trim().is_empty() {
         return Err("Game title cannot be empty".into());
     }
-    if game.exe_path.trim().is_empty() {
-        return Err("Executable path cannot be empty".into());
-    }
 
     let mut list = load_custom_games(&app);
     if game.id.trim().is_empty() || !game.id.starts_with("custom::") {
@@ -146,7 +143,10 @@ pub fn custom_games_edit(app: AppHandle, game: CustomGame) -> Result<CustomGame,
         return Err("Invalid game ID".into());
     }
     let mut list = load_custom_games(&app);
-    let index = list.iter().position(|g| g.id == game.id).ok_or("Game not found")?;
+    let index = list
+        .iter()
+        .position(|g| g.id == game.id || g.id.strip_prefix("custom::") == Some(&game.id))
+        .ok_or("Game not found")?;
     list[index] = game.clone();
     save_custom_games(&app, &list)?;
     Ok(game)
@@ -155,7 +155,7 @@ pub fn custom_games_edit(app: AppHandle, game: CustomGame) -> Result<CustomGame,
 #[tauri::command]
 pub fn custom_games_remove(app: AppHandle, id: String) -> Result<(), String> {
     let mut list = load_custom_games(&app);
-    list.retain(|g| g.id != id);
+    list.retain(|g| g.id != id && g.id.strip_prefix("custom::") != Some(&id));
     save_custom_games(&app, &list)?;
     Ok(())
 }
@@ -163,7 +163,14 @@ pub fn custom_games_remove(app: AppHandle, id: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), String> {
     let games = load_custom_games(&app);
-    let game = games.into_iter().find(|g| g.id == id).ok_or("Game not found")?;
+    let game = games
+        .into_iter()
+        .find(|g| g.id == id || g.id.strip_prefix("custom::") == Some(&id))
+        .ok_or("Game not found")?;
+
+    if game.exe_path.trim().is_empty() {
+        return Err("No executable configured for this game".into());
+    }
 
     let exe_path = PathBuf::from(&game.exe_path);
     if !exe_path.exists() {

@@ -60,8 +60,9 @@ export const customGamesSteamDetails = (appId: string) =>
   invoke<SteamGameStoreDetails>("custom_games_steam_details", { appId });
 
 export function customGameToSummary(g: CustomGame): EpicSummary {
-  const parts = g.exePath.replace(/\\/g, "/").split("/");
-  const installPath = parts.length > 1 ? parts.slice(0, -1).join("\\") : g.exePath;
+  const hasExe = Boolean(g.exePath && g.exePath.trim().length > 0);
+  const parts = g.exePath ? g.exePath.replace(/\\/g, "/").split("/") : [];
+  const installPath = hasExe ? (parts.length > 1 ? parts.slice(0, -1).join("\\") : g.exePath) : null;
 
   return {
     appName: g.id,
@@ -70,7 +71,7 @@ export function customGameToSummary(g: CustomGame): EpicSummary {
     cover: g.coverUrl || null,
     description: g.description || "",
     dlcCount: 0,
-    installed: true,
+    installed: hasExe,
     installPath,
     installSize: 0,
     installedVersion: "1.0",
@@ -81,8 +82,9 @@ export function customGameToSummary(g: CustomGame): EpicSummary {
 }
 
 export function customGameToLibraryItem(g: CustomGame): LibraryItem {
-  const parts = g.exePath.replace(/\\/g, "/").split("/");
-  const installPath = parts.length > 1 ? parts.slice(0, -1).join("\\") : g.exePath;
+  const hasExe = Boolean(g.exePath && g.exePath.trim().length > 0);
+  const parts = g.exePath ? g.exePath.replace(/\\/g, "/").split("/") : [];
+  const installPath = hasExe ? (parts.length > 1 ? parts.slice(0, -1).join("\\") : g.exePath) : null;
 
   return {
     key: g.id,
@@ -92,7 +94,7 @@ export function customGameToLibraryItem(g: CustomGame): LibraryItem {
     developer: g.developer || "",
     version: "1.0",
     installedVersion: "1.0",
-    installed: true,
+    installed: hasExe,
     installPath,
     installSize: 0,
     coverUrl: g.coverUrl || null,

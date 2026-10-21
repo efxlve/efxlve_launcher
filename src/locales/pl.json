@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "Osiągnięcie odblokowane: {name}"
+  "ach.unlockedNotification": "Osiągnięcie odblokowane: {name}",
+  "customGames.setExe": "Wybierz plik wykonywalny",
+  "customGames.setExeHint": "Wybierz plik wykonywalny, aby uruchomić tę grę",
+  "customGames.exeSetSuccess": "Połączono plik wykonywalny dla {title}"
 }

@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "Erfolg freigeschaltet: {name}"
+  "ach.unlockedNotification": "Erfolg freigeschaltet: {name}",
+  "customGames.setExe": "Exe auswählen",
+  "customGames.setExeHint": "Wähle die ausführbare Datei, um dieses Spiel zu starten",
+  "customGames.exeSetSuccess": "Ausführbare Datei für {title} verknüpft"
 }

@@ -472,6 +472,14 @@ export function epicActionButtons(
     }
     return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
+  if (s.appName.startsWith("custom::")) {
+    const custom = S.customGames.find((g) => g.id === s.appName);
+    const hasExe = Boolean(custom?.exePath && custom.exePath.trim().length > 0);
+    if (!hasExe) {
+      return `<button class="btn ghost${btn}" data-act="pick-custom-exe-for" data-id="${s.appName}" title="${esc(t("customGames.setExeHint"))}">${icon("folder", 14)} ${esc(t("customGames.setExe"))}</button>`;
+    }
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
   if (isAppDownloading(s.appName)) {
     const p = epicDlProgress(s.appName);
     const label = p !== null ? t("common.downloading", { p }) : t("steam.downloading");

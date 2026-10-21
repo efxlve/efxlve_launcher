@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "ปลดล็อกความสำเร็จแล้ว: {name}"
+  "ach.unlockedNotification": "ปลดล็อกความสำเร็จแล้ว: {name}",
+  "customGames.setExe": "เลือกไฟล์ Exe",
+  "customGames.setExeHint": "เลือกไฟล์สั่งการเพื่อเริ่มเกมนี้",
+  "customGames.exeSetSuccess": "เชื่อมโยงไฟล์สั่งการสำหรับ {title} แล้ว"
 }

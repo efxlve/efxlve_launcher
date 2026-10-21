@@ -271,6 +271,9 @@ function libraryBaseItems(): EpicSummary[] {
   if (S.enabledStores.has("steam")) {
     for (const g of S.steamSummaries) push(libraryItemToSummary(g));
   }
+  if (S.enabledStores.has("custom")) {
+    for (const g of S.customSummaries) push(libraryItemToSummary(g));
+  }
   for (const g of S.companionSummaries) {
     if (S.enabledStores.has(g.source)) push(libraryItemToSummary(g));
   }

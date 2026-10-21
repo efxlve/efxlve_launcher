@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "Conquista desbloqueada: {name}"
+  "ach.unlockedNotification": "Conquista desbloqueada: {name}",
+  "customGames.setExe": "Escolher executável",
+  "customGames.setExeHint": "Escolha o arquivo executável para iniciar este jogo",
+  "customGames.exeSetSuccess": "Executável vinculado para {title}"
 }

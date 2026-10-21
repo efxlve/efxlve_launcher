@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "成就已解锁：{name}"
+  "ach.unlockedNotification": "成就已解锁：{name}",
+  "customGames.setExe": "选择可执行文件",
+  "customGames.setExeHint": "选择可执行文件以启动此游戏",
+  "customGames.exeSetSuccess": "已为 {title} 关联可执行文件"
 }

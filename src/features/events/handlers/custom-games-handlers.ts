@@ -6,6 +6,7 @@ import {
   openAddCustomGameModal,
   closeAddCustomGameModal,
   handlePickCustomExe,
+  handlePickExeForGame,
   handleSaveCustomGame,
 } from "../../custom-games/add-game-dialog";
 import { customGamesRemove } from "../../../custom-games";
@@ -35,14 +36,19 @@ export function handleCustomGamesAction(act: string | undefined, id?: string): b
       void handleSaveCustomGame();
       return true;
 
+    case "pick-custom-exe-for":
+      if (id) {
+        void handlePickExeForGame(id);
+      }
+      return true;
+
     case "custom-game-remove":
       if (id) {
-        const customId = id.startsWith("custom::") ? id.slice(8) : id;
         const s = summaryOf(id);
         const title = s?.title || id;
         void (async () => {
           try {
-            await customGamesRemove(customId);
+            await customGamesRemove(id);
             await loadCustomGamesLibrary();
             toast(t("customGames.deletedSuccess", { title }), "ok");
             render();

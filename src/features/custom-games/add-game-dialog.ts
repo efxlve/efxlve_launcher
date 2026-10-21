@@ -1,5 +1,5 @@
 import { icon } from "../../core/icons";
-import { modalRoot } from "../../core/dom";
+import { customGameRoot } from "../../core/dom";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { toast } from "../../core/toast";
@@ -7,6 +7,7 @@ import { esc } from "../../core/utils";
 import { render } from "../../core/render";
 import {
   customGamesAdd,
+  customGamesEdit,
   customGamesPickFile,
   customGamesSearchSteam,
   customGamesSteamDetails,
@@ -25,13 +26,14 @@ export function openAddCustomGameModal(): void {
 export function closeAddCustomGameModal(): void {
   S.isAddCustomGameOpen = false;
   currentHits = [];
-  const root = modalRoot;
-  const el = root.querySelector(".custom-game-backdrop");
+  const root = customGameRoot;
+  const el = root?.querySelector(".custom-game-backdrop");
   if (el) el.remove();
 }
 
 export function renderCustomGameModal(): void {
-  const root = modalRoot;
+  const root = customGameRoot;
+  if (!root) return;
   let backdrop = root.querySelector<HTMLElement>(".custom-game-backdrop");
   if (!backdrop) {
     backdrop = document.createElement("div");
@@ -44,7 +46,7 @@ export function renderCustomGameModal(): void {
     <div class="modal custom-game-modal" onclick="event.stopPropagation()">
       <div class="custom-game-head">
         <div class="custom-game-title">${icon("plus", 18)} ${esc(t("customGames.addTitle"))}</div>
-        <button class="icon-btn close" data-act="close-custom-game-modal" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
+        <button class="modal-close-btn" data-act="close-custom-game-modal" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
       </div>
 
       <div class="custom-game-search-box">
@@ -78,9 +80,9 @@ export function renderCustomGameModal(): void {
         </div>
 
         <label class="custom-field">
-          <span>${esc(t("customGames.fieldExe"))} <strong class="req">*</strong></span>
+          <span>${esc(t("customGames.fieldExe"))}</span>
           <div class="custom-exe-input-wrap">
-            <input type="text" id="custom-exe-input" placeholder="C:\\Games\\...\\game.exe" required />
+            <input type="text" id="custom-exe-input" placeholder="C:\\Games\\...\\game.exe" />
             <button type="button" class="btn ghost small" data-act="pick-custom-exe">${icon("folder", 13)} ${esc(t("customGames.browse"))}</button>
           </div>
         </label>
@@ -236,10 +238,6 @@ export async function handleSaveCustomGame(): Promise<void> {
     toast(t("customGames.fieldTitle"), "err");
     return;
   }
-  if (!exePath) {
-    toast(t("customGames.fieldExe"), "err");
-    return;
-  }
 
   const launchArgs = argsInput?.value.trim() || undefined;
   const coverUrl = coverInput?.value.trim() || undefined;
@@ -266,6 +264,22 @@ export async function handleSaveCustomGame(): Promise<void> {
     await loadCustomGamesLibrary();
     closeAddCustomGameModal();
     toast(t("customGames.addedSuccess", { title: saved.title }), "ok");
+    render();
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
+export async function handlePickExeForGame(id: string): Promise<void> {
+  const chosen = await customGamesPickFile();
+  if (!chosen) return;
+  const game = S.customGames.find((g) => g.id === id);
+  if (!game) return;
+  const updated = { ...game, exePath: chosen };
+  try {
+    await customGamesEdit(updated);
+    await loadCustomGamesLibrary();
+    toast(t("customGames.exeSetSuccess"), "ok");
     render();
   } catch (e) {
     toast(String(e), "err");

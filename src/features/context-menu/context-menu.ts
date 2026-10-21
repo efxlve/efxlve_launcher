@@ -80,11 +80,15 @@ const isRiot = source === "riot";
         : isAmazon
           ? `${!installed ? amazonItem("amazon-install", t("common.install"), "download") : s.updateAvailable ? amazonItem("amazon-install", t("common.update"), "download") : amazonItem("amazon-play", t("common.play"), "play")}
     ${item("manage-game", t("common.manage"), "settings")}`
-          : `${installed
-              ? item("epic-play", t("common.play"), "play")
-              : isCompanion
-                ? companionItem("companion-install", t("common.install"), "download")
-                : item("epic-install", t("common.install"), "download")}
+          : isCustom
+            ? `${installed
+                ? item("epic-play", t("common.play"), "play")
+                : item("pick-custom-exe-for", t("customGames.setExe"), "folder")}`
+            : `${installed
+                ? item("epic-play", t("common.play"), "play")
+                : isCompanion
+                  ? companionItem("companion-install", t("common.install"), "download")
+                  : item("epic-install", t("common.install"), "download")}
     ${!isCustom ? item("manage-game", t("common.manage"), "settings") : ""}`}
     ${!shared && !isSteam && installed && (s.updateAvailable || S.availableUpdates.has(appName))
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
@@ -97,7 +101,7 @@ const isRiot = source === "riot";
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
     ${!isRiot && !isAmazon && !isCustom ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
-    ${!shared && installed
+    ${!shared && (installed || isCustom)
       ? `<div class="ps5-context-sep"></div>${isSteam
           ? steamItem("uninstall", t("steam.uninstall"), "trash", true)
           : isAmazon

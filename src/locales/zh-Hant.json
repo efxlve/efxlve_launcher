@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "成就已解鎖：{name}"
+  "ach.unlockedNotification": "成就已解鎖：{name}",
+  "customGames.setExe": "選擇執行檔",
+  "customGames.setExeHint": "選擇執行檔以啟動此遊戲",
+  "customGames.exeSetSuccess": "已為 {title} 關聯執行檔"
 }

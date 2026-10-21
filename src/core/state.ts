@@ -89,7 +89,7 @@ import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMe
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
-const ALL_STORES: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "ea", "ubisoft", "xbox", "battlenet", "riot"];
+const ALL_STORES: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "ea", "ubisoft", "xbox", "battlenet", "riot", "custom"];
 
 /** Stores left on in the library filter. An empty or broken save means all of them. */
 function loadEnabledStores(): Set<GameSource> {
@@ -107,6 +107,7 @@ function loadEnabledStores(): Set<GameSource> {
     // Amazon Games joined the filter after it shipped: existing saves predate
     // the store, so enable it once instead of hiding the new library.
     next.add("amazon");
+    next.add("custom");
     return next.size > 0 ? next : new Set(ALL_STORES);
   } catch {
     return new Set(ALL_STORES);

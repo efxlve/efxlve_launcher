@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} kütüphaneye eklendi",
   "customGames.deletedSuccess": "{title} kütüphaneden kaldırıldı",
   "customGames.storeLabel": "Özel",
-  "ach.unlockedNotification": "Başarım Kazanıldı: {name}"
+  "ach.unlockedNotification": "Başarım Kazanıldı: {name}",
+  "customGames.setExe": "Exe Seç",
+  "customGames.setExeHint": "Bu oyunu başlatmak için çalıştırılabilir dosyayı seçin",
+  "customGames.exeSetSuccess": "{title} için çalıştırılabilir dosya bağlandı"
 }

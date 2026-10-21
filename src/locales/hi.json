@@ -2787,5 +2787,8 @@
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
   "customGames.storeLabel": "Custom",
-  "ach.unlockedNotification": "उपलब्धि अनलॉक हुई: {name}"
+  "ach.unlockedNotification": "उपलब्धि अनलॉक हुई: {name}",
+  "customGames.setExe": "एक्ज़ीक्यूटेबल चुनें",
+  "customGames.setExeHint": "इस गेम को लॉन्च करने के लिए एक्ज़ीक्यूटेबल फ़ाइल चुनें",
+  "customGames.exeSetSuccess": "{title} के लिए निष्पादन योग्य लिंक किया गया"
 }
