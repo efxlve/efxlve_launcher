@@ -98,7 +98,7 @@
   width: 100%; min-height: 320px; flex: 1; border: none; background: transparent; color: var(--text);
   font: inherit; line-height: 1.6; resize: vertical; outline: none;
 }
-.notes-preview { min-height: 320px; color: var(--text); line-height: 1.6; }
+.notes-preview { min-height: 320px; color: var(--text); line-height: 1.6; cursor: text; }
 .notes-font-s .notes-body, .notes-font-s .notes-preview { font-size: 13px; }
 .notes-font-m .notes-body, .notes-font-m .notes-preview { font-size: 14.5px; }
 .notes-font-l .notes-body, .notes-font-l .notes-preview { font-size: 16.5px; }

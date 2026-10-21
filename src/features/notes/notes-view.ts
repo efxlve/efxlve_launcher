@@ -45,7 +45,7 @@ let draftColor = "";
 let draftDirty = false;
 let searchQuery = "";
 let scopeFilter: "all" | "launcher" | "games" = "all";
-let editorMode: "edit" | "preview" = "edit";
+let editorMode: "edit" | "preview" = "preview";
 let deleteArmed = false;
 let saveTimer: number | null = null;
 let saveState: "idle" | "saving" | "saved" = "idle";
@@ -64,7 +64,7 @@ function clearDraft(): void {
   draftPinned = false;
   draftColor = "";
   draftDirty = false;
-  editorMode = "edit";
+  editorMode = "preview";
   deleteArmed = false;
   saveState = "idle";
 }
@@ -301,11 +301,10 @@ async function selectNote(id: string): Promise<void> {
   draftPinned = note.pinned;
   draftColor = note.color;
   draftDirty = false;
-  editorMode = "edit";
+  editorMode = "preview";
   deleteArmed = false;
   saveState = "idle";
   render();
-  document.getElementById("notes-title")?.focus();
 }
 
 function startNewNote(): void {
@@ -394,6 +393,18 @@ function applyTool(kind: string): void {
   }
 }
 
+/** Opens the editor and puts the caret at the end of the note. */
+function enterEditMode(): void {
+  if (editorMode === "edit") return;
+  editorMode = "edit";
+  render();
+  const body = document.getElementById("notes-body") as HTMLTextAreaElement | null;
+  if (!body) return;
+  body.focus();
+  const end = body.value.length;
+  body.setSelectionRange(end, end);
+}
+
 /** The click-router delegates here; true when the click was a notes action. */
 export function handleNotesAction(act: string | undefined, el: HTMLElement): boolean {
   const id = el.dataset.id ?? "";
@@ -408,8 +419,12 @@ export function handleNotesAction(act: string | undefined, el: HTMLElement): boo
       void togglePin(null);
       return true;
     case "notes-mode":
-      editorMode = editorMode === "edit" ? "preview" : "edit";
-      render();
+      if (editorMode === "edit") {
+        editorMode = "preview";
+        render();
+      } else {
+        enterEditMode();
+      }
       return true;
     case "notes-delete":
       void deleteDraft();
@@ -469,14 +484,22 @@ function wireNotesView(): void {
   });
 
   document.addEventListener("click", (event) => {
-    const box = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-note-check]");
-    if (!box || !box.closest(".notes-editor")) return;
-    const index = Number(box.dataset.noteCheck);
-    if (!Number.isFinite(index)) return;
-    draftBody = toggleChecklist(draftBody, index);
-    draftDirty = true;
-    render();
-    void flushSave();
+    const target = event.target as HTMLElement | null;
+    const box = target?.closest<HTMLElement>("[data-note-check]");
+    if (box && box.closest(".notes-editor")) {
+      const index = Number(box.dataset.noteCheck);
+      if (!Number.isFinite(index)) return;
+      draftBody = toggleChecklist(draftBody, index);
+      draftDirty = true;
+      render();
+      void flushSave();
+      return;
+    }
+    // The note opens as rendered markdown; a click on its text starts editing,
+    // while links and checklist boxes keep their own action.
+    if (target?.closest(".notes-preview") && !target.closest("a, button")) {
+      enterEditMode();
+    }
   });
 
   document.addEventListener("keydown", (event) => {
