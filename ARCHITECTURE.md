@@ -148,6 +148,12 @@ of the main window rather than an iframe.
 **Rule:** a child webview builder never calls `additional_browser_args`; it
 silently breaks rendering in WebView2.
 
+The launcher window itself only ever loads local assets: `app.security.csp` in
+[`src-tauri/tauri.conf.json`](./src-tauri/tauri.conf.json) allows no remote
+script origin, and every remote page lives in a child webview instead. The
+pre-paint surface script is `public/prepaint.js` for that reason — an inline
+script would force `'unsafe-inline'` into `script-src`.
+
 ### 3.5 Overlay, capture and controllers
 
 The overlay is an external window over the game — no DLL injection and no hooks.
