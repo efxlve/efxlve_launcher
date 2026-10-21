@@ -357,7 +357,7 @@ export function renderScreenshotsPage(): string {
     <div class="ss-page-head">
       <div class="ss-page-info">
         <h2 class="ss-page-title">${icon("clapperboard", 20)} <span>${t("ss.studio")}</span></h2>
-        <span class="screenshots-count-chip">${t("ss.statsSummary", { photos: String(shots.length), clips: String(clips.length), size: fmtBytes(totalBytes) })}</span>
+        <span class="screenshots-count-chip">${fmtBytes(totalBytes)}</span>
         ${favorites.size > 0 ? `<span class="screenshots-count-chip ss-fav-chip">${icon("star", 11)} ${favorites.size}</span>` : ""}
       </div>
       <div class="ss-page-actions">
