@@ -31,9 +31,69 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.32",
+    version: "0.1.33",
     date: "2026-10-21",
     isCurrent: true,
+    items: [
+      {
+        en: "Custom games: add a game without a store account, search Steam for metadata and artwork, keep the executable optional, import a folder, and launch, stop and track playtime like any other library title.",
+        tr: "Özel oyunlar: mağaza hesabı olmadan oyun ekle, Steam'den metadata ve kapak bul, çalıştırılabilir dosyayı isteğe bağlı bırak, klasör içe aktar; diğer kütüphane oyunları gibi başlat, durdur ve oynama süresini takip et.",
+      },
+      {
+        en: "Custom game pages can be edited from the drawer or context menu, with custom artwork, metadata, profile details and a proper stop action.",
+        tr: "Özel oyun sayfaları çekmece veya sağ tık menüsünden düzenlenebiliyor; özel kapak, metadata, profil bilgileri ve düzgün bir durdurma işlemi var.",
+      },
+      {
+        en: "Achievements now work for emulated and custom games: local unlock files are matched with the public Steam schema, and the same live watcher updates the game page.",
+        tr: "Başarımlar artık emülatör ve özel oyunlarda çalışıyor: yerel başarım dosyaları herkese açık Steam şemasıyla eşleştiriliyor ve aynı canlı izleyici oyun sayfasını güncelliyor.",
+      },
+      {
+        en: "Achievement notifications are fully customizable: four screen corners, 3/5/8-second duration, volume, a custom sound file (WAV, MP3, OGG, FLAC, M4A or AAC), master/overlay switches and a test button.",
+        tr: "Başarım bildirimleri tamamen özelleştirilebiliyor: dört ekran köşesi, 3/5/8 saniye süre, ses düzeyi, özel ses dosyası (WAV, MP3, OGG, FLAC, M4A veya AAC), ana/overlay anahtarları ve test düğmesi.",
+      },
+      {
+        en: "Unlocked achievements appear in a native in-game card over the game, and the same notification settings control its position, duration and sound.",
+        tr: "Açılan başarımlar oyunun üzerinde yerel bir kart olarak görünüyor; aynı bildirim ayarları konumunu, süresini ve sesini kontrol ediyor.",
+      },
+      {
+        en: "Pick the launcher icon: classic, Frutiger Aero or your own image; the same icon appears in the title bar.",
+        tr: "Launcher simgesini seç: klasik, Frutiger Aero veya kendi görselin; aynı simge başlık çubuğunda da görünüyor.",
+      },
+      {
+        en: "The library toolbar is compact: Add Game and Import Folder are icon buttons, with shorter store and sort labels and a sort icon.",
+        tr: "Kütüphane araç çubuğu sıkıştırıldı: Oyun Ekle ve Klasör İçe Aktar simge düğmeleri oldu; mağaza ve sıralama etiketleri kısaldı ve sıralama simgesi eklendi.",
+      },
+    ],
+    fixed: [
+      {
+        en: "A game that was already running when the launcher opened no longer minimizes the window or triggers a new-session toast.",
+        tr: "Launcher açıldığında zaten çalışan bir oyun artık pencereyi küçültmüyor veya yeni oturum bildirimi göstermiyor.",
+      },
+      {
+        en: "Fullscreen mode can no longer take the launcher down when it is triggered automatically; a failed switch falls back to the normal window.",
+        tr: "Tam ekran modu otomatik tetiklendiğinde launcher'ı kapatamıyor; başarısız bir geçiş normal pencereye geri dönüyor.",
+      },
+      {
+        en: "Custom games no longer disappear when no store account is signed in, and duplicate saves no longer stack up.",
+        tr: "Mağaza hesabı açık değilken özel oyunlar kaybolmuyor ve yinelenen kayıtlar birikmiyor.",
+      },
+      {
+        en: "Emulator achievements are found in more save folders, and values such as 1.0 are read correctly.",
+        tr: "Emülatör başarımları daha fazla kayıt klasöründe bulunuyor ve 1.0 gibi ondalık değerler doğru okunuyor.",
+      },
+      {
+        en: "Custom games launched outside the launcher are tracked, keep their playtime and start the achievement watcher.",
+        tr: "Launcher dışından başlatılan özel oyunlar takip ediliyor, oynama süreleri korunuyor ve başarım izleyicisi başlıyor.",
+      },
+      {
+        en: "The collections menu uses the normal pointer again, and the launcher icon selector no longer shows native hover tooltips.",
+        tr: "Koleksiyonlar menüsü tekrar normal fare imlecini kullanıyor ve launcher simgesi seçici artık yerel hover tooltip'i göstermiyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.32",
+    date: "2026-10-21",
     items: [
       {
         en: "White Mode and Frutiger Aero themes, with a full light-theme pass across the library, game pages, profile, notes, collections and settings.",
