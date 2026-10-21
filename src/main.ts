@@ -22,6 +22,7 @@ import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
 import { destroyDiscordPage, hydrateDiscordPage, keepDiscordOpen, renderDiscordPage } from "./features/discord/discord-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
+import { closeAddCustomGameModal } from "./features/custom-games/add-game-dialog";
 import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./features/downloads/downloads-view";
 import "./features/events/click-router";
 import "./features/events/input-listeners";
@@ -187,6 +188,7 @@ function closeAllModals(): void {
   closeNotifPanel();
   closeAvatarModal();
   closeInstallDialog();
+  closeAddCustomGameModal();
   closeManagePopup();
   closeChangelogModal();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
