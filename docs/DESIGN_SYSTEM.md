@@ -1,6 +1,6 @@
 # DESIGN_SYSTEM.md — Efxlve Desktop Design System
 
-> **Primary audience:** AI agents and UI engineers.
+> **Primary audience:** UI engineers and contributors.
 > **One rule above all:** the launcher has exactly one visual language. Do not borrow screens from Apple, PlayStation, Xbox or the macOS App Store. If a new screen needs a pattern that is not described here, extend this document first, then build it.
 
 ---

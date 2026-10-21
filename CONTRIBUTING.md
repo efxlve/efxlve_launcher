@@ -2,7 +2,7 @@
 
 Efxlve Launcher is an open-source Universal Gaming Hub for Windows, aggregating Epic Games, GOG, and Steam in a single unified client. The frontend is frameworkless Vanilla TypeScript (Vite 6). The native backend is Rust on Tauri v2.
 
-Issues and pull requests are welcome. Read this guide and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before making interface or architectural changes. If an AI assistant is assisting, it must follow [AGENTS.md](./AGENTS.md).
+Issues and pull requests are welcome. Read this guide and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before making interface or architectural changes. Automated contributors must follow [AGENTS.md](./AGENTS.md).
 
 ---
 

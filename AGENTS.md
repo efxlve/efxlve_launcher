@@ -5,13 +5,13 @@ DeepSeek Harness.
 
 ## Model policy
 
-- This project runs on **DeepSeek V4.1 Flash** through **DeepSeek Harness**. When
-  DeepSeek ships a successor, it takes over this file unchanged.
-- Do not add configuration for another client or model provider. No
-  `.cursorrules`, `GEMINI.md`, `CLAUDE.md`, Antigravity bridge, Copilot rules or
-  similar files. If one appears, it is stale and should be deleted.
+- All work runs on **DeepSeek V4.1 Flash** through **DeepSeek Harness**. A newer
+  DeepSeek release takes over this file unchanged.
+- This is the repository's only agent instruction file. Do not add another agent,
+  editor, IDE or provider configuration, and do not reintroduce a rule file that
+  was removed.
 - Do not send project code to a provider the owner has not approved.
-- `*-contributor` tier models are vetoed. Do not use them.
+  Contributor-tier models are vetoed.
 - Subagents, when used, run through the same Harness and the same model.
 
 ## What the project is
@@ -140,9 +140,7 @@ add journals, audits or handoff notes.
 | `docs/IPC_INDEX.md` | Generated Tauri command index |
 | `docs/OVERLAY_ROADMAP.md` | Overlay architecture and open work |
 | `docs/CROSS_PLATFORM.md` | Linux/macOS compatibility layer |
-| `docs/CUSTOM_GAMES_AND_ACHIEVEMENTS.md` | Custom games and achievement behaviour |
 | `docs/GOOGLE_DRIVE_SETUP_GUIDE.md` | Google Drive backup setup |
-| `docs/KNOWN_ISSUES.md` | Reproducible open bugs; delete an entry when fixed |
 
 ## Release
 

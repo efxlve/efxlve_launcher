@@ -84,7 +84,6 @@ cargo test                 # Rust unit tests
 - [docs/CROSS_PLATFORM.md](./docs/CROSS_PLATFORM.md) — Linux/macOS compatibility layer, runners and packaging plan.
 - [docs/IPC_INDEX.md](./docs/IPC_INDEX.md) — Generated index of the Tauri IPC commands.
 - [TODO.md](./TODO.md) — Open work.
-- [docs/KNOWN_ISSUES.md](./docs/KNOWN_ISSUES.md) — Reproducible open bugs.
 - [AGENTS.md](./AGENTS.md) — The project rules loaded by DeepSeek Harness.
 
 ---
