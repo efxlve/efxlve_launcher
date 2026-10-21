@@ -53,6 +53,8 @@ let editingId: string | null = null;
 /** Artwork of the search hit selected in this session, if any. */
 let pickedHit: SearchHit | null = null;
 let pickedDetails: SteamGameStoreDetails | null = null;
+/** A save is in flight; a second click must not add/update twice. */
+let saving = false;
 
 export function openAddCustomGameModal(): void {
   editingId = null;
@@ -331,6 +333,7 @@ export async function handlePickCustomExe(): Promise<void> {
 }
 
 export async function handleSaveCustomGame(): Promise<void> {
+  if (saving) return;
   const titleInput = document.getElementById("custom-title-input") as HTMLInputElement | null;
   const exeInput = document.getElementById("custom-exe-input") as HTMLInputElement | null;
   const argsInput = document.getElementById("custom-args-input") as HTMLInputElement | null;
@@ -370,6 +373,9 @@ export async function handleSaveCustomGame(): Promise<void> {
     addedAt: base?.addedAt ?? 0,
   };
 
+  saving = true;
+  const saveButton = document.querySelector<HTMLButtonElement>('[data-act="save-custom-game"]');
+  if (saveButton) saveButton.disabled = true;
   try {
     const saved = base ? await customGamesEdit(payload) : await customGamesAdd(payload);
     await loadCustomGamesLibrary();
@@ -381,6 +387,9 @@ export async function handleSaveCustomGame(): Promise<void> {
     render();
   } catch (e) {
     toast(String(e), "err");
+  } finally {
+    saving = false;
+    if (saveButton) saveButton.disabled = false;
   }
 }
 
