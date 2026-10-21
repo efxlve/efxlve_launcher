@@ -4456,7 +4456,7 @@ function renderSettings(): void {
   }
   const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
   const hud = localStorage.getItem(HUD_KEY) === "true";
-  const opacity = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
+  const opacity = savedOpacity();
   const disabled = isDisabledGame(context.appName);
   const disabledList = disabledGames();
   const hp = getHomepage();
@@ -4518,7 +4518,7 @@ function renderSettings(): void {
               <div class="ov-setting-desc">${esc(t("overlay.opacityDesc"))}</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-              <input type="range" min="60" max="100" step="1" value="${opacity}" data-ov-opacity style="width:130px" />
+              <input type="range" min="0" max="100" step="1" value="${opacity}" data-ov-opacity style="width:130px" />
               <span id="ov-opacity-val" style="font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-2); min-width: 34px; text-align: right;">${opacity}%</span>
             </div>
           </div>
@@ -4726,13 +4726,20 @@ function renderSettings(): void {
   `;
 }
 
+/** Stored panel opacity, clamped to the slider's range. */
+function savedOpacity(): number {
+  const raw = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
+  return Number.isFinite(raw) ? Math.max(0, Math.min(100, Math.round(raw))) : 100;
+}
+
 function applyOpacity(val: number): void {
   const shell = document.getElementById("ov-shell");
   if (!shell) return;
-  shell.classList.remove("ov-opacity-90", "ov-opacity-75", "ov-opacity-60");
-  if (val <= 60) shell.classList.add("ov-opacity-60");
-  else if (val <= 75) shell.classList.add("ov-opacity-75");
-  else if (val < 100) shell.classList.add("ov-opacity-90");
+  const pct = Math.max(0, Math.min(100, val)) / 100;
+  shell.style.setProperty("--ov-panel-alpha", String(pct));
+  // 100% keeps the palette's designed scrim; lower values fade it with the
+  // panels so the game really shows through instead of hitting a 60% floor.
+  shell.style.setProperty("--ov-scrim-alpha", String(pct * 0.45));
 }
 
 /* ---------- Screenshot Lightbox ---------- */
@@ -5835,7 +5842,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     initWidgetDragging();
     initWidgetResizing();
   }
-  applyOpacity(Number(localStorage.getItem(OPACITY_KEY) ?? "100"));
+  applyOpacity(savedOpacity());
 
   document.documentElement.dataset.surface = "soft";
   hideLightbox();
@@ -5921,6 +5928,9 @@ async function boot(): Promise<void> {
     initWidgetDragging();
     initWidgetResizing();
   }
+  // Apply the saved opacity before the first paint, not only when a game opens
+  // the overlay, so the window never flashes the default scrim.
+  applyOpacity(savedOpacity());
 
   startOverlayLoops();
 

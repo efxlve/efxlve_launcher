@@ -149,7 +149,7 @@ export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
 export const OVERLAY_ENABLED_KEY = "efxlve-overlay-enabled";
 /** In-game overlay: always-on mini HUD, managed by the overlay settings tab. */
 export const OVERLAY_HUD_KEY = "efxlve-overlay-hud";
-/** In-game overlay: panel opacity step (60–100), managed by the overlay settings tab. */
+/** In-game overlay: panel opacity percentage (0–100), managed by the overlay settings tab. */
 export const OVERLAY_OPACITY_KEY = "efxlve-overlay-opacity";
 /** In-game overlay: games the user opted out of, as a JSON app-name array. */
 export const OVERLAY_DISABLED_KEY = "efxlve-overlay-disabled-games";

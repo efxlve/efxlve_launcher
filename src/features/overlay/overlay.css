@@ -37,14 +37,16 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(16, 16, 20, 0.45);
+  /* Both the scrim and the panel surfaces follow the settings opacity, so a
+     low value shows the game through the widgets instead of only around them. */
+  --ov-panel-alpha: 1;
+  background: rgba(16, 16, 20, var(--ov-scrim-alpha, 0.45));
+  --surface-1: rgba(24, 24, 28, var(--ov-panel-alpha));
+  --surface-2: rgba(34, 34, 40, var(--ov-panel-alpha));
+  --surface-3: rgba(44, 44, 50, var(--ov-panel-alpha));
   overflow: hidden;
   animation: fade-in 140ms ease-out;
 }
-
-.ov.ov-opacity-90 { background: rgba(16, 16, 20, 0.58); }
-.ov.ov-opacity-75 { background: rgba(16, 16, 20, 0.40); }
-.ov.ov-opacity-60 { background: rgba(16, 16, 20, 0.25); }
 
 /* --- Top Floating Widget Bar (Xbox Game Bar style) --- */
 .ov-topbar {
