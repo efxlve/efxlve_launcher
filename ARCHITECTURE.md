@@ -160,7 +160,7 @@ The overlay is an external window over the game — no DLL injection and no hook
 
 | Module | Job |
 |---|---|
-| `overlay/` | Window control and hotkey, metrics HUD, and the in-game browser. Architecture and open work: [docs/OVERLAY_ROADMAP.md](./docs/OVERLAY_ROADMAP.md). |
+| `overlay/` | Window control and hotkey, metrics HUD, notification card, and the in-game browser. Architecture and open work: [docs/OVERLAY_ROADMAP.md](./docs/OVERLAY_ROADMAP.md). |
 | `legendary/screenshots.rs` | F12 capture hook and the screenshot pipeline. |
 | `legendary/clip_recorder.rs`, `clip_audio.rs` | Screen clip recorder and its audio track. |
 | `controller.rs`, `controller_bridge.rs` | DualSense/DualShock handling and the PlayStation-to-XInput bridge. |

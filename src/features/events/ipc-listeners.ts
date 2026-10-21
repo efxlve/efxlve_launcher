@@ -651,7 +651,7 @@ export async function initApp(hooks: {
           toast(t("status.running", { title }), "ok");
           // Point at the Shift+Tab overlay on the first start of the title, unless
           // the overlay is off globally or the user opted this game out. The game
-          // gets a PS5-like card; the launcher keeps its own toast.
+          // gets its own card over the game; the launcher keeps its own toast.
           if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
             toast(t("overlay.startHint"), "");
             void invoke("overlay_set_active_game", { appName: id, title }).catch(() => {});

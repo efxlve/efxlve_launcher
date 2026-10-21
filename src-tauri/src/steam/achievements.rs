@@ -1520,7 +1520,7 @@ pub struct AchievementNotificationOptions {
     #[serde(default = "default_notification_position")]
     pub position: String,
     /// True when a user-picked sound exists; the watcher then plays it
-    /// natively instead of the system beep.
+    /// natively instead of the launcher's own chime.
     #[serde(default)]
     pub custom_sound: bool,
     #[serde(default)]
@@ -1630,23 +1630,42 @@ fn achievement_sound_dir(app: &tauri::AppHandle) -> PathBuf {
     dir
 }
 
-/// Plays a custom notification file on a background thread so the watcher
-/// never waits for the sound. Rodio decodes by content, so WAV, MP3, OGG,
-/// FLAC, and M4A all work through the same path.
+/// The launcher's own achievement chime. Embedded so a card never depends on
+/// the Windows system sounds; `scripts/achievement-chime.mjs` generates it.
+static ACHIEVEMENT_CHIME: &[u8] = include_bytes!("../../assets/achievement-chime.wav");
+
+/// When the chime last played. One event can unlock several achievements at
+/// once, and three arpeggios stacked on top of each other is not a fanfare.
 #[cfg(windows)]
-fn play_custom_sound(path: &str, volume: u8) -> bool {
-    let Ok(bytes) = std::fs::read(path) else {
-        return false;
+static LAST_CHIME_AT: StdMutex<Option<std::time::Instant>> = StdMutex::new(None);
+
+/// True when enough time has passed for another chime (and arms the next one).
+#[cfg(windows)]
+fn chime_allowed() -> bool {
+    let Ok(mut slot) = LAST_CHIME_AT.lock() else {
+        return true;
     };
+    let now = std::time::Instant::now();
+    if let Some(last) = *slot {
+        if now.duration_since(last) < std::time::Duration::from_millis(900) {
+            return false;
+        }
+    }
+    *slot = Some(now);
+    true
+}
+
+/// Plays audio bytes on a background thread so the watcher never waits for the
+/// sound. Rodio decodes by content, so WAV, MP3, OGG, FLAC, and M4A all work
+/// through the same path.
+#[cfg(windows)]
+fn play_sound_bytes(bytes: Vec<u8>, volume: u8) -> bool {
     let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(bytes)) else {
         return false;
     };
     let volume = (volume.min(100) as f32) / 100.0;
     std::thread::spawn(move || {
         let Ok(stream) = rodio::OutputStreamBuilder::open_default_stream() else {
-            unsafe {
-                MessageBeep(0x00000040);
-            }
             return;
         };
         let sink = rodio::Sink::connect_new(stream.mixer());
@@ -1655,6 +1674,15 @@ fn play_custom_sound(path: &str, volume: u8) -> bool {
         sink.sleep_until_end();
     });
     true
+}
+
+/// Plays a custom notification file, when the user picked one.
+#[cfg(windows)]
+fn play_custom_sound(path: &str, volume: u8) -> bool {
+    match std::fs::read(path) {
+        Ok(bytes) => play_sound_bytes(bytes, volume),
+        Err(_) => false,
+    }
 }
 
 #[cfg(windows)]
@@ -1677,6 +1705,13 @@ fn play_achievement_notification_sound(
             }
         }
     }
+    if !chime_allowed() {
+        return;
+    }
+    if play_sound_bytes(ACHIEVEMENT_CHIME.to_vec(), options.volume) {
+        return;
+    }
+    // The decoder refused the embedded file: the system beep is the last resort.
     unsafe {
         MessageBeep(0x00000040);
     }
@@ -1783,7 +1818,9 @@ pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body:
     crate::overlay::hud::set_notification_position(&options.position);
     crate::overlay::hud::set_notification_hold(options.duration_ms);
     if options.overlay {
-        crate::overlay::hud::notify(&title, &body);
+        // The preview shows the tier accent too; a real unlock passes the tier
+        // its unlock rate puts it in.
+        crate::overlay::hud::notify_achievement(&title, &body, Some("gold"));
     }
     play_achievement_notification_sound(&app, &options);
     let payload = AchievementUnlockedPayload {
@@ -1857,6 +1894,36 @@ pub fn steam_start_emulator_watcher(
     steam_start_custom_achievement_watcher(app, app_id);
 }
 
+/// Unlock rates for one game, keyed by achievement API name. The achievements
+/// cache already carries them when the game's tab was opened recently; one
+/// public request fills the gap otherwise. Best effort: an empty map means the
+/// card shows the neutral trophy.
+fn achievement_unlock_rates(
+    app: &tauri::AppHandle,
+    app_id: &str,
+) -> std::collections::HashMap<String, f64> {
+    let path = achievements_cache_dir(app).join(format!("{app_id}.json"));
+    if let Ok(text) = std::fs::read_to_string(&path) {
+        if let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) {
+            let mut rates = std::collections::HashMap::new();
+            for item in cached
+                .response
+                .achievements
+                .iter()
+                .chain(cached.response.hidden.iter())
+            {
+                if let Some(percent) = item.rarity.as_ref().and_then(|rarity| rarity.percent) {
+                    rates.insert(item.name.clone(), percent);
+                }
+            }
+            if !rates.is_empty() {
+                return rates;
+            }
+        }
+    }
+    tauri::async_runtime::block_on(fetch_global_percentages(app_id))
+}
+
 fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return;
@@ -1876,6 +1943,23 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
     let target_app_id = app_id.clone();
 
     std::thread::spawn(move || {
+        // Global unlock rates, for the card's trophy tier. Filled in the
+        // background so the card never waits on the network; an unlock that
+        // lands before the answer arrives simply gets the neutral trophy.
+        let rarity: std::sync::Arc<StdMutex<Option<std::collections::HashMap<String, f64>>>> =
+            std::sync::Arc::new(StdMutex::new(None));
+        {
+            let slot = std::sync::Arc::clone(&rarity);
+            let app = app_handle.clone();
+            let app_id = target_app_id.clone();
+            std::thread::spawn(move || {
+                let map = achievement_unlock_rates(&app, &app_id);
+                if let Ok(mut slot) = slot.lock() {
+                    *slot = Some(map);
+                }
+            });
+        }
+
         let steam = steam_install_path();
         let local_snapshot = if emulator_only {
             None
@@ -1946,7 +2030,6 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 if ach.unlocked && !unlocked_set.contains(&ach.name) {
                     unlocked_set.insert(ach.name.clone());
 
-                    // 1. Native in-game HUD toast card
                     let display = if ach.display_name.trim().is_empty() {
                         ach.name.clone()
                     } else {
@@ -1956,13 +2039,23 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                     crate::overlay::hud::set_notification_position(&options.position);
                     crate::overlay::hud::set_notification_hold(options.duration_ms);
                     if options.enabled {
-                        // 1. Native in-game HUD toast card
+                        // 1. The card over the game, carrying the trophy tier
+                        // the achievement's unlock rate puts it in.
                         if options.overlay {
-                            let title_text = format!("🏆 {display}");
-                            crate::overlay::hud::notify(&title_text, &ach.description);
+                            let tier = rarity
+                                .lock()
+                                .ok()
+                                .and_then(|slot| {
+                                    slot.as_ref().and_then(|map| map.get(&ach.name).copied())
+                                })
+                                .map(|percent| tier_for_percent(percent).name);
+                            crate::overlay::hud::notify_achievement(
+                                &display,
+                                &ach.description,
+                                tier.as_deref(),
+                            );
                         }
-                        // 2. Native notification sound: the user's file when
-                        // set, otherwise the Windows system beep.
+                        // 2. The launcher's own chime, or the user's file.
                         play_achievement_notification_sound(&app_handle, &options);
                     }
 

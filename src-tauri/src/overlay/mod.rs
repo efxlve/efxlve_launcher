@@ -12,6 +12,7 @@ pub mod browser;
 pub mod hotkey;
 pub mod hud;
 pub mod metrics;
+mod notif_card;
 
 use serde::Serialize;
 use std::sync::Mutex;
