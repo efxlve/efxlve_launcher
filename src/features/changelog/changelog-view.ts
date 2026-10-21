@@ -31,9 +31,37 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.34",
+    date: "2026-10-22",
+    isCurrent: true,
+    items: [
+      {
+        en: "In-app feedback reports: Settings > About or Ctrl+K opens a dialog that creates a diagnostic zip with logs, system information and redacted settings, then opens a prefilled GitHub issue where you can attach it.",
+        tr: "Uygulama içi geri bildirim raporları: Ayarlar > Hakkında veya Ctrl+K ile açılan pencere; loglar, sistem bilgisi ve gizlilik için temizlenmiş ayarlarla bir tanılama zip'i oluşturur, ardından dosyayı ekleyebileceğin hazır bir GitHub sorun kaydı açar.",
+      },
+      {
+        en: "If the launcher did not exit cleanly, the next start offers the feedback dialog automatically so the previous session can be reported before it is forgotten.",
+        tr: "Launcher düzgün kapanmadıysa bir sonraki açılışta geri bildirim penceresi otomatik açılır; böylece önceki oturum unutulmadan raporlanabilir.",
+      },
+      {
+        en: "The Media tab now respects the \"Also scan the store folders\" switch: when it is off, only the selected screenshot folder is listed.",
+        tr: "Medya sekmesi artık \"Mağaza klasörlerini de tara\" anahtarına uyuyor: kapalıyken yalnızca seçilen ekran görüntüsü klasörü listeleniyor.",
+      },
+      {
+        en: "Achievement notification positions now include center top and center bottom alongside the four corners.",
+        tr: "Başarım bildirimi konumlarına dört köşenin yanında üst orta ve alt orta da eklendi.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The Spotify receiver no longer starts automatically when the Music page opens. It waits for Start on this PC or the play button, so a failing audio backend cannot close the launcher during boot.",
+        tr: "Spotify alıcısı Müzik sayfası açıldığında artık otomatik başlamıyor. \"Bu bilgisayarda başlat\" veya oynat düğmesini bekliyor; böylece sorunlu bir ses arka ucu launcher'ı açılış sırasında kapatamıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.33",
     date: "2026-10-21",
-    isCurrent: true,
     items: [
       {
         en: "Custom games: add a game without a store account, search Steam for metadata and artwork, keep the executable optional, import a folder, and launch, stop and track playtime like any other library title.",
