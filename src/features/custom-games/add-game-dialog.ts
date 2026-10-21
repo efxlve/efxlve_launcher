@@ -202,14 +202,19 @@ function attachSearchListeners(modalEl: HTMLElement): void {
 
       searchTimeout = setTimeout(async () => {
         try {
-          let hits: SearchHit[] = (await customGamesSearchSteam(query)).map((hit) => ({
-            source: "steam",
-            id: String(hit.id),
-            name: hit.name,
-            coverUrl: hit.coverUrl,
-            headerUrl: hit.headerUrl,
-            heroUrl: hit.heroUrl,
-          }));
+          let hits: SearchHit[] = [];
+          try {
+            hits = (await customGamesSearchSteam(query)).map((hit) => ({
+              source: "steam",
+              id: String(hit.id),
+              name: hit.name,
+              coverUrl: hit.coverUrl,
+              headerUrl: hit.headerUrl,
+              heroUrl: hit.heroUrl,
+            }));
+          } catch {
+            // Steam Store unreachable: still try the second metadata source.
+          }
           // No store match: IGDB still knows games Steam never listed.
           if (hits.length === 0) {
             try {

@@ -611,7 +611,13 @@ export function renderEpicItems(): string {
         `<button class="btn primary" data-act="quick-tab" data-tab="all">${t("lib.favEmptyCta")}</button>`,
       );
     }
-    return emptyState("gamepad-2", t("lib.noGames"), "", `<button class="btn primary" data-act="open-store">${t("nav.store")}</button>`);
+    return emptyState(
+      "gamepad-2",
+      t("lib.noGames"),
+      "",
+      `<button class="btn primary" data-act="open-store">${t("nav.store")}</button>
+       <button class="btn ghost" data-act="open-add-custom-game-modal">${icon("plus", 14)} ${esc(t("customGames.addBtn"))}</button>`,
+    );
   }
 
   const chunk = renderedSlice(visible);
@@ -1017,14 +1023,26 @@ export function renderEpic(): string {
   }
   // Every store counts: a Steam-only player (no Epic/GOG account) must still
   // see the grid instead of the "connect an account" empty state.
-  const hasGames = S.epicSummaries.length > 0 || S.gogSummaries.length > 0 || S.amazonSummaries.length > 0 || S.steamSummaries.length > 0 || S.companionSummaries.length > 0;
+  const hasGames =
+    S.epicSummaries.length > 0 ||
+    S.gogSummaries.length > 0 ||
+    S.amazonSummaries.length > 0 ||
+    S.steamSummaries.length > 0 ||
+    S.companionSummaries.length > 0 ||
+    S.customSummaries.length > 0;
   const isAnyConnected = (S.epicPhase === "library" && Boolean(S.epicAccount)) || (S.gogPhase === "library" && Boolean(S.gogAccount));
 
   if (S.epicPhase === "checking" && S.gogPhase === "checking") {
     return renderSkeletonLibrary();
   }
   if (!isAnyConnected && (S.epicPhase === "setup" || S.epicPhase === "login") && !hasGames) {
-    return emptyState("layers", t("lib.connectTitle"), t("lib.connectDesc"), `<button class="btn primary" data-view="accounts">${t("accounts.connectCta")}</button>`);
+    return emptyState(
+      "layers",
+      t("lib.connectTitle"),
+      t("lib.connectDesc"),
+      `<button class="btn primary" data-view="accounts">${t("accounts.connectCta")}</button>
+       <button class="btn ghost" data-act="open-add-custom-game-modal">${icon("plus", 14)} ${esc(t("customGames.addBtn"))}</button>`,
+    );
   }
   if (S.epicPhase === "error" && !hasGames) {
     return `

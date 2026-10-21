@@ -196,18 +196,19 @@ Kullanıcının oyunu kütüphanesine sadece adıyla veya Steam aramasıyla ekle
 3. **Rust Testleri:**
    ```bash
    cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
-   # Çıktı: test result: ok. 447 passed; 0 failed; 29 ignored
+   # Tüm testler geçti (canlı ağ testleri varsayılan olarak ignored).
    ```
 4. **Git Commit Geçmişi:**
-   - Commit: `b84c181d` - `feat: make custom game exe optional with locate button and aero theme styling`
+   - `b84c181d` — exe opsiyonel, Aero tema.
+   - `1b3dc1f0` — public Steam Community şeması ve emülatör başarımları.
+   - `04b190d1` — özel oyun düzenleme.
+   - `78219842` — IGDB araması, kapak yedeği, durdurma, profil ve meta veri.
+   - `9733fdff` — canlı izleyiciyi emülatör dosyasına ayırma.
 
 ---
 
-## 6. Sıradaki Geliştirme Önerileri (Next Steps)
+## 6. Kalan İyileştirme Fırsatları
 
-1. **Oyun İçi Başarım Bildirimleri (Achievement Toast / Overlay):**
-   - Hydra Launcher tarzında, oyun oynanırken kazanılan başarımlar için sağ alt veya üst köşede beliren sesli/animasyonlu bildirim pop-up'ı (Toast).
-2. **Özel Oyun Düzenleme (Edit Game):**
-   - Kütüphaneye eklenmiş bir özel oyunun adını, kapak resmini, başlatma parametrelerini veya Steam AppID'sini sonradan değiştirebilmek için bir "Düzenle" penceresi.
-3. **Emülatör INI İzleme (Live File Watcher):**
-   - Oyun çalışırken belirlenen `achievements.ini` dosyasını `notify` veya periyodik tarama ile izleyip, başarım kilidi açıldığında anında launcher ve bildirim sistemine yansıtma.
+1. **Launcher dışından başlatılan özel oyunların canlı izlenmesi:** Şu anda süre/başarım izleme, oyun launcher üzerinden başlatıldığında kuruluyor. Dışarıdan başlatmalar için süreç taraması eklenebilir.
+2. **Daha fazla emülatör kökü:** `%LOCALAPPDATA%`, `%PROGRAMDATA%` ve oyun klasörü altındaki ek `steam_settings` varyasyonları otomatik taranabilir.
+3. **Toplu içe aktarma:** Bir klasördeki oyunları tek tek `.exe` seçmeden tarayıp kütüphaneye ekleme.

@@ -1518,7 +1518,9 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
 /// Starts the watch for a custom game: the emulator file is the truth, even
 /// when the same AppID also has Steam client stats on this PC.
 pub fn steam_start_custom_achievement_watcher(app: tauri::AppHandle, app_id: String) {
-    start_achievement_watcher(app, app_id, true);
+    // "Disabled (Steam client only)" must fall back to the client watcher.
+    let emulator_only = get_achievement_source_config(&app, &app_id).mode != "disabled";
+    start_achievement_watcher(app, app_id, emulator_only);
 }
 
 fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
