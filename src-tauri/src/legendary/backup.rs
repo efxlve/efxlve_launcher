@@ -605,7 +605,12 @@ mod tests {
             Some(&temp_dir.to_string_lossy()),
         );
         assert!(detected.is_some());
-        assert_eq!(detected.unwrap(), save_dir.to_string_lossy().to_string());
+        // Windows can hand back the same directory as an 8.3 short path
+        // (RUNNER~1) or its long name (runneradmin). Canonicalize both sides
+        // before comparing; this is also true on the GitHub runner.
+        let detected = std::fs::canonicalize(detected.unwrap()).unwrap();
+        let expected = std::fs::canonicalize(&save_dir).unwrap();
+        assert_eq!(detected, expected);
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
