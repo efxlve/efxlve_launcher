@@ -613,6 +613,14 @@ export function epicWideArt(s: EpicSummary): string | null {
   const cached = wideArtCache.get(s.appName);
   if (cached !== undefined) return cached;
 
+  // Custom games keep the store's hero/header beside the portrait cover.
+  if (s.appName.startsWith("custom::")) {
+    const game = S.customGames.find((item) => item.id === s.appName);
+    if (game?.heroUrl || game?.headerUrl) {
+      return game.heroUrl || game.headerUrl || null;
+    }
+  }
+
   if (s.appName.startsWith("steam::")) {
     const item = S.steamSummariesMap.get(s.appName);
     if (item?.heroUrl) {

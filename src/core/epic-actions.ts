@@ -79,6 +79,14 @@ async function launchWithStatus(
 /** Launch a game and record it in the recent list. */
 export async function epicStop(appName: string): Promise<void> {
   try {
+    if (appName.startsWith("custom::")) {
+      const { customGamesStop } = await import("../custom-games");
+      // The Rust launch thread reports the exit and the session totals; do not
+      // clear the running state here or that event would be treated as a
+      // duplicate and the hours would be dropped.
+      await customGamesStop(appName);
+      return;
+    }
     if (appName.startsWith("amazon::")) {
       const msg = await nileStop(appName.slice(8));
       S.runningGames.delete(appName);

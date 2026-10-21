@@ -2783,6 +2783,7 @@
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
   "customGames.save": "Save Game",
+  "customGames.deleteConfirm": "{name} को लाइब्रेरी से हटाएँ? गेम फ़ाइलें डिस्क पर रहती हैं।",
   "customGames.delete": "Delete Game",
   "customGames.updatedSuccess": "{title} अपडेट किया गया",
   "customGames.addedSuccess": "{title} added to your library",

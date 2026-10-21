@@ -2783,6 +2783,7 @@
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
   "customGames.save": "Save Game",
+  "customGames.deleteConfirm": "{name} をライブラリから削除しますか？ゲームファイルはディスクに残ります。",
   "customGames.delete": "Delete Game",
   "customGames.updatedSuccess": "{title} を更新しました",
   "customGames.addedSuccess": "{title} added to your library",

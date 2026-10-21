@@ -82,7 +82,7 @@ const isRiot = source === "riot";
     ${item("manage-game", t("common.manage"), "settings")}`
           : isCustom
             ? `${S.runningGames.has(appName)
-                ? `<button class="ps5-context-item" role="menuitem" disabled><span class="running-dot"></span><span>${esc(t("lib.running"))}</span></button>`
+                ? item("epic-stop", t("common.stop"), "square")
                 : installed
                   ? item("epic-play", t("common.play"), "play")
                   : item("pick-custom-exe-for", t("customGames.setExe"), "folder")}

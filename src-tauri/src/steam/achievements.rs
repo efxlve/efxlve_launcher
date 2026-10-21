@@ -603,6 +603,22 @@ pub fn get_achievement_source_config(
     config
 }
 
+/// Install folders the launcher has launched, keyed by Steam app id. Some
+/// emulators keep `steam_settings/achievements.ini` next to the game exe, which
+/// is not one of the global candidate roots.
+static ACHIEVEMENT_DIRS: StdMutex<Option<std::collections::HashMap<String, PathBuf>>> =
+    StdMutex::new(None);
+
+pub fn remember_achievement_dir(app_id: &str, dir: &Path) {
+    if app_id.is_empty() {
+        return;
+    }
+    if let Ok(mut lock) = ACHIEVEMENT_DIRS.lock() {
+        lock.get_or_insert_with(std::collections::HashMap::new)
+            .insert(app_id.to_string(), dir.to_path_buf());
+    }
+}
+
 pub fn read_emulator_achievements(
     app: Option<&tauri::AppHandle>,
     app_id: &str,
@@ -618,7 +634,14 @@ pub fn read_emulator_achievements(
         None => (None, "auto".to_string()),
     };
 
-    let custom_p = custom_path.as_deref().map(Path::new);
+    let remembered = ACHIEVEMENT_DIRS
+        .lock()
+        .ok()
+        .and_then(|lock| lock.as_ref().and_then(|map| map.get(app_id).cloned()));
+    let custom_p = custom_path
+        .as_deref()
+        .map(Path::new)
+        .or(remembered.as_deref());
     let file_path = find_emulator_achievement_file(app_id, custom_p)?;
     let content = std::fs::read_to_string(&file_path).ok()?;
     let parsed = if file_path.extension().and_then(|s| s.to_str()) == Some("json") {
@@ -1491,21 +1514,29 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
 
     std::thread::spawn(move || {
         let steam = steam_install_path();
-        // A custom game usually has no Steam client schema. The public page is
-        // cached on disk, so this is one request on the first run and offline
-        // afterwards.
-        let community = tauri::async_runtime::block_on(fetch_community_schema(
-            &app_handle,
-            &target_app_id,
-            false,
-        ));
+        let local_snapshot = steam.as_deref().and_then(|path| {
+            read_local_achievements_with_app(Some(&app_handle), path, &target_app_id)
+        });
+        // A custom game usually has no Steam client schema. Only ask the public
+        // page when the local snapshot is missing; the answer is cached on disk.
+        let community = if local_snapshot.is_none() {
+            tauri::async_runtime::block_on(fetch_community_schema(
+                &app_handle,
+                &target_app_id,
+                false,
+            ))
+        } else {
+            None
+        };
 
-        let initial = watcher_snapshot(
-            &app_handle,
-            &target_app_id,
-            steam.as_deref(),
-            community.as_deref(),
-        );
+        let initial = local_snapshot.or_else(|| {
+            watcher_snapshot(
+                &app_handle,
+                &target_app_id,
+                steam.as_deref(),
+                community.as_deref(),
+            )
+        });
         let mut initialised = initial.is_some();
         let mut unlocked_set: std::collections::HashSet<String> = initial
             .map(|response| {

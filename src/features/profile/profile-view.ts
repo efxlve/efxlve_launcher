@@ -626,6 +626,31 @@ function buildCompanionProfileGames(targetStore?: StoreKind): ProfileGameRecord[
   return games;
 }
 
+/** Custom games: only the achievements the launcher itself knows about. */
+function buildCustomProfileGames(): ProfileGameRecord[] {
+  const games: ProfileGameRecord[] = [];
+  for (const item of S.customSummaries) {
+    const ach = achSummaryOf(item.key);
+    const totalAch = ach?.total_achievements || 0;
+    const userUnlocked = ach?.user_unlocked || 0;
+    const pct = totalAch > 0 ? Math.round((userUnlocked / totalAch) * 100) : 0;
+    games.push({
+      sandbox_id: item.key,
+      app_name: item.key,
+      app_title: item.title,
+      cover: item.coverUrl,
+      total_unlocked: userUnlocked,
+      total_achievements: totalAch,
+      total_xp: ach?.user_xp || 0,
+      total_product_xp: ach?.total_xp || 0,
+      is_platinum: (ach?.is_platinum || false) || (totalAch > 0 && pct >= 100),
+      unlocked_percent: pct,
+      last_unlocked_date: null,
+    });
+  }
+  return games;
+}
+
 /**
  * Achievement rows for the current page: one account, or the combined profile
  * narrowed by the hero store chips.
@@ -638,6 +663,7 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
     if (selection.account.kind === "gog") return buildGogProfileGames();
     if (selection.account.kind === "steam") return buildSteamProfileGames();
     if (selection.account.kind === "amazon") return buildAmazonProfileGames();
+    if (selection.account.kind === "custom") return buildCustomProfileGames();
     return buildCompanionProfileGames(selection.account.kind);
   }
   const scope = targetScope || storeScope();
@@ -646,6 +672,7 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
   if ((scope === "all" || scope === "steam") && S.steamSummaries.length > 0) games.push(...buildSteamProfileGames());
   if ((scope === "all" || scope === "amazon") && S.amazonSummaries.length > 0) games.push(...buildAmazonProfileGames());
+  if ((scope === "all" || scope === "custom") && S.customSummaries.length > 0) games.push(...buildCustomProfileGames());
   if (scope === "all" || (scope !== "epic" && scope !== "gog" && scope !== "steam" && scope !== "amazon" && scope !== "custom")) {
     games.push(...buildCompanionProfileGames(scope === "all" ? undefined : scope));
   }

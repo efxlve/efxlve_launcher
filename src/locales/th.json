@@ -2783,6 +2783,7 @@
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
   "customGames.save": "Save Game",
+  "customGames.deleteConfirm": "นำ {name} ออกจากคลังหรือไม่ ไฟล์เกมยังอยู่ในดิสก์",
   "customGames.delete": "Delete Game",
   "customGames.updatedSuccess": "อัปเดต {title} แล้ว",
   "customGames.addedSuccess": "{title} added to your library",

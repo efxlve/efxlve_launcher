@@ -1,8 +1,29 @@
 //! Custom games management: manual game addition, metadata search, launch, and tracking.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
+
+/// Child PIDs of custom games the launcher started, keyed by library id.
+static RUNNING_PIDS: Mutex<Option<HashMap<String, u32>>> = Mutex::new(None);
+
+fn remember_pid(id: &str, pid: u32) {
+    if let Ok(mut lock) = RUNNING_PIDS.lock() {
+        lock.get_or_insert_with(HashMap::new).insert(id.to_string(), pid);
+    }
+}
+
+fn forget_pid(id: &str, pid: u32) {
+    if let Ok(mut lock) = RUNNING_PIDS.lock() {
+        if let Some(map) = lock.as_mut() {
+            if map.get(id).copied() == Some(pid) {
+                map.remove(id);
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,6 +97,30 @@ pub fn save_custom_games(app: &AppHandle, list: &[CustomGame]) -> Result<(), Str
     }
     let text = serde_json::to_string_pretty(list).map_err(|e| e.to_string())?;
     std::fs::write(&path, text).map_err(|e| e.to_string())
+}
+
+/// Splits a launcher argument line, keeping quoted values together.
+fn split_launch_args(input: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut current = String::new();
+    let mut quote: Option<char> = None;
+    for ch in input.chars() {
+        match quote {
+            Some(q) if ch == q => quote = None,
+            Some(_) => current.push(ch),
+            None if ch == '"' || ch == '\'' => quote = Some(ch),
+            None if ch.is_whitespace() => {
+                if !current.is_empty() {
+                    out.push(std::mem::take(&mut current));
+                }
+            }
+            None => current.push(ch),
+        }
+    }
+    if !current.is_empty() {
+        out.push(current);
+    }
+    out
 }
 
 pub fn slugify(title: &str) -> String {
@@ -182,7 +227,7 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     cmd.current_dir(working_dir);
 
     if let Some(ref args_str) = game.launch_args {
-        for arg in args_str.split_whitespace() {
+        for arg in split_launch_args(args_str) {
             cmd.arg(arg);
         }
     }
@@ -194,6 +239,8 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     }
 
     let mut child = cmd.spawn().map_err(|e| format!("Failed to launch game: {e}"))?;
+    let child_pid = child.id();
+    remember_pid(&game.id, child_pid);
 
     let app_clone = app.clone();
     let game_id = game.id.clone();
@@ -206,6 +253,9 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     crate::legendary::screenshots::set_active_running_game(&app_key, &game_title, Some(working_dir.to_path_buf()), vec![]);
 
     if let Some(ref aid) = steam_app_id {
+        // Emulator achievement files often sit next to the exe
+        // (`steam_settings/achievements.ini`), so teach the detector that root.
+        crate::steam::remember_achievement_dir(aid, working_dir);
         crate::steam::steam_start_achievement_watcher(app_clone.clone(), aid.clone());
     }
 
@@ -217,6 +267,7 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
 
     std::thread::spawn(move || {
         let _ = child.wait();
+        forget_pid(&app_key, child_pid);
         let elapsed = started.elapsed().as_secs();
         if let Some(ref aid) = steam_app_id {
             crate::steam::steam_stop_achievement_watcher(aid.clone());
@@ -246,6 +297,47 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     });
 
     let _ = app.emit("custom-games-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
+pub fn custom_games_stop(app: AppHandle, id: String) -> Result<(), String> {
+    let games = load_custom_games(&app);
+    let game = games
+        .iter()
+        .find(|g| g.id == id || g.id.strip_prefix("custom::") == Some(&id))
+        .ok_or("Game not found")?;
+    let pid = RUNNING_PIDS
+        .lock()
+        .ok()
+        .and_then(|lock| lock.as_ref().and_then(|map| map.get(&game.id).copied()))
+        .ok_or("Game is not running")?;
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let status = std::process::Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/T", "/F"])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .status()
+            .map_err(|e| format!("Failed to stop game: {e}"))?;
+        if !status.success() {
+            return Err("The game process could not be stopped".into());
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let status = std::process::Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .status()
+            .map_err(|e| format!("Failed to stop game: {e}"))?;
+        if !status.success() {
+            return Err("The game process could not be stopped".into());
+        }
+    }
+
+    // The launch thread owns the exit event and the session totals; ending the
+    // process here is enough for that thread to report the stop.
     Ok(())
 }
 
@@ -434,5 +526,20 @@ mod tests {
         assert_eq!(slugify("Minecraft: Story Mode"), "minecraft-story-mode");
         assert_eq!(slugify("  Spaces & D环ashes - - "), "spaces-dashes");
         assert_eq!(slugify("!!!"), "game");
+    }
+
+    #[test]
+    fn launch_arguments_keep_quoted_values_together() {
+        assert_eq!(
+            split_launch_args(r#"-windowed -profile "C:\My Games\save" --name 'NFS UG2'"#),
+            vec![
+                "-windowed".to_string(),
+                "-profile".to_string(),
+                r#"C:\My Games\save"#.to_string(),
+                "--name".to_string(),
+                "NFS UG2".to_string(),
+            ]
+        );
+        assert!(split_launch_args("   ").is_empty());
     }
 }

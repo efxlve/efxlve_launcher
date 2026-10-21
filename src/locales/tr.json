@@ -2783,6 +2783,7 @@
   "customGames.fieldYear": "Çıkış Yılı",
   "customGames.fieldSteamAppId": "Steam AppID (başarımlar için)",
   "customGames.save": "Oyunu Kaydet",
+  "customGames.deleteConfirm": "{name} kütüphaneden kaldırılsın mı? Oyun dosyaları diskte kalır.",
   "customGames.delete": "Oyunu Sil",
   "customGames.updatedSuccess": "{title} güncellendi",
   "customGames.addedSuccess": "{title} kütüphaneye eklendi",

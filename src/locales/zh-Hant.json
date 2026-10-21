@@ -2783,6 +2783,7 @@
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
   "customGames.save": "Save Game",
+  "customGames.deleteConfirm": "從媒體庫移除 {name}？遊戲檔案仍會保留在磁碟上。",
   "customGames.delete": "Delete Game",
   "customGames.updatedSuccess": "{title} 已更新",
   "customGames.addedSuccess": "{title} added to your library",

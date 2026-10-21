@@ -1181,6 +1181,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             custom_games::custom_games_edit,
             custom_games::custom_games_remove,
             custom_games::custom_games_launch,
+            custom_games::custom_games_stop,
             custom_games::custom_games_pick_file,
             custom_games::custom_games_search_steam,
             custom_games::custom_games_steam_details,

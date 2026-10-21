@@ -16,6 +16,7 @@ import { toast } from "../../../core/toast";
 import { t } from "../../../i18n";
 import { render } from "../../../core/render";
 import { summaryOf } from "../../../core/selectors";
+import { askConfirm } from "../../../core/confirm-dialog";
 
 export function handleCustomGamesAction(act: string | undefined, id?: string): boolean {
   if (!act) return false;
@@ -52,6 +53,14 @@ export function handleCustomGamesAction(act: string | undefined, id?: string): b
         const s = summaryOf(id);
         const title = s?.title || id;
         void (async () => {
+          const confirmed = await askConfirm({
+            title: t("customGames.delete"),
+            name: title,
+            body: t("customGames.deleteConfirm"),
+            confirm: t("common.delete"),
+            cancel: t("common.cancel"),
+          });
+          if (!confirmed) return;
           try {
             await customGamesRemove(id);
             await loadCustomGamesLibrary();

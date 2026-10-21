@@ -330,6 +330,16 @@ export function epicDlProgress(appName: string): number | null {
 export function epicArt(s: EpicSummary): string {
   const custom = S.customCovers[s.appName];
   if (custom) return `<img src="${esc(custom)}" alt="" decoding="async" />`;
+  if (s.appName.startsWith("custom::")) {
+    const game = S.customGames.find((item) => item.id === s.appName);
+    const cover = game?.coverUrl || game?.headerUrl || game?.heroUrl;
+    if (cover) {
+      const fallback = game?.headerUrl || game?.heroUrl;
+      const attr = fallback && fallback !== cover ? ` data-art-fallback="${esc(fallback)}"` : "";
+      return `<img src="${esc(cover)}"${attr} alt="" decoding="async" />`;
+    }
+    return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
+  }
   if (s.appName.startsWith("steam::")) {
     return steamPortraitImg(s.appName.slice("steam::".length));
   }
@@ -360,6 +370,10 @@ export function epicArt(s: EpicSummary): string {
 export function epicArtUrl(s: EpicSummary): string {
   const custom = S.customCovers[s.appName];
   if (custom) return custom;
+  if (s.appName.startsWith("custom::")) {
+    const game = S.customGames.find((item) => item.id === s.appName);
+    return game?.coverUrl || game?.headerUrl || game?.heroUrl || "";
+  }
   if (s.appName.startsWith("steam::")) {
     const appId = s.appName.slice("steam::".length);
     return cachedSteamCover(appId) || "";
@@ -429,11 +443,7 @@ export function epicActionButtons(
     if (s.appName.startsWith("amazon::")) {
       return `<button class="btn play${btn}" data-act="amazon-stop" data-id="${esc(s.appName.slice(8))}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
     }
-    if (
-      s.appName.startsWith("steam::") ||
-      s.appName.startsWith("custom::") ||
-      isCompanionKey(s.appName)
-    ) {
+    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
       return `<button class="btn play${btn} running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
     }
     return `<button class="btn play${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;

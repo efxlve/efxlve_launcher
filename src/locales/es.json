@@ -2783,6 +2783,7 @@
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
   "customGames.save": "Save Game",
+  "customGames.deleteConfirm": "¿Quitar {name} de tu biblioteca? Los archivos del juego permanecen en el disco.",
   "customGames.delete": "Delete Game",
   "customGames.updatedSuccess": "{title} actualizado",
   "customGames.addedSuccess": "{title} added to your library",

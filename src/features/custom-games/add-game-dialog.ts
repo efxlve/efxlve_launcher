@@ -13,16 +13,45 @@ import {
   customGamesSteamDetails,
   type CustomGame,
   type SteamGameStoreDetails,
-  type SteamStoreSearchHit,
 } from "../../custom-games";
+import { igdbGame, igdbImage, igdbSearch } from "../../igdb";
 import { loadCustomGamesLibrary } from "./custom-games-library";
 
+/** A search row from either store metadata source. */
+interface SearchHit {
+  source: "steam" | "igdb";
+  /** Steam AppID or IGDB id, kept as a string for both. */
+  id: string;
+  name: string;
+  year?: number | null;
+  coverUrl: string;
+  headerUrl: string;
+  heroUrl: string;
+}
+
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-let currentHits: SteamStoreSearchHit[] = [];
+let currentHits: SearchHit[] = [];
+let escapeWired = false;
+
+/** Escape closes the form before any other modal handler sees the key. */
+function wireEscape(): void {
+  if (escapeWired) return;
+  escapeWired = true;
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key !== "Escape" || !document.querySelector(".custom-game-modal")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeAddCustomGameModal();
+    },
+    true,
+  );
+}
 /** The game being edited; null while adding a new one. */
 let editingId: string | null = null;
-/** Metadata of the store hit selected in this session, if any. */
-let pickedHit: SteamStoreSearchHit | null = null;
+/** Artwork of the search hit selected in this session, if any. */
+let pickedHit: SearchHit | null = null;
 let pickedDetails: SteamGameStoreDetails | null = null;
 
 export function openAddCustomGameModal(): void {
@@ -30,6 +59,7 @@ export function openAddCustomGameModal(): void {
   pickedHit = null;
   pickedDetails = null;
   S.isAddCustomGameOpen = true;
+  wireEscape();
   renderCustomGameModal();
 }
 
@@ -43,6 +73,7 @@ export function openEditCustomGameModal(id: string): void {
     ? { name: game.title, shortDescription: "", headerImage: "", developers: [], genres: game.genres }
     : null;
   S.isAddCustomGameOpen = true;
+  wireEscape();
   renderCustomGameModal();
 }
 
@@ -171,7 +202,30 @@ function attachSearchListeners(modalEl: HTMLElement): void {
 
       searchTimeout = setTimeout(async () => {
         try {
-          const hits = await customGamesSearchSteam(query);
+          let hits: SearchHit[] = (await customGamesSearchSteam(query)).map((hit) => ({
+            source: "steam",
+            id: String(hit.id),
+            name: hit.name,
+            coverUrl: hit.coverUrl,
+            headerUrl: hit.headerUrl,
+            heroUrl: hit.heroUrl,
+          }));
+          // No store match: IGDB still knows games Steam never listed.
+          if (hits.length === 0) {
+            try {
+              hits = (await igdbSearch(query, 8)).map((hit) => ({
+                source: "igdb",
+                id: String(hit.id),
+                name: hit.name,
+                year: hit.year,
+                coverUrl: igdbImage(hit.coverId, "cover_big_2x"),
+                headerUrl: igdbImage(hit.coverId, "cover_big"),
+                heroUrl: igdbImage(hit.coverId, "cover_big"),
+              }));
+            } catch {
+              // IGDB is optional; an unconfigured proxy simply means no rows.
+            }
+          }
           currentHits = hits;
           if (hits.length === 0) {
             resultsDropdown.innerHTML = `<div class="search-result-empty">${esc(t("common.noResults"))}</div>`;
@@ -184,7 +238,7 @@ function attachSearchListeners(modalEl: HTMLElement): void {
               <img src="${esc(hit.coverUrl)}" class="result-thumb" onerror="this.style.display='none'" />
               <div class="result-info">
                 <span class="result-name">${esc(hit.name)}</span>
-                <span class="result-sub">Steam AppID: ${hit.id}</span>
+                <span class="result-sub">${hit.source === "steam" ? `Steam AppID: ${hit.id}` : `IGDB${hit.year ? ` · ${hit.year}` : ""}`}</span>
               </div>
             </div>
           `).join("");
@@ -209,11 +263,11 @@ function attachSearchListeners(modalEl: HTMLElement): void {
       const yearInput = modalEl.querySelector<HTMLInputElement>("#custom-year-input");
 
       if (titleInput) titleInput.value = hit.name;
-      if (appidInput) appidInput.value = String(hit.id);
+      if (appidInput) appidInput.value = hit.source === "steam" ? hit.id : "";
       pickedHit = hit;
       if (coverInput) {
         coverInput.value = hit.coverUrl;
-        if (coverPreview) {
+        if (coverPreview && hit.coverUrl) {
           coverPreview.innerHTML = `<img src="${esc(hit.coverUrl)}" alt="Cover" />`;
         }
       }
@@ -221,18 +275,36 @@ function attachSearchListeners(modalEl: HTMLElement): void {
       resultsDropdown.classList.add("hidden");
       if (searchInput) searchInput.value = hit.name;
 
-      // Fetch store details in background to auto-fill description and year
+      // Fetch the metadata in the background to auto-fill the form.
       try {
-        const details = await customGamesSteamDetails(String(hit.id));
-        pickedDetails = details;
-        if (descInput && !descInput.value && details.shortDescription) {
-          descInput.value = details.shortDescription;
-        }
-        if (yearInput && !yearInput.value && details.releaseYear) {
-          yearInput.value = String(details.releaseYear);
+        if (hit.source === "steam") {
+          const details = await customGamesSteamDetails(hit.id);
+          pickedDetails = details;
+          if (descInput && !descInput.value && details.shortDescription) {
+            descInput.value = details.shortDescription;
+          }
+          if (yearInput && !yearInput.value && details.releaseYear) {
+            yearInput.value = String(details.releaseYear);
+          }
+        } else {
+          const game = await igdbGame(Number(hit.id));
+          pickedDetails = {
+            name: game.name,
+            shortDescription: game.summary,
+            headerImage: hit.headerUrl,
+            developers: game.developer ? [game.developer] : [],
+            genres: game.genres,
+            releaseYear: game.pcReleaseYear ?? game.releaseYear ?? undefined,
+          };
+          if (titleInput) titleInput.value = game.name;
+          if (descInput && !descInput.value && game.summary) descInput.value = game.summary;
+          const year = game.pcReleaseYear ?? game.releaseYear;
+          if (yearInput && !yearInput.value && year) yearInput.value = String(year);
         }
       } catch {
-        // best effort
+        if (hit.source === "igdb" && yearInput && !yearInput.value && hit.year) {
+          yearInput.value = String(hit.year);
+        }
       }
     });
   }
