@@ -22,7 +22,7 @@ The application has a strict, uncompromising visual contract:
 ## 2. Engineering Standards
 
 - **Code Comments:** Write all comments strictly in English. Explain the non-obvious *why*, not just the *what*.
-- **Modularity:** Keep files focused and under ~500–1000 lines. Place feature-specific UI in `src/features/<feature>/` and shared utilities in `src/core/`.
+- **Modularity:** One file, one job. The size ceiling and the split rule live in [AGENTS.md](./AGENTS.md#layout-rules). Place feature-specific UI in `src/features/<feature>/` and shared utilities in `src/core/`.
 - **Targeted DOM Mutation:** Never destroy and re-render the entire library (`viewEl.innerHTML = ...`) on download progress or IPC events. Use in-place card patching (`patchLibraryCardDom`, `data-dlbtn`, `data-dlbar`).
 - **O(1) Data Structures:** Maintain and use `rawOf` and `summaryOf` hash maps. Never use linear `.find()` in high-frequency rendering paths.
 - **Tauri IPC Naming:** Arguments are camelCase on the JavaScript side (`appName`), matching snake_case in Rust (`app_name: String`).
