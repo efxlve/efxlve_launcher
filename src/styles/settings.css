@@ -274,7 +274,24 @@
   user-select: none;
 }
 
+/* Custom notification sound: name plus pick/clear buttons, right aligned. */
+.settings-custom-sound {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.settings-custom-sound .settings-hint {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* --- Search v2 ------------------------------------------------------------ */
+
 /* The rows are flex, and a class selector beats the browser's own [hidden]
    rule: without this the search's hidden attribute never hid a single row. */
 .settings-panel [hidden] { display: none !important; }

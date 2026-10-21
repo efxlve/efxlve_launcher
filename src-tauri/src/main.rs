@@ -196,6 +196,21 @@ pub struct EpicSettings {
     pub achievement_notifications_sound: Option<bool>,
     #[serde(default)]
     pub achievement_notifications_overlay: Option<bool>,
+    /// Custom notification sound copied into the app data folder.
+    #[serde(default)]
+    pub achievement_notifications_sound_path: Option<String>,
+    /// Original file name shown in Settings.
+    #[serde(default)]
+    pub achievement_notifications_sound_name: Option<String>,
+    /// 0-100; applied to the custom sound in the launcher webview.
+    #[serde(default)]
+    pub achievement_notifications_volume: Option<u8>,
+    /// How long the in-game notification card stays visible.
+    #[serde(default)]
+    pub achievement_notifications_duration_ms: Option<u64>,
+    /// top-right, top-left, bottom-right, or bottom-left.
+    #[serde(default)]
+    pub achievement_notifications_position: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -1183,6 +1198,8 @@ fn main() {    // Rockstar's launcher only continues when a process named
             steam::steam_get_emulator_achievements,
             steam::achievement_get_notification_options,
             steam::achievement_set_notification_options,
+            steam::achievement_pick_custom_sound,
+            steam::achievement_clear_custom_sound,
             steam::achievement_test_notification,
             steam::steam_start_emulator_watcher,
             steam::steam_start_achievement_watcher,

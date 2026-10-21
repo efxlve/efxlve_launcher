@@ -246,6 +246,11 @@ export interface AchievementNotificationOptions {
   enabled: boolean;
   sound: boolean;
   overlay: boolean;
+  volume: number;
+  durationMs: number;
+  position: string;
+  customSound: boolean;
+  customSoundName: string | null;
 }
 
 export const achievementGetNotificationOptions = () =>
@@ -256,6 +261,12 @@ export const achievementSetNotificationOptions = (options: AchievementNotificati
 
 export const achievementTestNotification = (title: string, body: string) =>
   invoke<void>("achievement_test_notification", { title, body });
+
+export const achievementPickCustomSound = () =>
+  invoke<string | null>("achievement_pick_custom_sound");
+
+export const achievementClearCustomSound = () =>
+  invoke<void>("achievement_clear_custom_sound");
 
 export const steamStartAchievementWatcher = (appId: string) =>
   invoke<void>("steam_start_achievement_watcher", { appId });

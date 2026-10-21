@@ -1514,6 +1514,17 @@ pub struct AchievementNotificationOptions {
     pub enabled: bool,
     pub sound: bool,
     pub overlay: bool,
+    pub volume: u8,
+    pub duration_ms: u64,
+    /// top-right, top-left, bottom-right, or bottom-left.
+    #[serde(default = "default_notification_position")]
+    pub position: String,
+    /// True when a user-picked sound exists; the watcher then plays it
+    /// natively instead of the system beep.
+    #[serde(default)]
+    pub custom_sound: bool,
+    #[serde(default)]
+    pub custom_sound_name: Option<String>,
 }
 
 impl Default for AchievementNotificationOptions {
@@ -1522,16 +1533,62 @@ impl Default for AchievementNotificationOptions {
             enabled: true,
             sound: true,
             overlay: true,
+            volume: 100,
+            duration_ms: 5000,
+            position: default_notification_position(),
+            custom_sound: false,
+            custom_sound_name: None,
         }
     }
 }
 
+fn default_notification_position() -> String {
+    "top-right".to_string()
+}
+
+/// Keeps the persisted value inside the four supported card corners.
+fn normalize_notification_position(value: Option<&str>) -> String {
+    match value {
+        Some("top-left") => "top-left",
+        Some("bottom-right") => "bottom-right",
+        Some("bottom-left") => "bottom-left",
+        _ => "top-right",
+    }
+    .to_string()
+}
+
 pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNotificationOptions {
     let settings = crate::load_settings(app);
+    let sound_path = settings
+        .achievement_notifications_sound_path
+        .as_deref()
+        .filter(|path| !path.trim().is_empty() && Path::new(path).is_file());
+    let custom_sound = sound_path.is_some();
     AchievementNotificationOptions {
         enabled: settings.achievement_notifications_enabled.unwrap_or(true),
         sound: settings.achievement_notifications_sound.unwrap_or(true),
         overlay: settings.achievement_notifications_overlay.unwrap_or(true),
+        volume: settings.achievement_notifications_volume.unwrap_or(100).min(100),
+        duration_ms: settings
+            .achievement_notifications_duration_ms
+            .unwrap_or(5000)
+            .clamp(2000, 15000),
+        position: normalize_notification_position(
+            settings.achievement_notifications_position.as_deref(),
+        ),
+        custom_sound,
+        custom_sound_name: if custom_sound {
+            settings.achievement_notifications_sound_name.clone().or_else(|| {
+                sound_path.and_then(|path| {
+                    Path::new(path)
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .map(str::to_string)
+                })
+            })
+        } else {
+            None
+        },
     }
 }
 
@@ -1551,6 +1608,166 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_enabled = Some(options.enabled);
     settings.achievement_notifications_sound = Some(options.sound);
     settings.achievement_notifications_overlay = Some(options.overlay);
+    settings.achievement_notifications_volume = Some(options.volume.min(100));
+    settings.achievement_notifications_duration_ms = Some(options.duration_ms.clamp(2000, 15000));
+    settings.achievement_notifications_position =
+        Some(normalize_notification_position(Some(options.position.as_str())));
+    crate::save_settings(&app, &settings);
+    Ok(())
+}
+
+fn achievement_sound_dir(app: &tauri::AppHandle) -> PathBuf {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("sounds");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+/// Plays a custom notification file on a background thread so the watcher
+/// never waits for the sound. Rodio decodes by content, so WAV, MP3, OGG,
+/// FLAC, and M4A all work through the same path.
+#[cfg(windows)]
+fn play_custom_sound(path: &str, volume: u8) -> bool {
+    let Ok(bytes) = std::fs::read(path) else {
+        return false;
+    };
+    let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(bytes)) else {
+        return false;
+    };
+    let volume = (volume.min(100) as f32) / 100.0;
+    std::thread::spawn(move || {
+        let Ok(stream) = rodio::OutputStreamBuilder::open_default_stream() else {
+            unsafe {
+                MessageBeep(0x00000040);
+            }
+            return;
+        };
+        let sink = rodio::Sink::connect_new(stream.mixer());
+        sink.set_volume(volume);
+        sink.append(decoder);
+        sink.sleep_until_end();
+    });
+    true
+}
+
+#[cfg(windows)]
+fn play_achievement_notification_sound(
+    app: &tauri::AppHandle,
+    options: &AchievementNotificationOptions,
+) {
+    if !options.sound {
+        return;
+    }
+    if options.custom_sound {
+        let settings = crate::load_settings(app);
+        if let Some(path) = settings
+            .achievement_notifications_sound_path
+            .as_deref()
+            .filter(|path| Path::new(path).is_file())
+        {
+            if play_custom_sound(path, options.volume) {
+                return;
+            }
+        }
+    }
+    unsafe {
+        MessageBeep(0x00000040);
+    }
+}
+
+#[cfg(not(windows))]
+fn play_achievement_notification_sound(
+    _app: &tauri::AppHandle,
+    _options: &AchievementNotificationOptions,
+) {
+}
+
+#[tauri::command]
+pub async fn achievement_pick_custom_sound(
+    app: tauri::AppHandle,
+) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    {
+        let chosen = tokio::task::spawn_blocking(move || {
+            let script = r#"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+Add-Type -AssemblyName System.Windows.Forms;
+$f = New-Object System.Windows.Forms.OpenFileDialog;
+$f.Title = 'Select notification sound';
+$f.Filter = 'Audio (*.wav;*.mp3;*.ogg;*.flac;*.m4a;*.aac)|*.wav;*.mp3;*.ogg;*.flac;*.m4a;*.aac';
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.FileName }
+"#;
+            let mut cmd = std::process::Command::new("powershell");
+            cmd.args(["-NoProfile", "-NonInteractive", "-Command", script]);
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+            let output = cmd.output().map_err(|error| error.to_string())?;
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok::<Option<String>, String>(if path.is_empty() { None } else { Some(path) })
+        })
+        .await
+        .map_err(|error| error.to_string())??;
+        let Some(chosen) = chosen else {
+            return Ok(None);
+        };
+        let source = PathBuf::from(&chosen);
+        if !source.is_file() {
+            return Err("The selected sound file does not exist".into());
+        }
+        let extension = source
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        if !matches!(extension.as_str(), "wav" | "mp3" | "ogg" | "flac" | "m4a" | "aac") {
+            return Err("Choose a WAV, MP3, OGG, FLAC, M4A, or AAC audio file".into());
+        }
+        let metadata = std::fs::metadata(&source).map_err(|error| error.to_string())?;
+        if metadata.len() > 10 * 1024 * 1024 {
+            return Err("The notification sound must be smaller than 10 MB".into());
+        }
+        let source_file = std::fs::File::open(&source).map_err(|error| error.to_string())?;
+        if rodio::Decoder::try_from(source_file).is_err() {
+            return Err("This audio file is not supported".into());
+        }
+        let target = achievement_sound_dir(&app).join(format!(
+            "achievement-{}.{}",
+            now_secs(),
+            extension
+        ));
+        std::fs::copy(&source, &target).map_err(|error| error.to_string())?;
+        let mut settings = crate::load_settings(&app);
+        if let Some(old) = settings.achievement_notifications_sound_path.take() {
+            if Path::new(&old) != target.as_path() {
+                let _ = std::fs::remove_file(old);
+            }
+        }
+        settings.achievement_notifications_sound_path =
+            Some(target.to_string_lossy().to_string());
+        settings.achievement_notifications_sound_name = source
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(str::to_string);
+        crate::save_settings(&app, &settings);
+        Ok(settings.achievement_notifications_sound_name)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub fn achievement_clear_custom_sound(app: tauri::AppHandle) -> Result<(), String> {
+    let mut settings = crate::load_settings(&app);
+    if let Some(path) = settings.achievement_notifications_sound_path.take() {
+        let _ = std::fs::remove_file(path);
+    }
+    settings.achievement_notifications_sound_name = None;
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -1560,15 +1777,12 @@ pub fn achievement_set_notification_options(
 #[tauri::command]
 pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body: String) {
     let options = achievement_notification_options(&app);
+    crate::overlay::hud::set_notification_position(&options.position);
+    crate::overlay::hud::set_notification_hold(options.duration_ms);
     if options.overlay {
         crate::overlay::hud::notify(&title, &body);
     }
-    #[cfg(windows)]
-    if options.sound {
-        unsafe {
-            MessageBeep(0x00000040);
-        }
-    }
+    play_achievement_notification_sound(&app, &options);
     let payload = AchievementUnlockedPayload {
         app_id: "0".into(),
         name: "TEST_ACHIEVEMENT".into(),
@@ -1736,19 +1950,17 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                         ach.display_name.clone()
                     };
                     let options = achievement_notification_options(&app_handle);
+                    crate::overlay::hud::set_notification_position(&options.position);
+                    crate::overlay::hud::set_notification_hold(options.duration_ms);
                     if options.enabled {
                         // 1. Native in-game HUD toast card
                         if options.overlay {
                             let title_text = format!("🏆 {display}");
                             crate::overlay::hud::notify(&title_text, &ach.description);
                         }
-                        // 2. Play Windows notification sound
-                        #[cfg(windows)]
-                        if options.sound {
-                            unsafe {
-                                MessageBeep(0x00000040); // MB_ICONASTERISK
-                            }
-                        }
+                        // 2. Native notification sound: the user's file when
+                        // set, otherwise the Windows system beep.
+                        play_achievement_notification_sound(&app_handle, &options);
                     }
 
                     // 3. Emit event to frontend; the UI records the unlock even

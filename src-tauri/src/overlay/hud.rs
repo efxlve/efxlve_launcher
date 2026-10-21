@@ -11,7 +11,7 @@
 //! modules of this crate; the ABI is identical, so the clash warning is noise.
 #![allow(clashing_extern_declarations)]
 
-use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU64, AtomicU8, Ordering};
 use std::sync::Mutex;
 
 static STARTED: AtomicBool = AtomicBool::new(false);
@@ -40,23 +40,44 @@ const NOTIF_BODY_PX: i32 = 13;
 const NOTIF_ALPHA: u8 = 242;
 static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(5200);
+/// 0 top-right, 1 top-left, 2 bottom-right, 3 bottom-left.
+static NOTIF_POSITION: AtomicU8 = AtomicU8::new(0);
 /// Text column: 16px pad + 32px icon disc + 14px gap.
 const NOTIF_TEXT_LEFT: i32 = 62;
 const NOTIF_TEXT_RIGHT: i32 = 18;
 
-/// Top-right card rect on the given monitor. Pure math, unit-tested.
+fn notification_is_left(position: u8) -> bool {
+    position == 1 || position == 3
+}
+
+fn notification_is_bottom(position: u8) -> bool {
+    position >= 2
+}
+
+/// Card rect in the requested monitor corner. Pure math, unit-tested.
 fn notif_rect(
     mon_x: i32,
     mon_y: i32,
     mon_w: u32,
+    mon_h: u32,
+    position: u8,
     title_px: i32,
     body_px: i32,
 ) -> (i32, i32, i32, i32) {
     let max_width = (mon_w as i32 - 2 * NOTIF_MARGIN).max(NOTIF_MIN_WIDTH);
     let text_width = title_px.max(body_px).max(1);
     let width = (NOTIF_TEXT_LEFT + NOTIF_TEXT_RIGHT + text_width).clamp(NOTIF_MIN_WIDTH, max_width);
-    let x = mon_x + mon_w as i32 - width - NOTIF_MARGIN;
-    (x, mon_y + NOTIF_MARGIN, width, NOTIF_HEIGHT)
+    let x = if notification_is_left(position) {
+        mon_x + NOTIF_MARGIN
+    } else {
+        mon_x + mon_w as i32 - width - NOTIF_MARGIN
+    };
+    let y = if notification_is_bottom(position) {
+        mon_y + mon_h as i32 - NOTIF_HEIGHT - NOTIF_MARGIN
+    } else {
+        mon_y + NOTIF_MARGIN
+    };
+    (x, y, width, NOTIF_HEIGHT)
 }
 
 /// Rough pixel advance of a UTF-16 line: CJK ideographs take a full em, Latin
@@ -79,6 +100,22 @@ fn now_ms() -> u64 {
 /// overwrite it.
 pub fn hint_active() -> bool {
     NOTIF_ON.load(Ordering::Relaxed)
+}
+
+/// How long the next notification card stays on screen.
+pub fn set_notification_hold(ms: u64) {
+    NOTIF_HOLD_MS.store(ms.clamp(2000, 15_000), Ordering::Relaxed);
+}
+
+/// Which corner the next notification card uses.
+pub fn set_notification_position(position: &str) {
+    let code = match position {
+        "top-left" => 1,
+        "bottom-right" => 2,
+        "bottom-left" => 3,
+        _ => 0,
+    };
+    NOTIF_POSITION.store(code, Ordering::Relaxed);
 }
 
 /// Shows a PS5-like system notification over the game (game start: the overlay
@@ -111,16 +148,21 @@ pub fn notify(title: &str, body: &str) {
             return;
         }
 
-        let (mon_x, mon_y, mon_w, _) =
+        let (mon_x, mon_y, mon_w, mon_h) =
             monitor_rect_for(foreground_window()).unwrap_or((0, 0, 1920, 1080));
+        let position = NOTIF_POSITION.load(Ordering::Relaxed);
         let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), NOTIF_TITLE_PX);
         let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), NOTIF_BODY_PX);
-        let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, title_px, body_px);
-        let start_x = mon_x + mon_w as i32 + 8;
+        let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
+        let start_x = if notification_is_left(position) {
+            mon_x - w - 8
+        } else {
+            mon_x + mon_w as i32 + 8
+        };
 
         unsafe {
             shape_notification(hwnd, w, h);
-            // Park the card past the right edge; the paint lands as it slides in.
+            // Park the card past the nearest edge; the paint lands as it slides in.
             MoveWindow(hwnd, start_x, y, w, h, 1);
             set_alpha(hwnd, 0);
             ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
@@ -139,7 +181,7 @@ pub fn notify(title: &str, body: &str) {
             if NOTIF_GEN.load(Ordering::Relaxed) != generation {
                 return;
             }
-            slide_out(hwnd, generation, x, y, w, h);
+            slide_out(hwnd, generation, x, y, w, h, notification_is_left(position));
             if NOTIF_GEN.load(Ordering::Relaxed) == generation {
                 NOTIF_ON.store(false, Ordering::SeqCst);
                 hide_window();
@@ -248,9 +290,9 @@ fn slide_in(hwnd: isize, generation: u64, start_x: i32, x: i32, y: i32, w: i32, 
 
 /// Slides the card back out while it fades; the caller then hides the window.
 #[cfg(windows)]
-fn slide_out(hwnd: isize, generation: u64, x: i32, y: i32, w: i32, h: i32) {
+fn slide_out(hwnd: isize, generation: u64, x: i32, y: i32, w: i32, h: i32, to_left: bool) {
     const STEPS: i32 = 12;
-    let end_x = x + w + 40;
+    let end_x = if to_left { x - w - 40 } else { x + w + 40 };
     for step in 0..=STEPS {
         if NOTIF_GEN.load(Ordering::Relaxed) != generation {
             return;
@@ -867,7 +909,7 @@ mod tests {
 
     #[test]
     fn notification_card_sits_at_the_top_right() {
-        let (x, y, width, height) = notif_rect(0, 0, 1920, 200, 400);
+        let (x, y, width, height) = notif_rect(0, 0, 1920, 1080, 0, 200, 400);
         assert_eq!(height, NOTIF_HEIGHT);
         assert_eq!(y, NOTIF_MARGIN);
         // The card hugs the right edge and never leaves a bigger gap.
@@ -877,7 +919,7 @@ mod tests {
 
     #[test]
     fn notification_card_fits_an_offset_monitor() {
-        let (x, y, width, _) = notif_rect(1920, 100, 1280, 800, 1200);
+        let (x, y, width, _) = notif_rect(1920, 100, 1280, 720, 0, 800, 1200);
         assert!(x >= 1920);
         assert!(x + width <= 1920 + 1280 - NOTIF_MARGIN);
         assert_eq!(y, 100 + NOTIF_MARGIN);
@@ -885,15 +927,23 @@ mod tests {
 
     #[test]
     fn notification_card_clamps_to_a_narrow_monitor() {
-        let (_, _, width, _) = notif_rect(0, 0, 800, 2000, 2000);
+        let (_, _, width, _) = notif_rect(0, 0, 800, 1080, 0, 2000, 2000);
         assert_eq!(width, 800 - 2 * NOTIF_MARGIN);
     }
 
     #[test]
     fn a_longer_line_makes_a_wider_card() {
-        let (_, _, narrow, _) = notif_rect(0, 0, 1920, text_px(&[b'a' as u16; 10], 15), 0);
-        let (_, _, wide, _) = notif_rect(0, 0, 1920, text_px(&[b'a' as u16; 40], 15), 0);
+        let (_, _, narrow, _) = notif_rect(0, 0, 1920, 1080, 0, text_px(&[b'a' as u16; 10], 15), 0);
+        let (_, _, wide, _) = notif_rect(0, 0, 1920, 1080, 0, text_px(&[b'a' as u16; 40], 15), 0);
         assert!(wide > narrow);
+    }
+
+    #[test]
+    fn notification_card_can_sit_at_the_bottom_left() {
+        let (x, y, width, height) = notif_rect(100, 50, 1920, 1080, 3, 200, 400);
+        assert_eq!(x, 100 + NOTIF_MARGIN);
+        assert_eq!(y + height + NOTIF_MARGIN, 50 + 1080);
+        assert!(width >= 360);
     }
 
     #[test]

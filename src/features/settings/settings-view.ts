@@ -91,7 +91,9 @@ import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOr
 import { companionGetClientSettings } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import {
+  achievementClearCustomSound,
   achievementGetNotificationOptions,
+  achievementPickCustomSound,
   achievementSetNotificationOptions,
   achievementTestNotification,
   steamGetApiKey,
@@ -1036,19 +1038,19 @@ function renderAppIconPicker(): string {
   const isCustomActive = S.appIcon === "custom";
   const customImg = S.customAppIcon ? `<img src="${esc(S.customAppIcon)}" class="app-icon-thumb" alt="" />` : icon("image", 13);
   return `<div class="seg theme-seg" style="display:inline-flex;align-items:center;gap:4px;">
-    <button type="button" class="${S.appIcon === "classic" ? "active" : ""}" data-act="set-app-icon" data-icon="classic" title="${esc(t("settings.appIconClassic"))}">
+    <button type="button" class="${S.appIcon === "classic" ? "active" : ""}" data-act="set-app-icon" data-icon="classic">
       <img src="${classicIcon}" class="app-icon-thumb" alt="" />
       <span>${esc(t("settings.appIconClassic"))}</span>
     </button>
-    <button type="button" class="${S.appIcon === "aero" ? "active" : ""}" data-act="set-app-icon" data-icon="aero" title="${esc(t("settings.appIconAero"))}">
+    <button type="button" class="${S.appIcon === "aero" ? "active" : ""}" data-act="set-app-icon" data-icon="aero">
       <img src="${aeroIcon}" class="app-icon-thumb" alt="" />
       <span>${esc(t("settings.appIconAero"))}</span>
     </button>
-    <button type="button" class="${isCustomActive ? "active" : ""}" data-act="set-app-icon" data-icon="custom" title="${esc(t("settings.appIconCustom"))}">
+    <button type="button" class="${isCustomActive ? "active" : ""}" data-act="set-app-icon" data-icon="custom">
       ${customImg}
       <span>${esc(t("settings.appIconCustom"))}</span>
     </button>
-    <button type="button" class="btn ghost small" data-act="upload-app-icon" style="height:26px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;margin-left:4px;" title="${esc(t("settings.appIconUploadBtn"))}">
+    <button type="button" class="btn ghost small" data-act="upload-app-icon" style="height:26px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;margin-left:4px;">
       ${icon("upload", 12)}
       <span>${esc(t("settings.appIconUploadBtn"))}</span>
     </button>
@@ -1111,6 +1113,40 @@ function renderAppearance(): string {
 
 function renderAchievementsSettings(): string {
   const options = S.achievementNotificationOptions;
+  const soundName = options.customSoundName || t("settings.achDefaultSound");
+  const volumeButtons = [25, 50, 75, 100]
+    .map(
+      (value) =>
+        `<button type="button" class="${options.volume === value ? "active" : ""}" data-act="set-ach-volume" data-val="${value}">${value}%</button>`,
+    )
+    .join("");
+  const durationButtons = [
+    [3000, "3s"],
+    [5000, "5s"],
+    [8000, "8s"],
+  ]
+    .map(
+      ([value, label]) =>
+        `<button type="button" class="${options.durationMs === value ? "active" : ""}" data-act="set-ach-duration" data-val="${value}">${label}</button>`,
+    )
+    .join("");
+  const positionButtons = [
+    ["top-left", "TopLeft", "↖"],
+    ["top-right", "TopRight", "↗"],
+    ["bottom-left", "BottomLeft", "↙"],
+    ["bottom-right", "BottomRight", "↘"],
+  ]
+    .map(
+      ([value, key, glyph]) =>
+        `<button type="button" class="${options.position === value ? "active" : ""}" data-act="set-ach-position" data-val="${value}" aria-label="${esc(t(`settings.achPosition${key}`))}">${glyph}</button>`,
+    )
+    .join("");
+  const customSoundControl = `
+    <div class="settings-custom-sound">
+      <span class="settings-hint">${esc(soundName)}</span>
+      <button type="button" class="btn ghost small" data-act="ach-pick-sound">${icon("folder", 13)} ${t("settings.achSoundChoose")}</button>
+      ${options.customSound ? `<button type="button" class="btn ghost small danger" data-act="ach-clear-sound" aria-label="${esc(t("settings.achSoundClear"))}">${icon("trash", 13)}</button>` : ""}
+    </div>`;
   return group(
     row(
       t("settings.achNotifyTitle"),
@@ -1118,14 +1154,30 @@ function renderAchievementsSettings(): string {
       toggle("toggle-ach-notifications", options.enabled),
     ) +
       row(
+        t("settings.achOverlayTitle"),
+        t("settings.achOverlayDesc"),
+        toggle("toggle-ach-overlay", options.overlay),
+      ) +
+      row(
+        t("settings.achPositionTitle"),
+        t("settings.achPositionDesc"),
+        `<div class="seg" role="group" aria-label="${t("settings.achPositionTitle")}">${positionButtons}</div>`,
+      ) +
+      row(
         t("settings.achSoundTitle"),
         t("settings.achSoundDesc"),
         toggle("toggle-ach-sound", options.sound),
       ) +
+      row(t("settings.achCustomSoundTitle"), t("settings.achCustomSoundDesc"), customSoundControl) +
       row(
-        t("settings.achOverlayTitle"),
-        t("settings.achOverlayDesc"),
-        toggle("toggle-ach-overlay", options.overlay),
+        t("settings.achVolumeTitle"),
+        t("settings.achVolumeDesc"),
+        `<div class="seg" role="group" aria-label="${t("settings.achVolumeTitle")}">${volumeButtons}</div>`,
+      ) +
+      row(
+        t("settings.achDurationTitle"),
+        t("settings.achDurationDesc"),
+        `<div class="seg" role="group" aria-label="${t("settings.achDurationTitle")}">${durationButtons}</div>`,
       ) +
       row(
         t("settings.achTestTitle"),
@@ -2269,6 +2321,56 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       render();
       return true;
     }
+    case "set-ach-position": {
+      const allowed = ["top-left", "top-right", "bottom-left", "bottom-right"];
+      const position = allowed.includes(_el.dataset.val ?? "")
+        ? (_el.dataset.val as string)
+        : "top-right";
+      const next = { ...S.achievementNotificationOptions, position };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+    case "set-ach-volume": {
+      const volume = Math.max(0, Math.min(100, Number(_el.dataset.val) || 100));
+      const next = { ...S.achievementNotificationOptions, volume };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+    case "set-ach-duration": {
+      const durationMs = Number(_el.dataset.val) || 5000;
+      const next = { ...S.achievementNotificationOptions, durationMs };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+    case "ach-pick-sound":
+      void (async () => {
+        try {
+          const name = await achievementPickCustomSound();
+          if (!name) return;
+          S.achievementNotificationOptions = await achievementGetNotificationOptions();
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
+    case "ach-clear-sound":
+      void (async () => {
+        try {
+          await achievementClearCustomSound();
+          S.achievementNotificationOptions = await achievementGetNotificationOptions();
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
     case "ach-test-notification":
       void achievementTestNotification(
         t("ach.unlockedNotification", { name: t("settings.achTestTitle") }),
