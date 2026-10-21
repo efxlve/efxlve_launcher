@@ -18,10 +18,14 @@
 //! the integration. Without the vendored SDK (see `build.rs`) the commands stay
 //! a no-op, so the build never depends on the 745 MB download.
 
+#[cfg(discord_sdk)]
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+#[cfg(discord_sdk)]
+use std::sync::mpsc::TryRecvError;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
+#[cfg(discord_sdk)]
 use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Emitter};
@@ -46,6 +50,7 @@ static STATE: Mutex<SdkState> = Mutex::new(SdkState::new());
 static CLIENT_PTR: std::sync::atomic::AtomicPtr<ffi::Client> =
     std::sync::atomic::AtomicPtr::new(std::ptr::null_mut());
 
+#[cfg_attr(not(discord_sdk), allow(dead_code))]
 enum SdkCommand {
     SendDm { user_id: u64, text: String },
     EditDm { user_id: u64, message_id: u64, text: String },
@@ -194,6 +199,7 @@ fn emit_state() {
     }
 }
 
+#[cfg(discord_sdk)]
 fn emit_friends() {
     let Some(payload) = with_state(|state| friends_json(state)) else {
         return;
