@@ -429,7 +429,11 @@ export function epicActionButtons(
     if (s.appName.startsWith("amazon::")) {
       return `<button class="btn play${btn}" data-act="amazon-stop" data-id="${esc(s.appName.slice(8))}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
     }
-    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
+    if (
+      s.appName.startsWith("steam::") ||
+      s.appName.startsWith("custom::") ||
+      isCompanionKey(s.appName)
+    ) {
       return `<button class="btn play${btn} running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
     }
     return `<button class="btn play${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;

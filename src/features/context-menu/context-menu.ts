@@ -81,9 +81,11 @@ const isRiot = source === "riot";
           ? `${!installed ? amazonItem("amazon-install", t("common.install"), "download") : s.updateAvailable ? amazonItem("amazon-install", t("common.update"), "download") : amazonItem("amazon-play", t("common.play"), "play")}
     ${item("manage-game", t("common.manage"), "settings")}`
           : isCustom
-            ? `${installed
-                ? item("epic-play", t("common.play"), "play")
-                : item("pick-custom-exe-for", t("customGames.setExe"), "folder")}`
+            ? `${S.runningGames.has(appName)
+                ? `<button class="ps5-context-item" role="menuitem" disabled><span class="running-dot"></span><span>${esc(t("lib.running"))}</span></button>`
+                : installed
+                  ? item("epic-play", t("common.play"), "play")
+                  : item("pick-custom-exe-for", t("customGames.setExe"), "folder")}`
             : `${installed
                 ? item("epic-play", t("common.play"), "play")
                 : isCompanion

@@ -458,8 +458,13 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 16)} ${t("steam.downloading")}</button>`;
   }
   if (S.runningGames.has(s.appName)) {
-    // Client-owned stores cannot be stopped here: show the running state.
-    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
+    // Client-owned stores and custom games cannot be stopped here: show the
+    // running state instead of offering a Play that would launch a second copy.
+    if (
+      s.appName.startsWith("steam::") ||
+      s.appName.startsWith("custom::") ||
+      isCompanionKey(s.appName)
+    ) {
       const label = t("lib.running");
       return `<button class="btn play lg running" disabled title="${esc(label)}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
     }
@@ -618,9 +623,11 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   if (s.appName.startsWith("custom::")) {
     const custom = S.customGames.find((g) => g.id === s.appName);
     const hasExe = Boolean(custom?.exePath && custom.exePath.trim().length > 0);
-    const primary = !hasExe
-      ? `<button class="btn ghost lg" data-act="pick-custom-exe-for" data-id="${s.appName}" title="${esc(t("customGames.setExeHint"))}">${icon("folder", 16)} ${esc(t("customGames.setExe"))}</button>`
-      : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+    const primary = S.runningGames.has(s.appName)
+      ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
+      : !hasExe
+        ? `<button class="btn ghost lg" data-act="pick-custom-exe-for" data-id="${s.appName}" title="${esc(t("customGames.setExeHint"))}">${icon("folder", 16)} ${esc(t("customGames.setExe"))}</button>`
+        : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`;
     return `${primary}
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       <button class="btn ghost lg danger" data-act="custom-game-remove" data-id="${s.appName}" title="${esc(t("customGames.delete"))}">${icon("trash", 16)} ${esc(t("customGames.delete"))}</button>
