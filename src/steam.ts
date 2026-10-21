@@ -212,6 +212,20 @@ export const steamGetAchievements = (appId: string, force = false) =>
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");
+export interface AchievementSourceConfig {
+  mode: "auto" | "custom" | "disabled";
+  customPath?: string;
+  detectedPath?: string;
+}
+
+export const steamGetAchievementSource = (appId: string) =>
+  invoke<AchievementSourceConfig>("steam_get_achievement_source", { appId });
+
+export const steamSetAchievementSource = (appId: string, mode: string, customPath?: string) =>
+  invoke<void>("steam_set_achievement_source", { appId, mode, customPath });
+
+export const steamDetectAchievementPath = (appId: string) =>
+  invoke<string | null>("steam_detect_achievement_path", { appId });
 /**
  * Screenshots taken by the Steam client for one app (read-only gallery: the
  * files belong to the client, so they are never edited or deleted here).

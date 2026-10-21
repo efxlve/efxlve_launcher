@@ -2759,5 +2759,15 @@
   "compat.desc.dxmt": "Translates Direct3D 12 to Metal on macOS.",
   "compat.desc.vulkan-helper-rs": "Manages Vulkan drivers and layers on Linux and macOS. Detected from the system, not installed here.",
   "compat.managedOnDemand": "Managed by the launcher · Prepared on first use",
-  "compat.storeClientsNote": "These clients are managed by the launcher and downloaded in the background on first use. You do not need to install them separately."
+  "compat.storeClientsNote": "These clients are managed by the launcher and downloaded in the background on first use. You do not need to install them separately.",
+  "ach.sourceSettings": "Achievement source settings",
+  "ach.sourceTitle": "Achievement Source",
+  "ach.sourceDesc": "Select where achievements are read from. By default, the launcher automatically detects emulator files (RUNE, CODEX, Goldberg).",
+  "ach.modeAuto": "Automatic (scan emulator files)",
+  "ach.modeCustom": "Custom file or folder",
+  "ach.modeDisabled": "Disabled (Steam client only)",
+  "ach.detectedPath": "Detected: {path}",
+  "ach.noPathDetected": "No local emulator achievement file detected for this game",
+  "ach.customPathPlaceholder": "Path to achievements.ini or folder containing it",
+  "ach.saveSource": "Save Source"
 }

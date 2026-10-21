@@ -2759,5 +2759,15 @@
   "compat.desc.dxmt": "macOS'ta Direct3D 12'yi Metal'e çevirir.",
   "compat.desc.vulkan-helper-rs": "Linux ve macOS'ta Vulkan sürücülerini ve katmanlarını yönetir. Sistemde aranır, launcher kurmaz.",
   "compat.managedOnDemand": "Launcher yönetiyor · İlk kullanımda hazırlanır",
-  "compat.storeClientsNote": "Bu istemciler launcher tarafından yönetilir ve ilk kullanımda arka planda indirilir. Ayrıca kurman gerekmez."
+  "compat.storeClientsNote": "Bu istemciler launcher tarafından yönetilir ve ilk kullanımda arka planda indirilir. Ayrıca kurman gerekmez.",
+  "ach.sourceSettings": "Başarım kaynağı ayarları",
+  "ach.sourceTitle": "Başarım Kaynağı",
+  "ach.sourceDesc": "Başarımların nereden okunacağını seçin. Varsayılan olarak launcher emülatör dosyalarını (RUNE, CODEX, Goldberg) otomatik tespit eder.",
+  "ach.modeAuto": "Otomatik (emülatör dosyalarını tara)",
+  "ach.modeCustom": "Özel dosya veya klasör",
+  "ach.modeDisabled": "Devre dışı (yalnızca Steam istemcisi)",
+  "ach.detectedPath": "Tespit edilen: {path}",
+  "ach.noPathDetected": "Bu oyun için lokal emülatör başarım dosyası bulunamadı",
+  "ach.customPathPlaceholder": "achievements.ini dosyasının veya klasörünün yolu",
+  "ach.saveSource": "Kaynağı Kaydet"
 }

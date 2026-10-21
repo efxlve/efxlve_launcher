@@ -38,7 +38,9 @@ import { hydrateProtonDbChip, renderProtonDbHost } from "./protondb";
 import { hydrateAntiCheatChip, renderAntiCheatHost } from "./awacy";
 import { hydrateDeckChip, renderDeckHost } from "./deck";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
-import { steamGetAchievements } from "../../steam";
+import { steamGetAchievements, steamGetAchievementSource, steamSetAchievementSource, type AchievementSourceConfig } from "../../steam";
+
+export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
 import { companionAchievements } from "../../companion";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
@@ -1856,7 +1858,58 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const platCup = `<span class="plat-cup${platShineDone ? "" : " shine"}">${epicPlatinumIcon(28)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 11)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 9)}</span><span class="plat-shine" aria-hidden="true"></span></span>`;
   if (isPlat) platShineDone = true;
 
+  if (s.appName.startsWith("steam::")) {
+    const appId = s.appName.slice(7);
+    if (!steamAchSourceCache.has(s.appName)) {
+      void steamGetAchievementSource(appId).then((cfg) => {
+        steamAchSourceCache.set(s.appName, cfg);
+        if (S.achSourceModalOpen === s.appName) {
+          const content = document.getElementById("drawer-tab-content");
+          if (content) content.innerHTML = renderDrawerAchievements(s);
+        }
+      });
+    }
+  }
+
+  const srcCfg = steamAchSourceCache.get(s.appName) ?? { mode: "auto" };
+  const detectedPath = srcCfg.detectedPath;
+  const sourceCard = S.achSourceModalOpen === s.appName && s.appName.startsWith("steam::")
+    ? `<div class="ach-source-card">
+        <div class="ach-source-header">
+          <span class="ach-source-title">${icon("settings", 14)} ${t("ach.sourceTitle")}</span>
+          <button class="icon-btn" data-act="ach-source-close" title="${t("common.close")}">${icon("x", 12)}</button>
+        </div>
+        <div class="ach-source-desc">${t("ach.sourceDesc")}</div>
+        <div class="ach-source-modes">
+          <label class="radio-label">
+            <input type="radio" name="ach-source-mode" value="auto" ${srcCfg.mode === "auto" ? "checked" : ""} data-act="ach-mode-change" data-id="${s.appName}" />
+            <span>${t("ach.modeAuto")}</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="ach-source-mode" value="custom" ${srcCfg.mode === "custom" ? "checked" : ""} data-act="ach-mode-change" data-id="${s.appName}" />
+            <span>${t("ach.modeCustom")}</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="ach-source-mode" value="disabled" ${srcCfg.mode === "disabled" ? "checked" : ""} data-act="ach-mode-change" data-id="${s.appName}" />
+            <span>${t("ach.modeDisabled")}</span>
+          </label>
+        </div>
+        ${srcCfg.mode === "auto"
+          ? (detectedPath
+            ? `<div class="ach-source-detected">${icon("check", 12)} <span>${t("ach.detectedPath", { path: esc(detectedPath) })}</span></div>`
+            : `<div class="ach-source-not-found">${icon("info", 12)} <span>${t("ach.noPathDetected")}</span></div>`)
+          : ""}
+        ${srcCfg.mode === "custom"
+          ? `<div class="ach-source-custom-row">
+              <input type="text" id="ach-custom-path-input" class="ach-custom-input" placeholder="${t("ach.customPathPlaceholder")}" value="${esc(srcCfg.customPath ?? "")}" />
+              <button class="btn small play" data-act="ach-source-save" data-id="${s.appName}">${t("ach.saveSource")}</button>
+            </div>`
+          : ""}
+      </div>`
+    : "";
+
   return `
+    ${sourceCard}
     ${sourceNote}
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
       <div class="ach-summary-left">
@@ -1872,6 +1925,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
         ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
         ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
+        ${s.appName.startsWith("steam::") ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
         <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
         ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>

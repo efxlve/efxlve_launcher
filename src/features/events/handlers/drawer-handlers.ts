@@ -14,7 +14,10 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintDlcsTab } from "../../drawer/drawer-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
+import { toast } from "../../../core/toast";
+import { t as i18n } from "../../../i18n";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { toggleSideWidget } from "../../drawer/side-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
@@ -313,6 +316,57 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "ach-refresh":
       if (id) void fetchAndRenderAchievements(id, true);
       return true;
+
+    case "ach-source-settings": {
+      if (id) {
+        S.achSourceModalOpen = S.achSourceModalOpen === id ? null : id;
+        const s = summaryOf(id);
+        const content = document.getElementById("drawer-tab-content");
+        if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      }
+      return true;
+    }
+
+    case "ach-source-close": {
+      S.achSourceModalOpen = null;
+      if (S.currentModalAppName) {
+        const s = summaryOf(S.currentModalAppName);
+        const content = document.getElementById("drawer-tab-content");
+        if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      }
+      return true;
+    }
+
+    case "ach-mode-change": {
+      if (id && id.startsWith("steam::")) {
+        const input = t as HTMLInputElement;
+        const mode = input.value;
+        const appId = id.slice(7);
+        void steamSetAchievementSource(appId, mode).then(() => {
+          void steamGetAchievementSource(appId).then((cfg) => {
+            steamAchSourceCache.set(id, cfg);
+            void fetchAndRenderAchievements(id, true);
+          });
+        });
+      }
+      return true;
+    }
+
+    case "ach-source-save": {
+      if (id && id.startsWith("steam::")) {
+        const input = document.getElementById("ach-custom-path-input") as HTMLInputElement | null;
+        const customPath = input?.value?.trim() || "";
+        const appId = id.slice(7);
+        void steamSetAchievementSource(appId, "custom", customPath).then(() => {
+          void steamGetAchievementSource(appId).then((cfg) => {
+            steamAchSourceCache.set(id, cfg);
+            toast(i18n("ach.saveSource"));
+            void fetchAndRenderAchievements(id, true);
+          });
+        });
+      }
+      return true;
+    }
 
     default:
       return false;

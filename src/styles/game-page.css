@@ -1954,3 +1954,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .dlc-igdb-block { margin-top: 18px; }
 .dlc-igdb-block > .gp-section-title { margin-bottom: 8px; }
 .dlc-igdb-block .row-thumb { width: 46px; height: 62px; object-fit: cover; border-radius: var(--r-sm); }
+
+.ach-source-card { margin-bottom: 16px; padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 12px; }
+.ach-source-header { display: flex; align-items: center; justify-content: space-between; }
+.ach-source-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.ach-source-desc { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+.ach-source-modes { display: flex; gap: 16px; flex-wrap: wrap; }
+.ach-source-modes .radio-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+.ach-source-detected { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-sm); background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.25); color: var(--green, #22c55e); font-size: 12px; word-break: break-all; }
+.ach-source-not-found { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-3); font-size: 12px; }
+.ach-source-custom-row { display: flex; gap: 8px; align-items: center; }
+.ach-custom-input { flex: 1; padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text-1); font-size: 13px; }

@@ -396,6 +396,7 @@ export const S = {
   achSortOrder: ("default") as "default" | "rarity" | "xp" | "date",
   revealedAchievements: (new Set()) as Set<string>,
   currentModalAppName: (null) as string | null,
+  achSourceModalOpen: (null) as string | null,
   loadedRequirements: (new Map()) as Map<string, GameRequirementsResponse>,
   loadingReqFor: new Set<string>(),
   activeSystemPlatform: ("Windows") as string,

@@ -279,22 +279,371 @@ pub(super) fn read_unlock_times(
     unlock_times
 }
 
+/* ---------- Emulator achievements (RUNE, CODEX, Goldberg, etc.) ---------- */
+
+#[derive(Debug, Clone, Default)]
+pub struct EmulatorAchievementEntry {
+    #[allow(dead_code)]
+    pub key: String,
+    pub achieved: bool,
+    pub unlock_time: i64,
+    pub cur_progress: f64,
+    pub max_progress: f64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ParsedEmulatorAchievements {
+    /// Entries indexed by lowercased section/key name
+    pub entries: std::collections::HashMap<String, EmulatorAchievementEntry>,
+    /// Order mapping from [SteamAchievements] (e.g. 00000 = "1" or "ACH_NAME")
+    pub order_mapping: Vec<String>,
+    /// Unlocked count from [SteamAchievements] Count= if present
+    pub count: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementSourceConfig {
+    /// "auto" | "custom" | "disabled"
+    pub mode: String,
+    pub custom_path: Option<String>,
+    pub detected_path: Option<String>,
+}
+
+/// Parses scene/emulator `achievements.ini` (RUNE, CODEX, PLAZA, etc.).
+pub fn parse_achievements_ini(text: &str) -> ParsedEmulatorAchievements {
+    let mut parsed = ParsedEmulatorAchievements::default();
+    let mut current_section = String::new();
+    let mut current_entry = EmulatorAchievementEntry::default();
+
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with(';') || line.starts_with('#') {
+            continue;
+        }
+        if line.starts_with('[') && line.ends_with(']') {
+            if !current_section.is_empty() && !current_section.eq_ignore_ascii_case("SteamAchievements") {
+                parsed.entries.insert(current_section.to_lowercase(), current_entry.clone());
+            }
+            current_section = line[1..line.len() - 1].trim().to_string();
+            current_entry = EmulatorAchievementEntry {
+                key: current_section.clone(),
+                ..Default::default()
+            };
+            continue;
+        }
+
+        if let Some((k, v)) = line.split_once('=') {
+            let key = k.trim();
+            let val = v.trim();
+            if current_section.eq_ignore_ascii_case("SteamAchievements") {
+                if key.eq_ignore_ascii_case("Count") {
+                    parsed.count = val.parse::<u32>().ok();
+                } else {
+                    parsed.order_mapping.push(val.to_string());
+                }
+            } else if key.eq_ignore_ascii_case("Achieved") {
+                current_entry.achieved = val == "1" || val.eq_ignore_ascii_case("true");
+            } else if key.eq_ignore_ascii_case("UnlockTime") {
+                current_entry.unlock_time = val.parse::<i64>().unwrap_or(0);
+            } else if key.eq_ignore_ascii_case("CurProgress") {
+                current_entry.cur_progress = val.parse::<f64>().unwrap_or(0.0);
+            } else if key.eq_ignore_ascii_case("MaxProgress") {
+                current_entry.max_progress = val.parse::<f64>().unwrap_or(0.0);
+            }
+        }
+    }
+    if !current_section.is_empty() && !current_section.eq_ignore_ascii_case("SteamAchievements") {
+        parsed.entries.insert(current_section.to_lowercase(), current_entry);
+    }
+    parsed
+}
+
+/// Parses Goldberg emulator `achievements.json`.
+pub fn parse_goldberg_achievements(text: &str) -> ParsedEmulatorAchievements {
+    let mut parsed = ParsedEmulatorAchievements::default();
+    let Ok(val) = serde_json::from_str::<serde_json::Value>(text) else {
+        return parsed;
+    };
+    if let Some(map) = val.as_object() {
+        for (k, v) in map {
+            let earned = v.get("earned").and_then(|e| e.as_bool()).unwrap_or(false);
+            let earned_time = v.get("earned_time").and_then(|t| t.as_i64()).unwrap_or(0);
+            parsed.entries.insert(
+                k.to_lowercase(),
+                EmulatorAchievementEntry {
+                    key: k.clone(),
+                    achieved: earned,
+                    unlock_time: earned_time,
+                    cur_progress: 0.0,
+                    max_progress: 0.0,
+                },
+            );
+        }
+    } else if let Some(arr) = val.as_array() {
+        for item in arr {
+            let name = item.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            if name.is_empty() {
+                continue;
+            }
+            let earned = item.get("earned").and_then(|e| e.as_bool()).unwrap_or(false);
+            let earned_time = item.get("earned_time").and_then(|t| t.as_i64()).unwrap_or(0);
+            parsed.entries.insert(
+                name.to_lowercase(),
+                EmulatorAchievementEntry {
+                    key: name.to_string(),
+                    achieved: earned,
+                    unlock_time: earned_time,
+                    cur_progress: 0.0,
+                    max_progress: 0.0,
+                },
+            );
+        }
+    }
+    parsed
+}
+
+/// Known root folders where scene emulators store achievement files on Windows.
+pub fn candidate_emulator_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+
+    // 1) C:\Users\Public\Documents\Steam
+    let public_dir = std::env::var_os("PUBLIC")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(r"C:\Users\Public"));
+    let steam_pub = public_dir.join("Documents").join("Steam");
+    if steam_pub.is_dir() {
+        dirs.push(steam_pub.clone());
+        if let Ok(entries) = std::fs::read_dir(&steam_pub) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_dir() {
+                    dirs.push(p);
+                }
+            }
+        }
+    }
+
+    // 2) %APPDATA%
+    if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
+        dirs.push(appdata.join("Goldberg SteamEmu Saves"));
+        dirs.push(appdata.join("ALI213"));
+        dirs.push(appdata.join("SmartSteamEmu"));
+        dirs.push(appdata.join("FLT"));
+    }
+
+    dirs
+}
+
+/// Locates the achievements file for a Steam AppID.
+pub fn find_emulator_achievement_file(app_id: &str, custom_path: Option<&Path>) -> Option<PathBuf> {
+    if let Some(p) = custom_path {
+        if p.is_file() {
+            return Some(p.to_path_buf());
+        }
+        if p.is_dir() {
+            for name in &["achievements.ini", "achievements.json", "stats.ini"] {
+                let candidate = p.join(name);
+                if candidate.is_file() {
+                    return Some(candidate);
+                }
+            }
+            let sub = p.join(app_id);
+            for name in &["achievements.ini", "achievements.json", "stats.ini"] {
+                let candidate = sub.join(name);
+                if candidate.is_file() {
+                    return Some(candidate);
+                }
+            }
+        }
+    }
+
+    for base in candidate_emulator_dirs() {
+        let app_dir = base.join(app_id);
+        for file_name in &["achievements.ini", "achievements.json", "stats.ini"] {
+            let candidate = app_dir.join(file_name);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+            let candidate_settings = app_dir.join("steam_settings").join(file_name);
+            if candidate_settings.is_file() {
+                return Some(candidate_settings);
+            }
+        }
+    }
+
+    None
+}
+
+/// Matches schema item against emulator achievement entries.
+fn is_emulator_unlocked(
+    parsed: &ParsedEmulatorAchievements,
+    api_name: &str,
+    index: usize,
+    bit_id: &str,
+) -> Option<(bool, i64, f64)> {
+    let api_lower = api_name.to_lowercase();
+    let one_based = (index + 1).to_string();
+    let zero_based = index.to_string();
+    let bit_str = bit_id.to_string();
+
+    // 1) Direct api_name match (e.g. [ACH_KILL_BOSS])
+    if let Some(entry) = parsed.entries.get(&api_lower) {
+        if entry.achieved || entry.unlock_time > 0 {
+            let prog = if entry.max_progress > 0.0 {
+                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
+            } else {
+                1.0
+            };
+            return Some((true, entry.unlock_time, prog));
+        }
+    }
+    // 2) 1-based index match (e.g. [1] for 1st achievement in schema, as in RUNE)
+    if let Some(entry) = parsed.entries.get(&one_based) {
+        if entry.achieved || entry.unlock_time > 0 {
+            let prog = if entry.max_progress > 0.0 {
+                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
+            } else {
+                1.0
+            };
+            return Some((true, entry.unlock_time, prog));
+        }
+    }
+    // 3) 0-based index match (e.g. [0])
+    if let Some(entry) = parsed.entries.get(&zero_based) {
+        if entry.achieved || entry.unlock_time > 0 {
+            let prog = if entry.max_progress > 0.0 {
+                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
+            } else {
+                1.0
+            };
+            return Some((true, entry.unlock_time, prog));
+        }
+    }
+    // 4) bit_id match
+    if let Some(entry) = parsed.entries.get(&bit_str) {
+        if entry.achieved || entry.unlock_time > 0 {
+            let prog = if entry.max_progress > 0.0 {
+                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
+            } else {
+                1.0
+            };
+            return Some((true, entry.unlock_time, prog));
+        }
+    }
+    // 5) Order mapping from [SteamAchievements]
+    for mapped in &parsed.order_mapping {
+        let mapped_lower = mapped.to_lowercase();
+        if mapped_lower == api_lower || mapped == &one_based || mapped == &zero_based || mapped == &bit_str {
+            if let Some(entry) = parsed.entries.get(&mapped_lower) {
+                if entry.achieved || entry.unlock_time > 0 {
+                    let prog = if entry.max_progress > 0.0 {
+                        (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
+                    } else {
+                        1.0
+                    };
+                    return Some((true, entry.unlock_time, prog));
+                }
+            }
+            return Some((true, 0, 1.0));
+        }
+    }
+    None
+}
+
+fn source_overrides_path(app: &tauri::AppHandle) -> PathBuf {
+    achievements_cache_dir(app).join("source_overrides.json")
+}
+
+pub fn load_source_overrides(
+    app: &tauri::AppHandle,
+) -> std::collections::HashMap<String, AchievementSourceConfig> {
+    let path = source_overrides_path(app);
+    std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_source_overrides(
+    app: &tauri::AppHandle,
+    overrides: &std::collections::HashMap<String, AchievementSourceConfig>,
+) -> Result<(), String> {
+    let path = source_overrides_path(app);
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let text = serde_json::to_string_pretty(overrides).map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| e.to_string())
+}
+
+pub fn get_achievement_source_config(
+    app: &tauri::AppHandle,
+    app_id: &str,
+) -> AchievementSourceConfig {
+    let overrides = load_source_overrides(app);
+    let mut config = overrides.get(app_id).cloned().unwrap_or_default();
+    if config.mode.is_empty() {
+        config.mode = "auto".to_string();
+    }
+    let custom = config
+        .custom_path
+        .as_ref()
+        .filter(|p| !p.trim().is_empty())
+        .map(Path::new);
+    config.detected_path = find_emulator_achievement_file(app_id, custom)
+        .map(|p| p.to_string_lossy().to_string());
+    config
+}
+
+pub fn read_emulator_achievements(
+    app: Option<&tauri::AppHandle>,
+    app_id: &str,
+) -> Option<ParsedEmulatorAchievements> {
+    let (custom_path, _mode) = match app {
+        Some(handle) => {
+            let cfg = get_achievement_source_config(handle, app_id);
+            if cfg.mode == "disabled" {
+                return None;
+            }
+            (cfg.custom_path, cfg.mode)
+        }
+        None => (None, "auto".to_string()),
+    };
+
+    let custom_p = custom_path.as_deref().map(Path::new);
+    let file_path = find_emulator_achievement_file(app_id, custom_p)?;
+    let content = std::fs::read_to_string(&file_path).ok()?;
+    let parsed = if file_path.extension().and_then(|s| s.to_str()) == Some("json") {
+        parse_goldberg_achievements(&content)
+    } else {
+        parse_achievements_ini(&content)
+    };
+    Some(parsed)
+}
+
 /// Achievements straight from the Steam client's own cache:
 /// `appcache/stats/UserGameStatsSchema_<app>.bin` (definitions, icons) and
-/// `UserGameStats_<account>_<app>.bin` (unlock times). Works offline, needs no
-/// Web API key and no public profile; `None` when the client has no schema.
-pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchievementsResponse> {
+/// `UserGameStats_<account>_<app>.bin` (unlock times) plus emulator achievements.
+pub fn read_local_achievements_with_app(
+    app: Option<&tauri::AppHandle>,
+    steam: &Path,
+    app_id: &str,
+) -> Option<GameAchievementsResponse> {
     let schema_bytes =
         std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
     let schema = parse_binary_vdf(&schema_bytes)?;
     let stats = schema.get(app_id)?.get("stats")?;
     let unlock_times = read_unlock_times(steam, app_id);
+    let emu_data = read_emulator_achievements(app, app_id);
 
     let mut groups: Vec<&(String, Vdf)> = stats.entries().iter().collect();
     groups.sort_by_key(|(id, _)| id.parse::<u32>().unwrap_or(u32::MAX));
 
     let mut items: Vec<AchievementItem> = Vec::new();
     let mut hidden_items: Vec<AchievementItem> = Vec::new();
+    let mut ach_index = 0usize;
+
     for (group_id, group) in groups {
         let Some(bits) = group.get("bits") else {
             continue;
@@ -328,10 +677,26 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
                 .and_then(Vdf::as_str)
                 .map(|v| v != "0")
                 .unwrap_or(false);
-            let unlock_time = unlock_times
+
+            let mut unlock_time = unlock_times
                 .get(&format!("{group_id}:{bit_id}"))
                 .copied()
                 .unwrap_or(0);
+            let mut cur_prog = if unlock_time > 0 { 1.0 } else { 0.0 };
+
+            if unlock_time == 0 {
+                if let Some(ref emu) = emu_data {
+                    if let Some((unlocked, t, prog)) =
+                        is_emulator_unlocked(emu, &api_name, ach_index, bit_id)
+                    {
+                        if unlocked {
+                            unlock_time = if t > 0 { t } else { 1 };
+                            cur_prog = prog;
+                        }
+                    }
+                }
+            }
+
             let unlocked = unlock_time > 0;
             let icon = display
                 .and_then(|d| d.get("icon"))
@@ -353,7 +718,7 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
                 display_name,
                 description,
                 unlocked,
-                progress: if unlocked { 1.0 } else { 0.0 },
+                progress: cur_prog,
                 unlock_date: if unlocked {
                     Some(unix_date(unlock_time))
                 } else {
@@ -370,6 +735,7 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
                 hidden_items.push(item.clone());
             }
             items.push(item);
+            ach_index += 1;
         }
     }
     if items.is_empty() {
@@ -384,10 +750,18 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
         user_unlocked: unlocked,
         total_achievements: total,
         // Steam has no platinum trophy: a full set counts as the completed state.
-        is_platinum: unlocked == total,
+        is_platinum: unlocked == total && total > 0,
         supported: Some(true),
         ..Default::default()
     })
+}
+
+/// Achievements straight from the Steam client's own cache:
+/// `appcache/stats/UserGameStatsSchema_<app>.bin` (definitions, icons) and
+/// `UserGameStats_<account>_<app>.bin` (unlock times). Works offline, needs no
+/// Web API key and no public profile; `None` when the client has no schema.
+pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchievementsResponse> {
+    read_local_achievements_with_app(None, steam, app_id)
 }
 
 /// Unlocked/total counts for every game the client keeps stats for.
@@ -397,58 +771,121 @@ pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchieve
 /// carry leftovers from a predecessor app (CS:GO bits under CS2), so using it
 /// as the total made every game look 100% complete.
 pub(super) fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u32)> {
-    let Some(account) = steam_account_id(steam) else {
-        return Vec::new();
-    };
     let Ok(entries) = std::fs::read_dir(stats_dir(steam)) else {
         return Vec::new();
     };
-    let prefix = format!("UserGameStats_{account}_");
     let mut out = Vec::new();
-    for entry in entries.flatten() {
-        let name = entry.file_name().to_string_lossy().to_string();
-        let Some(rest) = name.strip_prefix(&prefix) else {
-            continue;
-        };
-        let Some(app_id) = rest.strip_suffix(".bin") else {
-            continue;
-        };
-        if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
-            continue;
-        }
-        let Ok(schema_bytes) =
-            std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin")))
-        else {
-            continue;
-        };
-        let Some(schema) = parse_binary_vdf(&schema_bytes) else {
-            continue;
-        };
-        let Some(stats) = schema.get(app_id).and_then(|app| app.get("stats")) else {
-            continue;
-        };
-        let unlock_times = read_unlock_times(steam, app_id);
+    let mut seen_apps = std::collections::HashSet::new();
 
-        let (mut total, mut unlocked) = (0u32, 0u32);
-        for (group_id, group) in stats.entries() {
-            let Some(bits) = group.get("bits") else {
+    // Pass 1: games with user stats
+    if let Some(account) = steam_account_id(steam) {
+        let prefix = format!("UserGameStats_{account}_");
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let Some(rest) = name.strip_prefix(&prefix) else {
                 continue;
             };
-            for (bit_id, _) in bits.entries() {
-                total += 1;
-                if unlock_times
-                    .get(&format!("{group_id}:{bit_id}"))
-                    .map(|time| *time > 0)
-                    .unwrap_or(false)
-                {
-                    unlocked += 1;
+            let Some(app_id) = rest.strip_suffix(".bin") else {
+                continue;
+            };
+            if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+                continue;
+            }
+            seen_apps.insert(app_id.to_string());
+            let Ok(schema_bytes) =
+                std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin")))
+            else {
+                continue;
+            };
+            let Some(schema) = parse_binary_vdf(&schema_bytes) else {
+                continue;
+            };
+            let Some(stats) = schema.get(app_id).and_then(|app| app.get("stats")) else {
+                continue;
+            };
+            let unlock_times = read_unlock_times(steam, app_id);
+            let emu_data = read_emulator_achievements(None, app_id);
+
+            let (mut total, mut unlocked) = (0u32, 0u32);
+            let mut ach_idx = 0usize;
+            for (group_id, group) in stats.entries() {
+                let Some(bits) = group.get("bits") else {
+                    continue;
+                };
+                for (bit_id, bit) in bits.entries() {
+                    total += 1;
+                    let bit_unlocked = unlock_times
+                        .get(&format!("{group_id}:{bit_id}"))
+                        .map(|time| *time > 0)
+                        .unwrap_or(false);
+                    if bit_unlocked {
+                        unlocked += 1;
+                    } else if let Some(ref emu) = emu_data {
+                        let api_name = bit.get("name").and_then(Vdf::as_str).unwrap_or("");
+                        if let Some((u, _, _)) = is_emulator_unlocked(emu, api_name, ach_idx, bit_id) {
+                            if u {
+                                unlocked += 1;
+                            }
+                        }
+                    }
+                    ach_idx += 1;
                 }
             }
-        }
-        if total > 0 {
-            out.push((app_id.to_string(), unlocked, total));
+            if total > 0 {
+                out.push((app_id.to_string(), unlocked, total));
+            }
         }
     }
+
+    // Pass 2: games with schemas only (e.g. LuaTools, games without client stats)
+    if let Ok(schema_entries) = std::fs::read_dir(stats_dir(steam)) {
+        for entry in schema_entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let Some(rest) = name.strip_prefix("UserGameStatsSchema_") else {
+                continue;
+            };
+            let Some(app_id) = rest.strip_suffix(".bin") else {
+                continue;
+            };
+            if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) || seen_apps.contains(app_id) {
+                continue;
+            }
+            let emu_data = read_emulator_achievements(None, app_id);
+            let Ok(schema_bytes) = std::fs::read(entry.path()) else {
+                continue;
+            };
+            let Some(schema) = parse_binary_vdf(&schema_bytes) else {
+                continue;
+            };
+            let Some(stats) = schema.get(app_id).and_then(|app| app.get("stats")) else {
+                continue;
+            };
+
+            let (mut total, mut unlocked) = (0u32, 0u32);
+            let mut ach_idx = 0usize;
+            for (_group_id, group) in stats.entries() {
+                let Some(bits) = group.get("bits") else {
+                    continue;
+                };
+                for (bit_id, bit) in bits.entries() {
+                    total += 1;
+                    if let Some(ref emu) = emu_data {
+                        let api_name = bit.get("name").and_then(Vdf::as_str).unwrap_or("");
+                        if let Some((u, _, _)) = is_emulator_unlocked(emu, api_name, ach_idx, bit_id) {
+                            if u {
+                                unlocked += 1;
+                            }
+                        }
+                    }
+                    ach_idx += 1;
+                }
+            }
+            if total > 0 {
+                out.push((app_id.to_string(), unlocked, total));
+            }
+        }
+    }
+
     out
 }
 
@@ -483,7 +920,7 @@ pub async fn steam_get_achievements(
 
     // 1) The Steam client's own cache: instant, offline, no key, no rate limit.
     if let Some(mut response) =
-        steam_install_path().and_then(|path| read_local_achievements(&path, &app_id))
+        steam_install_path().and_then(|path| read_local_achievements_with_app(Some(&app), &path, &app_id))
     {
         // Global unlock rates are public, so even the local path gets rarity.
         let percentages = fetch_global_percentages(&app_id).await;
@@ -702,6 +1139,47 @@ pub async fn steam_get_achievements_summary(
     tokio::task::spawn_blocking(move || steam_achievements_summary_for(&app))
         .await
         .unwrap_or_default()
+}
+
+#[tauri::command]
+pub fn steam_get_achievement_source(
+    app: tauri::AppHandle,
+    app_id: String,
+) -> AchievementSourceConfig {
+    get_achievement_source_config(&app, &app_id)
+}
+
+#[tauri::command]
+pub fn steam_set_achievement_source(
+    app: tauri::AppHandle,
+    app_id: String,
+    mode: String,
+    custom_path: Option<String>,
+) -> Result<(), String> {
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return Err("Invalid Steam app id".into());
+    }
+    let mut overrides = load_source_overrides(&app);
+    let mut config = overrides.get(&app_id).cloned().unwrap_or_default();
+    config.mode = mode;
+    config.custom_path = custom_path.filter(|p| !p.trim().is_empty());
+    overrides.insert(app_id.clone(), config);
+    save_source_overrides(&app, &overrides)?;
+
+    // Evict per-game achievement cache so next reload gets fresh data
+    let cache = achievements_cache_dir(&app).join(format!("{app_id}.json"));
+    let _ = std::fs::remove_file(cache);
+
+    // Evict totals cache so summary updates
+    let totals_cache = totals_cache_path(&app);
+    let _ = std::fs::remove_file(totals_cache);
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn steam_detect_achievement_path(app_id: String) -> Option<String> {
+    find_emulator_achievement_file(&app_id, None).map(|p| p.to_string_lossy().to_string())
 }
 
 fn steam_achievements_summary_for(
