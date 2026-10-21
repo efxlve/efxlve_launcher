@@ -2,7 +2,24 @@
 
 **Tarih:** 21 Ekim 2026  
 **Proje:** Efxlve Launcher (`efxlve_launcher`)  
-**Durum:** Tamamlandı & Doğrulandı (Tüm testler ve derlemeler başarılı)
+**Durum:** Çalışıyor; ilk raporun ardından gelen düzeltmeler aşağıda.
+
+> **Son durum (inceleme sonrası):** İlk sürümdeki “Tamamlandı” notu çalışma zamanını
+> kapsamıyordu. Özel oyun penceresindeki `onclick="event.stopPropagation()"`, içerideki
+> tüm `data-act` tıklamalarını (Gözat, Kaydet, İptal, X) global yönlendiriciden
+> koparıyordu; bu yüzden ekleme akışı ölüydü. Düzeltildi.
+>
+> Bu incelemede ayrıca tamamlananlar:
+> - Emülatör başarımları artık Steam istemcisi/şeması olmadan, herkese açık
+>   `steamcommunity.com/stats/<appid>/achievements` sayfasından tanımları çeker;
+>   kilitler yerel `achievements.ini`/`achievements.json` dosyasından okunur.
+> - Canlı izleyici, Steam kurulu olmasa da emülatör dosyasını izler; Steam ve özel
+>   oyun yolları ayrıldı (`steam_start_custom_achievement_watcher`).
+> - Özel oyun düzenleme penceresi, IGDB arama yedeği, kapak/hero yedeği, Steam
+>   meta verisinden tür/geliştirici aktarımı, süre kaydı, launcher’dan durdurma,
+>   silme onayı ve profil listesi eklendi.
+> - Bilinen tek sınır: Launcher dışından başlatılan özel oyunun canlı izlenmesi ve
+>   emülatör dosyası olmayan oyunda yalnızca tanımların gösterilmesi.
 
 ---
 

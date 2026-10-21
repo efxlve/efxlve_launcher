@@ -1358,9 +1358,19 @@ pub async fn steam_get_emulator_achievements(
     app: tauri::AppHandle,
     app_id: String,
     force: Option<bool>,
+    install_dir: Option<String>,
 ) -> Result<GameAchievementsResponse, String> {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Err("Invalid Steam app id".into());
+    }
+    if let Some(dir) = install_dir.filter(|dir| !dir.trim().is_empty()) {
+        let path = Path::new(dir.trim());
+        let root = if path.is_file() {
+            path.parent().unwrap_or(path)
+        } else {
+            path
+        };
+        remember_achievement_dir(&app_id, root);
     }
     let config = get_achievement_source_config(&app, &app_id);
     // "Disabled" means emulator files are ignored, not that the game has no
@@ -1818,6 +1828,28 @@ mod tests {
         assert_eq!(parsed[0].name, "First & Best");
         assert_eq!(parsed[0].description, "Finish it.");
         assert_eq!(parsed[0].icon_achieved, "https://cdn/one.jpg");
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn live_community_schema_page() {
+        let client = reqwest::Client::builder()
+            .user_agent("efxlve-launcher")
+            .build()
+            .expect("client");
+        let html = client
+            .get("https://steamcommunity.com/stats/220/achievements?l=english")
+            .send()
+            .await
+            .expect("response")
+            .text()
+            .await
+            .expect("html");
+        let parsed = parse_community_schema(&html).expect("schema");
+        assert!(parsed.len() > 10);
+        assert!(parsed
+            .iter()
+            .any(|achievement| achievement.api_name == "HL2_HIT_CANCOP_WITHCAN"));
     }
 
     #[test]

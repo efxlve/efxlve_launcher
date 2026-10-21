@@ -2048,7 +2048,11 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
           ? await steamGetAchievements(appName.slice(7), forceRefresh)
           : isCustom
             ? customGame?.steamAppId
-              ? await steamGetEmulatorAchievements(customGame.steamAppId, forceRefresh)
+              ? await steamGetEmulatorAchievements(
+                  customGame.steamAppId,
+                  forceRefresh,
+                  customGame.exePath?.replace(/[\\/][^\\/]*$/, ""),
+                )
               : { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
             : isCompanion
               ? await companionAchievements(

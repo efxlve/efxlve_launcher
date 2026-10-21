@@ -214,8 +214,16 @@ export const steamGetAchievements = (appId: string, force = false) =>
  * Achievements for a custom/emulator-owned title: definitions from the public
  * Steam Community schema, unlocks from the local achievements.ini/json.
  */
-export const steamGetEmulatorAchievements = (appId: string, force = false) =>
-  invoke<import("./epic").EpicAchievementsData>("steam_get_emulator_achievements", { appId, force });
+export const steamGetEmulatorAchievements = (
+  appId: string,
+  force = false,
+  installDir?: string,
+) =>
+  invoke<import("./epic").EpicAchievementsData>("steam_get_emulator_achievements", {
+    appId,
+    force,
+    installDir: installDir ?? null,
+  });
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");
