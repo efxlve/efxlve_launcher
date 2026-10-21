@@ -130,6 +130,15 @@ docs: commit every completed change without asking
 These are the only project documents. A new document needs a concrete job; do not
 add journals, audits or handoff notes.
 
+Rules for these files:
+
+- Describe current behavior, not the road that led to it. History stays in commits.
+- One home per fact; link to the owner instead of restating it.
+- Generated files (`docs/IPC_INDEX.md`, `src/locales/*.json`) are never hand-edited.
+- No journals, completion reports, session logs or dated changelog paragraphs.
+- Keep the document to its own subject; lower-level detail belongs in the owning
+  file.
+
 | File | Job |
 |---|---|
 | `README.md` | Public overview, features, credits, build steps |

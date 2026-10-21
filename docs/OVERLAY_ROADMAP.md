@@ -1,22 +1,19 @@
 # In-Game Overlay — Product & Technical Roadmap
 
-Status: v1 shipped (Shift+Tab panel, native performance HUD, screenshots, notes,
-achievements, Spotify + SMTC music, Discord status). Controller-first navigation is in.
-ETW FPS is API-agnostic but needs the Windows "Performance Log Users" permission:
-the overlay offers a one-time enable action and explains the sign-out. Discord
-voice read/write still waits on the Discord app review noted below.
+The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
+notes, achievements, Spotify + SMTC music and Discord status. Controller-first
+navigation is in. ETW FPS is API-agnostic but needs the Windows "Performance Log
+Users" permission, so the overlay offers a one-time enable action and explains
+the sign-out. Discord voice read/write waits on the Discord app review noted
+below.
 
-Stability pass, 2026-10-20: the panel no longer imports `browser-window.ts` for
-its bookmark helpers (that used to boot the whole browser chrome and sync its
-bounds inside the panel), the hidden window’s clock/media/clip/gamepad work is
-stopped, and widget placement is clamped below the floating command bar with a
-repaired default tiling. Settings → Appearance now has a widget-layout reset
-that clears saved positions and returns open widgets to the tiled defaults. The
-next visual check is with real game art at the target 1280×800 and 1920×1080
-sizes. The overlay Discord tab now opens with one centered connect card instead
-of a profile row over an empty list, and its message/send accents follow the
-launcher tokens instead of Discord purple.
-Target platform: Windows first (Linux/macOS later) · Owner: core team
+The panel does not import `browser-window.ts`; the hidden window stops the clock,
+media, clip and gamepad work; widget placement is clamped below the floating
+command bar with a default tiling, and Settings → Appearance has a widget-layout
+reset. The Discord tab opens with one centered connect card, and its message/send
+accents follow the launcher tokens.
+
+Target platform: Windows first (Linux/macOS later).
 
 A Steam-like overlay hosted by Efxlve Launcher: one hotkey opens a panel over any
 running game with screenshots, notes, achievements, performance stats, music and
