@@ -9,7 +9,7 @@
 export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "music" | "discord" | "notes" | "screenshots";
 
 /** Store or catalog provider source for a game. */
-export type GameSource = "epic" | "gog" | "steam" | "ea" | "ubisoft" | "xbox" | "battlenet" | "riot" | "amazon";
+export type GameSource = "epic" | "gog" | "steam" | "ea" | "ubisoft" | "xbox" | "battlenet" | "riot" | "amazon" | "custom";
 
 /** Account/setup lifecycle phase for GOG.COM. */
 export type GogPhase = "checking" | "setup" | "login" | "library" | "error";

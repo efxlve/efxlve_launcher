@@ -3,6 +3,7 @@
 
 mod cloud_backup;
 mod comet;
+mod custom_games;
 mod compat;
 mod companion;
 mod controller;
@@ -1172,6 +1173,14 @@ fn main() {    // Rockstar's launcher only continues when a process named
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,
             steam::steam_detect_achievement_path,
+            custom_games::custom_games_list,
+            custom_games::custom_games_add,
+            custom_games::custom_games_edit,
+            custom_games::custom_games_remove,
+            custom_games::custom_games_launch,
+            custom_games::custom_games_pick_file,
+            custom_games::custom_games_search_steam,
+            custom_games::custom_games_steam_details,
             steam::steam_get_game_screenshots,
             steam::steam_get_screenshot_full_data,
             steam_auth::steam_login_begin,

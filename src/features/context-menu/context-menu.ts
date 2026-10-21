@@ -50,7 +50,8 @@ export function showContextMenu(x: number, y: number, appName: string): void {
   // Games is launcher-managed (Nile), so it gets its own items below.
   const source = sourceOfKey(appName);
   const isAmazon = source === "amazon";
-  const isCompanion = source !== "epic" && source !== "gog" && source !== "steam" && !isAmazon;
+  const isCustom = source === "custom";
+  const isCompanion = source !== "epic" && source !== "gog" && source !== "steam" && !isAmazon && !isCustom;
 /** Riot games have no web storefront: the client owns its shop. */
 const isRiot = source === "riot";
   const companionItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
@@ -84,17 +85,17 @@ const isRiot = source === "riot";
               : isCompanion
                 ? companionItem("companion-install", t("common.install"), "download")
                 : item("epic-install", t("common.install"), "download")}
-    ${item("manage-game", t("common.manage"), "settings")}`}
+    ${!isCustom ? item("manage-game", t("common.manage"), "settings") : ""}`}
     ${!shared && !isSteam && installed && (s.updateAvailable || S.availableUpdates.has(appName))
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
       : ""}
     <div class="ps5-context-sep"></div>
-    ${!shared && !isSteam && installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
+    ${!shared && !isSteam && !isCustom && installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
     ${!shared && installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
-    ${!shared && !isSteam && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
+    ${!shared && !isSteam && !isCustom && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
-    ${!isRiot && !isAmazon ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
+    ${!isRiot && !isAmazon && !isCustom ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && installed
       ? `<div class="ps5-context-sep"></div>${isSteam
@@ -103,7 +104,9 @@ const isRiot = source === "riot";
             ? amazonItem("amazon-uninstall", t("common.uninstall"), "trash", true)
             : isCompanion
               ? companionItem("companion-uninstall", t("common.uninstall"), "trash", true)
-              : item("epic-uninstall", t("common.uninstall"), "trash", true)}`
+              : isCustom
+                ? item("custom-game-remove", t("customGames.delete"), "trash", true)
+                : item("epic-uninstall", t("common.uninstall"), "trash", true)}`
       : ""}
   `;
 

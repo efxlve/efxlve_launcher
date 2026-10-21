@@ -17,7 +17,7 @@ import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
-const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot"];
+const STORE_ORDER: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "xbox", "battlenet", "ubisoft", "ea", "riot", "custom"];
 
 /** Stable signature fragment for the visible-library cache. */
 export function enabledStoreKey(): string {
@@ -44,6 +44,8 @@ function storeIsAvailable(id: GameSource): boolean {
         S.steamAuth?.state === "signed_in" ||
         Boolean(S.steamStatus?.installed)
       );
+    case "custom":
+      return S.customSummaries.length > 0;
     default:
       return (
         S.companionSummaries.some((g) => g.source === id) ||
@@ -69,6 +71,7 @@ function storeName(id: GameSource, short: boolean): string {
     case "xbox": return "Xbox";
     case "battlenet": return "Battle.net";
     case "riot": return "Riot Games";
+    case "custom": return t("customGames.storeLabel");
   }
 }
 
@@ -147,7 +150,7 @@ export type StoreFilterCounts = Record<GameSource, number> & { all: number };
 export function storeFilterMenuHtml(counts: StoreFilterCounts): string {
   const row = (value: GameSource | "all", label: string, count: number, on: boolean): string => {
     const mark = `<span class="store-option-mark">${on ? icon("check", 14) : ""}</span>`;
-    const logo = value === "all" ? `<span class="store-option-logo"></span>` : `<span class="store-option-logo">${storeLogo(value, 16)}</span>`;
+    const logo = value === "all" ? `<span class="store-option-logo"></span>` : `<span class="store-option-logo">${storeLogo(value, 16) || icon("gamepad-2", 16)}</span>`;
     return `<button type="button" class="sort-menu-item-btn store-menu-item${on ? " is-on" : ""}" role="menuitemcheckbox" aria-checked="${on}" data-act="source-filter" data-val="${value}">${mark}${logo}<span class="store-option-label">${esc(label)}</span><span class="store-option-count tabular-nums">${count}</span></button>`;
   };
   const available = availableStores();

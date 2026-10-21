@@ -142,6 +142,7 @@ import { handleScreenshotAction } from "./handlers/screenshot-handlers";
 import { handleScreenshotsPageAction } from "./handlers/screenshots-page-handlers";
 import { handleScreenshotEditorAction } from "../screenshots/screenshot-editor";
 import { handleSteamAction } from "./handlers/steam-handlers";
+import { handleCustomGamesAction } from "./handlers/custom-games-handlers";
 
 type StoreExtensionState = Record<string, { id: string; name: string; version: string; installed: boolean; enabled: boolean; sizeBytes: number }>;
 
@@ -339,6 +340,7 @@ document.addEventListener("click", (e) => {
   if (handleScreenshotsPageAction(act, t, targetEl)) return;
   if (handleScreenshotEditorAction(act, t, targetEl)) return;
   if (handleSteamAction(act, t, id)) return;
+  if (handleCustomGamesAction(act, id)) return;
 
   // Global Navigation & Modal Controls
   if (act === "close") {

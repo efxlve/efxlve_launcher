@@ -2769,5 +2769,22 @@
   "ach.detectedPath": "Detected: {path}",
   "ach.noPathDetected": "No local emulator achievement file detected for this game",
   "ach.customPathPlaceholder": "Path to achievements.ini or folder containing it",
-  "ach.saveSource": "Save Source"
+  "ach.saveSource": "Save Source",
+  "customGames.addBtn": "Add Game",
+  "customGames.addTitle": "Add Custom Game",
+  "customGames.editTitle": "Edit Custom Game",
+  "customGames.searchPlaceholder": "Search game title (Steam Store & IGDB)...",
+  "customGames.fieldTitle": "Game Title",
+  "customGames.fieldExe": "Executable Path",
+  "customGames.browse": "Browse...",
+  "customGames.fieldArgs": "Launch Arguments",
+  "customGames.fieldCoverUrl": "Cover Image URL",
+  "customGames.fieldDesc": "Description",
+  "customGames.fieldYear": "Release Year",
+  "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
+  "customGames.save": "Save Game",
+  "customGames.delete": "Delete Game",
+  "customGames.addedSuccess": "{title} added to your library",
+  "customGames.deletedSuccess": "{title} removed from your library",
+  "customGames.storeLabel": "Custom"
 }

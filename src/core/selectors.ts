@@ -189,6 +189,10 @@ export function rebuildAllGamesMap(): void {
     map.set(g.key, g);
     rememberCanon(storeSets, keySets, g.title, companionStoreLabel(g.source), g.key);
   }
+  for (const c of S.customSummaries) {
+    map.set(c.key, c);
+    rememberCanon(storeSets, keySets, c.title, "Custom", c.key);
+  }
 
   // Other accounts' games stay searchable/detail-openable through the same map
   // while the shared library is enabled — but only the ones this account does
@@ -259,6 +263,14 @@ export function setSteamSummaries(items: LibraryItem[]): void {
   S.libraryDataRev++;
 }
 
+/** Replace the custom games item list (manually added games). */
+export function setCustomSummaries(items: LibraryItem[]): void {
+  S.customSummaries = items;
+  S.customSummariesMap = new Map(items.map((item) => [item.key, item]));
+  rebuildAllGamesMap();
+  S.libraryDataRev++;
+}
+
 /** Converts any store's LibraryItem into an EpicSummary structure for legacy views. */
 export function libraryItemToSummary(g: LibraryItem): EpicSummary {
   return {
@@ -295,8 +307,9 @@ export function allStoreSummaries(): EpicSummary[] {
   // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) belong to the same
   // union: the palette, collections and hidden-games search all use this list.
   const companion = S.companionSummaries.length > 0 ? S.companionSummaries.map(libraryItemToSummary) : [];
-  if (gog.length === 0 && amazon.length === 0 && steam.length === 0 && companion.length === 0) return items;
-  return [...items, ...gog, ...amazon, ...steam, ...companion];
+  const custom = S.customSummaries.length > 0 ? S.customSummaries.map(libraryItemToSummary) : [];
+  if (gog.length === 0 && amazon.length === 0 && steam.length === 0 && companion.length === 0 && custom.length === 0) return items;
+  return [...items, ...gog, ...amazon, ...steam, ...companion, ...custom];
 }
 
 /** O(1) summary lookup by app name (Epic or GOG or Steam). */
@@ -308,6 +321,10 @@ export function summaryOf(appName: string): EpicSummary | undefined {
   }
   if (appName.startsWith("steam::")) {
     const item = S.steamSummariesMap.get(appName);
+    if (item) return libraryItemToSummary(item);
+  }
+  if (appName.startsWith("custom::")) {
+    const item = S.customSummariesMap.get(appName);
     if (item) return libraryItemToSummary(item);
   }
   const own = S.epicSummariesMap.get(appName);
@@ -336,6 +353,7 @@ export function activeOwnsKey(key: string): boolean {
     return S.gogSummariesMap.has(key.slice(5)) || S.gogSummariesMap.has(key);
   }
   if (key.startsWith("steam::")) return S.steamSummariesMap.has(key);
+  if (key.startsWith("custom::")) return S.customSummariesMap.has(key);
   if (S.amazonSummaries.some((item) => item.key === key)) return true;
   return S.companionSummaries.some((item) => item.key === key);
 }
@@ -349,6 +367,7 @@ export function sharedOwnerOf(key: string): import("../epic").SharedGame | undef
 
 /** Store of a library key: `epic` (no prefix), or `<store>::<id>`. */
 export function sourceOfKey(key: string): import("./types").GameSource {
+  if (key.startsWith("custom::")) return "custom";
   if (key.startsWith("gog::")) return "gog";
   if (key.startsWith("steam::")) return "steam";
   if (key.startsWith("ea::")) return "ea";
@@ -364,7 +383,7 @@ export function sourceOfKey(key: string): import("./types").GameSource {
 export function isCompanionSource(source: string): boolean {
   // Amazon Games is launcher-managed (Nile installs and launches it), so it is
   // not routed through the companion client commands.
-  return source !== "epic" && source !== "gog" && source !== "steam" && source !== "amazon";
+  return source !== "epic" && source !== "gog" && source !== "steam" && source !== "amazon" && source !== "custom";
 }
 
 /** True for games owned and launched by another client (EA, Ubisoft, Xbox, Battle.net, Riot). */

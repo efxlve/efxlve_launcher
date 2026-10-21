@@ -894,6 +894,7 @@ const CASE_STORE_NAMES: Record<GameSource, string> = {
   battlenet: "Battle.net",
   riot: "Riot Games",
   amazon: "Amazon Games",
+  custom: "Custom",
 };
 
 function renderCasesSection(): string {

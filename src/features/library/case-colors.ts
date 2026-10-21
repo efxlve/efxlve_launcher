@@ -12,6 +12,7 @@ export const DEFAULT_STORE_COLORS: Record<GameSource, string> = {
   battlenet: "#0084f4",
   riot: "#c91e29",
   amazon: "#cc7a14",
+  custom: "#06b6d4",
 };
 
 export const CASE_STORES: readonly GameSource[] = [
@@ -24,6 +25,7 @@ export const CASE_STORES: readonly GameSource[] = [
   "battlenet",
   "riot",
   "amazon",
+  "custom",
 ];
 
 function hexToRgb(hex: string): [number, number, number] {

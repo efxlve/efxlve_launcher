@@ -295,6 +295,7 @@ const CASE_BRAND_LABELS: Record<GameSource, string> = {
   battlenet: "BATTLE.NET",
   riot: "RIOT GAMES",
   amazon: "AMAZON",
+  custom: "CUSTOM",
 };
 
 type CaseOsKind = "windows" | "linux" | "macos";
@@ -1061,6 +1062,7 @@ export function renderEpic(): string {
       gog: visibleCount(S.gogSummaries.map((g) => g.key)),
       amazon: visibleCount(S.amazonSummaries.map((g) => g.key)),
       steam: visibleCount(S.steamSummaries.map((g) => g.key)),
+      custom: visibleCount(S.customSummaries.map((c) => c.key)),
       ea: companionCount("ea"),
       ubisoft: companionCount("ubisoft"),
       xbox: companionCount("xbox"),
@@ -1077,6 +1079,9 @@ export function renderEpic(): string {
     </button>`
     : "";
   const tools = `
+    <button class="btn ghost lib-sort-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}">
+      ${icon("plus", 14)} <span>${esc(t("customGames.addBtn"))}</span>
+    </button>
     ${sourceDropdown}
     ${filterButton}
     <div class="sort-dropdown-container">

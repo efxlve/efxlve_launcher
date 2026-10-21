@@ -96,7 +96,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       if (id) {
         const source = sourceOfKey(id);
         // Amazon Games has no storefront in the launcher: nothing to open.
-        if (source === "amazon") return true;
+        if (source === "amazon" || source === "custom") return true;
         if (isCompanionSource(source)) {
           // The id is not an Epic app name: open the owning storefront in the
           // embedded store, with Ubisoft's search filtered to the title. Riot

@@ -98,6 +98,17 @@ export async function epicStop(appName: string): Promise<void> {
 }
 
 export async function epicPlay(appName: string): Promise<void> {
+  if (appName.startsWith("custom::")) {
+    pushRecent(appName);
+    toast(t("dl.launching"), "");
+    try {
+      const { customGamesLaunch } = await import("../custom-games");
+      await customGamesLaunch(appName);
+    } catch (e) {
+      toast(String(e), "err");
+    }
+    return;
+  }
   // Amazon Games is installed and launched by the launcher through Nile.
   if (appName.startsWith("amazon::")) {
     pushRecent(appName);

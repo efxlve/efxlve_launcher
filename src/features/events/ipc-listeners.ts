@@ -53,6 +53,7 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncInstalledWatch } from "../library/installed-watch";
 import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
+import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -885,6 +886,10 @@ export async function initApp(hooks: {
       void refreshSteamInstalled();
     });
 
+  listenLater("custom-games-changed", () => {
+    void loadCustomGamesLibrary();
+  });
+
   // Game clips: the recorder runs in Rust; the UI only mirrors its state.
   listenLater<{ title: string }>("clip-started", (event) => {
     S.clipRecording = true;
@@ -952,6 +957,7 @@ export async function initApp(hooks: {
       startSteamLibraryWatch();
     });
     void loadCompanionLibrary().then(() => perfMark("library:companion"));
+    void loadCustomGamesLibrary().then(() => perfMark("library:custom"));
     // Linked companion accounts refresh in the background (Ubisoft session).
     void syncCompanionAccounts();
 

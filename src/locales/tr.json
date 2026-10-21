@@ -2769,5 +2769,22 @@
   "ach.detectedPath": "Tespit edilen: {path}",
   "ach.noPathDetected": "Bu oyun için lokal emülatör başarım dosyası bulunamadı",
   "ach.customPathPlaceholder": "achievements.ini dosyasının veya klasörünün yolu",
-  "ach.saveSource": "Kaynağı Kaydet"
+  "ach.saveSource": "Kaynağı Kaydet",
+  "customGames.addBtn": "Oyun Ekle",
+  "customGames.addTitle": "Özel Oyun Ekle",
+  "customGames.editTitle": "Özel Oyunu Düzenle",
+  "customGames.searchPlaceholder": "Oyun adı ara (Steam Mağazası & IGDB)...",
+  "customGames.fieldTitle": "Oyun Adı",
+  "customGames.fieldExe": "Çalıştırılabilir Dosya (EXE)",
+  "customGames.browse": "Gözat...",
+  "customGames.fieldArgs": "Başlatma Argümanları",
+  "customGames.fieldCoverUrl": "Kapak Resmi URL",
+  "customGames.fieldDesc": "Açıklama",
+  "customGames.fieldYear": "Çıkış Yılı",
+  "customGames.fieldSteamAppId": "Steam AppID (başarımlar için)",
+  "customGames.save": "Oyunu Kaydet",
+  "customGames.delete": "Oyunu Sil",
+  "customGames.addedSuccess": "{title} kütüphaneye eklendi",
+  "customGames.deletedSuccess": "{title} kütüphaneden kaldırıldı",
+  "customGames.storeLabel": "Özel"
 }
