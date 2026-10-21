@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Достижение получено: {name}",
   "customGames.setExe": "Выбрать exe",
   "customGames.setExeHint": "Выберите исполняемый файл для запуска игры",
-  "customGames.exeSetSuccess": "Исполняемый файл привязан к {title}"
+  "customGames.exeSetSuccess": "Исполняемый файл привязан к {title}",
+  "settings.appIconTitle": "Значок лаунчера",
+  "settings.appIconDesc": "Выберите значок в заголовке окна или загрузите свое изображение.",
+  "settings.appIconClassic": "Классический",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Свой",
+  "settings.appIconUploadBtn": "Загрузить..."
 }

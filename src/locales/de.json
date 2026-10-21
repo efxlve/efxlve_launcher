@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Erfolg freigeschaltet: {name}",
   "customGames.setExe": "Exe auswählen",
   "customGames.setExeHint": "Wähle die ausführbare Datei, um dieses Spiel zu starten",
-  "customGames.exeSetSuccess": "Ausführbare Datei für {title} verknüpft"
+  "customGames.exeSetSuccess": "Ausführbare Datei für {title} verknüpft",
+  "settings.appIconTitle": "Launcher-Symbol",
+  "settings.appIconDesc": "Wähle das Symbol in der Fensterleiste oder lade ein eigenes Bild hoch.",
+  "settings.appIconClassic": "Klassisch",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Benutzerdefiniert",
+  "settings.appIconUploadBtn": "Hochladen..."
 }

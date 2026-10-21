@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Achievement Unlocked: {name}",
   "customGames.setExe": "Locate Exe",
   "customGames.setExeHint": "Choose the executable file to launch this game",
-  "customGames.exeSetSuccess": "Executable linked for {title}"
+  "customGames.exeSetSuccess": "Executable linked for {title}",
+  "settings.appIconTitle": "Launcher Icon",
+  "settings.appIconDesc": "Choose the icon displayed in the window header or upload a custom image.",
+  "settings.appIconClassic": "Classic",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Custom",
+  "settings.appIconUploadBtn": "Upload..."
 }

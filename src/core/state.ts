@@ -33,6 +33,8 @@ import {
   MINIMIZE_ON_GAME_KEY,
   COVER_STATS_KEY,
   SURFACE_KEY,
+  APP_ICON_KEY,
+  CUSTOM_APP_ICON_KEY,
   PAUSE_ON_PLAY_KEY,
   STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
@@ -660,6 +662,24 @@ export const S = {
           : v === "aero"
             ? "aero"
             : "soft") as "black" | "soft" | "white" | "aero";
+    }
+  })(),
+  appIcon: (() => {
+    try {
+      const v = localStorage.getItem(APP_ICON_KEY);
+      if (v === "classic" || v === "aero" || v === "custom") return v;
+      const surface = localStorage.getItem(SURFACE_KEY);
+      if (surface === "aero") return "aero";
+      return "classic";
+    } catch {
+      return "classic";
+    }
+  })() as "classic" | "aero" | "custom",
+  customAppIcon: (() => {
+    try {
+      return localStorage.getItem(CUSTOM_APP_ICON_KEY) || "";
+    } catch {
+      return "";
     }
   })(),
   autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) === "true",

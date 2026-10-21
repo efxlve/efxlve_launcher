@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Başarım Kazanıldı: {name}",
   "customGames.setExe": "Exe Seç",
   "customGames.setExeHint": "Bu oyunu başlatmak için çalıştırılabilir dosyayı seçin",
-  "customGames.exeSetSuccess": "{title} için çalıştırılabilir dosya bağlandı"
+  "customGames.exeSetSuccess": "{title} için çalıştırılabilir dosya bağlandı",
+  "settings.appIconTitle": "Başlatıcı Simgesi",
+  "settings.appIconDesc": "Pencere başlığında görünen simgeyi seçin veya özel bir resim yükleyin.",
+  "settings.appIconClassic": "Klasik",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Özel",
+  "settings.appIconUploadBtn": "Yükle..."
 }

@@ -209,6 +209,8 @@ export function normalizeLibraryPageSize(raw: string | number | null | undefined
 }
 /** Shell surface: "soft" (default) or "black" (#0a0a0a). */
 export const SURFACE_KEY = "efxlve-surface";
+export const APP_ICON_KEY = "efxlve-app-icon";
+export const CUSTOM_APP_ICON_KEY = "efxlve-custom-icon";
 /** Persisted left-sidebar width in CSS pixels. */
 export const SIDEBAR_W_KEY = "efxlve-sidebar-w";
 /** Last expanded sidebar width, restored when the drawer opens. */

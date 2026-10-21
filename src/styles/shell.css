@@ -11,6 +11,18 @@
   padding-left: 14px; background: var(--bg); -webkit-app-region: drag; position: relative; z-index: 20;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
+.winbar-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  object-fit: contain;
+  margin-right: 8px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  pointer-events: none;
+  -webkit-app-region: drag;
+}
 .winbar-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.01em; }
 .winbar-version-pill {
   display: inline-flex;

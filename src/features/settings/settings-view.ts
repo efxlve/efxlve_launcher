@@ -17,6 +17,7 @@ import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { classicIcon, aeroIcon } from "../../core/app-icon";
 import type { GameSource, SettingsSection } from "../../core/types";
 import {
   CASE_COVERS_KEY,
@@ -1031,6 +1032,30 @@ function renderCasesSection(): string {
     `</div>`;
 }
 
+function renderAppIconPicker(): string {
+  const isCustomActive = S.appIcon === "custom";
+  const customImg = S.customAppIcon ? `<img src="${esc(S.customAppIcon)}" class="app-icon-thumb" alt="" />` : icon("image", 13);
+  return `<div class="seg theme-seg" style="display:inline-flex;align-items:center;gap:4px;">
+    <button type="button" class="${S.appIcon === "classic" ? "active" : ""}" data-act="set-app-icon" data-icon="classic" title="${esc(t("settings.appIconClassic"))}">
+      <img src="${classicIcon}" class="app-icon-thumb" alt="" />
+      <span>${esc(t("settings.appIconClassic"))}</span>
+    </button>
+    <button type="button" class="${S.appIcon === "aero" ? "active" : ""}" data-act="set-app-icon" data-icon="aero" title="${esc(t("settings.appIconAero"))}">
+      <img src="${aeroIcon}" class="app-icon-thumb" alt="" />
+      <span>${esc(t("settings.appIconAero"))}</span>
+    </button>
+    <button type="button" class="${isCustomActive ? "active" : ""}" data-act="set-app-icon" data-icon="custom" title="${esc(t("settings.appIconCustom"))}">
+      ${customImg}
+      <span>${esc(t("settings.appIconCustom"))}</span>
+    </button>
+    <button type="button" class="btn ghost small" data-act="upload-app-icon" style="height:26px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;margin-left:4px;" title="${esc(t("settings.appIconUploadBtn"))}">
+      ${icon("upload", 12)}
+      <span>${esc(t("settings.appIconUploadBtn"))}</span>
+    </button>
+    <input type="file" id="app-icon-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon" style="display:none;" />
+  </div>`;
+}
+
 function renderAppearance(): string {
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
@@ -1045,6 +1070,7 @@ function renderAppearance(): string {
         <button type="button" class="${S.surface === "white" ? "active" : ""}" data-act="set-surface" data-surface="white"><span class="theme-swatch theme-swatch-white"></span>${t("settings.surfaceWhite")}</button>
         <button type="button" class="${S.surface === "aero" ? "active" : ""}" data-act="set-surface" data-surface="aero"><span class="theme-swatch theme-swatch-aero"></span>${t("settings.surfaceAero")}</button>
       </div>`) +
+      row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
       row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +

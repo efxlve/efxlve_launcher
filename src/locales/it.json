@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Obiettivo sbloccato: {name}",
   "customGames.setExe": "Scegli eseguibile",
   "customGames.setExeHint": "Scegli il file eseguibile per avviare questo gioco",
-  "customGames.exeSetSuccess": "Eseguibile collegato per {title}"
+  "customGames.exeSetSuccess": "Eseguibile collegato per {title}",
+  "settings.appIconTitle": "Icona del launcher",
+  "settings.appIconDesc": "Scegli l'icona nell'intestazione o carica un'immagine personalizzata.",
+  "settings.appIconClassic": "Classico",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Personalizzato",
+  "settings.appIconUploadBtn": "Carica..."
 }

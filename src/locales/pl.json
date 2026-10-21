@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Osiągnięcie odblokowane: {name}",
   "customGames.setExe": "Wybierz plik wykonywalny",
   "customGames.setExeHint": "Wybierz plik wykonywalny, aby uruchomić tę grę",
-  "customGames.exeSetSuccess": "Połączono plik wykonywalny dla {title}"
+  "customGames.exeSetSuccess": "Połączono plik wykonywalny dla {title}",
+  "settings.appIconTitle": "Ikona programu",
+  "settings.appIconDesc": "Wybierz ikonę na pasku okna lub prześlij własny obraz.",
+  "settings.appIconClassic": "Klasyczna",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Własna",
+  "settings.appIconUploadBtn": "Prześlij..."
 }

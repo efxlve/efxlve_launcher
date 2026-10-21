@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "成就已解锁：{name}",
   "customGames.setExe": "选择可执行文件",
   "customGames.setExeHint": "选择可执行文件以启动此游戏",
-  "customGames.exeSetSuccess": "已为 {title} 关联可执行文件"
+  "customGames.exeSetSuccess": "已为 {title} 关联可执行文件",
+  "settings.appIconTitle": "启动器图标",
+  "settings.appIconDesc": "选择窗口标题中显示的图标或上传自定义图片。",
+  "settings.appIconClassic": "经典",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "自定义",
+  "settings.appIconUploadBtn": "上传..."
 }

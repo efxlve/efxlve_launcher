@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "उपलब्धि अनलॉक हुई: {name}",
   "customGames.setExe": "एक्ज़ीक्यूटेबल चुनें",
   "customGames.setExeHint": "इस गेम को लॉन्च करने के लिए एक्ज़ीक्यूटेबल फ़ाइल चुनें",
-  "customGames.exeSetSuccess": "{title} के लिए निष्पादन योग्य लिंक किया गया"
+  "customGames.exeSetSuccess": "{title} के लिए निष्पादन योग्य लिंक किया गया",
+  "settings.appIconTitle": "लॉन्चर आइकन",
+  "settings.appIconDesc": "विंडो हेडर में प्रदर्शित आइकन चुनें या कस्टम छवि अपलोड करें।",
+  "settings.appIconClassic": "क्लासिक",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "कस्टम",
+  "settings.appIconUploadBtn": "अपलोड..."
 }

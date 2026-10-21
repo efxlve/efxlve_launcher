@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "Succès déverrouillé : {name}",
   "customGames.setExe": "Choisir l'exécutable",
   "customGames.setExeHint": "Choisissez le fichier exécutable pour lancer ce jeu",
-  "customGames.exeSetSuccess": "Exécutable lié pour {title}"
+  "customGames.exeSetSuccess": "Exécutable lié pour {title}",
+  "settings.appIconTitle": "Icône du lanceur",
+  "settings.appIconDesc": "Choisissez l'icône dans l'en-tête ou téléchargez une image personnalisée.",
+  "settings.appIconClassic": "Classique",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "Personnalisé",
+  "settings.appIconUploadBtn": "Téléverser..."
 }

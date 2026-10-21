@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "تم فتح الإنجاز: {name}",
   "customGames.setExe": "اختر ملف التشغيل",
   "customGames.setExeHint": "اختر الملف التنفيذي لتشغيل هذه اللعبة",
-  "customGames.exeSetSuccess": "تم ربط الملف التنفيذي لـ {title}"
+  "customGames.exeSetSuccess": "تم ربط الملف التنفيذي لـ {title}",
+  "settings.appIconTitle": "أيقونة المشغل",
+  "settings.appIconDesc": "اختر الأيقونة المعروضة في شريط النافذة أو ارفع صورة مخصصة.",
+  "settings.appIconClassic": "تقليدي",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "مخصص",
+  "settings.appIconUploadBtn": "رفع..."
 }

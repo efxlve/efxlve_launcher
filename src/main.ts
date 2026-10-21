@@ -45,9 +45,11 @@ import { renderScreenshotsPage } from "./features/screenshots/screenshots-page";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
+import { applyWinbarAppIcon } from "./core/app-icon";
 
 if (S.surface !== "black") document.documentElement.dataset.surface = S.surface;
 document.documentElement.classList.add("ready");
+applyWinbarAppIcon();
 perfMark("main:module");
 initSidebarLayout();
 initMiniPlayer();

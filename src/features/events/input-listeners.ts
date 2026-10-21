@@ -5,7 +5,8 @@ import { summaryOf } from "../../core/selectors";
  * form change/input delegation and the scroll-to-top button.
  */
 
-import { AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
+import { applyWinbarAppIcon } from "../../core/app-icon";
+import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
@@ -378,6 +379,27 @@ document.addEventListener("change", (e) => {
   if (target?.classList?.contains("selective-checkbox") && target.closest(".settings-hidden-list")) {
     const btn = document.getElementById("hidden-show-selected") as HTMLButtonElement | null;
     if (btn) btn.disabled = !document.querySelector(".settings-hidden-list .selective-checkbox:checked");
+    return;
+  }
+  if (target && target.id === "app-icon-file-input" && target.files && target.files[0]) {
+    const file = target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (result) {
+        S.customAppIcon = result;
+        S.appIcon = "custom";
+        try {
+          localStorage.setItem(CUSTOM_APP_ICON_KEY, result);
+          localStorage.setItem(APP_ICON_KEY, "custom");
+        } catch {
+          /* ignore */
+        }
+        applyWinbarAppIcon();
+        render();
+      }
+    };
+    reader.readAsDataURL(file);
     return;
   }
   if (target && target.id === "custom-cover-file-input" && target.files && target.files[0]) {

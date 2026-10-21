@@ -2808,5 +2808,11 @@
   "ach.unlockedNotification": "도전 과제 달성: {name}",
   "customGames.setExe": "실행 파일 선택",
   "customGames.setExeHint": "이 게임을 실행할 실행 파일을 선택하세요",
-  "customGames.exeSetSuccess": "{title} 실행 파일이 연결되었습니다"
+  "customGames.exeSetSuccess": "{title} 실행 파일이 연결되었습니다",
+  "settings.appIconTitle": "런처 아이콘",
+  "settings.appIconDesc": "창 헤더에 표시할 아이콘을 선택하거나 사용자 지정 이미지를 업로드하세요.",
+  "settings.appIconClassic": "클래식",
+  "settings.appIconAero": "Frutiger Aero",
+  "settings.appIconCustom": "사용자 지정",
+  "settings.appIconUploadBtn": "업로드..."
 }

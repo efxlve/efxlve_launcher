@@ -41,6 +41,7 @@ import {
   normalizeCaseCoverStyle,
   SEPARATE_COPIES_KEY,
   SURFACE_KEY,
+  APP_ICON_KEY,
   FULLSCREEN_AUTO_KEY,
   CONTROLLER_BRIDGE_KEY,
   MINIMIZE_ON_GAME_KEY,
@@ -48,6 +49,7 @@ import {
   isTauri,
 } from "../../core/constants";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
+import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerConfirm, askConfirm } from "../../core/confirm-dialog";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
@@ -853,6 +855,26 @@ document.addEventListener("click", (e) => {
     if (surface === "black") delete document.documentElement.dataset.surface;
     else document.documentElement.dataset.surface = surface;
     render();
+  } else if (act === "set-app-icon") {
+    const wanted = t.dataset.icon;
+    if (wanted === "custom" && !S.customAppIcon) {
+      const input = document.getElementById("app-icon-file-input") as HTMLInputElement | null;
+      if (input) input.click();
+      return;
+    }
+    const iconType = wanted === "aero" ? "aero" : wanted === "custom" ? "custom" : "classic";
+    S.appIcon = iconType;
+    try {
+      localStorage.setItem(APP_ICON_KEY, iconType);
+    } catch {
+      /* ignore */
+    }
+    applyWinbarAppIcon();
+    render();
+  } else if (act === "upload-app-icon") {
+    const input = document.getElementById("app-icon-file-input") as HTMLInputElement | null;
+    if (input) input.click();
+    return;
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
