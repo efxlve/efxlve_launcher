@@ -25,7 +25,7 @@ import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t } from "../i18n";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
-import { steamGameAction } from "../steam";
+import { steamGameAction, steamStartAchievementWatcher } from "../steam";
 import { companionLaunch } from "../companion";
 import { nileLaunch, nileStop } from "../nile";
 import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game-view";
@@ -129,6 +129,8 @@ export async function epicPlay(appName: string): Promise<void> {
     return;
   }
   if (appName.startsWith("steam::")) {
+    const appId = appName.slice(7);
+    void steamStartAchievementWatcher(appId);
     pushRecent(appName);
     toast(t("dl.launching"), "");
     try {

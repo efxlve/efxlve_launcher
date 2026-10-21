@@ -186,11 +186,30 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
         cmd.creation_flags(0x00000008); // DETACHED_PROCESS
     }
 
-    let _ = cmd.spawn().map_err(|e| format!("Failed to launch game: {e}"))?;
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to launch game: {e}"))?;
 
-    // Refresh watchers
+    let app_clone = app.clone();
+    let game_id = game.id.clone();
+    let game_title = game.title.clone();
+    let steam_app_id = game.steam_app_id.clone();
+    let app_key = format!("custom::{game_id}");
+
+    crate::legendary::screenshots::set_active_running_game(&app_key, &game_title, Some(working_dir.to_path_buf()), vec![]);
+
+    if let Some(ref aid) = steam_app_id {
+        crate::steam::steam_start_achievement_watcher(app_clone.clone(), aid.clone());
+    }
+
+    std::thread::spawn(move || {
+        let _ = child.wait();
+        if let Some(ref aid) = steam_app_id {
+            crate::steam::steam_stop_achievement_watcher(aid.clone());
+        }
+        crate::legendary::screenshots::clear_active_running_game(&app_key);
+        let _ = app_clone.emit("custom-games-changed", ());
+    });
+
     let _ = app.emit("custom-games-changed", ());
-
     Ok(())
 }
 

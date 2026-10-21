@@ -2786,5 +2786,6 @@
   "customGames.delete": "Oyunu Sil",
   "customGames.addedSuccess": "{title} kütüphaneye eklendi",
   "customGames.deletedSuccess": "{title} kütüphaneden kaldırıldı",
-  "customGames.storeLabel": "Özel"
+  "customGames.storeLabel": "Özel",
+  "ach.unlockedNotification": "Başarım Kazanıldı: {name}"
 }

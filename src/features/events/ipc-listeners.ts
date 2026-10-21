@@ -85,7 +85,7 @@ import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
-import { openEpicModal, paintGameMeta, refreshAchievementsAfterSession } from "../drawer/drawer-view";
+import { fetchAndRenderAchievements, openEpicModal, paintGameMeta, refreshAchievementsAfterSession } from "../drawer/drawer-view";
 import { rememberCloudSync } from "../drawer/drawer-widgets";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -888,6 +888,36 @@ export async function initApp(hooks: {
 
   listenLater("custom-games-changed", () => {
     void loadCustomGamesLibrary();
+  });
+
+  listenLater<{
+    appId: string;
+    name: string;
+    displayName: string;
+    description: string;
+    iconUrl: string;
+  }>("achievement-unlocked", (event) => {
+    const { appId, displayName, description } = event.payload;
+    const titleText = t("ach.unlockedNotification", { name: displayName });
+    pushNotification({
+      kind: "info",
+      title: titleText,
+      body: description,
+      toast: true,
+    });
+    const appKeys = [
+      `steam::${appId}`,
+      ...S.customGames.filter((g) => g.steamAppId === appId).map((g) => g.id),
+    ];
+    for (const key of appKeys) {
+      if (S.epicAchSummaries[key]) {
+        S.epicAchSummaries[key].user_unlocked = (S.epicAchSummaries[key].user_unlocked || 0) + 1;
+        patchLibraryCardDom(key);
+      }
+      if (S.currentModalAppName === key) {
+        void fetchAndRenderAchievements(key, true);
+      }
+    }
   });
 
   // Game clips: the recorder runs in Rust; the UI only mirrors its state.

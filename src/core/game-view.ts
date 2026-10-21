@@ -18,6 +18,13 @@ import { esc, fmtPlaytime } from "./utils";
 
 /** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
 export function achSummaryOf(appName: string) {
+  if (appName.startsWith("custom::")) {
+    const custom = S.customGames.find((g) => g.id === appName);
+    if (custom?.steamAppId) {
+      const steamSum = S.epicAchSummaries[`steam::${custom.steamAppId}`] || S.epicAchSummaries[custom.steamAppId] || S.epicAchSummaries[appName];
+      if (steamSum) return steamSum;
+    }
+  }
   return (
     S.epicAchSummaries[appName] ||
     S.companionAchSummaries[appName] ||

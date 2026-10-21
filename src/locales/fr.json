@@ -2786,5 +2786,6 @@
   "customGames.delete": "Delete Game",
   "customGames.addedSuccess": "{title} added to your library",
   "customGames.deletedSuccess": "{title} removed from your library",
-  "customGames.storeLabel": "Custom"
+  "customGames.storeLabel": "Custom",
+  "ach.unlockedNotification": "Succès déverrouillé : {name}"
 }

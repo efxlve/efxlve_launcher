@@ -1,3 +1,12 @@
+
+function targetSteamAppIdOf(key: string): string | null {
+  if (key.startsWith("steam::")) return key.slice(7);
+  if (key.startsWith("custom::")) {
+    const custom = S.customGames.find((g) => g.id === key);
+    return custom?.steamAppId || null;
+  }
+  return null;
+}
 /**
  * Click delegation handlers for the game drawer tabs (achievements, DLCs, specs,
  * screenshots, manage), store URLs and selective install.
@@ -338,32 +347,36 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     }
 
     case "ach-mode-change": {
-      if (id && id.startsWith("steam::")) {
-        const input = t as HTMLInputElement;
-        const mode = input.value;
-        const appId = id.slice(7);
-        void steamSetAchievementSource(appId, mode).then(() => {
-          void steamGetAchievementSource(appId).then((cfg) => {
-            steamAchSourceCache.set(id, cfg);
-            void fetchAndRenderAchievements(id, true);
+      if (id) {
+        const appId = targetSteamAppIdOf(id);
+        if (appId) {
+          const input = t as HTMLInputElement;
+          const mode = input.value;
+          void steamSetAchievementSource(appId, mode).then(() => {
+            void steamGetAchievementSource(appId).then((cfg) => {
+              steamAchSourceCache.set(id, cfg);
+              void fetchAndRenderAchievements(id, true);
+            });
           });
-        });
+        }
       }
       return true;
     }
 
     case "ach-source-save": {
-      if (id && id.startsWith("steam::")) {
-        const input = document.getElementById("ach-custom-path-input") as HTMLInputElement | null;
-        const customPath = input?.value?.trim() || "";
-        const appId = id.slice(7);
-        void steamSetAchievementSource(appId, "custom", customPath).then(() => {
-          void steamGetAchievementSource(appId).then((cfg) => {
-            steamAchSourceCache.set(id, cfg);
-            toast(i18n("ach.saveSource"));
-            void fetchAndRenderAchievements(id, true);
+      if (id) {
+        const appId = targetSteamAppIdOf(id);
+        if (appId) {
+          const input = document.getElementById("ach-custom-path-input") as HTMLInputElement | null;
+          const customPath = input?.value?.trim() || "";
+          void steamSetAchievementSource(appId, "custom", customPath).then(() => {
+            void steamGetAchievementSource(appId).then((cfg) => {
+              steamAchSourceCache.set(id, cfg);
+              toast(i18n("ach.saveSource"));
+              void fetchAndRenderAchievements(id, true);
+            });
           });
-        });
+        }
       }
       return true;
     }

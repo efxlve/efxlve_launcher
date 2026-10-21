@@ -1858,10 +1858,12 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const platCup = `<span class="plat-cup${platShineDone ? "" : " shine"}">${epicPlatinumIcon(28)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 11)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 9)}</span><span class="plat-shine" aria-hidden="true"></span></span>`;
   if (isPlat) platShineDone = true;
 
-  if (s.appName.startsWith("steam::")) {
-    const appId = s.appName.slice(7);
+  const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
+  const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
+
+  if (targetSteamAppId) {
     if (!steamAchSourceCache.has(s.appName)) {
-      void steamGetAchievementSource(appId).then((cfg) => {
+      void steamGetAchievementSource(targetSteamAppId).then((cfg) => {
         steamAchSourceCache.set(s.appName, cfg);
         if (S.achSourceModalOpen === s.appName) {
           const content = document.getElementById("drawer-tab-content");
@@ -1873,7 +1875,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const srcCfg = steamAchSourceCache.get(s.appName) ?? { mode: "auto" };
   const detectedPath = srcCfg.detectedPath;
-  const sourceCard = S.achSourceModalOpen === s.appName && s.appName.startsWith("steam::")
+  const sourceCard = S.achSourceModalOpen === s.appName && Boolean(targetSteamAppId)
     ? `<div class="ach-source-card">
         <div class="ach-source-header">
           <span class="ach-source-title">${icon("settings", 14)} ${t("ach.sourceTitle")}</span>
@@ -1925,7 +1927,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
         ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
         ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
-        ${s.appName.startsWith("steam::") ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
+        ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
         <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
         ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>
@@ -2010,25 +2012,29 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
   try {
     const isGog = appName.startsWith("gog::");
     const isSteam = appName.startsWith("steam::");
+    const isCustom = appName.startsWith("custom::");
     const source = sourceOfKey(appName);
-    const isCompanion = source !== "epic" && source !== "gog" && source !== "steam";
+    const isCompanion = source !== "epic" && source !== "gog" && source !== "steam" && !isCustom;
     const rawId = isGog ? appName.slice(5) : appName;
-    // Amazon Games has no achievement API: the tab shows its empty state
-    // instead of asking a client that cannot answer.
+    const customGame = isCustom ? S.customGames.find((g) => g.id === appName) : undefined;
     let data = source === "amazon"
       ? { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
       : isGog
         ? await gogGetAchievements(rawId)
         : isSteam
           ? await steamGetAchievements(appName.slice(7), forceRefresh)
-          : isCompanion
-            ? await companionAchievements(
-                source as "ea" | "ubisoft" | "xbox" | "battlenet" | "riot",
-                appName.slice(appName.indexOf("::") + 2),
-                summaryOf(appName)?.title || appName,
-                currentLanguage(),
-              )
-            : await epicGetAchievements(appName, forceRefresh);
+          : isCustom
+            ? customGame?.steamAppId
+              ? await steamGetAchievements(customGame.steamAppId, forceRefresh)
+              : { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
+            : isCompanion
+              ? await companionAchievements(
+                  source as "ea" | "ubisoft" | "xbox" | "battlenet" | "riot",
+                  appName.slice(appName.indexOf("::") + 2),
+                  summaryOf(appName)?.title || appName,
+                  currentLanguage(),
+                )
+              : await epicGetAchievements(appName, forceRefresh);
     // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
     // while Ubisoft Connect tracks them for the same account. Read the client's
     // local cache as the fallback and flag the page so it can say so.

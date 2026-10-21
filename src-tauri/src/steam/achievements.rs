@@ -6,6 +6,10 @@
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
+use tauri::Emitter;
 
 use super::catalog::steam_get_api_key;
 use super::runtime::steam_install_path;
@@ -1181,6 +1185,108 @@ pub fn steam_set_achievement_source(
 pub fn steam_detect_achievement_path(app_id: String) -> Option<String> {
     find_emulator_achievement_file(&app_id, None).map(|p| p.to_string_lossy().to_string())
 }
+
+static ACTIVE_WATCHERS: StdMutex<Option<std::collections::HashMap<String, Arc<AtomicBool>>>> = StdMutex::new(None);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementUnlockedPayload {
+    pub app_id: String,
+    pub name: String,
+    pub display_name: String,
+    pub description: String,
+    pub icon_url: String,
+}
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn MessageBeep(uType: u32) -> i32;
+}
+
+#[tauri::command]
+pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return;
+    }
+
+    let mut lock = ACTIVE_WATCHERS.lock().unwrap();
+    let map = lock.get_or_insert_with(std::collections::HashMap::new);
+
+    if let Some(flag) = map.get(&app_id) {
+        flag.store(false, Ordering::SeqCst);
+    }
+
+    let running_flag = Arc::new(AtomicBool::new(true));
+    map.insert(app_id.clone(), running_flag.clone());
+
+    let app_handle = app.clone();
+    let target_app_id = app_id.clone();
+
+    std::thread::spawn(move || {
+        let steam = steam_install_path();
+
+        let mut unlocked_set = std::collections::HashSet::new();
+        if let Some(ref s) = steam {
+            if let Some(res) = read_local_achievements_with_app(Some(&app_handle), s, &target_app_id) {
+                for ach in res.achievements {
+                    if ach.unlocked {
+                        unlocked_set.insert(ach.name);
+                    }
+                }
+            }
+        }
+
+        while running_flag.load(Ordering::Relaxed) {
+            std::thread::sleep(std::time::Duration::from_millis(1500));
+            if !running_flag.load(Ordering::Relaxed) {
+                break;
+            }
+
+            if let Some(ref s) = steam {
+                if let Some(res) = read_local_achievements_with_app(Some(&app_handle), s, &target_app_id) {
+                    for ach in res.achievements {
+                        if ach.unlocked && !unlocked_set.contains(&ach.name) {
+                            unlocked_set.insert(ach.name.clone());
+
+                            // 1. Native in-game HUD toast card
+                            let title_text = format!("🏆 {}", ach.display_name);
+                            crate::overlay::hud::notify(&title_text, &ach.description);
+
+                            // 2. Play Windows notification sound
+                            #[cfg(windows)]
+                            unsafe {
+                                MessageBeep(0x00000040); // MB_ICONASTERISK
+                            }
+
+                            // 3. Emit event to frontend
+                            let payload = AchievementUnlockedPayload {
+                                app_id: target_app_id.clone(),
+                                name: ach.name,
+                                display_name: ach.display_name,
+                                description: ach.description,
+                                icon_url: ach.icon_link,
+                            };
+                            let _ = app_handle.emit("achievement-unlocked", payload);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+#[tauri::command]
+pub fn steam_stop_achievement_watcher(app_id: String) {
+    if let Ok(mut lock) = ACTIVE_WATCHERS.lock() {
+        if let Some(map) = lock.as_mut() {
+            if let Some(flag) = map.remove(&app_id) {
+                flag.store(false, Ordering::SeqCst);
+            }
+        }
+    }
+}
+
 
 fn steam_achievements_summary_for(
     app: &tauri::AppHandle,

@@ -226,6 +226,12 @@ export const steamSetAchievementSource = (appId: string, mode: string, customPat
 
 export const steamDetectAchievementPath = (appId: string) =>
   invoke<string | null>("steam_detect_achievement_path", { appId });
+
+export const steamStartAchievementWatcher = (appId: string) =>
+  invoke<void>("steam_start_achievement_watcher", { appId });
+
+export const steamStopAchievementWatcher = (appId: string) =>
+  invoke<void>("steam_stop_achievement_watcher", { appId });
 /**
  * Screenshots taken by the Steam client for one app (read-only gallery: the
  * files belong to the client, so they are never edited or deleted here).
