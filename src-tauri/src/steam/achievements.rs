@@ -1437,6 +1437,22 @@ mod tests {
         assert!(response.achievements[2].tier.is_none());
     }
     #[test]
+    fn order_mapping_only_unlocks_achieved_entries() {
+        let locked = parse_achievements_ini(
+            "[SteamAchievements]\n0=ACH_ONE\n[ACH_ONE]\nAchieved=0\nUnlockTime=0\n",
+        );
+        assert_eq!(is_emulator_unlocked(&locked, "ACH_ONE", 0, "0"), None);
+
+        let unlocked = parse_achievements_ini(
+            "[SteamAchievements]\n0=ACH_ONE\n[ACH_ONE]\nAchieved=1\nUnlockTime=1700000000\n",
+        );
+        assert_eq!(
+            is_emulator_unlocked(&unlocked, "ACH_ONE", 0, "0"),
+            Some((true, 1_700_000_000, 1.0))
+        );
+    }
+
+    #[test]
     fn unix_seconds_become_civil_dates() {
         assert_eq!(unix_date(0), "");
         assert_eq!(unix_date(1_700_000_000), "2023-11-14");
