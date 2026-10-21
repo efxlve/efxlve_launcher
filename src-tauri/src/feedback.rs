@@ -116,11 +116,24 @@ fn system_text(app: &AppHandle) -> String {
         .unwrap_or_else(|_| "<unknown>".into());
     let processors = std::env::var("NUMBER_OF_PROCESSORS").unwrap_or_else(|_| "?".into());
     let architecture = std::env::var("PROCESSOR_ARCHITECTURE").unwrap_or_else(|_| "?".into());
+    let windows = if cfg!(windows) {
+        let key = r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
+        let build = crate::winreg::query(key, Some("CurrentBuild"))
+            .map(|out| crate::winreg::parse_reg_sz(&out))
+            .unwrap_or_default();
+        let name = crate::winreg::query(key, Some("ProductName"))
+            .map(|out| crate::winreg::parse_reg_sz(&out))
+            .unwrap_or_default();
+        format!("{name} build {build}")
+    } else {
+        "n/a".to_string()
+    };
     format!(
-        "Efxlve Launcher: v{}\nOS: {} ({})\nArchitecture: {}\nProcessors: {}\nApp data: {}\nCreated (unix): {}\n",
+        "Efxlve Launcher: v{}\nOS: {} ({})\nWindows: {}\nArchitecture: {}\nProcessors: {}\nApp data: {}\nCreated (unix): {}\n",
         env!("CARGO_PKG_VERSION"),
         std::env::consts::OS,
         std::env::consts::ARCH,
+        windows,
         architecture,
         processors,
         data_dir,
@@ -129,7 +142,17 @@ fn system_text(app: &AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn feedback_create_report(
+pub async fn feedback_create_report(
+    app: AppHandle,
+    note: String,
+    include_logs: bool,
+) -> Result<FeedbackReport, String> {
+    tauri::async_runtime::spawn_blocking(move || create_report(app, note, include_logs))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+fn create_report(
     app: AppHandle,
     note: String,
     include_logs: bool,
