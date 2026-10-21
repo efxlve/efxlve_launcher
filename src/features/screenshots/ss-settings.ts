@@ -121,7 +121,7 @@ export function clipHotkeyName(): string {
 }
 
 /** The rates the MJPEG/GDI recorder can actually hold. 60 and 120 need the GPU
- *  path (see TODO.md §8), so their buttons stay disabled until then. */
+ *  recorder described in TODO.md, so their buttons stay disabled until then. */
 export const CLIP_FPS_SUPPORTED = [15, 30];
 
 export function clipFps(): number {

@@ -40,5 +40,5 @@ const body = [
   "",
 ].join("\n");
 
-writeFileSync(join("docs", "agent", "ipc-index.md"), body);
+writeFileSync(join("docs", "IPC_INDEX.md"), body);
 console.log(`${rows.length} commands`);

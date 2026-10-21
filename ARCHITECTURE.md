@@ -114,7 +114,7 @@ sequenceDiagram
 - Spatial navigation calculates candidate directional vectors with zero forced layout thrashing using `el.offsetParent !== null` rather than expensive `getComputedStyle()`.
 
 ### 3.3 Embedded Child Webviews (Multi-Storefront)
-- 7 embedded store views: Epic Games, GOG.COM, Steam, Xbox (PC-filtered), Battle.net, Ubisoft, and EA.
+- 8 embedded store views: Epic Games, GOG.COM, Steam, Xbox (PC-filtered), Battle.net, Ubisoft, EA, and Amazon Games (Luna claims).
 - Built via Tauri's native `WebviewBuilder::new(...)` using the `unstable` feature flag and `window.add_child`.
 - OS resize synchronization is managed through the native Windows `tauri::WindowEvent::Resized` event hook to eliminate black borders during window snapping or maximizing.
 - **Rule:** Never pass `additional_browser_args` to `WebviewBuilder`, as it silently breaks child webview rendering in WebView2.

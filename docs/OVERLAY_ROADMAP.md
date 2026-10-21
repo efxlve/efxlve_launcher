@@ -199,7 +199,7 @@ runs and SMTC otherwise.
 5. **Frontend** — new Vite entry `overlay.html` + `src/features/overlay/` so the main
    launcher bundle does not grow. Reuse tokens, icons, i18n and the existing event
    bus. New IPC commands live in `src-tauri/src/overlay/` (metrics, window control,
-   media) and follow `docs/agent/ipc-index.md` naming; store-specific data keeps
+   media) and follow `docs/IPC_INDEX.md` naming; store-specific data keeps
    coming from the existing commands.
 6. **Per-game behavior** — overlay enabled by default for library games; a per-game
    "disable overlay" switch, plus a small blocklist for titles that reject external

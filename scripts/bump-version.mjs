@@ -13,6 +13,8 @@ const targets = [
   ["package.json", /"version": "[^"]+"/, `"version": "${version}"`],
   ["src-tauri/tauri.conf.json", /"version": "[^"]+"/, `"version": "${version}"`],
   ["src-tauri/Cargo.toml", /^version = "[^"]+"/m, `version = "${version}"`],
+  ["README.md", /version-\d+\.\d+\.\d+-222/, `version-${version}-222`],
+  ["README.md", /\*\*v\d+\.\d+\.\d+\*\*/, `**v${version}**`],
 ];
 
 for (const [file, pattern, replacement] of targets) {

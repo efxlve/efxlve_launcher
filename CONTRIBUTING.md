@@ -2,7 +2,7 @@
 
 Efxlve Launcher is an open-source Universal Gaming Hub for Windows, aggregating Epic Games, GOG, and Steam in a single unified client. The frontend is frameworkless Vanilla TypeScript (Vite 6). The native backend is Rust on Tauri v2.
 
-Issues and pull requests are welcome. Read this guide and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before making interface or architectural changes. If an AI assistant is assisting, it must adhere to [AGENTS.md](./AGENTS.md) and `.cursorrules`.
+Issues and pull requests are welcome. Read this guide and [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) before making interface or architectural changes. If an AI assistant is assisting, it must follow [AGENTS.md](./AGENTS.md).
 
 ---
 
@@ -26,7 +26,7 @@ The application has a strict, uncompromising visual contract:
 - **Targeted DOM Mutation:** Never destroy and re-render the entire library (`viewEl.innerHTML = ...`) on download progress or IPC events. Use in-place card patching (`patchLibraryCardDom`, `data-dlbtn`, `data-dlbar`).
 - **O(1) Data Structures:** Maintain and use `rawOf` and `summaryOf` hash maps. Never use linear `.find()` in high-frequency rendering paths.
 - **Tauri IPC Naming:** Arguments are camelCase on the JavaScript side (`appName`), matching snake_case in Rust (`app_name: String`).
-- **Internationalization (i18n):** User-facing strings must use `t("key")`. All 15 locale JSON files in `src/locales/` must maintain 1:1 key parity.
+- **Internationalization (i18n):** User-facing strings must use `t("key")`. All 16 locale JSON files in `src/locales/` must maintain 1:1 key parity; `npm.cmd run locales` checks it.
 - **PowerShell Tooling:** Always use `npm.cmd` instead of `npm` on Windows PowerShell.
 
 ---
@@ -36,14 +36,14 @@ The application has a strict, uncompromising visual contract:
 Before submitting changes, ensure the following commands pass with zero errors:
 
 ```powershell
-npm.cmd run build          # Typecheck (tsc --noEmit) and Vite production build
-cargo check                # Rust backend validation
-cargo test                 # Rust unit tests
+npm.cmd run build                              # Typecheck (tsc --noEmit) and Vite production build
+npm.cmd run locales                            # Locale key parity
+cargo test --manifest-path src-tauri/Cargo.toml # Rust unit tests
 ```
 
 ---
 
 ## 4. Commits & Pull Requests
 
-- Use standard English imperative commit messages (`feat: ...`, `fix: ...`, `refactor: ...`, `perf: ...`, `docs: ...`).
+- Use standard English imperative commit messages (`feat: ...`, `fix: ...`, `refactor: ...`, `perf: ...`, `docs: ...`). One task, one commit.
 - Never commit private keys, updater signing keys, secrets, or local configuration files.

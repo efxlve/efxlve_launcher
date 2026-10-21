@@ -43,7 +43,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.31**.
+The current release is **v0.1.34**.
 
 1. Download the latest installer (`.exe`) from [Releases](https://github.com/efxlve/efxlve_launcher/releases/latest).
 2. Requirements: Windows 10 or 11 (64-bit). Microsoft Edge WebView2 (pre-installed on Windows 11).
@@ -82,8 +82,10 @@ cargo test                 # Rust unit tests
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) — Hydra console dark tokens, layout contracts, and UI invariants.
 - [docs/OVERLAY_ROADMAP.md](./docs/OVERLAY_ROADMAP.md) — In-game overlay research, architecture and milestones.
 - [docs/CROSS_PLATFORM.md](./docs/CROSS_PLATFORM.md) — Linux/macOS compatibility layer, runners and packaging plan.
-- [docs/agent/ipc-index.md](./docs/agent/ipc-index.md) — Generated index of the Tauri IPC commands.
-- [AGENTS.md](./AGENTS.md) — Operational guidelines for AI agents and core developers.
+- [docs/IPC_INDEX.md](./docs/IPC_INDEX.md) — Generated index of the Tauri IPC commands.
+- [TODO.md](./TODO.md) — Open work.
+- [docs/KNOWN_ISSUES.md](./docs/KNOWN_ISSUES.md) — Reproducible open bugs.
+- [AGENTS.md](./AGENTS.md) — The project rules loaded by DeepSeek Harness.
 
 ---
 

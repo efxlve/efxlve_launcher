@@ -149,7 +149,7 @@ Heroic modeli: `legendary launch <app> --no-wine --wrapper "<runner> run"`.
 - **Apple lisansı:** GPTK/D3DMetal ticari yeniden dağıtıma kapalıdır; launcher yalnızca
   kullanıcının kendi kurulumunu yönetir, binary'yi paketlemez.
 - **Performans hedefi korunur:** Wine/Proton çevirisi CPU/GPU yükü ekler; arayüz tarafındaki
-  düşük kaynak/120 FPS disiplini (AGENTS.md §4.1) platformdan bağımsız olarak aynen geçerlidir.
+  düşük kaynak/120 FPS disiplini (AGENTS.md) platformdan bağımsız olarak aynen geçerlidir.
 - **legendary fork:** Heroic kendi fork'unu kullanır; upstream sürümüyle uyumluluk izlenmelidir.
 
 ---
