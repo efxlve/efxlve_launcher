@@ -209,6 +209,13 @@ export const steamLibraryArt = (appIds: string[]) =>
 /** Schema + the player's unlocks + global rarity; cached on disk for an hour. */
 export const steamGetAchievements = (appId: string, force = false) =>
   invoke<import("./epic").EpicAchievementsData>("steam_get_achievements", { appId, force });
+
+/**
+ * Achievements for a custom/emulator-owned title: definitions from the public
+ * Steam Community schema, unlocks from the local achievements.ini/json.
+ */
+export const steamGetEmulatorAchievements = (appId: string, force = false) =>
+  invoke<import("./epic").EpicAchievementsData>("steam_get_emulator_achievements", { appId, force });
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");

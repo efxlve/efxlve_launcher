@@ -38,7 +38,7 @@ import { hydrateProtonDbChip, renderProtonDbHost } from "./protondb";
 import { hydrateAntiCheatChip, renderAntiCheatHost } from "./awacy";
 import { hydrateDeckChip, renderDeckHost } from "./deck";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
-import { steamGetAchievements, steamGetAchievementSource, steamSetAchievementSource, type AchievementSourceConfig } from "../../steam";
+import { steamGetAchievements, steamGetEmulatorAchievements, steamGetAchievementSource, steamSetAchievementSource, type AchievementSourceConfig } from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
 import { companionAchievements } from "../../companion";
@@ -2052,7 +2052,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
           ? await steamGetAchievements(appName.slice(7), forceRefresh)
           : isCustom
             ? customGame?.steamAppId
-              ? await steamGetAchievements(customGame.steamAppId, forceRefresh)
+              ? await steamGetEmulatorAchievements(customGame.steamAppId, forceRefresh)
               : { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
             : isCompanion
               ? await companionAchievements(
@@ -2108,7 +2108,11 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     invalidateLibraryVisibleCache();
   } catch (e) {
     console.warn("Achievements could not be fetched or this game has no achievement support:", e);
-    S.loadedAchievements.set(appName, { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false });
+    // A transient network/schema failure must not erase a list that was already
+    // loaded; only a game with no cached answer gets the empty state.
+    if (!S.loadedAchievements.has(appName)) {
+      S.loadedAchievements.set(appName, { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false });
+    }
   } finally {
     S.loadingAchFor.delete(appName);
     repaintAchievementSummary(appName);

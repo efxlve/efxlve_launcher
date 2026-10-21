@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 use tauri::Emitter;
 
-use super::catalog::steam_get_api_key;
+use super::catalog::{steam_get_api_key, strip_html};
 use super::runtime::steam_install_path;
 use super::users::active_steam_id;
 use super::vdf::Vdf;
@@ -629,6 +629,209 @@ pub fn read_emulator_achievements(
     Some(parsed)
 }
 
+/* ---------- Public Steam Community schema (no API key) ---------- */
+
+/// One achievement definition from the public Steam Community stats page.
+/// Scene/emulator releases usually carry no Steam client schema, but the
+/// community page publishes the same names, descriptions and icons.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommunityAchievement {
+    pub api_name: String,
+    pub name: String,
+    pub description: String,
+    pub hidden: bool,
+    pub icon_achieved: String,
+    pub icon_unachieved: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CommunitySchemaCache {
+    fetched_at: u64,
+    achievements: Vec<CommunityAchievement>,
+}
+
+/// Definitions change only with store metadata updates; a week is plenty.
+const COMMUNITY_SCHEMA_TTL_SECS: u64 = 7 * 24 * 60 * 60;
+
+/// Parses the achievement schema out of the SSR payload of
+/// `steamcommunity.com/stats/<appid>/achievements`.
+pub fn parse_community_schema(html: &str) -> Option<Vec<CommunityAchievement>> {
+    let marker = html.find("id=\"valve-ssr-data\"")?;
+    let open = marker + html[marker..].find('>')? + 1;
+    let close = open + html[open..].find("</script>")?;
+    let document: serde_json::Value = serde_json::from_str(&html[open..close]).ok()?;
+    let query_data = document
+        .get("renderContext")?
+        .get("queryData")?
+        .as_str()?;
+    let queries: serde_json::Value = serde_json::from_str(query_data).ok()?;
+    for query in queries.get("queries")?.as_array()? {
+        let Some(data) = query.get("state").and_then(|state| state.get("data")) else {
+            continue;
+        };
+        let Some(groups) = data.get("groups").and_then(|groups| groups.as_array()) else {
+            continue;
+        };
+        let mut out = Vec::new();
+        for group in groups {
+            let Some(items) = group.get("achievements").and_then(|items| items.as_array()) else {
+                continue;
+            };
+            for item in items {
+                let api_name = item
+                    .get("api_name")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or("")
+                    .trim();
+                if api_name.is_empty() {
+                    continue;
+                }
+                out.push(CommunityAchievement {
+                    api_name: api_name.to_string(),
+                    name: strip_html(
+                        item.get("name").and_then(|value| value.as_str()).unwrap_or(""),
+                    ),
+                    description: strip_html(
+                        item.get("description")
+                            .and_then(|value| value.as_str())
+                            .unwrap_or(""),
+                    ),
+                    hidden: item
+                        .get("hidden")
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(false),
+                    icon_achieved: item
+                        .get("icon_achieved")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    icon_unachieved: item
+                        .get("icon_unachieved")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                });
+            }
+        }
+        if !out.is_empty() {
+            return Some(out);
+        }
+    }
+    None
+}
+
+fn community_schema_cache_path(app: &tauri::AppHandle, app_id: &str) -> PathBuf {
+    achievements_cache_dir(app).join(format!("community_{app_id}.json"))
+}
+
+fn read_community_schema_cache(
+    app: &tauri::AppHandle,
+    app_id: &str,
+) -> Option<CommunitySchemaCache> {
+    let text = std::fs::read_to_string(community_schema_cache_path(app, app_id)).ok()?;
+    serde_json::from_str(&text).ok()
+}
+
+async fn fetch_community_schema(
+    app: &tauri::AppHandle,
+    app_id: &str,
+    force: bool,
+) -> Option<Vec<CommunityAchievement>> {
+    let cached = read_community_schema_cache(app, app_id);
+    if !force {
+        if let Some(ref cached) = cached {
+            if now_secs().saturating_sub(cached.fetched_at) < COMMUNITY_SCHEMA_TTL_SECS {
+                return Some(cached.achievements.clone());
+            }
+        }
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .user_agent("efxlve-launcher")
+        .build()
+        .ok()?;
+    let url = format!("https://steamcommunity.com/stats/{app_id}/achievements?l=english");
+    let fetched = match client.get(&url).send().await {
+        Ok(response) if response.status().is_success() => match response.text().await {
+            Ok(html) => parse_community_schema(&html),
+            Err(_) => None,
+        },
+        _ => None,
+    };
+
+    match fetched {
+        Some(achievements) => {
+            let cache = CommunitySchemaCache {
+                fetched_at: now_secs(),
+                achievements: achievements.clone(),
+            };
+            if let Ok(text) = serde_json::to_string(&cache) {
+                let _ = std::fs::write(community_schema_cache_path(app, app_id), text);
+            }
+            Some(achievements)
+        }
+        // Offline: a stale definition list is still better than no icons.
+        None => cached.map(|cached| cached.achievements),
+    }
+}
+
+/// Builds the achievement card directly from emulator state and the public
+/// community definitions, without reading any Steam client file.
+fn build_emulator_achievements(
+    schema: &[CommunityAchievement],
+    emu: &ParsedEmulatorAchievements,
+) -> GameAchievementsResponse {
+    let mut items: Vec<AchievementItem> = Vec::new();
+    let mut hidden_items: Vec<AchievementItem> = Vec::new();
+    for (index, entry) in schema.iter().enumerate() {
+        let state = is_emulator_unlocked(emu, &entry.api_name, index, &index.to_string());
+        let (unlocked, unlock_time, progress) = state.unwrap_or((false, 0, 0.0));
+        let icon = if unlocked {
+            &entry.icon_achieved
+        } else {
+            &entry.icon_unachieved
+        };
+        let item = AchievementItem {
+            name: entry.api_name.clone(),
+            display_name: entry.name.clone(),
+            description: entry.description.clone(),
+            unlocked,
+            progress,
+            unlock_date: if unlocked {
+                Some(unix_date(unlock_time))
+            } else {
+                None
+            },
+            icon_link: if icon.is_empty() {
+                entry.icon_achieved.clone()
+            } else {
+                icon.clone()
+            },
+            hidden: entry.hidden,
+            is_base: true,
+            ..Default::default()
+        };
+        if entry.hidden {
+            hidden_items.push(item.clone());
+        }
+        items.push(item);
+    }
+    let total = items.len() as u32;
+    let unlocked = items.iter().filter(|item| item.unlocked).count() as u32;
+    GameAchievementsResponse {
+        achievements: items,
+        hidden: hidden_items,
+        user_unlocked: unlocked,
+        total_achievements: total,
+        is_platinum: total > 0 && unlocked == total,
+        supported: Some(total > 0),
+        ..Default::default()
+    }
+}
+
 /// Achievements straight from the Steam client's own cache:
 /// `appcache/stats/UserGameStatsSchema_<app>.bin` (definitions, icons) and
 /// `UserGameStats_<account>_<app>.bin` (unlock times) plus emulator achievements.
@@ -1124,6 +1327,48 @@ pub async fn steam_get_achievements(
     Ok(response)
 }
 
+/// Achievements for a custom/emulator-owned title: definitions come from the
+/// public Steam Community page (no API key, no Steam client), unlocks come from
+/// the scene/emulator `achievements.ini`/`.json` file on this PC.
+#[tauri::command]
+pub async fn steam_get_emulator_achievements(
+    app: tauri::AppHandle,
+    app_id: String,
+    force: Option<bool>,
+) -> Result<GameAchievementsResponse, String> {
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return Err("Invalid Steam app id".into());
+    }
+    let config = get_achievement_source_config(&app, &app_id);
+    if config.mode == "disabled" {
+        return Ok(GameAchievementsResponse {
+            supported: Some(false),
+            ..Default::default()
+        });
+    }
+
+    let community = fetch_community_schema(&app, &app_id, force == Some(true)).await;
+    let emu = read_emulator_achievements(Some(&app), &app_id);
+    let mut response = match (community, emu) {
+        (Some(schema), Some(emu)) => build_emulator_achievements(&schema, &emu),
+        (Some(schema), None) => build_emulator_achievements(&schema, &Default::default()),
+        // No community answer (offline first run): the Steam client schema is
+        // still a useful definition source when the game also exists on Steam.
+        (None, _) => steam_install_path()
+            .and_then(|steam| read_local_achievements_with_app(Some(&app), &steam, &app_id))
+            .unwrap_or_else(|| GameAchievementsResponse {
+                supported: Some(false),
+                ..Default::default()
+            }),
+    };
+
+    if response.total_achievements > 0 {
+        let percentages = fetch_global_percentages(&app_id).await;
+        apply_rarity(&mut response, &percentages);
+    }
+    Ok(response)
+}
+
 /// How long the local totals scan stays fresh (parsing 150+ schemas is I/O heavy).
 pub(super) const ACH_TOTALS_TTL_SECS: u64 = 30 * 60;
 
@@ -1208,6 +1453,23 @@ extern "system" {
     fn MessageBeep(uType: u32) -> i32;
 }
 
+/// One achievement snapshot for the live watcher: the Steam client's own stats
+/// when available, otherwise the emulator file plus the public definition list.
+fn watcher_snapshot(
+    app: &tauri::AppHandle,
+    app_id: &str,
+    steam: Option<&Path>,
+    community: Option<&[CommunityAchievement]>,
+) -> Option<GameAchievementsResponse> {
+    if let Some(steam) = steam {
+        if let Some(response) = read_local_achievements_with_app(Some(app), steam, app_id) {
+            return Some(response);
+        }
+    }
+    let emu = read_emulator_achievements(Some(app), app_id)?;
+    community.map(|schema| build_emulator_achievements(schema, &emu))
+}
+
 #[tauri::command]
 pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
@@ -1229,17 +1491,32 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
 
     std::thread::spawn(move || {
         let steam = steam_install_path();
+        // A custom game usually has no Steam client schema. The public page is
+        // cached on disk, so this is one request on the first run and offline
+        // afterwards.
+        let community = tauri::async_runtime::block_on(fetch_community_schema(
+            &app_handle,
+            &target_app_id,
+            false,
+        ));
 
-        let mut unlocked_set = std::collections::HashSet::new();
-        if let Some(ref s) = steam {
-            if let Some(res) = read_local_achievements_with_app(Some(&app_handle), s, &target_app_id) {
-                for ach in res.achievements {
-                    if ach.unlocked {
-                        unlocked_set.insert(ach.name);
-                    }
-                }
-            }
-        }
+        let initial = watcher_snapshot(
+            &app_handle,
+            &target_app_id,
+            steam.as_deref(),
+            community.as_deref(),
+        );
+        let mut initialised = initial.is_some();
+        let mut unlocked_set: std::collections::HashSet<String> = initial
+            .map(|response| {
+                response
+                    .achievements
+                    .into_iter()
+                    .filter(|ach| ach.unlocked)
+                    .map(|ach| ach.name)
+                    .collect()
+            })
+            .unwrap_or_default();
 
         while running_flag.load(Ordering::Relaxed) {
             std::thread::sleep(std::time::Duration::from_millis(1500));
@@ -1247,33 +1524,52 @@ pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
                 break;
             }
 
-            if let Some(ref s) = steam {
-                if let Some(res) = read_local_achievements_with_app(Some(&app_handle), s, &target_app_id) {
-                    for ach in res.achievements {
-                        if ach.unlocked && !unlocked_set.contains(&ach.name) {
-                            unlocked_set.insert(ach.name.clone());
-
-                            // 1. Native in-game HUD toast card
-                            let title_text = format!("🏆 {}", ach.display_name);
-                            crate::overlay::hud::notify(&title_text, &ach.description);
-
-                            // 2. Play Windows notification sound
-                            #[cfg(windows)]
-                            unsafe {
-                                MessageBeep(0x00000040); // MB_ICONASTERISK
-                            }
-
-                            // 3. Emit event to frontend
-                            let payload = AchievementUnlockedPayload {
-                                app_id: target_app_id.clone(),
-                                name: ach.name,
-                                display_name: ach.display_name,
-                                description: ach.description,
-                                icon_url: ach.icon_link,
-                            };
-                            let _ = app_handle.emit("achievement-unlocked", payload);
-                        }
+            let Some(response) = watcher_snapshot(
+                &app_handle,
+                &target_app_id,
+                steam.as_deref(),
+                community.as_deref(),
+            ) else {
+                continue;
+            };
+            // The first successful read is the baseline, not a burst of old unlocks.
+            if !initialised {
+                for ach in response.achievements {
+                    if ach.unlocked {
+                        unlocked_set.insert(ach.name);
                     }
+                }
+                initialised = true;
+                continue;
+            }
+            for ach in response.achievements {
+                if ach.unlocked && !unlocked_set.contains(&ach.name) {
+                    unlocked_set.insert(ach.name.clone());
+
+                    // 1. Native in-game HUD toast card
+                    let display = if ach.display_name.trim().is_empty() {
+                        ach.name.clone()
+                    } else {
+                        ach.display_name.clone()
+                    };
+                    let title_text = format!("🏆 {display}");
+                    crate::overlay::hud::notify(&title_text, &ach.description);
+
+                    // 2. Play Windows notification sound
+                    #[cfg(windows)]
+                    unsafe {
+                        MessageBeep(0x00000040); // MB_ICONASTERISK
+                    }
+
+                    // 3. Emit event to frontend
+                    let payload = AchievementUnlockedPayload {
+                        app_id: target_app_id.clone(),
+                        name: ach.name,
+                        display_name: display,
+                        description: ach.description,
+                        icon_url: ach.icon_link,
+                    };
+                    let _ = app_handle.emit("achievement-unlocked", payload);
                 }
             }
         }
@@ -1436,6 +1732,60 @@ mod tests {
         );
         assert!(response.achievements[2].tier.is_none());
     }
+    #[test]
+    fn community_schema_reads_public_page_payload() {
+        let query = serde_json::json!({
+            "queries": [
+                { "state": { "data": null } },
+                { "state": { "data": { "groups": [
+                    { "achievements": [
+                        {
+                            "api_name": "ACH_ONE",
+                            "name": "First &amp; Best",
+                            "description": "Finish it.",
+                            "hidden": false,
+                            "icon_achieved": "https://cdn/one.jpg",
+                            "icon_unachieved": "https://cdn/one_bw.jpg"
+                        }
+                    ] }
+                ] } } }
+            ]
+        });
+        let document = serde_json::json!({
+            "renderContext": { "queryData": query.to_string() }
+        });
+        let html = format!(
+            "<html><script type=\"application/json\" id=\"valve-ssr-data\" nonce=\"x\">{}</script></html>",
+            document
+        );
+        let parsed = parse_community_schema(&html).expect("schema parsed");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].api_name, "ACH_ONE");
+        assert_eq!(parsed[0].name, "First & Best");
+        assert_eq!(parsed[0].description, "Finish it.");
+        assert_eq!(parsed[0].icon_achieved, "https://cdn/one.jpg");
+    }
+
+    #[test]
+    fn emulator_schema_merges_local_unlocks() {
+        let schema = vec![CommunityAchievement {
+            api_name: "ACH_ONE".into(),
+            name: "First".into(),
+            description: "Do the thing.".into(),
+            hidden: false,
+            icon_achieved: "on.jpg".into(),
+            icon_unachieved: "off.jpg".into(),
+        }];
+        let emu = parse_achievements_ini("[ACH_ONE]\nAchieved=1\nUnlockTime=1700000000\n");
+        let response = build_emulator_achievements(&schema, &emu);
+        assert_eq!(response.total_achievements, 1);
+        assert_eq!(response.user_unlocked, 1);
+        assert!(response.achievements[0].unlocked);
+        assert_eq!(response.achievements[0].display_name, "First");
+        assert_eq!(response.achievements[0].icon_link, "on.jpg");
+        assert_eq!(response.achievements[0].unlock_date.as_deref(), Some("2023-11-14"));
+    }
+
     #[test]
     fn order_mapping_only_unlocks_achieved_entries() {
         let locked = parse_achievements_ini(

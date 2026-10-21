@@ -1173,6 +1173,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,
             steam::steam_detect_achievement_path,
+            steam::steam_get_emulator_achievements,
             steam::steam_start_achievement_watcher,
             steam::steam_stop_achievement_watcher,
             custom_games::custom_games_list,

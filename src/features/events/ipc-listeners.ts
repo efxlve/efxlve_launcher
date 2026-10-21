@@ -897,21 +897,35 @@ export async function initApp(hooks: {
     description: string;
     iconUrl: string;
   }>("achievement-unlocked", (event) => {
-    const { appId, displayName, description } = event.payload;
-    const titleText = t("ach.unlockedNotification", { name: displayName });
-    pushNotification({
-      kind: "info",
-      title: titleText,
-      body: description,
-      toast: true,
-    });
+    const { appId, name, displayName, description } = event.payload;
     const appKeys = [
       `steam::${appId}`,
       ...S.customGames.filter((g) => g.steamAppId === appId).map((g) => g.id),
     ];
+    // The watcher can fall back to the raw API name when no schema was
+    // available; the cached list still knows the pretty label.
+    const cachedItem = appKeys
+      .map((key) => S.loadedAchievements.get(key)?.achievements.find((ach) => ach.name === name))
+      .find((ach) => Boolean(ach));
+    const label = displayName || cachedItem?.display_name || name;
+    pushNotification({
+      kind: "info",
+      title: t("ach.unlockedNotification", { name: label }),
+      body: description || cachedItem?.description || "",
+      toast: true,
+    });
     for (const key of appKeys) {
-      if (S.epicAchSummaries[key]) {
-        S.epicAchSummaries[key].user_unlocked = (S.epicAchSummaries[key].user_unlocked || 0) + 1;
+      const list = S.loadedAchievements.get(key);
+      const entry = list?.achievements.find((ach) => ach.name === name);
+      const wasUnlocked = entry?.unlocked === true;
+      if (entry && !wasUnlocked) {
+        entry.unlocked = true;
+        entry.progress = 1;
+        entry.unlock_date = new Date().toISOString().slice(0, 10);
+      }
+      const summary = S.epicAchSummaries[key];
+      if (summary && !wasUnlocked) {
+        summary.user_unlocked = (summary.user_unlocked || 0) + 1;
         patchLibraryCardDom(key);
       }
       if (S.currentModalAppName === key) {
