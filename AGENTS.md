@@ -135,7 +135,7 @@ add journals, audits or handoff notes.
 | `README.md` | Public overview, features, credits, build steps |
 | `ARCHITECTURE.md` | Subsystem boundaries and data flow |
 | `CONTRIBUTING.md` | UI contract and engineering standards for contributors |
-| `TODO.md` | Open work only, newest first |
+| `TODO.md` | Open work only |
 | `docs/DESIGN_SYSTEM.md` | Design tokens and layout contracts |
 | `docs/IPC_INDEX.md` | Generated Tauri command index |
 | `docs/OVERLAY_ROADMAP.md` | Overlay architecture and open work |

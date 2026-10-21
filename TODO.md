@@ -1,65 +1,35 @@
 # TODO
 
-Open work only, newest first. Delete an item when it lands. A task should fit one
-commit with `npm.cmd run build` (plus `cargo test` when Rust changes).
+Open work only. Delete the item when it lands.
 
-## 1. Owner checks (need the real app window)
+## GPU recorder: 60/120 fps
 
-- **Overlay:** the connected Discord state with a real account, and a final
-  in-game visual pass with real artwork. The panel, widget layout, clock, media
-  and clip polling were already verified in the browser harness; the hidden
-  window, hotkey and native HUD still need a real game.
-- **Themes / TV:** look at the TV home shell and game hub at 1920 px with real
-  poster art. Decide whether the TV profile and the embedded storefront need the
-  same command-bar / stage pass.
-- **Game page:** the hero with real artwork, and the `...` menu opened by hand.
-  Its markup and open/close behaviour were verified in the browser harness only.
-- **Transparency:** `tauri.conf.json` keeps a frameless transparent window, so
-  the compositor pays for alpha every frame (idle ~11% of one core). Choose
-  between disabling transparency while unfocused and a "solid background"
-  switch in Settings → Appearance for low-end PCs.
+The MJPEG/GDI recorder cannot hold the rates the settings offer. Measured on the
+dev machine on 2026-10-18:
 
-## 2. Performance
+| Step | Cost |
+|---|---|
+| GDI screen read (`BitBlt`), full 2560x1600 | 26-46 ms |
+| The same read at 384x240 output | 29 ms — the cost is the screen, not the frame |
+| GDI+ JPEG encode | 5-15 ms |
 
-- **Bundle split:** lazy-load the rare views (TV mode, store, Discord) behind
-  dynamic imports. This is roughly 100-150 kB off a cold start, but it touches
-  the core render switch and only pays off on low-end machines.
-- **GPU recorder:** the MJPEG/GDI path cannot hold 60/120 fps; a full 2560x1600
-  GDI read costs 26-46 ms per frame. A second recorder using Desktop Duplication
-  (DXGI) into a staging texture plus Media Foundation H.264 would lift the
-  ceiling. Keep MJPEG as the fallback for machines without a hardware encoder.
-  Settings already disables the 60/120 buttons (`CLIP_FPS_SUPPORTED`); recorded
-  files carry the measured frame rate so picture and sound stay the same length.
-- **Startup:** `epicGetNetworkProfile` and the CDN/shortcut prefetch are still
-  awaited on the boot path (~50 ms). Not worth another pass unless a slow start
-  shows up again.
+So the ceiling is ~20 fps at native size and ~26 fps at 720p, whatever the user
+asks for. The 60 and 120 buttons in Settings are therefore disabled
+(`CLIP_FPS_SUPPORTED` in `src/features/screenshots/ss-settings.ts`) and
+`clipFps()` falls back to 30. The AVI header carries the measured frame rate, so
+picture and sound stay the same length.
 
-## 3. Features
+Getting to 60/120 means a second recorder beside the current one:
 
-- **Compressed clip for sharing:** Discord accepts 8 MB, which a full-quality
-  clip passes in a second or two. The share path already cuts the chosen range
-  into the temp folder and shows its weight; re-encoding the frames smaller is
-  the real answer and belongs with the GPU encoder above.
-- **IGDB credentials:** the proxy at `efxlve.com/api/igdb` is the default, and it
-  is the only path most users need. Add a power-user way back to own
-  `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` now that the settings row is visible.
-- **Linux/macOS packaging:** the compatibility layer shipped (`src-tauri/src/compat/`),
-  but Flatpak/AppImage/`.deb`/AUR and macOS `.app`/notarization are open. Real
-  Linux/macOS hardware still has to confirm the Proton/umu prefix layout. The
-  screenshot hook, embedded store webview and drive scan still need platform
-  implementations. `wine-crossover` stays detection-only until a maintained
-  release source exists.
-- **Discord native friends list:** optional Phase 4 after the embedded webview.
-  The Social SDK is approved and the app is activated; cost is roughly 2-3 days
-  plus DLL packaging. The webview path stays the primary surface.
+- Read frames on the GPU: Desktop Duplication API (DXGI) or Windows Graphics
+  Capture, into a staging texture. The read stops costing CPU time per frame.
+- Encode with the hardware encoder: Media Foundation H.264 (the OS picks NVENC,
+  QuickSync or AMF) instead of one JPEG per frame.
+- Keep the MJPEG writer as the fallback: no codec licence, plays everywhere, and
+  it is the only path on machines without a hardware encoder.
+- The clip list, the settings rows and the overlay widget stay as they are; only
+  the recorder behind them changes.
 
-## 4. Community confirmations
-
-- **Berke:** the Discord consent fix shipped in 0.1.31 (RPC scope list plus
-  stop-on-decline). Ask him to try it and report.
-- **Gyro:** his crash is still unexplained. The 0.1.32 revert is the prime
-  suspect fix and has shipped; ask for the Windows Event Log entry — the
-  "faulting module name" — to settle it. `logs\crash.log` catches panics from
-  0.1.31 on.
-- **hidaaan:** the screenshot scan switch (`SCREENSHOT_SCAN_ALL`, off means the
-  chosen folder only) shipped. Confirm it at the next release.
+Files: `src-tauri/src/legendary/clip_recorder.rs`,
+`src-tauri/src/legendary/clip_audio.rs`,
+`src/features/screenshots/ss-settings.ts`.

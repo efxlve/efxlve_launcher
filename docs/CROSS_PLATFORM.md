@@ -1,6 +1,6 @@
 # CROSS_PLATFORM.md — Efxlve Launcher Linux & macOS Uyumluluk Katmanı (Araştırma & Mimari Tasarım)
 
-> **Durum:** Çekirdek katman uygulandı (2026-10-19). Paketleme ve gerçek Linux/macOS donanım doğrulaması açık; kalan işler `TODO.md` içinde.
+> **Durum:** Çekirdek katman uygulandı (2026-10-19). Paketleme ve gerçek Linux/macOS donanım doğrulaması açık.
 > **Amaç:** Heroic Games Launcher modelini referans alarak Efxlve Launcher'ın Windows dışına
 > taşınma stratejisini, Wine/Proton/D3DMetal katmanlarını ve platform soyutlamasını tanımlamak.
 
