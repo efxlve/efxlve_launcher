@@ -199,7 +199,9 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     let game_id = game.id.clone();
     let game_title = game.title.clone();
     let steam_app_id = game.steam_app_id.clone();
-    let app_key = format!("custom::{game_id}");
+    // `id` already carries the `custom::` namespace; adding it twice made the
+    // screenshot/session keys disagree with the library key.
+    let app_key = game_id.clone();
 
     crate::legendary::screenshots::set_active_running_game(&app_key, &game_title, Some(working_dir.to_path_buf()), vec![]);
 
@@ -207,12 +209,39 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
         crate::steam::steam_start_achievement_watcher(app_clone.clone(), aid.clone());
     }
 
+    let started = std::time::Instant::now();
+    let _ = app.emit(
+        "game-status",
+        serde_json::json!({ "id": app_key, "running": true }),
+    );
+
     std::thread::spawn(move || {
         let _ = child.wait();
+        let elapsed = started.elapsed().as_secs();
         if let Some(ref aid) = steam_app_id {
             crate::steam::steam_stop_achievement_watcher(aid.clone());
         }
         crate::legendary::screenshots::clear_active_running_game(&app_key);
+
+        // Custom games have no store backend to report hours, so the launcher
+        // records the session the same way it does for Epic titles.
+        let record = if elapsed >= 5 {
+            crate::legendary::playtime::record_session(&app_key, elapsed).ok()
+        } else {
+            None
+        };
+        let mut payload = serde_json::json!({
+            "id": app_key,
+            "running": false,
+            "sessionSeconds": elapsed,
+        });
+        if let Some(record) = record {
+            payload["totalSeconds"] = serde_json::json!(record.total_seconds);
+            payload["sessionCount"] = serde_json::json!(record.session_count);
+            payload["lastPlayed"] = serde_json::json!(record.last_played);
+            payload["lastPlayedTimestamp"] = serde_json::json!(record.last_played_timestamp);
+        }
+        let _ = app_clone.emit("game-status", payload);
         let _ = app_clone.emit("custom-games-changed", ());
     });
 

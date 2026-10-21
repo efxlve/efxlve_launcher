@@ -23,6 +23,8 @@ export function storeVersionLabel(source: GameVersionSource): string {
       return "Riot Games";
     case "amazon":
       return "Amazon Games";
+    case "custom":
+      return "Custom";
     default:
       return "Epic Games";
   }

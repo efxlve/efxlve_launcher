@@ -43,7 +43,7 @@ export function renderCustomGameModal(): void {
   }
 
   backdrop.innerHTML = `
-    <div class="modal custom-game-modal" onclick="event.stopPropagation()">
+    <div class="modal custom-game-modal" data-act="prevent-modal-close">
       <div class="custom-game-head">
         <div class="custom-game-title">${icon("plus", 18)} ${esc(t("customGames.addTitle"))}</div>
         <button class="modal-close-btn" data-act="close-custom-game-modal" title="${esc(t("common.close"))}">${icon("x", 16)}</button>

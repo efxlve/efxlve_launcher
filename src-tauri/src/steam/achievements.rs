@@ -535,7 +535,10 @@ fn is_emulator_unlocked(
             return Some((true, entry.unlock_time, prog));
         }
     }
-    // 5) Order mapping from [SteamAchievements]
+    // 5) Order mapping from [SteamAchievements]. The mapping only says which
+    // entry belongs to which achievement; the entry itself still has to be
+    // achieved, otherwise every mapped achievement (the whole set) was shown
+    // as unlocked.
     for mapped in &parsed.order_mapping {
         let mapped_lower = mapped.to_lowercase();
         if mapped_lower == api_lower || mapped == &one_based || mapped == &zero_based || mapped == &bit_str {
@@ -549,7 +552,7 @@ fn is_emulator_unlocked(
                     return Some((true, entry.unlock_time, prog));
                 }
             }
-            return Some((true, 0, 1.0));
+            return None;
         }
     }
     None

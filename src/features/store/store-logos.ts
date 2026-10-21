@@ -18,6 +18,7 @@ import luna from "../../assets/stores/luna.png";
 import discord from "../../assets/stores/discord.png";
 import spotify from "../../assets/stores/spotify.png";
 import type { StoreId } from "./store-view";
+import { icon } from "../../core/icons";
 
 export const STORE_LOGOS: Record<StoreId, string> = {
   epic,
@@ -39,6 +40,9 @@ EXTRA_LOGOS.amazon = luna;
 
 /** Logo markup for a store card. */
 export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {
+  // Custom games have no storefront mark; a gamepad keeps their rows from
+  // rendering a blank icon slot.
+  if (id === "custom") return icon("gamepad-2", size, className);
   const src = STORE_LOGOS[id as StoreId] || EXTRA_LOGOS[id];
   if (!src) return "";
   return `<img class="${className}" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
