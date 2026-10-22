@@ -13,7 +13,7 @@ import { handleThemeSettingsAction, renderThemeSection } from "./theme-settings"
 import { handleAchievementsSettingsAction, renderAchievementsSettingsView } from "./achievements-settings";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
-import { emptyState, icon } from "../../core/icons";
+import { emptyState, icon, type IconName } from "../../core/icons";
 import { discordPageVisible, hotkeyLabel, isValidHotkey, DEFAULT_OVERLAY_HOTKEY, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
@@ -106,26 +106,26 @@ import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 import { igdbProbeProxy, igdbStatus } from "../../igdb";
 
-const SECTIONS: { id: SettingsSection; labelKey: string }[] = [
-  { id: "account", labelKey: "settings.secAccount" },
-  { id: "downloads", labelKey: "settings.secDownloads" },
-  { id: "stores", labelKey: "settings.secStores" },
-  { id: "cloud", labelKey: "settings.secCloud" },
-  { id: "integrations", labelKey: "settings.secIntegrations" },
-  { id: "social", labelKey: "settings.secSocial" },
-  { id: "launchers", labelKey: "settings.secLaunchers" },
-  { id: "compat", labelKey: "settings.secCompat" },
-  { id: "collections", labelKey: "settings.secCollections" },
-  { id: "cases", labelKey: "settings.secCases" },
-  { id: "controller", labelKey: "settings.secController" },
-  { id: "appearance", labelKey: "settings.secAppearance" },
-  { id: "screenshots", labelKey: "settings.secScreenshots" },
-  { id: "achievements", labelKey: "settings.secAchievements" },
-  { id: "notes", labelKey: "settings.secNotes" },
-  { id: "system", labelKey: "settings.secSystem" },
-  { id: "tasks", labelKey: "settings.secTasks" },
-  { id: "hidden", labelKey: "settings.secHidden" },
-  { id: "about", labelKey: "settings.secAbout" },
+const SECTIONS: { id: SettingsSection; labelKey: string; icon: IconName }[] = [
+  { id: "account", labelKey: "settings.secAccount", icon: "user" },
+  { id: "downloads", labelKey: "settings.secDownloads", icon: "download" },
+  { id: "stores", labelKey: "settings.secStores", icon: "package" },
+  { id: "cloud", labelKey: "settings.secCloud", icon: "cloud" },
+  { id: "integrations", labelKey: "settings.secIntegrations", icon: "link" },
+  { id: "social", labelKey: "settings.secSocial", icon: "users" },
+  { id: "launchers", labelKey: "settings.secLaunchers", icon: "rocket" },
+  { id: "compat", labelKey: "settings.secCompat", icon: "cpu" },
+  { id: "collections", labelKey: "settings.secCollections", icon: "folder" },
+  { id: "cases", labelKey: "settings.secCases", icon: "layers" },
+  { id: "controller", labelKey: "settings.secController", icon: "gamepad-2" },
+  { id: "appearance", labelKey: "settings.secAppearance", icon: "sparkles" },
+  { id: "screenshots", labelKey: "settings.secScreenshots", icon: "camera" },
+  { id: "achievements", labelKey: "settings.secAchievements", icon: "trophy" },
+  { id: "notes", labelKey: "settings.secNotes", icon: "clipboard" },
+  { id: "system", labelKey: "settings.secSystem", icon: "monitor" },
+  { id: "tasks", labelKey: "settings.secTasks", icon: "activity" },
+  { id: "hidden", labelKey: "settings.secHidden", icon: "eye-off" },
+  { id: "about", labelKey: "settings.secAbout", icon: "info" },
 ];
 
 /**
@@ -277,7 +277,7 @@ function renderDownloads(): string {
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
-    ) + profile + cdn, t("settings.secDownloads")) +
+    ) + profile + cdn, t("downloads.settingsTitle")) +
     updates +
     group(
       row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +
@@ -762,12 +762,12 @@ function renderStores(): string {
   const steamCurrency = storeSteamCurrencyEnabled();
   const steamRate = getSteamTryRate();
 
-  const epicDesc = `${t("settings.storeEpicAssistantDesc")}<div style="margin-top:4px;font-size:11.5px;color:var(--text-muted);opacity:0.75;">${t("settings.storeAuthorEfxlve")}</div>`;
+  const epicDesc = `${t("settings.storeEpicAssistantDesc")}<div style="margin-top:4px;font-size:11.5px;color:var(--text-3);opacity:0.75;">${t("settings.storeAuthorEfxlve")}</div>`;
 
   const currencyDesc = `
     ${t("settings.storeSteamCurrencyDesc", { rate: String(steamRate) })}
-    <div style="margin-top:5px;font-size:11.5px;color:var(--text-muted);line-height:1.4;">${t("settings.storeSteamCurrencyRegionNote")}</div>
-    <div style="margin-top:3px;font-size:11px;color:var(--text-muted);opacity:0.75;">${t("settings.storeAuthorEfxlve")}</div>`;
+    <div style="margin-top:5px;font-size:11.5px;color:var(--text-3);line-height:1.4;">${t("settings.storeSteamCurrencyRegionNote")}</div>
+    <div style="margin-top:3px;font-size:11px;color:var(--text-3);opacity:0.75;">${t("settings.storeAuthorEfxlve")}</div>`;
 
   if (S.storeExtensionsState === null && isTauri) {
     loadStoreExtensionsState();
@@ -782,24 +782,24 @@ function renderStores(): string {
   if (!sdbInstalled) {
     sdbControl = `
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted);font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionNotInstalled")}</span>
-        <button type="button" class="btn primary small" data-act="download-store-extension" data-id="steamdb" ${sdbDownloading ? "disabled" : ""} style="padding:4px 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:6px;">
+        <span class="chip">${t("settings.storeExtensionNotInstalled")}</span>
+        <button type="button" class="btn primary small" data-act="download-store-extension" data-id="steamdb" ${sdbDownloading ? "disabled" : ""}>
           ${sdbDownloading ? `<span class="spinner" style="width:12px;height:12px;"></span> <span>${t("settings.storeExtensionDownloading")}</span>` : `${icon("download", 12)} <span>${t("settings.storeExtensionDownload")}</span>`}
         </button>
       </div>`;
   } else {
     sdbControl = `
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge" style="background:rgba(76,175,80,0.15);color:#81c784;font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionInstalled")} (v${sdbExt?.version || ""})</span>
-        <button type="button" class="btn ghost small" data-act="download-store-extension" data-id="steamdb" title="${t("settings.storeExtensionCheckUpdate")}" style="padding:4px 8px;">${icon("refresh", 12)}</button>
-        <button type="button" class="btn ghost small danger" data-act="uninstall-store-extension" data-id="steamdb" title="${t("settings.storeExtensionUninstall")}" style="padding:4px 8px;color:#f44336;">${icon("trash", 12)}</button>
+        <span class="chip ok">${t("settings.storeExtensionInstalled")} (v${sdbExt?.version || ""})</span>
+        <button type="button" class="btn ghost small" data-act="download-store-extension" data-id="steamdb" title="${t("settings.storeExtensionCheckUpdate")}">${icon("refresh", 12)}</button>
+        <button type="button" class="btn ghost small danger" data-act="uninstall-store-extension" data-id="steamdb" title="${t("settings.storeExtensionUninstall")}">${icon("trash", 12)}</button>
         ${toggle("toggle-store-steamdb", steamDb)}
       </div>`;
   }
 
   const steamDbDesc = `
     ${t("settings.storeSteamDbDesc")}
-    <div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+    <div style="margin-top:6px;font-size:11.5px;color:var(--text-3);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
       <span>${t("settings.storeSteamDbAuthor")}</span>
       <a href="https://github.com/SteamDatabase/BrowserExtension" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("github", 12)} GitHub ${icon("external", 10)}</a>
       <a href="https://steamdb.info/extension/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("globe", 12)} steamdb.info ${icon("external", 10)}</a>
@@ -814,24 +814,24 @@ function renderStores(): string {
   if (!asInstalled) {
     asControl = `
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted);font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionNotInstalled")}</span>
-        <button type="button" class="btn primary small" data-act="download-store-extension" data-id="augmented_steam" ${asDownloading ? "disabled" : ""} style="padding:4px 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:6px;">
+        <span class="chip">${t("settings.storeExtensionNotInstalled")}</span>
+        <button type="button" class="btn primary small" data-act="download-store-extension" data-id="augmented_steam" ${asDownloading ? "disabled" : ""}>
           ${asDownloading ? `<span class="spinner" style="width:12px;height:12px;"></span> <span>${t("settings.storeExtensionDownloading")}</span>` : `${icon("download", 12)} <span>${t("settings.storeExtensionDownload")}</span>`}
         </button>
       </div>`;
   } else {
     asControl = `
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge" style="background:rgba(76,175,80,0.15);color:#81c784;font-size:11px;padding:3px 8px;border-radius:4px;">${t("settings.storeExtensionInstalled")} (v${asExt?.version || ""})</span>
-        <button type="button" class="btn ghost small" data-act="download-store-extension" data-id="augmented_steam" title="${t("settings.storeExtensionCheckUpdate")}" style="padding:4px 8px;">${icon("refresh", 12)}</button>
-        <button type="button" class="btn ghost small danger" data-act="uninstall-store-extension" data-id="augmented_steam" title="${t("settings.storeExtensionUninstall")}" style="padding:4px 8px;color:#f44336;">${icon("trash", 12)}</button>
+        <span class="chip ok">${t("settings.storeExtensionInstalled")} (v${asExt?.version || ""})</span>
+        <button type="button" class="btn ghost small" data-act="download-store-extension" data-id="augmented_steam" title="${t("settings.storeExtensionCheckUpdate")}">${icon("refresh", 12)}</button>
+        <button type="button" class="btn ghost small danger" data-act="uninstall-store-extension" data-id="augmented_steam" title="${t("settings.storeExtensionUninstall")}">${icon("trash", 12)}</button>
         ${toggle("toggle-store-augmented-steam", augmentedSteam)}
       </div>`;
   }
 
   const augmentedSteamDesc = `
     ${t("settings.storeAugmentedSteamDesc")}
-    <div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+    <div style="margin-top:6px;font-size:11.5px;color:var(--text-3);display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
       <span>${t("settings.storeAugmentedSteamAuthor")}</span>
       <a href="https://github.com/IsThereAnyDeal/AugmentedSteam" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("github", 12)} GitHub ${icon("external", 10)}</a>
       <a href="https://augmentedsteam.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;opacity:0.85;">${icon("globe", 12)} augmentedsteam.com ${icon("external", 10)}</a>
@@ -1752,6 +1752,7 @@ function searchEmptyHtml(): string {
 
 export function renderSettings(): string {
   const active = SECTIONS.find((s) => s.id === S.settingsSection) ?? SECTIONS[0];
+  const activeGroup = NAV_GROUPS.find((cluster) => cluster.sections.includes(active.id)) ?? NAV_GROUPS[0];
   captureOpenDetails();
   const nav = NAV_GROUPS.map(
     (cluster) => `
@@ -1762,7 +1763,10 @@ export function renderSettings(): string {
             const section = SECTIONS.find((s) => s.id === id);
             if (!section) return "";
             const isActive = section.id === active.id && !settingsSearching;
-            return `<button class="settings-nav-item ${isActive ? "active" : ""}" data-act="settings-section" data-section="${section.id}">${t(section.labelKey)}</button>`;
+            return `<button class="settings-nav-item ${isActive ? "active" : ""}" data-act="settings-section" data-section="${section.id}"${isActive ? ' aria-current="page"' : ""}>
+              <span class="settings-nav-icon">${icon(section.icon, 15)}</span>
+              <span class="settings-nav-label">${t(section.labelKey)}</span>
+            </button>`;
           })
           .join("")}
       </div>`,
@@ -1773,7 +1777,7 @@ export function renderSettings(): string {
   queueMicrotask(() => {
     applySettingsSearch(settingsQuery);
     const activeItem = document.querySelector<HTMLElement>(".settings-nav-item.active");
-    activeItem?.scrollIntoView({ block: "nearest" });
+    activeItem?.scrollIntoView({ block: "nearest", inline: "nearest" });
   });
   return `
     <div class="page settings-page">
@@ -1813,7 +1817,14 @@ export function renderSettings(): string {
                     ${renderSection(s.id)}
                   </section>`,
                 ).join("") + searchEmptyHtml()
-              : renderSection(active.id)
+              : `<div class="settings-panel-head">
+                   <span class="settings-panel-crumb">${esc(t(activeGroup.labelKey))}</span>
+                   <div class="settings-panel-title-row">
+                     <span class="settings-panel-icon">${icon(active.icon, 16)}</span>
+                     <h2 class="settings-panel-title">${esc(t(active.labelKey))}</h2>
+                   </div>
+                 </div>
+                 <div class="settings-panel-body" data-settings-section="${active.id}">${renderSection(active.id)}</div>`
           }
         </div>
       </div>
@@ -1898,6 +1909,17 @@ function applySettingsSearch(query: string): void {
   // A heading goes with its content: walk the following siblings until the next
   // heading and keep the heading only when something readable is left.
   panel.querySelectorAll<HTMLElement>(".section-title").forEach((title) => {
+    // The theme gallery's title lives inside its own header, not next to the
+    // cards. Its section already carries every theme name in `data-search`, so
+    // the heading follows the section instead of looking for a sibling unit.
+    if (title.closest(".theme-section-titles")) {
+      const section = title.closest<HTMLElement>(".theme-section");
+      title.classList.toggle(
+        SEARCH_HIDE_CLASS,
+        searching && Boolean(section?.classList.contains(SEARCH_HIDE_CLASS)),
+      );
+      return;
+    }
     const head = title.closest<HTMLElement>(".settings-section-head, .settings-hidden-head") ?? title;
     let sibling = head.nextElementSibling;
     let anyVisible = false;

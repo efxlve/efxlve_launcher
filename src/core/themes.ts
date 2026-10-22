@@ -13,6 +13,7 @@
  */
 
 import { SURFACE_KEY } from "./constants";
+import { t } from "../i18n";
 
 export interface ThemeDef {
   /** Stored in `localStorage` and used as the `data-surface` value. */
@@ -374,7 +375,7 @@ const CRIMSON: ThemeDef = {
     "--text-2": "#cbb1b8",
     "--text-3": "#7e666e",
     "--accent": "#e11d48",
-    "--accent-hover": "#f43f5e",
+    "--accent-hover": "#be123c",
     "--accent-tint": "rgba(225, 29, 72, 0.16)",
     "--on-accent": "#ffffff",
     "--ok": "#2fb36d",
@@ -519,7 +520,7 @@ const VIOLET: ThemeDef = {
     "--text-2": "#a9a2b8",
     "--text-3": "#6d6680",
     "--accent": "#7c3aed",
-    "--accent-hover": "#8b5cf6",
+    "--accent-hover": "#6d28d9",
     "--accent-tint": "rgba(124, 58, 237, 0.2)",
     "--on-accent": "#ffffff",
     "--ok": "#2fb36d",
@@ -587,8 +588,8 @@ const DRACULA: ThemeDef = {
     "--line": "rgba(189, 147, 249, 0.14)",
     "--line-strong": "rgba(189, 147, 249, 0.28)",
     "--text": "#f8f8f2",
-    "--text-2": "#6272a4",
-    "--text-3": "#44475a",
+    "--text-2": "#a6b1d6",
+    "--text-3": "#7c87b3",
     "--accent": "#bd93f9",
     "--accent-hover": "#ff79c6",
     "--accent-tint": "rgba(189, 147, 249, 0.18)",
@@ -738,9 +739,9 @@ const SYNTHWAVE: ThemeDef = {
     "--text-2": "#cbbcdb",
     "--text-3": "#7d6b99",
     "--accent": "#ff2a85",
-    "--accent-hover": "#05d9e8",
+    "--accent-hover": "#ff5aa0",
     "--accent-tint": "rgba(255, 42, 133, 0.18)",
-    "--on-accent": "#ffffff",
+    "--on-accent": "#20050f",
     "--ok": "#05d9e8",
     "--ok-hover": "#45effd",
     "--ok-tint": "rgba(5, 217, 232, 0.18)",
@@ -911,7 +912,9 @@ function luminance(color: string): number {
  * otherwise it generates harmonious surfaces from the background.
  */
 export function customTokens(input: CustomThemeInput): Record<string, string> {
-  const onAccent = luminance(input.accent) > 0.55 ? "#101318" : "#ffffff";
+  // 0.18 is the luminance where black text starts to beat white text on the
+  // accent. A plain "is it bright" check left white text on hot pink and cyan.
+  const onAccent = luminance(input.accent) > 0.18 ? "#101318" : "#ffffff";
   const glass = Boolean(input.scene) || input.cardGlass === true;
   const baseSurface = input.surface && HEX.test(input.surface) ? input.surface : null;
 
@@ -992,8 +995,8 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
     "--line": line,
     "--line-strong": lineStrong,
     "--text": "#f7f7fa",
-    "--text-2": mix("#f7f7fa", input.bg, 0.55),
-    "--text-3": mix("#f7f7fa", input.bg, 0.3),
+    "--text-2": mix("#f7f7fa", input.bg, 0.38),
+    "--text-3": mix("#f7f7fa", input.bg, 0.58),
     "--accent": input.accent,
     "--accent-hover": input.accentHover ?? lighten(input.accent, 0.12),
     "--accent-2": secAccent,
@@ -1034,18 +1037,21 @@ function sceneRules(id: string, input: CustomThemeInput): string {
     rules.push(`${selector} body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: ${scrim}; ${blurFilter} pointer-events: none; }`);
     // Main column and view are transparent so the wallpaper shows in library/settings
     rules.push(`${selector} #main-col, ${selector} #view { background: transparent !important; }`);
-    // The game page overlay MUST have its own background so the library (#view) does NOT bleed through!
-    rules.push(`${selector} .overlay { background: var(--bg) !important; }`);
+    // The game page is its own opaque layer. It carries the same scene, dimmed
+    // by the same scrim, so the library cannot bleed through and the theme still
+    // reaches the page the user spends the most time on.
+    rules.push(`${selector} .overlay { background: linear-gradient(${scrim}, ${scrim}), ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`);
     rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
   } else if (input.cardGlass) {
     rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
   }
 
   if (input.glow && input.glow !== "none") {
-    rules.push(`${selector} .btn.primary { box-shadow: var(--accent-glow) !important; }`);
+    rules.push(`${selector} :is(.btn.primary, .btn.play) { box-shadow: var(--accent-glow) !important; }`);
   }
   if (input.accent2 && HEX.test(input.accent2)) {
-    rules.push(`${selector} .btn.primary { background: var(--accent-gradient) !important; }`);
+    rules.push(`${selector} :is(.btn.primary, .btn.play) { background: var(--accent-gradient) !important; }`);
+    rules.push(`${selector} :is(.progress > span, .gp-progress-fill, .ach-group-bar-fill, .tm-bar-fill) { background: var(--accent-gradient) !important; }`);
   }
 
   return rules.join("\n");
@@ -1174,6 +1180,12 @@ export function deleteCustomTheme(id: string): void {
   writeCustomInputs(list);
 }
 
+/** First `#rrggbb` in a value, for gradients that cannot be stored as-is. */
+function firstHex(value: string): string | null {
+  const match = value.match(/#[0-9a-f]{6}/i);
+  return match ? match[0] : null;
+}
+
 /** Duplicates any theme (built-in or custom) as a new custom theme. */
 export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
   const custom = getCustomThemeInput(sourceId);
@@ -1187,12 +1199,12 @@ export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
   }
 
   const def = themeById(sourceId);
-  const bg = HEX.test(def.bg) ? def.bg : "#141418";
-  const accent = HEX.test(def.accent) ? def.accent : "#7c3aed";
+  const bg = HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418";
+  const accent = HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed";
   const surface = def.surface && HEX.test(def.surface) ? def.surface : undefined;
 
   return saveCustomTheme({
-    name: `${def.name ?? def.id}${copySuffix}`,
+    name: `${def.name ?? (def.labelKey ? t(def.labelKey) : def.id)}${copySuffix}`,
     bg,
     surface,
     accent,
@@ -1234,10 +1246,10 @@ export function exportThemeJson(id: string): string {
   return JSON.stringify(
     {
       efxlve_theme: 2,
-      name: def.name ?? def.id,
-      bg: HEX.test(def.bg) ? def.bg : "#141418",
+      name: def.name ?? (def.labelKey ? t(def.labelKey) : def.id),
+      bg: HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418",
       surface: def.surface,
-      accent: HEX.test(def.accent) ? def.accent : "#7c3aed",
+      accent: HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed",
       light: def.scheme === "light",
       radius: "default",
       exportedAt: Date.now(),
@@ -1260,7 +1272,23 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
     const name = String(parsed.name || "Imported Theme").slice(0, 32);
     const surface = typeof parsed.surface === "string" && HEX.test(parsed.surface) ? parsed.surface : undefined;
     const accentHover = typeof parsed.accentHover === "string" && HEX.test(parsed.accentHover) ? parsed.accentHover : undefined;
+    const accent2 = typeof parsed.accent2 === "string" && HEX.test(parsed.accent2) ? parsed.accent2 : undefined;
+    const glow =
+      parsed.glow === "subtle" || parsed.glow === "radiant" || parsed.glow === "neon"
+        ? parsed.glow
+        : "none";
+    const cardGlass = parsed.cardGlass === true;
+    const borderStyle =
+      parsed.borderStyle === "contrast" || parsed.borderStyle === "accent"
+        ? parsed.borderStyle
+        : "subtle";
     const light = parsed.light === true;
+    const scene =
+      typeof parsed.scene === "string" &&
+      parsed.scene.startsWith("data:image/") &&
+      parsed.scene.length < 2_000_000
+        ? parsed.scene
+        : undefined;
     const sceneBlur = typeof parsed.sceneBlur === "number" ? Math.max(0, Math.min(30, parsed.sceneBlur)) : 0;
     const sceneOpacity = typeof parsed.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, parsed.sceneOpacity)) : undefined;
     const radius = parsed.radius === "sharp" || parsed.radius === "round" ? parsed.radius : "default";
@@ -1271,7 +1299,12 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
       surface,
       accent,
       accentHover,
+      accent2,
+      glow,
+      cardGlass,
+      borderStyle,
       light,
+      scene,
       sceneBlur,
       sceneOpacity,
       radius,
@@ -1312,11 +1345,10 @@ function tokenStyle(): HTMLStyleElement {
 }
 
 /**
- * Applies a theme and remembers it. Returns the id that was applied, so the
- * caller can store `S.surface` without a second lookup.
+ * Writes a theme to the document without storing it. The theme's tokens and
+ * generated scene rules replace the previous rule set on every call.
  */
-export function applySurface(id: string, persist = true): string {
-  const theme = themeById(normalizeSurface(id));
+function paintTheme(theme: ThemeDef): void {
   const root = document.documentElement;
   // Black is the base palette in `tokens.css`: it needs no attribute.
   if (theme.id === DEFAULT_THEME) delete root.dataset.surface;
@@ -1329,14 +1361,48 @@ export function applySurface(id: string, persist = true): string {
   // A user theme can carry a backdrop image; its rules are generated with the
   // theme, so the CSS files stay free of per-user selectors.
   const custom = theme.customInput ?? getCustomThemeInput(theme.id);
-  const scene = custom
-    ? sceneRules(theme.id, custom)
-    : "";
+  const scene = custom ? sceneRules(theme.id, custom) : "";
 
   tokenStyle().textContent = body || scene
     ? `${body ? `:root[data-surface="${theme.id}"]{${body}}` : ""}${scene ? `\n${scene}` : ""}`
     : "";
   root.style.colorScheme = theme.scheme;
+}
+
+/** The id the designer paints while its draft is on screen. Never stored. */
+const PREVIEW_THEME_ID = "custom-preview";
+
+/**
+ * Paints an unsaved draft, so "Test in App" shows the real shell instead of
+ * writing a throwaway theme to the user's list. Closing the designer calls
+ * `applySurface(S.surface, false)` and restores the previous look.
+ */
+export function previewCustomTheme(input: CustomThemeInput): void {
+  paintTheme({
+    id: PREVIEW_THEME_ID,
+    labelKey: "",
+    name: input.name,
+    bg: input.bg,
+    surface: input.surface,
+    accent: input.accent,
+    scheme: input.light ? "light" : "dark",
+    tokens: customTokens(input),
+    custom: true,
+    scene: input.scene,
+    sceneBlur: input.sceneBlur,
+    sceneOpacity: input.sceneOpacity,
+    radius: input.radius,
+    customInput: input,
+  });
+}
+
+/**
+ * Applies a theme and remembers it. Returns the id that was applied, so the
+ * caller can store `S.surface` without a second lookup.
+ */
+export function applySurface(id: string, persist = true): string {
+  const theme = themeById(normalizeSurface(id));
+  paintTheme(theme);
 
   if (persist) {
     try {

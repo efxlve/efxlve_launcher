@@ -32,6 +32,8 @@
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text-2);
 }
 
 .theme-section-titles .page-sub {
@@ -55,7 +57,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 8px 12px;
+  padding: 8px 10px;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -64,13 +66,22 @@
 .theme-filter-seg {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
 }
 
 .theme-filter-seg > button {
   height: 28px;
   padding: 0 12px;
+  border-radius: var(--r-sm);
   font-size: 12px;
+}
+
+.theme-filter-seg > button.active {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .theme-active-indicator {
@@ -78,8 +89,18 @@
   color: var(--text-2);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   white-space: nowrap;
+  padding-right: 4px;
+}
+
+.theme-active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ok);
+  box-shadow: 0 0 0 3px var(--ok-tint);
 }
 
 .theme-active-indicator strong {
@@ -88,10 +109,11 @@
 }
 
 /* --- Theme Grid --- */
-.theme-grid {
+.theme-grid,
+.theme-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(204px, 1fr));
+  gap: 12px;
   width: 100%;
 }
 
@@ -106,24 +128,24 @@
   overflow: hidden;
   cursor: pointer;
   user-select: none;
-  transition: transform var(--ease), border-color var(--ease), box-shadow var(--ease);
+  transition: border-color var(--ease), box-shadow var(--ease), background-color var(--ease);
 }
 
 .theme-card:hover {
   border-color: var(--line-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  background: var(--surface-2);
 }
 
 .theme-card.active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 8px 28px var(--accent-tint);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 /* --- Card Mini Launcher Preview Mockup --- */
 .theme-card-preview {
   position: relative;
-  height: 102px;
+  aspect-ratio: 16 / 9;
+  min-height: 112px;
   width: 100%;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
@@ -138,6 +160,7 @@
   background-size: cover;
   background-repeat: no-repeat;
   pointer-events: none;
+  transform: scale(1.08);
 }
 
 .theme-card-preview-scrim {
@@ -165,7 +188,6 @@
   align-items: center;
   gap: 3px;
   padding: 0 5px;
-  background: rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
 }
 
@@ -173,7 +195,6 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .theme-mock-body {
@@ -277,16 +298,19 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px 11px;
+  min-width: 0;
 }
 
 .theme-card-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
 }
 
 .theme-card-title {
+  width: 100%;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -298,6 +322,7 @@
 .theme-card-tags {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -348,7 +373,7 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--line-strong);
   flex-shrink: 0;
 }
 
@@ -405,14 +430,45 @@
    ========================================================================== */
 
 .theme-designer-dialog {
-  width: min(880px, 94vw);
+  width: min(960px, 96vw);
   max-height: 90vh;
+}
+
+/* The shared modal frame leaves the padding to each dialog. The designer and
+   the importer are the only two that build their head and foot by hand. */
+.theme-designer-dialog > .modal-head,
+.theme-import-dialog > .modal-head {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-designer-dialog > .modal-foot,
+.theme-import-dialog > .modal-foot {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.modal-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modal-sub {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
 }
 
 .theme-designer-body {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 24px;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 20px;
   min-height: 0;
   flex: 1;
   overflow: hidden;
@@ -422,7 +478,7 @@
 .theme-designer-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   overflow-y: auto;
   min-height: 0;
   padding-right: 6px;
@@ -433,6 +489,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-form-section:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .theme-form-section-title {
@@ -483,7 +546,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--line-strong);
 }
 
 /* Color input rows */
@@ -630,6 +693,38 @@
   color: var(--text-3);
 }
 
+.theme-preview-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+
+.theme-preview-tab {
+  flex: 1;
+  height: 26px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+
+.theme-preview-tab:hover { color: var(--text); }
+.theme-preview-tab.active {
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .theme-pulse-dot {
   width: 6px;
   height: 6px;
@@ -641,13 +736,13 @@
 .theme-preview-window {
   position: relative;
   flex: 1;
-  min-height: 280px;
+  min-height: 320px;
   border-radius: var(--r-md);
   border: 1px solid var(--line-strong);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-pop);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -673,15 +768,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 10px;
-  background: rgba(0, 0, 0, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--preview-line, var(--line));
   flex-shrink: 0;
 }
 
 .theme-preview-win-title {
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--preview-text-2, var(--text-2));
   letter-spacing: 0.02em;
 }
 
@@ -695,7 +789,6 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
 }
 
 .theme-preview-body {
@@ -710,7 +803,7 @@
   flex-direction: column;
   gap: 5px;
   padding: 8px 6px;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--preview-line, var(--line));
 }
 
 .theme-preview-nav-item {
@@ -721,11 +814,10 @@
   padding: 0 6px;
   font-size: 10px;
   font-weight: 500;
-  color: var(--text-2);
+  color: var(--preview-text-2, var(--text-2));
 }
 
 .theme-preview-nav-item.active {
-  color: var(--text);
   font-weight: 600;
 }
 
@@ -738,14 +830,14 @@
 }
 
 .theme-preview-search {
-  height: 22px;
+  height: 24px;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--preview-line, var(--line));
   display: flex;
   align-items: center;
   padding: 0 8px;
   font-size: 9.5px;
-  color: var(--text-3);
+  color: var(--preview-text-2, var(--text-3));
 }
 
 .theme-preview-cards {
@@ -756,11 +848,10 @@
 
 .theme-preview-card {
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--preview-line, var(--line));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-preview-card-art {
@@ -777,7 +868,7 @@
 .theme-preview-card-name {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--preview-text, var(--text));
 }
 
 .theme-preview-play-btn {
@@ -1215,34 +1306,6 @@
   width: 100%;
 }
 
-/* Preview Switcher Tabs */
-.theme-preview-subnav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.35);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.theme-preview-subnav-btn {
-  padding: 2px 8px;
-  font-size: 9.5px;
-  font-weight: 500;
-  border-radius: 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.theme-preview-subnav-btn.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  font-weight: 600;
-}
-
 /* Preview Hero View */
 .theme-preview-hero {
   position: relative;
@@ -1303,24 +1366,35 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--preview-line, var(--line));
 }
 
 .theme-preview-setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   font-size: 9.5px;
-  color: var(--text);
+  color: var(--preview-text, var(--text));
 }
+
+.theme-preview-skel {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+}
+
+.theme-preview-mini-title { font-size: 9.5px; font-weight: 600; }
+.theme-preview-mini-sub { font-size: 8.5px; margin-top: 1px; }
 
 .theme-preview-mock-toggle {
   width: 24px;
   height: 13px;
   border-radius: 10px;
   position: relative;
+  flex-shrink: 0;
 }
 
 .theme-preview-mock-toggle::after {
@@ -1331,7 +1405,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--preview-on-accent, #ffffff);
 }
 
 /* Dropzone for Import */

@@ -15,11 +15,13 @@ import { esc } from "../../core/utils";
 import {
   applySurface,
   customThemes,
+  customTokens,
   deleteCustomTheme,
   duplicateTheme,
   exportThemeJson,
   getCustomThemeInput,
   importThemeJson,
+  previewCustomTheme,
   saveCustomTheme,
   themeById,
   themes,
@@ -77,6 +79,9 @@ export function renderThemeSection(): string {
 
   const activeTheme = themeById(S.surface);
   const activeName = activeTheme.name ?? t(activeTheme.labelKey);
+  const themeNames = allThemes
+    .map((theme) => theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id))
+    .join(" ");
 
   const cardsHtml =
     filtered.length > 0
@@ -92,7 +97,7 @@ export function renderThemeSection(): string {
         : "";
 
   return `
-    <div class="theme-section" data-search="${esc(`${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance`)}">
+    <div class="theme-section" data-search="${esc(`${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames}`)}">
       <div class="theme-section-header">
         <div class="theme-section-titles">
           <h3 class="section-title">${esc(t("settings.themeTitle"))}</h3>
@@ -130,7 +135,7 @@ export function renderThemeSection(): string {
         </div>
       </div>
 
-      <div class="theme-card-grid">
+      <div class="theme-card-grid theme-grid">
         ${cardsHtml}
       </div>
     </div>
@@ -147,6 +152,8 @@ function renderThemeCard(theme: ThemeDef): string {
   const surface2 = theme.tokens?.["--surface-2"] ?? (theme.scheme === "light" ? "#f3f4f6" : "#242530");
   const accent = theme.accent;
   const lineColor = theme.tokens?.["--line"] ?? (theme.scheme === "light" ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)");
+  const dotColor = theme.tokens?.["--line-strong"] ?? lineColor;
+  const winbarColor = theme.scheme === "light" ? "rgba(15, 23, 42, 0.06)" : "rgba(0, 0, 0, 0.4)";
 
   const hasScene = Boolean(theme.scene);
   const sceneBlur = theme.sceneBlur ?? 0;
@@ -156,15 +163,15 @@ function renderThemeCard(theme: ThemeDef): string {
   const cardArtGradient = `linear-gradient(135deg, ${accent}33 0%, ${surface2} 100%)`;
 
   return `
-    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}">
+    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
       <div class="theme-card-preview" style="background: ${esc(previewBg)};">
         ${hasScene ? `<div class="theme-card-preview-scene" style="background-image: url('${esc(theme.scene!)}'); filter: blur(${sceneBlur}px);"></div>` : ""}
         <div class="theme-card-preview-scrim" style="background: ${scrimColor};"></div>
-        <div class="theme-card-mockup">
-          <div class="theme-mock-winbar">
-            <span class="theme-mock-dot"></span>
-            <span class="theme-mock-dot"></span>
-            <span class="theme-mock-dot"></span>
+        <div class="theme-card-mockup" style="border-color: ${esc(lineColor)};">
+          <div class="theme-mock-winbar" style="background: ${winbarColor};">
+            <span class="theme-mock-dot" style="background: ${esc(dotColor)};"></span>
+            <span class="theme-mock-dot" style="background: ${esc(dotColor)};"></span>
+            <span class="theme-mock-dot" style="background: ${esc(dotColor)};"></span>
           </div>
           <div class="theme-mock-body">
             <div class="theme-mock-sidebar" style="background: ${esc(surface1)}; border-color: ${esc(lineColor)};">
@@ -195,13 +202,13 @@ function renderThemeCard(theme: ThemeDef): string {
           <span class="theme-card-title" title="${esc(displayName)}">${esc(displayName)}</span>
           <div class="theme-card-tags">
             ${theme.custom ? `<span class="chip micro custom">${icon("sparkles", 9)} ${esc(t("settings.themeCustomBadge"))}</span>` : ""}
-            ${hasScene ? `<span class="chip micro glass">${icon("image", 9)} Cam</span>` : ""}
-            ${theme.scheme === "light" ? `<span class="chip micro light">Açık</span>` : ""}
+            ${hasScene ? `<span class="chip micro glass" title="${esc(t("settings.themeScene"))}">${icon("image", 9)}</span>` : ""}
+            ${theme.scheme === "light" ? `<span class="chip micro light">${esc(t("settings.themeFilterLight"))}</span>` : ""}
           </div>
         </div>
 
         <div class="theme-card-footer">
-          <div class="theme-swatch-cluster" title="Palet: ${esc(theme.bg)}, ${esc(surface1)}, ${esc(accent)}">
+          <div class="theme-swatch-cluster" title="${esc(`${theme.bg} · ${surface1} · ${accent}`)}">
             <span class="theme-dot" style="background: ${esc(theme.bg)};"></span>
             <span class="theme-dot" style="background: ${esc(surface1)};"></span>
             <span class="theme-dot" style="background: ${esc(accent)}; border-color: ${esc(accent)};"></span>
@@ -367,7 +374,7 @@ function renderDesignerModal(): void {
           <div class="theme-designer-form">
             <!-- Basic info -->
             <div class="theme-form-section">
-              <span class="theme-form-section-title">Temel Bilgiler</span>
+              <span class="theme-form-section-title">${esc(t("settings.themeTitle"))}</span>
               <input id="td-name" class="text-input" maxlength="32" placeholder="${esc(t("settings.themeNamePlaceholder"))}" value="${esc(designerDraft.name)}" />
               
               <div class="seg" style="align-self:flex-start;margin-top:4px;">
@@ -391,7 +398,7 @@ function renderDesignerModal(): void {
             <!-- Colors & Gradient -->
             <div class="theme-form-section">
               <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span class="theme-form-section-title">Renk Ayarları</span>
+                <span class="theme-form-section-title">${esc(t("settings.themeAccent"))}</span>
                 <label style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2);cursor:pointer;">
                   <input type="checkbox" id="td-harmonize" ${harmonizeSurfaces ? "checked" : ""} />
                   <span>${esc(t("settings.themeHarmonize"))}</span>
@@ -509,7 +516,7 @@ function renderDesignerModal(): void {
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
                   <div style="display:flex;align-items:center;gap:8px;">
                     <img class="theme-scene-thumb-preview" src="${esc(designerDraft.scene)}" alt="" />
-                    <span class="theme-hint" style="font-size:11px;">Duvar kağıdı aktif</span>
+                    <span class="theme-hint" style="font-size:11px;">${icon("check", 11)} ${esc(t("settings.themeScene"))}</span>
                   </div>
                   <button type="button" class="btn ghost small" data-act="td-clear-scene" style="color:var(--err);padding:2px 8px;font-size:11px;">
                     ${icon("trash", 12)} ${esc(t("settings.themeSceneClear"))}
@@ -563,6 +570,18 @@ function renderDesignerModal(): void {
               </button>
             </div>
 
+            <div class="theme-preview-tabs" role="tablist">
+              <button type="button" class="theme-preview-tab ${previewSubTab === "library" ? "active" : ""}" data-act="td-tab" data-tab="library" role="tab" aria-selected="${previewSubTab === "library"}">
+                ${esc(t("settings.themePreviewTabLibrary"))}
+              </button>
+              <button type="button" class="theme-preview-tab ${previewSubTab === "hero" ? "active" : ""}" data-act="td-tab" data-tab="hero" role="tab" aria-selected="${previewSubTab === "hero"}">
+                ${esc(t("settings.themePreviewTabGame"))}
+              </button>
+              <button type="button" class="theme-preview-tab ${previewSubTab === "settings" ? "active" : ""}" data-act="td-tab" data-tab="settings" role="tab" aria-selected="${previewSubTab === "settings"}">
+                ${esc(t("settings.themePreviewTabSettings"))}
+              </button>
+            </div>
+
             <div id="theme-designer-preview-window" class="theme-preview-window">
               <!-- Dynamically populated by updateDesignerLivePreview -->
             </div>
@@ -600,12 +619,16 @@ function updateDesignerLivePreview(): void {
   const surface = designerDraft.surface ?? (designerDraft.light ? "#ffffff" : "#181820");
   const accent = designerDraft.accent;
   const accent2 = designerDraft.accent2 ?? designerDraft.accentHover ?? accent;
+  const tokens = customTokens(designerDraft);
+  const textColor = tokens["--text"] ?? (designerDraft.light ? "#111318" : "#ffffff");
+  const text2 = tokens["--text-2"] ?? textColor;
+  const lineColor = tokens["--line"] ?? "rgba(255,255,255,0.08)";
+  const accentTint = tokens["--accent-tint"] ?? `${accent}22`;
   const hasScene = Boolean(designerDraft.scene);
   const blur = designerDraft.sceneBlur ?? 0;
   const opacity = designerDraft.sceneOpacity ?? (designerDraft.light ? 0.38 : 0.52);
   const scrimColor = designerDraft.light ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`;
-  const textColor = designerDraft.light ? "#111318" : "#ffffff";
-  const onAccentColor = designerDraft.light ? "#ffffff" : "#000000";
+  const onAccentColor = tokens["--on-accent"] ?? (designerDraft.light ? "#ffffff" : "#000000");
 
   const buttonBg = designerDraft.accent2 ? `linear-gradient(135deg, ${accent} 0%, ${accent2} 100%)` : accent;
 
@@ -619,6 +642,12 @@ function updateDesignerLivePreview(): void {
   }
 
   container.style.backgroundColor = bg;
+  container.style.setProperty("--preview-text", textColor);
+  container.style.setProperty("--preview-text-2", text2);
+  container.style.setProperty("--preview-line", lineColor);
+  container.style.setProperty("--preview-accent", accent);
+  container.style.setProperty("--preview-accent-tint", accentTint);
+  container.style.setProperty("--preview-on-accent", onAccentColor);
   if (hasScene && designerDraft.scene) {
     container.style.backgroundImage = `url("${designerDraft.scene}")`;
   } else {
@@ -634,29 +663,29 @@ function updateDesignerLivePreview(): void {
 
   if (previewSubTab === "hero") {
     mainContentHtml = `
-      <div class="theme-preview-hero" style="background-image: linear-gradient(135deg, ${accent}55 0%, #0d1117 100%);">
+      <div class="theme-preview-hero" style="background-image: linear-gradient(135deg, ${accent}66 0%, ${surface} 100%);">
         <div class="theme-preview-hero-scrim"></div>
         <div class="theme-preview-hero-content">
           <div>
             <div class="theme-preview-hero-title">Cyberpunk 2077</div>
             <div class="theme-preview-hero-meta">
-              <span>${icon("clock", 10)} 142s</span>
-              <span>${icon("trophy", 10)} 34/44 Başarım</span>
+              <span>${icon("clock", 10)} 142h</span>
+              <span>${icon("trophy", 10)} 34/44</span>
             </div>
           </div>
           <button type="button" class="theme-preview-hero-btn" style="${playBtnStyle}">
-            ${icon("play", 11)} <span>Oyna</span>
+            ${icon("play", 11)} <span>${esc(t("common.play"))}</span>
           </button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
         <div class="theme-preview-card" style="${cardStyle};padding:8px;">
-          <span style="font-size:9.5px;font-weight:600;color:${textColor};">Ek Paket: Phantom Liberty</span>
-          <span style="font-size:8.5px;color:rgba(255,255,255,0.6);">Yüklendi</span>
+          <span class="theme-preview-mini-title" style="color:${textColor};">${esc(t("drawer.dlcs"))}</span>
+          <span class="theme-preview-mini-sub" style="color:${text2};">${esc(t("common.installed"))}</span>
         </div>
         <div class="theme-preview-card" style="${cardStyle};padding:8px;">
-          <span style="font-size:9.5px;font-weight:600;color:${textColor};">Bulut Senkronizasyonu</span>
-          <span style="font-size:8.5px;color:rgba(255,255,255,0.6);">Güncel</span>
+          <span class="theme-preview-mini-title" style="color:${textColor};">${esc(t("drawer.cloudTitle"))}</span>
+          <span class="theme-preview-mini-sub" style="color:${text2};">v1.2.0</span>
         </div>
       </div>
     `;
@@ -664,45 +693,45 @@ function updateDesignerLivePreview(): void {
     mainContentHtml = `
       <div class="theme-preview-settings-group" style="${cardStyle}">
         <div class="theme-preview-setting-item">
-          <span>Oyun İçi Katman</span>
+          <span class="theme-preview-skel" style="width:42%;background:${text2};opacity:0.3;"></span>
           <div class="theme-preview-mock-toggle" style="background:${accent};"></div>
         </div>
         <div class="theme-preview-setting-item">
-          <span>FPS Göstergesi</span>
+          <span class="theme-preview-skel" style="width:33%;background:${text2};opacity:0.3;"></span>
           <div class="theme-preview-mock-toggle" style="background:${accent};"></div>
         </div>
         <div class="theme-preview-setting-item">
-          <span>Başarım Bildirimleri</span>
+          <span class="theme-preview-skel" style="width:48%;background:${text2};opacity:0.3;"></span>
           <div class="theme-preview-mock-toggle" style="background:${accent};"></div>
         </div>
       </div>
       <div class="theme-preview-settings-group" style="${cardStyle};margin-top:6px;">
         <div class="theme-preview-setting-item">
-          <span>Ses Seviyesi</span>
+          <span class="theme-preview-skel" style="width:28%;background:${text2};opacity:0.3;"></span>
           <span style="font-size:9px;font-weight:700;color:${accent};">80%</span>
         </div>
       </div>
     `;
   } else {
     mainContentHtml = `
-      <div class="theme-preview-search" style="background: ${surface};">
-        Oyunlarda ara...
+      <div class="theme-preview-search" style="background: ${surface}; border-color: ${lineColor}; color: ${text2};">
+        ${esc(t("lib.searchPlaceholder"))}
       </div>
 
       <div class="theme-preview-cards">
         <div class="theme-preview-card" style="${cardStyle}">
-          <div class="theme-preview-card-art" style="background: linear-gradient(135deg, ${accent}44, #12151b);"></div>
+          <div class="theme-preview-card-art" style="background: linear-gradient(135deg, ${accent}44, ${surface} 100%);"></div>
           <div class="theme-preview-card-meta">
             <span class="theme-preview-card-name">Cyberpunk</span>
-            <span class="theme-preview-play-btn" style="${playBtnStyle}">Oyna</span>
+            <span class="theme-preview-play-btn" style="${playBtnStyle}">${esc(t("common.play"))}</span>
           </div>
         </div>
 
         <div class="theme-preview-card" style="${cardStyle}">
-          <div class="theme-preview-card-art" style="background: linear-gradient(135deg, #2b3a4a, #10141c);"></div>
+          <div class="theme-preview-card-art" style="background: linear-gradient(135deg, ${accent}22, ${surface} 100%);"></div>
           <div class="theme-preview-card-meta">
             <span class="theme-preview-card-name">Witcher 3</span>
-            <span class="theme-preview-play-btn" style="${playBtnStyle}">Oyna</span>
+            <span class="theme-preview-play-btn" style="${playBtnStyle}">${esc(t("common.play"))}</span>
           </div>
         </div>
       </div>
@@ -712,36 +741,23 @@ function updateDesignerLivePreview(): void {
   container.innerHTML = `
     <div class="theme-preview-scrim" style="${scrimStyle}"></div>
     <div class="theme-preview-shell">
-      <div class="theme-preview-winbar">
-        <span class="theme-preview-win-title">Efxlve Launcher</span>
+      <div class="theme-preview-winbar" style="background:${designerDraft.light ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.35)"};border-color:${lineColor};">
+        <span class="theme-preview-win-title" style="color:${text2};">Efxlve Launcher</span>
         <div class="theme-preview-win-dots">
-          <span class="theme-preview-win-dot"></span>
-          <span class="theme-preview-win-dot"></span>
-          <span class="theme-preview-win-dot"></span>
+          <span class="theme-preview-win-dot" style="background:${lineColor};"></span>
+          <span class="theme-preview-win-dot" style="background:${lineColor};"></span>
+          <span class="theme-preview-win-dot" style="background:${lineColor};"></span>
         </div>
       </div>
 
-      <!-- Preview Subnav -->
-      <div class="theme-preview-subnav">
-        <button type="button" class="theme-preview-subnav-btn ${previewSubTab === "library" ? "active" : ""}" data-act="td-tab" data-tab="library">
-          ${esc(t("settings.themePreviewTabLibrary"))}
-        </button>
-        <button type="button" class="theme-preview-subnav-btn ${previewSubTab === "hero" ? "active" : ""}" data-act="td-tab" data-tab="hero">
-          ${esc(t("settings.themePreviewTabGame"))}
-        </button>
-        <button type="button" class="theme-preview-subnav-btn ${previewSubTab === "settings" ? "active" : ""}" data-act="td-tab" data-tab="settings">
-          ${esc(t("settings.themePreviewTabSettings"))}
-        </button>
-      </div>
-
       <div class="theme-preview-body">
-        <div class="theme-preview-sidebar" style="${sidebarStyle}">
+        <div class="theme-preview-sidebar" style="${sidebarStyle};border-color:${lineColor};">
           <div class="theme-preview-nav-item active" style="background: ${accent}26; color: ${accent}; border-left: 2px solid ${accent};">
-            Kütüphane
+            ${esc(t("nav.library"))}
           </div>
-          <div class="theme-preview-nav-item">Mağazalar</div>
-          <div class="theme-preview-nav-item">İndirmeler</div>
-          <div class="theme-preview-nav-item">Ayarlar</div>
+          <div class="theme-preview-nav-item" style="color:${text2};">${esc(t("nav.store"))}</div>
+          <div class="theme-preview-nav-item" style="color:${text2};">${esc(t("nav.downloads"))}</div>
+          <div class="theme-preview-nav-item" style="color:${text2};">${esc(t("nav.settings"))}</div>
         </div>
 
         <div class="theme-preview-main">
@@ -1122,7 +1138,8 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         if (newId) {
           S.surface = applySurface(newId);
           render();
-          toast(t("settings.themeSaved", { name: "Kopya Tema" }), "ok");
+          const copy = themeById(newId);
+          toast(t("settings.themeSaved", { name: copy.name ?? t("settings.themeCustomBadge") }), "ok");
         }
       }
       return true;
@@ -1265,6 +1282,11 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
       const tab = el.dataset.tab as "library" | "hero" | "settings";
       if (tab) {
         previewSubTab = tab;
+        document.querySelectorAll<HTMLElement>(".theme-preview-tab").forEach((button) => {
+          const active = button.dataset.tab === tab;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-selected", String(active));
+        });
         updateDesignerLivePreview();
       }
       return true;
@@ -1296,14 +1318,8 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
     }
 
     case "td-live-test": {
-      const tempId = saveCustomTheme({
-        ...designerDraft,
-        name: "Önizleme",
-      });
-      if (tempId) {
-        applySurface(tempId, false);
-        toast(t("settings.themeLiveTest"), "ok");
-      }
+      previewCustomTheme(designerDraft);
+      toast(t("settings.themeLiveTest"), "ok");
       return true;
     }
 

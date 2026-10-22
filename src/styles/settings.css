@@ -1,28 +1,44 @@
 /* ==========================================================================
-   Settings: plain text sub-navigation + list-row panels.
+   Settings: a grouped icon rail on the left, one masthead and list-row panels
+   on the right. The rail becomes a horizontal chip strip when the window is
+   too narrow for two columns.
    ========================================================================== */
-.settings-layout { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 32px; align-items: start; }
+.settings-layout {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+  max-width: 1320px;
+  margin: 0 auto;
+}
 .settings-nav {
   position: sticky;
   top: 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   max-height: calc(100vh - var(--winbar-h, 34px) - var(--header-h, 60px) - 64px);
+  padding: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
 }
 .settings-nav-header {
   flex-shrink: 0;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .settings-nav-scroll {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-right: 6px;
-  padding-bottom: 24px;
+  padding: 0 2px 8px;
   scrollbar-width: thin;
 }
 .settings-nav-scroll::-webkit-scrollbar {
@@ -32,20 +48,88 @@
   background: transparent;
 }
 .settings-nav-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 .settings-nav-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--scrollbar-thumb-hover);
 }
 .settings-nav-item {
-  height: 34px; padding: 0 12px; border: none; border-radius: var(--r-sm); background: transparent;
-  color: var(--text-2); font-size: 13px; font-weight: 500; font-family: inherit; text-align: left; cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
   transition: background-color var(--ease), color var(--ease);
 }
-.settings-nav-item:hover { background: var(--surface-1); color: var(--text); }
-.settings-nav-item.active { background: var(--surface-2); color: var(--text); }
-.settings-panel { min-width: 0; max-width: 920px; padding-bottom: 48px; }
+.settings-nav-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: color var(--ease);
+}
+.settings-nav-icon svg { width: 15px; height: 15px; }
+.settings-nav-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.settings-nav-item:hover { background: var(--surface-2); color: var(--text); }
+.settings-nav-item:hover .settings-nav-icon { color: var(--text-2); }
+.settings-nav-item.active {
+  background: var(--accent-tint);
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.settings-nav-item.active .settings-nav-icon { color: var(--accent); }
+.settings-panel { min-width: 0; max-width: 1040px; padding-bottom: 48px; }
+/* Section masthead: the nav says where you are, this says what this page does. */
+.settings-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 20px;
+  padding: 0 2px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-panel-crumb {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.settings-panel-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.settings-panel-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.settings-panel-icon svg { width: 16px; height: 16px; }
+.settings-panel-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-panel-body { min-width: 0; }
 .settings-accounts { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
 .settings-accounts .acc-actions { width: 100%; }
 .settings-accounts .acc-actions .btn.danger { margin-left: auto; }
@@ -53,8 +137,12 @@
    field: no native clock button, no reserved picker space, the value hugs its
    width. Typing is normalized by the change handler. */
 .settings-time-input { width: 72px; padding: 0 8px; text-align: center; font-variant-numeric: tabular-nums; }
-.settings-panel > .section-title:first-child, .settings-panel > .card:first-child, .settings-panel > .settings-section-head:first-child { margin-top: 0; }
-.settings-section-head { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 12px; padding-right: 15px; }
+.settings-panel-body > .section-title:first-child,
+.settings-panel > .section-title:first-child,
+.settings-panel > .card:first-child,
+.settings-panel > .settings-section-head:first-child { margin-top: 0; }
+.settings-panel-body > :first-child { margin-top: 0; }
+.settings-section-head { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 12px; padding-right: 2px; }
 .settings-section-head .section-title { margin: 0; }
 .settings-section-head .btn { flex-shrink: 0; }
 .settings-hidden-head {
@@ -90,8 +178,9 @@
 .settings-hidden-open .row-meta { min-height: 16px; line-height: 16px; }
 .settings-hidden-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-.settings-row { align-items: center; padding: 12px 14px; flex-wrap: wrap; }
+.settings-row { align-items: center; padding: 12px 16px; flex-wrap: wrap; }
 .settings-row:hover { background: transparent; }
+.settings-row + .settings-row { border-top-color: var(--line); }
 .settings-row.stacked { flex-direction: column; align-items: stretch; gap: 10px; }
 /* Column axis: the 220px flex-basis on .row-main is a width hint for
    horizontal rows. Here it becomes a tall empty block above the controls. */
@@ -164,16 +253,17 @@
 
 /* Language grid */
 .settings-lang-desc { margin: -4px 0 12px; }
-.lang-selection-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.lang-selection-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
 .lang-option-btn {
-  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; text-align: left;
+  display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 13px; text-align: left;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-sm);
   color: var(--text); font-size: 13px; font-family: inherit; cursor: pointer;
-  transition: border-color var(--ease), background-color var(--ease);
+  transition: border-color var(--ease), background-color var(--ease), box-shadow var(--ease);
 }
-.lang-option-btn:hover { background: var(--surface-2); }
-.lang-option-btn.active { border-color: var(--accent); background: var(--accent-tint); }
+.lang-option-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.lang-option-btn.active { border-color: var(--accent); background: var(--accent-tint); box-shadow: inset 0 0 0 1px var(--accent); }
 .lang-flag { width: 28px; font-size: 11px; font-weight: 600; color: var(--text-3); }
+.lang-option-btn.active .lang-flag { color: var(--accent); }
 .lang-name { font-weight: 500; }
 
 /* EOS overlay */
@@ -193,15 +283,34 @@
 .settings-about-copy { min-width: 0; }
 .settings-about-text { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: var(--text-2); max-width: 720px; }
 
-@media (max-width: 1100px) {
-  .settings-layout { grid-template-columns: 1fr; gap: 16px; }
+@media (max-width: 980px) {
+  .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .settings-nav { position: static; max-height: none; }
   .settings-nav-header { flex: 1 1 100%; }
-  .settings-nav-scroll { flex-direction: row; flex-wrap: wrap; overflow-y: visible; max-height: none; }
+  .settings-nav-scroll {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 8px;
+  }
+  .settings-nav-group { flex-direction: row; gap: 6px; margin-top: 0; }
+  .settings-nav-group-label { display: none; }
+  .settings-nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    box-shadow: none;
+  }
+  .settings-nav-item.active { box-shadow: inset 0 0 0 1px var(--accent); }
   /* The search keeps its own line above the section buttons. */
   .settings-nav-search { flex: 1 1 100%; }
   .settings-search-count { flex: 1 1 100%; padding-left: 0; }
   .settings-row-control { justify-content: flex-start; }
+  .settings-panel { max-width: none; }
 }
 #eos-settings-row { align-items: center; }
 #eos-settings-row .row-main { flex: 1 1 280px; min-width: min(100%, 220px); }
@@ -233,14 +342,15 @@
    shows every section so a match anywhere in the page is visible. */
 .settings-search {
   width: 100%;
-  height: 36px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 10px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
+  transition: border-color var(--ease), background-color var(--ease), box-shadow var(--ease);
 }
 
 .settings-search::-webkit-search-cancel-button,
@@ -259,8 +369,9 @@
 }
 
 .settings-search:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
 }
 
 /* The box inside the nav: leading icon, clear button, tighter height. */
@@ -284,13 +395,13 @@
 }
 
 /* --- Grouped navigation --------------------------------------------------- */
-.settings-nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }
-.settings-nav-group:first-child { margin-top: 0; }
+.settings-nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
+.settings-nav-group:first-child { margin-top: 2px; }
 .settings-nav-group-label {
-  padding: 0 12px 4px;
+  padding: 0 10px 5px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
   user-select: none;
@@ -549,23 +660,22 @@
 .case-style-card {
   display: flex;
   flex-direction: column;
-  padding: 11px 13px;
-  border-radius: var(--r-sm, 6px);
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
   background: var(--surface-2);
   border: 1px solid var(--line);
   cursor: pointer;
-  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
   user-select: none;
 }
 .case-style-card:hover {
-  border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-color: var(--line-strong);
+  background: var(--surface-3);
 }
 .case-style-card.active {
   border-color: var(--accent);
-  background: var(--accent-subtle, rgba(56, 139, 255, 0.12));
-  box-shadow: 0 0 0 1px var(--accent), 0 4px 14px rgba(0, 0, 0, 0.35);
+  background: var(--accent-tint);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .case-style-card-header {
   display: flex;
@@ -620,10 +730,10 @@
   gap: 10px;
   padding: 10px 14px;
   margin: 0 0 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  border-radius: var(--r-sm, 6px);
-  color: #fbbf24;
+  background: var(--warn-tint);
+  border: 1px solid var(--warn);
+  border-radius: var(--r-sm);
+  color: var(--warn);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -722,4 +832,24 @@
   display: flex;
   justify-content: flex-end;
   border-top: 1px solid var(--line);
+}
+
+/* The nav's base rules live below the first responsive block, so the compact
+   rail has to be restated here: same specificity, later source order wins. */
+@media (max-width: 980px) {
+  .settings-nav-scroll {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 8px;
+  }
+  .settings-nav-group {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-top: 0;
+  }
+  .settings-nav-group-label { display: none; }
 }
