@@ -1933,3 +1933,94 @@
   color: var(--text);
 }
 :root[data-surface="xbox360"] .profile-stat-plat-ico { color: var(--accent); }
+
+
+/* ---------- Cyberpunk 2077 ----------
+   Night City yellow & matte dark concrete with Arasaka tech cyan and Samurai red. */
+
+:root[data-surface="cyberpunk"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
+) {
+  color: #fcee0a;
+  letter-spacing: 0.4px;
+}
+
+:root[data-surface="cyberpunk"] .winbar-beta-chip {
+  background: #fcee0a;
+  color: #000000;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.45);
+}
+
+:root[data-surface="cyberpunk"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(252, 238, 10, 0.22) 0%, rgba(252, 238, 10, 0.08) 75%, transparent 100%);
+  color: #fcee0a;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(252, 238, 10, 0.2);
+}
+:root[data-surface="cyberpunk"] .sb-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: #fcee0a;
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.85);
+}
+
+:root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: #fcee0a;
+  color: #000000;
+  font-weight: 700;
+  border-color: #fcee0a;
+  box-shadow: 0 0 12px rgba(252, 238, 10, 0.35);
+}
+:root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: #fff34d;
+  color: #000000;
+  border-color: #fff34d;
+  box-shadow: 0 0 20px rgba(252, 238, 10, 0.65);
+}
+
+:root[data-surface="cyberpunk"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 1px #fcee0a,
+    0 0 22px rgba(252, 238, 10, 0.45),
+    0 14px 28px rgba(0, 0, 0, 0.8);
+}
+:root[data-surface="cyberpunk"] .pcard-play-btn:hover {
+  background: #fcee0a;
+  color: #000000;
+  border-color: #fcee0a;
+  box-shadow: 0 0 12px rgba(252, 238, 10, 0.5);
+}
+
+:root[data-surface="cyberpunk"] .progress > span,
+:root[data-surface="cyberpunk"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
+  background: #fcee0a;
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.5);
+}
+
+:root[data-surface="cyberpunk"] .switch input:checked + .track {
+  background: #fcee0a;
+  border-color: #fcee0a;
+}
+:root[data-surface="cyberpunk"] .switch input:checked + .track::before {
+  background: #000000;
+}
+
+:root[data-surface="cyberpunk"] .store-tabs .tab.active,
+:root[data-surface="cyberpunk"] .tab.active {
+  color: #fcee0a;
+}
+:root[data-surface="cyberpunk"] .store-tabs .tab.active::after,
+:root[data-surface="cyberpunk"] .tab.active::after {
+  background: #fcee0a;
+  box-shadow: 0 0 8px rgba(252, 238, 10, 0.65);
+}
+
+:root[data-surface="cyberpunk"] .profile-stat-plat-ico {
+  color: #fcee0a;
+}

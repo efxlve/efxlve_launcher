@@ -33,11 +33,48 @@ const DEFAULT_THEME = "black";
 const TOKEN_STYLE_ID = "efxlve-theme-tokens";
 
 /**
- * Cyberpunk: neon night with electric cyan accent and hot magenta hairlines.
+ * Cyberpunk 2077: CD Projekt Red's signature Night City cyber yellow (#FCEE0A)
+ * on dark tech concrete, with Samurai red (#FF003C) and Arasaka cyan (#00F0FF).
  */
 const CYBERPUNK: ThemeDef = {
   id: "cyberpunk",
   labelKey: "settings.surfaceCyberpunk",
+  bg: "linear-gradient(135deg, #050508 0%, #15161c 65%, #fcee0a 100%)",
+  accent: "#fcee0a",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#07070a",
+    "--surface-1": "#0f1015",
+    "--surface-2": "#17181f",
+    "--surface-3": "#22232c",
+    "--line": "rgba(252, 238, 10, 0.16)",
+    "--line-strong": "rgba(252, 238, 10, 0.38)",
+    "--text": "#f5f6f8",
+    "--text-2": "#a2a6b8",
+    "--text-3": "#636778",
+    "--accent": "#fcee0a",
+    "--accent-hover": "#fff34d",
+    "--accent-tint": "rgba(252, 238, 10, 0.16)",
+    "--on-accent": "#000000",
+    "--ok": "#00f0ff",
+    "--ok-hover": "#33f3ff",
+    "--ok-tint": "rgba(0, 240, 255, 0.16)",
+    "--warn": "#fcee0a",
+    "--warn-tint": "rgba(252, 238, 10, 0.16)",
+    "--err": "#ff003c",
+    "--err-tint": "rgba(255, 0, 60, 0.18)",
+    "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.75)",
+    "--scrollbar-thumb": "rgba(252, 238, 10, 0.22)",
+    "--scrollbar-thumb-hover": "rgba(252, 238, 10, 0.42)",
+  },
+};
+
+/**
+ * Synthwave: 80s retro neon night with electric cyan accent and hot magenta lines.
+ */
+const SYNTHWAVE: ThemeDef = {
+  id: "synthwave",
+  labelKey: "settings.surfaceSynthwave",
   bg: "linear-gradient(145deg, #090614 0%, #170d2e 55%, #080512 100%)",
   accent: "#05d9e2",
   scheme: "dark",
@@ -372,6 +409,7 @@ export const THEMES: readonly ThemeDef[] = [
     scheme: "dark",
   },
   CYBERPUNK,
+  SYNTHWAVE,
   TOKYO_NIGHT,
   CRIMSON,
   NORD,

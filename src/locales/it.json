@@ -2861,10 +2861,11 @@
   "settings.appIconAero": "Frutiger Aero",
   "settings.appIconCustom": "Personalizzato",
   "settings.appIconUploadBtn": "Carica...",
-  "settings.surfaceCyberpunk": "Cyberpunk",
+  "settings.surfaceCyberpunk": "Cyberpunk 2077",
   "settings.surfaceTokyoNight": "Tokyo Night",
   "settings.surfaceCrimson": "Crimson",
   "settings.surfaceNord": "Nord",
   "settings.surfaceSunset": "Sunset Amber",
-  "settings.surfaceMatrix": "Matrix"
+  "settings.surfaceMatrix": "Matrix",
+  "settings.surfaceSynthwave": "Synthwave"
 }
