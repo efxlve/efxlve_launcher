@@ -33,21 +33,3 @@ Getting to 60/120 means a second recorder beside the current one:
 Files: `src-tauri/src/legendary/clip_recorder.rs`,
 `src-tauri/src/legendary/clip_audio.rs`,
 `src/features/screenshots/ss-settings.ts`.
-
-## Overlay: split the 5,722-line panel
-
-`src/features/overlay/overlay.ts` holds the panel shell, the widget geometry and
-every widget renderer in one file, and `overlay.css` is 4,880 lines. Both are
-past the ceiling in [AGENTS.md](./AGENTS.md#layout-rules).
-
-Cut the widget layer first, because the panel only calls into it: position, size,
-pinning, drag, resize, clamping and z-order (`defaultWidgets` through
-`initWidgetResizing`) move to `src/features/overlay/widgets.ts`. The panel keeps
-the tab list, gamepad navigation and `renderWidgetContent`.
-
-Then one file per widget renderer (performance, achievements, screenshots, music,
-notes, Discord) and one stylesheet per widget group.
-
-`src/features/settings/settings-view.ts` (2,487) and
-`src/features/drawer/drawer-view.ts` (2,464) are over the ceiling too and need the
-same treatment.
