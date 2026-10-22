@@ -68,47 +68,15 @@ const MIDNIGHT: ThemeDef = {
 };
 
 /**
- * The community asks are palettes too: a PlayStation grey, the Epic store with a
- * violet accent and Discord's own greys. All three are token-only.
+ * The community asks are palettes too: the Epic store with a violet accent and
+ * Discord's own greys are token-only; Xbox 360 gets a scene and glass of its own
+ * in `themes.css`, the way Aero does.
  */
-const PS5: ThemeDef = {
-  id: "ps5",
-  labelKey: "settings.surfacePs5",
-  bg: "#eef0f3",
-  accent: "#0070d1",
-  scheme: "light",
-  tokens: {
-    "--bg": "#eef0f3",
-    "--surface-1": "#ffffff",
-    "--surface-2": "#e9ecf1",
-    "--surface-3": "#dfe3ea",
-    "--line": "rgba(15, 23, 42, 0.1)",
-    "--line-strong": "rgba(15, 23, 42, 0.18)",
-    "--text": "#101418",
-    "--text-2": "#4b5563",
-    "--text-3": "#767f8c",
-    "--accent": "#0070d1",
-    "--accent-hover": "#005fae",
-    "--accent-tint": "rgba(0, 112, 209, 0.12)",
-    "--on-accent": "#ffffff",
-    "--ok": "#1a7f4b",
-    "--ok-hover": "#15673d",
-    "--ok-tint": "rgba(26, 127, 75, 0.12)",
-    "--warn": "#a16207",
-    "--warn-tint": "rgba(161, 98, 7, 0.12)",
-    "--err": "#b91c1c",
-    "--err-tint": "rgba(185, 28, 28, 0.1)",
-    "--shadow-pop": "0 12px 32px rgba(15, 23, 42, 0.16)",
-    "--scrollbar-thumb": "rgba(15, 23, 42, 0.24)",
-    "--scrollbar-thumb-hover": "rgba(15, 23, 42, 0.4)",
-  },
-};
-
 const EPIC: ThemeDef = {
   id: "epic",
   labelKey: "settings.surfaceEpic",
   bg: "#0a0a0c",
-  accent: "#a259ff",
+  accent: "#7c3aed",
   scheme: "dark",
   tokens: {
     "--bg": "#0a0a0c",
@@ -120,10 +88,12 @@ const EPIC: ThemeDef = {
     "--text": "#f6f2ff",
     "--text-2": "#a9a2b8",
     "--text-3": "#6d6680",
-    "--accent": "#a259ff",
-    "--accent-hover": "#b47bff",
-    "--accent-tint": "rgba(162, 89, 255, 0.16)",
-    "--on-accent": "#12061f",
+    /* A filled button uses this, so it stays a deep violet instead of a neon
+       slab: bright violet is the hover and the tint, not the surface. */
+    "--accent": "#7c3aed",
+    "--accent-hover": "#8b5cf6",
+    "--accent-tint": "rgba(124, 58, 237, 0.2)",
+    "--on-accent": "#ffffff",
     "--ok": "#2fb36d",
     "--ok-hover": "#38c27a",
     "--ok-tint": "rgba(47, 179, 109, 0.14)",
@@ -191,7 +161,13 @@ export const THEMES: readonly ThemeDef[] = [
     accent: "#111318",
     scheme: "light",
   },
-  PS5,
+  {
+    id: "xbox360",
+    labelKey: "settings.surfaceXbox",
+    bg: "linear-gradient(160deg, #0b2416 0%, #4f8f1e 55%, #9bd44a 100%)",
+    accent: "#9bd44a",
+    scheme: "dark",
+  },
   {
     id: "aero",
     labelKey: "settings.surfaceAero",

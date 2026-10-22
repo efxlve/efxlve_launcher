@@ -1093,7 +1093,7 @@ function renderAppearance(): string {
     </button>`).join("");
   return (
     group(
-      row(t("settings.themeTitle"), t("settings.themeDesc"), renderThemePicker()) +
+      row(t("settings.themeTitle"), t("settings.themeDesc"), renderThemePicker(), true) +
       renderCustomCssRow() +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +

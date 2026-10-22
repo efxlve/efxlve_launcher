@@ -96,7 +96,7 @@
 /* Column axis: the 220px flex-basis on .row-main is a width hint for
    horizontal rows. Here it becomes a tall empty block above the controls. */
 .settings-row.stacked .row-main { flex: 0 1 auto; }
-.settings-row.stacked .settings-row-control { flex: 0 0 auto; }
+.settings-row.stacked .settings-row-control { flex: 0 0 auto; justify-content: flex-start; }
 .settings-row .row-main { flex: 1 1 220px; min-width: min(220px, 100%); }
 .settings-row-title { font-size: 13px; font-weight: 500; overflow-wrap: break-word; }
 /* Store mark inside a settings row title (Settings > Appearance > Store tabs). */
