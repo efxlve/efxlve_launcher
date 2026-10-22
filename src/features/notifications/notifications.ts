@@ -14,6 +14,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { AppNotification, NotifKind } from "../../core/types";
 import { esc, relativeTime } from "../../core/utils";
+import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { embeddedContentShown, syncStoreViewSize } from "../store/store-view";
 import { overlayThemeStyle } from "../../core/overlay-theme";
@@ -78,6 +79,7 @@ export interface NotifInput {
 /** Adds a notification (deduping identical recent events) and updates the badge. */
 export function pushNotification(input: NotifInput): void {
   const now = Date.now();
+  let isNew = false;
   const existing = S.notifications.find(
     (n) =>
       n.kind === input.kind &&
@@ -104,9 +106,13 @@ export function pushNotification(input: NotifInput): void {
       read: false,
     });
     if (S.notifications.length > MAX) S.notifications.length = MAX;
+    isNew = true;
   }
   persist();
   updateNotifBadge();
+  // Some events (an achievement unlock) also want a short visible toast, not
+  // only a new row in the bell's history.
+  if (input.toast && isNew) toast(input.title, input.kind === "error" ? "err" : "ok");
 }
 
 export function unreadCount(): number {

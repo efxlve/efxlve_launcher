@@ -299,7 +299,9 @@ pub struct EmulatorAchievementEntry {
 pub struct ParsedEmulatorAchievements {
     /// Entries indexed by lowercased section/key name
     pub entries: std::collections::HashMap<String, EmulatorAchievementEntry>,
-    /// Order mapping from [SteamAchievements] (e.g. 00000 = "1" or "ACH_NAME")
+    /// Stored entry keys from [SteamAchievements] (e.g. 00000 = "1" or
+    /// "ACH_NAME"). The list can be partial: it names the entries that exist,
+    /// not every achievement in the schema.
     pub order_mapping: Vec<String>,
     /// Unlocked count from [SteamAchievements] Count= if present
     pub count: Option<u32>,
@@ -455,44 +457,115 @@ pub fn candidate_emulator_dirs() -> Vec<PathBuf> {
     dirs
 }
 
+const EMULATOR_ACHIEVEMENT_FILES: &[&str] = &["achievements.ini", "achievements.json", "stats.ini"];
+
+/// File names as they may sit directly in `steam_settings` or one app-id
+/// folder below an emulator root.
+fn push_achievement_files(dir: &Path, app_id: &str, out: &mut Vec<PathBuf>) {
+    for folder in [
+        dir.to_path_buf(),
+        dir.join("steam_settings"),
+        dir.join(app_id),
+        dir.join(app_id).join("steam_settings"),
+        dir.join("steam_settings").join(app_id),
+    ] {
+        for name in EMULATOR_ACHIEVEMENT_FILES {
+            let candidate = folder.join(name);
+            if candidate.is_file() {
+                out.push(candidate);
+            }
+        }
+    }
+}
+
+/// The remembered folder is the executable's folder; Unreal builds can keep
+/// `steam_settings` a level or two above it.
+fn push_achievement_files_near(dir: &Path, app_id: &str, out: &mut Vec<PathBuf>) {
+    push_achievement_files(dir, app_id, out);
+    let mut current = dir;
+    for _ in 0..2 {
+        let Some(parent) = current.parent() else {
+            break;
+        };
+        current = parent;
+        let settings = current.join("steam_settings");
+        for name in EMULATOR_ACHIEVEMENT_FILES {
+            let candidate = settings.join(name);
+            if candidate.is_file() {
+                out.push(candidate);
+            }
+        }
+    }
+}
+
+/// A definitions template carries names and icons but no unlock state. When a
+/// progress file is present it wins, so `steam_settings` never hides the real
+/// save file from the watcher.
+fn achievement_file_has_progress(path: &Path) -> bool {
+    let Ok(bytes) = std::fs::read(path) else {
+        return false;
+    };
+    let text = String::from_utf8_lossy(&bytes).to_ascii_lowercase();
+    text.contains("achieved=") || text.contains("\"earned\"")
+}
+
+fn achievement_file_modified_ms(path: &Path) -> u64 {
+    std::fs::metadata(path)
+        .and_then(|meta| meta.modified())
+        .ok()
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// Picks the file the emulator is currently maintaining: a progress file beats
+/// a definition template, and the newest write wins among the rest.
+fn newest_achievement_file(files: Vec<PathBuf>) -> Option<PathBuf> {
+    let candidates: Vec<(PathBuf, bool, u64)> = files
+        .into_iter()
+        .map(|path| {
+            let progress = achievement_file_has_progress(&path);
+            let modified = achievement_file_modified_ms(&path);
+            (path, progress, modified)
+        })
+        .collect();
+    let has_progress = candidates.iter().any(|(_, progress, _)| *progress);
+    candidates
+        .into_iter()
+        .filter(|(_, progress, _)| !has_progress || *progress)
+        .max_by_key(|(_, _, modified)| *modified)
+        .map(|(path, _, _)| path)
+}
+
 /// Locates the achievements file for a Steam AppID.
 pub fn find_emulator_achievement_file(app_id: &str, custom_path: Option<&Path>) -> Option<PathBuf> {
     if let Some(p) = custom_path {
         if p.is_file() {
             return Some(p.to_path_buf());
         }
-        if p.is_dir() {
-            for name in &["achievements.ini", "achievements.json", "stats.ini"] {
-                let candidate = p.join(name);
-                if candidate.is_file() {
-                    return Some(candidate);
-                }
-            }
-            let sub = p.join(app_id);
-            for name in &["achievements.ini", "achievements.json", "stats.ini"] {
-                let candidate = sub.join(name);
-                if candidate.is_file() {
-                    return Some(candidate);
-                }
-            }
-        }
     }
 
+    let mut files = Vec::new();
+    if let Some(p) = custom_path.filter(|p| p.is_dir()) {
+        push_achievement_files_near(p, app_id, &mut files);
+    }
     for base in candidate_emulator_dirs() {
-        let app_dir = base.join(app_id);
-        for file_name in &["achievements.ini", "achievements.json", "stats.ini"] {
-            let candidate = app_dir.join(file_name);
-            if candidate.is_file() {
-                return Some(candidate);
-            }
-            let candidate_settings = app_dir.join("steam_settings").join(file_name);
-            if candidate_settings.is_file() {
-                return Some(candidate_settings);
-            }
-        }
+        push_achievement_files(&base, app_id, &mut files);
     }
 
-    None
+    newest_achievement_file(files)
+}
+
+fn emulator_entry_state(entry: &EmulatorAchievementEntry) -> Option<(bool, i64, f64)> {
+    if !entry.achieved && entry.unlock_time <= 0 {
+        return None;
+    }
+    let progress = if entry.max_progress > 0.0 {
+        (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
+    } else {
+        1.0
+    };
+    Some((true, entry.unlock_time, progress))
 }
 
 /// Matches schema item against emulator achievement entries.
@@ -502,73 +575,38 @@ fn is_emulator_unlocked(
     index: usize,
     bit_id: &str,
 ) -> Option<(bool, i64, f64)> {
+    // 1) The section key is the API name. This covers RUNE/CODEX files whose
+    // sections are the names from the Steam schema, including purely numeric
+    // names such as Kunitsu-Gami's `[1]`, `[2]`, `[31]`.
     let api_lower = api_name.to_lowercase();
+    if let Some(entry) = parsed.entries.get(&api_lower) {
+        return emulator_entry_state(entry);
+    }
+
+    // 2) A `[SteamAchievements]` list names every stored entry. It is a partial
+    // list of section keys, not a positional map: a file with three unlocks
+    // lists three keys (`00000=1`, `00001=2`, `00002=31`). Falling back to the
+    // schema position there unlocked neighbouring entries (`[2]` also matched
+    // achievement 3, `[31]` matched achievement 32).
+    if !parsed.order_mapping.is_empty() {
+        return None;
+    }
+
+    // 3) Legacy files without a mapping use one-based or zero-based section
+    // numbers, so the position is the only link to the schema. That does not
+    // apply when the API name itself is numeric: the section already is the
+    // API name, and reading the position as well would unlock its neighbours.
+    if api_name.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
     let one_based = (index + 1).to_string();
     let zero_based = index.to_string();
     let bit_str = bit_id.to_string();
-
-    // 1) Direct api_name match (e.g. [ACH_KILL_BOSS])
-    if let Some(entry) = parsed.entries.get(&api_lower) {
-        if entry.achieved || entry.unlock_time > 0 {
-            let prog = if entry.max_progress > 0.0 {
-                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
-            } else {
-                1.0
-            };
-            return Some((true, entry.unlock_time, prog));
-        }
-    }
-    // 2) 1-based index match (e.g. [1] for 1st achievement in schema, as in RUNE)
-    if let Some(entry) = parsed.entries.get(&one_based) {
-        if entry.achieved || entry.unlock_time > 0 {
-            let prog = if entry.max_progress > 0.0 {
-                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
-            } else {
-                1.0
-            };
-            return Some((true, entry.unlock_time, prog));
-        }
-    }
-    // 3) 0-based index match (e.g. [0])
-    if let Some(entry) = parsed.entries.get(&zero_based) {
-        if entry.achieved || entry.unlock_time > 0 {
-            let prog = if entry.max_progress > 0.0 {
-                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
-            } else {
-                1.0
-            };
-            return Some((true, entry.unlock_time, prog));
-        }
-    }
-    // 4) bit_id match
-    if let Some(entry) = parsed.entries.get(&bit_str) {
-        if entry.achieved || entry.unlock_time > 0 {
-            let prog = if entry.max_progress > 0.0 {
-                (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
-            } else {
-                1.0
-            };
-            return Some((true, entry.unlock_time, prog));
-        }
-    }
-    // 5) Order mapping from [SteamAchievements]. The mapping only says which
-    // entry belongs to which achievement; the entry itself still has to be
-    // achieved, otherwise every mapped achievement (the whole set) was shown
-    // as unlocked.
-    for mapped in &parsed.order_mapping {
-        let mapped_lower = mapped.to_lowercase();
-        if mapped_lower == api_lower || mapped == &one_based || mapped == &zero_based || mapped == &bit_str {
-            if let Some(entry) = parsed.entries.get(&mapped_lower) {
-                if entry.achieved || entry.unlock_time > 0 {
-                    let prog = if entry.max_progress > 0.0 {
-                        (entry.cur_progress / entry.max_progress).clamp(0.0, 1.0)
-                    } else {
-                        1.0
-                    };
-                    return Some((true, entry.unlock_time, prog));
-                }
+    for key in [&one_based, &zero_based, &bit_str] {
+        if let Some(entry) = parsed.entries.get(key) {
+            if let Some(state) = emulator_entry_state(entry) {
+                return Some(state);
             }
-            return None;
         }
     }
     None
@@ -831,7 +869,10 @@ fn build_emulator_achievements(
     let mut items: Vec<AchievementItem> = Vec::new();
     let mut hidden_items: Vec<AchievementItem> = Vec::new();
     for (index, entry) in schema.iter().enumerate() {
-        let state = is_emulator_unlocked(emu, &entry.api_name, index, &index.to_string());
+        // The community page publishes no stats bit ids; only the position is
+        // known. Do not pass it as `bit_id`, or a numeric section can match the
+        // wrong achievement.
+        let state = is_emulator_unlocked(emu, &entry.api_name, index, "");
         let (unlocked, unlock_time, progress) = state.unwrap_or((false, 0, 0.0));
         let icon = if unlocked {
             &entry.icon_achieved
@@ -1898,6 +1939,54 @@ pub fn steam_start_emulator_watcher(
     steam_start_custom_achievement_watcher(app, app_id);
 }
 
+/// Emits the card, sound and frontend event for every achievement that was not
+/// in `unlocked_set` yet.
+fn emit_new_achievement_unlocks(
+    app: &tauri::AppHandle,
+    app_id: &str,
+    response: &GameAchievementsResponse,
+    unlocked_set: &mut std::collections::HashSet<String>,
+) {
+    for ach in &response.achievements {
+        if !ach.unlocked || unlocked_set.contains(&ach.name) {
+            continue;
+        }
+        unlocked_set.insert(ach.name.clone());
+
+        // 1. Native in-game HUD toast card
+        let display = if ach.display_name.trim().is_empty() {
+            ach.name.clone()
+        } else {
+            ach.display_name.clone()
+        };
+        let options = achievement_notification_options(app);
+        crate::overlay::hud::set_notification_position(&options.position);
+        crate::overlay::hud::set_notification_size(&options.size);
+        crate::overlay::hud::set_notification_hold(options.duration_ms);
+        if options.enabled {
+            // 1. Native in-game HUD toast card
+            if options.overlay {
+                crate::overlay::hud::notify_ext("BAŞARIM KAZANILDI", &display, &ach.description);
+            }
+            // 2. Native notification sound: the user's file when set,
+            // otherwise the Windows system chime.
+            play_achievement_notification_sound(app, &options);
+        }
+
+        // 3. Emit event to frontend; the UI records the unlock even when the
+        // user silenced the visible notification.
+        let payload = AchievementUnlockedPayload {
+            app_id: app_id.to_string(),
+            name: ach.name.clone(),
+            display_name: display,
+            description: ach.description.clone(),
+            icon_url: ach.icon_link.clone(),
+            notification: options.enabled,
+        };
+        let _ = app.emit("achievement-unlocked", payload);
+    }
+}
+
 fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return;
@@ -1975,50 +2064,48 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
             };
             // The first successful read is the baseline, not a burst of old unlocks.
             if !initialised {
-                for ach in response.achievements {
+                for ach in &response.achievements {
                     if ach.unlocked {
-                        unlocked_set.insert(ach.name);
+                        unlocked_set.insert(ach.name.clone());
                     }
                 }
                 initialised = true;
                 continue;
             }
-            for ach in response.achievements {
-                if ach.unlocked && !unlocked_set.contains(&ach.name) {
-                    unlocked_set.insert(ach.name.clone());
+            emit_new_achievement_unlocks(
+                &app_handle,
+                &target_app_id,
+                &response,
+                &mut unlocked_set,
+            );
+        }
 
-                    // 1. Native in-game HUD toast card
-                    let display = if ach.display_name.trim().is_empty() {
-                        ach.name.clone()
-                    } else {
-                        ach.display_name.clone()
-                    };
-                    let options = achievement_notification_options(&app_handle);
-                    crate::overlay::hud::set_notification_position(&options.position);
-                    crate::overlay::hud::set_notification_size(&options.size);
-                    crate::overlay::hud::set_notification_hold(options.duration_ms);
-                    if options.enabled {
-                        // 1. Native in-game HUD toast card
-                        if options.overlay {
-                            crate::overlay::hud::notify_ext("BAŞARIM KAZANILDI", &display, &ach.description);
-                        }
-                        // 2. Native notification sound: the user's file when
-                        // set, otherwise the Windows system beep.
-                        play_achievement_notification_sound(&app_handle, &options);
-                    }
-
-                    // 3. Emit event to frontend; the UI records the unlock even
-                    // when the user silenced the visible notification.
-                    let payload = AchievementUnlockedPayload {
-                        app_id: target_app_id.clone(),
-                        name: ach.name,
-                        display_name: display,
-                        description: ach.description,
-                        icon_url: ach.icon_link,
-                        notification: options.enabled,
-                    };
-                    let _ = app_handle.emit("achievement-unlocked", payload);
-                }
+        // The emulator may flush its achievement file while the process exits.
+        // A new watcher for the same app owns the slot when the map points at a
+        // different flag; only the final stop leaves the slot empty.
+        let replaced_by_newer = ACTIVE_WATCHERS
+            .lock()
+            .ok()
+            .and_then(|lock| {
+                lock.as_ref()
+                    .and_then(|map| map.get(&target_app_id))
+                    .map(|flag| !Arc::ptr_eq(flag, &running_flag))
+            })
+            .unwrap_or(false);
+        if initialised && !replaced_by_newer {
+            if let Some(response) = watcher_snapshot(
+                &app_handle,
+                &target_app_id,
+                steam.as_deref(),
+                community.as_deref(),
+                emulator_only,
+            ) {
+                emit_new_achievement_unlocks(
+                    &app_handle,
+                    &target_app_id,
+                    &response,
+                    &mut unlocked_set,
+                );
             }
         }
     });
@@ -2279,6 +2366,72 @@ mod tests {
             is_emulator_unlocked(&unlocked, "ACH_ONE", 0, "0"),
             Some((true, 1_700_000_000, 1.0))
         );
+    }
+
+    #[test]
+    fn sparse_numeric_sections_do_not_unlock_their_neighbours() {
+        let parsed = parse_achievements_ini(
+            "[1]\nAchieved=1\nUnlockTime=1700000000\n\
+             [2]\nAchieved=1\nUnlockTime=1700000001\n\
+             [31]\nAchieved=1\nUnlockTime=1700000002\n\
+             [SteamAchievements]\n00000=1\n00001=2\n00002=31\nCount=3\n",
+        );
+        assert!(is_emulator_unlocked(&parsed, "1", 0, "0").is_some());
+        assert!(is_emulator_unlocked(&parsed, "2", 1, "1").is_some());
+        assert!(is_emulator_unlocked(&parsed, "31", 30, "30").is_some());
+        assert_eq!(is_emulator_unlocked(&parsed, "3", 2, "2"), None);
+        assert_eq!(is_emulator_unlocked(&parsed, "32", 31, "31"), None);
+    }
+
+    #[test]
+    fn emulator_build_unlocks_only_the_sections_named_in_the_file() {
+        let schema: Vec<CommunityAchievement> = ["1", "2", "3", "31", "32"]
+            .iter()
+            .map(|api_name| CommunityAchievement {
+                api_name: api_name.to_string(),
+                name: api_name.to_string(),
+                description: String::new(),
+                hidden: false,
+                icon_achieved: String::new(),
+                icon_unachieved: String::new(),
+            })
+            .collect();
+        let emu = parse_achievements_ini(
+            "[1]\nAchieved=1\nUnlockTime=1700000000\n\
+             [2]\nAchieved=1\nUnlockTime=1700000001\n\
+             [31]\nAchieved=1\nUnlockTime=1700000002\n\
+             [SteamAchievements]\n00000=1\n00001=2\n00002=31\nCount=3\n",
+        );
+        let response = build_emulator_achievements(&schema, &emu);
+        assert_eq!(response.user_unlocked, 3);
+        let unlocked: Vec<&str> = response
+            .achievements
+            .iter()
+            .filter(|ach| ach.unlocked)
+            .map(|ach| ach.name.as_str())
+            .collect();
+        assert_eq!(unlocked, ["1", "2", "31"]);
+    }
+
+    #[test]
+    fn emulator_file_search_reads_steam_settings_next_to_the_game() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-achievements-{}-{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let settings = root.join("steam_settings");
+        std::fs::create_dir_all(&settings).expect("create settings dir");
+        let file = settings.join("achievements.ini");
+        std::fs::write(&file, "[1]\nAchieved=1\nUnlockTime=1700000000\n").expect("write file");
+
+        let exe_dir = root.join("Binaries").join("Win64");
+        std::fs::create_dir_all(&exe_dir).expect("create exe dir");
+
+        let found = find_emulator_achievement_file("999999999", Some(&exe_dir));
+        assert_eq!(found.as_deref(), Some(file.as_path()));
+
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

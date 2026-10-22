@@ -19,9 +19,14 @@ import { esc, fmtPlaytime } from "./utils";
 /** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
 export function achSummaryOf(appName: string) {
   if (appName.startsWith("custom::")) {
+    // A custom game owns its achievement file; the Steam client summary is
+    // only a fallback until that game's own page has loaded. Preferring Steam
+    // first showed a different (older) count on the card.
+    const own = S.epicAchSummaries[appName];
+    if (own) return own;
     const custom = S.customGames.find((g) => g.id === appName);
     if (custom?.steamAppId) {
-      const steamSum = S.epicAchSummaries[`steam::${custom.steamAppId}`] || S.epicAchSummaries[custom.steamAppId] || S.epicAchSummaries[appName];
+      const steamSum = S.epicAchSummaries[`steam::${custom.steamAppId}`] || S.epicAchSummaries[custom.steamAppId];
       if (steamSum) return steamSum;
     }
   }
