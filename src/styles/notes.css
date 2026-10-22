@@ -143,7 +143,16 @@
 }
 
 /* --- Game page (drawer) Notes tab ----------------------------------------- */
-.drawer-notes { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px 16px; }
+.drawer-notes {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.drawer-notes > .empty-state {
+  padding: 40px 24px;
+}
 .drawer-notes-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .drawer-notes-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .drawer-notes-actions { display: flex; align-items: center; gap: 8px; }
@@ -165,7 +174,13 @@
 .drawer-note-title { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drawer-note-preview { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drawer-note-time { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.drawer-notes-editor { display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 16px; }
+.drawer-notes-editor {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
 .drawer-notes-editor-head { display: flex; align-items: center; gap: 8px; }
 .drawer-notes-editor .notes-title-input { font-size: 15px; }
 .drawer-notes-editor .notes-body, .drawer-notes-editor .notes-preview { min-height: 220px; }

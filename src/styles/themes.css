@@ -668,8 +668,8 @@
 }
 /* The badge sits on the theme's blue accent; black text disappeared into it. */
 :root[data-surface="gloss"] #page-header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.24));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line-strong);
   box-shadow: 0 1px 0 rgba(16, 78, 130, 0.1);
 }
 /* Windows 7 page titles: light weight, deep blue. */
@@ -1667,7 +1667,7 @@
   box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35);
 }
 :root[data-surface="blades"] #page-header {
-  background: linear-gradient(180deg, rgba(18, 44, 24, 0.65), rgba(10, 26, 15, 0.25));
+  background: var(--bg);
   border-bottom: 1px solid rgba(155, 212, 74, 0.18);
 }
 :root[data-surface="blades"] :is(.sb-profile, .sb-divider, .sb-mini) { border-color: var(--line); }
@@ -2021,7 +2021,7 @@
   backdrop-filter: blur(8px);
 }
 :root[data-surface="neongrid"] #page-header {
-  background: rgba(10, 12, 16, 0.75);
+  background: var(--bg);
   border-bottom: 1px solid rgba(252, 238, 10, 0.18);
 }
 :root[data-surface="neongrid"] .sb-item {

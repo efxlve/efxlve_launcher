@@ -263,7 +263,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
   resolved.sort((a, b) => Number(Boolean(b.owned)) - Number(Boolean(a.owned)));
   warmImages(resolved.map(({ hit }) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
   return `
-    <section class="gp-section igdb-card">
+    <section class="card gp-section igdb-card">
       <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
       <div class="igdb-similar">${resolved
         .map(({ hit, owned }) => {

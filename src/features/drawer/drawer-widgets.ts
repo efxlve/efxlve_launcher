@@ -622,7 +622,7 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
     // Still on the way: two placeholder rows hold the height, like every other
     // late block on this page.
     return `
-      <section class="gp-section gp-news">
+      <section class="card gp-section gp-news">
         <div class="gp-progress-head"><h3 class="gp-section-title">${icon("bell", 13)} ${i18nT("drawer.news")}</h3></div>
         <div class="gp-news-list">
           <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
@@ -642,7 +642,7 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
         : i18nT("time.daysAgo", { n: label.n });
   };
   return `
-    <section class="gp-section gp-news">
+    <section class="card gp-section gp-news">
       <div class="gp-progress-head"><h3 class="gp-section-title">${icon("bell", 13)} ${i18nT("drawer.news")}</h3></div>
       <div class="gp-news-list">${items
         .map(

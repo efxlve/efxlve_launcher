@@ -843,6 +843,9 @@ html.sb-narrow .sb-toggle-label {
   height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 6px;
   padding: 0 20px 0 14px; border-bottom: 1px solid var(--line);
   position: relative;
+  /* The store child paints under the header, so a transparent bar showed the
+     shop's hero art behind the title. Every theme gets an opaque strip. */
+  background: var(--bg);
 }
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
 .page-header-title { min-width: 0; margin: 0 0 0 4px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
