@@ -1044,3 +1044,225 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ==========================================================================
+   Advanced Custom Theme Upgrades: Wallpapers, Gradients, Glow & Mockup
+   ========================================================================== */
+
+/* Curated Wallpaper Grid */
+.theme-wp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.theme-wp-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 52px;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background-position: center;
+  background-size: cover;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 120ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.theme-wp-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+}
+
+.theme-wp-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-tint);
+}
+
+.theme-wp-card.active::after {
+  content: "✓";
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.theme-wp-card-name {
+  position: relative;
+  z-index: 1;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-wp-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.75) 100%);
+  pointer-events: none;
+}
+
+/* Gradient Preview Bar */
+.theme-gradient-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.theme-gradient-bar-preview {
+  height: 6px;
+  border-radius: 3px;
+  width: 100%;
+}
+
+/* Preview Switcher Tabs */
+.theme-preview-subnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.theme-preview-subnav-btn {
+  padding: 2px 8px;
+  font-size: 9.5px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.theme-preview-subnav-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Preview Hero View */
+.theme-preview-hero {
+  position: relative;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.theme-preview-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+.theme-preview-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.theme-preview-hero-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.theme-preview-hero-meta {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  gap: 8px;
+}
+
+.theme-preview-hero-btn {
+  height: 22px;
+  padding: 0 12px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  border: none;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.theme-preview-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-preview-setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text);
+}
+
+.theme-preview-mock-toggle {
+  width: 24px;
+  height: 13px;
+  border-radius: 10px;
+  position: relative;
+}
+
+.theme-preview-mock-toggle::after {
+  content: "";
+  position: absolute;
+  top: 1.5px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* Dropzone for Import */
+.theme-file-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 22px 16px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.theme-file-dropzone:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}

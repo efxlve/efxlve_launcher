@@ -53,8 +53,16 @@ export interface CustomThemeInput {
   accent: string;
   /** Optional hover accent, `#rrggbb`. */
   accentHover?: string;
+  /** Optional secondary accent for dual-tone gradients, `#rrggbb`. */
+  accent2?: string;
+  /** Accent glow effect intensity. */
+  glow?: "none" | "subtle" | "radiant" | "neon";
+  /** Surface glass transparency level. */
+  cardGlass?: boolean;
+  /** Border style contrast. */
+  borderStyle?: "subtle" | "contrast" | "accent";
   light: boolean;
-  /** Optional backdrop image as a `data:image/...` URL (already downscaled). */
+  /** Optional backdrop image as a `data:image/...` URL. */
   scene?: string;
   sceneBlur?: number;
   sceneOpacity?: number;
@@ -70,6 +78,188 @@ export interface ThemePreset {
   accent: string;
   light: boolean;
 }
+
+
+export interface PresetWallpaper {
+  id: string;
+  nameKey: string;
+  defaultName: string;
+  dataUrl: string;
+}
+
+const encodeSvg = (svg: string) => `data:image/svg+xml,${encodeURIComponent(svg.trim())}`;
+
+export const PRESET_WALLPAPERS: readonly PresetWallpaper[] = [
+  {
+    id: "cyber-grid",
+    nameKey: "settings.themeWpCyberGrid",
+    defaultName: "Cyber Grid",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <linearGradient id="cg-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#05050d"/>
+          <stop offset="55%" stop-color="#0d081f"/>
+          <stop offset="100%" stop-color="#2a0845"/>
+        </linearGradient>
+        <linearGradient id="cg-glow" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff007f" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#7928ca" stop-opacity="0"/>
+        </linearGradient>
+        <pattern id="cg-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#00f0ff" stroke-width="1" stroke-opacity="0.18"/>
+        </pattern>
+      </defs>
+      <rect width="1920" height="1080" fill="url(#cg-sky)"/>
+      <rect y="480" width="1920" height="600" fill="url(#cg-glow)"/>
+      <rect y="500" width="1920" height="580" fill="url(#cg-grid)"/>
+      <line x1="0" y1="500" x2="1920" y2="500" stroke="#ff007f" stroke-width="2" stroke-opacity="0.8"/>
+    </svg>`),
+  },
+  {
+    id: "deep-nebula",
+    nameKey: "settings.themeWpDeepNebula",
+    defaultName: "Deep Space",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <radialGradient id="nb-g1" cx="30%" cy="40%" r="55%">
+          <stop offset="0%" stop-color="#4f1787" stop-opacity="0.55"/>
+          <stop offset="50%" stop-color="#180161" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#05030a" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="nb-g2" cx="75%" cy="65%" r="50%">
+          <stop offset="0%" stop-color="#005792" stop-opacity="0.45"/>
+          <stop offset="60%" stop-color="#0b1b3d" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#05030a" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1920" height="1080" fill="#06060c"/>
+      <rect width="1920" height="1080" fill="url(#nb-g1)"/>
+      <rect width="1920" height="1080" fill="url(#nb-g2)"/>
+      <circle cx="240" cy="180" r="1.5" fill="#fff" opacity="0.8"/>
+      <circle cx="850" cy="120" r="1.2" fill="#fff" opacity="0.6"/>
+      <circle cx="1400" cy="220" r="1.8" fill="#a5f3fc" opacity="0.9"/>
+      <circle cx="1680" cy="450" r="1.3" fill="#fff" opacity="0.7"/>
+      <circle cx="420" cy="620" r="1.4" fill="#fbcfe8" opacity="0.8"/>
+      <circle cx="1100" cy="740" r="1.6" fill="#fff" opacity="0.7"/>
+    </svg>`),
+  },
+  {
+    id: "cyber-blades",
+    nameKey: "settings.themeWpCyberBlades",
+    defaultName: "Cyber Blades",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <linearGradient id="b-g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#0b0d12"/>
+          <stop offset="100%" stop-color="#171b24"/>
+        </linearGradient>
+        <linearGradient id="b-acc" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect width="1920" height="1080" fill="#08090d"/>
+      <polygon points="0,0 900,0 600,1080 0,1080" fill="url(#b-g1)"/>
+      <polygon points="898,0 904,0 604,1080 598,1080" fill="url(#b-acc)"/>
+      <polygon points="1200,0 1920,0 1920,1080 1500,1080" fill="#0d1017"/>
+      <polygon points="1198,0 1202,0 1502,1080 1498,1080" fill="#3b82f6" opacity="0.3"/>
+    </svg>`),
+  },
+  {
+    id: "aurora-emerald",
+    nameKey: "settings.themeWpAuroraEmerald",
+    defaultName: "Aurora Emerald",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <radialGradient id="au-1" cx="40%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#059669" stop-opacity="0.35"/>
+          <stop offset="50%" stop-color="#047857" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#021f16" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="au-2" cx="70%" cy="45%" r="55%">
+          <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+          <stop offset="60%" stop-color="#064e3b" stop-opacity="0.08"/>
+          <stop offset="100%" stop-color="#021f16" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1920" height="1080" fill="#040b08"/>
+      <rect width="1920" height="1080" fill="url(#au-1)"/>
+      <rect width="1920" height="1080" fill="url(#au-2)"/>
+    </svg>`),
+  },
+  {
+    id: "sakura-dusk",
+    nameKey: "settings.themeWpSakuraDusk",
+    defaultName: "Sakura Dusk",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <radialGradient id="sk-1" cx="50%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#db2777" stop-opacity="0.3"/>
+          <stop offset="60%" stop-color="#4c0519" stop-opacity="0.1"/>
+          <stop offset="100%" stop-color="#0d0408" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="sk-2" cx="20%" cy="70%" r="50%">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#0d0408" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1920" height="1080" fill="#0d060a"/>
+      <rect width="1920" height="1080" fill="url(#sk-1)"/>
+      <rect width="1920" height="1080" fill="url(#sk-2)"/>
+    </svg>`),
+  },
+  {
+    id: "fluid-waves",
+    nameKey: "settings.themeWpFluidWaves",
+    defaultName: "Fluid Waves",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <linearGradient id="fw-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#1e1e28"/>
+          <stop offset="100%" stop-color="#0e0e14"/>
+        </linearGradient>
+      </defs>
+      <rect width="1920" height="1080" fill="#0b0b10"/>
+      <path d="M0,600 C400,450 800,750 1200,550 C1600,350 1800,600 1920,520 L1920,1080 L0,1080 Z" fill="url(#fw-g)" opacity="0.65"/>
+      <path d="M0,720 C500,580 900,850 1400,660 C1700,550 1850,700 1920,640 L1920,1080 L0,1080 Z" fill="#14141c" opacity="0.75"/>
+    </svg>`),
+  },
+  {
+    id: "sunset-horizon",
+    nameKey: "settings.themeWpSunsetHorizon",
+    defaultName: "Sunset Horizon",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <linearGradient id="sh-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a0505"/>
+          <stop offset="60%" stop-color="#240c0c"/>
+          <stop offset="90%" stop-color="#5a1e06"/>
+          <stop offset="100%" stop-color="#b45309"/>
+        </linearGradient>
+      </defs>
+      <rect width="1920" height="1080" fill="url(#sh-sky)"/>
+      <polygon points="0,1080 300,740 600,860 900,680 1200,800 1500,650 1920,780 1920,1080" fill="#1a0b06" opacity="0.85"/>
+      <polygon points="0,1080 200,840 500,920 850,810 1150,910 1400,800 1750,890 1920,830 1920,1080" fill="#0c0502"/>
+    </svg>`),
+  },
+  {
+    id: "carbon-fiber",
+    nameKey: "settings.themeWpCarbonFiber",
+    defaultName: "Carbon Fiber",
+    dataUrl: encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs>
+        <pattern id="cf-p" width="12" height="12" patternUnits="userSpaceOnUse">
+          <rect width="12" height="12" fill="#0d0e12"/>
+          <polygon points="0,0 6,0 0,6" fill="#171920"/>
+          <polygon points="6,6 12,6 6,12" fill="#171920"/>
+          <polygon points="6,0 12,0 12,6" fill="#13141a"/>
+          <polygon points="0,6 6,6 0,12" fill="#13141a"/>
+        </pattern>
+      </defs>
+      <rect width="1920" height="1080" fill="url(#cf-p)"/>
+    </svg>`),
+  },
+];
 
 export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: "cyberpunk", name: "Cyberpunk", bg: "#07080a", surface: "#12151b", accent: "#fcee0a", light: false },
@@ -722,11 +912,36 @@ function luminance(color: string): number {
  */
 export function customTokens(input: CustomThemeInput): Record<string, string> {
   const onAccent = luminance(input.accent) > 0.55 ? "#101318" : "#ffffff";
-  const glass = Boolean(input.scene);
+  const glass = Boolean(input.scene) || input.cardGlass === true;
   const baseSurface = input.surface && HEX.test(input.surface) ? input.surface : null;
 
   const rSm = input.radius === "sharp" ? "0px" : input.radius === "round" ? "10px" : "6px";
   const rMd = input.radius === "sharp" ? "0px" : input.radius === "round" ? "16px" : "10px";
+
+  const secAccent = input.accent2 && HEX.test(input.accent2) ? input.accent2 : input.accentHover ?? (input.light ? darken(input.accent, 0.1) : lighten(input.accent, 0.12));
+  const accentGradient = `linear-gradient(135deg, ${input.accent} 0%, ${secAccent} 100%)`;
+
+  let accentGlow = "none";
+  if (input.glow === "neon") {
+    accentGlow = `0 0 16px ${rgba(input.accent, 0.7)}, 0 0 32px ${rgba(input.accent, 0.4)}`;
+  } else if (input.glow === "radiant") {
+    accentGlow = `0 0 14px ${rgba(input.accent, 0.45)}`;
+  } else if (input.glow === "subtle") {
+    accentGlow = `0 0 8px ${rgba(input.accent, 0.25)}`;
+  }
+
+  let line = "rgba(255, 255, 255, 0.07)";
+  let lineStrong = "rgba(255, 255, 255, 0.15)";
+  if (input.borderStyle === "accent") {
+    line = rgba(input.accent, 0.22);
+    lineStrong = rgba(input.accent, 0.45);
+  } else if (input.borderStyle === "contrast") {
+    line = input.light ? "rgba(15, 23, 42, 0.18)" : "rgba(255, 255, 255, 0.18)";
+    lineStrong = input.light ? "rgba(15, 23, 42, 0.35)" : "rgba(255, 255, 255, 0.32)";
+  } else if (input.light) {
+    line = "rgba(15, 23, 42, 0.09)";
+    lineStrong = "rgba(15, 23, 42, 0.18)";
+  }
 
   if (input.light) {
     const s1 = baseSurface ?? "#ffffff";
@@ -735,16 +950,19 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
 
     return {
       "--bg": input.bg,
-      "--surface-1": glass ? rgba(s1, 0.86) : s1,
-      "--surface-2": glass ? rgba(s2, 0.76) : s2,
-      "--surface-3": glass ? rgba(s3, 0.66) : s3,
-      "--line": "rgba(15, 23, 42, 0.09)",
-      "--line-strong": "rgba(15, 23, 42, 0.18)",
+      "--surface-1": glass ? rgba(s1, 0.85) : s1,
+      "--surface-2": glass ? rgba(s2, 0.75) : s2,
+      "--surface-3": glass ? rgba(s3, 0.65) : s3,
+      "--line": line,
+      "--line-strong": lineStrong,
       "--text": "#101318",
       "--text-2": "#4b5563",
       "--text-3": "#7b8492",
       "--accent": input.accent,
       "--accent-hover": input.accentHover ?? darken(input.accent, 0.1),
+      "--accent-2": secAccent,
+      "--accent-gradient": accentGradient,
+      "--accent-glow": accentGlow,
       "--accent-tint": rgba(input.accent, 0.12),
       "--on-accent": onAccent,
       "--ok": "#15803d",
@@ -768,16 +986,19 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
 
   return {
     "--bg": input.bg,
-    "--surface-1": glass ? rgba(s1, 0.82) : s1,
-    "--surface-2": glass ? rgba(s2, 0.72) : s2,
-    "--surface-3": glass ? rgba(s3, 0.62) : s3,
-    "--line": "rgba(255, 255, 255, 0.07)",
-    "--line-strong": "rgba(255, 255, 255, 0.15)",
+    "--surface-1": glass ? (input.cardGlass ? rgba(s1, 0.65) : rgba(s1, 0.82)) : s1,
+    "--surface-2": glass ? (input.cardGlass ? rgba(s2, 0.52) : rgba(s2, 0.72)) : s2,
+    "--surface-3": glass ? (input.cardGlass ? rgba(s3, 0.42) : rgba(s3, 0.62)) : s3,
+    "--line": line,
+    "--line-strong": lineStrong,
     "--text": "#f7f7fa",
     "--text-2": mix("#f7f7fa", input.bg, 0.55),
     "--text-3": mix("#f7f7fa", input.bg, 0.3),
     "--accent": input.accent,
     "--accent-hover": input.accentHover ?? lighten(input.accent, 0.12),
+    "--accent-2": secAccent,
+    "--accent-gradient": accentGradient,
+    "--accent-glow": accentGlow,
     "--accent-tint": rgba(input.accent, 0.16),
     "--on-accent": onAccent,
     "--ok": "#2fb36d",
@@ -811,7 +1032,7 @@ function sceneRules(id: string, input: CustomThemeInput): string {
     `${selector} body { background: ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`,
     `${selector} body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: ${scrim}; ${blurFilter} pointer-events: none; }`,
     `${selector} .overlay, ${selector} #main-col, ${selector} #view { background: transparent !important; }`,
-    `${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }`,
+    `${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }` + (input.glow && input.glow !== "none" ? `\n${selector} .btn.primary { box-shadow: var(--accent-glow) !important; }` : "") + (input.accent2 ? `\n${selector} .btn.primary { background: var(--accent-gradient) !important; }` : ""),
   ].join("\n");
 }
 
@@ -831,6 +1052,10 @@ function readCustomInputs(): CustomThemeInput[] {
         surface: typeof item.surface === "string" && HEX.test(item.surface) ? item.surface : undefined,
         accent: String(item.accent),
         accentHover: typeof item.accentHover === "string" && HEX.test(item.accentHover) ? item.accentHover : undefined,
+        accent2: typeof item.accent2 === "string" && HEX.test(item.accent2) ? item.accent2 : undefined,
+        glow: item.glow === "subtle" || item.glow === "radiant" || item.glow === "neon" ? item.glow : "none",
+        cardGlass: item.cardGlass === true,
+        borderStyle: item.borderStyle === "contrast" || item.borderStyle === "accent" ? item.borderStyle : "subtle",
         light: item.light === true,
         scene:
           typeof item.scene === "string" && item.scene.startsWith("data:image/") && item.scene.length < 2_000_000
@@ -896,6 +1121,10 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     surface: input.surface && HEX.test(input.surface) ? input.surface : undefined,
     accent: HEX.test(input.accent) ? input.accent : "#7c3aed",
     accentHover: input.accentHover && HEX.test(input.accentHover) ? input.accentHover : undefined,
+    accent2: input.accent2 && HEX.test(input.accent2) ? input.accent2 : undefined,
+    glow: input.glow === "subtle" || input.glow === "radiant" || input.glow === "neon" ? input.glow : "none",
+    cardGlass: Boolean(input.cardGlass),
+    borderStyle: input.borderStyle === "contrast" || input.borderStyle === "accent" ? input.borderStyle : "subtle",
     light: Boolean(input.light),
     scene: input.scene?.startsWith("data:image/") ? input.scene : undefined,
     sceneBlur: typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0,
@@ -963,16 +1192,23 @@ export function exportThemeJson(id: string): string {
   if (custom) {
     return JSON.stringify(
       {
-        efxlve_theme: 1,
+        efxlve_theme: 2,
         name: custom.name,
+        author: "User",
         bg: custom.bg,
         surface: custom.surface,
         accent: custom.accent,
         accentHover: custom.accentHover,
+        accent2: custom.accent2,
+        glow: custom.glow ?? "none",
+        cardGlass: Boolean(custom.cardGlass),
+        borderStyle: custom.borderStyle ?? "subtle",
         light: custom.light,
+        scene: custom.scene,
         sceneBlur: custom.sceneBlur,
         sceneOpacity: custom.sceneOpacity,
         radius: custom.radius,
+        exportedAt: Date.now(),
       },
       null,
       2,
@@ -982,13 +1218,14 @@ export function exportThemeJson(id: string): string {
   const def = themeById(id);
   return JSON.stringify(
     {
-      efxlve_theme: 1,
+      efxlve_theme: 2,
       name: def.name ?? def.id,
       bg: HEX.test(def.bg) ? def.bg : "#141418",
       surface: def.surface,
       accent: HEX.test(def.accent) ? def.accent : "#7c3aed",
       light: def.scheme === "light",
       radius: "default",
+      exportedAt: Date.now(),
     },
     null,
     2,
