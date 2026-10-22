@@ -1,50 +1,144 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-  <!-- Xbox 360 backdrop: a dark console-green room lit by one lime glow, with
-       two glass "blades" sweeping across it. Gradients only, no filters: the
-       scene is rasterised once behind the app and must stay cheap. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+  <!-- Xbox 360 Blades Dashboard Backdrop:
+       The iconic 2005 console room featuring sweeping emerald/lime glass blades,
+       the Ring of Light ambient glow, and the embossed Xbox 360 sphere watermark.
+       Built with pure SVG gradients and vectors for instant, GPU-efficient rendering. -->
   <defs>
-    <linearGradient id="room" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#04120a"/>
-      <stop offset="0.45" stop-color="#08220f"/>
-      <stop offset="0.8" stop-color="#0d2e14"/>
-      <stop offset="1" stop-color="#123a19"/>
+    <!-- Console room depth -->
+    <linearGradient id="xRoom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#020904"/>
+      <stop offset="35%" stop-color="#05160a"/>
+      <stop offset="70%" stop-color="#092612"/>
+      <stop offset="100%" stop-color="#0e361a"/>
     </linearGradient>
-    <radialGradient id="glow" cx="1180" cy="880" r="820" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#b6ef5c" stop-opacity="0.62"/>
-      <stop offset="0.3" stop-color="#8ec63f" stop-opacity="0.28"/>
-      <stop offset="0.62" stop-color="#4c8a22" stop-opacity="0.1"/>
-      <stop offset="1" stop-color="#0a1f0d" stop-opacity="0"/>
+
+    <!-- Ring of Light main aura -->
+    <radialGradient id="xRingGlow" cx="1220" cy="850" r="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c4f768" stop-opacity="0.55"/>
+      <stop offset="22%" stop-color="#9bd44a" stop-opacity="0.28"/>
+      <stop offset="48%" stop-color="#468820" stop-opacity="0.12"/>
+      <stop offset="78%" stop-color="#0c2612" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#020904" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowLeft" cx="120" cy="140" r="620" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9bd44a" stop-opacity="0.24"/>
-      <stop offset="0.55" stop-color="#4b8a24" stop-opacity="0.06"/>
-      <stop offset="1" stop-color="#04120a" stop-opacity="0"/>
+
+    <!-- Top left ambient fill -->
+    <radialGradient id="xAmbientLeft" cx="160" cy="120" r="700" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9bd44a" stop-opacity="0.2"/>
+      <stop offset="40%" stop-color="#3d7d1e" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#020904" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="bladeA" x1="0" y1="0" x2="1" y2="0.4">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
-      <stop offset="0.32" stop-color="#e6ffc4" stop-opacity="0.24"/>
-      <stop offset="0.62" stop-color="#b6ef5c" stop-opacity="0.10"/>
-      <stop offset="1" stop-color="#7cbf2a" stop-opacity="0"/>
+
+    <!-- Primary Blade Gradient -->
+    <linearGradient id="xBlade1" x1="0" y1="0" x2="1" y2="0.3">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="25%" stop-color="#e8ffc2" stop-opacity="0.22"/>
+      <stop offset="55%" stop-color="#b0ea55" stop-opacity="0.14"/>
+      <stop offset="85%" stop-color="#67ab24" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#3b7213" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="bladeB" x1="0" y1="1" x2="1" y2="0.2">
-      <stop offset="0" stop-color="#7cbf2a" stop-opacity="0"/>
-      <stop offset="0.4" stop-color="#c8f57a" stop-opacity="0.18"/>
-      <stop offset="0.72" stop-color="#ffffff" stop-opacity="0.07"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+
+    <!-- Secondary Blade Gradient -->
+    <linearGradient id="xBlade2" x1="0" y1="1" x2="1" y2="0.15">
+      <stop offset="0%" stop-color="#4e961c" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#bdf06a" stop-opacity="0.18"/>
+      <stop offset="65%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#70b82b" stop-opacity="0"/>
     </linearGradient>
-    <radialGradient id="vignette" cx="800" cy="520" r="900" gradientUnits="userSpaceOnUse">
-      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.5"/>
+
+    <!-- Third Deep Blade Gradient -->
+    <linearGradient id="xBlade3" x1="0" y1="0" x2="1" y2="0.8">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="40%" stop-color="#80cc31" stop-opacity="0.12"/>
+      <stop offset="75%" stop-color="#3b7918" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0e2a10" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glass Specular Highlight Stroke -->
+    <linearGradient id="xEdgeSheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="20%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#d6ff94" stop-opacity="0.6"/>
+      <stop offset="80%" stop-color="#9bd44a" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="xEdgeSheen2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="35%" stop-color="#e8ffba" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#8fd33c" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Xbox Sphere Watermark Gradients -->
+    <radialGradient id="xSphereBody" cx="1220" cy="500" r="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e6ffd0" stop-opacity="0.16"/>
+      <stop offset="35%" stop-color="#9bd44a" stop-opacity="0.11"/>
+      <stop offset="70%" stop-color="#3c7c1b" stop-opacity="0.05"/>
+      <stop offset="96%" stop-color="#143e12" stop-opacity="0.01"/>
+      <stop offset="100%" stop-color="#05170a" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="xChromeX" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#a6e355" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#2d6814" stop-opacity="0.03"/>
+    </linearGradient>
+
+    <!-- Vignette frame -->
+    <radialGradient id="xVignette" cx="800" cy="500" r="950" gradientUnits="userSpaceOnUse">
+      <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="85%" stop-color="#000000" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.75"/>
     </radialGradient>
   </defs>
 
-  <rect width="1600" height="1000" fill="url(#room)"/>
-  <rect width="1600" height="1000" fill="url(#glowLeft)"/>
-  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <!-- Base Room -->
+  <rect width="1600" height="1000" fill="url(#xRoom)"/>
+  <rect width="1600" height="1000" fill="url(#xAmbientLeft)"/>
+  <rect width="1600" height="1000" fill="url(#xRingGlow)"/>
 
-  <!-- The two blades the 360 dashboard slid between. -->
-  <path d="M-120 760 C 240 560, 640 470, 1080 470 L 1720 470 L 1720 620 C 1180 640, 700 720, 240 900 L -120 900 Z" fill="url(#bladeA)"/>
-  <path d="M-120 430 C 300 330, 780 300, 1220 330 L 1720 360 L 1720 470 C 1240 450, 700 500, 200 640 L -120 690 Z" fill="url(#bladeB)"/>
+  <!-- Xbox 360 Emblem Watermark (Soft in background) -->
+  <g id="xbox-watermark" transform="translate(1220, 500)">
+    <!-- Outer sphere rim -->
+    <circle r="220" fill="url(#xSphereBody)"/>
+    <circle r="220" fill="none" stroke="url(#xEdgeSheen)" stroke-width="1.5" opacity="0.35"/>
+    <!-- Inner groove ring -->
+    <circle r="180" fill="none" stroke="#b6ef5c" stroke-width="1" stroke-dasharray="14 8" opacity="0.15"/>
+    <!-- The Carved 360 "X" Geometry -->
+    <path d="M-115 -145 C -40 -65, -30 -30, 0 0 C -30 30, -40 65, -115 145 C -85 160, -45 160, -25 125 C 0 80, 20 50, 0 0 C 20 -50, 0 -80, -25 -125 C -45 -160, -85 -160, -115 -145 Z" fill="url(#xChromeX)"/>
+    <path d="M115 -145 C 40 -65, 30 -30, 0 0 C 30 30, 40 65, 115 145 C 85 160, 45 160, 25 125 C 0 80, -20 50, 0 0 C -20 -50, 0 -80, 25 -125 C 45 -160, 85 -160, 115 -145 Z" fill="url(#xChromeX)"/>
+    <circle r="36" fill="#a4e44e" opacity="0.18"/>
+  </g>
 
-  <rect width="1600" height="1000" fill="url(#vignette)"/>
+  <!-- Sweeping Blade 3 (Deepest) -->
+  <path d="M-140 890 C 200 740, 640 640, 1100 640 L 1740 640 L 1740 760 C 1200 760, 720 830, 220 980 L -140 990 Z" fill="url(#xBlade3)"/>
+
+  <!-- Sweeping Blade 1 (Main Lower Blade) -->
+  <path d="M-140 760 C 220 560, 640 465, 1080 465 L 1740 465 L 1740 615 C 1180 635, 700 715, 220 890 L -140 890 Z" fill="url(#xBlade1)"/>
+  <!-- Specular top edge on Blade 1 -->
+  <path d="M-140 760 C 220 560, 640 465, 1080 465 L 1740 465" fill="none" stroke="url(#xEdgeSheen)" stroke-width="2.2"/>
+
+  <!-- Sweeping Blade 2 (Upper Counter-Blade) -->
+  <path d="M-140 420 C 280 320, 760 290, 1200 320 L 1740 350 L 1740 465 C 1220 445, 680 495, 180 630 L -140 680 Z" fill="url(#xBlade2)"/>
+  <!-- Specular top edge on Blade 2 -->
+  <path d="M-140 420 C 280 320, 760 290, 1200 320 L 1740 350" fill="none" stroke="url(#xEdgeSheen2)" stroke-width="1.8"/>
+
+  <!-- Top Header Blade Contour (Guide Blade) -->
+  <path d="M-140 130 C 350 95, 850 90, 1350 115 L 1740 135 L 1740 145 C 1280 125, 780 120, -140 155 Z" fill="url(#xBlade1)" opacity="0.6"/>
+  <path d="M-140 130 C 350 95, 850 90, 1350 115 L 1740 135" fill="none" stroke="url(#xEdgeSheen)" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- Ring of Light Quadrants (Soft Green Arc Indicator) -->
+  <g id="ring-of-light-quads" transform="translate(1220, 850)" opacity="0.4">
+    <!-- Top-Left Quad -->
+    <path d="M -90 -20 A 92 92 0 0 1 -20 -90 L -14 -64 A 65 65 0 0 0 -64 -14 Z" fill="#b9f55c"/>
+    <!-- Top-Right Quad -->
+    <path d="M 20 -90 A 92 92 0 0 1 90 -20 L 64 -14 A 65 65 0 0 0 14 -64 Z" fill="#b9f55c"/>
+    <!-- Bottom-Left Quad -->
+    <path d="M -90 20 A 92 92 0 0 0 -20 90 L -14 64 A 65 65 0 0 1 -64 14 Z" fill="#78bf2b"/>
+    <!-- Bottom-Right Quad -->
+    <path d="M 20 90 A 92 92 0 0 0 90 20 L 64 14 A 65 65 0 0 1 14 64 Z" fill="#78bf2b"/>
+  </g>
+
+  <!-- Vignette -->
+  <rect width="1600" height="1000" fill="url(#xVignette)"/>
 </svg>

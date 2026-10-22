@@ -1580,18 +1580,19 @@
 }
 
 /* ---------- Xbox 360 ----------
-   The 360 dashboard: a dark console-green room, two glass blades sweeping
-   through it (src/assets/xbox360-scene.svg) and lime glass chrome. Like Aero,
-   this is a scene theme: gradients only, no backdrop-filter, no glow on text. */
+   The 360 dashboard: a dark console-green room, sweeping glass blades
+   (src/assets/xbox360-scene.svg), the iconic Ring of Light aura and lime gloss
+   chrome. Like Aero, this is a scene theme: layered gradients and highlights
+   emulating the classic 2005 console dashboard. */
 
 :root[data-surface="xbox360"] {
   color-scheme: dark;
   --bg: #07180d;
-  --surface-1: rgba(16, 38, 22, 0.86);
-  --surface-2: rgba(26, 56, 32, 0.72);
-  --surface-3: rgba(38, 76, 44, 0.6);
-  --line: rgba(170, 226, 118, 0.14);
-  --line-strong: rgba(170, 226, 118, 0.28);
+  --surface-1: rgba(16, 38, 22, 0.88);
+  --surface-2: rgba(26, 56, 32, 0.76);
+  --surface-3: rgba(38, 76, 44, 0.65);
+  --line: rgba(170, 226, 118, 0.16);
+  --line-strong: rgba(170, 226, 118, 0.3);
   --text: #f3ffe9;
   --text-2: #b8d5a8;
   --text-3: #7d9a75;
@@ -1613,7 +1614,7 @@
   --scrollbar-thumb-hover: rgba(155, 212, 74, 0.42);
   --x360-gloss: linear-gradient(180deg, #d8f7a0 0%, #a6dc52 46%, #7fbd2e 50%, #6ca726 100%);
   --x360-gloss-hover: linear-gradient(180deg, #e6ffb8 0%, #b7ea63 46%, #8ecb37 50%, #79b52b 100%);
-  --x360-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --x360-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 :root[data-surface="xbox360"] body {
@@ -1635,83 +1636,219 @@
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
+:root[data-surface="xbox360"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+
+/* Window bar: 360 header blade with specular highlight and glossy beta pill */
 :root[data-surface="xbox360"] #winbar {
-  background: linear-gradient(180deg, rgba(14, 34, 18, 0.94), rgba(8, 22, 12, 0.88));
-  border-bottom-color: var(--line);
+  background: linear-gradient(180deg, rgba(22, 54, 30, 0.95) 0%, rgba(12, 32, 16, 0.92) 50%, rgba(8, 20, 10, 0.95) 100%);
+  border-bottom: 1px solid rgba(155, 212, 74, 0.22);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
 }
+:root[data-surface="xbox360"] .winbar-beta-chip {
+  background: var(--x360-gloss);
+  color: var(--on-accent);
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 0 8px rgba(155, 212, 74, 0.35);
+}
+:root[data-surface="xbox360"] .winbar-btn:hover {
+  background: rgba(155, 212, 74, 0.15);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(155, 212, 74, 0.3);
+}
+:root[data-surface="xbox360"] .win-btn.win-close:hover {
+  background: linear-gradient(180deg, #f66a6a 0%, #d82b2b 50%, #b81b1b 100%);
+  color: #ffffff;
+}
+
+/* Sidebar: Xbox 360 Blades navigation */
 :root[data-surface="xbox360"] #sidebar {
-  background: linear-gradient(180deg, rgba(12, 30, 16, 0.92), rgba(6, 18, 10, 0.84));
-  border-right-color: var(--line);
+  background: linear-gradient(180deg, rgba(14, 36, 18, 0.94) 0%, rgba(6, 18, 10, 0.9) 100%);
+  border-right: 1px solid rgba(155, 212, 74, 0.2);
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35);
 }
 :root[data-surface="xbox360"] #page-header {
-  background: linear-gradient(180deg, rgba(18, 44, 24, 0.6), rgba(10, 26, 15, 0.24));
-  border-bottom-color: var(--line);
+  background: linear-gradient(180deg, rgba(18, 44, 24, 0.65), rgba(10, 26, 15, 0.25));
+  border-bottom: 1px solid rgba(155, 212, 74, 0.18);
 }
 :root[data-surface="xbox360"] :is(.sb-profile, .sb-divider, .sb-mini) { border-color: var(--line); }
+:root[data-surface="xbox360"] .sb-item {
+  position: relative;
+  transition: all var(--ease);
+}
+:root[data-surface="xbox360"] .sb-item:hover:not(.active) {
+  background: linear-gradient(90deg, rgba(155, 212, 74, 0.12) 0%, rgba(155, 212, 74, 0.04) 80%, transparent 100%);
+  color: #f3ffe9;
+}
 :root[data-surface="xbox360"] .sb-item.active {
-  background: var(--accent-tint);
-  color: var(--text);
+  background: linear-gradient(90deg, rgba(155, 212, 74, 0.28) 0%, rgba(155, 212, 74, 0.14) 75%, transparent 100%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 :root[data-surface="xbox360"] .sb-item.active::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: var(--accent);
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #d8f7a0, #7fbd2e);
+  box-shadow: 0 0 10px rgba(155, 212, 74, 0.7);
 }
 
-/* Glass cards: one gradient body, a hairline and a top sheen. */
-:root[data-surface="xbox360"] :is(.card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item) {
-  background: linear-gradient(180deg, rgba(22, 48, 26, 0.86), rgba(12, 30, 16, 0.9));
+/* Glass cards: smoked emerald console body, a hairline rim and a top sheen */
+:root[data-surface="xbox360"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
+  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: linear-gradient(180deg, rgba(22, 50, 28, 0.88), rgba(12, 30, 16, 0.92));
   border: 1px solid var(--line);
-  box-shadow: var(--x360-glass-edge);
+  box-shadow: var(--x360-glass-edge), 0 8px 24px rgba(0, 14, 4, 0.45);
 }
-:root[data-surface="xbox360"] :is(.row, .settings-row):hover { background: rgba(155, 212, 74, 0.06); }
+:root[data-surface="xbox360"] :is(.row, .settings-row):hover { background: rgba(155, 212, 74, 0.08); }
 
-:root[data-surface="xbox360"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input) {
-  background: rgba(8, 24, 12, 0.8);
+/* Inputs and focus rings */
+:root[data-surface="xbox360"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+  background: rgba(8, 24, 12, 0.85);
   border-color: var(--line);
   color: var(--text);
+  box-shadow: inset 0 1px 2px rgba(0, 12, 4, 0.5);
 }
-:root[data-surface="xbox360"] :is(input, select, textarea, .input, .text-input):focus {
+:root[data-surface="xbox360"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-surface="xbox360"] .search:focus-within,
+:root[data-surface="xbox360"] .install-path-input-wrap:focus-within {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(155, 212, 74, 0.3), inset 0 1px 2px rgba(0, 12, 4, 0.5);
 }
-:root[data-surface="xbox360"] .seg { background: rgba(8, 24, 12, 0.7); border-color: var(--line); }
+:root[data-surface="xbox360"] .seg {
+  background: rgba(8, 24, 12, 0.75);
+  border-color: var(--line);
+}
 :root[data-surface="xbox360"] .seg > button { color: var(--text-2); }
-:root[data-surface="xbox360"] .seg > button.active { background: var(--accent-tint); color: var(--text); }
+:root[data-surface="xbox360"] .seg > button.active {
+  background: var(--x360-gloss);
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 8px rgba(155, 212, 74, 0.3);
+}
 
-/* Buttons carry the 360's lime gloss. Text on the gloss is the dark ink, so a
-   filled row never turns into a bright slab. */
+/* Buttons: 360 lime gloss with specular highlights */
 :root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: var(--x360-gloss);
   color: var(--on-accent);
   border-color: #5f9420;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -4px 8px rgba(200, 245, 130, 0.35), 0 2px 6px rgba(0, 30, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -4px 8px rgba(200, 245, 130, 0.35), 0 2px 6px rgba(0, 30, 0, 0.4);
 }
 :root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: var(--x360-gloss-hover);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), inset 0 -4px 8px rgba(210, 250, 150, 0.4), 0 2px 10px rgba(120, 190, 50, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(210, 250, 150, 0.4), 0 0 14px rgba(155, 212, 74, 0.45);
 }
 :root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active:not(:disabled) {
   background: linear-gradient(180deg, #8ec93c 0%, #74ad2a 48%, #5f951f 50%, #578a1d 100%);
   box-shadow: inset 0 2px 4px rgba(0, 40, 0, 0.35);
 }
-:root[data-surface="xbox360"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn) {
-  background: rgba(16, 38, 22, 0.7);
+:root[data-surface="xbox360"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source) {
+  background: rgba(16, 40, 22, 0.75);
   border-color: var(--line);
   color: var(--text-2);
 }
-:root[data-surface="xbox360"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn):hover {
-  background: rgba(26, 56, 32, 0.9);
+:root[data-surface="xbox360"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source):hover,
+:root[data-surface="xbox360"] button.gp-source[aria-expanded="true"] {
+  background: rgba(26, 60, 34, 0.92);
   color: var(--text);
   border-color: var(--line-strong);
+  box-shadow: 0 0 8px rgba(155, 212, 74, 0.2);
 }
 :root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update) svg { color: currentColor; }
 
-:root[data-surface="xbox360"] .switch .track { background: rgba(8, 24, 12, 0.8); border-color: var(--line); }
+/* Library game cards: 360 jewel-case hover halo & diagonal glass reflection */
+:root[data-surface="xbox360"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 16, 4, 0.45), 0 0 0 1px rgba(155, 212, 74, 0.1);
+}
+:root[data-surface="xbox360"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 1px rgba(155, 212, 74, 0.75),
+    0 0 22px rgba(155, 212, 74, 0.45),
+    0 16px 32px rgba(0, 16, 4, 0.65);
+}
+:root[data-surface="xbox360"] .pcard:not(.is-case) .pcard-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.32) 0%, rgba(155, 212, 74, 0.12) 34%, transparent 34.5%);
+  opacity: 0;
+  transition: opacity var(--ease);
+  pointer-events: none;
+}
+:root[data-surface="xbox360"] .pcard:not(.is-case):is(:hover, :focus-visible) .pcard-art::after {
+  opacity: 1;
+}
+:root[data-surface="xbox360"] .pcard-play-btn {
+  background: rgba(16, 42, 22, 0.85);
+  border-color: rgba(155, 212, 74, 0.35);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+:root[data-surface="xbox360"] .pcard:hover .pcard-play-btn {
+  background: rgba(26, 62, 32, 0.95);
+  border-color: #9bd44a;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(155, 212, 74, 0.3);
+}
+:root[data-surface="xbox360"] .pcard-play-btn:hover {
+  background: var(--x360-gloss);
+  border-color: #5f9420;
+  color: var(--on-accent);
+  box-shadow: 0 0 14px rgba(155, 212, 74, 0.5);
+}
+
+/* Progress bars: glossy 360 green split bar */
+:root[data-surface="xbox360"] .progress {
+  background: rgba(8, 24, 12, 0.85);
+  border: 1px solid rgba(155, 212, 74, 0.25);
+  box-shadow: inset 0 1px 2px rgba(0, 10, 2, 0.5);
+}
+:root[data-surface="xbox360"] .progress > span,
+:root[data-surface="xbox360"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
+  background: var(--x360-gloss);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 0 8px rgba(155, 212, 74, 0.45);
+}
+
+/* Achievements ("Achievement Unlocked") */
+:root[data-surface="xbox360"] .profile-ach-card {
+  background: linear-gradient(180deg, rgba(22, 50, 28, 0.88), rgba(12, 30, 16, 0.92));
+  border: 1px solid rgba(155, 212, 74, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+:root[data-surface="xbox360"] .profile-ach-card:hover {
+  border-color: #9bd44a;
+  box-shadow: 0 4px 16px rgba(0, 16, 4, 0.5), 0 0 12px rgba(155, 212, 74, 0.25);
+}
+:root[data-surface="xbox360"] .profile-ach-pct {
+  color: var(--accent);
+  font-weight: 700;
+}
+:root[data-surface="xbox360"] .profile-ach-bar {
+  background: rgba(8, 24, 12, 0.85);
+  border: 1px solid rgba(155, 212, 74, 0.2);
+}
+:root[data-surface="xbox360"] .profile-ach-bar > span {
+  background: var(--x360-gloss);
+  box-shadow: 0 0 6px rgba(155, 212, 74, 0.4);
+}
+:root[data-surface="xbox360"] .lrow-plat-cup::before {
+  background: radial-gradient(circle, rgba(155, 212, 74, 0.4) 0%, rgba(155, 212, 74, 0) 70%);
+}
+
+/* Switch */
+:root[data-surface="xbox360"] .switch .track { background: rgba(8, 24, 12, 0.85); border-color: var(--line); }
 :root[data-surface="xbox360"] .switch .track::before { background: #e9ffd0; }
 :root[data-surface="xbox360"] .switch input:checked + .track {
   background: var(--x360-gloss);
@@ -1719,11 +1856,73 @@
 }
 :root[data-surface="xbox360"] .switch input:checked + .track::before { background: #10240a; }
 
+/* Store switcher tabs */
+:root[data-surface="xbox360"] .store-tabs {
+  background: rgba(8, 24, 12, 0.7);
+  border: 1px solid var(--line);
+}
 :root[data-surface="xbox360"] .store-tabs .tab { color: var(--text-2); }
-:root[data-surface="xbox360"] .store-tabs .tab.active { color: var(--text); }
+:root[data-surface="xbox360"] .store-tabs .tab.active {
+  color: #ffffff;
+  background: var(--accent-tint);
+}
 :root[data-surface="xbox360"] .store-tabs .tab.active::after,
-:root[data-surface="xbox360"] .tab.active::after { background: var(--accent); }
+:root[data-surface="xbox360"] .tab.active::after {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(155, 212, 74, 0.6);
+}
 :root[data-surface="xbox360"] .tab:hover:not(.active) { color: var(--text); }
+
+/* Overlays & Backdrops */
+:root[data-surface="xbox360"] :is(
+  .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
+  .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay,
+  .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop
+) {
+  background: rgba(4, 16, 8, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Dropdowns & Popovers */
+:root[data-surface="xbox360"] :is(
+  .gp-store-menu, .gp-version-menu, .gp-more-menu, .col-dropdown-menu,
+  .sort-dropdown-menu, .store-dropdown-menu, .ps5-context-menu, .custom-search-dropdown, .notif-panel
+) {
+  background: linear-gradient(180deg, rgba(20, 48, 26, 0.98), rgba(10, 26, 14, 0.98));
+  border: 1px solid rgba(155, 212, 74, 0.28);
+  box-shadow: 0 14px 34px rgba(0, 12, 4, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+:root[data-surface="xbox360"] :is(.ps5-context-item, .gp-store-row):hover,
+:root[data-surface="xbox360"] :is(.ps5-context-item, .gp-store-row):focus-visible {
+  background: var(--accent-tint);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(155, 212, 74, 0.35);
+}
+
+/* Game Page Hero */
+:root[data-surface="xbox360"] .gp-hero-scrim {
+  background: linear-gradient(to bottom, rgba(4, 16, 8, 0.35) 0%, rgba(4, 16, 8, 0) 25%, rgba(4, 16, 8, 0.12) 55%, rgba(4, 16, 8, 0.72) 85%, rgba(4, 16, 8, 0.92) 100%);
+}
+:root[data-surface="xbox360"] .gp-bar-meta-group {
+  background: linear-gradient(180deg, rgba(20, 48, 26, 0.88), rgba(12, 30, 16, 0.92));
+  border: 1px solid var(--line);
+  box-shadow: var(--x360-glass-edge), 0 6px 18px rgba(0, 12, 4, 0.4);
+}
+:root[data-surface="xbox360"] .gp-bar-meta-icon {
+  background: rgba(8, 24, 12, 0.7);
+  color: var(--text-2);
+}
+:root[data-surface="xbox360"] .gp-bar-meta-icon.is-synced {
+  color: #9bd44a;
+  background: rgba(155, 212, 74, 0.18);
+}
+:root[data-surface="xbox360"] .gp-bar-meta-item.is-clickable:hover {
+  background: var(--accent-tint);
+}
+:root[data-surface="xbox360"] .gp-bar-meta-sep {
+  background: var(--line);
+}
 
 :root[data-surface="xbox360"] :is(.notif-item.unread, .palette, .toast, .lib-filter-panel) {
   background: linear-gradient(180deg, rgba(26, 56, 32, 0.95), rgba(12, 30, 16, 0.96));

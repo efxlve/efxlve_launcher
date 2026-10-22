@@ -5,7 +5,7 @@
  * here and needs no CSS at all: the tokens are written to
  * `:root[data-surface="<id>"]` when the theme is applied. A theme that also
  * changes shapes, backgrounds or glass adds a `[data-surface="<id>"]` block in
- * `styles/themes.css` (White Mode and Frutiger Aero do).
+ * `styles/themes.css` (White Mode, Frutiger Aero and Xbox 360 do).
  *
  * The settings picker, the stored choice and the boot path all read this list,
  * so adding a theme is one entry (plus `settings.surface<Name>` in the locales)
@@ -31,6 +31,222 @@ export interface ThemeDef {
 
 const DEFAULT_THEME = "black";
 const TOKEN_STYLE_ID = "efxlve-theme-tokens";
+
+/**
+ * Cyberpunk: neon night with electric cyan accent and hot magenta hairlines.
+ */
+const CYBERPUNK: ThemeDef = {
+  id: "cyberpunk",
+  labelKey: "settings.surfaceCyberpunk",
+  bg: "linear-gradient(145deg, #090614 0%, #170d2e 55%, #080512 100%)",
+  accent: "#05d9e2",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#090614",
+    "--surface-1": "#100c22",
+    "--surface-2": "#181332",
+    "--surface-3": "#221c44",
+    "--line": "rgba(255, 42, 109, 0.16)",
+    "--line-strong": "rgba(5, 217, 226, 0.28)",
+    "--text": "#f8f9fe",
+    "--text-2": "#a8a9cb",
+    "--text-3": "#686a94",
+    "--accent": "#05d9e2",
+    "--accent-hover": "#38e5ed",
+    "--accent-tint": "rgba(5, 217, 226, 0.16)",
+    "--on-accent": "#041419",
+    "--ok": "#00f076",
+    "--ok-hover": "#2bf58e",
+    "--ok-tint": "rgba(0, 240, 118, 0.16)",
+    "--warn": "#ffbe0b",
+    "--warn-tint": "rgba(255, 190, 11, 0.16)",
+    "--err": "#ff2a6d",
+    "--err-tint": "rgba(255, 42, 109, 0.18)",
+    "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.75)",
+    "--scrollbar-thumb": "rgba(5, 217, 226, 0.18)",
+    "--scrollbar-thumb-hover": "rgba(5, 217, 226, 0.32)",
+  },
+};
+
+/**
+ * Tokyo Night: the beloved developer palette of deep indigo-black and soft sky blue.
+ */
+const TOKYO_NIGHT: ThemeDef = {
+  id: "tokyonight",
+  labelKey: "settings.surfaceTokyoNight",
+  bg: "linear-gradient(145deg, #16161e 0%, #1a1b26 50%, #13131a 100%)",
+  accent: "#7aa2f7",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#16161e",
+    "--surface-1": "#1a1b26",
+    "--surface-2": "#212337",
+    "--surface-3": "#2a2e48",
+    "--line": "rgba(122, 162, 247, 0.11)",
+    "--line-strong": "rgba(122, 162, 247, 0.22)",
+    "--text": "#c0caf5",
+    "--text-2": "#9aa5ce",
+    "--text-3": "#565f89",
+    "--accent": "#7aa2f7",
+    "--accent-hover": "#8cb0f9",
+    "--accent-tint": "rgba(122, 162, 247, 0.15)",
+    "--on-accent": "#0d111d",
+    "--ok": "#9ece6a",
+    "--ok-hover": "#aed67d",
+    "--ok-tint": "rgba(158, 206, 106, 0.14)",
+    "--warn": "#e0af68",
+    "--warn-tint": "rgba(224, 175, 104, 0.14)",
+    "--err": "#f7768e",
+    "--err-tint": "rgba(247, 118, 142, 0.14)",
+    "--shadow-pop": "0 12px 32px rgba(6, 8, 14, 0.65)",
+    "--scrollbar-thumb": "rgba(122, 162, 247, 0.18)",
+    "--scrollbar-thumb-hover": "rgba(122, 162, 247, 0.32)",
+  },
+};
+
+/**
+ * Crimson: deep charcoal obsidian with fiery ruby crimson accents.
+ */
+const CRIMSON: ThemeDef = {
+  id: "crimson",
+  labelKey: "settings.surfaceCrimson",
+  bg: "linear-gradient(140deg, #0e0a0d 0%, #201017 55%, #0b0709 100%)",
+  accent: "#e11d48",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#0d0a0c",
+    "--surface-1": "#151014",
+    "--surface-2": "#1e171c",
+    "--surface-3": "#291f27",
+    "--line": "rgba(225, 29, 72, 0.12)",
+    "--line-strong": "rgba(225, 29, 72, 0.24)",
+    "--text": "#fdf2f4",
+    "--text-2": "#cbb1b8",
+    "--text-3": "#7e666e",
+    "--accent": "#e11d48",
+    "--accent-hover": "#f43f5e",
+    "--accent-tint": "rgba(225, 29, 72, 0.16)",
+    "--on-accent": "#ffffff",
+    "--ok": "#2fb36d",
+    "--ok-hover": "#38c27a",
+    "--ok-tint": "rgba(47, 179, 109, 0.14)",
+    "--warn": "#e0a32e",
+    "--warn-tint": "rgba(224, 163, 46, 0.14)",
+    "--err": "#e11d48",
+    "--err-tint": "rgba(225, 29, 72, 0.18)",
+    "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.7)",
+    "--scrollbar-thumb": "rgba(225, 29, 72, 0.18)",
+    "--scrollbar-thumb-hover": "rgba(225, 29, 72, 0.3)",
+  },
+};
+
+/**
+ * Nord: clean Arctic slate with muted glacier cyan.
+ */
+const NORD: ThemeDef = {
+  id: "nord",
+  labelKey: "settings.surfaceNord",
+  bg: "linear-gradient(150deg, #242933 0%, #2e3440 60%, #1f232b 100%)",
+  accent: "#88c0d0",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#242933",
+    "--surface-1": "#2e3440",
+    "--surface-2": "#3b4252",
+    "--surface-3": "#434c5e",
+    "--line": "rgba(216, 222, 233, 0.08)",
+    "--line-strong": "rgba(136, 192, 208, 0.2)",
+    "--text": "#eceff4",
+    "--text-2": "#d8dee9",
+    "--text-3": "#7e889b",
+    "--accent": "#88c0d0",
+    "--accent-hover": "#8fbcbb",
+    "--accent-tint": "rgba(136, 192, 208, 0.16)",
+    "--on-accent": "#141920",
+    "--ok": "#a3be8c",
+    "--ok-hover": "#b4cf9d",
+    "--ok-tint": "rgba(163, 190, 140, 0.15)",
+    "--warn": "#ebcb8b",
+    "--warn-tint": "rgba(235, 203, 139, 0.15)",
+    "--err": "#bf616a",
+    "--err-tint": "rgba(191, 97, 106, 0.16)",
+    "--shadow-pop": "0 12px 32px rgba(10, 14, 20, 0.55)",
+    "--scrollbar-thumb": "rgba(216, 222, 233, 0.16)",
+    "--scrollbar-thumb-hover": "rgba(216, 222, 233, 0.28)",
+  },
+};
+
+/**
+ * Sunset Amber: warm obsidian dark with golden solar amber.
+ */
+const SUNSET: ThemeDef = {
+  id: "sunset",
+  labelKey: "settings.surfaceSunset",
+  bg: "linear-gradient(140deg, #100d0a 0%, #26190f 55%, #0d0a08 100%)",
+  accent: "#f59e0b",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#100d0a",
+    "--surface-1": "#17130f",
+    "--surface-2": "#231c15",
+    "--surface-3": "#2f251c",
+    "--line": "rgba(245, 158, 11, 0.11)",
+    "--line-strong": "rgba(245, 158, 11, 0.22)",
+    "--text": "#fffaf3",
+    "--text-2": "#d6beab",
+    "--text-3": "#8c7562",
+    "--accent": "#f59e0b",
+    "--accent-hover": "#fbbf24",
+    "--accent-tint": "rgba(245, 158, 11, 0.16)",
+    "--on-accent": "#1b0f00",
+    "--ok": "#2fb36d",
+    "--ok-hover": "#38c27a",
+    "--ok-tint": "rgba(47, 179, 109, 0.14)",
+    "--warn": "#f59e0b",
+    "--warn-tint": "rgba(245, 158, 11, 0.16)",
+    "--err": "#e5484d",
+    "--err-tint": "rgba(229, 72, 77, 0.14)",
+    "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.65)",
+    "--scrollbar-thumb": "rgba(245, 158, 11, 0.18)",
+    "--scrollbar-thumb-hover": "rgba(245, 158, 11, 0.3)",
+  },
+};
+
+/**
+ * Matrix: retro phosphor terminal green on pure black.
+ */
+const MATRIX: ThemeDef = {
+  id: "matrix",
+  labelKey: "settings.surfaceMatrix",
+  bg: "linear-gradient(150deg, #040905 0%, #0d1e11 55%, #030704 100%)",
+  accent: "#00e676",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#040905",
+    "--surface-1": "#09130b",
+    "--surface-2": "#102013",
+    "--surface-3": "#182e1c",
+    "--line": "rgba(0, 230, 118, 0.12)",
+    "--line-strong": "rgba(0, 230, 118, 0.24)",
+    "--text": "#e9ffe9",
+    "--text-2": "#9ad8a3",
+    "--text-3": "#52855a",
+    "--accent": "#00e676",
+    "--accent-hover": "#33eb91",
+    "--accent-tint": "rgba(0, 230, 118, 0.15)",
+    "--on-accent": "#021406",
+    "--ok": "#00e676",
+    "--ok-hover": "#33eb91",
+    "--ok-tint": "rgba(0, 230, 118, 0.15)",
+    "--warn": "#e0a32e",
+    "--warn-tint": "rgba(224, 163, 46, 0.14)",
+    "--err": "#e5484d",
+    "--err-tint": "rgba(229, 72, 77, 0.14)",
+    "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.75)",
+    "--scrollbar-thumb": "rgba(0, 230, 118, 0.16)",
+    "--scrollbar-thumb-hover": "rgba(0, 230, 118, 0.28)",
+  },
+};
 
 /**
  * Midnight is the reference for a colour-only theme: it defines nothing but
@@ -64,6 +280,8 @@ const MIDNIGHT: ThemeDef = {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.55)",
+    "--scrollbar-thumb": "rgba(120, 170, 255, 0.15)",
+    "--scrollbar-thumb-hover": "rgba(120, 170, 255, 0.28)",
   },
 };
 
@@ -88,8 +306,6 @@ const EPIC: ThemeDef = {
     "--text": "#f6f2ff",
     "--text-2": "#a9a2b8",
     "--text-3": "#6d6680",
-    /* A filled button uses this, so it stays a deep violet instead of a neon
-       slab: bright violet is the hover and the tint, not the surface. */
     "--accent": "#7c3aed",
     "--accent-hover": "#8b5cf6",
     "--accent-tint": "rgba(124, 58, 237, 0.2)",
@@ -102,6 +318,8 @@ const EPIC: ThemeDef = {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.6)",
+    "--scrollbar-thumb": "rgba(190, 160, 255, 0.15)",
+    "--scrollbar-thumb-hover": "rgba(190, 160, 255, 0.28)",
   },
 };
 
@@ -133,6 +351,8 @@ const DISCORD: ThemeDef = {
     "--err": "#f23f43",
     "--err-tint": "rgba(242, 63, 67, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.55)",
+    "--scrollbar-thumb": "rgba(255, 255, 255, 0.14)",
+    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.24)",
   },
 };
 
@@ -151,9 +371,15 @@ export const THEMES: readonly ThemeDef[] = [
     accent: "#ffffff",
     scheme: "dark",
   },
+  CYBERPUNK,
+  TOKYO_NIGHT,
+  CRIMSON,
+  NORD,
+  SUNSET,
+  MATRIX,
+  MIDNIGHT,
   EPIC,
   DISCORD,
-  MIDNIGHT,
   {
     id: "white",
     labelKey: "settings.surfaceWhite",
@@ -164,7 +390,7 @@ export const THEMES: readonly ThemeDef[] = [
   {
     id: "xbox360",
     labelKey: "settings.surfaceXbox",
-    bg: "linear-gradient(160deg, #0b2416 0%, #4f8f1e 55%, #9bd44a 100%)",
+    bg: "linear-gradient(160deg, #06190b 0%, #1f5c18 45%, #76be2b 75%, #a8ea48 100%)",
     accent: "#9bd44a",
     scheme: "dark",
   },
