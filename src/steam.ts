@@ -249,6 +249,7 @@ export interface AchievementNotificationOptions {
   volume: number;
   durationMs: number;
   position: string;
+  size: string;
   customSound: boolean;
   customSoundName: string | null;
 }

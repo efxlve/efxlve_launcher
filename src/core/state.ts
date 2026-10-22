@@ -307,6 +307,7 @@ export const S = {
     volume: 100,
     durationMs: 5000,
     position: "top-right",
+    size: "normal",
     customSound: false,
     customSoundName: null,
   } as import("../steam").AchievementNotificationOptions,

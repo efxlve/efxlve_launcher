@@ -1519,6 +1519,9 @@ pub struct AchievementNotificationOptions {
     /// top-right, top-left, bottom-right, or bottom-left.
     #[serde(default = "default_notification_position")]
     pub position: String,
+    /// compact, normal, large, or huge.
+    #[serde(default = "default_notification_size")]
+    pub size: String,
     /// True when a user-picked sound exists; the watcher then plays it
     /// natively instead of the system beep.
     #[serde(default)]
@@ -1536,10 +1539,25 @@ impl Default for AchievementNotificationOptions {
             volume: 100,
             duration_ms: 5000,
             position: default_notification_position(),
+            size: default_notification_size(),
             custom_sound: false,
             custom_sound_name: None,
         }
     }
+}
+
+fn default_notification_size() -> String {
+    "normal".to_string()
+}
+
+fn normalize_notification_size(value: Option<&str>) -> String {
+    match value {
+        Some("compact") => "compact",
+        Some("large") => "large",
+        Some("huge" | "extra-large") => "huge",
+        _ => "normal",
+    }
+    .to_string()
 }
 
 fn default_notification_position() -> String {
@@ -1579,6 +1597,9 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         position: normalize_notification_position(
             settings.achievement_notifications_position.as_deref(),
         ),
+        size: normalize_notification_size(
+            settings.achievement_notifications_size.as_deref(),
+        ),
         custom_sound,
         custom_sound_name: if custom_sound {
             settings.achievement_notifications_sound_name.clone().or_else(|| {
@@ -1615,6 +1636,8 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_duration_ms = Some(options.duration_ms.clamp(2000, 15000));
     settings.achievement_notifications_position =
         Some(normalize_notification_position(Some(options.position.as_str())));
+    settings.achievement_notifications_size =
+        Some(normalize_notification_size(Some(options.size.as_str())));
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -1798,6 +1821,7 @@ pub fn achievement_clear_custom_sound(app: tauri::AppHandle) -> Result<(), Strin
 pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body: String, tag: Option<String>) {
     let options = achievement_notification_options(&app);
     crate::overlay::hud::set_notification_position(&options.position);
+    crate::overlay::hud::set_notification_size(&options.size);
     crate::overlay::hud::set_notification_hold(options.duration_ms);
     let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
     if options.overlay {
@@ -1972,6 +1996,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                     };
                     let options = achievement_notification_options(&app_handle);
                     crate::overlay::hud::set_notification_position(&options.position);
+                    crate::overlay::hud::set_notification_size(&options.size);
                     crate::overlay::hud::set_notification_hold(options.duration_ms);
                     if options.enabled {
                         // 1. Native in-game HUD toast card

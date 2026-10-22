@@ -2959,5 +2959,11 @@
   "settings.themeImportDrop": "Drag & drop an .efxtheme file here or click to browse",
   "settings.themePreviewTabLibrary": "Library",
   "settings.themePreviewTabGame": "Game Hero",
-  "settings.themePreviewTabSettings": "Settings"
+  "settings.themePreviewTabSettings": "Settings",
+  "settings.achSizeTitle": "Notification Size",
+  "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
+  "settings.achSizeCompact": "Compact",
+  "settings.achSizeNormal": "Normal",
+  "settings.achSizeLarge": "Large",
+  "settings.achSizeHuge": "Huge (4K / TV)"
 }

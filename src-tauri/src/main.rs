@@ -218,6 +218,7 @@ pub struct EpicSettings {
     /// top-right, top-left, bottom-right, or bottom-left.
     #[serde(default)]
     pub achievement_notifications_position: Option<String>,
+    pub achievement_notifications_size: Option<String>,
 }
 
 fn default_true() -> bool {

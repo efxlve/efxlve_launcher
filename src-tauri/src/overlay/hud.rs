@@ -21,6 +21,12 @@ static TAG_FONT: AtomicIsize = AtomicIsize::new(0);
 static TITLE_FONT: AtomicIsize = AtomicIsize::new(0);
 static BODY_FONT: AtomicIsize = AtomicIsize::new(0);
 static ICON_FONT: AtomicIsize = AtomicIsize::new(0);
+/// 0 compact, 1 normal (default), 2 large, 3 huge.
+static NOTIF_SIZE: AtomicU8 = AtomicU8::new(1);
+static SIZE_TAG_FONTS: [AtomicIsize; 4] = [AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0)];
+static SIZE_TITLE_FONTS: [AtomicIsize; 4] = [AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0)];
+static SIZE_BODY_FONTS: [AtomicIsize; 4] = [AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0)];
+static SIZE_ICON_FONTS: [AtomicIsize; 4] = [AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0), AtomicIsize::new(0)];
 static TEXT: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 /// A notification card owns the plate while this is true.
 static NOTIF_ON: AtomicBool = AtomicBool::new(false);
@@ -33,22 +39,15 @@ static NOTIF_UNTIL: AtomicU64 = AtomicU64::new(0);
 static NOTIF_GEN: AtomicU64 = AtomicU64::new(0);
 
 /// console-like notification card: icon disc, bold title, muted body line.
-const NOTIF_HEIGHT: i32 = 72;
+const NOTIF_HEIGHT: i32 = 78;
 const NOTIF_MARGIN: i32 = 24;
-const NOTIF_MIN_WIDTH: i32 = 360;
 const NOTIF_RADIUS: i32 = 12;
-const NOTIF_TAG_PX: i32 = 10;
-const NOTIF_TITLE_PX: i32 = 14;
-const NOTIF_BODY_PX: i32 = 12;
 const NOTIF_ALPHA: u8 = 242;
 static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(5200);
 /// 0 top-right, 1 top-left, 2 bottom-right, 3 bottom-left, 4 center-top,
 /// 5 center-bottom.
 static NOTIF_POSITION: AtomicU8 = AtomicU8::new(0);
-/// Text column: 16px pad + 32px icon disc + 14px gap.
-const NOTIF_TEXT_LEFT: i32 = 62;
-const NOTIF_TEXT_RIGHT: i32 = 18;
 
 fn notification_is_left(position: u8) -> bool {
     position == 1 || position == 3
@@ -72,9 +71,12 @@ fn notif_rect(
     title_px: i32,
     body_px: i32,
 ) -> (i32, i32, i32, i32) {
-    let max_width = (mon_w as i32 - 2 * NOTIF_MARGIN).max(NOTIF_MIN_WIDTH);
+    let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(3);
+    let m = size_metrics(size_code);
+    let card_height = m.height;
+    let max_width = (mon_w as i32 - 2 * NOTIF_MARGIN).max(m.min_width);
     let text_width = title_px.max(body_px).max(1);
-    let width = (NOTIF_TEXT_LEFT + NOTIF_TEXT_RIGHT + text_width).clamp(NOTIF_MIN_WIDTH, max_width);
+    let width = (m.text_left + m.text_right + text_width).clamp(m.min_width, max_width);
     let x = if notification_is_left(position) {
         mon_x + NOTIF_MARGIN
     } else if notification_is_center(position) {
@@ -83,15 +85,13 @@ fn notif_rect(
         mon_x + mon_w as i32 - width - NOTIF_MARGIN
     };
     let y = if notification_is_bottom(position) {
-        mon_y + mon_h as i32 - NOTIF_HEIGHT - NOTIF_MARGIN
+        mon_y + mon_h as i32 - card_height - NOTIF_MARGIN
     } else {
         mon_y + NOTIF_MARGIN
     };
-    (x, y, width, NOTIF_HEIGHT)
+    (x, y, width, card_height)
 }
 
-/// Rough pixel advance of a UTF-16 line: CJK ideographs take a full em, Latin
-/// and the rest about half. Pure math, unit-tested.
 fn text_px(units: &[u16], size: i32) -> i32 {
     units
         .iter()
@@ -118,6 +118,118 @@ pub fn set_notification_hold(ms: u64) {
 }
 
 /// Which corner the next notification card uses.
+
+pub struct NotifSizeMetrics {
+    pub height: i32,
+    pub min_width: i32,
+    pub bar_width: i32,
+    pub medallion_r: i32,
+    pub left_pad: i32,
+    pub text_left: i32,
+    pub text_right: i32,
+    pub tag_px: i32,
+    pub title_px: i32,
+    pub body_px: i32,
+    pub tag_top: i32,
+    pub tag_bottom: i32,
+    pub title_top: i32,
+    pub title_bottom: i32,
+    pub body_top: i32,
+    pub body_bottom: i32,
+    pub icon_size: i32,
+}
+
+pub fn size_metrics(code: u8) -> NotifSizeMetrics {
+    match code {
+        0 => NotifSizeMetrics {
+            height: 64,
+            min_width: 340,
+            bar_width: 3,
+            medallion_r: 15,
+            left_pad: 14,
+            text_left: 56,
+            text_right: 14,
+            tag_px: 9,
+            title_px: 13,
+            body_px: 11,
+            tag_top: 8,
+            tag_bottom: 21,
+            title_top: 22,
+            title_bottom: 40,
+            body_top: 41,
+            body_bottom: 57,
+            icon_size: 13,
+        },
+        2 => NotifSizeMetrics {
+            height: 94,
+            min_width: 460,
+            bar_width: 5,
+            medallion_r: 23,
+            left_pad: 18,
+            text_left: 78,
+            text_right: 20,
+            tag_px: 12,
+            title_px: 18,
+            body_px: 14,
+            tag_top: 13,
+            tag_bottom: 30,
+            title_top: 31,
+            title_bottom: 58,
+            body_top: 59,
+            body_bottom: 84,
+            icon_size: 21,
+        },
+        3 => NotifSizeMetrics {
+            height: 114,
+            min_width: 540,
+            bar_width: 6,
+            medallion_r: 28,
+            left_pad: 22,
+            text_left: 94,
+            text_right: 24,
+            tag_px: 14,
+            title_px: 22,
+            body_px: 16,
+            tag_top: 16,
+            tag_bottom: 36,
+            title_top: 38,
+            title_bottom: 70,
+            body_top: 72,
+            body_bottom: 102,
+            icon_size: 26,
+        },
+        _ => NotifSizeMetrics { // 1 = Normal (Standard)
+            height: NOTIF_HEIGHT,
+            min_width: 390,
+            bar_width: 4,
+            medallion_r: 18,
+            left_pad: 16,
+            text_left: 64,
+            text_right: 18,
+            tag_px: 10,
+            title_px: 15,
+            body_px: 12,
+            tag_top: 10,
+            tag_bottom: 26,
+            title_top: 27,
+            title_bottom: 50,
+            body_top: 51,
+            body_bottom: 71,
+            icon_size: 16,
+        },
+    }
+}
+
+pub fn set_notification_size(size: &str) {
+    let code = match size {
+        "compact" => 0,
+        "large" => 2,
+        "huge" | "extra-large" => 3,
+        _ => 1,
+    };
+    NOTIF_SIZE.store(code, Ordering::Relaxed);
+}
+
 pub fn set_notification_position(position: &str) {
     let code = match position {
         "top-left" => 1,
@@ -179,9 +291,11 @@ pub fn notify_ext(tag: &str, title: &str, body: &str) {
         let (mon_x, mon_y, mon_w, mon_h) =
             monitor_rect_for(foreground_window()).unwrap_or((0, 0, 1920, 1080));
         let position = NOTIF_POSITION.load(Ordering::Relaxed);
-        let tag_px = if tag.is_empty() { 0 } else { text_px(&tag.encode_utf16().collect::<Vec<u16>>(), NOTIF_TAG_PX) };
-        let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), NOTIF_TITLE_PX).max(tag_px);
-        let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), NOTIF_BODY_PX);
+        let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(3);
+        let m = size_metrics(size_code);
+        let tag_px = if tag.is_empty() { 0 } else { text_px(&tag.encode_utf16().collect::<Vec<u16>>(), m.tag_px) };
+        let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), m.title_px).max(tag_px);
+        let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), m.body_px);
         let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
         let start_x = if notification_is_center(position) {
             x
@@ -745,17 +859,19 @@ unsafe fn paint_hud(hdc: isize, rect: &RECT) {
 unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let width = rect.right - rect.left;
     let height = rect.bottom - rect.top;
+    let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(3) as usize;
+    let m = size_metrics(size_code as u8);
 
-    // 1. Deep luxury smoked obsidian plate (RGB: 13, 15, 20 / #0d0f14)
+    // 1. Deep luxury smoked obsidian plate
     let plate = CreateSolidBrush(0x00140F0D);
     FillRect(hdc, rect, plate);
     let _ = DeleteObject(plate);
 
-    // 2. Radiant gold accent indicator bar on left edge (RGB: 245, 158, 11 / #f59e0b)
+    // 2. Radiant gold accent indicator bar on left edge
     let bar_rect = RECT {
         left: rect.left,
         top: rect.top,
-        right: rect.left + 4,
+        right: rect.left + m.bar_width,
         bottom: rect.bottom,
     };
     let bar_brush = CreateSolidBrush(0x000B9EF5);
@@ -773,35 +889,37 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     }
 
     // 4. Gold Trophy Medallion Emblem
-    let center_x = rect.left + 16 + 18;
+    let center_x = rect.left + m.left_pad + m.medallion_r;
     let center_y = (rect.top + rect.bottom) / 2;
 
     // Outer gold rim
     let rim = CreateSolidBrush(0x000B9EF5);
     let prev_rim = SelectObject(hdc, rim);
-    Ellipse(hdc, center_x - 18, center_y - 18, center_x + 18, center_y + 18);
+    Ellipse(hdc, center_x - m.medallion_r, center_y - m.medallion_r, center_x + m.medallion_r, center_y + m.medallion_r);
     SelectObject(hdc, prev_rim);
     let _ = DeleteObject(rim);
 
     // Inner velvet medallion plate
     let inner_disc = CreateSolidBrush(0x00080E12);
     let prev_inner = SelectObject(hdc, inner_disc);
-    Ellipse(hdc, center_x - 16, center_y - 16, center_x + 16, center_y + 16);
+    let inner_r = m.medallion_r - 2;
+    Ellipse(hdc, center_x - inner_r, center_y - inner_r, center_x + inner_r, center_y + inner_r);
     SelectObject(hdc, prev_inner);
     let _ = DeleteObject(inner_disc);
 
     // Trophy Icon
-    let icon_font = ICON_FONT.load(Ordering::Relaxed);
+    let icon_font = SIZE_ICON_FONTS[size_code].load(Ordering::Relaxed);
     if icon_font != 0 {
         SetBkMode(hdc, TRANSPARENT_BK);
         SetTextColor(hdc, 0x0024BFFB); // Radiant trophy gold #fbbf24
         SelectObject(hdc, icon_font);
         let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
+        let half_icon = m.icon_size;
         let mut icon_rect = RECT {
-            left: center_x - 14,
-            top: center_y - 14,
-            right: center_x + 14,
-            bottom: center_y + 14,
+            left: center_x - half_icon,
+            top: center_y - half_icon,
+            right: center_x + half_icon,
+            bottom: center_y + half_icon,
         };
         DrawTextW(
             hdc,
@@ -813,22 +931,23 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     } else {
         let gold_mark = CreateSolidBrush(0x0024BFFB);
         let prev = SelectObject(hdc, gold_mark);
-        RoundRect(hdc, center_x - 7, center_y - 7, center_x + 7, center_y + 1, 4, 4);
-        RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + 5, 2, 2);
-        RoundRect(hdc, center_x - 5, center_y + 5, center_x + 5, center_y + 8, 2, 2);
+        let bw = m.medallion_r * 2 / 5;
+        RoundRect(hdc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
+        RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
+        RoundRect(hdc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
         SelectObject(hdc, prev);
         let _ = DeleteObject(gold_mark);
     }
 
     // Text column: 3-tier layout (Tag, Title, Body)
     SetBkMode(hdc, TRANSPARENT_BK);
-    let text_left = rect.left + NOTIF_TEXT_LEFT + 6;
-    let text_right = rect.right - NOTIF_TEXT_RIGHT;
+    let text_left = rect.left + m.text_left;
+    let text_right = rect.right - m.text_right;
 
     let has_tag = NOTIF_TAG.lock().map(|t| t.len() > 1).unwrap_or(false);
 
     if has_tag {
-        let tag_font = TAG_FONT.load(Ordering::Relaxed);
+        let tag_font = SIZE_TAG_FONTS[size_code].load(Ordering::Relaxed);
         if let Ok(tag) = NOTIF_TAG.lock() {
             if tag.len() > 1 {
                 if tag_font != 0 {
@@ -837,9 +956,9 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 SetTextColor(hdc, 0x000B9EF5); // #f59e0b (Amber gold)
                 let mut tag_rect = RECT {
                     left: text_left,
-                    top: rect.top + 10,
+                    top: rect.top + m.tag_top,
                     right: text_right,
-                    bottom: rect.top + 24,
+                    bottom: rect.top + m.tag_bottom,
                 };
                 DrawTextW(
                     hdc,
@@ -851,7 +970,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             }
         }
 
-        let title_font = TITLE_FONT.load(Ordering::Relaxed);
+        let title_font = SIZE_TITLE_FONTS[size_code].load(Ordering::Relaxed);
         if let Ok(title) = NOTIF_TITLE.lock() {
             if title.len() > 1 {
                 if title_font != 0 {
@@ -860,9 +979,9 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 SetTextColor(hdc, 0x00FFFFFF);
                 let mut title_rect = RECT {
                     left: text_left,
-                    top: rect.top + 25,
+                    top: rect.top + m.title_top,
                     right: text_right,
-                    bottom: rect.top + 46,
+                    bottom: rect.top + m.title_bottom,
                 };
                 DrawTextW(
                     hdc,
@@ -874,7 +993,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             }
         }
 
-        let body_font = BODY_FONT.load(Ordering::Relaxed);
+        let body_font = SIZE_BODY_FONTS[size_code].load(Ordering::Relaxed);
         if let Ok(body) = NOTIF_BODY.lock() {
             if body.len() > 1 {
                 if body_font != 0 {
@@ -883,9 +1002,9 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 SetTextColor(hdc, 0x00B8B2AC);
                 let mut body_rect = RECT {
                     left: text_left,
-                    top: rect.top + 46,
+                    top: rect.top + m.body_top,
                     right: text_right,
-                    bottom: rect.top + 65,
+                    bottom: rect.top + m.body_bottom,
                 };
                 DrawTextW(
                     hdc,
@@ -897,7 +1016,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             }
         }
     } else {
-        let title_font = TITLE_FONT.load(Ordering::Relaxed);
+        let title_font = SIZE_TITLE_FONTS[size_code].load(Ordering::Relaxed);
         if let Ok(title) = NOTIF_TITLE.lock() {
             if title.len() > 1 {
                 if title_font != 0 {
@@ -906,9 +1025,9 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 SetTextColor(hdc, 0x00FFFFFF);
                 let mut text_rect = RECT {
                     left: text_left,
-                    top: rect.top + 14,
+                    top: rect.top + m.title_top - 6,
                     right: text_right,
-                    bottom: rect.top + 38,
+                    bottom: rect.top + m.title_bottom + 6,
                 };
                 DrawTextW(
                     hdc,
@@ -919,7 +1038,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 );
             }
         }
-        let body_font = BODY_FONT.load(Ordering::Relaxed);
+        let body_font = SIZE_BODY_FONTS[size_code].load(Ordering::Relaxed);
         if let Ok(body) = NOTIF_BODY.lock() {
             if body.len() > 1 {
                 if body_font != 0 {
@@ -928,9 +1047,9 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 SetTextColor(hdc, 0x00B8B2AC);
                 let mut text_rect = RECT {
                     left: text_left,
-                    top: rect.top + 38,
+                    top: rect.top + m.body_top,
                     right: text_right,
-                    bottom: rect.top + 60,
+                    bottom: rect.top + m.body_bottom + 6,
                 };
                 DrawTextW(
                     hdc,
@@ -968,25 +1087,30 @@ fn ensure_window() {
         let face: Vec<u16> = "Segoe UI\0".encode_utf16().collect();
         let font = CreateFontW(-14, 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
         FONT.store(font, Ordering::Relaxed);
-        let tag_font = CreateFontW(-NOTIF_TAG_PX, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
-        TAG_FONT.store(tag_font, Ordering::Relaxed);
-        let title_font = CreateFontW(
-            -NOTIF_TITLE_PX, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr(),
-        );
-        TITLE_FONT.store(title_font, Ordering::Relaxed);
-        let body_font = CreateFontW(
-            -NOTIF_BODY_PX, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr(),
-        );
-        BODY_FONT.store(body_font, Ordering::Relaxed);
-        // The MDL2 glyph font ships with Windows 10+; the disc falls back to a
-        // drawn mark when it is missing.
-        if std::path::Path::new(r"C:\Windows\Fonts\segmdl2.ttf").exists() {
-            let glyph_face: Vec<u16> = "Segoe MDL2 Assets\0".encode_utf16().collect();
-            let icon_font = CreateFontW(
-                -16, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 0, 0, glyph_face.as_ptr(),
-            );
-            ICON_FONT.store(icon_font, Ordering::Relaxed);
+        let has_glyph = std::path::Path::new(r"C:\Windows\Fonts\segmdl2.ttf").exists();
+        let glyph_face: Vec<u16> = if has_glyph {
+            "Segoe MDL2 Assets\0".encode_utf16().collect()
+        } else {
+            Vec::new()
+        };
+
+        for i in 0..4 {
+            let m = size_metrics(i as u8);
+            let tag_f = CreateFontW(-m.tag_px, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
+            SIZE_TAG_FONTS[i].store(tag_f, Ordering::Relaxed);
+            let title_f = CreateFontW(-m.title_px, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
+            SIZE_TITLE_FONTS[i].store(title_f, Ordering::Relaxed);
+            let body_f = CreateFontW(-m.body_px, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
+            SIZE_BODY_FONTS[i].store(body_f, Ordering::Relaxed);
+            if has_glyph {
+                let icon_f = CreateFontW(-m.icon_size, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 0, 0, glyph_face.as_ptr());
+                SIZE_ICON_FONTS[i].store(icon_f, Ordering::Relaxed);
+            }
         }
+        TAG_FONT.store(SIZE_TAG_FONTS[1].load(Ordering::Relaxed), Ordering::Relaxed);
+        TITLE_FONT.store(SIZE_TITLE_FONTS[1].load(Ordering::Relaxed), Ordering::Relaxed);
+        BODY_FONT.store(SIZE_BODY_FONTS[1].load(Ordering::Relaxed), Ordering::Relaxed);
+        ICON_FONT.store(SIZE_ICON_FONTS[1].load(Ordering::Relaxed), Ordering::Relaxed);
 
         let hwnd = CreateWindowExW(
             WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,

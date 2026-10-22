@@ -20,21 +20,29 @@ import {
 } from "../../steam";
 import { t } from "../../i18n";
 
-/** Synthesizes the Efxlve celesta chime live in the browser using Web Audio. */
-function playWebAudioCelestaChime(volumePct = 100): void {
+/** Synthesizes the warm velvet console chime live in the browser using Web Audio. */
+function playWebAudioAchievementChime(volumePct = 100): void {
   try {
     const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const now = ctx.currentTime;
-    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.45;
+    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.4;
 
-    // E5, B5, E6 notes matching scripts/achievement-chime.mjs
+    // Warm D-major acoustic bell harmonics matching scripts/achievement-chime.mjs
     const notes = [
-      { hz: 659.255, at: 0.0, gain: 0.8 },
-      { hz: 987.767, at: 0.085, gain: 0.7 },
-      { hz: 1318.51, at: 0.17, gain: 0.95 },
+      { hz: 293.665, at: 0.0, gain: 0.85, decay: 1.4 },   // D4
+      { hz: 440.000, at: 0.08, gain: 0.75, decay: 1.3 },  // A4
+      { hz: 587.330, at: 0.16, gain: 0.90, decay: 1.5 },  // D5
+      { hz: 739.989, at: 0.24, gain: 0.70, decay: 1.2 },  // F#5
     ];
+
+    // Master lowpass filter to eliminate ear-piercing high frequencies
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(2400, now);
+    filter.Q.setValueAtTime(0.7, now);
+    filter.connect(ctx.destination);
 
     for (const note of notes) {
       const osc = ctx.createOscillator();
@@ -44,15 +52,16 @@ function playWebAudioCelestaChime(volumePct = 100): void {
       osc.frequency.setValueAtTime(note.hz, now + note.at);
 
       const startTime = now + note.at;
-      gain.gain.setValueAtTime(0.001, startTime);
-      gain.gain.exponentialRampToValueAtTime(vol * note.gain, startTime + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.9);
+      // Soft 20ms attack curve
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(vol * note.gain, startTime + 0.022);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + note.decay);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(filter);
 
       osc.start(startTime);
-      osc.stop(startTime + 1.0);
+      osc.stop(startTime + note.decay + 0.05);
     }
   } catch {
     /* browser audio blocked or unavailable */
@@ -64,6 +73,24 @@ export function renderAchievementsSettingsView(): string {
   const options = S.achievementNotificationOptions;
   const soundName = options.customSoundName || t("settings.achDefaultChime");
   const position = options.position || "top-right";
+  const currentSize = options.size || "normal";
+
+  const sizeOptions: Array<{ id: string; label: string }> = [
+    { id: "compact", label: t("settings.achSizeCompact") },
+    { id: "normal", label: t("settings.achSizeNormal") },
+    { id: "large", label: t("settings.achSizeLarge") },
+    { id: "huge", label: t("settings.achSizeHuge") },
+  ];
+
+  const sizeButtons = sizeOptions
+    .map(
+      (opt) => `
+        <button type="button" class="${currentSize === opt.id ? "active" : ""}" data-act="set-ach-size" data-val="${opt.id}">
+          ${esc(opt.label)}
+        </button>
+      `,
+    )
+    .join("");
 
   const volumeButtons = [25, 50, 75, 100]
     .map(
@@ -139,7 +166,7 @@ export function renderAchievementsSettingsView(): string {
           <div class="ach-stage-backdrop"></div>
           
           <!-- Next-Gen Console Toast Card -->
-          <div class="ach-hud-toast">
+          <div class="ach-hud-toast size-${esc(currentSize)}">
             <div class="ach-hud-gold-bar"></div>
             <div class="ach-hud-medallion">
               <span class="ach-hud-trophy-ico">${icon("trophy", 16)}</span>
@@ -155,6 +182,17 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
+        <!-- Size Selector -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achSizeTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achSizeDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${sizeButtons}</div>
+          </div>
+        </div>
+
         <!-- Toggles -->
         <div class="row settings-row">
           <div class="row-main">
@@ -303,6 +341,16 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       return true;
     }
 
+    case "set-ach-size": {
+      const allowed = ["compact", "normal", "large", "huge"];
+      const size = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "normal";
+      const next = { ...S.achievementNotificationOptions, size };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
     case "set-ach-position": {
       const allowed = ["top-left", "center-top", "top-right", "bottom-left", "center-bottom", "bottom-right"];
       const position = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "top-right";
@@ -319,7 +367,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
-      playWebAudioCelestaChime(volume);
+      playWebAudioAchievementChime(volume);
       return true;
     }
 
@@ -333,7 +381,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-audition-sound": {
-      playWebAudioCelestaChime(S.achievementNotificationOptions.volume);
+      playWebAudioAchievementChime(S.achievementNotificationOptions.volume);
       return true;
     }
 
@@ -365,7 +413,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-test-notification": {
-      playWebAudioCelestaChime(S.achievementNotificationOptions.volume);
+      playWebAudioAchievementChime(S.achievementNotificationOptions.volume);
       void achievementTestNotification(
         "Platin Avcısı",
         t("settings.achTestDesc"),

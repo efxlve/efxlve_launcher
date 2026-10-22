@@ -2959,5 +2959,11 @@
   "settings.themeImportDrop": "Buraya bir .efxtheme dosyası sürükleyin veya göz atmak için tıklayın",
   "settings.themePreviewTabLibrary": "Kütüphane",
   "settings.themePreviewTabGame": "Oyun Detayı",
-  "settings.themePreviewTabSettings": "Ayarlar"
+  "settings.themePreviewTabSettings": "Ayarlar",
+  "settings.achSizeTitle": "Bildirim Boyutu",
+  "settings.achSizeDesc": "Başarım bildirim kartının ekrandaki görünüm boyutunu seçin",
+  "settings.achSizeCompact": "Kompakt",
+  "settings.achSizeNormal": "Normal",
+  "settings.achSizeLarge": "Büyük",
+  "settings.achSizeHuge": "Devasa (4K / TV)"
 }

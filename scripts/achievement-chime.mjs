@@ -1,10 +1,9 @@
 /**
- * Generates the launcher's achievement chime.
+ * Generates the launcher's warm velvet achievement chime.
  *
- * The card is the launcher's own surface, so the sound is the launcher's own
- * too: a small celesta figure (E5, B5, E6) rather than a Windows notification
- * tone. Everything is synthesized here, so the file has no third-party audio in
- * it and can be regenerated at any time.
+ * Designed to be soothing, warm, rewarding, and ear-pleasing (never shrill or piercing).
+ * Uses warm D-major acoustic bell harmonics (D4, A4, D5, F#5) with a rich body,
+ * smooth attacks, and gentle decay.
  *
  *   node scripts/achievement-chime.mjs
  *
@@ -17,44 +16,48 @@ import { dirname, join } from "node:path";
 const SAMPLE_RATE = 44_100;
 const OUT = join("src-tauri", "assets", "achievement-chime.wav");
 
-/** E5, B5, E6: a fifth and the octave on top, the classic "you did it". */
+/** Warm D-major harmonic ascent: rich, lush, console-grade rewarding chime. */
 const NOTES = [
-  { hz: 659.255, at: 0.0, gain: 0.9 },
-  { hz: 987.767, at: 0.085, gain: 0.72 },
-  { hz: 1318.51, at: 0.17, gain: 0.95 },
+  { hz: 293.665, at: 0.0,   gain: 0.85 }, // D4
+  { hz: 440.000, at: 0.090, gain: 0.75 }, // A4
+  { hz: 587.330, at: 0.180, gain: 0.70 }, // D5
+  { hz: 739.989, at: 0.260, gain: 0.50 }, // F#5
 ];
 
-/** One celesta-ish note: a strong fundamental and quickly dying upper partials. */
+/** Warm acoustic chime note with soft attack and warm harmonics. */
 function note(samples, hz, at, gain) {
   const start = Math.floor(at * SAMPLE_RATE);
-  const length = Math.floor(1.15 * SAMPLE_RATE);
+  const length = Math.floor(1.35 * SAMPLE_RATE);
   const partials = [
     [1, 1.0],
-    [2, 0.26],
-    [3, 0.11],
-    [4, 0.05],
+    [2, 0.18],
+    [3, 0.06],
   ];
-  // A few cents of detune between two voices gives the chime its shimmer.
-  for (const detune of [1, 1.0016]) {
+
+  // Subtle warm detuning (1.0008) for analog shimmer without chorus wobble
+  for (const detune of [1, 1.0008]) {
     for (const [ratio, amount] of partials) {
       const frequency = hz * ratio * detune;
       if (frequency > SAMPLE_RATE / 2.2) continue;
-      const decay = 0.92 / (1 + (ratio - 1) * 0.62);
-      const attack = 0.004 + 0.002 * ratio;
+      const decay = 0.85 / (1 + (ratio - 1) * 0.75);
+      const attack = 0.018 + 0.004 * ratio; // Soft attack (no ear-piercing click)
       const amplitude = (gain * amount) / (detune === 1 ? 1 : 2);
       for (let i = 0; i < length; i += 1) {
+        if (start + i >= samples.length) break;
         const t = i / SAMPLE_RATE;
         const envelope = Math.exp(-t / decay) * Math.min(1, t / attack);
         samples[start + i] += amplitude * envelope * Math.sin(2 * Math.PI * frequency * t);
       }
     }
   }
-  // Soft body an octave down: the note gets weight without a low thump.
+
+  // Deep warm fundamental body
   const body = hz / 2;
   for (let i = 0; i < length; i += 1) {
+    if (start + i >= samples.length) break;
     const t = i / SAMPLE_RATE;
-    const envelope = Math.exp(-t / 0.55) * Math.min(1, t / 0.012);
-    samples[start + i] += gain * 0.12 * envelope * Math.sin(2 * Math.PI * body * t);
+    const envelope = Math.exp(-t / 0.50) * Math.min(1, t / 0.022);
+    samples[start + i] += gain * 0.18 * envelope * Math.sin(2 * Math.PI * body * t);
   }
 }
 
@@ -67,41 +70,40 @@ function lowpass(samples, cut) {
   }
 }
 
-/** A short, quiet tail: four low-passed taps, no feedback to keep it short. */
+/** Warm ambient room reflection. */
 function addTail(samples, taps) {
   const copy = Float64Array.from(samples);
   for (const [delaySeconds, gain] of taps) {
     const delay = Math.floor(delaySeconds * SAMPLE_RATE);
     const wet = new Float64Array(copy.length);
     for (let i = 0; i + delay < copy.length; i += 1) wet[i + delay] = copy[i] * gain;
-    lowpass(wet, 0.22);
+    lowpass(wet, 0.20);
     for (let i = 0; i < samples.length; i += 1) samples[i] += wet[i];
   }
 }
 
 function build() {
-  const total = Math.ceil(1.45 * SAMPLE_RATE);
+  const total = Math.ceil(1.65 * SAMPLE_RATE);
   const samples = new Float64Array(total);
   for (const { hz, at, gain } of NOTES) note(samples, hz, at, gain);
 
   addTail(samples, [
-    [0.037, 0.24],
-    [0.063, 0.16],
-    [0.101, 0.1],
-    [0.149, 0.06],
+    [0.045, 0.22],
+    [0.080, 0.15],
+    [0.125, 0.09],
+    [0.180, 0.05],
   ]);
 
-  // Take the edge off the top end, then normalise with headroom: the settings
-  // volume multiplies this, and a 100% chime must not clip.
-  lowpass(samples, 0.42);
-  lowpass(samples, 0.42);
+  // Warm acoustic low-pass to eliminate high-frequency shrillness
+  lowpass(samples, 0.28);
+  lowpass(samples, 0.28);
 
   let peak = 0;
   for (const value of samples) peak = Math.max(peak, Math.abs(value));
-  const scale = peak > 0 ? 0.7 / peak : 0;
+  const scale = peak > 0 ? 0.72 / peak : 0;
 
-  // Fade the very end to zero so the file never clicks.
-  const fade = Math.floor(0.16 * SAMPLE_RATE);
+  // Smooth fade-out at the tail
+  const fade = Math.floor(0.20 * SAMPLE_RATE);
   for (let i = 0; i < fade; i += 1) {
     samples[samples.length - 1 - i] *= i / fade;
   }
