@@ -314,7 +314,7 @@
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background var(--ease), color var(--ease), border-color var(--ease);
 }
 
 .profile-store-chip-logo {
@@ -331,7 +331,6 @@
   background: var(--surface-3);
   color: var(--text);
   border-color: var(--line-strong);
-  transform: translateY(-1px);
 }
 
 .profile-hero-store-chip:hover .profile-store-chip-logo,
@@ -343,20 +342,14 @@
   transform: scale(0.97);
 }
 
+/* The selected chip is the accent tint plus a single accent border. A ring
+   drawn with `box-shadow` on top of the border doubled the outline in every
+   theme and read as a rendering bug. */
 .profile-hero-store-chip.selected {
-  background: var(--surface-3);
+  background: var(--accent-tint);
   color: var(--text);
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 3px 10px rgba(0, 0, 0, 0.35);
   font-weight: 600;
-  transform: translateY(-1px);
-  animation: chip-select-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes chip-select-pop {
-  0% { transform: scale(0.93); }
-  60% { transform: scale(1.04); }
-  100% { transform: scale(1) translateY(-1px); }
 }
 
 .profile-hero-store-chip.unlinked {
@@ -377,15 +370,18 @@
 .profile-hero-chip-count {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-3);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+  background: var(--accent-tint);
   padding: 1px 6px;
   border-radius: 10px;
   font-variant-numeric: tabular-nums;
 }
 
+/* On the selected chip the badge inverts with the theme's accent: white on
+   black, black on white, blue on aero. Leaving the text white made it vanish
+   into a white accent. */
 .profile-hero-store-chip.selected .profile-hero-chip-count {
-  color: #ffffff;
+  color: var(--on-accent);
   background: var(--accent);
 }
 

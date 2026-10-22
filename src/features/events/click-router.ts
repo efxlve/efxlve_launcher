@@ -40,7 +40,7 @@ import {
   CASE_COVER_STYLE_KEY,
   normalizeCaseCoverStyle,
   SEPARATE_COPIES_KEY,
-  SURFACE_KEY,
+  CUSTOM_CSS_LIMIT,
   APP_ICON_KEY,
   FULLSCREEN_AUTO_KEY,
   CONTROLLER_BRIDGE_KEY,
@@ -67,6 +67,8 @@ import { refreshSidebarToggle, toggleSidebarDrawer } from "../../core/sidebar-la
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S, applyTabSort, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
+import { saveCustomCss } from "../../core/custom-css";
+import { applySurface } from "../../core/themes";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
 import { openEpicLauncherDownload } from "../epic-launcher/epic-launcher-notice";
@@ -856,16 +858,22 @@ document.addEventListener("click", (e) => {
     render();
     void loadSettingsView();
   } else if (act === "set-surface") {
-    const wanted = t.dataset.surface;
-    const surface =
-      wanted === "soft" || wanted === "white" || wanted === "aero"
-        ? wanted
-        : "black";
-    S.surface = surface;
-    localStorage.setItem(SURFACE_KEY, surface);
-    if (surface === "black") delete document.documentElement.dataset.surface;
-    else document.documentElement.dataset.surface = surface;
+    S.surface = applySurface(t.dataset.surface ?? "black");
     render();
+  } else if (act === "custom-css-save") {
+    const input = document.getElementById("custom-css-input") as HTMLTextAreaElement | null;
+    if (!saveCustomCss(input?.value ?? "")) {
+      toast(i18nT("settings.customCssTooBig", { limit: String(CUSTOM_CSS_LIMIT) }), "err");
+      return;
+    }
+    S.customCss = input?.value.trim() ?? "";
+    toast(i18nT("settings.customCssSaved"), "ok");
+  } else if (act === "custom-css-clear") {
+    saveCustomCss("");
+    S.customCss = "";
+    const input = document.getElementById("custom-css-input") as HTMLTextAreaElement | null;
+    if (input) input.value = "";
+    toast(i18nT("settings.customCssCleared"), "ok");
   } else if (act === "set-app-icon") {
     const wanted = t.dataset.icon;
     if (wanted === "custom" && !S.customAppIcon) {

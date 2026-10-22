@@ -87,6 +87,8 @@ import {
   saveTabSort,
   type SortTab,
 } from "./constants";
+import { readCustomCss } from "./custom-css";
+import { normalizeSurface } from "./themes";
 import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
@@ -634,11 +636,10 @@ export const S = {
     let v: string | null = null;
     try {
       v = localStorage.getItem(SURFACE_KEY);
-      // Explicit user choice always wins. "epic" was the legacy key for "soft".
-      if (v === "soft" || v === "epic") return "soft";
-      if (v === "black") return "black";
-      if (v === "white") return "white";
-      if (v === "aero") return "aero";
+      // An explicit choice wins, including any theme the registry gained later.
+      if (v && normalizeSurface(v) === v) return v;
+      // "epic" was the legacy key for "soft".
+      if (v === "epic") return normalizeSurface("soft");
 
       // For existing installations without an explicit SURFACE_KEY, preserve
       // their previous experience (black) so this change does not affect current users.
@@ -651,22 +652,11 @@ export const S = {
         }
       }
 
-      if (isExistingUser) {
-        localStorage.setItem(SURFACE_KEY, "black");
-        return "black";
-      }
-
-      // Default for fresh installations is now soft black ("soft").
-      localStorage.setItem(SURFACE_KEY, "soft");
-      return "soft";
+      const picked = normalizeSurface(isExistingUser ? "black" : "soft");
+      localStorage.setItem(SURFACE_KEY, picked);
+      return picked;
     } catch {
-      return (v === "black"
-        ? "black"
-        : v === "white"
-          ? "white"
-          : v === "aero"
-            ? "aero"
-            : "soft") as "black" | "soft" | "white" | "aero";
+      return normalizeSurface(v);
     }
   })(),
   appIcon: (() => {
@@ -687,6 +677,8 @@ export const S = {
       return "";
     }
   })(),
+  /** Saved user stylesheet (Settings > Appearance). */
+  customCss: readCustomCss(),
   autoBackupOnExit: localStorage.getItem(AUTO_BACKUP_KEY) === "true",
   autoUpdateEnabled: (localStorage.getItem(AUTO_UPDATE_KEY) === "true") as boolean,
   autoUpdateTime: (localStorage.getItem(AUTO_UPDATE_TIME_KEY) || "03:00") as string,

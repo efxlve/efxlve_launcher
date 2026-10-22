@@ -163,6 +163,8 @@ select option { background: var(--surface-1); color: var(--text); }
 .seg > button svg { width: 14px; height: 14px; }
 .seg.theme-seg { flex-wrap: wrap; height: auto; max-width: 100%; }
 .seg.theme-seg > button { height: 26px; }
+/* Shell background and accent come from the theme registry (core/themes.ts),
+   so a new theme needs no CSS here. */
 .theme-swatch {
   width: 11px;
   height: 11px;
@@ -170,10 +172,6 @@ select option { background: var(--surface-1); color: var(--text); }
   border-radius: 50%;
   border: 1px solid var(--line-strong);
 }
-.theme-swatch-black { background: #000000; }
-.theme-swatch-soft { background: #18181c; }
-.theme-swatch-white { background: #ffffff; border-color: rgba(0, 0, 0, 0.28); }
-.theme-swatch-aero { background: linear-gradient(180deg, #1678cc 0%, #8fd6fa 58%, #6cc93a 60%, #2e8a22 100%); }
 .app-icon-thumb {
   width: 15px;
   height: 15px;

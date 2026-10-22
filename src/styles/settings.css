@@ -107,6 +107,26 @@
   background: var(--surface-2); padding: 1px 6px; border-radius: 4px; overflow-wrap: break-word;
 }
 .settings-row-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; max-width: 100%; }
+/* Settings > Appearance > Custom CSS. The textarea is the row's whole control,
+   so it takes the full width and stays resizable downwards. */
+.settings-css-area {
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  user-select: text;
+}
+.settings-css-area:focus { border-color: var(--accent); }
+.settings-css-area::placeholder { color: var(--text-3); }
+.settings-css-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; width: 100%; }
+.settings-css-count { margin-left: auto; font-size: 11px; color: var(--text-3); }
 .settings-row.stacked .settings-row-control { justify-content: flex-start; }
 .settings-path-input { width: min(280px, 100%); min-width: 0; flex: 1 1 160px; }
 /* Collapsible settings row: the summary carries the title and the status chip,

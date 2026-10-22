@@ -12,6 +12,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { initSidebarLayout } from "./core/sidebar-layout";
 import { applySidebarPageVisibility } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
+import { applyCustomCss } from "./core/custom-css";
+import { applySurface } from "./core/themes";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavHistoryUi, updateOfflineModeUi } from "./core/nav";
@@ -47,7 +49,8 @@ import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
 import { applyWinbarAppIcon } from "./core/app-icon";
 
-if (S.surface !== "black") document.documentElement.dataset.surface = S.surface;
+applySurface(S.surface, false);
+applyCustomCss(S.customCss);
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();
 perfMark("main:module");

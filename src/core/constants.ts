@@ -207,8 +207,12 @@ export function normalizeLibraryPageSize(raw: string | number | null | undefined
   const size = typeof raw === "number" ? raw : Number(raw);
   return (LIB_PAGE_SIZES as readonly number[]).includes(size) ? size : LIB_PAGE_SIZES[0];
 }
-/** Shell surface: "soft" (default) or "black" (#0a0a0a). */
+/** Shell surface: a theme id from `core/themes.ts` ("black" is the default). */
 export const SURFACE_KEY = "efxlve-surface";
+/** User stylesheet from Settings > Appearance (`core/custom-css.ts`). */
+export const CUSTOM_CSS_KEY = "efxlve-custom-css";
+/** A stylesheet this long is a mistake, not a theme. */
+export const CUSTOM_CSS_LIMIT = 20000;
 export const APP_ICON_KEY = "efxlve-app-icon";
 export const CUSTOM_APP_ICON_KEY = "efxlve-custom-icon";
 /** Persisted left-sidebar width in CSS pixels. */

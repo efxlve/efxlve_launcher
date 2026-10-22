@@ -8,7 +8,8 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
-import { DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { THEMES } from "../../core/themes";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
@@ -1059,6 +1060,31 @@ function renderAppIconPicker(): string {
   </div>`;
 }
 
+/** One button per theme in the registry: a new entry appears here on its own. */
+function renderThemePicker(): string {
+  const buttons = THEMES.map((theme) => `
+    <button type="button" class="${S.surface === theme.id ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}">
+      <span class="theme-swatch" style="background:${esc(theme.bg)};border-color:${esc(theme.accent)}"></span>${t(theme.labelKey)}
+    </button>`).join("");
+  return `<div class="seg theme-seg">${buttons}</div>`;
+}
+
+/** User stylesheet editor: applied live on save, never on every keystroke. */
+function renderCustomCssRow(): string {
+  const limit = `${S.customCss.length} / ${CUSTOM_CSS_LIMIT}`;
+  return row(
+    t("settings.customCssTitle"),
+    t("settings.customCssDesc"),
+    `<textarea id="custom-css-input" class="settings-css-area" spellcheck="false" placeholder="${esc(t("settings.customCssPlaceholder"))}">${esc(S.customCss)}</textarea>
+     <div class="settings-css-actions">
+       <button type="button" class="btn primary small" data-act="custom-css-save">${t("settings.customCssSave")}</button>
+       <button type="button" class="btn ghost small" data-act="custom-css-clear">${t("settings.customCssClear")}</button>
+       <span class="settings-css-count tabular-nums">${limit}</span>
+     </div>`,
+    true,
+  );
+}
+
 function renderAppearance(): string {
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
@@ -1067,12 +1093,8 @@ function renderAppearance(): string {
     </button>`).join("");
   return (
     group(
-      row(t("settings.themeTitle"), t("settings.themeDesc"), `<div class="seg theme-seg">
-        <button type="button" class="${S.surface === "black" ? "active" : ""}" data-act="set-surface" data-surface="black"><span class="theme-swatch theme-swatch-black"></span>${t("settings.surfaceBlack")}</button>
-        <button type="button" class="${S.surface === "soft" ? "active" : ""}" data-act="set-surface" data-surface="soft"><span class="theme-swatch theme-swatch-soft"></span>${t("settings.surfaceSoft")}</button>
-        <button type="button" class="${S.surface === "white" ? "active" : ""}" data-act="set-surface" data-surface="white"><span class="theme-swatch theme-swatch-white"></span>${t("settings.surfaceWhite")}</button>
-        <button type="button" class="${S.surface === "aero" ? "active" : ""}" data-act="set-surface" data-surface="aero"><span class="theme-swatch theme-swatch-aero"></span>${t("settings.surfaceAero")}</button>
-      </div>`) +
+      row(t("settings.themeTitle"), t("settings.themeDesc"), renderThemePicker()) +
+      renderCustomCssRow() +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
