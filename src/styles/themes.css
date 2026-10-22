@@ -2195,3 +2195,86 @@
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.7);
 }
 :root[data-surface="cyberpunk"] .profile-stat-plat-ico { color: #fcee0a; }
+
+/* ---------- Life is Strange ----------
+   Arcadia Bay at golden hour: the scene is the backdrop and every panel floats
+   over it as warm glass. The palette lives in core/themes.ts; this block only
+   paints the scene and the chrome, so the theme has one home. */
+
+:root[data-surface="lis"] body {
+  background: #121016 url("../assets/lis-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="lis"] #main-col,
+:root[data-surface="lis"] #view { background: transparent; }
+:root[data-surface="lis"] .overlay { background: transparent; }
+:root[data-surface="lis"] .overlay::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: var(--winbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  background: #121016 url("../assets/lis-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  pointer-events: none;
+  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+
+:root[data-surface="lis"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+
+:root[data-surface="lis"] #winbar {
+  background: linear-gradient(180deg, rgba(18, 16, 22, 0.92), rgba(18, 16, 22, 0.7));
+  border-bottom-color: var(--line);
+}
+:root[data-surface="lis"] #sidebar {
+  background: linear-gradient(180deg, rgba(22, 18, 28, 0.9), rgba(14, 12, 18, 0.78));
+  border-right-color: var(--line);
+}
+:root[data-surface="lis"] #page-header {
+  background: linear-gradient(180deg, rgba(26, 21, 32, 0.72), rgba(18, 16, 22, 0.2));
+  border-bottom-color: var(--line);
+}
+:root[data-surface="lis"] :is(.sb-profile, .sb-divider) { border-color: var(--line); }
+:root[data-surface="lis"] .sb-item.active {
+  background: var(--accent-tint);
+  color: var(--text);
+}
+:root[data-surface="lis"] .sb-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+/* Warm glass over the sunset: cards keep the scene visible around their edges. */
+:root[data-surface="lis"] :is(.card, .settings-group, .list, .lib-list, .info-box, .notif-panel) {
+  background: linear-gradient(180deg, rgba(30, 24, 36, 0.86), rgba(18, 15, 24, 0.9));
+  border-color: var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 28px rgba(10, 6, 14, 0.35);
+}
+:root[data-surface="lis"] :is(.row, .settings-row):hover { background: rgba(56, 189, 248, 0.06); }
+:root[data-surface="lis"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .settings-css-area) {
+  background: rgba(16, 13, 22, 0.82);
+  border-color: var(--line);
+  color: var(--text);
+}
+:root[data-surface="lis"] :is(input, select, textarea):focus { border-color: var(--accent); }
+:root[data-surface="lis"] .search:focus-within,
+:root[data-surface="lis"] .install-path-input-wrap:focus-within { border-color: var(--accent); }
+
+:root[data-surface="lis"] :is(.tab.active::after, .store-tabs .tab.active::after) { background: var(--accent); }
+:root[data-surface="lis"] .store-tabs .tab.active { color: var(--text); }
+:root[data-surface="lis"] .store-tabs .tab:hover:not(.active) { color: var(--text); }
+
+:root[data-surface="lis"] :is(.palette, .toast, .lib-filter-panel, .col-dropdown-menu, .sort-dropdown-menu, .store-dropdown-menu) {
+  background: linear-gradient(180deg, rgba(30, 24, 36, 0.96), rgba(16, 13, 22, 0.97));
+  border-color: var(--line-strong);
+}
+:root[data-surface="lis"] :is(.palette-item.active, .ps5-context-item.is-current, .lib-facet-row.is-on) {
+  background: var(--accent-tint);
+  color: var(--text);
+}
