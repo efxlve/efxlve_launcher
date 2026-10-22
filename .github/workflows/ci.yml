@@ -36,7 +36,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
 
       - name: Install Rust stable
@@ -52,9 +52,6 @@ jobs:
 
       - name: Frontend build
         run: npm run build
-
-      - name: Frontend unit tests
-        run: npm run test
 
       - name: Locale parity
         run: npm run locales

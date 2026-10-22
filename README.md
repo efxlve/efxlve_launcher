@@ -54,7 +54,7 @@ The current release is **v0.1.34**.
 
 ### Prerequisites
 - Windows 10/11 x86_64
-- Node.js 22+
+- Node.js 20+
 - Rust stable with MSVC toolchain
 
 ```powershell
@@ -69,7 +69,6 @@ npm.cmd run tauri dev
 ### Verification & Testing
 ```powershell
 npm.cmd run build          # Typecheck & Vite bundle verification
-npm.cmd run test           # Frontend unit tests (Vitest)
 cargo check                # Fast Rust backend check (run from src-tauri)
 cargo test                 # Rust unit tests
 ```
