@@ -20,7 +20,8 @@
         "minHeight": 640,
         "center": true,
         "decorations": false,
-        "backgroundColor": "#07080d"
+        "backgroundColor": "#07080d",
+        "create": false
       },
       {
         "label": "overlay",
@@ -36,12 +37,12 @@
         "resizable": true,
         "visible": false,
         "shadow": false,
-        "focus": false
+        "focus": false,
+        "create": false
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
-      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost ws://localhost:1420 http://localhost:1420; object-src 'none'; base-uri 'self'"
+      "csp": null
     }
   },
   "bundle": {

@@ -693,6 +693,146 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Set once the app starts shutting down, so a deliberate close during the first
+/// seconds is not mistaken for a failed webview.
+static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Creates one window declared in `tauri.conf.json`.
+///
+/// The config windows are built here rather than by the framework so a webview
+/// that cannot start has somewhere to be reported; the manifest marks them
+/// `"create": false` for that.
+fn create_config_window(app: &tauri::App, label: &str) -> Result<(), String> {
+    let config = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|window| window.label == label)
+        .ok_or_else(|| format!("no `{label}` window in tauri.conf.json"))?
+        .clone();
+    tauri::WebviewWindowBuilder::from_config(app.handle(), &config)
+        .map_err(|error| error.to_string())?
+        .build()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+/// Moves the launcher's WebView2 profile aside so the retry starts clean.
+///
+/// A profile the runtime cannot open is the usual reason a window never shows
+/// up, and keeping the folder makes the failure permanent. The old profile is
+/// renamed, not deleted, so a user can put it back.
+fn quarantine_webview_profile(app: &tauri::App) -> Option<std::path::PathBuf> {
+    let dir = app.path().app_local_data_dir().ok()?.join("EBWebView");
+    if !dir.is_dir() {
+        return None;
+    }
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs() % 86_400)
+        .map(|secs| format!("{:02}{:02}{:02}", secs / 3600, (secs / 60) % 60, secs % 60))
+        .unwrap_or_else(|_| "old".into());
+    let target = dir.with_file_name(format!("EBWebView.bak-{stamp}"));
+    std::fs::rename(&dir, &target).ok().map(|_| target)
+}
+
+/// Builds the main window, retrying once without the previous webview profile.
+fn create_main_window(app: &tauri::App) -> Result<(), String> {
+    match create_config_window(app, "main") {
+        Ok(()) => Ok(()),
+        Err(first) => {
+            let moved = quarantine_webview_profile(app)
+                .map(|path| path.display().to_string())
+                .unwrap_or_else(|| "nothing to move".into());
+            perf::write_line_global(&format!(
+                "boot: main window failed: {first}; profile: {moved}"
+            ));
+            create_config_window(app, "main").map_err(|second| format!("{first} / retry: {second}"))
+        }
+    }
+}
+
+/// A launcher without a webview must not keep running: the tray icon stays, the
+/// taskbar entry goes, and the user is left with a process that does nothing.
+/// Say what happened, log it, and exit so the next start can try again.
+fn report_boot_failure(app: &tauri::AppHandle, detail: &str) -> ! {
+    perf::write_line_global(&format!("boot: failed: {detail}"));
+    if let Some(marker) = app.try_state::<RunMarker>() {
+        if let Some(path) = &marker.path {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+    let log = app
+        .path()
+        .app_data_dir()
+        .map(|dir| dir.join("perf.log").display().to_string())
+        .unwrap_or_else(|_| "perf.log".into());
+    let message = format!(
+        "Efxlve Launcher web görünümünü başlatamadı.\r\n\
+         Microsoft Edge WebView2 Runtime'ı onarın ve antivirüsünüzün uygulamayı engellemediğinden emin olun.\r\n\r\n\
+         The launcher could not start its web view. Repair the Microsoft Edge WebView2 Runtime, \
+         or check that antivirus software is not blocking the app.\r\n\r\n\
+         {detail}\r\n\r\n{log}"
+    );
+    show_boot_error(&message);
+    std::process::exit(1);
+}
+
+#[cfg(windows)]
+fn show_boot_error(message: &str) {
+    #[link(name = "user32")]
+    extern "system" {
+        fn MessageBoxW(
+            hwnd: *mut core::ffi::c_void,
+            text: *const u16,
+            caption: *const u16,
+            kind: u32,
+        ) -> i32;
+    }
+    const MB_ICONERROR: u32 = 0x0000_0010;
+    const MB_SETFOREGROUND: u32 = 0x0001_0000;
+    const MB_TOPMOST: u32 = 0x0004_0000;
+
+    fn wide(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    let text = wide(message);
+    let caption = wide("Efxlve Launcher");
+    unsafe {
+        MessageBoxW(
+            std::ptr::null_mut(),
+            text.as_ptr(),
+            caption.as_ptr(),
+            MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST,
+        );
+    }
+}
+
+#[cfg(not(windows))]
+fn show_boot_error(_message: &str) {}
+
+/// A webview can also die a moment after its window is built: WebView2 kills the
+/// browser process, the window goes with it, and the event loop keeps running
+/// with nothing to draw. Check once the boot work is done so that state is
+/// reported instead of leaving a silent process behind.
+fn watch_boot_window(app: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(5));
+        if EXITING.load(std::sync::atomic::Ordering::Relaxed) {
+            return;
+        }
+        let alive = app
+            .get_window("main")
+            .map(|window| window.is_visible().is_ok())
+            .unwrap_or(false);
+        if !alive {
+            report_boot_failure(&app, "the main window disappeared during boot");
+        }
+    });
+}
+
 /// A panic in a release build leaves no trace: the window simply disappears and
 /// the user has nothing to send. This writes the message, the location and a
 /// backtrace next to the other logs, so a crash report is actionable.
@@ -944,6 +1084,14 @@ fn main() {    // Rockstar's launcher only continues when a process named
                 path: marker_path,
                 recovery,
             });
+            // A window whose webview cannot start used to die silently and take
+            // the whole interface with it; create both here instead.
+            if let Err(error) = create_main_window(app) {
+                report_boot_failure(app.handle(), &error);
+            }
+            if let Err(error) = create_config_window(app, "overlay") {
+                perf::write_line_global(&format!("boot: overlay window failed: {error}"));
+            }
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
                 hide_accent_border(&win);
@@ -976,6 +1124,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             // Refreshes linked companion accounts (today: Ubisoft) on a timer.
             companion::start_ubi_sync(app.handle().clone());
             build_tray(app)?;
+            watch_boot_window(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -1453,6 +1602,12 @@ fn main() {    // Rockstar's launcher only continues when a process named
 
     install_crash_logger(&app);
     app.run(|app_handle, event| {
+        if matches!(
+            event,
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
+        ) {
+            EXITING.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
         if let tauri::RunEvent::Exit = event {
             // A clean exit means the next boot should not show the recovery
             // feedback prompt.
