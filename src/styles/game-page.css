@@ -12,10 +12,7 @@
 }
 html.sb-no-anim .overlay,
 html.sb-resizing .overlay,
-body.sb-resizing .overlay,
-html.sb-no-anim .overlay::before,
-html.sb-resizing .overlay::before,
-body.sb-resizing .overlay::before {
+body.sb-resizing .overlay {
   transition: none !important;
 }
 .game-hub { min-height: 100%; display: flex; flex-direction: column; }
