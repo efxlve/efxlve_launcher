@@ -31,6 +31,8 @@ export interface ThemeDef {
   tokens?: Record<string, string>;
   /** True for a theme the user saved from Settings. */
   custom?: boolean;
+  /** Backdrop image for a user theme, already a `data:` URL. */
+  scene?: string;
 }
 
 /** What the Settings editor stores for one user theme. */
@@ -41,6 +43,8 @@ export interface CustomThemeInput {
   /** Accent, `#rrggbb`. */
   accent: string;
   light: boolean;
+  /** Optional backdrop image as a `data:image/...` URL (already downscaled). */
+  scene?: string;
 }
 
 const DEFAULT_THEME = "black";
@@ -443,15 +447,19 @@ function luminance(color: string): number {
  * Turns two colours into the full token set. This is what makes a user theme
  * one form instead of twenty variables: the surfaces, text ramp, tints and
  * shadows are derived from the background and the accent.
+ *
+ * With a backdrop image the surfaces turn into translucent glass, so the photo
+ * stays visible behind the cards instead of being covered by flat panels.
  */
 function customTokens(input: CustomThemeInput): Record<string, string> {
   const onAccent = luminance(input.accent) > 0.55 ? "#101318" : "#ffffff";
+  const glass = Boolean(input.scene);
   if (input.light) {
     return {
       "--bg": input.bg,
-      "--surface-1": "#ffffff",
-      "--surface-2": darken(input.bg, 0.04),
-      "--surface-3": darken(input.bg, 0.09),
+      "--surface-1": glass ? "rgba(255, 255, 255, 0.86)" : "#ffffff",
+      "--surface-2": glass ? rgba(darken(input.bg, 0.04), 0.76) : darken(input.bg, 0.04),
+      "--surface-3": glass ? rgba(darken(input.bg, 0.09), 0.66) : darken(input.bg, 0.09),
       "--line": "rgba(15, 23, 42, 0.09)",
       "--line-strong": "rgba(15, 23, 42, 0.18)",
       "--text": "#101318",
@@ -475,9 +483,9 @@ function customTokens(input: CustomThemeInput): Record<string, string> {
   }
   return {
     "--bg": input.bg,
-    "--surface-1": lighten(input.bg, 0.06),
-    "--surface-2": lighten(input.bg, 0.12),
-    "--surface-3": lighten(input.bg, 0.19),
+    "--surface-1": glass ? rgba(lighten(input.bg, 0.06), 0.82) : lighten(input.bg, 0.06),
+    "--surface-2": glass ? rgba(lighten(input.bg, 0.12), 0.72) : lighten(input.bg, 0.12),
+    "--surface-3": glass ? rgba(lighten(input.bg, 0.19), 0.62) : lighten(input.bg, 0.19),
     "--line": "rgba(255, 255, 255, 0.07)",
     "--line-strong": "rgba(255, 255, 255, 0.14)",
     "--text": "#f7f7fa",
@@ -500,6 +508,20 @@ function customTokens(input: CustomThemeInput): Record<string, string> {
   };
 }
 
+/** The scene rules for a user theme: photo on the shell, glass panels above. */
+function sceneRules(id: string, input: CustomThemeInput): string {
+  if (!input.scene) return "";
+  const selector = `:root[data-surface="${id}"]`;
+  const scrim = input.light
+    ? "linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.5))"
+    : "linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.58))";
+  return [
+    `${selector} body { background: ${input.bg} url("${input.scene}") center / cover no-repeat fixed; }`,
+    `${selector} body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: ${scrim}; pointer-events: none; }`,
+    `${selector} .overlay, ${selector} #main-col, ${selector} #view { background: transparent; }`,
+  ].join("\n");
+}
+
 function readCustomInputs(): CustomThemeInput[] {
   try {
     const raw = localStorage.getItem(CUSTOM_KEY);
@@ -514,17 +536,23 @@ function readCustomInputs(): CustomThemeInput[] {
         bg: String(item.bg),
         accent: String(item.accent),
         light: item.light === true,
+        scene:
+          typeof item.scene === "string" && item.scene.startsWith("data:image/") && item.scene.length < 2_000_000
+            ? item.scene
+            : undefined,
       }));
   } catch {
     return [];
   }
 }
 
-function writeCustomInputs(list: CustomThemeInput[]): void {
+/** Persists the list; false when the quota rejected it (a large backdrop). */
+function writeCustomInputs(list: CustomThemeInput[]): boolean {
   try {
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+    return true;
   } catch {
-    /* private mode: the theme still applies for this session */
+    return false;
   }
 }
 
@@ -539,6 +567,7 @@ export function customThemes(): ThemeDef[] {
     scheme: input.light ? "light" : "dark",
     tokens: customTokens(input),
     custom: true,
+    scene: input.scene,
   }));
 }
 
@@ -547,7 +576,7 @@ export function themes(): ThemeDef[] {
   return [...BUILTIN_THEMES, ...customThemes()];
 }
 
-/** Saves a user theme and returns its id. */
+/** Saves a user theme and returns its id, or "" when it could not be stored. */
 export function saveCustomTheme(input: CustomThemeInput): string {
   const list = readCustomInputs();
   const clean: CustomThemeInput = {
@@ -555,9 +584,10 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     bg: HEX.test(input.bg) ? input.bg : "#141418",
     accent: HEX.test(input.accent) ? input.accent : "#7c3aed",
     light: input.light,
+    scene: input.scene?.startsWith("data:image/") ? input.scene : undefined,
   };
   list.push(clean);
-  writeCustomInputs(list);
+  if (!writeCustomInputs(list)) return "";
   return `${CUSTOM_PREFIX}${list.length - 1}`;
 }
 
@@ -611,7 +641,20 @@ export function applySurface(id: string, persist = true): string {
   const body = Object.entries(theme.tokens ?? {})
     .map(([name, value]) => `${name}: ${value};`)
     .join("");
-  tokenStyle().textContent = body ? `:root[data-surface="${theme.id}"]{${body}}` : "";
+  // A user theme can carry a backdrop image; its rules are generated with the
+  // theme, so the CSS files stay free of per-user selectors.
+  const scene = theme.scene
+    ? sceneRules(theme.id, {
+        name: theme.name ?? "",
+        bg: theme.bg,
+        accent: theme.accent,
+        light: theme.scheme === "light",
+        scene: theme.scene,
+      })
+    : "";
+  tokenStyle().textContent = body || scene
+    ? `${body ? `:root[data-surface="${theme.id}"]{${body}}` : ""}${scene}`
+    : "";
   root.style.colorScheme = theme.scheme;
 
   if (persist) {
