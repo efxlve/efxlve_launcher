@@ -13,7 +13,22 @@
       html[data-surface="aero"], html[data-surface="aero"] body { background-color: #8fd6fa; color-scheme: light; }
       html:not(.ready) body > * { visibility: hidden; }
     </style>
-    <script src="/prepaint.js"></script>
+    <script>
+      (function () {
+        document.documentElement.classList.add("sb-no-anim");
+        try {
+          var surface = localStorage.getItem("efxlve-surface") || "";
+          if (surface === "soft" || surface === "white" || surface === "aero") {
+            document.documentElement.dataset.surface = surface;
+          }
+          var w = parseInt(localStorage.getItem("efxlve-sidebar-w") || "", 10);
+          if (w >= 72 && w <= 400) {
+            document.documentElement.style.setProperty("--sidebar-w", w + "px");
+            if (w < 160) document.documentElement.classList.add("sb-narrow");
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app">
