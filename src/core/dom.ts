@@ -43,6 +43,8 @@ export const feedbackRoot = document.getElementById("feedback-root") as HTMLElem
 /** Confirmation dialog root. Owns its own high layer so an ask always paints
  * above whichever modal opened it (the manage popup included). */
 export const confirmRoot = document.getElementById("confirm-root") as HTMLElement;
+/** Theme designer & importer modal root. */
+export const themeModalRoot = document.getElementById("theme-modal-root") as HTMLElement;
 
 /** Mark the sidebar game entry that matches the open game page. */
 export function syncSidebarGameActive(): void {

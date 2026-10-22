@@ -9,7 +9,7 @@
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
-import { applySurface, deleteCustomTheme, saveCustomTheme, themeById, themes } from "../../core/themes";
+import { handleThemeSettingsAction, renderThemeSection } from "./theme-settings";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
@@ -1159,143 +1159,6 @@ function applyOverlayHotkey(spec: string): void {
   render();
 }
 
-/** Theme picker: built-ins plus the user's own, then the editor for a new one. */
-function renderThemePicker(): string {
-  const buttons = themes()
-    .map(
-      (theme) => `
-    <button type="button" class="${S.surface === theme.id ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}">
-      <span class="theme-swatch" style="background:${esc(theme.bg)};border-color:${esc(theme.accent)}"></span>${esc(theme.name ?? t(theme.labelKey))}
-    </button>`,
-    )
-    .join("");
-  const active = themeById(S.surface);
-  const tools = `<div class="theme-tools">
-    <button type="button" class="btn ghost small" data-act="theme-add">${icon("plus", 13)} ${t("settings.themeAdd")}</button>
-    ${active.custom ? `<button type="button" class="btn ghost small" data-act="theme-delete">${icon("trash", 13)} ${t("settings.themeDelete")}</button>` : ""}
-    <span class="theme-hint">${t("settings.themeHint")}</span>
-  </div>`;
-  const editor = themeEditorOpen
-    ? `<div class="theme-editor">
-        <input id="theme-name" class="text-input" maxlength="24" placeholder="${esc(t("settings.themeNamePlaceholder"))}" value="${esc(themeDraft.name)}" />
-        <label class="theme-color"><span>${t("settings.themeBg")}</span><input type="color" id="theme-bg" value="${esc(themeDraft.bg)}" /></label>
-        <label class="theme-color"><span>${t("settings.themeAccent")}</span><input type="color" id="theme-accent" value="${esc(themeDraft.accent)}" /></label>
-        <label class="theme-light"><input type="checkbox" id="theme-light" ${themeDraft.light ? "checked" : ""} /><span>${t("settings.themeLight")}</span></label>
-        <div class="theme-scene">
-          <span class="theme-scene-label">${t("settings.themeScene")}</span>
-          <button type="button" class="btn ghost small" data-act="theme-scene-pick">${icon("image", 13)} ${t("settings.themeScenePick")}</button>
-          ${themeDraft.scene ? `<img class="theme-scene-thumb" src="${esc(themeDraft.scene)}" alt="" /><button type="button" class="btn ghost small" data-act="theme-scene-clear">${t("settings.themeSceneClear")}</button>` : ""}
-          <input type="file" id="theme-scene-file" accept="image/*" hidden />
-          <span class="theme-hint">${t("settings.themeSceneHint")}</span>
-        </div>
-        <div class="theme-editor-actions">
-          <button type="button" class="btn primary small" data-act="theme-save">${t("settings.themeSave")}</button>
-          <button type="button" class="btn ghost small" data-act="theme-cancel">${t("settings.themeCancel")}</button>
-        </div>
-      </div>`
-    : "";
-  return `<div class="theme-control"><div class="seg theme-seg">${buttons}</div>${tools}${editor}</div>`;
-}
-
-/** The theme being built: a copy of the active palette is the friendliest start. */
-let themeEditorOpen = false;
-let themeDraft: { name: string; bg: string; accent: string; light: boolean; scene?: string } = {
-  name: "",
-  bg: "#141418",
-  accent: "#7c3aed",
-  light: false,
-};
-
-function openThemeEditor(): void {
-  const active = themeById(S.surface);
-  themeDraft = {
-    name: "",
-    bg: HEX_COLOR.test(active.bg) ? active.bg : "#141418",
-    accent: HEX_COLOR.test(active.accent) ? active.accent : "#7c3aed",
-    light: active.scheme === "light",
-    scene: undefined,
-  };
-  themeEditorOpen = true;
-  render();
-}
-
-/** Downscales a picked photo to a JPEG data URL small enough for storage. */
-function downscaleImage(file: File): Promise<string | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      const max = 1920;
-      const scale = Math.min(1, max / Math.max(image.width, image.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(image.width * scale));
-      canvas.height = Math.max(1, Math.round(image.height * scale));
-      const context = canvas.getContext("2d");
-      if (!context) {
-        URL.revokeObjectURL(url);
-        resolve(null);
-        return;
-      }
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      let data = canvas.toDataURL("image/jpeg", 0.82);
-      if (data.length > 1_400_000) data = canvas.toDataURL("image/jpeg", 0.65);
-      resolve(data.length < 1_900_000 ? data : null);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(null);
-    };
-    image.src = url;
-  });
-}
-
-async function applyThemeSceneFile(file: File): Promise<void> {
-  const data = await downscaleImage(file);
-  if (!data) {
-    toast(t("settings.themeSceneTooBig"), "err");
-    return;
-  }
-  themeDraft.scene = data;
-  render();
-}
-
-// The file input is re-created on every render, so the listener lives on the
-// document and only answers the theme editor's own input.
-document.addEventListener("change", (event) => {
-  const input = event.target as HTMLInputElement | null;
-  if (input?.id !== "theme-scene-file") return;
-  const file = input.files?.[0];
-  if (file) void applyThemeSceneFile(file);
-});
-
-function saveThemeFromEditor(): void {
-  const name = (document.getElementById("theme-name") as HTMLInputElement | null)?.value ?? "";
-  const bg = (document.getElementById("theme-bg") as HTMLInputElement | null)?.value ?? "#141418";
-  const accent = (document.getElementById("theme-accent") as HTMLInputElement | null)?.value ?? "#7c3aed";
-  const light = (document.getElementById("theme-light") as HTMLInputElement | null)?.checked ?? false;
-  const id = saveCustomTheme({ name, bg, accent, light, scene: themeDraft.scene });
-  if (!id) {
-    toast(t("settings.themeSceneTooBig"), "err");
-    return;
-  }
-  themeEditorOpen = false;
-  S.surface = applySurface(id);
-  render();
-  toast(t("settings.themeSaved", { name: name.trim() || t("settings.themeNamePlaceholder") }), "ok");
-}
-
-function deleteActiveTheme(): void {
-  const active = themeById(S.surface);
-  if (!active.custom) return;
-  deleteCustomTheme(active.id);
-  S.surface = applySurface("black");
-  render();
-  toast(t("settings.themeDeleted"), "ok");
-}
-
-const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-
 /** User stylesheet editor: applied live on save, never on every keystroke. */
 function renderCustomCssRow(): string {
   const limit = `${S.customCss.length} / ${CUSTOM_CSS_LIMIT}`;
@@ -1319,8 +1182,8 @@ function renderAppearance(): string {
       <span class="lang-name">${esc(l.label)}</span>
     </button>`).join("");
   return (
+    renderThemeSection() +
     group(
-      row(t("settings.themeTitle"), t("settings.themeDesc"), renderThemePicker(), true) +
       renderCustomCssRow() +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
@@ -2482,33 +2345,8 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
   // here on click re-rendered the page while the native dropdown was opening,
   // which made the platform picker appear dead.
   if (_el.tagName !== "SELECT" && handleCompatAction(act, _el)) return true;
+  if (handleThemeSettingsAction(act, _el)) return true;
   switch (act) {
-    case "theme-add": {
-      openThemeEditor();
-      return true;
-    }
-    case "theme-cancel": {
-      themeEditorOpen = false;
-      render();
-      return true;
-    }
-    case "theme-save": {
-      saveThemeFromEditor();
-      return true;
-    }
-    case "theme-scene-pick": {
-      (document.getElementById("theme-scene-file") as HTMLInputElement | null)?.click();
-      return true;
-    }
-    case "theme-scene-clear": {
-      themeDraft.scene = undefined;
-      render();
-      return true;
-    }
-    case "theme-delete": {
-      deleteActiveTheme();
-      return true;
-    }
     case "toggle-overlay": {
       const enabled = (_el as HTMLInputElement).checked;
       try {

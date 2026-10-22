@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    Stylesheet entry point (cascade order). src/main.ts imports only this file.
    ========================================================================== */
 @import "./tokens.css";
@@ -15,4 +15,5 @@
 @import "./music.css";
 @import "./discord.css";
 @import "./fullscreen-mode.css";
+@import "./theme-system.css";
 @import "./themes.css";
