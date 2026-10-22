@@ -363,7 +363,7 @@
 :root[data-surface="white"] :is(.music-art, .music-track img, .music-track-art) {
   background: var(--surface-3);
 }
-:root[data-surface="white"] .ps5-context-item.is-current {
+:root[data-surface="white"] .panel-context-item.is-current {
   background: var(--surface-2);
 }
 :root[data-surface="white"] .sb-resize:hover,
@@ -500,57 +500,57 @@
 /* Dark media overlays and popovers deliberately keep their own dark surface.
    Their text must not inherit the light theme's dark --text token. */
 :root[data-surface="white"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name),
-:root[data-surface="aero"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name) {
+:root[data-surface="gloss"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name) {
   color: #f8fafc;
 }
 
 :root[data-surface="white"] .store-shot-name,
-:root[data-surface="aero"] .store-shot-name {
+:root[data-surface="gloss"] .store-shot-name {
   color: rgba(248, 250, 252, 0.72);
 }
 
 /* The collection editor keeps two deliberately dark fields inside its light
    frame; their text has to stay light in both themes. */
 :root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn),
-:root[data-surface="aero"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn) {
+:root[data-surface="gloss"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn) {
   color: #f8fafc;
 }
 
 /* Aero's global input tint is lighter than the editor's own dark field. */
 :root[data-surface="white"] .ced .col-name-input,
-:root[data-surface="aero"] .ced .col-name-input {
+:root[data-surface="gloss"] .ced .col-name-input {
   background: #1a1a1a;
   border-color: rgba(255, 255, 255, 0.22);
 }
 
 :root[data-surface="white"] .ced .col-search-wrap .text-input,
-:root[data-surface="aero"] .ced .col-search-wrap .text-input {
+:root[data-surface="gloss"] .ced .col-search-wrap .text-input {
   background: transparent !important;
   border: none;
   color: #f8fafc;
 }
 
 :root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder,
-:root[data-surface="aero"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder {
+:root[data-surface="gloss"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder {
   color: rgba(248, 250, 252, 0.56);
 }
 
 :root[data-surface="white"] .profile-banner-store-pill,
-:root[data-surface="aero"] .profile-banner-store-pill {
+:root[data-surface="gloss"] .profile-banner-store-pill {
   color: rgba(248, 250, 252, 0.72);
 }
 
 :root[data-surface="white"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer),
-:root[data-surface="aero"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer) {
+:root[data-surface="gloss"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer) {
   color: rgba(248, 250, 252, 0.72);
 }
 
-/* ---------- Frutiger Aero ----------
-   A Windows 7 morning: deep sky over green hills (src/assets/aero-scene.svg),
+/* ---------- Gloss ----------
+   A Windows 7 morning: deep sky over green hills (src/assets/gloss-scene.svg),
    glass chrome with a top sheen, and glossy split-gradient buttons. No
    backdrop-filter anywhere: the glass is gradients over a static backdrop. */
 
-:root[data-surface="aero"] {
+:root[data-surface="gloss"] {
   color-scheme: light;
   --bg: #cdeefc;
   --surface-1: rgba(255, 255, 255, 0.9);
@@ -587,14 +587,14 @@
 
 /* Backdrop. The SVG is drawn at viewport size, so every layer that repaints
    it (body, game page) lines up into one continuous scene. */
-:root[data-surface="aero"] body {
-  background: #8fd6fa url("../assets/aero-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="gloss"] body {
+  background: #8fd6fa url("../assets/gloss-scene.svg") 0 0 / 100vw 100vh no-repeat;
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 }
-:root[data-surface="aero"] #main-col,
-:root[data-surface="aero"] #view { background: transparent; }
-:root[data-surface="aero"] .overlay { background: transparent; }
-:root[data-surface="aero"] .overlay::before {
+:root[data-surface="gloss"] #main-col,
+:root[data-surface="gloss"] #view { background: transparent; }
+:root[data-surface="gloss"] .overlay { background: transparent; }
+:root[data-surface="gloss"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -602,52 +602,52 @@
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #8fd6fa url("../assets/aero-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #8fd6fa url("../assets/gloss-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="aero"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+:root[data-surface="gloss"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
 /* Window bar: Aero caption glass with the sheen line across its middle. */
-:root[data-surface="aero"] #winbar {
+:root[data-surface="gloss"] #winbar {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.52) 50%, rgba(222, 243, 255, 0.36) 50%, rgba(222, 243, 255, 0.58) 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 1px 0 rgba(16, 78, 130, 0.16);
 }
-:root[data-surface="aero"] :is(.win-btn, .winbar-btn):hover {
+:root[data-surface="gloss"] :is(.win-btn, .winbar-btn):hover {
   background: var(--aero-gloss-hover);
   color: var(--text);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
-:root[data-surface="aero"] .win-btn.win-close:hover {
+:root[data-surface="gloss"] .win-btn.win-close:hover {
   background: linear-gradient(180deg, #f6b3a3 0%, #e66b52 48%, #cf3a23 50%, #dc573c 100%);
   color: #ffffff;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 12px rgba(230, 80, 50, 0.45);
 }
-:root[data-surface="aero"] .winbar-version-pill {
+:root[data-surface="gloss"] .winbar-version-pill {
   background: var(--aero-gloss-white);
   border-color: var(--line-strong);
   box-shadow: inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .winbar-version-pill:hover {
+:root[data-surface="gloss"] .winbar-version-pill:hover {
   background: var(--aero-gloss-hover);
   border-color: #4aa6e6;
 }
-:root[data-surface="aero"] .winbar-beta-chip {
+:root[data-surface="gloss"] .winbar-beta-chip {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
 }
 
 /* Sidebar and header: clear glass, so the sky reads through the chrome. */
-:root[data-surface="aero"] #sidebar {
+:root[data-surface="gloss"] #sidebar {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.46) 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.78);
   box-shadow: 1px 0 0 rgba(16, 78, 130, 0.14);
 }
-:root[data-surface="aero"] :is(.sb-profile, .sb-divider) { border-color: var(--line); }
-:root[data-surface="aero"] .sb-item::before {
+:root[data-surface="gloss"] :is(.sb-profile, .sb-divider) { border-color: var(--line); }
+:root[data-surface="gloss"] .sb-item::before {
   content: "";
   position: absolute;
   inset: 3px 8px;
@@ -656,24 +656,24 @@
   border: 1px solid transparent;
   pointer-events: none;
 }
-:root[data-surface="aero"] .sb-item:hover::before {
+:root[data-surface="gloss"] .sb-item:hover::before {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(232, 246, 255, 0.7));
   border-color: rgba(120, 190, 240, 0.55);
 }
-:root[data-surface="aero"] .sb-item.active { box-shadow: none; color: var(--aero-heading); }
-:root[data-surface="aero"] .sb-item.active::before {
+:root[data-surface="gloss"] .sb-item.active { box-shadow: none; color: var(--aero-heading); }
+:root[data-surface="gloss"] .sb-item.active::before {
   background: linear-gradient(180deg, #f2fbff 0%, #d9f0fd 48%, #bfe5fb 50%, #dcf2fe 100%);
   border-color: rgba(60, 150, 220, 0.6);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(10, 90, 160, 0.18);
 }
 /* The badge sits on the theme's blue accent; black text disappeared into it. */
-:root[data-surface="aero"] #page-header {
+:root[data-surface="gloss"] #page-header {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.24));
   border-bottom: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: 0 1px 0 rgba(16, 78, 130, 0.1);
 }
 /* Windows 7 page titles: light weight, deep blue. */
-:root[data-surface="aero"] .page-header-title {
+:root[data-surface="gloss"] .page-header-title {
   color: var(--aero-heading);
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   font-size: 21px;
@@ -681,7 +681,7 @@
 }
 
 /* Panels: frosted white with a bright top edge and a thin blue outer rim. */
-:root[data-surface="aero"] :is(
+:root[data-surface="gloss"] :is(
   .card, .list, .lib-list, .modal, .toast, .gp-side-card, .settings-group, .info-box,
   .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
   .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -696,7 +696,7 @@
 }
 
 /* Modal Backdrops & Overlays */
-:root[data-surface="aero"] :is(
+:root[data-surface="gloss"] :is(
   .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
   .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay,
   .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop
@@ -707,7 +707,7 @@
 }
 
 /* Aero Headings & Section Titles */
-:root[data-surface="aero"] :is(
+:root[data-surface="gloss"] :is(
   .section-title, .hub-card-title, .hltb-title, .gp-section-title,
   .notif-title, .lib-filter-title-main, .storage-overview-title,
   .modal-box h2, .col-modal-title h2, .playtime-header h2,
@@ -718,7 +718,7 @@
 }
 
 /* Fields: sunken white with the Windows 7 blue focus glow. */
-:root[data-surface="aero"] :is(
+:root[data-surface="gloss"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -728,27 +728,27 @@
   border-color: rgba(16, 78, 130, 0.24);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] :is(
+:root[data-surface="gloss"] :is(
   input, select, textarea, .input, .text-input,
   .settings-search, .music-input, .music-select, .storage-search-input,
   .move-path-input, .install-path-input
 ):focus,
-:root[data-surface="aero"] .search:focus-within,
-:root[data-surface="aero"] .install-path-input-wrap:focus-within {
+:root[data-surface="gloss"] .search:focus-within,
+:root[data-surface="gloss"] .install-path-input-wrap:focus-within {
   border-color: #3d9de4;
   box-shadow: 0 0 0 3px rgba(61, 157, 228, 0.22), inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] .search input,
-:root[data-surface="aero"] .search input:focus {
+:root[data-surface="gloss"] .search input,
+:root[data-surface="gloss"] .search input:focus {
   background: none;
   box-shadow: none;
 }
-:root[data-surface="aero"] .seg {
+:root[data-surface="gloss"] .seg {
   background: rgba(255, 255, 255, 0.6);
   border-color: rgba(16, 78, 130, 0.2);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.08);
 }
-:root[data-surface="aero"] .seg > button.active {
+:root[data-surface="gloss"] .seg > button.active {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
@@ -756,74 +756,74 @@
 }
 
 /* Buttons: the glossy split, a bright top half over a deeper bottom half. */
-:root[data-surface="aero"] :is(.btn:not(.primary, .install, .play, .update, .running, .danger), button.gp-source) {
+:root[data-surface="gloss"] :is(.btn:not(.primary, .install, .play, .update, .running, .danger), button.gp-source) {
   background: var(--aero-gloss-white);
   border-color: rgba(16, 78, 130, 0.28);
   color: var(--text);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] :is(.btn:not(.primary, .install, .play, .update, .running, .danger), button.gp-source):hover,
-:root[data-surface="aero"] button.gp-source[aria-expanded="true"],
-:root[data-surface="aero"] .btn.ghost.active {
+:root[data-surface="gloss"] :is(.btn:not(.primary, .install, .play, .update, .running, .danger), button.gp-source):hover,
+:root[data-surface="gloss"] button.gp-source[aria-expanded="true"],
+:root[data-surface="gloss"] .btn.ghost.active {
   background: var(--aero-gloss-hover);
   border-color: #4aa6e6;
 }
-:root[data-surface="aero"] button.gp-source svg {
+:root[data-surface="gloss"] button.gp-source svg {
   color: var(--text-2);
 }
-:root[data-surface="aero"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+:root[data-surface="gloss"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   border-color: #0b5fa5;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.45);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -4px 8px rgba(130, 225, 255, 0.45), 0 2px 6px rgba(10, 90, 160, 0.3);
 }
-:root[data-surface="aero"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="gloss"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: var(--aero-gloss-blue-hover);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(150, 232, 255, 0.5), 0 0 14px rgba(70, 185, 255, 0.55);
 }
-:root[data-surface="aero"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active:not(:disabled) {
+:root[data-surface="gloss"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active:not(:disabled) {
   background: linear-gradient(180deg, #74c0ea 0%, #3598da 48%, #0e73c0 50%, #106db3 100%);
   box-shadow: inset 0 2px 4px rgba(0, 40, 90, 0.35);
 }
 /* Destructive actions still use the glass body, with red ink instead of the
    flat dark-theme danger fill. */
-:root[data-surface="aero"] .btn.danger {
+:root[data-surface="gloss"] .btn.danger {
   background: var(--aero-gloss-white);
   border-color: rgba(204, 47, 53, 0.35);
   color: #b3262c;
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] .btn.danger:hover {
+:root[data-surface="gloss"] .btn.danger:hover {
   background: linear-gradient(180deg, #fff7f7 0%, #ffe9e9 48%, #ffdada 50%, #ffeded 100%);
   border-color: rgba(204, 47, 53, 0.6);
 }
-:root[data-surface="aero"] .icon-btn:hover {
+:root[data-surface="gloss"] .icon-btn:hover {
   background: var(--aero-gloss-hover);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
-:root[data-surface="aero"] .switch .track {
+:root[data-surface="gloss"] .switch .track {
   background: linear-gradient(180deg, #c7d8e8 0%, #d8e5f2 50%, #e9f2fa 100%);
   box-shadow: inset 0 1px 2px rgba(8, 40, 80, 0.22), inset 0 0 0 1px rgba(16, 78, 130, 0.24);
 }
-:root[data-surface="aero"] .switch .track::before {
+:root[data-surface="gloss"] .switch .track::before {
   background: linear-gradient(180deg, #ffffff 0%, #f2f7fc 48%, #dae9f7 50%, #ebf4fc 100%);
   box-shadow: 0 1px 3px rgba(8, 40, 80, 0.35), inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(16, 78, 130, 0.15);
 }
-:root[data-surface="aero"] .switch input:checked + .track {
+:root[data-surface="gloss"] .switch input:checked + .track {
   background: var(--aero-gloss-blue);
   box-shadow: inset 0 1px 2px rgba(0, 45, 95, 0.35), inset 0 0 0 1px rgba(11, 95, 165, 0.5), 0 0 6px rgba(54, 166, 236, 0.35);
 }
-:root[data-surface="aero"] .switch input:checked + .track::before {
+:root[data-surface="gloss"] .switch input:checked + .track::before {
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
+:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
-:root[data-surface="aero"] .profile-hero-action-btn,
-:root[data-surface="aero"] .profile-refresh-btn {
+:root[data-surface="gloss"] .profile-hero-action-btn,
+:root[data-surface="gloss"] .profile-refresh-btn {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -831,19 +831,19 @@
   color: #0b4a8c;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
-:root[data-surface="aero"] .profile-hero-action-btn:hover,
-:root[data-surface="aero"] .profile-refresh-btn:hover {
+:root[data-surface="gloss"] .profile-hero-action-btn:hover,
+:root[data-surface="gloss"] .profile-refresh-btn:hover {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(43, 143, 239, 0.6);
   color: #003366;
   box-shadow: 0 2px 8px rgba(43, 143, 239, 0.2), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .profile-presence {
+:root[data-surface="gloss"] .profile-presence {
   background: rgba(255, 255, 255, 0.65);
   border-color: rgba(43, 143, 239, 0.25);
   color: #0b4a8c;
 }
-:root[data-surface="aero"] .profile-banner-edit-btn {
+:root[data-surface="gloss"] .profile-banner-edit-btn {
   background: rgba(10, 20, 36, 0.75);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -851,43 +851,43 @@
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
-:root[data-surface="aero"] .profile-banner-edit-btn:hover {
+:root[data-surface="gloss"] .profile-banner-edit-btn:hover {
   background: rgba(14, 30, 54, 0.9);
   border-color: rgba(43, 143, 239, 0.7);
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 12px rgba(43, 143, 239, 0.4);
 }
-:root[data-surface="aero"] .profile-hero-store-chip {
+:root[data-surface="gloss"] .profile-hero-store-chip {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(43, 143, 239, 0.28);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
-:root[data-surface="aero"] .profile-hero-store-chip:hover {
+:root[data-surface="gloss"] .profile-hero-store-chip:hover {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(43, 143, 239, 0.55);
   box-shadow: 0 3px 8px rgba(43, 143, 239, 0.18), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .profile-hero-store-chip.selected {
+:root[data-surface="gloss"] .profile-hero-store-chip.selected {
   background: var(--accent-tint);
   border-color: var(--accent);
   color: var(--text);
 }
-:root[data-surface="aero"] .profile-hero-banner::after {
+:root[data-surface="gloss"] .profile-hero-banner::after {
   background: linear-gradient(180deg, transparent 75%, rgba(0, 30, 60, 0.18) 100%);
 }
-:root[data-surface="aero"] .profile-stats {
+:root[data-surface="gloss"] .profile-stats {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: rgba(255, 255, 255, 0.85);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-:root[data-surface="aero"] .compat-note {
+:root[data-surface="gloss"] .compat-note {
   color: #0d2f4f;
 }
-:root[data-surface="aero"] .compat-note.info-box {
+:root[data-surface="gloss"] .compat-note.info-box {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -895,10 +895,10 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   color: #0d2f4f;
 }
-:root[data-surface="aero"] .compat-note.info-box svg {
+:root[data-surface="gloss"] .compat-note.info-box svg {
   color: #0b4a8c;
 }
-:root[data-surface="aero"] :is(.search input, .notes-search input, .notes-search-input) {
+:root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input) {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -907,12 +907,12 @@
   padding: 0 !important;
   outline: none !important;
 }
-:root[data-surface="aero"] :is(.search input, .notes-search input, .notes-search-input):focus {
+:root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input):focus {
   background: transparent !important;
   box-shadow: none !important;
   outline: none !important;
 }
-:root[data-surface="aero"] .notes-search {
+:root[data-surface="gloss"] .notes-search {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -921,20 +921,20 @@
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.08);
   color: #0b4a8c;
 }
-:root[data-surface="aero"] .notes-search:focus-within {
+:root[data-surface="gloss"] .notes-search:focus-within {
   border-color: #2b8fef;
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.08), 0 0 0 2px rgba(43, 143, 239, 0.25);
 }
-:root[data-surface="aero"] .notes-search svg {
+:root[data-surface="gloss"] .notes-search svg {
   color: #0b4a8c;
 }
-:root[data-surface="aero"] .notes-search-input {
+:root[data-surface="gloss"] .notes-search-input {
   color: var(--text);
 }
-:root[data-surface="aero"] .notes-search-input::placeholder {
+:root[data-surface="gloss"] .notes-search-input::placeholder {
   color: rgba(11, 74, 140, 0.55);
 }
-:root[data-surface="aero"] .sb-toggle {
+:root[data-surface="gloss"] .sb-toggle {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -942,94 +942,94 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   color: #0d2f4f;
 }
-:root[data-surface="aero"] .sb-toggle:hover {
+:root[data-surface="gloss"] .sb-toggle:hover {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(43, 143, 239, 0.5);
   color: #002d5a;
   box-shadow: 0 2px 6px rgba(43, 143, 239, 0.15), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .profile-ach-card {
+:root[data-surface="gloss"] .profile-ach-card {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(43, 143, 239, 0.28);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
-:root[data-surface="aero"] .profile-ach-card:hover {
+:root[data-surface="gloss"] .profile-ach-card:hover {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(43, 143, 239, 0.65);
   box-shadow: 0 8px 24px rgba(43, 143, 239, 0.2), inset 0 1px 0 #ffffff;
   transform: translateY(-4px);
 }
-:root[data-surface="aero"] .profile-ach-card.is-plat {
+:root[data-surface="gloss"] .profile-ach-card.is-plat {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(220, 240, 255, 0.85) 100%);
   border: 1px solid rgba(43, 143, 239, 0.5);
   box-shadow: 0 2px 8px rgba(43, 143, 239, 0.12), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .profile-ach-card.is-plat:hover {
+:root[data-surface="gloss"] .profile-ach-card.is-plat:hover {
   background: linear-gradient(180deg, #ffffff 0%, rgba(200, 232, 255, 0.95) 100%);
   border-color: #2b8fef;
   box-shadow: 0 8px 24px rgba(43, 143, 239, 0.3), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .profile-ach-pct {
+:root[data-surface="gloss"] .profile-ach-pct {
   color: #0b4a8c;
   font-weight: 700;
 }
-:root[data-surface="aero"] .profile-ach-card.is-plat .profile-ach-pct {
+:root[data-surface="gloss"] .profile-ach-card.is-plat .profile-ach-pct {
   color: #003366;
   font-weight: 800;
 }
-:root[data-surface="aero"] .profile-ach-bar {
+:root[data-surface="gloss"] .profile-ach-bar {
   background: rgba(43, 143, 239, 0.16);
 }
-:root[data-surface="aero"] .profile-ach-bar > span {
+:root[data-surface="gloss"] .profile-ach-bar > span {
   background: var(--aero-gloss-blue);
   box-shadow: 0 0 4px rgba(43, 143, 239, 0.35);
 }
-:root[data-surface="aero"] .profile-ach-card.is-plat .profile-ach-bar > span {
+:root[data-surface="gloss"] .profile-ach-card.is-plat .profile-ach-bar > span {
   background: linear-gradient(180deg, #2b8fef 0%, #1068c8 100%);
   box-shadow: 0 0 6px rgba(43, 143, 239, 0.5);
 }
-:root[data-surface="aero"] .profile-ach-title {
+:root[data-surface="gloss"] .profile-ach-title {
   color: #0d2f4f;
 }
-:root[data-surface="aero"] .profile-ach-count {
+:root[data-surface="gloss"] .profile-ach-count {
   color: #2b5275;
 }
-:root[data-surface="aero"] .profile-ach-sub-meta {
+:root[data-surface="gloss"] .profile-ach-sub-meta {
   color: #3d6487;
   font-weight: 500;
 }
-:root[data-surface="aero"] .profile-ach-badge.plat {
+:root[data-surface="gloss"] .profile-ach-badge.plat {
   background: rgba(10, 25, 45, 0.85);
   backdrop-filter: blur(6px);
   color: #ffd700;
   border: 1px solid rgba(255, 215, 0, 0.45);
 }
-:root[data-surface="aero"] .profile-ach-badge.pct {
+:root[data-surface="gloss"] .profile-ach-badge.pct {
   background: rgba(10, 25, 45, 0.8);
   backdrop-filter: blur(6px);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
-:root[data-surface="aero"] .profile-game-row {
+:root[data-surface="gloss"] .profile-game-row {
   border-bottom-color: rgba(43, 143, 239, 0.15);
   color: var(--text);
 }
-:root[data-surface="aero"] .profile-game-row:hover {
+:root[data-surface="gloss"] .profile-game-row:hover {
   background: rgba(255, 255, 255, 0.6);
 }
-:root[data-surface="aero"] .profile-game-row.is-plat {
+:root[data-surface="gloss"] .profile-game-row.is-plat {
   background: rgba(230, 245, 255, 0.45);
 }
-:root[data-surface="aero"] .profile-game-row.is-plat:hover {
+:root[data-surface="gloss"] .profile-game-row.is-plat:hover {
   background: rgba(220, 240, 255, 0.7);
 }
-:root[data-surface="aero"] .profile-table-header {
+:root[data-surface="gloss"] .profile-table-header {
   border-bottom-color: rgba(43, 143, 239, 0.2);
   color: #31536f;
 }
-:root[data-surface="aero"] .notes-filter {
+:root[data-surface="gloss"] .notes-filter {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1038,94 +1038,94 @@
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.08);
   padding: 2px;
 }
-:root[data-surface="aero"] .notes-filter button {
+:root[data-surface="gloss"] .notes-filter button {
   color: #0b4a8c;
   font-weight: 500;
   border-radius: 6px;
 }
-:root[data-surface="aero"] .notes-filter button:hover:not(.active) {
+:root[data-surface="gloss"] .notes-filter button:hover:not(.active) {
   background: rgba(255, 255, 255, 0.5);
   color: #003366;
 }
-:root[data-surface="aero"] .notes-filter button.active {
+:root[data-surface="gloss"] .notes-filter button.active {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 1px 3px rgba(10, 90, 160, 0.35);
 }
-:root[data-surface="aero"] .notes-row {
+:root[data-surface="gloss"] .notes-row {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(43, 143, 239, 0.25);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
-:root[data-surface="aero"] .notes-row:hover {
+:root[data-surface="gloss"] .notes-row:hover {
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(43, 143, 239, 0.5);
 }
-:root[data-surface="aero"] .notes-row.is-active {
+:root[data-surface="gloss"] .notes-row.is-active {
   background: rgba(255, 255, 255, 0.95);
   border-color: #2b8fef;
   box-shadow: 0 0 0 1px #2b8fef, 0 3px 10px rgba(43, 143, 239, 0.2);
 }
-:root[data-surface="aero"] .notes-editor {
+:root[data-surface="gloss"] .notes-editor {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
-:root[data-surface="aero"] .notes-list-empty {
+:root[data-surface="gloss"] .notes-list-empty {
   color: #31536f;
 }
-:root[data-surface="aero"] .notes-editor-empty-title {
+:root[data-surface="gloss"] .notes-editor-empty-title {
   color: #0c4a8c;
 }
-:root[data-surface="aero"] .notes-editor-empty-desc {
+:root[data-surface="gloss"] .notes-editor-empty-desc {
   color: #31536f;
 }
-:root[data-surface="aero"] .profile-stat {
+:root[data-surface="gloss"] .profile-stat {
   border-left-color: rgba(43, 143, 239, 0.15);
 }
-:root[data-surface="aero"] .profile-stat-val {
+:root[data-surface="gloss"] .profile-stat-val {
   color: #0b4a8c;
 }
-:root[data-surface="aero"] .settings-nav-scroll::-webkit-scrollbar-thumb {
+:root[data-surface="gloss"] .settings-nav-scroll::-webkit-scrollbar-thumb {
   background: rgba(13, 47, 79, 0.25);
   box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.5);
 }
-:root[data-surface="aero"] .settings-nav-scroll::-webkit-scrollbar-thumb:hover {
+:root[data-surface="gloss"] .settings-nav-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(13, 47, 79, 0.45);
 }
-:root[data-surface="aero"] .tab.active::after {
+:root[data-surface="gloss"] .tab.active::after {
   background: linear-gradient(90deg, #5cbdf3, #0a78c8);
   box-shadow: 0 0 8px rgba(54, 166, 236, 0.6);
 }
 
 /* Store marks are white logo files, so they sit on a dark glossy tile. */
 :root[data-surface="white"] .acc-store-mark,
-:root[data-surface="aero"] .acc-store-mark {
+:root[data-surface="gloss"] .acc-store-mark {
   border-radius: 9px;
   background: #15181d;
 }
-:root[data-surface="aero"] .acc-store-mark {
+:root[data-surface="gloss"] .acc-store-mark {
   background: linear-gradient(180deg, #45566a 0%, #1d2a38 48%, #0e1823 50%, #1b2a3a 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 6px rgba(8, 40, 80, 0.3);
 }
 
 /* Library covers: a soft drop shadow at rest; on hover a cyan halo and a
    diagonal glass reflection, the way Windows 7 lit a taskbar button. */
-:root[data-surface="aero"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="gloss"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 12px rgba(8, 60, 110, 0.2);
 }
-:root[data-surface="aero"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="gloss"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.9),
     0 0 22px rgba(120, 210, 255, 0.6),
     calc(var(--nx, 0) * -10px) calc(16px - var(--ny, 0) * 6px) 28px rgba(6, 50, 95, 0.4);
 }
-:root[data-surface="aero"] .pcard:not(.is-case) .pcard-art::after {
+:root[data-surface="gloss"] .pcard:not(.is-case) .pcard-art::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1135,26 +1135,26 @@
   transition: opacity var(--ease);
   pointer-events: none;
 }
-:root[data-surface="aero"] .pcard:not(.is-case):is(:hover, :focus-visible) .pcard-art::after { opacity: 1; }
+:root[data-surface="gloss"] .pcard:not(.is-case):is(:hover, :focus-visible) .pcard-art::after { opacity: 1; }
 /* Fading a cover over a light sky turns it milky; drain the colour instead. */
-:root[data-surface="aero"] .pgrid:is(.highlight-installed, .dim-uninstalled) .pcard.not-installed:not(:hover, :focus-visible) .pcard-art > img {
+:root[data-surface="gloss"] .pgrid:is(.highlight-installed, .dim-uninstalled) .pcard.not-installed:not(:hover, :focus-visible) .pcard-art > img {
   opacity: 0.82;
   filter: saturate(0.3) brightness(1.04);
 }
-:root[data-surface="aero"] .pcard-caption { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75); }
-:root[data-surface="aero"] .pcard-play-btn {
+:root[data-surface="gloss"] .pcard-caption { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75); }
+:root[data-surface="gloss"] .pcard-play-btn {
   background: var(--aero-gloss-white);
   border-color: rgba(16, 78, 130, 0.28);
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] .pcard:hover .pcard-play-btn {
+:root[data-surface="gloss"] .pcard:hover .pcard-play-btn {
   background: var(--aero-gloss-hover);
   border-color: #4aa6e6;
   color: #0c4a8c;
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(10, 90, 160, 0.2);
 }
-:root[data-surface="aero"] .pcard-play-btn:hover {
+:root[data-surface="gloss"] .pcard-play-btn:hover {
   background: var(--aero-gloss-blue);
   border-color: #0b5fa5;
   color: #ffffff;
@@ -1163,238 +1163,238 @@
 
 /* Game page hero: a navy scrim instead of black, and a lit glass edge where
    the art meets the sky. */
-:root[data-surface="aero"] .gp-hero {
+:root[data-surface="gloss"] .gp-hero {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(8, 60, 110, 0.25);
 }
-:root[data-surface="aero"] .gp-hero-scrim {
+:root[data-surface="gloss"] .gp-hero-scrim {
   background: linear-gradient(to bottom, rgba(4, 30, 60, 0.38) 0%, rgba(4, 30, 60, 0) 22%, rgba(4, 30, 60, 0.08) 52%, rgba(4, 30, 60, 0.6) 84%, rgba(4, 30, 60, 0.78) 100%);
 }
-:root[data-surface="aero"] .gp-title {
+:root[data-surface="gloss"] .gp-title {
   color: #ffffff;
   text-shadow: 0 2px 18px rgba(0, 40, 80, 0.6);
 }
-:root[data-surface="aero"] .gp-meta { color: rgba(255, 255, 255, 0.86); }
-:root[data-surface="aero"] .gp-bar-meta-group {
+:root[data-surface="gloss"] .gp-meta { color: rgba(255, 255, 255, 0.86); }
+:root[data-surface="gloss"] .gp-bar-meta-group {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 248, 255, 0.82) 100%);
   border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: var(--aero-glass-edge), 0 8px 24px rgba(8, 62, 110, 0.16), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .gp-bar-meta-icon {
+:root[data-surface="gloss"] .gp-bar-meta-icon {
   background: rgba(16, 78, 130, 0.08);
   color: var(--text-2);
 }
-:root[data-surface="aero"] .gp-bar-meta-icon.is-synced {
+:root[data-surface="gloss"] .gp-bar-meta-icon.is-synced {
   color: #107c41;
   background: rgba(16, 124, 65, 0.14);
 }
-:root[data-surface="aero"] .gp-bar-meta-item.is-clickable:hover {
+:root[data-surface="gloss"] .gp-bar-meta-item.is-clickable:hover {
   background: var(--aero-gloss-hover, rgba(255, 255, 255, 0.8));
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.35);
 }
-:root[data-surface="aero"] .gp-bar-meta-sep {
+:root[data-surface="gloss"] .gp-bar-meta-sep {
   background: rgba(16, 78, 130, 0.15);
 }
 
-/* Frutiger Aero: System Specs Tab */
-:root[data-surface="aero"] .hub-feature-row {
+/* Gloss: System Specs Tab */
+:root[data-surface="gloss"] .hub-feature-row {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 248, 255, 0.68) 100%);
   border: 1px solid rgba(16, 78, 130, 0.15);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(8, 60, 110, 0.05);
 }
-:root[data-surface="aero"] .hub-feature-row:hover {
+:root[data-surface="gloss"] .hub-feature-row:hover {
   background: var(--aero-gloss-hover, rgba(255, 255, 255, 0.95));
   border-color: rgba(74, 166, 230, 0.45);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.25), 0 2px 8px rgba(8, 60, 110, 0.08);
 }
-:root[data-surface="aero"] .hub-feature-icon {
+:root[data-surface="gloss"] .hub-feature-icon {
   background: linear-gradient(180deg, #ffffff 0%, #e8f4fc 100%);
   border: 1px solid rgba(74, 166, 230, 0.3);
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .ctrl-card {
+:root[data-surface="gloss"] .ctrl-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 248, 255, 0.68) 100%);
   border: 1px solid rgba(16, 78, 130, 0.16);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(8, 60, 110, 0.06);
 }
-:root[data-surface="aero"] .ctrl-glyph {
+:root[data-surface="gloss"] .ctrl-glyph {
   background: linear-gradient(180deg, #ffffff 0%, #e6f4fc 100%);
   border: 1px solid rgba(74, 166, 230, 0.35);
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] .ctrl-facts {
+:root[data-surface="gloss"] .ctrl-facts {
   border-top-color: rgba(16, 78, 130, 0.14);
 }
-:root[data-surface="aero"] .ctrl-badge.is-full {
+:root[data-surface="gloss"] .ctrl-badge.is-full {
   background: linear-gradient(180deg, #e6f9ed 0%, #cbf2d8 100%);
   border-color: rgba(16, 124, 65, 0.45);
   color: #107c41;
 }
-:root[data-surface="aero"] .ctrl-badge.is-partial {
+:root[data-surface="gloss"] .ctrl-badge.is-partial {
   background: linear-gradient(180deg, #fffbf0 0%, #feeec8 100%);
   border-color: rgba(180, 110, 0, 0.45);
   color: #945900;
 }
-:root[data-surface="aero"] .ctrl-tag {
+:root[data-surface="gloss"] .ctrl-tag {
   background: linear-gradient(180deg, #ffffff 0%, #f0f7fc 100%);
   border: 1px solid rgba(16, 78, 130, 0.18);
   box-shadow: inset 0 1px 0 #ffffff;
   color: var(--text-2);
 }
-:root[data-surface="aero"] .ctrl-tag svg {
+:root[data-surface="gloss"] .ctrl-tag svg {
   color: #104e82;
 }
 
-/* Frutiger Aero: Steam Deck, ProtonDB, AWACY compatibility pills */
-:root[data-surface="aero"] :is(.deck-pill.verified, .awacy-pill.supported) {
+/* Gloss: Steam Deck, ProtonDB, AWACY compatibility pills */
+:root[data-surface="gloss"] :is(.deck-pill.verified, .awacy-pill.supported) {
   color: #107c41;
   border-color: rgba(16, 124, 65, 0.4);
   background: linear-gradient(180deg, #f0fbf4 0%, #d8f5e1 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(16, 124, 65, 0.08);
 }
-:root[data-surface="aero"] :is(.deck-pill.playable, .protondb-pill.gold, .awacy-pill.running) {
+:root[data-surface="gloss"] :is(.deck-pill.playable, .protondb-pill.gold, .awacy-pill.running) {
   color: #945900;
   border-color: rgba(180, 110, 0, 0.4);
   background: linear-gradient(180deg, #fffbf0 0%, #feeec8 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(180, 110, 0, 0.08);
 }
-:root[data-surface="aero"] :is(.deck-pill.unsupported, .protondb-pill.borked, .awacy-pill.broken, .awacy-pill.denied) {
+:root[data-surface="gloss"] :is(.deck-pill.unsupported, .protondb-pill.borked, .awacy-pill.broken, .awacy-pill.denied) {
   color: #b52026;
   border-color: rgba(204, 32, 38, 0.4);
   background: linear-gradient(180deg, #fff2f2 0%, #fedede 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(204, 32, 38, 0.08);
 }
-:root[data-surface="aero"] .protondb-pill.platinum {
+:root[data-surface="gloss"] .protondb-pill.platinum {
   color: #0963a8;
   border-color: rgba(10, 120, 200, 0.4);
   background: linear-gradient(180deg, #f2fbff 0%, #dcf0fd 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(10, 120, 200, 0.08);
 }
-:root[data-surface="aero"] .protondb-pill.silver {
+:root[data-surface="gloss"] .protondb-pill.silver {
   color: #3e556b;
   border-color: rgba(62, 85, 107, 0.35);
   background: linear-gradient(180deg, #f5f8fa 0%, #e1e9ef 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(62, 85, 107, 0.08);
 }
-:root[data-surface="aero"] .protondb-pill.bronze {
+:root[data-surface="gloss"] .protondb-pill.bronze {
   color: #8a4f1d;
   border-color: rgba(138, 79, 29, 0.38);
   background: linear-gradient(180deg, #fdf6f0 0%, #f7e4d2 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(138, 79, 29, 0.08);
 }
-:root[data-surface="aero"] .awacy-pill.planned {
+:root[data-surface="gloss"] .awacy-pill.planned {
   color: #5b3da3;
   border-color: rgba(91, 61, 163, 0.35);
   background: linear-gradient(180deg, #f9f5ff 0%, #ebdffc 100%);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(91, 61, 163, 0.08);
 }
-:root[data-surface="aero"] :is(.deck-pill, .protondb-pill, .awacy-pill):is(.pending, .unknown) {
+:root[data-surface="gloss"] :is(.deck-pill, .protondb-pill, .awacy-pill):is(.pending, .unknown) {
   color: var(--text-2);
   border-color: rgba(16, 78, 130, 0.2);
   background: var(--aero-gloss-white);
   box-shadow: inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] :is(.protondb-pill, .deck-pill, .awacy-pill):hover {
+:root[data-surface="gloss"] :is(.protondb-pill, .deck-pill, .awacy-pill):hover {
   filter: brightness(1.03);
   box-shadow: inset 0 1px 0 #ffffff, 0 2px 6px rgba(8, 60, 110, 0.14);
 }
-:root[data-surface="aero"] .sys-hw-cell {
+:root[data-surface="gloss"] .sys-hw-cell {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 248, 255, 0.72) 100%);
   border: 1px solid rgba(16, 78, 130, 0.16);
   box-shadow: inset 0 1px 0 #ffffff, 0 2px 6px rgba(8, 60, 110, 0.05);
 }
-:root[data-surface="aero"] .sys-hw-cell:hover {
+:root[data-surface="gloss"] .sys-hw-cell:hover {
   border-color: rgba(74, 166, 230, 0.5);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.25), 0 4px 14px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] .sys-hw-icon {
+:root[data-surface="gloss"] .sys-hw-icon {
   background: linear-gradient(180deg, #ffffff 0%, #e6f4fc 100%);
   border: 1px solid rgba(74, 166, 230, 0.35);
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .sys-req-tabs.seg {
+:root[data-surface="gloss"] .sys-req-tabs.seg {
   background: rgba(16, 78, 130, 0.08);
   border-color: rgba(16, 78, 130, 0.18);
 }
-:root[data-surface="aero"] .sys-req-tabs.seg button.active {
+:root[data-surface="gloss"] .sys-req-tabs.seg button.active {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 3px rgba(10, 90, 160, 0.35);
 }
-:root[data-surface="aero"] .sys-lang-block {
+:root[data-surface="gloss"] .sys-lang-block {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(242, 249, 255, 0.65) 100%);
   border: 1px solid rgba(16, 78, 130, 0.16);
   box-shadow: inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .sys-lang-chip {
+:root[data-surface="gloss"] .sys-lang-chip {
   background: linear-gradient(180deg, #ffffff 0%, #f0f7fc 100%);
   border: 1px solid rgba(16, 78, 130, 0.18);
   box-shadow: inset 0 1px 0 #ffffff;
   color: var(--text);
 }
-:root[data-surface="aero"] .sys-lang-chip.is-user-lang {
+:root[data-surface="gloss"] .sys-lang-chip.is-user-lang {
   background: linear-gradient(180deg, #e6f9ed 0%, #cbf2d8 100%);
   border-color: rgba(16, 124, 65, 0.45);
   color: #107c41;
 }
 
 /* Progress bars: iconic Windows 7 glossy green bar with the split sheen. */
-:root[data-surface="aero"] .progress {
+:root[data-surface="gloss"] .progress {
   background: rgba(16, 78, 130, 0.12);
   border: 1px solid rgba(16, 78, 130, 0.22);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.15);
 }
-:root[data-surface="aero"] .progress > span {
+:root[data-surface="gloss"] .progress > span {
   background: linear-gradient(180deg, #b9f7a5 0%, #46cf34 48%, #1fa816 50%, #29be1e 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 6px rgba(45, 195, 30, 0.45);
 }
-:root[data-surface="aero"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
+:root[data-surface="gloss"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
   background: var(--aero-gloss-blue);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 /* Menus & popovers: Aero glass dropdown with fine border and top highlight. */
-:root[data-surface="aero"] :is(.gp-store-menu, .gp-version-menu, .gp-more-menu, .col-dropdown-menu, .sort-dropdown-menu, .store-dropdown-menu, .ps5-context-menu, .custom-search-dropdown) {
+:root[data-surface="gloss"] :is(.gp-store-menu, .gp-version-menu, .gp-more-menu, .col-dropdown-menu, .sort-dropdown-menu, .store-dropdown-menu, .panel-context-menu, .custom-search-dropdown) {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 251, 255, 0.92) 100%);
   border: 1px solid rgba(16, 78, 130, 0.2);
   box-shadow: 0 14px 34px rgba(8, 60, 110, 0.22), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] :is(.ps5-context-item, .gp-store-row):hover,
-:root[data-surface="aero"] :is(.ps5-context-item, .gp-store-row):focus-visible {
+:root[data-surface="gloss"] :is(.panel-context-item, .gp-store-row):hover,
+:root[data-surface="gloss"] :is(.panel-context-item, .gp-store-row):focus-visible {
   background: var(--aero-gloss-hover);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
-:root[data-surface="aero"] .gp-store-row.selected {
+:root[data-surface="gloss"] .gp-store-row.selected {
   background: var(--aero-gloss-hover);
 }
 
 /* Settings sub-navigation: glass pills matching the main sidebar items. */
-:root[data-surface="aero"] .settings-nav-item:hover {
+:root[data-surface="gloss"] .settings-nav-item:hover {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(232, 246, 255, 0.7));
   border: 1px solid rgba(120, 190, 240, 0.5);
 }
-:root[data-surface="aero"] .settings-nav-item.active {
+:root[data-surface="gloss"] .settings-nav-item.active {
   background: linear-gradient(180deg, #f2fbff 0%, #d9f0fd 48%, #bfe5fb 50%, #dcf2fe 100%);
   border: 1px solid rgba(60, 150, 220, 0.6);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(10, 90, 160, 0.18);
   color: var(--aero-heading);
   font-weight: 600;
 }
-:root[data-surface="aero"] .settings-nav-group-label {
+:root[data-surface="gloss"] .settings-nav-group-label {
   color: var(--text-2);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 /* Command palette: Aero frosted frame with glossy item highlight. */
-:root[data-surface="aero"] .palette {
+:root[data-surface="gloss"] .palette {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0, rgba(255, 255, 255, 0.9) 44px, rgba(240, 250, 255, 0.88) 100%);
   border-color: rgba(255, 255, 255, 0.95);
   box-shadow: var(--aero-glass-edge), 0 20px 50px rgba(8, 60, 110, 0.28), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .palette-item.active {
+:root[data-surface="gloss"] .palette-item.active {
   background: linear-gradient(180deg, #f2fbff 0%, #d9f0fd 48%, #bfe5fb 50%, #dcf2fe 100%);
   border: 1px solid rgba(60, 150, 220, 0.5);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(10, 90, 160, 0.18);
@@ -1402,190 +1402,190 @@
 }
 
 /* Toasts and scroll-to-top button. */
-:root[data-surface="aero"] .toast {
+:root[data-surface="gloss"] .toast {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.9));
   border-color: rgba(16, 78, 130, 0.24);
   box-shadow: 0 12px 30px rgba(8, 60, 110, 0.22), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] #totop {
+:root[data-surface="gloss"] #totop {
   background: var(--aero-gloss-white);
   border-color: rgba(16, 78, 130, 0.28);
   box-shadow: inset 0 1px 0 #ffffff, 0 4px 14px rgba(8, 60, 110, 0.2);
 }
-:root[data-surface="aero"] #totop:hover {
+:root[data-surface="gloss"] #totop:hover {
   background: var(--aero-gloss-hover);
   border-color: #4aa6e6;
 }
 
 /* Store switcher tabs: frosted glass strip, glossy active tab, and dark logos on light tabs. */
-:root[data-surface="aero"] .store-tabs {
+:root[data-surface="gloss"] .store-tabs {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(16, 78, 130, 0.2);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.08);
 }
-:root[data-surface="aero"] .store-tabs .tab {
+:root[data-surface="gloss"] .store-tabs .tab {
   color: var(--text-2);
 }
-:root[data-surface="aero"] .store-tabs .tab:not(.active) .store-tab-logo {
+:root[data-surface="gloss"] .store-tabs .tab:not(.active) .store-tab-logo {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.82;
 }
-:root[data-surface="aero"] .store-tabs .tab:hover:not(.active) {
+:root[data-surface="gloss"] .store-tabs .tab:hover:not(.active) {
   background: var(--aero-gloss-hover);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
-:root[data-surface="aero"] .store-tabs .tab:hover:not(.active) .store-tab-logo {
+:root[data-surface="gloss"] .store-tabs .tab:hover:not(.active) .store-tab-logo {
   opacity: 1;
 }
-:root[data-surface="aero"] .store-tabs .tab.active {
+:root[data-surface="gloss"] .store-tabs .tab.active {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 1px 3px rgba(10, 90, 160, 0.35);
 }
-:root[data-surface="aero"] .store-tabs .tab.active .store-tab-logo {
+:root[data-surface="gloss"] .store-tabs .tab.active .store-tab-logo {
   filter: none;
   opacity: 1;
 }
-:root[data-surface="aero"] .store-tabs-arrow {
+:root[data-surface="gloss"] .store-tabs-arrow {
   color: var(--text-2);
 }
-:root[data-surface="aero"] .store-tabs-arrow:hover:not(:disabled) {
+:root[data-surface="gloss"] .store-tabs-arrow:hover:not(:disabled) {
   background: var(--aero-gloss-hover);
   color: var(--text);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
 
-/* Frutiger Aero: Notifications, Overlays & Panels */
-:root[data-surface="aero"] .notif-panel {
+/* Gloss: Notifications, Overlays & Panels */
+:root[data-surface="gloss"] .notif-panel {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 251, 255, 0.92) 100%);
   border: 1px solid rgba(16, 78, 130, 0.2);
   box-shadow: 0 14px 34px rgba(8, 60, 110, 0.22), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="aero"] .notif-item.unread {
+:root[data-surface="gloss"] .notif-item.unread {
   background: rgba(10, 120, 200, 0.08);
 }
-:root[data-surface="aero"] .notif-action:hover {
+:root[data-surface="gloss"] .notif-action:hover {
   background: var(--aero-gloss-hover);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
 
-/* Frutiger Aero: Storage Manager */
-:root[data-surface="aero"] .storage-stat-dot.dot-games {
+/* Gloss: Storage Manager */
+:root[data-surface="gloss"] .storage-stat-dot.dot-games {
   background: #0a78c8;
   box-shadow: 0 0 6px rgba(10, 120, 200, 0.5);
 }
-:root[data-surface="aero"] .storage-meter-seg.seg-games {
+:root[data-surface="gloss"] .storage-meter-seg.seg-games {
   background: var(--aero-gloss-blue);
 }
-:root[data-surface="aero"] .storage-drive-tab-badge {
+:root[data-surface="gloss"] .storage-drive-tab-badge {
   background: rgba(16, 78, 130, 0.1);
   color: var(--text-2);
 }
-:root[data-surface="aero"] .storage-drive-tab.active .storage-drive-tab-badge {
+:root[data-surface="gloss"] .storage-drive-tab.active .storage-drive-tab-badge {
   background: rgba(10, 120, 200, 0.18);
   color: var(--aero-heading);
 }
 
-/* Frutiger Aero: Library List View */
-:root[data-surface="aero"] .lrow:hover {
+/* Gloss: Library List View */
+:root[data-surface="gloss"] .lrow:hover {
   background: var(--aero-gloss-hover);
 }
-:root[data-surface="aero"] .lrow-action .btn.install {
+:root[data-surface="gloss"] .lrow-action .btn.install {
   background: var(--aero-gloss-white);
   border-color: rgba(16, 78, 130, 0.28);
   color: var(--text);
 }
-:root[data-surface="aero"] .lrow-action .btn.install:hover {
+:root[data-surface="gloss"] .lrow-action .btn.install:hover {
   background: var(--aero-gloss-hover);
   border-color: #4aa6e6;
 }
-:root[data-surface="aero"] .lrow-plat-cup::before {
+:root[data-surface="gloss"] .lrow-plat-cup::before {
   background: radial-gradient(circle, rgba(92, 189, 243, 0.45) 0%, rgba(92, 189, 243, 0) 70%);
 }
 
-/* Frutiger Aero: Collections Dialog */
-:root[data-surface="aero"] .col-modal-card:not(.ced) .col-game-item:hover {
+/* Gloss: Collections Dialog */
+:root[data-surface="gloss"] .col-modal-card:not(.ced) .col-game-item:hover {
   background: var(--aero-gloss-hover);
 }
-:root[data-surface="aero"] .col-modal-card:not(.ced) .col-game-item.selected {
+:root[data-surface="gloss"] .col-modal-card:not(.ced) .col-game-item.selected {
   background: linear-gradient(180deg, #f2fbff 0%, #d9f0fd 100%);
 }
-:root[data-surface="aero"] .col-modal-card:not(.ced) .col-custom-cb {
+:root[data-surface="gloss"] .col-modal-card:not(.ced) .col-custom-cb {
   border-color: rgba(16, 78, 130, 0.35);
   background: rgba(255, 255, 255, 0.8);
 }
-:root[data-surface="aero"] .col-modal-card:not(.ced) .col-custom-cb.checked {
+:root[data-surface="gloss"] .col-modal-card:not(.ced) .col-custom-cb.checked {
   background: var(--aero-gloss-blue);
   border-color: #0b5fa5;
   color: #ffffff;
 }
 
-/* Frutiger Aero: Library Filter Drawer & Facets */
-:root[data-surface="aero"] .lib-filter-panel {
+/* Gloss: Library Filter Drawer & Facets */
+:root[data-surface="gloss"] .lib-filter-panel {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 248, 255, 0.92) 100%);
   border-left: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: -1px 0 0 rgba(16, 78, 130, 0.14), -14px 0 34px rgba(8, 60, 110, 0.2);
 }
-:root[data-surface="aero"] .lib-filter-badge {
+:root[data-surface="gloss"] .lib-filter-badge {
   background: var(--aero-gloss-blue);
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
 }
-:root[data-surface="aero"] :is(.lib-facet-row:hover, .lib-facet-row.is-on) {
+:root[data-surface="gloss"] :is(.lib-facet-row:hover, .lib-facet-row.is-on) {
   background: var(--aero-gloss-hover);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.35);
 }
 
-/* Frutiger Aero: Context Menu, Music & Resizing */
-:root[data-surface="aero"] .ps5-context-item.is-current {
+/* Gloss: Context Menu, Music & Resizing */
+:root[data-surface="gloss"] .panel-context-item.is-current {
   background: rgba(16, 78, 130, 0.08);
 }
-:root[data-surface="aero"] :is(.music-art, .music-track img, .music-track-art) {
+:root[data-surface="gloss"] :is(.music-art, .music-track img, .music-track-art) {
   background: rgba(16, 78, 130, 0.1);
 }
-:root[data-surface="aero"] .sb-resize:hover,
-:root[data-surface="aero"] body.sb-resizing .sb-resize {
+:root[data-surface="gloss"] .sb-resize:hover,
+:root[data-surface="gloss"] body.sb-resizing .sb-resize {
   background: rgba(16, 78, 130, 0.2);
 }
 
 
 
-:root[data-surface="aero"] .custom-search-label {
+:root[data-surface="gloss"] .custom-search-label {
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(16, 78, 130, 0.24);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
-:root[data-surface="aero"] .custom-search-label input {
+:root[data-surface="gloss"] .custom-search-label input {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   color: #0d2f4f;
 }
-:root[data-surface="aero"] .custom-cover-preview {
+:root[data-surface="gloss"] .custom-cover-preview {
   background: rgba(255, 255, 255, 0.7);
   border-color: rgba(16, 78, 130, 0.24);
 }
-:root[data-surface="aero"] .search-result-item:hover {
+:root[data-surface="gloss"] .search-result-item:hover {
   background: var(--aero-gloss-hover);
 }
-:root[data-surface="aero"] .custom-field {
+:root[data-surface="gloss"] .custom-field {
   color: #0d2f4f;
 }
-:root[data-surface="aero"] .custom-game-head {
+:root[data-surface="gloss"] .custom-game-head {
   border-bottom-color: rgba(16, 78, 130, 0.14);
 }
-:root[data-surface="aero"] .custom-game-footer {
+:root[data-surface="gloss"] .custom-game-footer {
   border-top-color: rgba(16, 78, 130, 0.14);
 }
 
-/* ---------- Xbox 360 ----------
+/* ---------- Blades ----------
    The 360 dashboard: a dark console-green room, sweeping glass blades
-   (src/assets/xbox360-scene.svg), the iconic Ring of Light aura and lime gloss
+   (src/assets/blades-scene.svg), the iconic Ring of Light aura and lime gloss
    chrome. Like Aero, this is a scene theme: layered gradients and highlights
    emulating the classic 2005 console dashboard. */
 
-:root[data-surface="xbox360"] {
+:root[data-surface="blades"] {
   color-scheme: dark;
   --bg: #07180d;
   --surface-1: rgba(16, 38, 22, 0.88);
@@ -1617,13 +1617,13 @@
   --x360-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-:root[data-surface="xbox360"] body {
-  background: #07180d url("../assets/xbox360-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="blades"] body {
+  background: #07180d url("../assets/blades-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="xbox360"] #main-col,
-:root[data-surface="xbox360"] #view { background: transparent; }
-:root[data-surface="xbox360"] .overlay { background: transparent; }
-:root[data-surface="xbox360"] .overlay::before {
+:root[data-surface="blades"] #main-col,
+:root[data-surface="blades"] #view { background: transparent; }
+:root[data-surface="blades"] .overlay { background: transparent; }
+:root[data-surface="blades"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -1631,61 +1631,61 @@
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #07180d url("../assets/xbox360-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #07180d url("../assets/blades-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="xbox360"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+:root[data-surface="blades"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
 /* Window bar: 360 header blade with specular highlight and glossy beta pill */
-:root[data-surface="xbox360"] #winbar {
+:root[data-surface="blades"] #winbar {
   background: linear-gradient(180deg, rgba(22, 54, 30, 0.95) 0%, rgba(12, 32, 16, 0.92) 50%, rgba(8, 20, 10, 0.95) 100%);
   border-bottom: 1px solid rgba(155, 212, 74, 0.22);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
 }
-:root[data-surface="xbox360"] .winbar-beta-chip {
+:root[data-surface="blades"] .winbar-beta-chip {
   background: var(--x360-gloss);
   color: var(--on-accent);
   font-weight: 700;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 0 8px rgba(155, 212, 74, 0.35);
 }
-:root[data-surface="xbox360"] .winbar-btn:hover {
+:root[data-surface="blades"] .winbar-btn:hover {
   background: rgba(155, 212, 74, 0.15);
   color: var(--text);
   box-shadow: inset 0 0 0 1px rgba(155, 212, 74, 0.3);
 }
-:root[data-surface="xbox360"] .win-btn.win-close:hover {
+:root[data-surface="blades"] .win-btn.win-close:hover {
   background: linear-gradient(180deg, #f66a6a 0%, #d82b2b 50%, #b81b1b 100%);
   color: #ffffff;
 }
 
-/* Sidebar: Xbox 360 Blades navigation */
-:root[data-surface="xbox360"] #sidebar {
+/* Sidebar: Blades navigation */
+:root[data-surface="blades"] #sidebar {
   background: linear-gradient(180deg, rgba(14, 36, 18, 0.94) 0%, rgba(6, 18, 10, 0.9) 100%);
   border-right: 1px solid rgba(155, 212, 74, 0.2);
   box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35);
 }
-:root[data-surface="xbox360"] #page-header {
+:root[data-surface="blades"] #page-header {
   background: linear-gradient(180deg, rgba(18, 44, 24, 0.65), rgba(10, 26, 15, 0.25));
   border-bottom: 1px solid rgba(155, 212, 74, 0.18);
 }
-:root[data-surface="xbox360"] :is(.sb-profile, .sb-divider, .sb-mini) { border-color: var(--line); }
-:root[data-surface="xbox360"] .sb-item {
+:root[data-surface="blades"] :is(.sb-profile, .sb-divider, .sb-mini) { border-color: var(--line); }
+:root[data-surface="blades"] .sb-item {
   position: relative;
   transition: all var(--ease);
 }
-:root[data-surface="xbox360"] .sb-item:hover:not(.active) {
+:root[data-surface="blades"] .sb-item:hover:not(.active) {
   background: linear-gradient(90deg, rgba(155, 212, 74, 0.12) 0%, rgba(155, 212, 74, 0.04) 80%, transparent 100%);
   color: #f3ffe9;
 }
-:root[data-surface="xbox360"] .sb-item.active {
+:root[data-surface="blades"] .sb-item.active {
   background: linear-gradient(90deg, rgba(155, 212, 74, 0.28) 0%, rgba(155, 212, 74, 0.14) 75%, transparent 100%);
   color: #ffffff;
   font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
-:root[data-surface="xbox360"] .sb-item.active::before {
+:root[data-surface="blades"] .sb-item.active::before {
   content: "";
   position: absolute;
   left: 0;
@@ -1698,7 +1698,7 @@
 }
 
 /* Glass cards: smoked emerald console body, a hairline rim and a top sheen */
-:root[data-surface="xbox360"] :is(
+:root[data-surface="blades"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -1711,27 +1711,27 @@
   border: 1px solid var(--line);
   box-shadow: var(--x360-glass-edge), 0 8px 24px rgba(0, 14, 4, 0.45);
 }
-:root[data-surface="xbox360"] :is(.row, .settings-row):hover { background: rgba(155, 212, 74, 0.08); }
+:root[data-surface="blades"] :is(.row, .settings-row):hover { background: rgba(155, 212, 74, 0.08); }
 
 /* Inputs and focus rings */
-:root[data-surface="xbox360"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+:root[data-surface="blades"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
   background: rgba(8, 24, 12, 0.85);
   border-color: var(--line);
   color: var(--text);
   box-shadow: inset 0 1px 2px rgba(0, 12, 4, 0.5);
 }
-:root[data-surface="xbox360"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
-:root[data-surface="xbox360"] .search:focus-within,
-:root[data-surface="xbox360"] .install-path-input-wrap:focus-within {
+:root[data-surface="blades"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-surface="blades"] .search:focus-within,
+:root[data-surface="blades"] .install-path-input-wrap:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(155, 212, 74, 0.3), inset 0 1px 2px rgba(0, 12, 4, 0.5);
 }
-:root[data-surface="xbox360"] .seg {
+:root[data-surface="blades"] .seg {
   background: rgba(8, 24, 12, 0.75);
   border-color: var(--line);
 }
-:root[data-surface="xbox360"] .seg > button { color: var(--text-2); }
-:root[data-surface="xbox360"] .seg > button.active {
+:root[data-surface="blades"] .seg > button { color: var(--text-2); }
+:root[data-surface="blades"] .seg > button.active {
   background: var(--x360-gloss);
   color: var(--on-accent);
   font-weight: 600;
@@ -1739,45 +1739,45 @@
 }
 
 /* Buttons: 360 lime gloss with specular highlights */
-:root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+:root[data-surface="blades"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: var(--x360-gloss);
   color: var(--on-accent);
   border-color: #5f9420;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -4px 8px rgba(200, 245, 130, 0.35), 0 2px 6px rgba(0, 30, 0, 0.4);
 }
-:root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="blades"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: var(--x360-gloss-hover);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(210, 250, 150, 0.4), 0 0 14px rgba(155, 212, 74, 0.45);
 }
-:root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active:not(:disabled) {
+:root[data-surface="blades"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active:not(:disabled) {
   background: linear-gradient(180deg, #8ec93c 0%, #74ad2a 48%, #5f951f 50%, #578a1d 100%);
   box-shadow: inset 0 2px 4px rgba(0, 40, 0, 0.35);
 }
-:root[data-surface="xbox360"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source) {
+:root[data-surface="blades"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source) {
   background: rgba(16, 40, 22, 0.75);
   border-color: var(--line);
   color: var(--text-2);
 }
-:root[data-surface="xbox360"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source):hover,
-:root[data-surface="xbox360"] button.gp-source[aria-expanded="true"] {
+:root[data-surface="blades"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source):hover,
+:root[data-surface="blades"] button.gp-source[aria-expanded="true"] {
   background: rgba(26, 60, 34, 0.92);
   color: var(--text);
   border-color: var(--line-strong);
   box-shadow: 0 0 8px rgba(155, 212, 74, 0.2);
 }
-:root[data-surface="xbox360"] :is(.btn.primary, .btn.install, .btn.play, .btn.update) svg { color: currentColor; }
+:root[data-surface="blades"] :is(.btn.primary, .btn.install, .btn.play, .btn.update) svg { color: currentColor; }
 
 /* Library game cards: 360 jewel-case hover halo & diagonal glass reflection */
-:root[data-surface="xbox360"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="blades"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 16, 4, 0.45), 0 0 0 1px rgba(155, 212, 74, 0.1);
 }
-:root[data-surface="xbox360"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="blades"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 1px rgba(155, 212, 74, 0.75),
     0 0 22px rgba(155, 212, 74, 0.45),
     0 16px 32px rgba(0, 16, 4, 0.65);
 }
-:root[data-surface="xbox360"] .pcard:not(.is-case) .pcard-art::after {
+:root[data-surface="blades"] .pcard:not(.is-case) .pcard-art::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1787,22 +1787,22 @@
   transition: opacity var(--ease);
   pointer-events: none;
 }
-:root[data-surface="xbox360"] .pcard:not(.is-case):is(:hover, :focus-visible) .pcard-art::after {
+:root[data-surface="blades"] .pcard:not(.is-case):is(:hover, :focus-visible) .pcard-art::after {
   opacity: 1;
 }
-:root[data-surface="xbox360"] .pcard-play-btn {
+:root[data-surface="blades"] .pcard-play-btn {
   background: rgba(16, 42, 22, 0.85);
   border-color: rgba(155, 212, 74, 0.35);
   color: var(--text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
-:root[data-surface="xbox360"] .pcard:hover .pcard-play-btn {
+:root[data-surface="blades"] .pcard:hover .pcard-play-btn {
   background: rgba(26, 62, 32, 0.95);
   border-color: #9bd44a;
   color: #ffffff;
   box-shadow: 0 0 10px rgba(155, 212, 74, 0.3);
 }
-:root[data-surface="xbox360"] .pcard-play-btn:hover {
+:root[data-surface="blades"] .pcard-play-btn:hover {
   background: var(--x360-gloss);
   border-color: #5f9420;
   color: var(--on-accent);
@@ -1810,71 +1810,71 @@
 }
 
 /* Progress bars: glossy 360 green split bar */
-:root[data-surface="xbox360"] .progress {
+:root[data-surface="blades"] .progress {
   background: rgba(8, 24, 12, 0.85);
   border: 1px solid rgba(155, 212, 74, 0.25);
   box-shadow: inset 0 1px 2px rgba(0, 10, 2, 0.5);
 }
-:root[data-surface="xbox360"] .progress > span,
-:root[data-surface="xbox360"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
+:root[data-surface="blades"] .progress > span,
+:root[data-surface="blades"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
   background: var(--x360-gloss);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 0 8px rgba(155, 212, 74, 0.45);
 }
 
 /* Achievements ("Achievement Unlocked") */
-:root[data-surface="xbox360"] .profile-ach-card {
+:root[data-surface="blades"] .profile-ach-card {
   background: linear-gradient(180deg, rgba(22, 50, 28, 0.88), rgba(12, 30, 16, 0.92));
   border: 1px solid rgba(155, 212, 74, 0.2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-:root[data-surface="xbox360"] .profile-ach-card:hover {
+:root[data-surface="blades"] .profile-ach-card:hover {
   border-color: #9bd44a;
   box-shadow: 0 4px 16px rgba(0, 16, 4, 0.5), 0 0 12px rgba(155, 212, 74, 0.25);
 }
-:root[data-surface="xbox360"] .profile-ach-pct {
+:root[data-surface="blades"] .profile-ach-pct {
   color: var(--accent);
   font-weight: 700;
 }
-:root[data-surface="xbox360"] .profile-ach-bar {
+:root[data-surface="blades"] .profile-ach-bar {
   background: rgba(8, 24, 12, 0.85);
   border: 1px solid rgba(155, 212, 74, 0.2);
 }
-:root[data-surface="xbox360"] .profile-ach-bar > span {
+:root[data-surface="blades"] .profile-ach-bar > span {
   background: var(--x360-gloss);
   box-shadow: 0 0 6px rgba(155, 212, 74, 0.4);
 }
-:root[data-surface="xbox360"] .lrow-plat-cup::before {
+:root[data-surface="blades"] .lrow-plat-cup::before {
   background: radial-gradient(circle, rgba(155, 212, 74, 0.4) 0%, rgba(155, 212, 74, 0) 70%);
 }
 
 /* Switch */
-:root[data-surface="xbox360"] .switch .track { background: rgba(8, 24, 12, 0.85); border-color: var(--line); }
-:root[data-surface="xbox360"] .switch .track::before { background: #e9ffd0; }
-:root[data-surface="xbox360"] .switch input:checked + .track {
+:root[data-surface="blades"] .switch .track { background: rgba(8, 24, 12, 0.85); border-color: var(--line); }
+:root[data-surface="blades"] .switch .track::before { background: #e9ffd0; }
+:root[data-surface="blades"] .switch input:checked + .track {
   background: var(--x360-gloss);
   border-color: #5f9420;
 }
-:root[data-surface="xbox360"] .switch input:checked + .track::before { background: #10240a; }
+:root[data-surface="blades"] .switch input:checked + .track::before { background: #10240a; }
 
 /* Store switcher tabs */
-:root[data-surface="xbox360"] .store-tabs {
+:root[data-surface="blades"] .store-tabs {
   background: rgba(8, 24, 12, 0.7);
   border: 1px solid var(--line);
 }
-:root[data-surface="xbox360"] .store-tabs .tab { color: var(--text-2); }
-:root[data-surface="xbox360"] .store-tabs .tab.active {
+:root[data-surface="blades"] .store-tabs .tab { color: var(--text-2); }
+:root[data-surface="blades"] .store-tabs .tab.active {
   color: #ffffff;
   background: var(--accent-tint);
 }
-:root[data-surface="xbox360"] .store-tabs .tab.active::after,
-:root[data-surface="xbox360"] .tab.active::after {
+:root[data-surface="blades"] .store-tabs .tab.active::after,
+:root[data-surface="blades"] .tab.active::after {
   background: var(--accent);
   box-shadow: 0 0 8px rgba(155, 212, 74, 0.6);
 }
-:root[data-surface="xbox360"] .tab:hover:not(.active) { color: var(--text); }
+:root[data-surface="blades"] .tab:hover:not(.active) { color: var(--text); }
 
 /* Overlays & Backdrops */
-:root[data-surface="xbox360"] :is(
+:root[data-surface="blades"] :is(
   .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
   .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay,
   .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop
@@ -1885,61 +1885,61 @@
 }
 
 /* Dropdowns & Popovers */
-:root[data-surface="xbox360"] :is(
+:root[data-surface="blades"] :is(
   .gp-store-menu, .gp-version-menu, .gp-more-menu, .col-dropdown-menu,
-  .sort-dropdown-menu, .store-dropdown-menu, .ps5-context-menu, .custom-search-dropdown, .notif-panel
+  .sort-dropdown-menu, .store-dropdown-menu, .panel-context-menu, .custom-search-dropdown, .notif-panel
 ) {
   background: linear-gradient(180deg, rgba(20, 48, 26, 0.98), rgba(10, 26, 14, 0.98));
   border: 1px solid rgba(155, 212, 74, 0.28);
   box-shadow: 0 14px 34px rgba(0, 12, 4, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-:root[data-surface="xbox360"] :is(.ps5-context-item, .gp-store-row):hover,
-:root[data-surface="xbox360"] :is(.ps5-context-item, .gp-store-row):focus-visible {
+:root[data-surface="blades"] :is(.panel-context-item, .gp-store-row):hover,
+:root[data-surface="blades"] :is(.panel-context-item, .gp-store-row):focus-visible {
   background: var(--accent-tint);
   color: var(--text);
   box-shadow: inset 0 0 0 1px rgba(155, 212, 74, 0.35);
 }
 
 /* Game Page Hero */
-:root[data-surface="xbox360"] .gp-hero-scrim {
+:root[data-surface="blades"] .gp-hero-scrim {
   background: linear-gradient(to bottom, rgba(4, 16, 8, 0.35) 0%, rgba(4, 16, 8, 0) 25%, rgba(4, 16, 8, 0.12) 55%, rgba(4, 16, 8, 0.72) 85%, rgba(4, 16, 8, 0.92) 100%);
 }
-:root[data-surface="xbox360"] .gp-bar-meta-group {
+:root[data-surface="blades"] .gp-bar-meta-group {
   background: linear-gradient(180deg, rgba(20, 48, 26, 0.88), rgba(12, 30, 16, 0.92));
   border: 1px solid var(--line);
   box-shadow: var(--x360-glass-edge), 0 6px 18px rgba(0, 12, 4, 0.4);
 }
-:root[data-surface="xbox360"] .gp-bar-meta-icon {
+:root[data-surface="blades"] .gp-bar-meta-icon {
   background: rgba(8, 24, 12, 0.7);
   color: var(--text-2);
 }
-:root[data-surface="xbox360"] .gp-bar-meta-icon.is-synced {
+:root[data-surface="blades"] .gp-bar-meta-icon.is-synced {
   color: #9bd44a;
   background: rgba(155, 212, 74, 0.18);
 }
-:root[data-surface="xbox360"] .gp-bar-meta-item.is-clickable:hover {
+:root[data-surface="blades"] .gp-bar-meta-item.is-clickable:hover {
   background: var(--accent-tint);
 }
-:root[data-surface="xbox360"] .gp-bar-meta-sep {
+:root[data-surface="blades"] .gp-bar-meta-sep {
   background: var(--line);
 }
 
-:root[data-surface="xbox360"] :is(.notif-item.unread, .palette, .toast, .lib-filter-panel) {
+:root[data-surface="blades"] :is(.notif-item.unread, .palette, .toast, .lib-filter-panel) {
   background: linear-gradient(180deg, rgba(26, 56, 32, 0.95), rgba(12, 30, 16, 0.96));
   border-color: var(--line-strong);
 }
-:root[data-surface="xbox360"] :is(.palette-item.active, .ps5-context-item.is-current, .lib-facet-row.is-on) {
+:root[data-surface="blades"] :is(.palette-item.active, .panel-context-item.is-current, .lib-facet-row.is-on) {
   background: var(--accent-tint);
   color: var(--text);
 }
-:root[data-surface="xbox360"] .profile-stat-plat-ico { color: var(--accent); }
+:root[data-surface="blades"] .profile-stat-plat-ico { color: var(--accent); }
 
 
-/* ---------- Cyberpunk ----------
-   CD Projekt Red Cyber Yellow (#FCEE0A) Kiroshi Optics HUD,
-   dark matte carbon graphite, Samurai Red (#FF003C), and Netrunner Cyan (#00F0FF). */
+/* ---------- Neon Grid ----------
+   Acid yellow (#FCEE0A) HUD on matte carbon graphite, with a red warning
+   (#FF003C) and a cyan signal tone (#00F0FF). */
 
-:root[data-surface="cyberpunk"] {
+:root[data-surface="neongrid"] {
   color-scheme: dark;
   --bg: #07080a;
   --surface-1: #0c0e12;
@@ -1970,13 +1970,13 @@
   --scrollbar-thumb-hover: rgba(252, 238, 10, 0.42);
 }
 
-:root[data-surface="cyberpunk"] body {
-  background: #07080a url("../assets/cyberpunk-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="neongrid"] body {
+  background: #07080a url("../assets/neon-grid-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="cyberpunk"] #main-col,
-:root[data-surface="cyberpunk"] #view { background: transparent; }
-:root[data-surface="cyberpunk"] .overlay { background: transparent; }
-:root[data-surface="cyberpunk"] .overlay::before {
+:root[data-surface="neongrid"] #main-col,
+:root[data-surface="neongrid"] #view { background: transparent; }
+:root[data-surface="neongrid"] .overlay { background: transparent; }
+:root[data-surface="neongrid"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -1984,19 +1984,19 @@
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #07080a url("../assets/cyberpunk-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #07080a url("../assets/neon-grid-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="cyberpunk"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+:root[data-surface="neongrid"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
-/* Cyberpunk Window Bar */
-:root[data-surface="cyberpunk"] #winbar {
+/* Neon Grid Window Bar */
+:root[data-surface="neongrid"] #winbar {
   background: #07080a;
   border-bottom: 1px solid rgba(252, 238, 10, 0.22);
 }
-:root[data-surface="cyberpunk"] .winbar-beta-chip {
+:root[data-surface="neongrid"] .winbar-beta-chip {
   background: #fcee0a;
   color: #000000;
   font-weight: 800;
@@ -2004,35 +2004,35 @@
   border-radius: 2px;
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.4);
 }
-:root[data-surface="cyberpunk"] .winbar-btn:hover {
+:root[data-surface="neongrid"] .winbar-btn:hover {
   background: rgba(252, 238, 10, 0.12);
   color: #fcee0a;
 }
-:root[data-surface="cyberpunk"] .win-btn.win-close:hover {
+:root[data-surface="neongrid"] .win-btn.win-close:hover {
   background: #ff003c;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(255, 0, 60, 0.65);
 }
 
-/* Cyberpunk Sidebar Navigation */
-:root[data-surface="cyberpunk"] #sidebar {
+/* Neon Grid Sidebar Navigation */
+:root[data-surface="neongrid"] #sidebar {
   background: rgba(10, 12, 16, 0.96);
   border-right: 1px solid rgba(252, 238, 10, 0.18);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="cyberpunk"] #page-header {
+:root[data-surface="neongrid"] #page-header {
   background: rgba(10, 12, 16, 0.75);
   border-bottom: 1px solid rgba(252, 238, 10, 0.18);
 }
-:root[data-surface="cyberpunk"] .sb-item {
+:root[data-surface="neongrid"] .sb-item {
   border-radius: 2px;
   transition: all var(--ease);
 }
-:root[data-surface="cyberpunk"] .sb-item:hover {
+:root[data-surface="neongrid"] .sb-item:hover {
   color: #fcee0a;
   background: rgba(252, 238, 10, 0.08);
 }
-:root[data-surface="cyberpunk"] .sb-item.active {
+:root[data-surface="neongrid"] .sb-item.active {
   background: linear-gradient(90deg, rgba(252, 238, 10, 0.18) 0%, rgba(252, 238, 10, 0.04) 100%);
   color: #fcee0a;
   font-weight: 700;
@@ -2040,12 +2040,12 @@
   border-radius: 0 2px 2px 0;
   box-shadow: inset 2px 0 8px rgba(252, 238, 10, 0.25);
 }
-:root[data-surface="cyberpunk"] .sb-item.active::before {
+:root[data-surface="neongrid"] .sb-item.active::before {
   display: none;
 }
 
-/* Cyberpunk: Primary HUD Action Buttons */
-:root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Neon Grid: Primary HUD Action Buttons */
+:root[data-surface="neongrid"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: #fcee0a;
   color: #000000;
   font-weight: 800;
@@ -2055,34 +2055,34 @@
   box-shadow: 0 0 14px rgba(252, 238, 10, 0.35);
   transition: all var(--ease);
 }
-:root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="neongrid"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: #ffffff;
   border-color: #ffffff;
   color: #000000;
   box-shadow: 0 0 20px rgba(252, 238, 10, 0.7), 0 0 6px #ffffff;
   transform: translateY(-1px);
 }
-:root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="neongrid"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #e6d800;
   border-color: #e6d800;
   transform: translateY(0);
 }
 
-/* Cyberpunk: Secondary Action Buttons */
-:root[data-surface="cyberpunk"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Neon Grid: Secondary Action Buttons */
+:root[data-surface="neongrid"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(18, 21, 28, 0.85);
   border: 1px solid rgba(252, 238, 10, 0.24);
   color: var(--text);
   border-radius: 2px;
 }
-:root[data-surface="cyberpunk"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover {
+:root[data-surface="neongrid"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover {
   border-color: #fcee0a;
   color: #fcee0a;
   background: rgba(252, 238, 10, 0.1);
 }
 
-/* Cyberpunk: Danger / Abort Buttons */
-:root[data-surface="cyberpunk"] .btn.danger {
+/* Neon Grid: Danger / Abort Buttons */
+:root[data-surface="neongrid"] .btn.danger {
   background: #ff003c;
   border: 1px solid #ff003c;
   color: #ffffff;
@@ -2090,14 +2090,14 @@
   border-radius: 2px;
   box-shadow: 0 0 12px rgba(255, 0, 60, 0.35);
 }
-:root[data-surface="cyberpunk"] .btn.danger:hover {
+:root[data-surface="neongrid"] .btn.danger:hover {
   background: #ff2a5c;
   border-color: #ff2a5c;
   box-shadow: 0 0 18px rgba(255, 0, 60, 0.6);
 }
 
-/* Cyberpunk: Crisp Headings & Titles */
-:root[data-surface="cyberpunk"] :is(
+/* Neon Grid: Crisp Headings & Titles */
+:root[data-surface="neongrid"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
 ) {
@@ -2106,8 +2106,8 @@
   font-weight: 700;
 }
 
-/* Cyberpunk: Cards & Panels */
-:root[data-surface="cyberpunk"] :is(
+/* Neon Grid: Cards & Panels */
+:root[data-surface="neongrid"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -2123,158 +2123,75 @@
   backdrop-filter: blur(8px);
 }
 
-/* Cyberpunk: Library Game Cards */
-:root[data-surface="cyberpunk"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Neon Grid: Library Game Cards */
+:root[data-surface="neongrid"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(252, 238, 10, 0.18);
   border-radius: 3px;
 }
-:root[data-surface="cyberpunk"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="neongrid"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #fcee0a,
     0 0 22px rgba(252, 238, 10, 0.45),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="cyberpunk"] .pcard-play-btn {
+:root[data-surface="neongrid"] .pcard-play-btn {
   background: rgba(8, 9, 12, 0.85);
   border: 1px solid rgba(252, 238, 10, 0.35);
   color: #fcee0a;
   border-radius: 2px;
 }
-:root[data-surface="cyberpunk"] .pcard-play-btn:hover {
+:root[data-surface="neongrid"] .pcard-play-btn:hover {
   background: #fcee0a;
   color: #000000;
   border-color: #fcee0a;
   box-shadow: 0 0 14px rgba(252, 238, 10, 0.7);
 }
 
-/* Cyberpunk: Inputs & Search */
-:root[data-surface="cyberpunk"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+/* Neon Grid: Inputs & Search */
+:root[data-surface="neongrid"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
   background: #08090d;
   border: 1px solid rgba(252, 238, 10, 0.22);
   color: #fefefe;
   border-radius: 2px;
 }
-:root[data-surface="cyberpunk"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
-:root[data-surface="cyberpunk"] .search:focus-within,
-:root[data-surface="cyberpunk"] .install-path-input-wrap:focus-within {
+:root[data-surface="neongrid"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-surface="neongrid"] .search:focus-within,
+:root[data-surface="neongrid"] .install-path-input-wrap:focus-within {
   border-color: #fcee0a;
   box-shadow: 0 0 0 2px rgba(252, 238, 10, 0.3);
 }
 
-/* Cyberpunk: Progress Bars */
-:root[data-surface="cyberpunk"] .progress {
+/* Neon Grid: Progress Bars */
+:root[data-surface="neongrid"] .progress {
   background: #08090d;
   border: 1px solid rgba(252, 238, 10, 0.25);
   border-radius: 2px;
 }
-:root[data-surface="cyberpunk"] .progress > span,
-:root[data-surface="cyberpunk"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
+:root[data-surface="neongrid"] .progress > span,
+:root[data-surface="neongrid"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
   background: linear-gradient(90deg, #fcee0a 0%, #ff6600 75%, #ff003c 100%);
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.5);
 }
 
-/* Cyberpunk: Switch */
-:root[data-surface="cyberpunk"] .switch input:checked + .track {
+/* Neon Grid: Switch */
+:root[data-surface="neongrid"] .switch input:checked + .track {
   background: #fcee0a;
   border-color: #fcee0a;
 }
-:root[data-surface="cyberpunk"] .switch input:checked + .track::before {
+:root[data-surface="neongrid"] .switch input:checked + .track::before {
   background: #000000;
 }
 
-/* Cyberpunk: Tabs & Chips */
-:root[data-surface="cyberpunk"] .store-tabs .tab.active,
-:root[data-surface="cyberpunk"] .tab.active {
+/* Neon Grid: Tabs & Chips */
+:root[data-surface="neongrid"] .store-tabs .tab.active,
+:root[data-surface="neongrid"] .tab.active {
   color: #fcee0a;
   font-weight: 700;
 }
-:root[data-surface="cyberpunk"] .store-tabs .tab.active::after,
-:root[data-surface="cyberpunk"] .tab.active::after {
+:root[data-surface="neongrid"] .store-tabs .tab.active::after,
+:root[data-surface="neongrid"] .tab.active::after {
   background: #fcee0a;
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.7);
 }
-:root[data-surface="cyberpunk"] .profile-stat-plat-ico { color: #fcee0a; }
-
-/* ---------- Life is Strange ----------
-   Arcadia Bay at golden hour: the scene is the backdrop and every panel floats
-   over it as warm glass. The palette lives in core/themes.ts; this block only
-   paints the scene and the chrome, so the theme has one home. */
-
-:root[data-surface="lis"] body {
-  background: #121016 url("../assets/lis-scene.svg") 0 0 / 100vw 100vh no-repeat;
-}
-:root[data-surface="lis"] #main-col,
-:root[data-surface="lis"] #view { background: transparent; }
-:root[data-surface="lis"] .overlay { background: transparent; }
-:root[data-surface="lis"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #121016 url("../assets/lis-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
-
-:root[data-surface="lis"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
-
-:root[data-surface="lis"] #winbar {
-  background: linear-gradient(180deg, rgba(18, 16, 22, 0.92), rgba(18, 16, 22, 0.7));
-  border-bottom-color: var(--line);
-}
-:root[data-surface="lis"] #sidebar {
-  background: linear-gradient(180deg, rgba(22, 18, 28, 0.9), rgba(14, 12, 18, 0.78));
-  border-right-color: var(--line);
-}
-:root[data-surface="lis"] #page-header {
-  background: linear-gradient(180deg, rgba(26, 21, 32, 0.72), rgba(18, 16, 22, 0.2));
-  border-bottom-color: var(--line);
-}
-:root[data-surface="lis"] :is(.sb-profile, .sb-divider) { border-color: var(--line); }
-:root[data-surface="lis"] .sb-item.active {
-  background: var(--accent-tint);
-  color: var(--text);
-}
-:root[data-surface="lis"] .sb-item.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: var(--accent);
-}
-
-/* Warm glass over the sunset: cards keep the scene visible around their edges. */
-:root[data-surface="lis"] :is(.card, .settings-group, .list, .lib-list, .info-box, .notif-panel) {
-  background: linear-gradient(180deg, rgba(30, 24, 36, 0.86), rgba(18, 15, 24, 0.9));
-  border-color: var(--line);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 28px rgba(10, 6, 14, 0.35);
-}
-:root[data-surface="lis"] :is(.row, .settings-row):hover { background: rgba(56, 189, 248, 0.06); }
-:root[data-surface="lis"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .settings-css-area) {
-  background: rgba(16, 13, 22, 0.82);
-  border-color: var(--line);
-  color: var(--text);
-}
-:root[data-surface="lis"] :is(input, select, textarea):focus { border-color: var(--accent); }
-:root[data-surface="lis"] .search:focus-within,
-:root[data-surface="lis"] .install-path-input-wrap:focus-within { border-color: var(--accent); }
-
-:root[data-surface="lis"] :is(.tab.active::after, .store-tabs .tab.active::after) { background: var(--accent); }
-:root[data-surface="lis"] .store-tabs .tab.active { color: var(--text); }
-:root[data-surface="lis"] .store-tabs .tab:hover:not(.active) { color: var(--text); }
-
-:root[data-surface="lis"] :is(.palette, .toast, .lib-filter-panel, .col-dropdown-menu, .sort-dropdown-menu, .store-dropdown-menu) {
-  background: linear-gradient(180deg, rgba(30, 24, 36, 0.96), rgba(16, 13, 22, 0.97));
-  border-color: var(--line-strong);
-}
-:root[data-surface="lis"] :is(.palette-item.active, .ps5-context-item.is-current, .lib-facet-row.is-on) {
-  background: var(--accent-tint);
-  color: var(--text);
-}
+:root[data-surface="neongrid"] .profile-stat-plat-ico { color: #fcee0a; }

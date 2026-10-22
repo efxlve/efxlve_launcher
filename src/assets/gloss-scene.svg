@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-  <!-- Frutiger Aero backdrop: morning sky, sun bloom, light ribbons, two hills
-       and a few soap bubbles. Gradients only, no filters: it is rasterised once
+  <!-- Gloss: morning sky, sun bloom, light ribbons, two hills and a few soap
+       bubbles. Gradients only, no filters: it is rasterised once
        behind the app and must stay cheap on low-end machines. -->
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">

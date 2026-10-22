@@ -83,22 +83,22 @@
   --radius: var(--r-md);
   --radius-lg: var(--r-md);
   --glow-ambient: none;
-  --ps5-surface-1: var(--surface-1);
-  --ps5-surface-2: var(--surface-2);
-  --ps5-surface-3: var(--surface-3);
-  --ps5-border-subtle: var(--line);
-  --ps5-border-default: var(--line-strong);
-  --ps5-accent: var(--accent);
-  --ps5-accent-hover: var(--accent-hover);
-  --ps5-text-secondary: var(--text-2);
-  --ps5-text-muted: var(--text-3);
-  --ps5-radius-sm: var(--r-sm);
-  --ps5-radius-md: var(--r-md);
-  --ps5-radius-lg: var(--r-md);
-  --ps5-radius-xl: var(--r-md);
-  --ps5-status-online: var(--ok);
-  --ps5-status-warn: var(--warn);
-  --ps5-status-err: var(--err);
+  --panel-surface-1: var(--surface-1);
+  --panel-surface-2: var(--surface-2);
+  --panel-surface-3: var(--surface-3);
+  --panel-border-subtle: var(--line);
+  --panel-border-default: var(--line-strong);
+  --panel-accent: var(--accent);
+  --panel-accent-hover: var(--accent-hover);
+  --panel-text-secondary: var(--text-2);
+  --panel-text-muted: var(--text-3);
+  --panel-radius-sm: var(--r-sm);
+  --panel-radius-md: var(--r-md);
+  --panel-radius-lg: var(--r-md);
+  --panel-radius-xl: var(--r-md);
+  --panel-status-online: var(--ok);
+  --panel-status-warn: var(--warn);
+  --panel-status-err: var(--err);
 }
 
 /* Soft black surface: a lifted background with blue-grey panels for bright

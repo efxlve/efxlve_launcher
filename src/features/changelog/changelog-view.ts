@@ -40,8 +40,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Overlay kontrolü: Ayarlar'daki anahtar servisi tamamen durdurur (panel penceresi, tuş dinleyicisi ve ölçümler); oyun başına seçim yalnızca o oyun açıkken durdurur, kısayol ise Ctrl, Alt veya Shift içeren herhangi bir kombinasyondan kaydedilebilir.",
       },
       {
-        en: "Themes now come from one registry, and Custom CSS (Settings > Appearance) layers your own rules over any palette. New palettes: Cyberpunk 2077, Life is Strange, Tokyo Night, Nord, Sunset, Crimson, Xbox 360, Epic, Discord and Midnight.",
-        tr: "Temalar artık tek bir kayıt defterinden geliyor; Özel CSS (Ayarlar > Görünüm) kendi kurallarını her temanın üzerine ekliyor. Yeni paletler: Cyberpunk 2077, Life is Strange, Tokyo Night, Nord, Gün Batımı, Kızıl, Xbox 360, Epic, Discord ve Gece Yarısı.",
+        en: "Themes now come from one registry, and Custom CSS (Settings > Appearance) layers your own rules over any palette. New palettes: Neon Grid, Golden Hour, Tokyo Night, Nord, Sunset, Crimson, Blades, Epic, Discord and Midnight.",
+        tr: "Temalar artık tek bir kayıt defterinden geliyor; Özel CSS (Ayarlar > Görünüm) kendi kurallarını her temanın üzerine ekliyor. Yeni paletler: Neon Grid, Golden Hour, Tokyo Night, Nord, Gün Batımı, Kızıl, Blades, Epic, Discord ve Gece Yarısı.",
       },
       {
         en: "The in-game notification card and the performance HUD share one native module, so achievement cards, game-start cards and the FPS readout look like one system.",
@@ -54,8 +54,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Profildeki mağaza çipleri seçili sayacı gizlemiyor (beyaz vurgu üzerinde beyaz yazı) ve çift çerçeve yerine tek bir vurgu halkası çiziyor; kaydırma çubukları, kapak rozetleri ve kenar çubuğu sayacı da temaya uyuyor.",
       },
       {
-        en: "Life is Strange paints its Arcadia Bay backdrop again — the scene shipped without the CSS that draws it.",
-        tr: "Life is Strange artık Arcadia Bay arka planını boyuyor — sahne, onu çizen CSS olmadan gönderilmişti.",
+        en: "Golden Hour paints its Arcadia Bay backdrop again — the scene shipped without the CSS that draws it.",
+        tr: "Golden Hour artık Arcadia Bay arka planını boyuyor — sahne, onu çizen CSS olmadan gönderilmişti.",
       },
       {
         en: "Custom CSS is applied before the shell is revealed, so a saved stylesheet never flashes off and on at startup.",
@@ -116,8 +116,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Açılan başarımlar oyunun üzerinde yerel bir kart olarak görünüyor; aynı bildirim ayarları konumunu, süresini ve sesini kontrol ediyor.",
       },
       {
-        en: "Pick the launcher icon: classic, Frutiger Aero or your own image; the same icon appears in the title bar.",
-        tr: "Launcher simgesini seç: klasik, Frutiger Aero veya kendi görselin; aynı simge başlık çubuğunda da görünüyor.",
+        en: "Pick the launcher icon: classic, Gloss or your own image; the same icon appears in the title bar.",
+        tr: "Launcher simgesini seç: klasik, Gloss veya kendi görselin; aynı simge başlık çubuğunda da görünüyor.",
       },
       {
         en: "The library toolbar is compact: Add Game and Import Folder are icon buttons, with shorter store and sort labels and a sort icon.",
@@ -156,8 +156,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-10-21",
     items: [
       {
-        en: "White Mode and Frutiger Aero themes, with a full light-theme pass across the library, game pages, profile, notes, collections and settings.",
-        tr: "White Mode ve Frutiger Aero temaları; kütüphane, oyun sayfaları, profil, notlar, koleksiyonlar ve ayarlarda tam açık tema geçişi.",
+        en: "White Mode and Gloss themes, with a full light-theme pass across the library, game pages, profile, notes, collections and settings.",
+        tr: "White Mode ve Gloss temaları; kütüphane, oyun sayfaları, profil, notlar, koleksiyonlar ve ayarlarda tam açık tema geçişi.",
       },
       {
         en: "Full Screen Mode replaces TV Mode: the window covers the taskbar and keeps the controller-first console layout.",
@@ -862,7 +862,7 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Kişisel Bulut Kayıt Yedeği: oyun save'lerinizi Google Drive (OAuth 2.0 PKCE) ve WebDAV ile tek tıkla veya otomatik yedekleyin ve geri yükleyin.",
       },
       {
-        en: "Resumable Upload Engine: large save archives (e.g. 250MB+ Cyberpunk saves) upload reliably with Google Drive's resumable chunked protocol.",
+        en: "Resumable Upload Engine: large save archives (e.g. 250MB+ Neon Grid saves) upload reliably with Google Drive's resumable chunked protocol.",
         tr: "Kesintisiz Yükleme Motoru: 250MB+ boyutundaki büyük save dosyaları Google Drive Resumable protokolüyle kopmadan güvenle yüklenir.",
       },
       {

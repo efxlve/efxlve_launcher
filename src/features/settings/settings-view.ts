@@ -9,7 +9,7 @@
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
-import { THEMES } from "../../core/themes";
+import { applySurface, deleteCustomTheme, saveCustomTheme, themeById, themes } from "../../core/themes";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
@@ -1046,7 +1046,7 @@ function renderAppIconPicker(): string {
     </button>
     <button type="button" class="${S.appIcon === "aero" ? "active" : ""}" data-act="set-app-icon" data-icon="aero">
       <img src="${aeroIcon}" class="app-icon-thumb" alt="" />
-      <span>${esc(t("settings.appIconAero"))}</span>
+      <span>${esc(t("settings.appIconGloss"))}</span>
     </button>
     <button type="button" class="${isCustomActive ? "active" : ""}" data-act="set-app-icon" data-icon="custom">
       ${customImg}
@@ -1159,14 +1159,73 @@ function applyOverlayHotkey(spec: string): void {
   render();
 }
 
-/** One button per theme in the registry: a new entry appears here on its own. */
+/** Theme picker: built-ins plus the user's own, then the editor for a new one. */
 function renderThemePicker(): string {
-  const buttons = THEMES.map((theme) => `
+  const buttons = themes()
+    .map(
+      (theme) => `
     <button type="button" class="${S.surface === theme.id ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}">
-      <span class="theme-swatch" style="background:${esc(theme.bg)};border-color:${esc(theme.accent)}"></span>${t(theme.labelKey)}
-    </button>`).join("");
-  return `<div class="seg theme-seg">${buttons}</div>`;
+      <span class="theme-swatch" style="background:${esc(theme.bg)};border-color:${esc(theme.accent)}"></span>${esc(theme.name ?? t(theme.labelKey))}
+    </button>`,
+    )
+    .join("");
+  const active = themeById(S.surface);
+  const tools = `<div class="theme-tools">
+    <button type="button" class="btn ghost small" data-act="theme-add">${icon("plus", 13)} ${t("settings.themeAdd")}</button>
+    ${active.custom ? `<button type="button" class="btn ghost small" data-act="theme-delete">${icon("trash", 13)} ${t("settings.themeDelete")}</button>` : ""}
+    <span class="theme-hint">${t("settings.themeHint")}</span>
+  </div>`;
+  const editor = themeEditorOpen
+    ? `<div class="theme-editor">
+        <input id="theme-name" class="text-input" maxlength="24" placeholder="${esc(t("settings.themeNamePlaceholder"))}" value="${esc(themeDraft.name)}" />
+        <label class="theme-color"><span>${t("settings.themeBg")}</span><input type="color" id="theme-bg" value="${esc(themeDraft.bg)}" /></label>
+        <label class="theme-color"><span>${t("settings.themeAccent")}</span><input type="color" id="theme-accent" value="${esc(themeDraft.accent)}" /></label>
+        <label class="theme-light"><input type="checkbox" id="theme-light" ${themeDraft.light ? "checked" : ""} /><span>${t("settings.themeLight")}</span></label>
+        <button type="button" class="btn primary small" data-act="theme-save">${t("settings.themeSave")}</button>
+        <button type="button" class="btn ghost small" data-act="theme-cancel">${t("settings.themeCancel")}</button>
+      </div>`
+    : "";
+  return `<div class="theme-control"><div class="seg theme-seg">${buttons}</div>${tools}${editor}</div>`;
 }
+
+/** The theme being built: a copy of the active palette is the friendliest start. */
+let themeEditorOpen = false;
+let themeDraft = { name: "", bg: "#141418", accent: "#7c3aed", light: false };
+
+function openThemeEditor(): void {
+  const active = themeById(S.surface);
+  themeDraft = {
+    name: "",
+    bg: HEX_COLOR.test(active.bg) ? active.bg : "#141418",
+    accent: HEX_COLOR.test(active.accent) ? active.accent : "#7c3aed",
+    light: active.scheme === "light",
+  };
+  themeEditorOpen = true;
+  render();
+}
+
+function saveThemeFromEditor(): void {
+  const name = (document.getElementById("theme-name") as HTMLInputElement | null)?.value ?? "";
+  const bg = (document.getElementById("theme-bg") as HTMLInputElement | null)?.value ?? "#141418";
+  const accent = (document.getElementById("theme-accent") as HTMLInputElement | null)?.value ?? "#7c3aed";
+  const light = (document.getElementById("theme-light") as HTMLInputElement | null)?.checked ?? false;
+  themeEditorOpen = false;
+  const id = saveCustomTheme({ name, bg, accent, light });
+  S.surface = applySurface(id);
+  render();
+  toast(t("settings.themeSaved", { name: name.trim() || t("settings.themeNamePlaceholder") }), "ok");
+}
+
+function deleteActiveTheme(): void {
+  const active = themeById(S.surface);
+  if (!active.custom) return;
+  deleteCustomTheme(active.id);
+  S.surface = applySurface("black");
+  render();
+  toast(t("settings.themeDeleted"), "ok");
+}
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 /** User stylesheet editor: applied live on save, never on every keystroke. */
 function renderCustomCssRow(): string {
@@ -1703,6 +1762,7 @@ function renderAbout(): string {
       <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
       <p class="settings-about-text">${t("settings.aboutLogos")}</p>
       <p class="settings-about-text">${t("settings.aboutMarks")}</p>
+      <p class="settings-about-text">${t("settings.aboutThemes")}</p>
       <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
       <p class="settings-about-text">${t("settings.aboutThirdParty")}</p>
       <p class="settings-about-text">${t("settings.aboutStoreExtensions")}</p>
@@ -2354,6 +2414,23 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
   // which made the platform picker appear dead.
   if (_el.tagName !== "SELECT" && handleCompatAction(act, _el)) return true;
   switch (act) {
+    case "theme-add": {
+      openThemeEditor();
+      return true;
+    }
+    case "theme-cancel": {
+      themeEditorOpen = false;
+      render();
+      return true;
+    }
+    case "theme-save": {
+      saveThemeFromEditor();
+      return true;
+    }
+    case "theme-delete": {
+      deleteActiveTheme();
+      return true;
+    }
     case "toggle-overlay": {
       const enabled = (_el as HTMLInputElement).checked;
       try {

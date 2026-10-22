@@ -30,7 +30,7 @@ static NOTIF_UNTIL: AtomicU64 = AtomicU64::new(0);
 /// Bumped per card; a stale animation thread must not hide a newer one.
 static NOTIF_GEN: AtomicU64 = AtomicU64::new(0);
 
-/// PS5-like notification card: icon disc, bold title, muted body line.
+/// console-like notification card: icon disc, bold title, muted body line.
 const NOTIF_HEIGHT: i32 = 68;
 const NOTIF_MARGIN: i32 = 24;
 const NOTIF_MIN_WIDTH: i32 = 360;
@@ -127,7 +127,7 @@ pub fn set_notification_position(position: &str) {
     NOTIF_POSITION.store(code, Ordering::Relaxed);
 }
 
-/// Shows a PS5-like system notification over the game (game start: the overlay
+/// Shows a console-like system notification over the game (game start: the overlay
 /// hint). Reuses the HUD window: a Windows toast is invisible for many setups,
 /// this card is not. `title` is the bold line, `body` the muted one.
 pub fn notify(title: &str, body: &str) {
@@ -722,7 +722,7 @@ unsafe fn paint_hud(hdc: isize, rect: &RECT) {
     }
 }
 
-/// The PS5-like card: rounded plate, icon disc, bold title, muted body.
+/// The console-like card: rounded plate, icon disc, bold title, muted body.
 #[cfg(windows)]
 unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let width = rect.right - rect.left;

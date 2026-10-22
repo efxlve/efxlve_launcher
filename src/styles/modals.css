@@ -98,16 +98,16 @@
 }
 
 .selective-header, .playtime-header, .cover-dialog-header, .col-modal-header,
-.move-modal-head, .ss-share-head, .ps5-avatar-modal-header {
+.move-modal-head, .ss-share-head, .panel-avatar-modal-header {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 16px 20px; border-bottom: 1px solid var(--line); flex-shrink: 0;
 }
 .selective-header h2, .playtime-header h2, .cover-dialog-header h2, .col-modal-title h2, .move-modal-title,
-.ps5-avatar-modal-title h3, .ss-share-title {
+.panel-avatar-modal-title h3, .ss-share-title {
   margin: 0; font-size: 16px; font-weight: 600;
 }
 .playtime-header-title, .cover-dialog-title-group, .col-modal-title, .move-modal-title-group,
-.ps5-avatar-modal-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.panel-avatar-modal-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .playtime-header-icon, .cover-dialog-icon, .col-modal-header-avatar, .move-modal-icon {
   width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center;
   border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-2);
@@ -122,11 +122,11 @@
 .col-modal-close:hover, .move-modal-close:hover, .ss-share-close:hover { background: var(--surface-2); color: var(--text); }
 
 .selective-body, .playtime-body, .cover-dialog-body, .col-modal-body, .move-modal-body,
-.install-body, .ps5-avatar-modal-body {
+.install-body, .panel-avatar-modal-body {
   flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;
 }
 .selective-footer, .playtime-footer, .cover-dialog-footer, .col-modal-footer, .move-modal-foot,
-.install-footer, .ps5-avatar-modal-footer {
+.install-footer, .panel-avatar-modal-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 8px;
   padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0;
 }
@@ -1052,12 +1052,12 @@
 .ss-badge-recommended { font-size: 11px; color: var(--accent); }
 
 /* --- Avatar manager --- */
-.ps5-avatar-modal { width: min(420px, 100%); }
-.ps5-avatar-modal-body { flex-direction: row; align-items: center; }
-.ps5-avatar-preview-wrap { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--surface-2); }
-.ps5-avatar-preview-img { width: 100%; height: 100%; object-fit: cover; }
-.ps5-avatar-modal-info h4 { margin: 0 0 4px; font-size: 14px; }
-.ps5-avatar-modal-info p { margin: 0; font-size: 12px; color: var(--text-3); }
+.panel-avatar-modal { width: min(420px, 100%); }
+.panel-avatar-modal-body { flex-direction: row; align-items: center; }
+.panel-avatar-preview-wrap { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--surface-2); }
+.panel-avatar-preview-img { width: 100%; height: 100%; object-fit: cover; }
+.panel-avatar-modal-info h4 { margin: 0 0 4px; font-size: 14px; }
+.panel-avatar-modal-info p { margin: 0; font-size: 12px; color: var(--text-3); }
 
 /* --- Hide several library games --- */
 .hide-list-dialog { width: min(520px, 100%); height: min(640px, 88vh); overscroll-behavior: contain; }

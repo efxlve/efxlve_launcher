@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-  <!-- Xbox 360 Blades Dashboard Backdrop:
+  <!-- Blades Blades Dashboard Backdrop:
        The iconic 2005 console room featuring sweeping emerald/lime glass blades,
-       the Ring of Light ambient glow, and the embossed Xbox 360 sphere watermark.
+       the Ring of Light ambient glow, and the embossed Blades sphere watermark.
        Built with pure SVG gradients and vectors for instant, GPU-efficient rendering. -->
   <defs>
     <!-- Console room depth -->
@@ -69,21 +69,6 @@
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- Xbox Sphere Watermark Gradients -->
-    <radialGradient id="xSphereBody" cx="1220" cy="500" r="260" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#e6ffd0" stop-opacity="0.16"/>
-      <stop offset="35%" stop-color="#9bd44a" stop-opacity="0.11"/>
-      <stop offset="70%" stop-color="#3c7c1b" stop-opacity="0.05"/>
-      <stop offset="96%" stop-color="#143e12" stop-opacity="0.01"/>
-      <stop offset="100%" stop-color="#05170a" stop-opacity="0"/>
-    </radialGradient>
-
-    <linearGradient id="xChromeX" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
-      <stop offset="50%" stop-color="#a6e355" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#2d6814" stop-opacity="0.03"/>
-    </linearGradient>
-
     <!-- Vignette frame -->
     <radialGradient id="xVignette" cx="800" cy="500" r="950" gradientUnits="userSpaceOnUse">
       <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
@@ -97,18 +82,6 @@
   <rect width="1600" height="1000" fill="url(#xAmbientLeft)"/>
   <rect width="1600" height="1000" fill="url(#xRingGlow)"/>
 
-  <!-- Xbox 360 Emblem Watermark (Soft in background) -->
-  <g id="xbox-watermark" transform="translate(1220, 500)">
-    <!-- Outer sphere rim -->
-    <circle r="220" fill="url(#xSphereBody)"/>
-    <circle r="220" fill="none" stroke="url(#xEdgeSheen)" stroke-width="1.5" opacity="0.35"/>
-    <!-- Inner groove ring -->
-    <circle r="180" fill="none" stroke="#b6ef5c" stroke-width="1" stroke-dasharray="14 8" opacity="0.15"/>
-    <!-- The Carved 360 "X" Geometry -->
-    <path d="M-115 -145 C -40 -65, -30 -30, 0 0 C -30 30, -40 65, -115 145 C -85 160, -45 160, -25 125 C 0 80, 20 50, 0 0 C 20 -50, 0 -80, -25 -125 C -45 -160, -85 -160, -115 -145 Z" fill="url(#xChromeX)"/>
-    <path d="M115 -145 C 40 -65, 30 -30, 0 0 C 30 30, 40 65, 115 145 C 85 160, 45 160, 25 125 C 0 80, -20 50, 0 0 C -20 -50, 0 -80, 25 -125 C 45 -160, 85 -160, 115 -145 Z" fill="url(#xChromeX)"/>
-    <circle r="36" fill="#a4e44e" opacity="0.18"/>
-  </g>
 
   <!-- Sweeping Blade 3 (Deepest) -->
   <path d="M-140 890 C 200 740, 640 640, 1100 640 L 1740 640 L 1740 760 C 1200 760, 720 830, 220 980 L -140 990 Z" fill="url(#xBlade3)"/>

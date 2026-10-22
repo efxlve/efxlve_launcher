@@ -107,6 +107,34 @@
   background: var(--surface-2); padding: 1px 6px; border-radius: 4px; overflow-wrap: break-word;
 }
 .settings-row-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; max-width: 100%; }
+/* Settings > Appearance > theme builder: the picker, its tools and the form. */
+.theme-control { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.theme-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.theme-hint { font-size: 11px; color: var(--text-3); }
+.theme-editor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.theme-editor .text-input { width: 180px; }
+.theme-color { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); }
+.theme-color input[type="color"] {
+  width: 32px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+}
+.theme-light { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); }
+.theme-light input { accent-color: var(--accent); }
+
 /* A switch plus one action in the same control column. */
 .settings-inline-control { display: flex; align-items: center; gap: 10px; }
 /* Settings > Appearance > Custom CSS. The textarea is the row's whole control,

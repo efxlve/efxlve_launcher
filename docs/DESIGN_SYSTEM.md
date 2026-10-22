@@ -7,7 +7,7 @@
 
 ## 1. Why this document was rewritten
 
-The closed beta verdict was unanimous: "it smells like AI". The cause was not any single color — it was the absence of a decision. Each screen imitated a different product (PS5 profile, Apple frosted top bar, App Store downloads, Xbox achievements), buttons changed color five times, and 30 stylesheets redefined the same components. The fix is consistency, not more decoration.
+The closed beta verdict was unanimous: "it smells like AI". The cause was not any single color — it was the absence of a decision. Each screen imitated a different product (console profile, Apple frosted top bar, App Store downloads, Xbox achievements), buttons changed color five times, and 30 stylesheets redefined the same components. The fix is consistency, not more decoration.
 
 Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover grid, a strong game page, one accent color. The gamepad / couch experience lives in a separate **TV Mode** (Playnite and Steam Big Picture model) so the desktop UI can stay dense and mouse/keyboard-first.
 
@@ -57,13 +57,13 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
   one entry with `tokens` (written to `:root[data-surface="<id>"]` at runtime)
   and needs no CSS; `midnight` is the reference. A theme that changes shapes,
   backgrounds or glass adds a `[data-surface="<id>"]` block in `themes.css`;
-  `white` and `aero` do. The Settings picker, the stored choice, the boot script
+  `white`, `blades` and `gloss` do. The Settings picker, the stored choice, the boot script
   and the child-webview palette all read the registry, so a new theme leaves no
   switch half-wired. Components read tokens, never literal colours: a literal is
   what makes one theme look broken in another.
-- `data-surface="soft"` lives in `tokens.css`; `white` and `aero` replace the
+- `data-surface="soft"` lives in `tokens.css`; `white` and `gloss` replace the
   same token set in `themes.css`. White Mode is a light palette with a dark
-  accent. Frutiger Aero adds a sky/water background, glossy glass cards and a
+  accent. Gloss adds a sky/water background, glossy glass cards and a
   blue accent; its gradients, glow and blur are intentional theme exceptions to
   §10 and must not leak into the flat themes.
 - Custom CSS (Settings > Appearance) is the user's own stylesheet: stored as

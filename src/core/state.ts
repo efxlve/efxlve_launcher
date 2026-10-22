@@ -664,7 +664,7 @@ export const S = {
       const v = localStorage.getItem(APP_ICON_KEY);
       if (v === "classic" || v === "aero" || v === "custom") return v;
       const surface = localStorage.getItem(SURFACE_KEY);
-      if (surface === "aero") return "aero";
+      if (surface === "gloss") return "aero";
       return "classic";
     } catch {
       return "classic";

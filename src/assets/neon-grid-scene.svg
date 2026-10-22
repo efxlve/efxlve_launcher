@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
-  <!-- Cyberpunk Kiroshi Optics Neural HUD Backdrop
+  <!-- Neon grid: HUD-style backdrop
        Authentic in-game cyberware telemetry, precision optical reticles,
-       CD Projekt Red Cyber Yellow (#FCEE0A) and Samurai Red (#FF003C) accents. -->
+       CD Projekt Red acid yellow (#FCEE0A) and warning Red (#FF003C) accents. -->
   <defs>
     <!-- Deep carbon graphite base gradient -->
     <linearGradient id="cpBase" x1="0" y1="0" x2="0" y2="1">
@@ -10,7 +10,7 @@
       <stop offset="100%" stop-color="#060709"/>
     </linearGradient>
 
-    <!-- Top-Right Cyber Yellow Ambient Glow -->
+    <!-- Top-right acid-yellow ambient glow -->
     <radialGradient id="cpYellowGlow" cx="1620" cy="180" r="850" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#fcee0a" stop-opacity="0.12"/>
       <stop offset="35%" stop-color="#fcee0a" stop-opacity="0.04"/>
@@ -18,7 +18,7 @@
       <stop offset="100%" stop-color="#07080a" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Bottom-Left Samurai Red Ambient Glow -->
+    <!-- Bottom-left red ambient glow -->
     <radialGradient id="cpRedGlow" cx="280" cy="920" r="750" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#ff003c" stop-opacity="0.10"/>
       <stop offset="40%" stop-color="#ff003c" stop-opacity="0.03"/>
@@ -26,7 +26,7 @@
       <stop offset="100%" stop-color="#07080a" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Netrunner Ice Cyan Central Pulse -->
+    <!-- Cyan central pulse -->
     <radialGradient id="cpCyanGlow" cx="960" cy="540" r="650" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.03"/>
       <stop offset="60%" stop-color="#00f0ff" stop-opacity="0.005"/>
@@ -90,13 +90,11 @@
     <!-- Corner Bracket -->
     <path d="M 0 -45 L 0 0 L 45 0" fill="none" stroke="#ff003c" stroke-width="2" opacity="0.5"/>
     <rect x="4" y="-8" width="4" height="4" fill="#ff003c" opacity="0.6"/>
-    <!-- Samurai Ghost Watermark -->
+    <!-- warning Ghost Watermark -->
     <g opacity="0.2">
       <path d="M 12 -42 L 28 -42 L 36 -28 L 20 -28 Z" fill="#ff003c"/>
       <path d="M 12 -24 L 28 -24 L 32 -14 L 16 -14 Z" fill="#fcee0a"/>
     </g>
-    <text x="55" y="-16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.5" fill="#ff003c" opacity="0.5">SAMURAI // 2077 NIGHT CITY</text>
-    <text x="55" y="-4" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#a6acb8" opacity="0.35">WAKE UP, SAMURAI. WE HAVE A CITY TO BURN.</text>
   </g>
 
   <!-- ==================== BOTTOM-RIGHT HUD BRACKET ==================== -->

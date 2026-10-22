@@ -5,7 +5,7 @@
  * here and needs no CSS at all: the tokens are written to
  * `:root[data-surface="<id>"]` when the theme is applied. A theme that also
  * changes shapes, backgrounds or glass adds a `[data-surface="<id>"]` block in
- * `styles/themes.css` (White Mode, Frutiger Aero, Xbox 360 and Life is Strange do).
+ * `styles/themes.css` (White Mode, Gloss and Blades do).
  *
  * The settings picker, the stored choice and the boot path all read this list,
  * so adding a theme is one entry (plus `settings.surface<Name>` in the locales)
@@ -19,6 +19,8 @@ export interface ThemeDef {
   id: string;
   /** Locale key for the picker label. */
   labelKey: string;
+  /** Label of a user theme, shown instead of `labelKey`. */
+  name?: string;
   /** Picker swatch: the shell background, as any CSS `background` value. */
   bg: string;
   /** Picker swatch border and the theme's accent colour. */
@@ -27,18 +29,30 @@ export interface ThemeDef {
   scheme: "dark" | "light";
   /** Runtime token overrides; omit when `themes.css` owns the theme's block. */
   tokens?: Record<string, string>;
+  /** True for a theme the user saved from Settings. */
+  custom?: boolean;
+}
+
+/** What the Settings editor stores for one user theme. */
+export interface CustomThemeInput {
+  name: string;
+  /** Shell background, `#rrggbb`. */
+  bg: string;
+  /** Accent, `#rrggbb`. */
+  accent: string;
+  light: boolean;
 }
 
 const DEFAULT_THEME = "black";
 const TOKEN_STYLE_ID = "efxlve-theme-tokens";
 
 /**
- * Cyberpunk: CD Projekt Red's signature Night City cyber yellow (#FCEE0A)
- * on dark tech concrete, with Samurai red (#FF003C) and Arasaka cyan (#00F0FF).
+ * Neon Grid: acid yellow (#FCEE0A) on dark tech concrete, with a red warning
+ * tone (#FF003C) and a cyan signal tone (#00F0FF).
  */
-const CYBERPUNK: ThemeDef = {
-  id: "cyberpunk",
-  labelKey: "settings.surfaceCyberpunk",
+const NEON_GRID: ThemeDef = {
+  id: "neongrid",
+  labelKey: "settings.surfaceNeonGrid",
   bg: "linear-gradient(135deg, #07080a 0%, #14171d 55%, #fcee0a 100%)",
   accent: "#fcee0a",
   scheme: "dark",
@@ -69,42 +83,6 @@ const CYBERPUNK: ThemeDef = {
   },
 };
 
-/**
- * Life is Strange: Arcadia Bay golden hour sunset over the Pacific cliffs and
- * lighthouse (src/assets/lis-scene.svg) with warm Polaroid tones and glowing Blue Butterfly cyan.
- */
-const LIFE_IS_STRANGE: ThemeDef = {
-  id: "lis",
-  labelKey: "settings.surfaceLifeIsStrange",
-  bg: "linear-gradient(150deg, #1a1222 0%, #6e2e34 50%, #f59e0b 80%, #38bdf8 100%)",
-  accent: "#38bdf8",
-  scheme: "dark",
-  tokens: {
-    "--bg": "#121016",
-    "--surface-1": "rgba(24, 20, 30, 0.88)",
-    "--surface-2": "rgba(35, 29, 44, 0.78)",
-    "--surface-3": "rgba(48, 40, 60, 0.68)",
-    "--line": "rgba(245, 158, 11, 0.16)",
-    "--line-strong": "rgba(56, 189, 248, 0.28)",
-    "--text": "#fef7ee",
-    "--text-2": "#c4b5a5",
-    "--text-3": "#7d7168",
-    "--accent": "#38bdf8",
-    "--accent-hover": "#7dd3fc",
-    "--accent-tint": "rgba(56, 189, 248, 0.16)",
-    "--on-accent": "#05131e",
-    "--ok": "#34d399",
-    "--ok-hover": "#4ade80",
-    "--ok-tint": "rgba(52, 211, 153, 0.16)",
-    "--warn": "#f59e0b",
-    "--warn-tint": "rgba(245, 158, 11, 0.16)",
-    "--err": "#f43f5e",
-    "--err-tint": "rgba(244, 63, 94, 0.16)",
-    "--shadow-pop": "0 16px 40px rgba(10, 6, 14, 0.7)",
-    "--scrollbar-thumb": "rgba(245, 158, 11, 0.22)",
-    "--scrollbar-thumb-hover": "rgba(56, 189, 248, 0.38)",
-  },
-};
 
 /**
  * Tokyo Night: the beloved developer palette of deep indigo-black and soft sky blue.
@@ -288,13 +266,12 @@ const MIDNIGHT: ThemeDef = {
 };
 
 /**
- * The community asks are palettes too: the Epic store with a violet accent and
- * Discord's own greys are token-only; Xbox 360 and Aero get scenes and glass of their own
- * in `themes.css`.
+ * Two palettes that only need tokens: a violet dark and a chat-grey dark.
+ * Blades and Gloss add scenes and glass of their own in `themes.css`.
  */
-const EPIC: ThemeDef = {
-  id: "epic",
-  labelKey: "settings.surfaceEpic",
+const VIOLET: ThemeDef = {
+  id: "violet",
+  labelKey: "settings.surfaceViolet",
   bg: "#0a0a0c",
   accent: "#7c3aed",
   scheme: "dark",
@@ -325,9 +302,9 @@ const EPIC: ThemeDef = {
   },
 };
 
-const DISCORD: ThemeDef = {
-  id: "discord",
-  labelKey: "settings.surfaceDiscord",
+const BLURPLE: ThemeDef = {
+  id: "blurple",
+  labelKey: "settings.surfaceBlurple",
   bg: "#1e1f22",
   accent: "#5865f2",
   scheme: "dark",
@@ -358,7 +335,8 @@ const DISCORD: ThemeDef = {
   },
 };
 
-export const THEMES: readonly ThemeDef[] = [
+/** Built-in themes. User themes are appended by [`themes`]. */
+const BUILTIN_THEMES: readonly ThemeDef[] = [
   {
     id: "black",
     labelKey: "settings.surfaceBlack",
@@ -373,15 +351,14 @@ export const THEMES: readonly ThemeDef[] = [
     accent: "#ffffff",
     scheme: "dark",
   },
-  CYBERPUNK,
-  LIFE_IS_STRANGE,
+  NEON_GRID,
   TOKYO_NIGHT,
   CRIMSON,
   NORD,
   SUNSET,
   MIDNIGHT,
-  EPIC,
-  DISCORD,
+  VIOLET,
+  BLURPLE,
   {
     id: "white",
     labelKey: "settings.surfaceWhite",
@@ -390,15 +367,15 @@ export const THEMES: readonly ThemeDef[] = [
     scheme: "light",
   },
   {
-    id: "xbox360",
-    labelKey: "settings.surfaceXbox",
+    id: "blades",
+    labelKey: "settings.surfaceBlades",
     bg: "linear-gradient(160deg, #06190b 0%, #1f5c18 45%, #76be2b 75%, #a8ea48 100%)",
     accent: "#9bd44a",
     scheme: "dark",
   },
   {
-    id: "aero",
-    labelKey: "settings.surfaceAero",
+    id: "gloss",
+    labelKey: "settings.surfaceGloss",
     bg: "linear-gradient(180deg, #1678cc 0%, #8fd6fa 58%, #d9f2ff 100%)",
     accent: "#2b8fef",
     scheme: "light",
@@ -406,12 +383,201 @@ export const THEMES: readonly ThemeDef[] = [
 ];
 
 /** A stored id that no longer exists falls back to the default theme. */
+/** Ids from before the neutral theme names; a stored choice keeps working. */
+const LEGACY_SURFACE_IDS: Record<string, string> = {
+  cyberpunk: "neongrid",
+  xbox360: "blades",
+  epic: "violet",
+  discord: "blurple",
+  aero: "gloss",
+};
+
+const CUSTOM_KEY = "efxlve-custom-themes";
+const CUSTOM_PREFIX = "custom-";
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function rgb(hex: string): [number, number, number] | null {
+  if (!HEX.test(hex)) return null;
+  const value = Number.parseInt(hex.slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function hex(parts: [number, number, number]): string {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return `#${parts.map((n) => clamp(n).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** `weight` 0 keeps `from`, 1 keeps `to`. */
+function mix(from: string, to: string, weight: number): string {
+  const a = rgb(from);
+  const b = rgb(to);
+  if (!a || !b) return from;
+  return hex([
+    a[0] + (b[0] - a[0]) * weight,
+    a[1] + (b[1] - a[1]) * weight,
+    a[2] + (b[2] - a[2]) * weight,
+  ]);
+}
+
+const lighten = (color: string, amount: number) => mix(color, "#ffffff", amount);
+const darken = (color: string, amount: number) => mix(color, "#000000", amount);
+
+function rgba(color: string, alpha: number): string {
+  const parts = rgb(color);
+  if (!parts) return color;
+  return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
+}
+
+/** Relative luminance, for picking readable text on the accent. */
+function luminance(color: string): number {
+  const parts = rgb(color);
+  if (!parts) return 0;
+  const [r, g, b] = parts.map((n) => {
+    const c = n / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Turns two colours into the full token set. This is what makes a user theme
+ * one form instead of twenty variables: the surfaces, text ramp, tints and
+ * shadows are derived from the background and the accent.
+ */
+function customTokens(input: CustomThemeInput): Record<string, string> {
+  const onAccent = luminance(input.accent) > 0.55 ? "#101318" : "#ffffff";
+  if (input.light) {
+    return {
+      "--bg": input.bg,
+      "--surface-1": "#ffffff",
+      "--surface-2": darken(input.bg, 0.04),
+      "--surface-3": darken(input.bg, 0.09),
+      "--line": "rgba(15, 23, 42, 0.09)",
+      "--line-strong": "rgba(15, 23, 42, 0.18)",
+      "--text": "#101318",
+      "--text-2": "#4b5563",
+      "--text-3": "#7b8492",
+      "--accent": input.accent,
+      "--accent-hover": darken(input.accent, 0.1),
+      "--accent-tint": rgba(input.accent, 0.12),
+      "--on-accent": onAccent,
+      "--ok": "#15803d",
+      "--ok-hover": "#166534",
+      "--ok-tint": "rgba(21, 128, 61, 0.12)",
+      "--warn": "#a16207",
+      "--warn-tint": "rgba(161, 98, 7, 0.12)",
+      "--err": "#b91c1c",
+      "--err-tint": "rgba(185, 28, 28, 0.1)",
+      "--shadow-pop": "0 12px 32px rgba(15, 23, 42, 0.16)",
+      "--scrollbar-thumb": "rgba(15, 23, 42, 0.24)",
+      "--scrollbar-thumb-hover": "rgba(15, 23, 42, 0.4)",
+    };
+  }
+  return {
+    "--bg": input.bg,
+    "--surface-1": lighten(input.bg, 0.06),
+    "--surface-2": lighten(input.bg, 0.12),
+    "--surface-3": lighten(input.bg, 0.19),
+    "--line": "rgba(255, 255, 255, 0.07)",
+    "--line-strong": "rgba(255, 255, 255, 0.14)",
+    "--text": "#f7f7fa",
+    "--text-2": mix("#f7f7fa", input.bg, 0.55),
+    "--text-3": mix("#f7f7fa", input.bg, 0.3),
+    "--accent": input.accent,
+    "--accent-hover": lighten(input.accent, 0.12),
+    "--accent-tint": rgba(input.accent, 0.16),
+    "--on-accent": onAccent,
+    "--ok": "#2fb36d",
+    "--ok-hover": "#38c27a",
+    "--ok-tint": "rgba(47, 179, 109, 0.14)",
+    "--warn": "#e0a32e",
+    "--warn-tint": "rgba(224, 163, 46, 0.14)",
+    "--err": "#e5484d",
+    "--err-tint": "rgba(229, 72, 77, 0.14)",
+    "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.55)",
+    "--scrollbar-thumb": "rgba(255, 255, 255, 0.12)",
+    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.22)",
+  };
+}
+
+function readCustomInputs(): CustomThemeInput[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+      .filter((item) => typeof item.name === "string" && HEX.test(String(item.bg)) && HEX.test(String(item.accent)))
+      .map((item) => ({
+        name: String(item.name).slice(0, 24) || "Custom",
+        bg: String(item.bg),
+        accent: String(item.accent),
+        light: item.light === true,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function writeCustomInputs(list: CustomThemeInput[]): void {
+  try {
+    localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+  } catch {
+    /* private mode: the theme still applies for this session */
+  }
+}
+
+/** User themes, already expanded into registry entries. */
+export function customThemes(): ThemeDef[] {
+  return readCustomInputs().map((input, index) => ({
+    id: `${CUSTOM_PREFIX}${index}`,
+    labelKey: "",
+    name: input.name,
+    bg: input.bg,
+    accent: input.accent,
+    scheme: input.light ? "light" : "dark",
+    tokens: customTokens(input),
+    custom: true,
+  }));
+}
+
+/** Every theme the picker shows: built-ins first, then the user's own. */
+export function themes(): ThemeDef[] {
+  return [...BUILTIN_THEMES, ...customThemes()];
+}
+
+/** Saves a user theme and returns its id. */
+export function saveCustomTheme(input: CustomThemeInput): string {
+  const list = readCustomInputs();
+  const clean: CustomThemeInput = {
+    name: input.name.trim().slice(0, 24) || "Custom",
+    bg: HEX.test(input.bg) ? input.bg : "#141418",
+    accent: HEX.test(input.accent) ? input.accent : "#7c3aed",
+    light: input.light,
+  };
+  list.push(clean);
+  writeCustomInputs(list);
+  return `${CUSTOM_PREFIX}${list.length - 1}`;
+}
+
+/** Removes a user theme by id. */
+export function deleteCustomTheme(id: string): void {
+  const index = Number(id.replace(CUSTOM_PREFIX, ""));
+  const list = readCustomInputs();
+  if (!Number.isInteger(index) || index < 0 || index >= list.length) return;
+  list.splice(index, 1);
+  writeCustomInputs(list);
+}
+
 export function normalizeSurface(id: string | null | undefined): string {
-  return THEMES.some((theme) => theme.id === id) ? (id as string) : DEFAULT_THEME;
+  const wanted = id ? (LEGACY_SURFACE_IDS[id] ?? id) : id;
+  return themes().some((theme) => theme.id === wanted) ? (wanted as string) : DEFAULT_THEME;
 }
 
 export function themeById(id: string): ThemeDef {
-  return THEMES.find((theme) => theme.id === id) ?? THEMES[0];
+  const list = themes();
+  return list.find((theme) => theme.id === id) ?? list[0];
 }
 
 export function readSurface(): string {

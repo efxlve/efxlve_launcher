@@ -1394,7 +1394,7 @@
     );
 }
 
-/* --- Style 10: Frutiger Aero Aqua Glass Case (Mid-2000s Skeuomorphism) --- */
+/* --- Style 10: Gloss Aqua Glass Case (Mid-2000s Skeuomorphism) --- */
 .pcard.is-case[data-case-style="aero"] .pcard-art {
   padding: 30px 6px 8px 8px;
   border-radius: 6px 12px 10px 6px;

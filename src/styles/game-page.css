@@ -1853,7 +1853,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   border-radius: var(--r-md); box-shadow: var(--shadow-pop);
 }
 .gp-more-menu.show { display: block; }
-.gp-more-menu .ps5-context-item span { white-space: nowrap; }
+.gp-more-menu .panel-context-item span { white-space: nowrap; }
 .gp-more-sep { height: 1px; margin: 4px 6px; background: var(--line); }
 
 /* One store: the picker is not a choice, so it stops looking like a button. */

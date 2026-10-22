@@ -10,7 +10,7 @@
       /* Hold the shell until the stylesheet is applied. Otherwise the first frame is raw browser buttons. */
       html, body { margin: 0; height: 100%; background-color: #000000; color-scheme: dark; overflow: hidden; }
       html[data-surface="white"], html[data-surface="white"] body { background-color: #f3f4f6; color-scheme: light; }
-      html[data-surface="aero"], html[data-surface="aero"] body { background-color: #8fd6fa; color-scheme: light; }
+      html[data-surface="gloss"], html[data-surface="gloss"] body { background-color: #8fd6fa; color-scheme: light; }
       html:not(.ready) body > * { visibility: hidden; }
     </style>
     <script>
@@ -18,7 +18,7 @@
         document.documentElement.classList.add("sb-no-anim");
         try {
           var surface = localStorage.getItem("efxlve-surface") || "";
-          if (surface === "soft" || surface === "white" || surface === "aero") {
+          if (surface === "soft" || surface === "white" || surface === "gloss") {
             document.documentElement.dataset.surface = surface;
           }
           var w = parseInt(localStorage.getItem("efxlve-sidebar-w") || "", 10);
