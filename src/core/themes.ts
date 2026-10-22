@@ -1035,11 +1035,10 @@ function sceneRules(id: string, input: CustomThemeInput): string {
     // Main column and view are transparent so the wallpaper shows in library/settings
     rules.push(`${selector} #main-col, ${selector} #view { background: transparent !important; }`);
     // The game page overlay MUST have its own background so the library (#view) does NOT bleed through!
-    rules.push(`${selector} .overlay { background: ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`);
-    rules.push(`${selector} .overlay::before { content: ""; position: fixed; top: var(--winbar-h); left: var(--sidebar-w); right: 0; bottom: 0; z-index: -1; background: ${scrim}; ${blurFilter} pointer-events: none; transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease); }`);
-    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .gp-about-card, .gp-stat, .gp-bar-meta-group, .gp-hub-card) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+    rules.push(`${selector} .overlay { background: var(--bg) !important; }`);
+    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
   } else if (input.cardGlass) {
-    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .gp-about-card, .gp-stat, .gp-bar-meta-group, .gp-hub-card) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
   }
 
   if (input.glow && input.glow !== "none") {
