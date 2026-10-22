@@ -2962,8 +2962,7 @@
   "settings.themePreviewTabSettings": "Settings",
   "settings.achSizeTitle": "Notification Size",
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
-  "settings.achSizeCompact": "Compact",
   "settings.achSizeNormal": "Normal",
   "settings.achSizeLarge": "Large",
-  "settings.achSizeHuge": "Huge (4K / TV)"
+  "settings.achSizeSmall": "Small"
 }

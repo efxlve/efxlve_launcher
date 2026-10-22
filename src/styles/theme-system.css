@@ -861,7 +861,7 @@
 .ach-stage-screen {
   position: relative;
   width: 100%;
-  min-height: 220px;
+  min-height: 250px;
   border-radius: var(--r-md);
   border: 1px solid var(--line-strong);
   overflow: hidden;
@@ -890,12 +890,12 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: min(370px, 90%);
-  padding: 10px 14px 10px 16px;
+  gap: 16px;
+  width: min(510px, 95%);
+  padding: 16px 20px 16px 22px;
   background: #0d0f14;
   border: 1px solid rgba(245, 168, 24, 0.35);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 16px rgba(245, 168, 24, 0.15);
   overflow: hidden;
   animation: ach-toast-slide 280ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
@@ -903,93 +903,91 @@
   transition: all 180ms ease-out;
 }
 
-/* Scalable Toast Sizes */
-.ach-hud-toast.size-compact {
-  width: min(320px, 88%);
-  padding: 7px 12px 7px 14px;
-  gap: 10px;
-  border-radius: 10px;
-}
-.ach-hud-toast.size-compact .ach-hud-medallion {
-  width: 30px;
-  height: 30px;
-}
-.ach-hud-toast.size-compact .ach-hud-trophy-ico svg {
-  width: 14px;
-  height: 14px;
-}
-.ach-hud-toast.size-compact .ach-hud-tag {
-  font-size: 8px;
-}
-.ach-hud-toast.size-compact .ach-hud-title {
-  font-size: 12px;
-}
-.ach-hud-toast.size-compact .ach-hud-desc {
-  font-size: 10px;
-}
-
-.ach-hud-toast.size-normal {
-  width: min(370px, 90%);
-  padding: 9px 14px 9px 16px;
-  gap: 12px;
-  border-radius: 12px;
-}
-
-.ach-hud-toast.size-large {
+/* Scalable Toast Sizes (3 Tiers: Küçük / Normal / Büyük) */
+.ach-hud-toast.size-small {
   width: min(440px, 92%);
-  padding: 13px 18px 13px 18px;
+  padding: 12px 16px 12px 18px;
   gap: 14px;
   border-radius: 14px;
 }
-.ach-hud-toast.size-large .ach-hud-gold-bar {
+.ach-hud-toast.size-small .ach-hud-gold-bar {
   width: 5px;
 }
-.ach-hud-toast.size-large .ach-hud-medallion {
+.ach-hud-toast.size-small .ach-hud-medallion {
   width: 44px;
   height: 44px;
   border-width: 2px;
 }
-.ach-hud-toast.size-large .ach-hud-trophy-ico svg {
+.ach-hud-toast.size-small .ach-hud-trophy-ico svg {
   width: 20px;
   height: 20px;
 }
-.ach-hud-toast.size-large .ach-hud-tag {
+.ach-hud-toast.size-small .ach-hud-tag {
   font-size: 10.5px;
 }
-.ach-hud-toast.size-large .ach-hud-title {
+.ach-hud-toast.size-small .ach-hud-title {
   font-size: 15.5px;
 }
-.ach-hud-toast.size-large .ach-hud-desc {
+.ach-hud-toast.size-small .ach-hud-desc {
   font-size: 12px;
 }
 
-.ach-hud-toast.size-huge {
-  width: min(500px, 95%);
+.ach-hud-toast.size-normal {
+  width: min(510px, 95%);
   padding: 16px 20px 16px 22px;
   gap: 16px;
   border-radius: 16px;
 }
-.ach-hud-toast.size-huge .ach-hud-gold-bar {
+.ach-hud-toast.size-normal .ach-hud-gold-bar {
   width: 6px;
 }
-.ach-hud-toast.size-huge .ach-hud-medallion {
-  width: 52px;
-  height: 52px;
+.ach-hud-toast.size-normal .ach-hud-medallion {
+  width: 54px;
+  height: 54px;
   border-width: 2.5px;
 }
-.ach-hud-toast.size-huge .ach-hud-trophy-ico svg {
+.ach-hud-toast.size-normal .ach-hud-trophy-ico svg {
   width: 24px;
   height: 24px;
 }
-.ach-hud-toast.size-huge .ach-hud-tag {
+.ach-hud-toast.size-normal .ach-hud-tag {
   font-size: 12px;
   letter-spacing: 0.1em;
 }
-.ach-hud-toast.size-huge .ach-hud-title {
-  font-size: 18px;
+.ach-hud-toast.size-normal .ach-hud-title {
+  font-size: 18.5px;
 }
-.ach-hud-toast.size-huge .ach-hud-desc {
+.ach-hud-toast.size-normal .ach-hud-desc {
   font-size: 13.5px;
+}
+
+.ach-hud-toast.size-large {
+  width: min(590px, 97%);
+  padding: 20px 24px 20px 26px;
+  gap: 20px;
+  border-radius: 18px;
+}
+.ach-hud-toast.size-large .ach-hud-gold-bar {
+  width: 8px;
+}
+.ach-hud-toast.size-large .ach-hud-medallion {
+  width: 64px;
+  height: 64px;
+  border-width: 3px;
+}
+.ach-hud-toast.size-large .ach-hud-trophy-ico svg {
+  width: 30px;
+  height: 30px;
+}
+.ach-hud-toast.size-large .ach-hud-tag {
+  font-size: 13.5px;
+  letter-spacing: 0.12em;
+}
+.ach-hud-toast.size-large .ach-hud-title {
+  font-size: 22px;
+}
+.ach-hud-toast.size-large .ach-hud-desc {
+  font-size: 15.5px;
 }
 
 @keyframes ach-toast-slide {

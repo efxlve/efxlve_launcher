@@ -39,7 +39,7 @@ static NOTIF_UNTIL: AtomicU64 = AtomicU64::new(0);
 static NOTIF_GEN: AtomicU64 = AtomicU64::new(0);
 
 /// console-like notification card: icon disc, bold title, muted body line.
-const NOTIF_HEIGHT: i32 = 78;
+const NOTIF_HEIGHT: i32 = 116;
 const NOTIF_MARGIN: i32 = 24;
 const NOTIF_RADIUS: i32 = 12;
 const NOTIF_ALPHA: u8 = 242;
@@ -71,7 +71,7 @@ fn notif_rect(
     title_px: i32,
     body_px: i32,
 ) -> (i32, i32, i32, i32) {
-    let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(3);
+    let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(2);
     let m = size_metrics(size_code);
     let card_height = m.height;
     let max_width = (mon_w as i32 - 2 * NOTIF_MARGIN).max(m.min_width);
@@ -141,90 +141,70 @@ pub struct NotifSizeMetrics {
 
 pub fn size_metrics(code: u8) -> NotifSizeMetrics {
     match code {
-        0 => NotifSizeMetrics {
-            height: 64,
-            min_width: 340,
-            bar_width: 3,
-            medallion_r: 15,
-            left_pad: 14,
-            text_left: 56,
-            text_right: 14,
-            tag_px: 9,
-            title_px: 13,
-            body_px: 11,
-            tag_top: 8,
-            tag_bottom: 21,
-            title_top: 22,
-            title_bottom: 40,
-            body_top: 41,
-            body_bottom: 57,
-            icon_size: 13,
-        },
-        2 => NotifSizeMetrics {
+        0 => NotifSizeMetrics { // Küçük (Old "Büyük")
             height: 94,
             min_width: 460,
             bar_width: 5,
-            medallion_r: 23,
+            medallion_r: 22,
             left_pad: 18,
             text_left: 78,
             text_right: 20,
-            tag_px: 12,
+            tag_px: 11,
             title_px: 18,
-            body_px: 14,
+            body_px: 13,
             tag_top: 13,
-            tag_bottom: 30,
-            title_top: 31,
+            tag_bottom: 29,
+            title_top: 30,
             title_bottom: 58,
             body_top: 59,
             body_bottom: 84,
-            icon_size: 21,
+            icon_size: 20,
         },
-        3 => NotifSizeMetrics {
-            height: 114,
+        2 => NotifSizeMetrics { // Büyük (Brand new extra-large tier)
+            height: 144,
+            min_width: 640,
+            bar_width: 8,
+            medallion_r: 33,
+            left_pad: 26,
+            text_left: 112,
+            text_right: 28,
+            tag_px: 15,
+            title_px: 27,
+            body_px: 18,
+            tag_top: 17,
+            tag_bottom: 41,
+            title_top: 43,
+            title_bottom: 84,
+            body_top: 86,
+            body_bottom: 126,
+            icon_size: 30,
+        },
+        _ => NotifSizeMetrics { // 1 = Normal (Standard, Old "Devasa")
+            height: NOTIF_HEIGHT,
             min_width: 540,
             bar_width: 6,
-            medallion_r: 28,
+            medallion_r: 27,
             left_pad: 22,
-            text_left: 94,
+            text_left: 92,
             text_right: 24,
-            tag_px: 14,
+            tag_px: 13,
             title_px: 22,
-            body_px: 16,
-            tag_top: 16,
-            tag_bottom: 36,
-            title_top: 38,
-            title_bottom: 70,
-            body_top: 72,
-            body_bottom: 102,
-            icon_size: 26,
-        },
-        _ => NotifSizeMetrics { // 1 = Normal (Standard)
-            height: NOTIF_HEIGHT,
-            min_width: 390,
-            bar_width: 4,
-            medallion_r: 18,
-            left_pad: 16,
-            text_left: 64,
-            text_right: 18,
-            tag_px: 10,
-            title_px: 15,
-            body_px: 12,
-            tag_top: 10,
-            tag_bottom: 26,
-            title_top: 27,
-            title_bottom: 50,
-            body_top: 51,
-            body_bottom: 71,
-            icon_size: 16,
+            body_px: 15,
+            tag_top: 15,
+            tag_bottom: 35,
+            title_top: 36,
+            title_bottom: 69,
+            body_top: 70,
+            body_bottom: 101,
+            icon_size: 24,
         },
     }
 }
 
 pub fn set_notification_size(size: &str) {
     let code = match size {
-        "compact" => 0,
+        "small" | "compact" => 0,
         "large" => 2,
-        "huge" | "extra-large" => 3,
         _ => 1,
     };
     NOTIF_SIZE.store(code, Ordering::Relaxed);
@@ -291,7 +271,7 @@ pub fn notify_ext(tag: &str, title: &str, body: &str) {
         let (mon_x, mon_y, mon_w, mon_h) =
             monitor_rect_for(foreground_window()).unwrap_or((0, 0, 1920, 1080));
         let position = NOTIF_POSITION.load(Ordering::Relaxed);
-        let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(3);
+        let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(2);
         let m = size_metrics(size_code);
         let tag_px = if tag.is_empty() { 0 } else { text_px(&tag.encode_utf16().collect::<Vec<u16>>(), m.tag_px) };
         let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), m.title_px).max(tag_px);
@@ -859,7 +839,7 @@ unsafe fn paint_hud(hdc: isize, rect: &RECT) {
 unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let width = rect.right - rect.left;
     let height = rect.bottom - rect.top;
-    let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(3) as usize;
+    let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(2) as usize;
     let m = size_metrics(size_code as u8);
 
     // 1. Deep luxury smoked obsidian plate
@@ -1186,7 +1166,7 @@ mod tests {
     #[test]
     fn a_longer_line_makes_a_wider_card() {
         let (_, _, narrow, _) = notif_rect(0, 0, 1920, 1080, 0, text_px(&[b'a' as u16; 10], 15), 0);
-        let (_, _, wide, _) = notif_rect(0, 0, 1920, 1080, 0, text_px(&[b'a' as u16; 40], 15), 0);
+        let (_, _, wide, _) = notif_rect(0, 0, 1920, 1080, 0, text_px(&[b'a' as u16; 80], 15), 0);
         assert!(wide > narrow);
     }
 

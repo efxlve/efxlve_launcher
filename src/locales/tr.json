@@ -2962,8 +2962,7 @@
   "settings.themePreviewTabSettings": "Ayarlar",
   "settings.achSizeTitle": "Bildirim Boyutu",
   "settings.achSizeDesc": "Başarım bildirim kartının ekrandaki görünüm boyutunu seçin",
-  "settings.achSizeCompact": "Kompakt",
   "settings.achSizeNormal": "Normal",
   "settings.achSizeLarge": "Büyük",
-  "settings.achSizeHuge": "Devasa (4K / TV)"
+  "settings.achSizeSmall": "Küçük"
 }

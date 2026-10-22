@@ -1552,9 +1552,8 @@ fn default_notification_size() -> String {
 
 fn normalize_notification_size(value: Option<&str>) -> String {
     match value {
-        Some("compact") => "compact",
+        Some("small" | "compact") => "small",
         Some("large") => "large",
-        Some("huge" | "extra-large") => "huge",
         _ => "normal",
     }
     .to_string()

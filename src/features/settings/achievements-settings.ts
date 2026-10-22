@@ -73,13 +73,16 @@ export function renderAchievementsSettingsView(): string {
   const options = S.achievementNotificationOptions;
   const soundName = options.customSoundName || t("settings.achDefaultChime");
   const position = options.position || "top-right";
-  const currentSize = options.size || "normal";
+  const currentSize = ["small", "normal", "large"].includes(options.size)
+    ? options.size
+    : options.size === "compact"
+      ? "small"
+      : "normal";
 
   const sizeOptions: Array<{ id: string; label: string }> = [
-    { id: "compact", label: t("settings.achSizeCompact") },
+    { id: "small", label: t("settings.achSizeSmall") },
     { id: "normal", label: t("settings.achSizeNormal") },
     { id: "large", label: t("settings.achSizeLarge") },
-    { id: "huge", label: t("settings.achSizeHuge") },
   ];
 
   const sizeButtons = sizeOptions
@@ -342,7 +345,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "set-ach-size": {
-      const allowed = ["compact", "normal", "large", "huge"];
+      const allowed = ["small", "normal", "large"];
       const size = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "normal";
       const next = { ...S.achievementNotificationOptions, size };
       S.achievementNotificationOptions = next;
