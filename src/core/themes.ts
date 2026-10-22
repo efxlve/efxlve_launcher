@@ -5,7 +5,7 @@
  * here and needs no CSS at all: the tokens are written to
  * `:root[data-surface="<id>"]` when the theme is applied. A theme that also
  * changes shapes, backgrounds or glass adds a `[data-surface="<id>"]` block in
- * `styles/themes.css` (White Mode, Frutiger Aero and Xbox 360 do).
+ * `styles/themes.css` (White Mode, Frutiger Aero, Xbox 360 and Life is Strange do).
  *
  * The settings picker, the stored choice and the boot path all read this list,
  * so adding a theme is one entry (plus `settings.surface<Name>` in the locales)
@@ -33,7 +33,7 @@ const DEFAULT_THEME = "black";
 const TOKEN_STYLE_ID = "efxlve-theme-tokens";
 
 /**
- * Cyberpunk 2077: CD Projekt Red's signature Night City cyber yellow (#FCEE0A)
+ * Cyberpunk: CD Projekt Red's signature Night City cyber yellow (#FCEE0A)
  * on dark tech concrete, with Samurai red (#FF003C) and Arasaka cyan (#00F0FF).
  */
 const CYBERPUNK: ThemeDef = {
@@ -70,38 +70,39 @@ const CYBERPUNK: ThemeDef = {
 };
 
 /**
- * Synthwave: 80s retro neon night with electric cyan accent and hot magenta lines.
+ * Life is Strange: Arcadia Bay golden hour sunset over the Pacific cliffs and
+ * lighthouse (src/assets/lis-scene.svg) with warm Polaroid tones and glowing Blue Butterfly cyan.
  */
-const SYNTHWAVE: ThemeDef = {
-  id: "synthwave",
-  labelKey: "settings.surfaceSynthwave",
-  bg: "linear-gradient(145deg, #090614 0%, #170d2e 55%, #080512 100%)",
-  accent: "#05d9e2",
+const LIFE_IS_STRANGE: ThemeDef = {
+  id: "lis",
+  labelKey: "settings.surfaceLifeIsStrange",
+  bg: "linear-gradient(150deg, #1a1222 0%, #6e2e34 50%, #f59e0b 80%, #38bdf8 100%)",
+  accent: "#38bdf8",
   scheme: "dark",
   tokens: {
-    "--bg": "#090614",
-    "--surface-1": "#100c22",
-    "--surface-2": "#181332",
-    "--surface-3": "#221c44",
-    "--line": "rgba(255, 42, 109, 0.16)",
-    "--line-strong": "rgba(5, 217, 226, 0.28)",
-    "--text": "#f8f9fe",
-    "--text-2": "#a8a9cb",
-    "--text-3": "#686a94",
-    "--accent": "#05d9e2",
-    "--accent-hover": "#38e5ed",
-    "--accent-tint": "rgba(5, 217, 226, 0.16)",
-    "--on-accent": "#041419",
-    "--ok": "#00f076",
-    "--ok-hover": "#2bf58e",
-    "--ok-tint": "rgba(0, 240, 118, 0.16)",
-    "--warn": "#ffbe0b",
-    "--warn-tint": "rgba(255, 190, 11, 0.16)",
-    "--err": "#ff2a6d",
-    "--err-tint": "rgba(255, 42, 109, 0.18)",
-    "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.75)",
-    "--scrollbar-thumb": "rgba(5, 217, 226, 0.18)",
-    "--scrollbar-thumb-hover": "rgba(5, 217, 226, 0.32)",
+    "--bg": "#121016",
+    "--surface-1": "rgba(24, 20, 30, 0.88)",
+    "--surface-2": "rgba(35, 29, 44, 0.78)",
+    "--surface-3": "rgba(48, 40, 60, 0.68)",
+    "--line": "rgba(245, 158, 11, 0.16)",
+    "--line-strong": "rgba(56, 189, 248, 0.28)",
+    "--text": "#fef7ee",
+    "--text-2": "#c4b5a5",
+    "--text-3": "#7d7168",
+    "--accent": "#38bdf8",
+    "--accent-hover": "#7dd3fc",
+    "--accent-tint": "rgba(56, 189, 248, 0.16)",
+    "--on-accent": "#05131e",
+    "--ok": "#34d399",
+    "--ok-hover": "#4ade80",
+    "--ok-tint": "rgba(52, 211, 153, 0.16)",
+    "--warn": "#f59e0b",
+    "--warn-tint": "rgba(245, 158, 11, 0.16)",
+    "--err": "#f43f5e",
+    "--err-tint": "rgba(244, 63, 94, 0.16)",
+    "--shadow-pop": "0 16px 40px rgba(10, 6, 14, 0.7)",
+    "--scrollbar-thumb": "rgba(245, 158, 11, 0.22)",
+    "--scrollbar-thumb-hover": "rgba(56, 189, 248, 0.38)",
   },
 };
 
@@ -324,8 +325,8 @@ const MIDNIGHT: ThemeDef = {
 
 /**
  * The community asks are palettes too: the Epic store with a violet accent and
- * Discord's own greys are token-only; Xbox 360 gets a scene and glass of its own
- * in `themes.css`, the way Aero does.
+ * Discord's own greys are token-only; Xbox 360 and Aero get scenes and glass of their own
+ * in `themes.css`.
  */
 const EPIC: ThemeDef = {
   id: "epic",
@@ -409,7 +410,7 @@ export const THEMES: readonly ThemeDef[] = [
     scheme: "dark",
   },
   CYBERPUNK,
-  SYNTHWAVE,
+  LIFE_IS_STRANGE,
   TOKYO_NIGHT,
   CRIMSON,
   NORD,

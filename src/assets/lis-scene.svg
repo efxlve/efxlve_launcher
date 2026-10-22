@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+  <!-- Life is Strange (Arcadia Bay, Oregon):
+       Golden hour sunset over the Pacific cliffs and the iconic lighthouse,
+       with warm sunbeams, floating dusk dust motes, and the legendary glowing Blue Butterfly.
+       Pure SVG vectors and gradients for fast rendering. -->
+  <defs>
+    <!-- Sunset sky gradient -->
+    <linearGradient id="lisSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e0a16"/>
+      <stop offset="25%" stop-color="#1f1224"/>
+      <stop offset="50%" stop-color="#481a2c"/>
+      <stop offset="72%" stop-color="#8a3028"/>
+      <stop offset="88%" stop-color="#d45e22"/>
+      <stop offset="97%" stop-color="#fca311"/>
+      <stop offset="100%" stop-color="#ffb703"/>
+    </linearGradient>
+
+    <!-- Golden sun aura -->
+    <radialGradient id="lisSunGlow" cx="480" cy="740" r="650" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff5cc" stop-opacity="0.85"/>
+      <stop offset="15%" stop-color="#ffb703" stop-opacity="0.6"/>
+      <stop offset="40%" stop-color="#e05a1e" stop-opacity="0.25"/>
+      <stop offset="70%" stop-color="#481a2c" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0e0a16" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Ocean water gradient -->
+    <linearGradient id="lisOcean" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#91361b"/>
+      <stop offset="15%" stop-color="#4a181d"/>
+      <stop offset="50%" stop-color="#24101b"/>
+      <stop offset="100%" stop-color="#100812"/>
+    </linearGradient>
+
+    <!-- Ocean shimmer path -->
+    <linearGradient id="lisShimmer" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffb703" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#fff5cc" stop-opacity="0.38"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.65"/>
+      <stop offset="60%" stop-color="#fff5cc" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#ffb703" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Butterfly glowing wings gradient -->
+    <linearGradient id="lisButterflyWing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e0f2fe"/>
+      <stop offset="35%" stop-color="#38bdf8"/>
+      <stop offset="75%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+
+    <radialGradient id="lisButterflyGlow" cx="1320" cy="380" r="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.55"/>
+      <stop offset="35%" stop-color="#0284c7" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#0e0a16" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#0e0a16" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Sunbeam overlay -->
+    <linearGradient id="lisSunbeam" x1="0.3" y1="0.8" x2="0.8" y2="0.1">
+      <stop offset="0%" stop-color="#ffb703" stop-opacity="0.28"/>
+      <stop offset="50%" stop-color="#ffd166" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Twilight vignette -->
+    <radialGradient id="lisVignette" cx="800" cy="500" r="950" gradientUnits="userSpaceOnUse">
+      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="85%" stop-color="#07040a" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#040206" stop-opacity="0.8"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sky & Sun -->
+  <rect width="1600" height="760" fill="url(#lisSky)"/>
+  <rect width="1600" height="760" fill="url(#lisSunGlow)"/>
+
+  <!-- Sun disk -->
+  <circle cx="480" cy="742" r="38" fill="#fffbe6" opacity="0.95"/>
+
+  <!-- Sunbeams through clouds -->
+  <polygon points="480,740 0,220 180,180" fill="url(#lisSunbeam)"/>
+  <polygon points="480,740 680,120 900,140" fill="url(#lisSunbeam)"/>
+  <polygon points="480,740 1150,260 1350,320" fill="url(#lisSunbeam)"/>
+
+  <!-- Distant mountains / headland on the left -->
+  <path d="M-80 755 Q 120 710, 260 735 T 480 755 L 480 770 L -80 770 Z" fill="#2d131f" opacity="0.7"/>
+
+  <!-- Ocean -->
+  <rect y="745" width="1600" height="255" fill="url(#lisOcean)"/>
+  <!-- Shimmering sun path on water -->
+  <polygon points="480,745 420,1000 540,1000" fill="url(#lisShimmer)"/>
+
+  <!-- Arcadia Bay Cliff & Lighthouse (Right side) -->
+  <!-- Cliff silhouette -->
+  <path d="M 1040 1000 C 1080 880, 1150 780, 1260 740 C 1320 720, 1420 705, 1620 680 L 1620 1000 Z" fill="#130c14"/>
+  <path d="M 1120 1000 C 1170 900, 1240 820, 1340 780 C 1410 750, 1500 735, 1620 720 L 1620 1000 Z" fill="#0b060c"/>
+
+  <!-- Pine tree silhouettes along the ridge -->
+  <g fill="#0b060c">
+    <!-- Tree 1 -->
+    <polygon points="1285,735 1278,755 1292,755"/>
+    <polygon points="1285,745 1275,768 1295,768"/>
+    <!-- Tree 2 -->
+    <polygon points="1310,725 1302,748 1318,748"/>
+    <polygon points="1310,738 1298,762 1322,762"/>
+    <!-- Tree 3 -->
+    <polygon points="1340,715 1332,738 1348,738"/>
+    <polygon points="1340,728 1328,754 1352,754"/>
+    <!-- Tree 4 -->
+    <polygon points="1520,670 1510,700 1530,700"/>
+    <polygon points="1550,660 1540,695 1560,695"/>
+  </g>
+
+  <!-- The Lighthouse Tower -->
+  <g id="lighthouse" transform="translate(1420, 520)">
+    <!-- Base foundation -->
+    <rect x="-16" y="160" width="32" height="18" fill="#110912"/>
+    <!-- Tapered tower -->
+    <polygon points="-12,50 12,50 15,160 -15,160" fill="#f8fafc" opacity="0.88"/>
+    <polygon points="0,50 12,50 15,160 0,160" fill="#cbd5e1" opacity="0.6"/>
+    <!-- Red decorative band -->
+    <polygon points="-13,95 13,95 14,115 -14,115" fill="#be123c"/>
+    <!-- Lantern Gallery deck -->
+    <rect x="-18" y="44" width="36" height="6" fill="#110912"/>
+    <line x1="-16" y1="44" x2="-16" y2="38" stroke="#110912" stroke-width="1.5"/>
+    <line x1="16" y1="44" x2="16" y2="38" stroke="#110912" stroke-width="1.5"/>
+    <line x1="-16" y1="38" x2="16" y2="38" stroke="#110912" stroke-width="1.5"/>
+    <!-- Glass lantern room -->
+    <rect x="-10" y="24" width="20" height="20" fill="#fffbe6" opacity="0.95"/>
+    <!-- Lantern roof / dome -->
+    <path d="M -12 24 C -12 12, 12 12, 12 24 Z" fill="#110912"/>
+    <circle cx="0" cy="11" r="2.5" fill="#110912"/>
+    <!-- Rotating beam of light -->
+    <polygon points="0,32 -600,0 -580,120" fill="#fffbe6" opacity="0.22"/>
+  </g>
+
+  <!-- Floating dust motes / Polaroid bokeh -->
+  <g fill="#ffe699" opacity="0.45">
+    <circle cx="340" cy="420" r="4"/>
+    <circle cx="560" cy="310" r="3"/>
+    <circle cx="720" cy="520" r="5" opacity="0.3"/>
+    <circle cx="890" cy="380" r="3.5"/>
+    <circle cx="1060" cy="460" r="4.5" opacity="0.35"/>
+    <circle cx="1200" cy="280" r="3"/>
+    <circle cx="640" cy="680" r="4"/>
+    <circle cx="420" cy="610" r="5" opacity="0.5"/>
+  </g>
+
+  <!-- The Iconic Blue Butterfly ("This action will have consequences") -->
+  <rect width="1600" height="1000" fill="url(#lisButterflyGlow)"/>
+  <g id="blue-butterfly" transform="translate(1320, 380) rotate(-14) scale(0.95)">
+    <!-- Butterfly wing glow aura -->
+    <ellipse cx="0" cy="0" rx="90" ry="70" fill="#38bdf8" opacity="0.25"/>
+
+    <!-- Left forewing -->
+    <path d="M 0,-4 C -25,-55 -65,-75 -85,-55 C -100,-35 -85,10 -40,15 C -20,18 -5,8 0,-4 Z" fill="url(#lisButterflyWing)"/>
+    <path d="M 0,-4 C -25,-55 -65,-75 -85,-55 C -100,-35 -85,10 -40,15 C -20,18 -5,8 0,-4 Z" fill="none" stroke="#e0f2fe" stroke-width="1.5" opacity="0.75"/>
+    <!-- Left hindwing -->
+    <path d="M 0,5 C -25,12 -55,18 -60,40 C -65,60 -35,68 -15,45 C -5,30 -2,15 0,5 Z" fill="url(#lisButterflyWing)"/>
+
+    <!-- Right forewing -->
+    <path d="M 0,-4 C 25,-55 65,-75 85,-55 C 100,-35 85,10 40,15 C 20,18 5,8 0,-4 Z" fill="url(#lisButterflyWing)"/>
+    <path d="M 0,-4 C 25,-55 65,-75 85,-55 C 100,-35 85,10 40,15 C 20,18 5,8 0,-4 Z" fill="none" stroke="#e0f2fe" stroke-width="1.5" opacity="0.75"/>
+    <!-- Right hindwing -->
+    <path d="M 0,5 C 25,12 55,18 60,40 C 65,60 35,68 15,45 C 5,30 2,15 0,5 Z" fill="url(#lisButterflyWing)"/>
+
+    <!-- Inner wing glowing veins -->
+    <path d="M 0,-4 Q -35,-30 -65,-45 M 0,-4 Q -45,-15 -60,0 M 0,5 Q -25,25 -40,40" stroke="#bae6fd" stroke-width="1" fill="none" opacity="0.8"/>
+    <path d="M 0,-4 Q 35,-30 65,-45 M 0,-4 Q 45,-15 60,0 M 0,5 Q 25,25 40,40" stroke="#bae6fd" stroke-width="1" fill="none" opacity="0.8"/>
+
+    <!-- Butterfly body & antennae -->
+    <ellipse cx="0" cy="5" rx="3.5" ry="24" fill="#082f49"/>
+    <circle cx="0" cy="-18" r="3.5" fill="#082f49"/>
+    <path d="M -1,-20 C -5,-32 -14,-38 -18,-38" stroke="#38bdf8" stroke-width="1.2" fill="none"/>
+    <path d="M 1,-20 C 5,-32 14,-38 18,-38" stroke="#38bdf8" stroke-width="1.2" fill="none"/>
+  </g>
+
+  <!-- Vignette -->
+  <rect width="1600" height="1000" fill="url(#lisVignette)"/>
+</svg>

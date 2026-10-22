@@ -9,7 +9,7 @@
 #winbar {
   height: var(--winbar-h); flex-shrink: 0; display: flex; align-items: center; gap: 2px;
   padding-left: 14px; background: var(--bg); -webkit-app-region: drag; position: relative; z-index: 20;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid var(--line);
 }
 .winbar-icon {
   width: 16px;
@@ -106,7 +106,7 @@
   min-height: 0;
   padding: 8px 0;
   background: var(--bg);
-  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: 1px solid var(--line);
   overflow-x: hidden;
   overflow-y: hidden;
   contain: paint;
@@ -841,7 +841,7 @@ html.sb-narrow .sb-toggle-label {
 #main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
 #page-header {
   height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; gap: 6px;
-  padding: 0 20px 0 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 0 20px 0 14px; border-bottom: 1px solid var(--line);
   position: relative;
 }
 #page-header .icon-btn:disabled { opacity: 0.3; cursor: default; }
