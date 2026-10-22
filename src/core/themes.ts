@@ -251,42 +251,6 @@ const SUNSET: ThemeDef = {
 };
 
 /**
- * Matrix: retro phosphor terminal green on pure black.
- */
-const MATRIX: ThemeDef = {
-  id: "matrix",
-  labelKey: "settings.surfaceMatrix",
-  bg: "linear-gradient(150deg, #040905 0%, #0d1e11 55%, #030704 100%)",
-  accent: "#00e676",
-  scheme: "dark",
-  tokens: {
-    "--bg": "#040905",
-    "--surface-1": "#09130b",
-    "--surface-2": "#102013",
-    "--surface-3": "#182e1c",
-    "--line": "rgba(0, 230, 118, 0.12)",
-    "--line-strong": "rgba(0, 230, 118, 0.24)",
-    "--text": "#e9ffe9",
-    "--text-2": "#9ad8a3",
-    "--text-3": "#52855a",
-    "--accent": "#00e676",
-    "--accent-hover": "#33eb91",
-    "--accent-tint": "rgba(0, 230, 118, 0.15)",
-    "--on-accent": "#021406",
-    "--ok": "#00e676",
-    "--ok-hover": "#33eb91",
-    "--ok-tint": "rgba(0, 230, 118, 0.15)",
-    "--warn": "#e0a32e",
-    "--warn-tint": "rgba(224, 163, 46, 0.14)",
-    "--err": "#e5484d",
-    "--err-tint": "rgba(229, 72, 77, 0.14)",
-    "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.75)",
-    "--scrollbar-thumb": "rgba(0, 230, 118, 0.16)",
-    "--scrollbar-thumb-hover": "rgba(0, 230, 118, 0.28)",
-  },
-};
-
-/**
  * Midnight is the reference for a colour-only theme: it defines nothing but
  * tokens, so every component picks it up without a single extra CSS rule.
  */
@@ -415,7 +379,6 @@ export const THEMES: readonly ThemeDef[] = [
   CRIMSON,
   NORD,
   SUNSET,
-  MATRIX,
   MIDNIGHT,
   EPIC,
   DISCORD,

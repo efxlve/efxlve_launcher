@@ -1937,7 +1937,7 @@
   "overlay.batteryPercentTitle": "Pil yüzdesini göster",
   "overlay.batteryPercentDesc": "Pil simgesinin yanında yüzde metnini göster.",
   "overlay.enabledTitle": "{key} overlay",
-  "overlay.enabledDesc": "Shift+Tab ile bu paneli oyun üzerinde aç.",
+  "overlay.enabledDesc": "{key} ile oyun üzerinde bu paneli aç.",
   "overlay.hudTitle": "Performans HUD'u",
   "overlay.hudDesc": "Oyun çalışırken ekranda sürekli mini gösterge.",
   "overlay.opacityTitle": "Panel opaklığı",
@@ -2672,7 +2672,11 @@
   "settings.customCssTooBig": "Özel CSS en fazla {limit} karakter olabilir",
   "settings.overlayToggleDesc": "Kapatmak overlay servisini tamamen durdurur: panel penceresi, tuş dinleyicisi ve ölçümler çalışmaz.",
   "settings.overlayHotkeyTitle": "Overlay kısayolu",
-  "settings.overlayHotkeyDesc": "Shift+Tab, Steam overlay'i ile aynı. Çakışıyorsa başka bir kombinasyon seç.",
+  "settings.overlayHotkeyInvalid": "Ctrl, Alt veya Shift'ten en az birini kullan.",
+  "settings.overlayHotkeySaved": "Overlay kısayolu artık {key}.",
+  "settings.overlayHotkeyReset": "Sıfırla",
+  "settings.overlayHotkeyRecording": "Tuşlara bas…",
+  "settings.overlayHotkeyDesc": "Butona tıkla ve istediğin kombinasyona bas. Ctrl, Alt veya Shift'ten en az biri gerekli.",
   "overlay.resetLayoutTitle": "Widget düzenini sıfırla",
   "overlay.resetLayoutDesc": "Açık widget'ları varsayılan döşenmiş konumlarına geri koy.",
   "overlay.resetLayoutAction": "Düzeni sıfırla",
@@ -2869,6 +2873,5 @@
   "settings.surfaceCrimson": "Kızıl",
   "settings.surfaceNord": "Nord",
   "settings.surfaceSunset": "Gün Batımı",
-  "settings.surfaceMatrix": "Matrix",
   "settings.surfaceLifeIsStrange": "Life is Strange"
 }

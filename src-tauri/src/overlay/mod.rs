@@ -35,6 +35,8 @@ pub(crate) struct OverlayState {
     pub game_disabled: bool,
     /// Hotkey preset id ("shift+tab", "shift+f4", "ctrl+shift+o").
     pub hotkey: String,
+    /// Parsed form of `hotkey`; `None` means the default Shift+Tab.
+    pub combo: Option<HotkeyCombo>,
     /// Game window captured when the panel opened, for focus restore.
     pub game_hwnd: isize,
     pub game_app: String,
@@ -47,6 +49,7 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     visible: false,
     game_disabled: false,
     hotkey: String::new(),
+    combo: None,
     game_hwnd: 0,
     game_app: String::new(),
     game_title: String::new(),
@@ -67,7 +70,7 @@ pub fn overlay_get_state() -> serde_json::Value {
             "hud": s.hud,
             "visible": s.visible,
             "gameDisabled": s.game_disabled,
-            "hotkey": hotkey_id(&s.hotkey),
+            "hotkey": hotkey_id(&s),
             "running": s.enabled && !s.game_disabled,
         }),
         Err(_) => serde_json::json!({
@@ -79,6 +82,100 @@ pub fn overlay_get_state() -> serde_json::Value {
             "running": true,
         }),
     }
+}
+
+/// A parsed overlay hotkey: modifiers plus one virtual-key code.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct HotkeyCombo {
+    pub ctrl: bool,
+    pub alt: bool,
+    pub shift: bool,
+    pub vk: i32,
+}
+
+/// Virtual-key code for a key name written by the launcher ("k", "f4",
+/// "pageup", "`"…). The names come from the recorder in Settings, so both
+/// sides share one vocabulary.
+pub(crate) fn vk_for_key(name: &str) -> Option<i32> {
+    let named = match name {
+        "tab" => 0x09,
+        "enter" => 0x0D,
+        "space" => 0x20,
+        "backspace" => 0x08,
+        "insert" => 0x2D,
+        "delete" => 0x2E,
+        "home" => 0x24,
+        "end" => 0x23,
+        "pageup" => 0x21,
+        "pagedown" => 0x22,
+        "left" => 0x25,
+        "up" => 0x26,
+        "right" => 0x27,
+        "down" => 0x28,
+        "-" => 0xBD,
+        "=" => 0xBB,
+        "[" => 0xDB,
+        "]" => 0xDD,
+        ";" => 0xBA,
+        "'" => 0xDE,
+        "," => 0xBC,
+        "." => 0xBE,
+        "/" => 0xBF,
+        "\\" => 0xDC,
+        "`" => 0xC0,
+        _ => {
+            if let Some(digits) = name.strip_prefix('f') {
+                let number: u32 = digits.parse().ok()?;
+                if (1..=24).contains(&number) {
+                    return Some(0x70 + number as i32 - 1);
+                }
+                return None;
+            }
+            let mut chars = name.chars();
+            let (Some(ch), None) = (chars.next(), chars.next()) else {
+                return None;
+            };
+            let upper = ch.to_ascii_uppercase();
+            if upper.is_ascii_alphanumeric() {
+                return Some(upper as i32);
+            }
+            return None;
+        }
+    };
+    Some(named)
+}
+
+/// Parses "ctrl+shift+k", "shift+tab", "alt+f4".
+///
+/// At least one modifier is required: a bare key would swallow normal typing.
+pub(crate) fn parse_hotkey(spec: &str) -> Option<HotkeyCombo> {
+    let parts: Vec<&str> = spec
+        .split('+')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let (key, modifiers) = parts.split_last()?;
+    let mut combo = HotkeyCombo {
+        ctrl: false,
+        alt: false,
+        shift: false,
+        vk: vk_for_key(&key.to_ascii_lowercase())?,
+    };
+    for modifier in modifiers {
+        match modifier.to_ascii_lowercase().as_str() {
+            "ctrl" | "control" => combo.ctrl = true,
+            "alt" => combo.alt = true,
+            "shift" => combo.shift = true,
+            _ => return None,
+        }
+    }
+    if !combo.ctrl && !combo.alt && !combo.shift {
+        return None;
+    }
+    Some(combo)
 }
 
 /// Turns the whole overlay service on or off. Off is a real stop: the panel
@@ -97,24 +194,32 @@ pub fn overlay_set_enabled(app: AppHandle, enabled: bool) {
     }
 }
 
-/// Sets the hotkey preset ("shift+tab", "shift+f4", "ctrl+shift+o").
+/// Sets the hotkey from a spec like "ctrl+shift+k". Rejects a combination
+/// without a modifier and anything the key table does not know.
 #[tauri::command]
-pub fn overlay_set_hotkey(spec: String) {
+pub fn overlay_set_hotkey(spec: String) -> Result<(), String> {
+    let Some(combo) = parse_hotkey(&spec) else {
+        return Err("unsupported hotkey".into());
+    };
+    let normalized = spec
+        .split('+')
+        .map(|part| part.trim().to_ascii_lowercase())
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join("+");
     if let Ok(mut s) = STATE.lock() {
-        s.hotkey = normalize_hotkey(&spec).to_string();
+        s.hotkey = normalized;
+        s.combo = Some(combo);
     }
+    Ok(())
 }
 
-/// The id of the configured hotkey, with the default filled in.
-fn hotkey_id(spec: &str) -> &'static str {
-    normalize_hotkey(spec)
-}
-
-fn normalize_hotkey(spec: &str) -> &'static str {
-    match spec {
-        "shift+f4" => "shift+f4",
-        "ctrl+shift+o" => "ctrl+shift+o",
-        _ => "shift+tab",
+/// The configured hotkey, with the default filled in.
+fn hotkey_id(state: &OverlayState) -> String {
+    if state.hotkey.is_empty() {
+        "shift+tab".to_string()
+    } else {
+        state.hotkey.clone()
     }
 }
 

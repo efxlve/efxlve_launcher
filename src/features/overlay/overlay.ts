@@ -35,7 +35,7 @@ import {
   type ClipStatus,
 } from "../../epic";
 import { SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY } from "../../core/constants";
-import { discordPageVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, overlayHotkeyLabel, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
@@ -4473,8 +4473,8 @@ function renderSettings(): void {
         <div class="ov-settings-group">
           <div class="ov-setting-item">
             <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.enabledTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.enabledDesc"))}</div>
+              <div class="ov-setting-name">${esc(t("overlay.enabledTitle", { key: overlayHotkeyLabel() }))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.enabledDesc", { key: overlayHotkeyLabel() }))}</div>
             </div>
             <label class="switch"><input type="checkbox" data-ov-toggle="enabled" ${enabled ? "checked" : ""} /><span class="track"></span></label>
           </div>

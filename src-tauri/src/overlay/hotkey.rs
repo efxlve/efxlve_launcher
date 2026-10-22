@@ -20,28 +20,27 @@ extern "system" {
 
 const VK_SHIFT: i32 = 0x10;
 const VK_CONTROL: i32 = 0x11;
+const VK_ALT: i32 = 0x12;
 const VK_TAB: i32 = 0x09;
-const VK_F4: i32 = 0x73;
-const VK_O: i32 = 0x4F;
 
 pub(crate) fn start(app: AppHandle) {
     std::thread::spawn(move || {
         let mut gone_ticks: u32 = 0;
         loop {
-            let (visible, enabled, game_disabled, hotkey, game_hwnd, cur_app, cur_title) = STATE
+            let (visible, enabled, game_disabled, combo, game_hwnd, cur_app, cur_title) = STATE
                 .lock()
                 .map(|s| {
                     (
                         s.visible,
                         s.enabled,
                         s.game_disabled,
-                        s.hotkey.clone(),
+                        s.combo,
                         s.game_hwnd,
                         s.game_app.clone(),
                         s.game_title.clone(),
                     )
                 })
-                .unwrap_or((false, true, false, String::new(), 0, String::new(), String::new()));
+                .unwrap_or((false, true, false, None, 0, String::new(), String::new()));
 
             // Switched off, or this game opted out: sleep without touching the
             // keyboard. The window is already gone (the command tore it down).
@@ -88,7 +87,7 @@ pub(crate) fn start(app: AppHandle) {
             #[cfg(windows)]
             {
                 let pad_down = is_controller_hotkey_down();
-                let down = hotkey_down_combo(&hotkey) || pad_down;
+                let down = combo_down(combo) || pad_down;
 
                 if down != hotkey_down() {
                     set_hotkey_down(down);
@@ -159,15 +158,19 @@ pub(crate) fn start(app: AppHandle) {
 }
 
 #[cfg(windows)]
-fn hotkey_down_combo(spec: &str) -> bool {
-    let shift = key_down(VK_SHIFT);
-    let ctrl = key_down(VK_CONTROL);
-    match spec {
-        // Steam's overlay owns Shift+Tab, so a second preset is the escape hatch.
-        "shift+f4" => shift && key_down(VK_F4),
-        "ctrl+shift+o" => ctrl && shift && key_down(VK_O),
-        _ => shift && key_down(VK_TAB),
-    }
+/// True while the configured combination is held.
+///
+/// Modifiers must match exactly: a user who puts the overlay on `ctrl+k` does
+/// not expect `ctrl+shift+k` (text selection) to open a panel over the game.
+fn combo_down(combo: Option<super::HotkeyCombo>) -> bool {
+    let Some(combo) = combo else {
+        // Nothing configured yet: Shift+Tab, the historical default.
+        return key_down(VK_SHIFT) && !key_down(VK_CONTROL) && !key_down(VK_ALT) && key_down(VK_TAB);
+    };
+    key_down(combo.vk)
+        && key_down(VK_CONTROL) == combo.ctrl
+        && key_down(VK_SHIFT) == combo.shift
+        && key_down(VK_ALT) == combo.alt
 }
 
 #[cfg(windows)]

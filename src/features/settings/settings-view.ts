@@ -13,7 +13,7 @@ import { THEMES } from "../../core/themes";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
-import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, OVERLAY_HOTKEYS, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, hotkeyLabel, isValidHotkey, DEFAULT_OVERLAY_HOTKEY, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -1060,19 +1060,103 @@ function renderAppIconPicker(): string {
   </div>`;
 }
 
-/** Hotkey presets the backend knows; Steam's overlay owns Shift+Tab. */
+/** Hotkey recorder: click, press a combination, it is saved. */
 function renderOverlayHotkeyPicker(): string {
-  const current = overlayHotkey();
-  const labels: Record<string, string> = {
-    "shift+tab": "Shift + Tab",
-    "shift+f4": "Shift + F4",
-    "ctrl+shift+o": "Ctrl + Shift + O",
+  const label = hotkeyRecording ? t("settings.overlayHotkeyRecording") : hotkeyLabel(overlayHotkey());
+  return `<div class="settings-inline-control">
+    <button type="button" class="btn ghost small${hotkeyRecording ? " primary" : ""}" data-act="record-overlay-hotkey">${esc(label)}</button>
+    <button type="button" class="btn ghost small" data-act="reset-overlay-hotkey">${t("settings.overlayHotkeyReset")}</button>
+  </div>`;
+}
+
+/** Maps a keydown onto the spec vocabulary the backend parses. */
+function hotkeySpecFromEvent(event: KeyboardEvent): string | null {
+  const named: Record<string, string> = {
+    Tab: "tab",
+    Space: "space",
+    Enter: "enter",
+    Backspace: "backspace",
+    Insert: "insert",
+    Delete: "delete",
+    Home: "home",
+    End: "end",
+    PageUp: "pageup",
+    PageDown: "pagedown",
+    ArrowLeft: "left",
+    ArrowUp: "up",
+    ArrowRight: "right",
+    ArrowDown: "down",
+    Minus: "-",
+    Equal: "=",
+    BracketLeft: "[",
+    BracketRight: "]",
+    Semicolon: ";",
+    Quote: "'",
+    Comma: ",",
+    Period: ".",
+    Slash: "/",
+    Backslash: "\\",
+    Backquote: "`",
   };
-  const buttons = OVERLAY_HOTKEYS.map(
-    (id) =>
-      `<button type="button" class="${current === id ? "active" : ""}" data-act="set-overlay-hotkey" data-hotkey="${id}">${labels[id]}</button>`,
-  ).join("");
-  return `<div class="seg">${buttons}</div>`;
+  const code = event.code;
+  let key: string | null = null;
+  if (/^Key[A-Z]$/.test(code)) key = code.slice(3).toLowerCase();
+  else if (/^Digit[0-9]$/.test(code)) key = code.slice(5);
+  else if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) key = code.toLowerCase();
+  else key = named[code] ?? null;
+  if (!key) return null;
+  const modifiers: string[] = [];
+  if (event.ctrlKey) modifiers.push("ctrl");
+  if (event.altKey) modifiers.push("alt");
+  if (event.shiftKey) modifiers.push("shift");
+  if (!modifiers.length) return null;
+  return [...modifiers, key].join("+");
+}
+
+let hotkeyRecording = false;
+
+function stopHotkeyRecording(): void {
+  hotkeyRecording = false;
+  window.removeEventListener("keydown", onHotkeyCapture, true);
+}
+
+function onHotkeyCapture(event: KeyboardEvent): void {
+  // Swallow the combination: it must not reach a menu, a modal or a shortcut.
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.key === "Escape") {
+    stopHotkeyRecording();
+    render();
+    return;
+  }
+  const spec = hotkeySpecFromEvent(event);
+  if (!spec) return;
+  stopHotkeyRecording();
+  applyOverlayHotkey(spec);
+}
+
+function startHotkeyRecording(): void {
+  if (hotkeyRecording) return;
+  hotkeyRecording = true;
+  window.addEventListener("keydown", onHotkeyCapture, true);
+  render();
+}
+
+/** Saves the combination and hands it to the backend. */
+function applyOverlayHotkey(spec: string): void {
+  if (!isValidHotkey(spec)) {
+    toast(t("settings.overlayHotkeyInvalid"), "err");
+    render();
+    return;
+  }
+  try {
+    localStorage.setItem(OVERLAY_HOTKEY_KEY, spec);
+  } catch {
+    /* private mode */
+  }
+  void invoke("overlay_set_hotkey", { spec }).catch(() => {});
+  toast(t("settings.overlayHotkeySaved", { key: hotkeyLabel(spec) }), "ok");
+  render();
 }
 
 /** One button per theme in the registry: a new entry appears here on its own. */
@@ -1129,7 +1213,7 @@ function renderAppearance(): string {
       row(
         t("overlay.overlayLabel"),
         t("settings.overlayToggleDesc"),
-        `<div class="settings-inline-control">${toggle("toggle-overlay", overlayEnabled())}<button type="button" class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button></div>`,
+        `<div class="settings-inline-control"><button type="button" class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>${toggle("toggle-overlay", overlayEnabled())}</div>`,
       ) +
       (overlayEnabled()
         ? row(t("settings.overlayHotkeyTitle"), t("settings.overlayHotkeyDesc"), renderOverlayHotkeyPicker())
@@ -2283,15 +2367,12 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       render();
       return true;
     }
-    case "set-overlay-hotkey": {
-      const hotkey = _el.dataset.hotkey ?? "shift+tab";
-      try {
-        localStorage.setItem(OVERLAY_HOTKEY_KEY, hotkey);
-      } catch {
-        /* private mode */
-      }
-      void invoke("overlay_set_hotkey", { spec: hotkey }).catch(() => {});
-      render();
+    case "record-overlay-hotkey": {
+      startHotkeyRecording();
+      return true;
+    }
+    case "reset-overlay-hotkey": {
+      applyOverlayHotkey(DEFAULT_OVERLAY_HOTKEY);
       return true;
     }
     case "add-ss-webhook": {

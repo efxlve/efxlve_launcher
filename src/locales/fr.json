@@ -1937,7 +1937,7 @@
   "overlay.batteryPercentTitle": "Afficher le pourcentage de batterie",
   "overlay.batteryPercentDesc": "Affiche le pourcentage à côté de l'icône de batterie.",
   "overlay.enabledTitle": "{key} overlay",
-  "overlay.enabledDesc": "Open this panel over the game with Shift+Tab.",
+  "overlay.enabledDesc": "Open this panel over the game with {key}.",
   "overlay.hudTitle": "Performance HUD",
   "overlay.hudDesc": "Always-on mini readout over the game while one is running.",
   "overlay.opacityTitle": "Panel opacity",
@@ -2672,7 +2672,11 @@
   "settings.customCssTooBig": "Custom CSS is limited to {limit} characters",
   "settings.overlayToggleDesc": "Off stops the overlay service completely: no panel window, no key listener, no metrics.",
   "settings.overlayHotkeyTitle": "Overlay hotkey",
-  "settings.overlayHotkeyDesc": "Shift+Tab is Steam's overlay too. Pick another combination if the two conflict.",
+  "settings.overlayHotkeyInvalid": "Use at least one of Ctrl, Alt or Shift.",
+  "settings.overlayHotkeySaved": "Overlay hotkey is now {key}.",
+  "settings.overlayHotkeyReset": "Reset",
+  "settings.overlayHotkeyRecording": "Press the keys…",
+  "settings.overlayHotkeyDesc": "Click the button and press the combination you want. One of Ctrl, Alt or Shift is required.",
   "overlay.resetLayoutTitle": "Reset widget layout",
   "overlay.resetLayoutDesc": "Put the open widgets back into their default tiled positions.",
   "overlay.resetLayoutAction": "Reset layout",
@@ -2869,6 +2873,5 @@
   "settings.surfaceCrimson": "Crimson",
   "settings.surfaceNord": "Nord",
   "settings.surfaceSunset": "Sunset Amber",
-  "settings.surfaceMatrix": "Matrix",
   "settings.surfaceLifeIsStrange": "Life is Strange"
 }

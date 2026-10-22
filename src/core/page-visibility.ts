@@ -17,16 +17,54 @@ export function overlayEnabled(): boolean {
   return localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false";
 }
 
-export type OverlayHotkey = "shift+tab" | "shift+f4" | "ctrl+shift+o";
+/**
+ * Overlay hotkey, as a lowercase spec joined with `+` ("shift+tab",
+ * "ctrl+shift+k"). The backend parses the same vocabulary.
+ */
+const HOTKEY_MODIFIERS = ["ctrl", "alt", "shift"] as const;
 
-export const OVERLAY_HOTKEYS: readonly OverlayHotkey[] = ["shift+tab", "shift+f4", "ctrl+shift+o"];
+const HOTKEY_KEYS = new Set([
+  "tab", "enter", "space", "backspace", "insert", "delete", "home", "end",
+  "pageup", "pagedown", "left", "up", "right", "down",
+  "-", "=", "[", "]", ";", "'", ",", ".", "/", "\\", "`",
+]);
 
-/** The key shown in Settings: anything unknown falls back to Shift+Tab. */
-export function overlayHotkey(): OverlayHotkey {
-  const stored = localStorage.getItem(OVERLAY_HOTKEY_KEY);
-  return (OVERLAY_HOTKEYS as readonly string[]).includes(stored ?? "")
-    ? (stored as OverlayHotkey)
-    : "shift+tab";
+export const DEFAULT_OVERLAY_HOTKEY = "shift+tab";
+
+/** True for a spec the backend also accepts: a modifier plus one key. */
+export function isValidHotkey(spec: string): boolean {
+  const parts = spec.toLowerCase().split("+").filter(Boolean);
+  if (parts.length < 2) return false;
+  const key = parts[parts.length - 1];
+  const modifiers = parts.slice(0, -1);
+  if (!modifiers.length || modifiers.some((mod) => !(HOTKEY_MODIFIERS as readonly string[]).includes(mod))) return false;
+  return HOTKEY_KEYS.has(key) || /^[a-z0-9]$/.test(key) || /^f([1-9]|1[0-9]|2[0-4])$/.test(key);
+}
+
+export function overlayHotkey(): string {
+  const stored = (localStorage.getItem(OVERLAY_HOTKEY_KEY) ?? "").trim().toLowerCase();
+  return isValidHotkey(stored) ? stored : DEFAULT_OVERLAY_HOTKEY;
+}
+
+/** "Ctrl + Shift + K", for every hint that names the key. */
+export function hotkeyLabel(spec: string): string {
+  return spec
+    .split("+")
+    .filter(Boolean)
+    .map((part) => {
+      if (part === "ctrl") return "Ctrl";
+      if (part === "alt") return "Alt";
+      if (part === "shift") return "Shift";
+      if (part === "pageup") return "Page Up";
+      if (part === "pagedown") return "Page Down";
+      if (part.length === 1) return part.toUpperCase();
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
+    .join(" + ");
+}
+
+export function overlayHotkeyLabel(): string {
+  return hotkeyLabel(overlayHotkey());
 }
 
 /**

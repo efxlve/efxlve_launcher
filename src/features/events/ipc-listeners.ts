@@ -37,7 +37,8 @@ import {
   type VerifyProgressEvent,
 } from "../../epic";
 import { localizeMessage, formatSyncStamp, setLanguage, t } from "../../i18n";
-import { noteDiscordMessage, setDiscordInCall } from "../../core/nav";
+import { noteDiscordMessage, setDiscordInCall, updatePageHeader } from "../../core/nav";
+import { getVersion } from "@tauri-apps/api/app";
 import { eglLauncherPresent } from "../../egl-removal";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
@@ -45,7 +46,7 @@ import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
 import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
-import { overlayEnabled, overlayHotkey } from "../../core/page-visibility";
+import { overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -146,12 +147,6 @@ function syncOverlayService(): void {
 }
 
 /** "Shift + Tab" for the hint text, matching the configured hotkey. */
-function overlayHotkeyLabel(): string {
-  const key = overlayHotkey();
-  if (key === "shift+f4") return "Shift + F4";
-  if (key === "ctrl+shift+o") return "Ctrl + Shift + O";
-  return "Shift + Tab";
-}
 
 /** Batches bursty download DOM updates into a single animation frame. */
 function scheduleDlDomUpdate(id: string): void {
@@ -229,6 +224,15 @@ export async function initApp(hooks: {
   installArtFallback();
   syncCaseCustomStoreColors();
   updateMaxIcon();
+  // The window bar version comes from the bundle, not from a literal that has
+  // to be remembered on every release.
+  void getVersion()
+    .then((version) => {
+      if (!version) return;
+      S.appVersion = version;
+      updatePageHeader();
+    })
+    .catch(() => {});
   // The overlay must know its switch state before anything else, because the
   // backend tears the panel window down when it is off.
   syncOverlayService();
