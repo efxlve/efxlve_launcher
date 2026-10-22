@@ -367,8 +367,9 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     case "ach-test-notification": {
       playWebAudioCelestaChime(S.achievementNotificationOptions.volume);
       void achievementTestNotification(
-        t("ach.unlockedNotification", { name: t("settings.achTestTitle") }),
+        "Platin Avcısı",
         t("settings.achTestDesc"),
+        t("settings.achUnlockedTag"),
       ).catch((e) => toast(String(e), "err"));
       return true;
     }

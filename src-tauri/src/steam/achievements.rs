@@ -1795,12 +1795,13 @@ pub fn achievement_clear_custom_sound(app: tauri::AppHandle) -> Result<(), Strin
 /// Settings > Achievements: preview the current notification settings. The
 /// payload goes through the same frontend listener as a real unlock.
 #[tauri::command]
-pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body: String) {
+pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body: String, tag: Option<String>) {
     let options = achievement_notification_options(&app);
     crate::overlay::hud::set_notification_position(&options.position);
     crate::overlay::hud::set_notification_hold(options.duration_ms);
+    let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
     if options.overlay {
-        crate::overlay::hud::notify(&title, &body);
+        crate::overlay::hud::notify_ext(&tag_text, &title, &body);
     }
     play_achievement_notification_sound(&app, &options);
     let payload = AchievementUnlockedPayload {
@@ -1809,7 +1810,7 @@ pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body:
         display_name: title,
         description: body,
         icon_url: String::new(),
-        notification: true,
+        notification: false,
     };
     let _ = app.emit("achievement-unlocked", payload);
 }
@@ -1975,8 +1976,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                     if options.enabled {
                         // 1. Native in-game HUD toast card
                         if options.overlay {
-                            let title_text = format!("🏆 {display}");
-                            crate::overlay::hud::notify(&title_text, &ach.description);
+                            crate::overlay::hud::notify_ext("BAŞARIM KAZANILDI", &display, &ach.description);
                         }
                         // 2. Native notification sound: the user's file when
                         // set, otherwise the Windows system beep.

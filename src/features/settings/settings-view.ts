@@ -98,7 +98,7 @@ import {
   achievementGetNotificationOptions,
   achievementPickCustomSound,
   achievementSetNotificationOptions,
-  achievementTestNotification,
+
   steamGetApiKey,
   steamStatus,
 } from "../../steam";

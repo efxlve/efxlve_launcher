@@ -259,8 +259,8 @@ export const achievementGetNotificationOptions = () =>
 export const achievementSetNotificationOptions = (options: AchievementNotificationOptions) =>
   invoke<void>("achievement_set_notification_options", { options });
 
-export const achievementTestNotification = (title: string, body: string) =>
-  invoke<void>("achievement_test_notification", { title, body });
+export const achievementTestNotification = (title: string, body: string, tag?: string) =>
+  invoke<void>("achievement_test_notification", { title, body, tag });
 
 export const achievementPickCustomSound = () =>
   invoke<string | null>("achievement_pick_custom_sound");

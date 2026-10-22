@@ -17,12 +17,14 @@ use std::sync::Mutex;
 static STARTED: AtomicBool = AtomicBool::new(false);
 static HWND: AtomicIsize = AtomicIsize::new(0);
 static FONT: AtomicIsize = AtomicIsize::new(0);
+static TAG_FONT: AtomicIsize = AtomicIsize::new(0);
 static TITLE_FONT: AtomicIsize = AtomicIsize::new(0);
 static BODY_FONT: AtomicIsize = AtomicIsize::new(0);
 static ICON_FONT: AtomicIsize = AtomicIsize::new(0);
 static TEXT: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 /// A notification card owns the plate while this is true.
 static NOTIF_ON: AtomicBool = AtomicBool::new(false);
+static NOTIF_TAG: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 static NOTIF_TITLE: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 static NOTIF_BODY: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 /// The card stays until this epoch-ms timestamp.
@@ -31,12 +33,13 @@ static NOTIF_UNTIL: AtomicU64 = AtomicU64::new(0);
 static NOTIF_GEN: AtomicU64 = AtomicU64::new(0);
 
 /// console-like notification card: icon disc, bold title, muted body line.
-const NOTIF_HEIGHT: i32 = 68;
+const NOTIF_HEIGHT: i32 = 72;
 const NOTIF_MARGIN: i32 = 24;
 const NOTIF_MIN_WIDTH: i32 = 360;
 const NOTIF_RADIUS: i32 = 12;
-const NOTIF_TITLE_PX: i32 = 15;
-const NOTIF_BODY_PX: i32 = 13;
+const NOTIF_TAG_PX: i32 = 10;
+const NOTIF_TITLE_PX: i32 = 14;
+const NOTIF_BODY_PX: i32 = 12;
 const NOTIF_ALPHA: u8 = 242;
 static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(5200);
@@ -131,19 +134,35 @@ pub fn set_notification_position(position: &str) {
 /// hint). Reuses the HUD window: a Windows toast is invisible for many setups,
 /// this card is not. `title` is the bold line, `body` the muted one.
 pub fn notify(title: &str, body: &str) {
+    if let Some((tag, rest)) = title.split_once(": ") {
+        notify_ext(&tag.to_uppercase(), rest, body);
+    } else if let Some(stripped) = title.strip_prefix("🏆 ") {
+        notify_ext("BAŞARIM KAZANILDI", stripped, body);
+    } else {
+        notify_ext("", title, body);
+    }
+}
+
+/// Explicit notification showing tag line (gold uppercase), title (bold white), and body (silver).
+pub fn notify_ext(tag: &str, title: &str, body: &str) {
     #[cfg(windows)]
     {
         ensure_window();
         {
-            let mut wide = title.encode_utf16().collect::<Vec<u16>>();
-            wide.push(0);
-            if let Ok(mut slot) = NOTIF_TITLE.lock() {
-                *slot = wide;
+            let mut wide_tag = tag.encode_utf16().collect::<Vec<u16>>();
+            wide_tag.push(0);
+            if let Ok(mut slot) = NOTIF_TAG.lock() {
+                *slot = wide_tag;
             }
-            let mut wide = body.encode_utf16().collect::<Vec<u16>>();
-            wide.push(0);
+            let mut wide_title = title.encode_utf16().collect::<Vec<u16>>();
+            wide_title.push(0);
+            if let Ok(mut slot) = NOTIF_TITLE.lock() {
+                *slot = wide_title;
+            }
+            let mut wide_body = body.encode_utf16().collect::<Vec<u16>>();
+            wide_body.push(0);
             if let Ok(mut slot) = NOTIF_BODY.lock() {
-                *slot = wide;
+                *slot = wide_body;
             }
         }
         NOTIF_ON.store(true, Ordering::SeqCst);
@@ -160,7 +179,8 @@ pub fn notify(title: &str, body: &str) {
         let (mon_x, mon_y, mon_w, mon_h) =
             monitor_rect_for(foreground_window()).unwrap_or((0, 0, 1920, 1080));
         let position = NOTIF_POSITION.load(Ordering::Relaxed);
-        let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), NOTIF_TITLE_PX);
+        let tag_px = if tag.is_empty() { 0 } else { text_px(&tag.encode_utf16().collect::<Vec<u16>>(), NOTIF_TAG_PX) };
+        let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), NOTIF_TITLE_PX).max(tag_px);
         let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), NOTIF_BODY_PX);
         let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
         let start_x = if notification_is_center(position) {
@@ -173,7 +193,6 @@ pub fn notify(title: &str, body: &str) {
 
         unsafe {
             shape_notification(hwnd, w, h);
-            // Park the card past the nearest edge; the paint lands as it slides in.
             MoveWindow(hwnd, start_x, y, w, h, 1);
             set_alpha(hwnd, 0);
             ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
@@ -182,7 +201,6 @@ pub fn notify(title: &str, body: &str) {
 
         std::thread::spawn(move || {
             slide_in(hwnd, generation, start_x, x, y, w, h);
-            // Hold the card until its deadline unless a newer one supersedes it.
             while NOTIF_GEN.load(Ordering::Relaxed) == generation
                 && NOTIF_ON.load(Ordering::Relaxed)
                 && now_ms() < NOTIF_UNTIL.load(Ordering::Relaxed)
@@ -201,7 +219,7 @@ pub fn notify(title: &str, body: &str) {
     }
     #[cfg(not(windows))]
     {
-        let _ = (title, body);
+        let _ = (tag, title, body);
     }
 }
 
@@ -728,27 +746,27 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let width = rect.right - rect.left;
     let height = rect.bottom - rect.top;
 
-    // 1. Deep luxury smoked obsidian plate
-    let plate = CreateSolidBrush(0x000F0D0C); // COLORREF 0x00BBGGRR (RGB: 12, 13, 15)
+    // 1. Deep luxury smoked obsidian plate (RGB: 13, 15, 20 / #0d0f14)
+    let plate = CreateSolidBrush(0x00140F0D);
     FillRect(hdc, rect, plate);
     let _ = DeleteObject(plate);
 
-    // 2. Radiant gold accent indicator bar on left edge
+    // 2. Radiant gold accent indicator bar on left edge (RGB: 245, 158, 11 / #f59e0b)
     let bar_rect = RECT {
         left: rect.left,
         top: rect.top,
         right: rect.left + 4,
         bottom: rect.bottom,
     };
-    let bar_brush = CreateSolidBrush(0x0018A8F5); // Radiant gold (#f5a818)
+    let bar_brush = CreateSolidBrush(0x000B9EF5);
     FillRect(hdc, &bar_rect, bar_brush);
     let _ = DeleteObject(bar_brush);
 
-    // 3. Hairline border; the region keeps it rounded.
+    // 3. Hairline border; warm subtle amber-bronze
     let diameter = NOTIF_RADIUS * 2;
     let region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
     if region != 0 {
-        let edge = CreateSolidBrush(0x002E261E); // Warm subtle bronze border
+        let edge = CreateSolidBrush(0x00185078);
         FrameRgn(hdc, region, edge, 1, 1);
         let _ = DeleteObject(edge);
         let _ = DeleteObject(region);
@@ -759,16 +777,16 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let center_y = (rect.top + rect.bottom) / 2;
 
     // Outer gold rim
-    let rim = CreateSolidBrush(0x0018A8F5);
+    let rim = CreateSolidBrush(0x000B9EF5);
     let prev_rim = SelectObject(hdc, rim);
-    Ellipse(hdc, center_x - 17, center_y - 17, center_x + 17, center_y + 17);
+    Ellipse(hdc, center_x - 18, center_y - 18, center_x + 18, center_y + 18);
     SelectObject(hdc, prev_rim);
     let _ = DeleteObject(rim);
 
     // Inner velvet medallion plate
-    let inner_disc = CreateSolidBrush(0x000E1624); // Deep bronze obsidian
+    let inner_disc = CreateSolidBrush(0x00080E12);
     let prev_inner = SelectObject(hdc, inner_disc);
-    Ellipse(hdc, center_x - 15, center_y - 15, center_x + 15, center_y + 15);
+    Ellipse(hdc, center_x - 16, center_y - 16, center_x + 16, center_y + 16);
     SelectObject(hdc, prev_inner);
     let _ = DeleteObject(inner_disc);
 
@@ -776,7 +794,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let icon_font = ICON_FONT.load(Ordering::Relaxed);
     if icon_font != 0 {
         SetBkMode(hdc, TRANSPARENT_BK);
-        SetTextColor(hdc, 0x0032D4FF); // Brilliant gold glyph
+        SetTextColor(hdc, 0x0024BFFB); // Radiant trophy gold #fbbf24
         SelectObject(hdc, icon_font);
         let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
         let mut icon_rect = RECT {
@@ -793,7 +811,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
         );
     } else {
-        let gold_mark = CreateSolidBrush(0x0032D4FF);
+        let gold_mark = CreateSolidBrush(0x0024BFFB);
         let prev = SelectObject(hdc, gold_mark);
         RoundRect(hdc, center_x - 7, center_y - 7, center_x + 7, center_y + 1, 4, 4);
         RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + 5, 2, 2);
@@ -802,53 +820,126 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
         let _ = DeleteObject(gold_mark);
     }
 
-    // Text column: bold title over a muted body line.
+    // Text column: 3-tier layout (Tag, Title, Body)
     SetBkMode(hdc, TRANSPARENT_BK);
     let text_left = rect.left + NOTIF_TEXT_LEFT + 6;
     let text_right = rect.right - NOTIF_TEXT_RIGHT;
 
-    let title_font = TITLE_FONT.load(Ordering::Relaxed);
-    if let Ok(title) = NOTIF_TITLE.lock() {
-        if title.len() > 1 {
-            if title_font != 0 {
-                SelectObject(hdc, title_font);
+    let has_tag = NOTIF_TAG.lock().map(|t| t.len() > 1).unwrap_or(false);
+
+    if has_tag {
+        let tag_font = TAG_FONT.load(Ordering::Relaxed);
+        if let Ok(tag) = NOTIF_TAG.lock() {
+            if tag.len() > 1 {
+                if tag_font != 0 {
+                    SelectObject(hdc, tag_font);
+                }
+                SetTextColor(hdc, 0x000B9EF5); // #f59e0b (Amber gold)
+                let mut tag_rect = RECT {
+                    left: text_left,
+                    top: rect.top + 10,
+                    right: text_right,
+                    bottom: rect.top + 24,
+                };
+                DrawTextW(
+                    hdc,
+                    tag.as_ptr(),
+                    (tag.len() - 1) as i32,
+                    &mut tag_rect,
+                    NOTIF_TEXT_FORMAT,
+                );
             }
-            SetTextColor(hdc, 0x00FFFFFF);
-            let mut text_rect = RECT {
-                left: text_left,
-                top: rect.top + 13,
-                right: text_right,
-                bottom: rect.top + 35,
-            };
-            DrawTextW(
-                hdc,
-                title.as_ptr(),
-                (title.len() - 1) as i32,
-                &mut text_rect,
-                NOTIF_TEXT_FORMAT,
-            );
         }
-    }
-    let body_font = BODY_FONT.load(Ordering::Relaxed);
-    if let Ok(body) = NOTIF_BODY.lock() {
-        if body.len() > 1 {
-            if body_font != 0 {
-                SelectObject(hdc, body_font);
+
+        let title_font = TITLE_FONT.load(Ordering::Relaxed);
+        if let Ok(title) = NOTIF_TITLE.lock() {
+            if title.len() > 1 {
+                if title_font != 0 {
+                    SelectObject(hdc, title_font);
+                }
+                SetTextColor(hdc, 0x00FFFFFF);
+                let mut title_rect = RECT {
+                    left: text_left,
+                    top: rect.top + 25,
+                    right: text_right,
+                    bottom: rect.top + 46,
+                };
+                DrawTextW(
+                    hdc,
+                    title.as_ptr(),
+                    (title.len() - 1) as i32,
+                    &mut title_rect,
+                    NOTIF_TEXT_FORMAT,
+                );
             }
-            SetTextColor(hdc, 0x00B8B2AC); // Warm refined silver
-            let mut text_rect = RECT {
-                left: text_left,
-                top: rect.top + 35,
-                right: text_right,
-                bottom: rect.top + 57,
-            };
-            DrawTextW(
-                hdc,
-                body.as_ptr(),
-                (body.len() - 1) as i32,
-                &mut text_rect,
-                NOTIF_TEXT_FORMAT,
-            );
+        }
+
+        let body_font = BODY_FONT.load(Ordering::Relaxed);
+        if let Ok(body) = NOTIF_BODY.lock() {
+            if body.len() > 1 {
+                if body_font != 0 {
+                    SelectObject(hdc, body_font);
+                }
+                SetTextColor(hdc, 0x00B8B2AC);
+                let mut body_rect = RECT {
+                    left: text_left,
+                    top: rect.top + 46,
+                    right: text_right,
+                    bottom: rect.top + 65,
+                };
+                DrawTextW(
+                    hdc,
+                    body.as_ptr(),
+                    (body.len() - 1) as i32,
+                    &mut body_rect,
+                    NOTIF_TEXT_FORMAT,
+                );
+            }
+        }
+    } else {
+        let title_font = TITLE_FONT.load(Ordering::Relaxed);
+        if let Ok(title) = NOTIF_TITLE.lock() {
+            if title.len() > 1 {
+                if title_font != 0 {
+                    SelectObject(hdc, title_font);
+                }
+                SetTextColor(hdc, 0x00FFFFFF);
+                let mut text_rect = RECT {
+                    left: text_left,
+                    top: rect.top + 14,
+                    right: text_right,
+                    bottom: rect.top + 38,
+                };
+                DrawTextW(
+                    hdc,
+                    title.as_ptr(),
+                    (title.len() - 1) as i32,
+                    &mut text_rect,
+                    NOTIF_TEXT_FORMAT,
+                );
+            }
+        }
+        let body_font = BODY_FONT.load(Ordering::Relaxed);
+        if let Ok(body) = NOTIF_BODY.lock() {
+            if body.len() > 1 {
+                if body_font != 0 {
+                    SelectObject(hdc, body_font);
+                }
+                SetTextColor(hdc, 0x00B8B2AC);
+                let mut text_rect = RECT {
+                    left: text_left,
+                    top: rect.top + 38,
+                    right: text_right,
+                    bottom: rect.top + 60,
+                };
+                DrawTextW(
+                    hdc,
+                    body.as_ptr(),
+                    (body.len() - 1) as i32,
+                    &mut text_rect,
+                    NOTIF_TEXT_FORMAT,
+                );
+            }
         }
     }
 }
@@ -877,8 +968,10 @@ fn ensure_window() {
         let face: Vec<u16> = "Segoe UI\0".encode_utf16().collect();
         let font = CreateFontW(-14, 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
         FONT.store(font, Ordering::Relaxed);
+        let tag_font = CreateFontW(-NOTIF_TAG_PX, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr());
+        TAG_FONT.store(tag_font, Ordering::Relaxed);
         let title_font = CreateFontW(
-            -NOTIF_TITLE_PX, 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr(),
+            -NOTIF_TITLE_PX, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 0, 0, face.as_ptr(),
         );
         TITLE_FONT.store(title_font, Ordering::Relaxed);
         let body_font = CreateFontW(
