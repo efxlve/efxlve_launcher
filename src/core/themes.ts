@@ -1018,22 +1018,38 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
 
 /** The scene rules for a user theme: photo on the shell, glass panels above. */
 function sceneRules(id: string, input: CustomThemeInput): string {
-  if (!input.scene) return "";
   const selector = `:root[data-surface="${id}"]`;
-  const opacity = typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : input.light ? 0.38 : 0.52;
-  const blur = typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0;
-  const scrim = input.light
-    ? `rgba(255, 255, 255, ${opacity})`
-    : `rgba(0, 0, 0, ${opacity})`;
+  const rules: string[] = [];
 
-  const blurFilter = blur > 0 ? `backdrop-filter: blur(${blur}px); -webkit-backdrop-filter: blur(${blur}px);` : "";
+  if (input.scene) {
+    const opacity = typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : input.light ? 0.38 : 0.52;
+    const blur = typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0;
+    const scrim = input.light
+      ? `rgba(255, 255, 255, ${opacity})`
+      : `rgba(0, 0, 0, ${opacity})`;
 
-  return [
-    `${selector} body { background: ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`,
-    `${selector} body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: ${scrim}; ${blurFilter} pointer-events: none; }`,
-    `${selector} .overlay, ${selector} #main-col, ${selector} #view { background: transparent !important; }`,
-    `${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }` + (input.glow && input.glow !== "none" ? `\n${selector} .btn.primary { box-shadow: var(--accent-glow) !important; }` : "") + (input.accent2 ? `\n${selector} .btn.primary { background: var(--accent-gradient) !important; }` : ""),
-  ].join("\n");
+    const blurFilter = blur > 0 ? `backdrop-filter: blur(${blur}px); -webkit-backdrop-filter: blur(${blur}px);` : "";
+
+    rules.push(`${selector} body { background: ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`);
+    rules.push(`${selector} body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: ${scrim}; ${blurFilter} pointer-events: none; }`);
+    // Main column and view are transparent so the wallpaper shows in library/settings
+    rules.push(`${selector} #main-col, ${selector} #view { background: transparent !important; }`);
+    // The game page overlay MUST have its own background so the library (#view) does NOT bleed through!
+    rules.push(`${selector} .overlay { background: ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`);
+    rules.push(`${selector} .overlay::before { content: ""; position: fixed; top: var(--winbar-h); left: var(--sidebar-w); right: 0; bottom: 0; z-index: -1; background: ${scrim}; ${blurFilter} pointer-events: none; transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease); }`);
+    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .gp-about-card, .gp-stat, .gp-bar-meta-group, .gp-hub-card) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+  } else if (input.cardGlass) {
+    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .gp-about-card, .gp-stat, .gp-bar-meta-group, .gp-hub-card) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+  }
+
+  if (input.glow && input.glow !== "none") {
+    rules.push(`${selector} .btn.primary { box-shadow: var(--accent-glow) !important; }`);
+  }
+  if (input.accent2 && HEX.test(input.accent2)) {
+    rules.push(`${selector} .btn.primary { background: var(--accent-gradient) !important; }`);
+  }
+
+  return rules.join("\n");
 }
 
 function readCustomInputs(): CustomThemeInput[] {
@@ -1314,12 +1330,12 @@ export function applySurface(id: string, persist = true): string {
   // A user theme can carry a backdrop image; its rules are generated with the
   // theme, so the CSS files stay free of per-user selectors.
   const custom = theme.customInput ?? getCustomThemeInput(theme.id);
-  const scene = custom?.scene
+  const scene = custom
     ? sceneRules(theme.id, custom)
     : "";
 
   tokenStyle().textContent = body || scene
-    ? `${body ? `:root[data-surface="${theme.id}"]{${body}}` : ""}${scene}`
+    ? `${body ? `:root[data-surface="${theme.id}"]{${body}}` : ""}${scene ? `\n${scene}` : ""}`
     : "";
   root.style.colorScheme = theme.scheme;
 
