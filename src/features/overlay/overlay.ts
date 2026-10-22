@@ -5230,6 +5230,13 @@ function wireEvents(): void {
         ? [...disabledGames().filter((i) => i.key !== context.appName), { key: context.appName, title: context.title || context.appName }]
         : disabledGames().filter((i) => i.key !== context.appName);
       saveDisabled(next);
+      // Tell the service right away: "off for this game" must stop the panel,
+      // not just hide the hint.
+      void invoke("overlay_set_active_game", {
+        appName: context.appName,
+        title: context.title || context.appName,
+        disabled: input.checked,
+      }).catch(() => {});
       if (input.checked) void invoke("overlay_hide");
     } else if (input.id === "ov-setting-browser-hp-select") {
       const sel = input as unknown as HTMLSelectElement;

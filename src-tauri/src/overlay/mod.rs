@@ -12,7 +12,6 @@ pub mod browser;
 pub mod hotkey;
 pub mod hud;
 pub mod metrics;
-mod notif_card;
 
 use serde::Serialize;
 use std::sync::Mutex;
@@ -32,6 +31,10 @@ pub(crate) struct OverlayState {
     pub hud: bool,
     /// Panel currently visible.
     pub visible: bool,
+    /// The running game opted out of the overlay: nothing may run for it.
+    pub game_disabled: bool,
+    /// Hotkey preset id ("shift+tab", "shift+f4", "ctrl+shift+o").
+    pub hotkey: String,
     /// Game window captured when the panel opened, for focus restore.
     pub game_hwnd: isize,
     pub game_app: String,
@@ -42,6 +45,8 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     enabled: true,
     hud: false,
     visible: false,
+    game_disabled: false,
+    hotkey: String::new(),
     game_hwnd: 0,
     game_app: String::new(),
     game_title: String::new(),
@@ -57,19 +62,59 @@ pub struct OverlayOpenPayload {
 #[tauri::command]
 pub fn overlay_get_state() -> serde_json::Value {
     match STATE.lock() {
-        Ok(s) => serde_json::json!({ "enabled": s.enabled, "hud": s.hud, "visible": s.visible }),
-        Err(_) => serde_json::json!({ "enabled": true, "hud": false, "visible": false }),
+        Ok(s) => serde_json::json!({
+            "enabled": s.enabled,
+            "hud": s.hud,
+            "visible": s.visible,
+            "gameDisabled": s.game_disabled,
+            "hotkey": hotkey_id(&s.hotkey),
+            "running": s.enabled && !s.game_disabled,
+        }),
+        Err(_) => serde_json::json!({
+            "enabled": true,
+            "hud": false,
+            "visible": false,
+            "gameDisabled": false,
+            "hotkey": "shift+tab",
+            "running": true,
+        }),
     }
 }
 
-/// Enables or disables the Shift+Tab hotkey. Disabling hides the panel too.
+/// Turns the whole overlay service on or off. Off is a real stop: the panel
+/// window is destroyed (its WebView2 renderers exit with it), the mini HUD is
+/// hidden and the metrics worker is told to leave, so nothing of the overlay
+/// keeps running behind a multiplayer game.
 #[tauri::command]
 pub fn overlay_set_enabled(app: AppHandle, enabled: bool) {
     if let Ok(mut s) = STATE.lock() {
         s.enabled = enabled;
     }
-    if !enabled {
-        hide(&app);
+    if enabled {
+        resume(&app);
+    } else {
+        teardown(&app);
+    }
+}
+
+/// Sets the hotkey preset ("shift+tab", "shift+f4", "ctrl+shift+o").
+#[tauri::command]
+pub fn overlay_set_hotkey(spec: String) {
+    if let Ok(mut s) = STATE.lock() {
+        s.hotkey = normalize_hotkey(&spec).to_string();
+    }
+}
+
+/// The id of the configured hotkey, with the default filled in.
+fn hotkey_id(spec: &str) -> &'static str {
+    normalize_hotkey(spec)
+}
+
+fn normalize_hotkey(spec: &str) -> &'static str {
+    match spec {
+        "shift+f4" => "shift+f4",
+        "ctrl+shift+o" => "ctrl+shift+o",
+        _ => "shift+tab",
     }
 }
 
@@ -200,29 +245,112 @@ pub fn overlay_raise(app: AppHandle) {
 }
 
 /// Sets the currently active game context for the overlay.
+///
+/// `disabled` is the per-game opt-out: a multiplayer title where the user does
+/// not want any overlay surface running. It stops the service for as long as
+/// that game is the active one.
 #[tauri::command]
-pub fn overlay_set_active_game(app_name: String, title: String) {
-    if let Ok(mut s) = STATE.lock() {
+pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, disabled: bool) {
+    let stopped = if let Ok(mut s) = STATE.lock() {
         s.game_app = app_name;
         s.game_title = title;
+        s.game_disabled = disabled;
+        disabled
+    } else {
+        disabled
+    };
+    if stopped {
+        teardown(&app);
+    } else {
+        resume(&app);
     }
 }
 
 /// Clears the active game context when a title stops.
 #[tauri::command]
-pub fn overlay_clear_active_game(app_name: String) {
-    if let Ok(mut s) = STATE.lock() {
-        if s.game_app == app_name {
+pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
+    let cleared = if let Ok(mut s) = STATE.lock() {
+        if s.game_app == app_name || s.game_disabled {
             s.game_app.clear();
             s.game_title.clear();
+            s.game_disabled = false;
+            true
+        } else {
+            false
         }
+    } else {
+        false
+    };
+    if cleared {
+        resume(&app);
     }
 }
 
-/// Manual open. The Shift+Tab hotkey is the normal path; this one lets the
-/// overlay (or tests) open the panel without a game when needed.
+/// Recreates the overlay window and lets the hotkey listener work again.
+pub(crate) fn resume(app: &AppHandle) {
+    let allowed = STATE
+        .lock()
+        .map(|s| s.enabled && !s.game_disabled)
+        .unwrap_or(true);
+    if !allowed {
+        return;
+    }
+    if let Err(error) = ensure_window(app) {
+        crate::perf::write_line_global(&format!("overlay: window failed: {error}"));
+    }
+}
+
+/// Destroys every overlay surface. The panel window goes away completely, so
+/// WebView2 stops its renderers instead of leaving them parked in the task
+/// manager; the HUD and the metrics worker stop with it.
+///
+/// The destroy itself runs on a worker: `Window::destroy` waits for the event
+/// loop to answer, and a command handler that already owns the loop would
+/// deadlock the whole app there.
+pub(crate) fn teardown(app: &AppHandle) {
+    hide(app);
+    browser::close_window(app);
+    hud::hide();
+    metrics::stop();
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        if let Some(win) = handle.get_webview_window(OVERLAY_LABEL) {
+            let _ = win.destroy();
+        }
+    });
+}
+
+/// Creates the overlay window from the manifest when it is missing.
+pub(crate) fn ensure_window(app: &AppHandle) -> Result<(), String> {
+    if app.get_webview_window(OVERLAY_LABEL).is_some() {
+        return Ok(());
+    }
+    let config = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|window| window.label == OVERLAY_LABEL)
+        .ok_or_else(|| "no `overlay` window in tauri.conf.json".to_string())?
+        .clone();
+    tauri::WebviewWindowBuilder::from_config(app, &config)
+        .map_err(|error| error.to_string())?
+        .build()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+/// Manual open. The hotkey is the normal path; this one lets the overlay (or
+/// tests) open the panel without a game when needed.
 #[tauri::command]
 pub fn overlay_show(app: AppHandle) {
+    let allowed = STATE
+        .lock()
+        .map(|s| s.enabled && !s.game_disabled)
+        .unwrap_or(true);
+    if !allowed {
+        return;
+    }
     if let Some((app_name, title)) = crate::legendary::screenshots::get_active_running_game() {
         // Prefer the game's own window so the panel lands on its monitor.
         let pids = crate::legendary::screenshots::active_game_pids();
@@ -255,10 +383,18 @@ pub fn overlay_show(app: AppHandle) {
 
 /// Shows the panel over the game monitor and announces the game context.
 pub(crate) fn show(app: &AppHandle) {
-    // The browser window floats over the game alongside other widgets.
-
-
-
+    let allowed = STATE
+        .lock()
+        .map(|s| s.enabled && !s.game_disabled)
+        .unwrap_or(true);
+    if !allowed {
+        return;
+    }
+    // The window is created on demand: it does not exist while the overlay is
+    // switched off.
+    if ensure_window(app).is_err() {
+        return;
+    }
     let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
         return;
     };

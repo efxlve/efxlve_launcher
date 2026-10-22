@@ -461,6 +461,19 @@ pub fn hide_window(app: &AppHandle) {
     emit_browser_state(app, false);
 }
 
+/// Closes the browser host for good when the overlay service stops: hiding it
+/// would leave the tab webviews alive in the task manager.
+pub fn close_window(app: &AppHandle) {
+    hide_window(app);
+    let handle = app.clone();
+    // `destroy` waits for the event loop; callers are command handlers.
+    std::thread::spawn(move || {
+        if let Some(window) = handle.get_window(WINDOW_LABEL) {
+            let _ = window.destroy();
+        }
+    });
+}
+
 /// One-frame size nudge: forces the overlay webview to repaint its surface.
 fn wake_overlay(app: &AppHandle) {
     let Some(window) = app.get_webview_window(crate::overlay::OVERLAY_LABEL) else {

@@ -107,6 +107,8 @@
   background: var(--surface-2); padding: 1px 6px; border-radius: 4px; overflow-wrap: break-word;
 }
 .settings-row-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; max-width: 100%; }
+/* A switch plus one action in the same control column. */
+.settings-inline-control { display: flex; align-items: center; gap: 10px; }
 /* Settings > Appearance > Custom CSS. The textarea is the row's whole control,
    so it takes the full width and stays resizable downwards. */
 .settings-css-area {

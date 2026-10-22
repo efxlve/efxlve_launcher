@@ -6,10 +6,27 @@
  * feature and is not affected.
  */
 
-import { OVERLAY_DISABLED_KEY, SHOW_DISCORD_KEY, SHOW_MINI_PLAYER_KEY, SHOW_NOTES_SIDEBAR_KEY, SHOW_SCREENSHOTS_SIDEBAR_KEY, SHOW_SPOTIFY_KEY } from "./constants";
+import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SHOW_DISCORD_KEY, SHOW_MINI_PLAYER_KEY, SHOW_NOTES_SIDEBAR_KEY, SHOW_SCREENSHOTS_SIDEBAR_KEY, SHOW_SPOTIFY_KEY } from "./constants";
 
 export function spotifyPageVisible(): boolean {
   return localStorage.getItem(SHOW_SPOTIFY_KEY) !== "false";
+}
+
+/** The in-game overlay is on unless the user switched it off. */
+export function overlayEnabled(): boolean {
+  return localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false";
+}
+
+export type OverlayHotkey = "shift+tab" | "shift+f4" | "ctrl+shift+o";
+
+export const OVERLAY_HOTKEYS: readonly OverlayHotkey[] = ["shift+tab", "shift+f4", "ctrl+shift+o"];
+
+/** The key shown in Settings: anything unknown falls back to Shift+Tab. */
+export function overlayHotkey(): OverlayHotkey {
+  const stored = localStorage.getItem(OVERLAY_HOTKEY_KEY);
+  return (OVERLAY_HOTKEYS as readonly string[]).includes(stored ?? "")
+    ? (stored as OverlayHotkey)
+    : "shift+tab";
 }
 
 /**

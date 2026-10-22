@@ -8,12 +8,12 @@
 
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
-import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
+import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { THEMES } from "../../core/themes";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
-import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
+import { discordPageVisible, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, OVERLAY_HOTKEYS, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
@@ -1060,6 +1060,21 @@ function renderAppIconPicker(): string {
   </div>`;
 }
 
+/** Hotkey presets the backend knows; Steam's overlay owns Shift+Tab. */
+function renderOverlayHotkeyPicker(): string {
+  const current = overlayHotkey();
+  const labels: Record<string, string> = {
+    "shift+tab": "Shift + Tab",
+    "shift+f4": "Shift + F4",
+    "ctrl+shift+o": "Ctrl + Shift + O",
+  };
+  const buttons = OVERLAY_HOTKEYS.map(
+    (id) =>
+      `<button type="button" class="${current === id ? "active" : ""}" data-act="set-overlay-hotkey" data-hotkey="${id}">${labels[id]}</button>`,
+  ).join("");
+  return `<div class="seg">${buttons}</div>`;
+}
+
 /** One button per theme in the registry: a new entry appears here on its own. */
 function renderThemePicker(): string {
   const buttons = THEMES.map((theme) => `
@@ -1111,7 +1126,14 @@ function renderAppearance(): string {
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
       row(t("settings.startupTabTitle"), t("settings.startupTabDesc"), startupTabSelect()) +
       row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`) +
-      row(t("overlay.overlayLabel"), t("overlay.startHint"), `<button class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>`) +
+      row(
+        t("overlay.overlayLabel"),
+        t("settings.overlayToggleDesc"),
+        `<div class="settings-inline-control">${toggle("toggle-overlay", overlayEnabled())}<button type="button" class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button></div>`,
+      ) +
+      (overlayEnabled()
+        ? row(t("settings.overlayHotkeyTitle"), t("settings.overlayHotkeyDesc"), renderOverlayHotkeyPicker())
+        : "") +
       (overlayBlockedGames().length > 0
         ? row(
             `${t("overlay.disabledListTitle")} (${overlayBlockedGames().length})`,
@@ -2248,6 +2270,30 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
   // which made the platform picker appear dead.
   if (_el.tagName !== "SELECT" && handleCompatAction(act, _el)) return true;
   switch (act) {
+    case "toggle-overlay": {
+      const enabled = (_el as HTMLInputElement).checked;
+      try {
+        localStorage.setItem(OVERLAY_ENABLED_KEY, enabled ? "true" : "false");
+      } catch {
+        /* private mode */
+      }
+      // Off is a real stop: the backend destroys the panel window and parks the
+      // hotkey listener, so nothing of the overlay runs behind a game.
+      void invoke("overlay_set_enabled", { enabled }).catch(() => {});
+      render();
+      return true;
+    }
+    case "set-overlay-hotkey": {
+      const hotkey = _el.dataset.hotkey ?? "shift+tab";
+      try {
+        localStorage.setItem(OVERLAY_HOTKEY_KEY, hotkey);
+      } catch {
+        /* private mode */
+      }
+      void invoke("overlay_set_hotkey", { spec: hotkey }).catch(() => {});
+      render();
+      return true;
+    }
     case "add-ss-webhook": {
       const nameInput = document.getElementById("ss-webhook-name") as HTMLInputElement | null;
       const urlInput = document.getElementById("ss-webhook-input") as HTMLInputElement | null;

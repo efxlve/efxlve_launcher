@@ -1457,6 +1457,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             legendary::screenshots::epic_get_screenshot_scan_all,
             overlay::overlay_get_state,
             overlay::overlay_set_enabled,
+            overlay::overlay_set_hotkey,
             overlay::overlay_set_hud,
             overlay::overlay_flash_hint,
             overlay::overlay_enable_fps,

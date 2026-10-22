@@ -147,6 +147,8 @@ export function normalizeCaseColorMode(raw: string | null | undefined): CaseColo
 export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";
 /** In-game overlay: Shift+Tab hotkey enabled, managed by the overlay settings tab. */
 export const OVERLAY_ENABLED_KEY = "efxlve-overlay-enabled";
+/** In-game overlay: which key opens the panel ("shift+tab", "shift+f4", "ctrl+shift+o"). */
+export const OVERLAY_HOTKEY_KEY = "efxlve-overlay-hotkey";
 /** In-game overlay: always-on mini HUD, managed by the overlay settings tab. */
 export const OVERLAY_HUD_KEY = "efxlve-overlay-hud";
 /** In-game overlay: panel opacity percentage (0–100), managed by the overlay settings tab. */

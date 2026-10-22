@@ -45,6 +45,7 @@ import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
 import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
+import { overlayEnabled, overlayHotkey } from "../../core/page-visibility";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -135,6 +136,23 @@ function overlayDisabledFor(appName: string): boolean {
   }
 }
 
+/**
+ * Boot sync for the overlay service: whether it may run at all and which key
+ * opens it. The backend tears the panel window down when this says off.
+ */
+function syncOverlayService(): void {
+  void invoke("overlay_set_enabled", { enabled: overlayEnabled() }).catch(() => {});
+  void invoke("overlay_set_hotkey", { spec: overlayHotkey() }).catch(() => {});
+}
+
+/** "Shift + Tab" for the hint text, matching the configured hotkey. */
+function overlayHotkeyLabel(): string {
+  const key = overlayHotkey();
+  if (key === "shift+f4") return "Shift + F4";
+  if (key === "ctrl+shift+o") return "Ctrl + Shift + O";
+  return "Shift + Tab";
+}
+
 /** Batches bursty download DOM updates into a single animation frame. */
 function scheduleDlDomUpdate(id: string): void {
   dlDomId = id;
@@ -211,6 +229,9 @@ export async function initApp(hooks: {
   installArtFallback();
   syncCaseCustomStoreColors();
   updateMaxIcon();
+  // The overlay must know its switch state before anything else, because the
+  // backend tears the panel window down when it is off.
+  syncOverlayService();
   createIcons({
     icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, Clapperboard, ...BRAND_ICONS },
   });
@@ -644,6 +665,14 @@ export async function initApp(hooks: {
         if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
         clearLaunchStatus(id);
+        // The backend needs every running title, not only a fresh start: a game
+        // that opted out must stop the overlay for its whole session, and an
+        // allowed one keeps the panel armed.
+        void invoke("overlay_set_active_game", {
+          appName: id,
+          title,
+          disabled: overlayDisabledFor(id),
+        }).catch(() => {});
         // A game that was already open before the launcher booted is not a
         // fresh start: show its Running state, but do not toast, flash the
         // overlay, or minimize the window the user just opened.
@@ -651,13 +680,12 @@ export async function initApp(hooks: {
           toast(t("status.running", { title }), "ok");
           // Point at the Shift+Tab overlay on the first start of the title, unless
           // the overlay is off globally or the user opted this game out. The game
-          // gets its own card over the game; the launcher keeps its own toast.
+          // gets a PS5-like card; the launcher keeps its own toast.
           if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
-            toast(t("overlay.startHint"), "");
-            void invoke("overlay_set_active_game", { appName: id, title }).catch(() => {});
+            toast(t("overlay.startHint", { key: overlayHotkeyLabel() }), "");
             void invoke("overlay_flash_hint", {
-              title: t("overlay.enabledTitle"),
-              body: t("overlay.startHint"),
+              title: t("overlay.enabledTitle", { key: overlayHotkeyLabel() }),
+              body: t("overlay.startHint", { key: overlayHotkeyLabel() }),
             }).catch(() => {});
           }
           // Opt-in: get the launcher out of the way when a game starts. TV Mode
