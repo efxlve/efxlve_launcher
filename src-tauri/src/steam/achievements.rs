@@ -1677,6 +1677,23 @@ fn play_achievement_notification_sound(
             }
         }
     }
+    const DEFAULT_CHIME: &[u8] = include_bytes!("../../assets/achievement-chime.wav");
+    if let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(DEFAULT_CHIME)) {
+        let volume = (options.volume.min(100) as f32) / 100.0;
+        std::thread::spawn(move || {
+            if let Ok(stream) = rodio::OutputStreamBuilder::open_default_stream() {
+                let sink = rodio::Sink::connect_new(stream.mixer());
+                sink.set_volume(volume);
+                sink.append(decoder);
+                sink.sleep_until_end();
+            } else {
+                unsafe {
+                    MessageBeep(0x00000040);
+                }
+            }
+        });
+        return;
+    }
     unsafe {
         MessageBeep(0x00000040);
     }

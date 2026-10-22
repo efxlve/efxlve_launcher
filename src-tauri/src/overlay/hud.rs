@@ -728,40 +728,62 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let width = rect.right - rect.left;
     let height = rect.bottom - rect.top;
 
-    let plate = CreateSolidBrush(0x001E1E1E); // Launcher surface-3 (#1e1e1e)
+    // 1. Deep luxury smoked obsidian plate
+    let plate = CreateSolidBrush(0x000F0D0C); // COLORREF 0x00BBGGRR (RGB: 12, 13, 15)
     FillRect(hdc, rect, plate);
     let _ = DeleteObject(plate);
 
-    // Hairline border; the region keeps it rounded.
+    // 2. Radiant gold accent indicator bar on left edge
+    let bar_rect = RECT {
+        left: rect.left,
+        top: rect.top,
+        right: rect.left + 4,
+        bottom: rect.bottom,
+    };
+    let bar_brush = CreateSolidBrush(0x0018A8F5); // Radiant gold (#f5a818)
+    FillRect(hdc, &bar_rect, bar_brush);
+    let _ = DeleteObject(bar_brush);
+
+    // 3. Hairline border; the region keeps it rounded.
     let diameter = NOTIF_RADIUS * 2;
     let region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
     if region != 0 {
-        let edge = CreateSolidBrush(0x003C3A3C); // COLORREF is 0x00BBGGRR
+        let edge = CreateSolidBrush(0x002E261E); // Warm subtle bronze border
         FrameRgn(hdc, region, edge, 1, 1);
         let _ = DeleteObject(edge);
         let _ = DeleteObject(region);
     }
 
-    // Icon: a white disc with the launcher's game mark, like the primary button.
-    let center_x = rect.left + 16 + 16;
+    // 4. Gold Trophy Medallion Emblem
+    let center_x = rect.left + 16 + 18;
     let center_y = (rect.top + rect.bottom) / 2;
-    let disc = CreateSolidBrush(0x00FFFFFF);
-    let previous = SelectObject(hdc, disc);
-    Ellipse(hdc, center_x - 16, center_y - 16, center_x + 16, center_y + 16);
-    SelectObject(hdc, previous);
-    let _ = DeleteObject(disc);
 
+    // Outer gold rim
+    let rim = CreateSolidBrush(0x0018A8F5);
+    let prev_rim = SelectObject(hdc, rim);
+    Ellipse(hdc, center_x - 17, center_y - 17, center_x + 17, center_y + 17);
+    SelectObject(hdc, prev_rim);
+    let _ = DeleteObject(rim);
+
+    // Inner velvet medallion plate
+    let inner_disc = CreateSolidBrush(0x000E1624); // Deep bronze obsidian
+    let prev_inner = SelectObject(hdc, inner_disc);
+    Ellipse(hdc, center_x - 15, center_y - 15, center_x + 15, center_y + 15);
+    SelectObject(hdc, prev_inner);
+    let _ = DeleteObject(inner_disc);
+
+    // Trophy Icon
     let icon_font = ICON_FONT.load(Ordering::Relaxed);
     if icon_font != 0 {
         SetBkMode(hdc, TRANSPARENT_BK);
-        SetTextColor(hdc, 0x00000000);
+        SetTextColor(hdc, 0x0032D4FF); // Brilliant gold glyph
         SelectObject(hdc, icon_font);
-        let glyph: [u16; 2] = [0xE7FC, 0]; // Segoe MDL2 "Game"
+        let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
         let mut icon_rect = RECT {
-            left: center_x - 16,
-            top: center_y - 16,
-            right: center_x + 16,
-            bottom: center_y + 16,
+            left: center_x - 14,
+            top: center_y - 14,
+            right: center_x + 14,
+            bottom: center_y + 14,
         };
         DrawTextW(
             hdc,
@@ -771,18 +793,20 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
         );
     } else {
-        // No icon font on this system: a plain mark keeps the disc alive.
-        let mark = CreateSolidBrush(0x00000000);
-        let previous = SelectObject(hdc, mark);
-        RoundRect(hdc, center_x - 9, center_y - 7, center_x + 9, center_y + 7, 6, 6);
-        SelectObject(hdc, previous);
-        let _ = DeleteObject(mark);
+        let gold_mark = CreateSolidBrush(0x0032D4FF);
+        let prev = SelectObject(hdc, gold_mark);
+        RoundRect(hdc, center_x - 7, center_y - 7, center_x + 7, center_y + 1, 4, 4);
+        RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + 5, 2, 2);
+        RoundRect(hdc, center_x - 5, center_y + 5, center_x + 5, center_y + 8, 2, 2);
+        SelectObject(hdc, prev);
+        let _ = DeleteObject(gold_mark);
     }
 
     // Text column: bold title over a muted body line.
     SetBkMode(hdc, TRANSPARENT_BK);
-    let text_left = rect.left + NOTIF_TEXT_LEFT;
+    let text_left = rect.left + NOTIF_TEXT_LEFT + 6;
     let text_right = rect.right - NOTIF_TEXT_RIGHT;
+
     let title_font = TITLE_FONT.load(Ordering::Relaxed);
     if let Ok(title) = NOTIF_TITLE.lock() {
         if title.len() > 1 {
@@ -811,7 +835,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             if body_font != 0 {
                 SelectObject(hdc, body_font);
             }
-            SetTextColor(hdc, 0x00A5A5A5);
+            SetTextColor(hdc, 0x00B8B2AC); // Warm refined silver
             let mut text_rect = RECT {
                 left: text_left,
                 top: rect.top + 35,

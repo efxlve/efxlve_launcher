@@ -2925,5 +2925,9 @@
   "settings.surfaceCyberEmerald": "Emerald Matrix",
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
-  "settings.surfaceOledCyan": "Abyss Cyan"
+  "settings.surfaceOledCyan": "Abyss Cyan",
+  "settings.achPreviewTitle": "Live Notification Preview",
+  "settings.achUnlockedTag": "ACHIEVEMENT UNLOCKED",
+  "settings.achDefaultChime": "Efxlve Celesta Chime (Built-in)",
+  "settings.achPositionPad": "Screen Position"
 }

@@ -2925,5 +2925,9 @@
   "settings.surfaceCyberEmerald": "Zümrüt Matris",
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
-  "settings.surfaceOledCyan": "Derin Camgöbeği"
+  "settings.surfaceOledCyan": "Derin Camgöbeği",
+  "settings.achPreviewTitle": "Canlı Bildirim Önizlemesi",
+  "settings.achUnlockedTag": "BAŞARIM KAZANILDI",
+  "settings.achDefaultChime": "Efxlve Celesta Tınısı (Yerleşik)",
+  "settings.achPositionPad": "Ekran Konumu"
 }

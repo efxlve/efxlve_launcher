@@ -10,6 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { handleThemeSettingsAction, renderThemeSection } from "./theme-settings";
+import { handleAchievementsSettingsAction, renderAchievementsSettingsView } from "./achievements-settings";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon } from "../../core/icons";
@@ -1232,83 +1233,7 @@ function renderAppearance(): string {
 }
 
 function renderAchievementsSettings(): string {
-  const options = S.achievementNotificationOptions;
-  const soundName = options.customSoundName || t("settings.achDefaultSound");
-  const volumeButtons = [25, 50, 75, 100]
-    .map(
-      (value) =>
-        `<button type="button" class="${options.volume === value ? "active" : ""}" data-act="set-ach-volume" data-val="${value}">${value}%</button>`,
-    )
-    .join("");
-  const durationButtons = [
-    [3000, "3s"],
-    [5000, "5s"],
-    [8000, "8s"],
-  ]
-    .map(
-      ([value, label]) =>
-        `<button type="button" class="${options.durationMs === value ? "active" : ""}" data-act="set-ach-duration" data-val="${value}">${label}</button>`,
-    )
-    .join("");
-  const positionButtons = [
-    ["top-left", "TopLeft", "↖"],
-    ["center-top", "CenterTop", "↑"],
-    ["top-right", "TopRight", "↗"],
-    ["bottom-left", "BottomLeft", "↙"],
-    ["center-bottom", "CenterBottom", "↓"],
-    ["bottom-right", "BottomRight", "↘"],
-  ]
-    .map(
-      ([value, key, glyph]) =>
-        `<button type="button" class="${options.position === value ? "active" : ""}" data-act="set-ach-position" data-val="${value}" aria-label="${esc(t(`settings.achPosition${key}`))}">${glyph}</button>`,
-    )
-    .join("");
-  const customSoundControl = `
-    <div class="settings-custom-sound">
-      <span class="settings-hint">${esc(soundName)}</span>
-      <button type="button" class="btn ghost small" data-act="ach-pick-sound">${icon("folder", 13)} ${t("settings.achSoundChoose")}</button>
-      ${options.customSound ? `<button type="button" class="btn ghost small danger" data-act="ach-clear-sound" aria-label="${esc(t("settings.achSoundClear"))}">${icon("trash", 13)}</button>` : ""}
-    </div>`;
-  return group(
-    row(
-      t("settings.achNotifyTitle"),
-      t("settings.achNotifyDesc"),
-      toggle("toggle-ach-notifications", options.enabled),
-    ) +
-      row(
-        t("settings.achOverlayTitle"),
-        t("settings.achOverlayDesc"),
-        toggle("toggle-ach-overlay", options.overlay),
-      ) +
-      row(
-        t("settings.achPositionTitle"),
-        t("settings.achPositionDesc"),
-        `<div class="seg" role="group" aria-label="${t("settings.achPositionTitle")}">${positionButtons}</div>`,
-      ) +
-      row(
-        t("settings.achSoundTitle"),
-        t("settings.achSoundDesc"),
-        toggle("toggle-ach-sound", options.sound),
-      ) +
-      row(t("settings.achCustomSoundTitle"), t("settings.achCustomSoundDesc"), customSoundControl) +
-      row(
-        t("settings.achVolumeTitle"),
-        t("settings.achVolumeDesc"),
-        `<div class="seg" role="group" aria-label="${t("settings.achVolumeTitle")}">${volumeButtons}</div>`,
-      ) +
-      row(
-        t("settings.achDurationTitle"),
-        t("settings.achDurationDesc"),
-        `<div class="seg" role="group" aria-label="${t("settings.achDurationTitle")}">${durationButtons}</div>`,
-      ) +
-      row(
-        t("settings.achTestTitle"),
-        t("settings.achTestDesc"),
-        `<button type="button" class="btn primary small" data-act="ach-test-notification">${icon("bell", 13)} ${t("settings.achTestTitle")}</button>`,
-      ),
-    t("settings.secAchievements"),
-    infoBox("settings.achNotificationsNote"),
-  );
+  return renderAchievementsSettingsView();
 }
 
 function renderNotes(): string {
@@ -2346,6 +2271,7 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
   // which made the platform picker appear dead.
   if (_el.tagName !== "SELECT" && handleCompatAction(act, _el)) return true;
   if (handleThemeSettingsAction(act, _el)) return true;
+  if (handleAchievementsSettingsAction(act, _el)) return true;
   switch (act) {
     case "toggle-overlay": {
       const enabled = (_el as HTMLInputElement).checked;
@@ -2436,92 +2362,6 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       resetSettingsSearch();
       render();
       document.getElementById("settings-search")?.focus();
-      return true;
-    case "toggle-ach-notifications": {
-      const next = {
-        ...S.achievementNotificationOptions,
-        enabled: (_el as HTMLInputElement).checked,
-      };
-      S.achievementNotificationOptions = next;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      return true;
-    }
-    case "toggle-ach-sound": {
-      const next = {
-        ...S.achievementNotificationOptions,
-        sound: (_el as HTMLInputElement).checked,
-      };
-      S.achievementNotificationOptions = next;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      return true;
-    }
-    case "toggle-ach-overlay": {
-      const next = {
-        ...S.achievementNotificationOptions,
-        overlay: (_el as HTMLInputElement).checked,
-      };
-      S.achievementNotificationOptions = next;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      return true;
-    }
-    case "set-ach-position": {
-      const allowed = ["top-left", "center-top", "top-right", "bottom-left", "center-bottom", "bottom-right"];
-      const position = allowed.includes(_el.dataset.val ?? "")
-        ? (_el.dataset.val as string)
-        : "top-right";
-      const next = { ...S.achievementNotificationOptions, position };
-      S.achievementNotificationOptions = next;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      return true;
-    }
-    case "set-ach-volume": {
-      const volume = Math.max(0, Math.min(100, Number(_el.dataset.val) || 100));
-      const next = { ...S.achievementNotificationOptions, volume };
-      S.achievementNotificationOptions = next;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      return true;
-    }
-    case "set-ach-duration": {
-      const durationMs = Number(_el.dataset.val) || 5000;
-      const next = { ...S.achievementNotificationOptions, durationMs };
-      S.achievementNotificationOptions = next;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      return true;
-    }
-    case "ach-pick-sound":
-      void (async () => {
-        try {
-          const name = await achievementPickCustomSound();
-          if (!name) return;
-          S.achievementNotificationOptions = await achievementGetNotificationOptions();
-          render();
-        } catch (e) {
-          toast(String(e), "err");
-        }
-      })();
-      return true;
-    case "ach-clear-sound":
-      void (async () => {
-        try {
-          await achievementClearCustomSound();
-          S.achievementNotificationOptions = await achievementGetNotificationOptions();
-          render();
-        } catch (e) {
-          toast(String(e), "err");
-        }
-      })();
-      return true;
-    case "ach-test-notification":
-      void achievementTestNotification(
-        t("ach.unlockedNotification", { name: t("settings.achTestTitle") }),
-        t("settings.achTestDesc"),
-      ).catch((e) => toast(String(e), "err"));
       return true;
     case "toggle-ss-sound":
       localStorage.setItem(SS_SOUND_KEY, String((_el as HTMLInputElement).checked));
