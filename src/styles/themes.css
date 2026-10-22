@@ -28,16 +28,14 @@
   --err: #b91c1c;
   --err-tint: rgba(185, 28, 28, 0.1);
   --shadow-pop: 0 12px 32px rgba(15, 23, 42, 0.14);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.22);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.36);
 }
 
 :root[data-surface="white"] body { background: var(--bg); }
-:root[data-surface="white"] * { scrollbar-color: rgba(15, 23, 42, 0.28) transparent; }
-:root[data-surface="white"] ::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.22); }
-:root[data-surface="white"] ::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.36); }
 :root[data-surface="white"] #winbar,
 :root[data-surface="white"] #sidebar,
 :root[data-surface="white"] #page-header { border-color: var(--line); }
-:root[data-surface="white"] .pbadge { color: #f8fafc; }
 :root[data-surface="white"] :is(.ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn) { color: #f8fafc; }
 :root[data-surface="white"] :is(.ss-compressed-tag) { color: #cbd5e1; }
 :root[data-surface="white"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
@@ -583,19 +581,9 @@
   --aero-gloss-blue-hover: linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%);
   --aero-gloss-white: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e2eef8 50%, #eef6fc 100%);
   --aero-gloss-hover: linear-gradient(180deg, #f6fcff 0%, #e2f4fe 48%, #c8e9fc 50%, #e1f4fe 100%);
+  --scrollbar-thumb: rgba(13, 47, 79, 0.24);
+  --scrollbar-thumb-hover: rgba(13, 47, 79, 0.4);
 }
-
-:root[data-surface="white"] :is(.pbadge.running, .pbadge.now),
-:root[data-surface="aero"] :is(.pbadge.running, .pbadge.now) {
-  color: var(--ok);
-}
-
-:root[data-surface="white"] .pbadge.update,
-:root[data-surface="aero"] .pbadge.update {
-  color: var(--warn);
-}
-
-:root[data-surface="aero"] .pbadge { color: #f8fafc; }
 
 /* Backdrop. The SVG is drawn at viewport size, so every layer that repaints
    it (body, game page) lines up into one continuous scene. */
@@ -619,9 +607,7 @@
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="aero"] * { scrollbar-color: rgba(13, 47, 79, 0.28) transparent; }
-:root[data-surface="aero"] ::-webkit-scrollbar-thumb { background: rgba(13, 47, 79, 0.24); }
-:root[data-surface="aero"] ::-webkit-scrollbar-thumb:hover { background: rgba(13, 47, 79, 0.4); }
+:root[data-surface="aero"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
 /* Window bar: Aero caption glass with the sheen line across its middle. */
 :root[data-surface="aero"] #winbar {
@@ -681,10 +667,6 @@
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(10, 90, 160, 0.18);
 }
 /* The badge sits on the theme's blue accent; black text disappeared into it. */
-:root[data-surface="aero"] .sb-count {
-  color: #ffffff;
-  text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
-}
 :root[data-surface="aero"] #page-header {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.24));
   border-bottom: 1px solid rgba(255, 255, 255, 0.72);

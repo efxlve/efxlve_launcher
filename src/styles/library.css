@@ -394,11 +394,13 @@
 .pbadge {
   position: absolute; top: 8px; left: 8px; z-index: 3; height: 20px; padding: 0 7px;
   display: inline-flex; align-items: center; border-radius: 4px; pointer-events: none;
-  font-size: 11px; font-weight: 600; background: rgba(14, 15, 18, 0.9); color: var(--text);
+  font-size: 11px; font-weight: 600; background: rgba(14, 15, 18, 0.9); color: #f8fafc;
 }
-.pbadge.running { color: var(--ok); }
-.pbadge.update { color: var(--warn); }
-.pbadge.now { color: var(--ok); }
+/* The badge sits on cover art, not on the theme surface: its text stays light
+   and its status colours stay bright in every palette, light themes included. */
+.pbadge.running { color: #3ddc84; }
+.pbadge.update { color: #f0b232; }
+.pbadge.now { color: #3ddc84; }
 
 .card-dl-track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 5; background: rgba(0, 0, 0, 0.6); }
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }
