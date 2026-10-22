@@ -31,9 +31,37 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.35",
+    version: "0.1.36",
     date: "2026-10-22",
     isCurrent: true,
+    items: [
+      {
+        en: "Build your own theme: name it, pick a background colour and an accent, add your own photo as a backdrop if you want one, and switch to it with one click. Saved themes stay on this PC.",
+        tr: "Kendi temanı oluştur: isim ver, arka plan ve vurgu rengini seç, istersen kendi fotoğrafını arka plan olarak ekle ve tek tıkla geç. Kaydedilen temalar bu bilgisayarda kalır.",
+      },
+      {
+        en: "Theme names now describe the palette instead of borrowing a game's name: Neon Grid, Blades, Gloss, Violet and Blurple replace the old labels.",
+        tr: "Tema adları artık bir oyunun adını ödünç almak yerine paleti anlatıyor: Neon Izgara, Blades, Parlak Cam, Mor ve Blurple eski etiketlerin yerini aldı.",
+      },
+      {
+        en: "Every backdrop is original vector artwork. A theme with a photo turns its panels into glass, so the image shows through the whole shell.",
+        tr: "Tüm arka planlar özgün vektör çizimler. Fotoğraflı bir temada paneller cama dönüşüyor, böylece görsel tüm arayüzün arkasında görünüyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Removed the borrowed elements: the Life is Strange theme and its scene, the Xbox sphere mark in the Blades backdrop, and the Cyberpunk quotes and HUD labels.",
+        tr: "Ödünç alınan öğeler kaldırıldı: Life is Strange teması ve sahnesi, Blades arka planındaki Xbox küre amblemi, Cyberpunk replikleri ve HUD etiketleri.",
+      },
+      {
+        en: "Settings > About now states that themes are original, unofficial palettes with no game assets and no endorsement.",
+        tr: "Ayarlar > Hakkında artık temaların özgün, resmî olmayan paletler olduğunu; oyun varlığı içermediğini ve onaylanmadığını belirtiyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.35",
+    date: "2026-10-22",
     items: [
       {
         en: "Overlay control: a switch in Settings stops the whole service (panel window, key listener and metrics), a per-game opt-out stops it only while that title runs, and the hotkey is recorded from any Ctrl, Alt or Shift combination.",
