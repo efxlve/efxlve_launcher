@@ -1935,21 +1935,21 @@
 :root[data-surface="xbox360"] .profile-stat-plat-ico { color: var(--accent); }
 
 
-/* ---------- Cyberpunk 2077 ----------
-   Night City neon skyline, perspective grid (src/assets/cyberpunk-scene.svg),
-   chamfered cyberware buttons, Arasaka tech cyan, and blazing Cyber Yellow (#FCEE0A). */
+/* ---------- Cyberpunk ----------
+   CD Projekt Red Cyber Yellow (#FCEE0A) Kiroshi Optics HUD,
+   dark matte carbon graphite, Samurai Red (#FF003C), and Netrunner Cyan (#00F0FF). */
 
 :root[data-surface="cyberpunk"] {
   color-scheme: dark;
-  --bg: #050508;
-  --surface-1: rgba(18, 16, 28, 0.9);
-  --surface-2: rgba(28, 25, 42, 0.8);
-  --surface-3: rgba(38, 34, 56, 0.72);
-  --line: rgba(252, 238, 10, 0.22);
+  --bg: #07080a;
+  --surface-1: #0c0e12;
+  --surface-2: #12151b;
+  --surface-3: #191c24;
+  --line: rgba(252, 238, 10, 0.2);
   --line-strong: rgba(252, 238, 10, 0.45);
   --text: #fefefe;
-  --text-2: #b2b6c8;
-  --text-3: #6e7286;
+  --text-2: #a6acb8;
+  --text-3: #616774;
   --accent: #fcee0a;
   --accent-hover: #ffffff;
   --accent-tint: rgba(252, 238, 10, 0.16);
@@ -1961,15 +1961,17 @@
   --warn-tint: rgba(252, 238, 10, 0.16);
   --err: #ff003c;
   --err-tint: rgba(255, 0, 60, 0.18);
-  --r-sm: 4px;
-  --r-md: 6px;
-  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.8);
-  --scrollbar-thumb: rgba(252, 238, 10, 0.25);
-  --scrollbar-thumb-hover: rgba(252, 238, 10, 0.45);
+  --r-xs: 2px;
+  --r-sm: 2px;
+  --r-md: 3px;
+  --r-lg: 4px;
+  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.85);
+  --scrollbar-thumb: rgba(252, 238, 10, 0.22);
+  --scrollbar-thumb-hover: rgba(252, 238, 10, 0.42);
 }
 
 :root[data-surface="cyberpunk"] body {
-  background: #050508 url("../assets/cyberpunk-scene.svg") 0 0 / 100vw 100vh no-repeat;
+  background: #07080a url("../assets/cyberpunk-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
 :root[data-surface="cyberpunk"] #main-col,
 :root[data-surface="cyberpunk"] #view { background: transparent; }
@@ -1982,31 +1984,29 @@
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #050508 url("../assets/cyberpunk-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #07080a url("../assets/cyberpunk-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
 :root[data-surface="cyberpunk"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
-/* Window bar: high-tech optic frame */
+/* Cyberpunk Window Bar */
 :root[data-surface="cyberpunk"] #winbar {
-  background: linear-gradient(180deg, rgba(16, 14, 26, 0.96), rgba(8, 7, 14, 0.92));
-  border-bottom: 1px solid rgba(252, 238, 10, 0.28);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+  background: #07080a;
+  border-bottom: 1px solid rgba(252, 238, 10, 0.22);
 }
 :root[data-surface="cyberpunk"] .winbar-beta-chip {
   background: #fcee0a;
   color: #000000;
   font-weight: 800;
   letter-spacing: 0.5px;
-  box-shadow: 0 0 12px rgba(252, 238, 10, 0.55);
-  clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px));
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.4);
 }
 :root[data-surface="cyberpunk"] .winbar-btn:hover {
-  background: rgba(252, 238, 10, 0.15);
+  background: rgba(252, 238, 10, 0.12);
   color: #fcee0a;
-  box-shadow: inset 0 0 0 1px rgba(252, 238, 10, 0.35);
 }
 :root[data-surface="cyberpunk"] .win-btn.win-close:hover {
   background: #ff003c;
@@ -2014,55 +2014,99 @@
   box-shadow: 0 0 14px rgba(255, 0, 60, 0.65);
 }
 
-/* Sidebar: Night City cyberware navigation */
+/* Cyberpunk Sidebar Navigation */
 :root[data-surface="cyberpunk"] #sidebar {
-  background: linear-gradient(180deg, rgba(12, 10, 20, 0.95), rgba(6, 5, 10, 0.92));
-  border-right: 1px solid rgba(252, 238, 10, 0.24);
-  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.5);
+  background: rgba(10, 12, 16, 0.96);
+  border-right: 1px solid rgba(252, 238, 10, 0.18);
+  backdrop-filter: blur(8px);
 }
 :root[data-surface="cyberpunk"] #page-header {
-  background: linear-gradient(180deg, rgba(20, 16, 32, 0.65), rgba(8, 7, 14, 0.25));
-  border-bottom: 1px solid rgba(252, 238, 10, 0.22);
+  background: rgba(10, 12, 16, 0.75);
+  border-bottom: 1px solid rgba(252, 238, 10, 0.18);
+}
+:root[data-surface="cyberpunk"] .sb-item {
+  border-radius: 2px;
+  transition: all var(--ease);
+}
+:root[data-surface="cyberpunk"] .sb-item:hover {
+  color: #fcee0a;
+  background: rgba(252, 238, 10, 0.08);
 }
 :root[data-surface="cyberpunk"] .sb-item.active {
-  background: linear-gradient(90deg, rgba(252, 238, 10, 0.24) 0%, rgba(252, 238, 10, 0.08) 80%, transparent 100%);
+  background: linear-gradient(90deg, rgba(252, 238, 10, 0.18) 0%, rgba(252, 238, 10, 0.04) 100%);
   color: #fcee0a;
   font-weight: 700;
   border-left: 3px solid #fcee0a;
-  box-shadow: inset 1px 0 10px rgba(252, 238, 10, 0.35);
+  border-radius: 0 2px 2px 0;
+  box-shadow: inset 2px 0 8px rgba(252, 238, 10, 0.25);
 }
 :root[data-surface="cyberpunk"] .sb-item.active::before {
   display: none;
 }
 
-/* Cut-Corner (Chamfered) Primary Buttons */
+/* Cyberpunk: Primary HUD Action Buttons */
 :root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: #fcee0a;
   color: #000000;
   font-weight: 800;
   border: 1px solid #fcee0a;
-  box-shadow: 0 0 14px rgba(252, 238, 10, 0.4);
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  border-radius: 2px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 14px rgba(252, 238, 10, 0.35);
   transition: all var(--ease);
 }
 :root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: #ffffff;
   border-color: #ffffff;
   color: #000000;
-  box-shadow: 0 0 24px rgba(252, 238, 10, 0.8), 0 0 8px #ffffff;
+  box-shadow: 0 0 20px rgba(252, 238, 10, 0.7), 0 0 6px #ffffff;
+  transform: translateY(-1px);
+}
+:root[data-surface="cyberpunk"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #e6d800;
+  border-color: #e6d800;
+  transform: translateY(0);
 }
 
-/* Headings: Neon Yellow HUD */
+/* Cyberpunk: Secondary Action Buttons */
+:root[data-surface="cyberpunk"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(18, 21, 28, 0.85);
+  border: 1px solid rgba(252, 238, 10, 0.24);
+  color: var(--text);
+  border-radius: 2px;
+}
+:root[data-surface="cyberpunk"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover {
+  border-color: #fcee0a;
+  color: #fcee0a;
+  background: rgba(252, 238, 10, 0.1);
+}
+
+/* Cyberpunk: Danger / Abort Buttons */
+:root[data-surface="cyberpunk"] .btn.danger {
+  background: #ff003c;
+  border: 1px solid #ff003c;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(255, 0, 60, 0.35);
+}
+:root[data-surface="cyberpunk"] .btn.danger:hover {
+  background: #ff2a5c;
+  border-color: #ff2a5c;
+  box-shadow: 0 0 18px rgba(255, 0, 60, 0.6);
+}
+
+/* Cyberpunk: Crisp Headings & Titles */
 :root[data-surface="cyberpunk"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
 ) {
   color: #fcee0a;
-  letter-spacing: 0.6px;
-  text-shadow: 0 0 14px rgba(252, 238, 10, 0.25);
+  letter-spacing: 0.03em;
+  font-weight: 700;
 }
 
-/* Cards & Panels: smoked tech concrete with cyber yellow hairline */
+/* Cyberpunk: Cards & Panels */
 :root[data-surface="cyberpunk"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
@@ -2072,55 +2116,65 @@
   .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
   .changelog-dialog, .lib-filter-panel, .custom-game-modal
 ) {
-  background: linear-gradient(180deg, rgba(20, 17, 30, 0.9), rgba(10, 9, 16, 0.94));
-  border: 1px solid rgba(252, 238, 10, 0.24);
-  box-shadow: inset 0 1px 0 rgba(252, 238, 10, 0.15), 0 10px 30px rgba(0, 0, 0, 0.65);
+  background: rgba(14, 16, 22, 0.88);
+  border: 1px solid rgba(252, 238, 10, 0.2);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(252, 238, 10, 0.18), 0 8px 24px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
 }
 
-/* Library Game Cards */
+/* Cyberpunk: Library Game Cards */
 :root[data-surface="cyberpunk"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(252, 238, 10, 0.16);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(252, 238, 10, 0.18);
+  border-radius: 3px;
 }
 :root[data-surface="cyberpunk"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
-    0 0 0 1px #fcee0a,
-    0 0 24px rgba(252, 238, 10, 0.5),
-    0 16px 36px rgba(0, 0, 0, 0.85);
+    0 0 0 2px #fcee0a,
+    0 0 22px rgba(252, 238, 10, 0.45),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="cyberpunk"] .pcard-play-btn {
+  background: rgba(8, 9, 12, 0.85);
+  border: 1px solid rgba(252, 238, 10, 0.35);
+  color: #fcee0a;
+  border-radius: 2px;
 }
 :root[data-surface="cyberpunk"] .pcard-play-btn:hover {
   background: #fcee0a;
   color: #000000;
   border-color: #fcee0a;
-  box-shadow: 0 0 14px rgba(252, 238, 10, 0.6);
+  box-shadow: 0 0 14px rgba(252, 238, 10, 0.7);
 }
 
-/* Inputs & Focus */
+/* Cyberpunk: Inputs & Search */
 :root[data-surface="cyberpunk"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
-  background: rgba(8, 7, 14, 0.85);
-  border-color: rgba(252, 238, 10, 0.25);
-  color: var(--text);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  background: #08090d;
+  border: 1px solid rgba(252, 238, 10, 0.22);
+  color: #fefefe;
+  border-radius: 2px;
 }
 :root[data-surface="cyberpunk"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
 :root[data-surface="cyberpunk"] .search:focus-within,
 :root[data-surface="cyberpunk"] .install-path-input-wrap:focus-within {
   border-color: #fcee0a;
-  box-shadow: 0 0 0 2px rgba(252, 238, 10, 0.35), inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 2px rgba(252, 238, 10, 0.3);
 }
 
-/* Progress bars */
+/* Cyberpunk: Progress Bars */
 :root[data-surface="cyberpunk"] .progress {
-  background: rgba(8, 7, 14, 0.85);
-  border: 1px solid rgba(252, 238, 10, 0.3);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  background: #08090d;
+  border: 1px solid rgba(252, 238, 10, 0.25);
+  border-radius: 2px;
 }
 :root[data-surface="cyberpunk"] .progress > span,
 :root[data-surface="cyberpunk"] :is(.gp-progress-fill, .hltb-bar-fill, .critic-meter-fill) {
-  background: linear-gradient(90deg, #fcee0a 0%, #ffe600 75%, #ff003c 100%);
-  box-shadow: 0 0 12px rgba(252, 238, 10, 0.6);
+  background: linear-gradient(90deg, #fcee0a 0%, #ff6600 75%, #ff003c 100%);
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.5);
 }
 
-/* Switch */
+/* Cyberpunk: Switch */
 :root[data-surface="cyberpunk"] .switch input:checked + .track {
   background: #fcee0a;
   border-color: #fcee0a;
@@ -2129,16 +2183,15 @@
   background: #000000;
 }
 
-/* Store Tabs */
+/* Cyberpunk: Tabs & Chips */
 :root[data-surface="cyberpunk"] .store-tabs .tab.active,
 :root[data-surface="cyberpunk"] .tab.active {
   color: #fcee0a;
+  font-weight: 700;
 }
 :root[data-surface="cyberpunk"] .store-tabs .tab.active::after,
 :root[data-surface="cyberpunk"] .tab.active::after {
   background: #fcee0a;
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.7);
 }
-
-/* Status Icons */
 :root[data-surface="cyberpunk"] .profile-stat-plat-ico { color: #fcee0a; }

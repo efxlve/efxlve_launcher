@@ -1,169 +1,164 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-  <!-- Cyberpunk 2077 Night City Scene Backdrop:
-       Dark megabuilding skyline, perspective cybernetic wireframe grid,
-       high-tech optic reticles, and electric Cyber Yellow (#FCEE0A) with Samurai Red accents.
-       Pure SVG vectors and gradients for lightning-fast rendering. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <!-- Cyberpunk Kiroshi Optics Neural HUD Backdrop
+       Authentic in-game cyberware telemetry, precision optical reticles,
+       CD Projekt Red Cyber Yellow (#FCEE0A) and Samurai Red (#FF003C) accents. -->
   <defs>
-    <!-- Night City sky gradient -->
-    <linearGradient id="cpSky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#030306"/>
-      <stop offset="35%" stop-color="#08070f"/>
-      <stop offset="70%" stop-color="#0f0c1c"/>
-      <stop offset="100%" stop-color="#181326"/>
+    <!-- Deep carbon graphite base gradient -->
+    <linearGradient id="cpBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#07080a"/>
+      <stop offset="50%" stop-color="#0a0c10"/>
+      <stop offset="100%" stop-color="#060709"/>
     </linearGradient>
 
-    <!-- Cyber Yellow neon ambient aura -->
-    <radialGradient id="cpYellowGlow" cx="1280" cy="540" r="750" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#fcee0a" stop-opacity="0.32"/>
-      <stop offset="25%" stop-color="#fcee0a" stop-opacity="0.12"/>
-      <stop offset="60%" stop-color="#ff003c" stop-opacity="0.04"/>
-      <stop offset="100%" stop-color="#030306" stop-opacity="0"/>
+    <!-- Top-Right Cyber Yellow Ambient Glow -->
+    <radialGradient id="cpYellowGlow" cx="1620" cy="180" r="850" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fcee0a" stop-opacity="0.12"/>
+      <stop offset="35%" stop-color="#fcee0a" stop-opacity="0.04"/>
+      <stop offset="70%" stop-color="#fcee0a" stop-opacity="0.01"/>
+      <stop offset="100%" stop-color="#07080a" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Samurai Red bottom aura -->
-    <radialGradient id="cpRedGlow" cx="240" cy="850" r="600" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ff003c" stop-opacity="0.22"/>
-      <stop offset="40%" stop-color="#ff003c" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#030306" stop-opacity="0"/>
+    <!-- Bottom-Left Samurai Red Ambient Glow -->
+    <radialGradient id="cpRedGlow" cx="280" cy="920" r="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff003c" stop-opacity="0.10"/>
+      <stop offset="40%" stop-color="#ff003c" stop-opacity="0.03"/>
+      <stop offset="75%" stop-color="#ff003c" stop-opacity="0.005"/>
+      <stop offset="100%" stop-color="#07080a" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Perspective grid fade -->
-    <linearGradient id="cpGridFade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fcee0a" stop-opacity="0"/>
-      <stop offset="30%" stop-color="#fcee0a" stop-opacity="0.08"/>
-      <stop offset="75%" stop-color="#fcee0a" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#fcee0a" stop-opacity="0.3"/>
-    </linearGradient>
-
-    <!-- Optic Ring stroke gradient -->
-    <linearGradient id="cpRingGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fcee0a" stop-opacity="0.7"/>
-      <stop offset="50%" stop-color="#ff003c" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.6"/>
-    </linearGradient>
-
-    <!-- Vignette frame -->
-    <radialGradient id="cpVignette" cx="800" cy="500" r="950" gradientUnits="userSpaceOnUse">
-      <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="85%" stop-color="#000000" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.85"/>
+    <!-- Netrunner Ice Cyan Central Pulse -->
+    <radialGradient id="cpCyanGlow" cx="960" cy="540" r="650" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.03"/>
+      <stop offset="60%" stop-color="#00f0ff" stop-opacity="0.005"/>
+      <stop offset="100%" stop-color="#07080a" stop-opacity="0"/>
     </radialGradient>
+
+    <!-- Tech Telemetry Micro-Dot Grid Pattern -->
+    <pattern id="cpDotGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <circle cx="18" cy="18" r="1" fill="#fcee0a" fill-opacity="0.06"/>
+    </pattern>
+
+    <!-- Diagonal Hazard Caution Stripe Pattern -->
+    <pattern id="cpHazardStripe" width="20" height="20" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="10" height="20" fill="#fcee0a" fill-opacity="0.14"/>
+      <rect x="10" width="10" height="20" fill="#000000" fill-opacity="0.3"/>
+    </pattern>
   </defs>
 
-  <!-- Sky Base -->
-  <rect width="1600" height="1000" fill="url(#cpSky)"/>
-  <rect width="1600" height="1000" fill="url(#cpRedGlow)"/>
-  <rect width="1600" height="1000" fill="url(#cpYellowGlow)"/>
+  <!-- Base Slate & Atmospheric Glows -->
+  <rect width="1920" height="1080" fill="url(#cpBase)"/>
+  <rect width="1920" height="1080" fill="url(#cpDotGrid)"/>
+  <rect width="1920" height="1080" fill="url(#cpYellowGlow)"/>
+  <rect width="1920" height="1080" fill="url(#cpRedGlow)"/>
+  <rect width="1920" height="1080" fill="url(#cpCyanGlow)"/>
 
-  <!-- Distant Megabuilding Silhouettes -->
-  <g fill="#07060b">
-    <rect x="80" y="320" width="110" height="680"/>
-    <rect x="220" y="240" width="140" height="760"/>
-    <rect x="390" y="380" width="85" height="620"/>
-    <rect x="500" y="180" width="160" height="820"/>
-    <polygon points="500,180 580,90 660,180"/>
-    <!-- Antenna spire -->
-    <line x1="580" y1="90" x2="580" y2="20" stroke="#fcee0a" stroke-width="2" opacity="0.6"/>
-    <circle cx="580" cy="20" r="3" fill="#ff003c"/>
-
-    <rect x="690" y="300" width="120" height="700"/>
-    <rect x="840" y="220" width="150" height="780"/>
-    <rect x="1020" y="260" width="180" height="740"/>
-    <rect x="1230" y="160" width="170" height="840"/>
-    <!-- Arasaka style tower crown -->
-    <polygon points="1230,160 1315,80 1400,160"/>
-    <line x1="1315" y1="80" x2="1315" y2="15" stroke="#00f0ff" stroke-width="2" opacity="0.7"/>
-    <circle cx="1315" cy="15" r="3.5" fill="#fcee0a"/>
-
-    <rect x="1430" y="280" width="190" height="720"/>
+  <!-- ==================== HUD HORIZONTAL GUIDES ==================== -->
+  <g opacity="0.22">
+    <!-- Top Telemetry Guideline -->
+    <line x1="60" y1="50" x2="1860" y2="50" stroke="#fcee0a" stroke-width="1" stroke-dasharray="8 4 2 4"/>
+    <!-- Bottom Telemetry Guideline -->
+    <line x1="60" y1="1030" x2="1860" y2="1030" stroke="#fcee0a" stroke-width="1" stroke-dasharray="12 6 2 6"/>
   </g>
 
-  <!-- Secondary Midground Buildings (Dark Tech Layer) -->
-  <g fill="#0b0914" opacity="0.95">
-    <rect x="140" y="440" width="120" height="560"/>
-    <rect x="320" y="480" width="110" height="520"/>
-    <rect x="610" y="400" width="130" height="600"/>
-    <rect x="790" y="360" width="140" height="640"/>
-    <rect x="960" y="420" width="150" height="580"/>
-    <rect x="1150" y="340" width="130" height="660"/>
-    <rect x="1350" y="410" width="150" height="590"/>
+  <!-- ==================== TOP-LEFT HUD BRACKET ==================== -->
+  <g transform="translate(60, 50)">
+    <!-- Corner Bracket -->
+    <path d="M 0 45 L 0 0 L 45 0" fill="none" stroke="#fcee0a" stroke-width="2" opacity="0.5"/>
+    <rect x="4" y="4" width="4" height="4" fill="#fcee0a" opacity="0.6"/>
+    <!-- Status Telemetry -->
+    <text x="55" y="14" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.5" fill="#fcee0a" opacity="0.45">KIROSHI OPTICS // NEURAL LINK v2.0</text>
+    <text x="55" y="28" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#a6acb8" opacity="0.35">BIOS: NC-7749-X // SYNCED</text>
+    <!-- Calibration ticks -->
+    <line x1="0" y1="15" x2="6" y2="15" stroke="#fcee0a" stroke-width="1" opacity="0.4"/>
+    <line x1="0" y1="30" x2="6" y2="30" stroke="#fcee0a" stroke-width="1" opacity="0.4"/>
   </g>
 
-  <!-- Night City Window Light Clusters (Glowing cyber points) -->
-  <g opacity="0.65">
-    <!-- Yellow window grids -->
-    <g fill="#fcee0a">
-      <rect x="520" y="210" width="3" height="3"/><rect x="530" y="210" width="3" height="3"/><rect x="540" y="210" width="3" height="3"/>
-      <rect x="520" y="230" width="3" height="3"/><rect x="540" y="230" width="3" height="3"/>
-      <rect x="520" y="270" width="3" height="3"/><rect x="530" y="270" width="3" height="3"/>
-      <rect x="860" y="260" width="3" height="3"/><rect x="880" y="260" width="3" height="3"/><rect x="900" y="260" width="3" height="3"/>
-      <rect x="860" y="300" width="3" height="3"/><rect x="890" y="300" width="3" height="3"/>
-      <rect x="1250" y="200" width="4" height="3"/><rect x="1270" y="200" width="4" height="3"/><rect x="1310" y="200" width="4" height="3"/>
-      <rect x="1250" y="240" width="4" height="3"/><rect x="1290" y="240" width="4" height="3"/>
-      <rect x="1270" y="280" width="4" height="3"/><rect x="1310" y="280" width="4" height="3"/>
+  <!-- ==================== TOP-RIGHT HUD BRACKET ==================== -->
+  <g transform="translate(1860, 50)">
+    <!-- Corner Bracket -->
+    <path d="M 0 45 L 0 0 L -45 0" fill="none" stroke="#fcee0a" stroke-width="2" opacity="0.5"/>
+    <rect x="-8" y="4" width="4" height="4" fill="#ff003c" opacity="0.7"/>
+    <!-- Danger / Arasaka Telemetry -->
+    <text x="-55" y="14" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.5" fill="#ff003c" opacity="0.55">SEC-LVL // RESTRICTED ACCESS</text>
+    <text x="-55" y="28" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#fcee0a" opacity="0.35">ICE FIREWALL: ACTIVE</text>
+    <!-- Hazard caution stripe accent bar -->
+    <rect x="-240" y="-12" width="180" height="6" fill="url(#cpHazardStripe)" rx="1"/>
+  </g>
+
+  <!-- ==================== BOTTOM-LEFT HUD BRACKET ==================== -->
+  <g transform="translate(60, 1030)">
+    <!-- Corner Bracket -->
+    <path d="M 0 -45 L 0 0 L 45 0" fill="none" stroke="#ff003c" stroke-width="2" opacity="0.5"/>
+    <rect x="4" y="-8" width="4" height="4" fill="#ff003c" opacity="0.6"/>
+    <!-- Samurai Ghost Watermark -->
+    <g opacity="0.2">
+      <path d="M 12 -42 L 28 -42 L 36 -28 L 20 -28 Z" fill="#ff003c"/>
+      <path d="M 12 -24 L 28 -24 L 32 -14 L 16 -14 Z" fill="#fcee0a"/>
     </g>
-    <!-- Cyan tech points -->
-    <g fill="#00f0ff">
-      <rect x="240" y="280" width="3" height="3"/><rect x="260" y="280" width="3" height="3"/>
-      <rect x="240" y="320" width="3" height="3"/>
-      <rect x="1050" y="300" width="3" height="3"/><rect x="1070" y="300" width="3" height="3"/>
-      <rect x="1050" y="340" width="3" height="3"/>
+    <text x="55" y="-16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.5" fill="#ff003c" opacity="0.5">SAMURAI // 2077 NIGHT CITY</text>
+    <text x="55" y="-4" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#a6acb8" opacity="0.35">WAKE UP, SAMURAI. WE HAVE A CITY TO BURN.</text>
+  </g>
+
+  <!-- ==================== BOTTOM-RIGHT HUD BRACKET ==================== -->
+  <g transform="translate(1860, 1030)">
+    <!-- Corner Bracket -->
+    <path d="M 0 -45 L 0 0 L -45 0" fill="none" stroke="#fcee0a" stroke-width="2" opacity="0.5"/>
+    <rect x="-8" y="-8" width="4" height="4" fill="#fcee0a" opacity="0.6"/>
+    <!-- High-Tech Barcode Stamp -->
+    <g transform="translate(-160, -38)" opacity="0.25">
+      <rect x="0" y="0" width="3" height="24" fill="#fcee0a"/>
+      <rect x="6" y="0" width="1" height="24" fill="#fcee0a"/>
+      <rect x="10" y="0" width="4" height="24" fill="#fcee0a"/>
+      <rect x="18" y="0" width="2" height="24" fill="#fcee0a"/>
+      <rect x="23" y="0" width="5" height="24" fill="#fcee0a"/>
+      <rect x="31" y="0" width="1" height="24" fill="#fcee0a"/>
+      <rect x="35" y="0" width="3" height="24" fill="#fcee0a"/>
+      <rect x="42" y="0" width="6" height="24" fill="#fcee0a"/>
+      <rect x="51" y="0" width="2" height="24" fill="#fcee0a"/>
+      <rect x="56" y="0" width="4" height="24" fill="#fcee0a"/>
+      <rect x="63" y="0" width="1" height="24" fill="#fcee0a"/>
+      <rect x="68" y="0" width="5" height="24" fill="#fcee0a"/>
+      <rect x="76" y="0" width="2" height="24" fill="#fcee0a"/>
+      <rect x="81" y="0" width="3" height="24" fill="#fcee0a"/>
+      <rect x="88" y="0" width="7" height="24" fill="#fcee0a"/>
+      <text x="0" y="32" font-family="'Consolas', monospace" font-size="7" letter-spacing="2" fill="#fcee0a">77-NIGHTCITY-V</text>
     </g>
-    <!-- Samurai Red warning beacons -->
-    <g fill="#ff003c">
-      <circle cx="150" cy="318" r="2.5"/>
-      <circle cx="750" cy="298" r="2.5"/>
-      <circle cx="980" cy="218" r="2.5"/>
-      <circle cx="1500" cy="278" r="2.5"/>
-    </g>
+    <text x="-175" y="-18" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.5" fill="#fcee0a" opacity="0.45">BUFFER: 100%</text>
+    <text x="-175" y="-6" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#00f0ff" opacity="0.4">LATENCY: 0.12ms // NOMINAL</text>
   </g>
 
-  <!-- Cyberware Optic HUD Reticle (Right background) -->
-  <g id="cp-hud-ring" transform="translate(1280, 540)" opacity="0.35">
-    <!-- Outer segmented tech ring -->
-    <circle r="220" fill="none" stroke="url(#cpRingGrad)" stroke-width="1.8" stroke-dasharray="14 8 4 8 28 12"/>
-    <!-- Middle crosshairs and notches -->
-    <circle r="180" fill="none" stroke="#fcee0a" stroke-width="1" stroke-dasharray="8 16"/>
-    <circle r="140" fill="none" stroke="#00f0ff" stroke-width="1.2" stroke-dasharray="40 10 10 10"/>
-    <circle r="90" fill="none" stroke="#ff003c" stroke-width="1" stroke-dasharray="4 6"/>
-    <!-- Reticle Crosshair Lines -->
-    <line x1="-240" y1="0" x2="-190" y2="0" stroke="#fcee0a" stroke-width="2"/>
-    <line x1="190" y1="0" x2="240" y2="0" stroke="#fcee0a" stroke-width="2"/>
-    <line x1="0" y1="-240" x2="0" y2="-190" stroke="#fcee0a" stroke-width="2"/>
-    <line x1="0" y1="190" x2="0" y2="240" stroke="#fcee0a" stroke-width="2"/>
-    <!-- Corner brackets -->
-    <path d="M-120 -120 L-140 -120 L-140 -100" fill="none" stroke="#fcee0a" stroke-width="2"/>
-    <path d="M120 -120 L140 -120 L140 -100" fill="none" stroke="#fcee0a" stroke-width="2"/>
-    <path d="M-120 120 L-140 120 L-140 100" fill="none" stroke="#fcee0a" stroke-width="2"/>
-    <path d="M120 120 L140 120 L140 100" fill="none" stroke="#fcee0a" stroke-width="2"/>
+  <!-- ==================== KIROSHI RETICLE (Top-Right Background) ==================== -->
+  <g transform="translate(1560, 360)" opacity="0.12">
+    <!-- Outer segmented circular reticle -->
+    <circle cx="0" cy="0" r="180" fill="none" stroke="#fcee0a" stroke-width="1.5" stroke-dasharray="14 10 4 10"/>
+    <circle cx="0" cy="0" r="160" fill="none" stroke="#fcee0a" stroke-width="0.75" stroke-dasharray="2 6"/>
+    <circle cx="0" cy="0" r="90" fill="none" stroke="#fcee0a" stroke-width="1" stroke-dasharray="40 20"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#ff003c" stroke-width="1"/>
+    <!-- Crosshair reticles -->
+    <line x1="-200" y1="0" x2="-100" y2="0" stroke="#fcee0a" stroke-width="1"/>
+    <line x1="100" y1="0" x2="200" y2="0" stroke="#fcee0a" stroke-width="1"/>
+    <line x1="0" y1="-200" x2="0" y2="-100" stroke="#fcee0a" stroke-width="1"/>
+    <line x1="0" y1="100" x2="0" y2="200" stroke="#fcee0a" stroke-width="1"/>
+    <!-- 45-degree corner ticks -->
+    <line x1="-70" y1="-70" x2="-55" y2="-55" stroke="#fcee0a" stroke-width="1.5"/>
+    <line x1="55" y1="55" x2="70" y2="70" stroke="#fcee0a" stroke-width="1.5"/>
+    <line x1="55" y1="-55" x2="70" y2="-70" stroke="#fcee0a" stroke-width="1.5"/>
+    <line x1="-70" y1="70" x2="-55" y2="55" stroke="#fcee0a" stroke-width="1.5"/>
+    <!-- Micro degree markers -->
+    <text x="96" y="-6" font-family="'Consolas', monospace" font-size="8" fill="#fcee0a">090°</text>
+    <text x="-6" y="-96" font-family="'Consolas', monospace" font-size="8" fill="#fcee0a">000°</text>
+    <text x="-124" y="-6" font-family="'Consolas', monospace" font-size="8" fill="#fcee0a">270°</text>
+    <text x="-6" y="104" font-family="'Consolas', monospace" font-size="8" fill="#fcee0a">180°</text>
   </g>
 
-  <!-- Perspective Ground Cyber Grid -->
-  <g stroke="url(#cpGridFade)" stroke-width="1.2">
-    <!-- Horizontal depth lines -->
-    <line x1="0" y1="720" x2="1600" y2="720"/>
-    <line x1="0" y1="760" x2="1600" y2="760"/>
-    <line x1="0" y1="810" x2="1600" y2="810"/>
-    <line x1="0" y1="870" x2="1600" y2="870"/>
-    <line x1="0" y1="940" x2="1600" y2="940"/>
-    <!-- Vanishing perspective lines converging near (800, 680) -->
-    <line x1="800" y1="680" x2="-200" y2="1000"/>
-    <line x1="800" y1="680" x2="100" y2="1000"/>
-    <line x1="800" y1="680" x2="350" y2="1000"/>
-    <line x1="800" y1="680" x2="600" y2="1000"/>
-    <line x1="800" y1="680" x2="800" y2="1000"/>
-    <line x1="800" y1="680" x2="1000" y2="1000"/>
-    <line x1="800" y1="680" x2="1250" y2="1000"/>
-    <line x1="800" y1="680" x2="1500" y2="1000"/>
-    <line x1="800" y1="680" x2="1800" y2="1000"/>
+  <!-- ==================== SECONDARY RETICLE (Bottom-Left Background) ==================== -->
+  <g transform="translate(360, 720)" opacity="0.08">
+    <circle cx="0" cy="0" r="110" fill="none" stroke="#00f0ff" stroke-width="1" stroke-dasharray="8 6"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#ff003c" stroke-width="1" stroke-dasharray="12 12"/>
+    <line x1="-130" y1="0" x2="130" y2="0" stroke="#00f0ff" stroke-width="0.75"/>
+    <line x1="0" y1="-130" x2="0" y2="130" stroke="#00f0ff" stroke-width="0.75"/>
   </g>
 
-  <!-- Horizontal Tech Hazard / Data Stripe along bottom-left -->
-  <g transform="translate(60, 930)" opacity="0.3">
-    <rect width="220" height="4" fill="#fcee0a"/>
-    <line x1="0" y1="12" x2="180" y2="12" stroke="#ff003c" stroke-width="2" stroke-dasharray="10 6"/>
-  </g>
-
-  <!-- Vignette -->
-  <rect width="1600" height="1000" fill="url(#cpVignette)"/>
+  <!-- Vignette dark edge mask -->
+  <rect width="1920" height="1080" fill="none" stroke="#000000" stroke-width="1" opacity="0.5"/>
 </svg>
