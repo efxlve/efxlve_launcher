@@ -15,6 +15,10 @@ const targets = [
   ["src-tauri/Cargo.toml", /^version = "[^"]+"/m, `version = "${version}"`],
   ["README.md", /version-\d+\.\d+\.\d+-222/, `version-${version}-222`],
   ["README.md", /\*\*v\d+\.\d+\.\d+\*\*/, `**v${version}**`],
+  // The winbar shows this until `getVersion()` answers, and the browser preview
+  // never gets an answer, so both literals follow the release.
+  ["src/core/state.ts", /appVersion: "\d+\.\d+\.\d+"/, `appVersion: "${version}"`],
+  ["index.html", /winbar-version-num">v\d+\.\d+\.\d+</, `winbar-version-num">v${version}<`],
 ];
 
 for (const [file, pattern, replacement] of targets) {
