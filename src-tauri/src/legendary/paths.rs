@@ -1,7 +1,7 @@
 //! legendary binary resolution and download URLs.
 //!
-//! Resolution order: binary downloaded into app_data -> not-found error
-//! (then auto-download kicks in).
+//! Resolution order: binary downloaded into app_data -> system binary on Unix
+//! -> not-found error (then auto-download kicks in).
 //!
 //! Legendary publishes one self-contained build per OS and architecture. The
 //! launcher used to pin the Windows x64 file on every platform; the table below
@@ -68,6 +68,8 @@ pub fn system_binary() -> Option<PathBuf> {
     // install here. Duplicates are harmless for a lookup.
     dirs.push(PathBuf::from("/usr/local/bin"));
     dirs.push(PathBuf::from("/opt/homebrew/bin"));
+    dirs.push(PathBuf::from("/opt/local/bin"));
+    dirs.push(PathBuf::from("/snap/bin"));
     if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
         dirs.push(home.join(".local").join("bin"));
         dirs.push(home.join("bin"));
