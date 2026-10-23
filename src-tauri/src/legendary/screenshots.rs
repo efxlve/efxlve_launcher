@@ -567,14 +567,22 @@ pub fn file_to_preview_data_url(path: &Path) -> Option<String> {
     Some(String::new())
 }
 
-/// `~/.config/efxlve/shot_thumbs`, next to the other launcher caches.
+/// `~/.config/efxlve/shot_thumbs` on Windows, `$XDG_CACHE_HOME/efxlve` (or
+/// `~/.cache/efxlve`) elsewhere, next to the other launcher caches.
 fn shot_thumbs_dir() -> PathBuf {
-    std::env::var_os("USERPROFILE")
+    if let Some(profile) = std::env::var_os("USERPROFILE") {
+        return PathBuf::from(profile)
+            .join(".config")
+            .join("efxlve")
+            .join("shot_thumbs");
+    }
+    let cache = std::env::var_os("XDG_CACHE_HOME")
         .map(PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir)
-        .join(".config")
-        .join("efxlve")
-        .join("shot_thumbs")
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache"))
+        })
+        .unwrap_or_else(std::env::temp_dir);
+    cache.join("efxlve").join("shot_thumbs")
 }
 
 /// Cache file keyed by path, mtime and size: a compressed or replaced capture
