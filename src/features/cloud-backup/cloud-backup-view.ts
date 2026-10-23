@@ -193,7 +193,7 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
-  const retentionRow = isEnabled ? `
+  const retentionRow = `
     <div class="row settings-row">
       <div class="row-main">
         <div class="settings-row-title">${t("cloud.retentionTitle")}</div>
@@ -203,7 +203,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <input id="cloud-retention-count" type="number" min="0" max="100" class="input" style="width:84px" value="${Number(st.retentionCount ?? 0)}" />
         <button type="button" class="btn ghost small" data-act="cloud-retention-save">${t("common.save")}</button>
       </div>
-    </div>` : "";
+    </div>`;
 
   const bulkRow = isEnabled ? `
     <div class="row settings-row">
@@ -221,7 +221,7 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
-  const localBackupRow = isEnabled ? `
+  const localBackupRow = `
     <div class="row settings-row">
       <div class="row-main">
         <div class="settings-row-title">${t("cloud.localBackupTitle")}</div>
@@ -230,7 +230,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <div class="settings-row-control">
         <label class="switch"><input type="checkbox" data-act="toggle-cloud-local-backup" ${st.localBackupDaily ? "checked" : ""} /><span class="track"></span></label>
       </div>
-    </div>` : "";
+    </div>`;
 
   const providerRow = isEnabled ? `
     <div class="row settings-row">
