@@ -31,9 +31,33 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.37",
+    date: "2026-10-24",
+    isCurrent: true,
+    items: [
+      {
+        en: "Collections now show a 2x2 cover mosaic in the library dropdown, and the game picker loads 120 rows at a time with Show more instead of building the whole library up front.",
+        tr: "Koleksiyonlar kitaplık menüsünde 2x2 kapak mozaiği gösteriyor; oyun seçici tüm kütüphaneyi baştan kurmak yerine 120 satır yükleyip Daha Fazla Göster ile devam ediyor.",
+      },
+      {
+        en: "Settings > Appearance > Reduce motion and effects turns off animations, glass blur and hover lifts. Every page, button and feature stays available.",
+        tr: "Ayarlar > Görünüm > Hareketi ve efektleri azalt, animasyonları, cam bulanıklığını ve hover hareketlerini kapatıyor. Tüm sayfalar, düğmeler ve özellikler kullanılabilir kalıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "A collection game's tick now changes immediately instead of waiting for the list to repaint.",
+        tr: "Koleksiyondaki bir oyunun işareti artık liste yeniden çizilmesini beklemeden anında değişiyor.",
+      },
+      {
+        en: "Long sessions no longer keep every decoded cover in memory, and Steam's running-state poll pauses while the launcher is hidden.",
+        tr: "Uzun oturumlar artık çözülen her kapağı bellekte tutmuyor; launcher gizliyken Steam çalışma durumu kontrolü de duruyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.36",
     date: "2026-10-22",
-    isCurrent: true,
     items: [
       {
         en: "Build your own theme: name it, pick a background colour and an accent, add your own photo as a backdrop if you want one, and switch to it with one click. Saved themes stay on this PC.",
