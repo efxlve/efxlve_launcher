@@ -668,6 +668,37 @@ fn detect_save_path_unix(
     None
 }
 
+/// Deletes the oldest timestamped backups under one game folder, keeping the
+/// newest entries. Pre-restore snapshots are safety copies and are never
+/// pruned, even when the user asks for a small retention window.
+fn prune_local_dir(dir: &Path, keep: u32) {
+    if keep == 0 {
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut backups: Vec<(u64, PathBuf)> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with("pre-restore-") {
+                return None;
+            }
+            let timestamp = name.parse::<u64>().ok()?;
+            let path = entry.path();
+            path.is_dir().then_some((timestamp, path))
+        })
+        .collect();
+    if backups.len() <= keep as usize {
+        return;
+    }
+    backups.sort_by(|a, b| b.0.cmp(&a.0));
+    for (_, path) in backups.into_iter().skip(keep as usize) {
+        let _ = std::fs::remove_dir_all(path);
+    }
+}
+
 pub fn create_backup(
     app_name: &str,
     save_path_override: Option<&str>,
@@ -730,6 +761,10 @@ pub fn create_backup(
 
     let info_json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
     let _ = std::fs::write(target.join("backup_info.json"), info_json);
+
+    // Local retention shares the cloud setting; snapshots stay untouched.
+    let keep = crate::cloud_backup::manager::load_settings().retention_count;
+    prune_local_dir(&app_backup_dir(app_name), keep);
 
     Ok(info)
 }
@@ -986,6 +1021,28 @@ mod tests {
         assert_eq!(migrate_legacy_dir_in(&base, "gog/123"), None);
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// Local retention keeps the newest timestamped backups and never removes
+    /// a pre-restore snapshot.
+    #[test]
+    fn local_retention_keeps_the_newest_and_the_snapshot() {
+        let dir = std::env::temp_dir().join(format!("efxlve_local_retention_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("100")).unwrap();
+        std::fs::create_dir_all(dir.join("200")).unwrap();
+        std::fs::create_dir_all(dir.join("pre-restore-300")).unwrap();
+
+        prune_local_dir(&dir, 1);
+        assert!(!dir.join("100").exists());
+        assert!(dir.join("200").exists());
+        assert!(dir.join("pre-restore-300").exists());
+
+        // 0 means unlimited: a second call must not delete anything.
+        prune_local_dir(&dir, 0);
+        assert!(dir.join("200").exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     fn unix_fixture(name: &str) -> (PathBuf, PathBuf, PathBuf) {

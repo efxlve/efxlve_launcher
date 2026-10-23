@@ -110,9 +110,9 @@ Steam's Proton still needs its folder picked once in Manage.
   and configured by the user.
 - Auto-sync on game exit is a separate switch. With Folder selected it works
   with no account setup.
-- **Keep the last N cloud versions** prunes older remote archives for that game
-  after a successful upload. 0 (the default) keeps every backup; local backups
-  are never pruned by this setting.
+- **Keep the last N versions** prunes older local backups and cloud archives
+  after a successful backup. 0 (the default) keeps every backup; pre-restore
+  snapshots are never pruned.
 - **Back up all installed games** walks every installed Epic, GOG, Amazon and
   custom game, creates a local backup and uploads it. The row shows progress
   while it runs and reports the failure count at the end; games without a save
@@ -233,8 +233,8 @@ Ordered by user value:
    macOS `~/Library/Application Support` and the launcher's Wine/Proton
    prefixes; a detected path the user can confirm once and then reuse would make
    the result explicit. Steam `compatdata` scanning is a separate gap.
-2. **Scheduled local backups** — keep the last N cloud versions is now a setting,
-   but there is no daily local backup job and local archives are not pruned.
+2. **Scheduled local backups** — retention now covers local backups and cloud
+   archives, but there is no daily local backup job.
 3. **Bulk restore** — “restore the newest backup for every game” is still open;
    bulk backup now exists.
 4. **Conflict detection** — the timestamp comparison before a restore is in
