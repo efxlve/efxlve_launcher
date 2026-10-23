@@ -88,13 +88,13 @@ Detection is platform-aware (`detect_save_path` in `legendary/backup.rs`):
 | Platform | Roots, in order |
 |---|---|
 | Windows | Saved Games, Documents\My Games, Documents, AppData\LocalLow, `%LOCALAPPDATA%`, `%APPDATA%`, install folder |
-| Linux | `$XDG_DATA_HOME` (default `~/.local/share`), `~/.config/unity3d`, `~/Documents`, `~/Saved Games`, then `AppData/Local`, `AppData/LocalLow`, `Documents` and `Saved Games` inside each prefix under `~/Games/Efxlve/Prefixes` |
+| Linux | `$XDG_DATA_HOME` (default `~/.local/share`), `~/.config/unity3d`, `~/Documents`, `~/Saved Games`, then `AppData/Local`, `AppData/LocalLow`, `Documents` and `Saved Games` inside each prefix under `~/Games/Efxlve/Prefixes`, then the same folders inside every `steamapps/compatdata/*/pfx` prefix |
 | macOS | the same XDG/Documents roots, `~/Library/Application Support`, then the prefixes above |
 
 The prefix pass reads both a plain Wine tree and Proton's `pfx/drive_c` layout.
-Steam's own `compatdata` tree is not scanned: the app id is not known here, and
-scanning every prefix would cost more than it is worth. A game launched through
-Steam's Proton still needs its folder picked once in Manage.
+Steam's own `compatdata` tree is the last resort: the app id is Steam's, not the
+launcher's, so every Proton prefix in every Steam library is searched only after
+the cheaper roots miss.
 
 ---
 
@@ -235,9 +235,9 @@ installing it on Windows.
 Ordered by user value:
 
 1. **Confirm the detected save folder** — discovery now covers the XDG roots,
-   macOS `~/Library/Application Support` and the launcher's Wine/Proton
-   prefixes; a detected path the user can confirm once and then reuse would make
-   the result explicit. Steam `compatdata` scanning is a separate gap.
+   macOS `~/Library/Application Support`, the launcher's Wine/Proton prefixes and
+   Steam's `compatdata` prefixes; a detected path the user can confirm once and
+   then reuse would make the result explicit.
 2. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
 3. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,

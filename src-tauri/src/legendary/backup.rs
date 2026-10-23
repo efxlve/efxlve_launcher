@@ -596,6 +596,35 @@ fn scan_unix_roots(
 /// `~/Games/Efxlve/Prefixes`. A prefix named after the game is scanned first;
 /// the other prefixes are only touched when it has no saves, which keeps the
 /// common case to one directory tree.
+/// Every Proton prefix a Steam library holds. The app id in the folder name is
+/// Steam's, not the launcher's, so the caller has to search the prefixes.
+#[cfg(any(not(windows), test))]
+fn compat_prefixes_in(libraries: &[PathBuf]) -> Vec<PathBuf> {
+    let mut prefixes = Vec::new();
+    for library in libraries {
+        let compatdata = library.join("steamapps").join("compatdata");
+        let Ok(entries) = std::fs::read_dir(compatdata) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let pfx = entry.path().join("pfx");
+            if pfx.is_dir() {
+                prefixes.push(pfx);
+            }
+        }
+    }
+    prefixes
+}
+
+#[cfg(any(not(windows), test))]
+fn steam_compat_prefixes() -> Vec<PathBuf> {
+    let Some(steam) = crate::steam::steam_install_path() else {
+        return Vec::new();
+    };
+    let libraries = crate::steam::library_folders(&steam);
+    compat_prefixes_in(&libraries)
+}
+
 #[cfg(any(not(windows), test))]
 fn detect_save_path_unix(
     home: &Path,
@@ -654,6 +683,24 @@ fn detect_save_path_unix(
         let wine_root = if pfx.is_dir() { pfx } else { prefix };
         let mut roots = Vec::new();
         for user in prefix_user_dirs(&wine_root) {
+            for sub in SUBDIRS {
+                let path = sub
+                    .iter()
+                    .fold(user.clone(), |path, part| path.join(part));
+                roots.push((path, true, true));
+            }
+        }
+        if let Some(found) = scan_unix_roots(&roots, &names, &normalized) {
+            return Some(found);
+        }
+    }
+
+    // Steam's Proton prefixes are not named after the game and live outside the
+    // launcher's prefix root. This is the last resort, and only runs when every
+    // cheaper root missed.
+    for prefix in steam_compat_prefixes() {
+        let mut roots = Vec::new();
+        for user in prefix_user_dirs(&prefix) {
             for sub in SUBDIRS {
                 let path = sub
                     .iter()
@@ -1083,6 +1130,26 @@ mod tests {
         assert_eq!(found.unwrap(), game.to_string_lossy());
 
         let _ = std::fs::remove_dir_all(home.parent().unwrap());
+    }
+
+    /// Steam stores Proton prefixes under a numeric app id, not the game name;
+    /// only folders with a real pfx tree are returned.
+    #[test]
+    fn steam_compat_prefixes_are_discovered() {
+        let root = std::env::temp_dir().join(format!("efxlve_compat_{}", std::process::id()));
+        let library = root.join("library");
+        let pfx = library
+            .join("steamapps")
+            .join("compatdata")
+            .join("12345")
+            .join("pfx");
+        std::fs::create_dir_all(&pfx).unwrap();
+        std::fs::create_dir_all(library.join("steamapps").join("compatdata").join("empty")).unwrap();
+
+        let prefixes = compat_prefixes_in(&[library]);
+        assert_eq!(prefixes, vec![pfx]);
+
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

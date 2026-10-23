@@ -4,10 +4,6 @@ Open work only. Delete the item when it lands.
 
 ## Cloud saves: next steps
 
-- Steam `compatdata` prefixes in save discovery: the launcher's own Wine/Proton
-  prefixes are scanned, but a game launched through Steam's Proton keeps its
-  saves under Steam's `compatdata` tree and still needs the folder picked by
-  hand.
 - Conflict detection compares timestamps before a restore; comparing hashes is
   still open.
 - Move provider credentials from plain JSON into the OS keychain.

@@ -281,8 +281,9 @@ yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 - macOS'ta imzalama/notarization ve Apple Silicon native runner doğrulaması.
   Overlay'in saydam penceresi `macos-private-api` özelliğini kullanır; bu özel
   API Mac App Store dağıtımını engeller, doğrudan indirme etkilenmez.
-- Steam `compatdata` ağacındaki prefix'ler kayıt algılamaya dahil değil; Steam
-  Proton'uyla başlatılan bir oyunun klasörü Manage'den seçilmeli.
+- Steam `compatdata` ağacındaki prefix'ler son çare olarak kayıt algılamaya
+  dahil edilir; Steam app id'si launcher'da bilinmediği için oyun adına göre
+  aranır ve ucuz kökler boş döndüğünde taranır.
 - Ekran görüntüsü kancası, klip kaydı, FPS/HUD ve görev çubuğu rozeti için
   platform implementasyonları (bugün Windows'ta çalışır, diğerlerinde gizlenir).
 - `wine-crossover` yalnızca algılanır (Gcenx/winecx deposu 404); `vulkan-helper-rs`
@@ -334,9 +335,9 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
   `~/Documents`, `~/Saved Games`; macOS'ta bunlara ek olarak
   `~/Library/Application Support`. Ardından `~/Games/Efxlve/Prefixes` altındaki
   her prefix'in `pfx/drive_c/users/<user>/` ağacında `AppData/Local`,
-  `AppData/LocalLow`, `Documents` ve `Saved Games` taranır. Steam'in kendi
-  `compatdata` ağacı taranmaz; Steam Proton'uyla başlatılan oyun için klasör
-  Manage'den seçilir.
+  `AppData/LocalLow`, `Documents` ve `Saved Games` taranır. Son çare olarak Steam
+  kütüphanelerindeki `steamapps/compatdata/*/pfx` prefix'leri de aynı klasörler
+  için taranır; Steam app id'si bilinmediği için eşleşme oyun adına göre yapılır.
 
 ## 9. Referanslar
 
