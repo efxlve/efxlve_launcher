@@ -26,11 +26,6 @@ function achievementPercent(summary: EpicSummary): number | null {
 
 export const SMART_COLLECTIONS: SmartCollection[] = [
   {
-    id: "smart:installed-unplayed",
-    label: () => `${t("library.installed")} · ${t("playtime.notPlayed")}`,
-    test: (s) => s.installed && libraryPlaytime(s).seconds === 0,
-  },
-  {
     id: "smart:not-played",
     label: () => t("playtime.notPlayed"),
     test: (s) => libraryPlaytime(s).seconds === 0,

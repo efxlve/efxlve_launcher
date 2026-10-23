@@ -89,15 +89,6 @@ body.sb-resizing .overlay {
   margin: 0 !important;
   display: none !important;
 }
-.gp-status-wrap { gap: 3px; }
-.gp-status-icon { display: inline-flex; color: var(--text-2); }
-.gp-status-select {
-  appearance: none; border: 0; padding: 0 12px 0 1px; margin: 0;
-  background: transparent; color: inherit; font: inherit; cursor: pointer;
-  outline: none; max-width: 110px;
-}
-.gp-status-select:hover { color: var(--text); }
-.gp-status-select option { background: var(--surface-2); color: var(--text); }
 .gp-meta-item { display: inline-flex; align-items: center; gap: 5px; }
 
 /* --- Action bar + stats --- */

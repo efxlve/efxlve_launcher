@@ -9,6 +9,7 @@
 import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
+import { cachedImage } from "../../core/picture-cache";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { allStoreSummaries, summaryOf } from "../../core/selectors";
@@ -19,6 +20,7 @@ import { t } from "../../i18n";
 
 import { epicDeleteCollection, epicGetCollections, epicImportEglCollections, epicSaveCollection, epicSetGameCollections, type GameCollection } from "../../epic";
 import { renderCollectionTags } from "../drawer/drawer-view";
+import { SMART_COLLECTIONS } from "../library/smart-collections";
 
 /** The picker renders in pages so a 1,000-game library does not build every row before the first paint. */
 const COL_PAGE_SIZE = 120;
@@ -412,4 +414,66 @@ function syncEglCollectionsOnce(): void {
     .catch(() => {
       eglSynced = false;
     });
+}
+/** Decorative gallery shown by the library's Collections tab. */
+export function openCollectionGallery(): void {
+  if (!collectionRoot) return;
+  const summaries = allStoreSummaries();
+  const smart = SMART_COLLECTIONS
+    .map((item) => ({ item, count: summaries.filter((s) => item.test(s)).length }))
+    .filter((entry) => entry.count > 0);
+  const total = S.epicCollections.length;
+
+  const coverStrip = (appNames: string[]): string => {
+    const covers = appNames
+      .map((name) => summaryOf(name)?.cover)
+      .filter((cover): cover is string => Boolean(cover))
+      .slice(0, 4);
+    if (covers.length === 0) return `<span class="col-gallery-art empty">${icon("layers", 28)}</span>`;
+    return `<span class="col-gallery-art">${covers.map((cover) => `<img src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="lazy" />`).join("")}</span>`;
+  };
+
+  const smartCards = smart.map(({ item, count }) => `
+    <button class="col-smart-card${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}">
+      <span class="col-smart-card-icon">${icon("sparkles", 15)}</span>
+      <span class="col-smart-card-name">${esc(item.label())}</span>
+      <span class="col-smart-card-count">${count}</span>
+    </button>`).join("");
+
+  const manualCards = S.epicCollections.map((col) => {
+    const totalGames = col.app_names?.length ?? 0;
+    const installed = (col.app_names ?? []).filter((name) => summaryOf(name)?.installed).length;
+    return `
+      <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}">
+        ${coverStrip(col.app_names ?? [])}
+        <span class="col-gallery-shade"></span>
+        <span class="col-gallery-info">
+          <span class="col-gallery-name">${esc(col.name)}</span>
+          <span class="col-gallery-count">(${installed}/${totalGames})</span>
+        </span>
+        <button class="col-gallery-edit" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${esc(t("col.edit"))}" aria-label="${esc(t("col.edit"))}">${icon("settings", 14)}</button>
+      </div>`;
+  }).join("");
+
+  collectionRoot.innerHTML = `
+    <div class="col-gallery-backdrop" data-act="close-col-gallery">
+      <section class="col-gallery" role="dialog" aria-modal="true" aria-label="${esc(t("col.allCollections"))}" data-gallery-panel data-act="col-gallery-panel">
+        <header class="col-gallery-head">
+          <div>
+            <h2>${esc(t("col.allCollections"))}</h2>
+            <p>${total}</p>
+          </div>
+          <button class="col-gallery-close" data-act="close-col-gallery" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">${icon("x", 18)}</button>
+        </header>
+        ${smartCards ? `<div class="col-gallery-section"><h3>${esc(t("smart.title"))}</h3><div class="col-smart-grid">${smartCards}</div></div>` : ""}
+        <div class="col-gallery-section">
+          <div class="col-gallery-section-head"><h3>${esc(t("col.allCollections"))}</h3><button class="btn ghost small" data-act="open-new-collection-modal">${icon("plus", 14)} ${esc(t("col.newTitle"))}</button></div>
+          <div class="col-gallery-grid">${manualCards}${total === 0 ? `<div class="col-gallery-empty">${esc(t("col.noCollectionsLong"))}</div>` : ""}</div>
+        </div>
+      </section>
+    </div>`;
+}
+
+export function closeCollectionGallery(): void {
+  if (collectionRoot) collectionRoot.innerHTML = "";
 }

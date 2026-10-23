@@ -36,16 +36,16 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     isCurrent: true,
     items: [
       {
-        en: "Collections now show a 2x2 cover mosaic in the library dropdown, and the game picker loads 120 rows at a time with Show more instead of building the whole library up front.",
-        tr: "Koleksiyonlar kitaplık menüsünde 2x2 kapak mozaiği gösteriyor; oyun seçici tüm kütüphaneyi baştan kurmak yerine 120 satır yükleyip Daha Fazla Göster ile devam ediyor.",
+        en: "Collections now open a cover gallery with a 2x2 mosaic on every collection card, and the game picker loads 120 rows at a time with Show more instead of building the whole library up front.",
+        tr: "Koleksiyonlar artık her kartta 2x2 kapak mozaiği olan bir galeride açılıyor; oyun seçici tüm kütüphaneyi baştan kurmak yerine 120 satır yükleyip Daha Fazla Göster ile devam ediyor.",
       },
       {
         en: "Settings > Appearance > Reduce motion and effects turns off animations, glass blur and hover lifts. Every page, button and feature stays available.",
         tr: "Ayarlar > Görünüm > Hareketi ve efektleri azalt, animasyonları, cam bulanıklığını ve hover hareketlerini kapatıyor. Tüm sayfalar, düğmeler ve özellikler kullanılabilir kalıyor.",
       },
       {
-        en: "Smart collections group installed-but-unplayed, almost finished, playing, completed, on-hold and forgotten games automatically. The game page adds a status selector, and the library adds a random-game button.",
-        tr: "Akıllı koleksiyonlar kurulu ama oynanmamış, neredeyse bitmiş, oynanıyor, tamamlanmış, beklemede ve unutulmuş oyunları otomatik grupluyor. Oyun sayfasına durum seçici, kütüphaneye rastgele oyun düğmesi eklendi.",
+        en: "Smart collections group almost finished, playing, completed, on-hold and forgotten games automatically. The game page adds a status selector, and the library adds a random-game button.",
+        tr: "Akıllı koleksiyonlar neredeyse bitmiş, oynanıyor, tamamlanmış, beklemede ve unutulmuş oyunları otomatik grupluyor. Oyun sayfasına durum seçici, kütüphaneye rastgele oyun düğmesi eklendi.",
       },
       {
         en: "Settings > Appearance > Interface scale zooms the whole interface from 80% to 150%, which keeps the same features readable on small screens, TVs and low-resolution laptops.",

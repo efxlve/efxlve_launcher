@@ -90,7 +90,8 @@ import {
   controllerBridgeStop,
 } from "../../epic";
 import { bootEpic } from "../auth/auth-actions";
-import { updateColGamesListInPlace } from "../collections/collections-view";
+import { closeCollectionGallery, updateColGamesListInPlace } from "../collections/collections-view";
+import { setGameStatus, type GameStatus } from "../library/game-status";
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import {
@@ -556,6 +557,7 @@ document.addEventListener("click", (e) => {
     S.isColDropdownOpen = false;
     const menu = document.getElementById("col-dropdown-menu");
     if (menu) menu.classList.remove("show");
+    closeCollectionGallery();
     S.activeCollectionId = (!colId || colId === "none") ? null : colId;
     S.epicFilter = "all";
     applyTabSort();
@@ -1091,6 +1093,14 @@ document.addEventListener("click", (e) => {
     localStorage.setItem(AUTO_UPDATE_KEY, String(S.autoUpdateEnabled));
     scheduleAutoUpdate();
     render();
+  } else if (act === "ctx-game-status") {
+    const app = t.dataset.id;
+    const status = t.dataset.status;
+    if (app) {
+      setGameStatus(app, status ? (status as GameStatus) : null);
+      S.isGameMoreMenuOpen = false;
+      render();
+    }
   } else if (act === "run-pc-check") {
     void runPcCheck()
       .then((html) => {

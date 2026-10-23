@@ -11,9 +11,8 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
-import { cachedImage } from "../../core/picture-cache";
-import { isSmartCollection, SMART_COLLECTIONS, smartCollection } from "./smart-collections";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
+import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 import { S, applyTabSort } from "../../core/state";
@@ -1144,58 +1143,10 @@ export function renderEpic(): string {
   const colBtnLabel = activeCol ? activeCol.name : activeSmart ? activeSmart.label() : t("col.allCollections");
 
   const colDropdown = `
-    <div class="col-dropdown-container">
-      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive ? "active" : ""}" data-act="toggle-col-dropdown" data-col-id="${esc(activeCol?.id ?? "")}" title="${esc(t("col.allCollections"))}">
+      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
         <span>${esc(colBtnLabel)}</span>
-        ${icon(S.isColDropdownOpen ? "chevron-up" : "chevron-down", 14)}
-      </button>
-      <div id="col-dropdown-menu" class="sort-dropdown-menu col-dropdown-menu ${S.isColDropdownOpen ? "show" : ""}">
-        ${S.epicCollections.length > 0 || SMART_COLLECTIONS.length > 0 ? `
-          <div class="col-dropdown-list">
-            ${isColActive ? `
-              <button class="sort-menu-item-btn col-menu-item-btn" data-act="select-col-filter" data-col-id="none">
-                <span class="col-item-name" style="opacity: 0.7;">${esc(t("col.noCollectionFilter"))}</span>
-              </button>
-              <div class="col-dropdown-divider"></div>
-            ` : ""}
-            <div class="col-smart-label">${t("smart.title")}</div>
-            ${SMART_COLLECTIONS.map((smart) => {
-              const isSelected = S.activeCollectionId === smart.id;
-              return `
-                <button class="sort-menu-item-btn col-menu-item-btn ${isSelected ? "selected" : ""}" data-act="select-col-filter" data-tab="collection" data-col-id="${esc(smart.id)}">
-                  <span class="col-smart-glyph" aria-hidden="true">${icon("sparkles", 13)}</span>
-                  <span class="col-item-name">${esc(smart.label())}</span>
-                </button>`;
-            }).join("")}
-            <div class="col-dropdown-divider"></div>
-            ${S.epicCollections.map((col) => {
-              const isSelected = S.activeCollectionId === col.id;
-              const count = col.app_names?.length ?? 0;
-              const covers = (col.app_names ?? [])
-                .map((name) => summaryOf(name)?.cover)
-                .filter((cover): cover is string => Boolean(cover))
-                .slice(0, 4);
-              const mosaic = covers.length > 0
-                ? `<span class="col-item-mosaic" aria-hidden="true">${covers.map((cover) => `<img src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="lazy" />`).join("")}</span>`
-                : `<span class="col-item-mosaic empty" aria-hidden="true">${icon("layers", 13)}</span>`;
-              return `
-                <button class="sort-menu-item-btn col-menu-item-btn lib-col-tab ${isSelected ? "selected" : ""}" data-act="select-col-filter" data-tab="collection" data-col-id="${esc(col.id)}">
-                  ${mosaic}
-                  <span class="col-item-name">${esc(col.name)}</span>
-                  <span class="col-item-count">${count}</span>
-                </button>`;
-            }).join("")}
-          </div>
-          <div class="col-dropdown-divider"></div>
-        ` : `
-          <div class="col-dropdown-empty">${esc(t("col.noCollectionsLong"))}</div>
-          <div class="col-dropdown-divider"></div>
-        `}
-        <button class="sort-menu-item-btn col-menu-add-btn" data-act="open-new-collection-modal">
-          ${icon("plus", 14)} <span>${esc(t("col.newTitle"))}</span>
-        </button>
-      </div>
-    </div>`;
+        ${icon("layers", 14)}
+      </button>`;
 
   const filters = [
     filterTab("all", t("library.all")),

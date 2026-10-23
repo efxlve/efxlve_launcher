@@ -13,6 +13,7 @@ import { gameVersionsOf, sourceOfKey, summaryOf, sharedOwnerOf } from "../../cor
 import { storeVersionLabel } from "../drawer/external-versions";
 import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
+import { gameStatusOf } from "../library/game-status";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
 
@@ -69,6 +70,19 @@ const isRiot = source === "riot";
         const active = version.appName === appName;
         return `<button class="ps5-context-item${active ? " is-current" : ""}" role="menuitemradio" aria-checked="${active}" data-act="prefer-version" data-id="${esc(version.appName)}">${storeLogo(version.source, 15)}<span>${esc(storeVersionLabel(version.source))}</span><span class="ctx-check">${active ? icon("check", 14) : ""}</span></button>`;
       }).join("")}<div class="ps5-context-sep"></div>`;
+  const currentStatus = gameStatusOf(appName);
+  const statusOptions: Array<["" | "playing" | "completed" | "onhold" | "dropped", string]> = [
+    ["", "—"],
+    ["playing", t("drawer.statePlaying")],
+    ["completed", t("drawer.stateCompleted")],
+    ["onhold", t("status.onHold")],
+    ["dropped", t("status.dropped")],
+  ];
+  const statusBlock = `<div class="ps5-context-sep"></div>
+    <div class="ctx-status-title">${esc(t("status.label"))}</div>
+    <div class="ctx-status-row">${statusOptions.map(([value, label]) => `
+      <button class="ctx-status-chip${currentStatus === value || (!currentStatus && !value) ? " active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" title="${esc(label)}">${esc(label)}</button>`).join("")}</div>`;
+
   menu.innerHTML = `
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
     ${versionBlock}
@@ -103,6 +117,7 @@ const isRiot = source === "riot";
     ${!shared && !isSteam && !isCustom && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
+    ${statusBlock}
     ${!isRiot && !isAmazon && !isCustom ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && (installed || isCustom)

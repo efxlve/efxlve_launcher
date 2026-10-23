@@ -16,9 +16,11 @@ import { gogImportGalaxyTags } from "../../../gog";
 import { steamImportCollections } from "../../../steam";
 import { hideGameIds } from "../../library/hide-games";
 import {
+  closeCollectionGallery,
   closeCollectionModal,
   deleteCollectionFromModal,
   loadEpicCollections,
+  openCollectionGallery,
   openCollectionModal,
   openGameCollectionsModal,
   resetCollectionPickerLimit,
@@ -50,6 +52,17 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       render();
       return true;
     }
+
+    case "open-col-gallery":
+      openCollectionGallery();
+      return true;
+
+    case "close-col-gallery":
+      closeCollectionGallery();
+      return true;
+
+    case "col-gallery-panel":
+      return true;
 
     case "open-new-collection-modal": {
       S.isColDropdownOpen = false;
