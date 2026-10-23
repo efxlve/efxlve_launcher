@@ -14,6 +14,8 @@ Open work only. Delete the item when it lands.
   pre-restore snapshot already makes a wrong restore recoverable.
 - Auto-sync failure toast and a background queue.
 - Move provider credentials from plain JSON into the OS keychain.
+- Move the Linux/macOS Steam token out of the `0600` file and into the OS
+  keychain (Secret Service / Keychain); Windows already uses DPAPI.
 
 Details: `docs/CLOUD_SAVES.md`.
 

@@ -132,15 +132,38 @@ pub mod dpapi {
     }
 }
 
-/// Fallback for non-Windows builds: the launcher targets Windows, and refusing
-/// to store is safer than writing a plain token file.
+/// Fallback for non-Windows builds: there is no DPAPI, so the bytes pass
+/// through and the file mode is the guard. Moving the token into the OS
+/// keychain (Secret Service / Keychain) is tracked in TODO.md.
 #[cfg(not(windows))]
 pub mod dpapi {
-    pub fn protect(_plain: &[u8]) -> Result<Vec<u8>, String> {
-        Err("@t:steam.err.secureStore".to_string())
+    pub fn protect(plain: &[u8]) -> Result<Vec<u8>, String> {
+        Ok(plain.to_vec())
     }
-    pub fn unprotect(_sealed: &[u8]) -> Result<Vec<u8>, String> {
-        Err("@t:steam.err.secureStore".to_string())
+    pub fn unprotect(sealed: &[u8]) -> Result<Vec<u8>, String> {
+        Ok(sealed.to_vec())
+    }
+}
+
+/// Writes a vault file only the current user may read. Windows relies on DPAPI
+/// for the bytes; Unix relies on the `0600` mode set at creation.
+fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .mode(0o600)
+            .open(path)?;
+        file.write_all(bytes)
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::write(path, bytes)
     }
 }
 
@@ -192,7 +215,7 @@ pub fn load_meta(dir: &Path) -> Vec<SteamSavedAccount> {
 pub fn save_meta(dir: &Path, accounts: &[SteamSavedAccount]) {
     let _ = std::fs::create_dir_all(dir.join("accounts"));
     if let Ok(text) = serde_json::to_string(accounts) {
-        let _ = std::fs::write(meta_path(dir), text);
+        let _ = write_private(&meta_path(dir), text.as_bytes());
     }
 }
 
@@ -212,7 +235,10 @@ pub fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
     let Ok(mut sealed) = dpapi::protect(&json) else {
         return;
     };
-    let _ = std::fs::write(vault_path(&auth_dir(app), &session.steam_id), &sealed);
+    let _ = write_private(
+        &vault_path(&auth_dir(app), &session.steam_id),
+        &sealed,
+    );
     sealed.zeroize();
 
     let mut accounts = load_meta(&auth_dir(app));
@@ -389,3 +415,31 @@ pub fn settoken_transfer(payload: &Value) -> Option<(String, Vec<(String, String
         .unwrap_or_default();
     Some((url, params))
 }
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    /// Unix has no DPAPI; the file mode is what keeps the token private.
+    #[test]
+    fn the_vault_file_is_user_only() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = std::env::temp_dir().join(format!("efxlve_vault_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("token.bin");
+        write_private(&path, b"refresh-token").unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), b"refresh-token");
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600, "the token file must not be world-readable");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_plain_fallback_roundtrips() {
+        let sealed = dpapi::protect(b"refresh-token").expect("protect");
+        assert_eq!(dpapi::unprotect(&sealed).expect("unprotect"), b"refresh-token");
+    }
+}
+
