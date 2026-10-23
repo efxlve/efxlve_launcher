@@ -2,10 +2,12 @@
 //!
 //! Backups are kept under `%USERPROFILE%\.config\legendary\backups\<app_name>\<backup_id>\`.
 
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveBackupInfo {
@@ -16,6 +18,10 @@ pub struct SaveBackupInfo {
     pub size_bytes: u64,
     pub file_count: usize,
     pub save_path: String,
+    /// SHA-256 of the copied save tree, independent of timestamps. Older
+    /// backups have no value and fall back to the timestamp conflict check.
+    #[serde(default)]
+    pub content_hash: Option<String>,
 }
 
 pub fn backups_base_dir() -> PathBuf {
@@ -139,6 +145,58 @@ fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<(u64, usize)> {
 /// Copies the current save folder into the local backup store before a restore
 /// overwrites it. A failed snapshot aborts the restore: losing the current
 /// saves is worse than a refused restore.
+/// Collects every regular file under a save tree with its relative path.
+fn collect_tree_files(root: &Path, base: &Path, files: &mut Vec<(String, PathBuf)>) {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
+        let path = entry.path();
+        if file_type.is_dir() {
+            collect_tree_files(&path, base, files);
+        } else if file_type.is_file() {
+            let rel = path
+                .strip_prefix(base)
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            files.push((rel, path));
+        }
+    }
+}
+
+/// SHA-256 over sorted relative paths and file bytes. Timestamps are ignored,
+/// so the same saves produce the same hash on Windows and Unix.
+pub fn tree_content_hash(root: &Path) -> Option<String> {
+    if !root.is_dir() {
+        return None;
+    }
+    let mut files = Vec::new();
+    collect_tree_files(root, root, &mut files);
+    files.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut hasher = Sha256::new();
+    for (rel, path) in files {
+        hasher.update(rel.as_bytes());
+        hasher.update([0]);
+        let Ok(mut file) = std::fs::File::open(&path) else {
+            continue;
+        };
+        let mut buffer = [0u8; 16384];
+        loop {
+            match file.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(count) => hasher.update(&buffer[..count]),
+                Err(_) => break,
+            }
+        }
+        hasher.update([0]);
+    }
+    Some(format!("{:x}", hasher.finalize()))
+}
+
 fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<String>, String> {
     if !save_path.exists() {
         return Ok(None);
@@ -159,6 +217,7 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
     std::fs::create_dir_all(&target).map_err(|error| error.to_string())?;
     let (size_bytes, file_count) = copy_dir_all(save_path, &target.join("data"))
         .map_err(|error| format!("@t:backup.copyFailed\u{1f}{error}"))?;
+    let content_hash = tree_content_hash(&target.join("data"));
     let info = SaveBackupInfo {
         id: backup_id.clone(),
         app_name: app_name.to_string(),
@@ -167,6 +226,7 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
         size_bytes,
         file_count,
         save_path: save_path.to_string_lossy().to_string(),
+        content_hash,
     };
     let info_json = serde_json::to_string_pretty(&info).map_err(|error| error.to_string())?;
     std::fs::write(target.join("backup_info.json"), info_json).map_err(|error| error.to_string())?;
@@ -796,6 +856,7 @@ pub fn create_backup(
 
     let formatted_date = format_backup_timestamp(now_ts);
 
+    let content_hash = tree_content_hash(&target.join("data"));
     let info = SaveBackupInfo {
         id: backup_id,
         app_name: app_name.to_string(),
@@ -804,6 +865,7 @@ pub fn create_backup(
         size_bytes,
         file_count,
         save_path: save_path_str,
+        content_hash,
     };
 
     let info_json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
@@ -917,6 +979,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn content_hash_ignores_timestamps_and_order() {
+        let root = std::env::temp_dir().join(format!("efxlve_content_hash_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("nested")).unwrap();
+        std::fs::write(root.join("a.dat"), b"alpha").unwrap();
+        std::fs::write(root.join("nested").join("b.dat"), b"beta").unwrap();
+
+        let first = tree_content_hash(&root).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        std::fs::write(root.join("a.dat"), b"alpha").unwrap();
+        let second = tree_content_hash(&root).unwrap();
+        assert_eq!(first, second);
+
+        std::fs::write(root.join("nested").join("b.dat"), b"changed").unwrap();
+        let third = tree_content_hash(&root).unwrap();
+        assert_ne!(first, third);
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn test_backup_info_serialize() {
         let info = SaveBackupInfo {
             id: "12345".into(),
@@ -926,6 +1009,7 @@ mod tests {
             size_bytes: 1024,
             file_count: 3,
             save_path: "C:\\Saves".into(),
+            content_hash: None,
         };
 
         let json = serde_json::to_string(&info).unwrap();

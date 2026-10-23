@@ -19,6 +19,7 @@ import {
   cloudBackupListGame,
   cloudBackupDownloadGame,
   cloudBackupDeleteRemote,
+  cloudBackupRemoteHash,
   epicBackupSave,
   type CloudBackupSettings,
   type CloudBackupEntry,
@@ -296,16 +297,29 @@ export async function downloadCloudBackupAction(
   const remote = (S.cloudBackupsMap.get(appName) || []).find((entry) => entry.remoteId === remoteId);
   const local = S.gameBackupsMap.get(appName)?.[0];
   if (remote && local && local.timestamp > remote.timestamp + 60) {
-    const proceed = await askConfirm({
-      title: t("cloud.conflictTitle"),
-      body: t("cloud.conflictBody", {
-        local: fmtCloudDate(local.timestamp),
-        remote: fmtCloudDate(remote.timestamp),
-      }),
-      confirm: t("cloud.restoreAnyway"),
-      cancel: t("common.cancel"),
-    });
-    if (!proceed) return;
+    // The timestamps differ, but the saves may still be byte-identical; only
+    // ask when the content really changed. Older backups have no hash.
+    let sameContent = false;
+    if (local.content_hash) {
+      try {
+        sameContent =
+          (await cloudBackupRemoteHash(remote.remoteId, remote.backupId)) === local.content_hash;
+      } catch {
+        sameContent = false;
+      }
+    }
+    if (!sameContent) {
+      const proceed = await askConfirm({
+        title: t("cloud.conflictTitle"),
+        body: t("cloud.conflictBody", {
+          local: fmtCloudDate(local.timestamp),
+          remote: fmtCloudDate(remote.timestamp),
+        }),
+        confirm: t("cloud.restoreAnyway"),
+        cancel: t("common.cancel"),
+      });
+      if (!proceed) return;
+    }
   }
   toast(t("cloud.downloading"), "");
   try {

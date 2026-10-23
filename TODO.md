@@ -2,13 +2,6 @@
 
 Open work only. Delete the item when it lands.
 
-## Cloud saves: next steps
-
-- Conflict detection compares timestamps before a restore; comparing hashes is
-  still open.
-
-Details: `docs/CLOUD_SAVES.md`.
-
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow

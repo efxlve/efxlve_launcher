@@ -687,7 +687,7 @@ pub async fn list_profile_archives() -> Result<Vec<CloudBackupEntry>, String> {
 }
 
 /// Downloads a launcher profile archive to a temporary path without restoring it.
-pub async fn download_profile_archive(remote_id: &str, backup_id: &str) -> Result<PathBuf, String> {
+pub async fn download_cloud_archive(remote_id: &str, backup_id: &str) -> Result<PathBuf, String> {
     let settings = load_settings();
     if !settings.enabled || settings.provider == CloudBackupProvider::None {
         return Err("Cloud backup is not enabled.".to_string());

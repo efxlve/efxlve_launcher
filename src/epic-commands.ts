@@ -527,6 +527,7 @@ export interface SaveBackupInfo {
   size_bytes: number;
   file_count: number;
   save_path: string;
+  content_hash?: string | null;
 }
 
 export const epicBackupSave = (appName: string, savePathOverride?: string) =>
@@ -997,6 +998,9 @@ export const cloudBackupSaveSettings = (settings: CloudBackupSettings) =>
   invoke<void>("cloud_backup_save_settings", { settings });
 
 export const cloudBackupOpenFolder = () => invoke<void>("cloud_backup_open_folder");
+
+export const cloudBackupRemoteHash = (remoteId: string, backupId: string) =>
+  invoke<string | null>("cloud_backup_remote_hash", { remoteId, backupId });
 
 export const cloudBackupRcloneRemotes = () => invoke<string[]>("cloud_backup_rclone_remotes");
 

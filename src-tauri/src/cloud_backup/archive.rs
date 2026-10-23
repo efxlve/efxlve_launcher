@@ -74,6 +74,37 @@ pub fn unpack_backup_tar_gz(tar_gz_file: &Path, target_backup_dir: &Path) -> Res
     Ok(())
 }
 
+/// Reads the save-tree hash from a cloud archive without unpacking the data.
+/// Older archives have no hash and return None.
+pub fn read_backup_content_hash(archive_file: &Path) -> Result<Option<String>, String> {
+    let file = File::open(archive_file).map_err(|error| format!("Failed to open archive: {error}"))?;
+    let reader = BufReader::new(file);
+    let gz = GzDecoder::new(reader);
+    let mut archive = tar::Archive::new(gz);
+    for entry in archive.entries().map_err(|error| error.to_string())? {
+        let mut entry = entry.map_err(|error| error.to_string())?;
+        let path = entry
+            .path()
+            .map_err(|error| error.to_string())?
+            .to_string_lossy()
+            .replace('\\', "/");
+        if path != "backup_info.json" && !path.ends_with("/backup_info.json") {
+            continue;
+        }
+        let mut text = String::new();
+        entry
+            .read_to_string(&mut text)
+            .map_err(|error| error.to_string())?;
+        let value: serde_json::Value =
+            serde_json::from_str(&text).map_err(|error| error.to_string())?;
+        return Ok(value
+            .get("content_hash")
+            .and_then(|value| value.as_str())
+            .map(str::to_string));
+    }
+    Ok(None)
+}
+
 /// Calculates size and hex SHA-256 checksum of any file.
 pub fn compute_file_sha256(path: &Path) -> Result<(u64, String), String> {
     let file = File::open(path).map_err(|e| format!("Failed to read file for checksum: {e}"))?;
@@ -99,6 +130,32 @@ pub fn compute_file_sha256(path: &Path) -> Result<(u64, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn content_hash_is_read_without_unpacking() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve_archive_hash_{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&base);
+        let source = base.join("backup");
+        std::fs::create_dir_all(source.join("data")).unwrap();
+        std::fs::write(
+            source.join("backup_info.json"),
+            r#"{"id":"1","content_hash":"abc123"}"#,
+        )
+        .unwrap();
+        std::fs::write(source.join("data").join("save.dat"), b"data").unwrap();
+        let archive = base.join("backup.tar.gz");
+        pack_backup_dir(&source, &archive).unwrap();
+
+        assert_eq!(
+            read_backup_content_hash(&archive).unwrap(),
+            Some("abc123".to_string())
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
 
     #[test]
     fn test_pack_and_unpack_roundtrip() {

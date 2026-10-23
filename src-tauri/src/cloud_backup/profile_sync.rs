@@ -481,7 +481,7 @@ pub async fn restore_from_cloud(
     remote_id: &str,
     backup_id: &str,
 ) -> Result<ProfileRestoreResult, String> {
-    let archive = manager::download_profile_archive(remote_id, backup_id).await?;
+    let archive = manager::download_cloud_archive(remote_id, backup_id).await?;
     let result = import_file(app, &archive.display().to_string());
     let _ = fs::remove_file(&archive);
     result

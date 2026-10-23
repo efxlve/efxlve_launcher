@@ -129,7 +129,9 @@ the cheaper roots miss.
   refreshes the list.
 - **Restore** — downloads the selected archive and snapshots current saves
   first. When the newest local backup is newer than the selected cloud archive,
-  a confirmation explains which is newer before overwriting anything.
+  a confirmation explains which is newer before overwriting anything. Both sides
+  carry a save-tree SHA-256, so an identical tree skips the warning even when the
+  timestamps differ.
 - **History** — timestamp, size and file count; newest first.
 - **Delete / Delete all** — removes remote archives for that game.
 
@@ -278,9 +280,7 @@ Ordered by user value:
    macOS `~/Library/Application Support`, the launcher's Wine/Proton prefixes and
    Steam's `compatdata` prefixes; a detected path the user can confirm once and
    then reuse would make the result explicit.
-2. **Conflict detection** — the timestamp comparison before a restore is in
-   place; comparing hashes before the overwrite is still open.
-3. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+2. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
 ---
@@ -298,7 +298,8 @@ Cloud:
   `cloud_backup_test_connection`, `cloud_backup_upload_game`,
   `cloud_backup_list_game`, `cloud_backup_download_game`,
   `cloud_backup_delete_remote`, `cloud_backup_delete_all_remote`,
-  `cloud_backup_open_folder`, `cloud_backup_rclone_remotes`
+  `cloud_backup_open_folder`, `cloud_backup_rclone_remotes`,
+  `cloud_backup_remote_hash`
 
 Google Drive auth:
 

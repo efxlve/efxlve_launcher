@@ -119,6 +119,17 @@ pub async fn profile_cloud_list() -> Result<Vec<CloudBackupEntry>, String> {
 }
 
 #[command]
+pub async fn cloud_backup_remote_hash(
+    remote_id: String,
+    backup_id: String,
+) -> Result<Option<String>, String> {
+    let archive = manager::download_cloud_archive(&remote_id, &backup_id).await?;
+    let result = crate::cloud_backup::archive::read_backup_content_hash(&archive);
+    let _ = std::fs::remove_file(&archive);
+    result
+}
+
+#[command]
 pub async fn profile_cloud_restore(
     app: AppHandle,
     remote_id: String,
