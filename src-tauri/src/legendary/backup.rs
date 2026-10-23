@@ -529,13 +529,30 @@ fn prefix_user_dirs(prefix: &Path) -> Vec<PathBuf> {
     users
 }
 
+/// Runs the ordered root list and returns the first match.
+#[cfg(any(not(windows), test))]
+fn scan_unix_roots(
+    roots: &[(PathBuf, bool, bool)],
+    names: &[String],
+    normalized: &[String],
+) -> Option<String> {
+    for (root, nested, require_files) in roots {
+        if let Some(found) = scan_folder_for_game(root, names, normalized, *nested, *require_files)
+        {
+            return Some(found.to_string_lossy().to_string());
+        }
+    }
+    None
+}
+
 /// Save locations on Linux/macOS.
 ///
 /// The home, data and config roots are arguments rather than environment reads
 /// so the layout can be unit-tested on every platform. Proton keeps the Windows
 /// tree under `pfx/drive_c`, and the launcher's own prefixes live under
-/// `~/Games/Efxlve/Prefixes`; both are searched, including a prefix chosen for
-/// a different game when the named one does not exist.
+/// `~/Games/Efxlve/Prefixes`. A prefix named after the game is scanned first;
+/// the other prefixes are only touched when it has no saves, which keeps the
+/// common case to one directory tree.
 #[cfg(any(not(windows), test))]
 fn detect_save_path_unix(
     home: &Path,
@@ -549,18 +566,21 @@ fn detect_save_path_unix(
     // `nested` allows one publisher directory; `require_files` only accepts a
     // folder that holds something save-like, so a bare name match in a shared
     // directory does not win over a real save folder.
-    let mut roots: Vec<(PathBuf, bool, bool)> = vec![
+    let mut standard: Vec<(PathBuf, bool, bool)> = vec![
         (data_home.to_path_buf(), false, false),
         (config_home.join("unity3d"), true, false),
         (home.join("Documents"), true, true),
         (home.join("Saved Games"), true, true),
     ];
     if cfg!(target_os = "macos") {
-        roots.push((
+        standard.push((
             home.join("Library").join("Application Support"),
             true,
             true,
         ));
+    }
+    if let Some(found) = scan_unix_roots(&standard, &names, &normalized) {
+        return Some(found);
     }
 
     let prefix_root = home.join("Games").join("Efxlve").join("Prefixes");
@@ -577,18 +597,19 @@ fn detect_save_path_unix(
             }
         }
     }
+    // Windows keeps user data in these four folders inside the prefix.
+    const SUBDIRS: [&[&str]; 4] = [
+        &["AppData", "Local"],
+        &["AppData", "LocalLow"],
+        &["Documents"],
+        &["Saved Games"],
+    ];
     for prefix in prefixes {
         // Proton puts the Windows tree under `pfx`; a plain Wine prefix is the
         // tree itself.
         let pfx = prefix.join("pfx");
         let wine_root = if pfx.is_dir() { pfx } else { prefix };
-        // Windows keeps user data in these four folders inside the prefix.
-        const SUBDIRS: [&[&str]; 4] = [
-            &["AppData", "Local"],
-            &["AppData", "LocalLow"],
-            &["Documents"],
-            &["Saved Games"],
-        ];
+        let mut roots = Vec::new();
         for user in prefix_user_dirs(&wine_root) {
             for sub in SUBDIRS {
                 let path = sub
@@ -597,11 +618,8 @@ fn detect_save_path_unix(
                 roots.push((path, true, true));
             }
         }
-    }
-
-    for (root, nested, require_files) in roots {
-        if let Some(found) = scan_folder_for_game(&root, &names, &normalized, nested, require_files) {
-            return Some(found.to_string_lossy().to_string());
+        if let Some(found) = scan_unix_roots(&roots, &names, &normalized) {
+            return Some(found);
         }
     }
     None
@@ -918,8 +936,33 @@ mod tests {
     }
 
     #[test]
-    fn unix_detection_ignores_an_empty_documents_folder() {
-        let (home, data, config) = unix_fixture("empty");
+    fn unix_detection_falls_back_to_another_prefix() {
+        let (home, data, config) = unix_fixture("other_prefix");
+        // A custom prefix name does not match the app key; the scan still has to
+        // find the saves inside it.
+        let local = home
+            .join("Games")
+            .join("Efxlve")
+            .join("Prefixes")
+            .join("CustomPrefix")
+            .join("pfx")
+            .join("drive_c")
+            .join("users")
+            .join("steamuser")
+            .join("AppData")
+            .join("Local")
+            .join("Sample Game");
+        std::fs::create_dir_all(&local).unwrap();
+        std::fs::write(local.join("savegame.dat"), b"save").unwrap();
+
+        let found = detect_save_path_unix(&home, &data, &config, "SampleGame", Some("Sample Game"));
+        assert_eq!(found.unwrap(), local.to_string_lossy());
+
+        let _ = std::fs::remove_dir_all(home.parent().unwrap());
+    }
+
+    #[test]
+    fn unix_detection_ignores_an_empty_documents_folder() {        let (home, data, config) = unix_fixture("empty");
         // A publisher folder that matches the game name but is empty is not a
         // save location; the Documents pass requires save-like content.
         let docs = home.join("Documents").join("Studio").join("Sample Game");
