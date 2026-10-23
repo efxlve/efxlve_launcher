@@ -56,6 +56,8 @@ import {
   epicGetScreenshotDir,
   epicGetScreenshotScanAll,
   epicGetScreenshotScanRoots,
+  epicAddScreenshotRoot,
+  epicRemoveScreenshotRoot,
   epicSetScreenshotScanAll,
   epicGetScreenshotMoveInfo,
   epicGetSettings,
@@ -1313,16 +1315,29 @@ function renderScreenshots(): string {
     toggle("ss-toggle-scan-all", S.screenshotScanAll),
     true,
   );
+  const rootPaths = (S.screenshotScanRoots.length
+    ? S.screenshotScanRoots
+    : [S.screenshotDir]
+  ).filter(Boolean);
+  const rootsControl = `<div class="ss-roots">
+    ${rootPaths
+      .map(
+        (path, index) => `<div class="ss-root-row">
+          <code class="ss-root-path" title="${esc(path)}">${esc(path)}</code>
+          ${
+            index === 0
+              ? `<span class="ss-root-lock" title="${esc(t("settings.ssDirTitle"))}">${icon("lock", 11)}</span>`
+              : `<button type="button" class="icon-btn ss-root-remove" data-act="ss-root-remove" data-path="${esc(path)}" title="${esc(t("settings.themeSceneClear"))}" aria-label="${esc(t("settings.themeSceneClear"))}">${icon("x", 13)}</button>`
+          }
+        </div>`,
+      )
+      .join("")}
+    <button type="button" class="btn ghost small ss-root-add" data-act="ss-root-add" title="${esc(t("settings.ssRootsTitle"))}">${icon("plus", 13)} ${t("common.browse")}</button>
+  </div>`;
   const roots = row(
     t("settings.ssRootsTitle"),
-    `${t("settings.ssRootsDesc")}<br>${(S.screenshotScanRoots.length
-      ? S.screenshotScanRoots
-      : [S.screenshotDir]
-    )
-      .filter(Boolean)
-      .map((path) => `<code>${esc(path)}</code>`)
-      .join("<br>")}`,
-    "",
+    t("settings.ssRootsDesc"),
+    rootsControl,
     true,
   );
 
@@ -2512,6 +2527,36 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "ss-reset-dir":
       void resetScreenshotsFolder();
       return true;
+    case "ss-root-add": {
+      void (async () => {
+        try {
+          const path = await epicSelectFolderDialog(
+            null,
+            t("settings.ssRootsTitle"),
+          );
+          if (!path) return;
+          const roots = await epicAddScreenshotRoot(path);
+          S.screenshotScanRoots = roots;
+          reloadScreenshotsPage();
+          render();
+        } catch (error) {
+          toast(String(error), "err");
+        }
+      })();
+      return true;
+    }
+    case "ss-root-remove": {
+      const path = _el.dataset.path ?? "";
+      if (!path) return true;
+      void epicRemoveScreenshotRoot(path)
+        .then((roots) => {
+          S.screenshotScanRoots = roots;
+          reloadScreenshotsPage();
+          render();
+        })
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
     case "ss-move-confirm": {
       const pending = takePendingScreenshotMove();
       if (pending) void applyScreenshotDir(pending.targetDir, true);

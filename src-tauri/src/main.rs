@@ -160,9 +160,17 @@ pub struct EpicSettings {
     /// Games the user turned screenshot capture off for (F12 does nothing).
     #[serde(default)]
     pub screenshot_disabled_games: Vec<String>,
-    /// When false the gallery reads the chosen screenshot folder only.
+    /// When false the gallery skips the automatic store folders; the chosen
+    /// folder and the user-added folders are still read.
     #[serde(default = "default_true")]
     pub screenshot_scan_all: bool,
+    /// User-added folders the gallery should also read.
+    #[serde(default)]
+    pub screenshot_extra_roots: Vec<String>,
+    /// Automatic folders (`Videos\Captures`, Steam userdata, …) the user
+    /// removed from the gallery's read list.
+    #[serde(default)]
+    pub screenshot_hidden_roots: Vec<String>,
     /// Run Comet (the GOG Communication Service) while a GOG game plays so
     /// in-game achievements unlock without the Galaxy client. On by default.
     #[serde(default)]
@@ -1101,13 +1109,20 @@ fn main() {    // Rockstar's launcher only continues when a process named
             // playtime before anything else reads the store.
             legendary::playtime_session::recover_stale();
             // The hotkey listener must already know the configured folder.
-            legendary::screenshots::set_screenshot_root(load_settings(app.handle()).screenshot_dir);
+            let screenshot_settings = load_settings(app.handle());
+            legendary::screenshots::set_screenshot_root(screenshot_settings.screenshot_dir);
             legendary::screenshots::set_screenshot_scan_all(
-                load_settings(app.handle()).screenshot_scan_all,
+                screenshot_settings.screenshot_scan_all,
             );
-    legendary::screenshots::set_disabled_games(
-        load_settings(app.handle()).screenshot_disabled_games,
-    );
+            legendary::screenshots::set_screenshot_extra_roots(
+                screenshot_settings.screenshot_extra_roots,
+            );
+            legendary::screenshots::set_screenshot_hidden_roots(
+                screenshot_settings.screenshot_hidden_roots,
+            );
+            legendary::screenshots::set_disabled_games(
+                screenshot_settings.screenshot_disabled_games,
+            );
             legendary::screenshots::start_f12_listener(app.handle().clone());
             // Shift+Tab overlay panel over the running game.
             overlay::start(app.handle().clone());
@@ -1432,6 +1447,8 @@ fn main() {    // Rockstar's launcher only continues when a process named
             legendary::screenshots::screenshot_share_discord,
             legendary::screenshots::screenshot_webhook_info,
             legendary::screenshots::screenshot_scan_roots,
+            legendary::screenshots::epic_add_screenshot_root,
+            legendary::screenshots::epic_remove_screenshot_root,
             legendary::clip_recorder::clip_status,
             legendary::clip_recorder::clip_start,
             legendary::clip_recorder::clip_stop,

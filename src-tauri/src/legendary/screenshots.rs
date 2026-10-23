@@ -5,6 +5,7 @@
 
 use base64::Engine;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use tauri::{AppHandle, Emitter};
@@ -182,6 +183,14 @@ static SCREENSHOT_ROOT: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::ne
 static SCREENSHOT_SCAN_ALL: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(true);
 
+/// Folders the user added to the gallery's read list.
+static SCREENSHOT_EXTRA_ROOTS: std::sync::Mutex<Vec<PathBuf>> =
+    std::sync::Mutex::new(Vec::new());
+
+/// Automatic folders the user removed from the gallery's read list.
+static SCREENSHOT_HIDDEN_ROOTS: std::sync::Mutex<Vec<PathBuf>> =
+    std::sync::Mutex::new(Vec::new());
+
 /// Stores the scan preference for this session (called at startup and on save).
 pub fn set_screenshot_scan_all(on: bool) {
     SCREENSHOT_SCAN_ALL.store(on, std::sync::atomic::Ordering::Relaxed);
@@ -189,6 +198,68 @@ pub fn set_screenshot_scan_all(on: bool) {
 
 fn screenshot_scan_all() -> bool {
     SCREENSHOT_SCAN_ALL.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Windows paths are case-insensitive; the settings list and the automatic list
+/// must compare and dedupe the same folder even when one was typed differently.
+#[cfg(windows)]
+fn root_key(path: &Path) -> String {
+    path.to_string_lossy().to_lowercase()
+}
+
+/// Other platforms compare paths exactly: `/home/A` and `/home/a` are different.
+#[cfg(not(windows))]
+fn root_key(path: &Path) -> String {
+    path.to_string_lossy().to_string()
+}
+
+fn same_path(a: &Path, b: &Path) -> bool {
+    root_key(a) == root_key(b)
+}
+
+/// Drops blanks and duplicates before a list reaches the settings file.
+pub fn clean_root_list(values: Vec<String>) -> Vec<PathBuf> {
+    let mut seen = HashSet::new();
+    let mut roots = Vec::new();
+    for value in values {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let path = PathBuf::from(trimmed);
+        if seen.insert(root_key(&path)) {
+            roots.push(path);
+        }
+    }
+    roots
+}
+
+pub fn set_screenshot_extra_roots(roots: Vec<String>) {
+    let cleaned = clean_root_list(roots);
+    if let Ok(mut slot) = SCREENSHOT_EXTRA_ROOTS.lock() {
+        *slot = cleaned;
+    }
+}
+
+pub fn set_screenshot_hidden_roots(roots: Vec<String>) {
+    let cleaned = clean_root_list(roots);
+    if let Ok(mut slot) = SCREENSHOT_HIDDEN_ROOTS.lock() {
+        *slot = cleaned;
+    }
+}
+
+fn screenshot_extra_roots() -> Vec<PathBuf> {
+    SCREENSHOT_EXTRA_ROOTS
+        .lock()
+        .map(|slot| slot.clone())
+        .unwrap_or_default()
+}
+
+fn screenshot_hidden_roots() -> Vec<PathBuf> {
+    SCREENSHOT_HIDDEN_ROOTS
+        .lock()
+        .map(|slot| slot.clone())
+        .unwrap_or_default()
 }
 
 /// Stores the configured root for this session (called at startup and on save).
@@ -220,6 +291,64 @@ pub fn screenshots_root() -> PathBuf {
     resolve_screenshot_root(configured_screenshot_root().as_deref())
 }
 
+/// The folders the stores and Game Bar write into. They are only scanned while
+/// "also scan the store folders" is on.
+fn automatic_screenshot_roots() -> Vec<PathBuf> {
+    let pictures = get_user_pictures_dir();
+    let mut roots = vec![
+        pictures.join("Efxlve Screenshots"),
+        get_user_videos_dir().join("Captures"),
+        pictures.join("UbisoftConnect"),
+        // Rockstar keeps its captures under Documents\Rockstar Games\<game>\Screenshots.
+        get_user_documents_dir().join("Rockstar Games"),
+    ];
+    // The old Ubisoft client used Uplay; only offer it when it exists.
+    let uplay = pictures.join("Uplay");
+    if uplay.is_dir() {
+        roots.push(uplay);
+    }
+    if let Some(steam) = crate::steam::steam_install_path() {
+        roots.push(steam.join("userdata"));
+    }
+    roots
+}
+
+/// The final read list in display order. The chosen folder is always first and
+/// cannot be removed; automatic folders follow only when scanning is on, then
+/// the folders the user added. Hidden folders are skipped everywhere.
+fn merge_screenshot_roots(
+    chosen: PathBuf,
+    scan_all: bool,
+    automatic: Vec<PathBuf>,
+    extra: Vec<PathBuf>,
+    hidden: &[PathBuf],
+) -> Vec<PathBuf> {
+    let hidden: HashSet<String> = hidden.iter().map(|path| root_key(path)).collect();
+    let mut seen = HashSet::new();
+    let mut roots = Vec::new();
+    let mut push = |path: PathBuf, roots: &mut Vec<PathBuf>| {
+        if path.as_os_str().is_empty() {
+            return;
+        }
+        let key = root_key(&path);
+        if hidden.contains(&key) || !seen.insert(key) {
+            return;
+        }
+        roots.push(path);
+    };
+
+    push(chosen, &mut roots);
+    if scan_all {
+        for path in automatic {
+            push(path, &mut roots);
+        }
+    }
+    for path in extra {
+        push(path, &mut roots);
+    }
+    roots
+}
+
 /// Every root the gallery reads from.
 ///
 /// The scan walks more than the configured folder — Steam's userdata, Game Bar
@@ -229,22 +358,13 @@ pub fn screenshots_root() -> PathBuf {
 /// It does NOT walk the whole Documents folder: that pulled in unrelated images
 /// from every app that writes there, which a beta tester rightly reported.
 pub fn screenshot_roots() -> Vec<PathBuf> {
-    let mut roots = vec![screenshots_root()];
-    if !screenshot_scan_all() {
-        return roots;
-    }
-    let legacy = get_user_pictures_dir().join("Efxlve Screenshots");
-    if !roots.contains(&legacy) {
-        roots.push(legacy);
-    }
-    roots.push(get_user_videos_dir().join("Captures"));
-    roots.push(get_user_pictures_dir().join("UbisoftConnect"));
-    // Rockstar keeps its captures under Documents\Rockstar Games\<game>\Screenshots.
-    roots.push(get_user_documents_dir().join("Rockstar Games"));
-    if let Some(steam) = crate::steam::steam_install_path() {
-        roots.push(steam.join("userdata"));
-    }
-    roots
+    merge_screenshot_roots(
+        screenshots_root(),
+        screenshot_scan_all(),
+        automatic_screenshot_roots(),
+        screenshot_extra_roots(),
+        &screenshot_hidden_roots(),
+    )
 }
 
 /// The roots as labels for the settings row, so the user can see where the
@@ -255,6 +375,82 @@ pub fn screenshot_scan_roots() -> Vec<String> {
         .iter()
         .map(|root| root.to_string_lossy().to_string())
         .collect()
+}
+
+fn root_strings(roots: &[PathBuf]) -> Vec<String> {
+    roots
+        .iter()
+        .map(|root| root.to_string_lossy().to_string())
+        .collect()
+}
+
+/// Saves the user's add/remove overrides. The chosen screenshot folder stays
+/// out of both lists: the gallery always reads it.
+fn persist_root_overrides(app: &AppHandle, extra: &[PathBuf], hidden: &[PathBuf]) {
+    let mut settings = crate::load_settings(app);
+    settings.screenshot_extra_roots = root_strings(extra);
+    settings.screenshot_hidden_roots = root_strings(hidden);
+    crate::save_settings(app, &settings);
+}
+
+/// Adds a folder the gallery should read. A removed automatic folder is simply
+/// unhidden again; anything else becomes a user root.
+#[tauri::command]
+pub fn epic_add_screenshot_root(app: AppHandle, path: String) -> Vec<String> {
+    let Some(path) = clean_root_list(vec![path]).into_iter().next() else {
+        return screenshot_scan_roots();
+    };
+    let key = root_key(&path);
+    if key == root_key(&screenshots_root()) {
+        return screenshot_scan_roots();
+    }
+
+    let automatic = automatic_screenshot_roots();
+    let is_automatic = automatic.iter().any(|root| root_key(root) == key);
+    let mut extra = screenshot_extra_roots();
+    let mut hidden = screenshot_hidden_roots();
+
+    // Picking a folder that was removed before re-enables it instead of
+    // creating a second entry, whether it was automatic or user-added.
+    hidden.retain(|root| root_key(root) != key);
+    if !is_automatic && !extra.iter().any(|root| root_key(root) == key) {
+        extra.push(path);
+    }
+
+    set_screenshot_extra_roots(root_strings(&extra));
+    set_screenshot_hidden_roots(root_strings(&hidden));
+    persist_root_overrides(&app, &extra, &hidden);
+    screenshot_scan_roots()
+}
+
+/// Removes one folder from the gallery's read list. The chosen screenshot
+/// folder is fixed: captures are written there.
+#[tauri::command]
+pub fn epic_remove_screenshot_root(app: AppHandle, path: String) -> Vec<String> {
+    let Some(path) = clean_root_list(vec![path]).into_iter().next() else {
+        return screenshot_scan_roots();
+    };
+    let key = root_key(&path);
+    if key == root_key(&screenshots_root()) {
+        return screenshot_scan_roots();
+    }
+
+    let automatic = automatic_screenshot_roots();
+    let mut extra = screenshot_extra_roots();
+    let mut hidden = screenshot_hidden_roots();
+
+    if extra.iter().any(|root| root_key(root) == key) {
+        extra.retain(|root| root_key(root) != key);
+    } else if automatic.iter().any(|root| root_key(root) == key)
+        && !hidden.iter().any(|root| root_key(root) == key)
+    {
+        hidden.push(path);
+    }
+
+    set_screenshot_extra_roots(root_strings(&extra));
+    set_screenshot_hidden_roots(root_strings(&hidden));
+    persist_root_overrides(&app, &extra, &hidden);
+    screenshot_scan_roots()
 }
 
 /// True when a path lives under one of the roots the gallery scans.
@@ -942,6 +1138,79 @@ fn scan_dir_files(
     }
 }
 
+/// A root that keeps one folder per game, plus optional loose files. This is
+/// the shape of the chosen folder, the legacy folder and every folder the user
+/// adds by hand.
+fn scan_per_game_root(
+    root: &Path,
+    results: &mut Vec<GameScreenshotItem>,
+    scanned: &mut std::collections::HashSet<PathBuf>,
+) {
+    if !root.is_dir() {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                scan_dir_files(&path, results, scanned);
+            } else if path.is_file() && scanned.insert(path.clone()) {
+                if let Some(item) = parse_file_to_item(&path) {
+                    results.push(item);
+                }
+            }
+        }
+    }
+}
+
+/// Rockstar keeps captures under `<game>\Screenshots` and
+/// `<game>\Profiles\<profile>\Screenshots`.
+fn scan_rockstar_root(
+    root: &Path,
+    results: &mut Vec<GameScreenshotItem>,
+    scanned: &mut std::collections::HashSet<PathBuf>,
+) {
+    if !root.is_dir() {
+        return;
+    }
+    if let Ok(games) = std::fs::read_dir(root) {
+        for game in games.flatten() {
+            let game_path = game.path();
+            if !game_path.is_dir() {
+                continue;
+            }
+            scan_dir_files(&game_path.join("Screenshots"), results, scanned);
+            if let Ok(profiles) = std::fs::read_dir(game_path.join("Profiles")) {
+                for profile in profiles.flatten() {
+                    scan_dir_files(&profile.path().join("Screenshots"), results, scanned);
+                }
+            }
+        }
+    }
+}
+
+/// Steam stores each app's captures under
+/// `userdata\<account>\760\remote\<app>\screenshots`.
+fn scan_steam_userdata(
+    root: &Path,
+    results: &mut Vec<GameScreenshotItem>,
+    scanned: &mut std::collections::HashSet<PathBuf>,
+) {
+    if !root.is_dir() {
+        return;
+    }
+    if let Ok(accounts) = std::fs::read_dir(root) {
+        for account in accounts.flatten() {
+            let remote = account.path().join("760").join("remote");
+            if let Ok(apps) = std::fs::read_dir(remote) {
+                for app in apps.flatten() {
+                    scan_dir_files(&app.path().join("screenshots"), results, scanned);
+                }
+            }
+        }
+    }
+}
+
 /// Scans and returns all screenshots from all games and capture folders from disk,
 /// sorted chronologically (newest to oldest).
 #[tauri::command]
@@ -952,137 +1221,34 @@ pub async fn epic_get_all_screenshots(
         let mut results = Vec::new();
         let mut scanned_paths = std::collections::HashSet::new();
 
-        // 1. Scanned root and its subdirectories (one subfolder per game)
-        let root = screenshots_root();
-        migrate_known_app_folders(&root);
-        if root.is_dir() {
-            if let Ok(entries) = std::fs::read_dir(&root) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        scan_dir_files(&path, &mut results, &mut scanned_paths);
-                    } else if path.is_file() && scanned_paths.insert(path.clone()) {
-                        if let Some(item) = parse_file_to_item(&path) {
-                            results.push(item);
-                        }
-                    }
+        // The settings page lists exactly the roots this loop scans. Hidden
+        // folders are already gone from `screenshot_roots`, and every folder
+        // the user added is in the same list.
+        let chosen = screenshots_root();
+        let legacy = get_user_pictures_dir().join("Efxlve Screenshots");
+        let captures = get_user_videos_dir().join("Captures");
+        let ubisoft = get_user_pictures_dir().join("UbisoftConnect");
+        let uplay = get_user_pictures_dir().join("Uplay");
+        let rockstar = get_user_documents_dir().join("Rockstar Games");
+        let steam = crate::steam::steam_install_path().map(|path| path.join("userdata"));
+
+        for root in screenshot_roots() {
+            if same_path(&root, &captures) {
+                // Game Bar writes files directly into Videos\Captures.
+                scan_dir_files(&root, &mut results, &mut scanned_paths);
+            } else if same_path(&root, &ubisoft) || same_path(&root, &uplay) {
+                scan_per_game_root(&root, &mut results, &mut scanned_paths);
+            } else if same_path(&root, &rockstar) {
+                scan_rockstar_root(&root, &mut results, &mut scanned_paths);
+            } else if steam.as_ref().is_some_and(|steam| same_path(&root, steam)) {
+                scan_steam_userdata(&root, &mut results, &mut scanned_paths);
+            } else {
+                // The chosen folder, its legacy twin and every user-added
+                // folder keep one subfolder per game.
+                if same_path(&root, &chosen) || same_path(&root, &legacy) {
+                    migrate_known_app_folders(&root);
                 }
-            }
-        }
-
-        // The extra roots below are exactly what the "scan all" setting
-        // controls. Without this early return the media tab kept showing Steam,
-        // Game Bar and Documents captures even when the switch was off.
-        if !screenshot_scan_all() {
-            results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-            results.truncate(300);
-            return Ok(results);
-        }
-
-        // 2. Legacy screenshots root (if different from root)
-        let legacy_root = get_user_pictures_dir().join("Efxlve Screenshots");
-        if legacy_root != root && legacy_root.is_dir() {
-            migrate_known_app_folders(&legacy_root);
-            if let Ok(entries) = std::fs::read_dir(&legacy_root) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        scan_dir_files(&path, &mut results, &mut scanned_paths);
-                    } else if path.is_file() && scanned_paths.insert(path.clone()) {
-                        if let Some(item) = parse_file_to_item(&path) {
-                            results.push(item);
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. Ubisoft Connect captures
-        for root_name in ["UbisoftConnect", "Uplay"] {
-            let ubi_root = get_user_pictures_dir().join(root_name);
-            if ubi_root.is_dir() {
-                if let Ok(entries) = std::fs::read_dir(&ubi_root) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_dir() {
-                            scan_dir_files(&path, &mut results, &mut scanned_paths);
-                        } else if path.is_file() && scanned_paths.insert(path.clone()) {
-                            if let Some(item) = parse_file_to_item(&path) {
-                                results.push(item);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 4. Windows Game Bar Captures (%USERPROFILE%\Videos\Captures)
-        let captures_dir = get_user_videos_dir().join("Captures");
-        scan_dir_files(&captures_dir, &mut results, &mut scanned_paths);
-
-        // 5. Steam screenshots (if Steam is installed)
-        if let Some(steam) = crate::steam::steam_install_path() {
-            let userdata = steam.join("userdata");
-            if userdata.is_dir() {
-                if let Ok(acc_entries) = std::fs::read_dir(&userdata) {
-                    for acc_entry in acc_entries.flatten() {
-                        let remote = acc_entry.path().join("760").join("remote");
-                        if remote.is_dir() {
-                            if let Ok(app_entries) = std::fs::read_dir(&remote) {
-                                for app_entry in app_entries.flatten() {
-                                    let shots_dir = app_entry.path().join("screenshots");
-                                    scan_dir_files(&shots_dir, &mut results, &mut scanned_paths);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 6. Documents game screenshot folders (e.g. Documents/<Game>/Screenshots, Rockstar Games, etc.)
-        let docs = get_user_documents_dir();
-        if docs.is_dir() {
-            if let Ok(entries) = std::fs::read_dir(&docs) {
-                for entry in entries.flatten() {
-                    let dpath = entry.path();
-                    if dpath.is_dir() {
-                        let direct = dpath.join("Screenshots");
-                        if direct.is_dir() {
-                            scan_dir_files(&direct, &mut results, &mut scanned_paths);
-                        }
-                        if entry
-                            .file_name()
-                            .to_string_lossy()
-                            .eq_ignore_ascii_case("Rockstar Games")
-                        {
-                            if let Ok(rg_entries) = std::fs::read_dir(&dpath) {
-                                for rg_entry in rg_entries.flatten() {
-                                    let rg_path = rg_entry.path();
-                                    if rg_path.is_dir() {
-                                        scan_dir_files(
-                                            &rg_path.join("Screenshots"),
-                                            &mut results,
-                                            &mut scanned_paths,
-                                        );
-                                        let profs = rg_path.join("Profiles");
-                                        if profs.is_dir() {
-                                            if let Ok(p_entries) = std::fs::read_dir(&profs) {
-                                                for p_entry in p_entries.flatten() {
-                                                    scan_dir_files(
-                                                        &p_entry.path().join("Screenshots"),
-                                                        &mut results,
-                                                        &mut scanned_paths,
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                scan_per_game_root(&root, &mut results, &mut scanned_paths);
             }
         }
 
@@ -2085,6 +2251,58 @@ mod tests {
         );
         // No configured folder: the legacy Pictures root stays the default.
         assert!(resolve_screenshot_root(None).ends_with("Efxlve Screenshots"));
+    }
+
+    #[test]
+    fn screenshot_roots_merge_extra_and_hidden() {
+        let chosen = PathBuf::from(r"C:\Shots");
+        let automatic = vec![
+            PathBuf::from(r"C:\Videos\Captures"),
+            PathBuf::from(r"C:\Steam\userdata"),
+        ];
+        let extra = vec![PathBuf::from(r"D:\My Pics")];
+        let hidden = vec![PathBuf::from(r"c:\videos\captures")];
+
+        let roots = merge_screenshot_roots(
+            chosen.clone(),
+            true,
+            automatic.clone(),
+            extra.clone(),
+            &hidden,
+        );
+        assert_eq!(
+            roots,
+            vec![
+                chosen.clone(),
+                PathBuf::from(r"C:\Steam\userdata"),
+                PathBuf::from(r"D:\My Pics")
+            ]
+        );
+
+        // Turning the automatic folders off keeps the chosen folder and the
+        // folders the user added by hand.
+        let roots = merge_screenshot_roots(chosen.clone(), false, automatic, extra, &[]);
+        assert_eq!(roots, vec![chosen, PathBuf::from(r"D:\My Pics")]);
+    }
+
+    #[test]
+    fn clean_root_list_dedupes_entries() {
+        let roots = clean_root_list(vec![
+            r"D:\Shots".to_string(),
+            r"D:\Shots".to_string(),
+            "".to_string(),
+        ]);
+        assert_eq!(roots, vec![PathBuf::from(r"D:\Shots")]);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn clean_root_list_dedupes_case_insensitively() {
+        let roots = clean_root_list(vec![
+            r"D:\Shots".to_string(),
+            " d:\\shots ".to_string(),
+        ]);
+        assert_eq!(roots, vec![PathBuf::from(r"D:\Shots")]);
     }
 
     #[test]

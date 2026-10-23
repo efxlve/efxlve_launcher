@@ -218,6 +218,53 @@
 .settings-css-area::placeholder { color: var(--text-3); }
 .settings-css-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; width: 100%; }
 .settings-css-count { margin-left: auto; font-size: 11px; color: var(--text-3); }
+
+/* Settings > Media: the folders the gallery reads. The first row is the camera
+   root and stays locked; every other row can leave the list. */
+.ss-roots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 760px;
+}
+.ss-root-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.ss-root-path {
+  flex: 1;
+  min-width: 0;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.ss-root-lock {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.ss-root-remove {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.ss-root-remove:hover {
+  color: var(--err);
+  background: var(--err-tint);
+}
+.ss-root-add {
+  align-self: flex-start;
+  margin-top: 4px;
+}
 .settings-row.stacked .settings-row-control { justify-content: flex-start; }
 .settings-path-input { width: min(280px, 100%); min-width: 0; flex: 1 1 160px; }
 /* Collapsible settings row: the summary carries the title and the status chip,

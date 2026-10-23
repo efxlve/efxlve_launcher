@@ -839,6 +839,14 @@ export const epicGetScreenshotDir = () =>
 export const epicGetScreenshotScanRoots = () =>
   invoke<string[]>("screenshot_scan_roots");
 
+/** Adds a folder to the gallery's read list and returns the new list. */
+export const epicAddScreenshotRoot = (path: string) =>
+  invoke<string[]>("epic_add_screenshot_root", { path });
+
+/** Removes a folder from the gallery's read list and returns the new list. */
+export const epicRemoveScreenshotRoot = (path: string) =>
+  invoke<string[]>("epic_remove_screenshot_root", { path });
+
 /** Whether the gallery also walks the store folders (default on). */
 export const epicGetScreenshotScanAll = () =>
   invoke<boolean>("epic_get_screenshot_scan_all");
