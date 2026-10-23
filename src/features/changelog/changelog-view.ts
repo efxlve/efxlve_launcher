@@ -53,6 +53,14 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Settings > About now states that themes are original, unofficial palettes with no game assets and no endorsement.",
         tr: "Ayarlar > Hakkında artık temaların özgün, resmî olmayan paletler olduğunu; oyun varlığı içermediğini ve onaylanmadığını belirtiyor.",
       },
+      {
+        en: "A repeated early crash now moves the WebView2 profile aside and retries with software rendering instead of closing again.",
+        tr: "Tekrarlanan erken çöküşte WebView2 profili kenara alınıyor ve yazılım işleme ile yeniden deneniyor; launcher tekrar kapanıp kalmıyor.",
+      },
+      {
+        en: "Steam's Running flag is re-checked periodically and when a game page opens, so a game started from the Steam client no longer looks closed.",
+        tr: "Steam'in Running bilgisi düzenli olarak ve oyun sayfası açılırken yeniden kontrol ediliyor; Steam istemcisinden başlatılan oyun artık kapalı görünmüyor.",
+      },
     ],
   },
   {
