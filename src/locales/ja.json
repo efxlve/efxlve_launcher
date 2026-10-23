@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "rclone で設定済みのリモートをそのまま利用できます: S3、Backblaze B2、Dropbox、OneDrive、Mega、pCloud、Box など 70 以上のサービス。",
   "cloud.rcloneHint": "一度 `rclone config` を実行し、リモートパスをここに貼り付けてください（例: `gdrive:efxlve_saves`、`s3:my-bucket/saves`）。",
   "cloud.rcloneSaved": "rclone リモートを保存しました。",
-  "cloud.guideOpenTip": "このプロバイダーの設定ガイドを開く。"
+  "cloud.guideOpenTip": "このプロバイダーの設定ガイドを開く。",
+  "cloud.retentionTitle": "クラウドの最新 N バージョンを保持",
+  "cloud.retentionDesc": "アップロード成功後に古いクラウドアーカイブを削除します。0 はすべて保持します。",
+  "cloud.retentionSaved": "クラウド保持設定を保存しました。"
 }

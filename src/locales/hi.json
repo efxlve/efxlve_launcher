@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "rclone में पहले से सेट किया गया कोई भी रिमोट इस्तेमाल करें: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box और 70+ सेवाएँ।",
   "cloud.rcloneHint": "एक बार `rclone config` चलाएँ, फिर रिमोट पथ यहाँ चिपकाएँ, जैसे `gdrive:efxlve_saves` या `s3:my-bucket/saves`।",
   "cloud.rcloneSaved": "rclone रिमोट सहेजा गया।",
-  "cloud.guideOpenTip": "इस प्रदाता के लिए सेटअप गाइड खोलें।"
+  "cloud.guideOpenTip": "इस प्रदाता के लिए सेटअप गाइड खोलें।",
+  "cloud.retentionTitle": "क्लाउड की अंतिम N वर्शन रखें",
+  "cloud.retentionDesc": "सफल अपलोड के बाद पुराने क्लाउड आर्काइव हटाता है। 0 सभी बैकअप रखता है।",
+  "cloud.retentionSaved": "क्लाउड रिटेंशन सहेजा गया।"
 }

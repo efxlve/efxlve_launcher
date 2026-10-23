@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "直接使用你在 rclone 中配置好的任意远程：S3、Backblaze B2、Dropbox、OneDrive、Mega、pCloud、Box 等 70 多种服务。",
   "cloud.rcloneHint": "先运行一次 `rclone config`，然后把远程路径粘贴到这里，例如 `gdrive:efxlve_saves` 或 `s3:my-bucket/saves`。",
   "cloud.rcloneSaved": "rclone 远程已保存。",
-  "cloud.guideOpenTip": "打开此提供商的设置指南。"
+  "cloud.guideOpenTip": "打开此提供商的设置指南。",
+  "cloud.retentionTitle": "保留最近 N 个云端版本",
+  "cloud.retentionDesc": "上传成功后删除较旧的云端归档。0 表示全部保留。",
+  "cloud.retentionSaved": "云端保留设置已保存。"
 }

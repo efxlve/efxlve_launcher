@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "Użyj dowolnego zdalnego magazynu skonfigurowanego w rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box i ponad 70 innych.",
   "cloud.rcloneHint": "Uruchom raz `rclone config`, a następnie wklej tutaj ścieżkę zdalną, np. `gdrive:efxlve_saves` lub `s3:my-bucket/saves`.",
   "cloud.rcloneSaved": "Zapisano zdalny magazyn rclone.",
-  "cloud.guideOpenTip": "Otwórz instrukcję konfiguracji tego dostawcy."
+  "cloud.guideOpenTip": "Otwórz instrukcję konfiguracji tego dostawcy.",
+  "cloud.retentionTitle": "Zachowaj ostatnie N wersji w chmurze",
+  "cloud.retentionDesc": "Usuwa starsze archiwa po udanym wysłaniu. 0 zachowuje wszystkie kopie.",
+  "cloud.retentionSaved": "Zapisano ustawienie przechowywania w chmurze."
 }

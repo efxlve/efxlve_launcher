@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "أعد استخدام أي مخزن بعيد أعددته مسبقًا في rclone: S3 وBackblaze B2 وDropbox وOneDrive وMega وpCloud وBox وأكثر من 70 خدمة.",
   "cloud.rcloneHint": "شغّل `rclone config` مرة واحدة ثم الصق مسار المخزن هنا، مثل `gdrive:efxlve_saves` أو `s3:my-bucket/saves`.",
   "cloud.rcloneSaved": "تم حفظ مخزن rclone البعيد.",
-  "cloud.guideOpenTip": "فتح دليل الإعداد لهذا المزوّد."
+  "cloud.guideOpenTip": "فتح دليل الإعداد لهذا المزوّد.",
+  "cloud.retentionTitle": "الاحتفاظ بآخر N نسخ سحابية",
+  "cloud.retentionDesc": "يحذف الأرشيفات الأقدم بعد رفع ناجح. القيمة 0 تحتفظ بكل النسخ.",
+  "cloud.retentionSaved": "تم حفظ إعداد الاحتفاظ السحابي."
 }

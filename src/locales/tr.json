@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "rclone'da zaten tanımladığın herhangi bir uzağı kullan: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box ve 70'ten fazla servis.",
   "cloud.rcloneHint": "Bir kez `rclone config` çalıştır, sonra uzak yolu buraya yapıştır; örneğin `gdrive:efxlve_saves` veya `s3:my-bucket/saves`.",
   "cloud.rcloneSaved": "rclone uzak yolu kaydedildi.",
-  "cloud.guideOpenTip": "Bu sağlayıcının kurulum rehberini aç."
+  "cloud.guideOpenTip": "Bu sağlayıcının kurulum rehberini aç.",
+  "cloud.retentionTitle": "Son N bulut sürümünü tut",
+  "cloud.retentionDesc": "Başarılı yüklemeden sonra daha eski bulut arşivlerini sil. 0 tüm yedekleri tutar.",
+  "cloud.retentionSaved": "Bulut saklama ayarı kaydedildi."
 }

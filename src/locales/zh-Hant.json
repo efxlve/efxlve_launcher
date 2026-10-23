@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "直接使用你在 rclone 中設定好的任意遠端：S3、Backblaze B2、Dropbox、OneDrive、Mega、pCloud、Box 等 70 多種服務。",
   "cloud.rcloneHint": "先執行一次 `rclone config`，再把遠端路徑貼到這裡，例如 `gdrive:efxlve_saves` 或 `s3:my-bucket/saves`。",
   "cloud.rcloneSaved": "rclone 遠端已儲存。",
-  "cloud.guideOpenTip": "開啟此提供者的設定指南。"
+  "cloud.guideOpenTip": "開啟此提供者的設定指南。",
+  "cloud.retentionTitle": "保留最近 N 個雲端版本",
+  "cloud.retentionDesc": "上傳成功後刪除較舊的雲端封存。0 表示全部保留。",
+  "cloud.retentionSaved": "雲端保留設定已儲存。"
 }

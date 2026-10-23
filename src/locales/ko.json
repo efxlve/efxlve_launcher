@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "rclone에 이미 설정한 원격을 그대로 사용하세요: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box 등 70개 이상.",
   "cloud.rcloneHint": "`rclone config`를 한 번 실행한 뒤 원격 경로를 여기에 붙여넣으세요. 예: `gdrive:efxlve_saves`, `s3:my-bucket/saves`.",
   "cloud.rcloneSaved": "rclone 원격을 저장했습니다.",
-  "cloud.guideOpenTip": "이 공급자의 설정 가이드 열기."
+  "cloud.guideOpenTip": "이 공급자의 설정 가이드 열기.",
+  "cloud.retentionTitle": "최근 N개 클라우드 버전 유지",
+  "cloud.retentionDesc": "업로드 성공 후 오래된 클라우드 아카이브를 삭제합니다. 0은 모두 보관합니다.",
+  "cloud.retentionSaved": "클라우드 보관 설정을 저장했습니다."
 }

@@ -39,6 +39,7 @@ export async function updateCloudBackupSettings(
     enabled: false,
     provider: "none",
     autoSyncOnGameExit: false,
+    retentionCount: 0,
     folderPath: "",
     webdavUrl: "",
     webdavUsername: "",

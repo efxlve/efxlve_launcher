@@ -8,7 +8,8 @@ Open work only. Delete the item when it lands.
   prefixes are scanned, but a game launched through Steam's Proton keeps its
   saves under Steam's `compatdata` tree and still needs the folder picked by
   hand.
-- Retention and scheduled local-only backups; prune old timestamps.
+- Scheduled local-only backups and local archive pruning; cloud retention is a
+  setting (keep the last N versions).
 - Bulk “back up all installed games” with a progress list.
 - Conflict detection before restore (local/remote timestamp + hash); the
   pre-restore snapshot already makes a wrong restore recoverable.

@@ -21,6 +21,7 @@ export function renderCloudBackupSettingsGroup(): string {
     enabled: false,
     provider: "none",
     autoSyncOnGameExit: false,
+    retentionCount: 0,
     folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
@@ -188,6 +189,18 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
+  const retentionRow = isEnabled ? `
+    <div class="row settings-row">
+      <div class="row-main">
+        <div class="settings-row-title">${t("cloud.retentionTitle")}</div>
+        <div class="settings-row-desc">${t("cloud.retentionDesc")}</div>
+      </div>
+      <div class="settings-row-control" style="display:flex;gap:8px;align-items:center">
+        <input id="cloud-retention-count" type="number" min="0" max="100" class="input" style="width:84px" value="${Number(st.retentionCount ?? 0)}" />
+        <button type="button" class="btn ghost small" data-act="cloud-retention-save">${t("common.save")}</button>
+      </div>
+    </div>` : "";
+
   const providerRow = isEnabled ? `
     <div class="row settings-row">
       <div class="row-main">
@@ -204,6 +217,7 @@ export function renderCloudBackupSettingsGroup(): string {
       ${providerRow}
       ${isEnabled ? providerConfig : ""}
       ${autoSyncRow}
+      ${retentionRow}
     </div>`;
 }
 

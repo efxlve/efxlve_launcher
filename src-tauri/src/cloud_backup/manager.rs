@@ -319,7 +319,26 @@ pub async fn upload_backup(
     settings.last_sync_time = Some(now);
     let _ = save_settings(&settings);
 
+    // Retention is best effort: a failed prune must not turn a successful
+    // upload into an error, and the newest archive is always kept.
+    if settings.retention_count > 0 {
+        prune_remote_backups(app_name, settings.retention_count).await;
+    }
+
     Ok(entry)
+}
+
+/// Deletes the oldest cloud archives for one game, keeping the newest entries.
+async fn prune_remote_backups(app_name: &str, keep: u32) {
+    if keep == 0 {
+        return;
+    }
+    let Ok(list) = list_cloud_backups(app_name).await else {
+        return;
+    };
+    for entry in list.into_iter().skip(keep as usize) {
+        let _ = delete_remote_backup(&entry.remote_id).await;
+    }
 }
 
 /// Lists all save backup archives from the active cloud provider for a game.

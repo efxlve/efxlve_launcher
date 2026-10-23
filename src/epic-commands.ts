@@ -939,6 +939,7 @@ export interface CloudBackupSettings {
   enabled: boolean;
   provider: CloudBackupProvider;
   autoSyncOnGameExit: boolean;
+  retentionCount: number;
   folderPath: string;
   webdavUrl: string;
   webdavUsername: string;

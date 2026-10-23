@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "Используйте любое хранилище, уже настроенное в rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box и ещё более 70 сервисов.",
   "cloud.rcloneHint": "Один раз выполните `rclone config`, затем вставьте сюда путь к хранилищу, например `gdrive:efxlve_saves` или `s3:my-bucket/saves`.",
   "cloud.rcloneSaved": "Удалённое хранилище rclone сохранено.",
-  "cloud.guideOpenTip": "Открыть руководство по настройке этого провайдера."
+  "cloud.guideOpenTip": "Открыть руководство по настройке этого провайдера.",
+  "cloud.retentionTitle": "Хранить последние N версий в облаке",
+  "cloud.retentionDesc": "Удаляет старые архивы после успешной загрузки. 0 — хранить все копии.",
+  "cloud.retentionSaved": "Настройка хранения в облаке сохранена."
 }

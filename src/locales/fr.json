@@ -2979,5 +2979,8 @@
   "cloud.rcloneDesc": "Réutilisez n'importe quel remote déjà configuré dans rclone : S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box et plus de 70 autres.",
   "cloud.rcloneHint": "Lancez `rclone config` une fois, puis collez le chemin du remote ici, par exemple `gdrive:efxlve_saves` ou `s3:my-bucket/saves`.",
   "cloud.rcloneSaved": "Remote rclone enregistré.",
-  "cloud.guideOpenTip": "Ouvrir le guide de configuration de ce fournisseur."
+  "cloud.guideOpenTip": "Ouvrir le guide de configuration de ce fournisseur.",
+  "cloud.retentionTitle": "Conserver les N dernières versions cloud",
+  "cloud.retentionDesc": "Supprime les archives plus anciennes après un envoi réussi. 0 conserve toutes les sauvegardes.",
+  "cloud.retentionSaved": "Rétention cloud enregistrée."
 }

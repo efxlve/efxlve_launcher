@@ -173,6 +173,16 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       return true;
     }
 
+    case "cloud-retention-save": {
+      const input = document.getElementById("cloud-retention-count") as HTMLInputElement | null;
+      const raw = Number(input?.value ?? 0);
+      const count = Number.isFinite(raw) ? Math.min(100, Math.max(0, Math.floor(raw))) : 0;
+      void updateCloudBackupSettings({ retentionCount: count }).then((ok) => {
+        if (ok) toast(i18nT("cloud.retentionSaved"), "ok");
+      });
+      return true;
+    }
+
     case "cloud-folder-open": {
       void cloudBackupOpenFolder()
         .then(() => toast(i18nT("win.folderOpened"), "ok"))

@@ -22,6 +22,9 @@ pub struct CloudBackupSettings {
     pub provider: CloudBackupProvider,
     #[serde(default)]
     pub auto_sync_on_game_exit: bool,
+    /// Cloud archives kept per game; 0 keeps every archive.
+    #[serde(default)]
+    pub retention_count: u32,
     #[serde(default)]
     pub folder_path: String,
     #[serde(default)]
@@ -53,6 +56,7 @@ impl Default for CloudBackupSettings {
             enabled: false,
             provider: CloudBackupProvider::None,
             auto_sync_on_game_exit: false,
+            retention_count: 0,
             folder_path: String::new(),
             webdav_url: String::new(),
             webdav_username: String::new(),
