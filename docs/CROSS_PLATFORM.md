@@ -270,8 +270,8 @@ yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 - Linux/macOS'ta gerçek donanım doğrulaması: oyun başlatma, Proton prefix'i,
   Steam kütüphanesi ve mağaza webview'leri.
 - macOS'ta imzalama/notarization ve Apple Silicon native runner doğrulaması.
-- Linux/macOS için otomatik kayıt klasörü algılama (bugün Windows yolları
-  ağırlıklı; oyunun kendi kayıt klasörü Manage çekmecesinden seçilebilir).
+- Steam `compatdata` ağacındaki prefix'ler kayıt algılamaya dahil değil; Steam
+  Proton'uyla başlatılan bir oyunun klasörü Manage'den seçilmeli.
 - Ekran görüntüsü kancası, klip kaydı, FPS/HUD ve görev çubuğu rozeti için
   platform implementasyonları (bugün Windows'ta çalışır, diğerlerinde gizlenir).
 - `wine-crossover` yalnızca algılanır (Gcenx/winecx deposu 404); `vulkan-helper-rs`
@@ -305,9 +305,14 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
 - **Windows'a özgü ve gizlenen yüzeyler:** Controller bridge (ViGEm), görev
   çubuğu rozeti, EOS/Epic relay, DPAPI Steam kasası yerine platformun kendi
   saklama yolu, `.lnk` kısayolları ve kayıt defteri taramaları.
-- **Bilinen sınır:** Otomatik kayıt klasörü algılama Windows odaklıdır. Linux/
-  macOS'ta oyunun kayıt klasörünü Manage çekmecesinden seçmek gerekir; bulut
-  yedeği bu yolu kullanır.
+- **Kayıt klasörü:** `detect_save_path` platforma göre arar. Linux'ta
+  `$XDG_DATA_HOME` (varsayılan `~/.local/share`), `~/.config/unity3d`,
+  `~/Documents`, `~/Saved Games`; macOS'ta bunlara ek olarak
+  `~/Library/Application Support`. Ardından `~/Games/Efxlve/Prefixes` altındaki
+  her prefix'in `pfx/drive_c/users/<user>/` ağacında `AppData/Local`,
+  `AppData/LocalLow`, `Documents` ve `Saved Games` taranır. Steam'in kendi
+  `compatdata` ağacı taranmaz; Steam Proton'uyla başlatılan oyun için klasör
+  Manage'den seçilir.
 
 ## 9. Referanslar
 

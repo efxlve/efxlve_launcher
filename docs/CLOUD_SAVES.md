@@ -82,10 +82,18 @@ path with `Documents`, `Saved Games` or `AppData` rewritten under the current
 home, then the installed manifest/heuristics. `HOME` is used on Linux/macOS when
 `USERPROFILE` is absent.
 
-The heuristics are still Windows-first. On Linux/macOS set the game's save
-folder explicitly from Manage before backing it up. Proton prefixes
-(`compatdata/<appid>/pfx/drive_c/users/steamuser/...`) are not scanned yet; that
-is tracked below.
+Detection is platform-aware (`detect_save_path` in `legendary/backup.rs`):
+
+| Platform | Roots, in order |
+|---|---|
+| Windows | Saved Games, Documents\My Games, Documents, AppData\LocalLow, `%LOCALAPPDATA%`, `%APPDATA%`, install folder |
+| Linux | `$XDG_DATA_HOME` (default `~/.local/share`), `~/.config/unity3d`, `~/Documents`, `~/Saved Games`, then `AppData/Local`, `AppData/LocalLow`, `Documents` and `Saved Games` inside each prefix under `~/Games/Efxlve/Prefixes` |
+| macOS | the same XDG/Documents roots, `~/Library/Application Support`, then the prefixes above |
+
+The prefix pass reads both a plain Wine tree and Proton's `pfx/drive_c` layout.
+Steam's own `compatdata` tree is not scanned: the app id is not known here, and
+scanning every prefix would cost more than it is worth. A game launched through
+Steam's Proton still needs its folder picked once in Manage.
 
 ---
 
@@ -135,9 +143,10 @@ Cloud links from the Manage drawer and the Cloud settings card now open the
 
 Ordered by user value:
 
-1. **Native save discovery on Linux/macOS** — XDG data/config roots, macOS
-   `~/Library/Application Support`, and Proton `compatdata` prefixes. Let the
-   user confirm the detected folder once, then remember it.
+1. **Confirm the detected save folder** — discovery now covers the XDG roots,
+   macOS `~/Library/Application Support` and the launcher's Wine/Proton
+   prefixes; a detected path the user can confirm once and then reuse would make
+   the result explicit. Steam `compatdata` scanning is a separate gap.
 2. **Retention and scheduled local backups** — keep the last N versions, run a
    daily local backup even with no provider, and prune old archives.
 3. **Bulk actions** — “back up all installed games”, “restore the newest backup

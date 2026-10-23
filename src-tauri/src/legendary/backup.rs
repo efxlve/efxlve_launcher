@@ -356,8 +356,12 @@ fn has_save_like_files(dir: &Path) -> bool {
     false
 }
 
-/// Attempts to automatically discover the local save directory for a game
-/// across standard Windows locations (Unreal Engine LocalAppData, Saved Games, Documents, LocalLow, etc.).
+/// Attempts to automatically discover the local save directory for a game.
+///
+/// Windows searches the standard profile locations (Saved Games, Documents,
+/// LocalAppData, LocalLow, Roaming). Linux/macOS search the XDG data/config
+/// homes, Documents, Unity's `unity3d` tree and the Wine/Proton prefixes the
+/// launcher creates.
 pub fn detect_save_path(
     app_name: &str,
     title: Option<&str>,
@@ -417,6 +421,23 @@ pub fn detect_save_path(
             if uc_path.is_dir() {
                 return Some(uc_path.to_string_lossy().to_string());
             }
+        }
+    }
+
+    // Unix: XDG directories, Unity's tree and the launcher's Wine/Proton
+    // prefixes. The Windows branches below are harmless there (`USERPROFILE`
+    // and the AppData variables are absent), so this is an extra first pass.
+    #[cfg(not(windows))]
+    if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
+        let data_home = std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".local").join("share"));
+        let config_home = std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".config"));
+        if let Some(found) = detect_save_path_unix(&home, &data_home, &config_home, app_name, title)
+        {
+            return Some(found);
         }
     }
 
@@ -490,6 +511,99 @@ pub fn detect_save_path(
         }
     }
 
+    None
+}
+
+/// Every user directory inside a Wine/Proton prefix (`drive_c/users/<name>`).
+#[cfg(any(not(windows), test))]
+fn prefix_user_dirs(prefix: &Path) -> Vec<PathBuf> {
+    let mut users = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(prefix.join("drive_c").join("users")) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                users.push(path);
+            }
+        }
+    }
+    users
+}
+
+/// Save locations on Linux/macOS.
+///
+/// The home, data and config roots are arguments rather than environment reads
+/// so the layout can be unit-tested on every platform. Proton keeps the Windows
+/// tree under `pfx/drive_c`, and the launcher's own prefixes live under
+/// `~/Games/Efxlve/Prefixes`; both are searched, including a prefix chosen for
+/// a different game when the named one does not exist.
+#[cfg(any(not(windows), test))]
+fn detect_save_path_unix(
+    home: &Path,
+    data_home: &Path,
+    config_home: &Path,
+    app_name: &str,
+    title: Option<&str>,
+) -> Option<String> {
+    let (names, normalized) = build_search_candidates(app_name, title, None);
+
+    // `nested` allows one publisher directory; `require_files` only accepts a
+    // folder that holds something save-like, so a bare name match in a shared
+    // directory does not win over a real save folder.
+    let mut roots: Vec<(PathBuf, bool, bool)> = vec![
+        (data_home.to_path_buf(), false, false),
+        (config_home.join("unity3d"), true, false),
+        (home.join("Documents"), true, true),
+        (home.join("Saved Games"), true, true),
+    ];
+    if cfg!(target_os = "macos") {
+        roots.push((
+            home.join("Library").join("Application Support"),
+            true,
+            true,
+        ));
+    }
+
+    let prefix_root = home.join("Games").join("Efxlve").join("Prefixes");
+    let mut prefixes = Vec::new();
+    let preferred = prefix_root.join(app_name);
+    if preferred.is_dir() {
+        prefixes.push(preferred);
+    }
+    if let Ok(entries) = std::fs::read_dir(&prefix_root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() && !prefixes.contains(&path) {
+                prefixes.push(path);
+            }
+        }
+    }
+    for prefix in prefixes {
+        // Proton puts the Windows tree under `pfx`; a plain Wine prefix is the
+        // tree itself.
+        let pfx = prefix.join("pfx");
+        let wine_root = if pfx.is_dir() { pfx } else { prefix };
+        // Windows keeps user data in these four folders inside the prefix.
+        const SUBDIRS: [&[&str]; 4] = [
+            &["AppData", "Local"],
+            &["AppData", "LocalLow"],
+            &["Documents"],
+            &["Saved Games"],
+        ];
+        for user in prefix_user_dirs(&wine_root) {
+            for sub in SUBDIRS {
+                let path = sub
+                    .iter()
+                    .fold(user.clone(), |path, part| path.join(part));
+                roots.push((path, true, true));
+            }
+        }
+    }
+
+    for (root, nested, require_files) in roots {
+        if let Some(found) = scan_folder_for_game(&root, &names, &normalized, nested, require_files) {
+            return Some(found.to_string_lossy().to_string());
+        }
+    }
     None
 }
 
@@ -737,5 +851,83 @@ mod tests {
         assert_eq!(found.unwrap(), game_dir);
 
         let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    fn unix_fixture(name: &str) -> (PathBuf, PathBuf, PathBuf) {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_unix_saves_{name}_{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let home = root.join("home");
+        let data = root.join("data");
+        let config = root.join("config");
+        std::fs::create_dir_all(&home).unwrap();
+        std::fs::create_dir_all(&data).unwrap();
+        std::fs::create_dir_all(&config).unwrap();
+        (home, data, config)
+    }
+
+    #[test]
+    fn unix_detection_finds_a_unity_save_tree() {
+        let (home, data, config) = unix_fixture("unity");
+        let game = config.join("unity3d").join("Studio").join("Sample Game");
+        std::fs::create_dir_all(&game).unwrap();
+        std::fs::write(game.join("profile.sav"), b"save").unwrap();
+
+        let found = detect_save_path_unix(&home, &data, &config, "SampleGame", Some("Sample Game"));
+        assert_eq!(found.unwrap(), game.to_string_lossy());
+
+        let _ = std::fs::remove_dir_all(home.parent().unwrap());
+    }
+
+    #[test]
+    fn unix_detection_finds_an_xdg_data_save() {
+        let (home, data, config) = unix_fixture("xdg");
+        let game = data.join("Sample Game");
+        std::fs::create_dir_all(&game).unwrap();
+
+        let found = detect_save_path_unix(&home, &data, &config, "SampleGame", Some("Sample Game"));
+        assert_eq!(found.unwrap(), game.to_string_lossy());
+
+        let _ = std::fs::remove_dir_all(home.parent().unwrap());
+    }
+
+    #[test]
+    fn unix_detection_reads_the_proton_prefix_appdata() {
+        let (home, data, config) = unix_fixture("proton");
+        let local = home
+            .join("Games")
+            .join("Efxlve")
+            .join("Prefixes")
+            .join("SampleGame")
+            .join("pfx")
+            .join("drive_c")
+            .join("users")
+            .join("steamuser")
+            .join("AppData")
+            .join("Local")
+            .join("Sample Game");
+        std::fs::create_dir_all(&local).unwrap();
+        std::fs::write(local.join("savegame.dat"), b"save").unwrap();
+
+        let found = detect_save_path_unix(&home, &data, &config, "SampleGame", Some("Sample Game"));
+        assert_eq!(found.unwrap(), local.to_string_lossy());
+
+        let _ = std::fs::remove_dir_all(home.parent().unwrap());
+    }
+
+    #[test]
+    fn unix_detection_ignores_an_empty_documents_folder() {
+        let (home, data, config) = unix_fixture("empty");
+        // A publisher folder that matches the game name but is empty is not a
+        // save location; the Documents pass requires save-like content.
+        let docs = home.join("Documents").join("Studio").join("Sample Game");
+        std::fs::create_dir_all(&docs).unwrap();
+
+        let found = detect_save_path_unix(&home, &data, &config, "SampleGame", Some("Sample Game"));
+        assert_eq!(found, None);
+
+        let _ = std::fs::remove_dir_all(home.parent().unwrap());
     }
 }
