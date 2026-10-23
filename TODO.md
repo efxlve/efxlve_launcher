@@ -10,8 +10,6 @@ Open work only. Delete the item when it lands.
   hand.
 - Conflict detection compares timestamps before a restore; comparing hashes is
   still open.
-- Auto-sync failure toast exists; a background queue with per-game status does
-  not.
 - Move provider credentials from plain JSON into the OS keychain.
 - Move the Linux/macOS Steam token out of the `0600` file and into the OS
   keychain (Secret Service / Keychain); Windows already uses DPAPI.

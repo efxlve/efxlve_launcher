@@ -460,6 +460,14 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
     }
 }
 
+/// Serializes automatic uploads: two games can exit together and only one
+/// sync should talk to the provider at a time.
+static AUTO_SYNC_QUEUE: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
+
+fn auto_sync_queue() -> &'static tokio::sync::Mutex<()> {
+    AUTO_SYNC_QUEUE.get_or_init(|| tokio::sync::Mutex::new(()))
+}
+
 /// Hook called automatically when a game process exits.
 /// If cloud backup is enabled with auto_sync_on_game_exit = true,
 /// this creates a local backup and uploads it silently in the background.
@@ -473,6 +481,7 @@ pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
     }
 
     tauri::async_runtime::spawn(async move {
+        let _queue = auto_sync_queue().lock().await;
         // Create the local backup first, then upload it. Failures must reach the
         // UI: `cloud-sync-complete` is the channel the frontend already listens to.
         let local_res = tauri::async_runtime::spawn_blocking({

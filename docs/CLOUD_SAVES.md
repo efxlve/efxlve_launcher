@@ -240,16 +240,14 @@ Ordered by user value:
    the result explicit. Steam `compatdata` scanning is a separate gap.
 2. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
-3. **Auto-sync feedback** — the failure toast and notification exist; a
-   background queue with per-game status does not.
-4. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
+3. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
    and a Google Drive “test before connect” path.
-5. **Secrets at rest** — OS keychain or an encrypted local vault; never log
+4. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
-6. **Remote migration** — local folders created before `backup_key` are moved to
+5. **Remote migration** — local folders created before `backup_key` are moved to
    the safe key automatically; WebDAV/Folder archives stored under raw `::`
    names still need a one-time remote rename or a legacy fallback in the listing.
-7. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+6. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
 ---
