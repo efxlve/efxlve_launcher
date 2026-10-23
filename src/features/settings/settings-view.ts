@@ -308,7 +308,10 @@ function renderCloud(): string {
  */
 function renderCollections(): string {
   const imports = group(
-    row(t("col.importEpic"), t("col.importEpicDesc"), `<button type="button" class="btn ghost small" data-act="import-egl-collections">${t("col.importBtn")}</button>`) +
+    // Only the Windows Epic Games Launcher keeps importable collections.
+    (IS_WINDOWS
+      ? row(t("col.importEpic"), t("col.importEpicDesc"), `<button type="button" class="btn ghost small" data-act="import-egl-collections">${t("col.importBtn")}</button>`)
+      : "") +
     row(t("col.importGalaxy"), t("col.importGalaxyDesc"), `<button type="button" class="btn ghost small" data-act="gog-import-galaxy-tags">${t("col.importBtn")}</button>`) +
     row(t("col.importSteam"), t("col.importSteamDesc"), `<button type="button" class="btn ghost small" data-act="steam-import-collections">${t("col.importBtn")}</button>`),
     t("col.importTitle"),
@@ -552,8 +555,12 @@ function renderIntegrations(): string {
 
   return (
     infoBox("settings.integrationsInfo") +
-    group(eglGroup, t("settings.eglTitle")) +
-    group(eos, t("settings.eosGroupTitle")) +
+    // The Epic Games Launcher scan/removal and the EOS overlay are Windows
+    // surfaces; on Linux/macOS the rebuilt Epic client is a separate app and
+    // legendary owns installs, so neither group applies.
+    (IS_WINDOWS
+      ? group(eglGroup, t("settings.eglTitle")) + group(eos, t("settings.eosGroupTitle"))
+      : "") +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
     group(nileGroup, t("settings.nileTitle")) +
     renderSteamGroup() +
