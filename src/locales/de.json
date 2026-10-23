@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "Die neueste Cloud-Sicherung für jedes Spiel wiederherstellen?",
   "cloud.bulkRestoreBody": "Stellt die neueste Cloud-Sicherung von {total} installierten Spielen wieder her. Vor jeder Wiederherstellung wird der aktuelle lokale Spielstand gesichert.",
   "cloud.bulkRestoreConfirm": "Alle wiederherstellen",
-  "cloud.bulkRestoreDone": "Wiederherstellung abgeschlossen: {total} Spiele, {failed} fehlgeschlagen."
+  "cloud.bulkRestoreDone": "Wiederherstellung abgeschlossen: {total} Spiele, {failed} fehlgeschlagen.",
+  "cloud.localBackupTitle": "Tägliches lokales Backup",
+  "cloud.localBackupDesc": "Erstellt höchstens einmal täglich eine lokale Sicherung pro installiertem Spiel, auch ohne Cloud-Anbieter. Läuft, solange der Launcher geöffnet ist."
 }

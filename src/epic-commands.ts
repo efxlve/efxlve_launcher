@@ -940,6 +940,8 @@ export interface CloudBackupSettings {
   provider: CloudBackupProvider;
   autoSyncOnGameExit: boolean;
   retentionCount: number;
+  localBackupDaily: boolean;
+  lastLocalBackup?: number | null;
   folderPath: string;
   webdavUrl: string;
   webdavUsername: string;

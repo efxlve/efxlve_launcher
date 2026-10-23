@@ -82,7 +82,7 @@ import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-act
 import { amazonKey, type NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";import { loadSavedAccounts } from "../auth/account-switcher";
-import { initCloudBackupSettings } from "../cloud-backup/cloud-backup-actions";
+import { initCloudBackupSettings, scheduleLocalBackups } from "../cloud-backup/cloud-backup-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
@@ -302,7 +302,7 @@ export async function initApp(hooks: {
     .catch(() => {});
   void hydrateSteamAuth();
   void loadSavedAccounts();
-  void initCloudBackupSettings();
+  void initCloudBackupSettings().then(() => scheduleLocalBackups());
 
   if (isTauri) {
     void initEosInstall();

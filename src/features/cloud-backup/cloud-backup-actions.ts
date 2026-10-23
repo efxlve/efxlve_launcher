@@ -19,6 +19,7 @@ import {
   cloudBackupListGame,
   cloudBackupDownloadGame,
   cloudBackupDeleteRemote,
+  epicBackupSave,
   type CloudBackupSettings,
   type CloudBackupEntry,
 } from "../../epic";
@@ -41,6 +42,8 @@ export async function updateCloudBackupSettings(
     provider: "none",
     autoSyncOnGameExit: false,
     retentionCount: 0,
+    localBackupDaily: false,
+    lastLocalBackup: null,
     folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
@@ -198,6 +201,52 @@ export async function bulkCloudRestoreAction(): Promise<void> {
   S.cloudBulkProgress = null;
   scheduleRender();
   toast(t("cloud.bulkRestoreDone", { total: restored, failed }), failed > 0 ? "err" : "ok");
+}
+
+let localBackupTimer: number | null = null;
+
+/** Starts the once-a-day local backup loop. Safe to call more than once. */
+export function scheduleLocalBackups(): void {
+  if (localBackupTimer !== null) return;
+  const run = () => {
+    void runScheduledLocalBackup();
+  };
+  // Let the library hydrate before the first pass, then check every six hours.
+  window.setTimeout(run, 30_000);
+  localBackupTimer = window.setInterval(run, 6 * 60 * 60 * 1000);
+}
+
+/** Runs the due check immediately, e.g. right after the switch is enabled. */
+export function runScheduledLocalBackupNow(): void {
+  void runScheduledLocalBackup();
+}
+
+async function runScheduledLocalBackup(): Promise<void> {
+  const st = S.cloudBackupSettings;
+  if (!st?.localBackupDaily || S.cloudBulkProgress) return;
+  const now = Math.floor(Date.now() / 1000);
+  if (st.lastLocalBackup && now - st.lastLocalBackup < 24 * 60 * 60) return;
+  const games = managedInstalledGames();
+  if (games.length === 0) return;
+  S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
+  scheduleRender();
+  let failed = 0;
+  for (const key of games) {
+    try {
+      await epicBackupSave(key);
+    } catch {
+      failed += 1;
+    }
+    S.cloudBulkProgress.done += 1;
+    S.cloudBulkProgress.failed = failed;
+    scheduleRender();
+  }
+  S.cloudBulkProgress = null;
+  await updateCloudBackupSettings({ lastLocalBackup: now });
+  scheduleRender();
+  if (failed > 0) {
+    console.warn(`scheduled local backup: ${failed} game(s) failed`);
+  }
 }
 
 export async function uploadGameCloudAction(appName: string, backupId?: string): Promise<void> {

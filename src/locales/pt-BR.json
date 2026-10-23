@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "Restaurar o backup na nuvem mais recente de cada jogo?",
   "cloud.bulkRestoreBody": "Restaura o backup na nuvem mais recente de {total} jogos instalados. Antes de cada restauração, um snapshot dos saves locais é criado.",
   "cloud.bulkRestoreConfirm": "Restaurar tudo",
-  "cloud.bulkRestoreDone": "Restauração concluída: {total} jogos, {failed} falharam."
+  "cloud.bulkRestoreDone": "Restauração concluída: {total} jogos, {failed} falharam.",
+  "cloud.localBackupTitle": "Backup local diário",
+  "cloud.localBackupDesc": "Cria no máximo um backup local por dia para cada jogo instalado, mesmo sem provedor na nuvem. Roda enquanto o launcher está aberto."
 }

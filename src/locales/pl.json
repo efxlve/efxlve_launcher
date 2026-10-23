@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "Przywrócić najnowszą kopię w chmurze dla każdej gry?",
   "cloud.bulkRestoreBody": "Przywraca najnowszą kopię w chmurze dla {total} zainstalowanych gier. Przed każdym przywróceniem tworzona jest kopia bieżących zapisów.",
   "cloud.bulkRestoreConfirm": "Przywróć wszystko",
-  "cloud.bulkRestoreDone": "Przywracanie zakończone: {total} gier, {failed} nieudanych."
+  "cloud.bulkRestoreDone": "Przywracanie zakończone: {total} gier, {failed} nieudanych.",
+  "cloud.localBackupTitle": "Codzienna kopia lokalna",
+  "cloud.localBackupDesc": "Tworzy najwyżej jedną lokalną kopię dziennie dla każdej zainstalowanej gry, nawet bez chmury. Działa, gdy launcher jest otwarty."
 }

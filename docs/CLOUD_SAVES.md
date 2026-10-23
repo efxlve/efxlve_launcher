@@ -110,6 +110,9 @@ Steam's Proton still needs its folder picked once in Manage.
   and configured by the user.
 - Auto-sync on game exit is a separate switch. With Folder selected it works
   with no account setup.
+- **Daily local backup** creates one local backup per installed game at most
+  once a day while the launcher is open, even with no cloud provider. It shares
+  the progress row with the bulk actions.
 - **Keep the last N versions** prunes older local backups and cloud archives
   after a successful backup. 0 (the default) keeps every backup; pre-restore
   snapshots are never pruned.
@@ -235,21 +238,19 @@ Ordered by user value:
    macOS `~/Library/Application Support` and the launcher's Wine/Proton
    prefixes; a detected path the user can confirm once and then reuse would make
    the result explicit. Steam `compatdata` scanning is a separate gap.
-2. **Scheduled local backups** — retention now covers local backups and cloud
-   archives, but there is no daily local backup job.
-3. **Conflict detection** — the timestamp comparison before a restore is in
+2. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
-4. **Auto-sync feedback** — the failure toast and notification exist; a
+3. **Auto-sync feedback** — the failure toast and notification exist; a
    background queue with per-game status does not.
-5. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
+4. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
    a Google Drive “test before connect” path, and an rclone remote picker that
    lists configured remotes (`rclone listremotes`).
-6. **Secrets at rest** — OS keychain or an encrypted local vault; never log
+5. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
-7. **Remote migration** — local folders created before `backup_key` are moved to
+6. **Remote migration** — local folders created before `backup_key` are moved to
    the safe key automatically; WebDAV/Folder archives stored under raw `::`
    names still need a one-time remote rename or a legacy fallback in the listing.
-8. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+7. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
 ---

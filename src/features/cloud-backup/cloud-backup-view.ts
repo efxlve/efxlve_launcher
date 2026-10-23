@@ -22,6 +22,8 @@ export function renderCloudBackupSettingsGroup(): string {
     provider: "none",
     autoSyncOnGameExit: false,
     retentionCount: 0,
+    localBackupDaily: false,
+    lastLocalBackup: null,
     folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
@@ -217,6 +219,17 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
+  const localBackupRow = isEnabled ? `
+    <div class="row settings-row">
+      <div class="row-main">
+        <div class="settings-row-title">${t("cloud.localBackupTitle")}</div>
+        <div class="settings-row-desc">${t("cloud.localBackupDesc")}</div>
+      </div>
+      <div class="settings-row-control">
+        <label class="switch"><input type="checkbox" data-act="toggle-cloud-local-backup" ${st.localBackupDaily ? "checked" : ""} /><span class="track"></span></label>
+      </div>
+    </div>` : "";
+
   const providerRow = isEnabled ? `
     <div class="row settings-row">
       <div class="row-main">
@@ -235,6 +248,7 @@ export function renderCloudBackupSettingsGroup(): string {
       ${autoSyncRow}
       ${retentionRow}
       ${bulkRow}
+      ${localBackupRow}
     </div>`;
 }
 

@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "กู้คืนแบ็กอัปคลาวด์ล่าสุดของทุกเกมหรือไม่?",
   "cloud.bulkRestoreBody": "กู้คืนแบ็กอัปคลาวด์ล่าสุดของ {total} เกมที่ติดตั้ง จะสร้างสแนปช็อตของเซฟในเครื่องก่อนทุกครั้ง",
   "cloud.bulkRestoreConfirm": "กู้คืนทั้งหมด",
-  "cloud.bulkRestoreDone": "กู้คืนเสร็จ: {total} เกม, ล้มเหลว {failed}"
+  "cloud.bulkRestoreDone": "กู้คืนเสร็จ: {total} เกม, ล้มเหลว {failed}",
+  "cloud.localBackupTitle": "แบ็กอัปในเครื่องรายวัน",
+  "cloud.localBackupDesc": "สร้างแบ็กอัปในเครื่องสูงสุดวันละครั้งต่อเกมที่ติดตั้ง แม้ไม่มีคลาวด์ ทำงานขณะเปิดตัวเรียกใช้งาน"
 }

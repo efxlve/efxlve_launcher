@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "Her oyun için en yeni bulut yedeği geri yüklensin mi?",
   "cloud.bulkRestoreBody": "{total} kurulu oyunun en yeni bulut yedeği geri yüklenir. Her geri yüklemeden önce mevcut yerel kayıtların anlık görüntüsü alınır.",
   "cloud.bulkRestoreConfirm": "Tümünü geri yükle",
-  "cloud.bulkRestoreDone": "Geri yükleme bitti: {total} oyun geri yüklendi, {failed} hata."
+  "cloud.bulkRestoreDone": "Geri yükleme bitti: {total} oyun geri yüklendi, {failed} hata.",
+  "cloud.localBackupTitle": "Günlük yerel yedek",
+  "cloud.localBackupDesc": "Bulut sağlayıcısı olmasa bile günde en fazla bir kez her kurulu oyun için yerel yedek alır. Launcher açıkken çalışır."
 }

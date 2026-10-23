@@ -13,6 +13,8 @@ import {
   disconnectGoogleDriveAction,
   downloadCloudBackupAction,
   loadCloudBackupsAction,
+  runScheduledLocalBackupNow,
+  scheduleLocalBackups,
   startGoogleDriveAuthAction,
   testCloudConnectionAction,
   updateCloudBackupSettings,
@@ -86,6 +88,17 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       void updateCloudBackupSettings({
         enabled: chk,
         provider: chk && (!S.cloudBackupSettings || S.cloudBackupSettings.provider === "none") ? "folder" : S.cloudBackupSettings?.provider ?? "folder",
+      });
+      return true;
+    }
+
+    case "toggle-cloud-local-backup": {
+      const chk = ((targetEl || t) as HTMLInputElement).checked;
+      void updateCloudBackupSettings({ localBackupDaily: chk }).then((ok) => {
+        if (ok && chk) {
+          scheduleLocalBackups();
+          runScheduledLocalBackupNow();
+        }
       });
       return true;
     }

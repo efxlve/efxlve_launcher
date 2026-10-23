@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "هل تريد استعادة أحدث نسخة سحابية لكل لعبة؟",
   "cloud.bulkRestoreBody": "يستعيد أحدث نسخة سحابية لـ {total} لعبة مثبتة. تُنشأ نسخة من الحفظات المحلية قبل كل استعادة.",
   "cloud.bulkRestoreConfirm": "استعد الكل",
-  "cloud.bulkRestoreDone": "اكتملت الاستعادة: {total} لعبة، {failed} فشلت."
+  "cloud.bulkRestoreDone": "اكتملت الاستعادة: {total} لعبة، {failed} فشلت.",
+  "cloud.localBackupTitle": "نسخة محلية يومية",
+  "cloud.localBackupDesc": "ينشئ نسخة محلية واحدة يوميًا كحد أقصى لكل لعبة مثبتة، حتى بدون مزوّد سحابي. يعمل أثناء فتح المشغّل."
 }

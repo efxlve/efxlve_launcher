@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "각 게임의 최신 클라우드 백업을 복원할까요?",
   "cloud.bulkRestoreBody": "{total}개 설치된 게임의 최신 클라우드 백업을 복원합니다. 복원 전마다 현재 로컬 세이브의 스냅샷이 생성됩니다.",
   "cloud.bulkRestoreConfirm": "모두 복원",
-  "cloud.bulkRestoreDone": "복원 완료: {total}개 게임, 실패 {failed}개."
+  "cloud.bulkRestoreDone": "복원 완료: {total}개 게임, 실패 {failed}개.",
+  "cloud.localBackupTitle": "매일 로컬 백업",
+  "cloud.localBackupDesc": "클라우드 없이도 설치된 게임마다 하루 최대 한 번 로컬 백업을 만듭니다. 런처가 열려 있는 동안 실행됩니다."
 }

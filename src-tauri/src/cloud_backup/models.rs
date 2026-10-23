@@ -25,6 +25,11 @@ pub struct CloudBackupSettings {
     /// Cloud archives kept per game; 0 keeps every archive.
     #[serde(default)]
     pub retention_count: u32,
+    /// Creates one local backup per installed game at most once a day.
+    #[serde(default)]
+    pub local_backup_daily: bool,
+    #[serde(default)]
+    pub last_local_backup: Option<u64>,
     #[serde(default)]
     pub folder_path: String,
     #[serde(default)]
@@ -57,6 +62,8 @@ impl Default for CloudBackupSettings {
             provider: CloudBackupProvider::None,
             auto_sync_on_game_exit: false,
             retention_count: 0,
+            local_backup_daily: false,
+            last_local_backup: None,
             folder_path: String::new(),
             webdav_url: String::new(),
             webdav_username: String::new(),

@@ -2995,5 +2995,7 @@
   "cloud.bulkRestoreTitle": "要為每個遊戲還原最新的雲端備份嗎？",
   "cloud.bulkRestoreBody": "將還原 {total} 個已安裝遊戲的最新雲端備份。每次還原前都會先建立目前本機存檔的快照。",
   "cloud.bulkRestoreConfirm": "全部還原",
-  "cloud.bulkRestoreDone": "還原完成：{total} 個遊戲，{failed} 個失敗。"
+  "cloud.bulkRestoreDone": "還原完成：{total} 個遊戲，{failed} 個失敗。",
+  "cloud.localBackupTitle": "每日本機備份",
+  "cloud.localBackupDesc": "即使沒有雲端提供者，也為每個已安裝遊戲每天最多建立一次本機備份。僅在啟動器開啟時執行。"
 }
