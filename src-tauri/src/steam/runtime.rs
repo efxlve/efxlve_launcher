@@ -41,6 +41,19 @@ pub fn steam_install_path() -> Option<PathBuf> {
         let candidates = [
             home.join(".steam").join("steam"),
             home.join(".local").join("share").join("Steam"),
+            // Flatpak and Snap installs keep their own copy of the client.
+            home.join(".var")
+                .join("app")
+                .join("com.valvesoftware.Steam")
+                .join(".local")
+                .join("share")
+                .join("Steam"),
+            home.join("snap")
+                .join("steam")
+                .join("common")
+                .join(".local")
+                .join("share")
+                .join("Steam"),
             home.join("Library")
                 .join("Application Support")
                 .join("Steam"),
@@ -81,7 +94,16 @@ pub(super) fn steam_client_running(steam: &Path) -> bool {
 }
 
 pub(super) fn steam_client_running_now(steam: &Path) -> bool {
-    if let Ok(raw) = std::fs::read_to_string(steam.join("steam.pid")) {
+    // Linux keeps `steam.pid` one level above the client folder (`~/.steam`),
+    // while the Windows client writes it inside the install folder.
+    let pid_files = [
+        steam.join("steam.pid"),
+        steam.parent().map(|parent| parent.join("steam.pid")).unwrap_or_default(),
+    ];
+    for pid_file in pid_files {
+        let Ok(raw) = std::fs::read_to_string(pid_file) else {
+            continue;
+        };
         if let Some(pid) = parse_steam_pid(&raw) {
             if pid_is_alive(pid) {
                 return true;
@@ -94,7 +116,7 @@ pub(super) fn steam_client_running_now(steam: &Path) -> bool {
     }
     #[cfg(not(windows))]
     {
-        false
+        crate::legendary::transfers::is_game_process_running(None, &["steam".to_string()])
     }
 }
 

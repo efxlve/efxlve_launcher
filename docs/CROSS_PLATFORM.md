@@ -291,9 +291,11 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
   oturumu ve overlay bağlamının Windows'suz çalışması içindir.
 - **Dosya seçiciler:** Linux'ta `zenity`/`kdialog`, macOS'ta `osascript`; yoksa
   mevcut değer korunur. Windows PowerShell seçicisi değişmedi.
-- **Steam:** Kayıt defteri yerine `~/.steam/steam`, `~/.local/share/Steam` ve
-  `~/Library/Application Support/Steam` aranır. `steam://` açma `xdg-open` /
-  `open` ile yapılır.
+- **Steam:** Kayıt defteri yerine `~/.steam/steam`, `~/.local/share/Steam`,
+  Flatpak (`~/.var/app/com.valvesoftware.Steam/...`), Snap
+  (`~/snap/steam/...`) ve `~/Library/Application Support/Steam` aranır.
+  `steam.pid` hem istemci klasöründe hem bir üst dizinde okunur; dosya yoksa
+  süreç adına bakılır. `steam://` açma `xdg-open` / `open` ile yapılır.
 - **Overlay:** Panel Tauri webview olarak açılır; launcher açıldığından itibaren
   üst çubuktaki düğme ve tepsi menüsüyle kullanılabilir. Shift+Tab global
   kısayolu, HUD/FPS katmanı, ekran görüntüsü ve klip sekmeleri Windows'a özgüdür.
