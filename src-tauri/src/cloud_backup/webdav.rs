@@ -4,12 +4,251 @@ use crate::cloud_backup::models::CloudBackupEntry;
 use crate::legendary::backup::{backup_key, format_backup_timestamp};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
-use reqwest::{Client, Method, StatusCode};
+use md5::{Digest, Md5};
+use reqwest::{Client, Method, Response, StatusCode};
 use std::path::Path;
 
 fn basic_auth_header(user: &str, pass: &str) -> String {
     format!("Basic {}", BASE64.encode(format!("{user}:{pass}")))
 }
+
+fn md5_hex(input: &str) -> String {
+    format!("{:x}", Md5::digest(input.as_bytes()))
+}
+
+/// Request URI (path and query) used by the digest response.
+fn digest_uri(url: &str) -> String {
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return "/".to_string();
+    };
+    let mut uri = parsed.path().to_string();
+    if let Some(query) = parsed.query() {
+        uri.push('?');
+        uri.push_str(query);
+    }
+    uri
+}
+
+fn escape_digest(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+/// Splits a digest challenge without breaking on a comma inside quotes.
+fn digest_params(input: &str) -> Vec<(String, String)> {
+    let text = input.trim();
+    let text = text.split_once(' ').map(|(_, rest)| rest).unwrap_or(text);
+    let chars: Vec<char> = text.chars().collect();
+    let mut params = Vec::new();
+    let mut index = 0;
+    while index < chars.len() {
+        while index < chars.len() && (chars[index] == ',' || chars[index].is_whitespace()) {
+            index += 1;
+        }
+        let name_start = index;
+        while index < chars.len() && chars[index] != '=' {
+            index += 1;
+        }
+        if index >= chars.len() {
+            break;
+        }
+        let name: String = chars[name_start..index].iter().collect();
+        index += 1; // '='
+        while index < chars.len() && chars[index].is_whitespace() {
+            index += 1;
+        }
+        let mut value = String::new();
+        if index < chars.len() && chars[index] == '"' {
+            index += 1;
+            while index < chars.len() {
+                let ch = chars[index];
+                if ch == '\\' && index + 1 < chars.len() {
+                    value.push(chars[index + 1]);
+                    index += 2;
+                    continue;
+                }
+                if ch == '"' {
+                    index += 1;
+                    break;
+                }
+                value.push(ch);
+                index += 1;
+            }
+        } else {
+            while index < chars.len() && chars[index] != ',' {
+                value.push(chars[index]);
+                index += 1;
+            }
+        }
+        if !name.trim().is_empty() {
+            params.push((name.trim().to_ascii_lowercase(), value.trim().to_string()));
+        }
+    }
+    params
+}
+
+fn digest_header(
+    challenge: &str,
+    method: &str,
+    uri: &str,
+    user: &str,
+    pass: &str,
+    cnonce: &str,
+) -> Option<String> {
+    let params = digest_params(challenge);
+    let get = |name: &str| {
+        params
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.as_str())
+    };
+    let realm = get("realm")?;
+    let nonce = get("nonce")?;
+    let algorithm = get("algorithm").unwrap_or("MD5");
+    let qop = get("qop").and_then(|value| {
+        value
+            .split(',')
+            .map(str::trim)
+            .find(|item| item.eq_ignore_ascii_case("auth"))
+    });
+
+    let ha1 = md5_hex(&format!("{user}:{realm}:{pass}"));
+    let ha1 = if algorithm.eq_ignore_ascii_case("MD5-sess") {
+        md5_hex(&format!("{ha1}:{nonce}:{cnonce}"))
+    } else {
+        ha1
+    };
+    let ha2 = md5_hex(&format!("{method}:{uri}"));
+    let nc = "00000001";
+    let response = match qop {
+        Some(qop) => md5_hex(&format!("{ha1}:{nonce}:{nc}:{cnonce}:{qop}:{ha2}")),
+        None => md5_hex(&format!("{ha1}:{nonce}:{ha2}")),
+    };
+
+    let mut header = format!(
+        "Digest username=\"{}\", realm=\"{}\", nonce=\"{}\", uri=\"{}\", response=\"{}\"",
+        escape_digest(user),
+        escape_digest(realm),
+        escape_digest(nonce),
+        escape_digest(uri),
+        response
+    );
+    if let Some(qop) = qop {
+        header.push_str(&format!(
+            ", qop={qop}, nc={nc}, cnonce=\"{}\"",
+            escape_digest(cnonce)
+        ));
+    }
+    if !algorithm.is_empty() {
+        header.push_str(&format!(
+            ", algorithm={}",
+            if algorithm.eq_ignore_ascii_case("MD5-sess") {
+                "MD5-sess"
+            } else {
+                "MD5"
+            }
+        ));
+    }
+    if let Some(opaque) = get("opaque") {
+        header.push_str(&format!(", opaque=\"{}\"", escape_digest(opaque)));
+    }
+    Some(header)
+}
+
+/// Sends a request with basic auth and retries once when the server asks for
+/// digest auth. Basic auth remains the first attempt so existing servers keep
+/// their old behavior.
+async fn send_webdav(
+    client: &Client,
+    method: &Method,
+    url: &str,
+    user: &str,
+    pass: &str,
+    body: Option<&[u8]>,
+    content_type: Option<&str>,
+    depth: Option<&str>,
+) -> Result<Response, String> {
+    let build = |auth: Option<String>| {
+        let mut request = client.request(method.clone(), url);
+        if let Some(auth) = auth {
+            request = request.header("Authorization", auth);
+        }
+        if let Some(body) = body {
+            request = request.body(body.to_vec());
+        }
+        if let Some(content_type) = content_type {
+            request = request.header("Content-Type", content_type);
+        }
+        if let Some(depth) = depth {
+            request = request.header("Depth", depth);
+        }
+        request
+    };
+
+    let response = build(Some(basic_auth_header(user, pass)))
+        .send()
+        .await
+        .map_err(|error| format!("Network connection failed: {error}"))?;
+    if response.status() != StatusCode::UNAUTHORIZED {
+        return Ok(response);
+    }
+
+    let challenge = response
+        .headers()
+        .get_all(reqwest::header::WWW_AUTHENTICATE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .find(|value| value.to_ascii_lowercase().starts_with("digest "))
+        .map(str::to_string);
+    let Some(challenge) = challenge else {
+        return Ok(response);
+    };
+    let cnonce = format!("{:016x}", rand::random::<u64>());
+    let Some(header) = digest_header(
+        &challenge,
+        method.as_str(),
+        &digest_uri(url),
+        user,
+        pass,
+        &cnonce,
+    ) else {
+        return Ok(response);
+    };
+
+    build(Some(header))
+        .send()
+        .await
+        .map_err(|error| format!("Digest authentication request failed: {error}"))
+}
+
+#[cfg(test)]
+mod digest_tests {
+    use super::*;
+
+    #[test]
+    fn rfc_example_digest_response() {
+        let challenge = "Digest realm=\"testrealm@host.com\", qop=\"auth,auth-int\", nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"";
+        let header = digest_header(
+            challenge,
+            "GET",
+            "/dir/index.html",
+            "Mufasa",
+            "Circle Of Life",
+            "0a4f113b",
+        )
+        .unwrap();
+        assert!(header.contains("response=\"6629fae49393a05397450978507c4ef1\""), "{header}");
+        assert!(header.contains("qop=auth"));
+        assert!(header.contains("opaque=\"5ccc069c403ebaf9f0171e9517f40e41\""));
+    }
+
+    #[test]
+    fn quoted_commas_do_not_split_params() {
+        let params = digest_params("Digest realm=\"a,b\", nonce=\"c\"");
+        assert_eq!(params[0], ("realm".to_string(), "a,b".to_string()));
+        assert_eq!(params[1], ("nonce".to_string(), "c".to_string()));
+    }
+}
+
 
 fn clean_base_url(url: &str) -> String {
     let mut u = url.trim().to_string();
@@ -29,13 +268,17 @@ pub async fn test_webdav_connection(
     let clean = clean_base_url(url);
     let propfind = Method::from_bytes(b"PROPFIND").map_err(|e| e.to_string())?;
 
-    let res = client
-        .request(propfind, &clean)
-        .header("Authorization", basic_auth_header(user, pass))
-        .header("Depth", "0")
-        .send()
-        .await
-        .map_err(|e| format!("Network connection failed: {e}"))?;
+    let res = send_webdav(
+        client,
+        &propfind,
+        &clean,
+        user,
+        pass,
+        None,
+        None,
+        Some("0"),
+    )
+    .await?;
 
     let status = res.status();
     if status == StatusCode::MULTI_STATUS || status.is_success() {
@@ -57,12 +300,9 @@ pub async fn ensure_remote_collection(
     let clean = clean_base_url(url);
     let mkcol = Method::from_bytes(b"MKCOL").map_err(|e| e.to_string())?;
 
-    let res = client
-        .request(mkcol, &clean)
-        .header("Authorization", basic_auth_header(user, pass))
-        .send()
+    let res = send_webdav(client, &mkcol, &clean, user, pass, None, None, None)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|error| error.to_string())?;
 
     let status = res.status();
     // 201 Created = success; 405 Method Not Allowed = already exists (standard WebDAV behavior)
@@ -85,14 +325,18 @@ pub async fn upload_file_webdav(
         .await
         .map_err(|e| format!("Failed to read local archive: {e}"))?;
 
-    let res = client
-        .put(target_url)
-        .header("Authorization", basic_auth_header(user, pass))
-        .header("Content-Type", "application/gzip")
-        .body(bytes)
-        .send()
-        .await
-        .map_err(|e| format!("Upload failed: {e}"))?;
+    let res = send_webdav(
+        client,
+        &Method::PUT,
+        target_url,
+        user,
+        pass,
+        Some(&bytes),
+        Some("application/gzip"),
+        None,
+    )
+    .await
+    .map_err(|error| format!("Upload failed: {error}"))?;
 
     if res.status().is_success() {
         Ok(())
@@ -116,12 +360,18 @@ pub async fn download_file_webdav(
         let _ = tokio::fs::create_dir_all(parent).await;
     }
 
-    let res = client
-        .get(remote_url)
-        .header("Authorization", basic_auth_header(user, pass))
-        .send()
-        .await
-        .map_err(|e| format!("Download request failed: {e}"))?;
+    let res = send_webdav(
+        client,
+        &Method::GET,
+        remote_url,
+        user,
+        pass,
+        None,
+        None,
+        None,
+    )
+    .await
+    .map_err(|error| format!("Download request failed: {error}"))?;
 
     if !res.status().is_success() {
         return Err(format!(
@@ -145,12 +395,18 @@ pub async fn delete_file_webdav(
     user: &str,
     pass: &str,
 ) -> Result<(), String> {
-    let res = client
-        .delete(remote_url)
-        .header("Authorization", basic_auth_header(user, pass))
-        .send()
-        .await
-        .map_err(|e| format!("Delete request failed: {e}"))?;
+    let res = send_webdav(
+        client,
+        &Method::DELETE,
+        remote_url,
+        user,
+        pass,
+        None,
+        None,
+        None,
+    )
+    .await
+    .map_err(|error| format!("Delete request failed: {error}"))?;
 
     if res.status().is_success() || res.status() == StatusCode::NOT_FOUND {
         Ok(())
@@ -171,13 +427,18 @@ pub async fn list_webdav_backups(
     let target = format!("{clean}efxlve_saves/{}/", backup_key(app_name));
     let propfind = Method::from_bytes(b"PROPFIND").map_err(|e| e.to_string())?;
 
-    let res = client
-        .request(propfind, &target)
-        .header("Authorization", basic_auth_header(user, pass))
-        .header("Depth", "1")
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
+    let res = send_webdav(
+        client,
+        &propfind,
+        &target,
+        user,
+        pass,
+        None,
+        None,
+        Some("1"),
+    )
+    .await
+    .map_err(|error| error.to_string())?;
 
     if res.status() == StatusCode::NOT_FOUND {
         return Ok(Vec::new());

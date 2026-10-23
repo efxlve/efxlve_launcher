@@ -175,8 +175,8 @@ server.
 
 Self-signed certificates are refused by default; the **Allow a self-signed
 certificate** checkbox turns verification off for that one provider. Use it only
-for a server you control. Digest authentication is not implemented yet; use an
-app password with basic auth.
+for a server you control. Basic and digest authentication are supported; an app
+password is still preferable when the server offers one.
 
 #### Google Drive
 
@@ -278,13 +278,10 @@ Ordered by user value:
    then reuse would make the result explicit.
 2. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
-3. **Provider polish** — WebDAV digest authentication.
-4. **Secrets at rest** — OS keychain or an encrypted local vault; never log
-   tokens.
-5. **Remote migration** — local and Folder archives created before `backup_key`
+3. **Remote migration** — local and Folder archives created before `backup_key`
    are moved to the safe key automatically; WebDAV archives stored under raw `::`
    names still need a one-time remote rename or a legacy fallback in the listing.
-6. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+4. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
 ---
