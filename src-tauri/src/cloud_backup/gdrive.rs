@@ -230,6 +230,54 @@ pub async fn exchange_code_for_tokens(
 }
 
 /// Gets a fresh access token using a stored refresh token.
+/// Checks a Desktop OAuth client before opening the browser.
+///
+/// A deliberately invalid code separates a bad client ("invalid_client") from
+/// a good client that simply rejects the code ("invalid_grant"). No tokens are
+/// stored and the request is safe to repeat.
+pub async fn check_oauth_client(
+    client: &Client,
+    client_id: &str,
+    client_secret: &str,
+) -> Result<String, String> {
+    let mut form = vec![
+        ("grant_type", "authorization_code"),
+        ("code", "efxlve-preflight-invalid-code"),
+        ("client_id", client_id),
+        ("redirect_uri", GDRIVE_REDIRECT_URI),
+    ];
+    if !client_secret.trim().is_empty() {
+        form.push(("client_secret", client_secret));
+    }
+    let response = client
+        .post("https://oauth2.googleapis.com/token")
+        .form(&form)
+        .send()
+        .await
+        .map_err(|error| format!("Google OAuth check could not reach Google: {error}"))?;
+    let status = response.status();
+    let body: serde_json::Value = response.json().await.unwrap_or_default();
+    let error = body.get("error").and_then(|value| value.as_str()).unwrap_or("");
+    match error {
+        "invalid_grant" | "redirect_uri_mismatch" => {
+            Ok("Google OAuth client verified. Click Connect with Google to continue.".to_string())
+        }
+        "invalid_client" => Err(
+            "Google rejected the client ID or secret. Use an OAuth Desktop app client from Google Cloud Console."
+                .to_string(),
+        ),
+        _ => {
+            let detail = body
+                .get("error_description")
+                .and_then(|value| value.as_str())
+                .unwrap_or(error);
+            Err(format!(
+                "Google OAuth check failed (HTTP {status}): {detail}"
+            ))
+        }
+    }
+}
+
 pub async fn refresh_access_token(
     client: &Client,
     client_id: &str,

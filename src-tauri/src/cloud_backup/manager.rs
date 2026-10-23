@@ -106,10 +106,10 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
         }
         CloudBackupProvider::GoogleDrive => {
             let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
-            if refresh.is_empty() {
-                return Err("Google Drive is not connected. Please log in first.".to_string());
-            }
             let (client_id, client_secret) = gdrive_credentials(settings)?;
+            if refresh.is_empty() {
+                return gdrive::check_oauth_client(client, client_id, client_secret.unwrap_or_default()).await;
+            }
             let access =
                 gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
             let email = gdrive::fetch_user_email(client, &access)
