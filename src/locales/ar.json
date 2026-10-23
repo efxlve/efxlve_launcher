@@ -1653,7 +1653,7 @@
   "cloud.title": "نسخ سحابي احتياطي لملفات الحفظ",
   "cloud.enableTitle": "تفعيل النسخ الاحتياطي السحابي",
   "cloud.enableDesc": "أرشفة وحفظ ملفات اللعبة تلقائيًا في مساحة التخزين السحابي الشخصية الخاصة بك",
-  "cloud.pageInfo": "تُؤرشف ملفات الحفظ في مساحة Google Drive أو WebDAV الخاصة بك. لا يُرفع أي شيء إلينا.",
+  "cloud.pageInfo": "تُؤرشف حفظاتك في مساحتك السحابية الخاصة: مجلد متزامن أو WebDAV أو Google Drive أو rclone. لا يُرسل شيء إلينا.",
   "cloud.providerTitle": "مزود السحابة",
   "cloud.providerDesc": "اختر المكان الذي سيتم تخزين أرشيفات الحفظ فيه",
   "cloud.autoSyncTitle": "مزامنة تلقائية عند إغلاق اللعبة",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "تم حذف كل النسخ السحابية",
   "cloud.gdriveLocationHint": "يخزّن Google Drive النسخ كبيانات تطبيق مخفية (appDataFolder). على الويب: الإعدادات (الترس) > الإعدادات > إدارة التطبيقات > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "نسخ احتياطي سحابي شخصي للحفظ",
-  "cloud.notConfiguredDesc": "اربط Google Drive أو WebDAV من إعدادات التكامل لنسخ الحفظ إلى سحابتك الشخصية.",
+  "cloud.notConfiguredDesc": "أعدّ مزوّد نسخ احتياطي سحابي في الإعدادات ← السحابة لأرشفة حفظاتك في مساحتك الخاصة.",
   "cloud.guideBtn": "دليل الإعداد",
   "cloud.guideBtnTip": "دليل خطوة بخطوة للحصول على معرّف عميل Google Cloud مجاني",
   "cloud.guideTitle": "دليل إعداد OAuth لـ Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "تم حفظ مجلد النسخ الاحتياطي.",
   "settings.ssPlatformNote": "لقطات الشاشة والمقاطع متاحة حاليًا على Windows فقط. لا يزال المعرض يقرأ المجلدات أدناه، بما في ذلك اللقطات من أدوات أخرى.",
   "controller.bridgeWindowsOnly": "جسر أذرع التحكم متاح على Windows فقط.",
-  "settings.overlayLauncherNote": "افتح الطبقة العلوية من زر الرأس أو قائمة شريط النظام. اختصار لوحة المفاتيح العام متاح حاليًا على Windows فقط."
+  "settings.overlayLauncherNote": "افتح الطبقة العلوية من زر الرأس أو قائمة شريط النظام. اختصار لوحة المفاتيح العام متاح حاليًا على Windows فقط.",
+  "cloud.providerRclone": "rclone (S3، Dropbox…)",
+  "cloud.rcloneTitle": "مخزن rclone البعيد",
+  "cloud.rcloneDesc": "أعد استخدام أي مخزن بعيد أعددته مسبقًا في rclone: S3 وBackblaze B2 وDropbox وOneDrive وMega وpCloud وBox وأكثر من 70 خدمة.",
+  "cloud.rcloneHint": "شغّل `rclone config` مرة واحدة ثم الصق مسار المخزن هنا، مثل `gdrive:efxlve_saves` أو `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "تم حفظ مخزن rclone البعيد.",
+  "cloud.guideOpenTip": "فتح دليل الإعداد لهذا المزوّد."
 }

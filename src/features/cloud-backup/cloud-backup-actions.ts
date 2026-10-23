@@ -43,6 +43,7 @@ export async function updateCloudBackupSettings(
     webdavUrl: "",
     webdavUsername: "",
     webdavPassword: "",
+    rcloneRemote: "",
     gdriveClientId: null,
     gdriveClientSecret: null,
     gdriveFolderId: null,

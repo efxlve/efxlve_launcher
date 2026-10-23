@@ -1653,7 +1653,7 @@
   "cloud.title": "Copia de seguridad en la nube",
   "cloud.enableTitle": "Activar copia de seguridad en la nube",
   "cloud.enableDesc": "Archiva y sube automáticamente las partidas guardadas a tu almacenamiento en la nube personal",
-  "cloud.pageInfo": "Tus partidas se archivan en tu propio Google Drive o almacenamiento WebDAV. No se sube nada a nosotros.",
+  "cloud.pageInfo": "Tus partidas se archivan en tu propio almacenamiento en la nube: una carpeta sincronizada, WebDAV, Google Drive o rclone. No se sube nada a nosotros.",
   "cloud.providerTitle": "Proveedor en la nube",
   "cloud.providerDesc": "Elige dónde se almacenan tus archivos de guardado",
   "cloud.autoSyncTitle": "Sincronización automática al salir del juego",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Se eliminaron todas las copias de la nube",
   "cloud.gdriveLocationHint": "Google Drive guarda las copias como datos ocultos de la app (appDataFolder). En la web: Ajustes (engranaje) > Ajustes > Gestionar aplicaciones > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Copia personal de partidas en la nube",
-  "cloud.notConfiguredDesc": "Conecta tu cuenta de Google Drive o WebDAV en las integraciones para copiar las partidas a tu nube personal.",
+  "cloud.notConfiguredDesc": "Configura un proveedor de copia en la nube en Ajustes → Nube para archivar tus partidas en tu propio almacenamiento.",
   "cloud.guideBtn": "Guía de configuración",
   "cloud.guideBtnTip": "Guía paso a paso para obtener un Client ID gratuito de Google Cloud",
   "cloud.guideTitle": "Guía de configuración de OAuth de Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Carpeta de copia guardada.",
   "settings.ssPlatformNote": "Las capturas y los clips solo están disponibles en Windows por ahora. La galería sigue leyendo las carpetas de abajo, incluidas las capturas de otras herramientas.",
   "controller.bridgeWindowsOnly": "El puente de mandos solo está disponible en Windows.",
-  "settings.overlayLauncherNote": "Abre el overlay desde el botón de la cabecera o el menú de la bandeja. El atajo global solo está disponible en Windows por ahora."
+  "settings.overlayLauncherNote": "Abre el overlay desde el botón de la cabecera o el menú de la bandeja. El atajo global solo está disponible en Windows por ahora.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "remoto de rclone",
+  "cloud.rcloneDesc": "Reutiliza cualquier remoto que ya hayas configurado en rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box y más de 70 servicios.",
+  "cloud.rcloneHint": "Ejecuta `rclone config` una vez y pega aquí la ruta del remoto, por ejemplo `gdrive:efxlve_saves` o `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "Remoto de rclone guardado.",
+  "cloud.guideOpenTip": "Abrir la guía de configuración de este proveedor."
 }

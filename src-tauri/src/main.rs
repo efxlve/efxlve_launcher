@@ -297,13 +297,20 @@ fn open_folder(path: String) -> Result<String, String> {
     if !p.is_dir() {
         return Err("@t:win.folderNotFound".to_string());
     }
+    open_in_file_manager(&p)?;
+    Ok("@t:win.folderOpened".to_string())
+}
+
+/// Spawns the platform file manager for an existing folder. Shared by the
+/// generic command and the Cloud settings "open folder" button.
+pub(crate) fn open_in_file_manager(path: &std::path::Path) -> Result<(), String> {
     #[cfg(windows)]
-    let res = std::process::Command::new("explorer").arg(&p).spawn();
+    let res = std::process::Command::new("explorer").arg(path).spawn();
     #[cfg(target_os = "macos")]
-    let res = std::process::Command::new("open").arg(&p).spawn();
+    let res = std::process::Command::new("open").arg(path).spawn();
     #[cfg(all(not(windows), not(target_os = "macos")))]
-    let res = std::process::Command::new("xdg-open").arg(&p).spawn();
-    res.map(|_| "@t:win.folderOpened".to_string())
+    let res = std::process::Command::new("xdg-open").arg(path).spawn();
+    res.map(|_| ())
         .map_err(|e| format!("@t:win.folderOpenFailed\u{1f}{e}"))
 }
 
@@ -1610,6 +1617,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             cloud_backup::commands::cloud_backup_list_game,
             cloud_backup::commands::cloud_backup_download_game,
             cloud_backup::commands::cloud_backup_delete_remote,
+            cloud_backup::commands::cloud_backup_open_folder,
             notes::notes_list,
             notes::notes_save,
             notes::notes_delete,

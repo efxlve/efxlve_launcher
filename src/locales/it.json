@@ -1653,7 +1653,7 @@
   "cloud.title": "Backup dei salvataggi su cloud",
   "cloud.enableTitle": "Abilita backup dei salvataggi su cloud",
   "cloud.enableDesc": "Archivia e carica automaticamente i tuoi salvataggi nel tuo spazio cloud personale",
-  "cloud.pageInfo": "I tuoi salvataggi vengono archiviati sul tuo Google Drive o storage WebDAV. Nulla viene caricato da noi.",
+  "cloud.pageInfo": "I tuoi salvataggi vengono archiviati nel tuo spazio cloud: una cartella sincronizzata, WebDAV, Google Drive o rclone. Niente viene caricato da noi.",
   "cloud.providerTitle": "Provider cloud",
   "cloud.providerDesc": "Scegli dove conservare i tuoi archivi di salvataggio",
   "cloud.autoSyncTitle": "Sincronizzazione automatica all'uscita dal gioco",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Tutti i backup cloud sono stati eliminati",
   "cloud.gdriveLocationHint": "Google Drive archivia i backup come dati nascosti dell'app (appDataFolder). Sul web: Impostazioni (ingranaggio) > Impostazioni > Gestisci app > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Backup cloud personale dei salvataggi",
-  "cloud.notConfiguredDesc": "Collega Google Drive o WebDAV nelle integrazioni per salvare le partite nel tuo cloud personale.",
+  "cloud.notConfiguredDesc": "Configura un provider di backup cloud in Impostazioni → Cloud per archiviare i salvataggi nel tuo spazio.",
   "cloud.guideBtn": "Guida all'installazione",
   "cloud.guideBtnTip": "Guida passo passo per ottenere un Client ID gratuito di Google Cloud",
   "cloud.guideTitle": "Guida alla configurazione OAuth di Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Cartella di backup salvata.",
   "settings.ssPlatformNote": "Schermate e clip per ora sono disponibili solo su Windows. La galleria continua a leggere le cartelle sotto, comprese le catture di altri strumenti.",
   "controller.bridgeWindowsOnly": "Il bridge dei controller è disponibile solo su Windows.",
-  "settings.overlayLauncherNote": "Apri l'overlay dal pulsante della barra superiore o dal menu della tray. La scorciatoia globale per ora è solo su Windows."
+  "settings.overlayLauncherNote": "Apri l'overlay dal pulsante della barra superiore o dal menu della tray. La scorciatoia globale per ora è solo su Windows.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "remote rclone",
+  "cloud.rcloneDesc": "Riusa qualsiasi remote già configurato in rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box e oltre 70 servizi.",
+  "cloud.rcloneHint": "Esegui `rclone config` una volta, poi incolla qui il percorso del remote, ad esempio `gdrive:efxlve_saves` o `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "Remote rclone salvato.",
+  "cloud.guideOpenTip": "Apri la guida di configurazione per questo provider."
 }

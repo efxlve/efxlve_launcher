@@ -42,6 +42,7 @@ A restore is deliberately two-step:
 | **Folder** | `<chosen folder>/efxlve_saves/<safe-key>/<timestamp>.tar.gz` | Choose a folder that OneDrive, Dropbox, Syncthing or a NAS client already syncs. No OAuth, account or API key. |
 | **WebDAV** | `<base url>/efxlve_saves/<safe-key>/` | Nextcloud, ownCloud, a NAS WebDAV share. Basic auth. |
 | **Google Drive** | Hidden `appDataFolder` | Bring-your-own OAuth desktop client. See the setup guide. |
+| **rclone** | `<remote>:<folder>/efxlve_saves/<safe-key>/` | Any remote already configured in rclone (S3, B2, Dropbox, OneDrive, Mega, SFTP, ...). No OAuth code in the launcher; rclone owns the credentials. |
 | **None** | Local backups only | The restore snapshot and manual local backups still work. |
 
 Folder provider rules:
@@ -101,10 +102,12 @@ Steam's Proton still needs its folder picked once in Manage.
 
 **Settings → Cloud**
 
-- Enable cloud backup and choose Folder, WebDAV or Google Drive.
+- Enable cloud backup and choose Folder, Google Drive, WebDAV or rclone.
 - Folder: path field, native folder picker, Test connection, Save.
 - WebDAV: URL, username, password, Test, Save.
 - Google Drive: Client ID/secret, Save, Test, Connect with Google.
+- rclone: remote path (`remote:folder`), Test, Save; rclone itself is installed
+  and configured by the user.
 - Auto-sync on game exit is a separate switch. With Folder selected it works
   with no account setup.
 
@@ -120,13 +123,88 @@ Steam's Proton still needs its folder picked once in Manage.
 Cloud links from the Manage drawer and the Cloud settings card now open the
 **Cloud** settings section instead of Integrations.
 
+### Provider setup
+
+Every provider is configured in **Settings → Cloud**, works on Windows, Linux and
+macOS, and stores its settings only on the local machine. The first three fields
+are optional: the launcher creates the `efxlve_saves` folder when it is missing.
+
+#### Folder provider
+
+Use this when a sync client already handles the upload: OneDrive, Dropbox,
+Google Drive for desktop, iCloud Drive, Nextcloud desktop, Syncthing or a NAS
+share mounted as a drive.
+
+1. Install and sign in to the sync client, and let it finish its first sync.
+2. Create a folder for the launcher, for example `EfxlveSaves` inside OneDrive,
+   Dropbox or `~/Nextcloud`.
+3. Settings → Cloud → enable the feature → choose **Folder** → **Choose
+   folder** → **Save** → **Test Connection**.
+4. Archives appear as `<folder>/efxlve_saves/<game-key>/<timestamp>.tar.gz` and
+   the sync client uploads them like any other file. The launcher never talks to
+   the cloud directly in this mode.
+
+Typical locations: `%USERPROFILE%\OneDrive\EfxlveSaves` on Windows,
+`~/Library/CloudStorage/...` or `~/Dropbox/EfxlveSaves` on macOS, and
+`~/Nextcloud/EfxlveSaves` or a mounted share on Linux.
+
+#### WebDAV
+
+Works with Nextcloud, ownCloud, Box, Hetzner Storage Box and any other WebDAV
+server.
+
+1. Enter the full collection URL, including the base path. Nextcloud:
+   `https://cloud.example.com/remote.php/dav/files/<user>/`.
+2. Use an **app password** rather than the account password when the server
+   offers one.
+3. **Test Connection** creates `efxlve_saves` and checks write access, then
+   **Save**.
+
+Self-signed certificates are not accepted yet; use a valid certificate or the
+Folder provider behind a sync client.
+
+#### Google Drive
+
+Google Drive uses an OAuth Desktop client created in the user's own Google
+Cloud project, and stores archives in the hidden `appDataFolder`. The
+step-by-step guide is in
+[GOOGLE_DRIVE_SETUP_GUIDE.md](./GOOGLE_DRIVE_SETUP_GUIDE.md), and the same steps
+are available from the **Setup Guide** button in the Cloud settings card.
+
+#### rclone
+
+[rclone](https://rclone.org/) already speaks to 70+ storage services (S3 and any
+S3-compatible store, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box, SFTP,
+WebDAV and more), so one provider covers services the launcher does not integrate
+directly.
+
+1. Install rclone: `winget install Rclone.Rclone` or `scoop install rclone` on
+   Windows, `brew install rclone` on macOS, or the package from
+   <https://rclone.org/downloads/> on Linux.
+2. Configure the remote once with `rclone config` and check it with
+   `rclone lsd <remote>:`.
+3. In Settings → Cloud choose **rclone** and enter the destination as
+   `<remote>:<folder>`, for example `gdrive:efxlve_saves`, `onedrive:Saves/Efxlve`
+   or `s3:my-bucket/efxlve_saves`.
+4. **Test Connection** creates the folder when needed; **Save** stores the path.
+
+The launcher runs the same `rclone` binary that `rclone config` uses, so
+existing credentials and encrypted configs keep working. If rclone is not on
+`PATH`, the launcher also checks `/usr/local/bin`, `/opt/homebrew/bin`,
+`/opt/local/bin`, `/snap/bin` and `~/.local/bin`; restart the app after
+installing it on Windows.
+
 ---
 
 ## 5. Storage and safety
 
 - Provider credentials live in
   `<config>/cloud_backup_settings.json` on the local machine. They are not sent
-  anywhere except the selected provider.
+  anywhere except the selected provider. With rclone the launcher stores only
+  the `remote:folder` path; the credentials stay in the user's own rclone
+  configuration.
+- rclone paths and ids are validated against the configured base path before a
+  download or delete, so a tampered id cannot reach another remote folder.
 - Folder provider paths are validated against the provider root; WebDAV and
   Google Drive ids come from their own listings.
 - Archives carry a SHA-256 and file count in the local metadata; the folder
@@ -159,8 +237,8 @@ Ordered by user value:
    when an automatic backup fails. Today the failure is visible only in the
    manage row.
 6. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
-   a Google Drive “test before connect” path, and a Folder “open in file
-   manager” button.
+   a Google Drive “test before connect” path, and an rclone remote picker that
+   lists configured remotes (`rclone listremotes`).
 7. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
 8. **Remote migration** — local folders created before `backup_key` are moved to
@@ -183,7 +261,8 @@ Cloud:
 - `cloud_backup_get_settings`, `cloud_backup_save_settings`,
   `cloud_backup_test_connection`, `cloud_backup_upload_game`,
   `cloud_backup_list_game`, `cloud_backup_download_game`,
-  `cloud_backup_delete_remote`, `cloud_backup_delete_all_remote`
+  `cloud_backup_delete_remote`, `cloud_backup_delete_all_remote`,
+  `cloud_backup_open_folder`
 
 Google Drive auth:
 

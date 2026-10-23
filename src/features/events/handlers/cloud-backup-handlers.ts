@@ -21,7 +21,7 @@ import {
   closeGoogleDriveGuideModal,
 } from "../../cloud-backup/cloud-backup-view";
 import type { CloudBackupProvider } from "../../../epic";
-import { epicSelectFolderDialog } from "../../../epic";
+import { cloudBackupOpenFolder, epicSelectFolderDialog } from "../../../epic";
 
 export function handleCloudBackupAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -173,6 +173,13 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       return true;
     }
 
+    case "cloud-folder-open": {
+      void cloudBackupOpenFolder()
+        .then(() => toast(i18nT("win.folderOpened"), "ok"))
+        .catch((err: unknown) => toast(String(err), "err"));
+      return true;
+    }
+
     case "cloud-folder-save": {
       const input = document.getElementById("cloud-folder-path") as HTMLInputElement | null;
       void updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "" }).then((ok) => {
@@ -215,6 +222,24 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
           webdavUsername: userInput?.value.trim() ?? "",
           webdavPassword: passInput?.value ?? "",
         });
+        if (!saved) return;
+        await testCloudConnectionAction();
+      })();
+      return true;
+    }
+
+    case "cloud-rclone-save": {
+      const input = document.getElementById("cloud-rclone-remote") as HTMLInputElement | null;
+      void updateCloudBackupSettings({ rcloneRemote: input?.value.trim() ?? "" }).then((ok) => {
+        if (ok) toast(i18nT("cloud.rcloneSaved"), "ok");
+      });
+      return true;
+    }
+
+    case "cloud-rclone-test": {
+      const input = document.getElementById("cloud-rclone-remote") as HTMLInputElement | null;
+      void (async () => {
+        const saved = await updateCloudBackupSettings({ rcloneRemote: input?.value.trim() ?? "" });
         if (!saved) return;
         await testCloudConnectionAction();
       })();

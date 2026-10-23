@@ -1749,7 +1749,7 @@
   "cloud.title": "क्लाउड सेव बैकअप",
   "cloud.enableTitle": "क्लाउड सेव बैकअप सक्षम करें",
   "cloud.enableDesc": "अपने गेम सेव को अपने व्यक्तिगत क्लाउड स्टोरेज में स्वचालित रूप से संग्रहीत और अपलोड करें",
-  "cloud.pageInfo": "आपके सेव आपके अपने Google Drive या WebDAV स्टोरेज में संग्रहीत होते हैं। हमें कुछ भी अपलोड नहीं किया जाता है।",
+  "cloud.pageInfo": "आपके सेव आपके अपने क्लाउड स्टोरेज में संग्रहीत होते हैं — सिंक किया गया फ़ोल्डर, WebDAV, Google Drive या rclone। हमारे पास कुछ नहीं भेजा जाता।",
   "cloud.providerTitle": "क्लाउड प्रदाता",
   "cloud.providerDesc": "चुनें कि आपके सेव संग्रह कहाँ संग्रहीत किए जाएं",
   "cloud.autoSyncTitle": "गेम से बाहर निकलने पर ऑटो-सिंक",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "सभी क्लाउड बैकअप हटा दिए गए",
   "cloud.gdriveLocationHint": "Google Drive बैकअप को 'हिडन ऐप डेटा' (appDataFolder) के रूप में संग्रहीत करता है। वेब पर अपने बैकअप देखने के लिए: सेटिंग्स (गियर आइकन) > सेटिंग्स > ऐप्स प्रबंधित करें > Efxlve Launcher पर जाएं।",
   "cloud.notConfiguredTitle": "व्यक्तिगत क्लाउड सेव बैकअप",
-  "cloud.notConfiguredDesc": "अपने व्यक्तिगत क्लाउड में सेव का बैकअप लेने के लिए एकीकरण सेटिंग्स में अपना Google Drive या WebDAV खाता कनेक्ट करें।",
+  "cloud.notConfiguredDesc": "अपने सेव अपने स्टोरेज में संग्रहीत करने के लिए सेटिंग्स → क्लाउड में क्लाउड बैकअप प्रदाता सेट करें।",
   "cloud.guideBtn": "सेटअप गाइड",
   "cloud.guideBtnTip": "निःशुल्क Google Cloud Client ID प्राप्त करने के लिए चरण-दर-चरण मार्गदर्शिका",
   "cloud.guideTitle": "Google Drive OAuth सेटअप गाइड",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "बैकअप फ़ोल्डर सहेजा गया।",
   "settings.ssPlatformNote": "स्क्रीन कैप्चर और क्लिप अभी केवल Windows पर उपलब्ध हैं। गैलरी नीचे दिए फ़ोल्डरों को पढ़ती रहती है, जिनमें दूसरे टूल की कैप्चर भी शामिल हैं।",
   "controller.bridgeWindowsOnly": "कंट्रोलर ब्रिज केवल Windows पर उपलब्ध है।",
-  "settings.overlayLauncherNote": "ओवरले को हेडर बटन या ट्रे मेनू से खोलें। ग्लोबल हॉटकी अभी केवल Windows पर उपलब्ध है।"
+  "settings.overlayLauncherNote": "ओवरले को हेडर बटन या ट्रे मेनू से खोलें। ग्लोबल हॉटकी अभी केवल Windows पर उपलब्ध है।",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "rclone रिमोट",
+  "cloud.rcloneDesc": "rclone में पहले से सेट किया गया कोई भी रिमोट इस्तेमाल करें: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box और 70+ सेवाएँ।",
+  "cloud.rcloneHint": "एक बार `rclone config` चलाएँ, फिर रिमोट पथ यहाँ चिपकाएँ, जैसे `gdrive:efxlve_saves` या `s3:my-bucket/saves`।",
+  "cloud.rcloneSaved": "rclone रिमोट सहेजा गया।",
+  "cloud.guideOpenTip": "इस प्रदाता के लिए सेटअप गाइड खोलें।"
 }

@@ -22,6 +22,25 @@ The launcher writes `efxlve_saves/<game>/<timestamp>.tar.gz` inside that folder.
 
 ---
 
+## rclone Provider (S3, Dropbox, OneDrive, Mega, ...)
+
+If your storage is not covered by Folder, WebDAV or Google Drive, use **rclone**:
+it already supports 70+ services and keeps its own credentials.
+
+1. Install rclone from <https://rclone.org/downloads/> (`winget install Rclone.Rclone`,
+   `brew install rclone`, or your distro package).
+2. Run `rclone config` once and create a remote. Test it with `rclone lsd <remote>:`.
+3. In **Settings → Cloud** select **rclone** and enter the destination, for example
+   `gdrive:efxlve_saves`, `onedrive:Saves/Efxlve` or `s3:my-bucket/efxlve_saves`.
+4. Click **Test connection** (the folder is created if needed), then **Save**.
+
+The launcher stores only that `remote:folder` path; the rclone config and its
+credentials stay on your machine. See the
+[provider setup section](./CLOUD_SAVES.md#provider-setup) for Folder, WebDAV and
+rclone details.
+
+---
+
 ## 🌟 Why Bring Your Own Credentials? (BYOC Model)
 
 Efxlve Launcher is an **independent, open-source** gaming hub. Following trusted open-source utilities like Rclone, KeePassXC, and Obsidian Remotely Save, it adopts the **"Bring Your Own Credentials" (BYOC)** pattern:

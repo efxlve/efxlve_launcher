@@ -1,4 +1,4 @@
-//! Cloud Save Backup module supporting WebDAV and Google Drive.
+//! Cloud Save Backup module supporting Folder, WebDAV, Google Drive and rclone.
 
 pub mod archive;
 pub mod commands;
@@ -6,4 +6,5 @@ pub mod folder;
 pub mod gdrive;
 pub mod manager;
 pub mod models;
+pub mod rclone;
 pub mod webdav;

@@ -1749,7 +1749,7 @@
   "cloud.title": "Bulut Kayıt Yedekleme",
   "cloud.enableTitle": "Bulut Yedeklemeyi Etkinleştir",
   "cloud.enableDesc": "Oyun kayıtlarınızı kişisel bulut depolama alanınıza arşivleyip yedekleyin",
-  "cloud.pageInfo": "Kayıtlarınız kendi Google Drive veya WebDAV depolamanıza arşivlenir. Bize hiçbir şey yüklenmez.",
+  "cloud.pageInfo": "Kayıtların kendi bulut depolamana arşivlenir: eşitlenen klasör, WebDAV, Google Drive veya rclone. Hiçbir şey bize yüklenmez.",
   "cloud.providerTitle": "Bulut Sağlayıcısı",
   "cloud.providerDesc": "Yedek arşivlerinizin saklanacağı bulut servisini seçin",
   "cloud.autoSyncTitle": "Oyun Kapanışında Otomatik Senkronizasyon",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Tüm bulut yedekleri silindi",
   "cloud.gdriveLocationHint": "Google Drive dosyaları 'Gizli Uygulama Verisi' (appDataFolder) olarak saklar. Yedeklerinizi web sitesinde görmek için: Ayarlar (çark simgesi) > Ayarlar > Uygulamaları Yönet > Efxlve Launcher bölümüne bakabilirsiniz.",
   "cloud.notConfiguredTitle": "Kişisel Bulut Kayıt Yedeği",
-  "cloud.notConfiguredDesc": "Oyun kayıtlarınızı Google Drive veya WebDAV alanınıza yedeklemek için entegrasyon ayarlarından bulut sağlayıcınızı bağlayın.",
+  "cloud.notConfiguredDesc": "Kayıtlarını kendi depolamana arşivlemek için Ayarlar → Bulut'ta bir bulut yedekleme sağlayıcısı kur.",
   "cloud.guideBtn": "Kurulum Rehberi",
   "cloud.guideBtnTip": "Google Cloud Console'dan ücretsiz Client ID alma adımları",
   "cloud.guideTitle": "Google Drive OAuth Kurulum Rehberi",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Yedek klasörü kaydedildi.",
   "settings.ssPlatformNote": "Ekran görüntüsü alma ve klip kaydı şimdilik yalnızca Windows'ta çalışır. Galeri aşağıdaki klasörleri ve diğer araçlarla alınmış görüntüleri okumaya devam eder.",
   "controller.bridgeWindowsOnly": "Denetleyici köprüsü yalnızca Windows'ta çalışır.",
-  "settings.overlayLauncherNote": "Overlay'i üst çubuktaki düğmeden veya sistem tepsisi menüsünden aç. Global kısayol şimdilik yalnızca Windows'ta çalışır."
+  "settings.overlayLauncherNote": "Overlay'i üst çubuktaki düğmeden veya sistem tepsisi menüsünden aç. Global kısayol şimdilik yalnızca Windows'ta çalışır.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "rclone uzak yolu",
+  "cloud.rcloneDesc": "rclone'da zaten tanımladığın herhangi bir uzağı kullan: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box ve 70'ten fazla servis.",
+  "cloud.rcloneHint": "Bir kez `rclone config` çalıştır, sonra uzak yolu buraya yapıştır; örneğin `gdrive:efxlve_saves` veya `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "rclone uzak yolu kaydedildi.",
+  "cloud.guideOpenTip": "Bu sağlayıcının kurulum rehberini aç."
 }

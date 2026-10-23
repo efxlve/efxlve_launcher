@@ -933,7 +933,7 @@ export const epicCancelMoveGame = (appName: string) =>
 
 /* ---------- Cloud Save Backup (WebDAV & Google Drive) ---------- */
 
-export type CloudBackupProvider = "none" | "folder" | "webdav" | "google_drive";
+export type CloudBackupProvider = "none" | "folder" | "webdav" | "google_drive" | "rclone";
 
 export interface CloudBackupSettings {
   enabled: boolean;
@@ -943,6 +943,7 @@ export interface CloudBackupSettings {
   webdavUrl: string;
   webdavUsername: string;
   webdavPassword: string;
+  rcloneRemote: string;
   gdriveClientId?: string | null;
   gdriveClientSecret?: string | null;
   gdriveFolderId?: string | null;
@@ -968,6 +969,8 @@ export const cloudBackupGetSettings = () =>
 
 export const cloudBackupSaveSettings = (settings: CloudBackupSettings) =>
   invoke<void>("cloud_backup_save_settings", { settings });
+
+export const cloudBackupOpenFolder = () => invoke<void>("cloud_backup_open_folder");
 
 export const cloudBackupTestConnection = (settings: CloudBackupSettings) =>
   invoke<string>("cloud_backup_test_connection", { settings });

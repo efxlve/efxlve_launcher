@@ -1,4 +1,4 @@
-//! Data models for Cloud Save Backup (WebDAV and Google Drive).
+//! Data models for Cloud Save Backup (Folder, WebDAV, Google Drive, rclone).
 
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,7 @@ pub enum CloudBackupProvider {
     Folder,
     Webdav,
     GoogleDrive,
+    Rclone,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +30,9 @@ pub struct CloudBackupSettings {
     pub webdav_username: String,
     #[serde(default)]
     pub webdav_password: String,
+    /// `<remote>:<path>` as configured in `rclone config`.
+    #[serde(default)]
+    pub rclone_remote: String,
     #[serde(default)]
     pub gdrive_client_id: Option<String>,
     #[serde(default)]
@@ -53,6 +57,7 @@ impl Default for CloudBackupSettings {
             webdav_url: String::new(),
             webdav_username: String::new(),
             webdav_password: String::new(),
+            rclone_remote: String::new(),
             gdrive_client_id: None,
             gdrive_client_secret: None,
             gdrive_folder_id: None,

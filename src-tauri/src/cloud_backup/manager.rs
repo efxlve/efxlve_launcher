@@ -10,6 +10,7 @@ use crate::cloud_backup::archive::{pack_backup_dir, unpack_backup_tar_gz};
 use crate::cloud_backup::folder;
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
+use crate::cloud_backup::rclone;
 use crate::cloud_backup::webdav;
 use crate::legendary::backup::{
     app_backup_dir, backup_key, create_backup, list_backups, restore_backup,
@@ -116,6 +117,7 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
                 .unwrap_or_else(|_| "connected".to_string());
             Ok(format!("Google Drive connection verified ({email})."))
         }
+        CloudBackupProvider::Rclone => rclone::test_rclone(&settings.rclone_remote).await,
     }
 }
 
@@ -232,6 +234,26 @@ pub async fn upload_backup(
                 remote_id,
             }
         }
+        CloudBackupProvider::Rclone => {
+            let remote_id = rclone::upload_backup_rclone(
+                &settings.rclone_remote,
+                app_name,
+                &backup_id,
+                &temp_archive,
+            )
+            .await?;
+            CloudBackupEntry {
+                backup_id: backup_id.clone(),
+                app_name: app_name.to_string(),
+                timestamp: local_info.timestamp,
+                formatted_date: local_info.formatted_date.clone(),
+                size_bytes,
+                file_count: local_info.file_count,
+                sha256,
+                provider: "rclone".to_string(),
+                remote_id,
+            }
+        }
         CloudBackupProvider::GoogleDrive => {
             let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
             if refresh.is_empty() {
@@ -310,6 +332,9 @@ pub async fn list_cloud_backups(app_name: &str) -> Result<Vec<CloudBackupEntry>,
     let client = get_client();
     match settings.provider {
         CloudBackupProvider::Folder => folder::list_backups_folder(&settings.folder_path, app_name),
+        CloudBackupProvider::Rclone => {
+            rclone::list_backups_rclone(&settings.rclone_remote, app_name).await
+        }
         CloudBackupProvider::Webdav => {
             webdav::list_webdav_backups(
                 client,
@@ -351,6 +376,9 @@ pub async fn download_and_restore(
         CloudBackupProvider::Folder => {
             folder::download_backup_folder(&settings.folder_path, remote_id, &temp_archive)?;
         }
+        CloudBackupProvider::Rclone => {
+            rclone::download_backup_rclone(&settings.rclone_remote, remote_id, &temp_archive).await?;
+        }
         CloudBackupProvider::Webdav => {
             webdav::download_file_webdav(
                 client,
@@ -389,6 +417,9 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
     match settings.provider {
         CloudBackupProvider::Folder => {
             folder::delete_backup_folder(&settings.folder_path, remote_id)
+        }
+        CloudBackupProvider::Rclone => {
+            rclone::delete_backup_rclone(&settings.rclone_remote, remote_id).await
         }
         CloudBackupProvider::Webdav => {
             webdav::delete_file_webdav(

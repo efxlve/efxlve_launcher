@@ -1653,7 +1653,7 @@
   "cloud.title": "Backup de salvamento na nuvem",
   "cloud.enableTitle": "Ativar backup de salvamento na nuvem",
   "cloud.enableDesc": "Arquive e envie automaticamente seus salvamentos para seu armazenamento pessoal em nuvem",
-  "cloud.pageInfo": "Seus saves são arquivados no seu próprio Google Drive ou armazenamento WebDAV. Nada é enviado para nós.",
+  "cloud.pageInfo": "Seus saves são arquivados no seu próprio armazenamento em nuvem: uma pasta sincronizada, WebDAV, Google Drive ou rclone. Nada é enviado para nós.",
   "cloud.providerTitle": "Provedor de nuvem",
   "cloud.providerDesc": "Escolha onde seus arquivos de salvamento serão armazenados",
   "cloud.autoSyncTitle": "Sincronização automática ao sair do jogo",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Todos os backups da nuvem foram excluídos",
   "cloud.gdriveLocationHint": "O Google Drive guarda os backups como dados ocultos do app (appDataFolder). Na web: Configurações (engrenagem) > Configurações > Gerenciar apps > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Backup pessoal de saves na nuvem",
-  "cloud.notConfiguredDesc": "Conecte o Google Drive ou WebDAV nas integrações para copiar os saves para a sua nuvem pessoal.",
+  "cloud.notConfiguredDesc": "Configure um provedor de backup na nuvem em Configurações → Nuvem para arquivar seus saves no seu próprio armazenamento.",
   "cloud.guideBtn": "Guia de configuração",
   "cloud.guideBtnTip": "Guia passo a passo para obter um Client ID gratuito do Google Cloud",
   "cloud.guideTitle": "Guia de configuração OAuth do Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Pasta de backup salva.",
   "settings.ssPlatformNote": "Capturas de tela e clipes por enquanto só funcionam no Windows. A galeria continua lendo as pastas abaixo, incluindo capturas de outras ferramentas.",
   "controller.bridgeWindowsOnly": "A ponte de controles só funciona no Windows.",
-  "settings.overlayLauncherNote": "Abra o overlay pelo botão do cabeçalho ou pelo menu da bandeja. O atalho global por enquanto só funciona no Windows."
+  "settings.overlayLauncherNote": "Abra o overlay pelo botão do cabeçalho ou pelo menu da bandeja. O atalho global por enquanto só funciona no Windows.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "remoto do rclone",
+  "cloud.rcloneDesc": "Reutilize qualquer remoto que você já configurou no rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box e mais de 70 serviços.",
+  "cloud.rcloneHint": "Execute `rclone config` uma vez e cole o caminho do remoto aqui, por exemplo `gdrive:efxlve_saves` ou `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "Remoto do rclone salvo.",
+  "cloud.guideOpenTip": "Abrir o guia de configuração deste provedor."
 }

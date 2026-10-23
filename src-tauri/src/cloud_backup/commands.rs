@@ -4,7 +4,7 @@ use tauri::{command, AppHandle};
 
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::manager;
-use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupSettings};
+use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
 
 #[command]
 pub fn cloud_backup_get_settings() -> Result<CloudBackupSettings, String> {
@@ -87,4 +87,21 @@ pub async fn cloud_backup_download_game(
 #[command]
 pub async fn cloud_backup_delete_remote(remote_id: String) -> Result<(), String> {
     manager::delete_remote_backup(&remote_id).await
+}
+
+/// Opens the Folder provider root in the system file manager, creating it when
+/// the first backup has not run yet.
+#[command]
+pub fn cloud_backup_open_folder() -> Result<(), String> {
+    let settings = manager::load_settings();
+    if settings.provider != CloudBackupProvider::Folder {
+        return Err("The folder provider is not selected.".to_string());
+    }
+    let base = settings.folder_path.trim();
+    if base.is_empty() {
+        return Err("Choose a backup folder first.".to_string());
+    }
+    let root = std::path::Path::new(base).join("efxlve_saves");
+    std::fs::create_dir_all(&root).map_err(|error| format!("Folder is not writable: {error}"))?;
+    crate::open_in_file_manager(&root)
 }

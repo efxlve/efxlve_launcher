@@ -1749,7 +1749,7 @@
   "cloud.title": "Cloud Save Backup",
   "cloud.enableTitle": "Enable Cloud Save Backup",
   "cloud.enableDesc": "Automatically archive and upload your game saves to your personal cloud storage",
-  "cloud.pageInfo": "Your saves are archived to your own Google Drive or WebDAV storage. Nothing is uploaded to us.",
+  "cloud.pageInfo": "Your saves are archived to your own cloud storage — a synced folder, WebDAV, Google Drive or rclone. Nothing is uploaded to us.",
   "cloud.providerTitle": "Cloud Provider",
   "cloud.providerDesc": "Choose where your save archives are stored",
   "cloud.autoSyncTitle": "Auto-Sync on Game Exit",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "All cloud backups deleted",
   "cloud.gdriveLocationHint": "Google Drive stores backups as 'Hidden App Data' (appDataFolder). To view your backups on the web: go to Settings (gear icon) > Settings > Manage Apps > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Personal Cloud Save Backup",
-  "cloud.notConfiguredDesc": "Connect your Google Drive or WebDAV account in integration settings to back up saves to your personal cloud.",
+  "cloud.notConfiguredDesc": "Set up a cloud backup provider in Settings → Cloud to archive your saves to your own storage.",
   "cloud.guideBtn": "Setup Guide",
   "cloud.guideBtnTip": "Step-by-step guide to get a free Google Cloud Client ID",
   "cloud.guideTitle": "Google Drive OAuth Setup Guide",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Backup folder saved.",
   "settings.ssPlatformNote": "Screen capture and clips are Windows-only for now. The gallery still reads the folders below, including screenshots taken by other tools.",
   "controller.bridgeWindowsOnly": "The controller bridge is Windows-only.",
-  "settings.overlayLauncherNote": "Open the overlay from the header button or the tray menu. The global hotkey is Windows-only for now."
+  "settings.overlayLauncherNote": "Open the overlay from the header button or the tray menu. The global hotkey is Windows-only for now.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "rclone remote",
+  "cloud.rcloneDesc": "Reuse any remote you already configured in rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box and 70+ more.",
+  "cloud.rcloneHint": "Run `rclone config` once, then paste the remote path here, for example `gdrive:efxlve_saves` or `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "rclone remote saved.",
+  "cloud.guideOpenTip": "Open the setup guide for this provider."
 }

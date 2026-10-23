@@ -1653,7 +1653,7 @@
   "cloud.title": "Sauvegarde dans le cloud",
   "cloud.enableTitle": "Activer la sauvegarde dans le cloud",
   "cloud.enableDesc": "Archiver et téléverser automatiquement vos sauvegardes sur votre stockage cloud personnel",
-  "cloud.pageInfo": "Vos sauvegardes sont archivées sur votre propre Google Drive ou stockage WebDAV. Rien n'est envoyé chez nous.",
+  "cloud.pageInfo": "Vos sauvegardes sont archivées dans votre propre stockage cloud : un dossier synchronisé, WebDAV, Google Drive ou rclone. Rien n'est envoyé chez nous.",
   "cloud.providerTitle": "Fournisseur cloud",
   "cloud.providerDesc": "Choisissez où sont stockées vos archives de sauvegarde",
   "cloud.autoSyncTitle": "Synchronisation automatique à la fermeture du jeu",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Toutes les sauvegardes cloud ont été supprimées",
   "cloud.gdriveLocationHint": "Google Drive stocke les sauvegardes comme données d'application masquées (appDataFolder). Sur le web : Paramètres (engrenage) > Paramètres > Gérer les applications > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Sauvegarde cloud personnelle des parties",
-  "cloud.notConfiguredDesc": "Connectez Google Drive ou WebDAV dans les intégrations pour sauvegarder les parties dans votre cloud personnel.",
+  "cloud.notConfiguredDesc": "Configurez un fournisseur de sauvegarde cloud dans Paramètres → Cloud pour archiver vos sauvegardes dans votre propre stockage.",
   "cloud.guideBtn": "Guide d'installation",
   "cloud.guideBtnTip": "Guide pas à pas pour obtenir un Client ID Google Cloud gratuit",
   "cloud.guideTitle": "Guide de configuration OAuth de Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Dossier de sauvegarde enregistré.",
   "settings.ssPlatformNote": "Les captures d'écran et les clips sont pour l'instant réservés à Windows. La galerie lit toujours les dossiers ci-dessous, y compris les captures d'autres outils.",
   "controller.bridgeWindowsOnly": "Le pont de manettes est réservé à Windows.",
-  "settings.overlayLauncherNote": "Ouvre l'overlay depuis le bouton d'en-tête ou le menu de la zone de notification. Le raccourci global est réservé à Windows pour l'instant."
+  "settings.overlayLauncherNote": "Ouvre l'overlay depuis le bouton d'en-tête ou le menu de la zone de notification. Le raccourci global est réservé à Windows pour l'instant.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "remote rclone",
+  "cloud.rcloneDesc": "Réutilisez n'importe quel remote déjà configuré dans rclone : S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box et plus de 70 autres.",
+  "cloud.rcloneHint": "Lancez `rclone config` une fois, puis collez le chemin du remote ici, par exemple `gdrive:efxlve_saves` ou `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "Remote rclone enregistré.",
+  "cloud.guideOpenTip": "Ouvrir le guide de configuration de ce fournisseur."
 }

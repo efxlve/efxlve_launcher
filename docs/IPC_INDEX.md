@@ -48,6 +48,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `cloud_backup_download_game` | `cloudBackupDownloadGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_get_settings` | `cloudBackupGetSettings({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_list_game` | `cloudBackupListGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `cloud_backup_open_folder` | `cloudBackupOpenFolder({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_save_settings` | `cloudBackupSaveSettings({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_start_gdrive_auth` | `cloudBackupStartGdriveAuth({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_test_connection` | `cloudBackupTestConnection({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |

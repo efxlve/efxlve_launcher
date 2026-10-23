@@ -1653,7 +1653,7 @@
   "cloud.title": "การสำรองข้อมูลเซฟบนคลาวด์",
   "cloud.enableTitle": "เปิดใช้งานการสำรองข้อมูลเซฟบนคลาวด์",
   "cloud.enableDesc": "เก็บถาวรและอัปโหลดเซฟเกมของคุณไปยังพื้นที่จัดเก็บบนคลาวด์ส่วนตัวโดยอัตโนมัติ",
-  "cloud.pageInfo": "เซฟของคุณจะถูกเก็บไว้ใน Google Drive หรือที่เก็บ WebDAV ของคุณเอง ไม่มีข้อมูลใดถูกอัปโหลดมาที่เรา",
+  "cloud.pageInfo": "เซฟของคุณถูกเก็บถาวรในคลาวด์ของคุณเอง: โฟลเดอร์ที่ซิงก์, WebDAV, Google Drive หรือ rclone ไม่มีข้อมูลใดถูกส่งมาที่เรา",
   "cloud.providerTitle": "ผู้ให้บริการคลาวด์",
   "cloud.providerDesc": "เลือกตำแหน่งที่จัดเก็บไฟล์สำรองข้อมูลเซฟของคุณ",
   "cloud.autoSyncTitle": "ซิงค์อัตโนมัติเมื่อออกจากเกม",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "ลบการสำรองบนคลาวด์ทั้งหมดแล้ว",
   "cloud.gdriveLocationHint": "Google Drive เก็บการสำรองเป็นข้อมูลแอปที่ซ่อน (appDataFolder) บนเว็บ: การตั้งค่า (เฟือง) > การตั้งค่า > จัดการแอป > Efxlve Launcher",
   "cloud.notConfiguredTitle": "การสำรองเซฟบนคลาวด์ส่วนตัว",
-  "cloud.notConfiguredDesc": "เชื่อม Google Drive หรือ WebDAV ในการตั้งค่าการเชื่อมต่อเพื่อสำรองเซฟขึ้นคลาวด์ส่วนตัว",
+  "cloud.notConfiguredDesc": "ตั้งค่าผู้ให้บริการสำรองข้อมูลคลาวด์ใน การตั้งค่า → คลาวด์ เพื่อเก็บเซฟของคุณไว้ในพื้นที่ของคุณเอง",
   "cloud.guideBtn": "คู่มือตั้งค่า",
   "cloud.guideBtnTip": "คู่มือทีละขั้นเพื่อรับ Google Cloud Client ID ฟรี",
   "cloud.guideTitle": "คู่มือตั้งค่า OAuth ของ Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "บันทึกโฟลเดอร์สำรองข้อมูลแล้ว",
   "settings.ssPlatformNote": "การจับภาพหน้าจอและคลิปใช้ได้เฉพาะ Windows ในตอนนี้ แกลเลอรียังอ่านโฟลเดอร์ด้านล่าง รวมถึงภาพจากเครื่องมืออื่น",
   "controller.bridgeWindowsOnly": "บริดจ์คอนโทรลเลอร์ใช้ได้เฉพาะ Windows",
-  "settings.overlayLauncherNote": "เปิดโอเวอร์เลย์จากปุ่มบนแถบหัวเรื่องหรือเมนูถาดระบบ คีย์ลัดทั่วระบบใช้ได้เฉพาะ Windows ในตอนนี้"
+  "settings.overlayLauncherNote": "เปิดโอเวอร์เลย์จากปุ่มบนแถบหัวเรื่องหรือเมนูถาดระบบ คีย์ลัดทั่วระบบใช้ได้เฉพาะ Windows ในตอนนี้",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "รีโมต rclone",
+  "cloud.rcloneDesc": "ใช้รีโมตที่ตั้งค่าไว้ใน rclone แล้วได้เลย: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box และอีกกว่า 70 บริการ",
+  "cloud.rcloneHint": "รัน `rclone config` หนึ่งครั้ง แล้ววางพาธรีโมตที่นี่ เช่น `gdrive:efxlve_saves` หรือ `s3:my-bucket/saves`",
+  "cloud.rcloneSaved": "บันทึกรีโมต rclone แล้ว",
+  "cloud.guideOpenTip": "เปิดคู่มือตั้งค่าสำหรับผู้ให้บริการนี้"
 }

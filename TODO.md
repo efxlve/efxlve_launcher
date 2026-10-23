@@ -12,7 +12,8 @@ Open work only. Delete the item when it lands.
 - Bulk “back up all installed games” with a progress list.
 - Conflict detection before restore (local/remote timestamp + hash); the
   pre-restore snapshot already makes a wrong restore recoverable.
-- Auto-sync failure toast and a background queue.
+- Auto-sync failure toast exists; a background queue with per-game status does
+  not.
 - Move provider credentials from plain JSON into the OS keychain.
 - Move the Linux/macOS Steam token out of the `0600` file and into the OS
   keychain (Secret Service / Keychain); Windows already uses DPAPI.

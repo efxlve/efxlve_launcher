@@ -1653,7 +1653,7 @@
   "cloud.title": "Cloud-Speicher-Backup",
   "cloud.enableTitle": "Cloud-Speicher-Backup aktivieren",
   "cloud.enableDesc": "Spielstände automatisch archivieren und in deinen persönlichen Cloud-Speicher hochladen",
-  "cloud.pageInfo": "Deine Spielstände werden in deinem eigenen Google Drive oder WebDAV-Speicher archiviert. Bei uns wird nichts hochgeladen.",
+  "cloud.pageInfo": "Deine Spielstände werden in deinem eigenen Cloud-Speicher archiviert – einem synchronisierten Ordner, WebDAV, Google Drive oder rclone. Nichts wird zu uns hochgeladen.",
   "cloud.providerTitle": "Cloud-Anbieter",
   "cloud.providerDesc": "Wähle, wo deine Speicherarchive gesichert werden",
   "cloud.autoSyncTitle": "Automatischer Abgleich beim Beenden des Spiels",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Alle Cloud-Sicherungen gelöscht",
   "cloud.gdriveLocationHint": "Google Drive speichert Sicherungen als versteckte App-Daten (appDataFolder). Im Web: Einstellungen (Zahnrad) > Einstellungen > Apps verwalten > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Persönliche Cloud-Spielstandssicherung",
-  "cloud.notConfiguredDesc": "Verbinde Google Drive oder WebDAV in den Integrationen, um Spielstände in deine persönliche Cloud zu sichern.",
+  "cloud.notConfiguredDesc": "Richte unter Einstellungen → Cloud einen Cloud-Backup-Anbieter ein, um deine Spielstände in deinem eigenen Speicher zu archivieren.",
   "cloud.guideBtn": "Einrichtungsanleitung",
   "cloud.guideBtnTip": "Schritt-für-Schritt-Anleitung für eine kostenlose Google-Cloud-Client-ID",
   "cloud.guideTitle": "Anleitung zur Google-Drive-OAuth-Einrichtung",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Backup-Ordner gespeichert.",
   "settings.ssPlatformNote": "Bildschirmfotos und Clips gibt es vorerst nur unter Windows. Die Galerie liest weiterhin die Ordner unten, auch Aufnahmen anderer Tools.",
   "controller.bridgeWindowsOnly": "Die Controller-Bridge gibt es nur unter Windows.",
-  "settings.overlayLauncherNote": "Öffne das Overlay über die Kopfzeilen-Schaltfläche oder das Tray-Menü. Der globale Hotkey gibt es vorerst nur unter Windows."
+  "settings.overlayLauncherNote": "Öffne das Overlay über die Kopfzeilen-Schaltfläche oder das Tray-Menü. Der globale Hotkey gibt es vorerst nur unter Windows.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "rclone-Remote",
+  "cloud.rcloneDesc": "Nutze jedes Remote, das du bereits in rclone eingerichtet hast: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box und über 70 weitere.",
+  "cloud.rcloneHint": "Führe einmal `rclone config` aus und füge dann den Remote-Pfad hier ein, zum Beispiel `gdrive:efxlve_saves` oder `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "rclone-Remote gespeichert.",
+  "cloud.guideOpenTip": "Einrichtungsanleitung für diesen Anbieter öffnen."
 }

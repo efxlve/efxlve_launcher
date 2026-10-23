@@ -1653,7 +1653,7 @@
   "cloud.title": "云存档备份",
   "cloud.enableTitle": "启用云存档备份",
   "cloud.enableDesc": "自动将您的游戏存档打包并上传至您的个人云存储",
-  "cloud.pageInfo": "存档会归档到你自己的 Google Drive 或 WebDAV 存储中，不会上传给我们。",
+  "cloud.pageInfo": "你的存档会归档到你自己的云存储：同步文件夹、WebDAV、Google Drive 或 rclone。我们不会收到任何数据。",
   "cloud.providerTitle": "云存储提供商",
   "cloud.providerDesc": "选择存档打包文件的存储位置",
   "cloud.autoSyncTitle": "退出游戏时自动同步",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "已删除全部云备份",
   "cloud.gdriveLocationHint": "Google Drive 将备份存为隐藏的应用数据 (appDataFolder)。在网页上：设置（齿轮）> 设置 > 管理应用 > Efxlve Launcher。",
   "cloud.notConfiguredTitle": "个人云存档备份",
-  "cloud.notConfiguredDesc": "在集成设置中连接 Google Drive 或 WebDAV，以便把存档备份到你的个人云。",
+  "cloud.notConfiguredDesc": "在“设置 → 云”中配置云备份提供商，将存档归档到你自己的存储空间。",
   "cloud.guideBtn": "设置指南",
   "cloud.guideBtnTip": "获取免费 Google Cloud Client ID 的分步指南",
   "cloud.guideTitle": "Google Drive OAuth 设置指南",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "备份文件夹已保存。",
   "settings.ssPlatformNote": "截屏和剪辑目前仅支持 Windows。图库仍会读取下方文件夹，包括其他工具截取的图片。",
   "controller.bridgeWindowsOnly": "手柄桥接目前仅支持 Windows。",
-  "settings.overlayLauncherNote": "从标题栏按钮或托盘菜单打开叠加层。全局快捷键目前仅支持 Windows。"
+  "settings.overlayLauncherNote": "从标题栏按钮或托盘菜单打开叠加层。全局快捷键目前仅支持 Windows。",
+  "cloud.providerRclone": "rclone（S3、Dropbox…）",
+  "cloud.rcloneTitle": "rclone 远程",
+  "cloud.rcloneDesc": "直接使用你在 rclone 中配置好的任意远程：S3、Backblaze B2、Dropbox、OneDrive、Mega、pCloud、Box 等 70 多种服务。",
+  "cloud.rcloneHint": "先运行一次 `rclone config`，然后把远程路径粘贴到这里，例如 `gdrive:efxlve_saves` 或 `s3:my-bucket/saves`。",
+  "cloud.rcloneSaved": "rclone 远程已保存。",
+  "cloud.guideOpenTip": "打开此提供商的设置指南。"
 }

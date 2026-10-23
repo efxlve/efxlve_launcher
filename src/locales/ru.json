@@ -1653,7 +1653,7 @@
   "cloud.title": "Резервное копирование сохранений в облако",
   "cloud.enableTitle": "Включить резервное копирование в облако",
   "cloud.enableDesc": "Автоматически архивируйте и загружайте сохранения в ваше персональное облачное хранилище",
-  "cloud.pageInfo": "Сохранения архивируются в вашем Google Drive или хранилище WebDAV. К нам ничего не загружается.",
+  "cloud.pageInfo": "Ваши сохранения архивируются в ваше собственное облако: синхронизируемая папка, WebDAV, Google Drive или rclone. Нам ничего не отправляется.",
   "cloud.providerTitle": "Облачный провайдер",
   "cloud.providerDesc": "Выберите, где хранить архивы сохранений",
   "cloud.autoSyncTitle": "Автосинхронизация при выходе из игры",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Все облачные копии удалены",
   "cloud.gdriveLocationHint": "Google Drive хранит копии как скрытые данные приложения (appDataFolder). В браузере: Настройки (шестерёнка) > Настройки > Управление приложениями > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Личное облачное резервное копирование сохранений",
-  "cloud.notConfiguredDesc": "Подключите Google Drive или WebDAV в интеграциях, чтобы копировать сохранения в личное облако.",
+  "cloud.notConfiguredDesc": "Настройте провайдера облачных резервных копий в «Настройки → Облако», чтобы архивировать сохранения в своём хранилище.",
   "cloud.guideBtn": "Руководство по настройке",
   "cloud.guideBtnTip": "Пошаговая инструкция, как получить бесплатный Client ID Google Cloud",
   "cloud.guideTitle": "Руководство по настройке OAuth для Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Папка резервных копий сохранена.",
   "settings.ssPlatformNote": "Снимки экрана и клипы пока доступны только в Windows. Галерея по-прежнему читает папки ниже, включая снимки из других программ.",
   "controller.bridgeWindowsOnly": "Мост контроллеров доступен только в Windows.",
-  "settings.overlayLauncherNote": "Открывайте оверлей кнопкой в заголовке или из меню в трее. Глобальная горячая клавиша пока доступна только в Windows."
+  "settings.overlayLauncherNote": "Открывайте оверлей кнопкой в заголовке или из меню в трее. Глобальная горячая клавиша пока доступна только в Windows.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "удалённое хранилище rclone",
+  "cloud.rcloneDesc": "Используйте любое хранилище, уже настроенное в rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box и ещё более 70 сервисов.",
+  "cloud.rcloneHint": "Один раз выполните `rclone config`, затем вставьте сюда путь к хранилищу, например `gdrive:efxlve_saves` или `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "Удалённое хранилище rclone сохранено.",
+  "cloud.guideOpenTip": "Открыть руководство по настройке этого провайдера."
 }

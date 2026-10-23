@@ -1653,7 +1653,7 @@
   "cloud.title": "Kopia zapasowa zapisów w chmurze",
   "cloud.enableTitle": "Włącz kopię zapasową w chmurze",
   "cloud.enableDesc": "Automatycznie archiwizuj i przesyłaj swoje zapisy gier do prywatnej chmury",
-  "cloud.pageInfo": "Zapisy są archiwizowane w Twoim Google Drive lub magazynie WebDAV. Nic nie trafia do nas.",
+  "cloud.pageInfo": "Twoje zapisy są archiwizowane w Twojej własnej chmurze: zsynchronizowanym folderze, WebDAV, Google Drive lub rclone. Nic nie jest przesyłane do nas.",
   "cloud.providerTitle": "Dostawca chmury",
   "cloud.providerDesc": "Wybierz miejsce przechowywania archiwów zapisów",
   "cloud.autoSyncTitle": "Automatyczna synchronizacja po wyjściu z gry",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "Usunięto wszystkie kopie w chmurze",
   "cloud.gdriveLocationHint": "Google Drive przechowuje kopie jako ukryte dane aplikacji (appDataFolder). W witrynie: Ustawienia (koło zębate) > Ustawienia > Zarządzaj aplikacjami > Efxlve Launcher.",
   "cloud.notConfiguredTitle": "Osobista kopia zapisów w chmurze",
-  "cloud.notConfiguredDesc": "Połącz Google Drive lub WebDAV w integracjach, aby kopiować zapisy do własnej chmury.",
+  "cloud.notConfiguredDesc": "Skonfiguruj dostawcę kopii w chmurze w Ustawienia → Chmura, aby archiwizować zapisy we własnym magazynie.",
   "cloud.guideBtn": "Przewodnik konfiguracji",
   "cloud.guideBtnTip": "Instrukcja krok po kroku, jak uzyskać bezpłatny identyfikator klienta Google Cloud",
   "cloud.guideTitle": "Przewodnik konfiguracji OAuth Google Drive",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "Folder kopii zapisany.",
   "settings.ssPlatformNote": "Zrzuty ekranu i klipy są na razie dostępne tylko w Windows. Galeria nadal czyta foldery poniżej, w tym zrzuty z innych narzędzi.",
   "controller.bridgeWindowsOnly": "Mostek kontrolerów działa tylko w Windows.",
-  "settings.overlayLauncherNote": "Otwórz overlay przyciskiem w nagłówku lub z menu zasobnika. Skrót globalny działa na razie tylko w Windows."
+  "settings.overlayLauncherNote": "Otwórz overlay przyciskiem w nagłówku lub z menu zasobnika. Skrót globalny działa na razie tylko w Windows.",
+  "cloud.providerRclone": "rclone (S3, Dropbox…)",
+  "cloud.rcloneTitle": "zdalny rclone",
+  "cloud.rcloneDesc": "Użyj dowolnego zdalnego magazynu skonfigurowanego w rclone: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box i ponad 70 innych.",
+  "cloud.rcloneHint": "Uruchom raz `rclone config`, a następnie wklej tutaj ścieżkę zdalną, np. `gdrive:efxlve_saves` lub `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "Zapisano zdalny magazyn rclone.",
+  "cloud.guideOpenTip": "Otwórz instrukcję konfiguracji tego dostawcy."
 }

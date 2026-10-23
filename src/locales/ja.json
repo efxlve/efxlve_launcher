@@ -1653,7 +1653,7 @@
   "cloud.title": "クラウドセーブバックアップ",
   "cloud.enableTitle": "クラウドセーブバックアップを有効化",
   "cloud.enableDesc": "セーブデータを自動でアーカイブし、個人のクラウドストレージにアップロードします",
-  "cloud.pageInfo": "セーブデータはご自身の Google Drive または WebDAV ストレージに保存されます。当方には何もアップロードされません。",
+  "cloud.pageInfo": "セーブデータは、同期フォルダー、WebDAV、Google Drive、rclone など、あなた自身のクラウドに保存されます。当方には何も送信されません。",
   "cloud.providerTitle": "クラウドプロバイダー",
   "cloud.providerDesc": "セーブアーカイブの保存先を選択します",
   "cloud.autoSyncTitle": "ゲーム終了時の自動同期",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "すべてのクラウドバックアップを削除しました",
   "cloud.gdriveLocationHint": "Google Drive はバックアップを非表示のアプリデータ (appDataFolder) として保存します。ウェブでは設定（歯車）> 設定 > アプリを管理 > Efxlve Launcher を開きます。",
   "cloud.notConfiguredTitle": "個人クラウドセーブバックアップ",
-  "cloud.notConfiguredDesc": "連携設定で Google Drive または WebDAV を接続し、セーブを個人クラウドにバックアップします。",
+  "cloud.notConfiguredDesc": "設定 → クラウドでクラウドバックアップのプロバイダーを設定し、セーブデータを自分のストレージに保存します。",
   "cloud.guideBtn": "セットアップガイド",
   "cloud.guideBtnTip": "無料の Google Cloud Client ID を取得する手順",
   "cloud.guideTitle": "Google Drive の OAuth セットアップガイド",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "バックアップフォルダーを保存しました。",
   "settings.ssPlatformNote": "画面キャプチャとクリップは今のところ Windows のみです。ギャラリーは下のフォルダーを引き続き読み込み、他のツールのキャプチャも表示します。",
   "controller.bridgeWindowsOnly": "コントローラーブリッジは Windows のみです。",
-  "settings.overlayLauncherNote": "オーバーレイはヘッダーのボタンまたはトレイメニューから開きます。グローバルホットキーは今のところ Windows のみです。"
+  "settings.overlayLauncherNote": "オーバーレイはヘッダーのボタンまたはトレイメニューから開きます。グローバルホットキーは今のところ Windows のみです。",
+  "cloud.providerRclone": "rclone (S3、Dropbox…)",
+  "cloud.rcloneTitle": "rclone リモート",
+  "cloud.rcloneDesc": "rclone で設定済みのリモートをそのまま利用できます: S3、Backblaze B2、Dropbox、OneDrive、Mega、pCloud、Box など 70 以上のサービス。",
+  "cloud.rcloneHint": "一度 `rclone config` を実行し、リモートパスをここに貼り付けてください（例: `gdrive:efxlve_saves`、`s3:my-bucket/saves`）。",
+  "cloud.rcloneSaved": "rclone リモートを保存しました。",
+  "cloud.guideOpenTip": "このプロバイダーの設定ガイドを開く。"
 }

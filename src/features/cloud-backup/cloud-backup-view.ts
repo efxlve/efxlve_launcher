@@ -9,6 +9,8 @@ import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "./cloud-backup-actions";
 
+const CLOUD_GUIDE_URL = "https://github.com/efxlve/efxlve_launcher/blob/main/docs/CLOUD_SAVES.md";
+
 /** Renders the Cloud Save Backup configuration card in Settings > Integrations. */
 export function renderCloudBackupSettingsGroup(): string {
   if (!S.cloudBackupSettings) {
@@ -23,6 +25,7 @@ export function renderCloudBackupSettingsGroup(): string {
     webdavUrl: "",
     webdavUsername: "",
     webdavPassword: "",
+    rcloneRemote: "",
     gdriveClientId: null,
     gdriveClientSecret: null,
     gdriveFolderId: null,
@@ -39,6 +42,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <button class="${activeProvider === "folder" ? "active" : ""}" data-act="set-cloud-provider" data-provider="folder">${t("cloud.providerFolder")}</button>
       <button class="${activeProvider === "google_drive" ? "active" : ""}" data-act="set-cloud-provider" data-provider="google_drive">Google Drive</button>
       <button class="${activeProvider === "webdav" ? "active" : ""}" data-act="set-cloud-provider" data-provider="webdav">WebDAV / Nextcloud</button>
+      <button class="${activeProvider === "rclone" ? "active" : ""}" data-act="set-cloud-provider" data-provider="rclone">rclone</button>
     </div>`;
 
   let providerConfig = "";
@@ -46,7 +50,10 @@ export function renderCloudBackupSettingsGroup(): string {
     providerConfig = `
       <div class="row settings-row stacked">
         <div class="row-main">
-          <div class="settings-row-title">${t("cloud.folderTitle")}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div class="settings-row-title">${t("cloud.folderTitle")}</div>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${CLOUD_GUIDE_URL}#folder-provider" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+          </div>
           <div class="settings-row-desc">${t("cloud.folderDesc")}</div>
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
@@ -54,6 +61,9 @@ export function renderCloudBackupSettingsGroup(): string {
           <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
             <button type="button" class="btn ghost small" data-act="cloud-folder-browse">
               ${icon("folder", 13)} ${t("cloud.folderBrowse")}
+            </button>
+            <button type="button" class="btn ghost small" data-act="cloud-folder-open">
+              ${icon("folder", 13)} ${t("ss.openFolder")}
             </button>
             <button type="button" class="btn ghost small" data-act="cloud-folder-test" ${S.cloudBackupTesting ? "disabled" : ""}>
               ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}
@@ -108,7 +118,10 @@ export function renderCloudBackupSettingsGroup(): string {
     providerConfig = `
       <div class="row settings-row stacked">
         <div class="row-main">
-          <div class="settings-row-title">${t("cloud.webdavConfigTitle")}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div class="settings-row-title">${t("cloud.webdavConfigTitle")}</div>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${CLOUD_GUIDE_URL}#webdav" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+          </div>
           <div class="settings-row-desc">${t("cloud.webdavConfigDesc")}</div>
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
@@ -122,6 +135,30 @@ export function renderCloudBackupSettingsGroup(): string {
               ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}
             </button>
             <button type="button" class="btn primary small" data-act="cloud-webdav-save">
+              ${t("common.save")}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  } else if (activeProvider === "rclone") {
+    providerConfig = `
+      <div class="row settings-row stacked">
+        <div class="row-main">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div class="settings-row-title">${t("cloud.rcloneTitle")}</div>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${CLOUD_GUIDE_URL}#rclone" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+          </div>
+          <div class="settings-row-desc">${t("cloud.rcloneDesc")}</div>
+        </div>
+        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+          <input id="cloud-rclone-remote" class="input" placeholder="gdrive:efxlve_saves" value="${esc(st.rcloneRemote)}" spellcheck="false" autocomplete="off" />
+          <div class="mg-note" style="color:var(--text-3);font-size:11px;line-height:1.5">${icon("info", 12)} ${t("cloud.rcloneHint")}</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://rclone.org/downloads/">${icon("external", 13)} rclone.org</button>
+            <button type="button" class="btn ghost small" data-act="cloud-rclone-test" ${S.cloudBackupTesting ? "disabled" : ""}>
+              ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}
+            </button>
+            <button type="button" class="btn primary small" data-act="cloud-rclone-save">
               ${t("common.save")}
             </button>
           </div>
@@ -215,7 +252,14 @@ export function renderManageCloudBackupRow(appName: string): string {
       </div>`;
   }
 
-  const providerLabel = st.provider === "google_drive" ? "Google Drive" : st.provider === "folder" ? t("cloud.providerFolder") : "WebDAV";
+  const providerLabel =
+    st.provider === "google_drive"
+      ? "Google Drive"
+      : st.provider === "folder"
+        ? t("cloud.providerFolder")
+        : st.provider === "rclone"
+          ? "rclone"
+          : "WebDAV";
   const backups = S.cloudBackupsMap.get(appName);
   const latest = backups?.[0];
   const isSyncing = S.cloudBackupSyncing && (S.cloudBackupSyncingApp === appName || !S.cloudBackupSyncingApp);

@@ -1653,7 +1653,7 @@
   "cloud.title": "클라우드 세이브 백업",
   "cloud.enableTitle": "클라우드 세이브 백업 활성화",
   "cloud.enableDesc": "게임 세이브를 개인 클라우드 스토리지에 자동으로 압축하여 백업합니다",
-  "cloud.pageInfo": "저장 데이터는 사용자의 Google Drive 또는 WebDAV 저장소에 보관됩니다. 저희 쪽으로는 아무것도 업로드되지 않습니다.",
+  "cloud.pageInfo": "세이브는 동기화 폴더, WebDAV, Google Drive 또는 rclone 등 사용자의 클라우드에 보관됩니다. 저희에게는 아무것도 전송되지 않습니다.",
   "cloud.providerTitle": "클라우드 공급자",
   "cloud.providerDesc": "세이브 압축 파일이 저장될 위치를 선택하세요",
   "cloud.autoSyncTitle": "게임 종료 시 자동 동기화",
@@ -1804,7 +1804,7 @@
   "cloud.deleteAllSuccess": "모든 클라우드 백업을 삭제했습니다",
   "cloud.gdriveLocationHint": "Google Drive는 백업을 숨겨진 앱 데이터(appDataFolder)로 저장합니다. 웹에서는 설정(톱니) > 설정 > 앱 관리 > Efxlve Launcher를 여세요.",
   "cloud.notConfiguredTitle": "개인 클라우드 저장 백업",
-  "cloud.notConfiguredDesc": "통합 설정에서 Google Drive 또는 WebDAV를 연결해 저장 데이터를 개인 클라우드에 백업하세요.",
+  "cloud.notConfiguredDesc": "설정 → 클라우드에서 클라우드 백업 공급자를 설정해 세이브를 사용자의 저장소에 보관하세요.",
   "cloud.guideBtn": "설정 가이드",
   "cloud.guideBtnTip": "무료 Google Cloud Client ID를 받는 단계별 안내",
   "cloud.guideTitle": "Google Drive OAuth 설정 가이드",
@@ -2973,5 +2973,11 @@
   "cloud.folderSaved": "백업 폴더를 저장했습니다.",
   "settings.ssPlatformNote": "화면 캡처와 클립은 현재 Windows에서만 지원됩니다. 갤러리는 아래 폴더를 계속 읽으며 다른 도구로 찍은 캡처도 표시합니다.",
   "controller.bridgeWindowsOnly": "컨트롤러 브리지는 Windows에서만 지원됩니다.",
-  "settings.overlayLauncherNote": "헤더 버튼이나 트레이 메뉴에서 오버레이를 여세요. 전역 단축키는 현재 Windows에서만 지원됩니다."
+  "settings.overlayLauncherNote": "헤더 버튼이나 트레이 메뉴에서 오버레이를 여세요. 전역 단축키는 현재 Windows에서만 지원됩니다.",
+  "cloud.providerRclone": "rclone(S3, Dropbox…)",
+  "cloud.rcloneTitle": "rclone 원격",
+  "cloud.rcloneDesc": "rclone에 이미 설정한 원격을 그대로 사용하세요: S3, Backblaze B2, Dropbox, OneDrive, Mega, pCloud, Box 등 70개 이상.",
+  "cloud.rcloneHint": "`rclone config`를 한 번 실행한 뒤 원격 경로를 여기에 붙여넣으세요. 예: `gdrive:efxlve_saves`, `s3:my-bucket/saves`.",
+  "cloud.rcloneSaved": "rclone 원격을 저장했습니다.",
+  "cloud.guideOpenTip": "이 공급자의 설정 가이드 열기."
 }
