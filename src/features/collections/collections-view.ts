@@ -19,11 +19,39 @@ import { t } from "../../i18n";
 
 import { epicDeleteCollection, epicGetCollections, epicImportEglCollections, epicSaveCollection, epicSetGameCollections, type GameCollection } from "../../epic";
 import { renderCollectionTags } from "../drawer/drawer-view";
+
+/** The picker renders in pages so a 1,000-game library does not build every row before the first paint. */
+const COL_PAGE_SIZE = 120;
+let colVisible = COL_PAGE_SIZE;
+let colSearchTimer: number | null = null;
+
+function filteredColSummaries() {
+  const q = S.colModalSearchQuery.toLowerCase();
+  let filtered = allStoreSummaries().filter((s) => s.title.toLowerCase().includes(q));
+  if (S.colModalTabFilter === "selected") {
+    filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
+  } else if (S.colModalTabFilter === "installed") {
+    filtered = filtered.filter((s) => s.installed);
+  }
+  return filtered;
+}
+
+function colGameRowsHtml(filtered: ReturnType<typeof filteredColSummaries>): string {
+  if (filtered.length === 0) return `<div class="col-empty-msg">${t("col.noMatch")}</div>`;
+  const rows = filtered.slice(0, colVisible).map((s) => colGameRow(s)).join("");
+  const remaining = filtered.length - colVisible;
+  const more = remaining > 0
+    ? `<button type="button" class="col-load-more" data-act="col-load-more">${t("profile.showMore")} (${remaining})</button>`
+    : "";
+  return rows + more;
+}
+
 export function openCollectionModal(colId?: string | null): void {
   S.activeEditingColId = colId ?? null;
   S.colModalSearchQuery = "";
   S.colModalTabFilter = "all";
   S.isMarkerPaletteOpen = false;
+  colVisible = COL_PAGE_SIZE;
   if (colId) {
     const col = S.epicCollections.find((c) => c.id === colId);
     S.colModalSelectedApps = new Set(col?.app_names || []);
@@ -85,13 +113,8 @@ export function renderCollectionModal(): void {
   const colName = col ? col.name : "";
   const isEditing = Boolean(S.activeEditingColId);
 
-  const q = S.colModalSearchQuery.toLowerCase();
-  let filtered = allStoreSummaries().filter((s) => s.title.toLowerCase().includes(q));
-  if (S.colModalTabFilter === "selected") {
-    filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
-  } else if (S.colModalTabFilter === "installed") {
-    filtered = filtered.filter((s) => s.installed);
-  }
+  const filtered = filteredColSummaries();
+  colVisible = COL_PAGE_SIZE;
 
   const selectedCount = S.colModalSelectedApps.size;
 
@@ -139,7 +162,7 @@ export function renderCollectionModal(): void {
           </div>
 
           <div class="col-games-list">
-            ${filtered.length > 0 ? filtered.map((s) => colGameRow(s)).join("") : `<div class="col-empty-msg">${t("col.noMatch")}</div>`}
+            ${colGameRowsHtml(filtered)}
           </div>
         </div>
 
@@ -167,25 +190,26 @@ export function renderCollectionModal(): void {
   if (searchInput) {
     searchInput.addEventListener("input", (e) => {
       S.colModalSearchQuery = (e.target as HTMLInputElement).value;
-      updateColGamesListInPlace();
+      colVisible = COL_PAGE_SIZE;
+      if (colSearchTimer !== null) window.clearTimeout(colSearchTimer);
+      // Typing rebuilds a list of every store; wait for a short pause instead
+      // of doing that on each keystroke.
+      colSearchTimer = window.setTimeout(() => {
+        colSearchTimer = null;
+        updateColGamesListInPlace();
+      }, 120);
     });
   }
 }
 
-export function updateColGamesListInPlace(): void {
+export function updateColGamesListInPlace(preserveScroll = false): void {
   const container = document.querySelector(".col-games-list");
   if (!container) return;
-  const q = S.colModalSearchQuery.toLowerCase();
-  let filtered = allStoreSummaries().filter((s) => s.title.toLowerCase().includes(q));
-  if (S.colModalTabFilter === "selected") {
-    filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
-  } else if (S.colModalTabFilter === "installed") {
-    filtered = filtered.filter((s) => s.installed);
-  }
+  const filtered = filteredColSummaries();
+  const previousScroll = preserveScroll ? container.scrollTop : 0;
 
-  container.innerHTML = filtered.length > 0
-    ? filtered.map((s) => colGameRow(s)).join("")
-    : `<div class="col-empty-msg">${t("col.noMatch")}</div>`;
+  container.innerHTML = colGameRowsHtml(filtered);
+  if (preserveScroll) container.scrollTop = previousScroll;
 
   const selCountEl = document.getElementById("col-tab-selected-cnt");
   if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
@@ -195,6 +219,17 @@ export function updateColGamesListInPlace(): void {
 
   const footerCnt = document.getElementById("col-footer-count");
   if (footerCnt) footerCnt.textContent = String(S.colModalSelectedApps.size);
+}
+
+/** Resets the picker to its first page after a search or filter change. */
+export function resetCollectionPickerLimit(): void {
+  colVisible = COL_PAGE_SIZE;
+}
+
+/** Reveals the next page while keeping the scroll position. */
+export function showMoreCollectionGames(): void {
+  colVisible += COL_PAGE_SIZE;
+  updateColGamesListInPlace(true);
 }
 
 export async function saveCollectionFromModal(): Promise<boolean> {

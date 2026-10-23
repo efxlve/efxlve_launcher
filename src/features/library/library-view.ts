@@ -11,7 +11,8 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
+import { cachedImage } from "../../core/picture-cache";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 import { S, applyTabSort } from "../../core/state";
@@ -644,7 +645,8 @@ const prefetchedCovers = new Set<string>();
  */
 function prefetchNextCovers(visible: EpicSummary[], renderedCount: number): void {
   if (S.offlineMode || S.libPagination) return;
-  const ahead = visible.slice(renderedCount, renderedCount + PREFETCH_COVERS);
+  const prefetch = S.reduceEffects ? Math.min(8, PREFETCH_COVERS) : PREFETCH_COVERS;
+  const ahead = visible.slice(renderedCount, renderedCount + prefetch);
   const urls = ahead
     .map((s) => epicArtUrl(s))
     .filter((url) => url && !prefetchedCovers.has(url));
@@ -1150,8 +1152,16 @@ export function renderEpic(): string {
             ${S.epicCollections.map((col) => {
               const isSelected = S.activeCollectionId === col.id;
               const count = col.app_names?.length ?? 0;
+              const covers = (col.app_names ?? [])
+                .map((name) => summaryOf(name)?.cover)
+                .filter((cover): cover is string => Boolean(cover))
+                .slice(0, 4);
+              const mosaic = covers.length > 0
+                ? `<span class="col-item-mosaic" aria-hidden="true">${covers.map((cover) => `<img src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="lazy" />`).join("")}</span>`
+                : `<span class="col-item-mosaic empty" aria-hidden="true">${icon("layers", 13)}</span>`;
               return `
                 <button class="sort-menu-item-btn col-menu-item-btn lib-col-tab ${isSelected ? "selected" : ""}" data-act="select-col-filter" data-tab="collection" data-col-id="${esc(col.id)}">
+                  ${mosaic}
                   <span class="col-item-name">${esc(col.name)}</span>
                   <span class="col-item-count">${count}</span>
                 </button>`;

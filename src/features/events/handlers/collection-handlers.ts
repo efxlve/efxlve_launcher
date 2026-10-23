@@ -21,8 +21,10 @@ import {
   loadEpicCollections,
   openCollectionModal,
   openGameCollectionsModal,
+  resetCollectionPickerLimit,
   saveCollectionFromModal,
   saveGameCollectionsFromModal,
+  showMoreCollectionGames,
   updateColGamesListInPlace,
   updateMarkerUi,
 } from "../../collections/collections-view";
@@ -108,6 +110,7 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       const filter = t.dataset.filter as "all" | "selected" | "installed";
       if (filter) {
         S.colModalTabFilter = filter;
+        resetCollectionPickerLimit();
         document.querySelectorAll(".col-filter-tab").forEach((tab) => {
           tab.classList.toggle("active", (tab as HTMLElement).dataset.filter === filter);
         });
@@ -118,6 +121,7 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
 
     case "col-search-clear": {
       S.colModalSearchQuery = "";
+      resetCollectionPickerLimit();
       const sInput = document.getElementById("col-search-input") as HTMLInputElement | null;
       if (sInput) {
         sInput.value = "";
@@ -137,8 +141,10 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
         }
         const itemEl = (t.classList.contains("col-game-item") ? t : t.closest(".col-game-item")) as HTMLElement | null;
         const isChecked = S.colModalSelectedApps.has(app);
-        const cb = itemEl?.querySelector(".col-game-cb") as HTMLInputElement | null;
-        if (cb) cb.checked = isChecked;
+        // The picker draws a span check, not an <input>; update that exact node
+        // so the tick changes immediately without rebuilding the list.
+        const cb = itemEl?.querySelector(".col-custom-cb");
+        if (cb) cb.classList.toggle("checked", isChecked);
         if (itemEl) itemEl.classList.toggle("selected", isChecked);
 
         const selCountEl = document.getElementById("col-tab-selected-cnt");
@@ -150,6 +156,10 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       }
       return true;
     }
+
+    case "col-load-more":
+      showMoreCollectionGames();
+      return true;
 
     case "col-select-all": {
       const q = S.colModalSearchQuery.toLocaleLowerCase("tr");

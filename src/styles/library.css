@@ -100,6 +100,17 @@
   font-size: 11px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums;
   padding: 1px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); flex-shrink: 0;
 }
+.col-item-mosaic {
+  width: 28px; height: 28px; flex-shrink: 0; display: grid;
+  grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px;
+  overflow: hidden; border-radius: 6px; background: var(--surface-3);
+}
+.col-item-mosaic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.col-item-mosaic img:only-child { grid-column: 1 / -1; grid-row: 1 / -1; }
+.col-item-mosaic.empty {
+  display: grid; place-items: center; color: var(--text-3);
+  background: rgba(255, 255, 255, 0.05);
+}
 .col-menu-add-btn {
   display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 500;
 }

@@ -901,7 +901,15 @@
   width: 100%; height: 64px; margin: 0; padding: 0 12px;
   border: none; border-radius: 8px; background: transparent; color: var(--text);
   font-family: inherit; font-size: 15px; text-align: left; cursor: pointer;
+  content-visibility: auto; contain-intrinsic-size: 64px;
 }
+.ced .col-load-more {
+  width: 100%; height: 40px; margin-top: 4px; flex-shrink: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 8px;
+  background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
+  cursor: pointer;
+}
+.ced .col-load-more:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
 .ced .col-game-item:hover { background: rgba(255, 255, 255, 0.05); }
 .ced .col-game-item.selected { background: rgba(255, 255, 255, 0.08); }
 .ced .col-custom-cb {
