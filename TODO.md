@@ -21,12 +21,17 @@ Details: `docs/CLOUD_SAVES.md`.
 
 ## Linux/macOS: packaging and validation
 
-- AppImage/Flatpak/.deb/.rpm and macOS `.app` + notarization; no Unix installer
-  is attached to a release yet.
+- Tagged releases still publish Windows only. The manual **Package** workflow
+  builds unsigned Linux (.deb/.rpm/AppImage) and macOS (.app/.dmg) artifacts;
+  Flatpak, signing and notarization are still open.
 - Real-hardware pass for game launch, Proton prefix preparation, Steam library
   detection, store webviews and path case sensitivity.
 - A Unix global overlay hotkey; today the overlay opens from the launcher header
-  and tray.
+  and tray. Wayland compositors may also ignore the panel's position and
+  always-on-top request, which needs a layer-shell path.
+- The path-MTU probe/fix is built on Windows `ping`/`netsh`; Linux/macOS need
+  their own `ip route`/`ifconfig` and elevated MTU change before the cloud-save
+  MTU guard can run there.
 - Screen capture, clips, HUD/FPS and taskbar badges remain Windows-only and are
   hidden on Unix.
 

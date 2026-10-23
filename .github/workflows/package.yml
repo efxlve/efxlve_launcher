@@ -1,0 +1,107 @@
+# Manual installer build for the Linux/macOS preview.
+#
+# This is deliberately separate from `release.yml`: it does not publish a
+# GitHub Release and it turns updater artifacts off, so it can run without the
+# signing key. Use it to test a real `.deb`/`.rpm`/AppImage or `.app`/`.dmg`
+# before the platform matrix is enabled for tagged releases.
+#
+# Run it from Actions -> Package -> Run workflow.
+
+name: Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: "Which installers to build"
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - linux
+          - macos
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    if: ${{ inputs.platforms != 'macos' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            patchelf \
+            pkg-config
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build installers
+        run: npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: efxlve-launcher-linux
+          path: src-tauri/target/release/bundle/**
+          if-no-files-found: error
+
+  macos:
+    if: ${{ inputs.platforms != 'linux' }}
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build installers
+        run: npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: efxlve-launcher-macos
+          path: src-tauri/target/release/bundle/**
+          if-no-files-found: error
