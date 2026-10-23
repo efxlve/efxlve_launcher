@@ -40,8 +40,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Kendi temanı oluştur: isim ver, arka plan ve vurgu rengini seç, istersen kendi fotoğrafını arka plan olarak ekle ve tek tıkla geç. Kaydedilen temalar bu bilgisayarda kalır.",
       },
       {
-        en: "Theme names now describe the palette instead of borrowing a game's name: Neon Grid, Blades, Gloss, Violet and Blurple replace the old labels.",
-        tr: "Tema adları artık bir oyunun adını ödünç almak yerine paleti anlatıyor: Neon Izgara, Blades, Parlak Cam, Mor ve Blurple eski etiketlerin yerini aldı.",
+        en: "Theme names now describe the palette directly: Neon Grid, Blades, Gloss, Violet and Blurple.",
+        tr: "Tema adları artık paleti doğrudan anlatıyor: Neon Izgara, Blades, Parlak Cam, Mor ve Blurple.",
       },
       {
         en: "Every backdrop is original vector artwork. A theme with a photo turns its panels into glass, so the image shows through the whole shell.",
@@ -50,44 +50,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     ],
     fixed: [
       {
-        en: "Removed the borrowed elements: the Life is Strange theme and its scene, the Xbox sphere mark in the Blades backdrop, and the Cyberpunk quotes and HUD labels.",
-        tr: "Ödünç alınan öğeler kaldırıldı: Life is Strange teması ve sahnesi, Blades arka planındaki Xbox küre amblemi, Cyberpunk replikleri ve HUD etiketleri.",
-      },
-      {
         en: "Settings > About now states that themes are original, unofficial palettes with no game assets and no endorsement.",
         tr: "Ayarlar > Hakkında artık temaların özgün, resmî olmayan paletler olduğunu; oyun varlığı içermediğini ve onaylanmadığını belirtiyor.",
-      },
-    ],
-  },
-  {
-    version: "0.1.35",
-    date: "2026-10-22",
-    items: [
-      {
-        en: "Overlay control: a switch in Settings stops the whole service (panel window, key listener and metrics), a per-game opt-out stops it only while that title runs, and the hotkey is recorded from any Ctrl, Alt or Shift combination.",
-        tr: "Overlay kontrolü: Ayarlar'daki anahtar servisi tamamen durdurur (panel penceresi, tuş dinleyicisi ve ölçümler); oyun başına seçim yalnızca o oyun açıkken durdurur, kısayol ise Ctrl, Alt veya Shift içeren herhangi bir kombinasyondan kaydedilebilir.",
-      },
-      {
-        en: "Themes now come from one registry, and Custom CSS (Settings > Appearance) layers your own rules over any palette. New palettes: Neon Grid, Golden Hour, Tokyo Night, Nord, Sunset, Crimson, Blades, Epic, Discord and Midnight.",
-        tr: "Temalar artık tek bir kayıt defterinden geliyor; Özel CSS (Ayarlar > Görünüm) kendi kurallarını her temanın üzerine ekliyor. Yeni paletler: Neon Grid, Golden Hour, Tokyo Night, Nord, Gün Batımı, Kızıl, Blades, Epic, Discord ve Gece Yarısı.",
-      },
-      {
-        en: "The in-game notification card and the performance HUD share one native module, so achievement cards, game-start cards and the FPS readout look like one system.",
-        tr: "Oyun içi bildirim kartı ile performans HUD'u tek bir yerel modülü paylaşıyor; başarım kartları, oyun başlangıç kartları ve FPS göstergesi tek bir sistem gibi görünüyor.",
-      },
-    ],
-    fixed: [
-      {
-        en: "The profile store chips no longer hide the selected count (white text on a white accent) and draw one accent ring instead of a double outline; scrollbars, cover badges and the sidebar counter follow the theme too.",
-        tr: "Profildeki mağaza çipleri seçili sayacı gizlemiyor (beyaz vurgu üzerinde beyaz yazı) ve çift çerçeve yerine tek bir vurgu halkası çiziyor; kaydırma çubukları, kapak rozetleri ve kenar çubuğu sayacı da temaya uyuyor.",
-      },
-      {
-        en: "Golden Hour paints its Arcadia Bay backdrop again — the scene shipped without the CSS that draws it.",
-        tr: "Golden Hour artık Arcadia Bay arka planını boyuyor — sahne, onu çizen CSS olmadan gönderilmişti.",
-      },
-      {
-        en: "Custom CSS is applied before the shell is revealed, so a saved stylesheet never flashes off and on at startup.",
-        tr: "Özel CSS, arayüz görünmeden önce uygulanıyor; kayıtlı bir stil dosyası açılışta bir anlığına kaybolmuyor.",
       },
     ],
   },
