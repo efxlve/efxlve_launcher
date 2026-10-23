@@ -10,9 +10,10 @@ Open work only. Delete the item when it lands.
   hand.
 - Scheduled local-only backups and local archive pruning; cloud retention is a
   setting (keep the last N versions).
-- Bulk “back up all installed games” with a progress list.
-- Conflict detection before restore (local/remote timestamp + hash); the
-  pre-restore snapshot already makes a wrong restore recoverable.
+- Bulk restore: “restore the newest backup for every game”. Bulk backup now
+  exists.
+- Conflict detection compares timestamps before a restore; comparing hashes is
+  still open.
 - Auto-sync failure toast exists; a background queue with per-game status does
   not.
 - Move provider credentials from plain JSON into the OS keychain.

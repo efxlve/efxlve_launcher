@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "Einrichtungsanleitung für diesen Anbieter öffnen.",
   "cloud.retentionTitle": "Die letzten N Cloud-Versionen behalten",
   "cloud.retentionDesc": "Löscht ältere Cloud-Archive nach einem erfolgreichen Upload. 0 behält alle Backups.",
-  "cloud.retentionSaved": "Cloud-Aufbewahrung gespeichert."
+  "cloud.retentionSaved": "Cloud-Aufbewahrung gespeichert.",
+  "cloud.bulkTitle": "Alle installierten Spiele sichern",
+  "cloud.bulkDesc": "Erstellt für jedes installierte Epic-, GOG-, Amazon- und eigene Spiel eine lokale Sicherung und lädt sie hoch. Spiele ohne Speicherordner werden übersprungen.",
+  "cloud.bulkBtn": "Alle sichern",
+  "cloud.bulkNone": "Keine installierten Spiele mit verwaltetem Speicherordner gefunden.",
+  "cloud.bulkDone": "Sicherung abgeschlossen: {total} Spiele, {failed} fehlgeschlagen.",
+  "cloud.conflictTitle": "Lokale Spielstände sind neuer",
+  "cloud.conflictBody": "Die neueste lokale Sicherung ist vom {local}, das gewählte Cloud-Archiv vom {remote}. Wiederherstellen überschreibt die neueren lokalen Spielstände. Vorher wird trotzdem eine Sicherung angelegt.",
+  "cloud.restoreAnyway": "Trotzdem wiederherstellen"
 }

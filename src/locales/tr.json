@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "Bu sağlayıcının kurulum rehberini aç.",
   "cloud.retentionTitle": "Son N bulut sürümünü tut",
   "cloud.retentionDesc": "Başarılı yüklemeden sonra daha eski bulut arşivlerini sil. 0 tüm yedekleri tutar.",
-  "cloud.retentionSaved": "Bulut saklama ayarı kaydedildi."
+  "cloud.retentionSaved": "Bulut saklama ayarı kaydedildi.",
+  "cloud.bulkTitle": "Tüm kurulu oyunları yedekle",
+  "cloud.bulkDesc": "Kurulu her Epic, GOG, Amazon ve özel oyun için yerel yedek oluşturup buluta yükler. Kayıt klasörü olmayan oyunlar atlanır.",
+  "cloud.bulkBtn": "Tümünü yedekle",
+  "cloud.bulkNone": "Yönetilen kayıt klasörü olan kurulu oyun bulunamadı.",
+  "cloud.bulkDone": "Yedekleme bitti: {total} oyun, {failed} hata.",
+  "cloud.conflictTitle": "Yerel kayıtlar daha yeni",
+  "cloud.conflictBody": "En yeni yerel yedek {local} tarihli, seçilen bulut arşivi ise {remote} tarihli. Geri yükleme daha yeni yerel kayıtların üzerine yazar. Yine de önce bir yedek alınır.",
+  "cloud.restoreAnyway": "Yine de geri yükle"
 }

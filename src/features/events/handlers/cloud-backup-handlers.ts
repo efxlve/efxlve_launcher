@@ -6,6 +6,7 @@ import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import {
+  bulkCloudBackupAction,
   deleteAllCloudBackupsAction,
   deleteCloudBackupAction,
   disconnectGoogleDriveAction,
@@ -170,6 +171,11 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         const ok = await updateCloudBackupSettings({ folderPath: chosen });
         if (ok) toast(i18nT("cloud.folderSaved"), "ok");
       })();
+      return true;
+    }
+
+    case "cloud-bulk-backup": {
+      void bulkCloudBackupAction();
       return true;
     }
 

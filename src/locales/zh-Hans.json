@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "打开此提供商的设置指南。",
   "cloud.retentionTitle": "保留最近 N 个云端版本",
   "cloud.retentionDesc": "上传成功后删除较旧的云端归档。0 表示全部保留。",
-  "cloud.retentionSaved": "云端保留设置已保存。"
+  "cloud.retentionSaved": "云端保留设置已保存。",
+  "cloud.bulkTitle": "备份所有已安装游戏",
+  "cloud.bulkDesc": "为每个已安装的 Epic、GOG、Amazon 和自定义游戏创建本地备份并上传。没有存档文件夹的游戏会被跳过。",
+  "cloud.bulkBtn": "全部备份",
+  "cloud.bulkNone": "未找到带有受管存档文件夹的已安装游戏。",
+  "cloud.bulkDone": "备份完成：{total} 个游戏，{failed} 个失败。",
+  "cloud.conflictTitle": "本地存档较新",
+  "cloud.conflictBody": "最新的本地备份时间为 {local}，而所选云端归档时间为 {remote}。恢复会覆盖较新的本地存档；仍会先创建快照。",
+  "cloud.restoreAnyway": "仍然恢复"
 }

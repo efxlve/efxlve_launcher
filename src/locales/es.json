@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "Abrir la guía de configuración de este proveedor.",
   "cloud.retentionTitle": "Conservar las últimas N versiones en la nube",
   "cloud.retentionDesc": "Elimina los archivos antiguos tras una subida correcta. 0 conserva todas las copias.",
-  "cloud.retentionSaved": "Retención en la nube guardada."
+  "cloud.retentionSaved": "Retención en la nube guardada.",
+  "cloud.bulkTitle": "Copia de seguridad de todos los juegos instalados",
+  "cloud.bulkDesc": "Crea una copia local y la sube para cada juego instalado de Epic, GOG, Amazon y personalizado. Los juegos sin carpeta de guardado se omiten.",
+  "cloud.bulkBtn": "Copiar todos",
+  "cloud.bulkNone": "No se encontraron juegos instalados con carpeta de guardado gestionada.",
+  "cloud.bulkDone": "Copia completada: {total} juegos, {failed} con error.",
+  "cloud.conflictTitle": "Las partidas locales son más recientes",
+  "cloud.conflictBody": "La copia local más reciente es del {local}, pero el archivo en la nube seleccionado es del {remote}. Restaurar sobrescribirá las partidas locales más recientes. Aun así se crea una instantánea previa.",
+  "cloud.restoreAnyway": "Restaurar de todos modos"
 }

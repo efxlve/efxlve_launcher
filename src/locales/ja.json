@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "このプロバイダーの設定ガイドを開く。",
   "cloud.retentionTitle": "クラウドの最新 N バージョンを保持",
   "cloud.retentionDesc": "アップロード成功後に古いクラウドアーカイブを削除します。0 はすべて保持します。",
-  "cloud.retentionSaved": "クラウド保持設定を保存しました。"
+  "cloud.retentionSaved": "クラウド保持設定を保存しました。",
+  "cloud.bulkTitle": "インストール済みの全ゲームをバックアップ",
+  "cloud.bulkDesc": "インストール済みの Epic、GOG、Amazon、カスタムゲームごとにローカルバックアップを作成してアップロードします。セーブフォルダーがないゲームはスキップされます。",
+  "cloud.bulkBtn": "すべてバックアップ",
+  "cloud.bulkNone": "管理対象のセーブフォルダーを持つインストール済みゲームが見つかりません。",
+  "cloud.bulkDone": "バックアップ完了: {total} 件、失敗 {failed} 件。",
+  "cloud.conflictTitle": "ローカルセーブの方が新しいです",
+  "cloud.conflictBody": "最新のローカルバックアップは {local}、選択したクラウドアーカイブは {remote} です。復元すると新しいローカルセーブが上書きされます。それでも復元前にスナップショットが作成されます。",
+  "cloud.restoreAnyway": "それでも復元"
 }

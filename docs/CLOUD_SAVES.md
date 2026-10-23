@@ -113,13 +113,18 @@ Steam's Proton still needs its folder picked once in Manage.
 - **Keep the last N cloud versions** prunes older remote archives for that game
   after a successful upload. 0 (the default) keeps every backup; local backups
   are never pruned by this setting.
+- **Back up all installed games** walks every installed Epic, GOG, Amazon and
+  custom game, creates a local backup and uploads it. The row shows progress
+  while it runs and reports the failure count at the end; games without a save
+  folder are skipped.
 
 **Game Manage drawer**
 
 - **Backup to Cloud** — creates a fresh local backup, uploads the archive and
   refreshes the list.
 - **Restore** — downloads the selected archive and snapshots current saves
-  first.
+  first. When the newest local backup is newer than the selected cloud archive,
+  a confirmation explains which is newer before overwriting anything.
 - **History** — timestamp, size and file count; newest first.
 - **Delete / Delete all** — removes remote archives for that game.
 
@@ -230,15 +235,12 @@ Ordered by user value:
    the result explicit. Steam `compatdata` scanning is a separate gap.
 2. **Scheduled local backups** — keep the last N cloud versions is now a setting,
    but there is no daily local backup job and local archives are not pruned.
-3. **Bulk actions** — “back up all installed games”, “restore the newest backup
-   for every game”, with a progress list instead of one toast.
-4. **Conflict detection** — compare local and remote timestamps and hashes
-   before a restore; show “local is newer / remote is newer” and let the user
-   choose. The pre-restore snapshot already makes the destructive case
-   recoverable.
-5. **Auto-sync feedback** — a background queue, per-game status, and a toast
-   when an automatic backup fails. Today the failure is visible only in the
-   manage row.
+3. **Bulk restore** — “restore the newest backup for every game” is still open;
+   bulk backup now exists.
+4. **Conflict detection** — the timestamp comparison before a restore is in
+   place; comparing hashes before the overwrite is still open.
+5. **Auto-sync feedback** — the failure toast and notification exist; a
+   background queue with per-game status does not.
 6. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
    a Google Drive “test before connect” path, and an rclone remote picker that
    lists configured remotes (`rclone listremotes`).

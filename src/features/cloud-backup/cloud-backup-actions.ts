@@ -7,7 +7,8 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { scheduleRender } from "../../core/render";
-import { updateManageCloudRowInPlace } from "./cloud-backup-view";
+import { askConfirm } from "../../core/confirm-dialog";
+import { fmtCloudDate, updateManageCloudRowInPlace } from "./cloud-backup-view";
 import {
   cloudBackupGetSettings,
   cloudBackupSaveSettings,
@@ -118,6 +119,42 @@ export async function disconnectGoogleDriveAction(): Promise<void> {
   }
 }
 
+/** Backs up every installed game from the stores the launcher manages. */
+export async function bulkCloudBackupAction(): Promise<void> {
+  if (S.cloudBulkProgress) return;
+  const seen = new Set<string>();
+  const games = [...S.allGamesMap.values()].filter((item) => {
+    if (!item.installed) return false;
+    if (!["epic", "gog", "amazon", "custom"].includes(item.source)) return false;
+    const key = item.source === "epic" ? item.id : item.key;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (games.length === 0) {
+    toast(t("cloud.bulkNone"), "");
+    return;
+  }
+  S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
+  scheduleRender();
+  let failed = 0;
+  for (const game of games) {
+    const key = game.source === "epic" ? game.id : game.key;
+    try {
+      await cloudBackupUploadGame(key);
+    } catch {
+      failed += 1;
+    }
+    S.cloudBulkProgress.done += 1;
+    S.cloudBulkProgress.failed = failed;
+    scheduleRender();
+  }
+  const total = games.length;
+  S.cloudBulkProgress = null;
+  scheduleRender();
+  toast(t("cloud.bulkDone", { total, failed }), failed > 0 ? "err" : "ok");
+}
+
 export async function uploadGameCloudAction(appName: string, backupId?: string): Promise<void> {
   if (S.cloudBackupSyncing) return;
   S.cloudBackupSyncing = true;
@@ -158,6 +195,20 @@ export async function downloadCloudBackupAction(
   remoteId: string,
   backupId: string,
 ): Promise<void> {
+  const remote = (S.cloudBackupsMap.get(appName) || []).find((entry) => entry.remoteId === remoteId);
+  const local = S.gameBackupsMap.get(appName)?.[0];
+  if (remote && local && local.timestamp > remote.timestamp + 60) {
+    const proceed = await askConfirm({
+      title: t("cloud.conflictTitle"),
+      body: t("cloud.conflictBody", {
+        local: fmtCloudDate(local.timestamp),
+        remote: fmtCloudDate(remote.timestamp),
+      }),
+      confirm: t("cloud.restoreAnyway"),
+      cancel: t("common.cancel"),
+    });
+    if (!proceed) return;
+  }
   toast(t("cloud.downloading"), "");
   try {
     await cloudBackupDownloadGame(appName, remoteId, backupId);

@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "Otwórz instrukcję konfiguracji tego dostawcy.",
   "cloud.retentionTitle": "Zachowaj ostatnie N wersji w chmurze",
   "cloud.retentionDesc": "Usuwa starsze archiwa po udanym wysłaniu. 0 zachowuje wszystkie kopie.",
-  "cloud.retentionSaved": "Zapisano ustawienie przechowywania w chmurze."
+  "cloud.retentionSaved": "Zapisano ustawienie przechowywania w chmurze.",
+  "cloud.bulkTitle": "Utwórz kopie wszystkich zainstalowanych gier",
+  "cloud.bulkDesc": "Tworzy lokalną kopię i wysyła ją dla każdej zainstalowanej gry Epic, GOG, Amazon i własnej. Gry bez folderu zapisów są pomijane.",
+  "cloud.bulkBtn": "Kopiuj wszystkie",
+  "cloud.bulkNone": "Nie znaleziono zainstalowanych gier z zarządzanym folderem zapisów.",
+  "cloud.bulkDone": "Kopia zakończona: {total} gier, {failed} nieudanych.",
+  "cloud.conflictTitle": "Lokalne zapisy są nowsze",
+  "cloud.conflictBody": "Najnowsza kopia lokalna jest z {local}, a wybrane archiwum w chmurze z {remote}. Przywrócenie nadpisze nowsze lokalne zapisy. Mimo to najpierw zostanie utworzona kopia.",
+  "cloud.restoreAnyway": "Przywróć mimo to"
 }

@@ -448,6 +448,8 @@ export const S = {
   cloudBackupSyncing: false,
   cloudBackupSyncingApp: (null) as string | null,
   cloudBackupsMap: (new Map()) as Map<string, CloudBackupEntry[]>,
+  /** Bulk "back up all installed games" progress while it runs. */
+  cloudBulkProgress: (null) as { done: number; total: number; failed: number } | null,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
   hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,
   ignoredUpdates: (loadStrSet(IGNORED_UPDATES_KEY)) as Set<string>,

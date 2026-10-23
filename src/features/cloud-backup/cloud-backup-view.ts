@@ -201,6 +201,19 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
+  const bulkRow = isEnabled ? `
+    <div class="row settings-row">
+      <div class="row-main">
+        <div class="settings-row-title">${t("cloud.bulkTitle")}</div>
+        <div class="settings-row-desc">${t("cloud.bulkDesc")}</div>
+      </div>
+      <div class="settings-row-control">
+        ${S.cloudBulkProgress
+          ? `<span class="settings-value tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
+          : `<button type="button" class="btn ghost small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>`}
+      </div>
+    </div>` : "";
+
   const providerRow = isEnabled ? `
     <div class="row settings-row">
       <div class="row-main">
@@ -218,6 +231,7 @@ export function renderCloudBackupSettingsGroup(): string {
       ${isEnabled ? providerConfig : ""}
       ${autoSyncRow}
       ${retentionRow}
+      ${bulkRow}
     </div>`;
 }
 

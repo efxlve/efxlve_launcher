@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "이 공급자의 설정 가이드 열기.",
   "cloud.retentionTitle": "최근 N개 클라우드 버전 유지",
   "cloud.retentionDesc": "업로드 성공 후 오래된 클라우드 아카이브를 삭제합니다. 0은 모두 보관합니다.",
-  "cloud.retentionSaved": "클라우드 보관 설정을 저장했습니다."
+  "cloud.retentionSaved": "클라우드 보관 설정을 저장했습니다.",
+  "cloud.bulkTitle": "설치된 모든 게임 백업",
+  "cloud.bulkDesc": "설치된 Epic, GOG, Amazon 및 사용자 지정 게임마다 로컬 백업을 만들어 업로드합니다. 세이브 폴더가 없는 게임은 건너뜁니다.",
+  "cloud.bulkBtn": "모두 백업",
+  "cloud.bulkNone": "관리되는 세이브 폴더가 있는 설치된 게임을 찾지 못했습니다.",
+  "cloud.bulkDone": "백업 완료: 게임 {total}개, 실패 {failed}개.",
+  "cloud.conflictTitle": "로컬 세이브가 더 최신입니다",
+  "cloud.conflictBody": "최신 로컬 백업은 {local}, 선택한 클라우드 아카이브는 {remote}입니다. 복원하면 더 최신 로컬 세이브가 덮어써집니다. 그래도 복원 전에 스냅샷이 생성됩니다.",
+  "cloud.restoreAnyway": "그래도 복원"
 }

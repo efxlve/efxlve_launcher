@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "Open the setup guide for this provider.",
   "cloud.retentionTitle": "Keep the last N cloud versions",
   "cloud.retentionDesc": "Delete older cloud archives after a successful upload. 0 keeps every backup.",
-  "cloud.retentionSaved": "Cloud retention saved."
+  "cloud.retentionSaved": "Cloud retention saved.",
+  "cloud.bulkTitle": "Back up all installed games",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed Epic, GOG, Amazon and custom game. Games without a save folder are skipped.",
+  "cloud.bulkBtn": "Back up all",
+  "cloud.bulkNone": "No installed games with a managed save folder were found.",
+  "cloud.bulkDone": "Backup finished: {total} games, {failed} failed.",
+  "cloud.conflictTitle": "Local saves are newer",
+  "cloud.conflictBody": "The newest local backup is from {local}, but the selected cloud archive is from {remote}. Restoring will overwrite the newer local saves. A pre-restore snapshot is still taken.",
+  "cloud.restoreAnyway": "Restore anyway"
 }

@@ -2982,5 +2982,13 @@
   "cloud.guideOpenTip": "Abrir o guia de configuração deste provedor.",
   "cloud.retentionTitle": "Manter as últimas N versões na nuvem",
   "cloud.retentionDesc": "Exclui arquivos mais antigos após um envio bem-sucedido. 0 mantém todos os backups.",
-  "cloud.retentionSaved": "Retenção na nuvem salva."
+  "cloud.retentionSaved": "Retenção na nuvem salva.",
+  "cloud.bulkTitle": "Fazer backup de todos os jogos instalados",
+  "cloud.bulkDesc": "Cria um backup local e o envia para cada jogo instalado da Epic, GOG, Amazon e personalizado. Jogos sem pasta de save são ignorados.",
+  "cloud.bulkBtn": "Fazer backup de todos",
+  "cloud.bulkNone": "Nenhum jogo instalado com pasta de save gerenciada foi encontrado.",
+  "cloud.bulkDone": "Backup concluído: {total} jogos, {failed} falharam.",
+  "cloud.conflictTitle": "Os saves locais são mais recentes",
+  "cloud.conflictBody": "O backup local mais recente é de {local}, mas o arquivo na nuvem selecionado é de {remote}. Restaurar sobrescreverá os saves locais mais recentes. Ainda assim, um snapshot é criado antes.",
+  "cloud.restoreAnyway": "Restaurar mesmo assim"
 }
