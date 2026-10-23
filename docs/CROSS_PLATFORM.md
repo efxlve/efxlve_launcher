@@ -303,7 +303,8 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
   oturumu ve overlay bağlamının Windows'suz çalışması içindir.
 - **Dosya seçiciler:** Linux'ta `zenity`/`kdialog`, macOS'ta `osascript`; yoksa
   mevcut değer korunur. Windows PowerShell seçicisi değişmedi.
-- **Steam:** Kayıt defteri yerine `~/.steam/steam`, `~/.local/share/Steam`,
+- **Steam:** Kayıt defteri yerine `~/.steam/steam`, `~/.steam/root`,
+  `~/.steam/debian-installation`, `~/.local/share/Steam`,
   Flatpak (`~/.var/app/com.valvesoftware.Steam/...`), Snap
   (`~/snap/steam/...`) ve `~/Library/Application Support/Steam` aranır.
   `steam.pid` hem istemci klasöründe hem bir üst dizinde okunur; dosya yoksa

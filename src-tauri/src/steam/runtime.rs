@@ -40,6 +40,8 @@ pub fn steam_install_path() -> Option<PathBuf> {
         let home = std::env::var("HOME").ok().map(PathBuf::from)?;
         let candidates = [
             home.join(".steam").join("steam"),
+            home.join(".steam").join("root"),
+            home.join(".steam").join("debian-installation"),
             home.join(".local").join("share").join("Steam"),
             // Flatpak and Snap installs keep their own copy of the client.
             home.join(".var")
