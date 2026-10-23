@@ -11,6 +11,7 @@
 import { storageRoot } from "../../core/dom";
 import { measureFolders, measuredSize } from "../../core/folder-size";
 import { icon, type IconName } from "../../core/icons";
+import { IS_WINDOWS } from "../../core/platform";
 import { rawOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
@@ -134,6 +135,9 @@ export function setStorageSearch(val: string): void {
 }
 
 function moveButton(g: StorageGame): string {
+  // Moving builds a drive-letter target (`X:\Games`), which has no Unix
+  // equivalent; the action is hidden there.
+  if (!IS_WINDOWS) return "";
   if (g.source !== "epic" && g.source !== "amazon") return "";
   if (g.source === "epic") {
     const partner = getThirdPartyLauncher(rawOf(g.key));

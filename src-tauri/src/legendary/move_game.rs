@@ -135,12 +135,26 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
 
     #[cfg(not(windows))]
     {
-        drives.push(SystemDriveInfo {
-            letter: "/".to_string(),
-            label: "@t:move.rootDir".to_string(),
-            total_bytes: 500_000_000_000,
-            available_bytes: 250_000_000_000,
-        });
+        // Unix has mount points rather than drive letters. The move dialog is
+        // Windows-only (it builds `X:\Games` targets), so this list is only
+        // used for reporting real capacity; report the truth instead of a
+        // hard-coded placeholder.
+        use sysinfo::Disks;
+
+        let mut seen = std::collections::HashSet::new();
+        for disk in Disks::new_with_refreshed_list().iter() {
+            let mount = disk.mount_point().to_string_lossy().to_string();
+            if !seen.insert(mount.clone()) || disk.total_space() == 0 {
+                continue;
+            }
+            let label = disk.name().to_string_lossy().to_string();
+            drives.push(SystemDriveInfo {
+                letter: mount,
+                label,
+                total_bytes: disk.total_space(),
+                available_bytes: disk.available_space(),
+            });
+        }
     }
 
     drives

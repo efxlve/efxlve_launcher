@@ -5,6 +5,7 @@
 
 import { manageRoot } from "../../core/dom";
 import { icon, type IconName } from "../../core/icons";
+import { IS_WINDOWS } from "../../core/platform";
 import { lastPlayedLabel, rawOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtPlaytime } from "../../core/utils";
@@ -380,7 +381,11 @@ function amazonManageBody(s: EpicSummary): string {
       ${row(
         t("manage.installLocation"),
         `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
-        `<button class="btn ghost small" data-act="open-move-game-modal" data-id="${s.appName}" title="${t("manage.moveTitle")}">${icon("hard-drive", 13)} ${t("manage.move")}</button>
+        `${
+          IS_WINDOWS
+            ? `<button class="btn ghost small" data-act="open-move-game-modal" data-id="${s.appName}" title="${t("manage.moveTitle")}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`
+            : ""
+        }
          <button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
       )}
       ${row(
@@ -598,9 +603,11 @@ export function renderDrawerManage(s: EpicSummary): string {
     ? t("manage.syncing")
     : st.lastCloudSync ? t("manage.lastSync", { time: esc(formatSyncStamp(st.lastCloudSync)) }) : t("manage.cloudDesc");
 
-  const moveBtn = blockedMove
-    ? `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${id}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`
-    : `<button class="btn ghost small" data-act="open-move-game-modal" data-id="${id}" title="${t("manage.moveTitle")}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`;
+  const moveBtn = !IS_WINDOWS
+    ? ""
+    : blockedMove
+      ? `<button class="btn ghost small disabled-hint" data-act="blocked-move-tp" data-id="${id}" data-partner="${esc(partner?.name || "Third-Party")}" title="${esc(t("manage.moveThirdPartyTip", { name: partner?.name || "Third-Party" }))}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`
+      : `<button class="btn ghost small" data-act="open-move-game-modal" data-id="${id}" title="${t("manage.moveTitle")}">${icon("hard-drive", 13)} ${t("manage.move")}</button>`;
 
   return `
     <div class="manage-tab-content">

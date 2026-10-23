@@ -307,7 +307,9 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
   Chrome eklentisi katmanı Windows'ta açılır; diğer platformlarda mağaza sayfası
   eklentisiz açılır, para birimi betiği çalışmaya devam eder.
 - **Windows'a özgü ve gizlenen yüzeyler:** Controller bridge (ViGEm), görev
-  çubuğu rozeti, EOS/Epic relay, `.lnk` kısayolları ve kayıt defteri taramaları.
+  çubuğu rozeti, EOS/Epic relay, `.lnk` kısayolları, kayıt defteri taramaları ve
+  sürücü harfi hedefi kuran oyun taşıma. Unix'te taşıma düğmesi gizlenir;
+  `get_system_drives` gerçek bağlama noktalarını ve kapasitelerini döndürür.
 - **Steam oturumu:** Windows token'ı DPAPI ile mühürler. Unix'te DPAPI yok; token
   `0600` izinli dosyaya düz yazılır ve yalnız geçerli kullanıcı okuyabilir.
   Anahtar zinciri (Secret Service / Keychain) açık iş olarak TODO.md'de.
