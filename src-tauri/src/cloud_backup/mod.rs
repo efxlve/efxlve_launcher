@@ -8,4 +8,5 @@ pub mod manager;
 pub mod models;
 pub mod profile_sync;
 pub mod rclone;
+pub mod secret_store;
 pub mod webdav;

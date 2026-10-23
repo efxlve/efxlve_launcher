@@ -246,10 +246,13 @@ profile.
 
 ## 5. Storage and safety
 
-- Provider credentials live in
-  `<config>/cloud_backup_settings.json` on the local machine. They are not sent
-  anywhere except the selected provider. With rclone the launcher stores only
-  the `remote:folder` path; the credentials stay in the user's own rclone
+- Provider credentials are sealed by the OS store: Windows DPAPI
+  (`cloud_secrets.bin` in the config folder), macOS Keychain through `security`,
+  or Linux Secret Service through `secret-tool`. The settings JSON keeps only
+  non-secret fields. If the platform store is unavailable the value falls back
+  to the JSON file instead of being lost. Secrets are not sent anywhere except
+  the selected provider. With rclone the launcher stores only the
+  `remote:folder` path; the credentials stay in the user's own rclone
   configuration.
 - rclone paths and ids are validated against the configured base path before a
   download or delete, so a tampered id cannot reach another remote folder.
@@ -260,8 +263,6 @@ profile.
   size only.
 - A failed restore snapshot aborts the restore. A failed upload leaves the local
   backup in place.
-- Credentials are currently stored as plain JSON. Moving them to the OS
-  keychain is open work.
 
 ---
 

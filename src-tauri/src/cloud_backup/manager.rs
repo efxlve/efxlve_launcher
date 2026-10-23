@@ -11,6 +11,7 @@ use crate::cloud_backup::folder;
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
 use crate::cloud_backup::rclone;
+use crate::cloud_backup::secret_store;
 use crate::cloud_backup::webdav;
 use crate::legendary::backup::{
     app_backup_dir, backup_key, create_backup, list_backups, restore_backup,
@@ -32,19 +33,7 @@ fn settings_file_path() -> PathBuf {
     default_config_dir().join("cloud_backup_settings.json")
 }
 
-/// Loads cloud backup settings from disk.
-pub fn load_settings() -> CloudBackupSettings {
-    let path = settings_file_path();
-    if let Ok(data) = std::fs::read_to_string(&path) {
-        if let Ok(settings) = serde_json::from_str::<CloudBackupSettings>(&data) {
-            return settings;
-        }
-    }
-    CloudBackupSettings::default()
-}
-
-/// Persists cloud backup settings to disk.
-pub fn save_settings(settings: &CloudBackupSettings) -> Result<(), String> {
+fn write_settings_file(settings: &CloudBackupSettings) -> Result<(), String> {
     let path = settings_file_path();
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
@@ -52,6 +41,95 @@ pub fn save_settings(settings: &CloudBackupSettings) -> Result<(), String> {
     let json = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
     std::fs::write(&path, json).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+fn hydrate_string(value: &mut String, key: &str, dirty: &mut bool) {
+    if value.is_empty() {
+        if let Some(secret) = secret_store::get(key) {
+            *value = secret;
+        }
+    } else if secret_store::set(key, value).is_ok() {
+        value.clear();
+        *dirty = true;
+    }
+}
+
+fn hydrate_option(value: &mut Option<String>, key: &str, dirty: &mut bool) {
+    match value.take() {
+        Some(secret) if !secret.is_empty() => {
+            if secret_store::set(key, &secret).is_ok() {
+                *dirty = true;
+            } else {
+                *value = Some(secret);
+            }
+        }
+        Some(_) => {
+            *dirty = true;
+        }
+        None => {
+            if let Some(secret) = secret_store::get(key) {
+                *value = Some(secret);
+            }
+        }
+    }
+}
+
+/// Moves plain-text secrets into the OS store and reads stored secrets back.
+fn hydrate_settings(settings: &mut CloudBackupSettings, dirty: &mut bool) {
+    hydrate_string(&mut settings.webdav_password, "webdav_password", dirty);
+    hydrate_option(
+        &mut settings.gdrive_refresh_token,
+        "gdrive_refresh_token",
+        dirty,
+    );
+    hydrate_option(
+        &mut settings.gdrive_client_secret,
+        "gdrive_client_secret",
+        dirty,
+    );
+}
+
+/// Loads cloud backup settings from disk and fills stored secrets.
+pub fn load_settings() -> CloudBackupSettings {
+    let mut settings = std::fs::read_to_string(settings_file_path())
+        .ok()
+        .and_then(|data| serde_json::from_str::<CloudBackupSettings>(&data).ok())
+        .unwrap_or_default();
+    let mut dirty = false;
+    // Tests read the developer's real settings file; never migrate it there.
+    if !cfg!(test) {
+        hydrate_settings(&mut settings, &mut dirty);
+        if dirty {
+            // Rewrite the JSON without the migrated plain-text secrets.
+            let _ = write_settings_file(&settings);
+        }
+    }
+    settings
+}
+
+fn stash_string(value: &mut String, key: &str) {
+    if !value.is_empty() && secret_store::set(key, value).is_ok() {
+        value.clear();
+    }
+}
+
+fn stash_option(value: &mut Option<String>, key: &str) {
+    if let Some(secret) = value.clone() {
+        if secret.is_empty() {
+            *value = None;
+        } else if secret_store::set(key, &secret).is_ok() {
+            *value = None;
+        }
+    }
+}
+
+/// Persists cloud backup settings; secrets go to the OS store when available.
+pub fn save_settings(settings: &CloudBackupSettings) -> Result<(), String> {
+    let mut stored = settings.clone();
+    stash_string(&mut stored.webdav_password, "webdav_password");
+    stash_option(&mut stored.gdrive_refresh_token, "gdrive_refresh_token");
+    stash_option(&mut stored.gdrive_client_secret, "gdrive_client_secret");
+    write_settings_file(&stored)
 }
 
 /// Resolves Google Drive OAuth client credentials from user settings or fallback default.

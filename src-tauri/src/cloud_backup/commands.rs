@@ -57,6 +57,7 @@ pub async fn cloud_backup_start_gdrive_auth(_app: AppHandle) -> Result<String, S
 
 #[command]
 pub fn cloud_backup_disconnect_gdrive() -> Result<(), String> {
+    let _ = crate::cloud_backup::secret_store::delete("gdrive_refresh_token");
     let mut settings = manager::load_settings();
     settings.gdrive_refresh_token = None;
     settings.gdrive_user_email = None;
