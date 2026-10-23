@@ -179,8 +179,9 @@ Folder provider behind a sync client.
 #### Google Drive
 
 Google Drive uses an OAuth Desktop client created in the user's own Google
-Cloud project, and stores archives in the hidden `appDataFolder`. The
-step-by-step guide is in
+Cloud project, and stores archives in the hidden `appDataFolder`. **Test
+Connection** checks the client before the browser opens, so a wrong client ID is
+reported without a failed sign-in. The step-by-step guide is in
 [GOOGLE_DRIVE_SETUP_GUIDE.md](./GOOGLE_DRIVE_SETUP_GUIDE.md), and the same steps
 are available from the **Setup Guide** button in the Cloud settings card.
 
@@ -272,12 +273,11 @@ Ordered by user value:
    then reuse would make the result explicit.
 2. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
-3. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
-   and a Google Drive “test before connect” path.
+3. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in.
 4. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
-5. **Remote migration** — local folders created before `backup_key` are moved to
-   the safe key automatically; WebDAV/Folder archives stored under raw `::`
+5. **Remote migration** — local and Folder archives created before `backup_key`
+   are moved to the safe key automatically; WebDAV archives stored under raw `::`
    names still need a one-time remote rename or a legacy fallback in the listing.
 6. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.

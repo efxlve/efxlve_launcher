@@ -55,12 +55,48 @@ pub fn test_folder(base: &str) -> Result<String, String> {
     Ok(format!("Folder is ready: {}", root.to_string_lossy()))
 }
 
+/// Moves archives created before the safe-key change from the raw game key
+/// (gog::123) to the safe folder (gog__123). A raw folder cannot be created on
+/// Windows, so this only has work on Unix; a conflict keeps both files instead
+/// of overwriting the newer archive.
+fn migrate_legacy_dir(base: &str, app_name: &str) {
+    let safe = backup_key(app_name);
+    if safe == app_name {
+        return;
+    }
+    let root = root_dir(base);
+    let legacy = root.join(app_name);
+    if !legacy.is_dir() {
+        return;
+    }
+    let target = root.join(&safe);
+    if !target.exists() {
+        let _ = std::fs::rename(&legacy, &target);
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(&legacy) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let destination = target.join(entry.file_name());
+        if destination.exists() {
+            continue;
+        }
+        if entry.file_type().map(|kind| kind.is_file()).unwrap_or(false) {
+            let _ = std::fs::copy(entry.path(), &destination);
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+    let _ = std::fs::remove_dir(&legacy);
+}
+
 pub fn upload_backup_folder(
     base: &str,
     app_name: &str,
     backup_id: &str,
     archive: &Path,
 ) -> Result<String, String> {
+    migrate_legacy_dir(base, app_name);
     let dir = app_dir(base, app_name);
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
     let file_name = format!("{backup_id}.tar.gz");
@@ -71,6 +107,7 @@ pub fn upload_backup_folder(
 }
 
 pub fn list_backups_folder(base: &str, app_name: &str) -> Result<Vec<CloudBackupEntry>, String> {
+    migrate_legacy_dir(base, app_name);
     let dir = app_dir(base, app_name);
     let mut list = Vec::new();
     let entries = match std::fs::read_dir(&dir) {
@@ -150,6 +187,29 @@ mod tests {
         assert!(resolve(r"C:\Saves", r"C:\Windows\x.tar.gz").is_err());
         let inside = resolve(r"C:\Saves", "efxlve_saves/game/1.tar.gz").unwrap();
         assert!(inside.starts_with(root_dir(r"C:\Saves")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_legacy_raw_key_folder_is_migrated() {
+        let base =
+            std::env::temp_dir().join(format!("efxlve-folder-legacy-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let legacy = base.join("efxlve_saves").join("gog::123");
+        std::fs::create_dir_all(&legacy).unwrap();
+        std::fs::write(legacy.join("100.tar.gz"), b"archive").unwrap();
+
+        let base_str = base.to_string_lossy().to_string();
+        let listed = list_backups_folder(&base_str, "gog::123").unwrap();
+        assert_eq!(listed.len(), 1);
+        assert!(base
+            .join("efxlve_saves")
+            .join("gog__123")
+            .join("100.tar.gz")
+            .is_file());
+        assert!(!legacy.exists());
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
