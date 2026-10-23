@@ -20,8 +20,8 @@ import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from 
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
-import { steamNews, type SteamNewsItem } from "../../steam";
-import { presenceSync, updateGamepadHud } from "../../core/render";
+import { steamNews, steamWatchRunning, type SteamNewsItem } from "../../steam";
+import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { sideCard } from "./side-widgets";
@@ -1064,6 +1064,20 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   // gallery (and its full-size originals) alive.
   if (!isSameApp && S.currentModalAppName) forgetGameScreenshots(S.currentModalAppName);
   S.currentModalAppName = appName;
+  // A game started from the Steam client may be running before the periodic
+  // watcher reports it; opening the page asks the backend once so the drawer
+  // never shows Play for a live session.
+  if (appName.startsWith("steam::")) {
+    void steamWatchRunning()
+      .then((ids) => {
+        const id = appName.slice("steam::".length);
+        if (ids.includes(id) && !S.runningGames.has(appName)) {
+          S.runningGames.add(appName);
+          scheduleRender();
+        }
+      })
+      .catch(() => {});
+  }
   S.isVersionDropdownOpen = false;
   S.isGameMoreMenuOpen = false;
   if (isInitialOpen) {
