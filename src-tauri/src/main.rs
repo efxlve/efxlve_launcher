@@ -718,6 +718,10 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 /// Set once the app starts shutting down, so a deliberate close during the first
 /// seconds is not mistaken for a failed webview.
 static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// First instance's show-request event, so a second launch can reveal it even
+/// when the window title lookup fails.
+#[cfg(windows)]
+static SHOW_EVENT: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
 
 /// Creates one window declared in `tauri.conf.json`.
 ///
@@ -903,15 +907,80 @@ fn watch_boot_window(app: tauri::AppHandle) {
         if EXITING.load(std::sync::atomic::Ordering::Relaxed) {
             return;
         }
-        let alive = app
-            .get_window("main")
-            .map(|window| window.is_visible().is_ok())
-            .unwrap_or(false);
-        if !alive {
+        let Some(window) = app.get_window("main") else {
             report_boot_failure(&app, "the main window disappeared during boot");
+            return;
+        };
+        match window.is_visible() {
+            Ok(true) => {}
+            Ok(false) => {
+                // A hidden main window is the "process alive, no taskbar" bug:
+                // show it instead of leaving the user with an invisible app.
+                perf::write_line_global("boot: main window was hidden; showing it");
+                let _ = window.set_skip_taskbar(false);
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+            Err(error) => {
+                report_boot_failure(&app, &format!("main window visibility check failed: {error}"));
+                return;
+            }
+        }
+        if window.is_minimized().unwrap_or(false) {
+            perf::write_line_global("boot: main window was minimized; restoring it");
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+        if matches!(window.current_monitor(), Ok(None)) {
+            perf::write_line_global("boot: main window is off-screen; centering it");
+            let _ = window.center();
+        }
+        if let Ok(position) = window.outer_position() {
+            perf::write_line_global(&format!(
+                "boot: window position {},{} visible={:?} minimized={:?}",
+                position.x,
+                position.y,
+                window.is_visible(),
+                window.is_minimized()
+            ));
         }
     });
 }
+
+/// Waits for a second launch and reveals the existing window. The old path
+/// relied on FindWindowW with the exact title, which can miss a borderless or
+/// hidden window; this event works for every window state.
+#[cfg(windows)]
+fn listen_for_show_requests(app: tauri::AppHandle) {
+    use std::sync::atomic::Ordering;
+    let Some(&event) = SHOW_EVENT.get() else {
+        return;
+    };
+    std::thread::Builder::new()
+        .name("show-request".into())
+        .spawn(move || loop {
+            #[link(name = "kernel32")]
+            extern "system" {
+                fn WaitForSingleObject(handle: *mut core::ffi::c_void, millis: u32) -> u32;
+            }
+            let result = unsafe { WaitForSingleObject(event as *mut core::ffi::c_void, u32::MAX) };
+            if result != 0 || EXITING.load(Ordering::Relaxed) {
+                return;
+            }
+            if let Some(window) = app.get_window("main") {
+                let _ = window.set_skip_taskbar(false);
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        })
+        .ok();
+}
+
+#[cfg(not(windows))]
+fn listen_for_show_requests(_app: tauri::AppHandle) {}
 
 /// A panic in a release build leaves no trace: the window simply disappears and
 /// the user has nothing to send. This writes the message, the location and a
@@ -1073,6 +1142,19 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
             bInitialOwner: i32,
             lpName: *const u16,
         ) -> *mut core::ffi::c_void;
+        fn CreateEventW(
+            lpEventAttributes: *mut core::ffi::c_void,
+            bManualReset: i32,
+            bInitialState: i32,
+            lpName: *const u16,
+        ) -> *mut core::ffi::c_void;
+        fn OpenEventW(
+            dwDesiredAccess: u32,
+            bInheritHandle: i32,
+            lpName: *const u16,
+        ) -> *mut core::ffi::c_void;
+        fn SetEvent(handle: *mut core::ffi::c_void) -> i32;
+        fn CloseHandle(handle: *mut core::ffi::c_void) -> i32;
         fn GetLastError() -> u32;
     }
     #[link(name = "user32")]
@@ -1084,8 +1166,12 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
 
     const ERROR_ALREADY_EXISTS: u32 = 183;
     const SW_RESTORE: i32 = 9;
+    const EVENT_MODIFY_STATE: u32 = 0x0002;
 
     let mutex_name: Vec<u16> = "Local\\EfxlveLauncherSingleInstanceMutex\0"
+        .encode_utf16()
+        .collect();
+    let event_name: Vec<u16> = "Local\\EfxlveLauncherShowEvent\0"
         .encode_utf16()
         .collect();
     let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 1, mutex_name.as_ptr()) };
@@ -1093,6 +1179,15 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
         return None;
     }
     if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
+        // Ask the running instance to reveal its window. This works even when
+        // the window is hidden, minimized or has a non-matching title.
+        let event = unsafe { OpenEventW(EVENT_MODIFY_STATE, 0, event_name.as_ptr()) };
+        if !event.is_null() {
+            unsafe {
+                SetEvent(event);
+                CloseHandle(event);
+            }
+        }
         let title: Vec<u16> = "Efxlve Launcher\0".encode_utf16().collect();
         let hwnd = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
         if !hwnd.is_null() {
@@ -1102,6 +1197,10 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
             }
         }
         std::process::exit(0);
+    }
+    let event = unsafe { CreateEventW(std::ptr::null_mut(), 0, 0, event_name.as_ptr()) };
+    if !event.is_null() {
+        let _ = SHOW_EVENT.set(event as usize);
     }
     Some(handle)
 }
@@ -1219,6 +1318,22 @@ fn main() {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
                 hide_accent_border(&win);
+                // A borderless window must still be a taskbar window. Some
+                // Windows/driver combinations start it hidden or minimized;
+                // force the declared state before the user sees a missing UI.
+                let _ = win.set_skip_taskbar(false);
+                let _ = win.unminimize();
+                let _ = win.show();
+                let _ = win.set_focus();
+                if let Ok(position) = win.outer_position() {
+                    perf::write_line_global(&format!(
+                        "boot: main window created at {},{} visible={:?} minimized={:?}",
+                        position.x,
+                        position.y,
+                        win.is_visible(),
+                        win.is_minimized()
+                    ));
+                }
             }
             // A marker left behind by a killed/restarted launcher becomes real
             // playtime before anything else reads the store.
@@ -1263,6 +1378,7 @@ fn main() {
             if let Err(error) = build_tray(app) {
                 perf::write_line_global(&format!("boot: tray icon unavailable: {error}"));
             }
+            listen_for_show_requests(app.handle().clone());
             watch_boot_window(app.handle().clone());
             Ok(())
         })

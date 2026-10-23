@@ -61,6 +61,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Steam's Running flag is re-checked periodically and when a game page opens, so a game started from the Steam client no longer looks closed.",
         tr: "Steam'in Running bilgisi düzenli olarak ve oyun sayfası açılırken yeniden kontrol ediliyor; Steam istemcisinden başlatılan oyun artık kapalı görünmüyor.",
       },
+      {
+        en: "A main window that starts hidden or minimized is now shown automatically. Launching the app again reveals the existing window instead of leaving an invisible background process.",
+        tr: "Gizli veya küçültülmüş başlayan ana pencere artık otomatik gösteriliyor. Uygulamayı yeniden başlatmak, görünmez bir arka plan süreci bırakmak yerine mevcut pencereyi öne getiriyor.",
+      },
     ],
   },
   {
