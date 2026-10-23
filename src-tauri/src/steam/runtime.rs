@@ -116,7 +116,10 @@ pub(super) fn steam_client_running_now(steam: &Path) -> bool {
     }
     #[cfg(not(windows))]
     {
-        crate::legendary::transfers::is_game_process_running(None, &["steam".to_string()])
+        crate::legendary::transfers::is_game_process_running(
+            None,
+            &["steam".to_string(), "steam_osx".to_string()],
+        )
     }
 }
 
