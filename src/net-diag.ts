@@ -3,8 +3,8 @@
  *
  * A path that carries smaller packets than the interface MTU black-holes large
  * uploads (Epic's CS-UL-0) while handshakes and downloads still work. The
- * backend measures the path with `ping -f` and can apply the standard fix with
- * one elevated command.
+ * backend measures the path with a don't-fragment ping and can apply the
+ * standard fix with one elevated command.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -25,6 +25,6 @@ export interface MtuProbe {
 /** Measures the real path MTU and whether the interface overshoots it. */
 export const netMtuProbe = () => invoke<MtuProbe>("net_mtu_probe");
 
-/** Applies the interface MTU with one elevated `netsh` run (UAC prompt). */
+/** Applies the interface MTU with one elevated command (UAC / polkit / admin). */
 export const netMtuFix = (iface: string, mtu: number) =>
   invoke<void>("net_mtu_fix", { interface: iface, mtu });

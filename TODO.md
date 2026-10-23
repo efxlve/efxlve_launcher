@@ -19,9 +19,6 @@ Details: `docs/CLOUD_SAVES.md`.
 - A Unix global overlay hotkey; today the overlay opens from the launcher header
   and tray. Wayland compositors may also ignore the panel's position and
   always-on-top request, which needs a layer-shell path.
-- The path-MTU probe/fix is built on Windows `ping`/`netsh`; Linux/macOS need
-  their own `ip route`/`ifconfig` and elevated MTU change before the cloud-save
-  MTU guard can run there.
 - Screen capture, clips, HUD/FPS and taskbar badges remain Windows-only and are
   hidden on Unix.
 

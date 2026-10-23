@@ -587,7 +587,7 @@ pub fn steam_remove_saved_account(app: tauri::AppHandle, steam_id: String) {
     if !valid_steam_id(&steam_id) {
         return;
     }
-    let _ = std::fs::remove_file(vault_path(&auth_dir(&app), &steam_id));
+    remove_vault_session(&app, &steam_id);
     let mut accounts = load_meta(&auth_dir(&app));
     accounts.retain(|account| account.steam_id != steam_id);
     save_meta(&auth_dir(&app), &accounts);

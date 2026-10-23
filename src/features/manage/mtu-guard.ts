@@ -8,7 +8,6 @@
  */
 
 import { isTauri } from "../../core/constants";
-import { IS_WINDOWS } from "../../core/platform";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { t } from "../../i18n";
@@ -19,9 +18,7 @@ let checked = false;
 
 /** Probes the path after a failed sync; a warning is raised only when broken. */
 export async function checkMtuAfterSyncFailure(): Promise<void> {
-  // The probe and its fix are built on Windows `ping`/`netsh`; Linux/macOS
-  // need their own implementation before this can help there.
-  if (checked || !isTauri || !IS_WINDOWS) return;
+  if (checked || !isTauri) return;
   checked = true;
   try {
     const probe = await netMtuProbe();
