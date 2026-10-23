@@ -238,6 +238,7 @@ pub use vault::{
     persist_session,
     deactivate_vault,
     read_vault_session,
+    remove_vault_session,
     load_stored_session,
     migrate_legacy_session,
     ensure_disk_checked,

@@ -219,8 +219,29 @@ pub fn save_meta(dir: &Path, accounts: &[SteamSavedAccount]) {
     }
 }
 
-/// Seals the refresh token into the account vault (DPAPI) and marks that
-/// account active. Failures are non-fatal: the session stays usable in memory.
+/// SteamID64-scoped key for the OS keychain on Unix.
+#[cfg(unix)]
+fn steam_secret_key(steam_id: &str) -> String {
+    format!("steam_refresh_{steam_id}")
+}
+
+fn session_from_stored(stored: StoredSession) -> Option<SteamSession> {
+    if stored.refresh_token.trim().is_empty() {
+        return None;
+    }
+    Some(SteamSession {
+        account_name: stored.account_name,
+        steam_id: stored.steam_id,
+        refresh_token: stored.refresh_token,
+        access_token: None,
+        access_token_exp: 0,
+    })
+}
+
+/// Seals the refresh token into the account vault and marks that account
+/// active. Windows uses DPAPI in a file; Unix prefers the OS keychain and only
+/// falls back to the 0600 file when the Secret Service is unavailable.
+/// Failures are non-fatal: the session stays usable in memory.
 pub fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
     use zeroize::Zeroizing;
     let stored = StoredSession {
@@ -229,17 +250,30 @@ pub fn persist_session(app: &tauri::AppHandle, session: &SteamSession) {
         refresh_token: session.refresh_token.clone(),
         saved_at: now_secs(),
     };
-    let Ok(json) = serde_json::to_vec(&stored).map(Zeroizing::new) else {
-        return;
-    };
-    let Ok(mut sealed) = dpapi::protect(&json) else {
-        return;
-    };
-    let _ = write_private(
-        &vault_path(&auth_dir(app), &session.steam_id),
-        &sealed,
-    );
-    sealed.zeroize();
+
+    #[cfg(unix)]
+    let keychain_saved = serde_json::to_string(&stored)
+        .ok()
+        .map(|json| crate::cloud_backup::secret_store::set(&steam_secret_key(&session.steam_id), &json).is_ok())
+        .unwrap_or(false);
+    #[cfg(not(unix))]
+    let keychain_saved = false;
+
+    if keychain_saved {
+        let _ = std::fs::remove_file(vault_path(&auth_dir(app), &session.steam_id));
+    } else {
+        let Ok(json) = serde_json::to_vec(&stored).map(Zeroizing::new) else {
+            return;
+        };
+        let Ok(mut sealed) = dpapi::protect(&json) else {
+            return;
+        };
+        let _ = write_private(
+            &vault_path(&auth_dir(app), &session.steam_id),
+            &sealed,
+        );
+        sealed.zeroize();
+    }
 
     let mut accounts = load_meta(&auth_dir(app));
     for account in accounts.iter_mut() {
@@ -275,19 +309,36 @@ pub fn deactivate_vault(app: &tauri::AppHandle) {
 
 pub fn read_vault_session(app: &tauri::AppHandle, steam_id: &str) -> Option<SteamSession> {
     use zeroize::Zeroizing;
+
+    #[cfg(unix)]
+    if let Some(json) = crate::cloud_backup::secret_store::get(&steam_secret_key(steam_id)) {
+        if let Ok(stored) = serde_json::from_str::<StoredSession>(&json) {
+            if let Some(session) = session_from_stored(stored) {
+                return Some(session);
+            }
+        }
+    }
+
     let sealed = std::fs::read(vault_path(&auth_dir(app), steam_id)).ok()?;
     let plain = Zeroizing::new(dpapi::unprotect(&sealed).ok()?);
     let stored: StoredSession = serde_json::from_slice(&plain).ok()?;
-    if stored.refresh_token.trim().is_empty() {
-        return None;
+
+    // Migrate the 0600 Unix file into the keychain while the token is in hand.
+    #[cfg(unix)]
+    if let Ok(json) = serde_json::to_string(&stored) {
+        if crate::cloud_backup::secret_store::set(&steam_secret_key(steam_id), &json).is_ok() {
+            let _ = std::fs::remove_file(vault_path(&auth_dir(app), steam_id));
+        }
     }
-    Some(SteamSession {
-        account_name: stored.account_name,
-        steam_id: stored.steam_id,
-        refresh_token: stored.refresh_token,
-        access_token: None,
-        access_token_exp: 0,
-    })
+
+    session_from_stored(stored)
+}
+
+/// Deletes both the sealed file and the keychain entry for one account.
+pub fn remove_vault_session(app: &tauri::AppHandle, steam_id: &str) {
+    #[cfg(unix)]
+    let _ = crate::cloud_backup::secret_store::delete(&steam_secret_key(steam_id));
+    let _ = std::fs::remove_file(vault_path(&auth_dir(app), steam_id));
 }
 
 /// Reads the active sealed session back; `None` covers "no file", "another
