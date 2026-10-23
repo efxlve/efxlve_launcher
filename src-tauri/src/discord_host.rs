@@ -967,6 +967,24 @@ fn run_ready_script(app: &AppHandle) {
     });
 }
 
+/// WebView2 permission handling and its script bridge have no WebKitGTK /
+/// WKWebView equivalent. The page still loads and paints (the first-paint flag
+/// comes from the page-load `eval`), but voice detection and microphone
+/// permission stay Windows-only.
+#[cfg(not(windows))]
+fn poll_voice_script(_app: &AppHandle) {}
+
+#[cfg(not(windows))]
+fn read_voice_now(_app: &AppHandle) -> Option<serde_json::Value> {
+    None
+}
+
+#[cfg(not(windows))]
+fn run_ready_script(_app: &AppHandle) {}
+
+#[cfg(not(windows))]
+fn allow_media_permissions(_view: &tauri::Webview) {}
+
 /// Keeps a fresh document hidden behind the loading note until the web client
 /// really painted. A destroy bumps the generation, so a stale poll is inert;
 /// the timeout shows the child anyway so an error page is never hidden forever.

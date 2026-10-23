@@ -368,15 +368,6 @@ pub fn stop() -> BridgeStatus {
     status()
 }
 
-#[cfg(not(windows))]
-fn worker(
-    _stop: Arc<AtomicBool>,
-    _device_name: Arc<Mutex<String>>,
-    ready: std::sync::mpsc::Sender<Result<(), String>>,
-) {
-    let _ = ready.send(Err("@t:controller.bridgeWindowsOnly".into()));
-}
-
 #[tauri::command]
 pub fn controller_bridge_start() -> Result<BridgeStatus, String> {
     start()
@@ -599,7 +590,7 @@ fn worker(
     _device_name: Arc<Mutex<String>>,
     ready: std::sync::mpsc::Sender<Result<(), String>>,
 ) {
-    let _ = ready.send(Err("The controller bridge is Windows only".into()));
+    let _ = ready.send(Err("@t:controller.bridgeWindowsOnly".into()));
 }
 
 #[cfg(test)]
@@ -787,6 +778,7 @@ mod tests {
 
     /// Hardware smoke test: reads reports from a connected Sony pad and parses
     /// them. Run with `cargo test -- --ignored --nocapture`.
+    #[cfg(windows)]
     #[test]
     #[ignore = "needs a connected DualShock/DualSense"]
     fn hardware_reports_parse() {

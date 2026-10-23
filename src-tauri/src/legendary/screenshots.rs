@@ -1373,6 +1373,11 @@ pub use win_capture::capture_frame_jpeg;
 #[path = "screenshot_capture_stub.rs"]
 mod win_capture;
 
+/// The stub keeps the recorder's frame-grabber name so the clip code links on
+/// every platform; it reports the "Windows only" error instead of a frame.
+#[cfg(not(target_os = "windows"))]
+pub use win_capture::capture_frame_jpeg;
+
 
 /// Synchronously captures the primary screen and saves it to the running game's folder.
 /// Refuses when no game is running, and ignores a second request while one capture is in flight.
@@ -1444,6 +1449,17 @@ fn capture_screen_to_game_folder(
     // 1. Try native Win32 GDI + GDI+ first (< 20 ms, full physical resolution)
     let native_res = win_capture::capture_screen_native(&target_file);
 
+    // The PowerShell fallback is a Windows shell path; elsewhere native capture
+    // is the only implementation and its error is returned as-is.
+    #[cfg(not(windows))]
+    {
+        return Err(format!(
+            "@t:ss.captureFailedNative\u{1f}{:?}",
+            native_res.err()
+        ));
+    }
+
+    #[cfg(windows)]
     if native_res.is_err() {
         // 2. Fallback: DPI-aware PowerShell command (full 2560x1600 resolution)
         let target_str = target_file.to_string_lossy().to_string();

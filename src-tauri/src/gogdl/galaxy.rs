@@ -40,12 +40,16 @@ pub struct GalaxyDetectedGame {
 }
 
 /// Runs `reg` without flashing a console window; returns stdout on success.
+/// Linux/macOS have no `reg`, so the scan simply finds no Galaxy installs.
 fn reg(args: &[&str]) -> Option<String> {
-    use std::os::windows::process::CommandExt;
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-
     let mut cmd = std::process::Command::new("reg");
-    cmd.args(args).creation_flags(CREATE_NO_WINDOW);
+    cmd.args(args);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
     let out = cmd.output().ok()?;
     if !out.status.success() {
         return None;

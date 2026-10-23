@@ -1501,6 +1501,7 @@ mod tests {
     /// The test renders its own silence first: WASAPI loopback hands out nothing
     /// while the endpoint is idle, so on a quiet machine the capture would come
     /// back empty and the run would look like a failure.
+    #[cfg(windows)]
     #[test]
     #[ignore = "grabs the real screen and speakers; run manually"]
     fn a_real_clip_gets_a_sound_track() {
@@ -1807,6 +1808,7 @@ mod tests {
 
     /// The frame grabber is the risky half (Win32 + GDI+): run manually on a
     /// desktop session (`cargo test -- --ignored`) to prove it returns a JPEG.
+    #[cfg(windows)]
     #[test]
     #[ignore = "captures the real screen; run manually"]
     fn capture_frame_jpeg_returns_a_jpeg() {

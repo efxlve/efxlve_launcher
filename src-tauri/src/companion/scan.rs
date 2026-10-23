@@ -525,6 +525,7 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\UbiAC
     /// and the text parser also matched `DisplayName_Localized`, an
     /// `@dll,-id` reference that showed as garbage where the real
     /// `DisplayName` now wins.
+    #[cfg(windows)]
     #[test]
     #[ignore = "reads the real registry; run manually to compare with reg query"]
     fn win32_uninstall_scan_matches_reg_query() {

@@ -30,9 +30,13 @@ impl AudioCapture {
         }
     }
 
-    pub fn drain(&mut self) -> Vec<u8> {
+    /// The recorder drains interleaved i16 samples on every frame and writes
+    /// them straight into the AVI, so the stub keeps that same shape.
+    pub fn drain(&mut self) -> Vec<i16> {
         Vec::new()
     }
+
+    pub fn stop(&self) {}
 }
 
 /// Renders silence into the default output device, for the live audio test.

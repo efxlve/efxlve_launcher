@@ -2,10 +2,14 @@
 //! RGBA and handed to Tauri's `set_overlay_icon` — the same badge Discord puts
 //! on its taskbar button. Pure Rust, so no GDI or COM setup is involved.
 
+use tauri::AppHandle;
+#[cfg(windows)]
 use tauri::image::Image;
-use tauri::{AppHandle, Manager};
+#[cfg(windows)]
+use tauri::Manager;
 
 /// 3x5 pixel glyphs: enough for "0"-"9" and "+".
+#[cfg(windows)]
 const GLYPHS: [[u8; 5]; 11] = [
     [0b111, 0b101, 0b101, 0b101, 0b111], // 0
     [0b010, 0b110, 0b010, 0b010, 0b111], // 1
@@ -22,6 +26,7 @@ const GLYPHS: [[u8; 5]; 11] = [
 
 /// The badge: a filled circle in the launcher's error red with the count in
 /// white, centred.
+#[cfg(windows)]
 fn badge_image(count: u32) -> Image<'static> {
     const SIZE: u32 = 32;
     let mut rgba = vec![0u8; (SIZE * SIZE * 4) as usize];
@@ -55,6 +60,7 @@ fn badge_image(count: u32) -> Image<'static> {
 }
 
 /// Draws the count with the pixel glyphs, centred in the badge.
+#[cfg(windows)]
 fn draw_text(rgba: &mut [u8], size: u32, text: &str) {
     const GLYPH_W: u32 = 3;
     const GLYPH_H: u32 = 5;
