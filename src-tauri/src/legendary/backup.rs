@@ -50,6 +50,49 @@ pub fn app_backup_dir(app_name: &str) -> PathBuf {
     backups_base_dir().join(backup_key(app_name))
 }
 
+/// Moves a backup folder created before `backup_key` (`gog::123`, `steam::456`)
+/// under the current safe key, so the list keeps showing old backups.
+///
+/// The legacy name is the raw app key, which used to be a valid Windows folder
+/// name for Epic titles and an invalid one for every other store. Only the base
+/// directory is touched; separators are rejected so a key can never climb out.
+fn migrate_legacy_dir_in(base: &Path, app_name: &str) -> Option<PathBuf> {
+    let key = backup_key(app_name);
+    if key == app_name
+        || app_name.is_empty()
+        || app_name == "."
+        || app_name == ".."
+        || app_name.contains(['/', '\\'])
+    {
+        return None;
+    }
+    let legacy = base.join(app_name);
+    let target = base.join(&key);
+    if !legacy.is_dir() || legacy == target {
+        return None;
+    }
+    if !target.exists() {
+        return std::fs::rename(&legacy, &target).ok().map(|_| target);
+    }
+    // A backup taken after the fix already owns the safe folder: move the old
+    // children in without overwriting, then drop the now-empty legacy folder.
+    let Ok(entries) = std::fs::read_dir(&legacy) else {
+        return None;
+    };
+    for entry in entries.flatten() {
+        let destination = target.join(entry.file_name());
+        if !destination.exists() {
+            let _ = std::fs::rename(entry.path(), destination);
+        }
+    }
+    let _ = std::fs::remove_dir(&legacy);
+    Some(target)
+}
+
+fn migrate_legacy_dir(app_name: &str) -> Option<PathBuf> {
+    migrate_legacy_dir_in(&backups_base_dir(), app_name)
+}
+
 /// Shared by the local list and the folder provider so both show the same date.
 pub fn format_backup_timestamp(ts: u64) -> String {
     let days = ts / 86400;
@@ -629,6 +672,7 @@ pub fn create_backup(
     app_name: &str,
     save_path_override: Option<&str>,
 ) -> Result<SaveBackupInfo, String> {
+    migrate_legacy_dir(app_name);
     let installed = super::cache::read_installed(&super::skip::default_config_dir());
     let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
 
@@ -691,6 +735,7 @@ pub fn create_backup(
 }
 
 pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
+    migrate_legacy_dir(app_name);
     let dir = app_backup_dir(app_name);
     let mut list = Vec::new();
 
@@ -714,6 +759,7 @@ pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
 }
 
 pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String> {
+    migrate_legacy_dir(app_name);
     let backup_dir = app_backup_dir(app_name).join(backup_id);
     let info_path = backup_dir.join("backup_info.json");
     if !info_path.exists() {
@@ -776,6 +822,7 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
 }
 
 pub fn delete_backup(app_name: &str, backup_id: &str) -> Result<(), String> {
+    migrate_legacy_dir(app_name);
     let target = app_backup_dir(app_name).join(backup_id);
     if target.exists() {
         std::fs::remove_dir_all(target).map_err(|e| e.to_string())?;
@@ -869,6 +916,76 @@ mod tests {
         assert_eq!(found.unwrap(), game_dir);
 
         let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    /// Local backups from before `backup_key` used the raw store key as the
+    /// folder name. A space stands in for the `::` key here: Windows cannot
+    /// create a `::` folder (that was the bug), while the sanitizing rule is
+    /// the same. The real `::` name is covered on Unix below.
+    #[test]
+    fn legacy_store_backup_folders_move_to_the_safe_key() {
+        let base = std::env::temp_dir().join(format!("efxlve_legacy_backup_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let legacy = base.join("gog 123");
+        let backup = legacy.join("1700000000");
+        std::fs::create_dir_all(&backup).unwrap();
+        std::fs::write(backup.join("backup_info.json"), b"{}").unwrap();
+
+        let moved = migrate_legacy_dir_in(&base, "gog 123").expect("moved");
+        assert_eq!(moved, base.join("gog_123"));
+        assert!(base.join("gog_123").join("1700000000").is_dir());
+        assert!(!legacy.exists(), "the raw folder is gone");
+        // Epic names already are the safe key: there is nothing to migrate.
+        assert_eq!(migrate_legacy_dir_in(&base, "Ginger"), None);
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// Both names may exist when a backup was taken before and after the fix;
+    /// the old children move into the safe folder and nothing is overwritten.
+    #[test]
+    fn legacy_backups_merge_into_an_existing_safe_folder() {
+        let base = std::env::temp_dir().join(format!("efxlve_legacy_merge_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("gog 123").join("1700000000")).unwrap();
+        std::fs::create_dir_all(base.join("gog_123").join("1700000001")).unwrap();
+
+        let moved = migrate_legacy_dir_in(&base, "gog 123").expect("merged");
+        assert_eq!(moved, base.join("gog_123"));
+        assert!(base.join("gog_123").join("1700000000").is_dir());
+        assert!(base.join("gog_123").join("1700000001").is_dir());
+        assert!(!base.join("gog 123").exists());
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// The real legacy name on Linux/macOS, where a `::` folder is legal.
+    #[cfg(unix)]
+    #[test]
+    fn legacy_colon_keys_migrate_on_unix() {
+        let base =
+            std::env::temp_dir().join(format!("efxlve_legacy_colon_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("gog::123").join("1700000000")).unwrap();
+
+        let moved = migrate_legacy_dir_in(&base, "gog::123").expect("moved");
+        assert_eq!(moved, base.join("gog__123"));
+        assert!(base.join("gog__123").join("1700000000").is_dir());
+        assert!(!base.join("gog::123").exists());
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn legacy_migration_rejects_path_separators() {
+        let base = std::env::temp_dir().join(format!("efxlve_legacy_traversal_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+
+        assert_eq!(migrate_legacy_dir_in(&base, "../outside"), None);
+        assert_eq!(migrate_legacy_dir_in(&base, "gog/123"), None);
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     fn unix_fixture(name: &str) -> (PathBuf, PathBuf, PathBuf) {

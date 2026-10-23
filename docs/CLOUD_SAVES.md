@@ -163,8 +163,9 @@ Ordered by user value:
    manager” button.
 7. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
-8. **Migration** — old WebDAV archives stored under raw `::` names need a
-   one-time folder rename or a legacy fallback in the listing.
+8. **Remote migration** — local folders created before `backup_key` are moved to
+   the safe key automatically; WebDAV/Folder archives stored under raw `::`
+   names still need a one-time remote rename or a legacy fallback in the listing.
 9. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
