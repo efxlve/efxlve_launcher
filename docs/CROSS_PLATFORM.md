@@ -15,6 +15,9 @@ Efxlve Launcher zaten iki büyük taşınabilirlik avantajına sahiptir:
    indirme ve bulut kayıt işlemleri Python tabanlı `legendary` ile yürütülür; Linux/macOS
    için resmi binary mevcuttur. Rust backend yalnızca süreç sarıcıdır (`client.rs`,
    `transfers.rs`), dolayısıyla bu katman büyük ölçüde yeniden kullanılabilir.
+   Epic'in Ekim 2026'da yayımladığı Linux önizleme istemcisi ayrı bir uygulamadır;
+   bu launcher Epic kurulumlarını yine `legendary` üzerinden yönetir ve resmi
+   istemcinin kurulu olmasını gerektirmez. Heroic de aynı yaklaşımı kullanır.
 2. **Tauri v2 + Vite/TypeScript frontend platformdan bağımsızdır.** Arayüz, oyun kolu
    navigasyonu, tema ve render disiplini değişmeden çalışır.
 
@@ -164,6 +167,10 @@ paketinin çıktığı anlamına gelmez.
 - `legendary/paths.rs` ve `gogdl/paths.rs` artık işletim sistemi + mimariye göre
   doğru release asset'ini seçiyor (Windows x64/ARM64, Linux x64/ARM64, macOS
   x64/ARM64). İndirilen dosya Unix'te çalıştırılabilir işaretleniyor.
+- Unix'te kullanıcının kendi kurduğu `legendary` (PATH, `~/.local/bin`,
+  `/usr/local/bin`, Homebrew) bulunursa indirme atlanır. Sürüm `legendary -V`
+  ile doğrulanır; bozuksa indirilen kopya kullanılır. Bu, GitHub erişimi
+  kapalıyken veya dağıtım paketi zaten legendary getiriyorsa devreye girer.
 - Nile ve Comet zaten tüm platformlar için pinlenmiş asset'lere sahipti; davranış
   değişmedi.
 
@@ -284,8 +291,9 @@ yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anlamına gelmez.
 
 - **Mağaza CLI'ları:** `legendary`, `gogdl`, Nile ve Comet işletim sistemi +
-  mimariye göre indirilir; Unix'te `0o755` izni verilir. Eksik platform için
-  indirme, çalıştırma yerine açık hata döndürür.
+  mimariye göre indirilir; Unix'te `0o755` izni verilir. Unix'te sistemde kurulu
+  bir `legendary` varsa önce o denenir. Eksik platform için indirme, çalıştırma
+  yerine açık hata döndürür.
 - **Oyun başlatma:** Epic, GOG, Amazon ve özel oyunlar `compat::launch_spec`
   üzerinden Wine/Proton/umu wrapper'ına verilir. Windows'ta wrapper atlanır.
 - **Süreç takibi:** Linux/macOS'ta `sysinfo` ile kurulum klasörü/EXE adı

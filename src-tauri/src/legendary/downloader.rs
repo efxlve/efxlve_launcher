@@ -169,6 +169,16 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, LegendaryError> {
         let _ = tokio::fs::remove_file(&target).await;
     }
 
+    // A system-installed legendary (distro package, pip, Homebrew) avoids the
+    // download entirely. Heroic accepts it for the same reason.
+    #[cfg(unix)]
+    if let Some(system) = paths::system_binary() {
+        if binary_version(&system).await.is_ok() {
+            emit(app, "ready", Some(100), "@t:auth.legendaryReady".into());
+            return Ok(system);
+        }
+    }
+
     emit(app, "downloading", Some(0), "@t:dl.fetchingVersion".into());
     let tag = latest_tag().await?;
     let asset = paths::current_asset_name()
