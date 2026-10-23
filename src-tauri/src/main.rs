@@ -1111,11 +1111,42 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
     None
 }
 
+/// A Windows zip with `portable.txt` next to the exe keeps the launcher's
+/// roaming/local data and legendary config inside `portable-data`. Everything
+/// else (game installs, saves, Steam library) stays where it normally lives.
+#[cfg(windows)]
+fn init_portable_mode() {
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+    let Some(dir) = exe.parent() else {
+        return;
+    };
+    if !dir.join("portable.txt").is_file() {
+        return;
+    }
+    let root = dir.join("portable-data");
+    let roaming = root.join("Roaming");
+    let local = root.join("Local");
+    let config = root.join("config").join("legendary");
+    for path in [&roaming, &local, &config] {
+        let _ = std::fs::create_dir_all(path);
+    }
+    std::env::set_var("APPDATA", &roaming);
+    std::env::set_var("LOCALAPPDATA", &local);
+    std::env::set_var("EFXLVE_CONFIG_DIR", &config);
+}
+
+#[cfg(not(windows))]
+fn init_portable_mode() {}
+
 /// Unpackaged (dev) builds show the launching shell's name in Windows toasts
 /// ("Windows PowerShell"); the packaged build takes the launcher's name from
 /// its Start-menu shortcut. An explicit app id here would make Windows drop
 /// the toasts entirely, because that id has no shortcut to resolve against.
-fn main() {    // Rockstar's launcher only continues when a process named
+fn main() {
+    init_portable_mode();
+    // Rockstar's launcher only continues when a process named
     // `EpicGamesLauncher.exe` is in its ancestor chain. This binary runs as
     // that relay copy when `legendary launch --wrapper` starts it, so Rockstar
     // titles work without the Epic Games Launcher. It has to run before the

@@ -162,6 +162,12 @@ pub fn write_seed(
 
 /// legendary default config dir (fallback when the status command fails).
 pub fn default_config_dir() -> PathBuf {
+    // Portable builds point this at a folder next to the executable.
+    if let Ok(path) = std::env::var("EFXLVE_CONFIG_DIR") {
+        if !path.trim().is_empty() {
+            return PathBuf::from(path);
+        }
+    }
     #[cfg(windows)]
     {
         std::env::var("USERPROFILE")

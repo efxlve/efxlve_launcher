@@ -95,3 +95,25 @@ jobs:
           prerelease: false
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+
+      - name: Package the portable Windows build
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force portable | Out-Null
+          Copy-Item src-tauri/target/release/efxlve-launcher.exe portable/
+          Set-Content -Path portable/portable.txt -Value "portable"
+          @"
+          Efxlve Launcher portable
+          Run efxlve-launcher.exe. Launcher data stays in portable-data next to this file.
+          "@ | Set-Content -Path portable/README.txt
+          Compress-Archive -Path portable/* -DestinationPath efxlve-launcher-portable.zip -Force
+
+      - name: Upload the portable Windows build
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          gh release upload "v$version" efxlve-launcher-portable.zip --clobber
