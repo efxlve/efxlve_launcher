@@ -11,7 +11,8 @@
 # - TAURI_SIGNING_PRIVATE_KEY_PASSWORD (empty string when the key has no password)
 #
 # The platform matrix is ready for the future Linux/macOS support: uncomment the
-# extra entries once the codebase builds on those targets.
+# extra entries once signing/notarization exists. Until then the manual
+# `package.yml` workflow builds unsigned Unix installers as artifacts.
 
 name: Release
 

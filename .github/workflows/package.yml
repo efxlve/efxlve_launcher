@@ -63,7 +63,7 @@ jobs:
         run: npm ci
 
       - name: Build installers
-        run: npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        run: npm run tauri build -- --config src-tauri/tauri.package.conf.json
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
@@ -97,7 +97,7 @@ jobs:
         run: npm ci
 
       - name: Build installers
-        run: npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        run: npm run tauri build -- --config src-tauri/tauri.package.conf.json
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
