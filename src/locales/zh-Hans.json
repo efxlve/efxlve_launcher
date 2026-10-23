@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "全部恢复",
   "cloud.bulkRestoreDone": "恢复完成：{total} 个游戏，{failed} 个失败。",
   "cloud.localBackupTitle": "每日本地备份",
-  "cloud.localBackupDesc": "即使没有云端提供商，也为每个已安装游戏每天最多创建一次本地备份。仅在启动器打开时运行。"
+  "cloud.localBackupDesc": "即使没有云端提供商，也为每个已安装游戏每天最多创建一次本地备份。仅在启动器打开时运行。",
+  "cloud.rcloneRemotes": "列出远程",
+  "cloud.rcloneNone": "未找到远程。请先运行 `rclone config`。"
 }

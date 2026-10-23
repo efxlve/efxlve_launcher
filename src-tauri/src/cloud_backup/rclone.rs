@@ -141,6 +141,21 @@ pub async fn test_rclone(remote: &str) -> Result<String, String> {
     Ok(format!("{first} ready: {base}"))
 }
 
+/// Lists remotes from the user's rclone config, without leaking credentials.
+pub async fn list_remotes() -> Result<Vec<String>, String> {
+    let output = run(&["listremotes"]).await?;
+    Ok(parse_remotes(&output))
+}
+
+fn parse_remotes(output: &str) -> Vec<String> {
+    output
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && line.ends_with(':'))
+        .map(str::to_string)
+        .collect()
+}
+
 pub async fn upload_backup_rclone(
     remote: &str,
     app_name: &str,
@@ -264,6 +279,12 @@ mod tests {
         assert!(validate_remote_id(base, "gdrive:other/gog__123/1.tar.gz").is_err());
         assert!(validate_remote_id(base, "gdrive:efxlve_saves/../x/1.tar.gz").is_err());
         assert!(validate_remote_id(base, "gdrive:efxlve_saves/gog__123/1.tar.gz\n--dry-run").is_err());
+    }
+
+    #[test]
+    fn remote_list_ignores_noise() {
+        let remotes = parse_remotes("gdrive:\n\n s3: \nbad-line\n");
+        assert_eq!(remotes, vec!["gdrive:", "s3:"]);
     }
 
     #[test]

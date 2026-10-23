@@ -1618,6 +1618,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
             cloud_backup::commands::cloud_backup_download_game,
             cloud_backup::commands::cloud_backup_delete_remote,
             cloud_backup::commands::cloud_backup_open_folder,
+            cloud_backup::commands::cloud_backup_rclone_remotes,
             notes::notes_list,
             notes::notes_save,
             notes::notes_delete,

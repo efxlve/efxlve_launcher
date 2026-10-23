@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "استعد الكل",
   "cloud.bulkRestoreDone": "اكتملت الاستعادة: {total} لعبة، {failed} فشلت.",
   "cloud.localBackupTitle": "نسخة محلية يومية",
-  "cloud.localBackupDesc": "ينشئ نسخة محلية واحدة يوميًا كحد أقصى لكل لعبة مثبتة، حتى بدون مزوّد سحابي. يعمل أثناء فتح المشغّل."
+  "cloud.localBackupDesc": "ينشئ نسخة محلية واحدة يوميًا كحد أقصى لكل لعبة مثبتة، حتى بدون مزوّد سحابي. يعمل أثناء فتح المشغّل.",
+  "cloud.rcloneRemotes": "عرض المخازن البعيدة",
+  "cloud.rcloneNone": "لم يُعثر على مخازن بعيدة. شغّل `rclone config` أولًا."
 }

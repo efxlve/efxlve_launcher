@@ -5,6 +5,7 @@
 import { toast } from "../../../core/toast";
 import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
+import { esc } from "../../../core/utils";
 import {
   bulkCloudBackupAction,
   bulkCloudRestoreAction,
@@ -25,7 +26,7 @@ import {
   closeGoogleDriveGuideModal,
 } from "../../cloud-backup/cloud-backup-view";
 import type { CloudBackupProvider } from "../../../epic";
-import { cloudBackupOpenFolder, epicSelectFolderDialog } from "../../../epic";
+import { cloudBackupOpenFolder, cloudBackupRcloneRemotes, epicSelectFolderDialog } from "../../../epic";
 
 export function handleCloudBackupAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -260,6 +261,34 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         if (!saved) return;
         await testCloudConnectionAction();
       })();
+      return true;
+    }
+
+    case "cloud-rclone-remotes": {
+      void (async () => {
+        try {
+          const remotes = await cloudBackupRcloneRemotes();
+          const box = document.getElementById("cloud-rclone-remotes");
+          if (!box) return;
+          box.innerHTML = remotes.length === 0
+            ? `<span style="font-size:11px;color:var(--text-3)">${esc(i18nT("cloud.rcloneNone"))}</span>`
+            : remotes
+                .map(
+                  (remote) =>
+                    `<button type="button" class="btn ghost small" data-act="cloud-rclone-pick" data-remote="${esc(remote)}">${esc(remote)}</button>`,
+                )
+                .join("");
+        } catch (err) {
+          toast(String(err), "err");
+        }
+      })();
+      return true;
+    }
+
+    case "cloud-rclone-pick": {
+      const remote = t.dataset.remote ?? "";
+      const input = document.getElementById("cloud-rclone-remote") as HTMLInputElement | null;
+      if (input) input.value = `${remote}efxlve_saves`;
       return true;
     }
 

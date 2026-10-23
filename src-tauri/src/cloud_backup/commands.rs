@@ -89,6 +89,11 @@ pub async fn cloud_backup_delete_remote(remote_id: String) -> Result<(), String>
     manager::delete_remote_backup(&remote_id).await
 }
 
+#[command]
+pub async fn cloud_backup_rclone_remotes() -> Result<Vec<String>, String> {
+    crate::cloud_backup::rclone::list_remotes().await
+}
+
 /// Opens the Folder provider root in the system file manager, creating it when
 /// the first backup has not run yet.
 #[command]

@@ -155,8 +155,10 @@ export function renderCloudBackupSettingsGroup(): string {
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
           <input id="cloud-rclone-remote" class="input" placeholder="gdrive:efxlve_saves" value="${esc(st.rcloneRemote)}" spellcheck="false" autocomplete="off" />
+          <div id="cloud-rclone-remotes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <div class="mg-note" style="color:var(--text-3);font-size:11px;line-height:1.5">${icon("info", 12)} ${t("cloud.rcloneHint")}</div>
           <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" class="btn ghost small" data-act="cloud-rclone-remotes">${icon("refresh", 13)} ${t("cloud.rcloneRemotes")}</button>
             <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://rclone.org/downloads/">${icon("external", 13)} rclone.org</button>
             <button type="button" class="btn ghost small" data-act="cloud-rclone-test" ${S.cloudBackupTesting ? "disabled" : ""}>
               ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}

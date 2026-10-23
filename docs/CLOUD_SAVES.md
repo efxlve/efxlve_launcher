@@ -196,9 +196,9 @@ directly.
    <https://rclone.org/downloads/> on Linux.
 2. Configure the remote once with `rclone config` and check it with
    `rclone lsd <remote>:`.
-3. In Settings → Cloud choose **rclone** and enter the destination as
-   `<remote>:<folder>`, for example `gdrive:efxlve_saves`, `onedrive:Saves/Efxlve`
-   or `s3:my-bucket/efxlve_saves`.
+3. In Settings → Cloud choose **rclone**, press **List remotes** and pick one,
+   then append a folder, for example `gdrive:efxlve_saves` or
+   `s3:my-bucket/efxlve_saves`.
 4. **Test Connection** creates the folder when needed; **Save** stores the path.
 
 The launcher runs the same `rclone` binary that `rclone config` uses, so
@@ -243,8 +243,7 @@ Ordered by user value:
 3. **Auto-sync feedback** — the failure toast and notification exist; a
    background queue with per-game status does not.
 4. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
-   a Google Drive “test before connect” path, and an rclone remote picker that
-   lists configured remotes (`rclone listremotes`).
+   and a Google Drive “test before connect” path.
 5. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
 6. **Remote migration** — local folders created before `backup_key` are moved to
@@ -268,7 +267,7 @@ Cloud:
   `cloud_backup_test_connection`, `cloud_backup_upload_game`,
   `cloud_backup_list_game`, `cloud_backup_download_game`,
   `cloud_backup_delete_remote`, `cloud_backup_delete_all_remote`,
-  `cloud_backup_open_folder`
+  `cloud_backup_open_folder`, `cloud_backup_rclone_remotes`
 
 Google Drive auth:
 

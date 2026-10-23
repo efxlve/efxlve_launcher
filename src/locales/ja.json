@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "すべて復元",
   "cloud.bulkRestoreDone": "復元完了: {total} 件、失敗 {failed} 件。",
   "cloud.localBackupTitle": "毎日のローカルバックアップ",
-  "cloud.localBackupDesc": "クラウドなしでも、インストール済みゲームごとに 1 日 1 回までローカルバックアップを作成します。ランチャー起動中に実行されます。"
+  "cloud.localBackupDesc": "クラウドなしでも、インストール済みゲームごとに 1 日 1 回までローカルバックアップを作成します。ランチャー起動中に実行されます。",
+  "cloud.rcloneRemotes": "リモート一覧",
+  "cloud.rcloneNone": "リモートが見つかりません。先に `rclone config` を実行してください。"
 }

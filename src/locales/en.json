@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "Restore all",
   "cloud.bulkRestoreDone": "Restore finished: {total} games restored, {failed} failed.",
   "cloud.localBackupTitle": "Daily local backup",
-  "cloud.localBackupDesc": "Creates one local backup per installed game at most once a day, even without a cloud provider. Runs while the launcher is open."
+  "cloud.localBackupDesc": "Creates one local backup per installed game at most once a day, even without a cloud provider. Runs while the launcher is open.",
+  "cloud.rcloneRemotes": "List remotes",
+  "cloud.rcloneNone": "No remotes found. Run `rclone config` first."
 }

@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "全部還原",
   "cloud.bulkRestoreDone": "還原完成：{total} 個遊戲，{failed} 個失敗。",
   "cloud.localBackupTitle": "每日本機備份",
-  "cloud.localBackupDesc": "即使沒有雲端提供者，也為每個已安裝遊戲每天最多建立一次本機備份。僅在啟動器開啟時執行。"
+  "cloud.localBackupDesc": "即使沒有雲端提供者，也為每個已安裝遊戲每天最多建立一次本機備份。僅在啟動器開啟時執行。",
+  "cloud.rcloneRemotes": "列出遠端",
+  "cloud.rcloneNone": "找不到遠端。請先執行 `rclone config`。"
 }

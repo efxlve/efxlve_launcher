@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "모두 복원",
   "cloud.bulkRestoreDone": "복원 완료: {total}개 게임, 실패 {failed}개.",
   "cloud.localBackupTitle": "매일 로컬 백업",
-  "cloud.localBackupDesc": "클라우드 없이도 설치된 게임마다 하루 최대 한 번 로컬 백업을 만듭니다. 런처가 열려 있는 동안 실행됩니다."
+  "cloud.localBackupDesc": "클라우드 없이도 설치된 게임마다 하루 최대 한 번 로컬 백업을 만듭니다. 런처가 열려 있는 동안 실행됩니다.",
+  "cloud.rcloneRemotes": "원격 목록",
+  "cloud.rcloneNone": "원격을 찾지 못했습니다. 먼저 `rclone config`를 실행하세요."
 }

@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "सभी पुनर्स्थापित करें",
   "cloud.bulkRestoreDone": "पुनर्स्थापना पूरी: {total} गेम, {failed} विफल।",
   "cloud.localBackupTitle": "दैनिक स्थानीय बैकअप",
-  "cloud.localBackupDesc": "क्लाउड प्रदाता के बिना भी हर इंस्टॉल गेम के लिए दिन में अधिकतम एक स्थानीय बैकअप बनाता है। लॉन्चर खुला रहने पर चलता है।"
+  "cloud.localBackupDesc": "क्लाउड प्रदाता के बिना भी हर इंस्टॉल गेम के लिए दिन में अधिकतम एक स्थानीय बैकअप बनाता है। लॉन्चर खुला रहने पर चलता है।",
+  "cloud.rcloneRemotes": "रिमोट सूची",
+  "cloud.rcloneNone": "कोई रिमोट नहीं मिला। पहले `rclone config` चलाएँ।"
 }

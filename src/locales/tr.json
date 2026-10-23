@@ -2997,5 +2997,7 @@
   "cloud.bulkRestoreConfirm": "Tümünü geri yükle",
   "cloud.bulkRestoreDone": "Geri yükleme bitti: {total} oyun geri yüklendi, {failed} hata.",
   "cloud.localBackupTitle": "Günlük yerel yedek",
-  "cloud.localBackupDesc": "Bulut sağlayıcısı olmasa bile günde en fazla bir kez her kurulu oyun için yerel yedek alır. Launcher açıkken çalışır."
+  "cloud.localBackupDesc": "Bulut sağlayıcısı olmasa bile günde en fazla bir kez her kurulu oyun için yerel yedek alır. Launcher açıkken çalışır.",
+  "cloud.rcloneRemotes": "Uzakları listele",
+  "cloud.rcloneNone": "Uzak bulunamadı. Önce `rclone config` çalıştır."
 }

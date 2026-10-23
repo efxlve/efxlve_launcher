@@ -975,6 +975,8 @@ export const cloudBackupSaveSettings = (settings: CloudBackupSettings) =>
 
 export const cloudBackupOpenFolder = () => invoke<void>("cloud_backup_open_folder");
 
+export const cloudBackupRcloneRemotes = () => invoke<string[]>("cloud_backup_rclone_remotes");
+
 export const cloudBackupTestConnection = (settings: CloudBackupSettings) =>
   invoke<string>("cloud_backup_test_connection", { settings });
 
