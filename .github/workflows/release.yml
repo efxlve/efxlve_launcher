@@ -10,9 +10,10 @@
 # - TAURI_SIGNING_PRIVATE_KEY          (content of ~/.tauri/efxlve.key)
 # - TAURI_SIGNING_PRIVATE_KEY_PASSWORD (empty string when the key has no password)
 #
-# The platform matrix is ready for the future Linux/macOS support: uncomment the
-# extra entries once signing/notarization exists. Until then the manual
-# `package.yml` workflow builds unsigned Unix installers as artifacts.
+# Windows is signed with the updater key. Linux and macOS artifacts are built
+# unsigned for the preview; Apple notarization and Flatpak are still open.
+# The manual `package.yml` workflow remains useful for a quick local installer
+# check without publishing a release.
 
 name: Release
 
@@ -32,12 +33,16 @@ jobs:
         include:
           - platform: windows-latest
             args: ""
-          # - platform: ubuntu-22.04
-          #   args: ""
-          # - platform: macos-latest
-          #   args: "--target aarch64-apple-darwin"
-          # - platform: macos-latest
-          #   args: "--target x86_64-apple-darwin"
+            target: ""
+            linux: false
+          - platform: ubuntu-22.04
+            args: ""
+            target: ""
+            linux: true
+          - platform: macos-latest
+            args: ""
+            target: ""
+            linux: false
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -56,8 +61,25 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
+      - name: Install Linux system dependencies
+        if: matrix.linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libfuse2 \
+            patchelf \
+            pkg-config
+
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Add Rust target
+        if: matrix.target != ''
+        run: rustup target add ${{ matrix.target }}
 
       - name: Build and publish release
         uses: tauri-apps/tauri-action@v1

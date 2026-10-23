@@ -670,22 +670,33 @@ export function refreshSteamInstalled(): Promise<void> {
   return steamScanInFlight;
 }
 
+let steamRunningPoll: number | null = null;
+
+/** Reconciles Steam's own Running flag every few seconds. The backend watcher
+ * emits changes, but a missed event used to leave an open game looking closed
+ * in the drawer; this poll only adds state and never clears it. */
+async function syncSteamRunningState(): Promise<void> {
+  const ids = await steamWatchRunning();
+  let changed = false;
+  for (const id of ids) {
+    const key = `steam::${id}`;
+    if (S.runningGames.has(key)) continue;
+    S.runningGames.add(key);
+    pushRecent(key);
+    changed = true;
+  }
+  if (changed) scheduleRender();
+}
+
 export function startSteamLibraryWatch(): void {
   if (!isTauri) return;
   void invoke("steam_watch_library").catch(() => {});
   // Steam's own Running flag also covers games the launcher did not start:
   // a game already open at boot lands in the running and recent lists.
-  void steamWatchRunning()
-    .then((ids) => {
-      let changed = false;
-      for (const id of ids) {
-        const key = `steam::${id}`;
-        if (S.runningGames.has(key)) continue;
-        S.runningGames.add(key);
-        pushRecent(key);
-        changed = true;
-      }
-      if (changed) scheduleRender();
-    })
-    .catch(() => {});
+  void syncSteamRunningState().catch(() => {});
+  if (steamRunningPoll === null) {
+    steamRunningPoll = window.setInterval(() => {
+      void syncSteamRunningState().catch(() => {});
+    }, 15_000);
+  }
 }

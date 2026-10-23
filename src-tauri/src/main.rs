@@ -759,6 +759,60 @@ fn quarantine_webview_profile(app: &tauri::App) -> Option<std::path::PathBuf> {
     std::fs::rename(&dir, &target).ok().map(|_| target)
 }
 
+/// Counts consecutive runs that never reached a clean exit. Two in a row is
+/// treated as a broken WebView2 profile: the profile is moved aside and the
+/// next boot runs with software rendering, which recovers the common cases
+/// without the user deleting anything by hand.
+fn boot_state_path(app: &tauri::App) -> Option<std::path::PathBuf> {
+    app.path().app_data_dir().ok().map(|dir| dir.join("boot_recovery.txt"))
+}
+
+fn read_crash_streak(app: &tauri::App) -> u32 {
+    boot_state_path(app)
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .and_then(|text| text.trim().parse().ok())
+        .unwrap_or(0)
+}
+
+fn write_crash_streak(app: &tauri::App, streak: u32) {
+    if let Some(path) = boot_state_path(app) {
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(path, streak.to_string());
+    }
+}
+
+fn reset_crash_streak(app: &tauri::AppHandle) {
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = std::fs::write(dir.join("boot_recovery.txt"), "0");
+    }
+}
+
+fn recover_broken_webview(app: &tauri::App, recovery: bool) {
+    let mut streak = read_crash_streak(app);
+    if recovery {
+        streak = streak.saturating_add(1);
+    } else {
+        streak = 0;
+    }
+    if streak >= 2 {
+        let moved = quarantine_webview_profile(app)
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|| "no profile folder".into());
+        // A GPU driver crash also survives a profile reset; software rendering
+        // is slower but gets the user back into the launcher.
+        if std::env::var_os("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").is_none() {
+            std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-gpu");
+        }
+        perf::write_line_global(&format!(
+            "boot: repeated crash; webview profile {moved}; software rendering enabled"
+        ));
+        streak = 0;
+    }
+    write_crash_streak(app, streak);
+}
+
 /// Builds the main window, retrying once without the previous webview profile.
 fn create_main_window(app: &tauri::App) -> Result<(), String> {
     match create_config_window(app, "main") {
@@ -1096,6 +1150,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
                 .as_ref()
                 .map(|path| path.is_file())
                 .unwrap_or(false);
+            recover_broken_webview(app, recovery);
             if let Some(path) = marker_path.as_ref() {
                 if let Some(parent) = path.parent() {
                     let _ = std::fs::create_dir_all(parent);
@@ -1664,6 +1719,7 @@ fn main() {    // Rockstar's launcher only continues when a process named
                     let _ = std::fs::remove_file(path);
                 }
             }
+            reset_crash_streak(app_handle);
             // Best effort: drop the GOG presence before the process ends.
             tauri::async_runtime::block_on(gogdl::presence::go_offline(app_handle));
             // Best effort: close the Spotify Connect receiver cleanly.
