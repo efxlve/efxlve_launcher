@@ -155,8 +155,8 @@ function visibleTabs(): typeof TABS {
       tab.id !== "settings" &&
       (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
       (HAS_NATIVE_CAPTURE || (tab.id !== "shots" && tab.id !== "clip")) &&
-      (tab.id !== "music" || spotifyPageVisible()) &&
-      (tab.id !== "discord" || discordPageVisible()),
+      (tab.id !== "music" || (IS_WINDOWS && spotifyPageVisible())) &&
+      (tab.id !== "discord" || (IS_WINDOWS && discordPageVisible())),
   );
 }
 
@@ -1395,6 +1395,11 @@ function updatePerfEmptyStates(): void {
 }
 
 function setTab(tab: TabId, fromOpen = false): void {
+  // Spotify playback and the Discord social SDK are Windows-only backends; the
+  // shortcuts on the home cards must not open a tab that cannot work.
+  if (!IS_WINDOWS && (tab === "music" || tab === "discord" || tab === "shots" || tab === "clip")) {
+    return;
+  }
   activeTab = tab;
   localStorage.setItem("efxlve-overlay-tab", tab);
   if (tab === "home") {
@@ -1667,14 +1672,14 @@ function renderHome(): void {
         </button>
       </div>
 
-      <!-- Media Player Card -->
-      <div class="ov-card ov-span-6 ov-media-card">
+      <!-- Media Player Card (Spotify playback is Windows-only) -->
+      ${IS_WINDOWS ? `<div class="ov-card ov-span-6 ov-media-card">
         <div class="ov-card-head">
           <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
           <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
         </div>
         ${mediaCardInnerHtml()}
-      </div>
+      </div>` : ""}
 
       <!-- Achievements Card -->
       <div class="ov-card ov-span-6" data-nav-target="ach">
@@ -1751,17 +1756,17 @@ function renderHomeLauncher(el: HTMLElement): void {
         <div class="ov-launcher-actions">
           <button class="btn" data-ov="launcher">${icon("external", 14)} ${esc(t("overlay.openLauncher"))}</button>
           <button class="btn ghost" data-ov="browser-open">${icon("globe", 14)} ${esc(t("overlay.tabBrowser"))}</button>
-          <button class="btn ghost" data-ov-tab="music">${icon("spotify", 14)} ${esc(t("overlay.tabSpotify"))}</button>
+          ${IS_WINDOWS ? `<button class="btn ghost" data-ov-tab="music">${icon("spotify", 14)} ${esc(t("overlay.tabSpotify"))}</button>` : ""}
         </div>
       </div>
 
-      <div class="ov-card ov-span-6 ov-media-card">
+      ${IS_WINDOWS ? `<div class="ov-card ov-span-6 ov-media-card">
         <div class="ov-card-head">
           <div class="ov-card-title" id="ov-media-card-title" data-kind="${getOverlayMedia().isSpotify ? "spotify" : "media"}">${mediaCardTitleHtml()}</div>
           <button class="ov-card-action" data-ov-tab="music">${icon("chevron-right", 16)}</button>
         </div>
         ${mediaCardInnerHtml()}
-      </div>
+      </div>` : ""}
 
       <!-- Quick Browser Card in Launcher Mode -->
       <div class="ov-card ov-span-6">
@@ -2607,6 +2612,9 @@ let lastSpotifyStartAttempt = 0;
 
 /** Ensures the Spotify playback engine is running in the background silently. */
 function ensureSpotifyEngine(): void {
+  // The Connect receiver is built on librespot, which ships on Windows only; the
+  // web player in the launcher's Spotify page keeps working on other platforms.
+  if (!IS_WINDOWS) return;
   const now = Date.now();
   if (spotifyEngineOn || now - lastSpotifyStartAttempt < 10000) return;
   lastSpotifyStartAttempt = now;
@@ -2619,6 +2627,9 @@ function ensureSpotifyEngine(): void {
 
 /** The launcher's Spotify receiver, or the idle state. */
 async function refreshMedia(): Promise<void> {
+  // No Connect receiver outside Windows: skip the poll instead of asking for a
+  // status that is always idle.
+  if (!IS_WINDOWS) return;
   const status = await spotifyPlaybackStatus().catch(() => null);
   spotifyEngineOn = status?.running === true;
   spotifyDeviceName = status?.deviceName ?? "";

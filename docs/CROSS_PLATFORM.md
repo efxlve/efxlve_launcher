@@ -302,7 +302,11 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
   üst çubuktaki düğme ve tepsi menüsüyle kullanılabilir. Shift+Tab global
   kısayolu, HUD/FPS katmanı, ekran görüntüsü ve klip sekmeleri Windows'a özgüdür.
   Linux/macOS'ta bu sekmeler gizlenir; panel, performans, notlar, başarımlar,
-  tarayıcı ve müzik sayfaları açılır.
+  tarayıcı sayfaları açılır. Spotify sekmesi (`librespot` Connect alıcısı) ve
+  Discord sosyal sekmesi (Social SDK / RPC) Windows'a özgü olduğu için Unix'te
+  gizlenir; Spotify web oynatıcısı ve Discord web istemcisi launcher
+  sayfalarında çalışmaya devam eder. Müzik kartı ve sekme kısayolları da
+  yalnızca Windows'ta çizilir.
 - **Mağaza webview'leri:** Tauri child webview kullanılır. WebView2'ye özgü
   Chrome eklentisi katmanı Windows'ta açılır; diğer platformlarda mağaza sayfası
   eklentisiz açılır, para birimi betiği çalışmaya devam eder.
