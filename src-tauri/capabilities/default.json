@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Ana pencere için varsayılan yetkinlik",
   "windows": ["main", "overlay"],
-  "permissions": ["core:default", "opener:default", "updater:default", "process:allow-restart", "notification:default"]
+  "permissions": ["core:default", "core:webview:allow-set-webview-zoom", "opener:default", "updater:default", "process:allow-restart", "notification:default"]
 }

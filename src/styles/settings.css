@@ -900,3 +900,22 @@
   }
   .settings-nav-group-label { display: none; }
 }
+
+.pc-check-result { margin-top: 4px; }
+.pc-check-result:empty { display: none; }
+.pc-check-list {
+  display: flex; flex-direction: column; gap: 2px; margin: 2px 0 8px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.02);
+}
+.pc-check-row {
+  display: grid; grid-template-columns: 18px 150px 1fr; align-items: center; gap: 8px;
+  min-height: 26px; font-size: 12.5px;
+}
+.pc-check-icon { display: inline-flex; color: var(--text-2); }
+.pc-check-row.ok .pc-check-icon { color: #4ade80; }
+.pc-check-row.warn .pc-check-icon { color: #fbbf24; }
+.pc-check-row.fail .pc-check-icon { color: #f87171; }
+.pc-check-label { color: var(--text-2); }
+.pc-check-value { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-check-hint { grid-column: 2 / -1; color: var(--text-3); font-size: 11px; }

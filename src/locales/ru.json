@@ -3019,5 +3019,21 @@
   "profile.pickFile": "Выберите архив данных лаунчера",
   "cloud.webdavAllowInvalidCert": "Разрешить самоподписанный сертификат",
   "settings.reduceEffectsTitle": "Уменьшить движение и эффекты",
-  "settings.reduceEffectsDesc": "Отключает анимации интерфейса, размытие стекла и переходы при наведении. Все страницы и функции остаются доступными."
+  "settings.reduceEffectsDesc": "Отключает анимации интерфейса, размытие стекла и переходы при наведении. Все страницы и функции остаются доступными.",
+  "smart.title": "Умные коллекции",
+  "smart.almost": "Почти пройдено",
+  "smart.forgotten": "Забыто",
+  "status.label": "Статус",
+  "status.onHold": "На паузе",
+  "status.dropped": "Заброшено",
+  "settings.uiScaleTitle": "Масштаб интерфейса",
+  "settings.uiScaleDesc": "Масштабирует весь интерфейс. Полезно на маленьких экранах, телевизорах и ноутбуках с низким разрешением.",
+  "library.random": "Случайная игра",
+  "settings.pcCheckTitle": "Проверка ПК",
+  "settings.pcCheckDesc": "Проверяет WebView2, оборудование, бэкенд, legendary, место на диске и локальное хранилище. Ничего не отправляется.",
+  "settings.pcCheckRun": "Проверить этот ПК",
+  "settings.pcCheckCopy": "Копировать отчёт",
+  "settings.pcCheckCopied": "Отчёт проверки скопирован.",
+  "settings.pcCheckDisk": "Диск",
+  "settings.pcCheckStorage": "Локальное хранилище"
 }

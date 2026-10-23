@@ -3019,5 +3019,21 @@
   "profile.pickFile": "Wybierz archiwum danych launchera",
   "cloud.webdavAllowInvalidCert": "Zezwól na certyfikat z podpisem własnym",
   "settings.reduceEffectsTitle": "Ogranicz ruch i efekty",
-  "settings.reduceEffectsDesc": "Wyłącza animacje interfejsu, rozmycie szkła i przejścia hover. Wszystkie strony i funkcje pozostają dostępne."
+  "settings.reduceEffectsDesc": "Wyłącza animacje interfejsu, rozmycie szkła i przejścia hover. Wszystkie strony i funkcje pozostają dostępne.",
+  "smart.title": "Inteligentne kolekcje",
+  "smart.almost": "Prawie ukończone",
+  "smart.forgotten": "Zapomniane",
+  "status.label": "Status",
+  "status.onHold": "Wstrzymane",
+  "status.dropped": "Porzucone",
+  "settings.uiScaleTitle": "Skala interfejsu",
+  "settings.uiScaleDesc": "Skaluje cały interfejs. Przydatne na małych ekranach, telewizorach i laptopach o niskiej rozdzielczości.",
+  "library.random": "Losowa gra",
+  "settings.pcCheckTitle": "Kontrola komputera",
+  "settings.pcCheckDesc": "Sprawdza WebView2, sprzęt, backend, legendary, miejsce na dysku i pamięć lokalną. Nic nie jest wysyłane.",
+  "settings.pcCheckRun": "Sprawdź ten komputer",
+  "settings.pcCheckCopy": "Kopiuj raport",
+  "settings.pcCheckCopied": "Raport z kontroli skopiowany.",
+  "settings.pcCheckDisk": "Dysk",
+  "settings.pcCheckStorage": "Pamięć lokalna"
 }

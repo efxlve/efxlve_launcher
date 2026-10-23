@@ -15,6 +15,12 @@ html.reduce-effects * {
   -webkit-backdrop-filter: none !important;
 }
 
+/* Fallback when the Tauri webview zoom capability is unavailable. The normal
+   path uses WebView2's page zoom, which keeps viewport units correct. */
+html[data-ui-fallback] body {
+  zoom: var(--ui-scale, 1);
+}
+
 /* A turning refresh icon is state, not decoration. */
 html.reduce-effects .spinning,
 html.reduce-effects .spinning svg {

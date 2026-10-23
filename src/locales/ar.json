@@ -3019,5 +3019,21 @@
   "profile.pickFile": "اختر أرشيف بيانات المشغّل",
   "cloud.webdavAllowInvalidCert": "السماح بشهادة موقّعة ذاتيًا",
   "settings.reduceEffectsTitle": "تقليل الحركة والتأثيرات",
-  "settings.reduceEffectsDesc": "يعطّل حركات الواجهة وضباب الزجاج وانتقالات التمرير. تبقى كل الصفحات والميزات متاحة."
+  "settings.reduceEffectsDesc": "يعطّل حركات الواجهة وضباب الزجاج وانتقالات التمرير. تبقى كل الصفحات والميزات متاحة.",
+  "smart.title": "مجموعات ذكية",
+  "smart.almost": "شبه مكتمل",
+  "smart.forgotten": "منسي",
+  "status.label": "الحالة",
+  "status.onHold": "متوقف مؤقتًا",
+  "status.dropped": "متروك",
+  "settings.uiScaleTitle": "مقياس الواجهة",
+  "settings.uiScaleDesc": "يغيّر حجم الواجهة بالكامل. مفيد للشاشات الصغيرة وأجهزة التلفاز والحواسيب المحمولة منخفضة الدقة.",
+  "library.random": "لعبة عشوائية",
+  "settings.pcCheckTitle": "فحص الكمبيوتر",
+  "settings.pcCheckDesc": "يفحص WebView2 والعتاد والخادم وlegendary ومساحة القرص والتخزين المحلي. لا يتم رفع أي شيء.",
+  "settings.pcCheckRun": "افحص هذا الكمبيوتر",
+  "settings.pcCheckCopy": "نسخ التقرير",
+  "settings.pcCheckCopied": "تم نسخ تقرير الفحص.",
+  "settings.pcCheckDisk": "القرص",
+  "settings.pcCheckStorage": "التخزين المحلي"
 }

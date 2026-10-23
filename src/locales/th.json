@@ -3019,5 +3019,21 @@
   "profile.pickFile": "เลือกไฟล์ข้อมูลตัวเรียกใช้งาน",
   "cloud.webdavAllowInvalidCert": "อนุญาตใบรับรองที่ลงนามเอง",
   "settings.reduceEffectsTitle": "ลดการเคลื่อนไหวและเอฟเฟกต์",
-  "settings.reduceEffectsDesc": "ปิดแอนิเมชันอินเทอร์เฟซ การเบลอแบบกระจก และทรานซิชันเมื่อชี้ หน้าต่างและฟีเจอร์ทั้งหมดยังใช้ได้"
+  "settings.reduceEffectsDesc": "ปิดแอนิเมชันอินเทอร์เฟซ การเบลอแบบกระจก และทรานซิชันเมื่อชี้ หน้าต่างและฟีเจอร์ทั้งหมดยังใช้ได้",
+  "smart.title": "คอลเลกชันอัจฉริยะ",
+  "smart.almost": "ใกล้เสร็จ",
+  "smart.forgotten": "ถูกลืม",
+  "status.label": "สถานะ",
+  "status.onHold": "พักไว้",
+  "status.dropped": "เลิกเล่น",
+  "settings.uiScaleTitle": "ขนาดอินเทอร์เฟซ",
+  "settings.uiScaleDesc": "ปรับขนาดอินเทอร์เฟซทั้งหมด เหมาะกับหน้าจอเล็ก ทีวี และแล็ปท็อปความละเอียดต่ำ",
+  "library.random": "สุ่มเกม",
+  "settings.pcCheckTitle": "ตรวจสอบพีซี",
+  "settings.pcCheckDesc": "ตรวจสอบ WebView2 ฮาร์ดแวร์ backend legendary พื้นที่ดิสก์ และที่เก็บข้อมูลในเครื่อง ไม่มีการอัปโหลดใด ๆ",
+  "settings.pcCheckRun": "ตรวจสอบพีซีนี้",
+  "settings.pcCheckCopy": "คัดลอกรายงาน",
+  "settings.pcCheckCopied": "คัดลอกรายงานตรวจสอบแล้ว",
+  "settings.pcCheckDisk": "ดิสก์",
+  "settings.pcCheckStorage": "ที่เก็บข้อมูลในเครื่อง"
 }

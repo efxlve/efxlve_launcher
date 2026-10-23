@@ -3019,5 +3019,21 @@
   "profile.pickFile": "Launcher veri arşivini seç",
   "cloud.webdavAllowInvalidCert": "Kendinden imzalı sertifikaya izin ver",
   "settings.reduceEffectsTitle": "Hareketi ve efektleri azalt",
-  "settings.reduceEffectsDesc": "Arayüz animasyonlarını, cam bulanıklığını ve hover geçişlerini kapatır. Tüm sayfalar ve özellikler kullanılabilir kalır."
+  "settings.reduceEffectsDesc": "Arayüz animasyonlarını, cam bulanıklığını ve hover geçişlerini kapatır. Tüm sayfalar ve özellikler kullanılabilir kalır.",
+  "smart.title": "Akıllı koleksiyonlar",
+  "smart.almost": "Neredeyse bitti",
+  "smart.forgotten": "Unutulmuş",
+  "status.label": "Durum",
+  "status.onHold": "Beklemede",
+  "status.dropped": "Bırakıldı",
+  "settings.uiScaleTitle": "Arayüz ölçeği",
+  "settings.uiScaleDesc": "Tüm arayüzü ölçekler. Küçük ekranlar, TV'ler ve düşük çözünürlüklü dizüstüler için kullanışlıdır.",
+  "library.random": "Rastgele oyun",
+  "settings.pcCheckTitle": "Bilgisayar kontrolü",
+  "settings.pcCheckDesc": "WebView2, donanım, arka uç, legendary, disk alanı ve yerel depolamayı kontrol eder. Hiçbir şey yüklenmez.",
+  "settings.pcCheckRun": "Bu bilgisayarı kontrol et",
+  "settings.pcCheckCopy": "Raporu kopyala",
+  "settings.pcCheckCopied": "Bilgisayar kontrol raporu kopyalandı.",
+  "settings.pcCheckDisk": "Disk",
+  "settings.pcCheckStorage": "Yerel depolama"
 }

@@ -3019,5 +3019,21 @@
   "profile.pickFile": "Selecione um arquivo de dados do launcher",
   "cloud.webdavAllowInvalidCert": "Permitir certificado autoassinado",
   "settings.reduceEffectsTitle": "Reduzir movimento e efeitos",
-  "settings.reduceEffectsDesc": "Desativa animações da interface, desfoque de vidro e transições de hover. Todas as páginas e recursos continuam disponíveis."
+  "settings.reduceEffectsDesc": "Desativa animações da interface, desfoque de vidro e transições de hover. Todas as páginas e recursos continuam disponíveis.",
+  "smart.title": "Coleções inteligentes",
+  "smart.almost": "Quase terminado",
+  "smart.forgotten": "Esquecido",
+  "status.label": "Status",
+  "status.onHold": "Em pausa",
+  "status.dropped": "Abandonado",
+  "settings.uiScaleTitle": "Escala da interface",
+  "settings.uiScaleDesc": "Dimensiona toda a interface. Útil em telas pequenas, TVs e notebooks de baixa resolução.",
+  "library.random": "Jogo aleatório",
+  "settings.pcCheckTitle": "Verificação do PC",
+  "settings.pcCheckDesc": "Verifica WebView2, hardware, backend, legendary, espaço em disco e armazenamento local. Nada é enviado.",
+  "settings.pcCheckRun": "Verificar este PC",
+  "settings.pcCheckCopy": "Copiar relatório",
+  "settings.pcCheckCopied": "Relatório de verificação copiado.",
+  "settings.pcCheckDisk": "Disco",
+  "settings.pcCheckStorage": "Armazenamento local"
 }

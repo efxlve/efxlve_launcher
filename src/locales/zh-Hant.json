@@ -3019,5 +3019,21 @@
   "profile.pickFile": "選擇啟動器資料封存",
   "cloud.webdavAllowInvalidCert": "允許自簽憑證",
   "settings.reduceEffectsTitle": "減少動態效果",
-  "settings.reduceEffectsDesc": "關閉介面動畫、玻璃模糊與滑鼠懸停轉場。所有頁面與功能仍可使用。"
+  "settings.reduceEffectsDesc": "關閉介面動畫、玻璃模糊與滑鼠懸停轉場。所有頁面與功能仍可使用。",
+  "smart.title": "智慧合集",
+  "smart.almost": "即將完成",
+  "smart.forgotten": "已遺忘",
+  "status.label": "狀態",
+  "status.onHold": "暫停",
+  "status.dropped": "已放棄",
+  "settings.uiScaleTitle": "介面縮放",
+  "settings.uiScaleDesc": "縮放整個介面。適合小螢幕、電視與低解析度筆電。",
+  "library.random": "隨機遊戲",
+  "settings.pcCheckTitle": "電腦檢查",
+  "settings.pcCheckDesc": "檢查 WebView2、硬體、後端、legendary、磁碟空間與本機儲存。不會上傳任何內容。",
+  "settings.pcCheckRun": "檢查此電腦",
+  "settings.pcCheckCopy": "複製報告",
+  "settings.pcCheckCopied": "電腦檢查報告已複製。",
+  "settings.pcCheckDisk": "磁碟",
+  "settings.pcCheckStorage": "本機儲存"
 }

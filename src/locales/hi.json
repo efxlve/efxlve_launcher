@@ -3019,5 +3019,21 @@
   "profile.pickFile": "लॉन्चर डेटा आर्काइव चुनें",
   "cloud.webdavAllowInvalidCert": "स्व-हस्ताक्षरित प्रमाणपत्र की अनुमति दें",
   "settings.reduceEffectsTitle": "गति और प्रभाव कम करें",
-  "settings.reduceEffectsDesc": "इंटरफ़ेस एनिमेशन, ग्लास ब्लर और हॉवर ट्रांज़िशन बंद करता है। सभी पेज और सुविधाएँ उपलब्ध रहती हैं।"
+  "settings.reduceEffectsDesc": "इंटरफ़ेस एनिमेशन, ग्लास ब्लर और हॉवर ट्रांज़िशन बंद करता है। सभी पेज और सुविधाएँ उपलब्ध रहती हैं।",
+  "smart.title": "स्मार्ट संग्रह",
+  "smart.almost": "लगभग पूर्ण",
+  "smart.forgotten": "भूला हुआ",
+  "status.label": "स्थिति",
+  "status.onHold": "रोका गया",
+  "status.dropped": "छोड़ा गया",
+  "settings.uiScaleTitle": "इंटरफ़ेस स्केल",
+  "settings.uiScaleDesc": "पूरे इंटरफ़ेस को स्केल करता है। छोटी स्क्रीन, टीवी और कम रिज़ॉल्यूशन वाले लैपटॉप के लिए उपयोगी।",
+  "library.random": "यादृच्छिक गेम",
+  "settings.pcCheckTitle": "पीसी जाँच",
+  "settings.pcCheckDesc": "WebView2, हार्डवेयर, बैकएंड, legendary, डिस्क स्थान और स्थानीय स्टोरेज जाँचता है। कुछ भी अपलोड नहीं होता।",
+  "settings.pcCheckRun": "इस पीसी को जाँचें",
+  "settings.pcCheckCopy": "रिपोर्ट कॉपी करें",
+  "settings.pcCheckCopied": "पीसी जाँच रिपोर्ट कॉपी हो गई।",
+  "settings.pcCheckDisk": "डिस्क",
+  "settings.pcCheckStorage": "स्थानीय स्टोरेज"
 }

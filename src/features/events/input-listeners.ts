@@ -14,6 +14,8 @@ import { cancelConfirm } from "../../core/confirm-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
+import { applyUiScale } from "../../core/game-status";
+import { setGameStatus, type GameStatus } from "../library/game-status";
 import type { StartupTab } from "../../core/types";
 import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -691,6 +693,25 @@ document.addEventListener("change", (e) => {
     return;
   }
   const act = t.dataset.act;
+  if (act === "set-ui-scale") {
+    const scale = Number((t as HTMLSelectElement).value);
+    if ([80, 90, 100, 110, 125, 150].includes(scale)) {
+      S.uiScale = scale;
+      localStorage.setItem("efxlve-ui-scale", String(scale));
+      void applyUiScale(scale);
+      render();
+    }
+    return;
+  }
+  if (act === "set-game-status") {
+    const app = t.dataset.app;
+    const value = (t as HTMLSelectElement).value;
+    if (app) {
+      setGameStatus(app, value ? (value as GameStatus) : null);
+      render();
+    }
+    return;
+  }
   if (handleGameCompatChange(t)) return;
   // Compatibility selects (target, runner, runner version, umu toggle) live in
   // the settings page but are answered by their own module.

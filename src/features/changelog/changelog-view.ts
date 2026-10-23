@@ -43,6 +43,18 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Settings > Appearance > Reduce motion and effects turns off animations, glass blur and hover lifts. Every page, button and feature stays available.",
         tr: "Ayarlar > Görünüm > Hareketi ve efektleri azalt, animasyonları, cam bulanıklığını ve hover hareketlerini kapatıyor. Tüm sayfalar, düğmeler ve özellikler kullanılabilir kalıyor.",
       },
+      {
+        en: "Smart collections group installed-but-unplayed, almost finished, playing, completed, on-hold and forgotten games automatically. The game page adds a status selector, and the library adds a random-game button.",
+        tr: "Akıllı koleksiyonlar kurulu ama oynanmamış, neredeyse bitmiş, oynanıyor, tamamlanmış, beklemede ve unutulmuş oyunları otomatik grupluyor. Oyun sayfasına durum seçici, kütüphaneye rastgele oyun düğmesi eklendi.",
+      },
+      {
+        en: "Settings > Appearance > Interface scale zooms the whole interface from 80% to 150%, which keeps the same features readable on small screens, TVs and low-resolution laptops.",
+        tr: "Ayarlar > Görünüm > Arayüz ölçeği tüm arayüzü %80 ile %150 arasında büyütüp küçültüyor; küçük ekranlarda, TV'lerde ve düşük çözünürlüklü dizüstülerde aynı özellikler okunabilir kalıyor.",
+      },
+      {
+        en: "Settings > System > PC check reports WebView2, hardware, backend, legendary, disk space and local storage, and copies the report to the clipboard. Nothing is uploaded.",
+        tr: "Ayarlar > Sistem > Bilgisayar kontrolü WebView2, donanım, arka uç, legendary, disk alanı ve yerel depolamayı raporluyor; rapor panoya kopyalanıyor. Hiçbir şey yüklenmiyor.",
+      },
     ],
     fixed: [
       {

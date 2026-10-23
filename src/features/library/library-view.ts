@@ -13,6 +13,7 @@ import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, i
 import { emptyState, icon } from "../../core/icons";
 import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { cachedImage } from "../../core/picture-cache";
+import { isSmartCollection, SMART_COLLECTIONS, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
 import { S, applyTabSort } from "../../core/state";
@@ -125,6 +126,9 @@ export function libraryFilteredList(): EpicSummary[] {
   const colSet = activeCol
     ? new Set(activeCol.app_names.map((n) => n.toLowerCase()))
     : null;
+  // Resolve the smart predicate once; a per-card .find() would walk the list
+  // 1,000 times on a large library.
+  const smartTest = smartCollection(S.activeCollectionId)?.test;
 
   let uncatSet: Set<string> | null = null;
   if (S.activeCollectionId === "uncategorized") {
@@ -145,6 +149,7 @@ export function libraryFilteredList(): EpicSummary[] {
     if (query.source === "steam" && !s.appName.startsWith("steam::")) return false;
 
     if (S.hiddenGames.has(s.appName)) return false;
+    if (smartTest && !smartTest(s)) return false;
     if (S.activeCollectionId === "fav") {
       if (!S.epicFav.has(s.appName)) return false;
     } else if (S.activeCollectionId === "uncategorized" && uncatSet) {
@@ -1127,12 +1132,16 @@ export function renderEpic(): string {
       <button class="${S.epicViewMode === "grid" ? "active" : ""}" data-act="lib-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
       <button class="${S.epicViewMode === "list" ? "active" : ""}" data-act="lib-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
     </div>
+    <button class="icon-btn lib-random-btn" data-act="lib-random-game" title="${esc(t("library.random"))}" aria-label="${esc(t("library.random"))}">${icon("shuffle", 16)}</button>
     <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>
     <button class="icon-btn lib-refresh-btn ${S.epicSyncing || S.gogSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">${icon("refresh", 16)}</button>`;
 
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
-  const activeCol = isColActive ? S.epicCollections.find((c) => c.id === S.activeCollectionId) : null;
-  const colBtnLabel = activeCol ? activeCol.name : t("col.allCollections");
+  const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
+    ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
+    : null;
+  const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
+  const colBtnLabel = activeCol ? activeCol.name : activeSmart ? activeSmart.label() : t("col.allCollections");
 
   const colDropdown = `
     <div class="col-dropdown-container">
@@ -1141,7 +1150,7 @@ export function renderEpic(): string {
         ${icon(S.isColDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>
       <div id="col-dropdown-menu" class="sort-dropdown-menu col-dropdown-menu ${S.isColDropdownOpen ? "show" : ""}">
-        ${S.epicCollections.length > 0 ? `
+        ${S.epicCollections.length > 0 || SMART_COLLECTIONS.length > 0 ? `
           <div class="col-dropdown-list">
             ${isColActive ? `
               <button class="sort-menu-item-btn col-menu-item-btn" data-act="select-col-filter" data-col-id="none">
@@ -1149,6 +1158,16 @@ export function renderEpic(): string {
               </button>
               <div class="col-dropdown-divider"></div>
             ` : ""}
+            <div class="col-smart-label">${t("smart.title")}</div>
+            ${SMART_COLLECTIONS.map((smart) => {
+              const isSelected = S.activeCollectionId === smart.id;
+              return `
+                <button class="sort-menu-item-btn col-menu-item-btn ${isSelected ? "selected" : ""}" data-act="select-col-filter" data-tab="collection" data-col-id="${esc(smart.id)}">
+                  <span class="col-smart-glyph" aria-hidden="true">${icon("sparkles", 13)}</span>
+                  <span class="col-item-name">${esc(smart.label())}</span>
+                </button>`;
+            }).join("")}
+            <div class="col-dropdown-divider"></div>
             ${S.epicCollections.map((col) => {
               const isSelected = S.activeCollectionId === col.id;
               const count = col.app_names?.length ?? 0;

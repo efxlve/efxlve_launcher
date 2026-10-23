@@ -68,6 +68,7 @@ import { refreshSidebarToggle, toggleSidebarDrawer } from "../../core/sidebar-la
 import { closeAllModals, openEpicModal, render, scheduleRender } from "../../core/render";
 import { S, applyTabSort, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
+import { copyPcCheck, runPcCheck } from "../settings/pc-check";
 import { saveCustomCss } from "../../core/custom-css";
 import { applySurface } from "../../core/themes";
 import { applyReduceEffects } from "../../core/effects";
@@ -95,6 +96,7 @@ import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-ac
 import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
+  libraryFilteredList,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
@@ -631,6 +633,12 @@ document.addEventListener("click", (e) => {
     const input = document.getElementById("search") as HTMLInputElement | null;
     if (input) input.value = "";
     if (!refreshLibraryResultsInPlace()) render();
+  } else if (act === "lib-random-game") {
+    const list = libraryFilteredList();
+    if (list.length > 0) {
+      const pick = list[Math.floor(Math.random() * list.length)];
+      openEpicModal(pick.appName);
+    }
   } else if (act === "lib-view-mode") {
     const mode = t.dataset.val as EpicViewMode;
     if ((mode === "grid" || mode === "list") && mode !== S.epicViewMode) {
@@ -1083,6 +1091,17 @@ document.addEventListener("click", (e) => {
     localStorage.setItem(AUTO_UPDATE_KEY, String(S.autoUpdateEnabled));
     scheduleAutoUpdate();
     render();
+  } else if (act === "run-pc-check") {
+    void runPcCheck()
+      .then((html) => {
+        const result = document.getElementById("pc-check-result");
+        if (result) result.innerHTML = html;
+      })
+      .catch(() => toast(i18nT("common.error"), "err"));
+  } else if (act === "copy-pc-check") {
+    void copyPcCheck()
+      .then(() => toast(i18nT("settings.pcCheckCopied"), "ok"))
+      .catch(() => toast(i18nT("common.error"), "err"));
   } else if (act === "app-update-check") {
     void checkForAppUpdate(true);
   } else if (act === "app-update-download") {

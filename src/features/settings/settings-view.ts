@@ -732,6 +732,13 @@ function startupTabSelect(): string {
   return html;
 }
 
+function uiScaleSelect(): string {
+  const values = [80, 90, 100, 110, 125, 150];
+  return `<select class="settings-select" data-act="set-ui-scale" aria-label="${t("settings.uiScaleTitle")}">
+    ${values.map((n) => `<option value="${n}" ${n === S.uiScale ? "selected" : ""}>${n}%</option>`).join("")}
+  </select>`;
+}
+
 function pageSizeSelect(): string {
   return `<select class="settings-select" data-act="lib-page-size" aria-label="${t("settings.libPageSizeTitle")}">
     ${LIB_PAGE_SIZES.map((n) => `<option value="${n}" ${n === S.libPageSize ? "selected" : ""}>${n}</option>`).join("")}
@@ -1199,6 +1206,7 @@ function renderAppearance(): string {
     group(
       renderCustomCssRow() +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
+      row(t("settings.uiScaleTitle"), t("settings.uiScaleDesc"), uiScaleSelect()) +
       row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects)) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
@@ -1617,7 +1625,13 @@ function renderSystem(): string {
     ) +
     group(
       row(t("settings.backend"), null, `<span class="settings-value">${isTauri ? t("settings.backendRust") : t("settings.backendBrowser")}</span>`) +
-      row(t("settings.libraryFolder"), `<code>${esc(S.libraryPath)}</code>`, ""),
+      row(t("settings.libraryFolder"), `<code>${esc(S.libraryPath)}</code>`, "") +
+      row(
+        t("settings.pcCheckTitle"),
+        t("settings.pcCheckDesc"),
+        `<button type="button" class="btn ghost small" data-act="run-pc-check">${icon("activity", 13)} ${t("settings.pcCheckRun")}</button>`,
+      ) +
+      `<div id="pc-check-result" class="pc-check-result" aria-live="polite"></div>`,
       t("settings.systemTitle"),
     )
   );

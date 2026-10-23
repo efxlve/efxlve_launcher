@@ -3019,5 +3019,21 @@
   "profile.pickFile": "Launcher-Datenarchiv auswählen",
   "cloud.webdavAllowInvalidCert": "Selbstsigniertes Zertifikat erlauben",
   "settings.reduceEffectsTitle": "Bewegung und Effekte reduzieren",
-  "settings.reduceEffectsDesc": "Schaltet Interface-Animationen, Glas-Unschärfe und Hover-Übergänge aus. Alle Seiten und Funktionen bleiben verfügbar."
+  "settings.reduceEffectsDesc": "Schaltet Interface-Animationen, Glas-Unschärfe und Hover-Übergänge aus. Alle Seiten und Funktionen bleiben verfügbar.",
+  "smart.title": "Intelligente Sammlungen",
+  "smart.almost": "Fast fertig",
+  "smart.forgotten": "Vergessen",
+  "status.label": "Status",
+  "status.onHold": "Pausiert",
+  "status.dropped": "Abgebrochen",
+  "settings.uiScaleTitle": "Oberflächengröße",
+  "settings.uiScaleDesc": "Skaliert die gesamte Oberfläche. Nützlich für kleine Bildschirme, TVs und Laptops mit niedriger Auflösung.",
+  "library.random": "Zufälliges Spiel",
+  "settings.pcCheckTitle": "PC-Prüfung",
+  "settings.pcCheckDesc": "Prüft WebView2, Hardware, Backend, legendary, Speicherplatz und lokalen Speicher. Nichts wird hochgeladen.",
+  "settings.pcCheckRun": "Diesen PC prüfen",
+  "settings.pcCheckCopy": "Bericht kopieren",
+  "settings.pcCheckCopied": "PC-Prüfbericht kopiert.",
+  "settings.pcCheckDisk": "Datenträger",
+  "settings.pcCheckStorage": "Lokaler Speicher"
 }

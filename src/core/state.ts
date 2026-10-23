@@ -88,6 +88,7 @@ import {
   type SortTab,
 } from "./constants";
 import { initialReduceEffects } from "./effects";
+import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
 import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
@@ -565,6 +566,10 @@ export const S = {
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
   /** Removes motion, glass blur and hover transitions without hiding features. */
   reduceEffects: initialReduceEffects(),
+  /** Personal completion label per app; see core/game-status.ts. */
+  gameStatus: loadGameStatus(),
+  /** 80..150, applied as a body zoom so every control scales together. */
+  uiScale: loadUiScale(),
   /** Mirrors the HKCU Run entry; loaded from the backend in loadSettingsView. */
   startWithWindows: false,
   /** Every folder the screenshot gallery scans; loaded with the settings. */

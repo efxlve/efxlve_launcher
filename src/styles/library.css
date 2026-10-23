@@ -111,6 +111,14 @@
   display: grid; place-items: center; color: var(--text-3);
   background: rgba(255, 255, 255, 0.05);
 }
+.col-smart-label {
+  padding: 6px 10px 4px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.col-smart-glyph {
+  width: 28px; height: 24px; flex-shrink: 0; display: grid; place-items: center;
+  color: var(--accent); opacity: 0.85;
+}
 .col-menu-add-btn {
   display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 500;
 }

@@ -22,6 +22,7 @@ import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { steamNews, steamWatchRunning, type SteamNewsItem } from "../../steam";
 import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
+import { gameStatusOf } from "../library/game-status";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { sideCard } from "./side-widgets";
@@ -156,6 +157,15 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
     : "";
   const colTags = renderCollectionTags(s.appName);
   const colChip = `<span id="drawer-col-chips-container" class="gp-hero-tags"${!colTags ? ' style="display:none;"' : ""}>${colTags}</span>`;
+  const currentStatus = gameStatusOf(s.appName) ?? "";
+  const statusOptions = [
+    ["", "—"],
+    ["playing", t("drawer.statePlaying")],
+    ["completed", t("drawer.stateCompleted")],
+    ["onhold", t("status.onHold")],
+    ["dropped", t("status.dropped")],
+  ].map(([value, label]) => `<option value="${value}"${currentStatus === value ? " selected" : ""}>${esc(label)}</option>`).join("");
+  const statusChip = `<span class="gp-meta-item gp-status-wrap"><span class="gp-status-icon">${icon("circle", 13)}</span><select class="gp-status-select" data-act="set-game-status" data-app="${esc(s.appName)}" title="${esc(t("status.label"))}" aria-label="${esc(t("status.label"))}">${statusOptions}</select></span>`;
   // The one line under the title: who made it, when, for whom.
   // Everything else about the copy lives in the features card.
   return [
@@ -163,6 +173,7 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
     publisher ? `<span class="gp-meta-item">${esc(publisher)}</span>` : "",
     year ? `<span class="gp-meta-item">${icon("calendar", 13)} ${year}</span>` : "",
     colChip,
+    statusChip,
     ageChip,
     s.appName.startsWith("gog::") ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
     S.steamSharedIds.has(s.appName)

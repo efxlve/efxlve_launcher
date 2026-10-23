@@ -100,6 +100,8 @@ export const EOS_OVERLAY_DECLINE_KEY = "efxlve-eos-overlay-declined";
 /** Hide to the system tray on close instead of quitting. */
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 export const REDUCE_EFFECTS_KEY = "efxlve-reduce-effects";
+export const UI_SCALE_KEY = "efxlve-ui-scale";
+export const GAME_STATUS_KEY = "efxlve-game-status";
 /** Playtime and achievement chips painted on library covers. On unless set to "false". */
 export const COVER_STATS_KEY = "efxlve-cover-stats";
 /** Show the game title under each cover tile in the library grid. */

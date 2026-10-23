@@ -3019,5 +3019,21 @@
   "profile.pickFile": "Select a launcher data archive",
   "cloud.webdavAllowInvalidCert": "Allow a self-signed certificate",
   "settings.reduceEffectsTitle": "Reduce motion and effects",
-  "settings.reduceEffectsDesc": "Turns off interface animations, glass blur and hover transitions. Every page and feature stays available."
+  "settings.reduceEffectsDesc": "Turns off interface animations, glass blur and hover transitions. Every page and feature stays available.",
+  "smart.title": "Smart collections",
+  "smart.almost": "Almost finished",
+  "smart.forgotten": "Forgotten",
+  "status.label": "Status",
+  "status.onHold": "On hold",
+  "status.dropped": "Dropped",
+  "settings.uiScaleTitle": "Interface scale",
+  "settings.uiScaleDesc": "Scales the whole interface. Useful on small screens, TVs and low-resolution laptops.",
+  "library.random": "Random game",
+  "settings.pcCheckTitle": "PC check",
+  "settings.pcCheckDesc": "Checks WebView2, hardware, backend, legendary, disk space and local storage. Nothing is uploaded.",
+  "settings.pcCheckRun": "Check this PC",
+  "settings.pcCheckCopy": "Copy report",
+  "settings.pcCheckCopied": "PC check report copied.",
+  "settings.pcCheckDisk": "Disk",
+  "settings.pcCheckStorage": "Local storage"
 }

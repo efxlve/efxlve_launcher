@@ -909,7 +909,6 @@ fn watch_boot_window(app: tauri::AppHandle) {
         }
         let Some(window) = app.get_window("main") else {
             report_boot_failure(&app, "the main window disappeared during boot");
-            return;
         };
         match window.is_visible() {
             Ok(true) => {}
@@ -924,7 +923,6 @@ fn watch_boot_window(app: tauri::AppHandle) {
             }
             Err(error) => {
                 report_boot_failure(&app, &format!("main window visibility check failed: {error}"));
-                return;
             }
         }
         if window.is_minimized().unwrap_or(false) {
