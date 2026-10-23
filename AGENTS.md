@@ -16,10 +16,15 @@ the start of every session.
 
 ## What the project is
 
-A Windows desktop launcher: Tauri 2 + Rust + vanilla TypeScript (Vite 6). It
-wraps the Legendary (Epic), gogdl (GOG) and Nile (Amazon) CLIs, reads the local
-Steam client, and hosts store pages in native child webviews. There is no web
+A desktop launcher: Tauri 2 + Rust + vanilla TypeScript (Vite 6). It wraps the
+Legendary (Epic), gogdl (GOG) and Nile (Amazon) CLIs, reads the local Steam
+client, and hosts store pages in native child webviews. There is no web
 framework and no virtual DOM.
+
+Windows is the released target; Linux and macOS build from the same tree as a
+preview. Platform-specific work is gated with `#[cfg(windows)]` /
+`#[cfg(not(windows))]` and the frontend `src/core/platform.ts`; CI builds and
+tests all three desktops.
 
 ## Task map
 
