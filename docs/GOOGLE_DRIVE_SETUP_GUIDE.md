@@ -1,8 +1,24 @@
 # Google Drive Cloud Save Backup Setup Guide
 
-Efxlve Launcher allows you to back up your game save files automatically or with a single click to your personal **Google Drive** storage, and restore them anytime on any machine.
+Efxlve Launcher allows you to back up your game save files automatically or with a single click to a folder you already sync (OneDrive, Dropbox, a NAS), **WebDAV**, or your personal **Google Drive** storage, and restore them anytime on another machine.
+
+The easiest setup needs no account or API key: choose **Folder** in Settings → Cloud and point it at a folder your cloud client already syncs. The Google Drive walkthrough below is optional and only needed if you want the launcher to talk to Drive directly.
 
 This guide provides a step-by-step walkthrough for **Community** members to obtain their own free Google Drive API credentials and configure the integration in under two minutes.
+
+---
+
+## 🚀 Quick Start: Folder Provider (No Setup)
+
+If OneDrive, Dropbox, Syncthing or a NAS client already syncs a folder on your PC:
+
+1. Open **Settings → Cloud** and turn on **Enable Cloud Save Backup**.
+2. Select **Folder (OneDrive / Dropbox / NAS)**.
+3. Click **Choose folder** and pick the folder your client syncs.
+4. Click **Test connection**, then **Save**.
+5. Open a game's **Manage** drawer and click **Backup to Cloud**.
+
+The launcher writes `efxlve_saves/<game>/<timestamp>.tar.gz` inside that folder. Your existing sync client uploads it. No Google Cloud project, OAuth client or API key is involved.
 
 ---
 
@@ -76,7 +92,7 @@ Efxlve Launcher is an **independent, open-source** gaming hub. Following trusted
 ---
 
 ### 7. Configure in Efxlve Launcher & Connect
-1. Open Efxlve Launcher and navigate to **Settings > Integrations > Cloud Save Backup**.
+1. Open Efxlve Launcher and navigate to **Settings → Cloud**.
 2. Toggle on **Enable Cloud Save Backup** and select **Google Drive** as your provider.
 3. Paste your **Client ID** and **Client Secret** into the respective fields and click **Save**.
 4. Click **Connect with Google**.
@@ -91,12 +107,12 @@ Efxlve Launcher is an **independent, open-source** gaming hub. Following trusted
 1. In your library, right-click any game or open its action menu and select **Manage**.
 2. Scroll to the **Save Files & Cloud** section:
    - **Backup to Cloud:** Compresses your current local save files and uploads a timestamped archive to Google Drive.
-   - **Restore:** Downloads any cloud backup and extracts it directly into the local save directory (protects against save corruption or system wipes).
+   - **Restore:** Downloads any cloud backup and extracts it into the local save directory. The launcher first snapshots the current save folder as a local `pre-restore` backup; if that snapshot cannot be written, the restore is refused. A wrong restore can be undone from the same backup list.
    - **Multi-Version History:** Each backup preserves a distinct timestamp and file size. The newest backup is tagged with a green **Latest** chip.
    - **Delete / Delete All:** Remove individual older backups or wipe all cloud saves for that game.
 
 ### Automated Cloud Sync (Auto-Sync)
-- Enable **Auto-Sync on Game Exit** in Settings to automatically create and upload a fresh save archive whenever you finish playing a supported game.
+- Enable **Auto-Sync on Game Exit** in Settings to automatically create and upload a fresh save archive whenever you finish playing a supported game. Auto-sync works with Folder, WebDAV and Google Drive alike.
 
 ---
 
@@ -110,7 +126,10 @@ To prevent hundreds of save archives from cluttering your root Drive folder, bac
 4. Locate **Efxlve Launcher** to view `Hidden app data: ~XX MB`.
 
 #### Are my Client ID and Client Secret secure?
-Yes. Your credentials and tokens are stored solely on your local computer (`%USERPROFILE%\.config\legendary\cloud_backup_settings.json`). They are never transmitted to third parties, telemetry endpoints, or developer servers.
+Yes. Your credentials and tokens are stored solely on your local computer (`%USERPROFILE%\.config\legendary\cloud_backup_settings.json` on Windows, `~/.config/legendary/cloud_backup_settings.json` on Linux/macOS). They are never transmitted to third parties, telemetry endpoints, or developer servers.
 
 #### Is WebDAV also supported?
 Yes! If you prefer self-hosting with Nextcloud, ownCloud, or a local NAS, choose **WebDAV** as your provider in Settings and provide your server URL and credentials for identical functionality.
+
+#### Is there a provider that needs no account at all?
+Yes. Choose **Folder** and point it at a folder your existing cloud client syncs. It uses the same archive format and restore flow, but the launcher only writes files; your client does the uploading.

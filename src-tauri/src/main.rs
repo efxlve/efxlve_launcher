@@ -630,6 +630,7 @@ fn app_set_decorations(app: AppHandle, decorations: bool) -> Result<(), String> 
 /// Tray menu item handles so the frontend can localize their labels.
 pub struct TrayItems {
     pub show: tauri::menu::MenuItem<tauri::Wry>,
+    pub overlay: tauri::menu::MenuItem<tauri::Wry>,
     pub quit: tauri::menu::MenuItem<tauri::Wry>,
 }
 
@@ -637,10 +638,12 @@ pub struct TrayItems {
 #[tauri::command]
 fn app_set_tray_labels(
     show: String,
+    overlay: String,
     quit: String,
     items: tauri::State<'_, TrayItems>,
 ) -> Result<(), String> {
     items.show.set_text(show).map_err(|e| e.to_string())?;
+    items.overlay.set_text(overlay).map_err(|e| e.to_string())?;
     items.quit.set_text(quit).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -652,10 +655,12 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
     let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+    let overlay = MenuItem::with_id(app, "overlay", "Overlay", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &overlay, &quit])?;
     app.manage(TrayItems {
         show: show.clone(),
+        overlay: overlay.clone(),
         quit: quit.clone(),
     });
 
@@ -671,6 +676,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     let _ = w.set_focus();
                 }
             }
+            "overlay" => crate::overlay::overlay_show(app.clone()),
             "quit" => {
                 if has_active_download(app) || has_running_game() {
                     // Keep the backend monitor, downloads and playtime tracking

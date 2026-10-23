@@ -419,6 +419,11 @@ fn write_list<W: Write>(out: &mut W, kind: &[u8; 4], payload: &[u8]) -> std::io:
 
 /// Starts a recording for the given game. Refuses when one is already running.
 pub fn start(app: &tauri::AppHandle, title: &str) -> Result<(), String> {
+    #[cfg(not(windows))]
+    {
+        let _ = (app, title);
+        return Err("Clip recording is only available on Windows.".to_string());
+    }
     if running() {
         return Err("@t:ss.recordingBusy".to_string());
     }

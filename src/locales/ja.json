@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "標準",
   "settings.achSizeLarge": "大",
-  "settings.achSizeSmall": "小"
+  "settings.achSizeSmall": "小",
+  "cloud.providerFolder": "フォルダー (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "フォルダーへのバックアップ",
+  "cloud.folderDesc": "クラウドクライアントがすでに同期しているフォルダーを選びます。アカウント、OAuth、API キーは不要です。",
+  "cloud.folderPath": "バックアップフォルダー",
+  "cloud.folderBrowse": "フォルダーを選択",
+  "cloud.folderSaved": "バックアップフォルダーを保存しました。",
+  "settings.ssPlatformNote": "画面キャプチャとクリップは今のところ Windows のみです。ギャラリーは下のフォルダーを引き続き読み込み、他のツールのキャプチャも表示します。",
+  "controller.bridgeWindowsOnly": "コントローラーブリッジは Windows のみです。",
+  "settings.overlayLauncherNote": "オーバーレイはヘッダーのボタンまたはトレイメニューから開きます。グローバルホットキーは今のところ Windows のみです。"
 }

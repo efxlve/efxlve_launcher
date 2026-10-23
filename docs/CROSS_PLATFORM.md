@@ -1,6 +1,7 @@
 # CROSS_PLATFORM.md — Efxlve Launcher Linux & macOS Uyumluluk Katmanı (Araştırma & Mimari Tasarım)
 
-> **Durum:** Çekirdek katman uygulandı (2026-10-19). Paketleme ve gerçek Linux/macOS donanım doğrulaması açık.
+> **Durum:** Çekirdek katman, mağaza CLI'ları, uyumluluk araçları ve başlatma zinciri uygulandı (2026-10-23).
+> Linux/macOS paketleme ve gerçek donanım doğrulaması açık.
 > **Amaç:** Heroic Games Launcher modelini referans alarak Efxlve Launcher'ın Windows dışına
 > taşınma stratejisini, Wine/Proton/D3DMetal katmanlarını ve platform soyutlamasını tanımlamak.
 
@@ -131,14 +132,14 @@ Heroic modeli: `legendary launch <app> --no-wine --wrapper "<runner> run"`.
 
 ## 6. Fazlı Uygulama Planı
 
-| Faz | Kapsam | Çıktı |
-|---|---|---|
-| **F0** | `platform/` soyutlaması + `cfg` iskeleti; Windows davranışı birebir korunur. | Derleme her 3 platformda yeşil. |
-| **F1** | Linux'ta `legendary` + saf Wine ile oyun başlatma; prefix yönetimi; `xdg-open`. | Linux'ta temel kütüphane/oyun. |
-| **F2** | Wine Manager (GE-Proton/Wine-GE indirme), DXVK/VKD3D otomatik kurulum, umu entegrasyonu. | Heroic seviyesi Linux deneyimi. |
-| **F3** | ProtonDB rozetleri, Gamescope/GameMode, Flatpak + AppImage paketleme. | Steam Deck uyumlu dağıtım. |
-| **F4** | macOS Apple Silicon: GPTK/DXMT runner yönetimi, CrossOver bottle desteği. | macOS'ta oyun başlatma. |
-| **F5** | Platformlar arası ekran görüntüsü kancası ve kabuk entegrasyonları. | Özellik paritesi. |
+| Faz | Kapsam | Çıktı | Durum |
+|---|---|---|---|
+| **F0** | `platform/` soyutlaması + `cfg` iskeleti; Windows davranışı birebir korunur. | Derleme her 3 platformda yeşil. | `cfg` modülleri ve Unix stub'ları ile uygulandı. |
+| **F1** | Linux'ta `legendary` + saf Wine ile oyun başlatma; prefix yönetimi; `xdg-open`. | Linux'ta temel kütüphane/oyun. | Uygulandı; donanım doğrulaması açık. |
+| **F2** | Wine Manager (GE-Proton/Wine-GE indirme), DXVK/VKD3D otomatik kurulum, umu entegrasyonu. | Heroic seviyesi Linux deneyimi. | Araç yöneticisi ve katman kopyalama uygulandı. |
+| **F3** | ProtonDB rozetleri, Gamescope/GameMode, Flatpak + AppImage paketleme. | Steam Deck uyumlu dağıtım. | ProtonDB/Deck rozetleri var; paketleme açık. |
+| **F4** | macOS Apple Silicon: GPTK/DXMT runner yönetimi, CrossOver bottle desteği. | macOS'ta oyun başlatma. | Araç zinciri uygulandı; imzalama ve donanım doğrulaması açık. |
+| **F5** | Platformlar arası ekran görüntüsü kancası ve kabuk entegrasyonları. | Özellik paritesi. | Windows'ta çalışıyor; diğer platformlarda gizleniyor. |
 
 ---
 
@@ -266,14 +267,47 @@ yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 ### 8.5 Kalan işler
 - Flatpak/AppImage/.deb/.rpm paketleme ve macOS `.app`/notarization.
 - GPTK/D3DMetal lisansı: binary paketlenmez, kullanıcı kendi kurulumunu yönetir.
-- Prefix'i `wineboot` ile ilk açılışta hazırlama ve hata akışı.
-- Oyun başına runner/prefix seçimi (bugün global varsayılan + oyunun kendi
-  wrapper'ı var).
-- ProtonDB/Steam Deck rozetleri, Gamescope/GameMode, anti-cheat uyarıları.
-- Ekran görüntüsü kancası, gömülü mağaza webview'i ve sürücü taraması için
-  platform implementasyonları (F0/F5).
+- Linux/macOS'ta gerçek donanım doğrulaması: oyun başlatma, Proton prefix'i,
+  Steam kütüphanesi ve mağaza webview'leri.
+- macOS'ta imzalama/notarization ve Apple Silicon native runner doğrulaması.
+- Linux/macOS için otomatik kayıt klasörü algılama (bugün Windows yolları
+  ağırlıklı; oyunun kendi kayıt klasörü Manage çekmecesinden seçilebilir).
+- Ekran görüntüsü kancası, klip kaydı, FPS/HUD ve görev çubuğu rozeti için
+  platform implementasyonları (bugün Windows'ta çalışır, diğerlerinde gizlenir).
 - `wine-crossover` yalnızca algılanır (Gcenx/winecx deposu 404); `vulkan-helper-rs`
   kaynak-only olduğu için indirilmez.
+
+### 8.6 Windows dışındaki bugünkü davranış
+
+Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anlamına gelmez.
+
+- **Mağaza CLI'ları:** `legendary`, `gogdl`, Nile ve Comet işletim sistemi +
+  mimariye göre indirilir; Unix'te `0o755` izni verilir. Eksik platform için
+  indirme, çalıştırma yerine açık hata döndürür.
+- **Oyun başlatma:** Epic, GOG, Amazon ve özel oyunlar `compat::launch_spec`
+  üzerinden Wine/Proton/umu wrapper'ına verilir. Windows'ta wrapper atlanır.
+- **Süreç takibi:** Linux/macOS'ta `sysinfo` ile kurulum klasörü/EXE adı
+  eşleştirilir; GOG ve Steam PID kontrolleri `kill -0` kullanır. Bu, oyun
+  oturumu ve overlay bağlamının Windows'suz çalışması içindir.
+- **Dosya seçiciler:** Linux'ta `zenity`/`kdialog`, macOS'ta `osascript`; yoksa
+  mevcut değer korunur. Windows PowerShell seçicisi değişmedi.
+- **Steam:** Kayıt defteri yerine `~/.steam/steam`, `~/.local/share/Steam` ve
+  `~/Library/Application Support/Steam` aranır. `steam://` açma `xdg-open` /
+  `open` ile yapılır.
+- **Overlay:** Panel Tauri webview olarak açılır; launcher açıldığından itibaren
+  üst çubuktaki düğme ve tepsi menüsüyle kullanılabilir. Shift+Tab global
+  kısayolu, HUD/FPS katmanı, ekran görüntüsü ve klip sekmeleri Windows'a özgüdür.
+  Linux/macOS'ta bu sekmeler gizlenir; panel, performans, notlar, başarımlar,
+  tarayıcı ve müzik sayfaları açılır.
+- **Mağaza webview'leri:** Tauri child webview kullanılır. WebView2'ye özgü
+  Chrome eklentisi katmanı Windows'ta açılır; diğer platformlarda mağaza sayfası
+  eklentisiz açılır, para birimi betiği çalışmaya devam eder.
+- **Windows'a özgü ve gizlenen yüzeyler:** Controller bridge (ViGEm), görev
+  çubuğu rozeti, EOS/Epic relay, DPAPI Steam kasası yerine platformun kendi
+  saklama yolu, `.lnk` kısayolları ve kayıt defteri taramaları.
+- **Bilinen sınır:** Otomatik kayıt klasörü algılama Windows odaklıdır. Linux/
+  macOS'ta oyunun kayıt klasörünü Manage çekmecesinden seçmek gerekir; bulut
+  yedeği bu yolu kullanır.
 
 ## 9. Referanslar
 

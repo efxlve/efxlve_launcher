@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "عادي",
   "settings.achSizeLarge": "كبير",
-  "settings.achSizeSmall": "صغير"
+  "settings.achSizeSmall": "صغير",
+  "cloud.providerFolder": "مجلد (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "نسخ احتياطي إلى مجلد",
+  "cloud.folderDesc": "اختر مجلدًا يزامنه تطبيق السحابة لديك بالفعل. لا حاجة إلى حساب أو OAuth أو مفاتيح API.",
+  "cloud.folderPath": "مجلد النسخ الاحتياطي",
+  "cloud.folderBrowse": "اختيار مجلد",
+  "cloud.folderSaved": "تم حفظ مجلد النسخ الاحتياطي.",
+  "settings.ssPlatformNote": "لقطات الشاشة والمقاطع متاحة حاليًا على Windows فقط. لا يزال المعرض يقرأ المجلدات أدناه، بما في ذلك اللقطات من أدوات أخرى.",
+  "controller.bridgeWindowsOnly": "جسر أذرع التحكم متاح على Windows فقط.",
+  "settings.overlayLauncherNote": "افتح الطبقة العلوية من زر الرأس أو قائمة شريط النظام. اختصار لوحة المفاتيح العام متاح حاليًا على Windows فقط."
 }

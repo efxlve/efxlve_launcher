@@ -933,12 +933,13 @@ export const epicCancelMoveGame = (appName: string) =>
 
 /* ---------- Cloud Save Backup (WebDAV & Google Drive) ---------- */
 
-export type CloudBackupProvider = "none" | "webdav" | "google_drive";
+export type CloudBackupProvider = "none" | "folder" | "webdav" | "google_drive";
 
 export interface CloudBackupSettings {
   enabled: boolean;
   provider: CloudBackupProvider;
   autoSyncOnGameExit: boolean;
+  folderPath: string;
   webdavUrl: string;
   webdavUsername: string;
   webdavPassword: string;

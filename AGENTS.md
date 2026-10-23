@@ -156,6 +156,7 @@ Rules for these files:
 | `docs/DESIGN_SYSTEM.md` | Design tokens and layout contracts |
 | `docs/IPC_INDEX.md` | Generated Tauri command index |
 | `docs/OVERLAY_ROADMAP.md` | Overlay architecture and open work |
+| `docs/CLOUD_SAVES.md` | Save backup architecture, user setup and open work |
 | `docs/CROSS_PLATFORM.md` | Linux/macOS compatibility layer |
 | `docs/GOOGLE_DRIVE_SETUP_GUIDE.md` | Google Drive backup setup |
 

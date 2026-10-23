@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Başarım bildirim kartının ekrandaki görünüm boyutunu seçin",
   "settings.achSizeNormal": "Normal",
   "settings.achSizeLarge": "Büyük",
-  "settings.achSizeSmall": "Küçük"
+  "settings.achSizeSmall": "Küçük",
+  "cloud.providerFolder": "Klasör (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "Klasöre yedekleme",
+  "cloud.folderDesc": "Bulut uygulamanın zaten eşitlediği bir klasörü seç. Hesap kurulumu, OAuth veya API anahtarı gerekmez.",
+  "cloud.folderPath": "Yedek klasörü",
+  "cloud.folderBrowse": "Klasör seç",
+  "cloud.folderSaved": "Yedek klasörü kaydedildi.",
+  "settings.ssPlatformNote": "Ekran görüntüsü alma ve klip kaydı şimdilik yalnızca Windows'ta çalışır. Galeri aşağıdaki klasörleri ve diğer araçlarla alınmış görüntüleri okumaya devam eder.",
+  "controller.bridgeWindowsOnly": "Denetleyici köprüsü yalnızca Windows'ta çalışır.",
+  "settings.overlayLauncherNote": "Overlay'i üst çubuktaki düğmeden veya sistem tepsisi menüsünden aç. Global kısayol şimdilik yalnızca Windows'ta çalışır."
 }

@@ -21,6 +21,7 @@ import {
   closeGoogleDriveGuideModal,
 } from "../../cloud-backup/cloud-backup-view";
 import type { CloudBackupProvider } from "../../../epic";
+import { epicSelectFolderDialog } from "../../../epic";
 
 export function handleCloudBackupAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -82,7 +83,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       const chk = ((targetEl || t) as HTMLInputElement).checked ?? !S.cloudBackupSettings?.enabled;
       void updateCloudBackupSettings({
         enabled: chk,
-        provider: chk && (!S.cloudBackupSettings || S.cloudBackupSettings.provider === "none") ? "google_drive" : S.cloudBackupSettings?.provider ?? "google_drive",
+        provider: chk && (!S.cloudBackupSettings || S.cloudBackupSettings.provider === "none") ? "folder" : S.cloudBackupSettings?.provider ?? "folder",
       });
       return true;
     }
@@ -146,6 +147,49 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
     case "cloud-gdrive-disconnect":
       void disconnectGoogleDriveAction();
       return true;
+
+    case "cloud-gdrive-test": {
+      const clientIdInput = document.getElementById("cloud-gdrive-client-id") as HTMLInputElement | null;
+      const clientSecretInput = document.getElementById("cloud-gdrive-client-secret") as HTMLInputElement | null;
+      void (async () => {
+        const saved = await updateCloudBackupSettings({
+          gdriveClientId: clientIdInput?.value.trim() ?? "",
+          gdriveClientSecret: clientSecretInput?.value.trim() ?? "",
+        });
+        if (!saved) return;
+        await testCloudConnectionAction();
+      })();
+      return true;
+    }
+
+    case "cloud-folder-browse": {
+      void (async () => {
+        const current = S.cloudBackupSettings?.folderPath ?? "";
+        const chosen = await epicSelectFolderDialog(current || null, i18nT("cloud.folderBrowse")).catch(() => null);
+        if (!chosen) return;
+        const ok = await updateCloudBackupSettings({ folderPath: chosen });
+        if (ok) toast(i18nT("cloud.folderSaved"), "ok");
+      })();
+      return true;
+    }
+
+    case "cloud-folder-save": {
+      const input = document.getElementById("cloud-folder-path") as HTMLInputElement | null;
+      void updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "" }).then((ok) => {
+        if (ok) toast(i18nT("cloud.folderSaved"), "ok");
+      });
+      return true;
+    }
+
+    case "cloud-folder-test": {
+      const input = document.getElementById("cloud-folder-path") as HTMLInputElement | null;
+      void (async () => {
+        const saved = await updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "" });
+        if (!saved) return;
+        await testCloudConnectionAction();
+      })();
+      return true;
+    }
 
     case "cloud-webdav-save": {
       const urlInput = document.getElementById("cloud-webdav-url") as HTMLInputElement | null;

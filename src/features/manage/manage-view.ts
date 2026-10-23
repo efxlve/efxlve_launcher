@@ -477,7 +477,7 @@ export function renderDrawerManage(s: EpicSummary): string {
               <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
               <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
               <div class="mg-inline" style="margin-top: 8px;">
-                <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+                <button class="btn ghost small" data-view="settings" data-settings-section="cloud">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
               </div>
             </div>
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
@@ -504,7 +504,7 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
             <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
             <div class="mg-inline" style="margin-top: 8px;">
-              <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+              <button class="btn ghost small" data-view="settings" data-settings-section="cloud">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
             </div>
           </div>
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
@@ -543,7 +543,7 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div class="mg-title">${icon("cloud", 14)} ${t("gog.cloudNoticeTitle")}</div>
             <div class="mg-desc">${t("gog.cloudNoticeDesc")}</div>
             <div class="mg-inline" style="margin-top: 8px;">
-              <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+              <button class="btn ghost small" data-view="settings" data-settings-section="cloud">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
             </div>
           </div>
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>

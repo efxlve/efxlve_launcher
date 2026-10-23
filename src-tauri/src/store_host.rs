@@ -702,12 +702,17 @@ fn create_store_builder(
     // The currency converter is the only script of ours that stays: it reads
     // the rate the launcher fetched and appends a TRY price.
     if store_id == "steam" {
-        builder = builder
-            // Extensions change the WebView2 environment, and profiles with
-            // different extension settings must not share a data directory.
-            .data_directory(store_extensions_profile_dir(app))
-            .browser_extensions_enabled(true)
-            .extensions_path(store_extensions_enabled_dir(app));
+        // Extensions are a WebView2 feature. Linux/macOS keep the currency
+        // script but load the store without the Chrome extension layer.
+        #[cfg(windows)]
+        {
+            builder = builder
+                // Extensions change the WebView2 environment, and profiles with
+                // different extension settings must not share a data directory.
+                .data_directory(store_extensions_profile_dir(app))
+                .browser_extensions_enabled(true)
+                .extensions_path(store_extensions_enabled_dir(app));
+        }
         builder = builder.initialization_script(steam_boot_script(steam_currency, steam_rate));
         builder = builder.initialization_script(guarded_script("currency", STEAM_EXTENSION_SCRIPT));
     }

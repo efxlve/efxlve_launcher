@@ -5,20 +5,20 @@
 </p>
 
 <p align="center">
-  <strong>Universal Gaming Hub for Windows</strong><br>
+  <strong>Universal Gaming Hub for Windows, Linux and macOS</strong><br>
   A unified, ultra-fast desktop launcher for Epic Games, GOG, Amazon Games, Steam, Xbox, EA, Ubisoft, Battle.net and Riot.<br>
   Built with Tauri 2, Rust, and Vanilla TypeScript. Zero framework bloat.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-Windows%20x86__64-222" alt="Windows" />
-  <img src="https://img.shields.io/badge/version-0.1.36-222" alt="Version 0.1.34" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-222" alt="Windows, Linux and macOS" />
+  <img src="https://img.shields.io/badge/version-0.1.36-222" alt="Version 0.1.36" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
 Efxlve Launcher eliminates the need to keep multiple heavy launchers running in the background. It opens instantly from local disk cache, so your library is immediately accessible even offline. Installs, updates, and launches for managed stores are powered by native Rust wrappers around the `legendary`, `gogdl` and Nile CLIs, while client-owned stores keep using their own apps.
 
-> **Platform note:** The launcher ships for Windows 10/11 (x64). Linux and macOS are being prepared in the same tree: Settings → Compatibility already manages Wine/Proton runners, umu-launcher, DXVK, VKD3D-Proton and the macOS tools, and the store CLIs download the right build per platform. The Linux/macOS bundles themselves are not released yet.
+> **Platform note:** Windows 10/11 (x64 and ARM64) is the released target. Linux (x86_64/ARM64) and macOS (Intel/Apple Silicon) build from the same tree and are in preview: store CLIs download the right binary, Wine/Proton/umu and the macOS toolchain are managed in Settings → Compatibility, and the overlay panel, library, stores, downloads and cloud saves use the Tauri webview on every platform. Native Windows surfaces — screen capture, clips, the FPS/HUD layer, the controller bridge and taskbar badges — are disabled on Linux/macOS instead of failing silently. The Linux/macOS installers are not published yet.
 
 ---
 
@@ -30,9 +30,9 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 - **Dedicated 10-ft TV Mode:** Full controller navigation (`A: Select`, `B: Back`, `LB/RB: categories`) with a compact command bar, cinematic stage, labelled shelf and card titles, designed for TV and couch gaming.
 - **Multi-Account Vault:** Connect multiple Epic, GOG, Steam and Amazon accounts. Fast 1-click account switching without re-entering credentials.
 - **Downloads & Transfers:** Real-time bandwidth and disk write metrics, speed limiter, concurrent download control, and pause/resume capability.
-- **Cloud & Local Save Backups:** Automated local backups on game exit, plus WebDAV and Google Drive cloud integration.
-- **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression, an editor, and a clip recorder.
-- **In-Game Overlay:** Shift+Tab opens a controller-friendly panel over borderless games with performance telemetry, captures, notes, achievements, Spotify/SMTC music, Discord status and a browser. Floating widgets stay clear of the command bar, remember their place, and idle when the panel is hidden.
+- **Cloud & Local Save Backups:** One-click local and cloud backups. The new **Folder** provider works with OneDrive, Dropbox, a NAS or any folder your sync client already handles — no OAuth and no API keys. WebDAV, Google Drive and auto-sync on game exit are still available, and every restore snapshots the current saves first so a wrong restore can be undone.
+- **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression, an editor, and a clip recorder. Windows only; the gallery still reads existing screenshots on Linux/macOS.
+- **In-Game Overlay:** Open the controller-friendly panel from the launcher header or the tray from the moment the app starts, or with Shift+Tab (Windows) over a game. It brings performance telemetry, captures, notes, achievements, Spotify/SMTC music, Discord status and a browser. Floating widgets stay clear of the command bar, remember their place, and idle when the panel is hidden.
 - **SteamGridDB Integration:** Automatic high-resolution covers and support for custom user artwork.
 - **Compatibility Toolbox:** Wine/Proton runners (GE-Proton, Proton-CachyOS), umu-launcher, DXVK/VKD3D-Proton and the macOS toolchain can be downloaded, inventoried and selected from Settings → Compatibility. Detected Steam/Lutris/Wine runners are usable too, and selected layers are copied into each game's prefix. The game page's System tab adds per-title runner, layer and exact-prefix overrides, a Prepare prefix action with progress, and an open-folder button.
 - **Compatibility Signals:** Steam game pages show Valve's Steam Deck category, the ProtonDB community tier and Are We Anti-Cheat Yet? status. Each answer is cached for a day and links back to its source.
@@ -48,14 +48,18 @@ The current release is **v0.1.36**.
 1. Download the latest installer (`.exe`) from [Releases](https://github.com/efxlve/efxlve_launcher/releases/latest).
 2. Requirements: Windows 10 or 11 (64-bit). Microsoft Edge WebView2 (pre-installed on Windows 11).
 
+Linux and macOS are **build-from-source previews** for now; no installer is attached to the release yet. The app deliberately hides Windows-only capture controls rather than shipping buttons that cannot work.
+
 ---
 
 ## Build from Source
 
 ### Prerequisites
-- Windows 10/11 x86_64
+- Windows 10/11 with the MSVC toolchain, or Linux/macOS with the platform Tauri prerequisites below
 - Node.js 20+
-- Rust stable with MSVC toolchain
+- Rust stable
+
+**Windows**
 
 ```powershell
 git clone https://github.com/efxlve/efxlve_launcher.git
@@ -66,18 +70,44 @@ npm.cmd run tauri dev
 
 > **Note:** In Windows PowerShell, always use `npm.cmd` rather than `npm` to avoid execution policy errors.
 
+**Linux (Debian/Ubuntu)**
+
+```bash
+sudo apt install build-essential curl wget file libxdo-dev libssl-dev \
+  libayatana-appindicator3-dev librsvg2-dev \
+  libwebkit2gtk-4.1-dev
+npm install
+npm run tauri dev
+```
+
+Fedora/Arch and the full list are in the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). The overlay uses the normal Tauri webview; on Wayland some compositors ignore always-on-top requests, so the panel can sit behind a fullscreen game.
+
+**macOS**
+
+Install Xcode Command Line Tools (`xcode-select --install`), then:
+
+```bash
+npm install
+npm run tauri dev
+```
+
+Wine/Proton and the Apple Game Porting Toolkit/DXMT stack are managed from Settings → Compatibility. The launcher does not redistribute Apple's GPTK.
+
 ### Verification & Testing
 ```powershell
 npm.cmd run build          # Typecheck & Vite bundle verification
-cargo check                # Fast Rust backend check (run from src-tauri)
-cargo test                 # Rust unit tests
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
+
+On Linux/macOS use `npm run build` and `cargo check` from `src-tauri`.
 
 ---
 
 ## Architecture & Design Guidelines
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Subsystem boundaries, cache-first hydration, and data pipelines.
+- [docs/CLOUD_SAVES.md](./docs/CLOUD_SAVES.md) — Cloud/local save backup architecture, user setup and open work.
 - [docs/GOOGLE_DRIVE_SETUP_GUIDE.md](./docs/GOOGLE_DRIVE_SETUP_GUIDE.md) — Step-by-step Google Drive Cloud Save Backup setup guide.
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) — Hydra console dark tokens, layout contracts, and UI invariants.
 - [docs/OVERLAY_ROADMAP.md](./docs/OVERLAY_ROADMAP.md) — In-game overlay research, architecture and milestones.

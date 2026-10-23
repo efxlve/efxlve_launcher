@@ -309,7 +309,7 @@ export async function initApp(hooks: {
     void initAppUpdater();
     void invoke("app_set_decorations", { decorations: false }).catch(() => {});
     void invoke("app_set_minimize_to_tray", { enabled: S.minimizeToTray }).catch(() => {});
-    void invoke("app_set_tray_labels", { show: t("tray.show"), quit: t("tray.quit") }).catch(() => {});
+    void invoke("app_set_tray_labels", { show: t("tray.show"), overlay: t("overlay.overlayLabel"), quit: t("tray.quit") }).catch(() => {});
     void initPresence();
     // Non-Steam games started from their own client are caught by folder.
     syncInstalledWatch();

@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "ปกติ",
   "settings.achSizeLarge": "ใหญ่",
-  "settings.achSizeSmall": "เล็ก"
+  "settings.achSizeSmall": "เล็ก",
+  "cloud.providerFolder": "โฟลเดอร์ (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "สำรองข้อมูลลงโฟลเดอร์",
+  "cloud.folderDesc": "เลือกโฟลเดอร์ที่ไคลเอนต์คลาวด์ของคุณซิงก์อยู่แล้ว ไม่ต้องตั้งค่าบัญชี OAuth หรือคีย์ API",
+  "cloud.folderPath": "โฟลเดอร์สำรองข้อมูล",
+  "cloud.folderBrowse": "เลือกโฟลเดอร์",
+  "cloud.folderSaved": "บันทึกโฟลเดอร์สำรองข้อมูลแล้ว",
+  "settings.ssPlatformNote": "การจับภาพหน้าจอและคลิปใช้ได้เฉพาะ Windows ในตอนนี้ แกลเลอรียังอ่านโฟลเดอร์ด้านล่าง รวมถึงภาพจากเครื่องมืออื่น",
+  "controller.bridgeWindowsOnly": "บริดจ์คอนโทรลเลอร์ใช้ได้เฉพาะ Windows",
+  "settings.overlayLauncherNote": "เปิดโอเวอร์เลย์จากปุ่มบนแถบหัวเรื่องหรือเมนูถาดระบบ คีย์ลัดทั่วระบบใช้ได้เฉพาะ Windows ในตอนนี้"
 }

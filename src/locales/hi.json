@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "सामान्य",
   "settings.achSizeLarge": "बड़ा",
-  "settings.achSizeSmall": "छोटा"
+  "settings.achSizeSmall": "छोटा",
+  "cloud.providerFolder": "फ़ोल्डर (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "फ़ोल्डर बैकअप",
+  "cloud.folderDesc": "वह फ़ोल्डर चुनें जिसे आपका क्लाउड क्लाइंट पहले से सिंक करता है। खाता, OAuth या API कुंजी की ज़रूरत नहीं।",
+  "cloud.folderPath": "बैकअप फ़ोल्डर",
+  "cloud.folderBrowse": "फ़ोल्डर चुनें",
+  "cloud.folderSaved": "बैकअप फ़ोल्डर सहेजा गया।",
+  "settings.ssPlatformNote": "स्क्रीन कैप्चर और क्लिप अभी केवल Windows पर उपलब्ध हैं। गैलरी नीचे दिए फ़ोल्डरों को पढ़ती रहती है, जिनमें दूसरे टूल की कैप्चर भी शामिल हैं।",
+  "controller.bridgeWindowsOnly": "कंट्रोलर ब्रिज केवल Windows पर उपलब्ध है।",
+  "settings.overlayLauncherNote": "ओवरले को हेडर बटन या ट्रे मेनू से खोलें। ग्लोबल हॉटकी अभी केवल Windows पर उपलब्ध है।"
 }

@@ -12,6 +12,29 @@
 #[cfg(windows)]
 pub use imp::AudioCapture;
 
+/// Non-Windows builds record video only. The recorder treats this as "no audio
+/// device" and keeps going, so the clip feature degrades instead of failing.
+#[cfg(not(windows))]
+pub struct AudioCapture;
+
+#[cfg(not(windows))]
+impl AudioCapture {
+    pub fn start() -> Result<Self, String> {
+        Err("System audio capture is only available on Windows.".to_string())
+    }
+
+    pub fn info(&self) -> AudioInfo {
+        AudioInfo {
+            sample_rate: 48_000,
+            channels: 2,
+        }
+    }
+
+    pub fn drain(&mut self) -> Vec<u8> {
+        Vec::new()
+    }
+}
+
 /// Renders silence into the default output device, for the live audio test.
 ///
 /// WASAPI loopback hands out no packets while the endpoint is idle, so a test

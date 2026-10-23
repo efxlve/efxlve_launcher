@@ -97,6 +97,7 @@ fn draw_text(rgba: &mut [u8], size: u32, text: &str) {
 
 /// Sets (or clears, with `count` 0) the taskbar overlay badge on the launcher's
 /// window. The UI calls this whenever the unread count changes.
+#[cfg(windows)]
 #[tauri::command]
 pub fn app_set_taskbar_badge(app: AppHandle, count: u32) -> Result<(), String> {
     let window = app
@@ -110,4 +111,12 @@ pub fn app_set_taskbar_badge(app: AppHandle, count: u32) -> Result<(), String> {
     window
         .set_overlay_icon(Some(badge_image(count)))
         .map_err(|error| error.to_string())
+}
+
+/// The overlay badge is a Windows taskbar surface. Other platforms keep the
+/// unread count in the sidebar and accept this call as a no-op.
+#[cfg(not(windows))]
+#[tauri::command]
+pub fn app_set_taskbar_badge(_app: AppHandle, _count: u32) -> Result<(), String> {
+    Ok(())
 }

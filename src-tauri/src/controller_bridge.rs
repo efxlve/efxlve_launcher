@@ -368,6 +368,15 @@ pub fn stop() -> BridgeStatus {
     status()
 }
 
+#[cfg(not(windows))]
+fn worker(
+    _stop: Arc<AtomicBool>,
+    _device_name: Arc<Mutex<String>>,
+    ready: std::sync::mpsc::Sender<Result<(), String>>,
+) {
+    let _ = ready.send(Err("@t:controller.bridgeWindowsOnly".into()));
+}
+
 #[tauri::command]
 pub fn controller_bridge_start() -> Result<BridgeStatus, String> {
     start()

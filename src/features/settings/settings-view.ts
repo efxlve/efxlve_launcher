@@ -19,6 +19,7 @@ import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { classicIcon, aeroIcon } from "../../core/app-icon";
 import type { GameSource, SettingsSection } from "../../core/types";
 import {
@@ -657,10 +658,10 @@ function renderController(): string {
     true,
   );
 
-  const virtualNote = status?.bridgeRunning
+  const virtualNote = IS_WINDOWS && status?.bridgeRunning
     ? infoBox("controller.bridgeVirtualNote")
     : "";
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenAuto, t("fullscreen.mode")) + deckNote + group(bridge, t("settings.secController"));
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenAuto, t("fullscreen.mode")) + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */
@@ -1210,7 +1211,9 @@ function renderAppearance(): string {
         `<div class="settings-inline-control"><button type="button" class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>${toggle("toggle-overlay", overlayEnabled())}</div>`,
       ) +
       (overlayEnabled()
-        ? row(t("settings.overlayHotkeyTitle"), t("settings.overlayHotkeyDesc"), renderOverlayHotkeyPicker())
+        ? IS_WINDOWS
+          ? row(t("settings.overlayHotkeyTitle"), t("settings.overlayHotkeyDesc"), renderOverlayHotkeyPicker())
+          : infoBox("settings.overlayLauncherNote")
         : "") +
       (overlayBlockedGames().length > 0
         ? row(
@@ -1545,13 +1548,21 @@ function renderScreenshots(): string {
     : "";
 
   return (
-    group(folder + scanAll + roots + hotkey + sidebar + sound + notify, t("settings.screenshotsTitle")) +
-    group(compression + options, t("ss.compressionSection")) +
+    (!HAS_NATIVE_CAPTURE ? infoBox("settings.ssPlatformNote") : "") +
+    group(
+      folder +
+        scanAll +
+        roots +
+        (HAS_NATIVE_CAPTURE ? hotkey + sound + notify : "") +
+        sidebar,
+      t("settings.screenshotsTitle"),
+    ) +
+    (HAS_NATIVE_CAPTURE ? group(compression + options, t("ss.compressionSection")) : "") +
     group(sortRow + densityRow, t("ss.gallerySection")) +
-    group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) +
+    (HAS_NATIVE_CAPTURE ? group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) : "") +
     group(favoritesRow + policyRow + sizeRow + ageRow + cleanupActions, t("ss.cleanupSection")) +
     group(webhookRow + webhookList, t("ss.shareSection")) +
-    group(clipToggle + clipHotkeyRow + clipOptions, t("ss.clipSection"))
+    (HAS_NATIVE_CAPTURE ? group(clipToggle + clipHotkeyRow + clipOptions, t("ss.clipSection")) : "")
   );
 }
 
@@ -1589,7 +1600,7 @@ function renderSystem(): string {
     ) +
     group(
       row(t("settings.minimizeToTray"), t("settings.minimizeToTrayDesc"), toggle("toggle-minimize-tray", S.minimizeToTray)) +
-      row(t("settings.startWithWindows"), t("settings.startWithWindowsDesc"), toggle("toggle-autostart", S.startWithWindows)) +
+      (IS_WINDOWS ? row(t("settings.startWithWindows"), t("settings.startWithWindowsDesc"), toggle("toggle-autostart", S.startWithWindows)) : "") +
       row(t("settings.minimizeOnGame"), t("settings.minimizeOnGameDesc"), toggle("toggle-minimize-on-game", S.minimizeOnGame)) +
       row(t("settings.autoBackup"), t("settings.autoBackupDesc"), toggle("toggle-auto-backup", S.autoBackupOnExit)),
       t("settings.secSystem"),

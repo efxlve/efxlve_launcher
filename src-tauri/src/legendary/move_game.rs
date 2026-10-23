@@ -325,6 +325,52 @@ if ($chosen) {{
 
     #[cfg(not(windows))]
     {
+        use std::process::Command;
+        let picked_title = title.unwrap_or_else(|| "Select Folder".to_string());
+        if cfg!(target_os = "macos") {
+            let escaped = picked_title.replace('\\', "\\\\").replace('"', "\\\"");
+            let script = format!("POSIX path of (choose folder with prompt \"{escaped}\")");
+            let output = Command::new("osascript")
+                .args(["-e", &script])
+                .output()
+                .map_err(|error| error.to_string())?;
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return Ok(if output.status.success() && !path.is_empty() {
+                Some(path)
+            } else {
+                None
+            });
+        }
+
+        // GNOME's zenity first, KDE's kdialog second. Neither is guaranteed on a
+        // minimal box; in that case keep the current value instead of failing.
+        let mut zenity = Command::new("zenity");
+        zenity.args(["--file-selection", "--directory", "--title", &picked_title]);
+        if let Some(default) = default_path.as_deref().filter(|path| !path.is_empty()) {
+            zenity.arg(format!("--filename={default}/"));
+        }
+        if let Ok(output) = zenity.output() {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    return Ok(Some(path));
+                }
+            }
+        }
+
+        let mut kdialog = Command::new("kdialog");
+        kdialog.args(["--getexistingdirectory", &picked_title]);
+        if let Some(default) = default_path.as_deref().filter(|path| !path.is_empty()) {
+            kdialog.arg(default);
+        }
+        if let Ok(output) = kdialog.output() {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    return Ok(Some(path));
+                }
+            }
+        }
         Ok(default_path)
     }
 }

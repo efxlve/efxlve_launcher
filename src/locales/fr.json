@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "Normal",
   "settings.achSizeLarge": "Grand",
-  "settings.achSizeSmall": "Petit"
+  "settings.achSizeSmall": "Petit",
+  "cloud.providerFolder": "Dossier (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "Sauvegarde dans un dossier",
+  "cloud.folderDesc": "Choisis un dossier que ton client cloud synchronise déjà. Aucun compte, OAuth ou clé API requis.",
+  "cloud.folderPath": "Dossier de sauvegarde",
+  "cloud.folderBrowse": "Choisir un dossier",
+  "cloud.folderSaved": "Dossier de sauvegarde enregistré.",
+  "settings.ssPlatformNote": "Les captures d'écran et les clips sont pour l'instant réservés à Windows. La galerie lit toujours les dossiers ci-dessous, y compris les captures d'autres outils.",
+  "controller.bridgeWindowsOnly": "Le pont de manettes est réservé à Windows.",
+  "settings.overlayLauncherNote": "Ouvre l'overlay depuis le bouton d'en-tête ou le menu de la zone de notification. Le raccourci global est réservé à Windows pour l'instant."
 }

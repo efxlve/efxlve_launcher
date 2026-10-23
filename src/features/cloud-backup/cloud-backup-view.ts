@@ -19,6 +19,7 @@ export function renderCloudBackupSettingsGroup(): string {
     enabled: false,
     provider: "none",
     autoSyncOnGameExit: false,
+    folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
     webdavPassword: "",
@@ -35,12 +36,35 @@ export function renderCloudBackupSettingsGroup(): string {
 
   const providerSeg = `
     <div class="seg" role="radiogroup">
+      <button class="${activeProvider === "folder" ? "active" : ""}" data-act="set-cloud-provider" data-provider="folder">${t("cloud.providerFolder")}</button>
       <button class="${activeProvider === "google_drive" ? "active" : ""}" data-act="set-cloud-provider" data-provider="google_drive">Google Drive</button>
       <button class="${activeProvider === "webdav" ? "active" : ""}" data-act="set-cloud-provider" data-provider="webdav">WebDAV / Nextcloud</button>
     </div>`;
 
   let providerConfig = "";
-  if (activeProvider === "google_drive") {
+  if (activeProvider === "folder") {
+    providerConfig = `
+      <div class="row settings-row stacked">
+        <div class="row-main">
+          <div class="settings-row-title">${t("cloud.folderTitle")}</div>
+          <div class="settings-row-desc">${t("cloud.folderDesc")}</div>
+        </div>
+        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+          <input id="cloud-folder-path" class="input" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
+          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" class="btn ghost small" data-act="cloud-folder-browse">
+              ${icon("folder", 13)} ${t("cloud.folderBrowse")}
+            </button>
+            <button type="button" class="btn ghost small" data-act="cloud-folder-test" ${S.cloudBackupTesting ? "disabled" : ""}>
+              ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}
+            </button>
+            <button type="button" class="btn primary small" data-act="cloud-folder-save">
+              ${t("common.save")}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  } else if (activeProvider === "google_drive") {
     const isConnected = Boolean(st.gdriveRefreshToken);
     const email = st.gdriveUserEmail || t("cloud.connected");
 
@@ -70,6 +94,9 @@ export function renderCloudBackupSettingsGroup(): string {
             ${isConnected ? `<span class="chip ok">${esc(email)}</span>` : ""}
             <button type="button" class="btn ghost small" data-act="cloud-gdrive-save">
               ${t("common.save")}
+            </button>
+            <button type="button" class="btn ghost small" data-act="cloud-gdrive-test" ${S.cloudBackupTesting ? "disabled" : ""}>
+              ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}
             </button>
             ${isConnected
               ? `<button type="button" class="btn ghost danger small" data-act="cloud-gdrive-disconnect">${t("cloud.disconnect")}</button>`
@@ -183,12 +210,12 @@ export function renderManageCloudBackupRow(appName: string): string {
         <div class="mg-title">${icon("cloud", 14)} ${t("cloud.notConfiguredTitle")}</div>
         <div class="mg-desc">${t("cloud.notConfiguredDesc")}</div>
         <div class="mg-inline" style="margin-top: 8px;">
-          <button class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
+          <button class="btn ghost small" data-view="settings" data-settings-section="cloud">${icon("settings", 13)} ${t("cloud.openSettings")}</button>
         </div>
       </div>`;
   }
 
-  const providerLabel = st.provider === "google_drive" ? "Google Drive" : "WebDAV";
+  const providerLabel = st.provider === "google_drive" ? "Google Drive" : st.provider === "folder" ? t("cloud.providerFolder") : "WebDAV";
   const backups = S.cloudBackupsMap.get(appName);
   const latest = backups?.[0];
   const isSyncing = S.cloudBackupSyncing && (S.cloudBackupSyncingApp === appName || !S.cloudBackupSyncingApp);

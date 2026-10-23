@@ -22,8 +22,42 @@ pub fn backups_base_dir() -> PathBuf {
     super::skip::default_config_dir().join("backups")
 }
 
+/// A filesystem-safe folder name for a game key. Store keys contain `::`
+/// (`gog::123`, `steam::456`), which is invalid in a Windows path segment and
+/// made every non-Epic local backup fail. Epic names pass through unchanged.
+pub fn backup_key(app_name: &str) -> String {
+    let mut key = String::with_capacity(app_name.len());
+    let mut chars = app_name.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == ':' && chars.peek() == Some(&':') {
+            chars.next();
+            key.push_str("__");
+        } else if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.') {
+            key.push(c);
+        } else {
+            key.push('_');
+        }
+    }
+    let trimmed = key.trim_matches(|c| c == '_' || c == '.');
+    if trimmed.is_empty() {
+        "game".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
 pub fn app_backup_dir(app_name: &str) -> PathBuf {
-    backups_base_dir().join(app_name)
+    backups_base_dir().join(backup_key(app_name))
+}
+
+/// Shared by the local list and the folder provider so both show the same date.
+pub fn format_backup_timestamp(ts: u64) -> String {
+    let days = ts / 86400;
+    let rem = ts % 86400;
+    let hours = rem / 3600;
+    let minutes = (rem % 3600) / 60;
+    let approx_year = 1970 + days / 365;
+    format!("{approx_year:04} ({hours:02}:{minutes:02} UTC)")
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<(u64, usize)> {
@@ -57,6 +91,43 @@ fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<(u64, usize)> {
     }
 
     Ok((total_bytes, file_count))
+}
+
+/// Copies the current save folder into the local backup store before a restore
+/// overwrites it. A failed snapshot aborts the restore: losing the current
+/// saves is worse than a refused restore.
+fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<String>, String> {
+    if !save_path.exists() {
+        return Ok(None);
+    }
+
+    let now_ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    let mut backup_id = format!("pre-restore-{now_ts}");
+    let mut target = app_backup_dir(app_name).join(&backup_id);
+    let mut suffix = 1;
+    while target.exists() {
+        backup_id = format!("pre-restore-{now_ts}-{suffix}");
+        target = app_backup_dir(app_name).join(&backup_id);
+        suffix += 1;
+    }
+    std::fs::create_dir_all(&target).map_err(|error| error.to_string())?;
+    let (size_bytes, file_count) = copy_dir_all(save_path, &target.join("data"))
+        .map_err(|error| format!("@t:backup.copyFailed\u{1f}{error}"))?;
+    let info = SaveBackupInfo {
+        id: backup_id.clone(),
+        app_name: app_name.to_string(),
+        timestamp: now_ts,
+        formatted_date: format_backup_timestamp(now_ts),
+        size_bytes,
+        file_count,
+        save_path: save_path.to_string_lossy().to_string(),
+    };
+    let info_json = serde_json::to_string_pretty(&info).map_err(|error| error.to_string())?;
+    std::fs::write(target.join("backup_info.json"), info_json).map_err(|error| error.to_string())?;
+    Ok(Some(backup_id))
 }
 
 fn normalize_for_match(s: &str) -> String {
@@ -469,12 +540,7 @@ pub fn create_backup(
     let (size_bytes, file_count) = copy_dir_all(&source, &target.join("data"))
         .map_err(|e| format!("@t:backup.copyFailed\u{1f}{e}"))?;
 
-    let days = now_ts / 86400;
-    let rem = now_ts % 86400;
-    let hours = rem / 3600;
-    let minutes = (rem % 3600) / 60;
-    let approx_year = 1970 + days / 365;
-    let formatted_date = format!("{approx_year:04} ({hours:02}:{minutes:02} UTC)");
+    let formatted_date = format_backup_timestamp(now_ts);
 
     let info = SaveBackupInfo {
         id: backup_id,
@@ -532,14 +598,26 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
 
     let mut dest = PathBuf::from(&info.save_path);
     if !dest.exists() {
-        if let Ok(current_user) = std::env::var("USERPROFILE") {
+        let cfgs = super::commands::load_all_game_custom_configs();
+        let custom = cfgs
+            .get(app_name)
+            .and_then(|cfg| cfg.custom_save_path.as_deref())
+            .map(str::trim)
+            .filter(|path| !path.is_empty())
+            .map(PathBuf::from)
+            .filter(|path| path.exists());
+        if let Some(path) = custom {
+            dest = path;
+        } else if let Ok(current_user) =
+            std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME"))
+        {
             let path_str = info.save_path.replace('\\', "/");
             if let Some(idx) = path_str.find("/Saved Games/") {
-                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', "\\"));
+                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
             } else if let Some(idx) = path_str.find("/Documents/") {
-                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', "\\"));
+                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
             } else if let Some(idx) = path_str.find("/AppData/") {
-                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', "\\"));
+                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
             }
         }
         if !dest.exists() {
@@ -552,6 +630,10 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
             }
         }
     }
+
+    // Keep the current saves before overwriting them. The snapshot stays in the
+    // local backup list, so a wrong restore can be undone from the same panel.
+    snapshot_before_restore(app_name, &dest)?;
 
     copy_dir_all(&data_src, &dest).map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
 
@@ -589,6 +671,15 @@ mod tests {
         let parsed: SaveBackupInfo = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.id, "12345");
         assert_eq!(parsed.file_count, 3);
+    }
+
+    #[test]
+    fn backup_key_keeps_epic_names_and_sanitizes_store_keys() {
+        assert_eq!(backup_key("Ginger"), "Ginger");
+        assert_eq!(backup_key("gog::12345"), "gog__12345");
+        assert_eq!(backup_key("steam::570"), "steam__570");
+        assert_eq!(backup_key("amazon::B0/../x"), "amazon__B0_.._x");
+        assert_eq!(backup_key(":::"), "game");
     }
 
     #[test]

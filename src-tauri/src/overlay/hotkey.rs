@@ -1,14 +1,15 @@
 //! Overlay hotkey listener.
 //!
 //! Same no-hook model as the screenshot hotkey: poll `GetAsyncKeyState` while a
-//! game runs, and only while the game (or the panel itself) is in front.
+//! game runs, and also while the launcher itself is in front — the panel has a
+//! launcher mode, so the overlay is usable from the moment the app opens.
 //!
 //! The listener idles instead of polling whenever the overlay is switched off or
 //! the running game opted out. That is deliberate: no key polling and no overlay
 //! window for a multiplayer title the user does not want the overlay near.
 
 use std::time::Duration;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 use super::{hide, show, STATE};
 
@@ -95,19 +96,9 @@ pub(crate) fn start(app: AppHandle) {
                         if visible {
                             hide(&app);
                         } else {
+                            // The launcher is a valid target now: the panel has a
+                            // launcher mode, so Shift+Tab works before any game.
                             let fg = super::hud::foreground_window();
-                            let main_hwnd = app
-                                .get_webview_window("main")
-                                .and_then(|w| w.hwnd().ok())
-                                .map(|h| h.0 as isize)
-                                .unwrap_or(0);
-
-                            // In launcher: allow Controller Guide to open, but let Shift+Tab do normal web tab navigation
-                            if fg != 0 && fg == main_hwnd && !pad_down {
-                                continue;
-                            }
-
-                            // Capture game window
                             let mut hwnd = fg;
                             if !super::hud::window_alive(hwnd) {
                                 let pids = crate::legendary::screenshots::active_game_pids();

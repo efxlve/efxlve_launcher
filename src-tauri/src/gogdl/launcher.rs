@@ -237,6 +237,13 @@ fn is_pid_alive(pid: u32) -> bool {
 }
 
 #[cfg(not(windows))]
-fn is_pid_alive(_pid: u32) -> bool {
-    false
+fn is_pid_alive(pid: u32) -> bool {
+    // `kill -0` checks for existence without sending a signal; it is available
+    // on both Linux and macOS and returns non-zero for a dead pid.
+    std::process::Command::new("kill")
+        .arg("-0")
+        .arg(pid.to_string())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
 }

@@ -20,6 +20,7 @@ import {
   loadBookmarks,
 } from "./browser-shared";
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
+import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
 import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
 import { ssDensity, ssFavorites, ssNotifyOn, ssSort, ssSortItems, ssSoundOn, ssToggleFavorite } from "../screenshots/ss-settings";
@@ -153,6 +154,7 @@ function visibleTabs(): typeof TABS {
       tab.id !== "chat" &&
       tab.id !== "settings" &&
       (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
+      (HAS_NATIVE_CAPTURE || (tab.id !== "shots" && tab.id !== "clip")) &&
       (tab.id !== "music" || spotifyPageVisible()) &&
       (tab.id !== "discord" || discordPageVisible()),
   );
@@ -193,6 +195,7 @@ let selectedGameFilters = new Set<string>();
 let filterPopoverOpen = false;
 let sessionStartEpoch = Date.now();
 let activeTab: TabId = (localStorage.getItem("efxlve-overlay-tab") as TabId) || "home";
+if (!IS_WINDOWS && (activeTab === "shots" || activeTab === "clip")) activeTab = "home";
 let browserBounds: { x: number; y: number; w: number; h: number } | null = null;
 
 /* ---------- Discord voice (streamed by the Rust worker) ---------- */
@@ -393,7 +396,7 @@ function formatSessionTime(ms: number): string {
 let fpsEnableState: "idle" | "enabled" | "denied" = "idle";
 
 function fpsNoticeHtml(m: MetricsSample | null): string {
-  if (!m || m.fpsAvailable) return "";
+  if (!IS_WINDOWS || !m || m.fpsAvailable) return "";
   const text =
     fpsEnableState === "enabled"
       ? t("overlay.fpsEnabled")
@@ -430,6 +433,10 @@ function refreshFpsNotices(): void {
  * sample was a full DOM rebuild each second. */
 function updateFpsNotice(): void {
   const existing = document.getElementById("ov-fps-notice");
+  if (!IS_WINDOWS) {
+    existing?.remove();
+    return;
+  }
   if (metrics?.fpsAvailable === true) {
     existing?.remove();
     return;
@@ -449,7 +456,7 @@ function updateFpsNotice(): void {
 async function enableFps(): Promise<void> {
   try {
     const status = await invoke<string>("overlay_enable_fps");
-    fpsEnableState = status === "denied" ? "denied" : "enabled";
+    fpsEnableState = status === "started" || status === "already" ? "enabled" : "denied";
   } catch {
     fpsEnableState = "denied";
   }
@@ -4473,19 +4480,19 @@ function renderSettings(): void {
         <div class="ov-settings-group">
           <div class="ov-setting-item">
             <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.enabledTitle", { key: overlayHotkeyLabel() }))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.enabledDesc", { key: overlayHotkeyLabel() }))}</div>
+              <div class="ov-setting-name">${esc(IS_WINDOWS ? t("overlay.enabledTitle", { key: overlayHotkeyLabel() }) : t("overlay.overlayLabel"))}</div>
+              <div class="ov-setting-desc">${esc(IS_WINDOWS ? t("overlay.enabledDesc", { key: overlayHotkeyLabel() }) : t("settings.overlayLauncherNote"))}</div>
             </div>
             <label class="switch"><input type="checkbox" data-ov-toggle="enabled" ${enabled ? "checked" : ""} /><span class="track"></span></label>
           </div>
 
-          <div class="ov-setting-item">
+          ${IS_WINDOWS ? `<div class="ov-setting-item">
             <div class="ov-setting-info">
               <div class="ov-setting-name">${esc(t("overlay.hudTitle"))}</div>
               <div class="ov-setting-desc">${esc(t("overlay.hudDesc"))}</div>
             </div>
             <label class="switch"><input type="checkbox" data-ov-toggle="hud" ${hud ? "checked" : ""} /><span class="track"></span></label>
-          </div>
+          </div>` : ""}
         </div>
       </section>
 

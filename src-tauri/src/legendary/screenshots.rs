@@ -150,27 +150,66 @@ pub fn clean_folder_name(name: &str) -> String {
 }
 
 pub fn get_user_pictures_dir() -> PathBuf {
-    if let Ok(profile) = std::env::var("USERPROFILE") {
-        PathBuf::from(profile).join("Pictures")
-    } else {
-        std::env::temp_dir()
+    #[cfg(windows)]
+    {
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+            return PathBuf::from(profile).join("Pictures");
+        }
     }
+    #[cfg(not(windows))]
+    {
+        if let Ok(dir) = std::env::var("XDG_PICTURES_DIR") {
+            if !dir.trim().is_empty() {
+                return PathBuf::from(dir);
+            }
+        }
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("Pictures");
+        }
+    }
+    std::env::temp_dir()
 }
 
 pub fn get_user_videos_dir() -> PathBuf {
-    if let Ok(profile) = std::env::var("USERPROFILE") {
-        PathBuf::from(profile).join("Videos")
-    } else {
-        std::env::temp_dir()
+    #[cfg(windows)]
+    {
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+            return PathBuf::from(profile).join("Videos");
+        }
     }
+    #[cfg(not(windows))]
+    {
+        if let Ok(dir) = std::env::var("XDG_VIDEOS_DIR") {
+            if !dir.trim().is_empty() {
+                return PathBuf::from(dir);
+            }
+        }
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("Videos");
+        }
+    }
+    std::env::temp_dir()
 }
 
 pub fn get_user_documents_dir() -> PathBuf {
-    if let Ok(profile) = std::env::var("USERPROFILE") {
-        PathBuf::from(profile).join("Documents")
-    } else {
-        std::env::temp_dir()
+    #[cfg(windows)]
+    {
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+            return PathBuf::from(profile).join("Documents");
+        }
     }
+    #[cfg(not(windows))]
+    {
+        if let Ok(dir) = std::env::var("XDG_DOCUMENTS_DIR") {
+            if !dir.trim().is_empty() {
+                return PathBuf::from(dir);
+            }
+        }
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join("Documents");
+        }
+    }
+    std::env::temp_dir()
 }
 
 /// User-configured screenshots root. `None` keeps the legacy

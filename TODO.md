@@ -2,6 +2,31 @@
 
 Open work only. Delete the item when it lands.
 
+## Cloud saves: next steps
+
+- Linux/macOS save-path discovery: XDG roots, macOS `Application Support`
+  and Proton `compatdata` prefixes. Until then the save folder must be set per
+  game in Manage.
+- Retention and scheduled local-only backups; prune old timestamps.
+- Bulk “back up all installed games” with a progress list.
+- Conflict detection before restore (local/remote timestamp + hash); the
+  pre-restore snapshot already makes a wrong restore recoverable.
+- Auto-sync failure toast and a background queue.
+- Move provider credentials from plain JSON into the OS keychain.
+
+Details: `docs/CLOUD_SAVES.md`.
+
+## Linux/macOS: packaging and validation
+
+- AppImage/Flatpak/.deb/.rpm and macOS `.app` + notarization; no Unix installer
+  is attached to a release yet.
+- Real-hardware pass for game launch, Proton prefix preparation, Steam library
+  detection, store webviews and path case sensitivity.
+- Native save discovery (above) and a Unix global overlay hotkey; today the
+  overlay opens from the launcher header and tray.
+- Screen capture, clips, HUD/FPS and taskbar badges remain Windows-only and are
+  hidden on Unix.
+
 ## GPU recorder: 60/120 fps
 
 The MJPEG/GDI recorder cannot hold the rates the settings offer. Measured on the

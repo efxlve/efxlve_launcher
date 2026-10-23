@@ -559,7 +559,16 @@ pub(crate) fn hide(app: &AppHandle) {
 /// Fills the monitor that hosts the game window; keeps the current monitor when
 /// no game window is known.
 fn place_over_game(win: &tauri::WebviewWindow, hwnd: isize) {
-    if let Some((x, y, w, h)) = hud::monitor_rect_for(hwnd) {
+    let monitor = hud::monitor_rect_for(hwnd).or_else(|| {
+        // Win32 helpers are stubs on Linux/macOS; the current Tauri monitor is
+        // the correct target there (and a useful fallback on Windows too).
+        win.current_monitor().ok().flatten().map(|monitor| {
+            let position = monitor.position();
+            let size = monitor.size();
+            (position.x, position.y, size.width, size.height)
+        })
+    });
+    if let Some((x, y, w, h)) = monitor {
         #[cfg(windows)]
         if let Ok(raw_hwnd) = win.hwnd() {
             unsafe {

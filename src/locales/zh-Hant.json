@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "標準",
   "settings.achSizeLarge": "大",
-  "settings.achSizeSmall": "小"
+  "settings.achSizeSmall": "小",
+  "cloud.providerFolder": "資料夾（OneDrive / Dropbox / NAS）",
+  "cloud.folderTitle": "資料夾備份",
+  "cloud.folderDesc": "選擇你的雲端用戶端已經同步的資料夾。無需帳戶、OAuth 或 API 金鑰。",
+  "cloud.folderPath": "備份資料夾",
+  "cloud.folderBrowse": "選擇資料夾",
+  "cloud.folderSaved": "備份資料夾已儲存。",
+  "settings.ssPlatformNote": "截圖與剪輯目前僅支援 Windows。圖庫仍會讀取下方資料夾，包括其他工具截取的圖片。",
+  "controller.bridgeWindowsOnly": "手把橋接目前僅支援 Windows。",
+  "settings.overlayLauncherNote": "從標題列按鈕或系統匣選單開啟疊加層。全域快速鍵目前僅支援 Windows。"
 }

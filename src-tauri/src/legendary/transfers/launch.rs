@@ -493,15 +493,48 @@ mod win_process {
 #[cfg(not(target_os = "windows"))]
 mod win_process {
     use std::path::Path;
-    pub fn is_game_process_running(
-        _install_path: Option<&Path>,
-        _candidate_exes: &[String],
-    ) -> bool {
-        false
+
+    /// The Windows implementation walks a toolhelp snapshot. On Linux/macOS the
+    /// same information comes from `sysinfo`; matching the executable path
+    /// inside the install folder is the reliable signal, with the file name as
+    /// a fallback when the launcher only knows the exe.
+    pub fn game_process_pids(install_path: Option<&Path>, candidate_exes: &[String]) -> Vec<u32> {
+        if candidate_exes.is_empty() && install_path.is_none() {
+            return Vec::new();
+        }
+        use sysinfo::{ProcessesToUpdate, System};
+
+        let mut system = System::new();
+        system.refresh_processes(ProcessesToUpdate::All, true);
+        let self_pid = std::process::id();
+        let mut pids = Vec::new();
+        for (pid, process) in system.processes() {
+            if pid.as_u32() == self_pid {
+                continue;
+            }
+            let exe = process.exe();
+            let inside = match (exe, install_path) {
+                (Some(exe), Some(install)) => exe.starts_with(install),
+                _ => false,
+            };
+            let name = process.name().to_string_lossy().to_lowercase();
+            let name_hit = candidate_exes
+                .iter()
+                .any(|candidate| candidate.eq_ignore_ascii_case(&name));
+            let ignored = name.contains("crashreportclient")
+                || name.contains("vc_redist")
+                || name.contains("vcredist")
+                || name.contains("dxsetup")
+                || name.contains("unrealcefsubprocess");
+            if !ignored && (inside || (install_path.is_none() && name_hit)) {
+                pids.push(pid.as_u32());
+            }
+        }
+        pids
     }
 
-    pub fn game_process_pids(_install_path: Option<&Path>, _candidate_exes: &[String]) -> Vec<u32> {
-        Vec::new()
+    pub fn is_game_process_running(install_path: Option<&Path>, candidate_exes: &[String]) -> bool {
+        !game_process_pids(install_path, candidate_exes).is_empty()
     }
 }
 

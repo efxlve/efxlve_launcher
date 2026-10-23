@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "Normal",
   "settings.achSizeLarge": "Large",
-  "settings.achSizeSmall": "Small"
+  "settings.achSizeSmall": "Small",
+  "cloud.providerFolder": "Folder (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "Folder backup",
+  "cloud.folderDesc": "Choose a folder your cloud client already syncs. No account setup, OAuth or API keys are needed.",
+  "cloud.folderPath": "Backup folder",
+  "cloud.folderBrowse": "Choose folder",
+  "cloud.folderSaved": "Backup folder saved.",
+  "settings.ssPlatformNote": "Screen capture and clips are Windows-only for now. The gallery still reads the folders below, including screenshots taken by other tools.",
+  "controller.bridgeWindowsOnly": "The controller bridge is Windows-only.",
+  "settings.overlayLauncherNote": "Open the overlay from the header button or the tray menu. The global hotkey is Windows-only for now."
 }

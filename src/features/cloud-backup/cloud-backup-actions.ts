@@ -39,6 +39,7 @@ export async function updateCloudBackupSettings(
     enabled: false,
     provider: "none",
     autoSyncOnGameExit: false,
+    folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
     webdavPassword: "",
@@ -54,6 +55,9 @@ export async function updateCloudBackupSettings(
   try {
     await cloudBackupSaveSettings(updated);
     S.cloudBackupSettings = updated;
+    if (patch.provider && patch.provider !== current.provider) {
+      S.cloudBackupsMap.clear();
+    }
     scheduleRender();
     return true;
   } catch (err) {

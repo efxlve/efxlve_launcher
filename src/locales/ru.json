@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "Обычный",
   "settings.achSizeLarge": "Большой",
-  "settings.achSizeSmall": "Маленький"
+  "settings.achSizeSmall": "Маленький",
+  "cloud.providerFolder": "Папка (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "Резервная копия в папку",
+  "cloud.folderDesc": "Выберите папку, которую ваш облачный клиент уже синхронизирует. Аккаунт, OAuth и ключи API не нужны.",
+  "cloud.folderPath": "Папка резервных копий",
+  "cloud.folderBrowse": "Выбрать папку",
+  "cloud.folderSaved": "Папка резервных копий сохранена.",
+  "settings.ssPlatformNote": "Снимки экрана и клипы пока доступны только в Windows. Галерея по-прежнему читает папки ниже, включая снимки из других программ.",
+  "controller.bridgeWindowsOnly": "Мост контроллеров доступен только в Windows.",
+  "settings.overlayLauncherNote": "Открывайте оверлей кнопкой в заголовке или из меню в трее. Глобальная горячая клавиша пока доступна только в Windows."
 }

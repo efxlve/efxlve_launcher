@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub enum CloudBackupProvider {
     #[default]
     None,
+    Folder,
     Webdav,
     GoogleDrive,
 }
@@ -20,6 +21,8 @@ pub struct CloudBackupSettings {
     pub provider: CloudBackupProvider,
     #[serde(default)]
     pub auto_sync_on_game_exit: bool,
+    #[serde(default)]
+    pub folder_path: String,
     #[serde(default)]
     pub webdav_url: String,
     #[serde(default)]
@@ -46,6 +49,7 @@ impl Default for CloudBackupSettings {
             enabled: false,
             provider: CloudBackupProvider::None,
             auto_sync_on_game_exit: false,
+            folder_path: String::new(),
             webdav_url: String::new(),
             webdav_username: String::new(),
             webdav_password: String::new(),

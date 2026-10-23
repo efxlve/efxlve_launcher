@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "Normal",
   "settings.achSizeLarge": "Grande",
-  "settings.achSizeSmall": "Pequeno"
+  "settings.achSizeSmall": "Pequeno",
+  "cloud.providerFolder": "Pasta (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "Backup em pasta",
+  "cloud.folderDesc": "Escolha uma pasta que seu cliente de nuvem já sincroniza. Não precisa de conta, OAuth nem chaves de API.",
+  "cloud.folderPath": "Pasta de backup",
+  "cloud.folderBrowse": "Escolher pasta",
+  "cloud.folderSaved": "Pasta de backup salva.",
+  "settings.ssPlatformNote": "Capturas de tela e clipes por enquanto só funcionam no Windows. A galeria continua lendo as pastas abaixo, incluindo capturas de outras ferramentas.",
+  "controller.bridgeWindowsOnly": "A ponte de controles só funciona no Windows.",
+  "settings.overlayLauncherNote": "Abra o overlay pelo botão do cabeçalho ou pelo menu da bandeja. O atalho global por enquanto só funciona no Windows."
 }

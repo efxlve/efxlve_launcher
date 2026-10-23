@@ -7,10 +7,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 
 use crate::cloud_backup::archive::{pack_backup_dir, unpack_backup_tar_gz};
+use crate::cloud_backup::folder;
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
 use crate::cloud_backup::webdav;
-use crate::legendary::backup::{app_backup_dir, create_backup, list_backups, restore_backup};
+use crate::legendary::backup::{
+    app_backup_dir, backup_key, create_backup, list_backups, restore_backup,
+};
 use crate::legendary::skip::default_config_dir;
 
 static HTTP_CLIENT: OnceLock<Client> = OnceLock::new();
@@ -87,6 +90,7 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
     let client = get_client();
     match settings.provider {
         CloudBackupProvider::None => Err("No cloud provider selected.".to_string()),
+        CloudBackupProvider::Folder => folder::test_folder(&settings.folder_path),
         CloudBackupProvider::Webdav => {
             if settings.webdav_url.trim().is_empty() {
                 return Err("WebDAV URL cannot be empty.".to_string());
@@ -170,7 +174,7 @@ pub async fn upload_backup(
         CloudBackupProvider::Webdav => {
             let base_url = settings.webdav_url.trim_end_matches('/');
             let root_dir = format!("{base_url}/efxlve_saves/");
-            let app_dir = format!("{base_url}/efxlve_saves/{app_name}/");
+            let app_dir = format!("{base_url}/efxlve_saves/{}/", backup_key(app_name));
             let target_file_url = format!("{app_dir}{backup_id}.tar.gz");
 
             let _ = webdav::ensure_remote_collection(
@@ -207,6 +211,25 @@ pub async fn upload_backup(
                 sha256,
                 provider: "webdav".to_string(),
                 remote_id: target_file_url,
+            }
+        }
+        CloudBackupProvider::Folder => {
+            let remote_id = folder::upload_backup_folder(
+                &settings.folder_path,
+                app_name,
+                &backup_id,
+                &temp_archive,
+            )?;
+            CloudBackupEntry {
+                backup_id: backup_id.clone(),
+                app_name: app_name.to_string(),
+                timestamp: local_info.timestamp,
+                formatted_date: local_info.formatted_date.clone(),
+                size_bytes,
+                file_count: local_info.file_count,
+                sha256,
+                provider: "folder".to_string(),
+                remote_id,
             }
         }
         CloudBackupProvider::GoogleDrive => {
@@ -286,6 +309,7 @@ pub async fn list_cloud_backups(app_name: &str) -> Result<Vec<CloudBackupEntry>,
 
     let client = get_client();
     match settings.provider {
+        CloudBackupProvider::Folder => folder::list_backups_folder(&settings.folder_path, app_name),
         CloudBackupProvider::Webdav => {
             webdav::list_webdav_backups(
                 client,
@@ -324,6 +348,9 @@ pub async fn download_and_restore(
 
     // 1. Download
     match settings.provider {
+        CloudBackupProvider::Folder => {
+            folder::download_backup_folder(&settings.folder_path, remote_id, &temp_archive)?;
+        }
         CloudBackupProvider::Webdav => {
             webdav::download_file_webdav(
                 client,
@@ -360,6 +387,9 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
     let client = get_client();
 
     match settings.provider {
+        CloudBackupProvider::Folder => {
+            folder::delete_backup_folder(&settings.folder_path, remote_id)
+        }
         CloudBackupProvider::Webdav => {
             webdav::delete_file_webdav(
                 client,

@@ -781,7 +781,7 @@ document.addEventListener("click", (e) => {
         // previous language until the next resize or drawer toggle.
         refreshSidebarToggle();
         if (isTauri) {
-          void invoke("app_set_tray_labels", { show: i18nT("tray.show"), quit: i18nT("tray.quit") }).catch(() => {});
+          void invoke("app_set_tray_labels", { show: i18nT("tray.show"), overlay: i18nT("overlay.overlayLabel"), quit: i18nT("tray.quit") }).catch(() => {});
         }
         toast(i18nT("settings.langSet"), "ok");
         render();

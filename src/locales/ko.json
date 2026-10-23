@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "보통",
   "settings.achSizeLarge": "크게",
-  "settings.achSizeSmall": "작게"
+  "settings.achSizeSmall": "작게",
+  "cloud.providerFolder": "폴더 (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "폴더 백업",
+  "cloud.folderDesc": "클라우드 클라이언트가 이미 동기화하는 폴더를 선택하세요. 계정, OAuth, API 키가 필요 없습니다.",
+  "cloud.folderPath": "백업 폴더",
+  "cloud.folderBrowse": "폴더 선택",
+  "cloud.folderSaved": "백업 폴더를 저장했습니다.",
+  "settings.ssPlatformNote": "화면 캡처와 클립은 현재 Windows에서만 지원됩니다. 갤러리는 아래 폴더를 계속 읽으며 다른 도구로 찍은 캡처도 표시합니다.",
+  "controller.bridgeWindowsOnly": "컨트롤러 브리지는 Windows에서만 지원됩니다.",
+  "settings.overlayLauncherNote": "헤더 버튼이나 트레이 메뉴에서 오버레이를 여세요. 전역 단축키는 현재 Windows에서만 지원됩니다."
 }

@@ -114,17 +114,30 @@ pub(super) fn spawn_uri(target: &str) -> Result<(), String> {
                 .map_err(|e| format!("Steam could not be opened: {e}"));
         }
     }
-    let mut command = Command::new("cmd");
-    command.args(["/C", &format!("start \"\" \"{target}\"")]);
+    #[cfg(not(windows))]
+    {
+        let opener = if cfg!(target_os = "macos") {
+            "open"
+        } else {
+            "xdg-open"
+        };
+        return Command::new(opener)
+            .arg(target)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Steam could not be opened: {e}"));
+    }
     #[cfg(windows)]
     {
+        let mut command = Command::new("cmd");
+        command.args(["/C", &format!("start \"\" \"{target}\"")]);
         use std::os::windows::process::CommandExt;
         command.creation_flags(CREATE_NO_WINDOW);
+        command
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Steam could not be opened: {e}"))
     }
-    command
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| format!("Steam could not be opened: {e}"))
 }
 
 pub(super) fn steam_action_url(app_id: &str, action: &str) -> Option<String> {

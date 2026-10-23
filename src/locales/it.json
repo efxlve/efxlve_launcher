@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "Normale",
   "settings.achSizeLarge": "Grande",
-  "settings.achSizeSmall": "Piccolo"
+  "settings.achSizeSmall": "Piccolo",
+  "cloud.providerFolder": "Cartella (OneDrive / Dropbox / NAS)",
+  "cloud.folderTitle": "Backup su cartella",
+  "cloud.folderDesc": "Scegli una cartella che il tuo client cloud sincronizza già. Nessun account, OAuth o chiave API richiesti.",
+  "cloud.folderPath": "Cartella di backup",
+  "cloud.folderBrowse": "Scegli cartella",
+  "cloud.folderSaved": "Cartella di backup salvata.",
+  "settings.ssPlatformNote": "Schermate e clip per ora sono disponibili solo su Windows. La galleria continua a leggere le cartelle sotto, comprese le catture di altri strumenti.",
+  "controller.bridgeWindowsOnly": "Il bridge dei controller è disponibile solo su Windows.",
+  "settings.overlayLauncherNote": "Apri l'overlay dal pulsante della barra superiore o dal menu della tray. La scorciatoia globale per ora è solo su Windows."
 }

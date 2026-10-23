@@ -1,6 +1,7 @@
 //! WebDAV client for Nextcloud, ownCloud, Box, pCloud, and custom WebDAV servers.
 
 use crate::cloud_backup::models::CloudBackupEntry;
+use crate::legendary::backup::{backup_key, format_backup_timestamp};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use reqwest::{Client, Method, StatusCode};
@@ -167,7 +168,7 @@ pub async fn list_webdav_backups(
     app_name: &str,
 ) -> Result<Vec<CloudBackupEntry>, String> {
     let clean = clean_base_url(base_url);
-    let target = format!("{clean}efxlve_saves/{app_name}/");
+    let target = format!("{clean}efxlve_saves/{}/", backup_key(app_name));
     let propfind = Method::from_bytes(b"PROPFIND").map_err(|e| e.to_string())?;
 
     let res = client
@@ -223,16 +224,14 @@ fn parse_propfind_xml(xml: &str, app_name: &str, base_url: &str) -> Vec<CloudBac
                 let backup_id = file_name.trim_end_matches(".tar.gz").to_string();
 
                 let timestamp: u64 = backup_id.parse().unwrap_or(0);
-
-                let days = timestamp / 86400;
-                let rem = timestamp % 86400;
-                let hours = rem / 3600;
-                let minutes = (rem % 3600) / 60;
-                let approx_year = 1970 + days / 365;
-                let formatted_date = format!("{approx_year:04} ({hours:02}:{minutes:02} UTC)");
+                let formatted_date = format_backup_timestamp(timestamp);
 
                 let full_url = if href_val.starts_with("http") {
                     href_val
+                } else if let Ok(base) = url::Url::parse(base_url) {
+                    base.join(&href_val)
+                        .map(|url| url.to_string())
+                        .unwrap_or_else(|_| format!("{base_url}{href_val}"))
                 } else {
                     format!("{}{}", base_url.trim_end_matches('/'), href_val)
                 };
@@ -302,5 +301,29 @@ mod tests {
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].backup_id, "1710000000");
         assert_eq!(items[0].size_bytes, 54321);
+        assert_eq!(
+            items[0].remote_id,
+            "https://cloud.example.com/efxlve_saves/Cyberpunk2077/1710000000.tar.gz"
+        );
+    }
+
+    #[test]
+    fn nextcloud_absolute_hrefs_do_not_repeat_the_base_path() {
+        let xml = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/remote.php/dav/files/user/efxlve_saves/gog__123/1710000000.tar.gz</d:href>
+    <d:propstat><d:prop><d:getcontentlength>7</d:getcontentlength></d:prop></d:propstat>
+  </d:response>
+</d:multistatus>"#;
+        let items = parse_propfind_xml(
+            xml,
+            "gog::123",
+            "https://cloud.example.com/remote.php/dav/files/user/",
+        );
+        assert_eq!(
+            items[0].remote_id,
+            "https://cloud.example.com/remote.php/dav/files/user/efxlve_saves/gog__123/1710000000.tar.gz"
+        );
     }
 }

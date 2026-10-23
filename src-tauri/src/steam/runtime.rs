@@ -9,27 +9,43 @@ use std::time::{Duration, Instant};
 
 use crate::winreg;
 
-/// Steam install directory from the registry (`SteamPath` / `InstallPath`).
+/// Steam install directory: registry on Windows, the well-known client folders
+/// on Linux/macOS.
 pub fn steam_install_path() -> Option<PathBuf> {
-    let hkcu = winreg::query(r"HKCU\Software\Valve\Steam", Some("SteamPath"));
-    let hklm = winreg::query(
-        r"HKLM\SOFTWARE\WOW6432Node\Valve\Steam",
-        Some("InstallPath"),
-    );
-    let raw = hkcu
-        .as_deref()
-        .map(winreg::parse_reg_sz)
-        .filter(|p| !p.is_empty())
-        .or_else(|| {
-            hklm.as_deref()
-                .map(winreg::parse_reg_sz)
-                .filter(|p| !p.is_empty())
-        })?;
-    let path = PathBuf::from(raw);
-    if path.is_dir() {
-        Some(path)
-    } else {
-        None
+    #[cfg(windows)]
+    {
+        let hkcu = winreg::query(r"HKCU\Software\Valve\Steam", Some("SteamPath"));
+        let hklm = winreg::query(
+            r"HKLM\SOFTWARE\WOW6432Node\Valve\Steam",
+            Some("InstallPath"),
+        );
+        let raw = hkcu
+            .as_deref()
+            .map(winreg::parse_reg_sz)
+            .filter(|p| !p.is_empty())
+            .or_else(|| {
+                hklm.as_deref()
+                    .map(winreg::parse_reg_sz)
+                    .filter(|p| !p.is_empty())
+            })?;
+        let path = PathBuf::from(raw);
+        if path.is_dir() {
+            Some(path)
+        } else {
+            None
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let home = std::env::var("HOME").ok().map(PathBuf::from)?;
+        let candidates = [
+            home.join(".steam").join("steam"),
+            home.join(".local").join("share").join("Steam"),
+            home.join("Library")
+                .join("Application Support")
+                .join("Steam"),
+        ];
+        candidates.into_iter().find(|path| path.is_dir())
     }
 }
 
@@ -118,15 +134,29 @@ pub(super) fn pid_is_alive(pid: u32) -> bool {
 
 #[cfg(not(windows))]
 pub(super) fn pid_is_alive(pid: u32) -> bool {
-    Path::new(&format!("/proc/{pid}")).is_dir()
+    std::process::Command::new("kill")
+        .arg("-0")
+        .arg(pid.to_string())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
 }
 
 /// Normalized path key for case-insensitive Windows comparisons.
+#[cfg(windows)]
 pub(super) fn path_key(path: &Path) -> String {
     path.to_string_lossy()
         .replace('/', "\\")
         .trim_end_matches('\\')
         .to_lowercase()
+}
+
+/// Linux/macOS filesystems are case-sensitive; only normalize separators.
+#[cfg(not(windows))]
+pub(super) fn path_key(path: &Path) -> String {
+    path.to_string_lossy()
+        .trim_end_matches('/')
+        .replace('\\', "/")
 }
 
 #[cfg(test)]

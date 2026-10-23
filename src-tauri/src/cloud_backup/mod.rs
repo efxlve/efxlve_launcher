@@ -2,6 +2,7 @@
 
 pub mod archive;
 pub mod commands;
+pub mod folder;
 pub mod gdrive;
 pub mod manager;
 pub mod models;

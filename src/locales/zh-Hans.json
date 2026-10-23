@@ -2964,5 +2964,14 @@
   "settings.achSizeDesc": "Choose how large the achievement card appears on screen",
   "settings.achSizeNormal": "标准",
   "settings.achSizeLarge": "大",
-  "settings.achSizeSmall": "小"
+  "settings.achSizeSmall": "小",
+  "cloud.providerFolder": "文件夹（OneDrive / Dropbox / NAS）",
+  "cloud.folderTitle": "文件夹备份",
+  "cloud.folderDesc": "选择你的云客户端已经在同步的文件夹。无需账户、OAuth 或 API 密钥。",
+  "cloud.folderPath": "备份文件夹",
+  "cloud.folderBrowse": "选择文件夹",
+  "cloud.folderSaved": "备份文件夹已保存。",
+  "settings.ssPlatformNote": "截屏和剪辑目前仅支持 Windows。图库仍会读取下方文件夹，包括其他工具截取的图片。",
+  "controller.bridgeWindowsOnly": "手柄桥接目前仅支持 Windows。",
+  "settings.overlayLauncherNote": "从标题栏按钮或托盘菜单打开叠加层。全局快捷键目前仅支持 Windows。"
 }
