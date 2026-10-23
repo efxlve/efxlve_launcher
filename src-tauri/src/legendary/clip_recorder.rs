@@ -514,7 +514,7 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     // Sound: the loopback stream is opened with the video, and its samples are
     // drained once per frame so the two stay roughly in step. A machine with no
     // output device records video only — that is not fatal.
-    let audio = match crate::legendary::clip_audio::AudioCapture::start() {
+    let mut audio = match crate::legendary::clip_audio::AudioCapture::start() {
         Ok(capture) => {
             let info = capture.info();
             log(
@@ -563,7 +563,7 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
                 // Sound collected since the previous frame goes in right after
                 // it, so the two streams stay interleaved in the file.
                 let samples = audio
-                    .as_ref()
+                    .as_mut()
                     .map(|capture| capture.drain())
                     .unwrap_or_default();
                 audio_samples += samples.len() as u64;
@@ -612,7 +612,7 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
         }
     }
 
-    if let Some(capture) = audio.as_ref() {
+    if let Some(capture) = audio.as_mut() {
         // Whatever the loopback still held when the hotkey arrived.
         let tail = capture.drain();
         audio_samples += tail.len() as u64;

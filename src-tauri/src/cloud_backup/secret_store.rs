@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use crate::legendary::skip::default_config_dir;
 
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(unix)]
 const SERVICE: &str = "efxlve-launcher";
 
 fn vault_path() -> PathBuf {

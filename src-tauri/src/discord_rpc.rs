@@ -1050,6 +1050,33 @@ struct Pipe {
     pending: Vec<u8>,
 }
 
+/// Non-Windows builds have no Discord IPC pipe. Keeping the same surface lets
+/// the settings UI and the shared call sites compile; every operation reports
+/// the feature as unavailable instead of pretending a connection exists.
+#[cfg(not(windows))]
+impl Pipe {
+    fn connect() -> Result<Pipe, String> {
+        Err("Discord IPC is only available on Windows.".to_string())
+    }
+
+    fn send(&mut self, _payload: &Value) -> Result<(), String> {
+        Err("Discord IPC is only available on Windows.".to_string())
+    }
+
+    fn read_now(&mut self) -> Result<Vec<Value>, String> {
+        Err("Discord IPC is only available on Windows.".to_string())
+    }
+
+    fn wait_for(
+        &mut self,
+        _wanted: &dyn Fn(&Value) -> bool,
+        _timeout: Duration,
+        _abort_on_stop: bool,
+    ) -> Result<Value, String> {
+        Err("Discord IPC is only available on Windows.".to_string())
+    }
+}
+
 /// First free `discord-ipc-*` pipe, handshaken.
 #[cfg(windows)]
 impl Pipe {
