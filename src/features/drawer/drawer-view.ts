@@ -590,7 +590,9 @@ function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): s
       <button class="btn ghost lg icon-only${open ? " active" : ""}" data-act="game-more-menu" data-id="${esc(s.appName)}" title="${esc(t("drawer.moreActions"))}" aria-haspopup="menu" aria-expanded="${open ? "true" : "false"}">${icon("dots", 16)}</button>
       <div id="game-more-menu" class="gp-more-menu${open ? " show" : ""}" role="menu">
         <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("plus", 14)} <span>${t("drawer.collection")}</span></button>
+        <div class="gp-more-sep"></div>
         ${statusMenuHtml(s.appName)}
+        <div class="gp-more-sep"></div>
         <button type="button" class="ps5-context-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 14)} <span>${storeTitle}</span></button>
         ${clientItem}
         <div class="gp-more-sep"></div>

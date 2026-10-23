@@ -1855,12 +1855,17 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-more-wrap { position: relative; display: inline-flex; }
 .gp-more-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
-  min-width: 240px; padding: 4px; display: none;
+  min-width: 300px; padding: 6px; display: none;
   background: var(--surface-1); border: 1px solid var(--line-strong);
   border-radius: var(--r-md); box-shadow: var(--shadow-pop);
 }
 .gp-more-menu.show { display: block; }
-.gp-more-menu .panel-context-item span { white-space: nowrap; }
+.gp-more-menu .ps5-context-item { min-height: 36px; border-radius: 8px; }
+.gp-more-menu .ps5-context-item span { white-space: nowrap; }
+.gp-more-menu .ctx-status-title { padding: 8px 10px 4px; }
+.gp-more-menu .ctx-status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 8px 8px; }
+.gp-more-menu .ctx-status-chip { width: 100%; height: 30px; border-radius: 8px; font-size: 11.5px; }
+.gp-more-menu .gp-more-sep { margin: 6px 4px; }
 .gp-more-sep { height: 1px; margin: 4px 6px; background: var(--line); }
 
 /* One store: the picker is not a choice, so it stops looking like a button. */
@@ -1921,6 +1926,12 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The one part of the page that changes without the player doing anything: what
    the game's own feed says today. */
+.gp-news {
+  background: linear-gradient(155deg, var(--surface-2), var(--surface-1) 58%);
+  border-color: var(--line-strong);
+}
+.gp-news .gp-news-row { background: var(--surface-1); }
+.gp-news .gp-news-row:hover { background: var(--surface-3); }
 .gp-news-list { display: flex; flex-direction: column; gap: 8px; }
 .gp-news-row {
   display: flex; align-items: stretch; gap: 12px; width: 100%; padding: 10px; text-align: left;

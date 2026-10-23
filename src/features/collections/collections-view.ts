@@ -9,7 +9,7 @@
 import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
-import { cachedImage } from "../../core/picture-cache";
+import { cachedImage, warmImages } from "../../core/picture-cache";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { allStoreSummaries, summaryOf } from "../../core/selectors";
@@ -423,14 +423,21 @@ export function openCollectionGallery(): void {
     .map((item) => ({ item, count: summaries.filter((s) => item.test(s)).length }))
     .filter((entry) => entry.count > 0);
   const total = S.epicCollections.length;
+  const warmUrls: string[] = [];
 
   const coverStrip = (appNames: string[]): string => {
-    const covers = appNames
+    const found = appNames
       .map((name) => summaryOf(name)?.cover)
       .filter((cover): cover is string => Boolean(cover))
       .slice(0, 4);
+    // A collection can have fewer than four games with art. Cycling the found
+    // covers keeps every cell filled instead of leaving a grey hole.
+    const covers = found.length > 0 && found.length < 4
+      ? Array.from({ length: 4 }, (_, i) => found[i % found.length])
+      : found;
     if (covers.length === 0) return `<span class="col-gallery-art empty">${icon("layers", 28)}</span>`;
-    return `<span class="col-gallery-art">${covers.map((cover) => `<img src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="lazy" />`).join("")}</span>`;
+    warmUrls.push(...covers);
+    return `<span class="col-gallery-art covers-${covers.length}">${covers.map((cover) => `<img src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="eager" decoding="async" />`).join("")}</span>`;
   };
 
   const smartCards = smart.map(({ item, count }) => `
@@ -472,6 +479,13 @@ export function openCollectionGallery(): void {
         </div>
       </section>
     </div>`;
+
+  // The gallery opens with twelve visible covers; ask the Rust disk cache for
+  // them once so the next open paints from local data instead of the CDN.
+  warmImages(warmUrls);
+  collectionRoot.querySelectorAll<HTMLImageElement>(".col-gallery-art img").forEach((img) => {
+    img.addEventListener("error", () => { img.style.display = "none"; }, { once: true });
+  });
 }
 
 export function closeCollectionGallery(): void {
