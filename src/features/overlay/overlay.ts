@@ -1938,7 +1938,7 @@ function renderPerf(): void {
   el.innerHTML = `
     <div class="ov-perf">
       ${fpsNoticeHtml(m)}
-      <!-- Top FPS Row -->
+      ${IS_WINDOWS ? `<!-- Top FPS Row -->
       <button class="ov-perf-card ov-perf-fps-row ${activePerfMetric === "fps" ? "active" : ""}" data-perf-metric="fps" type="button">
         <div class="ov-perf-fps-left">
           <span class="ov-perf-icon">${icon("zap", 14)}</span>
@@ -1948,9 +1948,9 @@ function renderPerf(): void {
         <div class="ov-perf-fps-right">
           <span class="ov-perf-sub" id="ov-perf-frame-ms">${t.subFps}</span>
         </div>
-      </button>
+      </button>` : ""}
 
-      <!-- 4 Hardware Telemetry Cards (2x2 Grid) -->
+      <!-- Hardware Telemetry Cards (2x2 Grid on Windows, CPU/RAM elsewhere) -->
       <div class="ov-perf-grid">
         <!-- CPU Card -->
         <button class="ov-perf-card ${activePerfMetric === "cpu" ? "active" : ""}" data-perf-metric="cpu" type="button">
@@ -1965,7 +1965,7 @@ function renderPerf(): void {
           <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.cpuStatus}" id="ov-chip-bar-cpu" style="width:${t.cpuVal}%"></div></div>
         </button>
 
-        <!-- GPU Card -->
+        ${IS_WINDOWS ? `<!-- GPU Card -->
         <button class="ov-perf-card ${activePerfMetric === "gpu" ? "active" : ""}" data-perf-metric="gpu" type="button">
           <div class="ov-perf-card-head">
             <div class="ov-perf-card-title-group">
@@ -1976,7 +1976,7 @@ function renderPerf(): void {
           </div>
           <div class="ov-perf-card-num" id="ov-chip-val-gpu">${t.gpuVal}%</div>
           <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.gpuStatus}" id="ov-chip-bar-gpu" style="width:${t.gpuVal}%"></div></div>
-        </button>
+        </button>` : ""}
 
         <!-- RAM Card -->
         <button class="ov-perf-card ${activePerfMetric === "ram" ? "active" : ""}" data-perf-metric="ram" type="button" title="${t.ramSubTitle}">
@@ -1991,7 +1991,7 @@ function renderPerf(): void {
           <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.ramStatus}" id="ov-chip-bar-ram" style="width:${t.ramPct}%"></div></div>
         </button>
 
-        <!-- VRAM Card -->
+        ${IS_WINDOWS ? `<!-- VRAM Card -->
         <button class="ov-perf-card ${activePerfMetric === "vram" ? "active" : ""}" data-perf-metric="vram" type="button" title="${t.vramSubTitle}">
           <div class="ov-perf-card-head">
             <div class="ov-perf-card-title-group">
@@ -2002,7 +2002,7 @@ function renderPerf(): void {
           </div>
           <div class="ov-perf-card-num" id="ov-chip-val-vram">${t.vramPct}%</div>
           <div class="ov-perf-bar"><div class="ov-perf-bar-fill ${t.vramStatus}" id="ov-chip-bar-vram" style="width:${t.vramPct}%"></div></div>
-        </button>
+        </button>` : ""}
       </div>
 
       <!-- Telemetry Scope (Chart) -->

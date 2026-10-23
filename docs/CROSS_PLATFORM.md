@@ -272,7 +272,9 @@ kopyasından önce gelir. Sayfa ayrıca araç klasörünün gerçek boyutunu gö
 yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 
 ### 8.5 Kalan işler
-- Flatpak/AppImage/.deb/.rpm paketleme ve macOS `.app`/notarization.
+- Flatpak paketleme ve macOS imzalama/notarization. `.deb`/`.rpm`/AppImage ve
+  `.app`/`.dmg` manuel **Package** workflow'unda üretiliyor; imzasız çıktı
+  doğrudan dağıtım için hazır değil.
 - GPTK/D3DMetal lisansı: binary paketlenmez, kullanıcı kendi kurulumunu yönetir.
 - Linux/macOS'ta gerçek donanım doğrulaması: oyun başlatma, Proton prefix'i,
   Steam kütüphanesi ve mağaza webview'leri.
@@ -309,8 +311,9 @@ Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anl
 - **Overlay:** Panel Tauri webview olarak açılır; launcher açıldığından itibaren
   üst çubuktaki düğme ve tepsi menüsüyle kullanılabilir. Shift+Tab global
   kısayolu, HUD/FPS katmanı, ekran görüntüsü ve klip sekmeleri Windows'a özgüdür.
-  Linux/macOS'ta bu sekmeler gizlenir; panel, performans, notlar, başarımlar,
-  tarayıcı sayfaları açılır. Spotify sekmesi (`librespot` Connect alıcısı) ve
+  Linux/macOS'ta bu sekmeler gizlenir; panel, performans (yalnızca CPU/RAM;
+  FPS/GPU/VRAM kartları Windows'a özgü), notlar, başarımlar, tarayıcı sayfaları
+  açılır. Spotify sekmesi (`librespot` Connect alıcısı) ve
   Discord sosyal sekmesi (Social SDK / RPC) Windows'a özgü olduğu için Unix'te
   gizlenir; Spotify web oynatıcısı ve Discord web istemcisi launcher
   sayfalarında çalışmaya devam eder. Müzik kartı ve sekme kısayolları da
