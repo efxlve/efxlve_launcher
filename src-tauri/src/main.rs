@@ -789,14 +789,18 @@ fn reset_crash_streak(app: &tauri::AppHandle) {
     }
 }
 
-fn recover_broken_webview(app: &tauri::App, recovery: bool) {
+fn recover_broken_webview(app: &tauri::App, recovery: bool, early_crash: bool) {
     let mut streak = read_crash_streak(app);
     if recovery {
         streak = streak.saturating_add(1);
     } else {
         streak = 0;
     }
-    if streak >= 2 {
+    // A crash in the first seconds is the WebView2 profile/GPU failure this
+    // recovery exists for; reset on the very next launch instead of making the
+    // user relaunch three times. A force-kill after a long session only counts
+    // toward the slower two-strike path.
+    if early_crash || streak >= 2 {
         let moved = quarantine_webview_profile(app)
             .map(|path| path.display().to_string())
             .unwrap_or_else(|| "no profile folder".into());
@@ -1150,12 +1154,24 @@ fn main() {    // Rockstar's launcher only continues when a process named
                 .as_ref()
                 .map(|path| path.is_file())
                 .unwrap_or(false);
-            recover_broken_webview(app, recovery);
+            let previous_started = marker_path
+                .as_ref()
+                .and_then(|path| std::fs::read_to_string(path).ok())
+                .and_then(|text| text.trim().parse::<u64>().ok());
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|elapsed| elapsed.as_secs())
+                .unwrap_or(0);
+            let early_crash = recovery
+                && previous_started
+                    .map(|started| now.saturating_sub(started) < 20)
+                    .unwrap_or(true);
+            recover_broken_webview(app, recovery, early_crash);
             if let Some(path) = marker_path.as_ref() {
                 if let Some(parent) = path.parent() {
                     let _ = std::fs::create_dir_all(parent);
                 }
-                let _ = std::fs::write(path, b"running");
+                let _ = std::fs::write(path, now.to_string());
             }
             app.manage(RunMarker {
                 path: marker_path,
