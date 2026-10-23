@@ -1,9 +1,37 @@
-# CLOUD_SAVES.md — Save Backup Architecture and Roadmap
+# Cloud Saves — start here
 
-Current behavior of the local and cloud save backup system, plus the open work.
-The user-facing Google Drive walkthrough is in
-[GOOGLE_DRIVE_SETUP_GUIDE.md](./GOOGLE_DRIVE_SETUP_GUIDE.md); this document owns
-the architecture and the roadmap.
+This page is the **short version**. You do not need to understand the architecture to use cloud saves. Pick the guide that matches the storage you already have:
+
+| I already use… | Read this | Difficulty |
+|---|---|---|
+| OneDrive, Dropbox, Google Drive desktop, iCloud, Nextcloud, Syncthing or a NAS | [Folder guide](CLOUD_FOLDER_GUIDE.md) | Easiest — no account inside the launcher |
+| Google Drive directly | [Google Drive guide](GOOGLE_DRIVE_SETUP_GUIDE.md) | Medium — one free OAuth client |
+| Nextcloud, ownCloud, Box, Hetzner Storage Box or any WebDAV server | [WebDAV guide](CLOUD_WEBDAV_GUIDE.md) | Easy if you have the address |
+| S3, Backblaze B2, OneDrive, Dropbox, Mega, pCloud or another rclone service | [rclone guide](CLOUD_RCLONE_GUIDE.md) | Medium — install rclone once |
+
+## The one-minute version
+
+1. **Settings → Cloud** → turn on **Enable Cloud Save Backup**.
+2. Choose the provider that matches your guide.
+3. Fill the two or three fields the guide names.
+4. Press **Test Connection**, then **Save**.
+5. Open a game → **Manage** → **Backup to Cloud**.
+
+Restoring is the same page: **Manage** → **Sync Cloud** → **Restore**.
+
+## What gets backed up?
+
+- The game's save folder, packed into one `.tar.gz` archive.
+- A small metadata file with the timestamp, size, file count and a SHA-256 of the save tree.
+- The launcher's own profile (custom games, collections, playtime, achievements, notes, themes) when you use **Launcher data** on the same page.
+
+It does **not** back up the game itself, screenshots, videos or your account passwords. Those stay where they are.
+
+Before a restore overwrites anything, the launcher snapshots the current saves as `pre-restore-…`, so a wrong restore can be undone.
+
+## Technical notes
+
+The sections below describe the implementation and the roadmap for contributors. They are not required reading for setup.
 
 ---
 

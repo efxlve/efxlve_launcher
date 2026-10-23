@@ -18,7 +18,7 @@
 
 Efxlve Launcher eliminates the need to keep multiple heavy launchers running in the background. It opens instantly from local disk cache, so your library is immediately accessible even offline. Installs, updates, and launches for managed stores are powered by native Rust wrappers around the `legendary`, `gogdl` and Nile CLIs, while client-owned stores keep using their own apps.
 
-> **Platform note:** Windows 10/11 (x64 and ARM64) is the released target. Linux (x86_64/ARM64) and macOS (Intel/Apple Silicon) build from the same tree and are in preview: store CLIs download the right binary (an existing system `legendary` is used first), Wine/Proton/umu and the macOS toolchain are managed in Settings → Compatibility, and the overlay panel, library, stores, downloads and cloud saves use the Tauri webview on every platform. Native Windows surfaces — screen capture, clips, the FPS/HUD layer, the controller bridge and taskbar badges — are disabled on Linux/macOS instead of failing silently. Epic installs do not need Epic's own client: the launcher manages them through `legendary`, the same way Heroic does, so Epic's Linux preview client is optional. The Linux/macOS installers are not attached to a tagged release yet; the manual **Package** workflow builds them as artifacts.
+> **Platform note:** Windows 10/11 (x64) is the primary target. Linux (x86_64) and macOS (Apple Silicon) preview builds are attached to every release; Linux ships as AppImage, deb and rpm, macOS as an unsigned dmg. Store CLIs download the right binary (an existing system `legendary` is used first), Wine/Proton/umu and the macOS toolchain are managed in Settings → Compatibility, and the overlay panel, library, stores, downloads and cloud saves use the Tauri webview on every platform. Native Windows surfaces — screen capture, clips, the FPS/HUD layer, the controller bridge and taskbar badges — are disabled on Linux/macOS instead of failing silently. Epic installs do not need Epic's own client: the launcher manages them through `legendary`, the same way Heroic does, so Epic's Linux preview client is optional.
 
 ---
 
@@ -30,7 +30,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 - **Dedicated 10-ft TV Mode:** Full controller navigation (`A: Select`, `B: Back`, `LB/RB: categories`) with a compact command bar, cinematic stage, labelled shelf and card titles, designed for TV and couch gaming.
 - **Multi-Account Vault:** Connect multiple Epic, GOG, Steam and Amazon accounts. Fast 1-click account switching without re-entering credentials.
 - **Downloads & Transfers:** Real-time bandwidth and disk write metrics, speed limiter, concurrent download control, and pause/resume capability.
-- **Cloud & Local Save Backups:** One-click local and cloud backups. The **Folder** provider works with OneDrive, Dropbox, a NAS or any folder your sync client already handles — no OAuth and no API keys. Google Drive, WebDAV, **rclone** (S3, Backblaze B2, Dropbox, OneDrive, Mega and 70+ more) and auto-sync on game exit are available too; every restore snapshots the current saves first so a wrong restore can be undone. **Launcher data** (custom games, collections, playtime, achievements, notes, themes and settings) can be exported to a `.efxprofile` file or synced through the same provider. Per-provider setup guides are in [docs/CLOUD_SAVES.md](docs/CLOUD_SAVES.md#provider-setup).
+- **Cloud & Local Save Backups:** One-click local and cloud backups. The **Folder** provider works with OneDrive, Dropbox, a NAS or any folder your sync client already handles — no OAuth and no API keys. Google Drive, WebDAV, **rclone** (S3, Backblaze B2, Dropbox, OneDrive, Mega and 70+ more) and auto-sync on game exit are available too; every restore snapshots the current saves first so a wrong restore can be undone. **Launcher data** (custom games, collections, playtime, achievements, notes, themes and settings) can be exported to a `.efxprofile` file or synced through the same provider. New to this? Start with the [Folder guide](docs/CLOUD_FOLDER_GUIDE.md), or pick [Google Drive](docs/GOOGLE_DRIVE_SETUP_GUIDE.md), [WebDAV](docs/CLOUD_WEBDAV_GUIDE.md) or [rclone](docs/CLOUD_RCLONE_GUIDE.md).
 - **In-Game Screenshot Hook:** Dedicated F12 screenshot capture with asynchronous WebP/AVIF compression, an editor, and a clip recorder. Windows only; the gallery still reads existing screenshots on Linux/macOS.
 - **In-Game Overlay:** Open the controller-friendly panel from the launcher header or the tray from the moment the app starts, or with Shift+Tab (Windows) over a game. It brings performance telemetry, captures, notes, achievements, Spotify/SMTC music, Discord status and a browser. Floating widgets stay clear of the command bar, remember their place, and idle when the panel is hidden.
 - **SteamGridDB Integration:** Automatic high-resolution covers and support for custom user artwork.
@@ -43,12 +43,41 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.36**.
+The current release is **v0.1.36**:
+[github.com/efxlve/efxlve_launcher/releases/tag/v0.1.36](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.36)
 
-1. Download the latest installer (`.exe`) from [Releases](https://github.com/efxlve/efxlve_launcher/releases/latest).
-2. Requirements: Windows 10 or 11 (64-bit). Microsoft Edge WebView2 (pre-installed on Windows 11).
+### Which file should I download?
 
-Linux and macOS are **build-from-source previews** for now; no installer is attached to the release yet. The app deliberately hides Windows-only capture controls rather than shipping buttons that cannot work.
+| Your system | Download this | Notes |
+|---|---|---|
+| **Windows 10/11 (64-bit)** | `Efxlve.Launcher_0.1.36_x64-setup.exe` | Recommended. Normal installer with Start-menu and uninstall entries. |
+| Windows, no installer wanted | `efxlve-launcher-portable.zip` | Extract anywhere and run `efxlve-launcher.exe`. Launcher data stays in `portable-data` beside it. |
+| Windows, managed deployment | `Efxlve.Launcher_0.1.36_x64_en-US.msi` | For shops, labs or scripted installs. |
+| **Linux (x86_64)** | `Efxlve.Launcher_0.1.36_amd64.AppImage` | Portable single file: `chmod +x` and run. |
+| Linux, Debian/Ubuntu | `Efxlve.Launcher_0.1.36_amd64.deb` | Install with your software centre or `sudo apt install ./file.deb`. |
+| Linux, Fedora/RHEL | `Efxlve.Launcher-0.1.36-1.x86_64.rpm` | Install with your software centre or `sudo rpm -i file.rpm`. |
+| **macOS (Apple Silicon)** | `Efxlve.Launcher_0.1.36_aarch64.dmg` | Open the DMG and drag the app to Applications. Unsigned preview: right-click → Open the first time. |
+
+The `.sig` files and `latest.json` are **updater metadata**, not installers. The app downloads them itself; you never need to open them.
+
+Requirements: Windows needs Microsoft Edge WebView2 (pre-installed on Windows 11). Linux needs a desktop with GTK3/WebKitGTK 4.1; the AppImage bundles what it can. The macOS build is an **Apple Silicon preview** and is not notarized yet.
+
+### Portable mode
+
+The Windows portable zip contains `portable.txt`. When that file sits next to `efxlve-launcher.exe`, the launcher keeps its roaming/local data and legendary config in `portable-data` beside the executable, so the whole folder can move on a USB stick. Game installs, saves and the Steam library stay where they already are.
+
+---
+
+## Cloud saves in one minute
+
+You do **not** need to read the architecture document to turn cloud saves on. Pick the guide that matches where you already keep files:
+
+- [Folder guide](docs/CLOUD_FOLDER_GUIDE.md) — easiest; OneDrive, Dropbox, Google Drive desktop, Nextcloud or a NAS folder. No account setup inside the launcher.
+- [Google Drive guide](docs/GOOGLE_DRIVE_SETUP_GUIDE.md) — connect Drive directly with your own free OAuth client.
+- [WebDAV guide](docs/CLOUD_WEBDAV_GUIDE.md) — Nextcloud, ownCloud, Hetzner Storage Box or any WebDAV server.
+- [rclone guide](docs/CLOUD_RCLONE_GUIDE.md) — 70+ services including S3, Backblaze B2, OneDrive, Mega and pCloud.
+
+The short version: **Settings → Cloud → Enable**, choose a provider, fill the two or three fields the guide names, press **Test Connection**, then **Save**. Open a game → **Manage** → **Backup to Cloud**. The same page can export or cloud-sync the launcher profile (custom games, achievements, notes, themes).
 
 ---
 

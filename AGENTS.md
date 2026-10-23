@@ -161,7 +161,10 @@ Rules for these files:
 | `docs/DESIGN_SYSTEM.md` | Design tokens and layout contracts |
 | `docs/IPC_INDEX.md` | Generated Tauri command index |
 | `docs/OVERLAY_ROADMAP.md` | Overlay architecture and open work |
-| `docs/CLOUD_SAVES.md` | Save backup architecture, user setup and open work |
+| `docs/CLOUD_SAVES.md` | Cloud saves overview, architecture and open work |
+| `docs/CLOUD_FOLDER_GUIDE.md` | Beginner guide for the folder provider |
+| `docs/CLOUD_WEBDAV_GUIDE.md` | Beginner guide for WebDAV |
+| `docs/CLOUD_RCLONE_GUIDE.md` | Beginner guide for rclone |
 | `docs/CROSS_PLATFORM.md` | Linux/macOS compatibility layer |
 | `docs/GOOGLE_DRIVE_SETUP_GUIDE.md` | Google Drive backup setup |
 
@@ -178,6 +181,19 @@ gh release edit v0.1.34 --notes-file "$env:TEMP\notes.md"
 `scripts/release-notes.mjs <version> <out.md>` reads that version's entry from
 `src/features/changelog/changelog-view.ts` and writes the release body, so the
 release page and the in-app changelog never drift.
+
+### Release assets
+
+- Start every release body with a **“Which file should I download?”** table: one
+  row per operating system, one recommended file per row.
+- `.sig` files and `latest.json` are updater metadata. Say so; do not present them
+  as installers a normal user should open.
+- Publish a Windows portable zip next to the installer when the build supports it.
+  Linux AppImage and macOS dmg are already the portable choices.
+- Do not dump every bundle as an equal choice. A normal user should be able to
+  pick one file without reading a matrix.
+- A new cloud provider ships with a beginner guide under `docs/` and a link from
+  `docs/CLOUD_SAVES.md`; the app's Setup Guide button opens that guide directly.
 
 Run `node scripts/bump-version.mjs <version>` to keep `package.json`,
 `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and the README version line

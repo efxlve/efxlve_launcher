@@ -1,43 +1,42 @@
-# Google Drive Cloud Save Backup Setup Guide
+# Google Drive Cloud Saves — beginner guide
 
-Efxlve Launcher allows you to back up your game save files automatically or with a single click to a folder you already sync (OneDrive, Dropbox, a NAS), **WebDAV**, or your personal **Google Drive** storage, and restore them anytime on another machine.
+This guide connects **Google Drive directly** to Efxlve. You will create a free Google Cloud project, copy two values into the launcher, and click Connect once. Budget about five minutes.
 
-The easiest setup needs no account or API key: choose **Folder** in Settings → Cloud and point it at a folder your cloud client already syncs. The Google Drive walkthrough below is optional and only needed if you want the launcher to talk to Drive directly.
+**Not sure this is the right option?**
 
-This guide provides a step-by-step walkthrough for **Community** members to obtain their own free Google Drive API credentials and configure the integration in under two minutes.
+| Your situation | Better guide |
+|---|---|
+| Google Drive for desktop already syncs a folder on your PC | [Folder guide](CLOUD_FOLDER_GUIDE.md) — no OAuth at all |
+| You use OneDrive, Dropbox, Nextcloud, Syncthing or a NAS | [Folder guide](CLOUD_FOLDER_GUIDE.md) |
+| You have a Nextcloud/WebDAV address | [WebDAV guide](CLOUD_WEBDAV_GUIDE.md) |
+| You want S3, Backblaze B2, Mega or another service | [rclone guide](CLOUD_RCLONE_GUIDE.md) |
 
----
-
-## 🚀 Quick Start: Folder Provider (No Setup)
-
-If OneDrive, Dropbox, Syncthing or a NAS client already syncs a folder on your PC:
-
-1. Open **Settings → Cloud** and turn on **Enable Cloud Save Backup**.
-2. Select **Folder (OneDrive / Dropbox / NAS)**.
-3. Click **Choose folder** and pick the folder your client syncs.
-4. Click **Test connection**, then **Save**.
-5. Open a game's **Manage** drawer and click **Backup to Cloud**.
-
-The launcher writes `efxlve_saves/<game>/<timestamp>.tar.gz` inside that folder. Your existing sync client uploads it. No Google Cloud project, OAuth client or API key is involved.
+Choose **Google Drive** when you want the launcher to talk to Drive directly, without the desktop sync app running.
 
 ---
 
-## rclone Provider (S3, Dropbox, OneDrive, Mega, ...)
+## Before you start
 
-If your storage is not covered by Folder, WebDAV or Google Drive, use **rclone**:
-it already supports 70+ services and keeps its own credentials.
+You need:
 
-1. Install rclone from <https://rclone.org/downloads/> (`winget install Rclone.Rclone`,
-   `brew install rclone`, or your distro package).
-2. Run `rclone config` once and create a remote. Test it with `rclone lsd <remote>:`.
-3. In **Settings → Cloud** select **rclone** and enter the destination, for example
-   `gdrive:efxlve_saves`, `onedrive:Saves/Efxlve` or `s3:my-bucket/efxlve_saves`.
-4. Click **Test connection** (the folder is created if needed), then **Save**.
+- A Google account.
+- A browser where you are signed in to that account.
+- Efxlve Launcher open at **Settings → Cloud**.
 
-The launcher stores only that `remote:folder` path; the rclone config and its
-credentials stay on your machine. See the
-[provider setup section](./CLOUD_SAVES.md#provider-setup) for Folder, WebDAV and
-rclone details.
+You do **not** need a paid Google account, a domain, or a credit card. The free Google Cloud project is enough for personal use.
+
+> **Privacy in one line:** the launcher asks only for the hidden `drive.appdata` folder. It cannot see your normal Drive documents, photos or files.
+
+---
+
+## Other providers
+
+The steps below are only for Google Drive. The other guides are separate, so you can stop reading this one if you picked a different provider:
+
+- [Folder guide](CLOUD_FOLDER_GUIDE.md)
+- [WebDAV guide](CLOUD_WEBDAV_GUIDE.md)
+- [rclone guide](CLOUD_RCLONE_GUIDE.md)
+
 
 ---
 

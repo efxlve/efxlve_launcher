@@ -10,7 +10,10 @@ import { t } from "../../i18n";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "./cloud-backup-actions";
 import { loadProfileArchivesAction } from "./profile-sync-actions";
 
-const CLOUD_GUIDE_URL = "https://github.com/efxlve/efxlve_launcher/blob/main/docs/CLOUD_SAVES.md";
+const CLOUD_DOCS = "https://github.com/efxlve/efxlve_launcher/blob/main/docs";
+const FOLDER_GUIDE_URL = `${CLOUD_DOCS}/CLOUD_FOLDER_GUIDE.md`;
+const WEBDAV_GUIDE_URL = `${CLOUD_DOCS}/CLOUD_WEBDAV_GUIDE.md`;
+const RCLONE_GUIDE_URL = `${CLOUD_DOCS}/CLOUD_RCLONE_GUIDE.md`;
 
 /** Renders the Cloud Save Backup configuration card in Settings > Integrations. */
 export function renderCloudBackupSettingsGroup(): string {
@@ -63,7 +66,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="row-main">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <div class="settings-row-title">${t("cloud.folderTitle")}</div>
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${CLOUD_GUIDE_URL}#folder-provider" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${FOLDER_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
           </div>
           <div class="settings-row-desc">${t("cloud.folderDesc")}</div>
         </div>
@@ -131,7 +134,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="row-main">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <div class="settings-row-title">${t("cloud.webdavConfigTitle")}</div>
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${CLOUD_GUIDE_URL}#webdav" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${WEBDAV_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
           </div>
           <div class="settings-row-desc">${t("cloud.webdavConfigDesc")}</div>
         </div>
@@ -161,7 +164,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="row-main">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <div class="settings-row-title">${t("cloud.rcloneTitle")}</div>
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${CLOUD_GUIDE_URL}#rclone" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${RCLONE_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
           </div>
           <div class="settings-row-desc">${t("cloud.rcloneDesc")}</div>
         </div>
