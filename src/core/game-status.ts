@@ -45,12 +45,8 @@ export async function applyUiScale(scale: number): Promise<void> {
   if (isTauri) {
     try {
       await getCurrentWebview().setZoom(scale / 100);
-      delete document.documentElement.dataset.uiFallback;
-      return;
     } catch {
-      /* Fall through to CSS zoom when the capability is unavailable. */
+      /* No CSS zoom fallback: it re-rasterises the whole page and stutters. */
     }
   }
-  document.documentElement.dataset.uiFallback = "1";
-  document.documentElement.style.setProperty("--ui-scale", String(scale / 100));
 }

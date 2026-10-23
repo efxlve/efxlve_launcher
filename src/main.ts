@@ -49,9 +49,11 @@ import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
 import { applyWinbarAppIcon } from "./core/app-icon";
+import { applyUiScale } from "./core/game-status";
 
 applySurface(S.surface, false);
 applyReduceEffects(S.reduceEffects);
+if (S.uiScale !== 100) void applyUiScale(S.uiScale);
 applyCustomCss(S.customCss);
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();
