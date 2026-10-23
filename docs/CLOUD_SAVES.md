@@ -171,7 +171,9 @@ server.
 2. Use an **app password** rather than the account password when the server
    offers one.
 3. **Test Connection** creates `efxlve_saves` and checks write access, then
-   **Save**.
+   **Save**. A legacy collection stored under a raw `::` name is moved to the
+   safe key with `MOVE` on the first listing or upload; an existing target is
+   never overwritten.
 
 Self-signed certificates are refused by default; the **Allow a self-signed
 certificate** checkbox turns verification off for that one provider. Use it only
@@ -278,10 +280,7 @@ Ordered by user value:
    then reuse would make the result explicit.
 2. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
-3. **Remote migration** — local and Folder archives created before `backup_key`
-   are moved to the safe key automatically; WebDAV archives stored under raw `::`
-   names still need a one-time remote rename or a legacy fallback in the listing.
-4. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+3. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
 ---

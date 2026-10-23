@@ -606,6 +606,14 @@ pub async fn upload_profile_archive(
         CloudBackupProvider::Webdav => {
             let webdav = webdav_client(&settings)?;
             let client = &webdav;
+            webdav::migrate_legacy_collection(
+                client,
+                &settings.webdav_url,
+                &settings.webdav_username,
+                &settings.webdav_password,
+                PROFILE_KEY,
+            )
+            .await?;
             let base_url = settings.webdav_url.trim_end_matches('/');
             let root_dir = format!("{base_url}/efxlve_saves/");
             let app_dir = format!("{base_url}/efxlve_saves/{}/", backup_key(PROFILE_KEY));

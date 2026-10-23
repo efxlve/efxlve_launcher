@@ -166,6 +166,7 @@ async fn send_webdav(
     body: Option<&[u8]>,
     content_type: Option<&str>,
     depth: Option<&str>,
+    extra_headers: &[(&str, String)],
 ) -> Result<Response, String> {
     let build = |auth: Option<String>| {
         let mut request = client.request(method.clone(), url);
@@ -180,6 +181,9 @@ async fn send_webdav(
         }
         if let Some(depth) = depth {
             request = request.header("Depth", depth);
+        }
+        for (name, value) in extra_headers {
+            request = request.header(*name, value);
         }
         request
     };
@@ -259,6 +263,52 @@ fn clean_base_url(url: &str) -> String {
 }
 
 /// Tests connectivity and credentials against a WebDAV server.
+/// Moves a collection created under the old raw game key (gog::123) to the
+/// safe key (gog__123). Missing legacy collections and an existing target are
+/// not errors; the caller carries on with the safe path.
+pub async fn migrate_legacy_collection(
+    client: &Client,
+    base_url: &str,
+    user: &str,
+    pass: &str,
+    app_name: &str,
+) -> Result<(), String> {
+    let safe = backup_key(app_name);
+    if safe == app_name {
+        return Ok(());
+    }
+    let clean = clean_base_url(base_url);
+    let source = format!("{clean}efxlve_saves/{app_name}/");
+    let destination = format!("{clean}efxlve_saves/{safe}/");
+    let method = Method::from_bytes(b"MOVE").map_err(|error| error.to_string())?;
+    let headers = [
+        ("Destination", destination),
+        ("Overwrite", "F".to_string()),
+    ];
+    let response = send_webdav(
+        client,
+        &method,
+        &source,
+        user,
+        pass,
+        None,
+        None,
+        None,
+        &headers,
+    )
+    .await?;
+    match response.status() {
+        StatusCode::CREATED
+        | StatusCode::NO_CONTENT
+        | StatusCode::NOT_FOUND
+        | StatusCode::CONFLICT
+        | StatusCode::PRECONDITION_FAILED
+        | StatusCode::METHOD_NOT_ALLOWED => Ok(()),
+        status if status.is_success() => Ok(()),
+        status => Err(format!("Legacy WebDAV folder could not be moved: {status}")),
+    }
+}
+
 pub async fn test_webdav_connection(
     client: &Client,
     url: &str,
@@ -277,6 +327,7 @@ pub async fn test_webdav_connection(
         None,
         None,
         Some("0"),
+        &[],
     )
     .await?;
 
@@ -300,7 +351,7 @@ pub async fn ensure_remote_collection(
     let clean = clean_base_url(url);
     let mkcol = Method::from_bytes(b"MKCOL").map_err(|e| e.to_string())?;
 
-    let res = send_webdav(client, &mkcol, &clean, user, pass, None, None, None)
+    let res = send_webdav(client, &mkcol, &clean, user, pass, None, None, None, &[])
         .await
         .map_err(|error| error.to_string())?;
 
@@ -334,6 +385,7 @@ pub async fn upload_file_webdav(
         Some(&bytes),
         Some("application/gzip"),
         None,
+        &[],
     )
     .await
     .map_err(|error| format!("Upload failed: {error}"))?;
@@ -369,6 +421,7 @@ pub async fn download_file_webdav(
         None,
         None,
         None,
+        &[],
     )
     .await
     .map_err(|error| format!("Download request failed: {error}"))?;
@@ -404,6 +457,7 @@ pub async fn delete_file_webdav(
         None,
         None,
         None,
+        &[],
     )
     .await
     .map_err(|error| format!("Delete request failed: {error}"))?;
@@ -423,6 +477,7 @@ pub async fn list_webdav_backups(
     pass: &str,
     app_name: &str,
 ) -> Result<Vec<CloudBackupEntry>, String> {
+    migrate_legacy_collection(client, base_url, user, pass, app_name).await?;
     let clean = clean_base_url(base_url);
     let target = format!("{clean}efxlve_saves/{}/", backup_key(app_name));
     let propfind = Method::from_bytes(b"PROPFIND").map_err(|e| e.to_string())?;
@@ -436,6 +491,7 @@ pub async fn list_webdav_backups(
         None,
         None,
         Some("1"),
+        &[],
     )
     .await
     .map_err(|error| error.to_string())?;
