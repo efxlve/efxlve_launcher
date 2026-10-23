@@ -1027,6 +1027,7 @@ mod tests {
         assert_eq!(backup_key(":::"), "game");
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_detect_save_path_candidates() {
         let temp_dir =

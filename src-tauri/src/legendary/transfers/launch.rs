@@ -998,6 +998,7 @@ mod tests {
         dir
     }
 
+    #[cfg(windows)]
     #[test]
     fn rockstar_stubs_are_recognised_by_name_and_size() {
         let dir = stub_dir("rockstar");

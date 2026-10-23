@@ -509,6 +509,7 @@ mod tests {
         let exe = std::env::current_exe().expect("test binary");
         let quoted = format!("\"{}\" %1", exe.display());
         assert_eq!(exe_from_open_command(&quoted), Some(exe.clone()));
+        #[cfg(windows)]
         assert_eq!(
             exe_from_open_command(r"C:\Windows\System32\cmd.exe /c"),
             Some(PathBuf::from(r"C:\Windows\System32\cmd.exe"))

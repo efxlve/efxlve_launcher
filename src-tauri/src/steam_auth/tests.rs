@@ -429,9 +429,12 @@ fn saved_accounts_meta_round_trips() {
     assert_eq!(loaded[1].steam_id, "76561198000000000");
 
     // Vault paths are namespaced per SteamID64.
-    assert!(vault_path(&dir, "76561199140017878")
-        .to_string_lossy()
-        .ends_with("accounts\\76561199140017878.bin"));
+    let vault = vault_path(&dir, "76561199140017878");
+    assert!(vault.starts_with(dir.join("accounts")));
+    assert_eq!(
+        vault.file_name().and_then(|name| name.to_str()),
+        Some("76561199140017878.bin")
+    );
     let _ = std::fs::remove_dir_all(&dir);
 }
 
