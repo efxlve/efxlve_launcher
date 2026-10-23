@@ -44,6 +44,8 @@ export async function updateCloudBackupSettings(
     retentionCount: 0,
     localBackupDaily: false,
     lastLocalBackup: null,
+    profileDailyUpload: false,
+    lastProfileUpload: null,
     folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
@@ -63,6 +65,7 @@ export async function updateCloudBackupSettings(
     S.cloudBackupSettings = updated;
     if (patch.provider && patch.provider !== current.provider) {
       S.cloudBackupsMap.clear();
+      S.launcherProfileArchives = null;
     }
     scheduleRender();
     return true;

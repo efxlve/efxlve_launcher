@@ -30,6 +30,11 @@ pub struct CloudBackupSettings {
     pub local_backup_daily: bool,
     #[serde(default)]
     pub last_local_backup: Option<u64>,
+    /// Uploads the launcher profile at most once a day while the app is open.
+    #[serde(default)]
+    pub profile_daily_upload: bool,
+    #[serde(default)]
+    pub last_profile_upload: Option<u64>,
     #[serde(default)]
     pub folder_path: String,
     #[serde(default)]
@@ -64,6 +69,8 @@ impl Default for CloudBackupSettings {
             retention_count: 0,
             local_backup_daily: false,
             last_local_backup: None,
+            profile_daily_upload: false,
+            last_profile_upload: None,
             folder_path: String::new(),
             webdav_url: String::new(),
             webdav_username: String::new(),

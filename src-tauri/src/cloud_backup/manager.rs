@@ -1,7 +1,7 @@
 //! High-level Cloud Backup Manager for orchestrating local archives and remote cloud providers.
 
 use reqwest::Client;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
@@ -466,6 +466,156 @@ static AUTO_SYNC_QUEUE: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync:
 
 fn auto_sync_queue() -> &'static tokio::sync::Mutex<()> {
     AUTO_SYNC_QUEUE.get_or_init(|| tokio::sync::Mutex::new(()))
+}
+
+/// Reserved cloud key for launcher profile archives.
+pub const PROFILE_KEY: &str = "__efxlve_profile__";
+
+fn provider_label(provider: &CloudBackupProvider) -> &'static str {
+    match provider {
+        CloudBackupProvider::Folder => "folder",
+        CloudBackupProvider::Webdav => "webdav",
+        CloudBackupProvider::GoogleDrive => "google_drive",
+        CloudBackupProvider::Rclone => "rclone",
+        CloudBackupProvider::None => "none",
+    }
+}
+
+/// Uploads a launcher profile archive through the configured save provider.
+pub async fn upload_profile_archive(
+    archive: &Path,
+    backup_id: &str,
+) -> Result<CloudBackupEntry, String> {
+    let settings = load_settings();
+    if !settings.enabled || settings.provider == CloudBackupProvider::None {
+        return Err("Cloud backup is not enabled.".to_string());
+    }
+    let client = get_client();
+    let (size_bytes, sha256) = crate::cloud_backup::archive::compute_file_sha256(archive)?;
+    let timestamp = backup_id.parse::<u64>().unwrap_or_else(|_| {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_secs())
+            .unwrap_or(0)
+    });
+
+    let remote_id = match settings.provider {
+        CloudBackupProvider::Folder => folder::upload_backup_folder(
+            &settings.folder_path,
+            PROFILE_KEY,
+            backup_id,
+            archive,
+        )?,
+        CloudBackupProvider::Webdav => {
+            let base_url = settings.webdav_url.trim_end_matches('/');
+            let root_dir = format!("{base_url}/efxlve_saves/");
+            let app_dir = format!("{base_url}/efxlve_saves/{}/", backup_key(PROFILE_KEY));
+            let target_file_url = format!("{app_dir}{backup_id}.tar.gz");
+            let _ = webdav::ensure_remote_collection(
+                client,
+                &root_dir,
+                &settings.webdav_username,
+                &settings.webdav_password,
+            )
+            .await;
+            let _ = webdav::ensure_remote_collection(
+                client,
+                &app_dir,
+                &settings.webdav_username,
+                &settings.webdav_password,
+            )
+            .await;
+            webdav::upload_file_webdav(
+                client,
+                &target_file_url,
+                &settings.webdav_username,
+                &settings.webdav_password,
+                archive,
+            )
+            .await?;
+            target_file_url
+        }
+        CloudBackupProvider::GoogleDrive => {
+            let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
+            if refresh.is_empty() {
+                return Err("Google Drive is not connected. Please log in first.".to_string());
+            }
+            let (client_id, client_secret) = gdrive_credentials(&settings)?;
+            let access =
+                gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
+            gdrive::upload_backup_gdrive(client, &access, PROFILE_KEY, backup_id, archive).await?
+        }
+        CloudBackupProvider::Rclone => {
+            rclone::upload_backup_rclone(&settings.rclone_remote, PROFILE_KEY, backup_id, archive)
+                .await?
+        }
+        CloudBackupProvider::None => unreachable!(),
+    };
+
+    let entry = CloudBackupEntry {
+        backup_id: backup_id.to_string(),
+        app_name: PROFILE_KEY.to_string(),
+        timestamp,
+        formatted_date: crate::legendary::backup::format_backup_timestamp(timestamp),
+        size_bytes,
+        file_count: 0,
+        sha256,
+        provider: provider_label(&settings.provider).to_string(),
+        remote_id,
+    };
+
+    // Profiles are small; five versions are plenty and keep the provider tidy.
+    if let Ok(list) = list_cloud_backups(PROFILE_KEY).await {
+        for old in list.into_iter().skip(5) {
+            let _ = delete_remote_backup(&old.remote_id).await;
+        }
+    }
+
+    Ok(entry)
+}
+
+/// Lists launcher profile archives stored by the active provider.
+pub async fn list_profile_archives() -> Result<Vec<CloudBackupEntry>, String> {
+    list_cloud_backups(PROFILE_KEY).await
+}
+
+/// Downloads a launcher profile archive to a temporary path without restoring it.
+pub async fn download_profile_archive(remote_id: &str, backup_id: &str) -> Result<PathBuf, String> {
+    let settings = load_settings();
+    if !settings.enabled || settings.provider == CloudBackupProvider::None {
+        return Err("Cloud backup is not enabled.".to_string());
+    }
+    let client = get_client();
+    let dest = std::env::temp_dir().join(format!("efxlve_profile_download_{backup_id}.tar.gz"));
+
+    match settings.provider {
+        CloudBackupProvider::Folder => {
+            folder::download_backup_folder(&settings.folder_path, remote_id, &dest)?;
+        }
+        CloudBackupProvider::Webdav => {
+            webdav::download_file_webdav(
+                client,
+                remote_id,
+                &settings.webdav_username,
+                &settings.webdav_password,
+                &dest,
+            )
+            .await?;
+        }
+        CloudBackupProvider::GoogleDrive => {
+            let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
+            let (client_id, client_secret) = gdrive_credentials(&settings)?;
+            let access =
+                gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
+            gdrive::download_backup_gdrive(client, &access, remote_id, &dest).await?;
+        }
+        CloudBackupProvider::Rclone => {
+            rclone::download_backup_rclone(&settings.rclone_remote, remote_id, &dest).await?;
+        }
+        CloudBackupProvider::None => return Err("No active cloud provider.".to_string()),
+    }
+
+    Ok(dest)
 }
 
 /// Hook called automatically when a game process exits.

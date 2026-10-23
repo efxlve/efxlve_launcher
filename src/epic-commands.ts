@@ -942,6 +942,8 @@ export interface CloudBackupSettings {
   retentionCount: number;
   localBackupDaily: boolean;
   lastLocalBackup?: number | null;
+  profileDailyUpload: boolean;
+  lastProfileUpload?: number | null;
   folderPath: string;
   webdavUrl: string;
   webdavUsername: string;
@@ -966,6 +968,26 @@ export interface CloudBackupEntry {
   provider: string;
   remoteId: string;
 }
+
+export interface ProfileRestoreResult {
+  filesRestored: number;
+  localStorage: Record<string, string>;
+  safetyArchive: string;
+}
+
+export const profileExport = (folder: string, localStorage: Record<string, string>) =>
+  invoke<string>("profile_export", { folder, localStorage });
+
+export const profileImport = (path: string) =>
+  invoke<ProfileRestoreResult>("profile_import", { path });
+
+export const profileCloudUpload = (localStorage: Record<string, string>) =>
+  invoke<CloudBackupEntry>("profile_cloud_upload", { localStorage });
+
+export const profileCloudList = () => invoke<CloudBackupEntry[]>("profile_cloud_list");
+
+export const profileCloudRestore = (remoteId: string, backupId: string) =>
+  invoke<ProfileRestoreResult>("profile_cloud_restore", { remoteId, backupId });
 
 export const cloudBackupGetSettings = () =>
   invoke<CloudBackupSettings>("cloud_backup_get_settings");

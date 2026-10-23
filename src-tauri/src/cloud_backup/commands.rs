@@ -5,6 +5,7 @@ use tauri::{command, AppHandle};
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::manager;
 use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
+use crate::cloud_backup::profile_sync::{self, ProfileRestoreResult};
 
 #[command]
 pub fn cloud_backup_get_settings() -> Result<CloudBackupSettings, String> {
@@ -87,6 +88,42 @@ pub async fn cloud_backup_download_game(
 #[command]
 pub async fn cloud_backup_delete_remote(remote_id: String) -> Result<(), String> {
     manager::delete_remote_backup(&remote_id).await
+}
+
+#[command]
+pub fn profile_export(
+    app: AppHandle,
+    folder: String,
+    local_storage: serde_json::Value,
+) -> Result<String, String> {
+    profile_sync::export_to_file(&app, &folder, &local_storage)
+}
+
+#[command]
+pub fn profile_import(app: AppHandle, path: String) -> Result<ProfileRestoreResult, String> {
+    profile_sync::import_file(&app, &path)
+}
+
+#[command]
+pub async fn profile_cloud_upload(
+    app: AppHandle,
+    local_storage: serde_json::Value,
+) -> Result<CloudBackupEntry, String> {
+    profile_sync::upload_to_cloud(&app, &local_storage).await
+}
+
+#[command]
+pub async fn profile_cloud_list() -> Result<Vec<CloudBackupEntry>, String> {
+    manager::list_profile_archives().await
+}
+
+#[command]
+pub async fn profile_cloud_restore(
+    app: AppHandle,
+    remote_id: String,
+    backup_id: String,
+) -> Result<ProfileRestoreResult, String> {
+    profile_sync::restore_from_cloud(&app, &remote_id, &backup_id).await
 }
 
 #[command]

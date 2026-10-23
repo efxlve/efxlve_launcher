@@ -344,6 +344,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_show_launcher` | `overlayShowLauncher({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
 | `prewarm_store_view` | `prewarmStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `profile_cloud_list` | `profileCloudList({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `profile_cloud_restore` | `profileCloudRestore({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `profile_cloud_upload` | `profileCloudUpload({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `profile_export` | `profileExport({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `profile_import` | `profileImport({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `resize_store_view` | `resizeStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `screenshot_scan_roots` | `screenshotScanRoots({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `screenshot_share_discord` | `screenshotShareDiscord({ ... })` | `src-tauri/src/legendary/screenshots.rs` |

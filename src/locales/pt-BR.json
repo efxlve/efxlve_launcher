@@ -2999,5 +2999,22 @@
   "cloud.localBackupTitle": "Backup local diário",
   "cloud.localBackupDesc": "Cria no máximo um backup local por dia para cada jogo instalado, mesmo sem provedor na nuvem. Roda enquanto o launcher está aberto.",
   "cloud.rcloneRemotes": "Listar remotos",
-  "cloud.rcloneNone": "Nenhum remoto encontrado. Execute `rclone config` primeiro."
+  "cloud.rcloneNone": "Nenhum remoto encontrado. Execute `rclone config` primeiro.",
+  "profile.title": "Dados do launcher",
+  "profile.desc": "Jogos personalizados, coleções, tempo de jogo, conquistas, notas, temas e configurações em um único arquivo. Senhas, chaves de API e caminhos da máquina ficam de fora.",
+  "profile.export": "Exportar para arquivo",
+  "profile.import": "Importar de arquivo",
+  "profile.upload": "Enviar para a nuvem",
+  "profile.restore": "Restaurar da nuvem",
+  "profile.restoreConfirm": "Restaurar o perfil do launcher de {date}? O launcher será reiniciado e os dados atuais serão substituídos. Uma cópia de segurança é criada antes.",
+  "profile.importConfirm": "Importar este perfil do launcher? O launcher será reiniciado e os dados atuais serão substituídos. Uma cópia de segurança é criada antes.",
+  "profile.done": "Dados do launcher restaurados. Reiniciando…",
+  "profile.exported": "Dados do launcher exportados para {path}",
+  "profile.uploaded": "Dados do launcher enviados ({date})",
+  "profile.latest": "Perfil mais recente na nuvem: {date}",
+  "profile.noCloud": "Ative um provedor de nuvem para sincronizar os dados do launcher.",
+  "profile.autoUploadTitle": "Enviar os dados do launcher diariamente",
+  "profile.autoUploadDesc": "Envia o perfil ao provedor de nuvem no máximo uma vez por dia enquanto o launcher está aberto, para que uma nova instalação possa restaurá-lo.",
+  "profile.pickFolder": "Escolha uma pasta para exportar os dados do launcher",
+  "profile.pickFile": "Selecione um arquivo de dados do launcher"
 }

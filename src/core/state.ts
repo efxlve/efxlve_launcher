@@ -448,6 +448,9 @@ export const S = {
   cloudBackupSyncing: false,
   cloudBackupSyncingApp: (null) as string | null,
   cloudBackupsMap: (new Map()) as Map<string, CloudBackupEntry[]>,
+  /** Remote launcher-profile archives; null until the first check. */
+  launcherProfileArchives: (null) as CloudBackupEntry[] | null,
+  launcherProfileLoading: false,
   /** Bulk "back up all installed games" progress while it runs. */
   cloudBulkProgress: (null) as { done: number; total: number; failed: number } | null,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,

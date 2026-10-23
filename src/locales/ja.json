@@ -2999,5 +2999,22 @@
   "cloud.localBackupTitle": "毎日のローカルバックアップ",
   "cloud.localBackupDesc": "クラウドなしでも、インストール済みゲームごとに 1 日 1 回までローカルバックアップを作成します。ランチャー起動中に実行されます。",
   "cloud.rcloneRemotes": "リモート一覧",
-  "cloud.rcloneNone": "リモートが見つかりません。先に `rclone config` を実行してください。"
+  "cloud.rcloneNone": "リモートが見つかりません。先に `rclone config` を実行してください。",
+  "profile.title": "ランチャーデータ",
+  "profile.desc": "カスタムゲーム、コレクション、プレイ時間、実績、ノート、テーマ、設定を 1 つのアーカイブに。パスワード、API キー、この PC 固有のパスは含まれません。",
+  "profile.export": "ファイルにエクスポート",
+  "profile.import": "ファイルからインポート",
+  "profile.upload": "クラウドにアップロード",
+  "profile.restore": "クラウドから復元",
+  "profile.restoreConfirm": "{date} のランチャープロファイルを復元しますか？ランチャーが再起動し、現在のデータは置き換えられます。先に安全コピーが保存されます。",
+  "profile.importConfirm": "このランチャープロファイルをインポートしますか？ランチャーが再起動し、現在のデータは置き換えられます。先に安全コピーが保存されます。",
+  "profile.done": "ランチャーデータを復元しました。再起動しています…",
+  "profile.exported": "ランチャーデータを {path} にエクスポートしました",
+  "profile.uploaded": "ランチャーデータをアップロードしました ({date})",
+  "profile.latest": "最新のクラウドプロファイル: {date}",
+  "profile.noCloud": "ランチャーデータを同期するにはクラウドプロバイダーを有効にしてください。",
+  "profile.autoUploadTitle": "ランチャーデータを毎日アップロード",
+  "profile.autoUploadDesc": "ランチャー起動中、プロファイルを 1 日 1 回までクラウドプロバイダーにアップロードし、再インストール時に復元できるようにします。",
+  "profile.pickFolder": "ランチャーデータのエクスポート先フォルダーを選択",
+  "profile.pickFile": "ランチャーデータのアーカイブを選択"
 }

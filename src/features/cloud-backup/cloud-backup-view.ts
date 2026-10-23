@@ -8,6 +8,7 @@ import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "./cloud-backup-actions";
+import { loadProfileArchivesAction } from "./profile-sync-actions";
 
 const CLOUD_GUIDE_URL = "https://github.com/efxlve/efxlve_launcher/blob/main/docs/CLOUD_SAVES.md";
 
@@ -24,6 +25,8 @@ export function renderCloudBackupSettingsGroup(): string {
     retentionCount: 0,
     localBackupDaily: false,
     lastLocalBackup: null,
+    profileDailyUpload: false,
+    lastProfileUpload: null,
     folderPath: "",
     webdavUrl: "",
     webdavUsername: "",
@@ -39,6 +42,10 @@ export function renderCloudBackupSettingsGroup(): string {
 
   const isEnabled = st.enabled && st.provider !== "none";
   const activeProvider = st.provider;
+  if (isEnabled && S.launcherProfileArchives === null && !S.launcherProfileLoading) {
+    void loadProfileArchivesAction();
+  }
+  const latestProfile = S.launcherProfileArchives?.[0];
 
   const providerSeg = `
     <div class="seg" role="radiogroup">
@@ -232,6 +239,38 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>`;
 
+  const profileRow = `
+    <div class="row settings-row stacked">
+      <div class="row-main">
+        <div class="settings-row-title">${icon("user", 14)} ${t("profile.title")}</div>
+        <div class="settings-row-desc">${t("profile.desc")}</div>
+      </div>
+      <div class="mg-inline" style="gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" class="btn ghost small" data-act="profile-export">${icon("download", 13)} ${t("profile.export")}</button>
+        <button type="button" class="btn ghost small" data-act="profile-import">${icon("upload", 13)} ${t("profile.import")}</button>
+        ${isEnabled ? `<button type="button" class="btn ghost small" data-act="profile-cloud-upload">${icon("cloud", 13)} ${t("profile.upload")}</button>` : ""}
+        ${isEnabled && latestProfile ? `<button type="button" class="btn ghost small" data-act="profile-cloud-restore">${icon("download", 13)} ${t("profile.restore")} · ${fmtCloudDate(latestProfile.timestamp)}</button>` : ""}
+      </div>
+      ${isEnabled
+        ? latestProfile
+          ? `<div class="mg-note" style="color:var(--text-3);font-size:11px">${t("profile.latest", { date: fmtCloudDate(latestProfile.timestamp) })}</div>`
+          : S.launcherProfileArchives === null
+            ? `<div class="mg-note" style="color:var(--text-3);font-size:11px">${t("cloud.statusChecking")}</div>`
+            : `<div class="mg-note" style="color:var(--text-3);font-size:11px">${t("cloud.statusNotBackedUp")}</div>`
+        : ""}
+    </div>`;
+
+  const profileAutoRow = isEnabled ? `
+    <div class="row settings-row">
+      <div class="row-main">
+        <div class="settings-row-title">${t("profile.autoUploadTitle")}</div>
+        <div class="settings-row-desc">${t("profile.autoUploadDesc")}</div>
+      </div>
+      <div class="settings-row-control">
+        <label class="switch"><input type="checkbox" data-act="toggle-profile-auto-upload" ${st.profileDailyUpload ? "checked" : ""} /><span class="track"></span></label>
+      </div>
+    </div>` : "";
+
   const providerRow = isEnabled ? `
     <div class="row settings-row">
       <div class="row-main">
@@ -251,6 +290,8 @@ export function renderCloudBackupSettingsGroup(): string {
       ${retentionRow}
       ${bulkRow}
       ${localBackupRow}
+      ${profileRow}
+      ${profileAutoRow}
     </div>`;
 }
 

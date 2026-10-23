@@ -207,6 +207,38 @@ existing credentials and encrypted configs keep working. If rclone is not on
 `/opt/local/bin`, `/snap/bin` and `~/.local/bin`; restart the app after
 installing it on Windows.
 
+#### Launcher profile (custom games, achievements, themes)
+
+Save archives cover game saves; the launcher's own data travels in a separate
+`.efxprofile` archive. **Settings → Cloud → Launcher data** has:
+
+- **Export to file** — pick a folder; the archive is written as
+  `efxlve_profile_<timestamp>.efxprofile`. Move it with a USB drive or another
+  cloud client.
+- **Import from file** — pick an archive, confirm, and the launcher restarts with
+  the restored data.
+- **Upload to cloud / Restore from cloud** — uses the same Folder, WebDAV,
+  Google Drive or rclone provider as save backups. The archive is stored under
+  the reserved `__efxlve_profile__` key, not as a game, and the newest five
+  versions are kept.
+- **Upload launcher data daily** uploads the profile at most once a day while the
+  launcher is open, so the newest archive is ready after a format.
+
+The archive contains custom games, collections, playtime, Epic/GOG/Steam
+achievement caches, notes, custom themes, browser bookmarks and the portable
+launcher settings. It does **not** contain passwords, OAuth tokens, Steam
+sessions, API keys, Discord webhooks or absolute install/screenshot paths.
+Those stay on the machine and are re-entered after a format; the provider
+settings are excluded for the same reason.
+
+Every import writes a safety archive to
+`<config>/profile_backups/pre_restore_<timestamp>.efxprofile` before copying
+anything, so a wrong import can be rolled back. After a format, install the
+launcher, configure the same provider under Settings → Cloud, and press
+**Restore from cloud**: the newest profile is shown with its date. The launcher
+cannot restore itself before a provider is configured because the credentials
+are deliberately not in the profile.
+
 ---
 
 ## 5. Storage and safety
@@ -270,6 +302,11 @@ Cloud:
 Google Drive auth:
 
 - `cloud_backup_start_gdrive_auth`, `cloud_backup_disconnect_gdrive`
+
+Launcher profile:
+
+- `profile_export`, `profile_import`, `profile_cloud_upload`,
+  `profile_cloud_list`, `profile_cloud_restore`
 
 Generated command names and arguments are indexed in
 [IPC_INDEX.md](./IPC_INDEX.md).

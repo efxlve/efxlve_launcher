@@ -2999,5 +2999,22 @@
   "cloud.localBackupTitle": "每日本地备份",
   "cloud.localBackupDesc": "即使没有云端提供商，也为每个已安装游戏每天最多创建一次本地备份。仅在启动器打开时运行。",
   "cloud.rcloneRemotes": "列出远程",
-  "cloud.rcloneNone": "未找到远程。请先运行 `rclone config`。"
+  "cloud.rcloneNone": "未找到远程。请先运行 `rclone config`。",
+  "profile.title": "启动器数据",
+  "profile.desc": "自定义游戏、收藏、游戏时间、成就、笔记、主题和设置打包在一个归档中。密码、API 密钥和本机路径不会包含在内。",
+  "profile.export": "导出到文件",
+  "profile.import": "从文件导入",
+  "profile.upload": "上传到云端",
+  "profile.restore": "从云端恢复",
+  "profile.restoreConfirm": "要恢复 {date} 的启动器配置吗？启动器将重启，当前数据会被替换。会先保存一份安全副本。",
+  "profile.importConfirm": "要导入此启动器配置吗？启动器将重启，当前数据会被替换。会先保存一份安全副本。",
+  "profile.done": "启动器数据已恢复。正在重启…",
+  "profile.exported": "启动器数据已导出到 {path}",
+  "profile.uploaded": "启动器数据已上传（{date}）",
+  "profile.latest": "最新云端配置：{date}",
+  "profile.noCloud": "启用云服务提供商以同步启动器数据。",
+  "profile.autoUploadTitle": "每日上传启动器数据",
+  "profile.autoUploadDesc": "启动器打开时每天最多将配置上传到云服务一次，以便重新安装后恢复。",
+  "profile.pickFolder": "选择启动器数据的导出文件夹",
+  "profile.pickFile": "选择启动器数据归档"
 }

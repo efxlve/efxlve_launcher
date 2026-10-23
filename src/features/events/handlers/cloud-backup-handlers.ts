@@ -22,6 +22,14 @@ import {
   uploadGameCloudAction,
 } from "../../cloud-backup/cloud-backup-actions";
 import {
+  exportProfileAction,
+  importProfileAction,
+  restoreProfileFromCloudAction,
+  runProfileUploadNow,
+  scheduleProfileUploads,
+  uploadProfileAction,
+} from "../../cloud-backup/profile-sync-actions";
+import {
   openGoogleDriveGuideModal,
   closeGoogleDriveGuideModal,
 } from "../../cloud-backup/cloud-backup-view";
@@ -79,6 +87,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
     case "set-cloud-provider": {
       const provider = t.dataset.provider as CloudBackupProvider;
       if (provider) {
+        S.launcherProfileArchives = null;
         void updateCloudBackupSettings({ provider, enabled: true });
       }
       return true;
@@ -291,6 +300,33 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       if (input) input.value = `${remote}efxlve_saves`;
       return true;
     }
+
+    case "profile-export":
+      void exportProfileAction();
+      return true;
+
+    case "profile-import":
+      void importProfileAction();
+      return true;
+
+    case "profile-cloud-upload":
+      void uploadProfileAction();
+      return true;
+
+    case "toggle-profile-auto-upload": {
+      const checked = ((targetEl || t) as HTMLInputElement).checked;
+      void updateCloudBackupSettings({ profileDailyUpload: checked }).then((ok) => {
+        if (ok && checked) {
+          scheduleProfileUploads();
+          runProfileUploadNow();
+        }
+      });
+      return true;
+    }
+
+    case "profile-cloud-restore":
+      void restoreProfileFromCloudAction();
+      return true;
 
     case "cloud-rclone-save": {
       const input = document.getElementById("cloud-rclone-remote") as HTMLInputElement | null;

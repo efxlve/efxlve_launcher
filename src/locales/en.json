@@ -2999,5 +2999,22 @@
   "cloud.localBackupTitle": "Daily local backup",
   "cloud.localBackupDesc": "Creates one local backup per installed game at most once a day, even without a cloud provider. Runs while the launcher is open.",
   "cloud.rcloneRemotes": "List remotes",
-  "cloud.rcloneNone": "No remotes found. Run `rclone config` first."
+  "cloud.rcloneNone": "No remotes found. Run `rclone config` first.",
+  "profile.title": "Launcher data",
+  "profile.desc": "Custom games, collections, playtime, achievements, notes, themes and settings in one archive. Passwords, API keys and machine-specific paths are left out.",
+  "profile.export": "Export to file",
+  "profile.import": "Import from file",
+  "profile.upload": "Upload to cloud",
+  "profile.restore": "Restore from cloud",
+  "profile.restoreConfirm": "Restore the launcher profile from {date}? The launcher restarts and current data is replaced. A safety copy is saved first.",
+  "profile.importConfirm": "Import this launcher profile? The launcher restarts and current data is replaced. A safety copy is saved first.",
+  "profile.done": "Launcher data restored. Restarting…",
+  "profile.exported": "Launcher data exported to {path}",
+  "profile.uploaded": "Launcher data uploaded ({date})",
+  "profile.latest": "Latest cloud profile: {date}",
+  "profile.noCloud": "Enable a cloud provider to sync launcher data.",
+  "profile.autoUploadTitle": "Upload launcher data daily",
+  "profile.autoUploadDesc": "Uploads the profile to the configured cloud provider at most once a day while the launcher is open, so a fresh install can restore it.",
+  "profile.pickFolder": "Choose a folder for the launcher data export",
+  "profile.pickFile": "Select a launcher data archive"
 }

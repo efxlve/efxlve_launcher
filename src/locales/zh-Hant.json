@@ -2999,5 +2999,22 @@
   "cloud.localBackupTitle": "每日本機備份",
   "cloud.localBackupDesc": "即使沒有雲端提供者，也為每個已安裝遊戲每天最多建立一次本機備份。僅在啟動器開啟時執行。",
   "cloud.rcloneRemotes": "列出遠端",
-  "cloud.rcloneNone": "找不到遠端。請先執行 `rclone config`。"
+  "cloud.rcloneNone": "找不到遠端。請先執行 `rclone config`。",
+  "profile.title": "啟動器資料",
+  "profile.desc": "自訂遊戲、收藏、遊玩時間、成就、筆記、主題與設定打包在一個封存中。密碼、API 金鑰與本機路徑不會包含在內。",
+  "profile.export": "匯出到檔案",
+  "profile.import": "從檔案匯入",
+  "profile.upload": "上傳到雲端",
+  "profile.restore": "從雲端還原",
+  "profile.restoreConfirm": "要還原 {date} 的啟動器設定嗎？啟動器將重新啟動，目前資料會被取代。會先儲存安全副本。",
+  "profile.importConfirm": "要匯入此啟動器設定嗎？啟動器將重新啟動，目前資料會被取代。會先儲存安全副本。",
+  "profile.done": "啟動器資料已還原。正在重新啟動…",
+  "profile.exported": "啟動器資料已匯出到 {path}",
+  "profile.uploaded": "啟動器資料已上傳（{date}）",
+  "profile.latest": "最新雲端設定：{date}",
+  "profile.noCloud": "啟用雲端提供者以同步啟動器資料。",
+  "profile.autoUploadTitle": "每日上傳啟動器資料",
+  "profile.autoUploadDesc": "啟動器開啟時每天最多將設定上傳到雲端一次，以便重新安裝後還原。",
+  "profile.pickFolder": "選擇啟動器資料的匯出資料夾",
+  "profile.pickFile": "選擇啟動器資料封存"
 }
