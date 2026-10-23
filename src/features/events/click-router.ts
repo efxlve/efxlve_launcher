@@ -20,6 +20,7 @@ import {
   INSTALLED_ICON_KEY,
   LANG_KEY,
   MINIMIZE_TRAY_KEY,
+  REDUCE_EFFECTS_KEY,
   PAUSE_ON_PLAY_KEY,
   STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
@@ -69,6 +70,7 @@ import { S, applyTabSort, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { saveCustomCss } from "../../core/custom-css";
 import { applySurface } from "../../core/themes";
+import { applyReduceEffects } from "../../core/effects";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
 import { openEpicLauncherDownload } from "../epic-launcher/epic-launcher-notice";
@@ -897,6 +899,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-cover-stats") {
     S.showCoverStats = !S.showCoverStats;
     localStorage.setItem(COVER_STATS_KEY, String(S.showCoverStats));
+    render();
+  } else if (act === "toggle-reduce-effects") {
+    S.reduceEffects = !S.reduceEffects;
+    localStorage.setItem(REDUCE_EFFECTS_KEY, String(S.reduceEffects));
+    applyReduceEffects(S.reduceEffects);
     render();
   } else if (act === "overlay-restore-disabled") {
     // The overlay can block itself away from a context; this is the way back.

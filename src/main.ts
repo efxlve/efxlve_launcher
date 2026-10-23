@@ -14,6 +14,7 @@ import { applySidebarPageVisibility } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
 import { applyCustomCss } from "./core/custom-css";
 import { applySurface } from "./core/themes";
+import { applyReduceEffects } from "./core/effects";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
 import { updateChrome, updateNavHistoryUi, updateOfflineModeUi } from "./core/nav";
@@ -50,6 +51,7 @@ import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } f
 import { applyWinbarAppIcon } from "./core/app-icon";
 
 applySurface(S.surface, false);
+applyReduceEffects(S.reduceEffects);
 applyCustomCss(S.customCss);
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();

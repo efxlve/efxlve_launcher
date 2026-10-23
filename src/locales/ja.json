@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "ランチャー起動中、プロファイルを 1 日 1 回までクラウドプロバイダーにアップロードし、再インストール時に復元できるようにします。",
   "profile.pickFolder": "ランチャーデータのエクスポート先フォルダーを選択",
   "profile.pickFile": "ランチャーデータのアーカイブを選択",
-  "cloud.webdavAllowInvalidCert": "自己署名証明書を許可"
+  "cloud.webdavAllowInvalidCert": "自己署名証明書を許可",
+  "settings.reduceEffectsTitle": "モーションと効果を減らす",
+  "settings.reduceEffectsDesc": "インターフェースのアニメーション、ガラスぼかし、ホバー遷移をオフにします。すべてのページと機能は引き続き利用できます。"
 }

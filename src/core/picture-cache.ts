@@ -22,6 +22,8 @@ interface CachedImage {
 
 /** URL → `data:` URL, for the pictures already on disk. */
 const cachedPictures = new Map<string, string>();
+/** Keep the decoded data URLs bounded; a long session must not grow forever. */
+const PICTURE_CACHE_LIMIT = 32;
 /** URLs asked for in this session, so a repaint does not ask twice. */
 const requested = new Set<string>();
 
@@ -50,6 +52,10 @@ export function warmImages(urls: Array<string | null | undefined>): void {
       let landed = false;
       for (const entry of entries) {
         if (entry.dataUrl) {
+          if (cachedPictures.size >= PICTURE_CACHE_LIMIT) {
+            const oldest = cachedPictures.keys().next().value;
+            if (oldest) cachedPictures.delete(oldest);
+          }
           cachedPictures.set(entry.url, entry.dataUrl);
           landed = true;
         }
@@ -77,7 +83,12 @@ function swapPaintedImages(): void {
 export const imageCacheSize = () => invoke<number>("image_cache_size");
 
 /** Empties the picture cache; returns the bytes it held. */
-export const clearImageCache = () => invoke<number>("clear_image_cache");
+export async function clearImageCache(): Promise<number> {
+  const bytes = await invoke<number>("clear_image_cache");
+  cachedPictures.clear();
+  requested.clear();
+  return bytes;
+}
 
 /**
  * Warms the hero art of the recently played games, once the window is idle.

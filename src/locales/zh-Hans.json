@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "启动器打开时每天最多将配置上传到云服务一次，以便重新安装后恢复。",
   "profile.pickFolder": "选择启动器数据的导出文件夹",
   "profile.pickFile": "选择启动器数据归档",
-  "cloud.webdavAllowInvalidCert": "允许自签名证书"
+  "cloud.webdavAllowInvalidCert": "允许自签名证书",
+  "settings.reduceEffectsTitle": "减少动态效果",
+  "settings.reduceEffectsDesc": "关闭界面动画、玻璃模糊和悬停过渡。所有页面和功能仍然可用。"
 }

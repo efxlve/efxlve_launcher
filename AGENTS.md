@@ -166,6 +166,7 @@ Rules for these files:
 | `docs/CLOUD_WEBDAV_GUIDE.md` | Beginner guide for WebDAV |
 | `docs/CLOUD_RCLONE_GUIDE.md` | Beginner guide for rclone |
 | `docs/CROSS_PLATFORM.md` | Linux/macOS compatibility layer |
+| `docs/PERFORMANCE.md` | Low-end performance rules, implemented wins and open work |
 | `docs/GOOGLE_DRIVE_SETUP_GUIDE.md` | Google Drive backup setup |
 
 ## Release

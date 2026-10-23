@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "啟動器開啟時每天最多將設定上傳到雲端一次，以便重新安裝後還原。",
   "profile.pickFolder": "選擇啟動器資料的匯出資料夾",
   "profile.pickFile": "選擇啟動器資料封存",
-  "cloud.webdavAllowInvalidCert": "允許自簽憑證"
+  "cloud.webdavAllowInvalidCert": "允許自簽憑證",
+  "settings.reduceEffectsTitle": "減少動態效果",
+  "settings.reduceEffectsDesc": "關閉介面動畫、玻璃模糊與滑鼠懸停轉場。所有頁面與功能仍可使用。"
 }

@@ -1199,6 +1199,7 @@ function renderAppearance(): string {
     group(
       renderCustomCssRow() +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
+      row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects)) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
       row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +

@@ -696,7 +696,11 @@ export function startSteamLibraryWatch(): void {
   void syncSteamRunningState().catch(() => {});
   if (steamRunningPoll === null) {
     steamRunningPoll = window.setInterval(() => {
-      void syncSteamRunningState().catch(() => {});
+      // A hidden launcher does not need to repaint Steam badges every 15s;
+      // the next visible tick catches up in one call.
+      if (document.visibilityState === "visible") {
+        void syncSteamRunningState().catch(() => {});
+      }
     }, 15_000);
   }
 }

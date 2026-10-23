@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "يرفع الملف إلى المزوّد السحابي مرة واحدة يوميًا كحد أقصى أثناء فتح المشغّل، ليتمكن التثبيت الجديد من استعادته.",
   "profile.pickFolder": "اختر مجلدًا لتصدير بيانات المشغّل",
   "profile.pickFile": "اختر أرشيف بيانات المشغّل",
-  "cloud.webdavAllowInvalidCert": "السماح بشهادة موقّعة ذاتيًا"
+  "cloud.webdavAllowInvalidCert": "السماح بشهادة موقّعة ذاتيًا",
+  "settings.reduceEffectsTitle": "تقليل الحركة والتأثيرات",
+  "settings.reduceEffectsDesc": "يعطّل حركات الواجهة وضباب الزجاج وانتقالات التمرير. تبقى كل الصفحات والميزات متاحة."
 }

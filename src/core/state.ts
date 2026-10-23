@@ -87,6 +87,7 @@ import {
   saveTabSort,
   type SortTab,
 } from "./constants";
+import { initialReduceEffects } from "./effects";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
 import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
@@ -562,6 +563,8 @@ export const S = {
   settingsIntegrationsLoaded: false,
   settingsIntegrationsLoading: false,
   minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
+  /** Removes motion, glass blur and hover transitions without hiding features. */
+  reduceEffects: initialReduceEffects(),
   /** Mirrors the HKCU Run entry; loaded from the backend in loadSettingsView. */
   startWithWindows: false,
   /** Every folder the screenshot gallery scans; loaded with the settings. */

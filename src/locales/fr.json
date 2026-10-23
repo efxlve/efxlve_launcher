@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "Envoie le profil au fournisseur cloud au plus une fois par jour tant que le launcher est ouvert, pour pouvoir le restaurer après une réinstallation.",
   "profile.pickFolder": "Choisir un dossier pour l'export des données du launcher",
   "profile.pickFile": "Sélectionner une archive de données du launcher",
-  "cloud.webdavAllowInvalidCert": "Autoriser un certificat auto-signé"
+  "cloud.webdavAllowInvalidCert": "Autoriser un certificat auto-signé",
+  "settings.reduceEffectsTitle": "Réduire les animations et effets",
+  "settings.reduceEffectsDesc": "Désactive les animations d'interface, le flou de verre et les transitions au survol. Toutes les pages et fonctions restent disponibles."
 }

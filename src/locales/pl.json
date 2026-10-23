@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "Wysyła profil do dostawcy chmury najwyżej raz dziennie, gdy launcher jest otwarty, aby można go było przywrócić po reinstalacji.",
   "profile.pickFolder": "Wybierz folder eksportu danych launchera",
   "profile.pickFile": "Wybierz archiwum danych launchera",
-  "cloud.webdavAllowInvalidCert": "Zezwól na certyfikat z podpisem własnym"
+  "cloud.webdavAllowInvalidCert": "Zezwól na certyfikat z podpisem własnym",
+  "settings.reduceEffectsTitle": "Ogranicz ruch i efekty",
+  "settings.reduceEffectsDesc": "Wyłącza animacje interfejsu, rozmycie szkła i przejścia hover. Wszystkie strony i funkcje pozostają dostępne."
 }

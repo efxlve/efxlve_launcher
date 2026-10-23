@@ -3017,5 +3017,7 @@
   "profile.autoUploadDesc": "Launcher açıkken profili günde en fazla bir kez seçili bulut sağlayıcısına yükler; yeni kurulumda geri yüklenebilir.",
   "profile.pickFolder": "Launcher verileri için bir klasör seç",
   "profile.pickFile": "Launcher veri arşivini seç",
-  "cloud.webdavAllowInvalidCert": "Kendinden imzalı sertifikaya izin ver"
+  "cloud.webdavAllowInvalidCert": "Kendinden imzalı sertifikaya izin ver",
+  "settings.reduceEffectsTitle": "Hareketi ve efektleri azalt",
+  "settings.reduceEffectsDesc": "Arayüz animasyonlarını, cam bulanıklığını ve hover geçişlerini kapatır. Tüm sayfalar ve özellikler kullanılabilir kalır."
 }
