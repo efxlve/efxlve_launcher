@@ -90,7 +90,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: "Efxlve Launcher v__VERSION__"
-          releaseBody: "Kurulum dosyaları ve otomatik güncelleme paketleri aşağıdaki varlıklarda."
+          releaseBody: "Installers and updater packages are attached below."
           releaseDraft: false
           prerelease: false
           updaterJsonPreferNsis: true
