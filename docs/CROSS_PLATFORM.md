@@ -1,346 +1,220 @@
-# CROSS_PLATFORM.md — Efxlve Launcher Linux & macOS Uyumluluk Katmanı (Araştırma & Mimari Tasarım)
+# CROSS_PLATFORM.md — Linux & macOS Compatibility Layer (Research and Architecture)
 
-> **Durum:** Çekirdek katman, mağaza CLI'ları, uyumluluk araçları ve başlatma zinciri uygulandı (2026-10-23).
-> Linux/macOS paketleme ve gerçek donanım doğrulaması açık.
-> **Amaç:** Heroic Games Launcher modelini referans alarak Efxlve Launcher'ın Windows dışına
-> taşınma stratejisini, Wine/Proton/D3DMetal katmanlarını ve platform soyutlamasını tanımlamak.
-
----
-
-## 1. Neden Mümkün? (Mevcut Mimarinin Getirdiği Avantaj)
-
-Efxlve Launcher zaten iki büyük taşınabilirlik avantajına sahiptir:
-
-1. **`legendary` CLI platformdan bağımsızdır.** Epic kimlik doğrulama, katalog, manifest,
-   indirme ve bulut kayıt işlemleri Python tabanlı `legendary` ile yürütülür; Linux/macOS
-   için resmi binary mevcuttur. Rust backend yalnızca süreç sarıcıdır (`client.rs`,
-   `transfers.rs`), dolayısıyla bu katman büyük ölçüde yeniden kullanılabilir.
-   Epic'in Ekim 2026'da yayımladığı Linux önizleme istemcisi ayrı bir uygulamadır;
-   bu launcher Epic kurulumlarını yine `legendary` üzerinden yönetir ve resmi
-   istemcinin kurulu olmasını gerektirmez. Heroic de aynı yaklaşımı kullanır.
-2. **Tauri v2 + Vite/TypeScript frontend platformdan bağımsızdır.** Arayüz, oyun kolu
-   navigasyonu, tema ve render disiplini değişmeden çalışır.
-
-**Taşınması gereken Windows'a özgü yüzeyler:**
-- Windows Registry taramaları (`cache.rs` EGL algılama, `commands.rs` 3. parti başlatıcı hub'ı).
-- Düşük seviyeli klavye kancası ile ekran görüntüsü (`screenshots.rs` — Win32 `SetWindowsHookEx`).
-- Gömülü Epic Mağaza native child webview'i (`main.rs` `add_child`; Windows'ta `HWND` tabanlı).
-- `explorer` / `link2ea://` / `.lnk` kısayolu gibi Windows kabuk entegrasyonları.
-- Sürücü listeleme (`move_game.rs` — Windows sürücü harfleri).
+> **Status:** core layer, store CLIs, compatibility tools and the launch chain are implemented (2026-10-23).
+> Linux/macOS packaging is attached to releases; Flatpak, signing/notarization and real-hardware validation remain open.
+> **Goal:** define how Efxlve Launcher moves beyond Windows, which Wine/Proton/D3DMetal layers it uses, and where the platform abstraction lives. Heroic Games Launcher is the reference model.
 
 ---
 
-## 2. Ortak Mimari: Platform Soyutlama Katmanı
+## 1. Why this is possible
 
-Önerilen yaklaşım, mevcut `src-tauri/src/legendary/` modüllerinin yanına bir
-`src-tauri/src/platform/` modülü eklemektir. Derleme zamanında `#[cfg(target_os = "...")]`
-ile platforma özgü implementasyon seçilir; iş mantığı `trait` üzerinden konuşur.
+Efxlve Launcher already has two major portability advantages:
+
+1. **The `legendary` CLI is platform-independent.** Epic authentication, catalog, manifests, downloads and cloud saves run through the Python-based `legendary` CLI, which ships Linux and macOS binaries. The Rust backend is only a process wrapper (`client.rs`, `transfers.rs`), so that layer is largely reusable.
+   Epic's Linux preview client released in October 2026 is a separate application; this launcher still manages Epic installs through `legendary` and does not require the official client. Heroic uses the same approach.
+2. **Tauri v2 + Vite/TypeScript is platform-independent.** The interface, controller navigation, themes and render discipline work unchanged.
+
+**Windows-only surfaces that need a portable path:**
+- Windows Registry scans (`cache.rs` EGL detection, `commands.rs` third-party launcher hub).
+- Low-level keyboard hook and screenshot capture (`screenshots.rs`, Win32 `SetWindowsHookEx`).
+- Native child webview for the embedded Epic Store (`main.rs` `add_child`, `HWND`-based on Windows).
+- Windows shell integration: `explorer`, `link2ea://`, `.lnk` shortcuts.
+- Drive enumeration (`move_game.rs`, Windows drive letters).
+
+---
+
+## 2. Shared architecture: platform abstraction
+
+The intended shape is a `src-tauri/src/platform/` module beside the existing `legendary/` modules. `#[cfg(target_os = "...")]` selects the implementation at compile time; business logic talks through a trait.
 
 ```rust
 // platform/mod.rs
 pub trait PlatformHost {
-    /// Varsayılan oyun kurulum kökü (Win: %USERPROFILE%\Games, Linux: ~/Games, macOS: ~/Games).
+    /// Default game install root (Win: %USERPROFILE%\Games, Linux/macOS: ~/Games).
     fn default_install_dir(&self) -> PathBuf;
-    /// Sistem sürücüleri / bağlı birimler (Win: C:, D:; Linux/macOS: mount noktaları).
+    /// System drives / mounted volumes (Win: C:, D:; Linux/macOS: mount points).
     fn system_drives(&self) -> Vec<SystemDriveInfo>;
-    /// Klasörü dosya yöneticisinde açar (explorer / xdg-open / open).
+    /// Reveal a folder in the file manager (explorer / xdg-open / open).
     fn reveal_in_file_manager(&self, path: &Path) -> Result<()>;
-    /// Ekran görüntüsü yakalama kancası (Win: Win32 hook; Linux: XDG portal; macOS: screencapture).
+    /// Screenshot capture hook (Win: Win32 hook; Linux: XDG portal; macOS: screencapture).
     fn install_screenshot_hook(&self, hotkey: u32) -> Result<()>;
-    /// Harici başlatıcı protokolleri (Win: link2ea://, uplay://; diğer: yok / wine ile).
+    /// Third-party launcher protocols (Win: link2ea://, uplay://; other: none / via Wine).
     fn launch_third_party(&self, protocol: &str, app_name: &str) -> Result<()>;
 }
 ```
 
-`cfg` ile iki implementasyon: `platform/windows.rs` (mevcut davranış korunur) ve
-`platform/unix.rs` (Linux + macOS ortak payda; macOS'a özgü dallar ayrıca `cfg(target_os = "macos")`).
+Two implementations behind `cfg`: `platform/windows.rs` preserves current behavior, and `platform/unix.rs` covers Linux + macOS, with `cfg(target_os = "macos")` for macOS-only branches.
 
 ---
 
-## 3. Linux Mimarisi (Wine / Proton / umu)
+## 3. Linux architecture (Wine / Proton / umu)
 
-Heroic modeli: `legendary launch <app> --no-wine --wrapper "<runner> run"`.
+Heroic model: `legendary launch <app> --no-wine --wrapper "<runner> run"`.
 
-### 3.1. Çalıştırıcı (Runner) Katmanı
-| Bileşen | Rol |
+### 3.1 Runner layer
+
+| Component | Role |
 |---|---|
-| **GE-Proton** (`proton-ge-custom`) | Önerilen varsayılan; Valve Proton + GloriousEggroll yamaları (medya codec, anticheat uyumu). |
-| **Proton-cachyos** | Alternatif performans odaklı runner. |
-| **Wine-GE / Wine-Lutris** | Steam dışı, saf Wine gerektiren senaryolar. |
-| **umu-launcher** | Steam Runtime dışında Proton'u çalıştıran standart başlatıcı (`STEAM_COMPAT_*` ortamını yönetir). Modern Heroic varsayılanı. |
-| **DXVK** | DirectX 9/10/11 → Vulkan çevirisi. |
-| **VKD3D-Proton** | DirectX 12 → Vulkan çevirisi. |
-| **Gamescope / GameMode** | Kapsayıcı compositor / CPU governor optimizasyonu (Steam Deck dostu). |
+| **GE-Proton** (`proton-ge-custom`) | Recommended default; Valve Proton plus GloriousEggroll patches (media codecs, anti-cheat compatibility). |
+| **Proton-cachyos** | Alternative performance-oriented runner. |
+| **Wine-GE / Wine-Lutris** | Non-Steam cases that need plain Wine. |
+| **umu-launcher** | Standard launcher for running Proton outside the Steam Runtime (manages `STEAM_COMPAT_*`). Modern Heroic default. |
+| **DXVK** | DirectX 9/10/11 → Vulkan translation. |
+| **VKD3D-Proton** | DirectX 12 → Vulkan translation. |
+| **Gamescope / GameMode** | Nested compositor / CPU governor optimization (Steam Deck friendly). |
 
-### 3.2. Prefix Yöneticisi (Her Oyun İçin İzole `WINEPREFIX`)
-- Oyun başına `~/Games/Heroic/Prefixes/<AppName>` altında prefix oluşturulur.
-- Proton için `STEAM_COMPAT_DATA_PATH=<prefix>`, `STEAM_COMPAT_CLIENT_INSTALL_PATH`
-  ve `STEAM_COMPAT_APP_ID=0` ortam değişkenleri ayarlanır.
-- DXVK/VKD3D aç-kapa, FSR/Sharpness, `nvidiaPrime`, `useGameMode` ve `WINEDLLOVERRIDES`
-  gibi ayarlar oyun bazlı `GameLocalSettings` şemasına eklenir (mevcut yapı genişletilir).
-- Winetricks / protontricks eşdeğeri işlemler prefix içinde runner'ın kendi `wine` binary'siyle koşturulur.
+### 3.2 Prefix manager (one isolated `WINEPREFIX` per game)
 
-### 3.3. Wine Manager (Runner İndirme & Yönetim)
-- Runner'lar `~/.config/efxlve/tools/{wine,proton}` altına indirilir.
-- Heroic'in aradığı bilinen konumlar da taranır: `~/.steam/root/compatibilitytools.d`,
-  `~/.steam/steam/steamapps/common`, `~/.local/share/lutris/runners/wine`, `/usr/share/steam`.
-- GitHub Releases üzerinden GE-Proton / Wine-GE indirme + SHA-256 doğrulaması
-  (`downloader.rs` altyapısı yeniden kullanılır).
+- A prefix is created per game under `~/Games/Efxlve/Prefixes/<AppName>`.
+- Proton receives `STEAM_COMPAT_DATA_PATH=<prefix>`, `STEAM_COMPAT_CLIENT_INSTALL_PATH` and `STEAM_COMPAT_APP_ID=0`.
+- DXVK/VKD3D toggles, FSR/sharpness, `nvidiaPrime`, `useGameMode` and `WINEDLLOVERRIDES` are added to the per-game `GameLocalSettings` schema (the existing structure is extended).
+- Winetricks/protontricks-style operations run inside the prefix through the runner's own `wine` binary.
 
-### 3.4. Uyumluluk Bilgisi
-- **ProtonDB** API/rozet entegrasyonu: oyun detay çekmecesinde uyumluluk seviyesi.
-- **Steam Deck Verified** durumu (varsa) gösterilir.
-- Anticheat uyarısı: Wine/Proton altında ban riski taşıyan oyunlar için bilgilendirme
-  (Heroic FAQ'de olduğu gibi).
+### 3.3 Wine manager (runner download and management)
 
-### 3.5. Paketleme
-- **Flatpak** (`com.efxlve.launcher`) — Steam Deck ve immutable distrolar için birincil.
-- **AppImage** — dağıtımdan bağımsız taşınabilir paket.
-- `.deb` / `.rpm` / AUR ikincil.
+- Runners download under `~/.config/efxlve/tools/{wine,proton}`.
+- Known Heroic locations are also scanned: `~/.steam/root/compatibilitytools.d`, `~/.steam/steam/steamapps/common`, `~/.local/share/lutris/runners/wine`, `/usr/share/steam`.
+- GE-Proton / Wine-GE downloads use GitHub Releases with SHA-256 verification (reusing the `downloader.rs` infrastructure).
+
+### 3.4 Compatibility information
+
+- **ProtonDB** API/badge in the game detail drawer.
+- **Steam Deck Verified** status when available.
+- Anti-cheat warning for titles that risk a ban under Wine/Proton (as in the Heroic FAQ).
+
+### 3.5 Packaging
+
+- **AppImage** — distribution-independent portable build (primary preview artifact).
+- `.deb` / `.rpm` — distro packages (attached to releases).
+- **Flatpak** (`com.efxlve.launcher`) — still open; needed for Steam Deck and immutable distros.
+- AUR is a secondary community channel.
 
 ---
 
-## 4. macOS Mimarisi (Apple Silicon Odaklı)
+## 4. macOS architecture (Apple Silicon focused)
 
-> **Kritik gerçek (2026):** CrossOver 27 ile Intel Mac ve 32-bit bottle desteği kaldırıldı;
-> ekosistem **Apple Silicon (M1+)** ve **macOS Sonoma+** üzerine yoğunlaştı. Tasarım bu
-> hedefe göre yapılmalıdır.
+> **Key fact (2026):** CrossOver 27 dropped Intel Macs and 32-bit bottles; the ecosystem is focused on **Apple Silicon (M1+)** and **macOS Sonoma+**. The design targets that.
 
-| Katman | Seçenek | Not |
+| Layer | Option | Note |
 |---|---|---|
-| **Birincil (ücretsiz)** | **Apple Game Porting Toolkit 4** (D3DMetal) + Wine (Gcenx build) | DirectX 11/12 → Metal; Apple lisansı ticari dağıtımı sınırlar, kullanıcı tarafından kurulur. |
-| **Alternatif** | **DXMT** (D3D → Metal, açık kaynak) | CrossOver'sız ücretsiz yığınlarda yaygın. |
-| **Ticari** | **CrossOver** bottle yönetimi | Heroic `wineCrossoverBottle` modeline benzer. |
-| **Runner** | Wine-Crossover, Wine-Staging, GPTK | Heroic'in macOS Wine Manager eşdeğeri. |
+| **Primary (free)** | **Apple Game Porting Toolkit 4** (D3DMetal) + Wine (Gcenx build) | DirectX 11/12 → Metal; Apple's licence limits commercial redistribution, so the user installs it. |
+| **Alternative** | **DXMT** (D3D → Metal, open source) | Common in free stacks without CrossOver. |
+| **Commercial** | **CrossOver** bottle management | Similar to Heroic's `wineCrossoverBottle` model. |
+| **Runner** | Wine-Crossover, Wine-Staging, GPTK | Heroic's macOS Wine Manager equivalent. |
 
-- Prefix: CrossOver bottle veya `WINEPREFIX` (Mac sürümüne göre).
-- MetalFX / D3DMetal DLL override'ları prefix bazlı yönetilir.
-- Rosetta 2 yalnızca x86_64 yardımcı süreçler için; oyunlar Apple Silicon native Wine altında çalışır.
+- Prefix: CrossOver bottle or `WINEPREFIX`, depending on the macOS version.
+- MetalFX / D3DMetal DLL overrides are managed per prefix.
+- Rosetta 2 is only for x86_64 helper processes; games run under the Apple Silicon native Wine.
 
 ---
 
-## 5. Platforma Özgü Yüzeylerin Eşlenmesi
+## 5. Mapping platform-specific surfaces
 
-| Windows Özelliği | Linux Karşılığı | macOS Karşılığı |
+| Windows feature | Linux equivalent | macOS equivalent |
 |---|---|---|
-| Registry EGL/launcher taraması | `legendary` config + `~/.steam` taraması | CrossOver bottle / `~/Library` taraması |
-| Win32 F12 klavye kancası | XDG Desktop Portal `GlobalShortcuts` veya `evdev` | `screencapture` + global hotkey (CGEventTap) |
-| Native child webview mağaza | Tauri child webview (WebKitGTK) | Tauri child webview (WKWebView) |
-| `explorer` / `.lnk` kısayolu | `xdg-open`, `.desktop` dosyası | `open`, `.app`/alias |
-| `link2ea://`, `uplay://` | Wine registry handler veya native launcher | CrossOver bottle handler |
-| Sürücü harfleri | `lsblk` / mount noktaları | `/Volumes` taraması |
-| `--max-workers`, `--max-shared-memory` | Aynı legendary bayrakları geçerli | Aynı legendary bayrakları geçerli |
+| Registry EGL/launcher scan | `legendary` config + `~/.steam` scan | CrossOver bottle / `~/Library` scan |
+| Win32 F12 keyboard hook | XDG Desktop Portal `GlobalShortcuts` or `evdev` | `screencapture` + global hotkey (CGEventTap) |
+| Native child webview store | Tauri child webview (WebKitGTK) | Tauri child webview (WKWebView) |
+| `explorer` / `.lnk` shortcut | `xdg-open`, `.desktop` file | `open`, `.app`/alias |
+| `link2ea://`, `uplay://` | Wine registry handler or native launcher | CrossOver bottle handler |
+| Drive letters | `lsblk` / mount points | `/Volumes` scan |
+| `--max-workers`, `--max-shared-memory` | Same legendary flags apply | Same legendary flags apply |
 
 ---
 
-## 6. Fazlı Uygulama Planı
+## 6. Phased implementation plan
 
-| Faz | Kapsam | Çıktı | Durum |
+| Phase | Scope | Output | Status |
 |---|---|---|---|
-| **F0** | `platform/` soyutlaması + `cfg` iskeleti; Windows davranışı birebir korunur. | Derleme her 3 platformda yeşil. | `cfg` modülleri ve Unix stub'ları ile uygulandı. |
-| **F1** | Linux'ta `legendary` + saf Wine ile oyun başlatma; prefix yönetimi; `xdg-open`. | Linux'ta temel kütüphane/oyun. | Uygulandı; donanım doğrulaması açık. |
-| **F2** | Wine Manager (GE-Proton/Wine-GE indirme), DXVK/VKD3D otomatik kurulum, umu entegrasyonu. | Heroic seviyesi Linux deneyimi. | Araç yöneticisi ve katman kopyalama uygulandı. |
-| **F3** | ProtonDB rozetleri, Gamescope/GameMode, Flatpak + AppImage paketleme. | Steam Deck uyumlu dağıtım. | ProtonDB/Deck rozetleri var; paketleme açık. |
-| **F4** | macOS Apple Silicon: GPTK/DXMT runner yönetimi, CrossOver bottle desteği. | macOS'ta oyun başlatma. | Araç zinciri uygulandı; imzalama ve donanım doğrulaması açık. |
-| **F5** | Platformlar arası ekran görüntüsü kancası ve kabuk entegrasyonları. | Özellik paritesi. | Windows'ta çalışıyor; diğer platformlarda gizleniyor. |
+| **F0** | `platform/` abstraction + `cfg` skeleton; Windows behavior unchanged. | Build green on all three platforms. | Implemented with `cfg` modules and Unix stubs. |
+| **F1** | Linux: `legendary` + plain Wine launch; prefix management; `xdg-open`. | Basic library/game on Linux. | Implemented; hardware validation open. |
+| **F2** | Wine Manager (GE-Proton/Wine-GE), automatic DXVK/VKD3D install, umu integration. | Heroic-level Linux experience. | Tool manager and layer copying implemented. |
+| **F3** | ProtonDB badges, Gamescope/GameMode, Flatpak + AppImage packaging. | Steam Deck-friendly distribution. | ProtonDB/Deck badges exist; Flatpak open. |
+| **F4** | macOS Apple Silicon: GPTK/DXMT runner management, CrossOver bottle support. | Game launch on macOS. | Toolchain implemented; signing and hardware validation open. |
+| **F5** | Cross-platform screenshot hook and shell integrations. | Feature parity. | Works on Windows; hidden elsewhere. |
 
 ---
 
-## 7. Riskler & Kısıtlar
+## 7. Risks and constraints
 
-- **Anticheat:** Kernel seviyesi anticheat (EAC/BattlEye) Wine/Proton altında çoğu oyunda
-  çalışmaz; kullanıcı bilgilendirilmelidir.
-- **Apple lisansı:** GPTK/D3DMetal ticari yeniden dağıtıma kapalıdır; launcher yalnızca
-  kullanıcının kendi kurulumunu yönetir, binary'yi paketlemez.
-- **Performans hedefi korunur:** Wine/Proton çevirisi CPU/GPU yükü ekler; arayüz tarafındaki
-  düşük kaynak/120 FPS disiplini (AGENTS.md) platformdan bağımsız olarak aynen geçerlidir.
-- **legendary fork:** Heroic kendi fork'unu kullanır; upstream sürümüyle uyumluluk izlenmelidir.
+- **Anti-cheat:** kernel-level anti-cheat (EAC/BattlEye) does not run under Wine/Proton for most titles; the user must be warned.
+- **Apple licence:** GPTK/D3DMetal may not be redistributed commercially; the launcher only manages the user's own installation and does not bundle the binary.
+- **Performance target stays:** Wine/Proton translation adds CPU/GPU cost; the low-overhead/120 FPS discipline on the UI side (AGENTS.md) applies unchanged.
+- **legendary fork:** Heroic uses its own fork; upstream compatibility must be tracked.
 
 ---
 
-## 8. Uygulanan ilk katman (2026-10-19)
+## 8. Implemented first layer (2026-10-19)
 
-Bu bölüm tasarımın hangi parçalarının kodda olduğunu söyler; Linux/macOS
-paketinin çıktığı anlamına gelmez.
+This section describes what is in the code; it does not imply that every platform package is production-ready.
 
-### 8.1 Platforma göre mağaza CLI'ları
-- `legendary/paths.rs` ve `gogdl/paths.rs` artık işletim sistemi + mimariye göre
-  doğru release asset'ini seçiyor (Windows x64/ARM64, Linux x64/ARM64, macOS
-  x64/ARM64). İndirilen dosya Unix'te çalıştırılabilir işaretleniyor.
-- Unix'te kullanıcının kendi kurduğu `legendary` (PATH, `~/.local/bin`,
-  `/usr/local/bin`, Homebrew) bulunursa indirme atlanır. Sürüm `legendary -V`
-  ile doğrulanır; bozuksa indirilen kopya kullanılır. Bu, GitHub erişimi
-  kapalıyken veya dağıtım paketi zaten legendary getiriyorsa devreye girer.
-- Nile ve Comet zaten tüm platformlar için pinlenmiş asset'lere sahipti; davranış
-  değişmedi.
+### 8.1 Store CLIs per platform
 
-### 8.2 Uyumluluk araç yöneticisi
-`src-tauri/src/compat/` üç işe ayrıldı:
+- `legendary/paths.rs` and `gogdl/paths.rs` select the correct release asset for the OS and architecture (Windows x64/ARM64, Linux x64/ARM64, macOS x64/ARM64). Downloaded files are marked executable on Unix.
+- On Unix, a user-installed `legendary` (PATH, `~/.local/bin`, `/usr/local/bin`, Homebrew) is used first and the download is skipped. The version is checked with `legendary -V`; a broken copy falls back to the downloaded one. This helps when GitHub is unreachable or the distro already ships legendary.
+- Nile and Comet already had pinned assets for every platform; behavior is unchanged.
 
-| Dosya | İş |
+### 8.2 Compatibility tool manager
+
+`src-tauri/src/compat/` is split into three jobs:
+
+| File | Job |
 |---|---|
-| `catalog.rs` | 16 araçlık katalog, platform/asset eşlemesi, arşiv türü |
-| `install.rs` | GitHub sürüm kontrolü (6 saat önbellek), indirme, SHA-256, arşiv açma, klasör kaydı, kaldırma, IPC |
-| `launch.rs` | Wine/Proton/umu wrapper'ı, `WINEPREFIX`, `STEAM_COMPAT_*`, `PROTONPATH`, `GAMEID`, `STORE` |
+| `catalog.rs` | 16-tool catalog, platform/asset mapping, archive type |
+| `install.rs` | GitHub release check (6-hour cache), download, SHA-256, extraction, folder record, uninstall, IPC |
+| `launch.rs` | Wine/Proton/umu wrapper, `WINEPREFIX`, `STEAM_COMPAT_*`, `PROTONPATH`, `GAMEID`, `STORE` |
 
-- Araçlar `<app_data>/compat/<os>-<arch>/<tool>/<tag>` altına iner; her kurulum
-  `manifest.json` taşır. `.tar.gz`, `.tar.xz`, `.tar.zst`, `.tar` ve düz dosya
-  destekleniyor. Arşiv yolları `..`/kök dizin kontrolünden geçiyor.
-- GitHub asset'inin `digest` alanı varsa SHA-256 doğrulanır; ayrıca indirilen
-  boyut ilan edilen boyutla karşılaştırılır.
-- Yarım kalan indirmeler `.part` olarak saklanır ve sonraki denemede HTTP Range
-  ile kaldığı yerden sürer; tamamlanmış parça yeniden indirilmeden doğrulanıp
-  kullanılır. Sunucu Range'i yok sayarsa baştan başlanır. Araç kaldırılınca
-  yarım parçalar da silinir.
-- Büyük indirmeler `compat-progress` olayıyla yüzde/indirme bilgisi yayınlar,
-  iptal edilebilir. Aynı araç için ikinci indirme reddedilir.
-- Windows'tan `linux-x86_64`, `linux-aarch64`, `macos-x86_64` veya
-  `macos-aarch64` hedefi seçilebilir; bu, paketleme öncesi araç ağacını
-  hazırlamak için. Başlatma her zaman çalışan platformun ağacını kullanır.
+- Tools install under `<app_data>/compat/<os>-<arch>/<tool>/<tag>`; each install has `manifest.json`. `.tar.gz`, `.tar.xz`, `.tar.zst`, `.tar` and plain files are supported. Archive paths are checked for `..`/root escapes.
+- If the GitHub asset has a `digest`, SHA-256 is verified; the downloaded size is also compared with the declared size.
+- Interrupted downloads are kept as `.part` and resumed with an HTTP Range request. A completed part is verified and reused without a second download; a server that ignores Range restarts from zero. Removing a tool deletes its parts too.
+- Large downloads emit `compat-progress` with percentage and can be cancelled. A second download of the same tool is refused.
+- From Windows the user can pick `linux-x86_64`, `linux-aarch64`, `macos-x86_64` or `macos-aarch64` as the target, for preparing a tool tree before packaging. Launching always uses the tree of the running platform.
 
-### 8.3 Başlatma zinciri
-- Epic: `legendary launch --wrapper "<runner> [run]"` + ortam değişkenleri.
-- GOG: oyun exe'si seçilen wrapper'ın arkasından başlatılır.
-- Amazon: `nile launch --no-wine --wrapper "<runner> [run]"` + ortam.
-- Öncelik: oyunun kendi `wrapper` ayarı → uyumluluk yöneticisinin seçimi →
-  (Windows'ta) Epic relay. umu-launcher kuruluysa ve açıksa Proton yerine o
-  kullanılır. Varsayılan olarak her oyun `<prefix>/<appName>` altında kendi
-  prefix'ini alır; oyun sayfasından tam bir klasör seçilirse o kullanılır.
-- DXVK ve VKD3D-Proton, Compatibility sayfasından açılırsa gerçek Wine prefix'ine
-  bir kez kopyalanır (`system32`/`syswow64`) ve `WINEDLLOVERRIDES` başlatmada
-  ayarlanır. Proton prefix'i `compatdata/pfx` içinde tuttuğu için kopyalama
-  oraya yapılır; düz Wine ve umu kökü kullanır. Prefix henüz `wineboot`
-  tarafından kurulmadıysa (`system.reg` yok) katmanlar o açılışta yazılmaz,
-  böylece Proton'un ilk kurulumu DLL'leri ezmez; katmanlar sonraki açılışta
-  uygulanır. Varsayılan kapalıdır; oyun başına `env_vars` ile ezilebilir.
-- Açık bir seçim yoksa launcher önce kendi indirdiği, sonra sistemde bulduğu ilk
-  çalıştırıcıyı (Steam `compatibilitytools.d`, Lutris, sistem Wine) kullanır.
-  "Kapalı" seçimi artık gerçekten kapalıdır: `compat_runner_enabled = false`,
-  açık bir oyun istisnası yoksa başlatma wrapper'ını tamamen atlar.
-  umu-launcher da yalnız launcher'ın indirdiği kopyadan değil, sistemde bulunan
-  `umu-run` üzerinden de çalışabilir.
-- Oyun sayfasının Sistem sekmesinde o oyuna özel bir çalıştırıcı, DXVK/VKD3D
-  anahtarları ve tam prefix klasörü seçilebilir; seçim
-  `<app_data>/compat/games.json` içinde tutulur ve genel ayarı yalnız o oyun
-  için ezer. Açık bir oyun seçimi global kapalı anahtarını da aşar; böylece tek
-  bir oyun için uyumluluk açık bırakılabilir. Katman seçimi genel seçimle aynı
-  hale gelince kayıt silinir ve oyun yine genel ayarı devralır. Prefix alanı
-  boşsa genel kök ve oyun adı kullanılır; doluysa klasör olduğu gibi alınır,
-  böylece Steam `compatdata` gibi var olan bir prefix yeniden kullanılabilir.
-  "Aç" düğmesi oyunun prefix'ini dosya yöneticisinde açar; prefix kurulmuşsa
-  Proton'un gerçek `pfx` klasörü, değilse compatdata kökü açılır. Aynı satırdaki
-  durum yazısı prefix'in hazır olup olmadığını gösterir. "Tanılamayı kopyala"
-  düğmesi çalıştırıcı, prefix, Wine kökü ve katman yollarını kimlik bilgisi
-  içermeyen düz metin olarak panoya verir; Linux/macOS hata bildirimleri için.
-  Settings → Uyumluluk sayfasındaki "Tanılamayı kopyala" düğmesi de platform,
-  hedef, araç klasörü, yönetilen sürümler, algılanan sistem çalıştırıcıları ve
-  başlatma ayarlarını aynı biçimde kopyalar.
-- Oyun sayfasındaki "Prefix'i hazırla" düğmesi `compat_prepare_prefix`
-  komutunu çağırır: seçili çalıştırıcıyla `wineboot -u` çalışır, ilerleme
-  `compat-prefix-progress` olayıyla gelir, 180 saniyede zaman aşımına uğrar ve
-  sonra katmanları gerçek prefix'e kopyalar. Aynı hazırlık, katman açık bir oyun
-  normal yoldan başlatılırken de oyun başlamadan önce çalışır; böylece ilk
-  açılış katmanları alır. Katman yoksa bu bekleme atlanır, Wine/Proton prefix'i
-  normal açılışta kurar. Bir hazırlık hatası oyunu engellemez; sonraki açılış
-  yeniden dener. Başlatma bildirimi hazırlık boyunca açık kalır ve geçen
-  saniyeleri gösterir; hata olursa yeniden "Başlatılıyor…" metnine döner.
-- Windows'ta `launch_spec` ve `compat_prepare_prefix` başlatma yapmaz; mevcut
-  Windows yolu birebir korunur ve hazırlama komutu açık bir hata döndürür.
+### 8.3 Launch chain
 
-Steam oyun sayfasının "bu bilgisayardaki kopya" kartında ProtonDB topluluk
-derecesi görünür (Steam uygulama kimliğiyle). Yanıt uygulama başına bir gün
-diskte cache'lenir; ağ hatasında eski kopya, o da yoksa satır hiç gösterilmez.
-Satır ProtonDB sayfasına gider. Aynı kartta Are We Anti-Cheat Yet? durumu da
-görünür: tek `games.json` dosyası günde bir kez indirilip uygulama kimliğine
-göre aranıyor; durum, hile koruması adları ve oyun sayfası bağlantısı gösteriliyor.
-Steam kimliğinin yanı sıra Epic katalog ad alanı (`storeIds.epic.namespace`)
-eşleşen 73 oyun da kapsanıyor. Kayıt yoksa veya kaynak ulaşılamıyorsa satır
-gizli kalıyor. Valve'nin kendi Steam
-Deck uyumluluk raporu da aynı kartta gösteriliyor: `resolved_category` 1
-desteklenmiyor, 2 oynanabilir, 3 doğrulanmış anlamına geliyor; yanıt uygulama
-başına günlük cache'leniyor.
+- Epic: `legendary launch --wrapper "<runner> [run]"` plus environment variables.
+- GOG: the game exe is launched behind the selected wrapper.
+- Amazon: `nile launch --no-wine --wrapper "<runner> [run]"` plus environment.
+- Precedence: the game's own `wrapper` setting → compatibility-manager selection → (on Windows) Epic relay. If umu-launcher is installed and enabled, it is used instead of Proton. By default every game gets its own prefix under `<prefix>/<appName>`; selecting a full folder on the game page overrides it.
+- DXVK and VKD3D-Proton, when enabled on the Compatibility page, are copied once into the real Wine prefix (`system32`/`syswow64`) and `WINEDLLOVERRIDES` is set at launch. Proton keeps its prefix under `compatdata/pfx`, so the copy goes there; plain Wine and umu use the root. If the prefix has not been initialized by `wineboot` yet (no `system.reg`), layers are not written on that boot, so Proton's first setup cannot overwrite the DLLs; they are applied on the next launch. Off by default; per-game `env_vars` can override it.
+- With no explicit choice, the launcher uses the first runner it downloaded, then the first system runner (Steam `compatibilitytools.d`, Lutris, system Wine). "Off" now really means off: `compat_runner_enabled = false` skips the launch wrapper entirely unless a game has an explicit exception. umu-launcher can also run from a system `umu-run`, not only the launcher's downloaded copy.
+- The game page's System tab can select a per-game runner, DXVK/VKD3D switches and an exact prefix folder. The choice lives in `<app_data>/compat/games.json` and overrides the global setting only for that game. An explicit game choice also overrides the global off switch, so compatibility can be enabled for one title. When the layer selection matches the global one, the record is removed and the game inherits the global setting again. An empty prefix field uses the global root and game name; a filled one is used as-is, so an existing Steam `compatdata` prefix can be reused.
+  The **Open** button reveals the game's prefix: Proton's real `pfx` folder when initialized, otherwise the compatdata root. The status text on the same row shows whether the prefix is ready. **Copy diagnostics** puts runner, prefix, Wine root and layer paths on the clipboard as plain text with no credentials, for Linux/macOS bug reports. Settings → Compatibility has the same button and also copies platform, target, tool folder, managed versions, detected system runners and launch settings.
+- The game page's **Prepare prefix** button calls `compat_prepare_prefix`: it runs `wineboot -u` with the selected runner, emits `compat-prefix-progress`, times out after 180 seconds, then copies layers into the real prefix. The same preparation runs before a normal launch when layers are enabled, so the first launch receives them. With no layers the wait is skipped and Wine/Proton initializes the prefix normally. A preparation error does not block the game; the next launch retries. The launch notification stays visible during preparation and shows elapsed seconds, then returns to "Launching…" on error.
+- On Windows, `launch_spec` and `compat_prepare_prefix` do not launch; the existing Windows path is preserved and the preparation command returns an explicit error.
 
-### 8.4 Arayüz
-Settings → Uyumluluk: hedef platform seçici, mağaza CLI'ları, çalıştırıcılar,
-çalışma zamanları, çeviri katmanları ve yardımcılar; sürüm/boyut, kurulu sürüm,
-sistemde bulunan kopyalar, indir/kaldır/güncelle ve canlı ilerleme. Altta bu
-bilgisayar için varsayılan çalıştırıcı, sürüm, prefix klasörü ve umu anahtarı.
-Çalıştırıcı listesi launcher'ın indirdiği sürümlerin yanında Steam
-`compatibilitytools.d`, Lutris ve sistem Wine kopyalarını da gösterir; seçilen
-klasör `compat_runner_path` olarak saklanır ve başlatmada launcher'ın kendi
-kopyasından önce gelir. Sayfa ayrıca araç klasörünün gerçek boyutunu gösterir ve
-yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
+On the Steam game page's "copy on this PC" card, the ProtonDB community rating is shown by Steam app id. The response is cached on disk per app for one day; on a network error the old copy is used, and if none exists the row is hidden. The row links to the ProtonDB page. The same card shows Are We Anti-Cheat Yet? status: one `games.json` file is downloaded once a day and searched by app id; the status, anti-cheat names and a link to the game page are shown. Besides Steam ids, 73 games matching the Epic catalog namespace (`storeIds.epic.namespace`) are covered. If there is no record or the source is unreachable, the row stays hidden. Valve's Steam Deck compatibility report is also shown on the same card: `resolved_category` 1 is unsupported, 2 playable, 3 verified; the response is cached per app daily.
 
-### 8.5 Kalan işler
-- Flatpak paketleme ve macOS imzalama/notarization. `.deb`/`.rpm`/AppImage ve
-  `.app`/`.dmg` manuel **Package** workflow'unda üretiliyor; imzasız çıktı
-  doğrudan dağıtım için hazır değil.
-- GPTK/D3DMetal lisansı: binary paketlenmez, kullanıcı kendi kurulumunu yönetir.
-- Linux/macOS'ta gerçek donanım doğrulaması: oyun başlatma, Proton prefix'i,
-  Steam kütüphanesi ve mağaza webview'leri.
-- macOS'ta imzalama/notarization ve Apple Silicon native runner doğrulaması.
-  Overlay'in saydam penceresi `macos-private-api` özelliğini kullanır; bu özel
-  API Mac App Store dağıtımını engeller, doğrudan indirme etkilenmez.
-- Steam `compatdata` ağacındaki prefix'ler son çare olarak kayıt algılamaya
-  dahil edilir; Steam app id'si launcher'da bilinmediği için oyun adına göre
-  aranır ve ucuz kökler boş döndüğünde taranır.
-- Ekran görüntüsü kancası, klip kaydı, FPS/HUD ve görev çubuğu rozeti için
-  platform implementasyonları (bugün Windows'ta çalışır, diğerlerinde gizlenir).
-- `wine-crossover` yalnızca algılanır (Gcenx/winecx deposu 404); `vulkan-helper-rs`
-  kaynak-only olduğu için indirilmez.
+### 8.4 Interface
 
-### 8.6 Windows dışındaki bugünkü davranış
+Settings → Compatibility: target-platform selector, store CLIs, runners, runtimes, translation layers and helpers; version/size, installed version, system copies, install/remove/update and live progress. The bottom shows the default runner for this PC, version, prefix folder and umu switch. The runner list shows Steam `compatibilitytools.d`, Lutris and system Wine copies next to launcher-downloaded versions; the selected folder is stored as `compat_runner_path` and takes precedence over the launcher's own copy at launch. The page also shows the real size of the tool folder and can clean partial download/extraction parts with one button.
 
-Bu bölüm kodun Linux/macOS'ta ne yaptığını söyler; paket çıktığı anlamına gelmez.
+### 8.5 Remaining work
 
-- **Mağaza CLI'ları:** `legendary`, `gogdl`, Nile ve Comet işletim sistemi +
-  mimariye göre indirilir; Unix'te `0o755` izni verilir. Unix'te sistemde kurulu
-  bir `legendary` varsa önce o denenir. Eksik platform için indirme, çalıştırma
-  yerine açık hata döndürür.
-- **Oyun başlatma:** Epic, GOG, Amazon ve özel oyunlar `compat::launch_spec`
-  üzerinden Wine/Proton/umu wrapper'ına verilir. Windows'ta wrapper atlanır.
-- **Süreç takibi:** Linux/macOS'ta `sysinfo` ile kurulum klasörü/EXE adı
-  eşleştirilir; GOG ve Steam PID kontrolleri `kill -0` kullanır. Bu, oyun
-  oturumu ve overlay bağlamının Windows'suz çalışması içindir.
-- **Dosya seçiciler:** Linux'ta `zenity`/`kdialog`, macOS'ta `osascript`; yoksa
-  mevcut değer korunur. Windows PowerShell seçicisi değişmedi.
-- **Steam:** Kayıt defteri yerine `~/.steam/steam`, `~/.steam/root`,
-  `~/.steam/debian-installation`, `~/.local/share/Steam`,
-  Flatpak (`~/.var/app/com.valvesoftware.Steam/...`), Snap
-  (`~/snap/steam/...`) ve `~/Library/Application Support/Steam` aranır.
-  `steam.pid` hem istemci klasöründe hem bir üst dizinde okunur; dosya yoksa
-  süreç adına bakılır. `steam://` açma `xdg-open` / `open` ile yapılır.
-- **Overlay:** Panel Tauri webview olarak açılır; launcher açıldığından itibaren
-  üst çubuktaki düğme ve tepsi menüsüyle kullanılabilir. Shift+Tab global
-  kısayolu, HUD/FPS katmanı, ekran görüntüsü ve klip sekmeleri Windows'a özgüdür.
-  Linux/macOS'ta bu sekmeler gizlenir; panel, performans (yalnızca CPU/RAM;
-  FPS/GPU/VRAM kartları Windows'a özgü), notlar, başarımlar, tarayıcı sayfaları
-  açılır. Spotify sekmesi (`librespot` Connect alıcısı) ve
-  Discord sosyal sekmesi (Social SDK / RPC) Windows'a özgü olduğu için Unix'te
-  gizlenir; Spotify web oynatıcısı ve Discord web istemcisi launcher
-  sayfalarında çalışmaya devam eder. Müzik kartı ve sekme kısayolları da
-  yalnızca Windows'ta çizilir.
-- **Mağaza webview'leri:** Tauri child webview kullanılır. WebView2'ye özgü
-  Chrome eklentisi katmanı Windows'ta açılır; diğer platformlarda mağaza sayfası
-  eklentisiz açılır, para birimi betiği çalışmaya devam eder.
-- **Windows'a özgü ve gizlenen yüzeyler:** Controller bridge (ViGEm), görev
-  çubuğu rozeti, EOS/Epic relay, `.lnk` kısayolları, kayıt defteri taramaları ve
-  sürücü harfi hedefi kuran oyun taşıma. Unix'te taşıma düğmesi gizlenir;
-  `get_system_drives` gerçek bağlama noktalarını ve kapasitelerini döndürür.
-- **Steam oturumu:** Windows token'ı DPAPI ile mühürler. Unix'te token önce
-  Secret Service / Keychain'e yazılır; anahtar zinciri yoksa yalnız geçerli
-  kullanıcının okuyabildiği `0600` dosyasına düşer. Hesap silinince hem dosya
-  hem anahtar zinciri kaydı temizlenir.
-- **Kayıt klasörü:** `detect_save_path` platforma göre arar. Linux'ta
-  `$XDG_DATA_HOME` (varsayılan `~/.local/share`), `~/.config/unity3d`,
-  `~/Documents`, `~/Saved Games`; macOS'ta bunlara ek olarak
-  `~/Library/Application Support`. Ardından `~/Games/Efxlve/Prefixes` altındaki
-  her prefix'in `pfx/drive_c/users/<user>/` ağacında `AppData/Local`,
-  `AppData/LocalLow`, `Documents` ve `Saved Games` taranır. Son çare olarak Steam
-  kütüphanelerindeki `steamapps/compatdata/*/pfx` prefix'leri de aynı klasörler
-  için taranır; Steam app id'si bilinmediği için eşleşme oyun adına göre yapılır.
+- **Flatpak** and macOS signing/notarization. `.deb`/`.rpm`/AppImage and `.dmg`/`.app` are attached to releases, but the macOS app is unsigned and not notarized; Flatpak is still open.
+- GPTK/D3DMetal licence: the binary is not bundled; the user manages their own installation.
+- Real-hardware validation on Linux/macOS: game launch, Proton prefix, Steam library and store webviews.
+- macOS signing/notarization and Apple Silicon native runner validation. The overlay's transparent window uses the `macos-private-api` feature; that private API blocks Mac App Store distribution, but direct download is unaffected.
+- Steam `compatdata` prefixes are included in save discovery as a last resort; because the Steam app id is unknown to the launcher, the match is by game name and only runs when cheaper roots return nothing.
+- Platform implementations for the screenshot hook, clip recording, FPS/HUD and taskbar badge (today they work on Windows and are hidden elsewhere).
+- `wine-crossover` is detection-only (the Gcenx/winecx repository is 404); `vulkan-helper-rs` is source-only and is not downloaded.
 
-## 9. Referanslar
+### 8.6 Current behavior outside Windows
+
+This section describes what the code does on Linux/macOS; it does not imply a production package.
+
+- **Store CLIs:** `legendary`, `gogdl`, Nile and Comet are downloaded for the OS + architecture and marked `0o755` on Unix. On Unix a system-installed `legendary` is tried first. A missing platform returns an explicit error instead of trying to run a Windows binary.
+- **Game launch:** Epic, GOG, Amazon and custom games go through `compat::launch_spec` into the Wine/Proton/umu wrapper. On Windows the wrapper is skipped.
+- **Process tracking:** Linux/macOS match the install folder/EXE name through `sysinfo`; GOG and Steam PID checks use `kill -0`. This keeps game sessions and overlay context working without Windows.
+- **File pickers:** `zenity`/`kdialog` on Linux and `osascript` on macOS; if missing, the current value is kept. The Windows PowerShell picker is unchanged.
+- **Steam:** instead of the registry, the launcher scans `~/.steam/steam`, `~/.steam/root`, `~/.steam/debian-installation`, `~/.local/share/Steam`, Flatpak (`~/.var/app/com.valvesoftware.Steam/...`), Snap (`~/snap/steam/...`) and `~/Library/Application Support/Steam`. `steam.pid` is read in both the client folder and its parent; if absent, the process name is used. `steam://` opens through `xdg-open`/`open`.
+- **Overlay:** the panel is a Tauri webview, available from the header button and tray menu as soon as the launcher starts. The Shift+Tab global hotkey, HUD/FPS layer, screenshots and clip tabs are Windows-only. On Linux/macOS those tabs are hidden; the panel still opens performance (CPU/RAM only; FPS/GPU/VRAM cards are Windows-only), notes, achievements and browser pages. The Spotify tab (`librespot` Connect receiver) and Discord social tab (Social SDK / RPC) are Windows-only and hidden on Unix; the Spotify web player and Discord web client still work in the launcher pages. The music card and tab shortcuts are only drawn on Windows.
+- **Store webviews:** Tauri child webviews are used. The WebView2-specific Chrome extension layer is Windows-only; other platforms open the store page without extensions, while the currency script keeps working.
+- **Windows-only and hidden surfaces:** controller bridge (ViGEm), taskbar badge, EOS/Epic relay, `.lnk` shortcuts, registry scans and game move that creates a drive-letter target. On Unix the move button is hidden; `get_system_drives` returns real mount points and capacities.
+- **Steam session:** Windows seals the token with DPAPI. On Unix the token is written to Secret Service / Keychain first; when no keychain exists it falls back to a `0600` file readable only by the current user. Deleting the account removes both the file and the keychain record.
+- **Save folder:** `detect_save_path` searches per platform. On Linux: `$XDG_DATA_HOME` (default `~/.local/share`), `~/.config/unity3d`, `~/Documents`, `~/Saved Games`; macOS adds `~/Library/Application Support`. Then it scans `AppData/Local`, `AppData/LocalLow`, `Documents` and `Saved Games` inside every prefix under `~/Games/Efxlve/Prefixes`. As a last resort it scans every `steamapps/compatdata/*/pfx` prefix in the Steam libraries for the same folders; the Steam app id is unknown, so the match is by game name.
+
+## 9. References
 
 - Heroic Games Launcher — https://heroicgameslauncher.com (GPL-3.0)
 - GE-Proton — https://github.com/GloriousEggroll/proton-ge-custom
