@@ -388,11 +388,13 @@ function amazonManageBody(s: EpicSummary): string {
         }
          <button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
       )}
-      ${row(
-        t("manage.shortcutTitle"),
-        t("manage.shortcutDesc"),
-        `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${s.appName}">${t("manage.createShortcut")}</button>`,
-      )}`
+      ${IS_WINDOWS
+        ? row(
+            t("manage.shortcutTitle"),
+            t("manage.shortcutDesc"),
+            `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${s.appName}">${t("manage.createShortcut")}</button>`,
+          )
+        : ""}`
     : row(
         t("common.install"),
         t("amazon.managedDesc"),
@@ -618,8 +620,10 @@ export function renderDrawerManage(s: EpicSummary): string {
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
           blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : "")}
-        ${row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
-          `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)}
+        ${IS_WINDOWS
+          ? row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
+              `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)
+          : ""}
       `) : ""}
 
       ${s.installed ? group("cloud", t("manage.groupSaves"), `

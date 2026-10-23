@@ -986,7 +986,9 @@ pub(super) async fn monitor_download(
                 tot_bytes,
             );
             let settings = crate::load_settings(&app);
-            if settings.auto_desktop_shortcut {
+            // A desktop shortcut is a Windows shell file (`.lnk`); the Unix
+            // builds skip the step instead of logging a failure per install.
+            if cfg!(windows) && settings.auto_desktop_shortcut {
                 let app_clone = app.clone();
                 let app_name_clone = app_name.clone();
                 tauri::async_runtime::spawn(async move {

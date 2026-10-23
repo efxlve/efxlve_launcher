@@ -8,6 +8,7 @@
 
 import { ctxRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
+import { IS_WINDOWS } from "../../core/platform";
 import { gameVersionsOf, sourceOfKey, summaryOf, sharedOwnerOf } from "../../core/selectors";
 import { storeVersionLabel } from "../drawer/external-versions";
 import { storeLogo } from "../store/store-logos";
@@ -97,7 +98,7 @@ const isRiot = source === "riot";
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
       : ""}
     <div class="ps5-context-sep"></div>
-    ${!shared && !isSteam && !isCustom && installed ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
+    ${!shared && !isSteam && !isCustom && installed && IS_WINDOWS ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
     ${!shared && installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
     ${!shared && !isSteam && !isCustom && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}

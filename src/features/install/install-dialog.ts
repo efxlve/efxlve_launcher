@@ -11,6 +11,7 @@ import { epicInstall, epicPlay } from "../../core/epic-actions";
 import { installRoot } from "../../core/dom";
 import { epicArt, epicDlProgress } from "../../core/game-view";
 import { icon } from "../../core/icons";
+import { IS_WINDOWS } from "../../core/platform";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
@@ -175,10 +176,12 @@ export function renderInstallDialog(): void {
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-autoupdate" ${S.installDialogAutoUpdate ? "checked" : ""} />
             <span>${t("install.autoUpdate")}</span>
           </label>
-          <label class="install-check-row">
+          ${IS_WINDOWS
+            ? `<label class="install-check-row">
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-shortcut" ${S.installDialogShortcut ? "checked" : ""} />
             <span>${t("manage.createShortcut")}</span>
-          </label>
+          </label>`
+            : ""}
         </div>
         <div class="install-footer">
           ${isGog ? `<button type="button" class="btn ghost small" data-act="gog-import-existing" data-id="${esc(appName)}">${t("settings.importInstalled")}</button>` : ""}
@@ -240,7 +243,7 @@ export async function confirmInstall(): Promise<void> {
   } catch {
     // Preferences are best-effort; never block the install.
   }
-  if (S.installDialogShortcut) S.pendingShortcutApps.add(appName);
+  if (IS_WINDOWS && S.installDialogShortcut) S.pendingShortcutApps.add(appName);
   S.selectiveInstallDir = dir;
   closeInstallDialog();
   if (hasOptions) {

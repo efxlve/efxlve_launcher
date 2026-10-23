@@ -285,7 +285,9 @@ function renderDownloads(): string {
     group(
       row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +
       row(t("downloads.pauseOnPlay"), t("downloads.pauseOnPlayDesc"), toggle("toggle-pause-on-play", S.pauseOnPlay)) +
-      row(t("settings.autoDesktopShortcut"), t("settings.autoDesktopShortcutDesc"), toggle("toggle-auto-desktop-shortcut", S.autoDesktopShortcut)) +
+      (IS_WINDOWS
+        ? row(t("settings.autoDesktopShortcut"), t("settings.autoDesktopShortcutDesc"), toggle("toggle-auto-desktop-shortcut", S.autoDesktopShortcut))
+        : "") +
       row(t("settings.offlineTitle"), t("settings.offlineDesc"), toggle("toggle-offline-mode", S.offlineMode)) +
       row(t("downloads.cacheClear"), t("settings.netCacheDesc"), `<button type="button" class="btn ghost small" data-act="dl-cleanup-cache">${t("downloads.cacheClearBtn")}</button>`) +
       row(t("settings.pictureCache"), t("settings.pictureCacheDesc"), `<span class="settings-value tabular-nums">${S.pictureCacheBytes != null ? fmtBytes(S.pictureCacheBytes) : ""}</span><button type="button" class="btn ghost small" data-act="clear-picture-cache">${t("downloads.cacheClearBtn")}</button>`),
