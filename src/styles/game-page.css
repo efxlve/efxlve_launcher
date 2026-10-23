@@ -94,38 +94,36 @@ body.sb-resizing .overlay {
 /* --- Action bar + stats --- */
 .gp-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
-  /* A solid capsule, so the row reads as a toolbar instead of a transparent
-     gap over the hero art. The old full-width strip made the primary button
-     look grey, but a contained card keeps the accent readable. */
-  margin: 12px 32px 0; padding: 10px 12px; position: relative; z-index: 4;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  /* No band behind the row: the launcher's own black, with the hero's scrim
+     fading into it. A surface-coloured strip made the play button look grey. */
+  margin-top: 0; padding: 14px 32px; position: relative; z-index: 4;
+  background: transparent;
 }
 .gp-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .gp-bar-right { display: flex; align-items: center; justify-content: flex-end; margin-left: auto; min-width: 0; }
 .gp-bar-meta-group {
   display: inline-flex;
   align-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  padding: 4px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* The facts sit on the page, not in their own capsule: a second floating
+     surface next to the play row competed with the primary action. */
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   max-width: 100%;
 }
 .gp-bar-meta-item {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: var(--r-sm);
   transition: background var(--ease), border-color var(--ease);
   user-select: none;
   min-width: 0;
 }
+.gp-bar-meta-item:first-child { padding-left: 0; }
+.gp-bar-meta-item:last-child { padding-right: 0; }
 .gp-bar-meta-item.is-clickable {
   cursor: pointer;
 }
@@ -343,15 +341,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* --- Body & tabs --- */
 .gp-body { padding: 18px 32px 48px; flex: 1; }
-.gp-tabs {
-  margin-bottom: 18px;
-  padding: 0 14px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
+.gp-tabs { margin-bottom: 22px; overflow-x: auto; scrollbar-width: none; }
 .gp-tabs::-webkit-scrollbar { display: none; }
 .gp-tabs .tab svg { width: 13px; height: 13px; }
 .gp-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }

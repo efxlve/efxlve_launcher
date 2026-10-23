@@ -272,11 +272,6 @@
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
 }
 
-:root[data-surface="white"] .gp-bar-meta-group {
-  background: #ffffff;
-  border-color: var(--line);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-}
 :root[data-surface="white"] .gp-bar-meta-icon {
   background: var(--surface-2);
   color: var(--text-2);
@@ -1174,11 +1169,6 @@
   text-shadow: 0 2px 18px rgba(0, 40, 80, 0.6);
 }
 :root[data-surface="gloss"] .gp-meta { color: rgba(255, 255, 255, 0.86); }
-:root[data-surface="gloss"] .gp-bar-meta-group {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 248, 255, 0.82) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow: var(--aero-glass-edge), 0 8px 24px rgba(8, 62, 110, 0.16), inset 0 1px 0 #ffffff;
-}
 :root[data-surface="gloss"] .gp-bar-meta-icon {
   background: rgba(16, 78, 130, 0.08);
   color: var(--text-2);
@@ -1903,11 +1893,6 @@
 /* Game Page Hero */
 :root[data-surface="blades"] .gp-hero-scrim {
   background: linear-gradient(to bottom, rgba(4, 16, 8, 0.35) 0%, rgba(4, 16, 8, 0) 25%, rgba(4, 16, 8, 0.12) 55%, rgba(4, 16, 8, 0.72) 85%, rgba(4, 16, 8, 0.92) 100%);
-}
-:root[data-surface="blades"] .gp-bar-meta-group {
-  background: linear-gradient(180deg, rgba(20, 48, 26, 0.88), rgba(12, 30, 16, 0.92));
-  border: 1px solid var(--line);
-  box-shadow: var(--x360-glass-edge), 0 6px 18px rgba(0, 12, 4, 0.4);
 }
 :root[data-surface="blades"] .gp-bar-meta-icon {
   background: rgba(8, 24, 12, 0.7);
