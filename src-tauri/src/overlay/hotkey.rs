@@ -7,11 +7,20 @@
 //! The listener idles instead of polling whenever the overlay is switched off or
 //! the running game opted out. That is deliberate: no key polling and no overlay
 //! window for a multiplayer title the user does not want the overlay near.
+//!
+//! Linux/macOS have no listener: there is no global key polling there, and the
+//! panel opens from the launcher header and the tray menu instead.
 
+#[cfg(windows)]
 use std::time::Duration;
 use tauri::AppHandle;
 
+#[cfg(windows)]
 use super::{hide, show, STATE};
+
+/// Linux/macOS: the overlay has no global hotkey, so there is no thread to run.
+#[cfg(not(windows))]
+pub(crate) fn start(_app: AppHandle) {}
 
 #[cfg(windows)]
 #[link(name = "user32")]
@@ -19,11 +28,16 @@ extern "system" {
     fn GetAsyncKeyState(v_key: i32) -> i16;
 }
 
+#[cfg(windows)]
 const VK_SHIFT: i32 = 0x10;
+#[cfg(windows)]
 const VK_CONTROL: i32 = 0x11;
+#[cfg(windows)]
 const VK_ALT: i32 = 0x12;
+#[cfg(windows)]
 const VK_TAB: i32 = 0x09;
 
+#[cfg(windows)]
 pub(crate) fn start(app: AppHandle) {
     std::thread::spawn(move || {
         let mut gone_ticks: u32 = 0;
@@ -138,12 +152,6 @@ pub(crate) fn start(app: AppHandle) {
                     }
                 }
             }
-
-            #[cfg(not(windows))]
-            {
-                let _ = &app;
-                std::thread::sleep(Duration::from_millis(250));
-            }
         }
     });
 }
@@ -255,11 +263,6 @@ fn is_controller_hotkey_down() -> bool {
             }
         }
     }
-    false
-}
-
-#[cfg(not(windows))]
-fn is_controller_hotkey_down() -> bool {
     false
 }
 

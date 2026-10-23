@@ -1145,7 +1145,15 @@ fn main() {    // Rockstar's launcher only continues when a process named
             }
             // Refreshes linked companion accounts (today: Ubisoft) on a timer.
             companion::start_ubi_sync(app.handle().clone());
+            // Linux desktops without a tray host (a bare GNOME session) fail to
+            // build the indicator; the launcher still has the header controls,
+            // so a missing tray must not abort boot.
+            #[cfg(windows)]
             build_tray(app)?;
+            #[cfg(not(windows))]
+            if let Err(error) = build_tray(app) {
+                perf::write_line_global(&format!("boot: tray icon unavailable: {error}"));
+            }
             watch_boot_window(app.handle().clone());
             Ok(())
         })
