@@ -270,6 +270,8 @@ yarım kalan indirme/extraction parçalarını tek düğmeyle temizler.
 - Linux/macOS'ta gerçek donanım doğrulaması: oyun başlatma, Proton prefix'i,
   Steam kütüphanesi ve mağaza webview'leri.
 - macOS'ta imzalama/notarization ve Apple Silicon native runner doğrulaması.
+  Overlay'in saydam penceresi `macos-private-api` özelliğini kullanır; bu özel
+  API Mac App Store dağıtımını engeller, doğrudan indirme etkilenmez.
 - Steam `compatdata` ağacındaki prefix'ler kayıt algılamaya dahil değil; Steam
   Proton'uyla başlatılan bir oyunun klasörü Manage'den seçilmeli.
 - Ekran görüntüsü kancası, klip kaydı, FPS/HUD ve görev çubuğu rozeti için
