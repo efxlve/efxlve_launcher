@@ -3016,5 +3016,6 @@
   "profile.autoUploadTitle": "每日上传启动器数据",
   "profile.autoUploadDesc": "启动器打开时每天最多将配置上传到云服务一次，以便重新安装后恢复。",
   "profile.pickFolder": "选择启动器数据的导出文件夹",
-  "profile.pickFile": "选择启动器数据归档"
+  "profile.pickFile": "选择启动器数据归档",
+  "cloud.webdavAllowInvalidCert": "允许自签名证书"
 }

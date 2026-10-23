@@ -3016,5 +3016,6 @@
   "profile.autoUploadTitle": "런처 데이터를 매일 업로드",
   "profile.autoUploadDesc": "런처가 열려 있는 동안 프로필을 하루 최대 한 번 클라우드 공급자에 업로드하여 새 설치에서 복원할 수 있게 합니다.",
   "profile.pickFolder": "런처 데이터를 내보낼 폴더 선택",
-  "profile.pickFile": "런처 데이터 아카이브 선택"
+  "profile.pickFile": "런처 데이터 아카이브 선택",
+  "cloud.webdavAllowInvalidCert": "자체 서명 인증서 허용"
 }

@@ -43,6 +43,9 @@ pub struct CloudBackupSettings {
     pub webdav_username: String,
     #[serde(default)]
     pub webdav_password: String,
+    /// Accept a self-signed WebDAV certificate (explicit opt-in).
+    #[serde(default)]
+    pub webdav_allow_invalid_cert: bool,
     /// `<remote>:<path>` as configured in `rclone config`.
     #[serde(default)]
     pub rclone_remote: String,
@@ -75,6 +78,7 @@ impl Default for CloudBackupSettings {
             webdav_url: String::new(),
             webdav_username: String::new(),
             webdav_password: String::new(),
+            webdav_allow_invalid_cert: false,
             rclone_remote: String::new(),
             gdrive_client_id: None,
             gdrive_client_secret: None,

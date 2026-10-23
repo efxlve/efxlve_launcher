@@ -31,6 +31,7 @@ export function renderCloudBackupSettingsGroup(): string {
     webdavUrl: "",
     webdavUsername: "",
     webdavPassword: "",
+    webdavAllowInvalidCert: false,
     rcloneRemote: "",
     gdriveClientId: null,
     gdriveClientSecret: null,
@@ -140,6 +141,10 @@ export function renderCloudBackupSettingsGroup(): string {
             <input id="cloud-webdav-user" class="input" placeholder="${t("cloud.username")}" value="${esc(st.webdavUsername)}" spellcheck="false" autocomplete="off" style="flex:1" />
             <input id="cloud-webdav-pass" type="password" class="input" placeholder="${t("cloud.password")}" value="${esc(st.webdavPassword)}" spellcheck="false" autocomplete="off" style="flex:1" />
           </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)">
+            <input type="checkbox" data-act="toggle-webdav-invalid-cert" ${st.webdavAllowInvalidCert ? "checked" : ""} />
+            ${t("cloud.webdavAllowInvalidCert")}
+          </label>
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button type="button" class="btn ghost small" data-act="cloud-webdav-test" ${S.cloudBackupTesting ? "disabled" : ""}>
               ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}

@@ -243,6 +243,12 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       return true;
     }
 
+    case "toggle-webdav-invalid-cert": {
+      const checked = ((targetEl || t) as HTMLInputElement).checked;
+      void updateCloudBackupSettings({ webdavAllowInvalidCert: checked });
+      return true;
+    }
+
     case "cloud-webdav-save": {
       const urlInput = document.getElementById("cloud-webdav-url") as HTMLInputElement | null;
       const userInput = document.getElementById("cloud-webdav-user") as HTMLInputElement | null;

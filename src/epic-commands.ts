@@ -948,6 +948,7 @@ export interface CloudBackupSettings {
   webdavUrl: string;
   webdavUsername: string;
   webdavPassword: string;
+  webdavAllowInvalidCert: boolean;
   rcloneRemote: string;
   gdriveClientId?: string | null;
   gdriveClientSecret?: string | null;

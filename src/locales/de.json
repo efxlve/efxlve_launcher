@@ -3016,5 +3016,6 @@
   "profile.autoUploadTitle": "Launcher-Daten täglich hochladen",
   "profile.autoUploadDesc": "Lädt das Profil höchstens einmal täglich zum Cloud-Anbieter, solange der Launcher geöffnet ist, damit eine Neuinstallation es wiederherstellen kann.",
   "profile.pickFolder": "Ordner für den Launcher-Datenexport wählen",
-  "profile.pickFile": "Launcher-Datenarchiv auswählen"
+  "profile.pickFile": "Launcher-Datenarchiv auswählen",
+  "cloud.webdavAllowInvalidCert": "Selbstsigniertes Zertifikat erlauben"
 }

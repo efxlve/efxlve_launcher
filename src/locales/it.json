@@ -3016,5 +3016,6 @@
   "profile.autoUploadTitle": "Carica i dati del launcher ogni giorno",
   "profile.autoUploadDesc": "Carica il profilo sul provider cloud al massimo una volta al giorno mentre il launcher è aperto, così una nuova installazione può ripristinarlo.",
   "profile.pickFolder": "Scegli una cartella per esportare i dati del launcher",
-  "profile.pickFile": "Seleziona un archivio dati del launcher"
+  "profile.pickFile": "Seleziona un archivio dati del launcher",
+  "cloud.webdavAllowInvalidCert": "Consenti un certificato autofirmato"
 }

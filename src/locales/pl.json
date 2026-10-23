@@ -3016,5 +3016,6 @@
   "profile.autoUploadTitle": "Codziennie wysyłaj dane launchera",
   "profile.autoUploadDesc": "Wysyła profil do dostawcy chmury najwyżej raz dziennie, gdy launcher jest otwarty, aby można go było przywrócić po reinstalacji.",
   "profile.pickFolder": "Wybierz folder eksportu danych launchera",
-  "profile.pickFile": "Wybierz archiwum danych launchera"
+  "profile.pickFile": "Wybierz archiwum danych launchera",
+  "cloud.webdavAllowInvalidCert": "Zezwól na certyfikat z podpisem własnym"
 }

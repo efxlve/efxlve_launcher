@@ -20,6 +20,15 @@ use crate::legendary::skip::default_config_dir;
 
 static HTTP_CLIENT: OnceLock<Client> = OnceLock::new();
 
+/// A WebDAV client; the self-signed opt-in is per provider, not global.
+fn webdav_client(settings: &CloudBackupSettings) -> Result<Client, String> {
+    Client::builder()
+        .danger_accept_invalid_certs(settings.webdav_allow_invalid_cert)
+        .connect_timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|error| format!("Could not create the WebDAV client: {error}"))
+}
+
 fn get_client() -> &'static Client {
     HTTP_CLIENT.get_or_init(|| {
         Client::builder()
@@ -171,6 +180,8 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
         CloudBackupProvider::None => Err("No cloud provider selected.".to_string()),
         CloudBackupProvider::Folder => folder::test_folder(&settings.folder_path),
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             if settings.webdav_url.trim().is_empty() {
                 return Err("WebDAV URL cannot be empty.".to_string());
             }
@@ -252,6 +263,8 @@ pub async fn upload_backup(
     // 3. Upload according to active provider
     let entry = match settings.provider {
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             let base_url = settings.webdav_url.trim_end_matches('/');
             let root_dir = format!("{base_url}/efxlve_saves/");
             let app_dir = format!("{base_url}/efxlve_saves/{}/", backup_key(app_name));
@@ -433,6 +446,8 @@ pub async fn list_cloud_backups(app_name: &str) -> Result<Vec<CloudBackupEntry>,
             rclone::list_backups_rclone(&settings.rclone_remote, app_name).await
         }
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             webdav::list_webdav_backups(
                 client,
                 &settings.webdav_url,
@@ -477,6 +492,8 @@ pub async fn download_and_restore(
             rclone::download_backup_rclone(&settings.rclone_remote, remote_id, &temp_archive).await?;
         }
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             webdav::download_file_webdav(
                 client,
                 remote_id,
@@ -519,6 +536,8 @@ pub async fn delete_remote_backup(remote_id: &str) -> Result<(), String> {
             rclone::delete_backup_rclone(&settings.rclone_remote, remote_id).await
         }
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             webdav::delete_file_webdav(
                 client,
                 remote_id,
@@ -585,6 +604,8 @@ pub async fn upload_profile_archive(
             archive,
         )?,
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             let base_url = settings.webdav_url.trim_end_matches('/');
             let root_dir = format!("{base_url}/efxlve_saves/");
             let app_dir = format!("{base_url}/efxlve_saves/{}/", backup_key(PROFILE_KEY));
@@ -671,6 +692,8 @@ pub async fn download_profile_archive(remote_id: &str, backup_id: &str) -> Resul
             folder::download_backup_folder(&settings.folder_path, remote_id, &dest)?;
         }
         CloudBackupProvider::Webdav => {
+            let webdav = webdav_client(&settings)?;
+            let client = &webdav;
             webdav::download_file_webdav(
                 client,
                 remote_id,

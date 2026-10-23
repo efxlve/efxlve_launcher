@@ -3016,5 +3016,6 @@
   "profile.autoUploadTitle": "Upload launcher data daily",
   "profile.autoUploadDesc": "Uploads the profile to the configured cloud provider at most once a day while the launcher is open, so a fresh install can restore it.",
   "profile.pickFolder": "Choose a folder for the launcher data export",
-  "profile.pickFile": "Select a launcher data archive"
+  "profile.pickFile": "Select a launcher data archive",
+  "cloud.webdavAllowInvalidCert": "Allow a self-signed certificate"
 }
