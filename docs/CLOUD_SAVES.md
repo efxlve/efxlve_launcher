@@ -234,11 +234,13 @@ settings are excluded for the same reason.
 
 Every import writes a safety archive to
 `<config>/profile_backups/pre_restore_<timestamp>.efxprofile` before copying
-anything, so a wrong import can be rolled back. After a format, install the
-launcher, configure the same provider under Settings → Cloud, and press
-**Restore from cloud**: the newest profile is shown with its date. The launcher
-cannot restore itself before a provider is configured because the credentials
-are deliberately not in the profile.
+anything, so a wrong import can be rolled back. The archive itself is not
+encrypted; it relies on the provider's access control, so keep the cloud account
+and the export file private. After a format, install the launcher, configure the
+same provider under Settings → Cloud, and press **Restore from cloud**: the
+newest profile is shown with its date. The launcher cannot restore itself before
+a provider is configured because the credentials are deliberately not in the
+profile.
 
 ---
 
