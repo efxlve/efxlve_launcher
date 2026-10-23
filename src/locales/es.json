@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Copia completada: {total} juegos, {failed} con error.",
   "cloud.conflictTitle": "Las partidas locales son más recientes",
   "cloud.conflictBody": "La copia local más reciente es del {local}, pero el archivo en la nube seleccionado es del {remote}. Restaurar sobrescribirá las partidas locales más recientes. Aun así se crea una instantánea previa.",
-  "cloud.restoreAnyway": "Restaurar de todos modos"
+  "cloud.restoreAnyway": "Restaurar de todos modos",
+  "cloud.bulkRestoreBtn": "Restaurar la más reciente",
+  "cloud.bulkRestoreTitle": "¿Restaurar la copia en la nube más reciente de cada juego?",
+  "cloud.bulkRestoreBody": "Restaura la copia en la nube más reciente de {total} juegos instalados. Antes de cada restauración se guarda una instantánea de las partidas locales.",
+  "cloud.bulkRestoreConfirm": "Restaurar todo",
+  "cloud.bulkRestoreDone": "Restauración completada: {total} juegos, {failed} con error."
 }

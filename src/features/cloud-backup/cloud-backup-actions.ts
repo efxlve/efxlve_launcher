@@ -119,18 +119,25 @@ export async function disconnectGoogleDriveAction(): Promise<void> {
   }
 }
 
+/** Installed games the launcher owns save backups for, one key per game. */
+function managedInstalledGames(): string[] {
+  const seen = new Set<string>();
+  const keys: string[] = [];
+  for (const item of S.allGamesMap.values()) {
+    if (!item.installed) continue;
+    if (!["epic", "gog", "amazon", "custom"].includes(item.source)) continue;
+    const key = item.source === "epic" ? item.id : item.key;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    keys.push(key);
+  }
+  return keys;
+}
+
 /** Backs up every installed game from the stores the launcher manages. */
 export async function bulkCloudBackupAction(): Promise<void> {
   if (S.cloudBulkProgress) return;
-  const seen = new Set<string>();
-  const games = [...S.allGamesMap.values()].filter((item) => {
-    if (!item.installed) return false;
-    if (!["epic", "gog", "amazon", "custom"].includes(item.source)) return false;
-    const key = item.source === "epic" ? item.id : item.key;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const games = managedInstalledGames();
   if (games.length === 0) {
     toast(t("cloud.bulkNone"), "");
     return;
@@ -138,8 +145,7 @@ export async function bulkCloudBackupAction(): Promise<void> {
   S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
   scheduleRender();
   let failed = 0;
-  for (const game of games) {
-    const key = game.source === "epic" ? game.id : game.key;
+  for (const key of games) {
     try {
       await cloudBackupUploadGame(key);
     } catch {
@@ -153,6 +159,45 @@ export async function bulkCloudBackupAction(): Promise<void> {
   S.cloudBulkProgress = null;
   scheduleRender();
   toast(t("cloud.bulkDone", { total, failed }), failed > 0 ? "err" : "ok");
+}
+
+/** Restores the newest cloud backup of every installed managed game. */
+export async function bulkCloudRestoreAction(): Promise<void> {
+  if (S.cloudBulkProgress) return;
+  const games = managedInstalledGames();
+  if (games.length === 0) {
+    toast(t("cloud.bulkNone"), "");
+    return;
+  }
+  const proceed = await askConfirm({
+    title: t("cloud.bulkRestoreTitle"),
+    body: t("cloud.bulkRestoreBody", { total: games.length }),
+    confirm: t("cloud.bulkRestoreConfirm"),
+    cancel: t("common.cancel"),
+  });
+  if (!proceed) return;
+  S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
+  scheduleRender();
+  let restored = 0;
+  let failed = 0;
+  for (const key of games) {
+    try {
+      const backups = await cloudBackupListGame(key);
+      const latest = backups?.[0];
+      if (latest) {
+        await cloudBackupDownloadGame(key, latest.remoteId, latest.backupId);
+        restored += 1;
+      }
+    } catch {
+      failed += 1;
+    }
+    S.cloudBulkProgress.done += 1;
+    S.cloudBulkProgress.failed = failed;
+    scheduleRender();
+  }
+  S.cloudBulkProgress = null;
+  scheduleRender();
+  toast(t("cloud.bulkRestoreDone", { total: restored, failed }), failed > 0 ? "err" : "ok");
 }
 
 export async function uploadGameCloudAction(appName: string, backupId?: string): Promise<void> {

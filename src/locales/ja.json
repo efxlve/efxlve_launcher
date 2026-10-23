@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "バックアップ完了: {total} 件、失敗 {failed} 件。",
   "cloud.conflictTitle": "ローカルセーブの方が新しいです",
   "cloud.conflictBody": "最新のローカルバックアップは {local}、選択したクラウドアーカイブは {remote} です。復元すると新しいローカルセーブが上書きされます。それでも復元前にスナップショットが作成されます。",
-  "cloud.restoreAnyway": "それでも復元"
+  "cloud.restoreAnyway": "それでも復元",
+  "cloud.bulkRestoreBtn": "最新を復元",
+  "cloud.bulkRestoreTitle": "各ゲームの最新クラウドバックアップを復元しますか？",
+  "cloud.bulkRestoreBody": "{total} 件のインストール済みゲームの最新クラウドバックアップを復元します。復元ごとに現在のローカルセーブのスナップショットが作成されます。",
+  "cloud.bulkRestoreConfirm": "すべて復元",
+  "cloud.bulkRestoreDone": "復元完了: {total} 件、失敗 {failed} 件。"
 }

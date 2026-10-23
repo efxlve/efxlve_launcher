@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "แบ็กอัปเสร็จ: {total} เกม, ล้มเหลว {failed}",
   "cloud.conflictTitle": "เซฟในเครื่องใหม่กว่า",
   "cloud.conflictBody": "แบ็กอัปในเครื่องล่าสุดคือ {local} แต่ไฟล์คลาวด์ที่เลือกคือ {remote} การกู้คืนจะเขียนทับเซฟในเครื่องที่ใหม่กว่า และจะสร้างสแนปช็อตก่อนเช่นกัน",
-  "cloud.restoreAnyway": "กู้คืนต่อไป"
+  "cloud.restoreAnyway": "กู้คืนต่อไป",
+  "cloud.bulkRestoreBtn": "กู้คืนล่าสุด",
+  "cloud.bulkRestoreTitle": "กู้คืนแบ็กอัปคลาวด์ล่าสุดของทุกเกมหรือไม่?",
+  "cloud.bulkRestoreBody": "กู้คืนแบ็กอัปคลาวด์ล่าสุดของ {total} เกมที่ติดตั้ง จะสร้างสแนปช็อตของเซฟในเครื่องก่อนทุกครั้ง",
+  "cloud.bulkRestoreConfirm": "กู้คืนทั้งหมด",
+  "cloud.bulkRestoreDone": "กู้คืนเสร็จ: {total} เกม, ล้มเหลว {failed}"
 }

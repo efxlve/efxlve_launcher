@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "백업 완료: 게임 {total}개, 실패 {failed}개.",
   "cloud.conflictTitle": "로컬 세이브가 더 최신입니다",
   "cloud.conflictBody": "최신 로컬 백업은 {local}, 선택한 클라우드 아카이브는 {remote}입니다. 복원하면 더 최신 로컬 세이브가 덮어써집니다. 그래도 복원 전에 스냅샷이 생성됩니다.",
-  "cloud.restoreAnyway": "그래도 복원"
+  "cloud.restoreAnyway": "그래도 복원",
+  "cloud.bulkRestoreBtn": "최신 복원",
+  "cloud.bulkRestoreTitle": "각 게임의 최신 클라우드 백업을 복원할까요?",
+  "cloud.bulkRestoreBody": "{total}개 설치된 게임의 최신 클라우드 백업을 복원합니다. 복원 전마다 현재 로컬 세이브의 스냅샷이 생성됩니다.",
+  "cloud.bulkRestoreConfirm": "모두 복원",
+  "cloud.bulkRestoreDone": "복원 완료: {total}개 게임, 실패 {failed}개."
 }

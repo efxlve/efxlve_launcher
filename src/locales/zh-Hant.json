@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "備份完成：{total} 個遊戲，{failed} 個失敗。",
   "cloud.conflictTitle": "本機存檔較新",
   "cloud.conflictBody": "最新的本機備份時間為 {local}，而所選雲端封存時間為 {remote}。還原會覆寫較新的本機存檔；仍會先建立快照。",
-  "cloud.restoreAnyway": "仍然還原"
+  "cloud.restoreAnyway": "仍然還原",
+  "cloud.bulkRestoreBtn": "還原最新版本",
+  "cloud.bulkRestoreTitle": "要為每個遊戲還原最新的雲端備份嗎？",
+  "cloud.bulkRestoreBody": "將還原 {total} 個已安裝遊戲的最新雲端備份。每次還原前都會先建立目前本機存檔的快照。",
+  "cloud.bulkRestoreConfirm": "全部還原",
+  "cloud.bulkRestoreDone": "還原完成：{total} 個遊戲，{failed} 個失敗。"
 }

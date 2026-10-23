@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "اكتمل النسخ: {total} لعبة، {failed} فشلت.",
   "cloud.conflictTitle": "الحفظات المحلية أحدث",
   "cloud.conflictBody": "أحدث نسخة محلية بتاريخ {local}، لكن الأرشيف السحابي المحدد بتاريخ {remote}. ستؤدي الاستعادة إلى الكتابة فوق الحفظات المحلية الأحدث. ومع ذلك تُنشأ نسخة قبلها.",
-  "cloud.restoreAnyway": "استعد على أي حال"
+  "cloud.restoreAnyway": "استعد على أي حال",
+  "cloud.bulkRestoreBtn": "استعد الأحدث",
+  "cloud.bulkRestoreTitle": "هل تريد استعادة أحدث نسخة سحابية لكل لعبة؟",
+  "cloud.bulkRestoreBody": "يستعيد أحدث نسخة سحابية لـ {total} لعبة مثبتة. تُنشأ نسخة من الحفظات المحلية قبل كل استعادة.",
+  "cloud.bulkRestoreConfirm": "استعد الكل",
+  "cloud.bulkRestoreDone": "اكتملت الاستعادة: {total} لعبة، {failed} فشلت."
 }

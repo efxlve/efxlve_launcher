@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Sicherung abgeschlossen: {total} Spiele, {failed} fehlgeschlagen.",
   "cloud.conflictTitle": "Lokale Spielstände sind neuer",
   "cloud.conflictBody": "Die neueste lokale Sicherung ist vom {local}, das gewählte Cloud-Archiv vom {remote}. Wiederherstellen überschreibt die neueren lokalen Spielstände. Vorher wird trotzdem eine Sicherung angelegt.",
-  "cloud.restoreAnyway": "Trotzdem wiederherstellen"
+  "cloud.restoreAnyway": "Trotzdem wiederherstellen",
+  "cloud.bulkRestoreBtn": "Neueste wiederherstellen",
+  "cloud.bulkRestoreTitle": "Die neueste Cloud-Sicherung für jedes Spiel wiederherstellen?",
+  "cloud.bulkRestoreBody": "Stellt die neueste Cloud-Sicherung von {total} installierten Spielen wieder her. Vor jeder Wiederherstellung wird der aktuelle lokale Spielstand gesichert.",
+  "cloud.bulkRestoreConfirm": "Alle wiederherstellen",
+  "cloud.bulkRestoreDone": "Wiederherstellung abgeschlossen: {total} Spiele, {failed} fehlgeschlagen."
 }

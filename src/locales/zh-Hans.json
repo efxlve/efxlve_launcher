@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "备份完成：{total} 个游戏，{failed} 个失败。",
   "cloud.conflictTitle": "本地存档较新",
   "cloud.conflictBody": "最新的本地备份时间为 {local}，而所选云端归档时间为 {remote}。恢复会覆盖较新的本地存档；仍会先创建快照。",
-  "cloud.restoreAnyway": "仍然恢复"
+  "cloud.restoreAnyway": "仍然恢复",
+  "cloud.bulkRestoreBtn": "恢复最新版本",
+  "cloud.bulkRestoreTitle": "要为每个游戏恢复最新的云端备份吗？",
+  "cloud.bulkRestoreBody": "将恢复 {total} 个已安装游戏的最新云端备份。每次恢复前都会先创建当前本地存档的快照。",
+  "cloud.bulkRestoreConfirm": "全部恢复",
+  "cloud.bulkRestoreDone": "恢复完成：{total} 个游戏，{failed} 个失败。"
 }

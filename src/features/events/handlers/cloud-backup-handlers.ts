@@ -7,6 +7,7 @@ import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import {
   bulkCloudBackupAction,
+  bulkCloudRestoreAction,
   deleteAllCloudBackupsAction,
   deleteCloudBackupAction,
   disconnectGoogleDriveAction,
@@ -176,6 +177,11 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
 
     case "cloud-bulk-backup": {
       void bulkCloudBackupAction();
+      return true;
+    }
+
+    case "cloud-bulk-restore": {
+      void bulkCloudRestoreAction();
       return true;
     }
 

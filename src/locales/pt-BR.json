@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Backup concluído: {total} jogos, {failed} falharam.",
   "cloud.conflictTitle": "Os saves locais são mais recentes",
   "cloud.conflictBody": "O backup local mais recente é de {local}, mas o arquivo na nuvem selecionado é de {remote}. Restaurar sobrescreverá os saves locais mais recentes. Ainda assim, um snapshot é criado antes.",
-  "cloud.restoreAnyway": "Restaurar mesmo assim"
+  "cloud.restoreAnyway": "Restaurar mesmo assim",
+  "cloud.bulkRestoreBtn": "Restaurar mais recente",
+  "cloud.bulkRestoreTitle": "Restaurar o backup na nuvem mais recente de cada jogo?",
+  "cloud.bulkRestoreBody": "Restaura o backup na nuvem mais recente de {total} jogos instalados. Antes de cada restauração, um snapshot dos saves locais é criado.",
+  "cloud.bulkRestoreConfirm": "Restaurar tudo",
+  "cloud.bulkRestoreDone": "Restauração concluída: {total} jogos, {failed} falharam."
 }

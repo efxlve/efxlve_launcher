@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Backup finished: {total} games, {failed} failed.",
   "cloud.conflictTitle": "Local saves are newer",
   "cloud.conflictBody": "The newest local backup is from {local}, but the selected cloud archive is from {remote}. Restoring will overwrite the newer local saves. A pre-restore snapshot is still taken.",
-  "cloud.restoreAnyway": "Restore anyway"
+  "cloud.restoreAnyway": "Restore anyway",
+  "cloud.bulkRestoreBtn": "Restore newest",
+  "cloud.bulkRestoreTitle": "Restore the newest cloud backup for every game?",
+  "cloud.bulkRestoreBody": "This restores the newest cloud backup of {total} installed games. Each restore snapshots the current local saves first.",
+  "cloud.bulkRestoreConfirm": "Restore all",
+  "cloud.bulkRestoreDone": "Restore finished: {total} games restored, {failed} failed."
 }

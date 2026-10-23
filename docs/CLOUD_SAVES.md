@@ -116,7 +116,9 @@ Steam's Proton still needs its folder picked once in Manage.
 - **Back up all installed games** walks every installed Epic, GOG, Amazon and
   custom game, creates a local backup and uploads it. The row shows progress
   while it runs and reports the failure count at the end; games without a save
-  folder are skipped.
+  folder are skipped. **Restore newest** does the same walk and restores each
+  game's newest cloud archive after a confirmation; every restore snapshots the
+  current local saves first.
 
 **Game Manage drawer**
 
@@ -235,21 +237,19 @@ Ordered by user value:
    the result explicit. Steam `compatdata` scanning is a separate gap.
 2. **Scheduled local backups** — retention now covers local backups and cloud
    archives, but there is no daily local backup job.
-3. **Bulk restore** — “restore the newest backup for every game” is still open;
-   bulk backup now exists.
-4. **Conflict detection** — the timestamp comparison before a restore is in
+3. **Conflict detection** — the timestamp comparison before a restore is in
    place; comparing hashes before the overwrite is still open.
-5. **Auto-sync feedback** — the failure toast and notification exist; a
+4. **Auto-sync feedback** — the failure toast and notification exist; a
    background queue with per-game status does not.
-6. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
+5. **Provider polish** — WebDAV digest auth and self-signed certificate opt-in,
    a Google Drive “test before connect” path, and an rclone remote picker that
    lists configured remotes (`rclone listremotes`).
-7. **Secrets at rest** — OS keychain or an encrypted local vault; never log
+6. **Secrets at rest** — OS keychain or an encrypted local vault; never log
    tokens.
-8. **Remote migration** — local folders created before `backup_key` are moved to
+7. **Remote migration** — local folders created before `backup_key` are moved to
    the safe key automatically; WebDAV/Folder archives stored under raw `::`
    names still need a one-time remote rename or a legacy fallback in the listing.
-9. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+8. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
    paths, and writable permissions.
 
 ---

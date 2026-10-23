@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Sauvegarde terminée : {total} jeux, {failed} en échec.",
   "cloud.conflictTitle": "Les sauvegardes locales sont plus récentes",
   "cloud.conflictBody": "La sauvegarde locale la plus récente date du {local}, mais l'archive cloud sélectionnée date du {remote}. La restauration écrasera les sauvegardes locales plus récentes. Un instantané est tout de même créé avant.",
-  "cloud.restoreAnyway": "Restaurer quand même"
+  "cloud.restoreAnyway": "Restaurer quand même",
+  "cloud.bulkRestoreBtn": "Restaurer la plus récente",
+  "cloud.bulkRestoreTitle": "Restaurer la sauvegarde cloud la plus récente de chaque jeu ?",
+  "cloud.bulkRestoreBody": "Restaure la sauvegarde cloud la plus récente de {total} jeux installés. Un instantané des sauvegardes locales est créé avant chaque restauration.",
+  "cloud.bulkRestoreConfirm": "Tout restaurer",
+  "cloud.bulkRestoreDone": "Restauration terminée : {total} jeux, {failed} en échec."
 }

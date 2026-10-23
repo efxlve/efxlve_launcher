@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Backup completato: {total} giochi, {failed} non riusciti.",
   "cloud.conflictTitle": "I salvataggi locali sono più recenti",
   "cloud.conflictBody": "Il backup locale più recente è del {local}, ma l'archivio cloud selezionato è del {remote}. Il ripristino sovrascriverà i salvataggi locali più recenti. Prima viene comunque creato uno snapshot.",
-  "cloud.restoreAnyway": "Ripristina comunque"
+  "cloud.restoreAnyway": "Ripristina comunque",
+  "cloud.bulkRestoreBtn": "Ripristina la più recente",
+  "cloud.bulkRestoreTitle": "Ripristinare il backup cloud più recente di ogni gioco?",
+  "cloud.bulkRestoreBody": "Ripristina il backup cloud più recente di {total} giochi installati. Prima di ogni ripristino viene creato uno snapshot dei salvataggi locali.",
+  "cloud.bulkRestoreConfirm": "Ripristina tutto",
+  "cloud.bulkRestoreDone": "Ripristino completato: {total} giochi, {failed} non riusciti."
 }

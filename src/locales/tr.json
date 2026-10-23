@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Yedekleme bitti: {total} oyun, {failed} hata.",
   "cloud.conflictTitle": "Yerel kayıtlar daha yeni",
   "cloud.conflictBody": "En yeni yerel yedek {local} tarihli, seçilen bulut arşivi ise {remote} tarihli. Geri yükleme daha yeni yerel kayıtların üzerine yazar. Yine de önce bir yedek alınır.",
-  "cloud.restoreAnyway": "Yine de geri yükle"
+  "cloud.restoreAnyway": "Yine de geri yükle",
+  "cloud.bulkRestoreBtn": "En yeniyi geri yükle",
+  "cloud.bulkRestoreTitle": "Her oyun için en yeni bulut yedeği geri yüklensin mi?",
+  "cloud.bulkRestoreBody": "{total} kurulu oyunun en yeni bulut yedeği geri yüklenir. Her geri yüklemeden önce mevcut yerel kayıtların anlık görüntüsü alınır.",
+  "cloud.bulkRestoreConfirm": "Tümünü geri yükle",
+  "cloud.bulkRestoreDone": "Geri yükleme bitti: {total} oyun geri yüklendi, {failed} hata."
 }

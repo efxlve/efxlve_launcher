@@ -10,8 +10,6 @@ Open work only. Delete the item when it lands.
   hand.
 - Scheduled local-only backups; local retention follows the cloud "keep last N"
   setting and snapshots are protected.
-- Bulk restore: “restore the newest backup for every game”. Bulk backup now
-  exists.
 - Conflict detection compares timestamps before a restore; comparing hashes is
   still open.
 - Auto-sync failure toast exists; a background queue with per-game status does

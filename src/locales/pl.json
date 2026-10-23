@@ -2990,5 +2990,10 @@
   "cloud.bulkDone": "Kopia zakończona: {total} gier, {failed} nieudanych.",
   "cloud.conflictTitle": "Lokalne zapisy są nowsze",
   "cloud.conflictBody": "Najnowsza kopia lokalna jest z {local}, a wybrane archiwum w chmurze z {remote}. Przywrócenie nadpisze nowsze lokalne zapisy. Mimo to najpierw zostanie utworzona kopia.",
-  "cloud.restoreAnyway": "Przywróć mimo to"
+  "cloud.restoreAnyway": "Przywróć mimo to",
+  "cloud.bulkRestoreBtn": "Przywróć najnowszą",
+  "cloud.bulkRestoreTitle": "Przywrócić najnowszą kopię w chmurze dla każdej gry?",
+  "cloud.bulkRestoreBody": "Przywraca najnowszą kopię w chmurze dla {total} zainstalowanych gier. Przed każdym przywróceniem tworzona jest kopia bieżących zapisów.",
+  "cloud.bulkRestoreConfirm": "Przywróć wszystko",
+  "cloud.bulkRestoreDone": "Przywracanie zakończone: {total} gier, {failed} nieudanych."
 }

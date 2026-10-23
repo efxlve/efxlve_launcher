@@ -210,7 +210,10 @@ export function renderCloudBackupSettingsGroup(): string {
       <div class="settings-row-control">
         ${S.cloudBulkProgress
           ? `<span class="settings-value tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
-          : `<button type="button" class="btn ghost small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>`}
+          : `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <button type="button" class="btn ghost small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>
+              <button type="button" class="btn ghost small" data-act="cloud-bulk-restore">${icon("download", 13)} ${t("cloud.bulkRestoreBtn")}</button>
+            </div>`}
       </div>
     </div>` : "";
 
