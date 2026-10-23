@@ -1,9 +1,12 @@
 # Pull-request and main-branch gate.
 #
 # The release workflow only runs after a tag; without this file a broken build,
-# a locale key mismatch or a failed Rust test could reach `main` unnoticed. The
-# job is Windows-only for now because the product is Windows-only; the Linux and
-# macOS entries can be added when the platform layer is ready.
+# a locale key mismatch or a failed Rust test could reach `main` unnoticed.
+#
+# All three supported desktops are gated: the Windows job is the release target,
+# and the Linux/macOS jobs compile and test the Unix half of the platform layer
+# (`#[cfg(not(windows))]` code and its stubs), which cannot be checked on a
+# Windows machine.
 #
 # `cargo fmt --check` is deliberately not a gate yet: the existing tree predates
 # rustfmt in several modules, so the check reports hundreds of unrelated diffs.
@@ -30,6 +33,82 @@ jobs:
   windows:
     runs-on: windows-latest
     timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Locale parity
+        run: npm run locales
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            patchelf \
+            pkg-config
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Locale parity
+        run: npm run locales
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 

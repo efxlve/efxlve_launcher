@@ -181,6 +181,7 @@ fn test_is_game_process_running() {
     }
 }
 
+#[cfg(windows)]
 #[test]
 fn test_is_safe_game_dir() {
     let def = PathBuf::from(r"C:\Games");

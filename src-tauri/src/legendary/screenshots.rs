@@ -2316,7 +2316,11 @@ mod tests {
             PathBuf::from(r"C:\Steam\userdata"),
         ];
         let extra = vec![PathBuf::from(r"D:\My Pics")];
+        // Root keys fold case on Windows only; elsewhere hiding is exact.
+        #[cfg(windows)]
         let hidden = vec![PathBuf::from(r"c:\videos\captures")];
+        #[cfg(not(windows))]
+        let hidden = vec![PathBuf::from(r"C:\Videos\Captures")];
 
         let roots = merge_screenshot_roots(
             chosen.clone(),

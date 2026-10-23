@@ -174,6 +174,9 @@ mod tests {
         assert_eq!(parse_steam_pid("nope"), None);
         assert_eq!(parse_steam_pid(""), None);
     }
+    /// Case folding is a Windows-only rule: Linux/macOS compare paths exactly,
+    /// so the same two strings stay different there.
+    #[cfg(windows)]
     #[test]
     fn library_paths_compare_case_insensitively() {
         assert_eq!(
