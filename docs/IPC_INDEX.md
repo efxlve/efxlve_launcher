@@ -25,6 +25,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_fullscreen` | `appSetFullscreen({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_minimize_to_tray` | `appSetMinimizeToTray({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_taskbar_badge` | `appSetTaskbarBadge({ ... })` | `src-tauri/src/taskbar_badge.rs` |
+| `app_set_taskbar_badge` | `appSetTaskbarBadge({ ... })` | `src-tauri/src/taskbar_badge.rs` |
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
 | `cache_images` | `cacheImages({ ... })` | `src-tauri/src/image_cache.rs` |
@@ -135,6 +136,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `egl_remove` | `eglRemove({ ... })` | `src-tauri/src/egl_removal.rs` |
 | `eos_install_redistributable` | `eosInstallRedistributable({ ... })` | `src-tauri/src/eos.rs` |
 | `eos_overlay_status` | `eosOverlayStatus({ ... })` | `src-tauri/src/eos.rs` |
+| `epic_add_screenshot_root` | `epicAddScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_anticheat_status` | `epicAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
 | `epic_backup_save` | `epicBackupSave({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_cached_library` | `epicCachedLibrary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
@@ -201,6 +203,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_presence_configure` | `epicPresenceConfigure({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_presence_update` | `epicPresenceUpdate({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_remove_saved_account` | `epicRemoveSavedAccount({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
+| `epic_remove_screenshot_root` | `epicRemoveScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_reorder_collections` | `epicReorderCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_reorder_queue` | `epicReorderQueue({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_replace_screenshot_with_compressed` | `epicReplaceScreenshotWithCompressed({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
