@@ -1337,7 +1337,7 @@
   "settings.aboutMarks": "商店與服務名稱及標誌（包括商店分頁以及側邊欄顯示的 Spotify 和 Discord 標誌）屬於各自擁有者所有，僅用於識別這些商店與服務。其使用並不代表任何合作夥伴關係、贊助或背書。Spotify 和 Discord 標誌取自 Simple Icons，採用 CC0-1.0 授權。",
   "settings.aboutThemes": "Themes are original, unofficial palettes inspired by common design styles. They contain no artwork from any game, and no publisher or platform endorses them; the names are descriptive and imply no affiliation.",
   "settings.aboutThirdParty": "第三方元件依循其各自的授權條款：legendary（GPL-3.0）、gogdl（GPL-3.0）、Nile（GPL-3.0）、Comet（Apache-2.0）、Tauri（MIT/Apache-2.0）、Lucide 圖示（ISC），以及隨原始碼列出的 Rust crate。",
-  "settings.aboutPrivacy": "無遙測資料收集，亦無啟動器帳號。此裝置上的 Steam 重新整理權杖均透過 Windows DPAPI 進行加密保護。Epic 和 GOG 工作階段檔案保留在您的本機設定檔中，以供商店工具使用。API 金鑰等設定僅保存在本機裝置上。所有網路請求均在您的電腦與所連線的商店之間直接進行。",
+  "settings.aboutPrivacy": "無遙測資料收集，亦無啟動器帳號。Steam 重新整理權杖會儲存在此裝置的作業系統安全儲存區中。Epic 和 GOG 工作階段檔案保留在您的本機設定檔中，以供商店工具使用。API 金鑰等設定僅保存在本機裝置上。所有網路請求均在您的電腦與所連線的商店之間直接進行。",
   "settings.aboutOpenSource": "本專案遵循 GNU 通用公共許可證 v3.0 (GPL-3.0) 完全開源且透明。",
   "settings.aboutLinksTitle": "官方連結與開發者",
   "settings.aboutWebsite": "網站",

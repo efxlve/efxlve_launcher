@@ -1759,8 +1759,8 @@ function renderAbout(): string {
       link(DISCORD_INVITE_URL, storeLogo("discord", 14, "about-link-logo"), t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
       t("settings.aboutLinksTitle"),
     )}
-    <div class="settings-about-texts" data-search="about">
-      <h3 class="section-title">${t("settings.aboutDisclaimerTitle")}</h3>
+    <div class="card settings-about-texts" data-search="about">
+      <h3 class="section-title">${icon("shield", 13)} ${t("settings.aboutDisclaimerTitle")}</h3>
       <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
       <p class="settings-about-text">${t("settings.aboutLogos")}</p>
       <p class="settings-about-text">${t("settings.aboutMarks")}</p>

@@ -1337,7 +1337,7 @@
   "settings.aboutMarks": "스토어 및 서비스 이름과 로고(사이드바의 Spotify 및 Discord 마크와 스토어 탭 포함)는 해당 소유자의 자산이며 식별 목적으로만 표시됩니다. 제휴, 후원 또는 보증을 의미하지 않습니다. Spotify 및 Discord 마크는 CC0-1.0 라이선스의 Simple Icons에서 가져왔습니다.",
   "settings.aboutThemes": "Themes are original, unofficial palettes inspired by common design styles. They contain no artwork from any game, and no publisher or platform endorses them; the names are descriptive and imply no affiliation.",
   "settings.aboutThirdParty": "서드파티 구성 요소는 각자의 라이선스를 따릅니다: legendary (GPL-3.0), gogdl (GPL-3.0), Nile (GPL-3.0), Comet (Apache-2.0), SteamDB Extension (BSD-3-Clause), Augmented Steam (GPL-3.0), Tauri(MIT/Apache-2.0), Lucide 아이콘(ISC), 그리고 소스 코드와 함께 명시된 Rust 크레이트.",
-  "settings.aboutPrivacy": "원격 측정(텔레메트리) 및 런처 전용 계정이 없습니다. 이 기기의 Steam 새로고침 토큰은 Windows DPAPI로 안전하게 암호화됩니다. Epic 및 GOG 세션 파일은 스토어 도구에서 사용할 수 있도록 로컬 프로필에 보관됩니다. API 키와 같은 설정은 이 기기에만 저장됩니다. 요청은 사용자의 PC와 연결된 스토어 간에 직접 전송됩니다.",
+  "settings.aboutPrivacy": "원격 측정(텔레메트리) 및 런처 전용 계정이 없습니다. Steam 새로고침 토큰은 이 장치의 운영 체제 보안 저장소에 보관됩니다. Epic 및 GOG 세션 파일은 스토어 도구에서 사용할 수 있도록 로컬 프로필에 보관됩니다. API 키와 같은 설정은 이 기기에만 저장됩니다. 요청은 사용자의 PC와 연결된 스토어 간에 직접 전송됩니다.",
   "settings.aboutOpenSource": "이 프로젝트는 GNU General Public License v3.0 (GPL-3.0)에 따라 완전히 공개된 오픈 소스입니다.",
   "settings.aboutLinksTitle": "공식 링크 및 개발자",
   "settings.aboutWebsite": "웹사이트",

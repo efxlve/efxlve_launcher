@@ -1337,7 +1337,7 @@
   "settings.aboutMarks": "أسماء وشعارات المتاجر والخدمات — بما في ذلك تبويبات المتاجر وعلامات Spotify وDiscord في الشريط الجانبي — هي ملك لأصحابها المعنيين وتُعرض فقط للتعريف بها. لا يعني استخدامها أي شراكة أو رعاية أو تأييد. علامات Spotify وDiscord مأخوذة من Simple Icons بترخيص CC0-1.0.",
   "settings.aboutThemes": "Themes are original, unofficial palettes inspired by common design styles. They contain no artwork from any game, and no publisher or platform endorses them; the names are descriptive and imply no affiliation.",
   "settings.aboutThirdParty": "تحتفظ مكوّنات الطرف الثالث برخصها الخاصة: legendary (GPL-3.0), gogdl (GPL-3.0), Nile (GPL-3.0), Comet (Apache-2.0), SteamDB Extension (BSD-3-Clause), Augmented Steam (GPL-3.0)، وTauri (MIT/Apache-2.0)، وأيقونات Lucide (ISC)، وحزم Rust المذكورة مع الشيفرة المصدرية.",
-  "settings.aboutPrivacy": "لا توجد أدوات تتبع عن بُعد (تليماتية) ولا حساب للمشغّل. رموز تحديث Steam على هذا الجهاز محمية ومشفرة باستخدام Windows DPAPI. تظل ملفات جلسات Epic وGOG في ملفك التعريفي المحلي حتى تتمكن أدوات المتاجر من استخدامها. تظل الإعدادات مثل مفاتيح API على هذا الجهاز فقط. تنتقل الطلبات مباشرة بين جهاز الكمبيوتر الخاص بك والمتاجر التي تتصل بها.",
+  "settings.aboutPrivacy": "لا توجد أدوات تتبع عن بُعد (تليماتية) ولا حساب للمشغّل. تُحفظ رموز تحديث Steam في التخزين الآمن لنظام التشغيل على هذا الجهاز. تظل ملفات جلسات Epic وGOG في ملفك التعريفي المحلي حتى تتمكن أدوات المتاجر من استخدامها. تظل الإعدادات مثل مفاتيح API على هذا الجهاز فقط. تنتقل الطلبات مباشرة بين جهاز الكمبيوتر الخاص بك والمتاجر التي تتصل بها.",
   "settings.aboutOpenSource": "هذا المشروع شفاف ومفتوح المصدر بالكامل بموجب رخصة جنو العمومية v3.0 (GPL-3.0).",
   "settings.aboutLinksTitle": "الروابط الرسمية والمطوّر",
   "settings.aboutWebsite": "الموقع",

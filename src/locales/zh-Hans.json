@@ -1337,7 +1337,7 @@
   "settings.aboutMarks": "商店及服务名称与标志（包括商店标签页以及侧边栏显示的 Spotify 和 Discord 标志）归各自所有者所有，仅用于标识这些商店与服务。使用这些标志不代表任何合作、赞助或认可。Spotify 和 Discord 标志来自 Simple Icons，基于 CC0-1.0 许可。",
   "settings.aboutThemes": "Themes are original, unofficial palettes inspired by common design styles. They contain no artwork from any game, and no publisher or platform endorses them; the names are descriptive and imply no affiliation.",
   "settings.aboutThirdParty": "第三方组件遵循其各自的许可证：legendary（GPL-3.0）、gogdl（GPL-3.0）、Nile（GPL-3.0）、Comet（Apache-2.0）、Tauri（MIT/Apache-2.0）、Lucide 图标（ISC），以及随源代码列出的 Rust crate。",
-  "settings.aboutPrivacy": "无遥测数据收集，亦无启动器账号。此设备上的 Steam 刷新令牌均通过 Windows DPAPI 进行加密保护。Epic 和 GOG 会话文件保留在您的本地配置文件中，以供商店工具使用。API 密钥等设置仅保存在本地设备上。所有网络请求均在您的电脑与所连接的商店之间直接进行。",
+  "settings.aboutPrivacy": "无遥测数据收集，亦无启动器账号。Steam 刷新令牌保存在此设备的操作系统安全存储中。Epic 和 GOG 会话文件保留在您的本地配置文件中，以供商店工具使用。API 密钥等设置仅保存在本地设备上。所有网络请求均在您的电脑与所连接的商店之间直接进行。",
   "settings.aboutOpenSource": "本项目遵循 GNU 通用公共许可证 v3.0 (GPL-3.0) 完全开源且透明。",
   "settings.aboutLinksTitle": "官方链接与开发者",
   "settings.aboutWebsite": "网站",

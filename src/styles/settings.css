@@ -329,6 +329,12 @@
 }
 .settings-about-copy { min-width: 0; }
 .settings-about-text { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: var(--text-2); max-width: 720px; }
+.settings-about-texts { margin-top: 16px; }
+.settings-about-texts .section-title {
+  display: inline-flex; align-items: center; gap: 7px; margin: 0 0 12px;
+}
+.settings-about-texts .settings-about-text { max-width: 860px; }
+.settings-about-texts .settings-about-text:last-child { margin-bottom: 0; }
 
 @media (max-width: 980px) {
   .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
