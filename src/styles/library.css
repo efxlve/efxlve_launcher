@@ -1748,9 +1748,9 @@ html.win-compact .lrow-ach-track { display: none; }
 
 .col-gallery {
   width: min(1180px, 94vw); max-height: 88vh; overflow-y: auto;
-  padding: 26px 30px 32px; border: 1px solid var(--line-strong);
-  border-radius: 16px; background: var(--surface-1);
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.75);
+  padding: 26px 30px 32px; border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px; background: #17171b;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85);
   animation: colPanelIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes colPanelIn {
@@ -1761,62 +1761,62 @@ html.win-compact .lrow-ach-track { display: none; }
 /* Gallery Header */
 .col-gallery-head {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--line);
+  margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-wrap: wrap;
 }
 .col-gallery-title-wrap { display: flex; align-items: center; gap: 14px; min-width: 220px; }
 .col-gallery-head-icon {
   width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--accent); flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12); color: var(--accent); flex-shrink: 0;
 }
 .col-gallery-title-row { display: flex; align-items: center; gap: 10px; }
-.col-gallery-title-row h2 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+.col-gallery-title-row h2 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.02em; color: var(--text, #ffffff); }
 .col-gallery-pill {
-  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--text-2);
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); color: var(--text, #ffffff);
 }
-.col-gallery-sub { margin: 2px 0 0; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.col-gallery-sub { margin: 2px 0 0; font-size: 12px; color: var(--text-2, #a8a8a8); font-variant-numeric: tabular-nums; }
 
 .col-gallery-actions { display: flex; align-items: center; gap: 10px; }
 .col-gallery-clear { display: inline-flex; align-items: center; gap: 6px; }
 .col-gallery-close {
   width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0;
-  border: 1px solid var(--line); border-radius: 50%; background: var(--surface-2);
-  color: var(--text-2); cursor: pointer; transition: all 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 50%; background: rgba(255, 255, 255, 0.08);
+  color: var(--text, #ffffff); cursor: pointer; transition: all 0.15s ease;
 }
-.col-gallery-close:hover { color: var(--text); background: var(--surface-3); border-color: var(--line-strong); transform: scale(1.05); }
+.col-gallery-close:hover { color: #fff; background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
 
 .col-gallery-section + .col-gallery-section { margin-top: 26px; }
 .col-gallery-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .col-gallery-section-head h3 {
   margin: 0; display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
+  font-size: 12px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2, #a8a8a8);
 }
 
 /* Smart collections grid */
 .col-smart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 10px; }
 .col-smart-card {
   display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px;
-  border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2);
-  color: var(--text-2); cursor: pointer; text-align: left; position: relative; overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 12px; background: #222228;
+  color: var(--text, #ffffff); cursor: pointer; text-align: left; position: relative; overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, background 0.18s ease, box-shadow 0.2s ease;
 }
 .col-smart-card:hover {
-  color: var(--text); background: var(--surface-3);
-  border-color: var(--line-strong);
+  color: #fff; background: #2a2a32;
+  border-color: rgba(255, 255, 255, 0.22);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
 }
 .col-smart-card.active {
-  border-color: var(--accent); color: var(--text); background: var(--surface-3);
+  border-color: var(--accent); color: #fff; background: #2a2a32;
   box-shadow: 0 0 0 1px var(--accent);
 }
 .col-smart-card-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--accent);
   transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 .col-smart-card:hover .col-smart-card-icon {
@@ -1830,13 +1830,13 @@ html.win-compact .lrow-ach-track { display: none; }
   border-color: var(--accent);
 }
 .col-smart-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.col-smart-card-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-smart-card-pct { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.col-smart-card-name { font-size: 13.5px; font-weight: 600; color: var(--text, #ffffff); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-smart-card-pct { font-size: 11.5px; color: var(--text-2, #a8a8a8); font-variant-numeric: tabular-nums; }
 .col-smart-card-count {
-  font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums;
-  padding: 3px 8px; border-radius: 8px; background: var(--surface-1); border: 1px solid var(--line);
+  font-size: 13px; font-weight: 700; color: var(--text, #ffffff); font-variant-numeric: tabular-nums;
+  padding: 3px 9px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16);
 }
-.col-smart-card:hover .col-smart-card-count { color: var(--text); border-color: var(--line-strong); }
+.col-smart-card:hover .col-smart-card-count { color: #fff; border-color: rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.15); }
 
 /* Collections 2.0 cards grid */
 .col-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
@@ -1849,15 +1849,15 @@ html.win-compact .lrow-ach-track { display: none; }
 .col-gallery-card {
   position: relative; display: flex; flex-direction: column; height: 216px;
   overflow: hidden; border-radius: 14px;
-  border: 1px solid var(--line); background: var(--surface-2); cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.09); background: #222228; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.26s ease;
   animation: colCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .col-gallery-card:hover {
   transform: translateY(-5px);
-  border-color: var(--line-strong);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
 }
 .col-gallery-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .col-gallery-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -1866,7 +1866,7 @@ html.win-compact .lrow-ach-track { display: none; }
 .col-poster-fan {
   position: relative; height: 146px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 50% 50%, var(--surface-3) 0%, var(--surface-1) 100%);
+  background: radial-gradient(circle at 50% 50%, #2b2b33 0%, #19191d 100%);
   perspective: 600px;
 }
 .col-poster-ambient {
@@ -1879,7 +1879,7 @@ html.win-compact .lrow-ach-track { display: none; }
 
 .col-poster-fan.empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: var(--text-3); gap: 6px;
+  color: var(--text-2, #a8a8a8); gap: 6px;
 }
 
 .col-poster-item {
@@ -1939,8 +1939,8 @@ html.win-compact .lrow-ach-track { display: none; }
 .col-card-body {
   position: relative; z-index: 4; flex: 1;
   display: flex; flex-direction: column; justify-content: space-between;
-  padding: 12px 14px; background: var(--surface-2);
-  border-top: 1px solid var(--line);
+  padding: 12px 14px; background: #1e1e24;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .col-card-header {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0;
@@ -1950,16 +1950,16 @@ html.win-compact .lrow-ach-track { display: none; }
 }
 .col-card-marker { display: inline-flex; align-items: center; flex-shrink: 0; color: var(--accent); }
 .col-card-title {
-  font-size: 14px; font-weight: 650; color: var(--text);
+  font-size: 14.5px; font-weight: 650; color: var(--text, #ffffff);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .col-card-pill {
-  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
-  padding: 2px 7px; border-radius: 7px; background: var(--surface-1);
-  border: 1px solid var(--line); color: var(--text-2); flex-shrink: 0;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+  padding: 2px 8px; border-radius: 7px; background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16); color: var(--text, #ffffff); flex-shrink: 0;
 }
 .col-card-sub {
-  font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  font-size: 12px; color: var(--text-2, #a8a8a8); font-variant-numeric: tabular-nums;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;
 }
 
@@ -1987,26 +1987,26 @@ html.win-compact .lrow-ach-track { display: none; }
 /* Add New Collection Card */
 .col-gallery-add-card {
   height: 216px; border-radius: 14px;
-  border: 2px dashed var(--line-strong); background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.03);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; color: var(--text-2); cursor: pointer;
+  gap: 12px; color: var(--text, #ffffff); cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .col-gallery-add-card:hover {
-  color: var(--text); border-color: var(--accent);
-  background: var(--surface-2); transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  color: #fff; border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06); transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
 }
 .col-add-card-icon {
   width: 48px; height: 48px; border-radius: 50%;
-  display: grid; place-items: center; background: var(--surface-2);
-  border: 1px solid var(--line); color: var(--accent);
+  display: grid; place-items: center; background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16); color: var(--accent);
   transition: transform 0.2s ease, background 0.2s ease;
 }
 .col-gallery-add-card:hover .col-add-card-icon {
-  transform: scale(1.08); background: var(--surface-3); border-color: var(--accent);
+  transform: scale(1.08); background: rgba(255, 255, 255, 0.15); border-color: var(--accent);
 }
-.col-add-card-label { font-size: 13.5px; font-weight: 600; }
+.col-add-card-label { font-size: 13.5px; font-weight: 600; color: var(--text, #ffffff); }
 
 /* Empty state */
 .col-gallery-empty {
