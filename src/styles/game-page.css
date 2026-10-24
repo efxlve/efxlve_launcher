@@ -1909,9 +1909,68 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-more-menu .ps5-context-item:hover svg { color: var(--text); }
 .gp-more-sep { height: 1px; margin: 5px 4px; background: var(--line); }
 
-/* Status section sizing inside Drawer More menu (base styles in components.css) */
-.gp-more-menu .gp-more-status-btn {
-  height: 34px; min-height: 34px; padding: 0 10px; border-radius: 8px; font-size: 13px; gap: 10px;
+/* Submenu inside Drawer More menu */
+.gp-more-menu .ctx-submenu-wrap {
+  position: relative;
+  width: 100%;
+}
+.gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: -6px;
+  display: none;
+  min-width: 180px;
+  max-width: 230px;
+  background-color: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
+  z-index: 100;
+}
+.gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  width: 10px;
+}
+.gp-more-menu .ctx-submenu-wrap:hover > .ps5-context-submenu,
+.gp-more-menu .ctx-submenu-wrap:focus-within > .ps5-context-submenu {
+  display: block;
+  animation: gpMoreMenuIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.gp-more-menu .ctx-submenu-wrap:hover > .ctx-submenu-trigger,
+.gp-more-menu .ctx-submenu-wrap:focus-within > .ctx-submenu-trigger {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.gp-more-menu .ctx-submenu-wrap:hover .ctx-sub-badge,
+.gp-more-menu .ctx-submenu-wrap:hover .ctx-chevron,
+.gp-more-menu .ctx-submenu-wrap:focus-within .ctx-sub-badge,
+.gp-more-menu .ctx-submenu-wrap:focus-within .ctx-chevron {
+  color: var(--text);
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 400;
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item span {
+  font-weight: 400;
+}
+@media (max-width: 768px) {
+  .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
+    left: auto;
+    right: calc(100% + 6px);
+  }
+  .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
+    left: auto;
+    right: -10px;
+  }
 }
 
 /* One store: the picker is not a choice, so it stops looking like a button. */

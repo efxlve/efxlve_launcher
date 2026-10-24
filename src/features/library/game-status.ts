@@ -32,28 +32,55 @@ export function gameStatusOptions(): Array<{ value: GameStatus; label: string; i
 }
 
 /**
- * Standard status selection menu (shared by the game card context menu and the
+ * Standard status selection submenu (shared by the game card context menu and the
  * game page drawer More menu).
  */
-export function statusMenuHtml(appName: string): string {
-  const current = gameStatusOf(appName);
+export function statusSubmenuHtml(appName: string): { triggerHtml: string; submenuHtml: string } {
+  const currentStatus = gameStatusOf(appName);
   const options = gameStatusOptions();
+  const currentStatusOpt = currentStatus ? options.find((o) => o.value === currentStatus) : undefined;
+
+  const triggerHtml = `
+    <button type="button" class="ps5-context-item ctx-submenu-trigger" role="menuitem" aria-haspopup="menu" aria-expanded="false" data-act="status-submenu-noop">
+      ${icon(currentStatusOpt ? currentStatusOpt.ic : "check-circle", 15)}
+      <span class="ctx-item-name">${esc(t("status.label"))}</span>
+      <span class="ctx-sub-tail">
+        ${currentStatusOpt ? `<span class="ctx-sub-badge">${esc(currentStatusOpt.label)}</span>` : ""}
+        <span class="ctx-chevron">${icon("chevron-right", 12)}</span>
+      </span>
+    </button>`;
+
+  const submenuHtml = `
+    <div class="ps5-context-menu ps5-context-submenu" role="menu">
+      ${options.map(({ value, label, ic }) => {
+        const active = currentStatus === value;
+        return `
+        <button type="button" class="ps5-context-item ctx-status-option${active ? " is-current active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${active}" title="${esc(label)}">
+          ${icon(ic, 14)}
+          <span>${esc(label)}</span>
+          <span class="ctx-check">${active ? icon("check", 14) : ""}</span>
+        </button>`;
+      }).join("")}
+      ${currentStatus ? `
+        <div class="ps5-context-sep"></div>
+        <button type="button" class="ps5-context-item danger ctx-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">
+          ${icon("x", 14)}
+          <span>${esc(t("col.clear"))}</span>
+        </button>` : ""}
+    </div>`;
+
+  return { triggerHtml, submenuHtml };
+}
+
+/**
+ * Renders the status submenu wrapped in `.ctx-submenu-wrap` for inline menus
+ * (such as the game page drawer More menu).
+ */
+export function statusMenuHtml(appName: string): string {
+  const { triggerHtml, submenuHtml } = statusSubmenuHtml(appName);
   return `
-    <div class="gp-more-status-box">
-      <div class="gp-more-status-head">
-        <span>${esc(t("status.label"))}</span>
-        ${current ? `<button type="button" class="gp-more-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">${icon("x", 11)}<span>${esc(t("col.clear"))}</span></button>` : ""}
-      </div>
-      <div class="gp-more-status-list" role="group">
-        ${options.map(({ value, label, ic }) => {
-          const on = current === value;
-          return `
-          <button type="button" class="ps5-context-item gp-more-status-btn${on ? " active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${on}" title="${esc(label)}">
-            <span class="gp-more-status-ico">${icon(ic, 14)}</span>
-            <span class="gp-more-status-name">${esc(label)}</span>
-            <span class="gp-more-status-mark">${on ? icon("check", 14) : ""}</span>
-          </button>`;
-        }).join("")}
-      </div>
+    <div class="ctx-submenu-wrap">
+      ${triggerHtml}
+      ${submenuHtml}
     </div>`;
 }

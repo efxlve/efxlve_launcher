@@ -13,7 +13,7 @@ import { gameVersionsOf, sourceOfKey, summaryOf, sharedOwnerOf } from "../../cor
 import { storeVersionLabel } from "../drawer/external-versions";
 import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
-import { gameStatusOf, gameStatusOptions } from "../library/game-status";
+import { statusSubmenuHtml } from "../library/game-status";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
 
@@ -103,18 +103,7 @@ const isRiot = source === "riot";
         return `<button class="ps5-context-item${active ? " is-current" : ""}" role="menuitemradio" aria-checked="${active}" data-act="prefer-version" data-id="${esc(version.appName)}">${storeLogo(version.source, 15)}<span>${esc(storeVersionLabel(version.source))}</span><span class="ctx-check">${active ? icon("check", 14) : ""}</span></button>`;
       }).join("")}<div class="ps5-context-sep"></div>`;
 
-  const currentStatus = gameStatusOf(appName);
-  const statusOptions = gameStatusOptions();
-  const currentStatusOpt = currentStatus ? statusOptions.find((o) => o.value === currentStatus) : undefined;
-  const statusTrigger = `
-    <button type="button" class="ps5-context-item ctx-submenu-trigger" role="menuitem" aria-haspopup="menu" aria-expanded="false" data-act="status-submenu-noop">
-      ${icon(currentStatusOpt ? currentStatusOpt.ic : "check-circle", 15)}
-      <span class="ctx-item-name">${esc(t("status.label"))}</span>
-      <span class="ctx-sub-tail">
-        ${currentStatusOpt ? `<span class="ctx-sub-badge">${esc(currentStatusOpt.label)}</span>` : ""}
-        <span class="ctx-chevron">${icon("chevron-right", 12)}</span>
-      </span>
-    </button>`;
+  const { triggerHtml, submenuHtml } = statusSubmenuHtml(appName);
 
   menu.innerHTML = `
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
@@ -150,7 +139,7 @@ const isRiot = source === "riot";
     ${!shared && !isSteam && !isCustom && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
-    ${statusTrigger}
+    ${triggerHtml}
     ${!isRiot && !isAmazon && !isCustom ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && (installed || isCustom)
@@ -170,27 +159,10 @@ const isRiot = source === "riot";
   root.appendChild(menu);
   S.ctxMenuEl = menu;
 
-  const submenu = document.createElement("div");
-  submenu.className = "ps5-context-menu ps5-context-submenu";
-  submenu.setAttribute("role", "menu");
+  const subWrap = document.createElement("div");
+  subWrap.innerHTML = submenuHtml.trim();
+  const submenu = (subWrap.firstElementChild as HTMLElement) || document.createElement("div");
   submenu.style.display = "none";
-  submenu.innerHTML = `
-    ${statusOptions.map(({ value, label, ic }) => {
-      const active = currentStatus === value;
-      return `
-      <button type="button" class="ps5-context-item ctx-status-option${active ? " is-current active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${active}" title="${esc(label)}">
-        ${icon(ic, 14)}
-        <span>${esc(label)}</span>
-        <span class="ctx-check">${active ? icon("check", 14) : ""}</span>
-      </button>`;
-    }).join("")}
-    ${currentStatus ? `
-      <div class="ps5-context-sep"></div>
-      <button type="button" class="ps5-context-item danger ctx-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">
-        ${icon("x", 14)}
-        <span>${esc(t("col.clear"))}</span>
-      </button>` : ""}
-  `;
   root.appendChild(submenu);
   activeSubmenuEl = submenu;
 
