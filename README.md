@@ -68,6 +68,21 @@ Requirements: Windows needs Microsoft Edge WebView2 (pre-installed on Windows 11
 
 The Windows portable zip contains `portable.txt`. When that file sits next to `efxlve-launcher.exe`, the launcher keeps its roaming/local data and legendary config in `portable-data` beside the executable, so the whole folder can move on a USB stick. Game installs, saves and the Steam library stay where they already are.
 
+### Uninstall & clean removal
+
+Closing the window sends the launcher to the tray instead of quitting, so **quit it first**: right-click the tray icon → **Quit**, or end `efxlve-launcher.exe` in Task Manager. Then remove it from Settings → Apps and delete what the uninstaller leaves behind:
+
+| Folder | What it holds |
+|---|---|
+| `%APPDATA%\com.efxlve.launcher` | Settings, caches, helper binaries (`legendary`, `gogdl`, `nile`, `comet`), logs and feedback reports |
+| `%LOCALAPPDATA%\com.efxlve.launcher` | The WebView2 profile (`EBWebView`); a damaged profile is the usual reason the window never appears |
+| `%USERPROFILE%\.config\legendary` | Epic account sessions, the installed list and save backups |
+| `%USERPROFILE%\.config\efxlve` | Screenshot thumbnails and the compatibility tools |
+
+If **start with Windows** was enabled, also delete the `EfxlveLauncher` value under `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`.
+
+Uninstalling never touches your games: install folders, saves, the Steam library and `Pictures\Efxlve Screenshots` stay where they are. A portable install is removed by deleting its folder, and its data lives in `portable-data` beside the executable. On Linux and macOS the same files sit in the platform's app-data folder for `com.efxlve.launcher` (`~/.local/share/…` and `~/Library/Application Support/…`), plus `~/.config/efxlve` and `~/.config/legendary`.
+
 ---
 
 ## Cloud saves in one minute
