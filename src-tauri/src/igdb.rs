@@ -880,18 +880,52 @@ fn game_cache_path(app: &AppHandle, id: i64) -> Option<PathBuf> {
 }
 
 fn read_lookup(app: &AppHandle) -> serde_json::Map<String, serde_json::Value> {
-    lookup_path(app)
-        .and_then(|path| std::fs::read_to_string(path).ok())
+    read_map(lookup_path(app))
+}
+
+fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Value>) {
+    write_map(lookup_path(app), lookup);
+}
+
+/// Title lookups IGDB had no match for, with the epoch second of the miss.
+fn misses_path(app: &AppHandle) -> Option<PathBuf> {
+    igdb_dir(app).map(|dir| dir.join("misses.json"))
+}
+
+fn read_misses(app: &AppHandle) -> serde_json::Map<String, serde_json::Value> {
+    read_map(misses_path(app))
+}
+
+fn write_misses(app: &AppHandle, misses: &serde_json::Map<String, serde_json::Value>) {
+    write_map(misses_path(app), misses);
+}
+
+/// External ids already resolved (`steam:620` → the IGDB game id), so a page
+/// open does not repeat the exact-id query for a game it already mapped.
+fn external_path(app: &AppHandle) -> Option<PathBuf> {
+    igdb_dir(app).map(|dir| dir.join("external.json"))
+}
+
+fn read_external(app: &AppHandle) -> serde_json::Map<String, serde_json::Value> {
+    read_map(external_path(app))
+}
+
+fn write_external(app: &AppHandle, external: &serde_json::Map<String, serde_json::Value>) {
+    write_map(external_path(app), external);
+}
+
+fn read_map(path: Option<PathBuf>) -> serde_json::Map<String, serde_json::Value> {
+    path.and_then(|path| std::fs::read_to_string(path).ok())
         .and_then(|data| serde_json::from_str(&data).ok())
         .unwrap_or_default()
 }
 
-fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Value>) {
-    let Some(path) = lookup_path(app) else { return };
+fn write_map(path: Option<PathBuf>, map: &serde_json::Map<String, serde_json::Value>) {
+    let Some(path) = path else { return };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    if let Ok(data) = serde_json::to_string(lookup) {
+    if let Ok(data) = serde_json::to_string(map) {
         let _ = std::fs::write(path, data);
     }
 }
@@ -1221,7 +1255,8 @@ pub async fn igdb_enrich(
 
     let mut id: Option<i64> = None;
 
-    // An external id is exact: it beats every fuzzy match.
+    // An external id is exact: it beats every fuzzy match. The resolved id is
+    // kept on disk, so the exact-id request runs once per game, not per open.
     if let (Some(category), Some(uid)) = (
         external_category,
         external_uid
@@ -1229,11 +1264,27 @@ pub async fn igdb_enrich(
             .map(str::trim)
             .filter(|uid| !uid.is_empty()),
     ) {
-        let value = api_post(&app, "games", &external_query(category, uid)).await?;
-        id = value
-            .as_array()
-            .and_then(|items| items.first())
-            .and_then(|item| item.get("id").and_then(serde_json::Value::as_i64));
+        let external_key = format!("{category}:{uid}");
+        let mut external = read_external(&app);
+        id = external
+            .get(&external_key)
+            .and_then(serde_json::Value::as_i64)
+            .filter(|id| *id > 0);
+        if id.is_none() {
+            // A failed exact-id request must not lose an answer that is already
+            // on disk: the title lookup below still gets its turn.
+            if let Ok(value) = api_post(&app, "games", &external_query(category, uid)).await {
+                let found = value
+                    .as_array()
+                    .and_then(|items| items.first())
+                    .and_then(|item| item.get("id").and_then(serde_json::Value::as_i64));
+                if let Some(found) = found {
+                    external.insert(external_key, serde_json::Value::from(found));
+                    write_external(&app, &external);
+                }
+                id = found;
+            }
+        }
     }
 
     let mut lookup = read_lookup(&app);
@@ -1242,6 +1293,18 @@ pub async fn igdb_enrich(
             .get(&key)
             .and_then(serde_json::Value::as_i64)
             .filter(|id| *id > 0);
+    }
+
+    // A title that had no match is not searched again for a month: the page
+    // would otherwise run the same two queries on every open. IGDB adds games,
+    // so the miss expires instead of being permanent.
+    let mut misses = read_misses(&app);
+    if id.is_none() {
+        if let Some(at) = misses.get(&key).and_then(serde_json::Value::as_u64) {
+            if crate::lookup_cache::fresh(at, crate::lookup_cache::MISS_TTL_SECS) {
+                return Ok(None);
+            }
+        }
     }
 
     if id.is_none() {
@@ -1262,9 +1325,15 @@ pub async fn igdb_enrich(
 
     if let Some(found) = id {
         if lookup.get(&key).and_then(serde_json::Value::as_i64) != Some(found) {
-            lookup.insert(key, serde_json::Value::from(found));
+            lookup.insert(key.clone(), serde_json::Value::from(found));
             write_lookup(&app, &lookup);
         }
+        if misses.remove(&key).is_some() {
+            write_misses(&app, &misses);
+        }
+    } else {
+        misses.insert(key, serde_json::Value::from(crate::lookup_cache::now_secs()));
+        write_misses(&app, &misses);
     }
 
     let Some(id) = id else { return Ok(None) };

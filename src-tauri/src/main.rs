@@ -20,6 +20,7 @@ mod feedback;
 mod gogdl;
 mod launchers;
 mod legendary;
+mod lookup_cache;
 mod nile;
 mod notes;
 mod net_diag;

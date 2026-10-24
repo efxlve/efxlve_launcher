@@ -197,29 +197,31 @@ async fn fetch_games() -> Option<Vec<AwacyGame>> {
     response.json::<Vec<AwacyGame>>().await.ok()
 }
 
+/// The cached Are We Anti-Cheat Yet? catalogue, served at once.
+///
+/// An entry older than a day is refreshed behind the page: the whole catalogue
+/// is a large download and must never hold a game page open.
 async fn load_games(app: &AppHandle, offline: bool) -> Option<Vec<AwacyGame>> {
     let path = cache_path(app);
-    let cached = read_cache(&path);
-    if let Some(cache) = cached.as_ref() {
-        if cache.schema == CACHE_SCHEMA && (offline || cache_is_fresh(cache.fetched_at, now_secs()))
-        {
-            return Some(cache.games.clone());
+    let cached = read_cache(&path).filter(|cache| cache.schema == CACHE_SCHEMA);
+    if let Some(cache) = cached {
+        if !offline && !cache_is_fresh(cache.fetched_at, now_secs()) {
+            let path = path.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Some(games) = fetch_games().await {
+                    write_cache(&path, &games);
+                }
+            });
         }
+        return Some(cache.games);
     }
     if offline {
-        return cached
-            .filter(|cache| cache.schema == CACHE_SCHEMA)
-            .map(|cache| cache.games);
+        return None;
     }
 
-    if let Some(games) = fetch_games().await {
-        write_cache(&path, &games);
-        return Some(games);
-    }
-
-    cached
-        .filter(|cache| cache.schema == CACHE_SCHEMA)
-        .map(|cache| cache.games)
+    let games = fetch_games().await?;
+    write_cache(&path, &games);
+    Some(games)
 }
 
 /// The cached Are We Anti-Cheat Yet? row for one Steam app. `None` means the

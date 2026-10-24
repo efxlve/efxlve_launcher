@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-const CACHE_SCHEMA: u32 = 1;
+const CACHE_SCHEMA: u32 = 2;
 const CACHE_TTL_SECS: u64 = 24 * 60 * 60;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -26,7 +26,10 @@ pub struct DeckStatus {
 struct CacheFile {
     schema: u32,
     fetched_at: u64,
-    category: u8,
+    /// `None` is a stored "Valve has not rated this app", answered from the disk
+    /// like a hit instead of asking the store again on every open.
+    #[serde(default)]
+    category: Option<u8>,
 }
 
 #[derive(Deserialize)]
@@ -76,7 +79,7 @@ fn read_cache(path: &Path) -> Option<CacheFile> {
     serde_json::from_str(&text).ok()
 }
 
-fn write_cache(path: &Path, category: u8) {
+fn write_cache(path: &Path, category: Option<u8>) {
     let Some(parent) = path.parent() else {
         return;
     };
@@ -110,27 +113,38 @@ fn parse_category(body: &[u8]) -> Option<u8> {
         .filter(|category| valid_category(*category))
 }
 
-async fn fetch_category(app_id: &str) -> Option<u8> {
-    let client = reqwest::Client::builder()
+/// The report's category and whether Valve answered: a miss is only stored when
+/// the store actually replied, so an offline page does not pin "unrated".
+async fn fetch_category(app_id: &str) -> (bool, Option<u8>) {
+    let Ok(client) = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
         .user_agent("efxlve-launcher")
         .build()
-        .ok()?;
-    let response = client
+    else {
+        return (false, None);
+    };
+    let Ok(response) = client
         .get("https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport")
         .query(&[("nAppID", app_id)])
         .send()
         .await
-        .ok()?;
+    else {
+        return (false, None);
+    };
     if !response.status().is_success() {
-        return None;
+        return (true, None);
     }
-    let body = response.bytes().await.ok()?;
-    parse_category(&body)
+    let Ok(body) = response.bytes().await else {
+        return (false, None);
+    };
+    (true, parse_category(&body))
 }
 
-/// Valve's cached Steam Deck category for one Steam app. `None` means the app
-/// has no report or the source could not be reached and no stale copy exists.
+/// Valve's Steam Deck category for one Steam app. `None` means the app has no
+/// report or the source could not be reached and no stored copy exists.
+///
+/// A stored answer is served at once; an entry older than a day is refreshed
+/// behind the page, so the row never holds the game page open.
 #[tauri::command]
 pub async fn steam_deck_status(
     app: AppHandle,
@@ -142,35 +156,34 @@ pub async fn steam_deck_status(
     }
     let offline = offline.unwrap_or(false);
     let path = cache_path(&app, &app_id);
-    let cached = read_cache(&path);
-    if let Some(cache) = cached.as_ref() {
-        if cache.schema == CACHE_SCHEMA
-            && (offline || cache_is_fresh(cache.fetched_at, now_secs()))
-            && valid_category(cache.category)
-        {
-            return Some(DeckStatus {
-                category: cache.category,
+    let cached = read_cache(&path).filter(|cache| cache.schema == CACHE_SCHEMA);
+    if let Some(cache) = cached {
+        if !offline && !cache_is_fresh(cache.fetched_at, now_secs()) {
+            let refresh = app.clone();
+            let refresh_id = app_id.clone();
+            tauri::async_runtime::spawn(async move {
+                let (reached, category) = fetch_category(&refresh_id).await;
+                if reached {
+                    write_cache(&cache_path(&refresh, &refresh_id), category);
+                }
             });
         }
+        return cache
+            .category
+            .filter(|category| valid_category(*category))
+            .map(|category| DeckStatus { category });
     }
     if offline {
-        return cached
-            .filter(|cache| cache.schema == CACHE_SCHEMA && valid_category(cache.category))
-            .map(|cache| DeckStatus {
-                category: cache.category,
-            });
+        return None;
     }
 
-    if let Some(category) = fetch_category(&app_id).await {
+    let (reached, category) = fetch_category(&app_id).await;
+    if reached {
         write_cache(&path, category);
-        return Some(DeckStatus { category });
     }
-
-    cached
-        .filter(|cache| cache.schema == CACHE_SCHEMA && valid_category(cache.category))
-        .map(|cache| DeckStatus {
-            category: cache.category,
-        })
+    category
+        .filter(|category| valid_category(*category))
+        .map(|category| DeckStatus { category })
 }
 
 #[cfg(test)]

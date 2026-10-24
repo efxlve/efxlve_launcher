@@ -180,7 +180,28 @@ pub async fn epic_get_critic(
     Ok(crate::legendary::critic::get_critic_data(&title, &app_name, force, year).await)
 }
 
-/// Fetches system requirements from the Epic Games Store content API and caches them to disk.
+/// Bump when `GameRequirementsResponse` gains a field.
+const SPECS_SCHEMA: u32 = 1;
+
+fn specs_cache_path(app_name: &str) -> std::path::PathBuf {
+    skip::default_config_dir()
+        .join("specs")
+        .join(format!("{}.json", crate::lookup_cache::file_key(app_name)))
+}
+
+/// The stored-answer rule: a hit never expires (the store's spec text is
+/// effectively static), a miss is retried after a month.
+fn stored_specs_usable(cached: &GameRequirementsResponse, fetched_at: u64) -> bool {
+    cached.supported
+        || crate::lookup_cache::fresh(fetched_at, crate::lookup_cache::MISS_TTL_SECS)
+}
+
+/// Epic store requirements and the catalog text that comes with them.
+///
+/// The answer is stored on disk — a miss too, so a game without a store page is
+/// not looked up again on every open. A stored hit never expires (the page text
+/// is effectively static); a stored miss is retried after a month in the
+/// background, while the page answers from the disk at once.
 #[tauri::command]
 pub async fn epic_get_system_requirements(
     _app: AppHandle,
@@ -188,23 +209,33 @@ pub async fn epic_get_system_requirements(
     app_name: String,
     force_refresh: Option<bool>,
 ) -> Result<GameRequirementsResponse, String> {
-    let config_dir = skip::default_config_dir();
-    let specs_dir = config_dir.join("specs");
-    let cache_file = specs_dir.join(format!("{}.json", app_name));
-    let force = force_refresh.unwrap_or(false);
-
-    // 1. Check the disk cache first (only supported, fresh entries with the new schema)
-    if !force && cache_file.is_file() {
-        if let Ok(content) = std::fs::read_to_string(&cache_file) {
-            if let Ok(cached) = serde_json::from_str::<GameRequirementsResponse>(&content) {
-                if cached.supported && content.contains("\"short_description\"") {
-                    return Ok(cached);
-                }
+    let cache_file = specs_cache_path(&app_name);
+    if force_refresh != Some(true) {
+        if let Some((cached, fetched_at)) =
+            crate::lookup_cache::read::<GameRequirementsResponse>(&cache_file, SPECS_SCHEMA)
+        {
+            if stored_specs_usable(&cached, fetched_at) {
+                return Ok(cached);
             }
+            let refresh_title = title.clone();
+            let refresh_name = app_name.clone();
+            tauri::async_runtime::spawn(async move {
+                let fresh = fetch_requirements(&refresh_title, &refresh_name).await;
+                crate::lookup_cache::write(&specs_cache_path(&refresh_name), SPECS_SCHEMA, &fresh);
+            });
+            return Ok(cached);
         }
     }
 
-    // 2. Scan FolderName and custom slug from the local metadata file
+    let result = fetch_requirements(&title, &app_name).await;
+    crate::lookup_cache::write(&cache_file, SPECS_SCHEMA, &result);
+    Ok(result)
+}
+
+/// The store request behind `epic_get_system_requirements`, without the cache.
+async fn fetch_requirements(title: &str, app_name: &str) -> GameRequirementsResponse {
+    let config_dir = skip::default_config_dir();
+    // 1. Scan FolderName and custom slug from the local metadata file
     let meta_file = config_dir
         .join("metadata")
         .join(format!("{}.json", app_name));
@@ -243,11 +274,14 @@ pub async fn epic_get_system_requirements(
     }
 
     // 3. Prepare slug candidates
-    let slugs = generate_slug_candidates(&title, folder_name.as_deref(), custom_slug.as_deref());
-    let client = reqwest::Client::builder()
+    let slugs = generate_slug_candidates(title, folder_name.as_deref(), custom_slug.as_deref());
+    let client = match reqwest::Client::builder()
         .timeout(Duration::from_secs(8))
         .build()
-        .map_err(|e| e.to_string())?;
+    {
+        Ok(client) => client,
+        Err(_) => return unsupported_requirements(app_name),
+    };
 
     let locales = ["tr-TR", "en-US"];
 
@@ -370,22 +404,15 @@ pub async fn epic_get_system_requirements(
 
                         if !systems.is_empty() || store_short_desc.is_some() || store_desc.is_some()
                         {
-                            let result = GameRequirementsResponse {
+                            return GameRequirementsResponse {
                                 supported: true,
                                 systems,
                                 languages,
-                                app_name: app_name.clone(),
+                                app_name: app_name.to_string(),
                                 description: store_desc,
                                 short_description: store_short_desc,
                                 tags: store_tags,
                             };
-
-                            let _ = std::fs::create_dir_all(&specs_dir);
-                            if let Ok(json_str) = serde_json::to_string(&result) {
-                                let _ = std::fs::write(&cache_file, json_str);
-                            }
-
-                            return Ok(result);
                         }
                     }
                 }
@@ -393,18 +420,20 @@ pub async fn epic_get_system_requirements(
         }
     }
 
-    // If not found, return supported: false gracefully (do not lock failures to disk permanently)
-    let fallback = GameRequirementsResponse {
+    unsupported_requirements(app_name)
+}
+
+/// The empty answer for a game whose store page carries no requirements.
+fn unsupported_requirements(app_name: &str) -> GameRequirementsResponse {
+    GameRequirementsResponse {
         supported: false,
         systems: vec![],
         languages: vec![],
-        app_name: app_name.clone(),
+        app_name: app_name.to_string(),
         description: None,
         short_description: None,
         tags: vec![],
-    };
-
-    Ok(fallback)
+    }
 }
 
 /// Detects games installed through the Epic Games Launcher.
@@ -509,5 +538,18 @@ mod tests {
             None,
         );
         assert!(slugs5.contains(&"the-dungeon-of-naheulbeuk".to_string()));
+    }
+
+    #[test]
+    fn a_stored_specs_hit_never_expires_but_a_miss_is_retried() {
+        let hit = GameRequirementsResponse {
+            supported: true,
+            ..GameRequirementsResponse::default()
+        };
+        let miss = GameRequirementsResponse::default();
+        // The epoch is "older than any TTL": a stored hit still answers.
+        assert!(stored_specs_usable(&hit, 0));
+        assert!(stored_specs_usable(&miss, crate::lookup_cache::now_secs()));
+        assert!(!stored_specs_usable(&miss, 0), "an aged miss is looked up again");
     }
 }

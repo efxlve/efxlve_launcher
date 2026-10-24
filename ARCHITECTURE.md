@@ -95,6 +95,13 @@ sequenceDiagram
     end
 ```
 
+**Game page lookups follow the same rule.** Every store, score, news, spec and
+compatibility answer is written to disk, including "nothing found"
+(`src-tauri/src/lookup_cache.rs` owns the envelope). A missing entry is the only
+one that waits for the network; an aged entry is served as it is and refreshed
+behind the page. A stored miss is retried after a month, so a game that reaches
+a store later is picked up without pinning the page to an old answer.
+
 ---
 
 ## 3. Key Subsystems & Design Invariants

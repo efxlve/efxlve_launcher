@@ -100,18 +100,21 @@ pub fn parse_metacritic_page(html: &str, title: &str, year: Option<u32>) -> Opti
 
 /// Fetches the game's own Metacritic page: the score and the URL it came from.
 /// The slug is tried with the store tags first and without them after:
-/// "... Enhanced" lives under the base name.
+/// "... Enhanced" lives under the base name. The second half of the answer says
+/// whether Metacritic was actually reached, so a stored miss is only written
+/// when the site answered.
 pub async fn fetch_metacritic(
     client: &reqwest::Client,
     title: &str,
     year: Option<u32>,
-) -> Option<(u32, String)> {
+) -> (Option<(u32, String)>, bool) {
     let mut slugs = vec![metacritic_slug(title)];
     let loosened = crate::legendary::hltb::loosen_hltb_search_term(title);
     let loose_slug = metacritic_slug(&loosened);
     if !loose_slug.is_empty() && loose_slug != slugs[0] {
         slugs.push(loose_slug);
     }
+    let mut reached = false;
     for slug in slugs {
         if slug.is_empty() {
             continue;
@@ -126,6 +129,7 @@ pub async fn fetch_metacritic(
         else {
             continue;
         };
+        reached = true;
         if !response.status().is_success() {
             continue;
         }
@@ -133,10 +137,10 @@ pub async fn fetch_metacritic(
             continue;
         };
         if let Some(score) = parse_metacritic_page(&html, title, year) {
-            return Some((score, url));
+            return (Some((score, url)), true);
         }
     }
-    None
+    (None, reached)
 }
 
 pub fn clean_critic_search_term(title: &str) -> String {
@@ -247,6 +251,17 @@ fn dirs_config_dir() -> Option<PathBuf> {
     std::env::var_os("USERPROFILE")
         .map(PathBuf::from)
         .map(|p| p.join(".config"))
+}
+
+/// The stored-answer rule: a hit never expires, a miss is retried after a
+/// month so a game that gains a score later is picked up, and an answer for a
+/// store that could not be reached is not trusted at all.
+pub fn cached_answer_usable(data: &CriticData, age: Option<std::time::Duration>) -> bool {
+    data.parser_version >= CRITIC_PARSER_VERSION
+        && (data.supported
+            || age
+                .map(|age| age.as_secs() < crate::lookup_cache::MISS_TTL_SECS)
+                .unwrap_or(false))
 }
 
 pub fn calculate_tier(score: u32) -> &'static str {
@@ -425,7 +440,12 @@ pub async fn get_critic_data(
     if !force_refresh && cache_file.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(data) = serde_json::from_str::<CriticData>(&content) {
-                if data.supported && data.parser_version >= CRITIC_PARSER_VERSION {
+                let age = tokio::fs::metadata(&cache_file)
+                    .await
+                    .ok()
+                    .and_then(|meta| meta.modified().ok())
+                    .and_then(|at| at.elapsed().ok());
+                if cached_answer_usable(&data, age) {
                     return data;
                 }
             }
@@ -435,7 +455,8 @@ pub async fn get_critic_data(
     // Direct Metacritic lookup first: a store field is often missing and the
     // wiki can land on an older game with the same name. The page's own schema
     // block carries the game, its release date and the metascore.
-    let (direct_score, direct_url) = match fetch_metacritic(&client, title, year).await {
+    let (direct, metacritic_reached) = fetch_metacritic(&client, title, year).await;
+    let (direct_score, direct_url) = match direct {
         Some((score, url)) => (Some(score), Some(url)),
         None => (None, None),
     };
@@ -455,7 +476,7 @@ pub async fn get_critic_data(
             tier: direct_score.map(|s| calculate_tier(s).to_string()),
             parser_version: CRITIC_PARSER_VERSION,
         };
-        if supported {
+        if supported || metacritic_reached {
             let _ = tokio::fs::create_dir_all(&cache_dir).await;
             if let Ok(json_str) = serde_json::to_string_pretty(&result) {
                 let _ = tokio::fs::write(&cache_file, json_str).await;
@@ -469,6 +490,9 @@ pub async fn get_critic_data(
     let mut mc_score: Option<u32> = None;
     let mut mc_url: Option<String> = None;
     let mut igdb_score: Option<f64> = None;
+    // A miss is only worth storing when a source actually answered; otherwise
+    // an offline page would pin "no score" for a month.
+    let mut reached = metacritic_reached;
 
     let mut fallback: Option<(
         Option<u32>,
@@ -489,6 +513,7 @@ pub async fn get_critic_data(
             .send()
             .await
         {
+            reached = true;
             if let Ok(json_val) = resp.json::<serde_json::Value>().await {
                 if let Some(arr) = json_val.get(1).and_then(|v| v.as_array()) {
                     for title in arr.iter().filter_map(|v| v.as_str()) {
@@ -589,8 +614,8 @@ pub async fn get_critic_data(
         parser_version: CRITIC_PARSER_VERSION,
     };
 
-    // 5. Diske kaydet
-    if supported {
+    // 5. Diske kaydet: a hit never expires, a miss is retried after a month.
+    if supported || reached {
         let _ = tokio::fs::create_dir_all(&cache_dir).await;
         if let Ok(json_str) = serde_json::to_string_pretty(&result) {
             let _ = tokio::fs::write(&cache_file, json_str).await;
@@ -675,6 +700,38 @@ mod tests {
             clean_critic_search_term("UNCHARTED™: Legacy of Thieves Collection"),
             "UNCHARTED: Legacy of Thieves Collection"
         );
+    }
+
+    #[test]
+    fn a_stored_hit_never_expires_but_a_miss_is_retried() {
+        use std::time::Duration;
+        let hit = CriticData {
+            app_name: "x".into(),
+            title: "X".into(),
+            supported: true,
+            opencritic_score: Some(80),
+            opencritic_url: None,
+            metacritic_score: None,
+            metacritic_url: None,
+            igdb_score: None,
+            tier: Some("Strong".into()),
+            parser_version: CRITIC_PARSER_VERSION,
+        };
+        let miss = CriticData {
+            supported: false,
+            parser_version: CRITIC_PARSER_VERSION,
+            ..hit.clone()
+        };
+        let long = Some(Duration::from_secs(365 * 24 * 3600));
+        assert!(cached_answer_usable(&hit, long), "a score is not refetched");
+        assert!(cached_answer_usable(&miss, Some(Duration::from_secs(60))));
+        assert!(!cached_answer_usable(&miss, long), "a miss expires");
+        assert!(!cached_answer_usable(&miss, None), "no file age, no answer");
+        let old_parser = CriticData {
+            parser_version: 0,
+            ..hit
+        };
+        assert!(!cached_answer_usable(&old_parser, None));
     }
 
     #[test]

@@ -40,6 +40,7 @@ Open only the row that matches the task. Do not read the rest of the tree first.
 | Epic types or cover helpers | `src/epic-model.ts` |
 | Steam library or VDF | `src-tauri/src/steam/library.rs`, `vdf.rs` |
 | Steam store page | `src-tauri/src/steam/catalog.rs` |
+| Game page answer cache (scores, specs, news, compat rows) | `src-tauri/src/lookup_cache.rs` |
 | Steam achievements | `src-tauri/src/steam/achievements.rs` |
 | Steam sign-in | `src-tauri/src/steam_auth/session.rs` |
 | Steam token file | `src-tauri/src/steam_auth/vault.rs` |

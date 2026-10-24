@@ -53,15 +53,6 @@ pub struct SteamGameDetails {
     pub platforms: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub(super) struct CachedDetails {
-    /// Cache shape version; older files are ignored after a parser fix.
-    #[serde(default)]
-    version: u32,
-    fetched_at: u64,
-    details: SteamGameDetails,
-}
-
 /// Bump whenever the parsed shape changes so stale entries refetch once.
 pub(super) const DETAILS_CACHE_VERSION: u32 = 7;
 
@@ -841,11 +832,22 @@ pub(super) fn details_cache_path(app: &tauri::AppHandle, app_id: &str, language:
     dir.join(format!("{app_id}_{language}.json"))
 }
 
-pub(super) fn now_secs() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::SystemTime::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+/// Bump when the exact-match search answer gains a field.
+const STORE_SEARCH_SCHEMA: u32 = 1;
+
+fn store_search_cache_path(app: &tauri::AppHandle, wanted: &str, language: &str) -> PathBuf {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("steam")
+        .join("search");
+    dir.join(format!(
+        "{}_{}.json",
+        crate::lookup_cache::file_key(wanted),
+        language
+    ))
 }
 
 /// Transport errors from `reqwest` print the request URL in their `Display`
@@ -857,8 +859,9 @@ pub(super) fn transport_error(context: &str, error: reqwest::Error) -> String {
 
 /// Store description, developer and requirements for one game.
 ///
-/// The Steam store API is rate limited, so a 6 hour disk cache answers repeated
-/// opens and the request only runs when the page actually asks for it.
+/// The Steam store API is rate limited, so a disk cache answers repeated opens.
+/// An aged entry is served as it is and refreshed behind the page: opening a
+/// game page never waits for the store.
 #[tauri::command]
 pub async fn steam_get_game_details(
     app: tauri::AppHandle,
@@ -872,17 +875,31 @@ pub async fn steam_get_game_details(
     let language = safe_store_language(language.unwrap_or_else(|| "english".into()))?;
     let cache = details_cache_path(&app, &app_id, &language);
     if force != Some(true) {
-        if let Ok(text) = std::fs::read_to_string(&cache) {
-            if let Ok(cached) = serde_json::from_str::<CachedDetails>(&text) {
-                if cached.version == DETAILS_CACHE_VERSION
-                    && now_secs().saturating_sub(cached.fetched_at) < DETAILS_TTL_SECS
-                {
-                    return Ok(cached.details);
-                }
+        if let Some((cached, fetched_at)) =
+            crate::lookup_cache::read::<SteamGameDetails>(&cache, DETAILS_CACHE_VERSION)
+        {
+            if !crate::lookup_cache::fresh(fetched_at, DETAILS_TTL_SECS) {
+                let refresh = app.clone();
+                let refresh_id = app_id.clone();
+                let refresh_language = language.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Ok(details) = fetch_store_details(&refresh_id, &refresh_language).await {
+                        let path = details_cache_path(&refresh, &refresh_id, &refresh_language);
+                        crate::lookup_cache::write(&path, DETAILS_CACHE_VERSION, &details);
+                    }
+                });
             }
+            return Ok(cached);
         }
     }
 
+    let details = fetch_store_details(&app_id, &language).await?;
+    crate::lookup_cache::write(&cache, DETAILS_CACHE_VERSION, &details);
+    Ok(details)
+}
+
+/// The store request behind `steam_get_game_details`, without the cache.
+async fn fetch_store_details(app_id: &str, language: &str) -> Result<SteamGameDetails, String> {
     let url = format!("https://store.steampowered.com/api/appdetails?appids={app_id}&l={language}");
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(12))
@@ -898,29 +915,21 @@ pub async fn steam_get_game_details(
         .await
         .map_err(|e| transport_error("Steam store answered with an unexpected payload", e))?;
     let entry = payload
-        .get(&app_id)
+        .get(app_id)
         .ok_or("Steam store has no record for this app")?;
     if entry.get("success").and_then(|v| v.as_bool()) != Some(true) {
         return Err("Steam store has no record for this app".into());
     }
     let data = entry.get("data").ok_or("Steam store returned no data")?;
-    let mut details = parse_app_details(&app_id, data);
+    let mut details = parse_app_details(app_id, data);
     // The store only lists DLCs that are still on sale; the client's own cache
     // also keeps delisted packs (episodic releases from older games).
     if let Some(steam) = steam_install_path() {
-        for dlc in read_client_dlc_ids(&steam, &app_id) {
+        for dlc in read_client_dlc_ids(&steam, app_id) {
             if !details.dlc.contains(&dlc) {
                 details.dlc.push(dlc);
             }
         }
-    }
-    let cached = CachedDetails {
-        version: DETAILS_CACHE_VERSION,
-        fetched_at: now_secs(),
-        details: details.clone(),
-    };
-    if let Ok(text) = serde_json::to_string(&cached) {
-        let _ = std::fs::write(&cache, text);
     }
     Ok(details)
 }
@@ -968,16 +977,58 @@ pub(crate) fn normalize_store_title(name: &str) -> String {
 /// Finds the Steam store app whose title matches exactly. Companion games use
 /// it for system requirements, add-on counts and developer names their own
 /// client does not publish.
+///
+/// The exact match is stable, so the answer is cached on disk; a stored miss is
+/// retried after a month in case the game reaches Steam later. An aged entry is
+/// served while the search runs again behind the page.
 #[tauri::command]
 pub async fn steam_find_store_app(
+    app: tauri::AppHandle,
     query: String,
     language: Option<String>,
 ) -> Result<Option<SteamStoreHit>, String> {
-    let query = query.trim();
+    let query = query.trim().to_string();
     if query.is_empty() {
         return Ok(None);
     }
     let language = safe_store_language(language.unwrap_or_else(|| "english".into()))?;
+    let wanted = normalize_store_title(&query);
+    if wanted.is_empty() {
+        return Ok(None);
+    }
+    let cache = store_search_cache_path(&app, &wanted, &language);
+    if let Some((hit, fetched_at)) =
+        crate::lookup_cache::read::<Option<SteamStoreHit>>(&cache, STORE_SEARCH_SCHEMA)
+    {
+        if !crate::lookup_cache::fresh(fetched_at, crate::lookup_cache::MISS_TTL_SECS) {
+            let refresh = app.clone();
+            let refresh_query = query.clone();
+            let refresh_wanted = wanted.clone();
+            let refresh_language = language.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Ok(hit) =
+                    fetch_store_search(&refresh_query, &refresh_wanted, &refresh_language).await
+                {
+                    let path =
+                        store_search_cache_path(&refresh, &refresh_wanted, &refresh_language);
+                    crate::lookup_cache::write(&path, STORE_SEARCH_SCHEMA, &hit);
+                }
+            });
+        }
+        return Ok(hit);
+    }
+
+    let hit = fetch_store_search(&query, &wanted, &language).await?;
+    crate::lookup_cache::write(&cache, STORE_SEARCH_SCHEMA, &hit);
+    Ok(hit)
+}
+
+/// The search request behind `steam_find_store_app`, without the cache.
+async fn fetch_store_search(
+    query: &str,
+    wanted: &str,
+    language: &str,
+) -> Result<Option<SteamStoreHit>, String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(12))
         .user_agent("efxlve-launcher")
@@ -985,17 +1036,13 @@ pub async fn steam_find_store_app(
         .map_err(|e| e.to_string())?;
     let payload: serde_json::Value = client
         .get("https://store.steampowered.com/api/storesearch/")
-        .query(&[("term", query), ("l", &language), ("cc", "US")])
+        .query(&[("term", query), ("l", language), ("cc", "US")])
         .send()
         .await
         .map_err(|e| transport_error("Steam search could not be reached", e))?
         .json()
         .await
         .map_err(|e| transport_error("Steam search answered with an unexpected payload", e))?;
-    let wanted = normalize_store_title(query);
-    if wanted.is_empty() {
-        return Ok(None);
-    }
     let hit = payload
         .get("items")
         .and_then(|v| v.as_array())

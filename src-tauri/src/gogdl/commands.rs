@@ -1,6 +1,6 @@
 //! Tauri IPC commands for GOG.COM integration.
 
-use tauri::{command, AppHandle};
+use tauri::{command, AppHandle, Manager};
 
 use super::api_client::{
     exchange_auth_code, fetch_game_details, fetch_gog_achievements, fetch_user_library,
@@ -162,13 +162,73 @@ pub async fn gog_list_games(app: AppHandle) -> Result<Vec<GogGameSummary>, Strin
     Ok(enriched)
 }
 
+/// Bump when `GogGameDetails` gains a field.
+const DETAILS_SCHEMA: u32 = 1;
+/// Store text changes rarely; an answer older than a week is refreshed behind
+/// the page instead of being waited for.
+const DETAILS_TTL_SECS: u64 = 7 * 24 * 3600;
+
+fn details_cache_path(app: &AppHandle, game_id: &str) -> std::path::PathBuf {
+    app.path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("gog")
+        .join("details")
+        .join(format!("{}.json", crate::lookup_cache::file_key(game_id)))
+}
+
+/// The store answer needs some content before it is worth keeping: a failed
+/// gog.com visit still builds an empty struct, and storing that would pin "no
+/// description" on the page for a week.
+fn details_have_content(details: &GogGameDetails) -> bool {
+    !details.title.trim().is_empty()
+        || details.description.is_some()
+        || details.developer.is_some()
+        || details.publisher.is_some()
+        || details.cover_url.is_some()
+        || details.hero_url.is_some()
+        || !details.screenshots.is_empty()
+        || details.requirements.is_some()
+}
+
+/// GOG details, disk first.
+///
+/// Every open of a GOG page used to hit `api.gog.com` and `gamesdb.gog.com`
+/// again, and the requirements call made it a second time. The stored answer is
+/// returned at once; an aged one is fetched again behind the page.
+async fn game_details(app: &AppHandle, game_id: &str) -> Result<GogGameDetails, String> {
+    let cache = details_cache_path(app, game_id);
+    if let Some((cached, fetched_at)) =
+        crate::lookup_cache::read::<GogGameDetails>(&cache, DETAILS_SCHEMA)
+    {
+        if !crate::lookup_cache::fresh(fetched_at, DETAILS_TTL_SECS) {
+            let refresh = app.clone();
+            let refresh_id = game_id.to_string();
+            tauri::async_runtime::spawn(async move {
+                if let Ok(details) = fetch_game_details(&refresh_id).await {
+                    if details_have_content(&details) {
+                        let path = details_cache_path(&refresh, &refresh_id);
+                        crate::lookup_cache::write(&path, DETAILS_SCHEMA, &details);
+                    }
+                }
+            });
+        }
+        return Ok(cached);
+    }
+    let details = fetch_game_details(game_id).await.map_err(cmd_error)?;
+    if details_have_content(&details) {
+        crate::lookup_cache::write(&cache, DETAILS_SCHEMA, &details);
+    }
+    Ok(details)
+}
+
 /// Retrieves detailed game metadata (official description, 2560px background, developers, and screenshots) on demand.
 #[command]
 pub async fn gog_get_game_details(
-    _app: AppHandle,
+    app: AppHandle,
     game_id: String,
 ) -> Result<GogGameDetails, String> {
-    fetch_game_details(&game_id).await.map_err(cmd_error)
+    game_details(&app, game_id.trim_start_matches("gog::")).await
 }
 
 /// Retrieves user achievements for a GOG game from the official Gameplay API.
@@ -295,10 +355,11 @@ pub async fn gog_sync_achievements(
 /// Retrieves hardware requirements for a GOG game.
 #[command]
 pub async fn gog_get_system_requirements(
+    app: AppHandle,
     game_id: String,
 ) -> Result<GameRequirementsResponse, String> {
     let clean_id = game_id.trim_start_matches("gog::");
-    let details = fetch_game_details(clean_id).await.map_err(cmd_error)?;
+    let details = game_details(&app, clean_id).await?;
     details
         .requirements
         .ok_or_else(|| "No requirements defined for this game".to_string())

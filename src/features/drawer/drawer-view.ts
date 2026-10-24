@@ -1008,13 +1008,21 @@ function ensureOverviewData(s: EpicSummary): void {
       .finally(() => { S.loadingCriticFor.delete(appName); });
   }
 
-  // Fetch official GOG metadata on demand
+  // Fetch official GOG metadata on demand. The details answer carries the
+  // requirements too, so it is the only store call the page makes: asking for
+  // the same payload a second time doubled the wait on the first open.
   if (appName.startsWith("gog::")) {
     const rawId = appName.slice(5);
-    const detailsP = loadGogDetails(rawId)
+    // The details call is also the requirements source: keep the specs tab from
+    // starting the same fetch while it is in flight.
+    const ownsReq = !S.loadingReqFor.has(appName);
+    if (ownsReq) S.loadingReqFor.add(appName);
+    void loadGogDetails(rawId)
       .then((details) => {
         if (details.requirements) {
           S.loadedRequirements.set(appName, details.requirements);
+        } else if (!S.loadedRequirements.has(appName)) {
+          S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
         }
         if (S.currentModalAppName !== appName) return;
         if (details.description && !s.description) {
@@ -1036,28 +1044,29 @@ function ensureOverviewData(s: EpicSummary): void {
           paintGameCloud(s);
         }
       })
-      .catch(() => {});
-    const reqP =
-      !S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)
-        ? fetchAndRenderRequirements(appName, s.title)
-        : Promise.resolve();
-    // GOG has two store-side sources (details + requirements): the wiki may only
-    // start once both have settled, otherwise its text would flash and be
-    // replaced by the store description.
-    void Promise.allSettled([detailsP, reqP]).then(() => {
-      storeAboutSettled.add(appName);
-      maybeLoadWikiAbout(s);
-      // The store page can land after the critic answer: its Metacritic score is
-      // worth showing, so the card is merged and painted again.
-      const loaded = S.loadedCritic.get(appName);
-      if (loaded) {
-        const merged = mergeSteamCritic(loaded, appName);
-        if (merged !== loaded) {
-          S.loadedCritic.set(appName, merged);
-          if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
+      .catch(() => {
+        if (!S.loadedRequirements.has(appName)) {
+          S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });
         }
-      }
-    });
+      })
+      .finally(() => {
+        if (ownsReq) S.loadingReqFor.delete(appName);
+        storeAboutSettled.add(appName);
+        maybeLoadWikiAbout(s);
+        // The store page can land after the critic answer: its Metacritic score is
+        // worth showing, so the card is merged and painted again.
+        const loaded = S.loadedCritic.get(appName);
+        if (loaded) {
+          const merged = mergeSteamCritic(loaded, appName);
+          if (merged !== loaded) {
+            S.loadedCritic.set(appName, merged);
+            if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
+          }
+        }
+        if (S.currentModalAppName === appName && (S.activeDrawerTab === "specs" || S.activeDrawerTab === "overview")) {
+          repaintStoreDetails(appName);
+        }
+      });
     if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) {
       void fetchAndRenderAchievements(appName);
     }
@@ -1183,7 +1192,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
   } else {
     ensureCloudSyncStamp(s);
-    if (!S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.title);
+    // GOG's details call carries the requirements; `ensureOverviewData` owns it.
+    if (!appName.startsWith("gog::") && !S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.title);
     if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.title);
     if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
     ensureEosSupport(appName);

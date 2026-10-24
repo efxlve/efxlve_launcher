@@ -88,10 +88,23 @@ pub async fn get_hltb_data(
     // older game with the same title ("Spider-Man 2" vs "Marvel's Spider-Man 2").
     let cache_file = hltb_cache_dir().join(format!("{}-{}.json", clean_app, year.unwrap_or(0)));
 
-    if !force_refresh && cache_file.exists() {
+    if !force_refresh {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(data) = serde_json::from_str::<HltbData>(&content) {
                 if data.supported {
+                    return data;
+                }
+                // A stored "not on HowLongToBeat" answer is trusted for a month:
+                // the site can add the game later, but until then the page must
+                // not run the whole handshake again for the same game.
+                let age = tokio::fs::metadata(&cache_file)
+                    .await
+                    .ok()
+                    .and_then(|meta| meta.modified().ok())
+                    .and_then(|at| at.elapsed().ok())
+                    .map(|elapsed| elapsed.as_secs())
+                    .unwrap_or(u64::MAX);
+                if age < crate::lookup_cache::MISS_TTL_SECS {
                     return data;
                 }
             }
@@ -221,7 +234,7 @@ pub async fn get_hltb_data(
     // matched ("Grand Theft Auto V Enhanced" / "... Legacy" live in HLTB as
     // "Grand Theft Auto V"; a real title ending in such a word, like
     // "Hogwarts Legacy", already matched on the first try).
-    let (mut result_data, first_exact) = search_hltb(
+    let (mut result_data, first_exact, mut reached) = search_hltb(
         &client,
         &search_endpoint,
         &terms,
@@ -239,7 +252,7 @@ pub async fn get_hltb_data(
         let loosened = loosen_hltb_search_term(&search_term);
         let loose_terms: Vec<&str> = loosened.split_whitespace().collect();
         if loosened != search_term && !loose_terms.is_empty() {
-            let (retry, retry_exact) = search_hltb(
+            let (retry, retry_exact, retry_reached) = search_hltb(
                 &client,
                 &search_endpoint,
                 &loose_terms,
@@ -249,14 +262,17 @@ pub async fn get_hltb_data(
                 year,
             )
             .await;
+            reached |= retry_reached;
             if retry_exact || !result_data.supported {
                 result_data = retry;
             }
         }
     }
 
-    // Cache only results that contain valid duration data
-    if result_data.supported {
+    // A definitive answer is stored either way. A stored miss keeps the page
+    // from asking HowLongToBeat again on every open; a network failure is not
+    // stored, so the next open retries it.
+    if result_data.supported || reached {
         if let Ok(_) = tokio::fs::create_dir_all(hltb_cache_dir()).await {
             if let Ok(json_str) = serde_json::to_string_pretty(&result_data) {
                 let _ = tokio::fs::write(&cache_file, json_str).await;
@@ -283,7 +299,7 @@ fn empty_hltb(app_name: &str, title: &str) -> HltbData {
 
 /// One HLTB search: the payload, the session's dynamic auth headers, and the
 /// best-matching result parsed into durations (plus whether it was an exact
-/// name match).
+/// name match and whether the site actually answered).
 async fn search_hltb(
     client: &reqwest::Client,
     endpoint: &str,
@@ -292,9 +308,9 @@ async fn search_hltb(
     app_name: &str,
     title: &str,
     year: Option<u32>,
-) -> (HltbData, bool) {
+) -> (HltbData, bool, bool) {
     if terms.is_empty() {
-        return (empty_hltb(app_name, title), false);
+        return (empty_hltb(app_name, title), false, false);
     }
     let mut payload = serde_json::json!({
         "searchType": "games",
@@ -347,12 +363,16 @@ async fn search_hltb(
 
     match req.json(&payload).send().await {
         Ok(resp) if resp.status().is_success() => match resp.text().await {
-            Ok(text) => serde_json::from_str::<serde_json::Value>(&text)
-                .map(|val| parse_hltb_response(app_name, title, terms, &val, year))
-                .unwrap_or_else(|_| (empty_hltb(app_name, title), false)),
-            Err(_) => (empty_hltb(app_name, title), false),
+            Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
+                Ok(val) => {
+                    let (data, exact) = parse_hltb_response(app_name, title, terms, &val, year);
+                    (data, exact, true)
+                }
+                Err(_) => (empty_hltb(app_name, title), false, false),
+            },
+            Err(_) => (empty_hltb(app_name, title), false, false),
         },
-        _ => (empty_hltb(app_name, title), false),
+        _ => (empty_hltb(app_name, title), false, false),
     }
 }
 

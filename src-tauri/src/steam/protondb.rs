@@ -35,7 +35,10 @@ pub struct ProtonDbSummary {
 struct CacheFile {
     schema: u32,
     fetched_at: u64,
-    summary: ProtonDbSummary,
+    /// `None` is a stored "ProtonDB has no page for this app", not a failure:
+    /// the miss is answered from the disk like a hit and retried after the TTL.
+    #[serde(default)]
+    summary: Option<ProtonDbSummary>,
 }
 
 fn valid_app_id(app_id: &str) -> bool {
@@ -69,7 +72,7 @@ fn read_cache(path: &Path) -> Option<CacheFile> {
     serde_json::from_str(&text).ok()
 }
 
-fn write_cache(path: &Path, summary: &ProtonDbSummary) {
+fn write_cache(path: &Path, summary: Option<&ProtonDbSummary>) {
     let Some(parent) = path.parent() else {
         return;
     };
@@ -77,7 +80,7 @@ fn write_cache(path: &Path, summary: &ProtonDbSummary) {
     let cache = CacheFile {
         schema: CACHE_SCHEMA,
         fetched_at: now_secs(),
-        summary: summary.clone(),
+        summary: summary.cloned(),
     };
     let Ok(text) = serde_json::to_string_pretty(&cache) else {
         return;
@@ -92,32 +95,43 @@ fn write_cache(path: &Path, summary: &ProtonDbSummary) {
     }
 }
 
-async fn fetch_summary(app_id: &str) -> Option<ProtonDbSummary> {
-    let client = reqwest::Client::builder()
+/// The ProtonDB answer and whether the site was reached: a miss is only stored
+/// when it answered, so an offline page does not pin "no tier" for a day.
+async fn fetch_summary(app_id: &str) -> (bool, Option<ProtonDbSummary>) {
+    let Ok(client) = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
         .user_agent("efxlve-launcher")
         .build()
-        .ok()?;
-    let response = client
+    else {
+        return (false, None);
+    };
+    let Ok(response) = client
         .get(format!(
             "https://www.protondb.com/api/v1/reports/summaries/{app_id}.json"
         ))
         .send()
         .await
-        .ok()?;
+    else {
+        return (false, None);
+    };
     if !response.status().is_success() {
-        return None;
+        return (true, None);
     }
-    let summary: ProtonDbSummary = response.json().await.ok()?;
+    let Ok(summary) = response.json::<ProtonDbSummary>().await else {
+        return (false, None);
+    };
     if summary.tier.trim().is_empty() {
-        return None;
+        return (true, None);
     }
-    Some(summary)
+    (true, Some(summary))
 }
 
-/// The cached tier, refreshed at most once a day. `None` means ProtonDB has no
-/// answer (unknown app, offline with no cache, or an endpoint change); the page
-/// then leaves the row out rather than showing a failure.
+/// The cached tier. `None` means ProtonDB has no answer (unknown app, offline
+/// with no cache, or an endpoint change); the page then leaves the row out
+/// rather than showing a failure.
+///
+/// A stored answer is always served at once. An entry older than a day is
+/// refreshed behind the page, so a page open never waits on protondb.com.
 #[tauri::command]
 pub async fn steam_protondb_summary(
     app: AppHandle,
@@ -129,29 +143,34 @@ pub async fn steam_protondb_summary(
     }
     let offline = offline.unwrap_or(false);
     let path = cache_path(&app, &app_id);
-    let cached = path.as_deref().and_then(read_cache);
-    if let Some(cache) = cached.as_ref() {
-        if cache.schema == CACHE_SCHEMA && (offline || cache_is_fresh(cache.fetched_at, now_secs()))
-        {
-            return Some(cache.summary.clone());
+    let cached = path
+        .as_deref()
+        .and_then(read_cache)
+        .filter(|cache| cache.schema == CACHE_SCHEMA);
+    if let Some(cache) = cached {
+        if !offline && !cache_is_fresh(cache.fetched_at, now_secs()) {
+            if let Some(path) = path.clone() {
+                tauri::async_runtime::spawn(async move {
+                    let (reached, summary) = fetch_summary(&app_id).await;
+                    if reached {
+                        write_cache(&path, summary.as_ref());
+                    }
+                });
+            }
         }
+        return cache.summary;
     }
     if offline {
-        return cached
-            .filter(|cache| cache.schema == CACHE_SCHEMA)
-            .map(|cache| cache.summary);
+        return None;
     }
 
-    if let Some(summary) = fetch_summary(&app_id).await {
+    let (reached, summary) = fetch_summary(&app_id).await;
+    if reached {
         if let Some(path) = path.as_deref() {
-            write_cache(path, &summary);
+            write_cache(path, summary.as_ref());
         }
-        return Some(summary);
     }
-
-    cached
-        .filter(|cache| cache.schema == CACHE_SCHEMA)
-        .map(|cache| cache.summary)
+    summary
 }
 
 #[cfg(test)]
