@@ -2403,6 +2403,8 @@
   "settings.ssRootsDesc": "Sua pasta escolhida, as pastas das lojas e da Game Bar e as pastas que você adicionar:",
   "settings.ssScanAllTitle": "Buscar também nas pastas das lojas",
   "settings.ssScanAllDesc": "Ligado: a galeria também lê as pastas da Game Bar, Steam, Ubisoft e Rockstar. Desligado: só a pasta escolhida e as que você adicionar.",
+  "settings.ssSubfoldersTitle": "Incluir subpastas",
+  "settings.ssSubfoldersDesc": "Ativado: todas as subpastas da pasta escolhida e das pastas adicionadas s?o lidas. Desativado: apenas um n?vel por pasta.",
   "ss.clipRes": "Resolução",
   "ss.clipResDesc": "Alturas menores gravam arquivos bem menores; nativa mantém a tela como está.",
   "ss.clipResNative": "Nativa",

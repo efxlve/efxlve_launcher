@@ -577,6 +577,8 @@ export const S = {
   screenshotScanRoots: [] as string[],
   /** When off, the gallery reads the chosen screenshot folder only. */
   screenshotScanAll: true,
+  /** When on, the chosen and added folders are walked recursively. */
+  screenshotScanSubfolders: true,
   /** Bytes the picture cache holds; null until the settings ask for it. */
   pictureCacheBytes: null as number | null,
   /** Default off: only an explicit `"true"` minimizes on game start. */

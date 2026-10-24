@@ -2403,6 +2403,8 @@
   "settings.ssRootsDesc": "Ton dossier choisi, ceux des boutiques et de la Game Bar, et les dossiers que tu ajoutes :",
   "settings.ssScanAllTitle": "Chercher aussi dans les dossiers des boutiques",
   "settings.ssScanAllDesc": "Activé : la galerie lit aussi les dossiers Game Bar, Steam, Ubisoft et Rockstar. Désactivé : uniquement le dossier choisi et ceux que tu ajoutes.",
+  "settings.ssSubfoldersTitle": "Inclure les sous-dossiers",
+  "settings.ssSubfoldersDesc": "Activ? : tous les sous-dossiers du dossier choisi et des dossiers ajout?s sont lus. D?sactiv? : un seul niveau par dossier.",
   "ss.clipRes": "Résolution",
   "ss.clipResDesc": "Une hauteur plus faible écrit des fichiers bien plus petits ; native garde l'écran tel quel.",
   "ss.clipResNative": "Native",

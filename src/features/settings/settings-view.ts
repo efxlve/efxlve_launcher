@@ -58,10 +58,12 @@ import {
   epicDetectEglGames,
   epicGetScreenshotDir,
   epicGetScreenshotScanAll,
+  epicGetScreenshotScanSubfolders,
   epicGetScreenshotScanRoots,
   epicAddScreenshotRoot,
   epicRemoveScreenshotRoot,
   epicSetScreenshotScanAll,
+  epicSetScreenshotScanSubfolders,
   epicGetScreenshotMoveInfo,
   epicGetSettings,
   epicGetSteamGridKey,
@@ -1491,6 +1493,12 @@ function renderScreenshots(): string {
     toggle("ss-toggle-scan-all", S.screenshotScanAll),
     true,
   );
+  const scanSubfolders = row(
+    t("settings.ssSubfoldersTitle"),
+    t("settings.ssSubfoldersDesc"),
+    toggle("ss-toggle-scan-subfolders", S.screenshotScanSubfolders),
+    true,
+  );
   const rootPaths = (S.screenshotScanRoots.length
     ? S.screenshotScanRoots
     : [S.screenshotDir]
@@ -1725,6 +1733,7 @@ function renderScreenshots(): string {
     group(
       folder +
         scanAll +
+        scanSubfolders +
         roots +
         (HAS_NATIVE_CAPTURE ? hotkey + sound + notify : "") +
         sidebar,
@@ -2241,7 +2250,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll, cacheBytes, achOptions] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll, ssSubfolders, cacheBytes, achOptions] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -2256,6 +2265,7 @@ export async function loadSettingsView(): Promise<void> {
         igdbStatus().catch(() => null),
         epicGetScreenshotScanRoots().catch(() => [] as string[]),
         epicGetScreenshotScanAll().catch(() => true),
+        epicGetScreenshotScanSubfolders().catch(() => true),
         imageCacheSize().catch(() => null),
         achievementGetNotificationOptions().catch(() => null),
       ]);
@@ -2272,6 +2282,7 @@ export async function loadSettingsView(): Promise<void> {
       S.amazonDefaultDir = amazonDefault || "";
       S.screenshotScanRoots = Array.isArray(ssRoots) ? ssRoots : [];
       S.screenshotScanAll = ssScanAll !== false;
+      S.screenshotScanSubfolders = ssSubfolders !== false;
       S.pictureCacheBytes = cacheBytes ?? null;
       if (achOptions) S.achievementNotificationOptions = achOptions;
       if (igdb) {
@@ -2603,6 +2614,18 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
           S.screenshotScanRoots = list;
           // Drop the previous scan so the media tab cannot keep showing files
           // from roots the user just turned off.
+          reloadScreenshotsPage();
+          render();
+        })
+        .catch(() => undefined);
+      return true;
+    }
+    case "ss-toggle-scan-subfolders": {
+      const on = (_el as HTMLInputElement).checked;
+      S.screenshotScanSubfolders = on;
+      void epicSetScreenshotScanSubfolders(on)
+        .then(() => {
+          // The gallery keeps the previous listing until it is told to re-read.
           reloadScreenshotsPage();
           render();
         })

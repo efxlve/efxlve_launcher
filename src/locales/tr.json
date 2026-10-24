@@ -2403,6 +2403,8 @@
   "settings.ssRootsDesc": "Seçtiğin klasör, mağazalar ile Game Bar'ın kaydettiği klasörler ve eklediğin klasörler:",
   "settings.ssScanAllTitle": "Mağaza klasörlerini de tara",
   "settings.ssScanAllDesc": "Açık: galeri Game Bar, Steam, Ubisoft ve Rockstar klasörlerini de okur. Kapalı: yalnızca seçilen klasör ve eklediğin klasörler okunur.",
+  "settings.ssSubfoldersTitle": "Alt klas?rleri de tara",
+  "settings.ssSubfoldersDesc": "A??k: se?ilen ve ekledi?in klas?rlerin i?indeki t?m alt klas?rler okunur. Kapal?: her klas?rde yaln?zca bir seviye okunur.",
   "ss.clipRes": "Çözünürlük",
   "ss.clipResDesc": "Düşük çözünürlük çok daha küçük dosya yazar; doğal, ekranı olduğu gibi bırakır.",
   "ss.clipResNative": "Doğal",

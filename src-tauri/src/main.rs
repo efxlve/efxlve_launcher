@@ -176,6 +176,11 @@ pub struct EpicSettings {
     /// User-added folders the gallery should also read.
     #[serde(default)]
     pub screenshot_extra_roots: Vec<String>,
+    /// Walk every subfolder of the chosen and added folders, not only the game
+    /// folder one level down. On by default: a Steam backup keeps its captures
+    /// several folders deep.
+    #[serde(default = "default_true")]
+    pub screenshot_scan_subfolders: bool,
     /// Automatic folders (`Videos\Captures`, Steam userdata, …) the user
     /// removed from the gallery's read list.
     #[serde(default)]
@@ -1351,6 +1356,9 @@ fn main() {
             legendary::screenshots::set_screenshot_scan_all(
                 screenshot_settings.screenshot_scan_all,
             );
+            legendary::screenshots::set_screenshot_subfolders(
+                screenshot_settings.screenshot_scan_subfolders,
+            );
             legendary::screenshots::set_screenshot_extra_roots(
                 screenshot_settings.screenshot_extra_roots,
             );
@@ -1720,6 +1728,8 @@ fn main() {
             legendary::screenshots::epic_get_screenshot_disabled_games,
             legendary::screenshots::epic_set_screenshot_scan_all,
             legendary::screenshots::epic_get_screenshot_scan_all,
+            legendary::screenshots::epic_set_screenshot_subfolders,
+            legendary::screenshots::epic_get_screenshot_subfolders,
             overlay::overlay_get_state,
             overlay::overlay_set_enabled,
             overlay::overlay_set_hotkey,

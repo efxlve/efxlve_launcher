@@ -855,6 +855,13 @@ export const epicGetScreenshotScanAll = () =>
 export const epicSetScreenshotScanAll = (scanAll: boolean) =>
   invoke<void>("epic_set_screenshot_scan_all", { scanAll });
 
+/** Whether the gallery walks nested subfolders (default on). */
+export const epicGetScreenshotScanSubfolders = () =>
+  invoke<boolean>("epic_get_screenshot_subfolders");
+
+export const epicSetScreenshotScanSubfolders = (enabled: boolean) =>
+  invoke<void>("epic_set_screenshot_subfolders", { enabled });
+
 /** Files and bytes currently stored in the screenshots root (move confirmation). */
 export interface ScreenshotMoveInfo {
   count: number;

@@ -226,9 +226,24 @@ static SCREENSHOT_SCAN_ALL: std::sync::atomic::AtomicBool =
 static SCREENSHOT_EXTRA_ROOTS: std::sync::Mutex<Vec<PathBuf>> =
     std::sync::Mutex::new(Vec::new());
 
+/// When true the gallery walks every subfolder of the chosen and added roots.
+/// On by default so a copied Steam screenshot tree (userdata/<id>/760/remote/…)
+/// is found without asking the user to add each app folder by hand.
+static SCREENSHOT_SUBFOLDERS: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(true);
+
 /// Automatic folders the user removed from the gallery's read list.
 static SCREENSHOT_HIDDEN_ROOTS: std::sync::Mutex<Vec<PathBuf>> =
     std::sync::Mutex::new(Vec::new());
+
+/// Stores the subfolder preference for this session (startup and settings save).
+pub fn set_screenshot_subfolders(on: bool) {
+    SCREENSHOT_SUBFOLDERS.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn screenshot_subfolders() -> bool {
+    SCREENSHOT_SUBFOLDERS.load(std::sync::atomic::Ordering::Relaxed)
+}
 
 /// Stores the scan preference for this session (called at startup and on save).
 pub fn set_screenshot_scan_all(on: bool) {
@@ -1185,15 +1200,58 @@ fn scan_dir_files(
     }
 }
 
+/// Deepest level the recursive walk follows. A copied Steam tree keeps its
+/// captures under `userdata/<account>/760/remote/<app>/screenshots`, five
+/// levels below the chosen folder; anything deeper is not a screenshot tree.
+const MAX_SCREENSHOT_DEPTH: usize = 8;
+
+/// Walks a root the way a file manager would: every subfolder, to a bounded
+/// depth. Symlinks are skipped so a junction cannot loop the scan.
+fn scan_dir_recursive(
+    dir: &Path,
+    depth: usize,
+    results: &mut Vec<GameScreenshotItem>,
+    scanned: &mut std::collections::HashSet<PathBuf>,
+) {
+    if depth == 0 || !dir.is_dir() {
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
+        if file_type.is_symlink() {
+            continue;
+        }
+        let path = entry.path();
+        if file_type.is_dir() {
+            scan_dir_recursive(&path, depth - 1, results, scanned);
+        } else if file_type.is_file() && scanned.insert(path.clone()) {
+            if let Some(item) = parse_file_to_item(&path) {
+                results.push(item);
+            }
+        }
+    }
+}
+
 /// A root that keeps one folder per game, plus optional loose files. This is
 /// the shape of the chosen folder, the legacy folder and every folder the user
-/// adds by hand.
+/// adds by hand. `recursive` follows nested folders too, which is what a
+/// backup of a Steam screenshot tree needs.
 fn scan_per_game_root(
     root: &Path,
+    recursive: bool,
     results: &mut Vec<GameScreenshotItem>,
     scanned: &mut std::collections::HashSet<PathBuf>,
 ) {
     if !root.is_dir() {
+        return;
+    }
+    if recursive {
+        scan_dir_recursive(root, MAX_SCREENSHOT_DEPTH, results, scanned);
         return;
     }
     if let Ok(entries) = std::fs::read_dir(root) {
@@ -1273,6 +1331,7 @@ pub async fn epic_get_all_screenshots(
         // the user added is in the same list.
         let chosen = screenshots_root();
         let legacy = get_user_pictures_dir().join("Efxlve Screenshots");
+        let scan_subfolders = screenshot_subfolders();
         let captures = get_user_videos_dir().join("Captures");
         let ubisoft = get_user_pictures_dir().join("UbisoftConnect");
         let uplay = get_user_pictures_dir().join("Uplay");
@@ -1284,7 +1343,7 @@ pub async fn epic_get_all_screenshots(
                 // Game Bar writes files directly into Videos\Captures.
                 scan_dir_files(&root, &mut results, &mut scanned_paths);
             } else if same_path(&root, &ubisoft) || same_path(&root, &uplay) {
-                scan_per_game_root(&root, &mut results, &mut scanned_paths);
+                scan_per_game_root(&root, scan_subfolders, &mut results, &mut scanned_paths);
             } else if same_path(&root, &rockstar) {
                 scan_rockstar_root(&root, &mut results, &mut scanned_paths);
             } else if steam.as_ref().is_some_and(|steam| same_path(&root, steam)) {
@@ -1295,7 +1354,7 @@ pub async fn epic_get_all_screenshots(
                 if same_path(&root, &chosen) || same_path(&root, &legacy) {
                     migrate_known_app_folders(&root);
                 }
-                scan_per_game_root(&root, &mut results, &mut scanned_paths);
+                scan_per_game_root(&root, scan_subfolders, &mut results, &mut scanned_paths);
             }
         }
 
@@ -1585,6 +1644,21 @@ pub fn epic_set_screenshot_scan_all(app: AppHandle, scan_all: bool) {
 #[tauri::command]
 pub fn epic_get_screenshot_scan_all() -> bool {
     screenshot_scan_all()
+}
+
+/// Turns the deep subfolder walk of the chosen and added folders on or off.
+#[tauri::command]
+pub fn epic_set_screenshot_subfolders(app: AppHandle, enabled: bool) {
+    set_screenshot_subfolders(enabled);
+    let mut settings = crate::load_settings(&app);
+    settings.screenshot_scan_subfolders = enabled;
+    crate::save_settings(&app, &settings);
+}
+
+/// Whether the gallery walks nested subfolders (default on).
+#[tauri::command]
+pub fn epic_get_screenshot_subfolders() -> bool {
+    screenshot_subfolders()
 }
 
 /// Background listener that captures a screenshot when the hotkey (default F12) is pressed while a game is running.
@@ -2651,6 +2725,41 @@ mod tests {
             }
         }
         println!("no capture folders found under {}", root.display());
+    }
+
+    /// A copied Steam screenshot tree is several folders deep. The normal
+    /// per-game scan stops one level down; the recursive option must reach the
+    /// captures without asking the user to add every app folder.
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn recursive_scan_finds_nested_steam_backup() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve-ss-recursive-{}",
+            std::process::id()
+        ));
+        let nested = base
+            .join("userdata")
+            .join("123")
+            .join("760")
+            .join("remote")
+            .join("456")
+            .join("screenshots");
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&nested).unwrap();
+        write_test_bmp(&nested.join("shot.bmp"), 4, 4);
+
+        let mut results = Vec::new();
+        let mut scanned = std::collections::HashSet::new();
+        scan_per_game_root(&base, false, &mut results, &mut scanned);
+        assert!(results.is_empty(), "the shallow scan must not reach the backup");
+
+        let mut results = Vec::new();
+        let mut scanned = std::collections::HashSet::new();
+        scan_per_game_root(&base, true, &mut results, &mut scanned);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].file_name, "shot.bmp");
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
