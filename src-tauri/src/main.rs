@@ -112,10 +112,18 @@ mod launch_arg_tests {
 }
 
 /// When set, closing the window hides it to the system tray instead of quitting
-/// so downloads keep running in the background.
-#[derive(Default)]
+/// so downloads keep running in the background. On by default; the frontend
+/// applies the stored preference once it boots.
 pub struct TrayPref {
     pub minimize_to_tray: std::sync::atomic::AtomicBool,
+}
+
+impl Default for TrayPref {
+    fn default() -> Self {
+        Self {
+            minimize_to_tray: std::sync::atomic::AtomicBool::new(true),
+        }
+    }
 }
 
 /// Path of the current-run marker, plus whether the previous run left one.

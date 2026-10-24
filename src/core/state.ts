@@ -563,7 +563,8 @@ export const S = {
   profileAccount: (null) as string | null,
   settingsIntegrationsLoaded: false,
   settingsIntegrationsLoading: false,
-  minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) === "true") as boolean,
+  /** Default on: closing the window keeps downloads alive in the tray. */
+  minimizeToTray: (localStorage.getItem(MINIMIZE_TRAY_KEY) !== "false") as boolean,
   /** Removes motion, glass blur and hover transitions without hiding features. */
   reduceEffects: initialReduceEffects(),
   /** Personal completion label per app; see core/game-status.ts. */
