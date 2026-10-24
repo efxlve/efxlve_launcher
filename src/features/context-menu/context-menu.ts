@@ -216,7 +216,7 @@ const isRiot = source === "riot";
   const py = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
   menu.style.left = `${px}px`;
   menu.style.top = `${py}px`;
-  menu.querySelector<HTMLElement>(".ps5-context-item")?.focus();
+  menu.querySelector<HTMLElement>(".ps5-context-item")?.focus({ preventScroll: true });
 }
 
 /** Right-click a collection tab to edit it. All and Favorites have no menu. */
@@ -248,12 +248,14 @@ export function initContextMenu(): void {
         showCollectionTabMenu(e.clientX, e.clientY, colTab.dataset.colId);
         return;
       }
-      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id]');
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-act="epic-detail"][data-id], [data-lib-item]');
       if (!target) {
         hideContextMenu();
         return;
       }
-      const id = target.dataset.id;
+      // The click action and the item key normally live on the same tile, but a
+      // patched or future tile may only carry `data-lib-item`; read either.
+      const id = target.dataset.id || target.dataset.libItem;
       if (id) showContextMenu(e.clientX, e.clientY, id);
     },
     true,
