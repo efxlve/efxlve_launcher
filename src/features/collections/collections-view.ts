@@ -537,11 +537,8 @@ export function openCollectionGallery(): void {
             </div>
             <span class="col-card-pill">${totalGames}</span>
           </div>
-          <div class="col-card-progress">
-            <div class="col-card-bar">
-              <div class="col-card-fill" style="width: ${percentInstalled}%;"></div>
-            </div>
-            <span class="col-card-status">${installed} / ${totalGames} ${t("common.installed")}</span>
+          <div class="col-card-sub">
+            <span>${installed} / ${totalGames} ${t("common.installed")}</span>
           </div>
         </div>
         <div class="col-card-actions">
@@ -568,13 +565,6 @@ export function openCollectionGallery(): void {
               </div>
               <p class="col-gallery-sub">${t("col.gameCount", { count: summaries.length })}</p>
             </div>
-          </div>
-          <div class="col-gallery-search">
-            ${icon("search", 14)}
-            <input type="text" id="col-gallery-search-input" placeholder="${esc(t("lib.searchPlaceholder"))}" autocomplete="off" spellcheck="false" />
-            <button type="button" class="col-gallery-search-clear" id="col-gallery-search-clear" style="display:none" title="${esc(t("col.clear"))}">
-              ${icon("x", 12)}
-            </button>
           </div>
           <div class="col-gallery-actions">
             ${S.activeCollectionId ? `
@@ -615,28 +605,6 @@ export function openCollectionGallery(): void {
         </div>
       </section>
     </div>`;
-
-  // Attach search listener for instant filtering
-  const searchInput = document.getElementById("col-gallery-search-input") as HTMLInputElement | null;
-  const searchClear = document.getElementById("col-gallery-search-clear");
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      const q = searchInput.value.trim().toLowerCase();
-      if (searchClear) searchClear.style.display = q ? "" : "none";
-      const cards = collectionRoot?.querySelectorAll<HTMLElement>(".col-gallery-card");
-      cards?.forEach((card) => {
-        const name = (card.dataset.colName || "").toLowerCase();
-        card.style.display = (!q || name.includes(q)) ? "" : "none";
-      });
-    });
-    if (searchClear) {
-      searchClear.addEventListener("click", () => {
-        searchInput.value = "";
-        searchInput.dispatchEvent(new Event("input"));
-        searchInput.focus();
-      });
-    }
-  }
 
   // The gallery opens with visible covers; ask the Rust disk cache for
   // them once so the next open paints from local data instead of the CDN.
