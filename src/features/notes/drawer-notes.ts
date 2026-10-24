@@ -115,23 +115,26 @@ export function renderDrawerNotes(appName: string): string {
   // the middle of the panel while it is empty. Never both.
   const newNote = `<button class="btn primary small" data-act="drawer-note-new">${icon("plus", 13)} ${esc(t("notes.newNote"))}</button>`;
   return `
-    <div class="drawer-notes">
-      <div class="drawer-notes-head">
-        <div class="drawer-notes-title">${icon("edit", 15)} <span>${esc(t("notes.title"))}</span></div>
-        <div class="drawer-notes-actions">
+    <div class="notes-tab-container">
+      <div class="notes-gallery-head">
+        <div class="notes-head-info">
+          <h3 class="notes-title">${icon("edit", 15)} <span>${esc(t("notes.title"))}</span></h3>
+          <span class="notes-count-chip">${t("notes.statsNotes", { count: notes.length })}</span>
+        </div>
+        <div class="notes-head-actions">
           <button class="btn ghost small" data-view="notes">${esc(t("notes.openPage"))}</button>
           ${hasNotes ? newNote : ""}
         </div>
       </div>
       ${
         hasNotes
-          ? `<div class="drawer-notes-list">${notes.map(noteRowHtml).join("")}</div>`
-          : emptyPanel(
+          ? `<div class="drawer-notes"><div class="drawer-notes-list">${notes.map(noteRowHtml).join("")}</div></div>`
+          : `<div class="notes-empty-panel">${emptyPanel(
               "edit",
               esc(t("notes.drawerEmptyTitle")),
               esc(t("notes.drawerEmptyDesc")),
               newNote,
-            )
+            )}</div>`
       }
     </div>`;
 }

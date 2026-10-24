@@ -282,26 +282,16 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   border: 1px solid var(--line-strong);
   color: var(--text-2);
   box-shadow: 0 4px 16px var(--accent-tint, rgba(0, 0, 0, 0.15)), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: transform var(--ease), border-color var(--ease), color var(--ease);
 }
 .empty-state-mark svg {
   width: 26px;
   height: 26px;
   color: var(--text-2);
-  transition: color var(--ease);
 }
 .empty-state > svg { width: 36px; height: 36px; color: var(--text-3); }
 .empty-state h3 { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
 .empty-state p { margin: 0 0 6px; font-size: 13px; line-height: 1.55; max-width: 48ch; color: var(--text-2); text-wrap: balance; }
 .empty-state .page-actions { margin-top: 10px; display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.empty-state:hover .empty-state-mark {
-  border-color: var(--line-strong);
-  color: var(--text);
-  transform: translateY(-1px);
-}
-.empty-state:hover .empty-state-mark svg {
-  color: var(--text);
-}
 .empty { color: var(--text-2); text-align: center; padding: 48px 0; font-size: 13px; }
 
 /* Empty state inside a panel or tab card: same words, the icon in a token
@@ -321,21 +311,11 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   background: var(--surface-2);
   color: var(--text-2);
   box-shadow: 0 4px 14px var(--accent-tint, rgba(0, 0, 0, 0.12)), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: transform var(--ease), border-color var(--ease), color var(--ease);
 }
 .empty-panel-mark svg {
   width: 24px;
   height: 24px;
   color: var(--text-2);
-  transition: color var(--ease);
-}
-.empty-panel:hover .empty-panel-mark {
-  border-color: var(--line-strong);
-  color: var(--text);
-  transform: translateY(-1px);
-}
-.empty-panel:hover .empty-panel-mark svg {
-  color: var(--text);
 }
 .empty-panel-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
 .empty-panel-desc { margin: 2px 0 0; max-width: 48ch; font-size: 13px; line-height: 1.55; color: var(--text-2); text-wrap: balance; }
