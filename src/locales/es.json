@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Copiar informe",
   "settings.pcCheckCopied": "Informe de comprobación copiado.",
   "settings.pcCheckDisk": "Disco",
-  "settings.pcCheckStorage": "Almacenamiento local"
+  "settings.pcCheckStorage": "Almacenamiento local",
+  "col.presetsTitle": "Plantillas rápidas",
+  "col.presetStory": "Juegos con historia",
+  "col.presetOnline": "Online y cooperativo",
+  "col.presetCompleted": "Completados",
+  "col.presetBacklog": "Pendientes",
+  "col.presetFavorites": "Favoritos",
+  "col.emptySelectionHint": "Vista previa en vivo",
+  "col.emptySelectionSub": "Selecciona juegos abajo para desplegar tu baraja 3D"
 }

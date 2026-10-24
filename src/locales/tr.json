@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Raporu kopyala",
   "settings.pcCheckCopied": "Bilgisayar kontrol raporu kopyalandı.",
   "settings.pcCheckDisk": "Disk",
-  "settings.pcCheckStorage": "Yerel depolama"
+  "settings.pcCheckStorage": "Yerel depolama",
+  "col.presetsTitle": "Hazır Şablonlar",
+  "col.presetStory": "Hikaye Oyunları",
+  "col.presetOnline": "Online & Co-op",
+  "col.presetCompleted": "Bitirilenler",
+  "col.presetBacklog": "Sıradakiler",
+  "col.presetFavorites": "Favoriler",
+  "col.emptySelectionHint": "Canlı Koleksiyon Önizlemesi",
+  "col.emptySelectionSub": "3D poster destenizi oluşturmak için aşağıdaki oyunları seçin"
 }

@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Copier le rapport",
   "settings.pcCheckCopied": "Rapport de vérification copié.",
   "settings.pcCheckDisk": "Disque",
-  "settings.pcCheckStorage": "Stockage local"
+  "settings.pcCheckStorage": "Stockage local",
+  "col.presetsTitle": "Modèles rapides",
+  "col.presetStory": "Jeux narratifs",
+  "col.presetOnline": "En ligne & Coop",
+  "col.presetCompleted": "Terminés",
+  "col.presetBacklog": "À faire",
+  "col.presetFavorites": "Favoris",
+  "col.emptySelectionHint": "Aperçu de la collection",
+  "col.emptySelectionSub": "Sélectionnez des jeux ci-dessous pour déployer votre éventail 3D"
 }

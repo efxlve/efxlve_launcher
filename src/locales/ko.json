@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "보고서 복사",
   "settings.pcCheckCopied": "PC 점검 보고서를 복사했습니다.",
   "settings.pcCheckDisk": "디스크",
-  "settings.pcCheckStorage": "로컬 저장소"
+  "settings.pcCheckStorage": "로컬 저장소",
+  "col.presetsTitle": "빠른 프리셋",
+  "col.presetStory": "스토리 게임",
+  "col.presetOnline": "온라인 & 협동",
+  "col.presetCompleted": "완료됨",
+  "col.presetBacklog": "플레이 대기",
+  "col.presetFavorites": "즐겨찾기",
+  "col.emptySelectionHint": "실시간 컬렉션 미리보기",
+  "col.emptySelectionSub": "아래에서 게임을 선택하여 3D 포스터 덱을 펼치세요"
 }

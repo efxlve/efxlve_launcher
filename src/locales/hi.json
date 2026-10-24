@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "रिपोर्ट कॉपी करें",
   "settings.pcCheckCopied": "पीसी जाँच रिपोर्ट कॉपी हो गई।",
   "settings.pcCheckDisk": "डिस्क",
-  "settings.pcCheckStorage": "स्थानीय स्टोरेज"
+  "settings.pcCheckStorage": "स्थानीय स्टोरेज",
+  "col.presetsTitle": "त्वरित प्रीसेट",
+  "col.presetStory": "कहानी वाले खेल",
+  "col.presetOnline": "ऑनलाइन और सह-ऑप",
+  "col.presetCompleted": "पूरा हुआ",
+  "col.presetBacklog": "खेलने के लिए बाकी",
+  "col.presetFavorites": "पसंदीदा",
+  "col.emptySelectionHint": "लाइव संग्रह पूर्वावलोकन",
+  "col.emptySelectionSub": "अपना 3D पोस्टर डेक फैलाने के लिए नीचे से गेम चुनें"
 }

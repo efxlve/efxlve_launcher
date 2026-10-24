@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "复制报告",
   "settings.pcCheckCopied": "电脑检查报告已复制。",
   "settings.pcCheckDisk": "磁盘",
-  "settings.pcCheckStorage": "本地存储"
+  "settings.pcCheckStorage": "本地存储",
+  "col.presetsTitle": "快速预设",
+  "col.presetStory": "剧情游戏",
+  "col.presetOnline": "在线与合作",
+  "col.presetCompleted": "已通关",
+  "col.presetBacklog": "待玩游戏",
+  "col.presetFavorites": "收藏夹",
+  "col.emptySelectionHint": "实时合集预览",
+  "col.emptySelectionSub": "在下方选择游戏以展开您的3D海报牌堆"
 }

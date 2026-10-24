@@ -12,7 +12,7 @@ import { collectionRoot } from "../../core/dom";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { icon, type IconName } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
-import { allStoreSummaries, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, gameStoresLabel, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -93,10 +93,76 @@ export function updateMarkerUi(): void {
       btn.classList.toggle("active", (btn as HTMLElement).dataset.icon === S.colModalMarker);
     });
   }
+  const deckMarker = document.querySelector(".ced-deck-marker");
+  if (deckMarker) {
+    deckMarker.innerHTML = collectionMarker(S.colModalMarker, 16);
+  }
+}
+
+export function renderCedHeroDeckHtml(): string {
+  const covers: string[] = [];
+  for (const appName of S.colModalSelectedApps) {
+    const c = summaryOf(appName)?.cover;
+    if (c) {
+      covers.push(c);
+      if (covers.length >= 3) break;
+    }
+  }
+  const count = S.colModalSelectedApps.size;
+  const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
+  const colName = nameInput ? nameInput.value.trim() : (S.activeEditingColId ? (S.epicCollections.find((c) => c.id === S.activeEditingColId)?.name || "") : "");
+
+  if (count === 0) {
+    return `
+      <div class="ced-deck-card empty">
+        <div class="ced-deck-ghost-fan">
+          <div class="ced-ghost-card c1">${icon("gamepad-2", 16)}</div>
+          <div class="ced-ghost-card c2">${icon("sparkles", 16)}</div>
+          <div class="ced-ghost-card c3">${icon("layers", 16)}</div>
+        </div>
+        <div class="ced-deck-info">
+          <div>
+            <div class="ced-deck-empty-title">${t("col.emptySelectionHint")}</div>
+            <div class="ced-deck-empty-sub">${t("col.emptySelectionSub")}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const stackHtml = covers.map((cover, idx) => {
+    return `<div class="ced-deck-card-poster pos-${idx}" style="background-image: url('${esc(cover)}')"></div>`;
+  }).join("");
+
+  return `
+    <div class="ced-deck-card active">
+      <div class="ced-deck-fan-wrap">
+        ${covers[0] ? `<div class="ced-deck-glow" style="background-image: url('${esc(covers[0])}')"></div>` : ""}
+        <div class="ced-deck-fan cards-${covers.length}">
+          ${stackHtml}
+        </div>
+      </div>
+      <div class="ced-deck-info">
+        <div class="ced-deck-name-row">
+          <span class="ced-deck-marker">${collectionMarker(S.colModalMarker, 16)}</span>
+          <span class="ced-deck-name" id="ced-deck-name">${esc(colName || t("col.defaultName"))}</span>
+        </div>
+        <div class="ced-deck-count-pill">${icon("check-circle", 12)} <span id="ced-deck-count">${t("col.selectedCount", { count })}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+export function updateCedHeroDeckInPlace(): void {
+  const deck = document.getElementById("ced-hero-deck");
+  if (deck) {
+    deck.innerHTML = renderCedHeroDeckHtml();
+  }
 }
 
 function colGameRow(s: { appName: string; title: string; cover?: string | null; installed: boolean }): string {
   const checked = S.colModalSelectedApps.has(s.appName);
+  const store = gameStoresLabel(s.appName);
   const thumb = s.cover
     ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />`
     : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 14)}</div>`;
@@ -104,8 +170,13 @@ function colGameRow(s: { appName: string; title: string; cover?: string | null; 
     <button type="button" class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${esc(s.appName)}">
       <span class="col-custom-cb ${checked ? "checked" : ""}">${icon("check", 12)}</span>
       ${thumb}
-      <span class="col-game-title">${esc(s.title)}</span>
-      ${s.installed ? `<span class="col-inst-badge">${t("common.installed")}</span>` : ""}
+      <div class="col-game-info">
+        <span class="col-game-title">${esc(s.title)}</span>
+        <div class="col-game-sub">
+          <span class="col-store-tag">${esc(store)}</span>
+          ${s.installed ? `<span class="col-inst-badge">${icon("check-circle", 11)} ${t("common.installed")}</span>` : ""}
+        </div>
+      </div>
     </button>`;
 }
 
@@ -129,6 +200,33 @@ export function renderCollectionModal(): void {
         </div>
 
         <div class="col-modal-body">
+          <div class="ced-hero-deck" id="ced-hero-deck">
+            ${renderCedHeroDeckHtml()}
+          </div>
+
+          ${!isEditing ? `
+            <div class="ced-presets-row">
+              <span class="ced-presets-label">${t("col.presetsTitle")}</span>
+              <div class="ced-presets-pills">
+                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="favorites" data-marker="star">
+                  ${icon("star", 13)} <span>${t("col.presetFavorites")}</span>
+                </button>
+                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="story" data-marker="sparkles">
+                  ${icon("sparkles", 13)} <span>${t("col.presetStory")}</span>
+                </button>
+                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="online" data-marker="users">
+                  ${icon("users", 13)} <span>${t("col.presetOnline")}</span>
+                </button>
+                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="completed" data-marker="trophy">
+                  ${icon("trophy", 13)} <span>${t("col.presetCompleted")}</span>
+                </button>
+                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="backlog" data-marker="clock">
+                  ${icon("clock", 13)} <span>${t("col.presetBacklog")}</span>
+                </button>
+              </div>
+            </div>
+          ` : ""}
+
           <div class="col-name-row">
             <div class="col-marker-picker-container">
               <button type="button" class="col-marker-avatar-btn ${S.colModalMarker ? "has-marker" : ""}" data-act="toggle-col-marker-palette" title="${t("col.pickIcon")}">
@@ -175,10 +273,18 @@ export function renderCollectionModal(): void {
             <button class="btn danger" data-act="col-delete-confirm" data-col-id="${isEditing ? esc(col!.id) : ""}">${t("col.delete")}</button>
           </div>
           <div class="col-footer-actions">
-            ${isEditing ? `<button class="btn ghost danger" data-act="col-delete-ask">${t("col.delete")}</button>` : `<span class="col-footer-summary" id="col-footer-count">${selectedCount}</span>`}
+            <div class="col-footer-left">
+              ${isEditing ? `<button class="btn ghost danger" data-act="col-delete-ask">${icon("trash", 14)} ${t("col.delete")}</button>` : ""}
+              <div class="ced-footer-selected">
+                ${icon("check-circle", 13)}
+                <span id="col-footer-count">${t("col.selectedCount", { count: selectedCount })}</span>
+              </div>
+            </div>
             <span class="col-footer-spacer"></span>
-            <button class="btn ghost" data-act="close-col-modal">${t("common.cancelShort")}</button>
-            <button class="btn primary" data-act="col-save-btn">${isEditing ? t("col.saveChanges") : t("col.create")}</button>
+            <div class="col-footer-right">
+              <button class="btn ghost" data-act="close-col-modal">${t("common.cancelShort")}</button>
+              <button class="btn primary" data-act="col-save-btn">${isEditing ? t("col.saveChanges") : t("col.create")}</button>
+            </div>
           </div>
         </div>
       </div>
@@ -186,7 +292,15 @@ export function renderCollectionModal(): void {
   `;
 
   const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
-  if (nameInput && !isEditing) nameInput.focus();
+  if (nameInput) {
+    if (!isEditing) nameInput.focus();
+    nameInput.addEventListener("input", () => {
+      const previewName = document.getElementById("ced-deck-name");
+      if (previewName) {
+        previewName.textContent = nameInput.value.trim() || t("col.defaultName");
+      }
+    });
+  }
 
   const searchInput = document.getElementById("col-search-input") as HTMLInputElement | null;
   if (searchInput) {
@@ -220,7 +334,9 @@ export function updateColGamesListInPlace(preserveScroll = false): void {
   if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
 
   const footerCnt = document.getElementById("col-footer-count");
-  if (footerCnt) footerCnt.textContent = String(S.colModalSelectedApps.size);
+  if (footerCnt) footerCnt.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
+
+  updateCedHeroDeckInPlace();
 }
 
 /** Resets the picker to its first page after a search or filter change. */

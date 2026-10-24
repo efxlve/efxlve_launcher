@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Копировать отчёт",
   "settings.pcCheckCopied": "Отчёт проверки скопирован.",
   "settings.pcCheckDisk": "Диск",
-  "settings.pcCheckStorage": "Локальное хранилище"
+  "settings.pcCheckStorage": "Локальное хранилище",
+  "col.presetsTitle": "Быстрые шаблоны",
+  "col.presetStory": "Сюжетные игры",
+  "col.presetOnline": "Онлайн и кооператив",
+  "col.presetCompleted": "Пройденные",
+  "col.presetBacklog": "Очередь",
+  "col.presetFavorites": "Избранное",
+  "col.emptySelectionHint": "Живой предпросмотр коллекции",
+  "col.emptySelectionSub": "Выберите игры ниже, чтобы сформировать 3D-веер постеров"
 }

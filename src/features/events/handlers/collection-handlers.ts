@@ -27,6 +27,7 @@ import {
   saveCollectionFromModal,
   saveGameCollectionsFromModal,
   showMoreCollectionGames,
+  updateCedHeroDeckInPlace,
   updateColGamesListInPlace,
   updateMarkerUi,
 } from "../../collections/collections-view";
@@ -99,6 +100,7 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
         S.colModalMarker = marker;
         S.isMarkerPaletteOpen = false;
         updateMarkerUi();
+        updateCedHeroDeckInPlace();
       }
       return true;
     }
@@ -107,7 +109,31 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       S.colModalMarker = "";
       S.isMarkerPaletteOpen = false;
       updateMarkerUi();
+      updateCedHeroDeckInPlace();
       return true;
+
+    case "col-apply-preset": {
+      const preset = t.dataset.preset;
+      const marker = t.dataset.marker;
+      const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
+      let presetTitle = "";
+      if (preset === "favorites") presetTitle = i18nT("col.presetFavorites");
+      else if (preset === "story") presetTitle = i18nT("col.presetStory");
+      else if (preset === "online") presetTitle = i18nT("col.presetOnline");
+      else if (preset === "completed") presetTitle = i18nT("col.presetCompleted");
+      else if (preset === "backlog") presetTitle = i18nT("col.presetBacklog");
+
+      if (nameInput && presetTitle) {
+        nameInput.value = presetTitle;
+        nameInput.focus();
+      }
+      if (marker) {
+        S.colModalMarker = marker;
+        updateMarkerUi();
+      }
+      updateCedHeroDeckInPlace();
+      return true;
+    }
 
     case "col-delete-ask":
       document.getElementById("col-delete-confirm")?.removeAttribute("hidden");
@@ -162,6 +188,11 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
 
         const selCountEl = document.getElementById("col-tab-selected-cnt");
         if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
+
+        const footerCnt = document.getElementById("col-footer-count");
+        if (footerCnt) footerCnt.textContent = i18nT("col.selectedCount", { count: S.colModalSelectedApps.size });
+
+        updateCedHeroDeckInPlace();
 
         if (S.colModalTabFilter === "selected") {
           updateColGamesListInPlace();

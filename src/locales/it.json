@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Copia rapporto",
   "settings.pcCheckCopied": "Rapporto di controllo copiato.",
   "settings.pcCheckDisk": "Disco",
-  "settings.pcCheckStorage": "Archiviazione locale"
+  "settings.pcCheckStorage": "Archiviazione locale",
+  "col.presetsTitle": "Modelli rapidi",
+  "col.presetStory": "Giochi con trama",
+  "col.presetOnline": "Online e cooperativa",
+  "col.presetCompleted": "Completati",
+  "col.presetBacklog": "Da giocare",
+  "col.presetFavorites": "Preferiti",
+  "col.emptySelectionHint": "Anteprima della raccolta",
+  "col.emptySelectionSub": "Seleziona i giochi sotto per aprire il ventaglio 3D"
 }

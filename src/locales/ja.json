@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "レポートをコピー",
   "settings.pcCheckCopied": "PCチェックレポートをコピーしました。",
   "settings.pcCheckDisk": "ディスク",
-  "settings.pcCheckStorage": "ローカルストレージ"
+  "settings.pcCheckStorage": "ローカルストレージ",
+  "col.presetsTitle": "クイックプリセット",
+  "col.presetStory": "ストーリーゲーム",
+  "col.presetOnline": "オンライン＆協力",
+  "col.presetCompleted": "クリア済み",
+  "col.presetBacklog": "積みゲー",
+  "col.presetFavorites": "お気に入り",
+  "col.emptySelectionHint": "ライブコレクションプレビュー",
+  "col.emptySelectionSub": "下のゲームを選択して3Dポスターデッキを展開"
 }

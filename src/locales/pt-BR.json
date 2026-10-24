@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Copiar relatório",
   "settings.pcCheckCopied": "Relatório de verificação copiado.",
   "settings.pcCheckDisk": "Disco",
-  "settings.pcCheckStorage": "Armazenamento local"
+  "settings.pcCheckStorage": "Armazenamento local",
+  "col.presetsTitle": "Modelos rápidos",
+  "col.presetStory": "Jogos de história",
+  "col.presetOnline": "Online e Co-op",
+  "col.presetCompleted": "Concluídos",
+  "col.presetBacklog": "Fila de espera",
+  "col.presetFavorites": "Favoritos",
+  "col.emptySelectionHint": "Prévia da coleção",
+  "col.emptySelectionSub": "Selecione jogos abaixo para abrir seu leque de pôsteres 3D"
 }

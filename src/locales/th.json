@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "คัดลอกรายงาน",
   "settings.pcCheckCopied": "คัดลอกรายงานตรวจสอบแล้ว",
   "settings.pcCheckDisk": "ดิสก์",
-  "settings.pcCheckStorage": "ที่เก็บข้อมูลในเครื่อง"
+  "settings.pcCheckStorage": "ที่เก็บข้อมูลในเครื่อง",
+  "col.presetsTitle": "เทมเพลตด่วน",
+  "col.presetStory": "เกมเนื้อเรื่อง",
+  "col.presetOnline": "ออนไลน์และร่วมมือ",
+  "col.presetCompleted": "จบแล้ว",
+  "col.presetBacklog": "เกมที่ยังไม่ได้เล่น",
+  "col.presetFavorites": "รายการโปรด",
+  "col.emptySelectionHint": "ตัวอย่างคอลเลกชันสด",
+  "col.emptySelectionSub": "เลือกเกมด้านล่างเพื่อกระจายชุดโปสเตอร์ 3 มิติของคุณ"
 }

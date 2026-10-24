@@ -3037,5 +3037,13 @@
   "settings.pcCheckCopy": "Copy report",
   "settings.pcCheckCopied": "PC check report copied.",
   "settings.pcCheckDisk": "Disk",
-  "settings.pcCheckStorage": "Local storage"
+  "settings.pcCheckStorage": "Local storage",
+  "col.presetsTitle": "Quick Presets",
+  "col.presetStory": "Story Games",
+  "col.presetOnline": "Online & Co-op",
+  "col.presetCompleted": "Completed",
+  "col.presetBacklog": "Backlog",
+  "col.presetFavorites": "Favorites",
+  "col.emptySelectionHint": "Live Collection Preview",
+  "col.emptySelectionSub": "Select games below to fan out your 3D poster deck"
 }
