@@ -510,6 +510,65 @@ body:has(.lib-pager) #totop {
 .ps5-context-item.danger, .ps5-context-item.danger svg { color: var(--err); }
 .ps5-context-sep { height: 1px; margin: 4px 6px; background: var(--line); }
 .ps5-context-item .ctx-check { margin-left: auto; display: inline-flex; color: var(--accent); }
+
+/* --- Context submenu (e.g. Durum flyout) --- */
+.ps5-context-submenu {
+  min-width: 170px;
+  max-width: 220px;
+  z-index: 10001;
+  padding: 4px;
+}
+.ctx-submenu-trigger {
+  position: relative;
+}
+.ctx-item-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ctx-sub-tail {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctx-sub-badge {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.ctx-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+.ctx-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+.ps5-context-item:hover .ctx-sub-badge,
+.ps5-context-item:hover .ctx-chevron,
+.ctx-submenu-trigger[aria-expanded="true"] .ctx-sub-badge,
+.ctx-submenu-trigger[aria-expanded="true"] .ctx-chevron {
+  color: var(--text);
+}
+.ctx-submenu-trigger[aria-expanded="true"] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ctx-status-option {
+  font-weight: 400;
+}
+.ctx-status-option.active,
+.ctx-status-option.is-current {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 400;
+}
+
 /* --- Game status section (shared between context menu and drawer) --- */
 .gp-more-status-box { padding: 2px 0 4px; }
 .gp-more-status-head {
@@ -518,7 +577,7 @@ body:has(.lib-pager) #totop {
   justify-content: space-between;
   padding: 4px 10px 6px;
   font-size: 10.5px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -532,7 +591,7 @@ body:has(.lib-pager) #totop {
   background: transparent;
   font-family: inherit;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-3);
   cursor: pointer;
   padding: 2px 5px;
@@ -561,7 +620,7 @@ body:has(.lib-pager) #totop {
   color: var(--text-2);
   font: inherit;
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
   text-align: left;
   user-select: none;
@@ -610,7 +669,7 @@ body:has(.lib-pager) #totop {
 .gp-more-status-btn.active {
   background: var(--accent-tint);
   color: var(--text);
-  font-weight: 600;
+  font-weight: 400;
 }
 .gp-more-status-btn.active .gp-more-status-ico,
 .gp-more-status-btn.active .gp-more-status-ico svg {

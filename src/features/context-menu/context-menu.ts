@@ -13,16 +13,48 @@ import { gameVersionsOf, sourceOfKey, summaryOf, sharedOwnerOf } from "../../cor
 import { storeVersionLabel } from "../drawer/external-versions";
 import { storeLogo } from "../store/store-logos";
 import { S } from "../../core/state";
-import { statusMenuHtml } from "../library/game-status";
+import { gameStatusOf, gameStatusOptions } from "../library/game-status";
 import { t } from "../../i18n";
 import { esc } from "../../core/utils";
 
-/** Remove the open menu, if any. */
+let activeSubmenuEl: HTMLElement | null = null;
+
+/** Remove the open menu and any open submenu, if any. */
 export function hideContextMenu(): void {
+  if (activeSubmenuEl) {
+    activeSubmenuEl.remove();
+    activeSubmenuEl = null;
+  }
   if (S.ctxMenuEl) {
     S.ctxMenuEl.remove();
     S.ctxMenuEl = null;
   }
+}
+
+/** Position cascading submenu relative to trigger button with viewport edge awareness. */
+function positionSubmenu(trigger: HTMLElement, sub: HTMLElement): void {
+  sub.style.display = "block";
+  trigger.setAttribute("aria-expanded", "true");
+  const tRect = trigger.getBoundingClientRect();
+  const sRect = sub.getBoundingClientRect();
+
+  // Prefer opening on the right side:
+  let left = tRect.right + 2;
+  // If not enough room on the right, flip to the left of the main menu
+  if (left + sRect.width > window.innerWidth - 8) {
+    left = tRect.left - sRect.width - 2;
+  }
+  left = Math.max(8, Math.min(left, window.innerWidth - sRect.width - 8));
+
+  // Align vertical top with trigger top, offset slightly for padding match
+  let top = tRect.top - 4;
+  if (top + sRect.height > window.innerHeight - 8) {
+    top = window.innerHeight - sRect.height - 8;
+  }
+  top = Math.max(8, top);
+
+  sub.style.left = `${Math.round(left)}px`;
+  sub.style.top = `${Math.round(top)}px`;
 }
 
 /** Build and position the context menu at the given viewport coordinates. */
@@ -71,6 +103,18 @@ const isRiot = source === "riot";
         return `<button class="ps5-context-item${active ? " is-current" : ""}" role="menuitemradio" aria-checked="${active}" data-act="prefer-version" data-id="${esc(version.appName)}">${storeLogo(version.source, 15)}<span>${esc(storeVersionLabel(version.source))}</span><span class="ctx-check">${active ? icon("check", 14) : ""}</span></button>`;
       }).join("")}<div class="ps5-context-sep"></div>`;
 
+  const currentStatus = gameStatusOf(appName);
+  const statusOptions = gameStatusOptions();
+  const currentStatusOpt = currentStatus ? statusOptions.find((o) => o.value === currentStatus) : undefined;
+  const statusTrigger = `
+    <button type="button" class="ps5-context-item ctx-submenu-trigger" role="menuitem" aria-haspopup="menu" aria-expanded="false" data-act="status-submenu-noop">
+      ${icon(currentStatusOpt ? currentStatusOpt.ic : "check-circle", 15)}
+      <span class="ctx-item-name">${esc(t("status.label"))}</span>
+      <span class="ctx-sub-tail">
+        ${currentStatusOpt ? `<span class="ctx-sub-badge">${esc(currentStatusOpt.label)}</span>` : ""}
+        <span class="ctx-chevron">${icon("chevron-right", 12)}</span>
+      </span>
+    </button>`;
 
   menu.innerHTML = `
     <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
@@ -106,9 +150,7 @@ const isRiot = source === "riot";
     ${!shared && !isSteam && !isCustom && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
     ${item("epic-fav", faved ? t("ctx.favRemove") : t("ctx.favAdd"), "heart")}
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
-    <div class="ps5-context-sep"></div>
-    ${statusMenuHtml(appName)}
-    <div class="ps5-context-sep"></div>
+    ${statusTrigger}
     ${!isRiot && !isAmazon && !isCustom ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && (installed || isCustom)
@@ -127,6 +169,74 @@ const isRiot = source === "riot";
   const root = ctxRoot || document.body;
   root.appendChild(menu);
   S.ctxMenuEl = menu;
+
+  const submenu = document.createElement("div");
+  submenu.className = "ps5-context-menu ps5-context-submenu";
+  submenu.setAttribute("role", "menu");
+  submenu.style.display = "none";
+  submenu.innerHTML = `
+    ${statusOptions.map(({ value, label, ic }) => {
+      const active = currentStatus === value;
+      return `
+      <button type="button" class="ps5-context-item ctx-status-option${active ? " is-current active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${active}" title="${esc(label)}">
+        ${icon(ic, 14)}
+        <span>${esc(label)}</span>
+        <span class="ctx-check">${active ? icon("check", 14) : ""}</span>
+      </button>`;
+    }).join("")}
+    ${currentStatus ? `
+      <div class="ps5-context-sep"></div>
+      <button type="button" class="ps5-context-item danger ctx-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">
+        ${icon("x", 14)}
+        <span>${esc(t("col.clear"))}</span>
+      </button>` : ""}
+  `;
+  root.appendChild(submenu);
+  activeSubmenuEl = submenu;
+
+  const triggerEl = menu.querySelector<HTMLElement>(".ctx-submenu-trigger");
+  if (triggerEl) {
+    let closeTimer: number | null = null;
+    const cancelClose = (): void => {
+      if (closeTimer !== null) {
+        window.clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+    };
+    const scheduleClose = (): void => {
+      cancelClose();
+      closeTimer = window.setTimeout(() => {
+        submenu.style.display = "none";
+        triggerEl.setAttribute("aria-expanded", "false");
+      }, 160);
+    };
+    const showSub = (): void => {
+      cancelClose();
+      positionSubmenu(triggerEl, submenu);
+    };
+
+    triggerEl.addEventListener("mouseenter", showSub);
+    triggerEl.addEventListener("mouseleave", scheduleClose);
+    triggerEl.addEventListener("click", () => {
+      if (submenu.style.display === "block") {
+        submenu.style.display = "none";
+        triggerEl.setAttribute("aria-expanded", "false");
+      } else {
+        showSub();
+      }
+    });
+
+    submenu.addEventListener("mouseenter", cancelClose);
+    submenu.addEventListener("mouseleave", scheduleClose);
+
+    menu.querySelectorAll(".ps5-context-item:not(.ctx-submenu-trigger)").forEach((otherItem) => {
+      otherItem.addEventListener("mouseenter", () => {
+        cancelClose();
+        submenu.style.display = "none";
+        triggerEl.setAttribute("aria-expanded", "false");
+      });
+    });
+  }
 
   // Clamp to the viewport. Measure once to avoid layout thrashing.
   const rect = menu.getBoundingClientRect();
@@ -184,6 +294,9 @@ export function initContextMenu(): void {
     (e) => {
       const target = e.target as HTMLElement;
       if (target.closest(".ps5-context-menu")) {
+        if (target.closest(".ctx-submenu-trigger")) {
+          return;
+        }
         window.setTimeout(hideContextMenu, 0);
         return;
       }
@@ -191,6 +304,12 @@ export function initContextMenu(): void {
     },
     true,
   );
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && (S.ctxMenuEl || activeSubmenuEl)) {
+      hideContextMenu();
+    }
+  });
 
   window.addEventListener("scroll", hideContextMenu, true);
   window.addEventListener("resize", hideContextMenu, { passive: true });
