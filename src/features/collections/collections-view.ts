@@ -415,15 +415,15 @@ function syncEglCollectionsOnce(): void {
       eglSynced = false;
     });
 }
-function smartMeta(id: string): { icon: IconName; cls: string } {
+function smartIcon(id: string): IconName {
   switch (id) {
-    case "smart:not-played": return { icon: "clock", cls: "smart-not-played" };
-    case "smart:playing": return { icon: "play", cls: "smart-playing" };
-    case "smart:almost": return { icon: "star", cls: "smart-almost" };
-    case "smart:completed": return { icon: "trophy", cls: "smart-completed" };
-    case "smart:on-hold": return { icon: "pause", cls: "smart-on-hold" };
-    case "smart:forgotten": return { icon: "ghost", cls: "smart-forgotten" };
-    default: return { icon: "sparkles", cls: "smart-default" };
+    case "smart:not-played": return "clock";
+    case "smart:playing": return "play";
+    case "smart:almost": return "star";
+    case "smart:completed": return "trophy";
+    case "smart:on-hold": return "pause";
+    case "smart:forgotten": return "ghost";
+    default: return "sparkles";
   }
 }
 
@@ -452,14 +452,11 @@ export function openCollectionGallery(): void {
   const warmUrls: string[] = [];
 
   const smartCards = smart.map(({ item, count }) => {
-    const meta = smartMeta(item.id);
+    const iconName = smartIcon(item.id);
     const pct = summaries.length > 0 ? Math.round((count / summaries.length) * 100) : 0;
     return `
-      <button type="button" class="col-smart-card ${meta.cls}${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}" title="${esc(item.label())}">
-        <span class="col-smart-card-icon">
-          ${icon(meta.icon, 15)}
-          ${item.id === "smart:playing" ? `<span class="col-smart-pulse"></span>` : ""}
-        </span>
+      <button type="button" class="col-smart-card${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}" title="${esc(item.label())}">
+        <span class="col-smart-card-icon">${icon(iconName, 15)}</span>
         <div class="col-smart-card-info">
           <span class="col-smart-card-name">${esc(item.label())}</span>
           <span class="col-smart-card-pct">%${pct}</span>
@@ -601,9 +598,6 @@ export function openCollectionGallery(): void {
         <div class="col-gallery-section">
           <div class="col-gallery-section-head">
             <h3>${icon("folder", 13)} <span>${esc(t("col.allCollections"))}</span></h3>
-            <button type="button" class="btn primary small col-gallery-add-btn" data-act="open-new-collection-modal">
-              ${icon("plus", 14)} <span>${esc(t("col.newTitle"))}</span>
-            </button>
           </div>
           <div class="col-gallery-grid">
             ${manualCards}

@@ -1813,7 +1813,7 @@ html.win-compact .lrow-ach-track { display: none; }
   font-size: 12px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
 }
 
-/* Smart collections 2.0 grid */
+/* Smart collections grid */
 .col-smart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 10px; }
 .col-smart-card {
   display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px;
@@ -1823,9 +1823,9 @@ html.win-compact .lrow-ach-track { display: none; }
 }
 .col-smart-card:hover {
   color: var(--text); background: var(--surface-3);
-  border-color: var(--smart-c, var(--line-strong));
+  border-color: var(--line-strong);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 .col-smart-card.active {
   border-color: var(--accent); color: var(--text); background: var(--surface-3);
@@ -1834,14 +1834,20 @@ html.win-compact .lrow-ach-track { display: none; }
 .col-smart-card-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-  background: var(--smart-bg, var(--surface-1));
-  border: 1px solid var(--smart-border, var(--line));
-  color: var(--smart-c, var(--accent));
-  position: relative;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
-.col-smart-pulse {
-  position: absolute; top: -2px; right: -2px; width: 7px; height: 7px;
-  border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;
+.col-smart-card:hover .col-smart-card-icon {
+  background: var(--accent-tint);
+  color: var(--accent);
+  transform: scale(1.05);
+}
+.col-smart-card.active .col-smart-card-icon {
+  background: var(--accent-tint);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .col-smart-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .col-smart-card-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1851,14 +1857,6 @@ html.win-compact .lrow-ach-track { display: none; }
   padding: 3px 8px; border-radius: 8px; background: var(--surface-1); border: 1px solid var(--line);
 }
 .col-smart-card:hover .col-smart-card-count { color: var(--text); border-color: var(--line-strong); }
-
-/* Thematic smart variants */
-.col-smart-card.smart-playing { --smart-c: #10b981; --smart-bg: rgba(16, 185, 129, 0.12); --smart-border: rgba(16, 185, 129, 0.25); }
-.col-smart-card.smart-completed { --smart-c: #f59e0b; --smart-bg: rgba(245, 158, 11, 0.12); --smart-border: rgba(245, 158, 11, 0.25); }
-.col-smart-card.smart-almost { --smart-c: #38bdf8; --smart-bg: rgba(56, 189, 248, 0.12); --smart-border: rgba(56, 189, 248, 0.25); }
-.col-smart-card.smart-not-played { --smart-c: #818cf8; --smart-bg: rgba(129, 140, 248, 0.12); --smart-border: rgba(129, 140, 248, 0.25); }
-.col-smart-card.smart-on-hold { --smart-c: #fb923c; --smart-bg: rgba(251, 146, 60, 0.12); --smart-border: rgba(251, 146, 60, 0.25); }
-.col-smart-card.smart-forgotten { --smart-c: #94a3b8; --smart-bg: rgba(148, 163, 184, 0.12); --smart-border: rgba(148, 163, 184, 0.25); }
 
 /* Collections 2.0 cards grid */
 .col-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
