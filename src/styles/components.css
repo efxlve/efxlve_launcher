@@ -276,6 +276,21 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .empty-state p { margin: 0 0 8px; font-size: 13px; max-width: 360px; }
 .empty { color: var(--text-2); text-align: center; padding: 56px 0; font-size: 13px; }
 
+/* Empty state inside a panel or tab card: same words, the icon in a token
+   tile so midnight, soft, white, blades and gloss all read the same. */
+.empty-panel {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 6px; padding: 36px 24px 32px;
+}
+.empty-panel-mark {
+  display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 8px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text-2);
+}
+.empty-panel-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.empty-panel-desc { margin: 0; max-width: 46ch; font-size: 13px; line-height: 1.55; color: var(--text-2); }
+.empty-panel-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+
 /* --- Spinner (only animation allowed; it stops when removed) --- */
 .spinner, .spin {
   width: 18px; height: 18px; border-radius: 50%;

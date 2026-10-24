@@ -347,6 +347,20 @@ export function emptyState(name: IconName, title: string, desc = "", actions = "
   return `<div class="empty-state">${icon(name, 36)}<h3>${title}</h3>${desc ? `<p>${desc}</p>` : ""}${actions ? `<div class="page-actions">${actions}</div>` : ""}</div>`;
 }
 
+/**
+ * Empty state that sits inside a panel or a tab card: the same icon, title and
+ * sentence as `emptyState`, with the icon in a token-coloured tile so it keeps
+ * its shape in every theme (docs/DESIGN_SYSTEM.md §4).
+ */
+export function emptyPanel(name: IconName, title: string, desc = "", actions = ""): string {
+  return `<div class="empty-panel">
+    <span class="empty-panel-mark">${icon(name, 20)}</span>
+    <h4 class="empty-panel-title">${title}</h4>
+    ${desc ? `<p class="empty-panel-desc">${desc}</p>` : ""}
+    ${actions ? `<div class="empty-panel-actions">${actions}</div>` : ""}
+  </div>`;
+}
+
 /** Centered spinner with a short status label for lazily loaded panels. */
 export function loadingState(label: string): string {
   return `<div class="empty-state"><span class="spinner"></span><p>${label}</p></div>`;

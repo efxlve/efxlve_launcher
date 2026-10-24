@@ -7,7 +7,7 @@
  * overlay see them at once.
  */
 
-import { icon } from "../../core/icons";
+import { emptyPanel, icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
@@ -110,23 +110,28 @@ export function renderDrawerNotes(appName: string): string {
   listScope = appName;
   if (editing) return editorHtml();
   const notes = notesForScope(appName);
+  const hasNotes = notes.length > 0;
+  // One primary action per state: in the header while the list has rows, in
+  // the middle of the panel while it is empty. Never both.
+  const newNote = `<button class="btn primary small" data-act="drawer-note-new">${icon("plus", 13)} ${esc(t("notes.newNote"))}</button>`;
   return `
     <div class="drawer-notes">
       <div class="drawer-notes-head">
         <div class="drawer-notes-title">${icon("edit", 15)} <span>${esc(t("notes.title"))}</span></div>
         <div class="drawer-notes-actions">
           <button class="btn ghost small" data-view="notes">${esc(t("notes.openPage"))}</button>
-          <button class="btn primary small" data-act="drawer-note-new">${icon("plus", 13)} ${esc(t("notes.newNote"))}</button>
+          ${hasNotes ? newNote : ""}
         </div>
       </div>
       ${
-        notes.length
+        hasNotes
           ? `<div class="drawer-notes-list">${notes.map(noteRowHtml).join("")}</div>`
-          : `<div class="empty-state">
-              ${icon("edit", 26)}
-              <h3>${esc(t("notes.emptyList"))}</h3>
-              <p>${esc(t("notes.drawerEmptyDesc"))}</p>
-            </div>`
+          : emptyPanel(
+              "edit",
+              esc(t("notes.drawerEmptyTitle")),
+              esc(t("notes.drawerEmptyDesc")),
+              newNote,
+            )
       }
     </div>`;
 }

@@ -8,7 +8,7 @@ import { summaryOf } from "../../core/selectors";
  */
 
 import { modalRoot } from "../../core/dom";
-import { icon } from "../../core/icons";
+import { emptyPanel, icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, formatScreenshotDate } from "../../core/utils";
@@ -718,18 +718,24 @@ export function renderDrawerScreenshots(s: EpicSummary): string {
   `;
 
   if (screenshots.length === 0) {
+    const emptyDesc =
+      owner === "steam"
+        ? t("ss.steamEmptyDesc")
+        : owner === "ubisoft"
+          ? t("ss.ubiEmptyDesc")
+          : t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` });
     return `
       <div class="screenshots-tab-container">
         ${headerHtml}
-        <div class="screenshots-empty-card">
-          <div class="screenshots-empty-icon">${icon("image", 44)}</div>
-          <h4 class="screenshots-empty-title">${t("ss.emptyTitle")}</h4>
-          <p class="screenshots-empty-desc">
-            ${owner === "steam" ? t("ss.steamEmptyDesc") : owner === "ubisoft" ? t("ss.ubiEmptyDesc") : t("ss.emptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}
-          </p>
-          <button type="button" class="btn ghost small screenshots-empty-settings" data-view="settings" data-settings-section="screenshots">
-            ${icon("settings", 13)} ${t("ss.openSettings")}
-          </button>
+        <div class="screenshots-empty-panel">
+          ${emptyPanel(
+            "image",
+            t("ss.emptyTitle"),
+            emptyDesc,
+            `<button type="button" class="btn ghost small" data-view="settings" data-settings-section="screenshots">
+              ${icon("settings", 13)} ${t("ss.openSettings")}
+            </button>`,
+          )}
         </div>
       </div>
     `;
