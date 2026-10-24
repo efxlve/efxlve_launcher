@@ -1909,35 +1909,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-more-menu .ps5-context-item:hover svg { color: var(--text); }
 .gp-more-sep { height: 1px; margin: 5px 4px; background: var(--line); }
 
-/* Status section inside More menu */
-.gp-more-status-box { padding: 2px 0 4px; }
-.gp-more-status-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 4px 10px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em;
-  text-transform: uppercase; color: var(--text-3);
+/* Status section sizing inside Drawer More menu (base styles in components.css) */
+.gp-more-menu .gp-more-status-btn {
+  height: 34px; min-height: 34px; padding: 0 10px; border-radius: 8px; font-size: 13px; gap: 10px;
 }
-.gp-more-status-clear {
-  display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent;
-  font-size: 11px; font-weight: 500; color: var(--text-3); cursor: pointer;
-  padding: 2px 5px; border-radius: 5px; transition: background 0.12s ease, color 0.12s ease;
-}
-.gp-more-status-clear:hover { color: var(--err); background: rgba(229, 72, 77, 0.12); }
-.gp-more-status-list { display: flex; flex-direction: column; gap: 2px; }
-.gp-more-status-btn {
-  display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 10px;
-  border-radius: 8px; border: none; background: transparent;
-  color: var(--text-2); font: inherit; font-size: 13px; font-weight: 500;
-  cursor: pointer; text-align: left; transition: background 0.12s ease, color 0.12s ease;
-}
-.gp-more-status-ico { display: inline-flex; flex-shrink: 0; color: var(--text-3); transition: color 0.12s ease; }
-.gp-more-status-ico svg { width: 14px; height: 14px; }
-.gp-more-status-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gp-more-status-mark { display: inline-flex; flex-shrink: 0; color: var(--accent); }
-.gp-more-status-mark svg { width: 14px; height: 14px; }
-.gp-more-status-btn:hover { background: var(--surface-2); color: var(--text); }
-.gp-more-status-btn:hover .gp-more-status-ico { color: var(--text); }
-.gp-more-status-btn.active { background: var(--accent-tint); color: var(--text); font-weight: 600; }
-.gp-more-status-btn.active .gp-more-status-ico { color: var(--accent); }
 
 /* One store: the picker is not a choice, so it stops looking like a button. */
 .gp-source.static {
