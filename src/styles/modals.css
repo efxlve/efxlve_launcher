@@ -832,8 +832,6 @@
 .ced.col-modal-card {
   width: min(720px, 100%);
   height: min(760px, calc(100vh - 40px));
-  background: var(--bg);
-  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 .ced .col-modal-header { padding: 20px 24px 16px; }
 .ced .col-modal-header > h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
@@ -843,17 +841,17 @@
   gap: 16px;
 }
 .ced .col-name-row { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
-.ced .col-name-input {
+.ced.col-modal-card .col-name-input {
   flex: 1; height: 44px; font-size: 15px;
-  background: #1a1a1a; border-color: rgba(255, 255, 255, 0.22);
+  background: var(--surface-2); border-color: var(--line-strong);
 }
 .ced .col-marker-picker-container { position: relative; flex-shrink: 0; }
 .ced .col-marker-avatar-btn {
   width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: var(--r-sm);
-  background: #2a2a2a; color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text);
 }
-.ced .col-marker-avatar-btn:hover { background: #3a3a3a; }
+.ced .col-marker-avatar-btn:hover { background: var(--surface-3); }
 .ced .col-marker-palette {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; width: 248px; padding: 8px; display: none;
   background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-pop);
@@ -883,9 +881,9 @@
 .ced .col-text-btn:hover { color: var(--text); }
 .ced .col-search-wrap {
   display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; color: var(--text);
-  background: #1a1a1a; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
 }
-.ced .col-search-wrap:focus-within { border-color: #fff; }
+.ced .col-search-wrap:focus-within { border-color: var(--accent); }
 .ced .col-search-wrap .text-input { flex: 1; height: 100%; padding: 0; border: none; background: none; font-size: 15px; }
 .ced .col-search-wrap .text-input::placeholder,
 .ced .col-name-input::placeholder { color: var(--text-2); }
@@ -894,7 +892,7 @@
   flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-direction: column; gap: 4px;
   margin: 0; padding: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16); border-radius: var(--r-sm);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
 }
 .ced .col-game-item {
   appearance: none; display: flex; align-items: center; gap: 14px; box-sizing: border-box;
@@ -905,16 +903,16 @@
 }
 .ced .col-load-more {
   width: 100%; height: 40px; margin-top: 4px; flex-shrink: 0;
-  border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 8px;
+  border: 1px dashed var(--line-strong); border-radius: 8px;
   background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
   cursor: pointer;
 }
-.ced .col-load-more:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
-.ced .col-game-item:hover { background: rgba(255, 255, 255, 0.05); }
-.ced .col-game-item.selected { background: rgba(255, 255, 255, 0.08); }
+.ced .col-load-more:hover { background: var(--surface-2); color: var(--text); }
+.ced .col-game-item:hover { background: var(--surface-2); }
+.ced .col-game-item.selected { background: var(--accent-tint); }
 .ced .col-custom-cb {
   width: 18px; height: 18px; flex-shrink: 0; display: grid; place-items: center; border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.45); color: transparent;
+  border: 1px solid var(--line-strong); background: var(--surface-2); color: transparent;
 }
 .ced .col-custom-cb.checked { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .ced .col-custom-cb svg { width: 12px; height: 12px; }

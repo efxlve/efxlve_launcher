@@ -504,31 +504,8 @@
   color: rgba(248, 250, 252, 0.72);
 }
 
-/* The collection editor keeps two deliberately dark fields inside its light
-   frame; their text has to stay light in both themes. */
-:root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn),
-:root[data-surface="gloss"] :is(.ced .col-name-input, .ced .col-search-wrap, .ced .col-marker-avatar-btn) {
-  color: #f8fafc;
-}
-
-/* Aero's global input tint is lighter than the editor's own dark field. */
-:root[data-surface="white"] .ced .col-name-input,
-:root[data-surface="gloss"] .ced .col-name-input {
-  background: #1a1a1a;
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-:root[data-surface="white"] .ced .col-search-wrap .text-input,
-:root[data-surface="gloss"] .ced .col-search-wrap .text-input {
-  background: transparent !important;
-  border: none;
-  color: #f8fafc;
-}
-
-:root[data-surface="white"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder,
-:root[data-surface="gloss"] :is(.ced .col-name-input, .ced .col-search-wrap .text-input)::placeholder {
-  color: rgba(248, 250, 252, 0.56);
-}
+/* The collection editor follows the active theme; its fields use the same
+   surface and line tokens as the rest of Settings. */
 
 :root[data-surface="white"] .profile-banner-store-pill,
 :root[data-surface="gloss"] .profile-banner-store-pill {
