@@ -344,7 +344,7 @@ export const BRAND_ICONS: Icons = {
  * escaped or trusted translation strings.
  */
 export function emptyState(name: IconName, title: string, desc = "", actions = ""): string {
-  return `<div class="empty-state">${icon(name, 36)}<h3>${title}</h3>${desc ? `<p>${desc}</p>` : ""}${actions ? `<div class="page-actions">${actions}</div>` : ""}</div>`;
+  return `<div class="empty-state"><span class="empty-state-mark">${icon(name, 26)}</span><h3>${title}</h3>${desc ? `<p>${desc}</p>` : ""}${actions ? `<div class="page-actions">${actions}</div>` : ""}</div>`;
 }
 
 /**
@@ -354,7 +354,7 @@ export function emptyState(name: IconName, title: string, desc = "", actions = "
  */
 export function emptyPanel(name: IconName, title: string, desc = "", actions = ""): string {
   return `<div class="empty-panel">
-    <span class="empty-panel-mark">${icon(name, 20)}</span>
+    <span class="empty-panel-mark">${icon(name, 24)}</span>
     <h4 class="empty-panel-title">${title}</h4>
     ${desc ? `<p class="empty-panel-desc">${desc}</p>` : ""}
     ${actions ? `<div class="empty-panel-actions">${actions}</div>` : ""}

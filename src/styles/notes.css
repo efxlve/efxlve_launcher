@@ -150,7 +150,7 @@
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
-.drawer-notes > .empty-panel { padding: 28px 16px 24px; }
+.drawer-notes > .empty-panel { padding: 36px 20px 32px; }
 .drawer-notes-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .drawer-notes-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .drawer-notes-actions { display: flex; align-items: center; gap: 8px; }

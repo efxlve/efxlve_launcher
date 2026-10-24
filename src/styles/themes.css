@@ -288,7 +288,7 @@
 }
 
 /* White Mode: Card elevation & depth */
-:root[data-surface="white"] :is(.card, .list, .lib-list, .settings-group, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box) {
+:root[data-surface="white"] :is(.card, .list, .lib-list, .settings-group, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box, .screenshots-empty-panel, .drawer-notes, .ach-empty-panel, .dlc-empty-panel, .ach-search-empty-wrap) {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
@@ -660,7 +660,8 @@
   .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
   .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
   .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
-  .changelog-dialog, .notif-panel, .lib-filter-panel, .custom-game-modal
+  .changelog-dialog, .notif-panel, .lib-filter-panel, .custom-game-modal,
+  .screenshots-empty-panel, .drawer-notes, .ach-empty-panel, .dlc-empty-panel, .ach-search-empty-wrap
 ) {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0, rgba(255, 255, 255, 0.86) 44px, rgba(244, 251, 255, 0.82) 100%);
   border-color: rgba(255, 255, 255, 0.95);
@@ -2159,3 +2160,18 @@
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.7);
 }
 :root[data-surface="neongrid"] .profile-stat-plat-ico { color: #fcee0a; }
+
+/* Theme-specific depth for empty marks */
+:root[data-surface="white"] :is(.empty-panel-mark, .empty-state-mark) {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-surface="gloss"] :is(.empty-panel-mark, .empty-state-mark) {
+  background: var(--aero-gloss-white);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--aero-glass-edge), 0 4px 12px rgba(8, 62, 110, 0.12), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="blades"] :is(.empty-panel-mark, .empty-state-mark) {
+  background: rgba(16, 36, 20, 0.85);
+  border-color: rgba(155, 212, 74, 0.28);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(155, 212, 74, 0.15);
+}

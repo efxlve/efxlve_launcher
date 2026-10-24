@@ -10,7 +10,7 @@
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
-import { epicPlatinumIcon, icon, type IconName } from "../../core/icons";
+import { emptyPanel, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
 import { isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
@@ -99,6 +99,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   // Same as the HowLongToBeat card: not asked yet is not "nothing to show", and
   // the card holds its place so the column does not jump when the answer lands.
   if (!critic && igdbScore == null) {
+    if (!isLoading) return "";
     const badge = `
         <div class="hub-critic-badge is-pending">
           <div class="critic-badge-score skel"></div>
@@ -1179,10 +1180,8 @@ export function renderAchievementSections(
 ): string {
   if (items.length === 0) {
     return `
-      <div class="ach-empty-state">
-        <div class="ach-empty-state-icon">${icon("search", 28)}</div>
-        <div class="ach-empty-state-title">${i18nT("ach.emptyTitle")}</div>
-        <div class="ach-empty-state-sub">${i18nT("ach.emptyDesc")}</div>
+      <div class="ach-search-empty-wrap">
+        ${emptyPanel("search", i18nT("ach.emptyTitle"), i18nT("ach.emptyDesc"))}
       </div>
     `;
   }

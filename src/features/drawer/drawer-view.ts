@@ -16,7 +16,7 @@ import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
 import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
-import { emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
+import { emptyPanel, emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
@@ -1329,7 +1329,8 @@ function syncScoresCardVisibility(): void {
     const card = document.querySelector<HTMLElement>(selector);
     const host = document.getElementById(hostId);
     if (!card || !host) continue;
-    card.classList.toggle("is-empty", host.children.length === 0);
+    const isEmpty = host.children.length === 0 || host.innerHTML.trim() === "";
+    card.classList.toggle("is-empty", isEmpty);
   }
 }
 
@@ -1781,7 +1782,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   const allDlcs = dlcRes?.dlcs || [];
   const extras = renderIgdbDlcExtras(s, allDlcs.map((dlc) => dlc.title));
   const storeBtn = `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.discoverDlc")}</button>`;
-  if (allDlcs.length === 0 && !extras) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+  if (allDlcs.length === 0 && !extras) return `<div class="dlc-empty-panel">${emptyPanel("package", t("drawer.noDlc"), t("drawer.noDlcDesc"), storeBtn)}</div>`;
 
   const query = S.dlcSearchQuery.trim().toLowerCase();
   const filtered = query ? allDlcs.filter((d) => d.title.toLowerCase().includes(query)) : allDlcs;

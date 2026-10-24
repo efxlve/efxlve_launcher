@@ -972,12 +972,22 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .screenshots-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .screenshots-count-chip { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .screenshots-head-actions { display: flex; gap: 8px; }
-.screenshots-empty-panel {
+.screenshots-empty-panel,
+.ach-empty-panel,
+.dlc-empty-panel,
+.ach-search-empty-wrap {
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
-.screenshots-empty-panel .empty-panel { padding: 32px 24px 28px; }
+.screenshots-empty-panel .empty-panel,
+.ach-empty-panel .empty-panel,
+.dlc-empty-panel .empty-panel {
+  padding: 44px 24px 40px;
+}
+.ach-search-empty-wrap .empty-panel {
+  padding: 32px 20px 28px;
+}
 .screenshots-empty-card { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(560px, 100%); margin: 28px auto 0; padding: 40px 24px; text-align: center; color: var(--text-3); background: transparent; border: 1px dashed var(--line); border-radius: var(--r-md); }
 .screenshots-empty-icon { color: var(--text-3); opacity: 0.7; }
 .screenshots-empty-icon svg { width: 34px; height: 34px; }
@@ -1853,7 +1863,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* A sidebar card whose own block came back empty: it has nothing to frame. */
 .gp-side-card.is-empty,
-.gp-scores-card.is-empty { display: none; }
+.gp-scores-card.is-empty { display: none !important; }
 
 /* ---------- The "…" menu ---------- */
 
