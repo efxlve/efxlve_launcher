@@ -162,7 +162,7 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
   const currentStatus = gameStatusOf(s.appName);
   const statusOption = currentStatus ? gameStatusOptions().find((option) => option.value === currentStatus) : undefined;
   const statusChip = statusOption
-    ? `<span class="gp-meta-item gp-status-chip">${icon(statusOption.ic, 12)} ${esc(statusOption.label)}</span>`
+    ? `<span class="gp-meta-item" title="${esc(t("status.label"))}">${icon(statusOption.ic, 13)} ${esc(statusOption.label)}</span>`
     : "";
   // The one line under the title: who made it, when, for whom.
   // Everything else about the copy lives in the features card.

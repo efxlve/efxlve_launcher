@@ -245,28 +245,6 @@ body.sb-resizing .overlay {
 .gp-col-chip:hover svg {
   color: var(--text);
 }
-/* The saved personal status, shown in the hero meta line. */
-.gp-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 9px;
-  border: 1px solid var(--hero-line);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.38);
-  color: var(--hero-fg);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  text-shadow: none;
-}
-.gp-status-chip svg {
-  width: 12px;
-  height: 12px;
-  color: var(--hero-fg-2);
-}
 .gp-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .gp-actions > .btn.lg:first-child { min-width: 180px; }
 .gp-actions .btn.lg.icon-only { width: 44px; }
