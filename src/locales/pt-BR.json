@@ -2520,7 +2520,6 @@
   "ss.allMediaEmpty": "No captures or recordings yet.",
   "ss.allMediaEmptyDesc": "Press {hotkey} for screenshots, or F9 for clips during any game.",
   "settings.secCompat": "Compatibility",
-  "compat.prepHint": "Linux and macOS preparation. This page downloads runners, translation layers and helper tools; on Windows games still start directly.",
   "compat.target": "Target platform",
   "compat.targetHint": "Download a tool tree for this PC or for another platform.",
   "compat.targetCurrent": "This PC",

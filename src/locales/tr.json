@@ -2520,7 +2520,6 @@
   "ss.allMediaEmpty": "Henüz yakalanan medya yok.",
   "ss.allMediaEmptyDesc": "Oyun oynarken {hotkey} ile ekran görüntüsü, F9 ile video klibi kaydedebilirsin.",
   "settings.secCompat": "Uyumluluk",
-  "compat.prepHint": "Linux ve macOS hazırlığı. Bu sayfa çalıştırıcıları, çeviri katmanlarını ve yardımcı araçları indirir; Windows'ta oyunlar yine doğrudan başlar.",
   "compat.target": "Hazırlanan platform",
   "compat.targetHint": "Bu bilgisayar ya da başka bir platform için araç ağacı indir.",
   "compat.targetCurrent": "Bu bilgisayar",

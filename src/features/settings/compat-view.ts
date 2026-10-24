@@ -7,8 +7,7 @@
  * patches a download's progress bar in place (no full repaint per chunk).
  *
  * The target selector is deliberate: on a Windows build it still lets the user
- * stage a `linux-x86_64` or `macos-aarch64` tree, which is how the cross-platform
- * work is prepared before those bundles exist.
+ * stage a `linux-x86_64` or `macos-aarch64` tree for another machine.
  */
 
 import { listen } from "@tauri-apps/api/event";
@@ -438,7 +437,6 @@ export function renderCompatSection(): string {
         ${icon("refresh", 13)} ${esc(refreshing ? t("compat.refreshing") : t("compat.refresh"))}
       </button>
     </div>
-    <div class="info-box">${icon("info", 14)}<span>${esc(t("compat.prepHint"))}</span></div>
     <div class="list settings-group">
       <div class="row settings-row" data-search="target platform linux macos">
         <div class="row-main">
