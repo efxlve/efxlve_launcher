@@ -292,6 +292,8 @@ export function setSteamSummaries(items: LibraryItem[]): void {
 export function setCustomSummaries(items: LibraryItem[]): void {
   S.customSummaries = items;
   S.customSummariesMap = new Map(items.map((item) => [item.key, item]));
+  // An edited custom cover replaces the wide art the page cached earlier.
+  clearWideArtCache();
   rebuildAllGamesMap();
   S.libraryDataRev++;
 }
