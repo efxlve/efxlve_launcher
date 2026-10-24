@@ -11,7 +11,8 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, compareLibraryRecent, gameStoresLabel, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
+import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, gameStoresLabel, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
+import { collectionMarker } from "../../core/collection-icons";
 import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
@@ -558,6 +559,83 @@ function collectionsSignature(): string {
   return S.epicCollections.map((c) => `${c.id}\x1f${c.name}\x1f${c.app_names.length}`).join("\x1e");
 }
 
+function libSmartIcon(id: string): string {
+  switch (id) {
+    case "smart:not-played": return icon("clock", 18);
+    case "smart:playing": return icon("play", 18);
+    case "smart:almost": return icon("star", 18);
+    case "smart:completed": return icon("trophy", 18);
+    case "smart:on-hold": return icon("pause", 18);
+    case "smart:forgotten": return icon("ghost", 18);
+    default: return icon("sparkles", 18);
+  }
+}
+
+function renderCollectionBanner(inCollection: boolean): string {
+  if (!inCollection || !S.activeCollectionId) return "";
+  const isSmart = isSmartCollection(S.activeCollectionId);
+  const activeCol = !isSmart ? S.epicCollections.find((c) => c.id === S.activeCollectionId) : null;
+  const activeSmart = isSmart ? smartCollection(S.activeCollectionId) : undefined;
+  if (!activeCol && !activeSmart) return "";
+
+  const title = activeCol ? activeCol.name : activeSmart ? activeSmart.label() : "";
+  const iconHtml = activeCol ? collectionMarker(activeCol.emoji, 20) : activeSmart ? libSmartIcon(activeSmart.id) : icon("layers", 20);
+
+  let totalGames = 0;
+  let installedCount = 0;
+  let totalSecs = 0;
+
+  if (activeCol) {
+    const apps = activeCol.app_names || [];
+    totalGames = apps.length;
+    for (let i = 0; i < apps.length; i++) {
+      const s = summaryOf(apps[i]);
+      if (s) {
+        if (s.installed) installedCount++;
+        totalSecs += libraryPlaytime(s).seconds;
+      }
+    }
+  } else if (activeSmart) {
+    const list = allStoreSummaries().filter((s) => activeSmart.test(s));
+    totalGames = list.length;
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      if (s.installed) installedCount++;
+      totalSecs += libraryPlaytime(s).seconds;
+    }
+  }
+
+  const pt = totalSecs > 0 ? fmtPlaytime(totalSecs) : "";
+
+  return `
+    <div class="lib-collection-banner">
+      <div class="lib-col-banner-left">
+        <span class="lib-col-banner-icon">${iconHtml}</span>
+        <div class="lib-col-banner-text">
+          <div class="lib-col-banner-title">${esc(title)}</div>
+          <div class="lib-col-banner-meta">
+            <span>${t("col.gameCount", { count: totalGames })}</span>
+            <span class="dot">·</span>
+            <span>${installedCount} ${t("common.installed")}</span>
+            ${pt ? `<span class="dot">·</span><span>${esc(pt)}</span>` : ""}
+          </div>
+        </div>
+      </div>
+      <div class="lib-col-banner-actions">
+        <button type="button" class="btn ghost small" data-act="col-play-random" data-col-id="${esc(S.activeCollectionId)}" title="${esc(t("library.random"))}">
+          ${icon("shuffle", 14)} <span>${esc(t("library.random"))}</span>
+        </button>
+        ${activeCol ? `
+          <button type="button" class="btn ghost small" data-act="edit-collection" data-col-id="${esc(activeCol.id)}" title="${esc(t("col.edit"))}">
+            ${icon("settings", 13)} <span>${esc(t("col.edit"))}</span>
+          </button>` : ""}
+        <button type="button" class="btn ghost small lib-col-banner-close" data-act="select-col-filter" data-col-id="all" title="${esc(t("col.noCollectionFilter"))}">
+          ${icon("x", 14)} <span>${esc(t("col.clear"))}</span>
+        </button>
+      </div>
+    </div>`;
+}
+
 /**
  * Renders the library content area. Default All is a cover grid (or list).
  * Collections are a separate filter mode.
@@ -574,12 +652,13 @@ export function renderEpicItems(): string {
     resetCardChunk();
   }
   const visible = epicVisibleSummaries();
+  const bannerHtml = inCollection ? renderCollectionBanner(inCollection) : "";
 
   if (visible.length === 0) {
     if (inCollection) {
       const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
       const action = activeCol ? `<button class="btn primary" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">${t("col.edit")}</button>` : "";
-      return emptyState("folder", t("col.noMatch"), "", action);
+      return `${bannerHtml}${emptyState("folder", t("col.noMatch"), "", action)}`;
     }
     if (S.query.trim()) {
       return emptyState("search", t("lib.noResults"), t("lib.noResultsHint"), `<button class="btn" data-act="lib-clear-search">${t("lib.clearSearch")}</button>`);
@@ -613,7 +692,7 @@ export function renderEpicItems(): string {
   // keeps them in its own disk cache, so this costs one request per cover ever.
   prefetchNextCovers(visible, chunk.length);
 
-  return `${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
+  return `${bannerHtml}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
 }
 
 /** Covers already asked for while idle, so a repaint does not ask again. */

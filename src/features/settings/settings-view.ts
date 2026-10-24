@@ -21,6 +21,7 @@ import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { classicIcon, aeroIcon } from "../../core/app-icon";
+import { cachedImage } from "../../core/picture-cache";
 import { collectionMarker } from "../../core/collection-icons";
 import type { GameSource, SettingsSection } from "../../core/types";
 import {
@@ -379,12 +380,21 @@ function renderCollections(): string {
                <button type="button" class="btn ghost danger small" data-act="col-settings-delete-cancel">${t("common.cancelShort")}</button>
              </div>`
           : "";
+        const thumbs: string[] = [];
+        for (let i = 0; i < c.app_names.length && thumbs.length < 3; i++) {
+          const cover = summaryOf(c.app_names[i])?.cover;
+          if (cover) thumbs.push(cover);
+        }
+        const visualHtml = thumbs.length > 0
+          ? `<div class="col-settings-mini-strip">${thumbs.map((img) => `<div class="col-settings-mini-thumb"><img src="${esc(cachedImage(img))}" alt="" loading="lazy" /></div>`).join("")}</div>`
+          : `<span class="col-settings-marker">${collectionMarker(c.emoji, 16)}</span>`;
+
         return `
           <div class="card col-settings-card" data-search="${esc(`${c.name} ${t("col.gameCount", { count: c.app_names.length })}`)}">
             <div class="col-settings-card-head">
-              <span class="col-settings-marker">${collectionMarker(c.emoji, 16)}</span>
+              ${visualHtml}
               <div class="col-settings-copy">
-                <div class="col-settings-name" title="${esc(c.name)}">${esc(c.name)}</div>
+                <div class="col-settings-name" title="${esc(c.name)}">${collectionMarker(c.emoji, 13)} ${esc(c.name)}</div>
                 <div class="col-settings-count">${t("col.gameCount", { count: c.app_names.length })}</div>
               </div>
             </div>

@@ -110,7 +110,8 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxLoginOpen, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
-import { rebuildAllGamesMap, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
+import { isSmartCollection, smartCollection } from "../library/smart-collections";
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
@@ -640,6 +641,27 @@ document.addEventListener("click", (e) => {
     if (list.length > 0) {
       const pick = list[Math.floor(Math.random() * list.length)];
       openEpicModal(pick.appName);
+    }
+  } else if (act === "col-play-random") {
+    const colId = t.dataset.colId || S.activeCollectionId;
+    let list: ReturnType<typeof summaryOf>[] = [];
+    if (colId && isSmartCollection(colId)) {
+      const smart = smartCollection(colId);
+      list = allStoreSummaries().filter((s) => smart?.test(s));
+    } else if (colId && colId !== "all" && colId !== "fav") {
+      const col = S.epicCollections.find((c) => c.id === colId);
+      if (col) {
+        list = col.app_names
+          .map((name) => summaryOf(name))
+          .filter((s): s is NonNullable<ReturnType<typeof summaryOf>> => Boolean(s));
+      }
+    } else {
+      list = libraryFilteredList();
+    }
+    if (list.length > 0) {
+      closeCollectionGallery();
+      const pick = list[Math.floor(Math.random() * list.length)];
+      if (pick) openEpicModal(pick.appName);
     }
   } else if (act === "lib-view-mode") {
     const mode = t.dataset.val as EpicViewMode;

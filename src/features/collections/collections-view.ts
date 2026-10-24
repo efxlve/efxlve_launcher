@@ -10,7 +10,7 @@ import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
 import { cachedImage, warmImages } from "../../core/picture-cache";
-import { icon } from "../../core/icons";
+import { icon, type IconName } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { allStoreSummaries, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -415,15 +415,15 @@ function syncEglCollectionsOnce(): void {
       eglSynced = false;
     });
 }
-function smartIcon(id: string): string {
+function smartMeta(id: string): { icon: IconName; cls: string } {
   switch (id) {
-    case "smart:not-played": return icon("clock", 15);
-    case "smart:playing": return icon("play", 15);
-    case "smart:almost": return icon("star", 15);
-    case "smart:completed": return icon("trophy", 15);
-    case "smart:on-hold": return icon("pause", 15);
-    case "smart:forgotten": return icon("ghost", 15);
-    default: return icon("sparkles", 15);
+    case "smart:not-played": return { icon: "clock", cls: "smart-not-played" };
+    case "smart:playing": return { icon: "play", cls: "smart-playing" };
+    case "smart:almost": return { icon: "star", cls: "smart-almost" };
+    case "smart:completed": return { icon: "trophy", cls: "smart-completed" };
+    case "smart:on-hold": return { icon: "pause", cls: "smart-on-hold" };
+    case "smart:forgotten": return { icon: "ghost", cls: "smart-forgotten" };
+    default: return { icon: "sparkles", cls: "smart-default" };
   }
 }
 
@@ -451,54 +451,110 @@ export function openCollectionGallery(): void {
   const total = S.epicCollections.length;
   const warmUrls: string[] = [];
 
-  const smartCards = smart.map(({ item, count }) => `
-    <button type="button" class="col-smart-card${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}" title="${esc(item.label())}">
-      <span class="col-smart-card-icon">${smartIcon(item.id)}</span>
-      <span class="col-smart-card-name">${esc(item.label())}</span>
-      <span class="col-smart-card-count">${count}</span>
-    </button>`).join("");
+  const smartCards = smart.map(({ item, count }) => {
+    const meta = smartMeta(item.id);
+    const pct = summaries.length > 0 ? Math.round((count / summaries.length) * 100) : 0;
+    return `
+      <button type="button" class="col-smart-card ${meta.cls}${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}" title="${esc(item.label())}">
+        <span class="col-smart-card-icon">
+          ${icon(meta.icon, 15)}
+          ${item.id === "smart:playing" ? `<span class="col-smart-pulse"></span>` : ""}
+        </span>
+        <div class="col-smart-card-info">
+          <span class="col-smart-card-name">${esc(item.label())}</span>
+          <span class="col-smart-card-pct">%${pct}</span>
+        </div>
+        <span class="col-smart-card-count">${count}</span>
+      </button>`;
+  }).join("");
 
-  const manualCards = S.epicCollections.map((col) => {
+  const manualCards = S.epicCollections.map((col, idx) => {
     const appNames = col.app_names ?? [];
     const totalGames = appNames.length;
     let installed = 0;
     const foundCovers: string[] = [];
 
-    // Scan apps once: count installed and take up to 4 covers without mapping all entries
     for (let i = 0; i < appNames.length; i++) {
       const s = summaryOf(appNames[i]);
       if (s) {
         if (s.installed) installed++;
-        if (s.cover && foundCovers.length < 4) foundCovers.push(s.cover);
+        if (s.cover && foundCovers.length < 3) foundCovers.push(s.cover);
       }
     }
 
-    const covers = foundCovers.length > 0 && foundCovers.length < 4
-      ? Array.from({ length: 4 }, (_, i) => foundCovers[i % foundCovers.length])
-      : foundCovers;
+    if (foundCovers.length > 0) warmUrls.push(...foundCovers);
 
-    if (covers.length > 0) warmUrls.push(...covers);
+    const percentInstalled = totalGames > 0 ? Math.min(100, Math.round((installed / totalGames) * 100)) : 0;
 
-    const artHtml = covers.length === 0
-      ? `<span class="col-gallery-art empty">${icon("layers", 28)}</span>`
-      : `<span class="col-gallery-art covers-${covers.length}">${covers.map((c) => `<img src="${esc(cachedImage(c))}" data-img-url="${esc(c)}" alt="" loading="lazy" decoding="async" />`).join("")}</span>`;
+    let artHtml = "";
+    if (foundCovers.length === 0) {
+      artHtml = `
+        <div class="col-poster-fan empty">
+          ${icon("folder", 34)}
+        </div>`;
+    } else if (foundCovers.length === 1) {
+      artHtml = `
+        <div class="col-poster-fan">
+          <div class="col-poster-ambient" style="background-image:url('${esc(cachedImage(foundCovers[0]))}')"></div>
+          <div class="col-poster-item col-poster-single">
+            <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
+          </div>
+        </div>`;
+    } else if (foundCovers.length === 2) {
+      artHtml = `
+        <div class="col-poster-fan">
+          <div class="col-poster-ambient" style="background-image:url('${esc(cachedImage(foundCovers[0]))}')"></div>
+          <div class="col-poster-item col-poster-pair-1">
+            <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
+          </div>
+          <div class="col-poster-item col-poster-pair-2">
+            <img src="${esc(cachedImage(foundCovers[1]))}" data-img-url="${esc(foundCovers[1])}" alt="" loading="lazy" decoding="async" />
+          </div>
+        </div>`;
+    } else {
+      artHtml = `
+        <div class="col-poster-fan">
+          <div class="col-poster-ambient" style="background-image:url('${esc(cachedImage(foundCovers[1]))}')"></div>
+          <div class="col-poster-item col-poster-fan-1">
+            <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
+          </div>
+          <div class="col-poster-item col-poster-fan-2">
+            <img src="${esc(cachedImage(foundCovers[1]))}" data-img-url="${esc(foundCovers[1])}" alt="" loading="lazy" decoding="async" />
+          </div>
+          <div class="col-poster-item col-poster-fan-3">
+            <img src="${esc(cachedImage(foundCovers[2]))}" data-img-url="${esc(foundCovers[2])}" alt="" loading="lazy" decoding="async" />
+          </div>
+        </div>`;
+    }
 
-    const markerHtml = isCollectionIcon(col.emoji)
-      ? `<span class="col-gallery-marker">${collectionMarker(col.emoji, 15)}</span>`
-      : "";
+    const markerHtml = collectionMarker(col.emoji, 15);
 
     return `
-      <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}">
+      <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}" data-col-name="${esc(col.name)}" style="--i: ${idx};">
         ${artHtml}
-        <span class="col-gallery-shade"></span>
-        <span class="col-gallery-info">
-          <span class="col-gallery-name-row">
-            ${markerHtml}
-            <span class="col-gallery-name">${esc(col.name)}</span>
-          </span>
-          <span class="col-gallery-count">${installed} / ${totalGames} ${t("common.installed")}</span>
-        </span>
-        <button type="button" class="col-gallery-edit" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${esc(t("col.edit"))}" aria-label="${esc(t("col.edit"))}">${icon("settings", 13)}</button>
+        <div class="col-card-body">
+          <div class="col-card-header">
+            <div class="col-card-title-group">
+              <span class="col-card-marker">${markerHtml}</span>
+              <span class="col-card-title" title="${esc(col.name)}">${esc(col.name)}</span>
+            </div>
+            <span class="col-card-pill">${totalGames}</span>
+          </div>
+          <div class="col-card-progress">
+            <div class="col-card-bar">
+              <div class="col-card-fill" style="width: ${percentInstalled}%;"></div>
+            </div>
+            <span class="col-card-status">${installed} / ${totalGames} ${t("common.installed")}</span>
+          </div>
+        </div>
+        <div class="col-card-actions">
+          <button type="button" class="col-card-action-btn" data-act="col-play-random" data-col-id="${esc(col.id)}" title="${esc(t("library.random"))}" aria-label="${esc(t("library.random"))}">
+            ${icon("shuffle", 13)}
+          </button>
+          <button type="button" class="col-card-action-btn" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${esc(t("col.edit"))}" aria-label="${esc(t("col.edit"))}">
+            ${icon("settings", 13)}
+          </button>
+        </div>
       </div>`;
   }).join("");
 
@@ -515,6 +571,13 @@ export function openCollectionGallery(): void {
               </div>
               <p class="col-gallery-sub">${t("col.gameCount", { count: summaries.length })}</p>
             </div>
+          </div>
+          <div class="col-gallery-search">
+            ${icon("search", 14)}
+            <input type="text" id="col-gallery-search-input" placeholder="${esc(t("lib.searchPlaceholder"))}" autocomplete="off" spellcheck="false" />
+            <button type="button" class="col-gallery-search-clear" id="col-gallery-search-clear" style="display:none" title="${esc(t("col.clear"))}">
+              ${icon("x", 12)}
+            </button>
           </div>
           <div class="col-gallery-actions">
             ${S.activeCollectionId ? `
@@ -544,6 +607,10 @@ export function openCollectionGallery(): void {
           </div>
           <div class="col-gallery-grid">
             ${manualCards}
+            <button type="button" class="col-gallery-add-card" data-act="open-new-collection-modal" title="${esc(t("col.newTitle"))}">
+              <span class="col-add-card-icon">${icon("plus", 20)}</span>
+              <span class="col-add-card-label">${esc(t("col.newTitle"))}</span>
+            </button>
             ${total === 0 ? `
               <div class="col-gallery-empty">
                 <div class="col-gallery-empty-icon">${icon("layers", 36)}</div>
@@ -555,11 +622,35 @@ export function openCollectionGallery(): void {
       </section>
     </div>`;
 
+  // Attach search listener for instant filtering
+  const searchInput = document.getElementById("col-gallery-search-input") as HTMLInputElement | null;
+  const searchClear = document.getElementById("col-gallery-search-clear");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.trim().toLowerCase();
+      if (searchClear) searchClear.style.display = q ? "" : "none";
+      const cards = collectionRoot?.querySelectorAll<HTMLElement>(".col-gallery-card");
+      cards?.forEach((card) => {
+        const name = (card.dataset.colName || "").toLowerCase();
+        card.style.display = (!q || name.includes(q)) ? "" : "none";
+      });
+    });
+    if (searchClear) {
+      searchClear.addEventListener("click", () => {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event("input"));
+        searchInput.focus();
+      });
+    }
+  }
+
   // The gallery opens with visible covers; ask the Rust disk cache for
   // them once so the next open paints from local data instead of the CDN.
   warmImages(warmUrls);
-  collectionRoot.querySelectorAll<HTMLImageElement>(".col-gallery-art img").forEach((img) => {
-    img.addEventListener("error", () => { img.style.display = "none"; }, { once: true });
+  collectionRoot.querySelectorAll<HTMLImageElement>(".col-poster-item img").forEach((img) => {
+    img.addEventListener("error", () => {
+      img.closest<HTMLElement>(".col-poster-item")?.remove();
+    }, { once: true });
   });
 }
 
