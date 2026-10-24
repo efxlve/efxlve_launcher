@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "مقياس الواجهة",
   "settings.uiScaleDesc": "يغيّر حجم الواجهة بالكامل. مفيد للشاشات الصغيرة وأجهزة التلفاز والحواسيب المحمولة منخفضة الدقة.",
   "library.random": "لعبة عشوائية",
+  "settings.secDiagnostics": "التشخيص",
+  "settings.pcCheckNetwork": "الشبكة",
   "settings.pcCheckTitle": "فحص الكمبيوتر",
   "settings.pcCheckDesc": "يفحص WebView2 والعتاد والخادم وlegendary ومساحة القرص والتخزين المحلي. لا يتم رفع أي شيء.",
   "settings.pcCheckRun": "افحص هذا الكمبيوتر",

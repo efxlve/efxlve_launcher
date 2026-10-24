@@ -92,6 +92,7 @@ import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-vie
 import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
 import { handleTaskAction, renderTasks } from "./task-manager";
+import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
 import { companionGetClientSettings } from "../../companion";
@@ -1716,10 +1717,10 @@ function renderSystem(): string {
       row(
         t("settings.pcCheckTitle"),
         t("settings.pcCheckDesc"),
-        `<button type="button" class="btn ghost small" data-act="run-pc-check">${icon("activity", 13)} ${t("settings.pcCheckRun")}</button>`,
+        `<button type="button" class="btn ghost small" data-act="run-pc-check">${icon("cpu", 13)} ${t("settings.pcCheckRun")}</button>`,
       ) +
-      `<div id="pc-check-result" class="pc-check-result" aria-live="polite"></div>`,
-      t("settings.systemTitle"),
+      `<div id="pc-check-result" class="pc-check-result" aria-live="polite">${pcCheckResultHtml()}</div>`,
+      t("settings.secDiagnostics"),
     )
   );
 }

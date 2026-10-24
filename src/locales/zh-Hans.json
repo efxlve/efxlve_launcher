@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "界面缩放",
   "settings.uiScaleDesc": "缩放整个界面。适合小屏幕、电视和低分辨率笔记本。",
   "library.random": "随机游戏",
+  "settings.secDiagnostics": "诊断",
+  "settings.pcCheckNetwork": "网络",
   "settings.pcCheckTitle": "电脑检查",
   "settings.pcCheckDesc": "检查 WebView2、硬件、后端、legendary、磁盘空间和本地存储。不会上传任何内容。",
   "settings.pcCheckRun": "检查此电脑",

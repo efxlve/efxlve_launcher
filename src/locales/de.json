@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Oberflächengröße",
   "settings.uiScaleDesc": "Skaliert die gesamte Oberfläche. Nützlich für kleine Bildschirme, TVs und Laptops mit niedriger Auflösung.",
   "library.random": "Zufälliges Spiel",
+  "settings.secDiagnostics": "Diagnose",
+  "settings.pcCheckNetwork": "Netzwerk",
   "settings.pcCheckTitle": "PC-Prüfung",
   "settings.pcCheckDesc": "Prüft WebView2, Hardware, Backend, legendary, Speicherplatz und lokalen Speicher. Nichts wird hochgeladen.",
   "settings.pcCheckRun": "Diesen PC prüfen",

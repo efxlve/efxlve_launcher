@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "인터페이스 배율",
   "settings.uiScaleDesc": "전체 인터페이스를 확대/축소합니다. 작은 화면, TV, 저해상도 노트북에 유용합니다.",
   "library.random": "무작위 게임",
+  "settings.secDiagnostics": "진단",
+  "settings.pcCheckNetwork": "네트워크",
   "settings.pcCheckTitle": "PC 점검",
   "settings.pcCheckDesc": "WebView2, 하드웨어, 백엔드, legendary, 디스크 공간, 로컬 저장소를 확인합니다. 아무것도 업로드되지 않습니다.",
   "settings.pcCheckRun": "이 PC 점검",

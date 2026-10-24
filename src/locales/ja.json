@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "インターフェース倍率",
   "settings.uiScaleDesc": "インターフェース全体を拡大縮小します。小型画面、テレビ、低解像度のノートPCに便利です。",
   "library.random": "ランダムなゲーム",
+  "settings.secDiagnostics": "診断",
+  "settings.pcCheckNetwork": "ネットワーク",
   "settings.pcCheckTitle": "PCチェック",
   "settings.pcCheckDesc": "WebView2、ハードウェア、バックエンド、legendary、ディスク容量、ローカルストレージを確認します。何もアップロードされません。",
   "settings.pcCheckRun": "このPCを確認",

@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Skala interfejsu",
   "settings.uiScaleDesc": "Skaluje cały interfejs. Przydatne na małych ekranach, telewizorach i laptopach o niskiej rozdzielczości.",
   "library.random": "Losowa gra",
+  "settings.secDiagnostics": "Diagnostyka",
+  "settings.pcCheckNetwork": "Sieć",
   "settings.pcCheckTitle": "Kontrola komputera",
   "settings.pcCheckDesc": "Sprawdza WebView2, sprzęt, backend, legendary, miejsce na dysku i pamięć lokalną. Nic nie jest wysyłane.",
   "settings.pcCheckRun": "Sprawdź ten komputer",

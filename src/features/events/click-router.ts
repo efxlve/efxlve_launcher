@@ -1107,12 +1107,18 @@ document.addEventListener("click", (e) => {
       else render();
     }
   } else if (act === "run-pc-check") {
+    const result = document.getElementById("pc-check-result");
+    const button = t as HTMLButtonElement;
+    if (result) result.textContent = i18nT("common.calculating");
+    if (button.tagName === "BUTTON") button.disabled = true;
     void runPcCheck()
       .then((html) => {
-        const result = document.getElementById("pc-check-result");
         if (result) result.innerHTML = html;
       })
-      .catch(() => toast(i18nT("common.error"), "err"));
+      .catch(() => toast(i18nT("common.error"), "err"))
+      .finally(() => {
+        if (button.tagName === "BUTTON") button.disabled = false;
+      });
   } else if (act === "copy-pc-check") {
     void copyPcCheck()
       .then(() => toast(i18nT("settings.pcCheckCopied"), "ok"))

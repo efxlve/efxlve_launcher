@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Arayüz ölçeği",
   "settings.uiScaleDesc": "Tüm arayüzü ölçekler. Küçük ekranlar, TV'ler ve düşük çözünürlüklü dizüstüler için kullanışlıdır.",
   "library.random": "Rastgele oyun",
+  "settings.secDiagnostics": "Tanılama",
+  "settings.pcCheckNetwork": "Ağ",
   "settings.pcCheckTitle": "Bilgisayar kontrolü",
   "settings.pcCheckDesc": "WebView2, donanım, arka uç, legendary, disk alanı ve yerel depolamayı kontrol eder. Hiçbir şey yüklenmez.",
   "settings.pcCheckRun": "Bu bilgisayarı kontrol et",

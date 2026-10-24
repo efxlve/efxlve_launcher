@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Escala de interfaz",
   "settings.uiScaleDesc": "Escala toda la interfaz. Útil en pantallas pequeñas, televisores y portátiles de baja resolución.",
   "library.random": "Juego aleatorio",
+  "settings.secDiagnostics": "Diagnóstico",
+  "settings.pcCheckNetwork": "Red",
   "settings.pcCheckTitle": "Comprobación del PC",
   "settings.pcCheckDesc": "Comprueba WebView2, hardware, backend, legendary, espacio en disco y almacenamiento local. No se sube nada.",
   "settings.pcCheckRun": "Comprobar este PC",

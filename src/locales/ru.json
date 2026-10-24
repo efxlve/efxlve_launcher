@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Масштаб интерфейса",
   "settings.uiScaleDesc": "Масштабирует весь интерфейс. Полезно на маленьких экранах, телевизорах и ноутбуках с низким разрешением.",
   "library.random": "Случайная игра",
+  "settings.secDiagnostics": "Диагностика",
+  "settings.pcCheckNetwork": "Сеть",
   "settings.pcCheckTitle": "Проверка ПК",
   "settings.pcCheckDesc": "Проверяет WebView2, оборудование, бэкенд, legendary, место на диске и локальное хранилище. Ничего не отправляется.",
   "settings.pcCheckRun": "Проверить этот ПК",

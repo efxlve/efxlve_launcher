@@ -25,6 +25,7 @@ mod net_diag;
 mod igdb;
 mod image_cache;
 mod perf;
+mod pc_check;
 mod task_manager;
 mod game_running;
 mod presence;
@@ -1460,6 +1461,7 @@ fn main() {
             app_set_tray_labels,
             feedback::feedback_create_report,
             feedback::feedback_has_crash,
+            pc_check::pc_check_system,
             feedback::feedback_recovery_pending,
             legendary::commands::epic_setup_status,
             legendary::commands::epic_ensure_binary,

@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Échelle de l'interface",
   "settings.uiScaleDesc": "Met toute l'interface à l'échelle. Utile sur les petits écrans, les TV et les ordinateurs portables à basse résolution.",
   "library.random": "Jeu aléatoire",
+  "settings.secDiagnostics": "Diagnostic",
+  "settings.pcCheckNetwork": "Réseau",
   "settings.pcCheckTitle": "Vérification du PC",
   "settings.pcCheckDesc": "Vérifie WebView2, le matériel, le backend, legendary, l'espace disque et le stockage local. Rien n'est envoyé.",
   "settings.pcCheckRun": "Vérifier ce PC",

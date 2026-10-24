@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Interface scale",
   "settings.uiScaleDesc": "Scales the whole interface. Useful on small screens, TVs and low-resolution laptops.",
   "library.random": "Random game",
+  "settings.secDiagnostics": "Diagnostics",
+  "settings.pcCheckNetwork": "Network",
   "settings.pcCheckTitle": "PC check",
   "settings.pcCheckDesc": "Checks WebView2, hardware, backend, legendary, disk space and local storage. Nothing is uploaded.",
   "settings.pcCheckRun": "Check this PC",

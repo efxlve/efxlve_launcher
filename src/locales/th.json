@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "ขนาดอินเทอร์เฟซ",
   "settings.uiScaleDesc": "ปรับขนาดอินเทอร์เฟซทั้งหมด เหมาะกับหน้าจอเล็ก ทีวี และแล็ปท็อปความละเอียดต่ำ",
   "library.random": "สุ่มเกม",
+  "settings.secDiagnostics": "การวินิจฉัย",
+  "settings.pcCheckNetwork": "เครือข่าย",
   "settings.pcCheckTitle": "ตรวจสอบพีซี",
   "settings.pcCheckDesc": "ตรวจสอบ WebView2 ฮาร์ดแวร์ backend legendary พื้นที่ดิสก์ และที่เก็บข้อมูลในเครื่อง ไม่มีการอัปโหลดใด ๆ",
   "settings.pcCheckRun": "ตรวจสอบพีซีนี้",

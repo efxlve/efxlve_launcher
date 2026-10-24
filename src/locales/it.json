@@ -3029,6 +3029,8 @@
   "settings.uiScaleTitle": "Scala interfaccia",
   "settings.uiScaleDesc": "Ridimensiona tutta l'interfaccia. Utile su schermi piccoli, TV e portatili a bassa risoluzione.",
   "library.random": "Gioco casuale",
+  "settings.secDiagnostics": "Diagnostica",
+  "settings.pcCheckNetwork": "Rete",
   "settings.pcCheckTitle": "Controllo PC",
   "settings.pcCheckDesc": "Controlla WebView2, hardware, backend, legendary, spazio su disco e archiviazione locale. Nulla viene caricato.",
   "settings.pcCheckRun": "Controlla questo PC",
