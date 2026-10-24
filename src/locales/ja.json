@@ -1425,6 +1425,7 @@
   "col.noCollectionsLong": "コレクションはまだ作成されていません。",
   "col.newCollectionBtn": "+ 新しいコレクションを作成",
   "col.newCollection": "新しいコレクション",
+  "col.settingsSummary": "{count} コレクション · {games} ゲーム",
   "col.edit": "編集",
   "col.deleteHint": "ゲームはライブラリに残ります。削除されるのはこのコレクションだけです。",
   "col.needName": "コレクション名を入力してください。",

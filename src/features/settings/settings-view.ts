@@ -21,6 +21,7 @@ import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { classicIcon, aeroIcon } from "../../core/app-icon";
+import { collectionMarker } from "../../core/collection-icons";
 import type { GameSource, SettingsSection } from "../../core/types";
 import {
   CASE_COVERS_KEY,
@@ -308,18 +309,58 @@ function renderCloud(): string {
  * same for differently named collections.
  */
 function renderCollections(): string {
-  const imports = group(
-    // Only the Windows Epic Games Launcher keeps importable collections.
-    (IS_WINDOWS
-      ? row(t("col.importEpic"), t("col.importEpicDesc"), `<button type="button" class="btn ghost small" data-act="import-egl-collections">${t("col.importBtn")}</button>`)
-      : "") +
-    row(t("col.importGalaxy"), t("col.importGalaxyDesc"), `<button type="button" class="btn ghost small" data-act="gog-import-galaxy-tags">${t("col.importBtn")}</button>`) +
-    row(t("col.importSteam"), t("col.importSteamDesc"), `<button type="button" class="btn ghost small" data-act="steam-import-collections">${t("col.importBtn")}</button>`),
-    t("col.importTitle"),
+  const sources: Array<{ id: string; name: string; desc: string; act: string }> = [];
+  // Only the Windows Epic Games Launcher keeps importable collections.
+  if (IS_WINDOWS) {
+    sources.push({
+      id: "epic",
+      name: t("col.importEpic"),
+      desc: t("col.importEpicDesc"),
+      act: "import-egl-collections",
+    });
+  }
+  sources.push(
+    {
+      id: "gog",
+      name: t("col.importGalaxy"),
+      desc: t("col.importGalaxyDesc"),
+      act: "gog-import-galaxy-tags",
+    },
+    {
+      id: "steam",
+      name: t("col.importSteam"),
+      desc: t("col.importSteamDesc"),
+      act: "steam-import-collections",
+    },
   );
+  const importCards = sources.map((source) => `
+    <div class="card col-import-card" data-search="${esc(`${source.name} ${source.desc}`)}">
+      <div class="col-import-head">
+        <span class="col-import-logo">${storeLogo(source.id, 24) || icon("layers", 24)}</span>
+        <span class="col-import-title">${esc(source.name)}</span>
+      </div>
+      <div class="col-import-desc">${esc(source.desc)}</div>
+      <button type="button" class="btn ghost small" data-act="${source.act}">${icon("download", 13)} ${t("col.importBtn")}</button>
+    </div>`).join("");
 
-  const rows = S.epicCollections.length === 0
-    ? row(t("col.noCollectionsLong"), null, "")
+  // Unique games, not memberships: a title in two collections still counts once.
+  const uniqueGames = new Set<string>();
+  for (const collection of S.epicCollections) {
+    for (const appName of collection.app_names) uniqueGames.add(appName.toLowerCase());
+  }
+  const summary = S.epicCollections.length > 0
+    ? `<span class="col-settings-summary">${esc(t("col.settingsSummary", { count: S.epicCollections.length, games: uniqueGames.size }))}</span>`
+    : "";
+  const newButton = `<button type="button" class="btn primary small" data-act="open-new-collection-modal">${icon("plus", 13)} ${t("col.newCollection")}</button>`;
+  // Empty lists get one centered call to action, not a second copy in the header.
+  const headButton = S.epicCollections.length > 0 ? newButton : "";
+
+  const cards = S.epicCollections.length === 0
+    ? `<div class="card col-settings-empty">
+         <span class="col-settings-empty-icon">${icon("folder", 26)}</span>
+         <div class="col-settings-empty-title">${t("col.noCollectionsLong")}</div>
+         ${newButton}
+       </div>`
     : S.epicCollections.map((c) => {
         const merging = S.colMergeSource === c.id;
         const deleting = S.colDeleteConfirm === c.id;
@@ -339,28 +380,37 @@ function renderCollections(): string {
              </div>`
           : "";
         return `
-          <div class="row settings-row">
-            <div class="row-main">
-              <div class="settings-row-title">${esc(c.name)}</div>
-              <div class="settings-row-desc">${t("col.gameCount", { count: c.app_names.length })}</div>
+          <div class="card col-settings-card" data-search="${esc(`${c.name} ${t("col.gameCount", { count: c.app_names.length })}`)}">
+            <div class="col-settings-card-head">
+              <span class="col-settings-marker">${collectionMarker(c.emoji, 16)}</span>
+              <div class="col-settings-copy">
+                <div class="col-settings-name" title="${esc(c.name)}">${esc(c.name)}</div>
+                <div class="col-settings-count">${t("col.gameCount", { count: c.app_names.length })}</div>
+              </div>
             </div>
-            <div class="settings-row-control">
-              <button type="button" class="btn ghost small" data-act="edit-collection" data-col-id="${esc(c.id)}">${t("col.edit")}</button>
-              <button type="button" class="btn ghost small" data-act="col-merge-ask" data-id="${esc(c.id)}" ${targets.length === 0 ? "disabled" : ""}>${t("col.merge")}</button>
-              <button type="button" class="btn ghost danger small" data-act="col-settings-delete-ask" data-id="${esc(c.id)}">${t("common.delete")}</button>
+            <div class="col-settings-actions">
+              <button type="button" class="btn ghost small" data-act="edit-collection" data-col-id="${esc(c.id)}">${icon("edit", 12)} ${t("col.edit")}</button>
+              <button type="button" class="btn ghost small" data-act="col-merge-ask" data-id="${esc(c.id)}" ${targets.length === 0 ? "disabled" : ""}>${icon("arrow-left-right", 12)} ${t("col.merge")}</button>
+              <button type="button" class="btn ghost danger small col-settings-delete" data-act="col-settings-delete-ask" data-id="${esc(c.id)}">${icon("trash", 12)} ${t("common.delete")}</button>
             </div>
-          </div>
-          ${mergePanel}${deletePanel}`;
+            ${mergePanel}${deletePanel}
+          </div>`;
       }).join("");
 
   return (
     infoBox("col.settingsInfo") +
-    imports +
     `<div class="settings-section-head">
-       <h3 class="section-title">${t("col.allCollections")}</h3>
-       <button type="button" class="btn ghost small" data-act="open-new-collection-modal">${icon("plus", 13)} ${t("col.newCollection")}</button>
+       <h3 class="section-title">${t("col.importTitle")}</h3>
      </div>
-     <div class="list settings-group">${rows}</div>`
+     <div class="col-import-grid">${importCards}</div>
+     <div class="settings-section-head col-settings-head">
+       <div class="col-settings-heading">
+         <h3 class="section-title">${t("col.allCollections")}</h3>
+         ${summary}
+       </div>
+       ${headButton}
+     </div>
+     ${S.epicCollections.length === 0 ? cards : `<div class="col-settings-grid">${cards}</div>`}`
   );
 }
 

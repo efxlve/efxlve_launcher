@@ -1425,6 +1425,7 @@
   "col.noCollectionsLong": "Nessuna collezione creata.",
   "col.newCollectionBtn": "+ Crea una nuova collezione",
   "col.newCollection": "Nuova collezione",
+  "col.settingsSummary": "{count} collezioni · {games} giochi",
   "col.edit": "Modifica",
   "col.deleteHint": "I giochi restano nella libreria. Si rimuove solo questa collezione.",
   "col.needName": "Inserisci un nome per la collezione.",
