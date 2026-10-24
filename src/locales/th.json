@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "เกมที่ยังไม่ได้เล่น",
   "col.presetFavorites": "รายการโปรด",
   "col.emptySelectionHint": "ตัวอย่างคอลเลกชันสด",
-  "col.emptySelectionSub": "เลือกเกมด้านล่างเพื่อกระจายชุดโปสเตอร์ 3 มิติของคุณ"
+  "col.emptySelectionSub": "เลือกเกมด้านล่างเพื่อกระจายชุดโปสเตอร์ 3 มิติของคุณ",
+  "col.coverGames": "เกมหน้าปก",
+  "col.coverAdd": "ตั้งเป็นหน้าปกคอลเลกชัน",
+  "col.coverRemove": "นำออกจากหน้าปก"
 }

@@ -12,15 +12,16 @@ import { collectionRoot } from "../../core/dom";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { icon, type IconName } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
-import { allStoreSummaries, gameStoresLabel, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, canonicalGameTitle, gameStoresLabel, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 
-import { epicDeleteCollection, epicGetCollections, epicImportEglCollections, epicSaveCollection, epicSetGameCollections, type GameCollection } from "../../epic";
+import { epicDeleteCollection, epicGetCollections, epicImportEglCollections, epicSaveCollection, epicSetGameCollections, type EpicSummary, type GameCollection } from "../../epic";
 import { renderCollectionTags } from "../drawer/drawer-view";
 import { SMART_COLLECTIONS } from "../library/smart-collections";
+import { storeLogo } from "../store/store-logos";
 
 /** The picker renders in pages so a 1,000-game library does not build every row before the first paint. */
 const COL_PAGE_SIZE = 120;
@@ -29,13 +30,27 @@ let colSearchTimer: number | null = null;
 
 function filteredColSummaries() {
   const q = S.colModalSearchQuery.toLowerCase();
-  let filtered = allStoreSummaries().filter((s) => s.title.toLowerCase().includes(q));
-  if (S.colModalTabFilter === "selected") {
-    filtered = filtered.filter((s) => S.colModalSelectedApps.has(s.appName));
-  } else if (S.colModalTabFilter === "installed") {
-    filtered = filtered.filter((s) => s.installed);
+  const seenApps = new Set<string>();
+  const seenTitleStore = new Set<string>();
+  const out: EpicSummary[] = [];
+
+  for (const s of allStoreSummaries()) {
+    if (S.hiddenGames.has(s.appName)) continue;
+    if (seenApps.has(s.appName)) continue;
+    seenApps.add(s.appName);
+
+    const store = sourceOfKey(s.appName);
+    const canonTitle = canonicalGameTitle(s.title).toLowerCase();
+    const titleStoreKey = `${canonTitle}::${store}`;
+    if (seenTitleStore.has(titleStoreKey)) continue;
+    seenTitleStore.add(titleStoreKey);
+
+    if (q && !s.title.toLowerCase().includes(q)) continue;
+    if (S.colModalTabFilter === "selected" && !S.colModalSelectedApps.has(s.appName)) continue;
+    if (S.colModalTabFilter === "installed" && !s.installed) continue;
+    out.push(s);
   }
-  return filtered;
+  return out;
 }
 
 function colGameRowsHtml(filtered: ReturnType<typeof filteredColSummaries>): string {
@@ -57,9 +72,11 @@ export function openCollectionModal(colId?: string | null): void {
   if (colId) {
     const col = S.epicCollections.find((c) => c.id === colId);
     S.colModalSelectedApps = new Set(col?.app_names || []);
+    S.colModalCoverApps = (col?.app_names || []).slice(0, 3);
     S.colModalMarker = isCollectionIcon(col?.emoji) ? (col!.emoji as string) : "";
   } else {
     S.colModalSelectedApps = new Set();
+    S.colModalCoverApps = [];
     S.colModalMarker = "";
   }
   renderCollectionModal();
@@ -99,15 +116,114 @@ export function updateMarkerUi(): void {
   }
 }
 
-export function renderCedHeroDeckHtml(): string {
-  const covers: string[] = [];
-  for (const appName of S.colModalSelectedApps) {
-    const c = summaryOf(appName)?.cover;
-    if (c) {
-      covers.push(c);
-      if (covers.length >= 3) break;
+export function toggleCollectionGame(appName: string, itemEl?: HTMLElement | null): void {
+  const isSelected = S.colModalSelectedApps.has(appName);
+  if (isSelected) {
+    S.colModalSelectedApps.delete(appName);
+    S.colModalCoverApps = S.colModalCoverApps.filter((a) => a !== appName);
+    if (S.colModalCoverApps.length < 3) {
+      for (const other of S.colModalSelectedApps) {
+        if (!S.colModalCoverApps.includes(other)) {
+          S.colModalCoverApps.push(other);
+          if (S.colModalCoverApps.length >= 3) break;
+        }
+      }
+    }
+  } else {
+    S.colModalSelectedApps.add(appName);
+    if (S.colModalCoverApps.length < 3 && !S.colModalCoverApps.includes(appName)) {
+      S.colModalCoverApps.push(appName);
     }
   }
+
+  const nowChecked = S.colModalSelectedApps.has(appName);
+  const isCover = S.colModalCoverApps.includes(appName);
+  if (itemEl) {
+    itemEl.classList.toggle("selected", nowChecked);
+    const customCb = itemEl.querySelector(".col-custom-cb");
+    if (customCb) customCb.classList.toggle("checked", nowChecked);
+    let pin = itemEl.querySelector(".col-cover-pin-btn") as HTMLElement | null;
+    if (nowChecked && !pin) {
+      const pinBtn = document.createElement("button");
+      pinBtn.type = "button";
+      pinBtn.className = `col-cover-pin-btn ${isCover ? "is-cover" : ""}`;
+      pinBtn.dataset.act = "col-toggle-cover";
+      pinBtn.dataset.app = appName;
+      pinBtn.title = isCover ? t("col.coverRemove") : t("col.coverAdd");
+      pinBtn.innerHTML = icon("star", 13);
+      itemEl.appendChild(pinBtn);
+    } else if (!nowChecked && pin) {
+      pin.remove();
+    } else if (pin) {
+      pin.classList.toggle("is-cover", isCover);
+      pin.title = isCover ? t("col.coverRemove") : t("col.coverAdd");
+    }
+  }
+
+  const cntEl = document.getElementById("col-tab-selected-cnt") || document.getElementById("col-selected-count");
+  if (cntEl) cntEl.textContent = String(S.colModalSelectedApps.size);
+
+  const headerBadge = document.getElementById("col-header-selected-badge");
+  if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
+
+  const footerCnt = document.getElementById("col-footer-count");
+  if (footerCnt) footerCnt.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
+
+  updateCedHeroDeckInPlace();
+
+  if (S.colModalTabFilter === "selected") {
+    updateColGamesListInPlace();
+  }
+}
+
+export function toggleCoverGame(appName: string): void {
+  if (!S.colModalSelectedApps.has(appName)) {
+    S.colModalSelectedApps.add(appName);
+  }
+  const idx = S.colModalCoverApps.indexOf(appName);
+  if (idx !== -1) {
+    S.colModalCoverApps.splice(idx, 1);
+  } else {
+    if (S.colModalCoverApps.length >= 3) {
+      S.colModalCoverApps[2] = appName;
+    } else {
+      S.colModalCoverApps.push(appName);
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>(".col-cover-pin-btn").forEach((btn) => {
+    const app = btn.dataset.app;
+    const isCover = Boolean(app && S.colModalCoverApps.includes(app));
+    btn.classList.toggle("is-cover", isCover);
+    btn.title = isCover ? t("col.coverRemove") : t("col.coverAdd");
+  });
+
+  const footerCnt = document.getElementById("col-footer-count");
+  if (footerCnt) footerCnt.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
+
+  updateCedHeroDeckInPlace();
+}
+
+export function renderCedHeroDeckHtml(): string {
+  const coverEntries: { appName: string; cover: string }[] = [];
+  for (const appName of S.colModalCoverApps) {
+    if (S.colModalSelectedApps.has(appName)) {
+      const c = summaryOf(appName)?.cover;
+      if (c) coverEntries.push({ appName, cover: c });
+    }
+  }
+  if (coverEntries.length < 3) {
+    for (const appName of S.colModalSelectedApps) {
+      if (!coverEntries.some((e) => e.appName === appName)) {
+        const c = summaryOf(appName)?.cover;
+        if (c) {
+          coverEntries.push({ appName, cover: c });
+          if (coverEntries.length >= 3) break;
+        }
+      }
+    }
+  }
+
   const count = S.colModalSelectedApps.size;
   const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
   const colName = nameInput ? nameInput.value.trim() : (S.activeEditingColId ? (S.epicCollections.find((c) => c.id === S.activeEditingColId)?.name || "") : "");
@@ -130,15 +246,15 @@ export function renderCedHeroDeckHtml(): string {
     `;
   }
 
-  const stackHtml = covers.map((cover, idx) => {
-    return `<div class="ced-deck-card-poster pos-${idx}" style="background-image: url('${esc(cover)}')"></div>`;
+  const stackHtml = coverEntries.map((item, idx) => {
+    return `<div class="ced-deck-card-poster pos-${idx}" style="background-image: url('${esc(item.cover)}')"></div>`;
   }).join("");
 
   return `
     <div class="ced-deck-card active">
       <div class="ced-deck-fan-wrap">
-        ${covers[0] ? `<div class="ced-deck-glow" style="background-image: url('${esc(covers[0])}')"></div>` : ""}
-        <div class="ced-deck-fan cards-${covers.length}">
+        ${coverEntries[0] ? `<div class="ced-deck-glow" style="background-image: url('${esc(coverEntries[0].cover)}')"></div>` : ""}
+        <div class="ced-deck-fan cards-${coverEntries.length}">
           ${stackHtml}
         </div>
       </div>
@@ -147,7 +263,14 @@ export function renderCedHeroDeckHtml(): string {
           <span class="ced-deck-marker">${collectionMarker(S.colModalMarker, 16)}</span>
           <span class="ced-deck-name" id="ced-deck-name">${esc(colName || t("col.defaultName"))}</span>
         </div>
-        <div class="ced-deck-count-pill">${icon("check-circle", 12)} <span id="ced-deck-count">${t("col.selectedCount", { count })}</span></div>
+        <div class="ced-deck-right">
+          <div class="ced-cover-slots-indicator" title="${t("col.coverGames")}">
+            ${icon("star", 12)}
+            <span>${t("col.coverGames")}:</span>
+            <span class="ced-cover-slots-cnt">${coverEntries.length}/3</span>
+          </div>
+          <div class="ced-deck-count-pill">${icon("check-circle", 12)} <span id="ced-deck-count">${t("col.selectedCount", { count })}</span></div>
+        </div>
       </div>
     </div>
   `;
@@ -162,22 +285,34 @@ export function updateCedHeroDeckInPlace(): void {
 
 function colGameRow(s: { appName: string; title: string; cover?: string | null; installed: boolean }): string {
   const checked = S.colModalSelectedApps.has(s.appName);
+  const isCover = S.colModalCoverApps.includes(s.appName);
   const store = gameStoresLabel(s.appName);
+  const source = sourceOfKey(s.appName);
   const thumb = s.cover
     ? `<img class="col-game-thumb" src="${esc(s.cover)}" alt="" loading="lazy" />`
     : `<div class="col-game-thumb placeholder">${icon("gamepad-2", 14)}</div>`;
+
+  const showInstalled = s.installed && S.colModalTabFilter !== "installed";
+
   return `
-    <button type="button" class="col-game-item ${checked ? "selected" : ""}" data-act="col-toggle-game" data-app="${esc(s.appName)}">
-      <span class="col-custom-cb ${checked ? "checked" : ""}">${icon("check", 12)}</span>
-      ${thumb}
-      <div class="col-game-info">
-        <span class="col-game-title">${esc(s.title)}</span>
-        <div class="col-game-sub">
-          <span class="col-store-tag">${esc(store)}</span>
-          ${s.installed ? `<span class="col-inst-badge">${icon("check-circle", 11)} ${t("common.installed")}</span>` : ""}
+    <div class="col-game-item ${checked ? "selected" : ""}" data-app="${esc(s.appName)}">
+      <button type="button" class="col-game-check-btn" data-act="col-toggle-game" data-app="${esc(s.appName)}">
+        <span class="col-custom-cb ${checked ? "checked" : ""}">${icon("check", 12)}</span>
+        ${thumb}
+        <div class="col-game-info">
+          <span class="col-game-title">${esc(s.title)}</span>
+          <div class="col-game-sub">
+            <span class="col-store-tag">${storeLogo(source, 13, "col-store-logo-img")}<span>${esc(store)}</span></span>
+            ${showInstalled ? `<span class="col-inst-badge">${icon("check-circle", 11)} ${t("common.installed")}</span>` : ""}
+          </div>
         </div>
-      </div>
-    </button>`;
+      </button>
+      ${checked ? `
+        <button type="button" class="col-cover-pin-btn ${isCover ? "is-cover" : ""}" data-act="col-toggle-cover" data-app="${esc(s.appName)}" title="${isCover ? t("col.coverRemove") : t("col.coverAdd")}">
+          ${icon("star", 13)}
+        </button>
+      ` : ""}
+    </div>`;
 }
 
 export function renderCollectionModal(): void {
@@ -203,29 +338,6 @@ export function renderCollectionModal(): void {
           <div class="ced-hero-deck" id="ced-hero-deck">
             ${renderCedHeroDeckHtml()}
           </div>
-
-          ${!isEditing ? `
-            <div class="ced-presets-row">
-              <span class="ced-presets-label">${t("col.presetsTitle")}</span>
-              <div class="ced-presets-pills">
-                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="favorites" data-marker="star">
-                  ${icon("star", 13)} <span>${t("col.presetFavorites")}</span>
-                </button>
-                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="story" data-marker="sparkles">
-                  ${icon("sparkles", 13)} <span>${t("col.presetStory")}</span>
-                </button>
-                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="online" data-marker="users">
-                  ${icon("users", 13)} <span>${t("col.presetOnline")}</span>
-                </button>
-                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="completed" data-marker="trophy">
-                  ${icon("trophy", 13)} <span>${t("col.presetCompleted")}</span>
-                </button>
-                <button type="button" class="ced-preset-chip" data-act="col-apply-preset" data-preset="backlog" data-marker="clock">
-                  ${icon("clock", 13)} <span>${t("col.presetBacklog")}</span>
-                </button>
-              </div>
-            </div>
-          ` : ""}
 
           <div class="col-name-row">
             <div class="col-marker-picker-container">
@@ -358,9 +470,13 @@ export async function saveCollectionFromModal(): Promise<boolean> {
     return false;
   }
   try {
+    const coverSet = new Set(S.colModalCoverApps.filter((a) => S.colModalSelectedApps.has(a)));
+    const remaining = Array.from(S.colModalSelectedApps).filter((a) => !coverSet.has(a));
+    const orderedAppNames = [...Array.from(coverSet), ...remaining];
+
     const saved = await epicSaveCollection(
       name,
-      Array.from(S.colModalSelectedApps),
+      orderedAppNames,
       S.activeEditingColId,
       S.colModalMarker || null,
     );

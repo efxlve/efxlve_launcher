@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "積みゲー",
   "col.presetFavorites": "お気に入り",
   "col.emptySelectionHint": "ライブコレクションプレビュー",
-  "col.emptySelectionSub": "下のゲームを選択して3Dポスターデッキを展開"
+  "col.emptySelectionSub": "下のゲームを選択して3Dポスターデッキを展開",
+  "col.coverGames": "カバーゲーム",
+  "col.coverAdd": "コレクションのカバーに設定",
+  "col.coverRemove": "カバーから削除"
 }

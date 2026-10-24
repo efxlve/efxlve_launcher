@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Da giocare",
   "col.presetFavorites": "Preferiti",
   "col.emptySelectionHint": "Anteprima della raccolta",
-  "col.emptySelectionSub": "Seleziona i giochi sotto per aprire il ventaglio 3D"
+  "col.emptySelectionSub": "Seleziona i giochi sotto per aprire il ventaglio 3D",
+  "col.coverGames": "Giochi di copertina",
+  "col.coverAdd": "Imposta come copertina",
+  "col.coverRemove": "Rimuovi dalla copertina"
 }

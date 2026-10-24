@@ -1010,6 +1010,28 @@
   text-overflow: ellipsis;
   letter-spacing: -0.01em;
 }
+.ced-deck-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.ced-cover-slots-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.ced-cover-slots-cnt {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
 .ced-deck-count-pill {
   display: inline-flex;
   align-items: center;
@@ -1023,57 +1045,6 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-}
-
-/* --- Quick Presets --- */
-.ced-presets-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.ced-presets-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.5);
-  margin-right: 2px;
-}
-.ced-presets-pills {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.ced-preset-chip {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  background: #222228;
-  color: rgba(255, 255, 255, 0.85);
-  padding: 4px 11px;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 140ms ease;
-}
-.ced-preset-chip:hover {
-  background: #2e2e38;
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #fff;
-  transform: translateY(-1px);
-}
-.ced-preset-chip svg {
-  opacity: 0.8;
-}
-.ced-preset-chip:hover svg {
-  opacity: 1;
 }
 
 /* --- Name row & marker picker --- */
@@ -1156,10 +1127,10 @@
   background: #17171c; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
 }
 .ced .col-game-item {
-  appearance: none; display: flex; align-items: center; gap: 12px; box-sizing: border-box;
-  width: 100%; height: 58px; margin: 0; padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; background: #202026; color: #fff;
-  font-family: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  appearance: none; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box;
+  width: 100%; height: 58px; margin: 0; padding: 0 10px 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; background: #202026; color: #fff;
+  font-family: inherit; font-size: 14px; text-align: left;
   content-visibility: auto; contain-intrinsic-size: 58px;
   transition: background 120ms ease, border-color 120ms ease;
 }
@@ -1168,6 +1139,37 @@
 }
 .ced .col-game-item.selected {
   background: rgba(255, 255, 255, 0.08); border-color: var(--accent);
+}
+.ced .col-game-check-btn {
+  appearance: none; border: none; background: transparent; padding: 0; margin: 0;
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; height: 100%;
+  cursor: pointer; color: inherit; text-align: left; font-family: inherit;
+}
+.ced .col-cover-pin-btn {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.35);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: all 140ms ease;
+}
+.ced .col-cover-pin-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.ced .col-cover-pin-btn.is-cover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
 }
 .ced .col-custom-cb {
   width: 18px; height: 18px; flex-shrink: 0; display: grid; place-items: center; border-radius: 5px;
@@ -1194,9 +1196,13 @@
   display: flex; align-items: center; gap: 6px;
 }
 .ced .col-store-tag {
-  font-size: 11px; padding: 1px 6px; border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.7);
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 1px 7px; border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.8);
   letter-spacing: 0.02em; font-weight: 500;
+}
+.ced .col-store-logo-img {
+  width: 12px; height: 12px; object-fit: contain; flex-shrink: 0;
 }
 .ced .col-inst-badge {
   display: inline-flex; align-items: center; gap: 3px;

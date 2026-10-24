@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Pendientes",
   "col.presetFavorites": "Favoritos",
   "col.emptySelectionHint": "Vista previa en vivo",
-  "col.emptySelectionSub": "Selecciona juegos abajo para desplegar tu baraja 3D"
+  "col.emptySelectionSub": "Selecciona juegos abajo para desplegar tu baraja 3D",
+  "col.coverGames": "Juegos de portada",
+  "col.coverAdd": "Fijar como portada",
+  "col.coverRemove": "Quitar de la portada"
 }

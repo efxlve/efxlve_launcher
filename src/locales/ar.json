@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "قائمة الانتظار",
   "col.presetFavorites": "المفضلة",
   "col.emptySelectionHint": "معاينة المجموعة المباشرة",
-  "col.emptySelectionSub": "حدد الألعاب أدناه لتوزيع مجموعة الملصقات ثلاثية الأبعاد"
+  "col.emptySelectionSub": "حدد الألعاب أدناه لتوزيع مجموعة الملصقات ثلاثية الأبعاد",
+  "col.coverGames": "ألعاب الغلاف",
+  "col.coverAdd": "تعيين كغلاف للمجموعة",
+  "col.coverRemove": "إزالة من الغلاف"
 }

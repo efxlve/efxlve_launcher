@@ -27,6 +27,8 @@ import {
   saveCollectionFromModal,
   saveGameCollectionsFromModal,
   showMoreCollectionGames,
+  toggleCollectionGame,
+  toggleCoverGame,
   updateCedHeroDeckInPlace,
   updateColGamesListInPlace,
   updateMarkerUi,
@@ -112,26 +114,9 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       updateCedHeroDeckInPlace();
       return true;
 
-    case "col-apply-preset": {
-      const preset = t.dataset.preset;
-      const marker = t.dataset.marker;
-      const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
-      let presetTitle = "";
-      if (preset === "favorites") presetTitle = i18nT("col.presetFavorites");
-      else if (preset === "story") presetTitle = i18nT("col.presetStory");
-      else if (preset === "online") presetTitle = i18nT("col.presetOnline");
-      else if (preset === "completed") presetTitle = i18nT("col.presetCompleted");
-      else if (preset === "backlog") presetTitle = i18nT("col.presetBacklog");
-
-      if (nameInput && presetTitle) {
-        nameInput.value = presetTitle;
-        nameInput.focus();
-      }
-      if (marker) {
-        S.colModalMarker = marker;
-        updateMarkerUi();
-      }
-      updateCedHeroDeckInPlace();
+    case "col-toggle-cover": {
+      const app = t.dataset.app || (t.closest(".col-cover-pin-btn") as HTMLElement)?.dataset.app;
+      if (app) toggleCoverGame(app);
       return true;
     }
 
@@ -173,30 +158,8 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
     case "col-toggle-game": {
       const app = t.dataset.app || (t.closest(".col-game-item") as HTMLElement)?.dataset.app;
       if (app) {
-        if (S.colModalSelectedApps.has(app)) {
-          S.colModalSelectedApps.delete(app);
-        } else {
-          S.colModalSelectedApps.add(app);
-        }
         const itemEl = (t.classList.contains("col-game-item") ? t : t.closest(".col-game-item")) as HTMLElement | null;
-        const isChecked = S.colModalSelectedApps.has(app);
-        // The picker draws a span check, not an <input>; update that exact node
-        // so the tick changes immediately without rebuilding the list.
-        const cb = itemEl?.querySelector(".col-custom-cb");
-        if (cb) cb.classList.toggle("checked", isChecked);
-        if (itemEl) itemEl.classList.toggle("selected", isChecked);
-
-        const selCountEl = document.getElementById("col-tab-selected-cnt");
-        if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
-
-        const footerCnt = document.getElementById("col-footer-count");
-        if (footerCnt) footerCnt.textContent = i18nT("col.selectedCount", { count: S.colModalSelectedApps.size });
-
-        updateCedHeroDeckInPlace();
-
-        if (S.colModalTabFilter === "selected") {
-          updateColGamesListInPlace();
-        }
+        toggleCollectionGame(app, itemEl);
       }
       return true;
     }

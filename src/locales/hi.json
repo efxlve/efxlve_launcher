@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "खेलने के लिए बाकी",
   "col.presetFavorites": "पसंदीदा",
   "col.emptySelectionHint": "लाइव संग्रह पूर्वावलोकन",
-  "col.emptySelectionSub": "अपना 3D पोस्टर डेक फैलाने के लिए नीचे से गेम चुनें"
+  "col.emptySelectionSub": "अपना 3D पोस्टर डेक फैलाने के लिए नीचे से गेम चुनें",
+  "col.coverGames": "कवर गेम",
+  "col.coverAdd": "संग्रह कवर के रूप में सेट करें",
+  "col.coverRemove": "कवर से हटाएं"
 }

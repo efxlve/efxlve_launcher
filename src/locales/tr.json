@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Sıradakiler",
   "col.presetFavorites": "Favoriler",
   "col.emptySelectionHint": "Canlı Koleksiyon Önizlemesi",
-  "col.emptySelectionSub": "3D poster destenizi oluşturmak için aşağıdaki oyunları seçin"
+  "col.emptySelectionSub": "3D poster destenizi oluşturmak için aşağıdaki oyunları seçin",
+  "col.coverGames": "Kapak Oyunları",
+  "col.coverAdd": "Koleksiyon kapağına yerleştir",
+  "col.coverRemove": "Kapak oyunlarından çıkar"
 }

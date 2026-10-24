@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Backlog",
   "col.presetFavorites": "Favorites",
   "col.emptySelectionHint": "Live Collection Preview",
-  "col.emptySelectionSub": "Select games below to fan out your 3D poster deck"
+  "col.emptySelectionSub": "Select games below to fan out your 3D poster deck",
+  "col.coverGames": "Cover Games",
+  "col.coverAdd": "Set as collection cover",
+  "col.coverRemove": "Remove from cover"
 }

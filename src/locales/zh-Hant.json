@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "待玩遊戲",
   "col.presetFavorites": "收藏夾",
   "col.emptySelectionHint": "實時合集預覽",
-  "col.emptySelectionSub": "在下方選擇遊戲以展開您的3D海報牌堆"
+  "col.emptySelectionSub": "在下方選擇遊戲以展開您的3D海報牌堆",
+  "col.coverGames": "封面遊戲",
+  "col.coverAdd": "設為合集封面",
+  "col.coverRemove": "從封面移除"
 }

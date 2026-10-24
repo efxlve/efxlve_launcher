@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Очередь",
   "col.presetFavorites": "Избранное",
   "col.emptySelectionHint": "Живой предпросмотр коллекции",
-  "col.emptySelectionSub": "Выберите игры ниже, чтобы сформировать 3D-веер постеров"
+  "col.emptySelectionSub": "Выберите игры ниже, чтобы сформировать 3D-веер постеров",
+  "col.coverGames": "Игры на обложке",
+  "col.coverAdd": "Сделать обложкой",
+  "col.coverRemove": "Убрать с обложки"
 }

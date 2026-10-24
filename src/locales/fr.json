@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "À faire",
   "col.presetFavorites": "Favoris",
   "col.emptySelectionHint": "Aperçu de la collection",
-  "col.emptySelectionSub": "Sélectionnez des jeux ci-dessous pour déployer votre éventail 3D"
+  "col.emptySelectionSub": "Sélectionnez des jeux ci-dessous pour déployer votre éventail 3D",
+  "col.coverGames": "Jeux de couverture",
+  "col.coverAdd": "Définir comme couverture",
+  "col.coverRemove": "Retirer de la couverture"
 }

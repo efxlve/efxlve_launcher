@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Fila de espera",
   "col.presetFavorites": "Favoritos",
   "col.emptySelectionHint": "Prévia da coleção",
-  "col.emptySelectionSub": "Selecione jogos abaixo para abrir seu leque de pôsteres 3D"
+  "col.emptySelectionSub": "Selecione jogos abaixo para abrir seu leque de pôsteres 3D",
+  "col.coverGames": "Jogos da capa",
+  "col.coverAdd": "Definir como capa",
+  "col.coverRemove": "Remover da capa"
 }

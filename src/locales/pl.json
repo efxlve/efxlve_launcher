@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Kolejka gier",
   "col.presetFavorites": "Ulubione",
   "col.emptySelectionHint": "Podgląd kolekcji",
-  "col.emptySelectionSub": "Wybierz gry poniżej, aby rozłożyć talię plakatów 3D"
+  "col.emptySelectionSub": "Wybierz gry poniżej, aby rozłożyć talię plakatów 3D",
+  "col.coverGames": "Gry na okładce",
+  "col.coverAdd": "Ustaw jako okładkę",
+  "col.coverRemove": "Usuń z okładki"
 }

@@ -718,6 +718,7 @@ export const S = {
   /** Collection whose delete confirmation is open in Settings. */
   colDeleteConfirm: (null) as string | null,
   colModalSelectedApps: (new Set()) as Set<string>,
+  colModalCoverApps: [] as string[],
   colModalSearchQuery: ("") as string,
   colModalMarker: ("") as string,
   colModalTabFilter: ("all") as "all" | "selected" | "installed",

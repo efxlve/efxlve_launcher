@@ -90,7 +90,7 @@ import {
   controllerBridgeStop,
 } from "../../epic";
 import { bootEpic } from "../auth/auth-actions";
-import { closeCollectionGallery, updateColGamesListInPlace } from "../collections/collections-view";
+import { closeCollectionGallery, toggleCollectionGame, toggleCoverGame, updateColGamesListInPlace } from "../collections/collections-view";
 import { gameStatusOf, setGameStatus, type GameStatus } from "../library/game-status";
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
@@ -215,6 +215,14 @@ document.addEventListener("click", (e) => {
     if (pal) pal.classList.remove("open");
   }
 
+  // Cover pin button check before gameItem check
+  const coverPin = targetEl.closest<HTMLElement>(".col-cover-pin-btn");
+  if (coverPin) {
+    const app = coverPin.dataset.app;
+    if (app) toggleCoverGame(app);
+    return;
+  }
+
   // In-modal game/collection selection.
   const gameItem = targetEl.closest<HTMLElement>(".col-game-item");
   if (gameItem) {
@@ -222,26 +230,7 @@ document.addEventListener("click", (e) => {
     const colId = gameItem.dataset.colId;
 
     if (appName) {
-      const nowChecked = !S.colModalSelectedApps.has(appName);
-      if (nowChecked) S.colModalSelectedApps.add(appName);
-      else S.colModalSelectedApps.delete(appName);
-
-      gameItem.classList.toggle("selected", nowChecked);
-      const customCb = gameItem.querySelector(".col-custom-cb");
-      if (customCb) customCb.classList.toggle("checked", nowChecked);
-
-      const cntEl = document.getElementById("col-tab-selected-cnt") || document.getElementById("col-selected-count");
-      if (cntEl) cntEl.textContent = String(S.colModalSelectedApps.size);
-
-      const headerBadge = document.getElementById("col-header-selected-badge");
-      if (headerBadge) headerBadge.textContent = i18nT("col.selectedCount", { count: S.colModalSelectedApps.size });
-
-      const footerCnt = document.getElementById("col-footer-count");
-      if (footerCnt) footerCnt.textContent = String(S.colModalSelectedApps.size);
-
-      if (S.colModalTabFilter === "selected") {
-        updateColGamesListInPlace();
-      }
+      toggleCollectionGame(appName, gameItem);
       return;
     } else if (colId) {
       const nowChecked = !S.gameColModalSelectedCols.has(colId);

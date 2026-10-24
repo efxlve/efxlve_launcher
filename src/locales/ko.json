@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "플레이 대기",
   "col.presetFavorites": "즐겨찾기",
   "col.emptySelectionHint": "실시간 컬렉션 미리보기",
-  "col.emptySelectionSub": "아래에서 게임을 선택하여 3D 포스터 덱을 펼치세요"
+  "col.emptySelectionSub": "아래에서 게임을 선택하여 3D 포스터 덱을 펼치세요",
+  "col.coverGames": "커버 게임",
+  "col.coverAdd": "컬렉션 커버로 설정",
+  "col.coverRemove": "커버에서 제거"
 }

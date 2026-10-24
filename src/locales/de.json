@@ -3045,5 +3045,8 @@
   "col.presetBacklog": "Warteschlange",
   "col.presetFavorites": "Favoriten",
   "col.emptySelectionHint": "Live-Sammlungsvorschau",
-  "col.emptySelectionSub": "Wähle unten Spiele aus, um dein 3D-Posterdeck zu fächern"
+  "col.emptySelectionSub": "Wähle unten Spiele aus, um dein 3D-Posterdeck zu fächern",
+  "col.coverGames": "Cover-Spiele",
+  "col.coverAdd": "Als Cover festlegen",
+  "col.coverRemove": "Vom Cover entfernen"
 }
