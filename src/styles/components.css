@@ -515,6 +515,8 @@ body:has(.lib-pager) #totop {
 .ps5-context-submenu {
   min-width: 170px;
   max-width: 220px;
+  max-height: none;
+  overflow: visible;
   z-index: 10001;
   padding: 4px;
 }

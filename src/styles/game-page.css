@@ -1921,6 +1921,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   display: none;
   min-width: 190px;
   max-width: 240px;
+  max-height: none;
+  overflow: visible;
   padding: 6px;
   background-color: var(--bg);
   background-image: linear-gradient(var(--surface-1), var(--surface-1));
@@ -1929,14 +1931,14 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--line);
   z-index: 100;
 }
-/* Generous safe hit-test bridge so diagonal mouse movement never drops the submenu */
+/* Safe hit-test bridge across the 4px horizontal gap between trigger and submenu */
 .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
   content: "";
   position: absolute;
-  top: -40px;
-  bottom: -40px;
-  left: -24px;
-  width: 32px;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  width: 10px;
 }
 .gp-more-menu .ctx-submenu-wrap.open > .ps5-context-submenu,
 .gp-more-menu .ctx-submenu-wrap:hover > .ps5-context-submenu,
@@ -2017,6 +2019,11 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-more-menu .ps5-context-submenu .ps5-context-item.danger:hover svg {
   color: var(--err);
 }
+.gp-more-menu .ps5-context-submenu .ps5-context-sep {
+  height: 1px;
+  margin: 4px 4px;
+  background: var(--line);
+}
 @media (max-width: 768px) {
   .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
     left: auto;
@@ -2024,7 +2031,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   }
   .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
     left: auto;
-    right: -24px;
+    right: -8px;
   }
 }
 
