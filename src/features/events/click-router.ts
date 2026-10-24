@@ -91,7 +91,7 @@ import {
 } from "../../epic";
 import { bootEpic } from "../auth/auth-actions";
 import { closeCollectionGallery, updateColGamesListInPlace } from "../collections/collections-view";
-import { setGameStatus, type GameStatus } from "../library/game-status";
+import { gameStatusOf, setGameStatus, type GameStatus } from "../library/game-status";
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import {
@@ -1097,7 +1097,9 @@ document.addEventListener("click", (e) => {
     const app = t.dataset.id;
     const status = t.dataset.status;
     if (app) {
-      setGameStatus(app, status ? (status as GameStatus) : null);
+      const current = gameStatusOf(app);
+      const next = current === status ? null : (status ? (status as GameStatus) : null);
+      setGameStatus(app, next);
       S.isGameMoreMenuOpen = false;
       render();
     }

@@ -22,7 +22,7 @@ import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { steamNews, steamWatchRunning, type SteamNewsItem } from "../../steam";
 import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
-import { gameStatusOf } from "../library/game-status";
+import { gameStatusOf, type GameStatus } from "../library/game-status";
 import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { sideCard } from "./side-widgets";
@@ -558,16 +558,25 @@ function ubisoftCompanionFor(s: EpicSummary): import("../../core/types").Library
  */
 function statusMenuHtml(appName: string): string {
   const current = gameStatusOf(appName);
-  const options: Array<["" | "playing" | "completed" | "onhold" | "dropped", string]> = [
-    ["", "—"],
-    ["playing", t("drawer.statePlaying")],
-    ["completed", t("drawer.stateCompleted")],
-    ["onhold", t("status.onHold")],
-    ["dropped", t("status.dropped")],
+  const options: Array<{ value: GameStatus; label: string; ic: "play" | "check" | "pause" | "x" }> = [
+    { value: "playing", label: t("drawer.statePlaying"), ic: "play" },
+    { value: "completed", label: t("drawer.stateCompleted"), ic: "check" },
+    { value: "onhold", label: t("status.onHold"), ic: "pause" },
+    { value: "dropped", label: t("status.dropped"), ic: "x" },
   ];
-  return `<div class="ctx-status-title">${esc(t("status.label"))}</div>
-    <div class="ctx-status-row">${options.map(([value, label]) => `
-      <button type="button" class="ctx-status-chip${current === value || (!current && !value) ? " active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}">${esc(label)}</button>`).join("")}</div>`;
+  return `
+    <div class="gp-more-status-box">
+      <div class="gp-more-status-head">
+        <span>${esc(t("status.label"))}</span>
+        ${current ? `<button type="button" class="gp-more-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" title="${esc(t("col.clear"))}">${icon("refresh", 10)} <span>${esc(t("col.clear"))}</span></button>` : ""}
+      </div>
+      <div class="gp-more-status-grid">
+        ${options.map(({ value, label, ic }) => `
+          <button type="button" class="gp-more-status-btn${current === value ? " active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" title="${esc(label)}">
+            ${icon(ic, 11)} <span>${esc(label)}</span>
+          </button>`).join("")}
+      </div>
+    </div>`;
 }
 
 function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
@@ -587,9 +596,9 @@ function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): s
     : "";
   return `
     <div class="gp-more-wrap">
-      <button class="btn ghost lg icon-only${open ? " active" : ""}" data-act="game-more-menu" data-id="${esc(s.appName)}" title="${esc(t("drawer.moreActions"))}" aria-haspopup="menu" aria-expanded="${open ? "true" : "false"}">${icon("dots", 16)}</button>
+      <button class="btn ghost lg icon-only gp-more-btn${open ? " active" : ""}" data-act="game-more-menu" data-id="${esc(s.appName)}" title="${esc(t("drawer.moreActions"))}" aria-haspopup="menu" aria-expanded="${open ? "true" : "false"}">${icon("dots", 16)}</button>
       <div id="game-more-menu" class="gp-more-menu${open ? " show" : ""}" role="menu">
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("plus", 14)} <span>${t("drawer.collection")}</span></button>
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("layers", 14)} <span>${t("drawer.collection")}</span></button>
         <div class="gp-more-sep"></div>
         ${statusMenuHtml(s.appName)}
         <div class="gp-more-sep"></div>

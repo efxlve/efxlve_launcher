@@ -415,50 +415,90 @@ function syncEglCollectionsOnce(): void {
       eglSynced = false;
     });
 }
+function smartIcon(id: string): string {
+  switch (id) {
+    case "smart:not-played": return icon("clock", 15);
+    case "smart:playing": return icon("play", 15);
+    case "smart:almost": return icon("star", 15);
+    case "smart:completed": return icon("trophy", 15);
+    case "smart:on-hold": return icon("pause", 15);
+    case "smart:forgotten": return icon("ghost", 15);
+    default: return icon("sparkles", 15);
+  }
+}
+
 /** Decorative gallery shown by the library's Collections tab. */
 export function openCollectionGallery(): void {
   if (!collectionRoot) return;
   const summaries = allStoreSummaries();
+
+  // One pass over summaries to count matches across all smart collections simultaneously
+  const smartCounts = new Map<string, number>();
+  for (const item of SMART_COLLECTIONS) smartCounts.set(item.id, 0);
+  for (let i = 0; i < summaries.length; i++) {
+    const s = summaries[i];
+    for (const item of SMART_COLLECTIONS) {
+      if (item.test(s)) {
+        smartCounts.set(item.id, (smartCounts.get(item.id) ?? 0) + 1);
+      }
+    }
+  }
+
   const smart = SMART_COLLECTIONS
-    .map((item) => ({ item, count: summaries.filter((s) => item.test(s)).length }))
+    .map((item) => ({ item, count: smartCounts.get(item.id) ?? 0 }))
     .filter((entry) => entry.count > 0);
+
   const total = S.epicCollections.length;
   const warmUrls: string[] = [];
 
-  const coverStrip = (appNames: string[]): string => {
-    const found = appNames
-      .map((name) => summaryOf(name)?.cover)
-      .filter((cover): cover is string => Boolean(cover))
-      .slice(0, 4);
-    // A collection can have fewer than four games with art. Cycling the found
-    // covers keeps every cell filled instead of leaving a grey hole.
-    const covers = found.length > 0 && found.length < 4
-      ? Array.from({ length: 4 }, (_, i) => found[i % found.length])
-      : found;
-    if (covers.length === 0) return `<span class="col-gallery-art empty">${icon("layers", 28)}</span>`;
-    warmUrls.push(...covers);
-    return `<span class="col-gallery-art covers-${covers.length}">${covers.map((cover) => `<img src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="eager" decoding="async" />`).join("")}</span>`;
-  };
-
   const smartCards = smart.map(({ item, count }) => `
-    <button class="col-smart-card${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}">
-      <span class="col-smart-card-icon">${icon("sparkles", 15)}</span>
+    <button type="button" class="col-smart-card${S.activeCollectionId === item.id ? " active" : ""}" data-act="select-col-filter" data-col-id="${esc(item.id)}" title="${esc(item.label())}">
+      <span class="col-smart-card-icon">${smartIcon(item.id)}</span>
       <span class="col-smart-card-name">${esc(item.label())}</span>
       <span class="col-smart-card-count">${count}</span>
     </button>`).join("");
 
   const manualCards = S.epicCollections.map((col) => {
-    const totalGames = col.app_names?.length ?? 0;
-    const installed = (col.app_names ?? []).filter((name) => summaryOf(name)?.installed).length;
+    const appNames = col.app_names ?? [];
+    const totalGames = appNames.length;
+    let installed = 0;
+    const foundCovers: string[] = [];
+
+    // Scan apps once: count installed and take up to 4 covers without mapping all entries
+    for (let i = 0; i < appNames.length; i++) {
+      const s = summaryOf(appNames[i]);
+      if (s) {
+        if (s.installed) installed++;
+        if (s.cover && foundCovers.length < 4) foundCovers.push(s.cover);
+      }
+    }
+
+    const covers = foundCovers.length > 0 && foundCovers.length < 4
+      ? Array.from({ length: 4 }, (_, i) => foundCovers[i % foundCovers.length])
+      : foundCovers;
+
+    if (covers.length > 0) warmUrls.push(...covers);
+
+    const artHtml = covers.length === 0
+      ? `<span class="col-gallery-art empty">${icon("layers", 28)}</span>`
+      : `<span class="col-gallery-art covers-${covers.length}">${covers.map((c) => `<img src="${esc(cachedImage(c))}" data-img-url="${esc(c)}" alt="" loading="lazy" decoding="async" />`).join("")}</span>`;
+
+    const markerHtml = isCollectionIcon(col.emoji)
+      ? `<span class="col-gallery-marker">${collectionMarker(col.emoji, 15)}</span>`
+      : "";
+
     return `
       <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}">
-        ${coverStrip(col.app_names ?? [])}
+        ${artHtml}
         <span class="col-gallery-shade"></span>
         <span class="col-gallery-info">
-          <span class="col-gallery-name">${esc(col.name)}</span>
-          <span class="col-gallery-count">(${installed}/${totalGames})</span>
+          <span class="col-gallery-name-row">
+            ${markerHtml}
+            <span class="col-gallery-name">${esc(col.name)}</span>
+          </span>
+          <span class="col-gallery-count">${installed} / ${totalGames} ${t("common.installed")}</span>
         </span>
-        <button class="col-gallery-edit" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${esc(t("col.edit"))}" aria-label="${esc(t("col.edit"))}">${icon("settings", 14)}</button>
+        <button type="button" class="col-gallery-edit" data-act="edit-collection" data-col-id="${esc(col.id)}" title="${esc(t("col.edit"))}" aria-label="${esc(t("col.edit"))}">${icon("settings", 13)}</button>
       </div>`;
   }).join("");
 
@@ -466,21 +506,56 @@ export function openCollectionGallery(): void {
     <div class="col-gallery-backdrop" data-act="close-col-gallery">
       <section class="col-gallery" role="dialog" aria-modal="true" aria-label="${esc(t("col.allCollections"))}" data-gallery-panel data-act="col-gallery-panel">
         <header class="col-gallery-head">
-          <div>
-            <h2>${esc(t("col.allCollections"))}</h2>
-            <p>${total}</p>
+          <div class="col-gallery-title-wrap">
+            <span class="col-gallery-head-icon">${icon("layers", 20)}</span>
+            <div>
+              <div class="col-gallery-title-row">
+                <h2>${esc(t("col.allCollections"))}</h2>
+                <span class="col-gallery-pill">${total}</span>
+              </div>
+              <p class="col-gallery-sub">${t("col.gameCount", { count: summaries.length })}</p>
+            </div>
           </div>
-          <button class="col-gallery-close" data-act="close-col-gallery" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">${icon("x", 18)}</button>
+          <div class="col-gallery-actions">
+            ${S.activeCollectionId ? `
+              <button type="button" class="btn ghost small col-gallery-clear" data-act="select-col-filter" data-col-id="all">
+                ${icon("x", 13)} <span>${esc(t("col.noCollectionFilter"))}</span>
+              </button>` : ""}
+            <button type="button" class="col-gallery-close" data-act="close-col-gallery" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">
+              ${icon("x", 16)}
+            </button>
+          </div>
         </header>
-        ${smartCards ? `<div class="col-gallery-section"><h3>${esc(t("smart.title"))}</h3><div class="col-smart-grid">${smartCards}</div></div>` : ""}
+
+        ${smartCards ? `
+          <div class="col-gallery-section">
+            <div class="col-gallery-section-head">
+              <h3>${icon("sparkles", 13)} <span>${esc(t("smart.title"))}</span></h3>
+            </div>
+            <div class="col-smart-grid">${smartCards}</div>
+          </div>` : ""}
+
         <div class="col-gallery-section">
-          <div class="col-gallery-section-head"><h3>${esc(t("col.allCollections"))}</h3><button class="btn ghost small" data-act="open-new-collection-modal">${icon("plus", 14)} ${esc(t("col.newTitle"))}</button></div>
-          <div class="col-gallery-grid">${manualCards}${total === 0 ? `<div class="col-gallery-empty">${esc(t("col.noCollectionsLong"))}</div>` : ""}</div>
+          <div class="col-gallery-section-head">
+            <h3>${icon("folder", 13)} <span>${esc(t("col.allCollections"))}</span></h3>
+            <button type="button" class="btn primary small col-gallery-add-btn" data-act="open-new-collection-modal">
+              ${icon("plus", 14)} <span>${esc(t("col.newTitle"))}</span>
+            </button>
+          </div>
+          <div class="col-gallery-grid">
+            ${manualCards}
+            ${total === 0 ? `
+              <div class="col-gallery-empty">
+                <div class="col-gallery-empty-icon">${icon("layers", 36)}</div>
+                <div class="col-gallery-empty-title">${esc(t("col.noCollectionsLong"))}</div>
+                <button type="button" class="btn primary small" data-act="open-new-collection-modal">${icon("plus", 14)} ${esc(t("col.newTitle"))}</button>
+              </div>` : ""}
+          </div>
         </div>
       </section>
     </div>`;
 
-  // The gallery opens with twelve visible covers; ask the Rust disk cache for
+  // The gallery opens with visible covers; ask the Rust disk cache for
   // them once so the next open paints from local data instead of the CDN.
   warmImages(warmUrls);
   collectionRoot.querySelectorAll<HTMLImageElement>(".col-gallery-art img").forEach((img) => {

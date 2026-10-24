@@ -1853,20 +1853,62 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* ---------- The "…" menu ---------- */
 
 .gp-more-wrap { position: relative; display: inline-flex; }
+.gp-more-btn {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.gp-more-btn.active {
+  background: var(--surface-3); border-color: var(--line-strong); color: var(--text);
+}
 .gp-more-menu {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
-  min-width: 300px; padding: 6px; display: none;
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 50;
+  min-width: 250px; padding: 6px; display: none;
   background: var(--surface-1); border: 1px solid var(--line-strong);
-  border-radius: var(--r-md); box-shadow: var(--shadow-pop);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--line);
+  animation: gpMoreMenuIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes gpMoreMenuIn {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .gp-more-menu.show { display: block; }
-.gp-more-menu .ps5-context-item { min-height: 36px; border-radius: 8px; }
-.gp-more-menu .ps5-context-item span { white-space: nowrap; }
-.gp-more-menu .ctx-status-title { padding: 8px 10px 4px; }
-.gp-more-menu .ctx-status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 8px 8px; }
-.gp-more-menu .ctx-status-chip { width: 100%; height: 30px; border-radius: 8px; font-size: 11.5px; }
-.gp-more-menu .gp-more-sep { margin: 6px 4px; }
-.gp-more-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+.gp-more-menu .ps5-context-item {
+  min-height: 36px; padding: 0 10px; border-radius: 8px; font-size: 13px;
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  color: var(--text-2); background: transparent; border: none; cursor: pointer; text-align: left;
+  transition: all 0.12s ease;
+}
+.gp-more-menu .ps5-context-item span { white-space: nowrap; font-weight: 500; }
+.gp-more-menu .ps5-context-item svg { width: 15px; height: 15px; color: var(--text-3); flex-shrink: 0; transition: color 0.12s ease; }
+.gp-more-menu .ps5-context-item:hover { background: var(--surface-2); color: var(--text); }
+.gp-more-menu .ps5-context-item:hover svg { color: var(--text); }
+.gp-more-sep { height: 1px; margin: 5px 4px; background: var(--line); }
+
+/* Status section inside More menu */
+.gp-more-status-box { padding: 4px; }
+.gp-more-status-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 6px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.gp-more-status-clear {
+  display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent;
+  font-size: 11px; color: var(--text-3); cursor: pointer; padding: 2px 5px; border-radius: 4px;
+  transition: all 0.12s ease;
+}
+.gp-more-status-clear:hover { color: var(--err); background: rgba(229, 72, 77, 0.12); }
+.gp-more-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.gp-more-status-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 8px;
+  border-radius: 7px; border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--text-2); font: inherit; font-size: 11.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.12s ease;
+}
+.gp-more-status-btn svg { flex-shrink: 0; }
+.gp-more-status-btn:hover { background: var(--surface-3); color: var(--text); border-color: var(--line-strong); }
+.gp-more-status-btn.active {
+  background: var(--accent); color: var(--on-accent, #000); border-color: var(--accent);
+  font-weight: 600; box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+}
 
 /* One store: the picker is not a choice, so it stops looking like a button. */
 .gp-source.static {
@@ -1927,35 +1969,66 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* The one part of the page that changes without the player doing anything: what
    the game's own feed says today. */
 .gp-news {
-  background: linear-gradient(155deg, var(--surface-2), var(--surface-1) 58%);
-  border-color: var(--line-strong);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px;
 }
-.gp-news .gp-news-row { background: var(--surface-1); }
-.gp-news .gp-news-row:hover { background: var(--surface-3); }
-.gp-news-list { display: flex; flex-direction: column; gap: 8px; }
+.gp-news-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.gp-news-header .gp-section-title {
+  margin: 0; display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 650; color: var(--text);
+}
+.gp-news-count {
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+  padding: 2px 7px; border-radius: 10px; background: var(--surface-2);
+  border: 1px solid var(--line); color: var(--text-3);
+}
+.gp-news-list { display: flex; flex-direction: column; gap: 10px; }
 .gp-news-row {
-  display: flex; align-items: stretch; gap: 12px; width: 100%; padding: 10px; text-align: left;
-  background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
+  display: flex; align-items: stretch; gap: 14px; width: 100%; padding: 12px 14px; text-align: left;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md);
   color: var(--text); font: inherit; cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.gp-news-row:hover { background: var(--surface-2); }
-/* The store's feed reads like Steam's: a picture when the post has one, the feed
-   name and the patch-note chip on top, then the headline, the opening of the body
-   and the date. Patch notes are usually text only, so a row without a picture has
-   to stand on its own. */
-.gp-news-art { flex: 0 0 auto; width: 168px; height: 94px; object-fit: cover; border-radius: var(--r-sm); background: var(--surface-2); }
+.gp-news-row:hover {
+  background: var(--surface-3); border-color: var(--line-strong);
+  transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.gp-news-row.no-art {
+  border-left: 3px solid var(--line-strong);
+}
+.gp-news-row.no-art:hover {
+  border-left-color: var(--accent);
+}
+.gp-news-art {
+  flex: 0 0 auto; width: 160px; height: 92px; object-fit: cover;
+  border-radius: var(--r-sm); background: var(--surface-1); border: 1px solid var(--line);
+}
 .gp-news-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
-.gp-news-head { display: flex; align-items: center; gap: 6px; }
-.gp-news-feed { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gp-news-title { font-size: 13.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-news-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gp-news-feed {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gp-news-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+  background: rgba(47, 179, 109, 0.15); color: #3cd07f; border: 1px solid rgba(47, 179, 109, 0.35);
+}
+.gp-news-title {
+  font-size: 14px; font-weight: 650; color: var(--text); line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .gp-news-snippet {
-  font-size: 12px; color: var(--text-2); line-height: 1.45;
+  font-size: 12px; color: var(--text-2); line-height: 1.5;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.gp-news-meta { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
-.gp-news-tag {
-  flex: none; font-size: 10.5px; padding: 2px 6px; border-radius: 999px;
-  background: var(--surface-3); color: var(--text-2);
+.gp-news-meta {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; margin-top: 2px;
 }
 .gp-news-row.is-pending .gp-news-title { width: 55%; height: 11px; }
 

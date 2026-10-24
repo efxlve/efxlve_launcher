@@ -623,7 +623,7 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
     // late block on this page.
     return `
       <section class="card gp-section gp-news">
-        <div class="gp-progress-head"><h3 class="gp-section-title">${icon("bell", 13)} ${i18nT("drawer.news")}</h3></div>
+        <div class="gp-news-header"><h3 class="gp-section-title">${icon("bell", 14)} <span>${i18nT("drawer.news")}</span></h3></div>
         <div class="gp-news-list">
           <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
           <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
@@ -643,20 +643,23 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
   };
   return `
     <section class="card gp-section gp-news">
-      <div class="gp-progress-head"><h3 class="gp-section-title">${icon("bell", 13)} ${i18nT("drawer.news")}</h3></div>
+      <div class="gp-news-header">
+        <h3 class="gp-section-title">${icon("bell", 14)} <span>${i18nT("drawer.news")}</span></h3>
+        <span class="gp-news-count">${items.length}</span>
+      </div>
       <div class="gp-news-list">${items
         .map(
           (item) => `
-        <button type="button" class="gp-news-row${item.image ? " has-art" : ""}" data-act="open-external-url" data-url="${esc(item.url)}" title="${esc(item.title)}">
+        <button type="button" class="gp-news-row${item.image ? " has-art" : " no-art"}" data-act="open-external-url" data-url="${esc(item.url)}" title="${esc(item.title)}">
           ${item.image ? `<img class="gp-news-art" src="${esc(item.image)}" alt="" loading="lazy" decoding="async" />` : ""}
           <span class="gp-news-main">
             <span class="gp-news-head">
               <span class="gp-news-feed">${esc(item.feed)}</span>
-              ${item.patchNotes ? `<span class="gp-news-tag">${i18nT("drawer.patchNote")}</span>` : ""}
+              ${item.patchNotes ? `<span class="gp-news-tag">${icon("sparkles", 11)} ${i18nT("drawer.patchNote")}</span>` : ""}
             </span>
             <span class="gp-news-title">${esc(item.title)}</span>
             ${item.snippet ? `<span class="gp-news-snippet">${esc(item.snippet)}</span>` : ""}
-            ${item.date ? `<span class="gp-news-meta">${esc(when(item.date))}</span>` : ""}
+            ${item.date ? `<span class="gp-news-meta">${icon("calendar", 11)} ${esc(when(item.date))}</span>` : ""}
           </span>
         </button>`,
         )
