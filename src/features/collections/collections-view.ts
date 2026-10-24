@@ -166,9 +166,6 @@ export function toggleCollectionGame(appName: string, itemEl?: HTMLElement | nul
   const headerBadge = document.getElementById("col-header-selected-badge");
   if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
 
-  const footerCnt = document.getElementById("col-footer-count");
-  if (footerCnt) footerCnt.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
-
   updateCedHeroDeckInPlace();
 
   if (S.colModalTabFilter === "selected") {
@@ -197,9 +194,6 @@ export function toggleCoverGame(appName: string): void {
     btn.classList.toggle("is-cover", isCover);
     btn.title = isCover ? t("col.coverRemove") : t("col.coverAdd");
   });
-
-  const footerCnt = document.getElementById("col-footer-count");
-  if (footerCnt) footerCnt.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
 
   updateCedHeroDeckInPlace();
 }
@@ -387,10 +381,6 @@ export function renderCollectionModal(): void {
           <div class="col-footer-actions">
             <div class="col-footer-left">
               ${isEditing ? `<button class="btn ghost danger" data-act="col-delete-ask">${icon("trash", 14)} ${t("col.delete")}</button>` : ""}
-              <div class="ced-footer-selected">
-                ${icon("check-circle", 13)}
-                <span id="col-footer-count">${t("col.selectedCount", { count: selectedCount })}</span>
-              </div>
             </div>
             <span class="col-footer-spacer"></span>
             <div class="col-footer-right">
@@ -444,9 +434,6 @@ export function updateColGamesListInPlace(preserveScroll = false): void {
 
   const headerBadge = document.getElementById("col-header-selected-badge");
   if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
-
-  const footerCnt = document.getElementById("col-footer-count");
-  if (footerCnt) footerCnt.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
 
   updateCedHeroDeckInPlace();
 }
