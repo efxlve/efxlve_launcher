@@ -415,7 +415,8 @@ function storePlatesHtml(s: EpicSummary): string {
 
 /**
  * Grid tile is the portrait only, plus an optional caption under the cover
- * ("Titles under covers" in Settings). Hover grows the cover frame, not the caption.
+ * ("Titles under covers" in Settings). Hover lifts the cover and the caption
+ * together, so the title never drifts away from its artwork.
  * The caption already shows the name, so the card does not also set a title
  * tooltip (that tooltip is a square system box on the rounded cover).
  */
@@ -815,9 +816,9 @@ function clearCardTilt(card: HTMLElement): void {
 }
 
 /**
- * Tracks cursor position over the hovered library card to drive 3D box tilt,
- * dynamic spine extrusion, and plastic/foil specular reflections, and keeps
- * the card unclipped until its settle animation finishes.
+ * Tracks cursor position over a hovered card to drive 3D tilt, the normal
+ * cover's cursor-following light, and the physical case's spine/foil
+ * reflections, and keeps the card unclipped until its settle animation ends.
  */
 function wireCardSettle(): void {
   if (cardSettleWired) return;
@@ -855,8 +856,9 @@ function wireCardSettle(): void {
         const nx = (px - 0.5) * 2;
         const ny = (py - 0.5) * 2;
         const isCase = current.classList.contains("is-case");
-        const maxRx = isCase ? (S.caseTilt ? 9.5 : 0) : 5;
-        const maxRy = isCase ? (S.caseTilt ? 11.5 : 0) : 6;
+        // Normal covers get a calmer tilt than the full physical-box physics.
+        const maxRx = isCase ? (S.caseTilt ? 9.5 : 0) : 4;
+        const maxRy = isCase ? (S.caseTilt ? 11.5 : 0) : 5;
         const rx = -ny * maxRx;
         const ry = nx * maxRy;
         const glareAngle = 122 + nx * 34 - ny * 18;
