@@ -13,4 +13,7 @@ export function setGameStatus(appName: string, status: GameStatus | null): void 
   if (status) S.gameStatus.set(appName, status);
   else S.gameStatus.delete(appName);
   saveGameStatus(S.gameStatus);
+  // Smart collections and the status menu read this map: the library's visible
+  // cache must miss after a change, not only when the page is rebuilt.
+  S.libraryDataRev++;
 }

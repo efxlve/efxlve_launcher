@@ -157,12 +157,20 @@ function gameMetaHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null, an
     : "";
   const colTags = renderCollectionTags(s.appName);
   const colChip = `<span id="drawer-col-chips-container" class="gp-hero-tags"${!colTags ? ' style="display:none;"' : ""}>${colTags}</span>`;
+  // The personal label sits in the same line, so setting it in the menu has a
+  // visible result on the page instead of only inside the closed menu.
+  const currentStatus = gameStatusOf(s.appName);
+  const statusOption = currentStatus ? gameStatusOptions().find((option) => option.value === currentStatus) : undefined;
+  const statusChip = statusOption
+    ? `<span class="gp-meta-item gp-status-chip">${icon(statusOption.ic, 12)} ${esc(statusOption.label)}</span>`
+    : "";
   // The one line under the title: who made it, when, for whom.
   // Everything else about the copy lives in the features card.
   return [
     dev ? `<span>${esc(dev)}</span>` : "",
     publisher ? `<span class="gp-meta-item">${esc(publisher)}</span>` : "",
     year ? `<span class="gp-meta-item">${icon("calendar", 13)} ${year}</span>` : "",
+    statusChip,
     colChip,
     ageChip,
     s.appName.startsWith("gog::") ? `<span class="gp-meta-item" title="GOG.COM DRM-Free">${icon("unlock", 13)} DRM-Free</span>` : "",
@@ -556,25 +564,35 @@ function ubisoftCompanionFor(s: EpicSummary): import("../../core/types").Library
  * page, the partner client's own window, and the cover picker. The row keeps the
  * play button, the store picker, Manage, the heart and this.
  */
-function statusMenuHtml(appName: string): string {
-  const current = gameStatusOf(appName);
-  const options: Array<{ value: GameStatus; label: string; ic: "play" | "check" | "pause" | "x" }> = [
+/** The four personal labels, in menu order, with their icon. */
+function gameStatusOptions(): Array<{ value: GameStatus; label: string; ic: "play" | "check" | "pause" | "x" }> {
+  return [
     { value: "playing", label: t("drawer.statePlaying"), ic: "play" },
     { value: "completed", label: t("drawer.stateCompleted"), ic: "check" },
     { value: "onhold", label: t("status.onHold"), ic: "pause" },
     { value: "dropped", label: t("status.dropped"), ic: "x" },
   ];
+}
+
+function statusMenuHtml(appName: string): string {
+  const current = gameStatusOf(appName);
+  const options = gameStatusOptions();
   return `
     <div class="gp-more-status-box">
       <div class="gp-more-status-head">
         <span>${esc(t("status.label"))}</span>
-        ${current ? `<button type="button" class="gp-more-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" title="${esc(t("col.clear"))}">${icon("refresh", 10)} <span>${esc(t("col.clear"))}</span></button>` : ""}
+        ${current ? `<button type="button" class="gp-more-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">${icon("x", 11)}<span>${esc(t("col.clear"))}</span></button>` : ""}
       </div>
-      <div class="gp-more-status-grid">
-        ${options.map(({ value, label, ic }) => `
-          <button type="button" class="gp-more-status-btn${current === value ? " active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" title="${esc(label)}">
-            ${icon(ic, 11)} <span>${esc(label)}</span>
-          </button>`).join("")}
+      <div class="gp-more-status-list" role="group">
+        ${options.map(({ value, label, ic }) => {
+          const on = current === value;
+          return `
+          <button type="button" class="gp-more-status-btn${on ? " active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${on}" title="${esc(label)}">
+            <span class="gp-more-status-ico">${icon(ic, 14)}</span>
+            <span class="gp-more-status-name">${esc(label)}</span>
+            <span class="gp-more-status-mark">${on ? icon("check", 14) : ""}</span>
+          </button>`;
+        }).join("")}
       </div>
     </div>`;
 }
@@ -592,20 +610,20 @@ function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): s
           : "drawer.storeTitle",
   );
   const clientItem = companion
-    ? `<button type="button" class="ps5-context-item" role="menuitem" data-act="companion-open" data-id="${esc(sourceOfKey(s.appName))}">${icon("layers", 14)} <span>${t("accounts.openClient")}</span></button>`
+    ? `<button type="button" class="ps5-context-item" role="menuitem" data-act="companion-open" data-id="${esc(sourceOfKey(s.appName))}">${icon("gamepad-2", 15)} <span>${t("accounts.openClient")}</span></button>`
     : "";
   return `
     <div class="gp-more-wrap">
       <button class="btn ghost lg icon-only gp-more-btn${open ? " active" : ""}" data-act="game-more-menu" data-id="${esc(s.appName)}" title="${esc(t("drawer.moreActions"))}" aria-haspopup="menu" aria-expanded="${open ? "true" : "false"}">${icon("dots", 16)}</button>
       <div id="game-more-menu" class="gp-more-menu${open ? " show" : ""}" role="menu">
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("layers", 14)} <span>${t("drawer.collection")}</span></button>
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("layers", 15)} <span>${t("drawer.collection")}</span></button>
         <div class="gp-more-sep"></div>
         ${statusMenuHtml(s.appName)}
         <div class="gp-more-sep"></div>
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 14)} <span>${storeTitle}</span></button>
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 15)} <span>${storeTitle}</span></button>
         ${clientItem}
         <div class="gp-more-sep"></div>
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="open-custom-cover" data-target="cover" data-id="${esc(s.appName)}">${icon("image", 14)} <span>${t("manage.coverChange")}</span></button>
+        <button type="button" class="ps5-context-item" role="menuitem" data-act="open-custom-cover" data-target="cover" data-id="${esc(s.appName)}">${icon("image", 15)} <span>${t("manage.coverChange")}</span></button>
       </div>
     </div>`;
 }

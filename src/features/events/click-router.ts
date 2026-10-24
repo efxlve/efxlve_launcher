@@ -1101,7 +1101,10 @@ document.addEventListener("click", (e) => {
       const next = current === status ? null : (status ? (status as GameStatus) : null);
       setGameStatus(app, next);
       S.isGameMoreMenuOpen = false;
-      render();
+      // The game page lives in the modal root, which `render()` does not touch:
+      // without this repaint the menu kept its old selection and stayed open.
+      if (S.currentModalAppName === app) openEpicModal(app, false);
+      else render();
     }
   } else if (act === "run-pc-check") {
     void runPcCheck()
