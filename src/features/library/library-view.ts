@@ -11,7 +11,7 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { canonicalGameTitle, gameStoresLabel, libraryItemToSummary, libraryPlaytime, libraryRecentIndex, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
+import { canonicalGameTitle, compareLibraryRecent, gameStoresLabel, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, totalLibraryGamesCount } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
@@ -205,31 +205,8 @@ export function epicVisibleSummaries(): EpicSummary[] {
     case "achievements":
       result = [...list].sort((a, b) => achievementRank(b.appName) - achievementRank(a.appName) || byTitle(a, b));
       break;
-    default: {
-      result = [...list].sort((a, b) => {
-        const idxA = libraryRecentIndex(a);
-        const idxB = libraryRecentIndex(b);
-        if (idxA >= 0 && idxB >= 0) return idxA - idxB;
-        if (idxA >= 0) return -1;
-        if (idxB >= 0) return 1;
-
-        const ptA = libraryPlaytime(a);
-        const ptB = libraryPlaytime(b);
-        if (ptA.lastPlayed > 0 || ptB.lastPlayed > 0) {
-          if (ptA.lastPlayed !== ptB.lastPlayed) return ptB.lastPlayed - ptA.lastPlayed;
-        }
-
-        if (ptA.seconds > 0 || ptB.seconds > 0) {
-          if (ptA.seconds !== ptB.seconds) return ptB.seconds - ptA.seconds;
-        }
-
-        if (a.installed !== b.installed) {
-          return Number(b.installed) - Number(a.installed);
-        }
-
-        return byTitle(a, b);
-      });
-    }
+    default:
+      result = [...list].sort(compareLibraryRecent);
   }
 
   visibleCache = result;

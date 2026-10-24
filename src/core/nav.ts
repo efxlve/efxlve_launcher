@@ -10,7 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { invoke } from "@tauri-apps/api/core";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { rawOf, totalLibraryGamesCount } from "./selectors";
+import { compareLibraryRecent, rawOf, totalLibraryGamesCount } from "./selectors";
 import { hasConnection } from "./offline";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
@@ -220,21 +220,11 @@ function sidebarRecentLimit(): number {
     ? SIDEBAR_RECENT_LIMIT_SMALL
     : SIDEBAR_RECENT_LIMIT;
 }
-const sidebarFillRank = new Map<string, number>();
-
-function fillRank(id: string): number {
-  let rank = sidebarFillRank.get(id);
-  if (rank === undefined) {
-    rank = Math.random();
-    sidebarFillRank.set(id, rank);
-  }
-  return rank;
-}
 
 /**
- * Up to five sidebar games: recently played first, then random installed
- * titles so the list stays full. Rebuilt only when membership or a status
- * marker changes.
+ * Up to five installed games in the library's "Recently played" order. The
+ * sidebar used to lead with a random installed batch, so its list named
+ * different games than the library; both now share one comparator.
  */
 export function updateSidebarGames(): void {
   const host = document.getElementById("sb-games");
@@ -242,8 +232,7 @@ export function updateSidebarGames(): void {
   const limit = sidebarRecentLimit();
   // Cheap guard first: building the installed-game array and its cover URLs
   // before checking a stamp ran on every repaint, including download patches.
-  // Membership, not `libraryDataRev`: playtime or achievement updates bump the
-  // revision but never change which games belong in the sidebar.
+  // Playtime now feeds the order, so a revision bump must invalidate it too.
   const membership = [
     ...S.epicSummaries
       .filter((s) => s.installed && !S.hiddenGames.has(s.appName))
@@ -261,29 +250,14 @@ export function updateSidebarGames(): void {
       .filter((g) => g.installed && !S.hiddenGames.has(g.key))
       .map((g) => g.key),
   ].join("\n");
-  const cheapStamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.epicRecent.join("\n")}\0${membership}`;
+  const cheapStamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.libraryDataRev}\0${S.epicRecent.join("\n")}\0${membership}`;
   if (cheapStamp === sidebarInputs) return;
   const entries = sidebarGames();
   const stamp = `${cheapStamp}\0${entries.map((e) => e.appName).join("\n")}`;
   if (stamp === sidebarInputs) return;
   sidebarInputs = stamp;
 
-  const recentIdx = new Map<string, number>();
-  S.epicRecent.forEach((id, i) => recentIdx.set(id, i));
-  const byId = new Map(entries.map((e) => [e.appName, e]));
-  const played = S.epicRecent
-    .map((id) => byId.get(id))
-    .filter((e): e is SidebarGame => Boolean(e));
-  const fillers = entries
-    .filter((e) => !recentIdx.has(e.appName))
-    .sort((a, b) => fillRank(a.appName) - fillRank(b.appName));
-  if (sidebarFillRank.size > entries.length + 32) {
-    const keep = new Set(entries.map((e) => e.appName));
-    for (const id of sidebarFillRank.keys()) {
-      if (!keep.has(id)) sidebarFillRank.delete(id);
-    }
-  }
-  const shown = played.concat(fillers).slice(0, limit);
+  const shown = [...entries].sort(compareLibraryRecent).slice(0, limit);
 
   const sig = shown.map((e) => e.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
   if (sig === sidebarGamesSig) return;

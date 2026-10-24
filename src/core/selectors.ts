@@ -157,6 +157,31 @@ export function libraryRecentIndex(s: { appName: string; title: string }): numbe
   return best;
 }
 
+/**
+ * "Recently played" order: the launch list first, then the newest last-played
+ * stamp, then total playtime, installed state and title. The library grid and
+ * the sidebar both sort with this, so the two lists always agree.
+ */
+export function compareLibraryRecent(
+  a: { appName: string; title: string; installed?: boolean },
+  b: { appName: string; title: string; installed?: boolean },
+): number {
+  const idxA = libraryRecentIndex(a);
+  const idxB = libraryRecentIndex(b);
+  if (idxA >= 0 && idxB >= 0) return idxA - idxB;
+  if (idxA >= 0) return -1;
+  if (idxB >= 0) return 1;
+
+  const ptA = libraryPlaytime(a);
+  const ptB = libraryPlaytime(b);
+  if (ptA.lastPlayed !== ptB.lastPlayed) return ptB.lastPlayed - ptA.lastPlayed;
+  if (ptA.seconds !== ptB.seconds) return ptB.seconds - ptA.seconds;
+  if (Boolean(a.installed) !== Boolean(b.installed)) {
+    return Number(Boolean(b.installed)) - Number(Boolean(a.installed));
+  }
+  return S.trCollator.compare(a.title, b.title);
+}
+
 /** Rebuilds the unified allGamesMap and store mapping from both epicSummaries and gogSummaries in O(N). */
 export function rebuildAllGamesMap(): void {
   const map = new Map<string, LibraryItem>();
