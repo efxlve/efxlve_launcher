@@ -43,7 +43,7 @@
   "settings.nileReady": "準備完了",
   "settings.nileDesc": "Amazon Games のライブラリとインストールはオープンソースの Nile ヘルパーを通します。初回のインストール時に自動でダウンロードされます。",
   "accounts.note.amazon": "ライブラリは Nile 経由で Amazon アカウントから取得します。インストール、更新、起動はランチャーが行います。Amazon Games にクラウドセーブはないため、管理パネルからバックアップしてください。",
-  "launchers.amazonNote": "Nile で直接管理されます。これらのゲームのインストール、更新、起動に Amazon クライアントは不要です。",
+  "launchers.amazonNote": "任意 — Nile で直接管理されます。これらのゲームのインストール、更新、起動に Amazon クライアントは不要です。",
   "sidebar.recent": "最近プレイしたゲーム",
   "palette.open": "ゲームとコマンドを検索 (Ctrl+K)",
   "palette.placeholder": "ゲーム、ページ、操作を検索",

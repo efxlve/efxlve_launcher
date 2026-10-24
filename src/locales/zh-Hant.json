@@ -43,7 +43,7 @@
   "settings.nileReady": "就緒",
   "settings.nileDesc": "Amazon Games 的遊戲庫與安裝透過開源 Nile 助手完成；首次安裝遊戲時會自動下載。",
   "accounts.note.amazon": "遊戲庫透過 Nile 來自你的 Amazon 帳戶；安裝、更新與啟動由啟動器完成。Amazon Games 沒有雲端存檔，請在管理面板中備份存檔。",
-  "launchers.amazonNote": "由 Nile 直接管理：安裝、更新或啟動這些遊戲無須 Amazon 用戶端。",
+  "launchers.amazonNote": "可選——由 Nile 直接管理：安裝、更新或啟動這些遊戲無須 Amazon 用戶端。",
   "sidebar.recent": "最近遊玩",
   "palette.open": "搜尋遊戲和命令 (Ctrl+K)",
   "palette.placeholder": "搜尋遊戲、頁面和操作",

@@ -43,7 +43,7 @@
   "settings.nileReady": "Gotowy",
   "settings.nileDesc": "Biblioteka i instalacje Amazon Games działają przez otwartoźródłowy pomocnik Nile; pobiera się automatycznie przy pierwszej instalacji.",
   "accounts.note.amazon": "Biblioteka pochodzi z konta Amazon przez Nile; instalacją, aktualizacjami i uruchamianiem zajmuje się launcher. Amazon Games nie ma zapisów w chmurze — kopie zapasowe rób z panelu zarządzania.",
-  "launchers.amazonNote": "Zarządzane bezpośrednio przez Nile: do instalowania, aktualizowania i uruchamiania tych gier nie jest potrzebny klient Amazon.",
+  "launchers.amazonNote": "Opcjonalne — Zarządzane bezpośrednio przez Nile: do instalowania, aktualizowania i uruchamiania tych gier nie jest potrzebny klient Amazon.",
   "sidebar.recent": "Ostatnio grane",
   "palette.open": "Szukaj gier i poleceń (Ctrl+K)",
   "palette.placeholder": "Szukaj gier, stron i akcji",

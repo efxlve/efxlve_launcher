@@ -375,6 +375,10 @@ const LAUNCHER_OPEN: Record<string, { act: string; withId: boolean }> = {
   riot: { act: "companion-open", withId: true },
 };
 
+/** Official Amazon help page that carries the Amazon Games App installer. */
+const AMAZON_GAMES_DOWNLOAD =
+  "https://www.amazon.com/gp/help/customer/display.html?nodeId=TQ1wROUN7BTxoTBbAk";
+
 /** One info box per category: what the launcher manages, what the clients do. */
 function launcherInfoBox(): string {
   return `${infoBox("launchers.infoManaged")}${infoBox("launchers.infoDelegated")}`;
@@ -391,13 +395,16 @@ function renderLaunchers(): string {
       : launcherInfoBox();
   }
   // Amazon Games has no client to detect: Nile is managed by the launcher, so
-  // the row explains that instead of offering a download.
+  // the row explains that the client is optional and links to its download.
   const amazonRow = `
       <div class="row settings-row">
         <span class="acc-store-mark">${storeLogo("amazon", 24)}</span>
         <div class="row-main">
           <div class="settings-row-title">Amazon Games</div>
           <div class="settings-row-desc">${t("launchers.amazonNote")}</div>
+        </div>
+        <div class="settings-row-control">
+          <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${esc(AMAZON_GAMES_DOWNLOAD)}">${t("launchers.download")}</button>
         </div>
       </div>`;
   const managed: string[] = [];

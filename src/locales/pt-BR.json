@@ -43,7 +43,7 @@
   "settings.nileReady": "Pronto",
   "settings.nileDesc": "A biblioteca e as instalações do Amazon Games funcionam pelo assistente de código aberto Nile; ele é baixado automaticamente na primeira instalação.",
   "accounts.note.amazon": "A biblioteca vem da sua conta Amazon por meio do Nile; o launcher instala, atualiza e inicia os jogos. O Amazon Games não tem salvamento em nuvem; faça backups pelo painel de gerenciamento.",
-  "launchers.amazonNote": "Gerenciado diretamente pelo Nile: nenhum cliente da Amazon é necessário para instalar, atualizar ou iniciar esses jogos.",
+  "launchers.amazonNote": "Opcional — Gerenciado diretamente pelo Nile: nenhum cliente da Amazon é necessário para instalar, atualizar ou iniciar esses jogos.",
   "sidebar.recent": "Jogados recentemente",
   "palette.open": "Buscar jogos e comandos (Ctrl+K)",
   "palette.placeholder": "Buscar jogos, páginas e ações",
