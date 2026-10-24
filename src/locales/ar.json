@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "المصدر: GOG",
   "drawer.sourceSteam": "المصدر: Steam",
   "drawer.sourceStore": "المصدر: {store}",
+  "drawer.sourceCustom": "المصدر: لعبة مخصصة",
   "drawer.addonsCount": "{count} إضافات",
   "drawer.addonsDesc": "أسماء الإضافات على صفحة المتجر. افتحها لتصفحها.",
   "common.unknownError": "خطأ غير معروف",

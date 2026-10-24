@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "Fonte: GOG",
   "drawer.sourceSteam": "Fonte: Steam",
   "drawer.sourceStore": "Fonte: {store}",
+  "drawer.sourceCustom": "Fonte: Gioco personalizzato",
   "drawer.addonsCount": "{count} DLC",
   "drawer.addonsDesc": "I nomi dei DLC sono nella pagina dello store. Aprila per sfogliarli.",
   "common.unknownError": "Errore sconosciuto",

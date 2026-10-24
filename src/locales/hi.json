@@ -1655,6 +1655,7 @@
   "drawer.sourceGog": "स्रोत: GOG",
   "drawer.sourceSteam": "स्रोत: Steam",
   "drawer.sourceStore": "स्रोत: {store}",
+  "drawer.sourceCustom": "स्रोत: कस्टम गेम",
   "drawer.addonsCount": "{count} ऐड-ऑन",
   "drawer.addonsDesc": "ऐड-ऑन नाम स्टोर पेज पर रहते हैं। उन्हें ब्राउज़ करने के लिए इसे खोलें।",
   "common.unknownError": "अज्ञात त्रुटि",

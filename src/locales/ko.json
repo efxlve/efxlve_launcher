@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "출처: GOG",
   "drawer.sourceSteam": "출처: Steam",
   "drawer.sourceStore": "출처: {store}",
+  "drawer.sourceCustom": "출처: 사용자 지정 게임",
   "drawer.addonsCount": "추가 콘텐츠 {count}개",
   "drawer.addonsDesc": "추가 콘텐츠 이름은 상점 페이지에 있습니다. 열어서 확인하세요.",
   "common.unknownError": "알 수 없는 오류",

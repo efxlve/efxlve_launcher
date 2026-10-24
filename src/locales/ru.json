@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "Источник: GOG",
   "drawer.sourceSteam": "Источник: Steam",
   "drawer.sourceStore": "Источник: {store}",
+  "drawer.sourceCustom": "Источник: Своя игра",
   "drawer.addonsCount": "{count} дополнений",
   "drawer.addonsDesc": "Названия дополнений — на странице магазина. Откройте её, чтобы посмотреть.",
   "common.unknownError": "Неизвестная ошибка",

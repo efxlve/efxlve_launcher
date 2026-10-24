@@ -873,12 +873,20 @@ function igdbAboutText(s: EpicSummary): string {
   return igdbGameFor(s.appName)?.summary?.trim() || "";
 }
 
+/** True when the text is the game's own real blurb, not a store placeholder. */
+function isRealDescription(s: EpicSummary, text: string): boolean {
+  return Boolean(text && text !== NO_DESC && text !== s.title);
+}
+
 /** Epic's catalog description (raw or from the store data); empty when unusable. */
 function epicDescription(s: EpicSummary): string {
-  const rawDesc = s.description?.trim();
-  const hasRealDesc = rawDesc && rawDesc !== NO_DESC && rawDesc !== s.title && rawDesc.length > 25;
+  const rawDesc = s.description?.trim() ?? "";
   const reqData = S.loadedRequirements.get(s.appName);
   const storeDesc = reqData?.shortDescription || (reqData?.description ? cleanStoreDescription(reqData.description) : "");
+  // A custom game's description is written by the player, so a short note is
+  // legitimate text: the catalog length filter below would hide it.
+  if (s.appName.startsWith("custom::")) return isRealDescription(s, rawDesc) ? rawDesc : "";
+  const hasRealDesc = isRealDescription(s, rawDesc) && rawDesc.length > 25;
   // Companion catalogs ship plain text that may still carry store markup.
   if (hasRealDesc) return isCompanionApp(s.appName) ? cleanStoreDescription(rawDesc) : rawDesc;
   return storeDesc || "";
@@ -929,6 +937,8 @@ async function loadWikiAbout(s: EpicSummary): Promise<void> {
 
 /** Source note under the description: IGDB, the game's own store, or Wikipedia. */
 function aboutSourceText(s: EpicSummary, storeDesc: string, wikiText: string): string {
+  // Custom text is shown ahead of IGDB, so the note has to name it first.
+  if (s.appName.startsWith("custom::") && epicDescription(s)) return t("drawer.sourceCustom");
   if (igdbAboutText(s)) return t("drawer.sourceIgdb");
   const source = sourceOfKey(s.appName);
   const storeName = source === "gog" ? "GOG" : source === "steam" ? "Steam" : source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "battlenet" ? "Battle.net" : source === "riot" ? "Riot Games" : source === "amazon" ? "Amazon Games" : "Epic Games Store";
@@ -960,8 +970,9 @@ function paintAboutText(s: EpicSummary): void {
   const storeDesc = epicDescription(s);
   const wikiText = aboutCache.get(aboutKey(s.appName)) || "";
   const igdbDesc = igdbAboutText(s);
-  const text = igdbDesc || storeDesc || wikiText;
-  const pending = !igdbDesc && !igdbAboutSettled(s.appName);
+  const customDesc = s.appName.startsWith("custom::") ? storeDesc : "";
+  const text = customDesc || igdbDesc || storeDesc || wikiText;
+  const pending = !customDesc && !igdbDesc && !igdbAboutSettled(s.appName);
   const body = aboutBodyHtml(s, text);
   descEl.innerHTML = pending
     ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
@@ -1373,13 +1384,16 @@ function renderAboutSection(s: EpicSummary): string {
   const igdbDesc = igdbAboutText(s);
   const key = aboutKey(s.appName);
   const wikiText = aboutCache.get(key) || "";
-  // IGDB first, then the game's own store, then Wikipedia. The note under the
-  // box names whichever source won, so a fallback is never silent.
-  const effectiveDesc = igdbDesc || epicDesc || wikiText || null;
+  // A custom game's own description wins over every catalog: the player wrote
+  // it for this exact entry. Otherwise IGDB first, then the game's own store,
+  // then Wikipedia. The note under the box names whichever source won, so a
+  // fallback is never silent.
+  const customDesc = s.appName.startsWith("custom::") ? epicDesc : "";
+  const effectiveDesc = customDesc || igdbDesc || epicDesc || wikiText || null;
   // The box waits for IGDB before showing the store text: replacing the text
   // under the reader's eyes reads like the wrong description. Once IGDB has
   // settled, the spinner only stays while the store or the wiki can still answer.
-  const igdbPending = !igdbDesc && !igdbAboutSettled(s.appName);
+  const igdbPending = !customDesc && !igdbDesc && !igdbAboutSettled(s.appName);
   const aboutLoading =
     igdbPending ||
     (!effectiveDesc && !(aboutCache.has(key) || S.loadedRequirements.has(s.appName) || Boolean(epicDesc)));

@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "Quelle: GOG",
   "drawer.sourceSteam": "Quelle: Steam",
   "drawer.sourceStore": "Quelle: {store}",
+  "drawer.sourceCustom": "Quelle: Eigenes Spiel",
   "drawer.addonsCount": "{count} Add-ons",
   "drawer.addonsDesc": "Die Namen der Add-ons stehen auf der Shop-Seite. Öffnen Sie sie zum Stöbern.",
   "common.unknownError": "Unbekannter Fehler",

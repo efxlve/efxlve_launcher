@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "Source : GOG",
   "drawer.sourceSteam": "Source : Steam",
   "drawer.sourceStore": "Source : {store}",
+  "drawer.sourceCustom": "Source : Jeu personnalisé",
   "drawer.addonsCount": "{count} extensions",
   "drawer.addonsDesc": "Les noms des extensions sont sur la page du magasin. Ouvrez-la pour les parcourir.",
   "common.unknownError": "Erreur inconnue",

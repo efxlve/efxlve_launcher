@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "來源：GOG",
   "drawer.sourceSteam": "來源：Steam",
   "drawer.sourceStore": "來源：{store}",
+  "drawer.sourceCustom": "來源：自訂遊戲",
   "drawer.addonsCount": "{count} 個附加內容",
   "drawer.addonsDesc": "附加內容名稱在商店頁面上。開啟即可瀏覽。",
   "common.unknownError": "未知錯誤",

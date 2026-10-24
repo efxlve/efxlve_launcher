@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "ที่มา: GOG",
   "drawer.sourceSteam": "ที่มา: Steam",
   "drawer.sourceStore": "ที่มา: {store}",
+  "drawer.sourceCustom": "แหล่งที่มา: เกมที่กำหนดเอง",
   "drawer.addonsCount": "ส่วนเสริม {count} รายการ",
   "drawer.addonsDesc": "ชื่อส่วนเสริมอยู่ในหน้าร้านค้า เปิดเพื่อเรียกดู",
   "common.unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ",

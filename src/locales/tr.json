@@ -1655,6 +1655,7 @@
   "drawer.sourceGog": "Kaynak: GOG",
   "drawer.sourceSteam": "Kaynak: Steam",
   "drawer.sourceStore": "Kaynak: {store}",
+  "drawer.sourceCustom": "Kaynak: Özel oyun",
   "drawer.addonsCount": "{count} ek paket",
   "drawer.addonsDesc": "Ek paket adları mağaza sayfasında. Göz atmak için sayfayı açın.",
   "common.unknownError": "Bilinmeyen hata",

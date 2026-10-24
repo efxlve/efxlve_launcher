@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "出典: GOG",
   "drawer.sourceSteam": "出典: Steam",
   "drawer.sourceStore": "出典: {store}",
+  "drawer.sourceCustom": "ソース: カスタムゲーム",
   "drawer.addonsCount": "アドオン {count} 個",
   "drawer.addonsDesc": "アドオン名はストアページにあります。開いて確認してください。",
   "common.unknownError": "不明なエラー",

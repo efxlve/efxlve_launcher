@@ -1566,6 +1566,7 @@
   "drawer.sourceGog": "Fuente: GOG",
   "drawer.sourceSteam": "Fuente: Steam",
   "drawer.sourceStore": "Fuente: {store}",
+  "drawer.sourceCustom": "Fuente: Juego personalizado",
   "drawer.addonsCount": "{count} complementos",
   "drawer.addonsDesc": "Los nombres de los complementos están en la página de la tienda. Ábrela para explorarlos.",
   "common.unknownError": "Error desconocido",
