@@ -398,31 +398,31 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-/* The stores a game belongs to: a small plate each, never a plain text line. */
+/* The stores a game belongs to: a quiet mark + name line, not a chip. The
+   mark carries the identity; the text stays metadata under the title. */
 .pcard-stores {
   display: flex;
   align-items: center;
   gap: 4px;
+  height: 16px;
   min-width: 0;
   overflow: hidden;
 }
 .pcard-store-plate {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  height: 17px;
-  padding: 0 5px;
-  border: 1px solid var(--line-strong);
-  border-radius: 4px;
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
+  gap: 5px;
+  height: 16px;
   min-width: 0;
   flex-shrink: 1;
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 500;
+  /* The name span clips for its ellipsis; 1.3 keeps the p/g descenders inside. */
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: color var(--ease);
 }
 .pcard-store-name {
   min-width: 0;
@@ -430,22 +430,37 @@
   text-overflow: ellipsis;
 }
 .pcard-store-logo {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   object-fit: contain;
   border-radius: 2px;
   flex-shrink: 0;
+  opacity: 0.9;
+  transition: opacity var(--ease);
 }
 .pcard-store-more {
   display: inline-flex;
   align-items: center;
-  height: 17px;
-  color: var(--text-2);
+  height: 16px;
+  color: var(--text-3);
   font-size: 10px;
   font-weight: 500;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+  transition: color var(--ease);
+}
+.pcard:hover .pcard-store-plate,
+.pcard:focus-visible .pcard-store-plate {
+  color: var(--text);
+}
+.pcard:hover .pcard-store-logo,
+.pcard:focus-visible .pcard-store-logo {
+  opacity: 1;
+}
+.pcard:hover .pcard-store-more,
+.pcard:focus-visible .pcard-store-more {
+  color: var(--text-2);
 }
 /* Games that belong to another saved account keep a quiet card: the owner is
    shown on the detail page action bar only. */
