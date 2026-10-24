@@ -835,6 +835,7 @@ async fn xbox_achievements_summary() -> std::collections::HashMap<String, GameAc
                 total_xp: achievement.total_xp,
                 is_platinum: achievement.unlocked >= achievement.total,
                 supported: true,
+                progress_known: true,
                 ..Default::default()
             },
         );
@@ -880,6 +881,7 @@ pub async fn companion_achievements_summary(
                     total_xp: response.total_xp,
                     is_platinum: response.is_platinum,
                     supported: true,
+                    progress_known: true,
                     ..Default::default()
                 },
             );

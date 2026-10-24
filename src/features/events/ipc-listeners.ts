@@ -112,7 +112,7 @@ import { initOfflineMode } from "../../core/offline";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
-import { initHoverPrefetch, prefetchGamePagesWhenIdle } from "../drawer/game-prefetch";
+import { initHoverPrefetch, prefetchGamePagesWhenIdle, prefetchVisibleAchievements } from "../drawer/game-prefetch";
 import { feedbackRecoveryPending } from "../../feedback";
 import { openFeedback } from "../feedback/feedback-view";
 
@@ -1092,6 +1092,10 @@ export async function initApp(hooks: {
     // recent games' screenshots. The disk caches stay warm between runs, so the
     // next visit to a page paints from local data instead of asking again.
     prefetchGamePagesWhenIdle();
+    // Covers the player can see get their real achievement progress without
+    // opening each game page; the metadata-only rows would otherwise keep
+    // showing a false zero.
+    prefetchVisibleAchievements();
     // A card the pointer rests on is the next page most of the time; warm it
     // after a short pause so a sweep across the grid does not fire requests.
     initHoverPrefetch();

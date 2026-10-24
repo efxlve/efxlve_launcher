@@ -206,6 +206,7 @@ pub async fn gog_get_achievements(
         supported: data.supported.unwrap_or(data.total_achievements > 0),
         base_achievements: data.base_achievements,
         base_unlocked: data.base_unlocked,
+        progress_known: true,
     };
     let mut cache = load_achievements_cache(&app);
     cache.insert(format!("gog::{clean_id}"), summary.clone());
@@ -276,6 +277,7 @@ pub async fn gog_sync_achievements(
                 supported: resp.supported.unwrap_or(resp.total_achievements > 0),
                 base_achievements: resp.base_achievements,
                 base_unlocked: resp.base_unlocked,
+                progress_known: true,
             };
             cache.insert(format!("gog::{id}"), summary.clone());
             cache.insert(id, summary);

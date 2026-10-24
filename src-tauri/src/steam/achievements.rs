@@ -2154,6 +2154,7 @@ fn steam_achievements_summary_for(
                 total_achievements: response.total_achievements,
                 is_platinum: response.is_platinum,
                 supported: true,
+                progress_known: true,
                 ..Default::default()
             };
             out.insert(format!("steam::{app_id}"), summary);
@@ -2197,6 +2198,7 @@ fn steam_achievements_summary_for(
                 total_achievements: total,
                 is_platinum: unlocked == total,
                 supported: true,
+                progress_known: true,
                 ..Default::default()
             },
         );

@@ -249,6 +249,8 @@ export interface EpicAchievementSummary {
   supported: boolean;
   base_achievements?: number;
   base_unlocked?: number;
+  /** False when only the list (metadata) is known, not the player's progress. */
+  progress_known?: boolean;
 }
 
 export const epicGetAchievements = (appName: string, forceRefresh = false) =>

@@ -116,10 +116,15 @@ pub fn load_achievements_cache(
 ) -> HashMap<String, crate::legendary::models::GameAchievementSummary> {
     let path = super::paths::achievements_cache_path(app);
     if let Ok(bytes) = fs::read(&path) {
-        if let Ok(map) = serde_json::from_slice::<
+        if let Ok(mut map) = serde_json::from_slice::<
             HashMap<String, crate::legendary::models::GameAchievementSummary>,
         >(&bytes)
         {
+            // Cache rows written before the field existed still carry real
+            // progress; the serde default (false) would hide their counts.
+            for summary in map.values_mut() {
+                summary.progress_known = true;
+            }
             return map;
         }
     }

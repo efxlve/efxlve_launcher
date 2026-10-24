@@ -18,7 +18,8 @@ import { isTauri } from "../../core/constants";
 import { perfMark } from "../../core/perf";
 import { S } from "../../core/state";
 import { summaryOf } from "../../core/selectors";
-import { prefetchGamePage } from "./drawer-view";
+import { achSummaryOf } from "../../core/game-view";
+import { fetchAndRenderAchievements, prefetchGamePage } from "./drawer-view";
 
 /** Games per pass. Enough to cover the shelf, small enough to stay quiet. */
 const PREFETCH_GAMES = 6;
@@ -163,4 +164,67 @@ export function prefetchGamePagesWhenIdle(): void {
   idleRun(() => {
     window.setTimeout(() => void run(), 3000);
   });
+}
+
+/** Games whose achievements the idle pass already asked for this session. */
+const achRequested = new Set<string>();
+/** Cards per pass: one page fills in without a burst of CLI processes. */
+const ACH_PREFETCH_GAMES = 12;
+const ACH_PREFETCH_GAP_MS = 900;
+
+let achPassRunning = false;
+let achPassTimer = 0;
+let achRetryLeft = 1;
+
+async function runAchievementPass(): Promise<void> {
+  if (achPassRunning) return;
+  achPassRunning = true;
+  try {
+    if (S.offlineMode) return;
+    const cards = [...document.querySelectorAll<HTMLElement>("#view [data-lib-item]")];
+    const queue: string[] = [];
+    for (const card of cards) {
+      const id = card.dataset.libItem ?? "";
+      if (!id || achRequested.has(id)) continue;
+      const ach = achSummaryOf(id);
+      // Metadata alone gave us the set size, not the player's progress. Those
+      // are exactly the covers that used to show a false "0 / N" until the
+      // game page was opened.
+      if (!ach?.supported || ach.total_achievements === 0 || ach.progress_known !== false) continue;
+      queue.push(id);
+      if (queue.length >= ACH_PREFETCH_GAMES) break;
+    }
+    if (queue.length === 0) {
+      // The bulk summary may still be on its way at the first idle slot.
+      if (achRetryLeft > 0) {
+        achRetryLeft -= 1;
+        window.setTimeout(() => void runAchievementPass(), 6000);
+      }
+      return;
+    }
+    for (const id of queue) {
+      if (S.offlineMode || S.currentModalAppName) return;
+      achRequested.add(id);
+      await fetchAndRenderAchievements(id).catch(() => undefined);
+      await sleep(ACH_PREFETCH_GAP_MS);
+    }
+    perfMark(`prefetch:achievements:${queue.length}`);
+  } finally {
+    achPassRunning = false;
+  }
+}
+
+/**
+ * Fills in the achievement chips of the cards the player is actually looking
+ * at. The bulk summary only knows progress for games fetched on an earlier
+ * visit; this pass asks the stores for the rest, one at a time, after the
+ * window is idle. Every launch starts from the first card, so already-known
+ * games are skipped and the next page is reached on the next run.
+ */
+export function prefetchVisibleAchievements(): void {
+  if (!isTauri || achPassTimer) return;
+  achPassTimer = window.setTimeout(() => {
+    achPassTimer = 0;
+    idleRun(() => void runAchievementPass());
+  }, 4000);
 }

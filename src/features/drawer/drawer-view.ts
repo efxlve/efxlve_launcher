@@ -2176,6 +2176,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
       total_xp: data.total_xp,
       is_platinum: data.is_platinum,
       supported: (data.total_achievements ?? 0) > 0,
+      progress_known: true,
     };
     S.epicAchSummaries[appName] = summary;
     if (isGog) {

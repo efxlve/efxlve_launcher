@@ -58,9 +58,15 @@ function achievementGlyph(appName: string, done: boolean): string {
 /** Achievement progress for a library list row. Dash when the game has no tracked set. */
 export function listAchievementCell(appName: string): string {
   const ach = achSummaryOf(appName);
-  const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
+  const known = ach?.progress_known !== false;
+  const done = known && (isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements));
   if (ach?.supported && ach.total_achievements > 0) {
     const total = ach.total_achievements;
+    // A metadata-only row knows the list but not the player's progress. Show
+    // the set size instead of a false "0 / N".
+    if (!known) {
+      return `<span class="lrow-ach">${achievementGlyph(appName, false)}<span class="tabular-nums">${total}</span></span>`;
+    }
     const unlocked = ach.user_unlocked;
     // Count, percentage and a thin track in one cell. Compact windows hide the
     // track through CSS and fall back to the plain count.
@@ -82,9 +88,10 @@ export function libraryCoverStats(appName: string): string {
     chips.push(`<span class="cover-stat">${icon("clock", 12)}<span>${esc(fmtPlaytime(secs))}</span></span>`);
   }
   const ach = achSummaryOf(appName);
-  const done = isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements);
+  const known = ach?.progress_known !== false;
+  const done = known && (isAppPlatinum(appName) || (Boolean(ach?.total_achievements) && ach!.user_unlocked >= ach!.total_achievements));
   if (ach?.supported && ach.total_achievements > 0) {
-    const label = `${ach.user_unlocked}/${ach.total_achievements}`;
+    const label = known ? `${ach.user_unlocked}/${ach.total_achievements}` : String(ach.total_achievements);
     chips.push(
       `<span class="cover-stat${done ? " done" : ""}">${icon("trophy", 12)}<span>${label}</span></span>`,
     );

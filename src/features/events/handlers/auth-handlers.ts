@@ -21,6 +21,7 @@ import {
   removeSavedAccount,
   switchAccount,
 } from "../../auth/account-switcher";
+import { prefetchVisibleAchievements } from "../../drawer/game-prefetch";
 import {
   extractGogAuthCode,
   gogLoginWithCode,
@@ -106,6 +107,9 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
       if (S.gogAccount) void syncGogLibrary(true);
       // Steam reads its own manifests and the owned list, so it refreshes too.
       void loadSteamLibrary();
+      // The visible covers may still be metadata-only; fill them after the
+      // refresh has replaced the summary map.
+      prefetchVisibleAchievements();
       return true;
 
     case "epic-retry":

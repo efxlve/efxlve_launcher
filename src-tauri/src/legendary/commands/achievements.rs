@@ -176,6 +176,10 @@ pub fn scan_achievements_summary(
             if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
                 if let Some(obj) = val.as_object() {
                     for (ns_key, data) in obj {
+                        // A null entry means "never synced", not "no unlocks".
+                        if data.is_null() {
+                            continue;
+                        }
                         let total_unlocked = data
                             .get("totalUnlocked")
                             .and_then(|v| v.as_u64())
@@ -330,17 +334,17 @@ pub fn scan_achievements_summary(
                                     })
                                     .unwrap_or((0, 0));
 
+                                let progress = user_ach_map
+                                    .get(&ns)
+                                    .or_else(|| user_ach_map.get(&app_name.to_lowercase()))
+                                    .copied();
                                 let (
                                     user_unlocked,
                                     user_xp,
                                     has_plat,
                                     base_unlocked,
                                     _base_user_xp,
-                                ) = user_ach_map
-                                    .get(&ns)
-                                    .or_else(|| user_ach_map.get(&app_name.to_lowercase()))
-                                    .copied()
-                                    .unwrap_or((0, 0, false, 0, 0));
+                                ) = progress.unwrap_or((0, 0, false, 0, 0));
 
                                 let base_plat = base_total > 0 && base_unlocked >= base_total;
                                 let all_plat = total > 0 && user_unlocked >= total;
@@ -358,6 +362,7 @@ pub fn scan_achievements_summary(
                                         supported: true,
                                         base_achievements: base_total,
                                         base_unlocked,
+                                        progress_known: progress.is_some(),
                                     },
                                 );
                             }
@@ -400,6 +405,7 @@ pub fn scan_achievements_summary(
                                 s.is_platinum = is_plat;
                                 s.base_achievements = data.base_achievements;
                                 s.base_unlocked = data.base_unlocked;
+                                s.progress_known = true;
                             })
                             .or_insert(GameAchievementSummary {
                                 app_name,
@@ -411,6 +417,7 @@ pub fn scan_achievements_summary(
                                 supported: true,
                                 base_achievements: data.base_achievements,
                                 base_unlocked: data.base_unlocked,
+                                progress_known: true,
                             });
                     }
                 }
@@ -434,11 +441,50 @@ mod tests {
                 println!("PLATINUM GAME: {} => {:?}", k, v);
             }
         }
+        // Only assert when the local account actually has that cache.
         if let Some(carnation) = summaries.get("Carnation") {
             assert_eq!(carnation.total_achievements, 48);
             assert_eq!(carnation.user_unlocked, 48);
             assert_eq!(carnation.is_platinum, true);
         }
+    }
+
+    #[test]
+    fn null_progress_is_unknown_until_the_cache_has_it() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve-ach-known-{}",
+            std::process::id()
+        ));
+        let config = base.join("config");
+        let cache_dir = base.join("achievements");
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(config.join("metadata")).unwrap();
+        std::fs::create_dir_all(&cache_dir).unwrap();
+        std::fs::write(
+            config.join("metadata").join("TestApp.json"),
+            r#"{"achievements":{"total_achievements":10,"namespace":"ns-test"}}"#,
+        )
+        .unwrap();
+        // A null legendary entry means "never synced", not "zero unlocked".
+        std::fs::write(config.join("achievements.json"), r#"{"ns-test":null}"#).unwrap();
+
+        let summaries = scan_achievements_summary(&config, &cache_dir);
+        let unknown = summaries.get("TestApp").expect("metadata row");
+        assert_eq!(unknown.total_achievements, 10);
+        assert_eq!(unknown.user_unlocked, 0);
+        assert!(!unknown.progress_known);
+
+        std::fs::write(
+            cache_dir.join("TestApp.json"),
+            r#"{"achievements":[{"name":"a","unlocked":true}],"user_unlocked":1,"total_achievements":10,"supported":true}"#,
+        )
+        .unwrap();
+        let summaries = scan_achievements_summary(&config, &cache_dir);
+        let known = summaries.get("TestApp").expect("cached row");
+        assert_eq!(known.user_unlocked, 1);
+        assert!(known.progress_known);
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]

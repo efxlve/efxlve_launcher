@@ -346,6 +346,11 @@ pub struct GameAchievementSummary {
     pub base_achievements: u32,
     #[serde(default)]
     pub base_unlocked: u32,
+    /// False when this row only knows the achievement list (metadata) and not
+    /// the player's progress. The covers then show the total without a false
+    /// zero, and the idle warm-up knows which games still need a fetch.
+    #[serde(default)]
+    pub progress_known: bool,
 }
 
 /// Epic Games Store system requirement item (OS, Processor, Memory, Storage, etc.)
