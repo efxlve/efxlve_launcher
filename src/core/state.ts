@@ -578,8 +578,8 @@ export const S = {
   screenshotScanAll: true,
   /** Bytes the picture cache holds; null until the settings ask for it. */
   pictureCacheBytes: null as number | null,
-  /** Default on: `!== "false"` keeps a fresh install minimizing on game start. */
-  minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) !== "false") as boolean,
+  /** Default off: only an explicit `"true"` minimizes on game start. */
+  minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) === "true") as boolean,
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,

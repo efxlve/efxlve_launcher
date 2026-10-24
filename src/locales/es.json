@@ -190,7 +190,7 @@
   "settings.startWithWindows": "Iniciar con Windows",
   "settings.startWithWindowsDesc": "Abre el launcher automáticamente al iniciar sesión.",
   "settings.minimizeOnGame": "Minimizar al iniciar un juego",
-  "settings.minimizeOnGameDesc": "Envía el launcher a la barra de tareas al iniciar un juego (el Modo TV permanece abierto).",
+  "settings.minimizeOnGameDesc": "Envía el launcher a la barra de tareas al iniciar un juego.",
   "settings.autostartFailed": "No se pudo actualizar la entrada de inicio de Windows.",
   "tray.show": "Mostrar",
   "tray.quit": "Salir",

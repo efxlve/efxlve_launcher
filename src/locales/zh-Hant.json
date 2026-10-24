@@ -190,7 +190,7 @@
   "settings.startWithWindows": "隨 Windows 啟動",
   "settings.startWithWindowsDesc": "登入 Windows 時自動開啟啟動器。",
   "settings.minimizeOnGame": "遊戲啟動時最小化",
-  "settings.minimizeOnGameDesc": "遊戲啟動後立即將啟動器最小化到工作列（TV 模式保持開啟）。",
+  "settings.minimizeOnGameDesc": "遊戲啟動後立即將啟動器最小化到工作列。",
   "settings.autostartFailed": "無法更新 Windows 啟動項目。",
   "tray.show": "顯示",
   "tray.quit": "結束",

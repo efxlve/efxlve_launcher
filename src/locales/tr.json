@@ -207,7 +207,7 @@
   "settings.startWithWindows": "Windows ile başlat",
   "settings.startWithWindowsDesc": "Oturum açtığında launcher kendiliğinden açılır.",
   "settings.minimizeOnGame": "Oyun başlayınca simge durumuna küçült",
-  "settings.minimizeOnGameDesc": "Oyun açılır açılmaz launcher'ı görev çubuğuna indirir (TV Modu açık kalır).",
+  "settings.minimizeOnGameDesc": "Oyun açılır açılmaz launcher'ı görev çubuğuna indirir.",
   "settings.autostartFailed": "Windows başlangıç kaydı güncellenemedi.",
   "tray.show": "Göster",
   "tray.quit": "Çıkış",

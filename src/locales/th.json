@@ -190,7 +190,7 @@
   "settings.startWithWindows": "เปิดพร้อม Windows",
   "settings.startWithWindowsDesc": "เปิดตัวเรียกเกมอัตโนมัติเมื่อคุณลงชื่อเข้าใช้",
   "settings.minimizeOnGame": "ย่อหน้าต่างเมื่อเกมเริ่ม",
-  "settings.minimizeOnGameDesc": "ย่อตัวเรียกเกมลงแถบงานทันทีที่เกมเริ่ม (โหมด TV ยังเปิดอยู่)",
+  "settings.minimizeOnGameDesc": "ย่อตัวเรียกเกมลงแถบงานทันทีที่เกมเริ่ม",
   "settings.autostartFailed": "อัปเดตรายการเริ่มต้นของ Windows ไม่สำเร็จ",
   "tray.show": "แสดง",
   "tray.quit": "ออก",

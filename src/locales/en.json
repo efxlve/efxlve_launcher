@@ -207,7 +207,7 @@
   "settings.startWithWindows": "Start with Windows",
   "settings.startWithWindowsDesc": "Opens the launcher automatically when you sign in.",
   "settings.minimizeOnGame": "Minimize when a game starts",
-  "settings.minimizeOnGameDesc": "Sends the launcher to the taskbar as soon as a game launches (TV Mode stays open).",
+  "settings.minimizeOnGameDesc": "Sends the launcher to the taskbar as soon as a game launches.",
   "settings.autostartFailed": "Could not update the Windows startup entry.",
   "tray.show": "Show",
   "tray.quit": "Quit",

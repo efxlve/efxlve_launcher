@@ -190,7 +190,7 @@
   "settings.startWithWindows": "Windows と同時に起動",
   "settings.startWithWindowsDesc": "サインイン時にランチャーを自動で開きます。",
   "settings.minimizeOnGame": "ゲーム開始時に最小化",
-  "settings.minimizeOnGameDesc": "ゲームが起動したらランチャーをタスクバーに最小化します（TV モードはそのまま）。",
+  "settings.minimizeOnGameDesc": "ゲームが起動したらランチャーをタスクバーに最小化します。",
   "settings.autostartFailed": "Windows のスタートアップ項目を更新できませんでした。",
   "tray.show": "表示",
   "tray.quit": "終了",

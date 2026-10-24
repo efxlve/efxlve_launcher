@@ -190,7 +190,7 @@
   "settings.startWithWindows": "Avvia con Windows",
   "settings.startWithWindowsDesc": "Apre il launcher automaticamente all'accesso.",
   "settings.minimizeOnGame": "Riduci all'avvio di un gioco",
-  "settings.minimizeOnGameDesc": "Manda il launcher nella barra delle applicazioni all'avvio di un gioco (la Modalità TV resta aperta).",
+  "settings.minimizeOnGameDesc": "Manda il launcher nella barra delle applicazioni all'avvio di un gioco.",
   "settings.autostartFailed": "Impossibile aggiornare la voce di avvio di Windows.",
   "tray.show": "Mostra",
   "tray.quit": "Esci",

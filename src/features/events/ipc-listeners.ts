@@ -696,8 +696,8 @@ export async function initApp(hooks: {
               body: t("overlay.startHint", { key: overlayHotkeyLabel() }),
             }).catch(() => {});
           }
-          // Opt-in: get the launcher out of the way when a game starts. TV Mode
-          // is a fullscreen couch UI and stays where it is.
+          // Opt-in: get the launcher out of the way when a game starts. Full
+          // Screen Mode is a couch UI and stays where it is.
           if (S.minimizeOnGame && !S.isFullscreen) {
             void appMinimize().catch(() => {});
           }

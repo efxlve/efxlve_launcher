@@ -207,7 +207,7 @@
   "settings.startWithWindows": "Windows के साथ शुरू करें",
   "settings.startWithWindowsDesc": "साइन इन करने पर लॉन्चर को स्वचालित रूप से खोलता है।",
   "settings.minimizeOnGame": "गेम शुरू होने पर न्यूनतम करें",
-  "settings.minimizeOnGameDesc": "गेम लॉन्च होते ही लॉन्चर को टास्कबार में भेज देता है (टीवी मोड खुला रहता है)।",
+  "settings.minimizeOnGameDesc": "गेम लॉन्च होते ही लॉन्चर को टास्कबार में भेज देता है।",
   "settings.autostartFailed": "Windows स्टार्टअप प्रविष्टि अपडेट नहीं की जा सकी।",
   "tray.show": "दिखाएं",
   "tray.quit": "बाहर निकलें",

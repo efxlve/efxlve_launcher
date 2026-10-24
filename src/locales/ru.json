@@ -190,7 +190,7 @@
   "settings.startWithWindows": "Запускать с Windows",
   "settings.startWithWindowsDesc": "Автоматически открывает лаунчер при входе в систему.",
   "settings.minimizeOnGame": "Сворачивать при запуске игры",
-  "settings.minimizeOnGameDesc": "Сворачивает лаунчер в панель задач при запуске игры (режим ТВ остаётся открытым).",
+  "settings.minimizeOnGameDesc": "Сворачивает лаунчер в панель задач при запуске игры.",
   "settings.autostartFailed": "Не удалось обновить запись автозапуска Windows.",
   "tray.show": "Показать",
   "tray.quit": "Выйти",

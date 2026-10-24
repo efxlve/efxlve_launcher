@@ -190,7 +190,7 @@
   "settings.startWithWindows": "Uruchamiaj z Windows",
   "settings.startWithWindowsDesc": "Otwiera launcher automatycznie po zalogowaniu.",
   "settings.minimizeOnGame": "Minimalizuj przy starcie gry",
-  "settings.minimizeOnGameDesc": "Minimalizuje launcher do paska zadań po uruchomieniu gry (tryb TV pozostaje otwarty).",
+  "settings.minimizeOnGameDesc": "Minimalizuje launcher do paska zadań po uruchomieniu gry.",
   "settings.autostartFailed": "Nie udało się zaktualizować wpisu autostartu Windows.",
   "tray.show": "Pokaż",
   "tray.quit": "Zakończ",
