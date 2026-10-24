@@ -745,6 +745,10 @@ static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 /// when the window title lookup fails.
 #[cfg(windows)]
 static SHOW_EVENT: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+/// Set once this instance has its main window on screen. A second launch waits
+/// on it to tell "still booting" from "alive with no window".
+#[cfg(windows)]
+static WINDOW_READY: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
 
 /// Creates one window declared in `tauri.conf.json`.
 ///
@@ -934,8 +938,12 @@ fn watch_boot_window(app: tauri::AppHandle) {
         if EXITING.load(std::sync::atomic::Ordering::Relaxed) {
             return;
         }
+        // A modal box cannot help here: the window it would belong to is gone,
+        // so the box can sit unseen behind other windows and hold the process,
+        // the tray and the single-instance lock for as long as it is up.
         let Some(window) = app.get_window("main") else {
-            report_boot_failure(&app, "the main window disappeared during boot");
+            perf::write_line_global("boot: main window gone during boot; exiting");
+            std::process::exit(1);
         };
         match window.is_visible() {
             Ok(true) => {}
@@ -970,6 +978,32 @@ fn watch_boot_window(app: tauri::AppHandle) {
                 window.is_visible(),
                 window.is_minimized()
             ));
+        }
+    });
+}
+
+/// A launcher with nothing on screen must not keep running. When its webview
+/// dies the window goes with it, but the event loop stays alive: the process
+/// sits in Task Manager at a few megabytes with no tray icon, and because it
+/// still owns the single-instance lock every later launch exits without a
+/// window. Close that process so the next click starts clean.
+fn watch_main_window_life(app: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        let mut missing = 0u8;
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            if EXITING.load(std::sync::atomic::Ordering::Relaxed) {
+                return;
+            }
+            if app.get_window("main").is_some() {
+                missing = 0;
+                continue;
+            }
+            missing += 1;
+            if missing >= 2 {
+                perf::write_line_global("boot: main window gone; exiting instead of idling");
+                std::process::exit(0);
+            }
         }
     });
 }
@@ -1265,6 +1299,10 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
     let event_name: Vec<u16> = "Local\\EfxlveLauncherShowEvent\0"
         .encode_utf16()
         .collect();
+    let title_name: Vec<u16> = "Efxlve Launcher\0".encode_utf16().collect();
+    let ready_name: Vec<u16> = "Local\\EfxlveLauncherWindowReady\0"
+        .encode_utf16()
+        .collect();
     let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 1, mutex_name.as_ptr()) };
     if handle.is_null() {
         return None;
@@ -1279,21 +1317,85 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
                 CloseHandle(event);
             }
         }
-        let title: Vec<u16> = "Efxlve Launcher\0".encode_utf16().collect();
-        let hwnd = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
-        if !hwnd.is_null() {
-            unsafe {
-                ShowWindow(hwnd, SW_RESTORE);
-                SetForegroundWindow(hwnd);
+        // A process can own the lock with no window at all: its webview died,
+        // or its exit never finished. Exiting here made a click do nothing.
+        // Wait for the other instance to put a window on screen, then start
+        // anyway instead of dying quietly.
+        if wait_for_other_window(&title_name, &ready_name) {
+            let hwnd = unsafe { FindWindowW(std::ptr::null(), title_name.as_ptr()) };
+            if !hwnd.is_null() {
+                unsafe {
+                    ShowWindow(hwnd, SW_RESTORE);
+                    SetForegroundWindow(hwnd);
+                }
             }
+            std::process::exit(0);
         }
-        std::process::exit(0);
     }
     let event = unsafe { CreateEventW(std::ptr::null_mut(), 0, 0, event_name.as_ptr()) };
     if !event.is_null() {
         let _ = SHOW_EVENT.set(event as usize);
     }
+    let ready = unsafe { CreateEventW(std::ptr::null_mut(), 1, 0, ready_name.as_ptr()) };
+    if !ready.is_null() {
+        let _ = WINDOW_READY.set(ready as usize);
+    }
     Some(handle)
+}
+
+/// True when the other instance has a window on screen within the budget. The
+/// ready event says which case this is: unsignalled means the build is still
+/// booting (worth waiting for), signalled with no window means the process is
+/// stale (its webview died), and a missing event means an older build.
+#[cfg(windows)]
+fn wait_for_other_window(title: &[u16], ready_name: &[u16]) -> bool {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn OpenEventW(access: u32, inherit: i32, name: *const u16) -> *mut core::ffi::c_void;
+        fn WaitForSingleObject(handle: *mut core::ffi::c_void, millis: u32) -> u32;
+        fn CloseHandle(handle: *mut core::ffi::c_void) -> i32;
+    }
+    #[link(name = "user32")]
+    extern "system" {
+        fn FindWindowW(class: *const u16, title: *const u16) -> *mut core::ffi::c_void;
+    }
+    const SYNCHRONIZE: u32 = 0x0010_0000;
+
+    let mut budget = std::time::Duration::from_millis(1_500);
+    let ready = unsafe { OpenEventW(SYNCHRONIZE, 0, ready_name.as_ptr()) };
+    if !ready.is_null() {
+        let signalled = unsafe { WaitForSingleObject(ready, 0) } == 0;
+        unsafe { CloseHandle(ready) };
+        budget = if signalled {
+            std::time::Duration::ZERO
+        } else {
+            std::time::Duration::from_secs(8)
+        };
+    }
+    let deadline = std::time::Instant::now() + budget;
+    loop {
+        if !unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) }.is_null() {
+            return true;
+        }
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+}
+
+/// Tells a second launch that this instance has a window on screen.
+#[cfg(windows)]
+fn signal_window_ready() {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn SetEvent(handle: *mut core::ffi::c_void) -> i32;
+    }
+    if let Some(handle) = WINDOW_READY.get() {
+        unsafe {
+            SetEvent(*handle as *mut core::ffi::c_void);
+        }
+    }
 }
 
 #[cfg(not(windows))]
@@ -1417,6 +1519,8 @@ fn main() {
                 let _ = win.unminimize();
                 let _ = win.show();
                 let _ = win.set_focus();
+                #[cfg(windows)]
+                signal_window_ready();
                 if let Ok(position) = win.outer_position() {
                     perf::write_line_global(&format!(
                         "boot: main window created at {},{} visible={:?} minimized={:?}",
@@ -1475,6 +1579,7 @@ fn main() {
             }
             listen_for_show_requests(app.handle().clone());
             watch_boot_window(app.handle().clone());
+            watch_main_window_life(app.handle().clone());
             trace_window_state(app.handle().clone());
             Ok(())
         })

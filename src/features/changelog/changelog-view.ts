@@ -58,6 +58,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     ],
     fixed: [
       {
+        en: "A launcher whose window disappears no longer sits in the background holding the app open. It closes itself, and the next launch opens normally instead of doing nothing.",
+        tr: "Penceresi kaybolan launcher artık arka planda takılı kalmıyor. Kendini kapatıyor ve bir sonraki açılış hiçbir şey yapmamak yerine normal açılıyor.",
+      },
+      {
         en: "A collection game's tick now changes immediately instead of waiting for the list to repaint.",
         tr: "Koleksiyondaki bir oyunun işareti artık liste yeniden çizilmesini beklemeden anında değişiyor.",
       },
