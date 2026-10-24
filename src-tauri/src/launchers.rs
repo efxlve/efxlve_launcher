@@ -41,15 +41,6 @@ fn first_file(candidates: &[&str]) -> Option<PathBuf> {
     candidates.iter().map(PathBuf::from).find(|path| path.is_file())
 }
 
-fn epic_launcher() -> Option<PathBuf> {
-    first_file(&[
-        r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
-        r"C:\Program Files\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
-        r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
-        r"C:\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
-    ])
-}
-
 fn gog_galaxy() -> Option<PathBuf> {
     first_file(&[
         r"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe",
@@ -64,14 +55,6 @@ fn gog_storage() -> Option<PathBuf> {
     dir.is_dir().then_some(dir)
 }
 
-/// `<ProgramData>/Epic/UnrealEngineLauncher` exists once the Epic Games
-/// Launcher has run.
-fn egl_data() -> Option<PathBuf> {
-    let base = std::env::var_os("ProgramData")?;
-    let dir = PathBuf::from(base).join("Epic").join("UnrealEngineLauncher");
-    dir.is_dir().then_some(dir)
-}
-
 /// Installation state and path of one client.
 fn state(id: &str) -> (bool, String) {
     // The Xbox app ships as a Store package and has no single path.
@@ -79,7 +62,9 @@ fn state(id: &str) -> (bool, String) {
         return (crate::companion::client_installed("xbox"), String::new());
     }
     let path = match id {
-        "epic" => epic_launcher().or_else(egl_data),
+        // Only the executable counts. `%ProgramData%\Epic\UnrealEngineLauncher`
+        // outlives an uninstall and must not make a missing launcher look installed.
+        "epic" => crate::legendary::import_installed::epic_launcher_executable(),
         "gog" => gog_galaxy().or_else(gog_storage),
         "steam" => crate::steam::steam_install_path(),
         _ => crate::companion::client_path(id),
