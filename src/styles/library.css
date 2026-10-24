@@ -216,7 +216,7 @@
 .pcard-title {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -241,6 +241,8 @@
   padding: 0;
   flex-shrink: 0;
   margin-left: auto;
+  /* The 14px title's glyphs sit a pixel above the row centre. */
+  top: -1px;
   position: relative;
   z-index: 3;
   line-height: 1;
@@ -360,14 +362,54 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* The stores a game belongs to: a small plate each, never a plain text line. */
 .pcard-stores {
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.pcard-store-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 17px;
+  padding: 0 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10px;
   font-weight: 500;
-  color: var(--text-3);
-  letter-spacing: 0.02em;
+  line-height: 1;
+  letter-spacing: 0.01em;
   white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.pcard-store-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.pcard-store-logo {
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.pcard-store-more {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 /* Games that belong to another saved account keep a quiet card: the owner is
    shown on the detail page action bar only. */
@@ -378,14 +420,15 @@
 }
 .pgrid.highlight-installed .pcard.not-installed .pcard-title,
 .pgrid.contrast-titles .pcard.not-installed .pcard-title {
-  color: var(--text-3);
+  /* The cover stays dimmed; the title must stay readable above its plate. */
+  color: var(--text-2);
   font-weight: 500;
 }
 .pgrid.highlight-installed .pcard.not-installed:hover .pcard-title,
 .pgrid.highlight-installed .pcard.not-installed:focus-visible .pcard-title,
 .pgrid.contrast-titles .pcard.not-installed:hover .pcard-title,
 .pgrid.contrast-titles .pcard.not-installed:focus-visible .pcard-title {
-  color: var(--text-2);
+  color: var(--text);
 }
 .pgrid.has-captions > .pcard { contain-intrinsic-size: auto 338px; }
 

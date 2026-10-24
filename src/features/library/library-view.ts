@@ -387,6 +387,32 @@ function caseCoverHeader(s: EpicSummary, source: GameSource): string {
   </div>`;
 }
 
+/** A small storefront plate: the mark and its name under a cover. */
+function storePlateHtml(source: GameSource): string {
+  return `<span class="pcard-store-plate">${storeLogo(source, 11, "pcard-store-logo")}<span class="pcard-store-name">${esc(sourceLabel(source))}</span></span>`;
+}
+
+/**
+ * The card's own storefront as a plate, plus how many other stores own the same
+ * title. A second full plate would ellipsize both names on a narrow card; the
+ * title attribute still lists every store.
+ */
+function storePlatesHtml(s: EpicSummary): string {
+  if (!S.showStoreBadge || S.enabledStores.size <= 1) return "";
+  const sources: GameSource[] = [];
+  for (const key of storeKeysForTitle(s.title || s.appName)) {
+    const source = sourceOfKey(key);
+    if (!sources.includes(source)) sources.push(source);
+  }
+  const own = sourceOfKey(s.appName);
+  const at = sources.indexOf(own);
+  if (at > 0) sources.splice(at, 1);
+  if (at !== 0) sources.unshift(own);
+  const others = sources.length - 1;
+  const label = sources.map(sourceLabel).join(", ");
+  return `<span class="pcard-stores" title="${esc(label)}">${storePlateHtml(own)}${others > 0 ? `<span class="pcard-store-more">+${others}</span>` : ""}</span>`;
+}
+
 /**
  * Grid tile is the portrait only, plus an optional caption under the cover
  * ("Titles under covers" in Settings). Hover grows the cover frame, not the caption.
@@ -395,16 +421,15 @@ function caseCoverHeader(s: EpicSummary, source: GameSource): string {
  */
 export function epicCardPortrait(s: EpicSummary): string {
   const title = esc(s.title);
-  const showStores = S.showStoreBadge && S.enabledStores.size > 1;
-  const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
+  const storePlates = storePlatesHtml(s);
   const playBtnHtml = libraryInstalledIcon(s.appName, s.installed);
   const titleRow = S.showCoverTitles
     ? `<span class="pcard-title-row"><span class="pcard-title">${title}</span>${playBtnHtml}</span>`
     : "";
-  const caption = (S.showCoverTitles || Boolean(storesLabel))
+  const caption = (S.showCoverTitles || Boolean(storePlates))
     ? `<div class="pcard-caption">
         ${titleRow}
-        ${storesLabel ? `<span class="pcard-stores">${storesLabel}</span>` : ""}
+        ${storePlates}
       </div>`
     : "";
   const source = sourceOfKey(s.appName);
@@ -472,6 +497,7 @@ export function resetCardChunk(): void {
 function sourceLabel(source: string): string {
   if (source === "amazon") return "Amazon Games";
   if (source === "riot") return "Riot Games";
+  if (source === "custom") return t("customGames.storeLabel");
   return (STORE_LABELS as Record<string, string>)[source] ?? source;
 }
 
