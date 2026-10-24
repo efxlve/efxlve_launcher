@@ -622,9 +622,6 @@ function renderCollectionBanner(inCollection: boolean): string {
         </div>
       </div>
       <div class="lib-col-banner-actions">
-        <button type="button" class="btn ghost small" data-act="col-play-random" data-col-id="${esc(S.activeCollectionId)}" title="${esc(t("library.random"))}">
-          ${icon("shuffle", 14)} <span>${esc(t("library.random"))}</span>
-        </button>
         ${activeCol ? `
           <button type="button" class="btn ghost small" data-act="edit-collection" data-col-id="${esc(activeCol.id)}" title="${esc(t("col.edit"))}">
             ${icon("settings", 13)} <span>${esc(t("col.edit"))}</span>
