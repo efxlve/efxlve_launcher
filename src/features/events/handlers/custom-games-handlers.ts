@@ -6,6 +6,7 @@ import {
   openAddCustomGameModal,
   openEditCustomGameModal,
   closeAddCustomGameModal,
+  handlePickCustomCover,
   handlePickCustomExe,
   handlePickExeForGame,
   handleSaveCustomGame,
@@ -56,6 +57,10 @@ export function handleCustomGamesAction(act: string | undefined, id?: string): b
 
     case "pick-custom-exe":
       void handlePickCustomExe();
+      return true;
+
+    case "pick-custom-cover":
+      handlePickCustomCover();
       return true;
 
     case "save-custom-game":

@@ -2869,6 +2869,8 @@
   "customGames.browse": "Gözat...",
   "customGames.fieldArgs": "Başlatma Argümanları",
   "customGames.fieldCoverUrl": "Kapak Resmi URL",
+  "customGames.coverUpload": "Yükle",
+  "customGames.coverUploadFailed": "Bu görsel okunamadı",
   "customGames.fieldDesc": "Açıklama",
   "customGames.fieldYear": "Çıkış Yılı",
   "customGames.fieldSteamAppId": "Steam AppID (başarımlar için)",

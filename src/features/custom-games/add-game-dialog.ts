@@ -52,13 +52,43 @@ function wireEscape(): void {
 let editingId: string | null = null;
 /** Artwork of the search hit selected in this session, if any. */
 let pickedHit: SearchHit | null = null;
+/** Cover chosen from disk in this session, stored as a data URL. */
+let pickedCover: string | null = null;
 let pickedDetails: SteamGameStoreDetails | null = null;
+
+/** Largest edge of a stored cover: the card stays sharp and the JSON small. */
+const COVER_MAX_W = 640;
+const COVER_MAX_H = 960;
+/** A cover data URL past this size is re-encoded or rejected. */
+const COVER_MAX_DATA_CHARS = 1_200_000;
+
+/** Cover preview body: the picture (or the placeholder) and the upload hint. */
+function coverPreviewHtml(src: string | null | undefined): string {
+  const image = src
+    ? `<img src="${esc(src)}" alt="Cover" />`
+    : `<div class="cover-placeholder">${icon("gamepad-2", 36)}</div>`;
+  return `${image}<span class="custom-cover-upload-chip">${icon("upload", 11)}<span>${esc(t("customGames.coverUpload"))}</span></span>`;
+}
+
+/** Paints a preview and falls back to the placeholder when the picture fails. */
+function paintCoverPreview(preview: HTMLElement | null, src: string | null | undefined): void {
+  if (!preview) return;
+  preview.innerHTML = coverPreviewHtml(src);
+  preview.querySelector("img")?.addEventListener(
+    "error",
+    () => {
+      preview.innerHTML = coverPreviewHtml(null);
+    },
+    { once: true },
+  );
+}
 /** A save is in flight; a second click must not add/update twice. */
 let saving = false;
 
 export function openAddCustomGameModal(): void {
   editingId = null;
   pickedHit = null;
+  pickedCover = null;
   pickedDetails = null;
   S.isAddCustomGameOpen = true;
   wireEscape();
@@ -71,6 +101,7 @@ export function openEditCustomGameModal(id: string): void {
   if (!game) return;
   editingId = id;
   pickedHit = null;
+  pickedCover = game.coverUrl?.startsWith("data:") ? game.coverUrl : null;
   pickedDetails = game.genres?.length
     ? { name: game.title, shortDescription: "", headerImage: "", developers: [], genres: game.genres }
     : null;
@@ -84,6 +115,7 @@ export function closeAddCustomGameModal(): void {
   currentHits = [];
   editingId = null;
   pickedHit = null;
+  pickedCover = null;
   pickedDetails = null;
   const root = customGameRoot;
   const el = root?.querySelector(".custom-game-backdrop");
@@ -102,6 +134,9 @@ export function renderCustomGameModal(): void {
   }
 
   const game = editingId ? S.customGames.find((item) => item.id === editingId) : undefined;
+  // An uploaded cover is a data URL far too long for the text field; the
+  // preview carries it and the field stays empty.
+  const coverUrlValue = game?.coverUrl && !game.coverUrl.startsWith("data:") ? game.coverUrl : "";
   backdrop.innerHTML = `
     <div class="modal custom-game-modal" data-act="prevent-modal-close">
       <div class="custom-game-head">
@@ -118,9 +153,10 @@ export function renderCustomGameModal(): void {
 
       <div class="custom-game-form">
         <div class="custom-form-row preview-row">
-          <div class="custom-cover-preview" id="custom-cover-preview">
-            ${game?.coverUrl ? `<img src="${esc(game.coverUrl)}" alt="Cover" />` : `<div class="cover-placeholder">${icon("gamepad-2", 36)}</div>`}
+          <div class="custom-cover-preview" id="custom-cover-preview" role="button" tabindex="0" data-act="pick-custom-cover" title="${esc(t("customGames.coverUpload"))}">
+            ${coverPreviewHtml(game?.coverUrl)}
           </div>
+          <input type="file" id="custom-game-cover-file-input" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif" hidden />
           <div class="custom-form-meta">
             <label class="custom-field">
               <span>${esc(t("customGames.fieldTitle"))} <strong class="req">*</strong></span>
@@ -154,7 +190,7 @@ export function renderCustomGameModal(): void {
 
         <label class="custom-field">
           <span>${esc(t("customGames.fieldCoverUrl"))}</span>
-          <input type="text" id="custom-cover-input" placeholder="https://..." value="${esc(game?.coverUrl ?? "")}" />
+          <input type="text" id="custom-cover-input" placeholder="https://..." value="${esc(coverUrlValue)}" />
         </label>
 
         <label class="custom-field">
@@ -171,6 +207,9 @@ export function renderCustomGameModal(): void {
   `;
 
   attachSearchListeners(backdrop);
+  // Re-paint once so a broken cover URL falls back to the placeholder, and the
+  // initial picture gets the same error handler as later updates.
+  paintCoverPreview(backdrop.querySelector<HTMLElement>("#custom-cover-preview"), game?.coverUrl);
 }
 
 function attachSearchListeners(modalEl: HTMLElement): void {
@@ -178,19 +217,22 @@ function attachSearchListeners(modalEl: HTMLElement): void {
   const resultsDropdown = modalEl.querySelector<HTMLElement>("#custom-search-results");
   const coverInput = modalEl.querySelector<HTMLInputElement>("#custom-cover-input");
   const coverPreview = modalEl.querySelector<HTMLElement>("#custom-cover-preview");
+  const coverFileInput = modalEl.querySelector<HTMLInputElement>("#custom-game-cover-file-input");
 
   if (coverInput && coverPreview) {
     coverInput.addEventListener("input", () => {
       const url = coverInput.value.trim();
-      // A hand-typed cover is no longer the selected store hit's artwork.
+      // A hand-typed cover is no longer the selected store hit's artwork, and
+      // it replaces a cover uploaded earlier in this session.
       pickedHit = null;
-      if (url) {
-        coverPreview.innerHTML = `<img src="${esc(url)}" alt="Cover" onerror="this.parentElement.innerHTML='${icon("gamepad-2", 36)}'" />`;
-      } else {
-        coverPreview.innerHTML = `<div class="cover-placeholder">${icon("gamepad-2", 36)}</div>`;
-      }
+      pickedCover = null;
+      paintCoverPreview(coverPreview, url || null);
     });
   }
+
+  coverFileInput?.addEventListener("change", () => {
+    void applyPickedCover(coverFileInput);
+  });
 
   if (searchInput && resultsDropdown) {
     searchInput.addEventListener("input", () => {
@@ -272,12 +314,9 @@ function attachSearchListeners(modalEl: HTMLElement): void {
       if (titleInput) titleInput.value = hit.name;
       if (appidInput) appidInput.value = hit.source === "steam" ? hit.id : "";
       pickedHit = hit;
-      if (coverInput) {
-        coverInput.value = hit.coverUrl;
-        if (coverPreview && hit.coverUrl) {
-          coverPreview.innerHTML = `<img src="${esc(hit.coverUrl)}" alt="Cover" />`;
-        }
-      }
+      pickedCover = null;
+      if (coverInput) coverInput.value = hit.coverUrl;
+      paintCoverPreview(coverPreview, hit.coverUrl);
 
       resultsDropdown.classList.add("hidden");
       if (searchInput) searchInput.value = hit.name;
@@ -332,6 +371,60 @@ export async function handlePickCustomExe(): Promise<void> {
   }
 }
 
+/** Opens the file picker behind the cover placeholder. */
+export function handlePickCustomCover(): void {
+  document.getElementById("custom-game-cover-file-input")?.click();
+}
+
+/**
+ * Shrinks a picked picture to cover size, so the library JSON never carries a
+ * multi-megabyte photo. `img.decode` handles every format the WebView reads.
+ */
+async function coverFromFile(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("not an image");
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    const width = image.naturalWidth;
+    const height = image.naturalHeight;
+    if (!width || !height) throw new Error("empty image");
+    const scale = Math.min(1, COVER_MAX_W / width, COVER_MAX_H / height);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("no canvas");
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    let dataUrl = canvas.toDataURL("image/webp", 0.9);
+    if (dataUrl.length > COVER_MAX_DATA_CHARS) {
+      dataUrl = canvas.toDataURL("image/jpeg", 0.78);
+    }
+    if (dataUrl.length > COVER_MAX_DATA_CHARS) throw new Error("too large");
+    return dataUrl;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/** Reads the chosen file into the preview; the URL field stays the other way in. */
+async function applyPickedCover(input: HTMLInputElement): Promise<void> {
+  const file = input.files?.[0];
+  // Clearing the field lets the same file be picked again after a cancel.
+  input.value = "";
+  if (!file) return;
+  try {
+    pickedCover = await coverFromFile(file);
+    pickedHit = null;
+    const coverInput = document.getElementById("custom-cover-input") as HTMLInputElement | null;
+    if (coverInput) coverInput.value = "";
+    paintCoverPreview(document.getElementById("custom-cover-preview"), pickedCover);
+  } catch {
+    toast(t("customGames.coverUploadFailed"), "err");
+  }
+}
+
 export async function handleSaveCustomGame(): Promise<void> {
   if (saving) return;
   const titleInput = document.getElementById("custom-title-input") as HTMLInputElement | null;
@@ -351,20 +444,25 @@ export async function handleSaveCustomGame(): Promise<void> {
   }
 
   const launchArgs = argsInput?.value.trim() || undefined;
-  const coverUrl = coverInput?.value.trim() || undefined;
+  // An uploaded cover wins over the URL field; typing a URL clears it above.
+  const coverUrl = pickedCover || coverInput?.value.trim() || undefined;
   const description = descInput?.value.trim() || undefined;
   const releaseYear = yearInput?.value ? Number(yearInput.value) : undefined;
   const steamAppId = appidInput?.value.trim() || undefined;
 
   const base = editingId ? S.customGames.find((item) => item.id === editingId) : undefined;
+  // Store art outlives a new cover; a previous upload does not, or the hero
+  // would keep showing the picture the user just replaced.
+  const baseHeader = base?.headerUrl && base.headerUrl !== base.coverUrl && !base.headerUrl.startsWith("data:") ? base.headerUrl : undefined;
+  const baseHero = base?.heroUrl && base.heroUrl !== base.coverUrl && !base.heroUrl.startsWith("data:") ? base.heroUrl : undefined;
   const payload: CustomGame = {
     id: base?.id ?? "",
     title,
     exePath,
     launchArgs,
     coverUrl,
-    headerUrl: pickedHit?.headerUrl || base?.headerUrl || coverUrl,
-    heroUrl: pickedHit?.heroUrl || base?.heroUrl || coverUrl,
+    headerUrl: pickedHit?.headerUrl || baseHeader || (pickedCover ? undefined : coverUrl),
+    heroUrl: pickedHit?.heroUrl || baseHero || (pickedCover ? undefined : coverUrl),
     description,
     developer: pickedDetails?.developers?.filter(Boolean).join(", ") || base?.developer,
     releaseYear: releaseYear ?? base?.releaseYear,

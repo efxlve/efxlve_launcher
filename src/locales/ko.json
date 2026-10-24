@@ -2869,6 +2869,8 @@
   "customGames.browse": "Browse...",
   "customGames.fieldArgs": "Launch Arguments",
   "customGames.fieldCoverUrl": "Cover Image URL",
+  "customGames.coverUpload": "업로드",
+  "customGames.coverUploadFailed": "이 이미지를 읽을 수 없습니다",
   "customGames.fieldDesc": "Description",
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",

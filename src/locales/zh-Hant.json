@@ -2869,6 +2869,8 @@
   "customGames.browse": "Browse...",
   "customGames.fieldArgs": "Launch Arguments",
   "customGames.fieldCoverUrl": "Cover Image URL",
+  "customGames.coverUpload": "上傳",
+  "customGames.coverUploadFailed": "無法讀取這張圖片",
   "customGames.fieldDesc": "Description",
   "customGames.fieldYear": "Release Year",
   "customGames.fieldSteamAppId": "Steam AppID (for achievements)",
