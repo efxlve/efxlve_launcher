@@ -26,6 +26,17 @@ pub fn init(dir: PathBuf) {
     let _ = LOG_PATH.set(dir.join("perf.log"));
 }
 
+/// Starts one launch's block in the log. Without this header a trimmed log
+/// mixes several runs and a report cannot say which build or hour a line came
+/// from, which is the first question a "it closed by itself" report asks.
+pub fn start_session() {
+    write_line_global(&format!(
+        "=== v{} {} ===",
+        env!("CARGO_PKG_VERSION"),
+        crate::clock::stamp(std::time::SystemTime::now())
+    ));
+}
+
 /// Appends one line; never fails loudly (logging must not break a boot).
 pub fn write_line_global(line: &str) {
     let Some(path) = LOG_PATH.get() else {

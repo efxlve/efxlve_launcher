@@ -1,9 +1,10 @@
 //! User-triggered feedback reports.
 //!
 //! A report is a small zip the user can attach to a GitHub issue. It contains
-//! the note, environment details, the performance log, and a sanitized copy of
-//! the settings. Logs are copied only when the user leaves diagnostics enabled;
-//! account vaults and Spotify tokens are never included.
+//! the note, environment details, the window and boot state, the performance
+//! log, and a sanitized copy of the settings. Logs are copied only when the
+//! user leaves diagnostics enabled; account vaults and Spotify tokens are never
+//! included.
 
 use std::io::Write;
 use std::path::Path;
@@ -225,6 +226,13 @@ fn create_report(
         system_text(&app).as_bytes(),
         &mut files,
     )?;
+    add_bytes(
+        &mut archive,
+        options,
+        "boot.txt",
+        boot_text(&app, include_logs).as_bytes(),
+        &mut files,
+    )?;
 
     if include_logs {
         if let Some(settings) = redacted_settings(&app) {
@@ -288,9 +296,86 @@ pub fn feedback_recovery_pending(state: tauri::State<'_, crate::RunMarker>) -> b
     state.recovery
 }
 
+/// One line about the window at report time.
+fn window_state(app: &AppHandle) -> String {
+    let Some(window) = app.get_window("main") else {
+        return "Main window: missing".into();
+    };
+    let flag = |value: tauri::Result<bool>| match value {
+        Ok(true) => "true",
+        Ok(false) => "false",
+        Err(_) => "?",
+    };
+    format!(
+        "Main window: visible={} minimized={} focused={}\n{}",
+        flag(window.is_visible()),
+        flag(window.is_minimized()),
+        flag(window.is_focused()),
+        crate::display_line(&window),
+    )
+}
+
+/// The window and boot lines of one log text, newest session only. Walking the
+/// log backwards stops at the session header, which is why a trimmed log still
+/// yields the run that matters.
+fn session_lines(text: &str) -> Vec<String> {
+    let mut kept = Vec::new();
+    for line in text.lines().rev() {
+        if line.starts_with("=== ") {
+            kept.push(line.to_string());
+            break;
+        }
+        if (line.starts_with("win:") || line.starts_with("boot:")) && kept.len() < 200 {
+            kept.push(line.to_string());
+        }
+    }
+    kept.reverse();
+    kept
+}
+
+fn last_session_lines(app: &AppHandle) -> Vec<String> {
+    let Ok(dir) = app.path().app_data_dir() else {
+        return Vec::new();
+    };
+    let Ok(text) = std::fs::read_to_string(dir.join("perf.log")) else {
+        return Vec::new();
+    };
+    session_lines(&text)
+}
+
+/// `boot.txt`: the state a "it opened and then closed by itself" report needs.
+fn boot_text(app: &AppHandle, include_logs: bool) -> String {
+    let previous = match app.try_state::<crate::RunMarker>() {
+        Some(marker) if marker.recovery => "no (the run before this one left its marker behind)",
+        Some(_) => "yes",
+        None => "unknown",
+    };
+    let mut text = format!(
+        "Efxlve Launcher: v{}\nRecorded: {} (UTC)\nPrevious session ended cleanly: {}\nRuns without a clean exit in a row: {}\n{}\n",
+        env!("CARGO_PKG_VERSION"),
+        crate::clock::stamp(std::time::SystemTime::now()),
+        previous,
+        crate::read_crash_streak(app),
+        window_state(app),
+    );
+    if include_logs {
+        let lines = last_session_lines(app);
+        text.push_str("\nTimeline (last launch):\n");
+        if lines.is_empty() {
+            text.push_str("no window events recorded (build before the trace existed)\n");
+        } else {
+            for line in lines {
+                text.push_str(&line);
+                text.push('\n');
+            }
+        }
+    }
+    text
+}
+
 #[cfg(test)]
 mod tests {
-    use super::redact_settings;
+    use super::{redact_settings, session_lines};
     use serde_json::json;
 
     #[test]
@@ -305,5 +390,44 @@ mod tests {
         assert_eq!(value["nested"]["refresh_token"], "<redacted>");
         assert_eq!(value["install_dir"], "D:/Games");
         assert_eq!(value["nested"]["theme"], "aero");
+    }
+
+    #[test]
+    fn only_the_last_launch_is_reported() {
+        let log = "\
+=== v0.1.36 2026-10-23 20:00:00 ===
+  121 ms  main:module
+win: visible=true minimized=false at +0 ms
+win: visible=false minimized=false at +2310 ms
+=== v0.1.37 2026-10-24 21:00:00 ===
+  125 ms  main:module
+win: visible=true minimized=false at +0 ms
+boot: exit requested
+boot: exit
+";
+        let lines = session_lines(log);
+        assert_eq!(lines[0], "=== v0.1.37 2026-10-24 21:00:00 ===");
+        assert!(lines.contains(&"win: visible=true minimized=false at +0 ms".to_string()));
+        assert!(lines.contains(&"boot: exit".to_string()));
+        assert!(
+            !lines.iter().any(|line| line.contains("2310 ms")),
+            "the previous launch must not be mixed into the report"
+        );
+        assert!(
+            !lines.iter().any(|line| line.contains("main:module")),
+            "timings are already in perf.log"
+        );
+    }
+
+    #[test]
+    fn a_log_without_a_header_still_yields_its_lines() {
+        let lines = session_lines("win: close requested; hidden to the tray\nboot: exit");
+        assert_eq!(
+            lines,
+            vec![
+                "win: close requested; hidden to the tray".to_string(),
+                "boot: exit".to_string()
+            ]
+        );
     }
 }

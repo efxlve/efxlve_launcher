@@ -2,6 +2,7 @@
 #![windows_subsystem = "windows"]
 
 mod cloud_backup;
+mod clock;
 mod comet;
 mod custom_games;
 mod compat;
@@ -395,6 +396,9 @@ fn app_minimize(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    // "The window closed by itself" was a minimize the user did not ask for;
+    // name the caller in the log so the next report says which feature did it.
+    perf::write_line_global("win: minimize requested by the interface");
     window.minimize().map_err(|e| e.to_string())
 }
 
@@ -693,6 +697,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => {
                 if let Some(w) = app.get_window("main") {
+                    perf::write_line_global("win: shown from the tray");
                     let _ = w.show();
                     let _ = w.set_focus();
                 }
@@ -703,9 +708,11 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     // Keep the backend monitor, downloads and playtime tracking
                     // alive while hidden.
                     if let Some(w) = app.get_window("main") {
+                        perf::write_line_global("win: tray quit kept the app hidden for a download or game");
                         let _ = w.hide();
                     }
                 } else {
+                    perf::write_line_global("win: quit from the tray");
                     app.exit(0);
                 }
             }
@@ -720,6 +727,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             {
                 let app = tray.app_handle();
                 if let Some(w) = app.get_window("main") {
+                    perf::write_line_global("win: shown from a tray click");
                     let _ = w.show();
                     let _ = w.set_focus();
                 }
@@ -781,18 +789,23 @@ fn quarantine_webview_profile(app: &tauri::App) -> Option<std::path::PathBuf> {
 /// treated as a broken WebView2 profile: the profile is moved aside and the
 /// next boot runs with software rendering, which recovers the common cases
 /// without the user deleting anything by hand.
-fn boot_state_path(app: &tauri::App) -> Option<std::path::PathBuf> {
-    app.path().app_data_dir().ok().map(|dir| dir.join("boot_recovery.txt"))
+fn boot_state_path(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("boot_recovery.txt"))
 }
 
-fn read_crash_streak(app: &tauri::App) -> u32 {
+/// Consecutive runs that never reached a clean exit. The feedback report quotes
+/// it, so it is readable from outside this file.
+pub(crate) fn read_crash_streak(app: &AppHandle) -> u32 {
     boot_state_path(app)
         .and_then(|path| std::fs::read_to_string(path).ok())
         .and_then(|text| text.trim().parse().ok())
         .unwrap_or(0)
 }
 
-fn write_crash_streak(app: &tauri::App, streak: u32) {
+fn write_crash_streak(app: &AppHandle, streak: u32) {
     if let Some(path) = boot_state_path(app) {
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -801,14 +814,13 @@ fn write_crash_streak(app: &tauri::App, streak: u32) {
     }
 }
 
-fn reset_crash_streak(app: &tauri::AppHandle) {
-    if let Ok(dir) = app.path().app_data_dir() {
-        let _ = std::fs::write(dir.join("boot_recovery.txt"), "0");
-    }
+fn reset_crash_streak(app: &AppHandle) {
+    write_crash_streak(app, 0);
 }
 
 fn recover_broken_webview(app: &tauri::App, recovery: bool, early_crash: bool) {
-    let mut streak = read_crash_streak(app);
+    let handle = app.handle();
+    let mut streak = read_crash_streak(handle);
     if recovery {
         streak = streak.saturating_add(1);
     } else {
@@ -832,7 +844,7 @@ fn recover_broken_webview(app: &tauri::App, recovery: bool, early_crash: bool) {
         ));
         streak = 0;
     }
-    write_crash_streak(app, streak);
+    write_crash_streak(handle, streak);
 }
 
 /// Builds the main window, retrying once without the previous webview profile.
@@ -957,6 +969,72 @@ fn watch_boot_window(app: tauri::AppHandle) {
                 window.is_visible(),
                 window.is_minimized()
             ));
+        }
+    });
+}
+
+/// One line with the desktop layout. A window restored onto a monitor that is
+/// no longer connected is the other way a launcher "closes" without crashing.
+/// The feedback report quotes it, so it is readable from outside this file.
+pub(crate) fn display_line(window: &tauri::Window) -> String {
+    let count = window
+        .available_monitors()
+        .map(|list| list.len().to_string())
+        .unwrap_or_else(|_| "?".into());
+    let current = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|monitor| {
+            let size = monitor.size();
+            let position = monitor.position();
+            format!(
+                "{}x{} at {},{}",
+                size.width, size.height, position.x, position.y
+            )
+        })
+        .unwrap_or_else(|| "unknown".into());
+    let scale = window
+        .scale_factor()
+        .map(|value| format!("{value:.2}"))
+        .unwrap_or_else(|_| "?".into());
+    format!("Display: {count} monitors; current {current}; scale {scale}")
+}
+
+/// Records what the main window does right after boot. "It opened, then
+/// vanished, but the process is still there" leaves no crash and no log line on
+/// its own, so the state changes themselves become the evidence: a hide or a
+/// minimize names itself here, and the first line carries the monitor layout.
+fn trace_window_state(app: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        let started = std::time::Instant::now();
+        let mut last = String::new();
+        while started.elapsed() < std::time::Duration::from_secs(20) {
+            if EXITING.load(std::sync::atomic::Ordering::Relaxed) {
+                return;
+            }
+            let Some(window) = app.get_window("main") else {
+                perf::write_line_global(&format!(
+                    "win: main window is gone at +{} ms",
+                    started.elapsed().as_millis()
+                ));
+                return;
+            };
+            let visible = window.is_visible().unwrap_or(false);
+            let minimized = window.is_minimized().unwrap_or(false);
+            let state = format!("visible={visible} minimized={minimized}");
+            if state != last {
+                if last.is_empty() {
+                    perf::write_line_global(&format!("win: {state}; {}", display_line(&window)));
+                } else {
+                    perf::write_line_global(&format!(
+                        "win: {state} at +{} ms",
+                        started.elapsed().as_millis()
+                    ));
+                }
+                last = state;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(250));
         }
     });
 }
@@ -1286,6 +1364,7 @@ fn main() {
             // every module can write a line without an AppHandle.
             if let Ok(dir) = app.path().app_data_dir() {
                 perf::init(dir);
+                perf::start_session();
             }
             let marker_path = app
                 .path()
@@ -1395,6 +1474,7 @@ fn main() {
             }
             listen_for_show_requests(app.handle().clone());
             watch_boot_window(app.handle().clone());
+            trace_window_state(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -1406,8 +1486,11 @@ fn main() {
                     || has_active_download(&window.app_handle())
                     || has_running_game()
                 {
+                    perf::write_line_global("win: close requested; hidden to the tray");
                     api.prevent_close();
                     let _ = window.hide();
+                } else {
+                    perf::write_line_global("win: close requested; exiting");
                 }
             }
             if let tauri::WindowEvent::Resized(physical_size) = event {
@@ -1887,13 +1970,16 @@ fn main() {
 
     install_crash_logger(&app);
     app.run(|app_handle, event| {
-        if matches!(
-            event,
-            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
-        ) {
-            EXITING.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let tauri::RunEvent::ExitRequested { .. } = event {
+            if !EXITING.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                perf::write_line_global("boot: exit requested");
+            }
         }
         if let tauri::RunEvent::Exit = event {
+            EXITING.store(true, std::sync::atomic::Ordering::Relaxed);
+            // The last line of a run. Without it a log cannot tell a clean quit
+            // from a process that died between two boots.
+            perf::write_line_global("boot: exit");
             // A clean exit means the next boot should not show the recovery
             // feedback prompt.
             if let Some(marker) = app_handle.try_state::<RunMarker>() {
