@@ -42,20 +42,21 @@ pub(crate) fn start(app: AppHandle) {
     std::thread::spawn(move || {
         let mut gone_ticks: u32 = 0;
         loop {
-            let (visible, enabled, game_disabled, combo, game_hwnd, cur_app, cur_title) = STATE
+            let (visible, enabled, game_disabled, capturing, combo, game_hwnd, cur_app, cur_title) = STATE
                 .lock()
                 .map(|s| {
                     (
                         s.visible,
                         s.enabled,
                         s.game_disabled,
+                        s.capturing,
                         s.combo,
                         s.game_hwnd,
                         s.game_app.clone(),
                         s.game_title.clone(),
                     )
                 })
-                .unwrap_or((false, true, false, None, 0, String::new(), String::new()));
+                .unwrap_or((false, true, false, false, None, 0, String::new(), String::new()));
 
             // Switched off, or this game opted out: sleep without touching the
             // keyboard. The window is already gone (the command tore it down).
@@ -102,7 +103,9 @@ pub(crate) fn start(app: AppHandle) {
             #[cfg(windows)]
             {
                 let pad_down = is_controller_hotkey_down();
-                let down = combo_down(combo) || pad_down;
+                // The Settings recorder owns the keyboard while it listens; the
+                // old combination must not open the panel over the capture.
+                let down = !capturing && (combo_down(combo) || pad_down);
 
                 if down != hotkey_down() {
                     set_hotkey_down(down);

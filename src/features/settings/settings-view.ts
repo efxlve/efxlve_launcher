@@ -1084,60 +1084,126 @@ function renderAppIconPicker(): string {
 function renderOverlayHotkeyPicker(): string {
   const label = hotkeyRecording ? t("settings.overlayHotkeyRecording") : hotkeyLabel(overlayHotkey());
   return `<div class="settings-inline-control">
-    <button type="button" class="btn ghost small${hotkeyRecording ? " primary" : ""}" data-act="record-overlay-hotkey">${esc(label)}</button>
+    <button type="button" class="btn ${hotkeyRecording ? "primary" : "ghost"} small" data-act="record-overlay-hotkey">${esc(label)}</button>
     <button type="button" class="btn ghost small" data-act="reset-overlay-hotkey">${t("settings.overlayHotkeyReset")}</button>
   </div>`;
 }
 
-/** Maps a keydown onto the spec vocabulary the backend parses. */
-function hotkeySpecFromEvent(event: KeyboardEvent): string | null {
-  const named: Record<string, string> = {
-    Tab: "tab",
-    Space: "space",
-    Enter: "enter",
-    Backspace: "backspace",
-    Insert: "insert",
-    Delete: "delete",
-    Home: "home",
-    End: "end",
-    PageUp: "pageup",
-    PageDown: "pagedown",
-    ArrowLeft: "left",
-    ArrowUp: "up",
-    ArrowRight: "right",
-    ArrowDown: "down",
-    Minus: "-",
-    Equal: "=",
-    BracketLeft: "[",
-    BracketRight: "]",
-    Semicolon: ";",
-    Quote: "'",
-    Comma: ",",
-    Period: ".",
-    Slash: "/",
-    Backslash: "\\",
-    Backquote: "`",
-  };
+/** Named keys and punctuation the backend understands, keyed by `event.code`. */
+const HOTKEY_KEY_BY_CODE: Record<string, string> = {
+  Tab: "tab",
+  Space: "space",
+  Enter: "enter",
+  Backspace: "backspace",
+  Insert: "insert",
+  Delete: "delete",
+  Home: "home",
+  End: "end",
+  PageUp: "pageup",
+  PageDown: "pagedown",
+  ArrowLeft: "left",
+  ArrowUp: "up",
+  ArrowRight: "right",
+  ArrowDown: "down",
+  Minus: "-",
+  Equal: "=",
+  BracketLeft: "[",
+  BracketRight: "]",
+  Semicolon: ";",
+  Quote: "'",
+  Comma: ",",
+  Period: ".",
+  Slash: "/",
+  Backslash: "\\",
+  Backquote: "`",
+};
+
+/** The same keys keyed by the character in `event.key`, shifted forms included. */
+const HOTKEY_KEY_BY_CHAR: Record<string, string> = {
+  " ": "space",
+  Tab: "tab",
+  Enter: "enter",
+  Backspace: "backspace",
+  Insert: "insert",
+  Delete: "delete",
+  Home: "home",
+  End: "end",
+  PageUp: "pageup",
+  PageDown: "pagedown",
+  ArrowLeft: "left",
+  ArrowUp: "up",
+  ArrowRight: "right",
+  ArrowDown: "down",
+  "-": "-", _: "-", "=": "=", "+": "=",
+  "[": "[", "{": "[", "]": "]", "}": "]",
+  ";": ";", ":": ";", "'": "'", "\"": "'",
+  ",": ",", "<": ",", ".": ".", ">": ".",
+  "/": "/", "?": "/", "\\": "\\", "|": "\\",
+  "`": "`", "~": "`",
+  "!": "1", "@": "2", "#": "3", "$": "4", "%": "5",
+  "^": "6", "&": "7", "*": "8", "(": "9", ")": "0",
+};
+
+/** The key the user pressed, as the backend vocabulary names it. */
+function hotkeyKeyFromEvent(event: KeyboardEvent): string | null {
   const code = event.code;
-  let key: string | null = null;
-  if (/^Key[A-Z]$/.test(code)) key = code.slice(3).toLowerCase();
-  else if (/^Digit[0-9]$/.test(code)) key = code.slice(5);
-  else if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) key = code.toLowerCase();
-  else key = named[code] ?? null;
-  if (!key) return null;
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) return code.toLowerCase();
+  const byCode = HOTKEY_KEY_BY_CODE[code];
+  if (byCode) return byCode;
+  // A physical key the backend has no name for (numpad, IntlBackslash): ignore
+  // it instead of recording a key that could never fire.
+  if (code && code !== "Unidentified") return null;
+  // WebView2 leaves `code` empty for some layouts and synthetic inputs, which
+  // used to swallow every key and leave the button on "Press the keys…".
+  const raw = event.key;
+  if (/^[a-zA-Z0-9]$/.test(raw)) return raw.toLowerCase();
+  if (/^F([1-9]|1[0-9]|2[0-4])$/i.test(raw)) return raw.toLowerCase();
+  return HOTKEY_KEY_BY_CHAR[raw] ?? null;
+}
+
+function hotkeyModifiers(event: KeyboardEvent): string[] {
   const modifiers: string[] = [];
   if (event.ctrlKey) modifiers.push("ctrl");
   if (event.altKey) modifiers.push("alt");
   if (event.shiftKey) modifiers.push("shift");
-  if (!modifiers.length) return null;
-  return [...modifiers, key].join("+");
+  return modifiers;
 }
 
 let hotkeyRecording = false;
 
+/** The button text is the whole state: no page repaint is needed per key. */
+function paintOverlayHotkeyButton(): void {
+  const btn = document.querySelector<HTMLElement>('[data-act="record-overlay-hotkey"]');
+  if (!btn) return;
+  btn.textContent = hotkeyRecording
+    ? t("settings.overlayHotkeyRecording")
+    : hotkeyLabel(overlayHotkey());
+  btn.classList.toggle("primary", hotkeyRecording);
+  btn.classList.toggle("ghost", !hotkeyRecording);
+}
+
+function onHotkeyCaptureOutside(event: MouseEvent): void {
+  const target = event.target as HTMLElement | null;
+  // Clicks on the picker's own buttons are the picker's business.
+  if (target?.closest(".settings-inline-control")?.querySelector('[data-act="record-overlay-hotkey"]')) return;
+  stopHotkeyRecording();
+}
+
+function onHotkeyCaptureBlur(): void {
+  stopHotkeyRecording();
+}
+
 function stopHotkeyRecording(): void {
+  if (!hotkeyRecording) return;
   hotkeyRecording = false;
   window.removeEventListener("keydown", onHotkeyCapture, true);
+  window.removeEventListener("blur", onHotkeyCaptureBlur);
+  document.removeEventListener("click", onHotkeyCaptureOutside, true);
+  // Let the global shortcut work again.
+  void invoke("overlay_set_hotkey_capture", { capturing: false }).catch(() => {});
+  paintOverlayHotkeyButton();
 }
 
 function onHotkeyCapture(event: KeyboardEvent): void {
@@ -1146,37 +1212,58 @@ function onHotkeyCapture(event: KeyboardEvent): void {
   event.stopPropagation();
   if (event.key === "Escape") {
     stopHotkeyRecording();
-    render();
     return;
   }
-  const spec = hotkeySpecFromEvent(event);
-  if (!spec) return;
-  stopHotkeyRecording();
-  applyOverlayHotkey(spec);
+  const key = hotkeyKeyFromEvent(event);
+  if (!key) return;
+  const modifiers = hotkeyModifiers(event);
+  if (!modifiers.length) {
+    // A lone key is not a shortcut: say why instead of silently swallowing it.
+    toast(t("settings.overlayHotkeyInvalid"), "err");
+    return;
+  }
+  void applyOverlayHotkey([...modifiers, key].join("+"));
 }
 
 function startHotkeyRecording(): void {
   if (hotkeyRecording) return;
   hotkeyRecording = true;
   window.addEventListener("keydown", onHotkeyCapture, true);
-  render();
+  window.addEventListener("blur", onHotkeyCaptureBlur);
+  document.addEventListener("click", onHotkeyCaptureOutside, true);
+  // The old combination must not open the overlay while the reader types.
+  void invoke("overlay_set_hotkey_capture", { capturing: true }).catch(() => {});
+  paintOverlayHotkeyButton();
 }
 
 /** Saves the combination and hands it to the backend. */
-function applyOverlayHotkey(spec: string): void {
+async function applyOverlayHotkey(spec: string): Promise<void> {
+  stopHotkeyRecording();
   if (!isValidHotkey(spec)) {
     toast(t("settings.overlayHotkeyInvalid"), "err");
-    render();
+    paintOverlayHotkeyButton();
     return;
   }
+  const previous = overlayHotkey();
   try {
     localStorage.setItem(OVERLAY_HOTKEY_KEY, spec);
   } catch {
     /* private mode */
   }
-  void invoke("overlay_set_hotkey", { spec }).catch(() => {});
+  try {
+    await invoke("overlay_set_hotkey", { spec });
+  } catch (error) {
+    try {
+      localStorage.setItem(OVERLAY_HOTKEY_KEY, previous);
+    } catch {
+      /* private mode */
+    }
+    toast(String(error), "err");
+    paintOverlayHotkeyButton();
+    return;
+  }
   toast(t("settings.overlayHotkeySaved", { key: hotkeyLabel(spec) }), "ok");
-  render();
+  paintOverlayHotkeyButton();
 }
 
 /** User stylesheet editor: applied live on save, never on every keystroke. */
@@ -2363,7 +2450,7 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       return true;
     }
     case "reset-overlay-hotkey": {
-      applyOverlayHotkey(DEFAULT_OVERLAY_HOTKEY);
+      void applyOverlayHotkey(DEFAULT_OVERLAY_HOTKEY);
       return true;
     }
     case "add-ss-webhook": {

@@ -37,6 +37,8 @@ pub(crate) struct OverlayState {
     pub hotkey: String,
     /// Parsed form of `hotkey`; `None` means the default Shift+Tab.
     pub combo: Option<HotkeyCombo>,
+    /// The Settings recorder is listening: the old shortcut must not fire.
+    pub capturing: bool,
     /// Game window captured when the panel opened, for focus restore.
     pub game_hwnd: isize,
     pub game_app: String,
@@ -50,6 +52,7 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     game_disabled: false,
     hotkey: String::new(),
     combo: None,
+    capturing: false,
     game_hwnd: 0,
     game_app: String::new(),
     game_title: String::new(),
@@ -176,6 +179,15 @@ pub(crate) fn parse_hotkey(spec: &str) -> Option<HotkeyCombo> {
         return None;
     }
     Some(combo)
+}
+
+/// Pauses the global shortcut while the Settings recorder listens. Without
+/// this the old combination opens the panel over the capture.
+#[tauri::command]
+pub fn overlay_set_hotkey_capture(capturing: bool) {
+    if let Ok(mut s) = STATE.lock() {
+        s.capturing = capturing;
+    }
 }
 
 /// Turns the whole overlay service on or off. Off is a real stop: the panel
