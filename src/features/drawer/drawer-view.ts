@@ -595,6 +595,59 @@ function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): s
     </div>`;
 }
 
+/** Wires hover and click interaction on the game page More menu's status submenu with a grace buffer. */
+export function wireDrawerSubmenu(menuEl: HTMLElement): void {
+  const wrap = menuEl.querySelector<HTMLElement>(".ctx-submenu-wrap");
+  if (!wrap || wrap.dataset.wired === "true") return;
+  wrap.dataset.wired = "true";
+
+  const sub = wrap.querySelector<HTMLElement>(".ps5-context-submenu");
+  const trigger = wrap.querySelector<HTMLElement>(".ctx-submenu-trigger");
+  if (!sub || !trigger) return;
+
+  let timer: number | null = null;
+  const cancel = (): void => {
+    if (timer !== null) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+  };
+  const close = (): void => {
+    cancel();
+    timer = window.setTimeout(() => {
+      wrap.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
+    }, 200);
+  };
+  const open = (): void => {
+    cancel();
+    wrap.classList.add("open");
+    trigger.setAttribute("aria-expanded", "true");
+  };
+
+  trigger.addEventListener("mouseenter", open);
+  trigger.addEventListener("mouseleave", close);
+  sub.addEventListener("mouseenter", cancel);
+  sub.addEventListener("mouseleave", close);
+
+  trigger.addEventListener("click", () => {
+    if (wrap.classList.contains("open")) {
+      wrap.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
+    } else {
+      open();
+    }
+  });
+
+  menuEl.querySelectorAll(".ps5-context-item:not(.ctx-submenu-trigger)").forEach((item) => {
+    item.addEventListener("mouseenter", () => {
+      cancel();
+      wrap.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
+    });
+  });
+}
+
 /** Primary action + favorite/store/cancel buttons (re-rendered on state changes). */
 function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): string {
   const faved = S.epicFav.has(s.appName);

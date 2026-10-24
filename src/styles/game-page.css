@@ -1916,36 +1916,41 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 }
 .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
   position: absolute;
-  left: calc(100% + 6px);
+  left: calc(100% + 4px);
   top: -6px;
   display: none;
-  min-width: 180px;
-  max-width: 230px;
-  background-color: var(--bg);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-pop);
+  min-width: 190px;
+  max-width: 240px;
   padding: 6px;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--surface-1), var(--surface-1));
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--line);
   z-index: 100;
 }
+/* Generous safe hit-test bridge so diagonal mouse movement never drops the submenu */
 .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -10px;
-  width: 10px;
+  top: -40px;
+  bottom: -40px;
+  left: -24px;
+  width: 32px;
 }
+.gp-more-menu .ctx-submenu-wrap.open > .ps5-context-submenu,
 .gp-more-menu .ctx-submenu-wrap:hover > .ps5-context-submenu,
 .gp-more-menu .ctx-submenu-wrap:focus-within > .ps5-context-submenu {
   display: block;
-  animation: gpMoreMenuIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.gp-more-menu .ctx-submenu-wrap.open > .ctx-submenu-trigger,
 .gp-more-menu .ctx-submenu-wrap:hover > .ctx-submenu-trigger,
 .gp-more-menu .ctx-submenu-wrap:focus-within > .ctx-submenu-trigger {
   background: var(--surface-2);
   color: var(--text);
 }
+.gp-more-menu .ctx-submenu-wrap.open .ctx-sub-badge,
+.gp-more-menu .ctx-submenu-wrap.open .ctx-chevron,
 .gp-more-menu .ctx-submenu-wrap:hover .ctx-sub-badge,
 .gp-more-menu .ctx-submenu-wrap:hover .ctx-chevron,
 .gp-more-menu .ctx-submenu-wrap:focus-within .ctx-sub-badge,
@@ -1958,18 +1963,68 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   border-radius: 8px;
   font-size: 13px;
   font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 .gp-more-menu .ps5-context-submenu .ps5-context-item span {
   font-weight: 400;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: color 0.12s ease;
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item:hover svg {
+  color: var(--text);
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item.active,
+.gp-more-menu .ps5-context-submenu .ps5-context-item.is-current {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 400;
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item.active svg,
+.gp-more-menu .ps5-context-submenu .ps5-context-item.is-current svg,
+.gp-more-menu .ps5-context-submenu .ps5-context-item .ctx-check svg {
+  color: var(--accent);
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item.danger,
+.gp-more-menu .ps5-context-submenu .ps5-context-item.danger svg {
+  color: var(--err);
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item.danger:hover {
+  background: rgba(229, 72, 77, 0.12);
+  color: var(--err);
+}
+.gp-more-menu .ps5-context-submenu .ps5-context-item.danger:hover svg {
+  color: var(--err);
 }
 @media (max-width: 768px) {
   .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
     left: auto;
-    right: calc(100% + 6px);
+    right: calc(100% + 4px);
   }
   .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
     left: auto;
-    right: -10px;
+    right: -24px;
   }
 }
 

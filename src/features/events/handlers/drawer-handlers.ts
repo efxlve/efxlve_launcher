@@ -15,7 +15,7 @@ function targetSteamAppIdOf(key: string): string | null {
 import { FAV_KEY } from "../../../core/constants";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
-import { toggleAboutExpanded } from "../../drawer/drawer-view";
+import { toggleAboutExpanded, wireDrawerSubmenu } from "../../drawer/drawer-view";
 import { closeStoreShot, openStoreShot } from "../../screenshots/store-shot-viewer";
 import { gameVersionsOf, isCompanionSource, sourceOfKey, summaryOf } from "../../../core/selectors";
 import type { DrawerTab } from "../../../core/types";
@@ -140,13 +140,18 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       if (id) selectGameVersion(id);
       return true;
 
-    case "game-more-menu":
+    case "game-more-menu": {
       S.isGameMoreMenuOpen = !S.isGameMoreMenuOpen;
-      document.getElementById("game-more-menu")?.classList.toggle("show", S.isGameMoreMenuOpen);
+      const menuEl = document.getElementById("game-more-menu");
+      menuEl?.classList.toggle("show", S.isGameMoreMenuOpen);
       document
         .querySelector<HTMLElement>('[data-act="game-more-menu"]')
         ?.setAttribute("aria-expanded", String(S.isGameMoreMenuOpen));
+      if (S.isGameMoreMenuOpen && menuEl) {
+        wireDrawerSubmenu(menuEl);
+      }
       return true;
+    }
 
     case "toggle-version-dropdown":
       S.isVersionDropdownOpen = !S.isVersionDropdownOpen;
