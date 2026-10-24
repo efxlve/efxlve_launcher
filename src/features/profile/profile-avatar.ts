@@ -136,9 +136,9 @@ export function promptAvatarAction(key?: string, displayName?: string): void {
   closeAvatarModal();
   const modalHtml = `
     <div id="avatar-manage-modal" class="modal-backdrop fadeIn" style="z-index: 1050;">
-      <div class="modal-box ps5-avatar-modal" role="dialog" aria-modal="true">
-        <div class="ps5-avatar-modal-header">
-          <div class="ps5-avatar-modal-title">
+      <div class="modal-box panel-avatar-modal" role="dialog" aria-modal="true">
+        <div class="panel-avatar-modal-header">
+          <div class="panel-avatar-modal-title">
             ${icon("camera", 16)}
             <h3>${t("profile.avatarTitle")}</h3>
           </div>
@@ -147,17 +147,17 @@ export function promptAvatarAction(key?: string, displayName?: string): void {
           </button>
         </div>
 
-        <div class="ps5-avatar-modal-body">
-          <div class="ps5-avatar-preview-wrap">
-            <img class="ps5-avatar-preview-img" src="${esc(currentAvatar)}" alt="${esc(name)}" />
+        <div class="panel-avatar-modal-body">
+          <div class="panel-avatar-preview-wrap">
+            <img class="panel-avatar-preview-img" src="${esc(currentAvatar)}" alt="${esc(name)}" />
           </div>
-          <div class="ps5-avatar-modal-info">
+          <div class="panel-avatar-modal-info">
             <h4>${esc(name)}</h4>
             <p>${t("profile.avatarDesc")}</p>
           </div>
         </div>
 
-        <div class="ps5-avatar-modal-footer">
+        <div class="panel-avatar-modal-footer">
           <button class="apple-pill-btn secondary" data-act="avatar-modal-remove" data-id="${esc(avatarKey)}">
             ${icon("trash", 13)} <span>${t("profile.removePhoto")}</span>
           </button>
@@ -200,9 +200,9 @@ export function openChangeNameModal(): void {
   const placeholder = t("profile.user");
   const modalHtml = `
     <div id="profile-name-modal" class="modal-backdrop fadeIn" style="z-index: 1050;">
-      <div class="modal-box ps5-avatar-modal" role="dialog" aria-modal="true" style="max-width: 400px;">
-        <div class="ps5-avatar-modal-header">
-          <div class="ps5-avatar-modal-title">
+      <div class="modal-box panel-avatar-modal" role="dialog" aria-modal="true" style="max-width: 400px;">
+        <div class="panel-avatar-modal-header">
+          <div class="panel-avatar-modal-title">
             ${icon("edit", 16)}
             <h3>${esc(t("profile.changeNameTitle"))}</h3>
           </div>
@@ -211,14 +211,14 @@ export function openChangeNameModal(): void {
           </button>
         </div>
 
-        <div class="ps5-avatar-modal-body" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 18px 24px;">
+        <div class="panel-avatar-modal-body" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 18px 24px;">
           <label style="font-size: 13px; color: var(--fg-muted); display: flex; flex-direction: column; gap: 8px;">
             <span>${esc(t("profile.user"))}</span>
             <input id="profile-name-input" type="text" class="input" style="padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-surface-elevated, #1a1d24); color: var(--fg-default, #fff); width: 100%; box-sizing: border-box;" value="${esc(current)}" placeholder="${esc(placeholder)}" maxlength="32" autofocus />
           </label>
         </div>
 
-        <div class="ps5-avatar-modal-footer">
+        <div class="panel-avatar-modal-footer">
           <button class="apple-pill-btn secondary" data-act="profile-name-modal-close">
             <span>${t("common.cancel")}</span>
           </button>
