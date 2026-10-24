@@ -711,6 +711,7 @@ export function openCollectionGallery(): void {
     } else if (foundCovers.length === 1) {
       artHtml = `
         <div class="col-poster-fan">
+          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[0]))}')"></div>
           <div class="col-poster-item col-poster-single">
             <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
           </div>
@@ -718,6 +719,7 @@ export function openCollectionGallery(): void {
     } else if (foundCovers.length === 2) {
       artHtml = `
         <div class="col-poster-fan">
+          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[0]))}')"></div>
           <div class="col-poster-item col-poster-pair-1">
             <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
           </div>
@@ -728,6 +730,7 @@ export function openCollectionGallery(): void {
     } else {
       artHtml = `
         <div class="col-poster-fan">
+          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[1]))}')"></div>
           <div class="col-poster-item col-poster-fan-1">
             <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
           </div>

@@ -1851,6 +1851,24 @@ html.win-compact .lrow-ach-track { display: none; }
   background: #19191d;
 }
 
+/* A flat tint of the middle cover replaces the old 28 px blur. The picture is
+   already decoded for the poster above it, so this is one extra draw; the
+   radial veil turns its edges into the panel colour, which is what the blur
+   used to do for a fraction of the pixels. */
+.col-poster-ambient {
+  position: absolute; inset: 0; z-index: 0;
+  background-color: #19191d;
+  background-image:
+    radial-gradient(circle at 50% 46%, rgba(25, 25, 29, 0.15) 0%, rgba(25, 25, 29, 0.6) 58%, #19191d 100%),
+    var(--ambient, none);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.42;
+  pointer-events: none;
+  transition: opacity 0.14s ease-out;
+}
+.col-gallery-card:hover .col-poster-ambient { opacity: 0.58; }
+
 .col-poster-fan.empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: var(--text-2, #a8a8a8); gap: 6px;
