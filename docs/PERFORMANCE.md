@@ -37,6 +37,7 @@ the window is hidden.
 | Area | Change | Why it helps |
 |---|---|---|
 | Collections picker | First page is 120 rows; **Show more** adds another 120 | A 1,000-game library no longer creates ~1,000 rows and images before the modal opens |
+| Collections gallery | Plain scrim, flat poster panel, no per-card entrance or hover fan | The full-screen backdrop blur plus a 28 px blur behind every card and a scale-in animated the whole panel each frame; opening now paints once |
 | Collections picker | `content-visibility: auto` on rows with a fixed 64 px intrinsic size | Off-screen rows skip layout/paint while keeping every row accessible |
 | Collection search | 120 ms debounce, then one rebuild | Typing no longer walks every store on each keypress |
 | Collection checkbox | Updates the existing `.col-custom-cb` node instead of rebuilding the list | A click is now O(1) DOM work and the tick is correct immediately |

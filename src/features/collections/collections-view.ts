@@ -684,7 +684,7 @@ export function openCollectionGallery(): void {
       </button>`;
   }).join("");
 
-  const manualCards = S.epicCollections.map((col, idx) => {
+  const manualCards = S.epicCollections.map((col) => {
     const appNames = col.app_names ?? [];
     const totalGames = appNames.length;
     let installed = 0;
@@ -711,7 +711,6 @@ export function openCollectionGallery(): void {
     } else if (foundCovers.length === 1) {
       artHtml = `
         <div class="col-poster-fan">
-          <div class="col-poster-ambient" style="background-image:url('${esc(cachedImage(foundCovers[0]))}')"></div>
           <div class="col-poster-item col-poster-single">
             <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
           </div>
@@ -719,7 +718,6 @@ export function openCollectionGallery(): void {
     } else if (foundCovers.length === 2) {
       artHtml = `
         <div class="col-poster-fan">
-          <div class="col-poster-ambient" style="background-image:url('${esc(cachedImage(foundCovers[0]))}')"></div>
           <div class="col-poster-item col-poster-pair-1">
             <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
           </div>
@@ -730,7 +728,6 @@ export function openCollectionGallery(): void {
     } else {
       artHtml = `
         <div class="col-poster-fan">
-          <div class="col-poster-ambient" style="background-image:url('${esc(cachedImage(foundCovers[1]))}')"></div>
           <div class="col-poster-item col-poster-fan-1">
             <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
           </div>
@@ -746,7 +743,7 @@ export function openCollectionGallery(): void {
     const markerHtml = collectionMarker(col.emoji, 15);
 
     return `
-      <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}" data-col-name="${esc(col.name)}" style="--i: ${idx};">
+      <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}" data-col-name="${esc(col.name)}">
         ${artHtml}
         <div class="col-card-body">
           <div class="col-card-header">
@@ -825,9 +822,11 @@ export function openCollectionGallery(): void {
       </section>
     </div>`;
 
-  // The gallery opens with visible covers; ask the Rust disk cache for
-  // them once so the next open paints from local data instead of the CDN.
-  warmImages(warmUrls);
+  // The gallery opens with visible covers; ask the Rust disk cache for them
+  // once so the next open paints from local data instead of the CDN. The ask
+  // waits for the open to settle: its answer decodes every picture in the
+  // WebView, and doing that while the panel animates in was a visible hitch.
+  window.setTimeout(() => warmImages(warmUrls), 900);
   collectionRoot.querySelectorAll<HTMLImageElement>(".col-poster-item img").forEach((img) => {
     img.addEventListener("error", () => {
       img.closest<HTMLElement>(".col-poster-item")?.remove();

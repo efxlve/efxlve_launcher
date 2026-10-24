@@ -163,7 +163,9 @@ input[type="number"] { -moz-appearance: textfield; }
   .view-enter > *,
   .overlay,
   .gp-hero-img,
-  .store-loading-screen {
+  .store-loading-screen,
+  .col-gallery-backdrop,
+  .col-gallery {
     animation: none !important;
   }
 }

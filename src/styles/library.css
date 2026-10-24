@@ -1738,24 +1738,16 @@ html.win-compact .lrow-ach-track { display: none; }
 /* --- Collection gallery 2.0 --- */
 .col-gallery-backdrop {
   position: fixed; inset: 0; z-index: 900; display: grid; place-items: center;
-  padding: 24px; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(12px);
-  animation: colBackdropIn 0.2s ease-out;
-}
-@keyframes colBackdropIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  padding: 24px; background: rgba(0, 0, 0, 0.78);
+  animation: fade-in 0.15s ease-out;
 }
 
 .col-gallery {
-  width: min(1180px, 94vw); max-height: 88vh; overflow-y: auto;
+  width: min(1180px, 94vw); max-height: 88vh; overflow-y: auto; overscroll-behavior: contain;
   padding: 26px 30px 32px; border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px; background: #17171b;
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85);
-  animation: colPanelIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes colPanelIn {
-  from { opacity: 0; transform: scale(0.96) translateY(12px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  animation: fade-in 0.18s ease-out;
 }
 
 /* Gallery Header */
@@ -1782,9 +1774,9 @@ html.win-compact .lrow-ach-track { display: none; }
 .col-gallery-close {
   width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 50%; background: rgba(255, 255, 255, 0.08);
-  color: var(--text, #ffffff); cursor: pointer; transition: all 0.15s ease;
+  color: var(--text, #ffffff); cursor: pointer; transition: color 0.14s ease-out, background-color 0.14s ease-out, border-color 0.14s ease-out;
 }
-.col-gallery-close:hover { color: #fff; background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
+.col-gallery-close:hover { color: #fff; background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.25); }
 
 .col-gallery-section + .col-gallery-section { margin-top: 26px; }
 .col-gallery-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
@@ -1799,13 +1791,11 @@ html.win-compact .lrow-ach-track { display: none; }
   display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 12px; background: #222228;
   color: var(--text, #ffffff); cursor: pointer; text-align: left; position: relative; overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, background 0.18s ease, box-shadow 0.2s ease;
+  transition: border-color 0.14s ease-out, background-color 0.14s ease-out, color 0.14s ease-out;
 }
 .col-smart-card:hover {
   color: #fff; background: #2a2a32;
   border-color: rgba(255, 255, 255, 0.22);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
 }
 .col-smart-card.active {
   border-color: var(--accent); color: #fff; background: #2a2a32;
@@ -1817,12 +1807,11 @@ html.win-compact .lrow-ach-track { display: none; }
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--accent);
-  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  transition: background-color 0.14s ease-out, color 0.14s ease-out, border-color 0.14s ease-out;
 }
 .col-smart-card:hover .col-smart-card-icon {
   background: var(--accent-tint);
   color: var(--accent);
-  transform: scale(1.05);
 }
 .col-smart-card.active .col-smart-card-icon {
   background: var(--accent-tint);
@@ -1841,41 +1830,26 @@ html.win-compact .lrow-ach-track { display: none; }
 /* Collections 2.0 cards grid */
 .col-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 
-@keyframes colCardIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
 .col-gallery-card {
   position: relative; display: flex; flex-direction: column; height: 216px;
   overflow: hidden; border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.09); background: #222228; cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.26s ease;
-  animation: colCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: border-color 0.14s ease-out, background-color 0.14s ease-out;
 }
 .col-gallery-card:hover {
-  transform: translateY(-5px);
   border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
 }
 .col-gallery-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .col-gallery-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* 3D Poster Fan Showcase */
+/* Poster stack. Static on purpose: the old hover fan moved three posters and
+   scaled the card, which repainted the whole gallery on every pointer move. */
 .col-poster-fan {
   position: relative; height: 146px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 50% 50%, #2b2b33 0%, #19191d 100%);
-  perspective: 600px;
+  background: #19191d;
 }
-.col-poster-ambient {
-  position: absolute; inset: -20px; z-index: 0;
-  background-size: cover; background-position: center;
-  filter: blur(28px); opacity: 0.24; transform: scale(1.1); pointer-events: none;
-  transition: opacity 0.25s ease;
-}
-.col-gallery-card:hover .col-poster-ambient { opacity: 0.36; }
 
 .col-poster-fan.empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1887,17 +1861,12 @@ html.win-compact .lrow-ach-track { display: none; }
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: var(--surface-3); flex-shrink: 0; position: absolute;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, opacity 0.22s ease;
 }
 .col-poster-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Single poster */
 .col-poster-single {
   position: relative; z-index: 2; transform: translateY(0);
-}
-.col-gallery-card:hover .col-poster-single {
-  transform: translateY(-6px) scale(1.05);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.7);
 }
 
 /* Pair of posters */
@@ -1906,12 +1875,6 @@ html.win-compact .lrow-ach-track { display: none; }
 }
 .col-poster-pair-2 {
   transform: translateX(16px) rotate(6deg) scale(0.96); z-index: 2;
-}
-.col-gallery-card:hover .col-poster-pair-1 {
-  transform: translateX(-24px) translateY(-4px) rotate(-10deg) scale(1); opacity: 1;
-}
-.col-gallery-card:hover .col-poster-pair-2 {
-  transform: translateX(24px) translateY(-4px) rotate(10deg) scale(1);
 }
 
 /* 3-card fan */
@@ -1923,16 +1886,6 @@ html.win-compact .lrow-ach-track { display: none; }
 }
 .col-poster-fan-3 {
   transform: translateX(26px) translateY(4px) rotate(8deg) scale(0.92); z-index: 2; opacity: 0.82;
-}
-.col-gallery-card:hover .col-poster-fan-1 {
-  transform: translateX(-40px) translateY(-3px) rotate(-14deg) scale(0.97); opacity: 1;
-}
-.col-gallery-card:hover .col-poster-fan-2 {
-  transform: translateY(-8px) scale(1.06);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.75);
-}
-.col-gallery-card:hover .col-poster-fan-3 {
-  transform: translateX(40px) translateY(-3px) rotate(14deg) scale(0.97); opacity: 1;
 }
 
 /* Card Body & Info */
@@ -1977,11 +1930,11 @@ html.win-compact .lrow-ach-track { display: none; }
 .col-card-action-btn {
   width: 28px; height: 28px; display: grid; place-items: center;
   border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.68); backdrop-filter: blur(6px);
-  color: #fff; cursor: pointer; transition: background 0.15s ease, transform 0.15s ease;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff; cursor: pointer; transition: background-color 0.14s ease-out, color 0.14s ease-out;
 }
 .col-card-action-btn:hover {
-  background: rgba(0, 0, 0, 0.9); transform: scale(1.1); color: var(--accent);
+  background: rgba(0, 0, 0, 0.9); color: var(--accent);
 }
 
 /* Add New Collection Card */
@@ -1990,21 +1943,20 @@ html.win-compact .lrow-ach-track { display: none; }
   border: 2px dashed rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.03);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 12px; color: var(--text, #ffffff); cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.14s ease-out, background-color 0.14s ease-out, color 0.14s ease-out;
 }
 .col-gallery-add-card:hover {
   color: #fff; border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.06); transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.06);
 }
 .col-add-card-icon {
   width: 48px; height: 48px; border-radius: 50%;
   display: grid; place-items: center; background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16); color: var(--accent);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: background-color 0.14s ease-out, border-color 0.14s ease-out;
 }
 .col-gallery-add-card:hover .col-add-card-icon {
-  transform: scale(1.08); background: rgba(255, 255, 255, 0.15); border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.15); border-color: var(--accent);
 }
 .col-add-card-label { font-size: 13.5px; font-weight: 600; color: var(--text, #ffffff); }
 
