@@ -31,9 +31,49 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.38",
+    date: "2026-10-25",
+    isCurrent: true,
+    items: [
+      {
+        en: "Estimated completion times now show the jump between tiers: main story, main + extra and 100% completion each carry the extra hours over the step before them instead of repeating the values as progress bars.",
+        tr: "Tahmini bitiş süreleri artık kademeler arasındaki farkı gösteriyor: ana hikâye, ana + ekstra ve %100 bitirme, değerleri ilerleme çubuğu olarak tekrarlamak yerine bir önceki adıma göre eklenen saati taşıyor.",
+      },
+      {
+        en: "The scores card is a clean source list: IGDB, OpenCritic and Metacritic each show a large score out of 100, and the OpenCritic tier stays as a small badge.",
+        tr: "Puanlar kartı temiz bir kaynak listesi: IGDB, OpenCritic ve Metacritic 100 üzerinden büyük puanlar gösteriyor; OpenCritic seviyesi küçük bir rozet olarak kalıyor.",
+      },
+      {
+        en: "The overview achievements card is a flat list titled Achievements for the next locked trophies, with each rarity reading as a number instead of a pill.",
+        tr: "Genel bakıştaki başarımlar kartı, sıradaki kilitli kupalar için Başarımlar başlıklı düz bir liste; her nadirlik artık pill yerine sayı olarak okunuyor.",
+      },
+      {
+        en: "Completing every achievement plays a one-shot platinum celebration in the card and the achievements tab: glow, expanding ring, sparkles, a monochrome particle burst and a shine sweep. The tab and card trophy turn into a filled cup.",
+        tr: "Tüm başarımları tamamlamak kartta ve başarımlar sekmesinde tek seferlik bir platin kutlaması oynatıyor: ışık, genişleyen halka, ışıltılar, monokrom parçacık patlaması ve parlama süpürmesi. Sekme ve karttaki kupa dolu bir kupaya dönüşüyor.",
+      },
+      {
+        en: "The news section is one editorial list: the source and date share a line, patch notes use a neutral badge, and rows no longer sit in their own boxes or lift on hover.",
+        tr: "Haberler bölümü tek bir editoryal liste: kaynak ve tarih aynı satırı paylaşıyor, yama notları nötr bir rozet kullanıyor ve satırlar artık kendi kutularında durmuyor veya hover'da yükselmiyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The news header no longer repeats the story count next to the title.",
+        tr: "Haberler başlığı artık hikâye sayısını başlığın yanında tekrarlamıyor.",
+      },
+      {
+        en: "The patch-note badge no longer uses a hard-coded green, so it follows the active theme.",
+        tr: "Yama notu rozeti artık sabit bir yeşil kullanmıyor; etkin temaya uyuyor.",
+      },
+      {
+        en: "The scores card no longer draws progress meters that restated the number, and the achievements tab keeps its filled trophy through late data updates.",
+        tr: "Puanlar kartı artık sayıyı tekrarlayan ilerleme çubukları çizmiyor; başarımlar sekmesi geç gelen verilerde de dolu kupasını koruyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.37",
     date: "2026-10-24",
-    isCurrent: true,
     items: [
       {
         en: "Collections now open a cover gallery with a 2x2 mosaic on every collection card, and the game picker loads 120 rows at a time with Show more instead of building the whole library up front.",
