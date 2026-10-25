@@ -2069,6 +2069,26 @@
 .ov-ach-filter.active { border-color: var(--accent); color: var(--text); background: var(--surface-3); }
 .ov-ach-filter.active span { color: var(--text-2); }
 
+.ov-ach-hidden-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.ov-ach-hidden-row span:nth-child(2) { flex: 1; }
+.ov-ach-hidden-row:hover { background: var(--surface-2); color: var(--text-2); }
+.ov-ach-hidden-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .ov-ach-side {
   display: flex;
   align-items: center;

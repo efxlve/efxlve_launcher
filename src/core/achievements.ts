@@ -233,22 +233,26 @@ export interface AchievementGuideLinks {
 export function achievementGuideLinks(target: AchievementGuideTarget): AchievementGuideLinks {
   const game = target.title.trim() || target.achievement;
   const achievement = target.achievement.trim();
-  const query = `${game} ${achievement}`.trim();
+  const query = achievement ? `${game} ${achievement}` : game;
   const links: AchievementGuideLinks = {
     video: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${query} achievement guide`)}`,
-    web: `https://www.google.com/search?q=${encodeURIComponent(`"${game}" "${achievement}" achievement guide`)}`,
+    web: `https://www.google.com/search?q=${encodeURIComponent(achievement ? `"${game}" "${achievement}" achievement guide` : `"${game}" achievement guide`)}`,
   };
 
   if (target.steamAppId) {
     const id = target.steamAppId;
-    links.steamDiscussions = `https://steamcommunity.com/app/${id}/discussions/search/?q=${encodeURIComponent(achievement)}`;
-    links.steamGuides = `https://steamcommunity.com/app/${id}/guides/?searchText=${encodeURIComponent(achievement)}&browsefilter=trend&browsesort=textsearch`;
+    links.steamDiscussions = achievement
+      ? `https://steamcommunity.com/app/${id}/discussions/search/?q=${encodeURIComponent(achievement)}`
+      : `https://steamcommunity.com/app/${id}/discussions/`;
+    links.steamGuides = achievement
+      ? `https://steamcommunity.com/app/${id}/guides/?searchText=${encodeURIComponent(achievement)}&browsefilter=trend&browsesort=textsearch`
+      : `https://steamcommunity.com/app/${id}/guides/?browsefilter=trend&requiredtags[]=Achievements`;
     links.steamAchievements = `https://steamcommunity.com/stats/${id}/achievements`;
   }
 
   const slug = achievementSiteSlug(game);
   if (slug) {
-    const fragment = `#:~:text=${encodeURIComponent(achievement)}`;
+    const fragment = achievement ? `#:~:text=${encodeURIComponent(achievement)}` : "";
     if (target.store === "steam" || target.steamAppId) {
       links.trueSteamAchievements = `https://truesteamachievements.com/game/${slug}/achievements${fragment}`;
     }

@@ -583,6 +583,12 @@ document.addEventListener("input", (e) => {
           if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (S.activeAchFilter === "locked" && isUnlocked) return false;
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+          if (
+            S.activeAchFilter !== "hidden" &&
+            a.hidden &&
+            !isUnlocked &&
+            !S.revealedAchievements.has(`${s.appName}:${a.name}`)
+          ) return false;
           if (S.activeAchFilter === "near") {
             const progress = achievementProgress(a);
             if (isUnlocked || progress < 0.5 || progress >= 1) return false;

@@ -3087,5 +3087,15 @@
   "ach.savedGuideOpen": "Kayıtlı rehberi aç",
   "ach.guideUrlPlaceholder": "Rehber bağlantısını yapıştır…",
   "ach.guideInvalid": "Geçerli bir http(s) rehber bağlantısı gir.",
-  "ach.guideSaved": "Rehber bağlantısı kaydedildi."
+  "ach.guideSaved": "Rehber bağlantısı kaydedildi.",
+  "ach.statRemaining": "Kalan",
+  "ach.statRarest": "En nadir",
+  "ach.statEstimate": "Tahmini",
+  "ach.hiddenGroup": "{n} gizli başarım",
+  "ach.powerpyxNone": "Yok",
+  "ach.guidesTitle": "Rehberler",
+  "ach.sideNoNext": "Henüz sıradaki hedef yok.",
+  "ach.personalTitle": "Notlarım ve bağlantılarım",
+  "ach.rarityShort": "%{n} oyuncuda",
+  "ach.multiplierShort": "{n}x nadirlik"
 }

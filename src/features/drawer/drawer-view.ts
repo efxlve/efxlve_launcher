@@ -56,6 +56,7 @@ import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbG
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked } from "../../core/achievements";
 import { renderAchievementDetail } from "./ach-detail";
+import { renderAchSidePanel } from "./ach-side-panel";
 import { renderPowerPyxCard } from "./ach-powerpyx";
 import { powerpyxGameGuide } from "../../guides";
 
@@ -1913,7 +1914,16 @@ export function ensureAchievementCommunity(appName: string, achName: string): vo
       ) return;
       const s = summaryOf(appName);
       const content = document.getElementById("drawer-tab-content");
-      if (s && content) content.innerHTML = renderDrawerAchievements(s);
+      if (!s || !content) return;
+      const list = content.querySelector<HTMLElement>(".ach-list-container");
+      const pane = document.getElementById("ach-detail-pane");
+      const listScroll = list?.scrollTop ?? 0;
+      const paneScroll = pane?.scrollTop ?? 0;
+      content.innerHTML = renderDrawerAchievements(s);
+      const nextList = content.querySelector<HTMLElement>(".ach-list-container");
+      const nextPane = document.getElementById("ach-detail-pane");
+      if (nextList) nextList.scrollTop = listScroll;
+      if (nextPane) nextPane.scrollTop = paneScroll;
     });
 }
 
@@ -1999,18 +2009,8 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
   const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
   const detailItem = S.achDetail ? data.achievements.find((a) => a.name === S.achDetail) : undefined;
-  if (detailItem) {
-    const key = `${s.appName}:${detailItem.name}`;
-    ensureAchievementCommunity(s.appName, detailItem.name);
-    return renderAchievementDetail({
-      summary: s,
-      data,
-      item: detailItem,
-      steamAppId: targetSteamAppId,
-      community: S.achCommunity.get(key) ?? null,
-      communityLoading: S.loadingAchCommunity.has(key),
-    });
-  }
+  if (S.achDetail && !detailItem) S.achDetail = null;
+  if (detailItem) ensureAchievementCommunity(s.appName, detailItem.name);
 
   ensurePowerPyxGuide(s.appName, s.title);
   const hasDlc = data.achievements.some((a) => !a.is_base);
@@ -2018,21 +2018,22 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const effectiveXp = isDemo ? data.total_xp : data.user_xp;
   const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
   const achStats = achievementStats(data.achievements);
-  const nearCount = achStats.nearComplete;
+  const isMaskedHidden = (a: (typeof data.achievements)[number]): boolean =>
+    Boolean(a.hidden) &&
+    !isAchievementUnlocked(a) &&
+    !S.revealedAchievements.has(`${s.appName}:${a.name}`);
+  const nearCount = data.achievements.filter((a) => {
+    const progress = achievementProgress(a);
+    return !isMaskedHidden(a) && !isAchievementUnlocked(a) && progress >= 0.5 && progress < 1;
+  }).length;
   if (S.activeAchFilter === "near" && nearCount === 0) S.activeAchFilter = "all";
   const playtime = libraryPlaytime(s);
   const hltb = S.loadedHltb.get(s.appName);
   const remainingHours = isDemo
     ? null
     : estimateRemainingHours(achStats, playtime.seconds, hltb?.completionist);
-  const insightParts = [
-    achStats.remaining > 0 ? t("ach.insightRemaining", { n: achStats.remaining }) : "",
-    achStats.rarestUnlocked != null
-      ? t("ach.insightRarest", { n: fmtDecimal1(achStats.rarestUnlocked) })
-      : "",
-    remainingHours != null ? t("ach.insightEstimate", { n: fmtHours(remainingHours) }) : "",
-  ].filter(Boolean);
-  const insight = isDemo ? "" : insightParts.join(" · ");
+  const estimate = remainingHours != null ? Math.max(1, Math.round(remainingHours)) : null;
+  const remaining = Math.max(0, data.total_achievements - effectiveUnlocked);
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filtered = data.achievements.filter((a) => {
@@ -2068,8 +2069,21 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     const u = isAchievementUnlocked(a) || isDemo;
     tier[0]++;
     if (u) { tier[1]++; unlockedCount++; }
-    if (a.hidden) hiddenCount++;
+    if (isMaskedHidden(a)) hiddenCount++;
   }
+
+  // Unrevealed hidden achievements are one discoverable group, not 25 identical
+  // "Hidden achievement" rows in the middle of the list.
+  const hiddenGroupHtml = (S.activeAchFilter === "all" || S.activeAchFilter === "locked") && hiddenCount > 0
+    ? `<button type="button" class="ach-hidden-row" data-act="ach-filter" data-val="hidden">
+         ${icon("lock", 14)}
+         <span class="ach-hidden-title">${esc(t("ach.hiddenGroup", { n: hiddenCount }))}</span>
+         <span class="ach-hidden-action">${esc(t("ach.show"))} ${icon("chevron-right", 12)}</span>
+       </button>`
+    : "";
+  const visibleItems = S.activeAchFilter === "hidden"
+    ? sorted
+    : sorted.filter((a) => !isMaskedHidden(a));
   const showPlat = tiers.platinum[0] > 0 || isPlat || data.is_platinum || (data.base_achievements ?? 0) > 0;
   const platTotal = tiers.platinum[0] > 0 ? tiers.platinum[0] : showPlat ? 1 : 0;
   const platUnlocked = tiers.platinum[0] > 0 ? tiers.platinum[1] : isPlat ? 1 : 0;
@@ -2079,7 +2093,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const tierChip = (
     tier: "platinum" | "gold" | "silver" | "bronze",
     cls: string,
-    title: string,
+    label: string,
     glyph: string,
     done: number,
     total: number,
@@ -2087,8 +2101,8 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   ): string =>
     total > 0
       ? clickable
-        ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${title}" aria-pressed="${S.achTierFilter === tier}">${glyph} ${done}/${total}</button>`
-        : `<span class="ach-tier-mini static ${cls} ${done >= total ? "complete" : ""}" title="${title}">${glyph} ${done}/${total}</span>`
+        ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${esc(label)}" aria-pressed="${S.achTierFilter === tier}">${glyph}<span>${esc(label)}</span><strong class="tabular-nums">${done}/${total}</strong></button>`
+        : `<span class="ach-tier-mini static ${cls} ${done >= total ? "complete" : ""}" title="${esc(label)}">${glyph}<span>${esc(label)}</span><strong class="tabular-nums">${done}/${total}</strong></span>`
       : "";
   const filterChip = (val: string, label: string, n: number): string =>
     `<button class="tab ach-status-chip ${S.activeAchFilter === val ? "active" : ""}" data-act="ach-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
@@ -2151,31 +2165,50 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       </div>`
     : "";
 
+  const detailKey = detailItem ? `${s.appName}:${detailItem.name}` : "";
+  const detailPane = detailItem
+    ? renderAchievementDetail({
+        summary: s,
+        data,
+        item: detailItem,
+        steamAppId: targetSteamAppId,
+        community: S.achCommunity.get(detailKey) ?? null,
+        communityLoading: S.loadingAchCommunity.has(detailKey),
+      })
+    : renderAchSidePanel({ summary: s, data, steamAppId: targetSteamAppId });
+
   return `
+    <div class="ach-workspace${detailItem ? " has-detail" : ""}">
+      <div class="ach-list-pane">
     ${sourceCard}
     ${sourceNote}
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
-      <div class="ach-summary-left">
-        <span class="ach-summary-pct ${isPlat ? "plat" : ""}">${isPlat ? platCup : `${pct}%`}</span>
-        <div class="ach-summary-text">
-          <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
-          <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : data.total_xp > 0 ? `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP` : ""}</span>
-          ${insight ? `<span class="ach-summary-insight"${remainingHours != null ? ` title="${esc(t("ach.insightEstimateHint"))}"` : ""}>${esc(insight)}</span>` : ""}
+      <div class="ach-summary-main">
+        <div class="ach-summary-percent ${isPlat ? "plat" : ""}">${isPlat ? platCup : `${pct}%`}</div>
+        <div class="ach-summary-info">
+          <div class="ach-summary-count">${effectiveUnlocked} <span>/ ${data.total_achievements}</span></div>
+          <div class="ach-summary-label">${isPlat ? t("ach.platinumComplete") : t("drawer.achievements")}</div>
+          ${data.total_xp > 0 && !isPlat ? `<div class="ach-summary-xp tabular-nums">${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP</div>` : ""}
+          <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
         </div>
-        <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
+        <div class="ach-summary-stats">
+          ${remaining > 0 ? `<div class="ach-stat"><span class="ach-stat-label">${esc(t("ach.statRemaining"))}</span><strong class="ach-stat-value tabular-nums">${remaining}</strong></div>` : ""}
+          ${achStats.rarestUnlocked != null ? `<div class="ach-stat"><span class="ach-stat-label">${esc(t("ach.statRarest"))}</span><strong class="ach-stat-value tabular-nums">%${fmtDecimal1(achStats.rarestUnlocked)}</strong></div>` : ""}
+          ${estimate != null ? `<div class="ach-stat" title="${esc(t("ach.insightEstimateHint"))}"><span class="ach-stat-label">${esc(t("ach.statEstimate"))}</span><strong class="ach-stat-value tabular-nums">~${fmtHours(estimate)} ${t("common.hoursShort")}</strong></div>` : ""}
+        </div>
+        <div class="ach-summary-actions">
+          ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
+          <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
+          ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
+        </div>
       </div>
-      <div class="ach-summary-right">
+      <div class="ach-tier-row">
         ${tierChip("platinum", "plat", t("ach.tierPlatinum"), epicPlatinumIcon(11), platUnlocked, platTotal, tiers.platinum[0] > 0)}
         ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
         ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
         ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
-        ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
-        <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
-        ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>
     </div>
-
-    <div id="ach-powerpyx-host">${renderPowerPyxCard(S.powerpyxGuides.get(s.appName))}</div>
 
     <div class="gp-toolbar">
       <div class="tabs ach-status-strip">
@@ -2183,7 +2216,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${filterChip("unlocked", t("ach.filterUnlocked"), unlockedCount)}
         ${filterChip("locked", t("ach.filterLocked"), data.achievements.length - unlockedCount)}
         ${nearCount > 0 ? filterChip("near", t("ach.filterNear"), nearCount) : ""}
-        ${hiddenCount > 0 ? filterChip("hidden", t("ach.filterHidden"), hiddenCount) : ""}
+        ${S.activeAchFilter === "hidden" ? filterChip("hidden", t("ach.filterHidden"), hiddenCount) : ""}
       </div>
       <div class="gp-toolbar-right">
         <label class="search gp-search">${icon("search", 15)}<input type="text" id="ach-search-input" placeholder="${t("ach.searchPlaceholder")}" value="${esc(S.achSearchQuery)}" autocomplete="off" />
@@ -2199,7 +2232,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     </div>
 
     <div class="ach-list-container" id="ach-list-container">
-      ${renderAchievementSections(sorted, s, hasDlc, data.achievements)}
+      ${renderAchievementSections(visibleItems, s, hasDlc, data.achievements, hiddenGroupHtml)}
+    </div>
+      </div>
+      <aside class="ach-detail-pane" id="ach-detail-pane">${detailPane}</aside>
     </div>`;
 }
 

@@ -73,6 +73,18 @@ export function fmtPlaytime(seconds: number): string {
     : `${hours.toFixed(1)} ${t("common.hoursShort")}`;
 }
 
+/**
+ * Removes pictographic emoji from third-party guide titles and snippets.
+ * Achievement names are game content and stay untouched; this helper is only
+ * for decorative community copy where the launcher already supplies an icon.
+ */
+export function stripEmoji(text: string): string {
+  return text
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** Format an achievement unlock date for the active locale. */
 export function fmtAchDate(iso: string | null): string {
   if (!iso) return "";

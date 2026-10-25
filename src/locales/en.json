@@ -3087,5 +3087,15 @@
   "ach.savedGuideOpen": "Open saved guide",
   "ach.guideUrlPlaceholder": "Paste a guide URL…",
   "ach.guideInvalid": "Enter a valid http(s) guide link.",
-  "ach.guideSaved": "Guide link saved."
+  "ach.guideSaved": "Guide link saved.",
+  "ach.statRemaining": "Remaining",
+  "ach.statRarest": "Rarest",
+  "ach.statEstimate": "Estimate",
+  "ach.hiddenGroup": "{n} hidden achievements",
+  "ach.powerpyxNone": "None",
+  "ach.guidesTitle": "Guides",
+  "ach.sideNoNext": "No next target yet.",
+  "ach.personalTitle": "My notes & links",
+  "ach.rarityShort": "{n}% of players",
+  "ach.multiplierShort": "{n}x rarity"
 }

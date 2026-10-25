@@ -7,7 +7,7 @@
  * trigger network fetches, which keeps them safe to reuse and test.
  */
 
-import { achievementRarity, achievementTier, achievementTierKnown, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
+import { achievementProgress, achievementRarity, achievementTier, achievementTierKnown, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
@@ -1182,14 +1182,19 @@ export function renderInstalledCopyFacts(
   `;
 }
 
+function renderAchievementList(items: EpicAchievementItem[], s: EpicSummary): string {
+  return `<div class="ach-list">${items.map((a) => renderAchievementRow(a, s)).join("")}</div>`;
+}
+
 export function renderAchievementSections(
   items: EpicAchievementItem[],
   s: EpicSummary,
   shouldGroup: boolean,
   allAchievements?: EpicAchievementItem[],
+  hiddenGroupHtml = "",
 ): string {
   if (items.length === 0) {
-    return `
+    return hiddenGroupHtml || `
       <div class="ach-search-empty-wrap">
         ${emptyPanel("search", i18nT("ach.emptyTitle"), i18nT("ach.emptyDesc"))}
       </div>
@@ -1199,7 +1204,7 @@ export function renderAchievementSections(
   const isDemo = S.demoPlatinumApps.has(s.appName);
 
   if (!shouldGroup) {
-    return `<div class="ach-cards-grid">${items.map((a) => renderAchievementCard(a, s)).join("")}</div>`;
+    return `${renderAchievementList(items, s)}${hiddenGroupHtml}`;
   }
 
   // SteamHunters category groups: base game and add-on packs
@@ -1207,8 +1212,8 @@ export function renderAchievementSections(
   const dlcItems = items.filter((a) => !a.is_base);
 
   // Category stats and completion ratios must be computed from ALL of the game's
-  // achievements, not just the filtered list. Otherwise, under the "Unlocked" filter,
-  // locked ones are filtered out and the category total collapses to the unlocked count, looking 100% complete.
+  // achievements, not just the filtered list. Otherwise, under the "Unlocked"
+  // filter, locked ones disappear and the category looks complete.
   const allSource = allAchievements && allAchievements.length > 0 ? allAchievements : items;
   const allBase = allSource.filter((a) => a.is_base);
   const allDlc = allSource.filter((a) => !a.is_base);
@@ -1239,9 +1244,7 @@ export function renderAchievementSections(
         <div class="ach-group-bar">
           <div class="ach-group-bar-fill gold" style="width: ${basePct}%"></div>
         </div>
-        <div class="ach-cards-grid">
-          ${baseItems.map((a) => renderAchievementCard(a, s)).join("")}
-        </div>
+        ${renderAchievementList(baseItems, s)}
       </div>
     `;
   }
@@ -1260,85 +1263,73 @@ export function renderAchievementSections(
         <div class="ach-group-bar">
           <div class="ach-group-bar-fill purple" style="width: ${dlcPct}%"></div>
         </div>
-        <div class="ach-cards-grid">
-          ${dlcItems.map((a) => renderAchievementCard(a, s)).join("")}
-        </div>
+        ${renderAchievementList(dlcItems, s)}
       </div>
     `;
   }
 
-  return html;
+  return `${html}${hiddenGroupHtml}`;
 }
 
-export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): string {
+/** One scannable achievement row: icon, title/description, rarity/tier/date,
+ *  and one status mark. Hidden unrevealed rows stay deliberately bare. */
+export function renderAchievementRow(a: EpicAchievementItem, s: EpicSummary): string {
   const isDemo = S.demoPlatinumApps.has(s.appName);
   const isUnlocked = isAchievementUnlocked(a) || isDemo;
-  const isHidden = a.hidden;
-  const isSecretMasked = isHidden && !isUnlocked;
   const isRevealed = S.revealedAchievements.has(`${s.appName}:${a.name}`);
+  const isSecretMasked = Boolean(a.hidden) && !isUnlocked && !isRevealed;
   const rarity = achievementRarity(a);
+  const progress = achievementProgress(a);
+  const tier = getAchTier(a);
+  const tierKnown = achievementTierKnown(a);
+  const tierName = fmtTierName(tier);
+  const date = a.unlock_date && isUnlocked ? fmtAchDate(a.unlock_date) : "";
 
-  const title = isSecretMasked && !isRevealed ? i18nT("ach.hiddenName") : (a.display_name || a.name);
-  const desc = isSecretMasked && !isRevealed
+  const title = isSecretMasked ? i18nT("ach.hiddenName") : (a.display_name || a.name);
+  const desc = isSecretMasked
     ? i18nT("ach.hiddenDesc")
     : (a.description || i18nT("ach.noDesc"));
-  const tier = getAchTier(a);
-  const tierClass = tier;
-  const tierIcon = icon("trophy", 11);
-  const tierName = fmtTierName(tier);
-  const tierKnown = achievementTierKnown(a);
-  const xp = Number(a.xp) || 0;
 
   return `
-    <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
-         data-act="ach-open" data-id="${esc(s.appName)}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${esc(i18nT("ach.revealTitle"))}">
-      
-      <!-- Left: 52px icon -->
-      <div class="ach-icon-wrapper">
+    <div class="ach-row ${isUnlocked ? "is-unlocked" : "is-locked"}${isSecretMasked ? " is-secret" : ""}${S.achDetail === a.name ? " is-selected" : ""}"
+         data-act="ach-open" data-id="${esc(s.appName)}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${esc(desc)}">
+      <div class="ach-row-icon">
         ${
-          isSecretMasked && !isRevealed
-            ? `<div class="ach-mystery-box">${icon("lock", 20)}</div>`
+          isSecretMasked
+            ? `<span class="ach-row-mystery">${icon("lock", 16)}</span>`
             : a.icon_link
-              ? `<img class="ach-art" src="${esc(a.icon_link)}" alt="" loading="lazy" />`
-              : `<div class="ach-fallback-icon ${tierClass}">${icon("trophy", 20)}</div>`
+              ? `<img src="${esc(a.icon_link)}" alt="" loading="lazy" />`
+              : `<span class="ach-row-fallback ${tier}">${icon("trophy", 18)}</span>`
         }
-        ${!isUnlocked && (!isSecretMasked || isRevealed) ? `<div class="ach-locked-badge">${icon("lock", 12)}</div>` : ""}
       </div>
 
-      <!-- Middle: title, description & meta -->
-      <div class="ach-content">
-        <div class="ach-title-row">
-          <span class="ach-name">${isSecretMasked && !isRevealed ? icon("lock", 11) + " " : ""}${esc(title)}</span>
-          ${
-            isSecretMasked
-              ? (isRevealed
-                  ? `<button class="ach-reveal-btn revealed" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="${i18nT("ach.hideSpoiler")}">${icon("eye-off", 10)} ${i18nT("ach.hide")}</button>`
-                  : `<button class="ach-reveal-btn" data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" title="${i18nT("ach.showSpoiler")}">${icon("eye", 10)} ${i18nT("ach.show")}</button>`)
-              : isHidden && isUnlocked
-                ? `<span class="ach-pill secret">${icon("lock", 9)} ${i18nT("ach.secret")}</span>`
-                : ""
-          }
-          ${!a.is_base ? `<span class="ach-pill dlc">${icon("package", 9)} DLC</span>` : ""}
+      <div class="ach-row-main">
+        <div class="ach-row-title-line">
+          <span class="ach-row-title">${esc(title)}</span>
+          ${!a.is_base ? `<span class="ach-row-tag">DLC</span>` : ""}
+          ${a.hidden && !isSecretMasked ? `<span class="ach-row-tag secret">${i18nT("ach.secret")}</span>` : ""}
         </div>
-
-        <p class="ach-description">${esc(desc)}</p>
-
-        <div class="ach-meta-row">
-          ${tierKnown ? `<span class="ach-pill tier ${tierClass}">${tierIcon} ${esc(tierName)}</span>` : ""}
-          ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${fmtAchDate(a.unlock_date)}</span>` : ""}
-          ${rarity != null && rarity < 10 ? `
-            <span class="ach-pill rarity ultra-rare">
-              ${icon("sparkles", 10)} %${fmtDecimal1(rarity)} ${i18nT("ach.rare")}
-            </span>` : ""}
-        </div>
+        <div class="ach-row-desc">${esc(desc)}</div>
+        ${
+          !isUnlocked && progress > 0 && progress < 1
+            ? `<div class="ach-row-progress"><span class="ach-row-progress-track"><i style="width:${Math.round(progress * 100)}%"></i></span><em class="tabular-nums">${Math.round(progress * 100)}%</em></div>`
+            : ""
+        }
       </div>
 
-      <!-- Right: XP & status -->
-      <div class="ach-aside">
-        ${xp > 0 ? `<div class="ach-xp-chip ${isUnlocked ? "unlocked" : "locked"}">+${xp} XP</div>` : ""}
-        ${isUnlocked
-          ? `<div class="ach-status-icon earned" title="${i18nT("ach.earned")}">${icon("check", 13)}</div>`
-          : `<div class="ach-status-icon locked" title="${i18nT("ach.locked")}">${icon("lock", 12)}</div>`
+      <div class="ach-row-meta">
+        ${!isSecretMasked && rarity != null ? `<span class="ach-row-rarity tabular-nums" title="${esc(i18nT("ach.detailRarity", { n: fmtDecimal1(rarity) }))}">%${fmtDecimal1(rarity)}</span>` : ""}
+        ${!isSecretMasked && tierKnown ? `<span class="ach-row-tier ${tier}">${icon("trophy", 10)} ${esc(tierName)}</span>` : ""}
+        ${date ? `<span class="ach-row-date tabular-nums">${esc(date)}</span>` : ""}
+      </div>
+
+      <div class="ach-row-status">
+        ${
+          isSecretMasked
+            ? `<button type="button" class="ach-row-reveal" data-act="ach-reveal" data-id="${esc(s.appName)}" data-ach="${esc(a.name)}" title="${esc(i18nT("ach.showSpoiler"))}">${icon("eye", 12)}<span>${esc(i18nT("ach.show"))}</span></button>`
+            : isUnlocked
+              ? `<span class="ach-row-check" title="${esc(i18nT("ach.earned"))}">${icon("check", 13)}</span>`
+              : `<span class="ach-row-lock" title="${esc(i18nT("ach.locked"))}">${icon("lock", 12)}</span>`
         }
       </div>
     </div>

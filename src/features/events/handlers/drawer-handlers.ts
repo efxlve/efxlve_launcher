@@ -322,6 +322,8 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       if (achName && S.currentModalAppName) {
         S.achDetail = achName;
         openEpicModal(S.currentModalAppName, false, false);
+        const pane = document.getElementById("ach-detail-pane");
+        if (pane) pane.scrollTop = 0;
       }
       return true;
     }

@@ -49,7 +49,7 @@ import {
   nextAchievements,
   rarityMultiplier,
 } from "../../core/achievements";
-import { esc, fmtAchDate, fmtDecimal1 } from "../../core/utils";
+import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
 import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
 import {
@@ -214,7 +214,7 @@ let cachedAchievements: AchievementsData | null = null;
 let achLoading = false;
 let achLoadGeneration = 0;
 let achDetail: string | null = null;
-let achFilter: "all" | "locked" | "near" = "all";
+let achFilter: "all" | "locked" | "near" | "hidden" = "all";
 let achRevealed = new Set<string>();
 let achCommunity = new Map<string, SteamAchievementCommunity>();
 let achCommunityLoading = new Set<string>();
@@ -1622,11 +1622,12 @@ function renderHome(): void {
   const achPct = achTotal > 0 ? Math.round((achUnlocked / achTotal) * 100) : 0;
   const nextAchs = achData ? nextAchievements(achData.achievements, 2) : [];
   const earnedPreview = achData?.achievements.filter(isAchievementUnlocked).slice(0, 2) ?? [];
+  const visiblePreview = achData?.achievements.filter((item) => !achMasked(item)).slice(0, 2) ?? [];
   const previewAchs = nextAchs.length > 0
     ? nextAchs
     : earnedPreview.length > 0
       ? earnedPreview
-      : achData?.achievements.slice(0, 2) ?? [];
+      : visiblePreview;
 
   // Screenshots preview
   const shotsPreview = cachedScreenshots.slice(0, 4);
@@ -2379,8 +2380,8 @@ function renderAchCommunity(name: string): string {
     .map(
       (guide) => `<button type="button" class="ov-ach-community-row" data-ov="ach-guide" data-url="${esc(guide.url)}">
         <span class="ov-ach-community-main">
-          <span class="ov-ach-community-title">${esc(guide.title)}</span>
-          <span class="ov-ach-community-meta">${esc(guide.author || "")}${guide.rating != null ? ` · ${icon("star", 9)} ${guide.rating}/5` : ""}</span>
+          <span class="ov-ach-community-title">${esc(stripEmoji(guide.title) || guide.title)}</span>
+          <span class="ov-ach-community-meta">${esc(stripEmoji(guide.author || ""))}${guide.rating != null ? ` · ${icon("star", 9)} ${guide.rating}/5` : ""}</span>
         </span>
         ${icon("external", 11)}
       </button>`,
@@ -2391,7 +2392,7 @@ function renderAchCommunity(name: string): string {
     .map(
       (thread) => `<button type="button" class="ov-ach-community-row" data-ov="ach-guide" data-url="${esc(thread.url)}">
         <span class="ov-ach-community-main">
-          <span class="ov-ach-community-title">${esc(thread.title)}</span>
+          <span class="ov-ach-community-title">${esc(stripEmoji(thread.title) || thread.title)}</span>
           <span class="ov-ach-community-meta">${thread.replies > 0 ? esc(t("ach.communityReplies", { n: thread.replies })) : ""}${thread.date ? ` · ${esc(thread.date)}` : ""}</span>
         </span>
         ${icon("external", 11)}
@@ -2425,21 +2426,24 @@ function renderAchDetail(item: AchievementItem): string {
       ? `<button type="button" class="btn ghost small ov-ach-guide-btn" data-ov="ach-guide" data-url="${esc(url)}">${icon(glyph, 12)}<span>${esc(label)}</span></button>`
       : "";
 
-  const meta = [
-    tier ? `<span class="ov-ach-tag">${icon("trophy", 10)} ${esc(t(`trophy.${tier === "platinum" ? "plat" : tier}`))}</span>` : "",
-    rarity != null ? `<span class="ov-ach-tag">${icon("sparkles", 10)} ${esc(t("ach.detailRarity", { n: fmtDecimal1(rarity) }))}</span>` : "",
-    multiplier != null ? `<span class="ov-ach-tag">${esc(t("ach.detailMultiplier", { n: fmtDecimal1(multiplier) }))}</span>` : "",
-    xp > 0 ? `<span class="ov-ach-tag">+${xp} XP</span>` : "",
-    !item.is_base ? `<span class="ov-ach-tag">DLC</span>` : "",
-  ]
-    .filter(Boolean)
-    .join("");
+  const meta = masked
+    ? ""
+    : [
+        tier ? `<span class="ov-ach-tag">${icon("trophy", 10)} ${esc(t(`trophy.${tier === "platinum" ? "plat" : tier}`))}</span>` : "",
+        rarity != null ? `<span class="ov-ach-tag">${icon("sparkles", 10)} ${esc(t("ach.rarityShort", { n: fmtDecimal1(rarity) }))}</span>` : "",
+        multiplier != null ? `<span class="ov-ach-tag">${esc(t("ach.multiplierShort", { n: fmtDecimal1(multiplier) }))}</span>` : "",
+        xp > 0 ? `<span class="ov-ach-tag">+${xp} XP</span>` : "",
+        !item.is_base ? `<span class="ov-ach-tag">DLC</span>` : "",
+      ]
+        .filter(Boolean)
+        .join("");
 
   const guideButtons = [
     guideButton(links.video, t("ach.guideVideo"), "youtube"),
     guideButton(links.steamGuides, t("ach.guideSteamGuides"), "link"),
     guideButton(links.steamDiscussions, t("ach.guideSteamDiscussions"), "users"),
     guideButton(links.trueSteamAchievements, t("ach.guideTrueSteam"), "external"),
+    guideButton(links.trueAchievements, t("ach.guideTrueAchievements"), "external"),
     guideButton(links.web, t("ach.guideWeb"), "globe"),
   ].join("");
 
@@ -2459,18 +2463,22 @@ function renderAchDetail(item: AchievementItem): string {
         </div>
       </div>
       ${meta ? `<div class="ov-ach-detail-meta">${meta}</div>` : ""}
-      <div class="ov-ach-detail-status">
-        ${
-          unlocked
-            ? `<span class="ov-ach-state is-earned">${icon("check", 12)} ${esc(t("ach.earned"))}</span>${date ? `<span class="ov-ach-state">${esc(date)}</span>` : ""}`
-            : `<span class="ov-ach-state">${icon("lock", 11)} ${esc(t("ach.locked"))}</span>`
-        }
-        ${
-          !unlocked && progress > 0
-            ? `<div class="ov-ach-progress"><span style="width:${Math.round(progress * 100)}%"></span></div><span class="ov-ach-progress-label tabular-nums">${Math.round(progress * 100)}%</span>`
-            : ""
-        }
-      </div>
+      ${
+        masked
+          ? ""
+          : `<div class="ov-ach-detail-status">
+               ${
+                 unlocked
+                   ? `<span class="ov-ach-state is-earned">${icon("check", 12)} ${esc(t("ach.earned"))}</span>${date ? `<span class="ov-ach-state">${esc(date)}</span>` : ""}`
+                   : `<span class="ov-ach-state">${icon("lock", 11)} ${esc(t("ach.locked"))}</span>`
+               }
+               ${
+                 !unlocked && progress > 0
+                   ? `<div class="ov-ach-progress"><span style="width:${Math.round(progress * 100)}%"></span></div><span class="ov-ach-progress-label tabular-nums">${Math.round(progress * 100)}%</span>`
+                   : ""
+               }
+             </div>`
+      }
       ${
         item.hidden && !unlocked
           ? `<div class="ov-ach-spoiler">
@@ -2496,9 +2504,17 @@ function renderAchList(data: AchievementsData): string {
   const total = data.total_achievements || stats.total;
   const unlocked = stats.unlocked || data.user_unlocked;
   const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
-  const nearCount = stats.nearComplete;
+  const hiddenItems = data.achievements.filter(achMasked);
+  const hiddenNames = new Set(hiddenItems.map((item) => item.name));
+  const hiddenCount = hiddenItems.length;
+  const nearCount = data.achievements.filter((item) => {
+    const progress = achievementProgress(item);
+    return !achMasked(item) && !isAchievementUnlocked(item) && progress >= 0.5 && progress < 1;
+  }).length;
 
-  let items = [...data.achievements];
+  let items = achFilter === "hidden"
+    ? [...hiddenItems]
+    : data.achievements.filter((item) => !hiddenNames.has(item.name));
   if (achFilter === "locked") {
     items = items.filter((item) => !isAchievementUnlocked(item));
   } else if (achFilter === "near") {
@@ -2548,6 +2564,15 @@ function renderAchList(data: AchievementsData): string {
     })
     .join("");
 
+  const hiddenRow = achFilter !== "hidden" && hiddenCount > 0
+    ? `<button type="button" class="ov-ach-hidden-row" data-ov="ach-filter" data-val="hidden">
+         ${icon("lock", 13)}
+         <span>${esc(t("ach.hiddenGroup", { n: hiddenCount }))}</span>
+         ${icon("chevron-right", 12)}
+       </button>`
+    : "";
+  const body = `${rows}${hiddenRow}`;
+
   return `
     <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span>
       <button type="button" class="ov-ach-refresh" data-ov="ach-refresh" title="${esc(t("ach.refreshData"))}">${icon("refresh", 13)}</button>
@@ -2561,8 +2586,9 @@ function renderAchList(data: AchievementsData): string {
       ${chip("all", t("ach.filterAll"), stats.total)}
       ${chip("locked", t("ach.filterLocked"), Math.max(0, stats.total - unlocked))}
       ${nearCount > 0 ? chip("near", t("ach.filterNear"), nearCount) : ""}
+      ${achFilter === "hidden" ? chip("hidden", t("ach.filterHidden"), hiddenCount) : ""}
     </div>
-    <div class="ov-ach-full-list">${rows || `<div class="ov-empty">${esc(t("ach.emptyTitle"))}</div>`}</div>`;
+    <div class="ov-ach-full-list">${body || `<div class="ov-empty">${esc(t("ach.emptyTitle"))}</div>`}</div>`;
 }
 
 function renderAchView(): void {
@@ -5247,7 +5273,7 @@ function wireEvents(): void {
       return;
     } else if (action === "ach-filter") {
       const value = actionEl.dataset.val;
-      if (value === "all" || value === "locked" || value === "near") {
+      if (value === "all" || value === "locked" || value === "near" || value === "hidden") {
         achFilter = value;
         renderAchView();
       }
