@@ -14,6 +14,7 @@ function targetSteamAppIdOf(key: string): string | null {
 
 import { FAV_KEY } from "../../../core/constants";
 import { isSafeExternalUrl } from "../../../core/achievements";
+import { removeAchievementGuide, saveAchievementGuide } from "../../../core/achievement-notes";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { toggleAboutExpanded, wireDrawerSubmenu } from "../../drawer/drawer-view";
@@ -336,6 +337,31 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "ach-guide": {
       const url = t.dataset.url;
       if (url && isSafeExternalUrl(url)) void openUrl(url).catch(() => undefined);
+      return true;
+    }
+
+    case "ach-guide-save": {
+      const appName = S.currentModalAppName;
+      const achName = t.dataset.ach;
+      const input = document.getElementById("ach-guide-url-input") as HTMLInputElement | null;
+      const url = input?.value.trim() ?? "";
+      if (!appName || !achName) return true;
+      if (!saveAchievementGuide(appName, achName, url)) {
+        toast(i18n("ach.guideInvalid"), "err");
+        return true;
+      }
+      toast(i18n("ach.guideSaved"), "ok");
+      openEpicModal(appName, false, false);
+      return true;
+    }
+
+    case "ach-guide-remove": {
+      const appName = S.currentModalAppName;
+      const achName = t.dataset.ach;
+      if (appName && achName) {
+        removeAchievementGuide(appName, achName);
+        openEpicModal(appName, false, false);
+      }
       return true;
     }
 

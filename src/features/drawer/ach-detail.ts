@@ -16,6 +16,7 @@ import {
   isAchievementUnlocked,
   rarityMultiplier,
 } from "../../core/achievements";
+import { achievementGuide, achievementNote } from "../../core/achievement-notes";
 import { icon, type IconName } from "../../core/icons";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -158,6 +159,10 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
     store: sourceOfKey(summary.appName),
     steamAppId,
   });
+  const note = achievementNote(summary.appName, item.name);
+  const savedGuide = achievementGuide(summary.appName, item.name);
+  const appId = esc(summary.appName);
+  const achId = esc(item.name);
 
   const date = item.unlock_date && isUnlocked ? fmtAchDate(item.unlock_date) : "";
   const meta = [
@@ -256,6 +261,27 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
                </div>
                ${communityBlock}
                <div class="ach-guide-grid">${guideButtons}</div>
+             </section>
+             <section class="ach-personal">
+               <div class="ach-personal-block">
+                 <h3 class="ach-detail-heading">${icon("edit", 13)} <span>${esc(t("ach.noteTitle"))}</span></h3>
+                 <textarea id="ach-note-input" class="ach-note-input" data-id="${appId}" data-ach="${achId}" rows="3" maxlength="4000" placeholder="${esc(t("ach.notePlaceholder"))}">${esc(note)}</textarea>
+                 <span class="ach-note-status" id="ach-note-status">${note ? esc(t("common.saved")) : ""}</span>
+               </div>
+               <div class="ach-personal-block">
+                 <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.savedGuideTitle"))}</span></h3>
+                 ${
+                   savedGuide
+                     ? `<div class="ach-saved-guide">
+                          <button type="button" class="btn ghost small" data-act="ach-guide" data-url="${esc(savedGuide)}">${icon("external", 12)}<span>${esc(t("ach.savedGuideOpen"))}</span></button>
+                          <button type="button" class="btn ghost small" data-act="ach-guide-remove" data-id="${appId}" data-ach="${achId}">${icon("trash", 12)}<span>${esc(t("common.delete"))}</span></button>
+                        </div>`
+                     : `<div class="ach-guide-save-row">
+                          <input id="ach-guide-url-input" class="input" type="url" placeholder="${esc(t("ach.guideUrlPlaceholder"))}" autocomplete="off" spellcheck="false" />
+                          <button type="button" class="btn small play" data-act="ach-guide-save" data-id="${appId}" data-ach="${achId}">${esc(t("common.save"))}</button>
+                        </div>`
+                 }
+               </div>
              </section>`
       }
     </div>`;

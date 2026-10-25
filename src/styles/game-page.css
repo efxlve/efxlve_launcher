@@ -1041,6 +1041,42 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-guide-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ach-guide-btn { display: inline-flex; align-items: center; gap: 6px; }
 
+.ach-personal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.ach-personal-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.ach-note-input {
+  width: 100%;
+  min-height: 76px;
+  padding: 8px 10px;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ach-note-input:focus { outline: none; border-color: var(--accent); }
+.ach-note-status { min-height: 14px; color: var(--text-3); font-size: 11px; }
+.ach-guide-save-row { display: flex; align-items: center; gap: 6px; }
+.ach-guide-save-row .input { flex: 1; min-width: 0; }
+.ach-saved-guide { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
 .ach-community { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 .ach-community-group { display: flex; flex-direction: column; gap: 6px; }
 .ach-community-group-title {
@@ -1098,6 +1134,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   .ach-detail-hero { flex-direction: column; gap: 12px; }
   .ach-detail-art { width: 72px; height: 72px; flex-basis: 72px; }
   .ach-detail-guides-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .ach-personal { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* --- System requirements --- */

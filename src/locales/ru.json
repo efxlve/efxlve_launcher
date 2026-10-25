@@ -3080,5 +3080,12 @@
   "ach.insightRemaining": "{n} left",
   "ach.insightRarest": "Rarest unlocked {n}%",
   "ach.insightEstimate": "~{n} h at your pace",
-  "ach.insightEstimateHint": "A rough estimate from your playtime and HowLongToBeat."
+  "ach.insightEstimateHint": "A rough estimate from your playtime and HowLongToBeat.",
+  "ach.noteTitle": "My note",
+  "ach.notePlaceholder": "A tip that helps you unlock this achievement…",
+  "ach.savedGuideTitle": "My guide link",
+  "ach.savedGuideOpen": "Open saved guide",
+  "ach.guideUrlPlaceholder": "Paste a guide URL…",
+  "ach.guideInvalid": "Enter a valid http(s) guide link.",
+  "ach.guideSaved": "Guide link saved."
 }

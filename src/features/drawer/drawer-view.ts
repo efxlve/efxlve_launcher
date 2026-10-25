@@ -1904,6 +1904,13 @@ export function ensureAchievementCommunity(appName: string, achName: string): vo
     .finally(() => {
       S.loadingAchCommunity.delete(key);
       if (S.currentModalAppName !== appName || S.achDetail !== achName) return;
+      // A community answer must not rebuild the detail while the reader is
+      // typing a note; the textarea keeps its focus and the next paint picks
+      // the answer up.
+      if (
+        document.activeElement?.id === "ach-note-input" ||
+        document.activeElement?.id === "ach-guide-url-input"
+      ) return;
       const s = summaryOf(appName);
       const content = document.getElementById("drawer-tab-content");
       if (s && content) content.innerHTML = renderDrawerAchievements(s);
@@ -2035,7 +2042,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
     if (S.activeAchFilter === "near") {
       const progress = achievementProgress(a);
-      if (unlocked || progress <= 0 || progress >= 1) return false;
+      if (unlocked || progress < 0.5 || progress >= 1) return false;
     }
     if (S.achTierFilter !== "all" && getAchTier(a) !== S.achTierFilter) return false;
     if (query) {

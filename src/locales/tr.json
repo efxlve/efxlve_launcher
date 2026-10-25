@@ -3080,5 +3080,12 @@
   "ach.insightRemaining": "Kalan {n}",
   "ach.insightRarest": "En nadir kazanılan %{n}",
   "ach.insightEstimate": "Kendi hızına göre ~{n} sa",
-  "ach.insightEstimateHint": "Oynama süren ve HowLongToBeat'e göre kaba bir tahmin."
+  "ach.insightEstimateHint": "Oynama süren ve HowLongToBeat'e göre kaba bir tahmin.",
+  "ach.noteTitle": "Notum",
+  "ach.notePlaceholder": "Bu başarımı açmana yardımcı olacak bir not…",
+  "ach.savedGuideTitle": "Rehber bağlantım",
+  "ach.savedGuideOpen": "Kayıtlı rehberi aç",
+  "ach.guideUrlPlaceholder": "Rehber bağlantısını yapıştır…",
+  "ach.guideInvalid": "Geçerli bir http(s) rehber bağlantısı gir.",
+  "ach.guideSaved": "Rehber bağlantısı kaydedildi."
 }

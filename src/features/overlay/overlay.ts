@@ -1621,9 +1621,12 @@ function renderHome(): void {
   const achTotal = achStats?.total ?? achData?.total_achievements ?? achData?.achievements?.length ?? 0;
   const achPct = achTotal > 0 ? Math.round((achUnlocked / achTotal) * 100) : 0;
   const nextAchs = achData ? nextAchievements(achData.achievements, 2) : [];
+  const earnedPreview = achData?.achievements.filter(isAchievementUnlocked).slice(0, 2) ?? [];
   const previewAchs = nextAchs.length > 0
     ? nextAchs
-    : achData?.achievements.filter(isAchievementUnlocked).slice(0, 2) ?? [];
+    : earnedPreview.length > 0
+      ? earnedPreview
+      : achData?.achievements.slice(0, 2) ?? [];
 
   // Screenshots preview
   const shotsPreview = cachedScreenshots.slice(0, 4);
@@ -2501,7 +2504,7 @@ function renderAchList(data: AchievementsData): string {
   } else if (achFilter === "near") {
     items = items.filter((item) => {
       const progress = achievementProgress(item);
-      return !isAchievementUnlocked(item) && progress > 0 && progress < 1;
+      return !isAchievementUnlocked(item) && progress >= 0.5 && progress < 1;
     });
   }
   items.sort((a, b) => {

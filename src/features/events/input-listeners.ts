@@ -46,6 +46,7 @@ import {
 } from "../drawer/drawer-view";
 import { getAchTier, renderAchievementSections } from "../drawer/drawer-widgets";
 import { achievementProgress, isAchievementUnlocked } from "../../core/achievements";
+import { saveAchievementNote } from "../../core/achievement-notes";
 import { handleCompatAction } from "../settings/compat-view";
 import { handleGameCompatChange } from "../drawer/game-compat";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
@@ -501,6 +502,15 @@ let profileSearchTimer = 0;
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t.id === "ach-note-input" && S.currentModalAppName) {
+    const ach = t.dataset.ach;
+    if (ach) {
+      saveAchievementNote(S.currentModalAppName, ach, (t as HTMLTextAreaElement).value);
+      const status = document.getElementById("ach-note-status");
+      if (status) status.textContent = i18nT("common.saved");
+    }
+    return;
+  }
   const colorInput = t?.closest?.<HTMLInputElement>('input[data-act="set-case-store-color"]');
   if (colorInput) {
     const store = colorInput.dataset.store;
@@ -575,7 +585,7 @@ document.addEventListener("input", (e) => {
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;
           if (S.activeAchFilter === "near") {
             const progress = achievementProgress(a);
-            if (isUnlocked || progress <= 0 || progress >= 1) return false;
+            if (isUnlocked || progress < 0.5 || progress >= 1) return false;
           }
           if (S.achTierFilter !== "all" && getAchTier(a) !== S.achTierFilter) return false;
           if (query) {
