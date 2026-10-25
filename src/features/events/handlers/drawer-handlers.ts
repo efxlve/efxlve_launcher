@@ -14,7 +14,7 @@ function targetSteamAppIdOf(key: string): string | null {
 
 import { FAV_KEY } from "../../../core/constants";
 import { isSafeExternalUrl } from "../../../core/achievements";
-import { removeAchievementGuide, saveAchievementGuide } from "../../../core/achievement-notes";
+import { removeAchievementGuide, saveAchievementGuide } from "../../drawer/ach-notes";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { toggleAboutExpanded, wireDrawerSubmenu } from "../../drawer/drawer-view";
@@ -348,12 +348,14 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       const input = document.getElementById("ach-guide-url-input") as HTMLInputElement | null;
       const url = input?.value.trim() ?? "";
       if (!appName || !achName) return true;
-      if (!saveAchievementGuide(appName, achName, url)) {
-        toast(i18n("ach.guideInvalid"), "err");
-        return true;
-      }
-      toast(i18n("ach.guideSaved"), "ok");
-      openEpicModal(appName, false, false);
+      void saveAchievementGuide(appName, achName, url).then((ok) => {
+        if (!ok) {
+          toast(i18n("ach.guideInvalid"), "err");
+          return;
+        }
+        toast(i18n("ach.guideSaved"), "ok");
+        if (S.currentModalAppName === appName) openEpicModal(appName, false, false);
+      });
       return true;
     }
 
@@ -361,8 +363,9 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       const appName = S.currentModalAppName;
       const achName = t.dataset.ach;
       if (appName && achName) {
-        removeAchievementGuide(appName, achName);
-        openEpicModal(appName, false, false);
+        void removeAchievementGuide(appName, achName).then(() => {
+          if (S.currentModalAppName === appName) openEpicModal(appName, false, false);
+        });
       }
       return true;
     }

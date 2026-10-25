@@ -39,6 +39,10 @@ export interface Note {
   pinned: boolean;
   /** Accent name; empty means the neutral color. */
   color: string;
+  /** Stable achievement key when the note belongs to one achievement. */
+  achievement: string;
+  /** Optional guide link attached to the achievement note. */
+  guideUrl: string;
   /** Unix milliseconds. */
   created: number;
   updated: number;
@@ -51,6 +55,8 @@ export interface NoteInput {
   body: string;
   pinned?: boolean;
   color?: string;
+  achievement?: string;
+  guideUrl?: string;
 }
 
 let cache: Note[] | null = null;
@@ -99,6 +105,8 @@ export async function saveNote(input: NoteInput): Promise<Note | null> {
       body: input.body,
       pinned: input.pinned ?? false,
       color: input.color ?? "",
+      achievement: input.achievement ?? "",
+      guideUrl: input.guideUrl ?? "",
     });
     if (note) {
       cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];

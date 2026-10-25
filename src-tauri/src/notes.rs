@@ -17,6 +17,8 @@ const MAX_NOTES: usize = 5000;
 const MAX_SCOPE: usize = 200;
 const MAX_TITLE: usize = 300;
 const MAX_BODY: usize = 200_000;
+const MAX_ACHIEVEMENT: usize = 200;
+const MAX_GUIDE_URL: usize = 2048;
 
 /// Suffix for ids created in this process, so two notes saved in the same
 /// millisecond still differ.
@@ -39,6 +41,12 @@ pub struct Note {
     /// falls back to the neutral color in the UI.
     #[serde(default)]
     pub color: String,
+    /// Stable achievement key when this note belongs to one achievement.
+    #[serde(default)]
+    pub achievement: String,
+    /// Optional guide link attached to the achievement note.
+    #[serde(default)]
+    pub guide_url: String,
     /// Unix milliseconds.
     #[serde(default)]
     pub created: u64,
@@ -88,6 +96,10 @@ pub struct NoteInput {
     pub pinned: bool,
     #[serde(default)]
     pub color: String,
+    #[serde(default)]
+    pub achievement: String,
+    #[serde(default)]
+    pub guide_url: String,
 }
 
 fn now_ms() -> u64 {
@@ -117,6 +129,13 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
     let scope = normalize_scope(&input.scope);
     let title: String = input.title.trim().chars().take(MAX_TITLE).collect();
     let body: String = input.body.chars().take(MAX_BODY).collect();
+    let achievement: String = input
+        .achievement
+        .trim()
+        .chars()
+        .take(MAX_ACHIEVEMENT)
+        .collect();
+    let guide_url: String = input.guide_url.trim().chars().take(MAX_GUIDE_URL).collect();
     if let Some(id) = input.id.as_deref().map(str::trim).filter(|id| !id.is_empty()) {
         if let Some(existing) = file.notes.iter_mut().find(|note| note.id == id) {
             existing.scope = scope;
@@ -124,6 +143,8 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
             existing.body = body;
             existing.pinned = input.pinned;
             existing.color = normalize_color(&input.color);
+            existing.achievement = achievement;
+            existing.guide_url = guide_url;
             existing.updated = now;
             return Ok(existing.clone());
         }
@@ -138,6 +159,8 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
         body,
         pinned: input.pinned,
         color: normalize_color(&input.color),
+        achievement,
+        guide_url,
         created: now,
         updated: now,
     };
@@ -234,6 +257,8 @@ pub fn notes_save(
     body: String,
     pinned: bool,
     color: String,
+    achievement: Option<String>,
+    guide_url: Option<String>,
 ) -> Result<Note, String> {
     let mut file = read_notes(&app);
     let input = NoteInput {
@@ -243,6 +268,8 @@ pub fn notes_save(
         body,
         pinned,
         color,
+        achievement: achievement.unwrap_or_default(),
+        guide_url: guide_url.unwrap_or_default(),
     };
     let note = upsert(&mut file, input, now_ms(), NEXT_ID.fetch_add(1, Ordering::Relaxed))?;
     write_notes(&app, &file)?;
@@ -286,6 +313,13 @@ fn merge_import(file: &mut NotesFile, incoming: Vec<Note>, now: u64, seq: &mut u
         note.title = note.title.trim().chars().take(MAX_TITLE).collect();
         note.body = note.body.chars().take(MAX_BODY).collect();
         note.color = normalize_color(&note.color);
+        note.achievement = note
+            .achievement
+            .trim()
+            .chars()
+            .take(MAX_ACHIEVEMENT)
+            .collect();
+        note.guide_url = note.guide_url.trim().chars().take(MAX_GUIDE_URL).collect();
         if note.created == 0 {
             note.created = now;
         }
@@ -344,6 +378,9 @@ fn notes_to_markdown(file: &NotesFile) -> String {
             out.push_str(&format!("\n### {title}\n\n"));
             out.push_str(note.body.trim_end());
             out.push_str("\n");
+            if !note.guide_url.is_empty() {
+                out.push_str(&format!("\nGuide: {}\n", note.guide_url.trim()));
+            }
         }
     }
     out
@@ -415,6 +452,41 @@ mod tests {
     }
 
     #[test]
+    fn achievement_metadata_survives_an_update() {
+        let mut file = NotesFile::default();
+        let note = upsert(
+            &mut file,
+            NoteInput {
+                achievement: "ACH_BOSS".to_string(),
+                guide_url: "https://example.com/guide".to_string(),
+                ..input("steam::1", "Boss", "first")
+            },
+            1,
+            1,
+        )
+        .unwrap();
+        assert_eq!(note.achievement, "ACH_BOSS");
+        assert_eq!(note.guide_url, "https://example.com/guide");
+
+        let updated = upsert(
+            &mut file,
+            NoteInput {
+                id: Some(note.id.clone()),
+                achievement: "ACH_BOSS".to_string(),
+                guide_url: "https://example.com/guide-2".to_string(),
+                ..input("steam::1", "Boss", "second")
+            },
+            2,
+            2,
+        )
+        .unwrap();
+        assert_eq!(file.notes.len(), 1);
+        assert_eq!(updated.body, "second");
+        assert_eq!(updated.achievement, "ACH_BOSS");
+        assert_eq!(updated.guide_url, "https://example.com/guide-2");
+    }
+
+    #[test]
     fn scope_defaults_to_launcher_and_unknown_colors_drop() {
         let mut file = NotesFile::default();
         let note = upsert(
@@ -475,6 +547,8 @@ mod tests {
                 body: "two".to_string(),
                 pinned: true,
                 color: "red".to_string(),
+                achievement: String::new(),
+                guide_url: String::new(),
                 created: 500,
                 updated: 900,
             },
@@ -485,6 +559,8 @@ mod tests {
                 body: String::new(),
                 pinned: false,
                 color: String::new(),
+                achievement: String::new(),
+                guide_url: String::new(),
                 created: 0,
                 updated: 0,
             },
@@ -511,5 +587,23 @@ mod tests {
         let game_at = markdown.find("## steam::1").unwrap();
         assert!(launcher_at < game_at);
         assert!(markdown.contains("### Game note"));
+    }
+
+    #[test]
+    fn markdown_export_keeps_an_achievement_guide_link() {
+        let mut file = NotesFile::default();
+        upsert(
+            &mut file,
+            NoteInput {
+                achievement: "ACH_1".to_string(),
+                guide_url: "https://example.com/guide".to_string(),
+                ..input("steam::1", "Boss", "note")
+            },
+            1,
+            1,
+        )
+        .unwrap();
+        let markdown = notes_to_markdown(&file);
+        assert!(markdown.contains("Guide: https://example.com/guide"));
     }
 }

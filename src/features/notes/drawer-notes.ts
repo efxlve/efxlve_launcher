@@ -11,7 +11,7 @@ import { emptyPanel, icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import { cachedNotes, deleteNote, loadNotes, notesForScope, saveNote, type Note } from "./notes-client";
+import { cachedNotes, deleteNote, loadNotes, notesForScope, onNotesChanged, saveNote, type Note } from "./notes-client";
 import { notePreview, renderMarkdownLite, toggleChecklist } from "./markdown";
 
 interface DrawerDraft {
@@ -64,12 +64,19 @@ export function ensureDrawerNotes(appName: string, onLoaded?: () => void): void 
 
 function noteRowHtml(note: Note): string {
   const title = note.title.trim() || t("notes.untitled");
+  const preview = notePreview(note.body, 140) || note.guideUrl;
+  const achievementFlag = note.achievement
+    ? `<span class="drawer-note-kind" title="${esc(t("drawer.achievements"))}">${icon("trophy", 11)}</span>`
+    : "";
+  const guideFlag = note.guideUrl
+    ? `<span class="drawer-note-kind" title="${esc(note.guideUrl)}">${icon("link", 10)}</span>`
+    : "";
   return `
     <button class="drawer-note-row" data-act="drawer-note-open" data-id="${esc(note.id)}">
       <span class="drawer-note-bar${note.color ? ` color-${esc(note.color)}` : ""}"></span>
       <span class="drawer-note-main">
-        <span class="drawer-note-title">${note.pinned ? icon("pin", 11) : ""}${esc(title)}</span>
-        ${note.body.trim() ? `<span class="drawer-note-preview">${esc(notePreview(note.body, 140))}</span>` : ""}
+        <span class="drawer-note-title">${note.pinned ? icon("pin", 11) : ""}${achievementFlag}${guideFlag}${esc(title)}</span>
+        ${preview ? `<span class="drawer-note-preview">${esc(preview)}</span>` : ""}
       </span>
       <span class="drawer-note-time">${esc(formatUpdated(note.updated))}</span>
     </button>`;
@@ -77,6 +84,9 @@ function noteRowHtml(note: Note): string {
 
 function editorHtml(): string {
   const preview = mode === "preview";
+  const linkedGuide = draft.id
+    ? cachedNotes().find((note) => note.id === draft.id)?.guideUrl ?? ""
+    : "";
   return `
     <div class="drawer-notes-editor">
       <div class="drawer-notes-editor-head">
@@ -99,6 +109,15 @@ function editorHtml(): string {
         preview
           ? `<div class="notes-preview">${renderMarkdownLite(draft.body).html || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
           : `<textarea id="drawer-note-body" class="notes-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draft.body)}</textarea>`
+      }
+      ${
+        linkedGuide
+          ? `<button type="button" class="notes-linked-guide" data-act="ach-guide" data-url="${esc(linkedGuide)}" title="${esc(linkedGuide)}">
+               ${icon("link", 12)}
+               <span>${esc(linkedGuide)}</span>
+               ${icon("external", 11)}
+             </button>`
+          : ""
       }
       <div class="notes-editor-foot">
         <span class="notes-save-state" id="drawer-note-save-state"></span>
@@ -147,6 +166,9 @@ function paintSaveState(): void {
 async function flushSave(): Promise<void> {
   if (!draft.title.trim() && !draft.body.trim()) return;
   if (!listScope) return;
+  const existing = draft.id
+    ? cachedNotes().find((note) => note.id === draft.id)
+    : undefined;
   const note = await saveNote({
     id: draft.id,
     scope: listScope,
@@ -154,6 +176,8 @@ async function flushSave(): Promise<void> {
     body: draft.body,
     pinned: draft.pinned,
     color: draft.color,
+    achievement: existing?.achievement ?? "",
+    guideUrl: existing?.guideUrl ?? "",
   });
   if (note) draft.id = note.id;
   paintSaveState();
@@ -233,6 +257,11 @@ function queueSave(): void {
 function wireDrawerNotes(): void {
   if (wired) return;
   wired = true;
+  onNotesChanged(() => {
+    if (!listScope || S.currentModalAppName !== listScope) return;
+    if (S.activeDrawerTab !== "notes" || editing) return;
+    repaint();
+  });
   document.addEventListener("input", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;

@@ -3084,6 +3084,7 @@
   "ach.insightEstimateHint": "A rough estimate from your playtime and HowLongToBeat.",
   "ach.noteTitle": "My note",
   "ach.notePlaceholder": "A tip that helps you unlock this achievement…",
+  "ach.noteSyncHint": "Also appears in the game's Notes tab.",
   "ach.savedGuideTitle": "My guide link",
   "ach.savedGuideOpen": "Open saved guide",
   "ach.guideUrlPlaceholder": "Paste a guide URL…",

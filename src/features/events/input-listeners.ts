@@ -46,7 +46,7 @@ import {
 } from "../drawer/drawer-view";
 import { getAchTier, renderAchievementSections } from "../drawer/drawer-widgets";
 import { achievementProgress, isAchievementUnlocked } from "../../core/achievements";
-import { saveAchievementNote } from "../../core/achievement-notes";
+import { saveAchievementNote } from "../drawer/ach-notes";
 import { handleCompatAction } from "../settings/compat-view";
 import { handleGameCompatChange } from "../drawer/game-compat";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
@@ -517,15 +517,45 @@ document.addEventListener("click", (event) => {
   });
 });
 
+const achNoteTimers = new Map<string, number>();
+const achNoteValues = new Map<string, string>();
+
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
   if (t.id === "ach-note-input" && S.currentModalAppName) {
     const ach = t.dataset.ach;
-    if (ach) {
-      saveAchievementNote(S.currentModalAppName, ach, (t as HTMLTextAreaElement).value);
-      const status = document.getElementById("ach-note-status");
-      if (status) status.textContent = i18nT("common.saved");
+    if (!ach) return;
+    const appName = S.currentModalAppName;
+    const value = (t as HTMLTextAreaElement).value;
+    const max = (t as HTMLTextAreaElement).maxLength || 4000;
+    const count = document.getElementById("ach-note-count");
+    if (count) count.textContent = `${value.length} / ${max}`;
+    const status = document.getElementById("ach-note-status");
+    if (status) {
+      status.textContent = i18nT("notes.saving");
+      status.dataset.state = "saving";
     }
+    // One timer per achievement: switching details before the debounce must
+    // not cancel the note that was being typed in the previous one.
+    const key = `${appName}\u0000${ach}`;
+    achNoteValues.set(key, value);
+    const pending = achNoteTimers.get(key);
+    if (pending) window.clearTimeout(pending);
+    achNoteTimers.set(
+      key,
+      window.setTimeout(() => {
+        achNoteTimers.delete(key);
+        const latest = achNoteValues.get(key) ?? value;
+        achNoteValues.delete(key);
+        void saveAchievementNote(appName, ach, latest).then((ok) => {
+          if (S.currentModalAppName !== appName || S.achDetail !== ach) return;
+          const state = document.getElementById("ach-note-status");
+          if (!state) return;
+          state.textContent = ok ? i18nT("notes.saved") : "";
+          state.dataset.state = ok ? "saved" : "";
+        });
+      }, 600),
+    );
     return;
   }
   const colorInput = t?.closest?.<HTMLInputElement>('input[data-act="set-case-store-color"]');

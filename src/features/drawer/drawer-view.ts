@@ -48,9 +48,10 @@ import { buildSteamRequirements, steamLanguage } from "./steam-details";
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { renderDrawerManage } from "../manage/manage-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
-import { cachedNotes, notesForScope } from "../notes/notes-client";
+import { cachedNotes, notesForScope, onNotesChanged } from "../notes/notes-client";
 import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
+import { ensureLegacyAchievementNotes } from "./ach-notes";
 import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
@@ -1218,7 +1219,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     ensureEosSupport(appName);
   }
   // The notes tab's list and badge; the client caches, so this is one call.
-  ensureDrawerNotes(appName, () => repaintPersonalBlock(appName));
+  ensureDrawerNotes(appName, () => {
+    repaintPersonalBlock(appName);
+    repaintAchievementsTab(appName);
+  });
 
   const dlcRes = S.dlcCache.get(appName);
   const dlcCount = dlcRes ? dlcRes.dlcs.length : s.dlcCount;
@@ -1877,6 +1881,46 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
 }
 
 /**
+ * Repaints the achievements tab without throwing away the list or detail
+ * scroll position. Late notes, community answers and legacy migration data use
+ * this instead of a full drawer repaint.
+ */
+function repaintAchievementsTab(appName: string): void {
+  if (S.currentModalAppName !== appName || S.activeDrawerTab !== "achievements") return;
+  // The reader is typing: leave the textarea and its caret alone.
+  if (
+    document.activeElement?.id === "ach-note-input" ||
+    document.activeElement?.id === "ach-guide-url-input"
+  ) return;
+  const s = summaryOf(appName);
+  const content = document.getElementById("drawer-tab-content");
+  if (!s || !content) return;
+  const list = content.querySelector<HTMLElement>(".ach-list-container");
+  const pane = document.getElementById("ach-detail-pane");
+  const personalWasOpen = Boolean(content.querySelector("details.ach-personal[open]"));
+  const guidesWereOpen = Boolean(content.querySelector("details.ach-detail-guides[open]"));
+  const listScroll = list?.scrollTop ?? 0;
+  const paneScroll = pane?.scrollTop ?? 0;
+  content.innerHTML = renderDrawerAchievements(s);
+  const nextList = content.querySelector<HTMLElement>(".ach-list-container");
+  const nextPane = document.getElementById("ach-detail-pane");
+  const nextPersonal = content.querySelector<HTMLDetailsElement>("details.ach-personal");
+  const nextGuides = content.querySelector<HTMLDetailsElement>("details.ach-detail-guides");
+  if (nextList) nextList.scrollTop = listScroll;
+  if (nextPane) nextPane.scrollTop = paneScroll;
+  if (nextPersonal) nextPersonal.open = personalWasOpen;
+  if (nextGuides) nextGuides.open = guidesWereOpen;
+}
+
+/** Another window wrote a note: the open achievement detail picks it up. */
+onNotesChanged(() => {
+  const appName = S.currentModalAppName;
+  if (!appName) return;
+  if (S.activeDrawerTab === "achievements") repaintAchievementsTab(appName);
+  else if (S.activeDrawerTab === "overview") repaintPersonalBlock(appName);
+});
+
+/**
  * One achievement's Steam Community answers. Called when a detail opens, not
  * for the whole list: a hundred achievements must not become a hundred search
  * requests. The backend caches each query for a day.
@@ -1910,25 +1954,7 @@ export function ensureAchievementCommunity(appName: string, achName: string): vo
     .finally(() => {
       S.loadingAchCommunity.delete(key);
       if (S.currentModalAppName !== appName || S.achDetail !== achName) return;
-      // A community answer must not rebuild the detail while the reader is
-      // typing a note; the textarea keeps its focus and the next paint picks
-      // the answer up.
-      if (
-        document.activeElement?.id === "ach-note-input" ||
-        document.activeElement?.id === "ach-guide-url-input"
-      ) return;
-      const s = summaryOf(appName);
-      const content = document.getElementById("drawer-tab-content");
-      if (!s || !content) return;
-      const list = content.querySelector<HTMLElement>(".ach-list-container");
-      const pane = document.getElementById("ach-detail-pane");
-      const listScroll = list?.scrollTop ?? 0;
-      const paneScroll = pane?.scrollTop ?? 0;
-      content.innerHTML = renderDrawerAchievements(s);
-      const nextList = content.querySelector<HTMLElement>(".ach-list-container");
-      const nextPane = document.getElementById("ach-detail-pane");
-      if (nextList) nextList.scrollTop = listScroll;
-      if (nextPane) nextPane.scrollTop = paneScroll;
+      repaintAchievementsTab(appName);
     });
 }
 
@@ -2010,6 +2036,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   }
 
   enrichAchievementsData(s.appName, data);
+  // Move the old per-achievement localStorage notes into the shared notes file
+  // once; the repaint shows them as soon as the writes land.
+  ensureLegacyAchievementNotes(s.appName, () => repaintAchievementsTab(s.appName));
 
   const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
   const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);

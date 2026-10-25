@@ -3084,6 +3084,7 @@
   "ach.insightEstimateHint": "Oynama süren ve HowLongToBeat'e göre kaba bir tahmin.",
   "ach.noteTitle": "Notum",
   "ach.notePlaceholder": "Bu başarımı açmana yardımcı olacak bir not…",
+  "ach.noteSyncHint": "Oyunun Notlar sekmesinde de görünür.",
   "ach.savedGuideTitle": "Rehber bağlantım",
   "ach.savedGuideOpen": "Kayıtlı rehberi aç",
   "ach.guideUrlPlaceholder": "Rehber bağlantısını yapıştır…",

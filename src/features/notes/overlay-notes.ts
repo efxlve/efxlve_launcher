@@ -54,12 +54,13 @@ function formatUpdated(ms: number): string {
 }
 
 function rowHtml(note: Note): string {
+  const preview = notePreview(note.body, 90) || note.guideUrl;
   return `
     <button class="ov-note-row${note.pinned ? " is-pinned" : ""}" data-ov="ov-note-open" data-id="${esc(note.id)}">
       <span class="ov-note-bar${note.color ? ` color-${esc(note.color)}` : ""}"></span>
       <span class="ov-note-row-main">
-        <span class="ov-note-row-title">${note.pinned ? icon("pin", 10) : ""}${esc(note.title.trim() || t("notes.untitled"))}</span>
-        ${note.body.trim() ? `<span class="ov-note-row-preview">${esc(notePreview(note.body, 90))}</span>` : ""}
+        <span class="ov-note-row-title">${note.pinned ? icon("pin", 10) : ""}${note.achievement ? icon("trophy", 10) : ""}${note.guideUrl ? icon("link", 10) : ""}${esc(note.title.trim() || t("notes.untitled"))}</span>
+        ${preview ? `<span class="ov-note-row-preview">${esc(preview)}</span>` : ""}
       </span>
       <span class="ov-note-row-time">${esc(formatUpdated(note.updated))}</span>
     </button>`;
@@ -131,6 +132,9 @@ function paintSaveState(): void {
 
 async function flushSave(): Promise<void> {
   if (!draftTitle.trim() && !draftBody.trim()) return;
+  const existing = draftId
+    ? cachedNotes().find((note) => note.id === draftId)
+    : undefined;
   const note = await saveNote({
     id: draftId,
     scope,
@@ -138,6 +142,8 @@ async function flushSave(): Promise<void> {
     body: draftBody,
     pinned: draftPinned,
     color: "",
+    achievement: existing?.achievement ?? "",
+    guideUrl: existing?.guideUrl ?? "",
   });
   if (note) draftId = note.id;
   paintSaveState();
