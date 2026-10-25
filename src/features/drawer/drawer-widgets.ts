@@ -44,16 +44,24 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
       </div>
     `;
   }
-  // Not asked yet: the card keeps its place with three placeholder rows. It used
-  // to render nothing, so the whole right column dropped down the moment the
-  // answer arrived — the page rearranging itself while the reader looks at it.
+  // Not asked yet: the card keeps its place with three placeholder rows in the
+  // same shape as the answer, so the right column does not jump when it lands.
   if (!hltb) {
     return `
       <div class="drawer-hltb-body is-pending">
         <div class="hltb-list">
-          <div class="hltb-row"><div class="hltb-row-top"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div><div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:38%"></span></div></div>
-          <div class="hltb-row"><div class="hltb-row-top"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div><div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:64%"></span></div></div>
-          <div class="hltb-row"><div class="hltb-row-top"><span class="hltb-row-label skel"></span><span class="hltb-row-val skel"></span></div><div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:100%"></span></div></div>
+          <div class="hltb-row">
+            <div class="hltb-row-text"><span class="hltb-row-label skel"></span></div>
+            <span class="hltb-row-val skel"></span>
+          </div>
+          <div class="hltb-row">
+            <div class="hltb-row-text"><span class="hltb-row-label skel"></span><span class="hltb-row-delta skel"></span></div>
+            <span class="hltb-row-val skel"></span>
+          </div>
+          <div class="hltb-row">
+            <div class="hltb-row-text"><span class="hltb-row-label skel"></span><span class="hltb-row-delta skel"></span></div>
+            <span class="hltb-row-val skel"></span>
+          </div>
         </div>
       </div>
     `;
@@ -63,24 +71,31 @@ export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
     // The player's own time lives in the hero's SÜRE stat.
     return "";
   }
-  const maxH = Math.max(hltb.main_story || 0, hltb.main_extra || 0, hltb.completionist || 0, 1);
-  const rowHtml = (label: string, val?: number | null): string => {
-    const pct = val && val > 0 ? Math.max(8, Math.min(100, Math.round((val / maxH) * 100))) : 0;
+  const tiers: Array<{ label: string; val?: number | null }> = [
+    { label: i18nT("hltb.mainStory"), val: hltb.main_story },
+    { label: i18nT("hltb.mainExtra"), val: hltb.main_extra },
+    { label: i18nT("hltb.completionist"), val: hltb.completionist },
+  ];
+  const rowHtml = (tier: { label: string; val?: number | null }, prev?: number | null): string => {
+    // How much the next tier adds over the one before it: the jump from the
+    // story to the side content, and from there to the full completion. It is
+    // the useful figure the old proportional bar never told the reader.
+    const delta = tier.val && prev && tier.val > prev ? tier.val - prev : 0;
     return `
-        <div class="hltb-row${!val ? " is-empty" : ""}">
-          <div class="hltb-row-top">
-            <span class="hltb-row-label">${label}</span>
-            <span class="hltb-row-val num${!val ? " empty" : ""}">${val ? hours(val) : "—"}</span>
+        <div class="hltb-row${!tier.val ? " is-empty" : ""}">
+          <div class="hltb-row-text">
+            <span class="hltb-row-label">${tier.label}</span>
+            ${delta > 0 ? `<span class="hltb-row-delta">+${hours(delta)}</span>` : ""}
           </div>
-          <div class="hltb-bar-track"><span class="hltb-bar-fill" style="width:${pct}%"></span></div>
+          <span class="hltb-row-val num${!tier.val ? " empty" : ""}">${tier.val ? hours(tier.val) : "—"}</span>
         </div>`;
   };
   return `
     <div class="drawer-hltb-body">
       <div class="hltb-list">
-        ${rowHtml(i18nT("hltb.mainStory"), hltb.main_story)}
-        ${rowHtml(i18nT("hltb.mainExtra"), hltb.main_extra)}
-        ${rowHtml(i18nT("hltb.completionist"), hltb.completionist)}
+        ${rowHtml(tiers[0])}
+        ${rowHtml(tiers[1], tiers[0].val)}
+        ${rowHtml(tiers[2], tiers[1].val)}
       </div>
     </div>
   `;

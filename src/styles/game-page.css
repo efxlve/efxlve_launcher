@@ -590,28 +590,29 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* HLTB widget */
 #drawer-hltb-container:empty, #drawer-critic-container:empty { display: none; }
-.hltb-list { display: flex; flex-direction: column; gap: 6px; }
+.hltb-list { display: flex; flex-direction: column; }
 .hltb-row {
-  display: flex; flex-direction: column; gap: 6px; min-width: 0;
-  padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r-sm);
-  background: var(--surface-2);
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 0;
+  padding: 9px 0;
 }
-.hltb-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.hltb-row:first-child { padding-top: 1px; }
+.hltb-row:last-child { padding-bottom: 1px; }
+.hltb-row + .hltb-row { border-top: 1px solid var(--line); }
+.hltb-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .hltb-row-label {
-  font-size: 12.5px; font-weight: 500; color: var(--text-2);
+  font-size: 12px; font-weight: 500; line-height: 1.35; color: var(--text-2);
   min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.hltb-row-val {
-  font-size: 12.5px; font-weight: 700; color: var(--text);
+.hltb-row.is-empty .hltb-row-label { color: var(--text-3); }
+.hltb-row-delta {
+  font-size: 11px; font-weight: 500; line-height: 1.35; color: var(--text-2);
   font-variant-numeric: tabular-nums; white-space: nowrap;
-  padding: 1px 7px; border-radius: 5px; background: var(--surface-3); border: 1px solid var(--line);
 }
-.hltb-row-val.empty {
-  color: var(--text-3); font-weight: 400; background: transparent; border-color: transparent; padding: 0;
+.hltb-row-val {
+  flex: none; font-size: 18px; font-weight: 600; line-height: 1.2; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em; white-space: nowrap;
 }
-.hltb-bar-track { height: 4px; width: 100%; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
-.hltb-bar-fill { display: block; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.72); transition: width 220ms ease; }
-.hltb-row.is-empty .hltb-bar-track { opacity: 0.35; }
+.hltb-row-val.empty { padding: 0; color: var(--text-3); font-weight: 500; text-align: end; }
 .hltb-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface-3); border-top-color: var(--accent); animation: spin 0.8s linear infinite; display: inline-block; }
 
 /* Features & Copy facts */
@@ -1593,8 +1594,9 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The rows keep their own height, so a pending card is the height of the card
    that replaces it. */
-.drawer-hltb-body.is-pending .hltb-row-label.skel { width: 74px; height: 11px; }
-.drawer-hltb-body.is-pending .hltb-row-val.skel { width: 46px; height: 11px; }
+.drawer-hltb-body.is-pending .hltb-row-label.skel { width: 74px; height: 15px; }
+.drawer-hltb-body.is-pending .hltb-row-delta.skel { width: 38px; height: 15px; }
+.drawer-hltb-body.is-pending .hltb-row-val.skel { width: 52px; height: 15px; }
 
 .drawer-critic-body.is-pending .hub-critic-badge { opacity: 1; }
 .drawer-critic-body.is-pending .critic-badge-score.skel { width: 34px; height: 34px; border-radius: 8px; }
