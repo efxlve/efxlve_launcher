@@ -2564,7 +2564,7 @@ function renderAchList(data: AchievementsData): string {
     })
     .join("");
 
-  const hiddenRow = achFilter !== "hidden" && hiddenCount > 0
+  const hiddenRow = (achFilter === "all" || achFilter === "locked") && hiddenCount > 0
     ? `<button type="button" class="ov-ach-hidden-row" data-ov="ach-filter" data-val="hidden">
          ${icon("lock", 13)}
          <span>${esc(t("ach.hiddenGroup", { n: hiddenCount }))}</span>

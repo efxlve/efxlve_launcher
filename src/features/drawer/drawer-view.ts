@@ -1886,6 +1886,11 @@ export function ensureAchievementCommunity(appName: string, achName: string): vo
   const data = S.loadedAchievements.get(appName);
   const item = data?.achievements.find((achievement) => achievement.name === achName);
   if (!item) return;
+  if (
+    item.hidden &&
+    !isAchievementUnlocked(item) &&
+    !S.revealedAchievements.has(`${appName}:${item.name}`)
+  ) return;
   const custom = appName.startsWith("custom::")
     ? S.customGames.find((game) => game.id === appName)
     : undefined;
@@ -2008,9 +2013,15 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
   const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
+  const isMaskedHidden = (a: (typeof data.achievements)[number]): boolean =>
+    Boolean(a.hidden) &&
+    !isAchievementUnlocked(a) &&
+    !S.revealedAchievements.has(`${s.appName}:${a.name}`);
   const detailItem = S.achDetail ? data.achievements.find((a) => a.name === S.achDetail) : undefined;
   if (S.achDetail && !detailItem) S.achDetail = null;
-  if (detailItem) ensureAchievementCommunity(s.appName, detailItem.name);
+  if (detailItem && !isMaskedHidden(detailItem)) {
+    ensureAchievementCommunity(s.appName, detailItem.name);
+  }
 
   ensurePowerPyxGuide(s.appName, s.title);
   const hasDlc = data.achievements.some((a) => !a.is_base);
@@ -2018,10 +2029,6 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const effectiveXp = isDemo ? data.total_xp : data.user_xp;
   const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
   const achStats = achievementStats(data.achievements);
-  const isMaskedHidden = (a: (typeof data.achievements)[number]): boolean =>
-    Boolean(a.hidden) &&
-    !isAchievementUnlocked(a) &&
-    !S.revealedAchievements.has(`${s.appName}:${a.name}`);
   const nearCount = data.achievements.filter((a) => {
     const progress = achievementProgress(a);
     return !isMaskedHidden(a) && !isAchievementUnlocked(a) && progress >= 0.5 && progress < 1;
