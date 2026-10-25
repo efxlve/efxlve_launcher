@@ -2033,7 +2033,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     const progress = achievementProgress(a);
     return !isMaskedHidden(a) && !isAchievementUnlocked(a) && progress >= 0.5 && progress < 1;
   }).length;
+  const hiddenCount = data.achievements.filter(isMaskedHidden).length;
   if (S.activeAchFilter === "near" && nearCount === 0) S.activeAchFilter = "all";
+  if (S.activeAchFilter === "hidden" && hiddenCount === 0) S.activeAchFilter = "all";
   const playtime = libraryPlaytime(s);
   const hltb = S.loadedHltb.get(s.appName);
   const remainingHours = isDemo
@@ -2070,13 +2072,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const tiers = { platinum: [0, 0], gold: [0, 0], silver: [0, 0], bronze: [0, 0] } as Record<string, [number, number]>;
   let unlockedCount = 0;
-  let hiddenCount = 0;
   for (const a of data.achievements) {
     const tier = tiers[getAchTier(a)];
     const u = isAchievementUnlocked(a) || isDemo;
     tier[0]++;
     if (u) { tier[1]++; unlockedCount++; }
-    if (isMaskedHidden(a)) hiddenCount++;
   }
 
   // Unrevealed hidden achievements are one discoverable group, not 25 identical

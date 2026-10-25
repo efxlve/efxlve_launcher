@@ -2507,6 +2507,7 @@ function renderAchList(data: AchievementsData): string {
   const hiddenItems = data.achievements.filter(achMasked);
   const hiddenNames = new Set(hiddenItems.map((item) => item.name));
   const hiddenCount = hiddenItems.length;
+  if (achFilter === "hidden" && hiddenCount === 0) achFilter = "all";
   const nearCount = data.achievements.filter((item) => {
     const progress = achievementProgress(item);
     return !achMasked(item) && !isAchievementUnlocked(item) && progress >= 0.5 && progress < 1;
