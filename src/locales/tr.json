@@ -3076,5 +3076,9 @@
   "ach.powerpyxOpen": "Rehberi aç",
   "ach.powerpyxDifficulty": "Zorluk",
   "ach.powerpyxTime": "Süre",
-  "ach.powerpyxMissables": "Kaçırılabilir"
+  "ach.powerpyxMissables": "Kaçırılabilir",
+  "ach.insightRemaining": "Kalan {n}",
+  "ach.insightRarest": "En nadir kazanılan %{n}",
+  "ach.insightEstimate": "Kendi hızına göre ~{n} sa",
+  "ach.insightEstimateHint": "Oynama süren ve HowLongToBeat'e göre kaba bir tahmin."
 }

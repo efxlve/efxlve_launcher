@@ -3076,5 +3076,9 @@
   "ach.powerpyxOpen": "Open guide",
   "ach.powerpyxDifficulty": "Difficulty",
   "ach.powerpyxTime": "Time",
-  "ach.powerpyxMissables": "Missables"
+  "ach.powerpyxMissables": "Missables",
+  "ach.insightRemaining": "{n} left",
+  "ach.insightRarest": "Rarest unlocked {n}%",
+  "ach.insightEstimate": "~{n} h at your pace",
+  "ach.insightEstimateHint": "A rough estimate from your playtime and HowLongToBeat."
 }

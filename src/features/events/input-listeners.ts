@@ -45,7 +45,7 @@ import {
   renderDrawerDlcs,
 } from "../drawer/drawer-view";
 import { getAchTier, renderAchievementSections } from "../drawer/drawer-widgets";
-import { isAchievementUnlocked } from "../../core/achievements";
+import { achievementProgress, isAchievementUnlocked } from "../../core/achievements";
 import { handleCompatAction } from "../settings/compat-view";
 import { handleGameCompatChange } from "../drawer/game-compat";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
@@ -573,6 +573,10 @@ document.addEventListener("input", (e) => {
           if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (S.activeAchFilter === "locked" && isUnlocked) return false;
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+          if (S.activeAchFilter === "near") {
+            const progress = achievementProgress(a);
+            if (isUnlocked || progress <= 0 || progress >= 1) return false;
+          }
           if (S.achTierFilter !== "all" && getAchTier(a) !== S.achTierFilter) return false;
           if (query) {
             const matchTitle = (a.display_name || a.name).toLowerCase().includes(query);

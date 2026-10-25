@@ -30,7 +30,7 @@ import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
+import { esc, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
@@ -54,7 +54,7 @@ import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
-import { isAchievementUnlocked } from "../../core/achievements";
+import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked } from "../../core/achievements";
 import { renderAchievementDetail } from "./ach-detail";
 import { renderPowerPyxCard } from "./ach-powerpyx";
 import { powerpyxGameGuide } from "../../guides";
@@ -2010,6 +2010,22 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const effectiveUnlocked = isDemo ? data.total_achievements : data.user_unlocked;
   const effectiveXp = isDemo ? data.total_xp : data.user_xp;
   const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
+  const achStats = achievementStats(data.achievements);
+  const nearCount = achStats.nearComplete;
+  if (S.activeAchFilter === "near" && nearCount === 0) S.activeAchFilter = "all";
+  const playtime = libraryPlaytime(s);
+  const hltb = S.loadedHltb.get(s.appName);
+  const remainingHours = isDemo
+    ? null
+    : estimateRemainingHours(achStats, playtime.seconds, hltb?.completionist);
+  const insightParts = [
+    achStats.remaining > 0 ? t("ach.insightRemaining", { n: achStats.remaining }) : "",
+    achStats.rarestUnlocked != null
+      ? t("ach.insightRarest", { n: fmtDecimal1(achStats.rarestUnlocked) })
+      : "",
+    remainingHours != null ? t("ach.insightEstimate", { n: fmtHours(remainingHours) }) : "",
+  ].filter(Boolean);
+  const insight = isDemo ? "" : insightParts.join(" · ");
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filtered = data.achievements.filter((a) => {
@@ -2017,6 +2033,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (S.activeAchFilter === "unlocked" && !unlocked) return false;
     if (S.activeAchFilter === "locked" && unlocked) return false;
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+    if (S.activeAchFilter === "near") {
+      const progress = achievementProgress(a);
+      if (unlocked || progress <= 0 || progress >= 1) return false;
+    }
     if (S.achTierFilter !== "all" && getAchTier(a) !== S.achTierFilter) return false;
     if (query) {
       const inTitle = (a.display_name || a.name).toLowerCase().includes(query);
@@ -2133,6 +2153,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="ach-summary-text">
           <span class="ach-summary-count">${effectiveUnlocked} / ${data.total_achievements}</span>
           <span class="ach-summary-sub">${isPlat ? t("ach.platinumComplete") : data.total_xp > 0 ? `${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP` : ""}</span>
+          ${insight ? `<span class="ach-summary-insight"${remainingHours != null ? ` title="${esc(t("ach.insightEstimateHint"))}"` : ""}>${esc(insight)}</span>` : ""}
         </div>
         <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
       </div>
@@ -2154,6 +2175,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${filterChip("all", t("ach.filterAll"), data.achievements.length)}
         ${filterChip("unlocked", t("ach.filterUnlocked"), unlockedCount)}
         ${filterChip("locked", t("ach.filterLocked"), data.achievements.length - unlockedCount)}
+        ${nearCount > 0 ? filterChip("near", t("ach.filterNear"), nearCount) : ""}
         ${hiddenCount > 0 ? filterChip("hidden", t("ach.filterHidden"), hiddenCount) : ""}
       </div>
       <div class="gp-toolbar-right">

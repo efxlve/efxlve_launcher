@@ -7,7 +7,7 @@
  * trigger network fetches, which keeps them safe to reuse and test.
  */
 
-import { achievementRarity, achievementTier, achievementTierKnown, isAchievementUnlocked } from "../../core/achievements";
+import { achievementRarity, achievementTier, achievementTierKnown, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
@@ -707,10 +707,16 @@ export function renderNextAchievements(appName: string): string {
     return `<div id="gp-next-ach" class="gp-side-card gp-next-card is-empty"></div>`;
   }
   const complete = Boolean(data.is_platinum) || data.user_unlocked >= data.total_achievements;
-  const locked = data.achievements
-    .filter((a) => !isAchievementUnlocked(a) && !a.hidden)
-    .sort((a, b) => (b.rarity?.percent ?? 0) - (a.rarity?.percent ?? 0))
-    .slice(0, 3);
+  // Progress and rarity are stronger signals than store order. If neither is
+  // available, the card stays useful by falling back to the commonest locked
+  // rows instead of claiming a recommendation.
+  const recommended = nextAchievements(data.achievements, 3);
+  const locked = recommended.length > 0
+    ? recommended
+    : data.achievements
+        .filter((a) => !isAchievementUnlocked(a) && !a.hidden)
+        .sort((a, b) => (b.rarity?.percent ?? 0) - (a.rarity?.percent ?? 0))
+        .slice(0, 3);
   const actionHtml = `<button type="button" class="gp-widget-action" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}">${i18nT("drawer.momentsAll")}</button>`;
   if (locked.length === 0) {
     // Nothing left to chase: celebrate the platinum instead of an empty slot.

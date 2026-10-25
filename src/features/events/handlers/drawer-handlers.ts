@@ -297,7 +297,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
 
     case "ach-filter": {
-      const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden";
+      const val = t.dataset.val as "all" | "unlocked" | "locked" | "hidden" | "near";
       if (val && S.currentModalAppName) {
         if (S.activeAchFilter === val) return true;
         S.activeAchFilter = val;

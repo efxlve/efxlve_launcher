@@ -412,7 +412,7 @@ export const S = {
   loadingScreenshotsFor: new Set<string>(),
   activeLightboxScreenshot: (null) as { appName: string; index: number } | null,
   activeShareScreenshot: (null) as { appName: string; item: GameScreenshotItem } | null,
-  activeAchFilter: ("all") as "all" | "unlocked" | "locked" | "hidden",
+  activeAchFilter: ("all") as "all" | "unlocked" | "locked" | "hidden" | "near",
   achTierFilter: ("all") as "all" | "platinum" | "gold" | "silver" | "bronze",
   achSearchQuery: "",
   achSortOrder: ("default") as "default" | "rarity" | "xp" | "date",
