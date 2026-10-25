@@ -2130,8 +2130,8 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${esc(label)}" aria-pressed="${S.achTierFilter === tier}">${glyph}<span>${esc(label)}</span><strong class="tabular-nums">${done}/${total}</strong></button>`
         : `<span class="ach-tier-mini static ${cls} ${done >= total ? "complete" : ""}" title="${esc(label)}">${glyph}<span>${esc(label)}</span><strong class="tabular-nums">${done}/${total}</strong></span>`
       : "";
-  const filterChip = (val: string, label: string, n: number, disabled = false): string =>
-    `<button class="tab ach-status-chip${S.activeAchFilter === val ? " active" : ""}${disabled ? " is-disabled" : ""}" data-act="ach-filter" data-val="${val}"${disabled ? ' disabled aria-disabled="true"' : ""}>${label}<span class="count">${n}</span></button>`;
+  const filterChip = (val: string, label: string, n: number, glyph: IconName, disabled = false): string =>
+    `<button class="tab ach-status-chip${S.activeAchFilter === val ? " active" : ""}${disabled ? " is-disabled" : ""}" data-act="ach-filter" data-val="${val}"${disabled ? ' disabled aria-disabled="true"' : ""}>${icon(glyph, 12)}<span>${label}</span><span class="count">${n}</span></button>`;
 
   const sourceNote = ubiAchSource.has(s.appName)
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
@@ -2239,11 +2239,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
     <div class="gp-toolbar">
       <div class="tabs ach-status-strip">
-        ${filterChip("all", t("ach.filterAll"), data.achievements.length)}
-        ${filterChip("unlocked", t("ach.filterUnlocked"), unlockedCount)}
-        ${filterChip("locked", t("ach.filterLocked"), data.achievements.length - unlockedCount)}
-        ${nearCount > 0 ? filterChip("near", t("ach.filterNear"), nearCount) : ""}
-        ${filterChip("hidden", t("ach.filterHidden"), hiddenCount, hiddenCount === 0)}
+        ${filterChip("all", t("ach.filterAll"), data.achievements.length, "list")}
+        ${filterChip("unlocked", t("ach.filterUnlocked"), unlockedCount, "check-circle")}
+        ${filterChip("locked", t("ach.filterLocked"), data.achievements.length - unlockedCount, "lock")}
+        ${nearCount > 0 ? filterChip("near", t("ach.filterNear"), nearCount, "activity") : ""}
+        ${filterChip("hidden", t("ach.filterHidden"), hiddenCount, "eye-off", hiddenCount === 0)}
       </div>
       <div class="gp-toolbar-right">
         <label class="search gp-search">${icon("search", 15)}<input type="text" id="ach-search-input" placeholder="${t("ach.searchPlaceholder")}" value="${esc(S.achSearchQuery)}" autocomplete="off" />
