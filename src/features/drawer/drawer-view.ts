@@ -2091,6 +2091,22 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const visibleItems = S.activeAchFilter === "hidden"
     ? sorted
     : sorted.filter((a) => !isMaskedHidden(a));
+  const detailIndex = detailItem ? visibleItems.findIndex((a) => a.name === detailItem.name) : -1;
+  const neighbourOf = (a: (typeof data.achievements)[number] | undefined) =>
+    a
+      ? {
+          name: a.name,
+          title: isMaskedHidden(a) ? t("ach.hiddenName") : a.display_name || a.name,
+        }
+      : undefined;
+  const detailPosition = detailItem && detailIndex >= 0
+    ? {
+        index: detailIndex + 1,
+        total: visibleItems.length,
+        prev: neighbourOf(visibleItems[detailIndex - 1]),
+        next: neighbourOf(visibleItems[detailIndex + 1]),
+      }
+    : undefined;
   const showPlat = tiers.platinum[0] > 0 || isPlat || Boolean(data.is_platinum);
   const platTotal = tiers.platinum[0] > 0 ? tiers.platinum[0] : showPlat ? 1 : 0;
   const platUnlocked = tiers.platinum[0] > 0 ? tiers.platinum[1] : isPlat ? 1 : 0;
@@ -2181,6 +2197,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         steamAppId: targetSteamAppId,
         community: S.achCommunity.get(detailKey) ?? null,
         communityLoading: S.loadingAchCommunity.has(detailKey),
+        position: detailPosition,
       })
     : renderAchSidePanel({ summary: s, data, steamAppId: targetSteamAppId });
 

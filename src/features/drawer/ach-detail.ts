@@ -25,6 +25,18 @@ import type { EpicAchievementItem, EpicAchievementsData, EpicSummary } from "../
 import { t } from "../../i18n";
 import type { SteamAchievementCommunity } from "../../steam";
 
+export interface AchievementDetailNeighbour {
+  name: string;
+  title: string;
+}
+
+export interface AchievementDetailPosition {
+  index: number;
+  total: number;
+  prev?: AchievementDetailNeighbour;
+  next?: AchievementDetailNeighbour;
+}
+
 export interface AchievementDetailInput {
   summary: EpicSummary;
   data: EpicAchievementsData;
@@ -32,6 +44,8 @@ export interface AchievementDetailInput {
   steamAppId: string | null;
   community?: SteamAchievementCommunity | null;
   communityLoading?: boolean;
+  /** Where the item sits in the list that is on screen, for the rail's stepper. */
+  position?: AchievementDetailPosition;
 }
 
 function tierName(tier: "platinum" | "gold" | "silver" | "bronze"): string {
@@ -45,9 +59,14 @@ function guideButton(
   url: string | undefined,
   label: string,
   glyph: IconName,
+  fullLabel = label,
 ): string {
   if (!url) return "";
-  return `<button type="button" class="btn ghost small ach-guide-btn" data-act="ach-guide" data-url="${esc(url)}" title="${esc(label)}">${icon(glyph, 13)}<span>${esc(label)}</span></button>`;
+  return `<button type="button" class="ach-guide-btn" data-act="ach-guide" data-url="${esc(url)}" title="${esc(fullLabel)}">
+    <span class="ach-guide-btn-icon">${icon(glyph, 14)}</span>
+    <span class="ach-guide-btn-label">${esc(label)}</span>
+    <span class="ach-guide-btn-open">${icon("external", 11)}</span>
+  </button>`;
 }
 
 function communityRow(
@@ -169,33 +188,46 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
   const achId = esc(item.name);
 
   const date = item.unlock_date && isUnlocked ? fmtAchDate(item.unlock_date) : "";
-  const meta = masked
-    ? ""
-    : [
-        tierKnown
-          ? `<span class="ach-pill tier ${tier}">${icon("trophy", 11)} ${esc(tierName(tier))}</span>`
-          : "",
-        rarity != null
-          ? `<span class="ach-pill${rarity < 10 ? " rarity ultra-rare" : ""}">${icon("sparkles", 10)} ${esc(t("ach.rarityShort", { n: fmtDecimal1(rarity) }))}</span>`
-          : "",
-        multiplier != null
-          ? `<span class="ach-pill">${esc(t("ach.multiplierShort", { n: fmtDecimal1(multiplier) }))}</span>`
-          : "",
-        xp > 0 ? `<span class="ach-pill">+${xp} XP</span>` : "",
-        !item.is_base ? `<span class="ach-pill dlc">${icon("package", 9)} DLC</span>` : "",
-        item.hidden ? `<span class="ach-pill secret">${icon("lock", 9)} ${esc(t("ach.secret"))}</span>` : "",
-        isSecret
-          ? `<button type="button" class="ach-pill ach-detail-hide" data-act="ach-reveal" data-id="${esc(summary.appName)}" data-ach="${esc(item.name)}">${icon("eye-off", 9)} ${esc(t("ach.hide"))}</button>`
-          : "",
+  const rarityHint = rarity != null
+    ? [
+        t("ach.detailRarity", { n: fmtDecimal1(rarity) }),
+        multiplier != null ? t("ach.detailMultiplier", { n: fmtDecimal1(multiplier) }) : "",
       ]
         .filter(Boolean)
-        .join("");
+        .join(" · ")
+    : "";
+  const eyebrowTags = [
+    !item.is_base ? `<span class="ach-detail-tag">DLC</span>` : "",
+    !masked && item.hidden
+      ? `<span class="ach-detail-tag">${icon("lock", 9)}<span>${esc(t("ach.secret"))}</span></span>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+  const hideButton = isSecret && !masked
+    ? `<button type="button" class="ach-detail-hide" data-act="ach-reveal" data-id="${appId}" data-ach="${achId}" title="${esc(t("ach.hideTitle"))}">${icon("eye-off", 11)}<span>${esc(t("ach.hide"))}</span></button>`
+    : "";
+  // One quiet fact line carries state, date, tier, rarity and XP; the rarity
+  // tooltip keeps the multiplier so the rail stays scannable.
+  const facts = masked
+    ? ""
+    : [
+        `<span class="ach-detail-fact ${isUnlocked ? "is-earned" : "is-locked"}">${isUnlocked ? icon("check", 11) : icon("lock", 10)}<span>${esc(isUnlocked ? t("ach.earned") : t("ach.locked"))}</span></span>`,
+        isUnlocked && date ? `<span class="ach-detail-fact">${esc(date)}</span>` : "",
+        tierKnown ? `<span class="ach-detail-fact tier ${tier}">${icon("trophy", 10)}<span>${esc(tierName(tier))}</span></span>` : "",
+        rarity != null
+          ? `<span class="ach-detail-fact"${rarityHint ? ` title="${esc(rarityHint)}"` : ""}>${icon("sparkles", 10)}<span>%${esc(fmtDecimal1(rarity))}</span></span>`
+          : "",
+        xp > 0 ? `<span class="ach-detail-fact">+${xp} XP</span>` : "",
+      ]
+        .filter(Boolean)
+        .join(`<span class="ach-detail-sep" aria-hidden="true">·</span>`);
 
   const guideButtons = [
     guideButton(links.video, t("ach.guideVideo"), "youtube"),
     guideButton(links.steamGuides, t("ach.guideSteamGuides"), "link"),
     guideButton(links.steamDiscussions, t("ach.guideSteamDiscussions"), "users"),
-    guideButton(links.trueSteamAchievements, t("ach.guideTrueSteam"), "external"),
+    guideButton(links.trueSteamAchievements, t("ach.guideTrueSteamShort"), "external", t("ach.guideTrueSteam")),
     guideButton(links.trueAchievements, t("ach.guideTrueAchievements"), "external"),
     guideButton(links.web, t("ach.guideWeb"), "globe"),
   ]
@@ -206,11 +238,14 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
     ? renderCommunity(community, Boolean(communityLoading), links.steamGuides)
     : "";
 
-  const status = masked
-    ? ""
-    : isUnlocked
-      ? `<span class="ach-detail-pill is-earned">${icon("check", 12)} <span>${esc(t("ach.earned"))}</span></span>${date ? `<span class="ach-detail-pill">${esc(date)}</span>` : ""}`
-      : `<span class="ach-detail-pill is-locked">${icon("lock", 11)} <span>${esc(t("ach.locked"))}</span></span>`;
+  const position = input.position;
+  const navigation = position
+    ? `<div class="ach-detail-nav">
+         <span class="ach-detail-index">${position.index} / ${position.total}</span>
+         <button type="button" class="ach-detail-step" data-act="ach-open" data-ach="${esc(position.prev?.name ?? "")}" title="${esc(position.prev?.title ?? "")}"${position.prev ? "" : " disabled"}>${icon("chevron-left", 14)}</button>
+         <button type="button" class="ach-detail-step" data-act="ach-open" data-ach="${esc(position.next?.name ?? "")}" title="${esc(position.next?.title ?? "")}"${position.next ? "" : " disabled"}>${icon("chevron-right", 14)}</button>
+       </div>`
+    : "";
   const progressLine = !masked && !isUnlocked && progress > 0
     ? `<div class="ach-detail-progress-line">
          <div class="progress"><span style="width:${Math.round(progress * 100)}%"></span></div>
@@ -221,9 +256,12 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
 
   return `
     <div class="ach-detail">
-      <button type="button" class="icon-btn ach-detail-back" data-act="ach-back" title="${esc(t("common.close"))}">
-        ${icon("x", 14)}
-      </button>
+      <div class="ach-detail-bar">
+        <button type="button" class="ach-detail-back" data-act="ach-back" title="${esc(t("common.back"))}">
+          ${icon("arrow-left", 13)}<span>${esc(t("drawer.achievements"))}</span>
+        </button>
+        ${navigation}
+      </div>
 
       <section class="ach-detail-hero">
         <div class="ach-detail-art ${masked ? "is-masked" : ""}">
@@ -236,17 +274,17 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
           }
         </div>
         <div class="ach-detail-main">
-          <div class="ach-detail-eyebrow">${masked ? icon("lock", 12) + " " : ""}${esc(summary.title)}</div>
-          <div class="ach-detail-title-row">
-            <h2 class="ach-detail-name">${esc(title)}</h2>
-            ${status}
+          <div class="ach-detail-eyebrow">
+            <span class="ach-detail-game">${esc(summary.title)}</span>
+            ${eyebrowTags}
+            ${hideButton}
           </div>
+          <h2 class="ach-detail-name">${esc(title)}</h2>
           <p class="ach-detail-desc">${esc(description)}</p>
-          ${meta ? `<div class="ach-detail-meta">${meta}</div>` : ""}
+          ${facts ? `<div class="ach-detail-facts">${facts}</div>` : ""}
+          ${progressLine}
         </div>
       </section>
-
-      ${progressLine}
 
       ${
         isSecret && masked
@@ -268,9 +306,9 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
           : `<section class="ach-detail-guides">
                <div class="ach-detail-guides-head">
                  <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.detailHowTo"))}</span></h3>
-                 <span class="ach-detail-hint">${esc(t("ach.detailGuideHint"))}</span>
                </div>
                <div class="ach-guide-grid">${guideButtons}</div>
+               <p class="ach-detail-footnote">${icon("info", 11)}<span>${esc(t("ach.detailGuideHint"))}</span></p>
                ${communityBlock}
              </section>
              <details class="ach-personal"${personalOpen}>
