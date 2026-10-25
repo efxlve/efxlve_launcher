@@ -348,6 +348,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_show_launcher` | `overlayShowLauncher({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `pc_check_system` | `pcCheckSystem({ ... })` | `src-tauri/src/pc_check.rs` |
 | `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
+| `powerpyx_game_guide` | `powerpyxGameGuide({ ... })` | `src-tauri/src/guides/powerpyx.rs` |
 | `prewarm_store_view` | `prewarmStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `profile_cloud_list` | `profileCloudList({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `profile_cloud_restore` | `profileCloudRestore({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |

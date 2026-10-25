@@ -424,6 +424,9 @@ export const S = {
   /** Steam guide/thread answers keyed by `<appName>:<achievement>`. */
   achCommunity: (new Map()) as Map<string, import("../steam").SteamAchievementCommunity>,
   loadingAchCommunity: (new Set()) as Set<string>,
+  /** PowerPyx roadmap facts keyed by library app name. */
+  powerpyxGuides: (new Map()) as Map<string, import("../guides").PowerPyxGuide>,
+  loadingPowerpyx: (new Set()) as Set<string>,
   loadedRequirements: (new Map()) as Map<string, GameRequirementsResponse>,
   loadingReqFor: new Set<string>(),
   activeSystemPlatform: ("Windows") as string,

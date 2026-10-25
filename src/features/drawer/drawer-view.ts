@@ -56,6 +56,8 @@ import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbG
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
 import { isAchievementUnlocked } from "../../core/achievements";
 import { renderAchievementDetail } from "./ach-detail";
+import { renderPowerPyxCard } from "./ach-powerpyx";
+import { powerpyxGameGuide } from "../../guides";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1908,6 +1910,37 @@ export function ensureAchievementCommunity(appName: string, achName: string): vo
     });
 }
 
+/**
+ * PowerPyx publishes a roadmap card per game. It is best effort and cached;
+ * a miss is kept for a day so a page open does not hammer the site.
+ */
+export function ensurePowerPyxGuide(appName: string, title: string): void {
+  if (!isTauri || S.powerpyxGuides.has(appName) || S.loadingPowerpyx.has(appName)) return;
+  S.loadingPowerpyx.add(appName);
+  void powerpyxGameGuide(title)
+    .then((guide) => {
+      S.powerpyxGuides.set(appName, guide);
+    })
+    .catch(() => {
+      S.powerpyxGuides.set(appName, {
+        supported: false,
+        title: "",
+        url: "",
+        difficulty: "",
+        time: "",
+        missables: "",
+      });
+    })
+    .finally(() => {
+      S.loadingPowerpyx.delete(appName);
+      if (S.currentModalAppName !== appName || S.activeDrawerTab !== "achievements" || S.achDetail) return;
+      // Late data patches its own host; a full tab rebuild would throw the
+      // reader back to the top of a long achievement list.
+      const host = document.getElementById("ach-powerpyx-host");
+      if (host) host.innerHTML = renderPowerPyxCard(S.powerpyxGuides.get(appName));
+    });
+}
+
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const isDemo = S.demoPlatinumApps.has(s.appName);
@@ -1972,6 +2005,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     });
   }
 
+  ensurePowerPyxGuide(s.appName, s.title);
   const hasDlc = data.achievements.some((a) => !a.is_base);
   const effectiveUnlocked = isDemo ? data.total_achievements : data.user_unlocked;
   const effectiveXp = isDemo ? data.total_xp : data.user_xp;
@@ -2112,6 +2146,8 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
       </div>
     </div>
+
+    <div id="ach-powerpyx-host">${renderPowerPyxCard(S.powerpyxGuides.get(s.appName))}</div>
 
     <div class="gp-toolbar">
       <div class="tabs ach-status-strip">

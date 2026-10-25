@@ -839,6 +839,42 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-detail-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* --- Achievement detail (list → detail inside the achievements tab) --- */
+.ach-powerpyx {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.ach-powerpyx-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ach-powerpyx-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ach-powerpyx-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .ach-detail {
   display: flex;
   flex-direction: column;

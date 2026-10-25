@@ -18,6 +18,7 @@ mod egl_removal;
 mod epic_shim;
 mod feedback;
 mod gogdl;
+mod guides;
 mod launchers;
 mod legendary;
 mod lookup_cache;
@@ -1841,6 +1842,7 @@ fn main() {
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,
             steam::steam_get_achievement_community,
+            guides::powerpyx::powerpyx_game_guide,
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,
             steam::steam_detect_achievement_path,
