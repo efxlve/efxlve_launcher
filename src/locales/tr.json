@@ -3054,5 +3054,17 @@
   "col.emptySelectionSub": "3D poster destenizi oluşturmak için aşağıdaki oyunları seçin",
   "col.coverGames": "Kapak Oyunları",
   "col.coverAdd": "Koleksiyon kapağına yerleştir",
-  "col.coverRemove": "Kapak oyunlarından çıkar"
+  "col.coverRemove": "Kapak oyunlarından çıkar",
+  "ach.detailHowTo": "Nasıl kazanılır?",
+  "ach.detailGuideHint": "Bağlantılar tarayıcıda açılır. Topluluk rehberleri spoiler içerebilir.",
+  "ach.detailRarity": "Bu başarım oyuncuların %{n} kadarında var",
+  "ach.detailMultiplier": "Nadirlik çarpanı: {n}x",
+  "ach.detailProgress": "İlerleme: %{n}",
+  "ach.detailSpoiler": "Bu başarım gizli. Rehberi açmadan önce spoiler'ı göster.",
+  "ach.guideVideo": "Video rehber",
+  "ach.guideWeb": "Web'de ara",
+  "ach.guideSteamGuides": "Steam rehberleri",
+  "ach.guideSteamDiscussions": "Steam tartışmaları",
+  "ach.guideTrueSteam": "TrueSteamAchievements",
+  "ach.guideTrueAchievements": "TrueAchievements"
 }

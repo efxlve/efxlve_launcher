@@ -3054,5 +3054,17 @@
   "col.emptySelectionSub": "अपना 3D पोस्टर डेक फैलाने के लिए नीचे से गेम चुनें",
   "col.coverGames": "कवर गेम",
   "col.coverAdd": "संग्रह कवर के रूप में सेट करें",
-  "col.coverRemove": "कवर से हटाएं"
+  "col.coverRemove": "कवर से हटाएं",
+  "ach.detailHowTo": "How to unlock",
+  "ach.detailGuideHint": "These open in your browser. Community guides may contain spoilers.",
+  "ach.detailRarity": "{n}% of players have this",
+  "ach.detailMultiplier": "{n}x rarity",
+  "ach.detailProgress": "{n}% complete",
+  "ach.detailSpoiler": "This achievement is hidden. Reveal it before opening a guide.",
+  "ach.guideVideo": "Video guide",
+  "ach.guideWeb": "Search the web",
+  "ach.guideSteamGuides": "Steam guides",
+  "ach.guideSteamDiscussions": "Steam discussions",
+  "ach.guideTrueSteam": "TrueSteamAchievements",
+  "ach.guideTrueAchievements": "TrueAchievements"
 }

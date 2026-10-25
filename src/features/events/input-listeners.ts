@@ -45,6 +45,7 @@ import {
   renderDrawerDlcs,
 } from "../drawer/drawer-view";
 import { getAchTier, renderAchievementSections } from "../drawer/drawer-widgets";
+import { isAchievementUnlocked } from "../../core/achievements";
 import { handleCompatAction } from "../settings/compat-view";
 import { handleGameCompatChange } from "../drawer/game-compat";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
@@ -307,6 +308,13 @@ document.addEventListener("keydown", (e) => {
       document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
       return;
     }
+    // The achievement detail is one level inside the game page: Escape returns
+    // to the list before it closes the page.
+    if (S.achDetail && S.currentModalAppName && S.activeDrawerTab === "achievements") {
+      S.achDetail = null;
+      openEpicModal(S.currentModalAppName, false, false);
+      return;
+    }
     closeModal();
   }
   if (e.key === "Enter") {
@@ -561,7 +569,7 @@ document.addEventListener("input", (e) => {
         const query = S.achSearchQuery.trim().toLowerCase();
         const isDemo = S.demoPlatinumApps.has(s.appName);
         const filteredItems = data.achievements.filter((a) => {
-          const isUnlocked = a.unlocked || isDemo;
+          const isUnlocked = isAchievementUnlocked(a) || isDemo;
           if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (S.activeAchFilter === "locked" && isUnlocked) return false;
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;

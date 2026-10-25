@@ -7,6 +7,7 @@
  * trigger network fetches, which keeps them safe to reuse and test.
  */
 
+import { achievementRarity, achievementTier, achievementTierKnown, isAchievementUnlocked } from "../../core/achievements";
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
@@ -21,19 +22,11 @@ import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { type SteamNewsItem } from "../../steam";
 import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
-/** Map an achievement to its trophy tier. */
+/** Map an achievement to its trophy tier. Unknown data stays bronze for the
+ *  existing filter buckets, but the card/detail hides the pill when the store
+ *  gave no tier signal at all. */
 export function getAchTier(a: EpicAchievementItem): "platinum" | "gold" | "silver" | "bronze" {
-  if (a.tier?.name) {
-    const n = a.tier.name.toLowerCase();
-    if (n.includes("plat")) return "platinum";
-    if (n.includes("gold")) return "gold";
-    if (n.includes("silver")) return "silver";
-    if (n.includes("bronze")) return "bronze";
-  }
-  if (a.xp >= 200) return "platinum";
-  if (a.xp >= 100) return "gold";
-  if (a.xp >= 50) return "silver";
-  return "bronze";
+  return achievementTier(a) ?? "bronze";
 }
 export function renderHltbCard(hltb?: HltbData, isLoading = false): string {
   const hours = (n: number) => i18nT("hltb.hours", { n: fmtHours(n) });
@@ -715,7 +708,7 @@ export function renderNextAchievements(appName: string): string {
   }
   const complete = Boolean(data.is_platinum) || data.user_unlocked >= data.total_achievements;
   const locked = data.achievements
-    .filter((a) => !a.unlocked && !a.hidden)
+    .filter((a) => !isAchievementUnlocked(a) && !a.hidden)
     .sort((a, b) => (b.rarity?.percent ?? 0) - (a.rarity?.percent ?? 0))
     .slice(0, 3);
   const actionHtml = `<button type="button" class="gp-widget-action" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}">${i18nT("drawer.momentsAll")}</button>`;
@@ -1215,14 +1208,14 @@ export function renderAchievementSections(
   const allDlc = allSource.filter((a) => !a.is_base);
 
   const baseTotal = allBase.length;
-  const baseUnlocked = isDemo ? baseTotal : allBase.filter((a) => a.unlocked).length;
+  const baseUnlocked = isDemo ? baseTotal : allBase.filter((a) => isAchievementUnlocked(a)).length;
   const basePct = baseTotal > 0 ? Math.round((baseUnlocked / baseTotal) * 100) : 0;
-  const baseXp = allBase.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+  const baseXp = allBase.filter((a) => isDemo || isAchievementUnlocked(a)).reduce((sum, a) => sum + a.xp, 0);
 
   const dlcTotal = allDlc.length;
-  const dlcUnlocked = isDemo ? dlcTotal : allDlc.filter((a) => a.unlocked).length;
+  const dlcUnlocked = isDemo ? dlcTotal : allDlc.filter((a) => isAchievementUnlocked(a)).length;
   const dlcPct = dlcTotal > 0 ? Math.round((dlcUnlocked / dlcTotal) * 100) : 0;
-  const dlcXp = allDlc.filter((a) => a.unlocked || isDemo).reduce((sum, a) => sum + a.xp, 0);
+  const dlcXp = allDlc.filter((a) => isDemo || isAchievementUnlocked(a)).reduce((sum, a) => sum + a.xp, 0);
 
   let html = "";
 
@@ -1235,7 +1228,7 @@ export function renderAchievementSections(
             <span class="ach-group-heading">${i18nT("ach.baseGame")}</span>
             <span class="ach-group-badge ${baseUnlocked === baseTotal ? "complete" : ""}">${baseUnlocked}/${baseTotal} (%${basePct})</span>
           </div>
-          <div class="ach-group-xp">${baseXp} XP</div>
+          ${baseXp > 0 ? `<div class="ach-group-xp">${baseXp} XP</div>` : ""}
         </div>
         <div class="ach-group-bar">
           <div class="ach-group-bar-fill gold" style="width: ${basePct}%"></div>
@@ -1256,7 +1249,7 @@ export function renderAchievementSections(
             <span class="ach-group-heading">${i18nT("ach.dlcPacks")}</span>
             <span class="ach-group-badge ${dlcUnlocked === dlcTotal ? "complete" : ""}">${dlcUnlocked}/${dlcTotal} (%${dlcPct})</span>
           </div>
-          <div class="ach-group-xp">${dlcXp} XP</div>
+          ${dlcXp > 0 ? `<div class="ach-group-xp">${dlcXp} XP</div>` : ""}
         </div>
         <div class="ach-group-bar">
           <div class="ach-group-bar-fill purple" style="width: ${dlcPct}%"></div>
@@ -1273,10 +1266,11 @@ export function renderAchievementSections(
 
 export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): string {
   const isDemo = S.demoPlatinumApps.has(s.appName);
-  const isUnlocked = a.unlocked || isDemo;
+  const isUnlocked = isAchievementUnlocked(a) || isDemo;
   const isHidden = a.hidden;
   const isSecretMasked = isHidden && !isUnlocked;
   const isRevealed = S.revealedAchievements.has(`${s.appName}:${a.name}`);
+  const rarity = achievementRarity(a);
 
   const title = isSecretMasked && !isRevealed ? i18nT("ach.hiddenName") : (a.display_name || a.name);
   const desc = isSecretMasked && !isRevealed
@@ -1286,10 +1280,12 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
   const tierClass = tier;
   const tierIcon = icon("trophy", 11);
   const tierName = fmtTierName(tier);
+  const tierKnown = achievementTierKnown(a);
+  const xp = Number(a.xp) || 0;
 
   return `
     <div class="ach-card ${isUnlocked ? "unlocked" : "locked"} ${isSecretMasked ? (isRevealed ? "revealed-secret" : "hidden-secret") : ""}"
-         ${isSecretMasked ? `data-act="ach-reveal" data-id="${s.appName}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${isRevealed ? i18nT("ach.hideTitle") : i18nT("ach.revealTitle")}"` : ""}>
+         data-act="ach-open" data-id="${esc(s.appName)}" data-ach="${esc(a.name)}" role="button" tabindex="0" title="${esc(i18nT("ach.revealTitle"))}">
       
       <!-- Left: 52px icon -->
       <div class="ach-icon-wrapper">
@@ -1322,18 +1318,18 @@ export function renderAchievementCard(a: EpicAchievementItem, s: EpicSummary): s
         <p class="ach-description">${esc(desc)}</p>
 
         <div class="ach-meta-row">
-          <span class="ach-pill tier ${tierClass}">${tierIcon} ${esc(tierName)}</span>
+          ${tierKnown ? `<span class="ach-pill tier ${tierClass}">${tierIcon} ${esc(tierName)}</span>` : ""}
           ${a.unlock_date && isUnlocked ? `<span class="ach-pill date">${fmtAchDate(a.unlock_date)}</span>` : ""}
-          ${a.rarity?.percent != null && a.rarity.percent < 10 ? `
+          ${rarity != null && rarity < 10 ? `
             <span class="ach-pill rarity ultra-rare">
-              ${icon("sparkles", 10)} %${fmtDecimal1(a.rarity.percent)} ${i18nT("ach.rare")}
+              ${icon("sparkles", 10)} %${fmtDecimal1(rarity)} ${i18nT("ach.rare")}
             </span>` : ""}
         </div>
       </div>
 
       <!-- Right: XP & status -->
       <div class="ach-aside">
-        <div class="ach-xp-chip ${isUnlocked ? "unlocked" : "locked"}">+${a.xp} XP</div>
+        ${xp > 0 ? `<div class="ach-xp-chip ${isUnlocked ? "unlocked" : "locked"}">+${xp} XP</div>` : ""}
         ${isUnlocked
           ? `<div class="ach-status-icon earned" title="${i18nT("ach.earned")}">${icon("check", 13)}</div>`
           : `<div class="ach-status-icon locked" title="${i18nT("ach.locked")}">${icon("lock", 12)}</div>`

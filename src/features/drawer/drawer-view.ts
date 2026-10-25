@@ -54,6 +54,8 @@ import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
+import { isAchievementUnlocked } from "../../core/achievements";
+import { renderAchievementDetail } from "./ach-detail";
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1145,6 +1147,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   // A freshly opened game page celebrates a platinum once: the cup's shine
   // sweep replays only when the page is opened again, not on every re-render.
   if (isInitialOpen) platShineDone = false;
+  // A detail belongs to the game page it was opened from; a new page or a new
+  // game starts on the list again.
+  if (isInitialOpen || !isSameApp) S.achDetail = null;
   // Switching games inside the open drawer must not keep the previous
   // gallery (and its full-size originals) alive.
   if (!isSameApp && S.currentModalAppName) forgetGameScreenshots(S.currentModalAppName);
@@ -1916,6 +1921,13 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   enrichAchievementsData(s.appName, data);
 
+  const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
+  const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
+  const detailItem = S.achDetail ? data.achievements.find((a) => a.name === S.achDetail) : undefined;
+  if (detailItem) {
+    return renderAchievementDetail({ summary: s, data, item: detailItem, steamAppId: targetSteamAppId });
+  }
+
   const hasDlc = data.achievements.some((a) => !a.is_base);
   const effectiveUnlocked = isDemo ? data.total_achievements : data.user_unlocked;
   const effectiveXp = isDemo ? data.total_xp : data.user_xp;
@@ -1923,7 +1935,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filtered = data.achievements.filter((a) => {
-    const unlocked = a.unlocked || isDemo;
+    const unlocked = isAchievementUnlocked(a) || isDemo;
     if (S.activeAchFilter === "unlocked" && !unlocked) return false;
     if (S.activeAchFilter === "locked" && unlocked) return false;
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
@@ -1948,7 +1960,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   let hiddenCount = 0;
   for (const a of data.achievements) {
     const tier = tiers[getAchTier(a)];
-    const u = a.unlocked || isDemo;
+    const u = isAchievementUnlocked(a) || isDemo;
     tier[0]++;
     if (u) { tier[1]++; unlockedCount++; }
     if (a.hidden) hiddenCount++;
@@ -1984,9 +1996,6 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   // shine sweep (the sweep only runs on the first paint of the page).
   const platCup = platinumCup(28, !platShineDone);
   if (isPlat) platShineDone = true;
-
-  const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
-  const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
 
   if (targetSteamAppId) {
     if (!steamAchSourceCache.has(s.appName)) {

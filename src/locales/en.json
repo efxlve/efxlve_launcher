@@ -3054,5 +3054,17 @@
   "col.emptySelectionSub": "Select games below to fan out your 3D poster deck",
   "col.coverGames": "Cover Games",
   "col.coverAdd": "Set as collection cover",
-  "col.coverRemove": "Remove from cover"
+  "col.coverRemove": "Remove from cover",
+  "ach.detailHowTo": "How to unlock",
+  "ach.detailGuideHint": "These open in your browser. Community guides may contain spoilers.",
+  "ach.detailRarity": "{n}% of players have this",
+  "ach.detailMultiplier": "{n}x rarity",
+  "ach.detailProgress": "{n}% complete",
+  "ach.detailSpoiler": "This achievement is hidden. Reveal it before opening a guide.",
+  "ach.guideVideo": "Video guide",
+  "ach.guideWeb": "Search the web",
+  "ach.guideSteamGuides": "Steam guides",
+  "ach.guideSteamDiscussions": "Steam discussions",
+  "ach.guideTrueSteam": "TrueSteamAchievements",
+  "ach.guideTrueAchievements": "TrueAchievements"
 }

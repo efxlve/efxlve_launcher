@@ -13,6 +13,7 @@ function targetSteamAppIdOf(key: string): string | null {
  */
 
 import { FAV_KEY } from "../../../core/constants";
+import { isSafeExternalUrl } from "../../../core/achievements";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { toggleAboutExpanded, wireDrawerSubmenu } from "../../drawer/drawer-view";
@@ -27,6 +28,7 @@ import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements,
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
 import { t as i18n } from "../../../i18n";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { toggleSideWidget } from "../../drawer/side-widgets";
 import { fetchAndRenderScreenshots } from "../../screenshots/screenshots-view";
@@ -193,6 +195,7 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       const tab = t.dataset.tab as DrawerTab;
       if (tab && S.currentModalAppName) {
         if (tab === S.activeDrawerTab) return true;
+        if (tab !== "achievements") S.achDetail = null;
         S.activeDrawerTab = tab;
         if (tab === "achievements") {
           const cached = S.loadedAchievements.get(S.currentModalAppName);
@@ -310,6 +313,29 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         S.achTierFilter = S.achTierFilter === tier ? "all" : tier;
         openEpicModal(S.currentModalAppName, false, false);
       }
+      return true;
+    }
+
+    case "ach-open": {
+      const achName = t.dataset.ach;
+      if (achName && S.currentModalAppName) {
+        S.achDetail = achName;
+        openEpicModal(S.currentModalAppName, false, false);
+      }
+      return true;
+    }
+
+    case "ach-back": {
+      if (S.currentModalAppName && S.achDetail) {
+        S.achDetail = null;
+        openEpicModal(S.currentModalAppName, false, false);
+      }
+      return true;
+    }
+
+    case "ach-guide": {
+      const url = t.dataset.url;
+      if (url && isSafeExternalUrl(url)) void openUrl(url).catch(() => undefined);
       return true;
     }
 

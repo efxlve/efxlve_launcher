@@ -419,6 +419,8 @@ export const S = {
   revealedAchievements: (new Set()) as Set<string>,
   currentModalAppName: (null) as string | null,
   achSourceModalOpen: (null) as string | null,
+  /** Achievement name whose detail view is open in the game page. */
+  achDetail: (null) as string | null,
   loadedRequirements: (new Map()) as Map<string, GameRequirementsResponse>,
   loadingReqFor: new Set<string>(),
   activeSystemPlatform: ("Windows") as string,

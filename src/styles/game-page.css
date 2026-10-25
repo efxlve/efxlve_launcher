@@ -832,6 +832,184 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-status-icon { display: grid; place-items: center; color: var(--text-3); }
 .ach-status-icon.earned { color: var(--ok); }
 
+.ach-card { cursor: pointer; transition: border-color var(--ease), background-color var(--ease); }
+.ach-card:hover { border-color: var(--text-3); }
+.ach-card:focus-visible,
+.ach-guide-btn:focus-visible,
+.ach-detail-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- Achievement detail (list → detail inside the achievements tab) --- */
+.ach-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding-bottom: 24px;
+}
+
+.ach-detail-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ach-detail-hero {
+  display: flex;
+  gap: 18px;
+  padding: 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.ach-detail-art {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.ach-detail-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ach-detail-art.is-masked { color: var(--text-3); }
+
+.ach-detail-main { flex: 1; min-width: 0; }
+
+.ach-detail-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.ach-detail-name {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.ach-detail-desc {
+  margin: 8px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.ach-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ach-detail-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.ach-detail-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ach-detail-state.is-earned { color: var(--ok); }
+.ach-detail-state.is-locked { color: var(--text-2); }
+
+.ach-detail-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.ach-detail-progress .progress { flex: 1; }
+
+.ach-detail-progress-label {
+  color: var(--text-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ach-detail-spoiler {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface-1);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+}
+
+.ach-detail-spoiler-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.ach-detail-spoiler-body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.ach-detail-spoiler-title { color: var(--text-2); font-size: 13px; line-height: 1.45; }
+
+.ach-detail-guides {
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.ach-detail-guides-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ach-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ach-detail-hint { color: var(--text-3); font-size: 12px; }
+
+.ach-guide-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.ach-guide-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+@media (max-width: 720px) {
+  .ach-detail-hero { flex-direction: column; gap: 12px; }
+  .ach-detail-art { width: 72px; height: 72px; flex-basis: 72px; }
+  .ach-detail-guides-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+}
+
 /* --- System requirements --- */
 .sys-req-container { display: flex; flex-direction: column; gap: 16px; }
 .sys-req-toolbar {
