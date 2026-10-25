@@ -17,17 +17,27 @@ function short(value: string, max = 34): string {
   return `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
+/** PowerPyx writes hours in English; the rail should use the reader's unit. */
+function localizedTime(value: string): string {
+  const match = value.match(/(\d+)(?:\s*[–-]\s*(\d+))?\+?\s*hours?/i);
+  if (!match) return short(value, 18);
+  const unit = t("common.hoursShort");
+  if (match[2]) return `${match[1]}–${match[2]} ${unit}`;
+  return `${match[1]}${value.includes("+") ? "+" : ""} ${unit}`;
+}
+
 export function renderPowerPyxCard(guide: PowerPyxGuide | undefined): string {
   if (!guide?.supported || !guide.url) return "";
   const difficulty = guide.difficulty.match(/^\d+\s*\/\s*\d+/)?.[0] ??
     stripEmoji(guide.difficulty).split(",")[0].trim();
-  const missables = stripEmoji(guide.missables).split(",")[0].trim();
+  const missables = stripEmoji(guide.missables).trim();
+  const missableValue = missables.toLowerCase().startsWith("no")
+    ? t("ach.powerpyxNone")
+    : missables.match(/\d+/)?.[0] ?? short(missables, 22);
   const facts = [
     difficulty ? `${t("ach.powerpyxDifficulty")} ${short(difficulty, 24)}` : "",
-    guide.time ? `${t("ach.powerpyxTime")} ${short(guide.time, 18)}` : "",
-    missables
-      ? `${t("ach.powerpyxMissables")} ${missables.toLowerCase().startsWith("no") ? t("ach.powerpyxNone") : short(missables, 22)}`
-      : "",
+    guide.time ? `${t("ach.powerpyxTime")} ${localizedTime(guide.time)}` : "",
+    missables ? `${t("ach.powerpyxMissables")} ${missableValue}` : "",
   ].filter(Boolean);
   const tooltip = stripEmoji([guide.title, guide.difficulty, guide.time, guide.missables]
     .filter(Boolean)
