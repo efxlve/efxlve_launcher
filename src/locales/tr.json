@@ -3071,5 +3071,6 @@
   "ach.communityThreads": "Tartışmalar",
   "ach.communityReplies": "{n} yanıt",
   "ach.communityEmpty": "Bu başarım için henüz topluluk rehberi veya konusu bulunamadı.",
-  "ach.communityFallback": "Steam'de ara"
+  "ach.communityFallback": "Steam'de ara",
+  "ach.filterNear": "Yakında"
 }

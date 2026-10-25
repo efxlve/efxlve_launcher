@@ -3071,5 +3071,6 @@
   "ach.communityThreads": "Discussions",
   "ach.communityReplies": "{n} replies",
   "ach.communityEmpty": "No community guides or threads found for this achievement yet.",
-  "ach.communityFallback": "Search Steam"
+  "ach.communityFallback": "Search Steam",
+  "ach.filterNear": "Almost there"
 }

@@ -38,7 +38,19 @@ import {
 import { SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY } from "../../core/constants";
 import { discordPageVisible, overlayHotkeyLabel, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
-import { esc } from "../../core/utils";
+import {
+  achievementGuideLinks,
+  achievementProgress,
+  achievementRarity,
+  achievementStats,
+  achievementTier,
+  isAchievementUnlocked,
+  isSafeExternalUrl,
+  nextAchievements,
+  rarityMultiplier,
+} from "../../core/achievements";
+import { esc, fmtAchDate, fmtDecimal1 } from "../../core/utils";
+import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
 import {
   formatTime as formatSpotifyTime,
@@ -103,15 +115,24 @@ interface AchievementItem {
   name: string;
   display_name?: string;
   description?: string;
+  xp?: number;
   unlocked?: boolean;
+  progress?: number;
+  unlock_date?: string | null;
   hidden?: boolean;
   icon_link?: string;
+  is_base?: boolean;
+  tier?: { name?: string } | null;
+  rarity?: { percent?: number | null } | null;
 }
 
 interface AchievementsData {
   achievements: AchievementItem[];
   user_unlocked: number;
   total_achievements: number;
+  user_xp?: number;
+  total_xp?: number;
+  is_platinum?: boolean;
 }
 
 interface ScreenshotItem {
@@ -190,6 +211,13 @@ let tracksState: "idle" | "loading" | "ready" | "error" = "idle";
 let tracksError = "";
 let tracksFor: string | null = null;
 let cachedAchievements: AchievementsData | null = null;
+let achLoading = false;
+let achLoadGeneration = 0;
+let achDetail: string | null = null;
+let achFilter: "all" | "locked" | "near" = "all";
+let achRevealed = new Set<string>();
+let achCommunity = new Map<string, SteamAchievementCommunity>();
+let achCommunityLoading = new Set<string>();
 let cachedScreenshots: ScreenshotItem[] = [];
 let selectedGameFilters = new Set<string>();
 let filterPopoverOpen = false;
@@ -861,6 +889,7 @@ function closeWidget(tab: TabId): void {
   saveOpenWidgets();
 
   if (tab === "clip") stopClipPolling();
+  if (tab === "ach") achDetail = null;
 
   const widget = document.getElementById(`ov-widget-${tab}`);
   if (widget) widget.style.display = "none";
@@ -1584,12 +1613,17 @@ function renderHome(): void {
   const currentFps = m?.fps != null ? Math.round(m.fps) : "—";
   const hudActive = localStorage.getItem(HUD_KEY) === "true";
 
-  // Achievements preview
+  // Achievements preview: the next targets, not the first two rows of the
+  // store's list. A completed set falls back to two earned rows.
   const achData = cachedAchievements;
-  const achUnlocked = achData?.user_unlocked ?? 0;
-  const achTotal = achData?.total_achievements ?? achData?.achievements?.length ?? 0;
+  const achStats = achData ? achievementStats(achData.achievements) : null;
+  const achUnlocked = achStats?.unlocked ?? achData?.user_unlocked ?? 0;
+  const achTotal = achStats?.total ?? achData?.total_achievements ?? achData?.achievements?.length ?? 0;
   const achPct = achTotal > 0 ? Math.round((achUnlocked / achTotal) * 100) : 0;
-  const recentAchs = achData?.achievements ? achData.achievements.slice(0, 2) : [];
+  const nextAchs = achData ? nextAchievements(achData.achievements, 2) : [];
+  const previewAchs = nextAchs.length > 0
+    ? nextAchs
+    : achData?.achievements.filter(isAchievementUnlocked).slice(0, 2) ?? [];
 
   // Screenshots preview
   const shotsPreview = cachedScreenshots.slice(0, 4);
@@ -1693,15 +1727,21 @@ function renderHome(): void {
             <span class="ov-ach-pct">%${achPct}</span>
           </div>
           <div class="ov-ach-mini-list">
-            ${recentAchs.map((item) => `
-              <div class="ov-ach-item${item.unlocked ? " unlocked" : ""}">
-                ${item.icon_link ? `<img class="ov-ach-thumb" src="${esc(item.icon_link)}" alt="" />` : `<span class="ov-ach-thumb"></span>`}
+            ${previewAchs.map((item) => {
+              const unlocked = isAchievementUnlocked(item);
+              const masked = achMasked(item);
+              const rarity = achievementRarity(item);
+              return `
+              <button type="button" class="ov-ach-item${unlocked ? " unlocked" : ""}" data-ov="ach-open" data-ach="${esc(item.name)}" data-nav-row>
+                ${item.icon_link && !masked ? `<img class="ov-ach-thumb" src="${esc(item.icon_link)}" alt="" />` : `<span class="ov-ach-thumb">${masked ? icon("lock", 12) : ""}</span>`}
                 <div class="ov-ach-meta">
-                  <div class="ov-ach-name">${esc(item.display_name || item.name)}</div>
-                  <div class="ov-ach-desc">${esc(item.description || "")}</div>
+                  <div class="ov-ach-name">${esc(masked ? t("ach.hiddenName") : item.display_name || item.name)}</div>
+                  <div class="ov-ach-desc">${esc(masked ? t("ach.hiddenDesc") : item.description || "")}</div>
                 </div>
-                ${item.unlocked ? `<span style="color:var(--ok)">${icon("check", 14)}</span>` : ""}
-              </div>`).join("")}
+                ${rarity != null ? `<span class="ov-ach-rarity tabular-nums">%${fmtDecimal1(rarity)}</span>` : ""}
+                ${unlocked ? `<span style="color:var(--ok)">${icon("check", 14)}</span>` : ""}
+              </button>`;
+            }).join("")}
           </div>` : `
           <div class="ov-empty" style="padding:16px 0">${esc(t("overlay.noAchievements"))}</div>`}
       </div>
@@ -2266,35 +2306,265 @@ function updateMetricsUi(): void {
 }
 
 /* 3. Full Achievements View */
-async function loadAchievements(force = false): Promise<void> {
+function achDisplayName(item: AchievementItem): string {
+  return item.display_name || item.name;
+}
+
+function achMasked(item: AchievementItem): boolean {
+  return Boolean(item.hidden) && !isAchievementUnlocked(item) && !achRevealed.has(item.name);
+}
+
+function achCommunityKey(name: string): string {
+  return `${context.appName}:${name}`;
+}
+
+function achGuideLinksFor(item: AchievementItem) {
+  const { store, id } = splitKey(context.appName);
+  return achievementGuideLinks({
+    title: context.title,
+    achievement: achDisplayName(item),
+    store,
+    steamAppId: store === "steam" ? id : null,
+  });
+}
+
+function openAchUrl(url: string | undefined): void {
+  if (!url || !isSafeExternalUrl(url)) return;
+  void invoke("overlay_browser_open", { url }).catch(() => {
+    void openUrl(url).catch(() => undefined);
+  });
+}
+
+function ensureAchCommunity(name: string): void {
+  const { store, id } = splitKey(context.appName);
+  if (store !== "steam") return;
+  const item = cachedAchievements?.achievements.find((entry) => entry.name === name);
+  if (!item || achMasked(item)) return;
+  const key = achCommunityKey(name);
+  if (achCommunity.has(key) || achCommunityLoading.has(key)) return;
+  achCommunityLoading.add(key);
+  void steamGetAchievementCommunity(id, achDisplayName(item))
+    .then((response) => {
+      achCommunity.set(key, response);
+    })
+    .catch(() => {
+      achCommunity.set(key, { guides: [], threads: [], supported: false });
+    })
+    .finally(() => {
+      achCommunityLoading.delete(key);
+      if (achDetail === name) renderAchView();
+    });
+}
+
+function openAchDetail(name: string): void {
+  achDetail = name;
+  if (!isWidgetOpen("ach")) openWidget("ach", false);
+  renderAchView();
+  ensureAchCommunity(name);
+}
+
+function renderAchCommunity(name: string): string {
+  const key = achCommunityKey(name);
+  const loading = achCommunityLoading.has(key);
+  const community = achCommunity.get(key);
+  if (loading) {
+    return `<div class="ov-ach-community-loading"><span class="skel skel-line"></span><span class="skel skel-line short"></span></div>`;
+  }
+  if (!community || !community.supported) return "";
+
+  const guideRows = community.guides
+    .map(
+      (guide) => `<button type="button" class="ov-ach-community-row" data-ov="ach-guide" data-url="${esc(guide.url)}">
+        <span class="ov-ach-community-main">
+          <span class="ov-ach-community-title">${esc(guide.title)}</span>
+          <span class="ov-ach-community-meta">${esc(guide.author || "")}${guide.rating != null ? ` · ${icon("star", 9)} ${guide.rating}/5` : ""}</span>
+        </span>
+        ${icon("external", 11)}
+      </button>`,
+    )
+    .slice(0, 2)
+    .join("");
+  const threadRows = community.threads
+    .map(
+      (thread) => `<button type="button" class="ov-ach-community-row" data-ov="ach-guide" data-url="${esc(thread.url)}">
+        <span class="ov-ach-community-main">
+          <span class="ov-ach-community-title">${esc(thread.title)}</span>
+          <span class="ov-ach-community-meta">${thread.replies > 0 ? esc(t("ach.communityReplies", { n: thread.replies })) : ""}${thread.date ? ` · ${esc(thread.date)}` : ""}</span>
+        </span>
+        ${icon("external", 11)}
+      </button>`,
+    )
+    .slice(0, 2)
+    .join("");
+
+  if (!guideRows && !threadRows) return "";
+  return `<div class="ov-ach-community">
+    ${guideRows ? `<div class="ov-ach-community-group"><div class="ov-ach-community-head">${esc(t("ach.communityGuides"))}</div>${guideRows}</div>` : ""}
+    ${threadRows ? `<div class="ov-ach-community-group"><div class="ov-ach-community-head">${esc(t("ach.communityThreads"))}</div>${threadRows}</div>` : ""}
+  </div>`;
+}
+
+function renderAchDetail(item: AchievementItem): string {
+  const unlocked = isAchievementUnlocked(item);
+  const masked = achMasked(item);
+  const rarity = achievementRarity(item);
+  const multiplier = rarityMultiplier(item);
+  const tier = achievementTier(item);
+  const progress = achievementProgress(item);
+  const links = achGuideLinksFor(item);
+  const title = masked ? t("ach.hiddenName") : achDisplayName(item);
+  const description = masked ? t("ach.hiddenDesc") : item.description || t("ach.noDesc");
+  const date = item.unlock_date && unlocked ? fmtAchDate(item.unlock_date) : "";
+  const xp = Number(item.xp) || 0;
+
+  const guideButton = (url: string | undefined, label: string, glyph: IconName): string =>
+    url
+      ? `<button type="button" class="btn ghost small ov-ach-guide-btn" data-ov="ach-guide" data-url="${esc(url)}">${icon(glyph, 12)}<span>${esc(label)}</span></button>`
+      : "";
+
+  const meta = [
+    tier ? `<span class="ov-ach-tag">${icon("trophy", 10)} ${esc(t(`trophy.${tier === "platinum" ? "plat" : tier}`))}</span>` : "",
+    rarity != null ? `<span class="ov-ach-tag">${icon("sparkles", 10)} ${esc(t("ach.detailRarity", { n: fmtDecimal1(rarity) }))}</span>` : "",
+    multiplier != null ? `<span class="ov-ach-tag">${esc(t("ach.detailMultiplier", { n: fmtDecimal1(multiplier) }))}</span>` : "",
+    xp > 0 ? `<span class="ov-ach-tag">+${xp} XP</span>` : "",
+    !item.is_base ? `<span class="ov-ach-tag">DLC</span>` : "",
+  ]
+    .filter(Boolean)
+    .join("");
+
+  const guideButtons = [
+    guideButton(links.video, t("ach.guideVideo"), "youtube"),
+    guideButton(links.steamGuides, t("ach.guideSteamGuides"), "link"),
+    guideButton(links.steamDiscussions, t("ach.guideSteamDiscussions"), "users"),
+    guideButton(links.trueSteamAchievements, t("ach.guideTrueSteam"), "external"),
+    guideButton(links.web, t("ach.guideWeb"), "globe"),
+  ].join("");
+
+  if (!masked) ensureAchCommunity(item.name);
+
+  return `
+    <div class="ov-ach-detail">
+      <button type="button" class="btn ghost small ov-ach-back" data-ov="ach-back">${icon("arrow-left", 12)}<span>${esc(t("common.back"))}</span></button>
+      <div class="ov-ach-detail-hero">
+        <div class="ov-ach-detail-art${masked ? " is-masked" : ""}">
+          ${masked ? icon("lock", 22) : item.icon_link ? `<img src="${esc(item.icon_link)}" alt="" loading="lazy" />` : icon("trophy", 22)}
+        </div>
+        <div class="ov-ach-detail-main">
+          <div class="ov-ach-detail-game">${esc(context.title || context.appName)}</div>
+          <div class="ov-ach-detail-name">${esc(title)}</div>
+          <div class="ov-ach-detail-desc">${esc(description)}</div>
+        </div>
+      </div>
+      ${meta ? `<div class="ov-ach-detail-meta">${meta}</div>` : ""}
+      <div class="ov-ach-detail-status">
+        ${
+          unlocked
+            ? `<span class="ov-ach-state is-earned">${icon("check", 12)} ${esc(t("ach.earned"))}</span>${date ? `<span class="ov-ach-state">${esc(date)}</span>` : ""}`
+            : `<span class="ov-ach-state">${icon("lock", 11)} ${esc(t("ach.locked"))}</span>`
+        }
+        ${
+          !unlocked && progress > 0
+            ? `<div class="ov-ach-progress"><span style="width:${Math.round(progress * 100)}%"></span></div><span class="ov-ach-progress-label tabular-nums">${Math.round(progress * 100)}%</span>`
+            : ""
+        }
+      </div>
+      ${
+        item.hidden && !unlocked
+          ? `<div class="ov-ach-spoiler">
+               <span>${esc(masked ? t("ach.detailSpoiler") : t("ach.hideSpoiler"))}</span>
+               <button type="button" class="btn ghost small" data-ov="ach-reveal" data-ach="${esc(item.name)}">${icon(masked ? "eye" : "eye-off", 11)} ${esc(masked ? t("ach.showSpoiler") : t("ach.hide"))}</button>
+             </div>`
+          : ""
+      }
+      ${
+        masked
+          ? ""
+          : `<div class="ov-ach-detail-guides">
+               <div class="ov-ach-detail-heading">${icon("link", 12)} ${esc(t("ach.detailHowTo"))}</div>
+               <div class="ov-ach-guide-grid">${guideButtons}</div>
+               ${renderAchCommunity(item.name)}
+             </div>`
+      }
+    </div>`;
+}
+
+function renderAchList(data: AchievementsData): string {
+  const stats = achievementStats(data.achievements);
+  const total = data.total_achievements || stats.total;
+  const unlocked = stats.unlocked || data.user_unlocked;
+  const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
+  const nearCount = stats.nearComplete;
+
+  let items = [...data.achievements];
+  if (achFilter === "locked") {
+    items = items.filter((item) => !isAchievementUnlocked(item));
+  } else if (achFilter === "near") {
+    items = items.filter((item) => {
+      const progress = achievementProgress(item);
+      return !isAchievementUnlocked(item) && progress > 0 && progress < 1;
+    });
+  }
+  items.sort((a, b) => {
+    if (achFilter === "near" || achFilter === "locked") {
+      const progress = achievementProgress(b) - achievementProgress(a);
+      if (progress !== 0) return progress;
+      return (achievementRarity(b) ?? 0) - (achievementRarity(a) ?? 0);
+    }
+    return Number(isAchievementUnlocked(b)) - Number(isAchievementUnlocked(a));
+  });
+
+  const chip = (value: typeof achFilter, label: string, count: number): string =>
+    `<button type="button" class="ov-ach-filter ${achFilter === value ? "active" : ""}" data-ov="ach-filter" data-val="${value}">${esc(label)}<span>${count}</span></button>`;
+
+  const rows = items
+    .map((item) => {
+      const unlocked = isAchievementUnlocked(item);
+      const masked = achMasked(item);
+      const rarity = achievementRarity(item);
+      const progress = achievementProgress(item);
+      return `<button type="button" class="ov-ach-row${unlocked ? " unlocked" : ""}" data-ov="ach-open" data-ach="${esc(item.name)}" data-nav-row>
+        ${item.icon_link && !masked ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
+        <div class="ov-ach-body">
+          <div class="ov-ach-name">${esc(masked ? t("ach.hiddenName") : achDisplayName(item))}</div>
+          <div class="ov-ach-desc">${esc(masked ? t("ach.hiddenDesc") : item.description || "")}</div>
+          ${
+            !unlocked && progress > 0 && progress < 1
+              ? `<div class="ov-ach-progress"><span style="width:${Math.round(progress * 100)}%"></span></div>`
+              : ""
+          }
+        </div>
+        <div class="ov-ach-side">
+          ${rarity != null ? `<span class="ov-ach-rarity tabular-nums">%${fmtDecimal1(rarity)}</span>` : ""}
+          ${
+            unlocked
+              ? `<span class="ov-ach-check" title="${esc(t("ach.earned"))}">${icon("check", 13)}</span>`
+              : `<span class="ov-ach-locked" title="${esc(t("ach.locked"))}">${icon("lock", 11)}</span>`
+          }
+        </div>
+      </button>`;
+    })
+    .join("");
+
+  return `
+    <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span>
+      <button type="button" class="ov-ach-refresh" data-ov="ach-refresh" title="${esc(t("ach.refreshData"))}">${icon("refresh", 13)}</button>
+    </div>
+    <div class="ov-ach-summary">
+      <div class="ov-ach-count"><strong>${unlocked}</strong> / ${total}</div>
+      <div class="ov-ach-bar"><span style="width:${pct}%"></span></div>
+      <div class="ov-ach-pct">%${pct}</div>
+    </div>
+    <div class="ov-ach-filters">
+      ${chip("all", t("ach.filterAll"), stats.total)}
+      ${chip("locked", t("ach.filterLocked"), Math.max(0, stats.total - unlocked))}
+      ${nearCount > 0 ? chip("near", t("ach.filterNear"), nearCount) : ""}
+    </div>
+    <div class="ov-ach-full-list">${rows || `<div class="ov-empty">${esc(t("ach.emptyTitle"))}</div>`}</div>`;
+}
+
+function renderAchView(): void {
   const el = viewEl("ach");
   if (!el) return;
-  if (!cachedAchievements || force) {
-    el.innerHTML = `<div class="ov-empty">${esc(t("ach.checking"))}</div>`;
-    const { store, id } = splitKey(context.appName);
-    try {
-      if (store === "game") {
-        // A title the launcher did not install: no store to ask.
-        cachedAchievements = null;
-      } else if (store === "steam") {
-        cachedAchievements = await invoke<AchievementsData>("steam_get_achievements", { appId: id, force: false });
-      } else if (store === "gog") {
-        cachedAchievements = await invoke<AchievementsData>("gog_get_achievements", { gameId: id });
-      } else if (store === "epic") {
-        cachedAchievements = await invoke<AchievementsData>("epic_get_achievements", { appName: context.appName, forceRefresh: false });
-      } else {
-        cachedAchievements = await invoke<AchievementsData>("companion_achievements", {
-          store,
-          id,
-          title: context.title,
-          language: currentLanguage(),
-        });
-      }
-    } catch {
-      cachedAchievements = null;
-    }
-  }
-
   const data = cachedAchievements;
   if (!data || !data.achievements || data.achievements.length === 0) {
     el.innerHTML = `
@@ -2303,40 +2573,57 @@ async function loadAchievements(force = false): Promise<void> {
     renderHomeSafe();
     return;
   }
-
-  const total = data.total_achievements || data.achievements.length;
-  const unlocked = data.user_unlocked;
-  const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
-
-  const rows = [...data.achievements]
-    .sort((a, b) => Number(Boolean(b.unlocked)) - Number(Boolean(a.unlocked)))
-    .map((item) => {
-      const name = item.unlocked || !item.hidden ? item.display_name || item.name : t("ach.hiddenName");
-      const desc = item.unlocked || !item.hidden ? item.description || "" : t("ach.hiddenDesc");
-      return `
-        <div class="ov-ach-row${item.unlocked ? " unlocked" : ""}" data-nav-row>
-          ${item.icon_link ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
-          <div class="ov-ach-body">
-            <div class="ov-ach-name">${esc(name)}</div>
-            <div class="ov-ach-desc">${esc(desc)}</div>
-          </div>
-          ${
-            item.unlocked
-              ? `<span class="ov-ach-check" title="${esc(t("ach.earned"))}">${icon("check", 13)}</span>`
-              : `<span class="ov-ach-locked" title="${esc(t("ach.locked"))}">${icon("lock", 11)}</span>`
-          }
-        </div>`;
-    }).join("");
-
-  el.innerHTML = `
-    <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span></div>
-    <div class="ov-ach-summary">
-      <div class="ov-ach-count"><strong>${unlocked}</strong> / ${total}</div>
-      <div class="ov-ach-bar"><span style="width:${pct}%"></span></div>
-      <div class="ov-ach-pct">%${pct}</div>
-    </div>
-    <div class="ov-ach-full-list">${rows}</div>`;
+  if (achDetail) {
+    const item = data.achievements.find((entry) => entry.name === achDetail);
+    if (item) {
+      el.innerHTML = renderAchDetail(item);
+      renderHomeSafe();
+      return;
+    }
+    achDetail = null;
+  }
+  el.innerHTML = renderAchList(data);
   renderHomeSafe();
+}
+
+async function loadAchievements(force = false): Promise<void> {
+  const el = viewEl("ach");
+  if (!el) return;
+  if (achLoading) return;
+  if (!cachedAchievements || force) {
+    const generation = ++achLoadGeneration;
+    achLoading = true;
+    el.innerHTML = `<div class="ov-empty">${esc(t("ach.checking"))}</div>`;
+    const { store, id } = splitKey(context.appName);
+    try {
+      let next: AchievementsData | null = null;
+      if (store === "game") {
+        // A title the launcher did not install: no store to ask.
+        next = null;
+      } else if (store === "steam") {
+        next = await invoke<AchievementsData>("steam_get_achievements", { appId: id, force: false });
+      } else if (store === "gog") {
+        next = await invoke<AchievementsData>("gog_get_achievements", { gameId: id });
+      } else if (store === "epic") {
+        next = await invoke<AchievementsData>("epic_get_achievements", { appName: context.appName, forceRefresh: false });
+      } else {
+        next = await invoke<AchievementsData>("companion_achievements", {
+          store,
+          id,
+          title: context.title,
+          language: currentLanguage(),
+        });
+      }
+      // The panel can open for another game while the store is answering.
+      if (generation !== achLoadGeneration) return;
+      cachedAchievements = next;
+    } catch {
+      if (generation === achLoadGeneration) cachedAchievements = null;
+    } finally {
+      if (generation === achLoadGeneration) achLoading = false;
+    }
+  }
+  renderAchView();
 }
 
 /** The game a capture belongs to; untitled files share the "Other" bucket. */
@@ -4927,9 +5214,10 @@ function wireEvents(): void {
       return;
     }
 
-    // Dashboard card: the whole card opens its section.
+    // Dashboard card: the whole card opens its section. A real action inside
+    // the card (the next-target row) wins over the card-wide navigation.
     const navCard = target.closest<HTMLElement>("[data-nav-target]");
-    if (navCard?.dataset.navTarget) {
+    if (navCard?.dataset.navTarget && !target.closest("[data-ov]")) {
       setTab(navCard.dataset.navTarget as TabId);
       return;
     }
@@ -4942,8 +5230,40 @@ function wireEvents(): void {
     }
 
     // Actions
-    const action = target.closest<HTMLElement>("[data-ov]")?.dataset.ov;
-    if (!action) return;
+    const actionEl = target.closest<HTMLElement>("[data-ov]");
+    const action = actionEl?.dataset.ov;
+    if (!action || !actionEl) return;
+
+    if (action === "ach-open") {
+      const name = actionEl.dataset.ach;
+      if (name) openAchDetail(name);
+      return;
+    } else if (action === "ach-back") {
+      achDetail = null;
+      renderAchView();
+      return;
+    } else if (action === "ach-filter") {
+      const value = actionEl.dataset.val;
+      if (value === "all" || value === "locked" || value === "near") {
+        achFilter = value;
+        renderAchView();
+      }
+      return;
+    } else if (action === "ach-refresh") {
+      void loadAchievements(true);
+      return;
+    } else if (action === "ach-reveal") {
+      const name = actionEl.dataset.ach;
+      if (name) {
+        if (achRevealed.has(name)) achRevealed.delete(name);
+        else achRevealed.add(name);
+        renderAchView();
+      }
+      return;
+    } else if (action === "ach-guide") {
+      openAchUrl(actionEl.dataset.url);
+      return;
+    }
 
     if (action === "close") void invoke("overlay_hide");
     else if (action === "launcher") {
@@ -5648,6 +5968,11 @@ function goBack(): void {
     hideLightbox();
     return;
   }
+  if (achDetail && isWidgetOpen("ach")) {
+    achDetail = null;
+    renderAchView();
+    return;
+  }
   if (isTextEntryFocused()) {
     (document.activeElement as HTMLElement | null)?.blur();
     return;
@@ -5839,6 +6164,13 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   vramHistory = [];
   ramHistory = [];
   cachedAchievements = null;
+  achLoading = false;
+  achLoadGeneration += 1;
+  achDetail = null;
+  achFilter = "all";
+  achRevealed.clear();
+  achCommunity.clear();
+  achCommunityLoading.clear();
   cachedScreenshots = [];
   spotifyEngineOn = false;
   spotifyDeviceName = "";
@@ -5922,10 +6254,11 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     })
     .catch(() => undefined);
 
-  // Preload achievements and screenshots
+  // Preload achievements and screenshots. The achievements prefetch feeds the
+  // home card even when the achievements widget itself is closed.
   const { store } = splitKey(context.appName);
   if (context.appName && store !== "game") {
-    if (openWidgets.has("ach")) void loadAchievements();
+    void loadAchievements();
     if (openWidgets.has("shots")) void loadScreenshots();
   }
 
@@ -6014,6 +6347,26 @@ async function boot(): Promise<void> {
     clipCard("overlay.clipFailedTitle", localizeMessage(event.payload));
     void refreshClipWidget(true);
   });
+
+  // The native watcher already showed the toast; the panel still has to fold
+  // the unlock into its own list and home card.
+  await listen<{ appId: string; name: string; displayName: string; description: string }>(
+    "achievement-unlocked",
+    (event) => {
+      if (!cachedAchievements || !context.appName.startsWith("steam::")) return;
+      if (context.appName !== `steam::${event.payload.appId}`) return;
+      const item = cachedAchievements.achievements.find((entry) => entry.name === event.payload.name);
+      if (!item || isAchievementUnlocked(item)) return;
+      item.unlocked = true;
+      item.progress = 1;
+      item.unlock_date = new Date().toISOString().slice(0, 10);
+      cachedAchievements.user_unlocked = Math.min(
+        cachedAchievements.total_achievements,
+        (cachedAchievements.user_unlocked || 0) + 1,
+      );
+      renderAchView();
+    },
+  );
 
   await listen<MetricsSample>("overlay-metrics", (event) => {
     metrics = event.payload;

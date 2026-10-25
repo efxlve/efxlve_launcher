@@ -1953,12 +1953,21 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-left: 2px solid transparent;
   border-radius: var(--r-sm);
   background: var(--surface-1);
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
 }
+
+.ov-ach-row:hover { background: var(--surface-2); }
+.ov-ach-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .ov-ach-row.unlocked {
   border-left-color: var(--ok);
@@ -2021,6 +2030,171 @@
   color: var(--text-3);
   flex-shrink: 0;
 }
+
+/* --- Achievements 2.0 (filters, detail, community) --- */
+.ov-ach-refresh {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.ov-ach-refresh:hover { background: var(--surface-3); color: var(--text); }
+
+.ov-ach-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+.ov-ach-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ov-ach-filter span { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.ov-ach-filter.active { border-color: var(--accent); color: var(--text); background: var(--surface-3); }
+.ov-ach-filter.active span { color: var(--text-2); }
+
+.ov-ach-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.ov-ach-rarity { color: var(--text-3); font-size: 11px; }
+.ov-ach-progress { height: 3px; margin-top: 6px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.ov-ach-progress span { display: block; height: 100%; background: var(--accent); }
+.ov-ach-progress-label { color: var(--text-3); font-size: 11px; }
+
+.ov-ach-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; }
+
+.ov-ach-detail { display: flex; flex-direction: column; gap: 10px; }
+
+.ov-ach-detail-hero {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.ov-ach-detail-art {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+.ov-ach-detail-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ov-ach-detail-main { flex: 1; min-width: 0; }
+.ov-ach-detail-game { color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+.ov-ach-detail-name { color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.35; }
+.ov-ach-detail-desc { color: var(--text-3); font-size: 11px; line-height: 1.45; margin-top: 4px; }
+
+.ov-ach-detail-meta { display: flex; flex-wrap: wrap; gap: 5px; }
+.ov-ach-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10px;
+}
+
+.ov-ach-detail-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+}
+
+.ov-ach-state.is-earned { color: var(--ok); }
+.ov-ach-detail-status .ov-ach-progress { flex: 1; min-width: 40px; margin-top: 0; }
+
+.ov-ach-spoiler {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ov-ach-detail-guides { padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1); }
+.ov-ach-detail-heading { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; color: var(--text); font-size: 12px; font-weight: 600; }
+.ov-ach-guide-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.ov-ach-guide-btn { display: inline-flex; align-items: center; gap: 4px; }
+
+.ov-ach-community { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ov-ach-community-group { display: flex; flex-direction: column; gap: 4px; }
+.ov-ach-community-head { color: var(--text-3); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.ov-ach-community-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 7px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ov-ach-community-row:hover { background: var(--surface-3); border-color: var(--line); }
+.ov-ach-community-main { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.ov-ach-community-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-ach-community-meta { color: var(--text-3); font-size: 10px; }
+.ov-ach-community-loading { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.ov-ach-community-loading .skel-line { height: 10px; }
+.ov-ach-community-loading .skel-line.short { width: 60%; }
+
+/* The home card rows are buttons now; keep their old plate. */
+button.ov-ach-item {
+  width: 100%;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.ov-ach-item:hover { background: var(--surface-3); }
 
 /* Settings */
 .ov-setting-item {
