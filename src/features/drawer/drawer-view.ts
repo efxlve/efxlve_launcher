@@ -2028,7 +2028,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     const progress = achievementProgress(a);
     return !isMaskedHidden(a) && !isAchievementUnlocked(a) && progress >= 0.5 && progress < 1;
   }).length;
-  const hiddenCount = data.achievements.filter(isMaskedHidden).length;
+  const hiddenCount = data.achievements.filter((a) => Boolean(a.hidden)).length;
   if (S.activeAchFilter === "near" && nearCount === 0) S.activeAchFilter = "all";
   if (S.activeAchFilter === "hidden" && hiddenCount === 0) S.activeAchFilter = "all";
   const playtime = libraryPlaytime(s);
@@ -2074,18 +2074,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (u) { tier[1]++; unlockedCount++; }
   }
 
-  // Unrevealed hidden achievements are one discoverable group, not 25 identical
-  // "Hidden achievement" rows in the middle of the list.
-  const hiddenGroupHtml = (S.activeAchFilter === "all" || S.activeAchFilter === "locked") && hiddenCount > 0
-    ? `<button type="button" class="ach-hidden-row" data-act="ach-filter" data-val="hidden">
-         ${icon("lock", 14)}
-         <span class="ach-hidden-title">${esc(t("ach.hiddenGroup", { n: hiddenCount }))}</span>
-         <span class="ach-hidden-action">${esc(t("ach.show"))} ${icon("chevron-right", 12)}</span>
-       </button>`
-    : "";
-  const visibleItems = S.activeAchFilter === "hidden"
-    ? sorted
-    : sorted.filter((a) => !isMaskedHidden(a));
+  // Unrevealed hidden achievements stay in the normal list as masked rows.
+  // Their names, rarity and tier are withheld until the player reveals them.
+  const visibleItems = sorted;
   // Opening the tab should land on something useful. The best next target is
   // the default; a filter that hides the open item falls back to the first
   // row on screen, so the rail always matches the list.
@@ -2139,8 +2130,8 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ? `<button type="button" class="ach-tier-mini ${cls} ${done >= total ? "complete" : ""} ${S.achTierFilter === tier ? "active" : ""}" data-act="ach-tier-filter" data-tier="${tier}" title="${esc(label)}" aria-pressed="${S.achTierFilter === tier}">${glyph}<span>${esc(label)}</span><strong class="tabular-nums">${done}/${total}</strong></button>`
         : `<span class="ach-tier-mini static ${cls} ${done >= total ? "complete" : ""}" title="${esc(label)}">${glyph}<span>${esc(label)}</span><strong class="tabular-nums">${done}/${total}</strong></span>`
       : "";
-  const filterChip = (val: string, label: string, n: number): string =>
-    `<button class="tab ach-status-chip ${S.activeAchFilter === val ? "active" : ""}" data-act="ach-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
+  const filterChip = (val: string, label: string, n: number, disabled = false): string =>
+    `<button class="tab ach-status-chip${S.activeAchFilter === val ? " active" : ""}${disabled ? " is-disabled" : ""}" data-act="ach-filter" data-val="${val}"${disabled ? ' disabled aria-disabled="true"' : ""}>${label}<span class="count">${n}</span></button>`;
 
   const sourceNote = ubiAchSource.has(s.appName)
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
@@ -2252,7 +2243,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${filterChip("unlocked", t("ach.filterUnlocked"), unlockedCount)}
         ${filterChip("locked", t("ach.filterLocked"), data.achievements.length - unlockedCount)}
         ${nearCount > 0 ? filterChip("near", t("ach.filterNear"), nearCount) : ""}
-        ${S.activeAchFilter === "hidden" ? filterChip("hidden", t("ach.filterHidden"), hiddenCount) : ""}
+        ${filterChip("hidden", t("ach.filterHidden"), hiddenCount, hiddenCount === 0)}
       </div>
       <div class="gp-toolbar-right">
         <label class="search gp-search">${icon("search", 15)}<input type="text" id="ach-search-input" placeholder="${t("ach.searchPlaceholder")}" value="${esc(S.achSearchQuery)}" autocomplete="off" />
@@ -2268,7 +2259,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     </div>
 
     <div class="ach-list-container" id="ach-list-container">
-      ${renderAchievementSections(visibleItems, s, hasDlc, data.achievements, hiddenGroupHtml)}
+      ${renderAchievementSections(visibleItems, s, hasDlc, data.achievements)}
     </div>
       </div>
       <aside class="ach-detail-pane" id="ach-detail-pane">${detailPane}</aside>

@@ -1191,10 +1191,9 @@ export function renderAchievementSections(
   s: EpicSummary,
   shouldGroup: boolean,
   allAchievements?: EpicAchievementItem[],
-  hiddenGroupHtml = "",
 ): string {
   if (items.length === 0) {
-    return hiddenGroupHtml || `
+    return `
       <div class="ach-search-empty-wrap">
         ${emptyPanel("search", i18nT("ach.emptyTitle"), i18nT("ach.emptyDesc"))}
       </div>
@@ -1204,7 +1203,7 @@ export function renderAchievementSections(
   const isDemo = S.demoPlatinumApps.has(s.appName);
 
   if (!shouldGroup) {
-    return `${renderAchievementList(items, s)}${hiddenGroupHtml}`;
+    return renderAchievementList(items, s);
   }
 
   // SteamHunters category groups: base game and add-on packs
@@ -1268,7 +1267,7 @@ export function renderAchievementSections(
     `;
   }
 
-  return `${html}${hiddenGroupHtml}`;
+  return html;
 }
 
 /** One scannable achievement row: icon, title/description, rarity/tier/date,
