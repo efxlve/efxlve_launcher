@@ -19,6 +19,7 @@ const MAX_TITLE: usize = 300;
 const MAX_BODY: usize = 200_000;
 const MAX_ACHIEVEMENT: usize = 200;
 const MAX_GUIDE_URL: usize = 2048;
+const MAX_GUIDE_LINKS: usize = 20;
 
 /// Suffix for ids created in this process, so two notes saved in the same
 /// millisecond still differ.
@@ -44,9 +45,13 @@ pub struct Note {
     /// Stable achievement key when this note belongs to one achievement.
     #[serde(default)]
     pub achievement: String,
-    /// Optional guide link attached to the achievement note.
+    /// Optional guide link attached to the achievement note. Kept for notes
+    /// written before multiple links; the UI merges it into `guide_urls`.
     #[serde(default)]
     pub guide_url: String,
+    /// Additional guide, video or article links for the achievement note.
+    #[serde(default)]
+    pub guide_urls: Vec<String>,
     /// Unix milliseconds.
     #[serde(default)]
     pub created: u64,
@@ -100,6 +105,8 @@ pub struct NoteInput {
     pub achievement: String,
     #[serde(default)]
     pub guide_url: String,
+    #[serde(default)]
+    pub guide_urls: Vec<String>,
 }
 
 fn now_ms() -> u64 {
@@ -123,6 +130,23 @@ fn normalize_color(color: &str) -> String {
     }
 }
 
+/// Ordered, trimmed, deduped links. Old notes may only have `guide_url`; the
+/// caller keeps both fields so the frontend can merge them on its next save.
+fn normalize_guide_urls(urls: Vec<String>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for url in urls {
+        let value: String = url.trim().chars().take(MAX_GUIDE_URL).collect();
+        if value.is_empty() || out.iter().any(|existing| existing == &value) {
+            continue;
+        }
+        out.push(value);
+        if out.len() >= MAX_GUIDE_LINKS {
+            break;
+        }
+    }
+    out
+}
+
 /// Creates a note or updates the one the id names. The returned note is the
 /// stored copy, timestamps and id included.
 fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<Note, String> {
@@ -136,6 +160,7 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
         .take(MAX_ACHIEVEMENT)
         .collect();
     let guide_url: String = input.guide_url.trim().chars().take(MAX_GUIDE_URL).collect();
+    let guide_urls = normalize_guide_urls(input.guide_urls);
     if let Some(id) = input.id.as_deref().map(str::trim).filter(|id| !id.is_empty()) {
         if let Some(existing) = file.notes.iter_mut().find(|note| note.id == id) {
             existing.scope = scope;
@@ -145,6 +170,7 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
             existing.color = normalize_color(&input.color);
             existing.achievement = achievement;
             existing.guide_url = guide_url;
+            existing.guide_urls = guide_urls;
             existing.updated = now;
             return Ok(existing.clone());
         }
@@ -161,6 +187,7 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
         color: normalize_color(&input.color),
         achievement,
         guide_url,
+        guide_urls,
         created: now,
         updated: now,
     };
@@ -259,6 +286,7 @@ pub fn notes_save(
     color: String,
     achievement: Option<String>,
     guide_url: Option<String>,
+    guide_urls: Option<Vec<String>>,
 ) -> Result<Note, String> {
     let mut file = read_notes(&app);
     let input = NoteInput {
@@ -270,6 +298,7 @@ pub fn notes_save(
         color,
         achievement: achievement.unwrap_or_default(),
         guide_url: guide_url.unwrap_or_default(),
+        guide_urls: guide_urls.unwrap_or_default(),
     };
     let note = upsert(&mut file, input, now_ms(), NEXT_ID.fetch_add(1, Ordering::Relaxed))?;
     write_notes(&app, &file)?;
@@ -320,6 +349,7 @@ fn merge_import(file: &mut NotesFile, incoming: Vec<Note>, now: u64, seq: &mut u
             .take(MAX_ACHIEVEMENT)
             .collect();
         note.guide_url = note.guide_url.trim().chars().take(MAX_GUIDE_URL).collect();
+        note.guide_urls = normalize_guide_urls(note.guide_urls);
         if note.created == 0 {
             note.created = now;
         }
@@ -378,8 +408,13 @@ fn notes_to_markdown(file: &NotesFile) -> String {
             out.push_str(&format!("\n### {title}\n\n"));
             out.push_str(note.body.trim_end());
             out.push_str("\n");
-            if !note.guide_url.is_empty() {
-                out.push_str(&format!("\nGuide: {}\n", note.guide_url.trim()));
+            let mut links = note.guide_urls.clone();
+            let legacy = note.guide_url.trim();
+            if !legacy.is_empty() && !links.iter().any(|url| url.as_str() == legacy) {
+                links.insert(0, legacy.to_string());
+            }
+            for link in links {
+                out.push_str(&format!("\nGuide: {}\n", link.trim()));
             }
         }
     }
@@ -459,6 +494,7 @@ mod tests {
             NoteInput {
                 achievement: "ACH_BOSS".to_string(),
                 guide_url: "https://example.com/guide".to_string(),
+                guide_urls: vec!["https://example.com/guide".to_string()],
                 ..input("steam::1", "Boss", "first")
             },
             1,
@@ -467,13 +503,18 @@ mod tests {
         .unwrap();
         assert_eq!(note.achievement, "ACH_BOSS");
         assert_eq!(note.guide_url, "https://example.com/guide");
+        assert_eq!(note.guide_urls.len(), 1);
 
         let updated = upsert(
             &mut file,
             NoteInput {
                 id: Some(note.id.clone()),
                 achievement: "ACH_BOSS".to_string(),
-                guide_url: "https://example.com/guide-2".to_string(),
+                guide_url: String::new(),
+                guide_urls: vec![
+                    "https://example.com/guide-2".to_string(),
+                    "https://youtube.com/watch?v=1".to_string(),
+                ],
                 ..input("steam::1", "Boss", "second")
             },
             2,
@@ -483,7 +524,8 @@ mod tests {
         assert_eq!(file.notes.len(), 1);
         assert_eq!(updated.body, "second");
         assert_eq!(updated.achievement, "ACH_BOSS");
-        assert_eq!(updated.guide_url, "https://example.com/guide-2");
+        assert_eq!(updated.guide_url, "");
+        assert_eq!(updated.guide_urls.len(), 2);
     }
 
     #[test]
@@ -549,6 +591,7 @@ mod tests {
                 color: "red".to_string(),
                 achievement: String::new(),
                 guide_url: String::new(),
+                guide_urls: Vec::new(),
                 created: 500,
                 updated: 900,
             },
@@ -561,6 +604,7 @@ mod tests {
                 color: String::new(),
                 achievement: String::new(),
                 guide_url: String::new(),
+                guide_urls: Vec::new(),
                 created: 0,
                 updated: 0,
             },
@@ -596,7 +640,10 @@ mod tests {
             &mut file,
             NoteInput {
                 achievement: "ACH_1".to_string(),
-                guide_url: "https://example.com/guide".to_string(),
+                guide_urls: vec![
+                    "https://example.com/guide".to_string(),
+                    "https://youtube.com/watch?v=1".to_string(),
+                ],
                 ..input("steam::1", "Boss", "note")
             },
             1,
@@ -605,5 +652,6 @@ mod tests {
         .unwrap();
         let markdown = notes_to_markdown(&file);
         assert!(markdown.contains("Guide: https://example.com/guide"));
+        assert!(markdown.contains("Guide: https://youtube.com/watch?v=1"));
     }
 }

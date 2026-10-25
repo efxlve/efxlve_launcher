@@ -1885,12 +1885,15 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
  * scroll position. Late notes, community answers and legacy migration data use
  * this instead of a full drawer repaint.
  */
-function repaintAchievementsTab(appName: string): void {
+export function repaintAchievementsTab(appName: string, force = false): void {
   if (S.currentModalAppName !== appName || S.activeDrawerTab !== "achievements") return;
-  // The reader is typing: leave the textarea and its caret alone.
+  // The reader is typing: leave the textarea and its caret alone. A link add or
+  // a note delete passes `force` because the focused field is about to be
+  // replaced anyway.
   if (
-    document.activeElement?.id === "ach-note-input" ||
-    document.activeElement?.id === "ach-guide-url-input"
+    !force &&
+    (document.activeElement?.id === "ach-note-input" ||
+      document.activeElement?.id === "ach-guide-url-input")
   ) return;
   const s = summaryOf(appName);
   const content = document.getElementById("drawer-tab-content");

@@ -14,6 +14,8 @@ import {
   cachedNotes,
   deleteNote,
   loadNotes,
+  noteGuideUrls,
+  onNoteDeleted,
   saveNote,
   type Note,
 } from "../notes/notes-client";
@@ -22,6 +24,7 @@ const LEGACY_NOTES_KEY = "efxlve-ach-notes";
 const LEGACY_GUIDES_KEY = "efxlve-ach-guides";
 const MAX_NOTE_CHARS = 4000;
 const MAX_URL_CHARS = 2048;
+const MAX_LINKS = 20;
 
 type EntryMap = Record<string, Record<string, string>>;
 
@@ -84,25 +87,39 @@ export function achievementNote(appName: string, achievement: string): string {
   return findNote(appName, achievement)?.body ?? "";
 }
 
-export function achievementGuide(appName: string, achievement: string): string {
-  return findNote(appName, achievement)?.guideUrl ?? "";
+export function achievementGuides(appName: string, achievement: string): string[] {
+  const note = findNote(appName, achievement);
+  return note ? noteGuideUrls(note) : [];
+}
+
+function cleanLinks(urls: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of urls) {
+    const url = raw.trim().slice(0, MAX_URL_CHARS);
+    if (!url || !isSafeExternalUrl(url) || out.includes(url)) continue;
+    out.push(url);
+    if (out.length >= MAX_LINKS) break;
+  }
+  return out;
 }
 
 /**
- * One tagged note per achievement holds both fields. A change to either side
- * keeps the other one, so the note editor and the guide field cannot erase each
- * other.
+ * One tagged note per achievement holds the body and every saved link. A
+ * change to either side keeps the other one, and the old single `guideUrl`
+ * field is folded into the list on the next save.
  */
 async function upsertNote(
   appName: string,
   achievement: string,
-  patch: { body?: string; guideUrl?: string },
+  patch: { body?: string; guideUrls?: string[] },
 ): Promise<Note | null> {
   await loadNotes();
   const existing = findNote(appName, achievement);
   const body = (patch.body ?? existing?.body ?? "").slice(0, MAX_NOTE_CHARS);
-  const guideUrl = (patch.guideUrl ?? existing?.guideUrl ?? "").slice(0, MAX_URL_CHARS);
-  if (!body.trim() && !guideUrl.trim()) {
+  const guideUrls = cleanLinks(
+    patch.guideUrls ?? (existing ? noteGuideUrls(existing) : []),
+  );
+  if (!body.trim() && guideUrls.length === 0) {
     if (existing) await deleteNote(existing.id);
     return null;
   }
@@ -114,7 +131,8 @@ async function upsertNote(
     pinned: existing?.pinned ?? false,
     color: existing?.color ?? "",
     achievement,
-    guideUrl,
+    guideUrl: "",
+    guideUrls,
   });
 }
 
@@ -127,23 +145,104 @@ export async function saveAchievementNote(
   return Boolean(note) || !text.trim();
 }
 
-/** Saving validates the URL here as well as in the click handler. */
-export async function saveAchievementGuide(
+interface PendingNoteSave {
+  timer: number;
+  value: string;
+  onSettled?: (ok: boolean) => void;
+}
+
+const pendingNoteSaves = new Map<string, PendingNoteSave>();
+
+function pendingKey(appName: string, achievement: string): string {
+  return `${appName}\u0000${achievement}`;
+}
+
+/** Debounces a note body while keeping one pending save per achievement. */
+export function queueAchievementNoteSave(
+  appName: string,
+  achievement: string,
+  text: string,
+  onSettled?: (ok: boolean) => void,
+): void {
+  const key = pendingKey(appName, achievement);
+  const previous = pendingNoteSaves.get(key);
+  if (previous) window.clearTimeout(previous.timer);
+  const timer = window.setTimeout(() => {
+    const pending = pendingNoteSaves.get(key);
+    pendingNoteSaves.delete(key);
+    const value = pending?.value ?? text;
+    void saveAchievementNote(appName, achievement, value).then((ok) => {
+      pending?.onSettled?.(ok);
+    });
+  }, 600);
+  pendingNoteSaves.set(key, { timer, value: text, onSettled });
+}
+
+export function cancelAchievementNoteSave(appName: string, achievement: string): void {
+  const key = pendingKey(appName, achievement);
+  const pending = pendingNoteSaves.get(key);
+  if (pending) window.clearTimeout(pending.timer);
+  pendingNoteSaves.delete(key);
+}
+
+/** Flushes the visible textarea before a link edit rewrites the same note. */
+export async function flushAchievementNoteSave(
+  appName: string,
+  achievement: string,
+  text: string,
+): Promise<boolean> {
+  cancelAchievementNoteSave(appName, achievement);
+  return saveAchievementNote(appName, achievement, text);
+}
+
+export async function addAchievementGuide(
   appName: string,
   achievement: string,
   url: string,
 ): Promise<boolean> {
   const value = url.trim().slice(0, MAX_URL_CHARS);
   if (!value || !isSafeExternalUrl(value)) return false;
-  return Boolean(await upsertNote(appName, achievement, { guideUrl: value }));
+  await loadNotes();
+  const existing = findNote(appName, achievement);
+  const current = existing ? noteGuideUrls(existing) : [];
+  if (current.includes(value)) return true;
+  const note = await upsertNote(appName, achievement, {
+    guideUrls: [...current, value],
+  });
+  return Boolean(note);
 }
 
 export async function removeAchievementGuide(
   appName: string,
   achievement: string,
+  url: string,
 ): Promise<void> {
-  await upsertNote(appName, achievement, { guideUrl: "" });
+  await loadNotes();
+  const existing = findNote(appName, achievement);
+  if (!existing) return;
+  const current = noteGuideUrls(existing);
+  const value = url.trim();
+  if (!current.includes(value)) return;
+  await upsertNote(appName, achievement, {
+    guideUrls: current.filter((entry) => entry !== value),
+  });
 }
+
+export async function deleteAchievementNote(
+  appName: string,
+  achievement: string,
+): Promise<void> {
+  cancelAchievementNoteSave(appName, achievement);
+  await loadNotes();
+  const note = findNote(appName, achievement);
+  if (note) await deleteNote(note.id);
+}
+
+// Deleting the shared note from the Notes page, the drawer or the overlay must
+// stop a debounced achievement save from recreating it a moment later.
+onNoteDeleted((note) => {
+  if (note.achievement) cancelAchievementNoteSave(note.scope, note.achievement);
+});
 
 const migrating = new Set<string>();
 
@@ -167,17 +266,21 @@ export function ensureLegacyAchievementNotes(appName: string, onDone?: () => voi
       for (const achievement of names) {
         const body = (legacyNotes[achievement] ?? "").slice(0, MAX_NOTE_CHARS);
         const rawGuide = (legacyGuides[achievement] ?? "").trim().slice(0, MAX_URL_CHARS);
-        const guideUrl = rawGuide && isSafeExternalUrl(rawGuide) ? rawGuide : "";
-        if (!body.trim() && !guideUrl) {
+        const legacyLinks = cleanLinks([rawGuide]);
+        if (!body.trim() && legacyLinks.length === 0) {
           dropLegacyEntry(LEGACY_NOTES_KEY, appName, achievement);
           dropLegacyEntry(LEGACY_GUIDES_KEY, appName, achievement);
           continue;
         }
         const existing = findNote(appName, achievement);
         if (existing) {
+          const existingLinks = noteGuideUrls(existing);
+          const mergedLinks = cleanLinks([...existingLinks, ...legacyLinks]);
           const mergedBody = existing.body.trim() ? existing.body : body;
-          const mergedGuide = existing.guideUrl.trim() ? existing.guideUrl : guideUrl;
-          if (mergedBody !== existing.body || mergedGuide !== existing.guideUrl) {
+          const linksChanged =
+            mergedLinks.length !== existingLinks.length ||
+            mergedLinks.some((url, index) => url !== existingLinks[index]);
+          if (mergedBody !== existing.body || linksChanged) {
             const saved = await saveNote({
               id: existing.id,
               scope: existing.scope,
@@ -186,7 +289,8 @@ export function ensureLegacyAchievementNotes(appName: string, onDone?: () => voi
               pinned: existing.pinned,
               color: existing.color,
               achievement: existing.achievement || achievement,
-              guideUrl: mergedGuide,
+              guideUrl: "",
+              guideUrls: mergedLinks,
             });
             if (!saved) {
               failed = true;
@@ -199,7 +303,8 @@ export function ensureLegacyAchievementNotes(appName: string, onDone?: () => voi
             title: achievementTitle(appName, achievement),
             body,
             achievement,
-            guideUrl,
+            guideUrl: "",
+            guideUrls: legacyLinks,
           });
           if (!saved) {
             failed = true;

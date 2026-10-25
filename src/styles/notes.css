@@ -106,12 +106,12 @@
 .notes-font-m .notes-body, .notes-font-m .notes-preview { font-size: 14.5px; }
 .notes-font-l .notes-body, .notes-font-l .notes-preview { font-size: 16.5px; }
 
+.notes-linked-guides { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .notes-linked-guide {
   display: flex;
   align-items: center;
   gap: 7px;
   width: 100%;
-  margin-top: 8px;
   padding: 7px 9px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);

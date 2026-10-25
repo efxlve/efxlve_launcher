@@ -41,8 +41,11 @@ export interface Note {
   color: string;
   /** Stable achievement key when the note belongs to one achievement. */
   achievement: string;
-  /** Optional guide link attached to the achievement note. */
+  /** Optional guide link attached to the achievement note. Kept for notes
+   * written before multiple links; `noteGuideUrls` merges it into the list. */
   guideUrl: string;
+  /** Additional guide, video or article links. */
+  guideUrls: string[];
   /** Unix milliseconds. */
   created: number;
   updated: number;
@@ -57,10 +60,36 @@ export interface NoteInput {
   color?: string;
   achievement?: string;
   guideUrl?: string;
+  guideUrls?: string[];
+}
+
+/** Old notes kept a single guide link in `guideUrl`; surface both as one list. */
+export function noteGuideUrls(note: Note): string[] {
+  const values = [...(note.guideUrls ?? [])];
+  const legacy = note.guideUrl?.trim();
+  if (legacy) values.unshift(legacy);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    const url = value.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+  }
+  return out;
 }
 
 let cache: Note[] | null = null;
 let loading: Promise<Note[]> | null = null;
+
+type NoteDeleteHandler = (note: Note) => void;
+const deleteHandlers = new Set<NoteDeleteHandler>();
+
+/** Lets the achievement rail cancel a pending debounced save when its note is
+ * deleted from any other notes surface. */
+export function onNoteDeleted(handler: NoteDeleteHandler): void {
+  deleteHandlers.add(handler);
+}
 
 /** Pinned first, then most recently changed. */
 export function sortNotes(notes: Note[]): Note[] {
@@ -107,6 +136,7 @@ export async function saveNote(input: NoteInput): Promise<Note | null> {
       color: input.color ?? "",
       achievement: input.achievement ?? "",
       guideUrl: input.guideUrl ?? "",
+      guideUrls: input.guideUrls ?? [],
     });
     if (note) {
       cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];
@@ -118,9 +148,15 @@ export async function saveNote(input: NoteInput): Promise<Note | null> {
 }
 
 export async function deleteNote(id: string): Promise<boolean> {
+  const note = (cache ?? []).find((item) => item.id === id);
   try {
     const removed = await invoke<boolean>("notes_delete", { id });
-    if (removed) cache = (cache ?? []).filter((note) => note.id !== id);
+    if (removed) {
+      cache = (cache ?? []).filter((item) => item.id !== id);
+      if (note) {
+        for (const handler of deleteHandlers) handler(note);
+      }
+    }
     return removed;
   } catch {
     return false;

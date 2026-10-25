@@ -16,7 +16,7 @@ import {
   isAchievementUnlocked,
   rarityMultiplier,
 } from "../../core/achievements";
-import { achievementGuide, achievementNote } from "./ach-notes";
+import { achievementGuides, achievementNote } from "./ach-notes";
 import { icon, type IconName } from "../../core/icons";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -61,6 +61,13 @@ function guideHost(url: string): string {
   } catch {
     return url;
   }
+}
+
+function linkGlyph(url: string): IconName {
+  const host = guideHost(url).toLowerCase();
+  if (host.includes("youtube.") || host === "youtu.be") return "youtube";
+  if (host.includes("steamcommunity.")) return "link";
+  return "globe";
 }
 
 function guideButton(
@@ -191,7 +198,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
     steamAppId,
   });
   const note = achievementNote(summary.appName, item.name);
-  const savedGuide = achievementGuide(summary.appName, item.name);
+  const savedGuides = achievementGuides(summary.appName, item.name);
   const appId = esc(summary.appName);
   const achId = esc(item.name);
 
@@ -267,9 +274,24 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
          <span class="ach-detail-progress-label tabular-nums">${esc(t("ach.detailProgress", { n: Math.round(progress * 100) }))}</span>
        </div>`
     : "";
-  const personalMark = note || savedGuide
+  const personalMark = note || savedGuides.length > 0
     ? `<span class="ach-personal-mark" title="${esc(t("common.saved"))}"></span>`
     : "";
+  const guideRows = savedGuides
+    .map(
+      (url) => `<div class="ach-link-row">
+        <button type="button" class="ach-link-open" data-act="ach-guide" data-url="${esc(url)}" title="${esc(url)}">
+          <span class="ach-link-icon">${icon(linkGlyph(url), 14)}</span>
+          <span class="ach-link-text">
+            <span class="ach-link-host">${esc(guideHost(url))}</span>
+            <span class="ach-link-url">${esc(url)}</span>
+          </span>
+          ${icon("external", 12)}
+        </button>
+        <button type="button" class="icon-btn ach-link-remove" data-act="ach-guide-remove" data-id="${appId}" data-ach="${achId}" data-url="${esc(url)}" title="${esc(t("common.delete"))}">${icon("trash", 13)}</button>
+      </div>`,
+    )
+    .join("");
 
   return `
     <div class="ach-detail">
@@ -323,34 +345,28 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
                    <div class="ach-personal-block">
                      <div class="ach-personal-label">
                        <h3 class="ach-detail-heading">${icon("edit", 13)} <span>${esc(t("ach.noteTitle"))}</span></h3>
-                       <span class="ach-note-count tabular-nums" id="ach-note-count">${note.length} / 4000</span>
+                       <span class="ach-note-tools">
+                         <span class="ach-note-count tabular-nums" id="ach-note-count">${note.length} / 4000</span>
+                         ${
+                           note || savedGuides.length > 0
+                             ? `<button type="button" class="icon-btn ach-note-delete" data-act="ach-note-delete" data-id="${appId}" data-ach="${achId}" title="${esc(t("ach.noteDeleteTitle"))}">${icon("trash", 12)}</button>`
+                             : ""
+                         }
+                       </span>
                      </div>
                      <textarea id="ach-note-input" class="ach-note-input" data-id="${appId}" data-ach="${achId}" rows="4" maxlength="4000" placeholder="${esc(t("ach.notePlaceholder"))}">${esc(note)}</textarea>
                      <span class="ach-note-status" id="ach-note-status" data-state="${note ? "saved" : ""}">${note ? esc(t("notes.saved")) : ""}</span>
                    </div>
                    <div class="ach-personal-block">
                      <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.savedGuideTitle"))}</span></h3>
-                     ${
-                       savedGuide
-                         ? `<div class="ach-saved-guide">
-                              <button type="button" class="ach-saved-guide-open" data-act="ach-guide" data-url="${esc(savedGuide)}" title="${esc(savedGuide)}">
-                                <span class="ach-saved-guide-icon">${icon("link", 14)}</span>
-                                <span class="ach-saved-guide-text">
-                                  <span class="ach-saved-guide-host">${esc(guideHost(savedGuide))}</span>
-                                  <span class="ach-saved-guide-url">${esc(savedGuide)}</span>
-                                </span>
-                                ${icon("external", 12)}
-                              </button>
-                              <button type="button" class="icon-btn ach-saved-guide-remove" data-act="ach-guide-remove" data-id="${appId}" data-ach="${achId}" title="${esc(t("common.delete"))}">${icon("trash", 13)}</button>
-                            </div>`
-                         : `<div class="ach-guide-save-row">
-                              <div class="ach-guide-field">
-                                ${icon("link", 13)}
-                                <input id="ach-guide-url-input" class="input" type="url" placeholder="${esc(t("ach.guideUrlPlaceholder"))}" autocomplete="off" spellcheck="false" />
-                              </div>
-                              <button type="button" class="btn small play" data-act="ach-guide-save" data-id="${appId}" data-ach="${achId}">${esc(t("common.save"))}</button>
-                            </div>`
-                     }
+                     ${guideRows ? `<div class="ach-link-list">${guideRows}</div>` : ""}
+                     <div class="ach-link-add">
+                       <div class="ach-guide-field">
+                         ${icon("link", 13)}
+                         <input id="ach-guide-url-input" class="input" type="url" placeholder="${esc(t("ach.guideUrlPlaceholder"))}" autocomplete="off" spellcheck="false" />
+                       </div>
+                       <button type="button" class="btn ghost small ach-link-add-btn" data-act="ach-guide-add" data-id="${appId}" data-ach="${achId}" title="${esc(t("ach.linkAdd"))}" aria-label="${esc(t("ach.linkAdd"))}">${icon("plus", 13)}</button>
+                     </div>
                    </div>
                  </div>
                </div>

@@ -11,7 +11,7 @@
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import { LAUNCHER_SCOPE, cachedNotes, deleteNote, loadNotes, notesFontSize, saveNote, setNotesFontSize, sortNotes, type Note } from "./notes-client";
+import { LAUNCHER_SCOPE, cachedNotes, deleteNote, loadNotes, noteGuideUrls, notesFontSize, saveNote, setNotesFontSize, sortNotes, type Note } from "./notes-client";
 import { notePreview, renderMarkdownLite, toggleChecklist } from "./markdown";
 
 let scope = LAUNCHER_SCOPE;
@@ -54,12 +54,13 @@ function formatUpdated(ms: number): string {
 }
 
 function rowHtml(note: Note): string {
-  const preview = notePreview(note.body, 90) || note.guideUrl;
+  const links = noteGuideUrls(note);
+  const preview = notePreview(note.body, 90) || links[0] || "";
   return `
     <button class="ov-note-row${note.pinned ? " is-pinned" : ""}" data-ov="ov-note-open" data-id="${esc(note.id)}">
       <span class="ov-note-bar${note.color ? ` color-${esc(note.color)}` : ""}"></span>
       <span class="ov-note-row-main">
-        <span class="ov-note-row-title">${note.pinned ? icon("pin", 10) : ""}${note.achievement ? icon("trophy", 10) : ""}${note.guideUrl ? icon("link", 10) : ""}${esc(note.title.trim() || t("notes.untitled"))}</span>
+        <span class="ov-note-row-title">${note.pinned ? icon("pin", 10) : ""}${note.achievement ? icon("trophy", 10) : ""}${links.length > 0 ? icon("link", 10) : ""}${esc(note.title.trim() || t("notes.untitled"))}</span>
         ${preview ? `<span class="ov-note-row-preview">${esc(preview)}</span>` : ""}
       </span>
       <span class="ov-note-row-time">${esc(formatUpdated(note.updated))}</span>
@@ -143,7 +144,8 @@ async function flushSave(): Promise<void> {
     pinned: draftPinned,
     color: "",
     achievement: existing?.achievement ?? "",
-    guideUrl: existing?.guideUrl ?? "",
+    guideUrl: "",
+    guideUrls: existing ? noteGuideUrls(existing) : [],
   });
   if (note) draftId = note.id;
   paintSaveState();

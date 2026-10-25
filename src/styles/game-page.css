@@ -1238,7 +1238,16 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   background: currentColor;
 }
 .ach-note-status[data-state="saved"] { color: var(--ok); }
-.ach-guide-save-row { display: flex; align-items: center; gap: 6px; }
+.ach-note-tools { display: inline-flex; align-items: center; gap: 6px; }
+.ach-note-delete {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+}
+.ach-note-delete:hover { color: var(--err); }
 .ach-guide-field {
   position: relative;
   display: flex;
@@ -1253,8 +1262,9 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   pointer-events: none;
 }
 .ach-guide-field .input { width: 100%; min-width: 0; padding-left: 30px; }
-.ach-saved-guide { display: flex; align-items: stretch; gap: 6px; }
-.ach-saved-guide-open {
+.ach-link-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.ach-link-row { display: flex; align-items: stretch; gap: 6px; }
+.ach-link-open {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1269,9 +1279,9 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   text-align: left;
   cursor: pointer;
 }
-.ach-saved-guide-open:hover { background: var(--surface-3); border-color: var(--line); }
-.ach-saved-guide-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ach-saved-guide-icon {
+.ach-link-open:hover { background: var(--surface-3); border-color: var(--line); }
+.ach-link-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ach-link-icon {
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
@@ -1281,8 +1291,8 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   background: var(--surface-1);
   color: var(--text-3);
 }
-.ach-saved-guide-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
-.ach-saved-guide-host {
+.ach-link-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.ach-link-host {
   overflow: hidden;
   color: var(--text-2);
   font-size: 11.5px;
@@ -1290,15 +1300,15 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.ach-saved-guide-url {
+.ach-link-url {
   overflow: hidden;
   color: var(--text-3);
   font-size: 10px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.ach-saved-guide-open > svg { flex: 0 0 auto; color: var(--text-3); }
-.ach-saved-guide-remove {
+.ach-link-open > svg { flex: 0 0 auto; color: var(--text-3); }
+.ach-link-remove {
   width: 30px;
   height: auto;
   flex: 0 0 30px;
@@ -1307,7 +1317,15 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   background: var(--surface-2);
   color: var(--text-3);
 }
-.ach-saved-guide-remove:hover { color: var(--err); border-color: var(--err); }
+.ach-link-remove:hover { color: var(--err); border-color: var(--err); }
+.ach-link-add { display: flex; align-items: center; gap: 6px; }
+.ach-link-add-btn {
+  width: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
 
 .ach-community {
   display: flex;

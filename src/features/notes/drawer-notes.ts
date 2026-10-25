@@ -11,7 +11,7 @@ import { emptyPanel, icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import { cachedNotes, deleteNote, loadNotes, notesForScope, onNotesChanged, saveNote, type Note } from "./notes-client";
+import { cachedNotes, deleteNote, loadNotes, noteGuideUrls, notesForScope, onNotesChanged, saveNote, type Note } from "./notes-client";
 import { notePreview, renderMarkdownLite, toggleChecklist } from "./markdown";
 
 interface DrawerDraft {
@@ -64,12 +64,13 @@ export function ensureDrawerNotes(appName: string, onLoaded?: () => void): void 
 
 function noteRowHtml(note: Note): string {
   const title = note.title.trim() || t("notes.untitled");
-  const preview = notePreview(note.body, 140) || note.guideUrl;
+  const links = noteGuideUrls(note);
+  const preview = notePreview(note.body, 140) || links[0] || "";
   const achievementFlag = note.achievement
     ? `<span class="drawer-note-kind" title="${esc(t("drawer.achievements"))}">${icon("trophy", 11)}</span>`
     : "";
-  const guideFlag = note.guideUrl
-    ? `<span class="drawer-note-kind" title="${esc(note.guideUrl)}">${icon("link", 10)}</span>`
+  const guideFlag = links.length > 0
+    ? `<span class="drawer-note-kind" title="${esc(links[0])}">${icon("link", 10)}</span>`
     : "";
   return `
     <button class="drawer-note-row" data-act="drawer-note-open" data-id="${esc(note.id)}">
@@ -84,9 +85,8 @@ function noteRowHtml(note: Note): string {
 
 function editorHtml(): string {
   const preview = mode === "preview";
-  const linkedGuide = draft.id
-    ? cachedNotes().find((note) => note.id === draft.id)?.guideUrl ?? ""
-    : "";
+  const activeNote = draft.id ? cachedNotes().find((note) => note.id === draft.id) : undefined;
+  const linkedGuides = activeNote ? noteGuideUrls(activeNote) : [];
   return `
     <div class="drawer-notes-editor">
       <div class="drawer-notes-editor-head">
@@ -111,12 +111,16 @@ function editorHtml(): string {
           : `<textarea id="drawer-note-body" class="notes-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draft.body)}</textarea>`
       }
       ${
-        linkedGuide
-          ? `<button type="button" class="notes-linked-guide" data-act="ach-guide" data-url="${esc(linkedGuide)}" title="${esc(linkedGuide)}">
-               ${icon("link", 12)}
-               <span>${esc(linkedGuide)}</span>
-               ${icon("external", 11)}
-             </button>`
+        linkedGuides.length > 0
+          ? `<div class="notes-linked-guides">${linkedGuides
+              .map(
+                (url) => `<button type="button" class="notes-linked-guide" data-act="ach-guide" data-url="${esc(url)}" title="${esc(url)}">
+                  ${icon("link", 12)}
+                  <span>${esc(url)}</span>
+                  ${icon("external", 11)}
+                </button>`,
+              )
+              .join("")}</div>`
           : ""
       }
       <div class="notes-editor-foot">
@@ -177,7 +181,8 @@ async function flushSave(): Promise<void> {
     pinned: draft.pinned,
     color: draft.color,
     achievement: existing?.achievement ?? "",
-    guideUrl: existing?.guideUrl ?? "",
+    guideUrl: "",
+    guideUrls: existing ? noteGuideUrls(existing) : [],
   });
   if (note) draft.id = note.id;
   paintSaveState();

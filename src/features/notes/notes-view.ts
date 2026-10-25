@@ -18,6 +18,7 @@ import {
   cachedNotes,
   deleteNote,
   loadNotes,
+  noteGuideUrls,
   notesFontSize,
   onNotesChanged,
   saveNote,
@@ -82,7 +83,7 @@ function visibleNotes(): Note[] {
       if (scopeFilter === "launcher" && note.scope !== LAUNCHER_SCOPE) return false;
       if (scopeFilter === "games" && note.scope === LAUNCHER_SCOPE) return false;
       if (!needle) return true;
-      const hay = `${note.title} ${note.body} ${note.guideUrl ?? ""} ${scopeLabel(note.scope)}`.toLowerCase();
+      const hay = `${note.title} ${note.body} ${noteGuideUrls(note).join(" ")} ${scopeLabel(note.scope)}`.toLowerCase();
       return hay.includes(needle);
     }),
   );
@@ -98,12 +99,13 @@ function listEmptyHtml(): string {
 
 function noteRowHtml(note: Note): string {
   const title = note.title.trim() || t("notes.untitled");
-  const preview = notePreview(note.body) || note.guideUrl;
+  const links = noteGuideUrls(note);
+  const preview = notePreview(note.body) || links[0] || "";
   const achievementFlag = note.achievement
     ? `<span class="notes-row-kind" title="${esc(t("drawer.achievements"))}">${icon("trophy", 12)}</span>`
     : "";
-  const guideFlag = note.guideUrl
-    ? `<span class="notes-row-kind" title="${esc(note.guideUrl)}">${icon("link", 12)}</span>`
+  const guideFlag = links.length > 0
+    ? `<span class="notes-row-kind" title="${esc(links[0])}">${icon("link", 12)}</span>`
     : "";
   return `
     <button class="notes-row${note.id === selectedId ? " is-active" : ""}${note.pinned ? " is-pinned" : ""}${note.color ? ` color-${esc(note.color)}` : ""}" data-act="notes-select" data-id="${esc(note.id)}">
@@ -159,9 +161,8 @@ function editorHtml(): string {
   }
   const preview = editorMode === "preview";
   const rendered = preview ? renderMarkdownLite(draftBody).html : "";
-  const linkedGuide = draftId
-    ? cachedNotes().find((note) => note.id === draftId)?.guideUrl ?? ""
-    : "";
+  const activeNote = draftId ? cachedNotes().find((note) => note.id === draftId) : undefined;
+  const linkedGuides = activeNote ? noteGuideUrls(activeNote) : [];
   return `
     <div class="notes-editor-head">
       ${
@@ -194,12 +195,16 @@ function editorHtml(): string {
           <textarea id="notes-body" class="notes-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draftBody)}</textarea>`
     }
     ${
-      linkedGuide
-        ? `<button type="button" class="notes-linked-guide" data-act="ach-guide" data-url="${esc(linkedGuide)}" title="${esc(linkedGuide)}">
-             ${icon("link", 12)}
-             <span>${esc(linkedGuide)}</span>
-             ${icon("external", 11)}
-           </button>`
+      linkedGuides.length > 0
+        ? `<div class="notes-linked-guides">${linkedGuides
+            .map(
+              (url) => `<button type="button" class="notes-linked-guide" data-act="ach-guide" data-url="${esc(url)}" title="${esc(url)}">
+                ${icon("link", 12)}
+                <span>${esc(url)}</span>
+                ${icon("external", 11)}
+              </button>`,
+            )
+            .join("")}</div>`
         : ""
     }
     <div class="notes-editor-foot">
@@ -287,7 +292,8 @@ async function flushSave(): Promise<void> {
     pinned: draftPinned,
     color: draftColor,
     achievement: existing?.achievement ?? "",
-    guideUrl: existing?.guideUrl ?? "",
+    guideUrl: "",
+    guideUrls: existing ? noteGuideUrls(existing) : [],
   });
   if (note) {
     draftId = note.id;
@@ -369,7 +375,8 @@ async function togglePin(note: Note | null): Promise<void> {
       pinned: !note.pinned,
       color: note.color,
       achievement: note.achievement,
-      guideUrl: note.guideUrl,
+      guideUrl: "",
+      guideUrls: noteGuideUrls(note),
     });
   } else {
     draftPinned = !draftPinned;

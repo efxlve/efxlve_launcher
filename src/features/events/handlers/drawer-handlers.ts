@@ -14,9 +14,10 @@ function targetSteamAppIdOf(key: string): string | null {
 
 import { FAV_KEY } from "../../../core/constants";
 import { isSafeExternalUrl } from "../../../core/achievements";
-import { removeAchievementGuide, saveAchievementGuide } from "../../drawer/ach-notes";
+import { addAchievementGuide, deleteAchievementNote, flushAchievementNoteSave, removeAchievementGuide } from "../../drawer/ach-notes";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
+import { askConfirm } from "../../../core/confirm-dialog";
 import { toggleAboutExpanded, wireDrawerSubmenu } from "../../drawer/drawer-view";
 import { closeStoreShot, openStoreShot } from "../../screenshots/store-shot-viewer";
 import { gameVersionsOf, isCompanionSource, sourceOfKey, summaryOf } from "../../../core/selectors";
@@ -25,7 +26,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
 import { t as i18n } from "../../../i18n";
@@ -342,31 +343,77 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
     }
 
-    case "ach-guide-save": {
+    case "ach-guide-add": {
       const appName = S.currentModalAppName;
       const achName = t.dataset.ach;
       const input = document.getElementById("ach-guide-url-input") as HTMLInputElement | null;
       const url = input?.value.trim() ?? "";
-      if (!appName || !achName) return true;
-      void saveAchievementGuide(appName, achName, url).then((ok) => {
+      if (!appName || !achName || !url) return true;
+      void (async () => {
+        // A link save rewrites the same note; flush the body first so a pending
+        // debounce cannot be replaced by the older cached text.
+        const noteInput = document.getElementById("ach-note-input") as HTMLTextAreaElement | null;
+        if (noteInput?.dataset.ach === achName) {
+          const saved = await flushAchievementNoteSave(appName, achName, noteInput.value);
+          const status = document.getElementById("ach-note-status");
+          if (status) {
+            status.textContent = saved ? i18n("notes.saved") : "";
+            status.dataset.state = saved ? "saved" : "";
+          }
+        }
+        const ok = await addAchievementGuide(appName, achName, url);
         if (!ok) {
           toast(i18n("ach.guideInvalid"), "err");
           return;
         }
-        toast(i18n("ach.guideSaved"), "ok");
-        if (S.currentModalAppName === appName) openEpicModal(appName, false, false);
-      });
+        if (S.currentModalAppName === appName) {
+          repaintAchievementsTab(appName, true);
+          // Keep the caret in the add field so several links can be pasted in a row.
+          requestAnimationFrame(() => {
+            document.getElementById("ach-guide-url-input")?.focus();
+          });
+        }
+      })();
       return true;
     }
 
     case "ach-guide-remove": {
       const appName = S.currentModalAppName;
       const achName = t.dataset.ach;
-      if (appName && achName) {
-        void removeAchievementGuide(appName, achName).then(() => {
-          if (S.currentModalAppName === appName) openEpicModal(appName, false, false);
-        });
+      const url = t.dataset.url ?? "";
+      if (appName && achName && url) {
+        void (async () => {
+          const noteInput = document.getElementById("ach-note-input") as HTMLTextAreaElement | null;
+          if (noteInput?.dataset.ach === achName) {
+            const saved = await flushAchievementNoteSave(appName, achName, noteInput.value);
+            const status = document.getElementById("ach-note-status");
+            if (status) {
+              status.textContent = saved ? i18n("notes.saved") : "";
+              status.dataset.state = saved ? "saved" : "";
+            }
+          }
+          await removeAchievementGuide(appName, achName, url);
+          if (S.currentModalAppName === appName) repaintAchievementsTab(appName, true);
+        })();
       }
+      return true;
+    }
+
+    case "ach-note-delete": {
+      const appName = S.currentModalAppName;
+      const achName = t.dataset.ach;
+      if (!appName || !achName) return true;
+      void askConfirm({
+        title: i18n("ach.noteDeleteTitle"),
+        body: i18n("ach.noteDeleteBody"),
+        confirm: i18n("common.delete"),
+        cancel: i18n("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        void deleteAchievementNote(appName, achName).then(() => {
+          if (S.currentModalAppName === appName) repaintAchievementsTab(appName, true);
+        });
+      });
       return true;
     }
 
