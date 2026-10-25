@@ -38,7 +38,7 @@
 :root[data-surface="white"] #page-header { border-color: var(--line); }
 :root[data-surface="white"] :is(.ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn) { color: #f8fafc; }
 :root[data-surface="white"] :is(.ss-compressed-tag) { color: #cbd5e1; }
-:root[data-surface="white"] :is(.gp-progress-fill, .critic-meter-fill) {
+:root[data-surface="white"] :is(.gp-progress-fill) {
   background: rgba(15, 23, 42, 0.55);
 }
 :root[data-surface="white"] .seg > button.active {
@@ -1319,7 +1319,7 @@
   background: linear-gradient(180deg, #b9f7a5 0%, #46cf34 48%, #1fa816 50%, #29be1e 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 6px rgba(45, 195, 30, 0.45);
 }
-:root[data-surface="gloss"] :is(.gp-progress-fill, .critic-meter-fill) {
+:root[data-surface="gloss"] :is(.gp-progress-fill) {
   background: var(--aero-gloss-blue);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
@@ -1785,7 +1785,7 @@
   box-shadow: inset 0 1px 2px rgba(0, 10, 2, 0.5);
 }
 :root[data-surface="blades"] .progress > span,
-:root[data-surface="blades"] :is(.gp-progress-fill, .critic-meter-fill) {
+:root[data-surface="blades"] :is(.gp-progress-fill) {
   background: var(--x360-gloss);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 0 8px rgba(155, 212, 74, 0.45);
 }
@@ -2134,7 +2134,7 @@
   border-radius: 2px;
 }
 :root[data-surface="neongrid"] .progress > span,
-:root[data-surface="neongrid"] :is(.gp-progress-fill, .critic-meter-fill) {
+:root[data-surface="neongrid"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #fcee0a 0%, #ff6600 75%, #ff003c 100%);
   box-shadow: 0 0 10px rgba(252, 238, 10, 0.5);
 }

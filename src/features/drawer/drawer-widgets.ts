@@ -115,18 +115,18 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
   // the card holds its place so the column does not jump when the answer lands.
   if (!critic && igdbScore == null) {
     if (!isLoading) return "";
-    const badge = `
-        <div class="hub-critic-badge is-pending">
-          <div class="critic-badge-score skel"></div>
-          <div class="critic-badge-info">
-            <div class="critic-badge-top"><div class="critic-badge-name skel"></div></div>
-            <div class="critic-badge-sub skel"></div>
-            <div class="critic-meter-track"><span class="critic-meter-fill" style="width:76%"></span></div>
+    const row = `
+        <div class="critic-row">
+          <div class="critic-row-text">
+            <span class="critic-row-name skel"></span>
+            <span class="critic-row-sub skel"></span>
           </div>
+          <span class="critic-row-score skel"></span>
+          <span class="critic-row-ext"></span>
         </div>`;
     return `
       <div class="drawer-critic-body is-pending">
-        <div class="hub-critic-grid">${badge}${badge}</div>
+        <div class="critic-list">${row}${row}${row}</div>
       </div>
     `;
   }
@@ -139,69 +139,62 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
     return "";
   }
 
-  const hasGlobalScores = Boolean(critic.opencritic_score || critic.metacritic_score || igdbScore != null);
-
-  let globalScoresHtml = "";
-  if (hasGlobalScores) {
-    const meter = (n: number) => `<div class="critic-meter-track"><span class="critic-meter-fill" style="width:${Math.max(6, Math.min(100, Math.round(n)))}%"></span></div>`;
-    globalScoresHtml = `
-      <div class="hub-critic-grid">
-        ${
-          igdbScore != null
-            ? `
-          <div class="hub-critic-badge igdb" title="${i18nT("critic.igdbCommunity")}">
-            <div class="critic-badge-score igdb num">${igdbScore}</div>
-            <div class="critic-badge-info">
-              <div class="critic-badge-top">
-                <span class="critic-badge-name">IGDB</span>
-                <span class="critic-scale-pill num">/ 100</span>
-              </div>
-              <div class="critic-badge-sub">${i18nT("critic.communityScore")}</div>
-              ${meter(igdbScore)}
+  // One row per source: the name and what the number means on the left, the
+  // score on the right. The old row carried a 0-100 meter under the text; it
+  // restated the number without adding a fact, and the score reads faster as
+  // type than as a bar.
+  const row = (args: {
+    name: string;
+    sub: string;
+    score: number;
+    tier?: string | null;
+    url?: string | null;
+    title: string;
+  }): string => {
+    const url = args.url && args.url.length > 0 ? args.url : "";
+    return `
+        <div class="critic-row${url ? " clickable" : ""}" ${url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(url)}"` : ""} title="${esc(args.title)}">
+          <div class="critic-row-text">
+            <div class="critic-row-top">
+              <span class="critic-row-name">${esc(args.name)}</span>
+              ${args.tier ? `<span class="critic-tier-pill">${esc(args.tier)}</span>` : ""}
             </div>
-          </div>`
-            : ""
-        }
-        ${
-          critic.opencritic_score
-            ? `
-          <div class="hub-critic-badge opencritic ${critic.opencritic_url ? "clickable" : ""}" ${critic.opencritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.opencritic_url)}"` : ""} title="${i18nT("critic.openCriticPage")}">
-            <div class="critic-badge-score num ${critic.tier ? `tier-${critic.tier.toLowerCase()}` : ""}">${critic.opencritic_score}</div>
-            <div class="critic-badge-info">
-              <div class="critic-badge-top">
-                <span class="critic-badge-name">OpenCritic</span>
-                ${critic.tier ? `<span class="critic-tier-pill tier-${critic.tier.toLowerCase()}">${esc(critic.tier)}</span>` : `<span class="critic-scale-pill num">/ 100</span>`}
-              </div>
-              <div class="critic-badge-sub">${i18nT("critic.topCritic")}</div>
-              ${meter(critic.opencritic_score)}
-            </div>
-            ${critic.opencritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
-          </div>`
-            : ""
-        }
-        ${
-          critic.metacritic_score
-            ? `
-          <div class="hub-critic-badge metacritic ${critic.metacritic_url ? "clickable" : ""}" ${critic.metacritic_url ? `role="button" tabindex="0" data-act="open-critic-url" data-url="${esc(critic.metacritic_url)}"` : ""} title="${i18nT("critic.metacriticPage")}">
-            <div class="critic-badge-score mc num">${critic.metacritic_score}</div>
-            <div class="critic-badge-info">
-              <div class="critic-badge-top">
-                <span class="critic-badge-name">Metacritic</span>
-                <span class="critic-scale-pill num">/ 100</span>
-              </div>
-              <div class="critic-badge-sub">${i18nT("critic.metascore")}</div>
-              ${meter(critic.metacritic_score)}
-            </div>
-            ${critic.metacritic_url ? `<div class="critic-badge-ext">${icon("external", 12)}</div>` : ""}
-          </div>`
-            : ""
-        }
-      </div>
-    `;
-  }
+            <span class="critic-row-sub">${esc(args.sub)}</span>
+          </div>
+          <div class="critic-row-score">
+            <span class="critic-row-val num">${args.score}</span>
+            <span class="critic-row-scale num">/ 100</span>
+          </div>
+          <span class="critic-row-ext">${url ? icon("external", 12) : ""}</span>
+        </div>`;
+  };
 
   return `
-    ${globalScoresHtml}
+    <div class="drawer-critic-body">
+      <div class="critic-list">
+        ${igdbScore != null ? row({
+          name: "IGDB",
+          sub: i18nT("critic.communityScore"),
+          score: igdbScore,
+          title: i18nT("critic.igdbCommunity"),
+        }) : ""}
+        ${critic.opencritic_score ? row({
+          name: "OpenCritic",
+          sub: i18nT("critic.topCritic"),
+          score: critic.opencritic_score,
+          tier: critic.tier,
+          url: critic.opencritic_url,
+          title: i18nT("critic.openCriticPage"),
+        }) : ""}
+        ${critic.metacritic_score ? row({
+          name: "Metacritic",
+          sub: i18nT("critic.metascore"),
+          score: critic.metacritic_score,
+          url: critic.metacritic_url,
+          title: i18nT("critic.metacriticPage"),
+        }) : ""}
+      </div>
+    </div>
   `;
 }
 
