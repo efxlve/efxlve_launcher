@@ -628,15 +628,20 @@ export function renderLastSessionCompact(appName: string): string {
  */
 export function renderSteamNews(items: SteamNewsItem[] | null): string {
   if (items === null) {
-    // Still on the way: two placeholder rows hold the height, like every other
-    // late block on this page.
+    // Still on the way: three placeholder rows hold the height of the three
+    // stories that replace them, like every other late block on this page.
+    const row = `
+      <div class="gp-news-row is-pending">
+        <span class="gp-news-main">
+          <span class="skel gp-news-skel-meta"></span>
+          <span class="skel gp-news-skel-title"></span>
+          <span class="skel gp-news-skel-desc"></span>
+        </span>
+      </div>`;
     return `
       <section class="card gp-section gp-news">
         <div class="gp-news-header"><h3 class="gp-section-title">${icon("bell", 14)} <span>${i18nT("drawer.news")}</span></h3></div>
-        <div class="gp-news-list">
-          <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
-          <div class="gp-news-row is-pending"><span class="skel gp-news-title"></span></div>
-        </div>
+        <div class="gp-news-list">${row}${row}${row}</div>
       </section>`;
   }
   if (items.length === 0) return "";
@@ -654,21 +659,21 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
     <section class="card gp-section gp-news">
       <div class="gp-news-header">
         <h3 class="gp-section-title">${icon("bell", 14)} <span>${i18nT("drawer.news")}</span></h3>
-        <span class="gp-news-count">${items.length}</span>
+        <span class="gp-news-count num">${items.length}</span>
       </div>
       <div class="gp-news-list">${items
         .map(
           (item) => `
-        <button type="button" class="gp-news-row${item.image ? " has-art" : " no-art"}" data-act="open-external-url" data-url="${esc(item.url)}" title="${esc(item.title)}">
+        <button type="button" class="gp-news-row" data-act="open-external-url" data-url="${esc(item.url)}" title="${esc(item.title)}">
           ${item.image ? `<img class="gp-news-art" src="${esc(item.image)}" alt="" loading="lazy" decoding="async" />` : ""}
           <span class="gp-news-main">
             <span class="gp-news-head">
               <span class="gp-news-feed">${esc(item.feed)}</span>
               ${item.patchNotes ? `<span class="gp-news-tag">${icon("sparkles", 11)} ${i18nT("drawer.patchNote")}</span>` : ""}
+              ${item.date ? `<span class="gp-news-date num">${icon("calendar", 11)} ${esc(when(item.date))}</span>` : ""}
             </span>
             <span class="gp-news-title">${esc(item.title)}</span>
             ${item.snippet ? `<span class="gp-news-snippet">${esc(item.snippet)}</span>` : ""}
-            ${item.date ? `<span class="gp-news-meta">${icon("calendar", 11)} ${esc(when(item.date))}</span>` : ""}
           </span>
         </button>`,
         )
