@@ -22,12 +22,15 @@ import { S } from "../../core/state";
 import { esc, fmtAchDate, fmtDecimal1 } from "../../core/utils";
 import type { EpicAchievementItem, EpicAchievementsData, EpicSummary } from "../../epic";
 import { t } from "../../i18n";
+import type { SteamAchievementCommunity } from "../../steam";
 
 export interface AchievementDetailInput {
   summary: EpicSummary;
   data: EpicAchievementsData;
   item: EpicAchievementItem;
   steamAppId: string | null;
+  community?: SteamAchievementCommunity | null;
+  communityLoading?: boolean;
 }
 
 function tierName(tier: "platinum" | "gold" | "silver" | "bronze"): string {
@@ -46,8 +49,94 @@ function guideButton(
   return `<button type="button" class="btn ghost small ach-guide-btn" data-act="ach-guide" data-url="${esc(url)}" title="${esc(label)}">${icon(glyph, 13)}<span>${esc(label)}</span></button>`;
 }
 
+function communityRow(
+  url: string,
+  title: string,
+  meta: string,
+  snippet: string,
+): string {
+  return `<button type="button" class="ach-community-row" data-act="ach-guide" data-url="${esc(url)}">
+    <span class="ach-community-row-main">
+      <span class="ach-community-title">${esc(title)}</span>
+      ${meta ? `<span class="ach-community-meta">${meta}</span>` : ""}
+      ${snippet ? `<span class="ach-community-snippet">${esc(snippet)}</span>` : ""}
+    </span>
+    <span class="ach-community-open">${icon("external", 13)}</span>
+  </button>`;
+}
+
+function renderCommunity(
+  community: SteamAchievementCommunity | null | undefined,
+  loading: boolean,
+  fallbackUrl: string | undefined,
+): string {
+  if (loading) {
+    return `<div class="ach-community-loading" aria-hidden="true">
+      <span class="skel skel-line"></span>
+      <span class="skel skel-line short"></span>
+      <span class="skel skel-line"></span>
+    </div>`;
+  }
+  if (!community || !community.supported) return "";
+
+  const guides = community.guides
+    .map((guide) => {
+      const meta = [
+        guide.author ? esc(guide.author) : "",
+        guide.rating != null
+          ? `<span class="ach-community-rating">${icon("star", 10)} ${guide.rating}/5</span>`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return communityRow(guide.url, guide.title, meta, guide.description);
+    })
+    .join("");
+  const threads = community.threads
+    .map((thread) => {
+      const meta = [
+        thread.replies > 0 ? esc(t("ach.communityReplies", { n: thread.replies })) : "",
+        thread.date ? esc(thread.date) : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return communityRow(thread.url, thread.title, meta, thread.snippet);
+    })
+    .join("");
+
+  if (!guides && !threads) {
+    return `<div class="ach-community-empty">
+      <span>${esc(t("ach.communityEmpty"))}</span>
+      ${
+        fallbackUrl
+          ? `<button type="button" class="btn ghost small" data-act="ach-guide" data-url="${esc(fallbackUrl)}">${icon("search", 12)}<span>${esc(t("ach.communityFallback"))}</span></button>`
+          : ""
+      }
+    </div>`;
+  }
+
+  return `<div class="ach-community">
+    ${
+      guides
+        ? `<div class="ach-community-group">
+             <div class="ach-community-group-title">${icon("link", 11)} ${esc(t("ach.communityGuides"))}</div>
+             ${guides}
+           </div>`
+        : ""
+    }
+    ${
+      threads
+        ? `<div class="ach-community-group">
+             <div class="ach-community-group-title">${icon("users", 11)} ${esc(t("ach.communityThreads"))}</div>
+             ${threads}
+           </div>`
+        : ""
+    }
+  </div>`;
+}
+
 export function renderAchievementDetail(input: AchievementDetailInput): string {
-  const { summary, item, steamAppId } = input;
+  const { summary, item, steamAppId, community, communityLoading } = input;
   const isDemo = S.demoPlatinumApps.has(summary.appName);
   const isUnlocked = isAchievementUnlocked(item) || isDemo;
   const isSecret = item.hidden && !isUnlocked;
@@ -98,6 +187,10 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
   ]
     .filter(Boolean)
     .join("");
+
+  const communityBlock = steamAppId && !masked
+    ? renderCommunity(community, Boolean(communityLoading), links.steamGuides)
+    : "";
 
   const status = isUnlocked
     ? `<span class="ach-detail-state is-earned">${icon("check", 13)} <span>${esc(t("ach.earned"))}</span></span>${date ? `<span class="ach-pill date">${esc(date)}</span>` : ""}`
@@ -161,6 +254,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
                  <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.detailHowTo"))}</span></h3>
                  <span class="ach-detail-hint">${esc(t("ach.detailGuideHint"))}</span>
                </div>
+               ${communityBlock}
                <div class="ach-guide-grid">${guideButtons}</div>
              </section>`
       }

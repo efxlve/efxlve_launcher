@@ -1840,6 +1840,7 @@ fn main() {
             steam_art::steam_library_art,
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,
+            steam::steam_get_achievement_community,
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,
             steam::steam_detect_achievement_path,

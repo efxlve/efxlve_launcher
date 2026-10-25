@@ -3066,5 +3066,10 @@
   "ach.guideSteamGuides": "Steam guides",
   "ach.guideSteamDiscussions": "Steam discussions",
   "ach.guideTrueSteam": "TrueSteamAchievements",
-  "ach.guideTrueAchievements": "TrueAchievements"
+  "ach.guideTrueAchievements": "TrueAchievements",
+  "ach.communityGuides": "Community guides",
+  "ach.communityThreads": "Discussions",
+  "ach.communityReplies": "{n} replies",
+  "ach.communityEmpty": "No community guides or threads found for this achievement yet.",
+  "ach.communityFallback": "Search Steam"
 }

@@ -39,7 +39,7 @@ import { hydrateProtonDbChip, renderProtonDbHost } from "./protondb";
 import { hydrateAntiCheatChip, renderAntiCheatHost } from "./awacy";
 import { hydrateDeckChip, renderDeckHost } from "./deck";
 import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
-import { steamGetAchievements, steamGetEmulatorAchievements, steamGetAchievementSource, steamSetAchievementSource, type AchievementSourceConfig } from "../../steam";
+import { steamGetAchievements, steamGetAchievementCommunity, steamGetEmulatorAchievements, steamGetAchievementSource, steamSetAchievementSource, type AchievementSourceConfig } from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
 import { companionAchievements } from "../../companion";
@@ -1873,6 +1873,41 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
   }
 }
 
+/**
+ * One achievement's Steam Community answers. Called when a detail opens, not
+ * for the whole list: a hundred achievements must not become a hundred search
+ * requests. The backend caches each query for a day.
+ */
+export function ensureAchievementCommunity(appName: string, achName: string): void {
+  if (!isTauri) return;
+  const data = S.loadedAchievements.get(appName);
+  const item = data?.achievements.find((achievement) => achievement.name === achName);
+  if (!item) return;
+  const custom = appName.startsWith("custom::")
+    ? S.customGames.find((game) => game.id === appName)
+    : undefined;
+  const appId = appName.startsWith("steam::") ? appName.slice(7) : custom?.steamAppId;
+  if (!appId) return;
+
+  const key = `${appName}:${achName}`;
+  if (S.achCommunity.has(key) || S.loadingAchCommunity.has(key)) return;
+  S.loadingAchCommunity.add(key);
+  void steamGetAchievementCommunity(appId, item.display_name || item.name)
+    .then((response) => {
+      S.achCommunity.set(key, response);
+    })
+    .catch(() => {
+      S.achCommunity.set(key, { guides: [], threads: [], supported: false });
+    })
+    .finally(() => {
+      S.loadingAchCommunity.delete(key);
+      if (S.currentModalAppName !== appName || S.achDetail !== achName) return;
+      const s = summaryOf(appName);
+      const content = document.getElementById("drawer-tab-content");
+      if (s && content) content.innerHTML = renderDrawerAchievements(s);
+    });
+}
+
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const isDemo = S.demoPlatinumApps.has(s.appName);
@@ -1925,7 +1960,16 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
   const detailItem = S.achDetail ? data.achievements.find((a) => a.name === S.achDetail) : undefined;
   if (detailItem) {
-    return renderAchievementDetail({ summary: s, data, item: detailItem, steamAppId: targetSteamAppId });
+    const key = `${s.appName}:${detailItem.name}`;
+    ensureAchievementCommunity(s.appName, detailItem.name);
+    return renderAchievementDetail({
+      summary: s,
+      data,
+      item: detailItem,
+      steamAppId: targetSteamAppId,
+      community: S.achCommunity.get(key) ?? null,
+      communityLoading: S.loadingAchCommunity.has(key),
+    });
   }
 
   const hasDlc = data.achievements.some((a) => !a.is_base);

@@ -227,6 +227,35 @@ export const steamGetEmulatorAchievements = (
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");
+
+export interface SteamGuideHit {
+  title: string;
+  url: string;
+  author: string;
+  description: string;
+  rating?: number | null;
+}
+
+export interface SteamThreadHit {
+  title: string;
+  url: string;
+  snippet: string;
+  replies: number;
+  date: string;
+}
+
+export interface SteamAchievementCommunity {
+  guides: SteamGuideHit[];
+  threads: SteamThreadHit[];
+  supported: boolean;
+}
+
+/**
+ * Public Steam Community guides and discussions for one achievement. Results
+ * are cached by the backend for a day; the rows open the real pages.
+ */
+export const steamGetAchievementCommunity = (appId: string, query: string) =>
+  invoke<SteamAchievementCommunity>("steam_get_achievement_community", { appId, query });
 export interface AchievementSourceConfig {
   mode: "auto" | "custom" | "disabled";
   customPath?: string;

@@ -11,6 +11,7 @@ mod download_live;
 mod catalog;
 mod cloud;
 mod collections;
+mod community;
 mod library;
 mod news;
 mod playtime;
@@ -44,6 +45,11 @@ pub use cloud::*;
 // collections.rs: steam_import_collections
 #[allow(unused_imports)]
 pub use collections::*;
+
+// community.rs: SteamAchievementCommunity, parse_guide_hits, parse_thread_hits,
+// steam_get_achievement_community
+#[allow(unused_imports)]
+pub use community::*;
 
 // news.rs: SteamNewsItem, steam_news
 #[allow(unused_imports)]

@@ -177,6 +177,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_get_screenshot_full_data` | `epicGetScreenshotFullData({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_get_screenshot_move_info` | `epicGetScreenshotMoveInfo({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_get_screenshot_scan_all` | `epicGetScreenshotScanAll({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `epic_get_screenshot_subfolders` | `epicGetScreenshotSubfolders({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_get_settings` | `epicGetSettings({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_get_steamgrid_covers` | `epicGetSteamgridCovers({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
 | `epic_get_steamgrid_key` | `epicGetSteamgridKey({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
@@ -232,6 +233,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_set_screenshot_disabled_games` | `epicSetScreenshotDisabledGames({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_set_screenshot_hotkey` | `epicSetScreenshotHotkey({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_set_screenshot_scan_all` | `epicSetScreenshotScanAll({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `epic_set_screenshot_subfolders` | `epicSetScreenshotSubfolders({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_set_steamgrid_key` | `epicSetSteamgridKey({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
 | `epic_setup_status` | `epicSetupStatus({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_stop_game` | `epicStopGame({ ... })` | `src-tauri/src/legendary/transfers/launch.rs` |
@@ -340,9 +342,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_set_active_game` | `overlaySetActiveGame({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_enabled` | `overlaySetEnabled({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_hotkey` | `overlaySetHotkey({ ... })` | `src-tauri/src/overlay/mod.rs` |
+| `overlay_set_hotkey_capture` | `overlaySetHotkeyCapture({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_hud` | `overlaySetHud({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_show` | `overlayShow({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_show_launcher` | `overlayShowLauncher({ ... })` | `src-tauri/src/overlay/mod.rs` |
+| `pc_check_system` | `pcCheckSystem({ ... })` | `src-tauri/src/pc_check.rs` |
 | `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
 | `prewarm_store_view` | `prewarmStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `profile_cloud_list` | `profileCloudList({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
@@ -385,6 +389,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_family_shared_apps` | `steamFamilySharedApps({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_find_store_app` | `steamFindStoreApp({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_game_action` | `steamGameAction({ ... })` | `src-tauri/src/steam/protocol.rs` |
+| `steam_get_achievement_community` | `steamGetAchievementCommunity({ ... })` | `src-tauri/src/steam/community.rs` |
 | `steam_get_achievement_source` | `steamGetAchievementSource({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_get_achievements` | `steamGetAchievements({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_get_achievements_summary` | `steamGetAchievementsSummary({ ... })` | `src-tauri/src/steam/achievements.rs` |

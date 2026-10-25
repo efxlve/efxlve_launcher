@@ -1001,8 +1001,61 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 .ach-detail-hint { color: var(--text-3); font-size: 12px; }
 
-.ach-guide-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.ach-guide-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ach-guide-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+.ach-community { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.ach-community-group { display: flex; flex-direction: column; gap: 6px; }
+.ach-community-group-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ach-community-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+
+.ach-community-row:hover { background: var(--surface-3); border-color: var(--line); }
+.ach-community-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ach-community-row-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ach-community-title { font-size: 12px; font-weight: 500; line-height: 1.4; }
+.ach-community-meta { display: flex; align-items: center; gap: 4px; color: var(--text-3); font-size: 11px; }
+.ach-community-rating { display: inline-flex; align-items: center; gap: 2px; }
+.ach-community-snippet { color: var(--text-3); font-size: 11px; line-height: 1.45; }
+.ach-community-open { color: var(--text-3); flex: 0 0 auto; padding-top: 2px; }
+.ach-community-row:hover .ach-community-open { color: var(--text-2); }
+
+.ach-community-loading { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.ach-community-loading .skel-line { height: 12px; }
+.ach-community-loading .skel-line.short { width: 60%; }
+
+.ach-community-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--text-3);
+  font-size: 12px;
+}
 
 @media (max-width: 720px) {
   .ach-detail-hero { flex-direction: column; gap: 12px; }
