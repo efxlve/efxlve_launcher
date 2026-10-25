@@ -495,6 +495,28 @@ document.addEventListener("change", (e) => {
 /** Pending profile-search grid patch. Typing batches into one rebuild. */
 let profileSearchTimer = 0;
 
+/**
+ * The achievement rail behaves like an accordion: opening "My notes & links"
+ * folds away the guide and community block so the editor lands inside the rail
+ * instead of below its scroll area. The opened section is scrolled into view so
+ * the pane never looks cut off.
+ */
+document.addEventListener("click", (event) => {
+  const summary = (event.target as HTMLElement | null)?.closest<HTMLElement>("summary");
+  const section = summary?.closest<HTMLDetailsElement>("details[data-ach-section]");
+  if (!section) return;
+  requestAnimationFrame(() => {
+    if (!section.open || !section.isConnected) return;
+    document
+      .querySelectorAll<HTMLDetailsElement>("details[data-ach-section][open]")
+      .forEach((other) => {
+        if (other !== section) other.open = false;
+      });
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    section.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+  });
+});
+
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
   if (t.id === "ach-note-input" && S.currentModalAppName) {

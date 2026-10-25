@@ -1096,19 +1096,40 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-detail-spoiler-title { color: var(--text-2); font-size: 13px; line-height: 1.45; }
 
 .ach-detail-guides {
-  padding: 16px;
+  padding: 0;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
 
-.ach-detail-guides-head {
+.ach-detail-guides-body { padding: 0 16px 16px; }
+.ach-detail-guides-body .ach-guide-grid { margin-top: 0; }
+
+.ach-detail-section-summary {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 16px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ach-detail-section-summary::-webkit-details-marker { display: none; }
+.ach-detail-section-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.ach-detail-section-chevron {
+  display: inline-grid;
+  place-items: center;
+  margin-left: auto;
+  color: var(--text-3);
+  transition: transform var(--ease);
+}
+
+details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
+  transform: rotate(180deg);
 }
 
 .ach-detail-heading {
@@ -2971,27 +2992,14 @@ details.ach-personal {
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
-.ach-personal-summary {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 12px 14px;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
+.ach-personal-mark {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
 }
-.ach-personal-summary::-webkit-details-marker { display: none; }
-.ach-personal-chevron {
-  display: inline-grid;
-  place-items: center;
-  margin-left: auto;
-  color: var(--text-3);
-  transition: transform var(--ease);
-}
-details.ach-personal[open] .ach-personal-chevron { transform: rotate(180deg); }
-.ach-personal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 0 14px 14px; }
+.ach-personal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 0 16px 16px; }
 
 @media (max-width: 1180px) {
   .ach-workspace { grid-template-columns: minmax(0, 1fr); }

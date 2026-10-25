@@ -259,7 +259,9 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
          <span class="ach-detail-progress-label tabular-nums">${esc(t("ach.detailProgress", { n: Math.round(progress * 100) }))}</span>
        </div>`
     : "";
-  const personalOpen = note || savedGuide ? " open" : "";
+  const personalMark = note || savedGuide
+    ? `<span class="ach-personal-mark" title="${esc(t("common.saved"))}"></span>`
+    : "";
 
   return `
     <div class="ach-detail">
@@ -305,16 +307,8 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
       ${
         masked
           ? ""
-          : `<section class="ach-detail-guides">
-               <div class="ach-detail-guides-head">
-                 <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.detailHowTo"))}</span></h3>
-               </div>
-               <div class="ach-guide-grid">${guideButtons}</div>
-               <p class="ach-detail-footnote">${icon("info", 11)}<span>${esc(t("ach.detailGuideHint"))}</span></p>
-               ${communityBlock}
-             </section>
-             <details class="ach-personal"${personalOpen}>
-               <summary class="ach-personal-summary">${icon("edit", 13)} <span>${esc(t("ach.personalTitle"))}</span><span class="ach-personal-chevron">${icon("chevron-down", 12)}</span></summary>
+          : `<details class="ach-personal" data-ach-section>
+               <summary class="ach-detail-section-summary">${icon("edit", 13)} <span>${esc(t("ach.personalTitle"))}</span>${personalMark}<span class="ach-detail-section-chevron">${icon("chevron-down", 12)}</span></summary>
                <div class="ach-personal-grid">
                  <div class="ach-personal-block">
                    <h3 class="ach-detail-heading">${icon("edit", 13)} <span>${esc(t("ach.noteTitle"))}</span></h3>
@@ -335,6 +329,17 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
                           </div>`
                    }
                  </div>
+               </div>
+             </details>
+             <details class="ach-detail-guides" data-ach-section open>
+               <summary class="ach-detail-section-summary">
+                 <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.detailHowTo"))}</span></h3>
+                 <span class="ach-detail-section-chevron">${icon("chevron-down", 12)}</span>
+               </summary>
+               <div class="ach-detail-guides-body">
+                 <div class="ach-guide-grid">${guideButtons}</div>
+                 <p class="ach-detail-footnote">${icon("info", 11)}<span>${esc(t("ach.detailGuideHint"))}</span></p>
+                 ${communityBlock}
                </div>
              </details>`
       }
