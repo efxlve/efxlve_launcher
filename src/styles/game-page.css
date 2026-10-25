@@ -2161,11 +2161,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   margin: 0; display: flex; align-items: center; gap: 8px;
   font-size: 14px; font-weight: 600; color: var(--text);
 }
-.gp-news-count {
-  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
-  padding: 1px 6px; border-radius: var(--r-sm);
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--text-3);
-}
 .gp-news-list { display: flex; flex-direction: column; }
 .gp-news-row {
   display: flex; align-items: center; gap: 16px; width: 100%; padding: 10px 0; text-align: left;

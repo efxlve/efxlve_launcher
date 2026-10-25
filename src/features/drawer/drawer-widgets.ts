@@ -659,7 +659,6 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
     <section class="card gp-section gp-news">
       <div class="gp-news-header">
         <h3 class="gp-section-title">${icon("bell", 14)} <span>${i18nT("drawer.news")}</span></h3>
-        <span class="gp-news-count num">${items.length}</span>
       </div>
       <div class="gp-news-list">${items
         .map(
