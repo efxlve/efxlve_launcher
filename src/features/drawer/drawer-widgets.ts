@@ -680,20 +680,23 @@ export function renderNextAchievements(appName: string): string {
   const loading = S.loadingAchFor.has(appName) && !S.loadedAchievements.has(appName);
   if (loading) {
     // Three placeholder rows, the height of the three rows that replace them:
-    // the spinner was a different height, so everything below it moved when the
-    // store answered.
+    // the card does not move when the store answers.
     const rows = Array.from(
       { length: 3 },
       () => `
         <div class="gp-next-row is-pending">
           <span class="skel skel-icon"></span>
-          <span class="skel skel-line"></span>
+          <span class="gp-next-text">
+            <span class="skel skel-line"></span>
+            <span class="skel skel-line short"></span>
+          </span>
+          <span class="skel skel-rarity"></span>
         </div>`,
     ).join("");
     return sideCard(
       appName,
       "next-ach",
-      i18nT("drawer.nextAchievements"),
+      i18nT("drawer.achievements"),
       "trophy",
       `<div class="gp-next-list">${rows}</div>`,
       { idAttr: "gp-next-ach", extraClass: "gp-next-card" },
@@ -720,39 +723,29 @@ export function renderNextAchievements(appName: string): string {
           <span class="gp-plat-sub">${i18nT("ach.platinumEarnedDesc")}</span>
         </span>
       </div>`;
-    return sideCard(appName, "next-ach", i18nT("drawer.nextAchievements"), "trophy", platBody, {
+    return sideCard(appName, "next-ach", i18nT("drawer.achievements"), "trophy", platBody, {
       idAttr: "gp-next-ach",
       extraClass: "gp-next-card",
       metaHtml: `<span class="gp-widget-meta num">${data.user_unlocked}/${data.total_achievements}</span>`,
       actionHtml,
     });
   }
-  const pct = Math.min(100, Math.round((data.user_unlocked / data.total_achievements) * 100));
   const rows = locked
     .map((a) => {
       const rarity = a.rarity?.percent;
       const desc = (a.description || "").trim();
       return `
       <button type="button" class="gp-next-row" data-act="drawer-tab" data-tab="achievements" data-id="${esc(appName)}" title="${esc(desc || a.display_name || a.name)}">
-        ${a.icon_link ? `<img src="${esc(a.icon_link)}" alt="" />` : `<span class="gp-next-ph">${icon("trophy", 16)}</span>`}
+        ${a.icon_link ? `<img class="gp-next-icon" src="${esc(a.icon_link)}" alt="" />` : `<span class="gp-next-icon gp-next-ph">${icon("trophy", 16)}</span>`}
         <span class="gp-next-text">
           <span class="gp-next-name">${esc(a.display_name || a.name)}</span>
           ${desc ? `<span class="gp-next-desc">${esc(desc)}</span>` : ""}
         </span>
-        ${rarity != null ? `<span class="gp-next-rarity-pill num">%${fmtDecimal1(rarity)}</span>` : ""}
+        ${rarity != null ? `<span class="gp-next-rarity num">%${fmtDecimal1(rarity)}</span>` : ""}
       </button>`;
     })
     .join("");
-  const body = `
-    <div class="gp-next-progress-wrap">
-      <div class="gp-progress-track gp-next-progress"><span class="gp-progress-fill" style="width:${pct}%"></span></div>
-      <div class="gp-next-progress-meta">
-        <span class="num">${data.user_unlocked} / ${data.total_achievements}</span>
-        <span class="num">%${pct}</span>
-      </div>
-    </div>
-    <div class="gp-next-list">${rows}</div>`;
-  return sideCard(appName, "next-ach", i18nT("drawer.nextAchievements"), "trophy", body, {
+  return sideCard(appName, "next-ach", i18nT("drawer.achievements"), "trophy", `<div class="gp-next-list">${rows}</div>`, {
     idAttr: "gp-next-ach",
     extraClass: "gp-next-card",
     metaHtml: `<span class="gp-widget-meta num">${data.user_unlocked}/${data.total_achievements}</span>`,

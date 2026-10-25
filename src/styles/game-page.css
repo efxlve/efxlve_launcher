@@ -509,35 +509,33 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   font-size: 13.5px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums;
 }
 
-/* Sidebar Next Achievements widget */
-.gp-next-progress-wrap {
-  margin-bottom: 8px; padding: 8px 10px;
-  border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
-}
-.gp-next-progress { height: 5px; margin-bottom: 6px; }
-.gp-next-progress-meta {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 11px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums;
-}
-.gp-next-list { display: flex; flex-direction: column; gap: 6px; }
+/* Sidebar achievements widget */
+.gp-next-list { display: flex; flex-direction: column; }
 .gp-next-row {
-  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left;
-  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text);
-  font: inherit; cursor: pointer; transition: background 140ms ease, border-color 140ms ease;
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 0; text-align: left;
+  background: none; border: 0; border-radius: 0; color: var(--text); font: inherit; cursor: pointer;
 }
-.gp-next-row:hover { background: var(--surface-3); border-color: var(--line-strong); }
-.gp-next-row img, .gp-next-ph {
-  flex: none; width: 38px; height: 38px; border-radius: 6px; object-fit: cover;
-  background: var(--surface-3); border: 1px solid var(--line);
+.gp-next-row:first-child { padding-top: 1px; }
+.gp-next-row:last-child { padding-bottom: 1px; }
+.gp-next-row + .gp-next-row { border-top: 1px solid var(--line); }
+.gp-next-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+.gp-next-icon {
+  flex: none; width: 34px; height: 34px; border-radius: 6px; object-fit: cover;
+  background: var(--surface-2); border: 1px solid var(--line);
+  transition: border-color 140ms ease;
 }
+.gp-next-row:hover .gp-next-icon { border-color: var(--line-strong); }
 .gp-next-ph { display: grid; place-items: center; color: var(--text-3); }
 .gp-next-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gp-next-name { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gp-next-desc { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gp-next-rarity-pill {
-  flex-shrink: 0; padding: 2px 7px; border-radius: 999px;
-  background: var(--surface-3); border: 1px solid var(--line);
-  font-size: 11px; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums;
+.gp-next-name { min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-next-desc {
+  font-size: 11px; line-height: 1.35; color: var(--text-3); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; transition: color 140ms ease;
+}
+.gp-next-row:hover .gp-next-desc { color: var(--text-2); }
+.gp-next-rarity {
+  flex: none; font-size: 11px; font-weight: 600; color: var(--text-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 
 .hub-overview-main .gp-side-card { margin-bottom: 20px; }
@@ -700,18 +698,15 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   60% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 0.85; }
 }
-/* Everything unlocked: a platinum card replaces the next-achievements list. */
+/* Everything unlocked: the platinum cup replaces the achievements list. */
 .gp-plat-card {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  gap: 16px;
+  padding: 6px 0 2px;
 }
 .gp-plat-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.gp-plat-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.gp-plat-title { font-size: 14px; font-weight: 600; color: var(--text); }
 .gp-plat-sub { font-size: 12px; color: var(--text-3); }
 .ach-summary-text { display: flex; flex-direction: column; }
 .ach-summary-count { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -1619,9 +1614,12 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 /* The next-achievement rows keep the row's own padding and gap; only the
    contents are placeholders. */
-.gp-next-row.is-pending { pointer-events: none; }
-.gp-next-row.is-pending .skel-icon { width: 28px; height: 28px; border-radius: 6px; flex: none; }
-.gp-next-row.is-pending .skel-line { width: 190px; height: 11px; }
+.gp-next-row.is-pending { pointer-events: none; cursor: default; }
+.gp-next-row.is-pending .skel-icon { width: 34px; height: 34px; border-radius: 6px; flex: none; }
+.gp-next-row.is-pending .gp-next-text { height: 34px; justify-content: center; }
+.gp-next-row.is-pending .skel-line { width: 150px; height: 11px; }
+.gp-next-row.is-pending .skel-line.short { width: 110px; height: 9px; }
+.gp-next-row.is-pending .skel-rarity { width: 30px; height: 11px; }
 
 /* The caption under a capture: a flex row, so a long file name ellipsizes
    instead of running over the card next to it. */
@@ -1632,10 +1630,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
    shrink and ellipsize instead of pushing past the card's edge. */
 .screenshot-info-strip .ss-name,
 .screenshot-info-strip .ss-date { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-
-/* The name inside a card ellipsizes: an achievement name can be a sentence. */
-.gp-next-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gp-next-row .gp-next-text { min-width: 0; }
 
 /* Played but nothing personal yet: say what the space is for. */
 .gp-personal-empty-card {
