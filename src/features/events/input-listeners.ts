@@ -309,13 +309,8 @@ document.addEventListener("keydown", (e) => {
       document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
       return;
     }
-    // The achievement detail is one level inside the game page: Escape returns
-    // to the list before it closes the page.
-    if (S.achDetail && S.currentModalAppName && S.activeDrawerTab === "achievements") {
-      S.achDetail = null;
-      openEpicModal(S.currentModalAppName, false, false);
-      return;
-    }
+    // The achievements detail no longer has its own dismissal level: Escape
+    // closes the game page, as it does on every other tab.
     closeModal();
   }
   if (e.key === "Enter") {

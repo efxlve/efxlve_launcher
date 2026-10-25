@@ -239,13 +239,20 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
     : "";
 
   const position = input.position;
-  const navigation = position
-    ? `<div class="ach-detail-nav">
-         <span class="ach-detail-index">${position.index} / ${position.total}</span>
-         <button type="button" class="ach-detail-step" data-act="ach-open" data-ach="${esc(position.prev?.name ?? "")}" title="${esc(position.prev?.title ?? "")}"${position.prev ? "" : " disabled"}>${icon("chevron-left", 14)}</button>
-         <button type="button" class="ach-detail-step" data-act="ach-open" data-ach="${esc(position.next?.name ?? "")}" title="${esc(position.next?.title ?? "")}"${position.next ? "" : " disabled"}>${icon("chevron-right", 14)}</button>
-       </div>`
-    : "";
+  const detailBar = `<div class="ach-detail-bar${position ? "" : " is-positionless"}">
+    <button type="button" class="ach-detail-back" data-act="ach-back" title="${esc(t("common.back"))}">
+      ${icon("arrow-left", 13)}<span>${esc(t("drawer.achievements"))}</span>
+    </button>
+    ${
+      position
+        ? `<div class="ach-detail-nav">
+             <span class="ach-detail-index">${icon("trophy", 11)}<span>${position.index} / ${position.total}</span></span>
+             <button type="button" class="ach-detail-step" data-act="ach-open" data-ach="${esc(position.prev?.name ?? "")}" title="${esc(position.prev?.title ?? "")}"${position.prev ? "" : " disabled"}>${icon("chevron-left", 14)}</button>
+             <button type="button" class="ach-detail-step" data-act="ach-open" data-ach="${esc(position.next?.name ?? "")}" title="${esc(position.next?.title ?? "")}"${position.next ? "" : " disabled"}>${icon("chevron-right", 14)}</button>
+           </div>`
+        : ""
+    }
+  </div>`;
   const progressLine = !masked && !isUnlocked && progress > 0
     ? `<div class="ach-detail-progress-line">
          <div class="progress"><span style="width:${Math.round(progress * 100)}%"></span></div>
@@ -256,12 +263,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
 
   return `
     <div class="ach-detail">
-      <div class="ach-detail-bar">
-        <button type="button" class="ach-detail-back" data-act="ach-back" title="${esc(t("common.back"))}">
-          ${icon("arrow-left", 13)}<span>${esc(t("drawer.achievements"))}</span>
-        </button>
-        ${navigation}
-      </div>
+      ${detailBar}
 
       <section class="ach-detail-hero">
         <div class="ach-detail-art ${masked ? "is-masked" : ""}">

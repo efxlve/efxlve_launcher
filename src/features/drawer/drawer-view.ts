@@ -54,7 +54,7 @@ import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
 import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, isMacSys, isWinSys, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews, renderSupportedLanguages, verifySystemDetails } from "./drawer-widgets";
-import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked } from "../../core/achievements";
+import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { renderAchievementDetail } from "./ach-detail";
 import { renderAchSidePanel } from "./ach-side-panel";
 import { renderPowerPyxCard } from "./ach-powerpyx";
@@ -2017,11 +2017,6 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     Boolean(a.hidden) &&
     !isAchievementUnlocked(a) &&
     !S.revealedAchievements.has(`${s.appName}:${a.name}`);
-  const detailItem = S.achDetail ? data.achievements.find((a) => a.name === S.achDetail) : undefined;
-  if (S.achDetail && !detailItem) S.achDetail = null;
-  if (detailItem && !isMaskedHidden(detailItem)) {
-    ensureAchievementCommunity(s.appName, detailItem.name);
-  }
 
   ensurePowerPyxGuide(s.appName, s.title);
   const hasDlc = data.achievements.some((a) => !a.is_base);
@@ -2091,6 +2086,23 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const visibleItems = S.activeAchFilter === "hidden"
     ? sorted
     : sorted.filter((a) => !isMaskedHidden(a));
+  // Opening the tab should land on something useful. The best next target is
+  // the default; a filter that hides the open item falls back to the first
+  // row on screen, so the rail always matches the list.
+  const selectedVisible = S.achDetail
+    ? visibleItems.find((a) => a.name === S.achDetail)
+    : undefined;
+  if (!selectedVisible) {
+    const next = nextAchievements(visibleItems, 1)[0];
+    S.achDetail = next?.name ?? visibleItems[0]?.name ?? null;
+  }
+  const detailItem = S.achDetail
+    ? data.achievements.find((a) => a.name === S.achDetail)
+    : undefined;
+  if (S.achDetail && !detailItem) S.achDetail = null;
+  if (detailItem && !isMaskedHidden(detailItem)) {
+    ensureAchievementCommunity(s.appName, detailItem.name);
+  }
   const detailIndex = detailItem ? visibleItems.findIndex((a) => a.name === detailItem.name) : -1;
   const neighbourOf = (a: (typeof data.achievements)[number] | undefined) =>
     a
