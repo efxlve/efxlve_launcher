@@ -16,7 +16,7 @@ import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
 import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
-import { emptyPanel, emptyState, epicPlatinumIcon, icon, loadingState, type IconName } from "../../core/icons";
+import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
@@ -791,8 +791,8 @@ const TAB_ICON: Record<string, IconName> = {
   specs: "cpu",
 };
 
-function tabButton(tab: string, label: string, extraClass = ""): string {
-  const glyph = TAB_ICON[tab] ? icon(TAB_ICON[tab], 14) : "";
+function tabButton(tab: string, label: string, extraClass = "", glyphHtml = ""): string {
+  const glyph = glyphHtml || (TAB_ICON[tab] ? icon(TAB_ICON[tab], 14) : "");
   return `<button class="tab drawer-tab ${S.activeDrawerTab === tab ? "active" : ""} ${extraClass}" data-act="drawer-tab" data-tab="${tab}" data-id="${S.currentModalAppName ?? ""}">${glyph}${label}</button>`;
 }
 
@@ -1259,7 +1259,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const meta = gameMetaHtml(s, partner, antiCheat);
 
   const tabs = `${tabButton("overview", t("drawer.overview"))}
-       ${tabButton("achievements", t("drawer.achievements"), isPlat ? "plat" : "")}
+       ${tabButton("achievements", t("drawer.achievements"), isPlat ? "plat" : "", isPlat ? filledTrophy(14) : "")}
        ${tabButton("dlcs", t("drawer.dlcs"))}
        ${tabButton("screenshots", t("drawer.screenshots"))}
        ${tabButton("notes", t("drawer.notes"))}
@@ -1980,9 +1980,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
     : "";
 
-  // Platinum celebration: a soft glow behind the cup, two sparkles and a
-  // one-shot shine sweep (the sweep only runs on the first paint of the page).
-  const platCup = `<span class="plat-cup${platShineDone ? "" : " shine"}">${epicPlatinumIcon(28)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 11)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 9)}</span><span class="plat-shine" aria-hidden="true"></span></span>`;
+  // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot
+  // shine sweep (the sweep only runs on the first paint of the page).
+  const platCup = platinumCup(28, !platShineDone);
   if (isPlat) platShineDone = true;
 
   const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
@@ -2243,7 +2243,20 @@ function repaintAchievementSummary(appName: string): void {
   const s = summaryOf(appName);
   if (!s) return;
   const tab = document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]');
-  if (tab) tab.classList.toggle("plat", isAppPlatinum(appName));
+  const plat = isAppPlatinum(appName);
+  // The platinum answer can land after the page painted: the tab has to pick up
+  // the filled cup, not just the class. Replace the glyph alone so the button
+  // (and keyboard focus) survives the update.
+  if (tab) {
+    tab.classList.toggle("plat", plat);
+    const glyph = tab.querySelector("svg");
+    const isFilled = Boolean(glyph?.classList.contains("trophy-filled-svg"));
+    if (plat !== isFilled) {
+      const next = plat ? filledTrophy(14) : icon("trophy", 14);
+      if (glyph) glyph.outerHTML = next;
+      else tab.insertAdjacentHTML("afterbegin", next);
+    }
+  }
   if (S.activeDrawerTab === "achievements") {
     const content = document.getElementById("drawer-tab-content");
     if (content) content.innerHTML = renderDrawerAchievements(s);

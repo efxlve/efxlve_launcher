@@ -49,6 +49,8 @@ export interface SideCardOptions {
   extraClass?: string;
   metaHtml?: string;
   actionHtml?: string;
+  /** Trusted icon markup that replaces the named glyph (a platinum cup, for one). */
+  glyphHtml?: string;
 }
 
 /**
@@ -67,8 +69,9 @@ export function sideCard(
   const idPart = opts.idAttr ? ` id="${esc(opts.idAttr)}"` : "";
   const clsPart = opts.extraClass ? ` ${opts.extraClass}` : "";
   const metaPart = opts.metaHtml ? ` ${opts.metaHtml}` : "";
+  const glyphPart = opts.glyphHtml ?? icon(glyph, 13);
   const headInner = `
-    <span class="gp-widget-glyph">${icon(glyph, 13)}</span>
+    <span class="gp-widget-glyph">${glyphPart}</span>
     <h3 class="gp-section-title"><span>${esc(title)}</span>${metaPart}</h3>`;
   const headHtml = opts.actionHtml
     ? `<div class="gp-widget-head">

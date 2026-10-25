@@ -10,7 +10,7 @@
 import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
-import { emptyPanel, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
+import { emptyPanel, filledTrophy, icon, platinumCup, type IconName } from "../../core/icons";
 import { isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
@@ -676,6 +676,9 @@ export function renderSteamNews(items: SteamNewsItem[] | null): string {
     </section>`;
 }
 
+/** Sidebar platinum cards that already played their celebration this session. */
+const platinumCardCelebrated = new Set<string>();
+
 export function renderNextAchievements(appName: string): string {
   const loading = S.loadingAchFor.has(appName) && !S.loadedAchievements.has(appName);
   if (loading) {
@@ -715,9 +718,11 @@ export function renderNextAchievements(appName: string): string {
   if (locked.length === 0) {
     // Nothing left to chase: celebrate the platinum instead of an empty slot.
     if (!complete) return `<div id="gp-next-ach" class="gp-side-card gp-next-card is-empty"></div>`;
+    const celebrate = !platinumCardCelebrated.has(appName);
+    platinumCardCelebrated.add(appName);
     const platBody = `
-      <div class="gp-plat-card">
-        <span class="plat-cup">${epicPlatinumIcon(40)}<span class="plat-spark s1" aria-hidden="true">${icon("sparkles", 12)}</span><span class="plat-spark s2" aria-hidden="true">${icon("sparkles", 10)}</span></span>
+      <div class="gp-plat-card${celebrate ? " is-celebrating" : ""}">
+        ${platinumCup(40, celebrate)}
         <span class="gp-plat-copy">
           <span class="gp-plat-title">${i18nT("ach.platinumEarned")}</span>
           <span class="gp-plat-sub">${i18nT("ach.platinumEarnedDesc")}</span>
@@ -725,9 +730,10 @@ export function renderNextAchievements(appName: string): string {
       </div>`;
     return sideCard(appName, "next-ach", i18nT("drawer.achievements"), "trophy", platBody, {
       idAttr: "gp-next-ach",
-      extraClass: "gp-next-card",
+      extraClass: "gp-next-card is-platinum",
       metaHtml: `<span class="gp-widget-meta num">${data.user_unlocked}/${data.total_achievements}</span>`,
       actionHtml,
+      glyphHtml: filledTrophy(13),
     });
   }
   const rows = locked

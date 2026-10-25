@@ -403,3 +403,56 @@ export function epicPlatinumIcon(size = 18): string {
     <path d="M6.8 21.1h10.4" stroke="url(#${gradient})" stroke-width="2.2" stroke-linecap="round"/>
   </svg>`;
 }
+
+/**
+ * Solid tournament cup for the achievements tab of a completed set. The
+ * platinum artwork is white; at 14px on a light tab it vanished, so the tab
+ * uses this currentColor silhouette instead.
+ */
+export function filledTrophy(size = 14): string {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="trophy-filled-svg" aria-hidden="true">
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+    <path d="M4 22h16"/>
+    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" fill="currentColor"/>
+  </svg>`;
+}
+
+/**
+ * The platinum cup and its one-shot celebration: one ring, sparkles and a
+ * monochrome particle burst around the cup, plus a shine sweep. Without `shine`
+ * every effect stays inert, so a static card carries no motion. The glow is
+ * drawn with the current accent, keeping it legible in White, Gloss and Blades.
+ */
+export function platinumCup(size = 28, shine = false): string {
+  const sparkBig = size >= 36 ? 12 : 10;
+  const sparkSmall = size >= 36 ? 10 : 8;
+  const particles: Array<[number, number, number]> = [
+    [-26, -16, 0],
+    [24, -20, 35],
+    [-30, 10, 60],
+    [28, 14, 25],
+    [0, -32, 45],
+    [3, 30, 75],
+    [-18, 24, 50],
+    [20, 22, 15],
+  ];
+  const burstScale = Math.max(0.75, size / 40);
+  const burst = particles
+    .map(([dx, dy, delay]) => {
+      const x = Math.round(dx * burstScale);
+      const y = Math.round(dy * burstScale);
+      return `<span style="--dx:${x}px;--dy:${y}px;--delay:${delay}ms"></span>`;
+    })
+    .join("");
+  return `<span class="plat-cup${shine ? " shine" : ""}" aria-hidden="true">
+    <span class="plat-ring"></span>
+    <span class="plat-burst">${burst}</span>
+    ${epicPlatinumIcon(size)}
+    <span class="plat-spark s1">${icon("sparkles", sparkBig)}</span>
+    <span class="plat-spark s2">${icon("sparkles", sparkSmall)}</span>
+    <span class="plat-shine"></span>
+  </span>`;
+}

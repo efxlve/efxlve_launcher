@@ -537,6 +537,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   flex: none; font-size: 11px; font-weight: 600; color: var(--text-2);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
+/* A completed set turns the header glyph into a filled, accented cup. */
+.gp-next-card.is-platinum .gp-widget-glyph { color: var(--accent); }
 
 .hub-overview-main .gp-side-card { margin-bottom: 20px; }
 .hub-card, .drawer-hltb-card, .gp-side-card {
@@ -657,21 +659,39 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
    does not sit pinned to the left edge. */
 .ach-summary-pct.plat { color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
 .ach-summary-pct.plat svg { vertical-align: 0; }
-/* Platinum celebration: soft glow, sparkles, and a single shine sweep that
-   plays when the game page first paints (never a perpetual animation). */
-.plat-cup { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+/* Platinum celebration: an accent glow, a single expanding ring, sparkles, a
+   monochrome particle burst and one shine sweep. Every effect is one-shot; a
+   cup without `shine` sits still. The glow follows the theme accent, so White,
+   Gloss and Blades all keep a visible halo. */
+.plat-cup { position: relative; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); }
 .plat-cup::before {
   content: "";
   position: absolute;
   inset: -9px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.07) 46%, rgba(255, 255, 255, 0) 72%);
+  background: radial-gradient(circle, currentColor 0%, transparent 72%);
+  opacity: 0.18;
   pointer-events: none;
 }
-.plat-spark { position: absolute; color: #ffffff; opacity: 0.85; pointer-events: none; }
+.plat-ring {
+  position: absolute; inset: -7px; border-radius: 50%;
+  border: 1px solid currentColor; opacity: 0; pointer-events: none;
+}
+.plat-burst { position: absolute; inset: 0; pointer-events: none; }
+.plat-burst > span {
+  position: absolute; left: 50%; top: 50%; width: 3px; height: 3px;
+  border-radius: 50%; background: currentColor; opacity: 0;
+}
+.plat-burst > span:nth-child(2n) { width: 2px; height: 2px; }
+.plat-burst > span:nth-child(3n) { width: 4px; height: 4px; }
+.plat-spark { position: absolute; color: currentColor; opacity: 0.85; pointer-events: none; }
 .plat-spark.s1 { top: -7px; right: -9px; }
 .plat-spark.s2 { bottom: -5px; left: -8px; opacity: 0.6; }
-.plat-cup.shine::before { animation: plat-bloom 1.2s ease-out 0.05s 1 both; }
+.plat-cup.shine::before { animation: plat-glow 1.2s ease-out 0.05s 1 both; }
+.plat-cup.shine .plat-ring { animation: plat-ring 1s ease-out 0.04s 1 both; }
+.plat-cup.shine .plat-burst > span {
+  animation: plat-particle 0.9s cubic-bezier(0.16, 0.8, 0.32, 1) calc(60ms + var(--delay, 0ms)) 1 both;
+}
 .plat-shine { position: absolute; inset: 5px 7px 7px 7px; overflow: hidden; border-radius: 3px; pointer-events: none; }
 .plat-shine::after {
   content: "";
@@ -693,10 +713,31 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   55% { opacity: 1; transform: scale(1.15); }
   100% { opacity: 1; transform: scale(1); }
 }
+@keyframes plat-glow {
+  0% { opacity: 0; transform: scale(0.6); }
+  55% { opacity: 0.28; transform: scale(1.15); }
+  100% { opacity: 0.18; transform: scale(1); }
+}
+@keyframes plat-ring {
+  0% { opacity: 0.5; transform: scale(0.55); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+@keyframes plat-particle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  18% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(0.9); }
+}
 @keyframes plat-pop {
   0% { transform: scale(0.4); opacity: 0; }
   60% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plat-cup.shine::before,
+  .plat-cup.shine .plat-ring,
+  .plat-cup.shine .plat-burst > span,
+  .plat-cup.shine .plat-shine::after,
+  .plat-cup.shine .plat-spark { animation: none; }
 }
 /* Everything unlocked: the platinum cup replaces the achievements list. */
 .gp-plat-card {
@@ -704,6 +745,22 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   align-items: center;
   gap: 16px;
   padding: 6px 0 2px;
+}
+.gp-plat-card.is-celebrating { animation: plat-card-in 380ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both; }
+@keyframes plat-card-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+/* The tab's trophy changes from outline to the filled platinum cup; the swap
+   gets the same small pop as the card so the eye catches it. */
+.gp-tabs .drawer-tab.plat svg { color: var(--accent); animation: plat-tab-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both; }
+@keyframes plat-tab-in {
+  from { opacity: 0.35; transform: scale(0.72); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gp-plat-card.is-celebrating { animation: none; }
+  .gp-tabs .drawer-tab.plat svg { animation: none; }
 }
 .gp-plat-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gp-plat-title { font-size: 14px; font-weight: 600; color: var(--text); }
