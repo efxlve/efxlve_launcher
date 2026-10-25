@@ -43,11 +43,12 @@ export function renderPowerPyxCard(guide: PowerPyxGuide | undefined): string {
     .filter(Boolean)
     .join(" · "));
 
-  return `<div class="ach-powerpyx" title="${esc(tooltip)}">
-    <span class="ach-powerpyx-title">${icon("external", 12)} <span>PowerPyx</span></span>
-    ${facts.length > 0 ? `<span class="ach-powerpyx-facts">${facts.map((fact) => esc(fact)).join(" · ")}</span>` : ""}
-    <button type="button" class="btn ghost small" data-act="ach-guide" data-url="${esc(guide.url)}">
-      ${esc(t("ach.powerpyxOpen"))}
-    </button>
-  </div>`;
+  return `<button type="button" class="ach-side-guide-row ach-powerpyx-row" data-act="ach-guide" data-url="${esc(guide.url)}" title="${esc(tooltip)}">
+    <span class="ach-side-guide-icon">${icon("external", 14)}</span>
+    <span class="ach-side-guide-main">
+      <span class="ach-side-guide-title">PowerPyx</span>
+      ${facts.length > 0 ? `<span class="ach-side-guide-meta">${facts.map((fact) => esc(fact)).join(" · ")}</span>` : ""}
+    </span>
+    <span class="ach-side-guide-arrow">${icon("chevron-right", 13)}</span>
+  </button>`;
 }
