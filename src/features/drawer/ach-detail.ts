@@ -56,7 +56,7 @@ function communityRow(
   meta: string,
   snippet: string,
 ): string {
-  const cleanTitle = stripEmoji(title) || title;
+  const cleanTitle = stripEmoji(title) || "—";
   const cleanSnippet = stripEmoji(snippet);
   return `<button type="button" class="ach-community-row" data-act="ach-guide" data-url="${esc(url)}">
     <span class="ach-community-row-main">

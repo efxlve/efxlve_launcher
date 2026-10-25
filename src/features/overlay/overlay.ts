@@ -2380,7 +2380,7 @@ function renderAchCommunity(name: string): string {
     .map(
       (guide) => `<button type="button" class="ov-ach-community-row" data-ov="ach-guide" data-url="${esc(guide.url)}">
         <span class="ov-ach-community-main">
-          <span class="ov-ach-community-title">${esc(stripEmoji(guide.title) || guide.title)}</span>
+          <span class="ov-ach-community-title">${esc(stripEmoji(guide.title) || "—")}</span>
           <span class="ov-ach-community-meta">${esc(stripEmoji(guide.author || ""))}${guide.rating != null ? ` · ${icon("star", 9)} ${guide.rating}/5` : ""}</span>
         </span>
         ${icon("external", 11)}
@@ -2392,7 +2392,7 @@ function renderAchCommunity(name: string): string {
     .map(
       (thread) => `<button type="button" class="ov-ach-community-row" data-ov="ach-guide" data-url="${esc(thread.url)}">
         <span class="ov-ach-community-main">
-          <span class="ov-ach-community-title">${esc(stripEmoji(thread.title) || thread.title)}</span>
+          <span class="ov-ach-community-title">${esc(stripEmoji(thread.title) || "—")}</span>
           <span class="ov-ach-community-meta">${thread.replies > 0 ? esc(t("ach.communityReplies", { n: thread.replies })) : ""}${thread.date ? ` · ${esc(thread.date)}` : ""}</span>
         </span>
         ${icon("external", 11)}
@@ -2512,6 +2512,7 @@ function renderAchList(data: AchievementsData): string {
     const progress = achievementProgress(item);
     return !achMasked(item) && !isAchievementUnlocked(item) && progress >= 0.5 && progress < 1;
   }).length;
+  if (achFilter === "near" && nearCount === 0) achFilter = "all";
 
   let items = achFilter === "hidden"
     ? [...hiddenItems]
