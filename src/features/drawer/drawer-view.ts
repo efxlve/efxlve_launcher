@@ -2091,7 +2091,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const visibleItems = S.activeAchFilter === "hidden"
     ? sorted
     : sorted.filter((a) => !isMaskedHidden(a));
-  const showPlat = tiers.platinum[0] > 0 || isPlat || data.is_platinum || (data.base_achievements ?? 0) > 0;
+  const showPlat = tiers.platinum[0] > 0 || isPlat || Boolean(data.is_platinum);
   const platTotal = tiers.platinum[0] > 0 ? tiers.platinum[0] : showPlat ? 1 : 0;
   const platUnlocked = tiers.platinum[0] > 0 ? tiers.platinum[1] : isPlat ? 1 : 0;
   // A chip filters only when the tier really holds achievements. The synthetic
