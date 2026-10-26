@@ -683,6 +683,13 @@ pub fn page_alive(app: &AppHandle) -> bool {
     view(app).is_some()
 }
 
+/// The frontend uses this to skip the cold-create delay when the child is
+/// already warm (prewarmed or suspended).
+#[tauri::command]
+pub fn discord_view_alive(app: AppHandle) -> bool {
+    page_alive(&app)
+}
+
 fn rect_of(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
     tauri::Rect {
         position: Position::Logical(LogicalPosition::new(x, y)),
@@ -705,10 +712,31 @@ fn park_loading(view: &tauri::Webview, width: f64, height: f64) {
     let _ = view.show();
 }
 
+/// Parks a finished page at the off-screen sliver and asks WebView2 to suspend
+/// it. A page that never painted is left alone: suspending a half-loaded
+/// document only makes its first paint impossible.
+fn suspend_page(app: &AppHandle) -> bool {
+    let Some(view) = view(app) else {
+        return false;
+    };
+    let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+    let _ = view.show();
+    if webview_power::suspend(&view) {
+        SUSPENDED.store(true, Ordering::SeqCst);
+        true
+    } else {
+        let _ = view.hide();
+        false
+    }
+}
+
 /// One readiness report from the child. The child may cover the loading note
 /// only once the root has children *and* the page has visible text; before that
 /// it stays parked.
 fn handle_ready_report(app: &AppHandle, kids: i64, text: i64) {
+    if SUSPENDED.load(Ordering::SeqCst) {
+        return;
+    }
     if READY_LAST.swap(kids, Ordering::SeqCst) != kids
         || READY_TEXT_LAST.swap(text, Ordering::SeqCst) != text
     {
@@ -719,6 +747,21 @@ fn handle_ready_report(app: &AppHandle, kids: i64, text: i64) {
     }
     let first = !PAINTED.swap(true, Ordering::SeqCst);
     if !WANT_VISIBLE.load(Ordering::SeqCst) {
+        // A prewarmed or left-during-boot page has now painted. It can sleep
+        // until the next visit; suspending it here is what makes the 3-minute
+        // prewarm window unnecessary.
+        if !KEEP_OPEN.load(Ordering::SeqCst) && !IN_CALL.load(Ordering::SeqCst) {
+            let suspend_app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if !WANT_VISIBLE.load(Ordering::SeqCst)
+                    && !KEEP_OPEN.load(Ordering::SeqCst)
+                    && !IN_CALL.load(Ordering::SeqCst)
+                    && suspend_page(&suspend_app)
+                {
+                    web_log(&suspend_app, "page painted while parked; suspended");
+                }
+            });
+        }
         return;
     }
     let show_app = app.clone();
@@ -955,11 +998,18 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                     && !KEEP_OPEN.load(Ordering::SeqCst)
                     && (!IN_CALL.load(Ordering::SeqCst) || quiet)
                 {
-                    web_log(
-                        &track_app,
-                        "web voice: the call ended; closing the parked page",
-                    );
-                    destroy_view(&track_app);
+                    PARKED.store(false, Ordering::SeqCst);
+                    if suspend_page(&track_app) {
+                        web_log(
+                            &track_app,
+                            "web voice: the call ended; suspending the parked page",
+                        );
+                    } else {
+                        web_log(
+                            &track_app,
+                            "web voice: the call ended; hiding the parked page",
+                        );
+                    }
                     return;
                 }
             }
@@ -1071,6 +1121,11 @@ fn watch_first_paint(app: &AppHandle, generation: u64) {
             if GENERATION.load(Ordering::SeqCst) != generation {
                 break;
             }
+            // A suspended renderer cannot answer ExecuteScript and must not be
+            // mistaken for a wedged client.
+            if SUSPENDED.load(Ordering::SeqCst) {
+                break;
+            }
             if PAINTED.load(Ordering::SeqCst) {
                 painted = true;
                 break;
@@ -1080,7 +1135,10 @@ fn watch_first_paint(app: &AppHandle, generation: u64) {
         if WATCHING.load(Ordering::SeqCst) == generation {
             WATCHING.store(0, Ordering::SeqCst);
         }
-        if painted || GENERATION.load(Ordering::SeqCst) != generation {
+        if painted
+            || GENERATION.load(Ordering::SeqCst) != generation
+            || SUSPENDED.load(Ordering::SeqCst)
+        {
             return;
         }
         if GENERATION.load(Ordering::SeqCst) == generation && !PAINTED.load(Ordering::SeqCst) {
@@ -1342,14 +1400,15 @@ pub async fn discord_view_prewarm(
                 && !IN_CALL.load(Ordering::SeqCst)
                 && !KEEP_OPEN.load(Ordering::SeqCst)
             {
-                if let Some(view) = view(&idle_app) {
-                    if webview_power::suspend(&view) {
-                        SUSPENDED.store(true, Ordering::SeqCst);
-                        web_log(&idle_app, "prewarmed Discord page idle; suspending it");
-                    } else {
-                        let _ = view.hide();
-                        web_log(&idle_app, "prewarmed Discord page idle; hidden");
+                // A painted prewarm is already suspended by handle_ready_report;
+                // this timer only cleans up a page that never managed to paint.
+                if PAINTED.load(Ordering::SeqCst) {
+                    if !SUSPENDED.load(Ordering::SeqCst) && suspend_page(&idle_app) {
+                        web_log(&idle_app, "prewarmed Discord page idle; suspended");
                     }
+                } else {
+                    web_log(&idle_app, "prewarmed Discord page never painted; closing it");
+                    destroy_view(&idle_app);
                 }
             }
         });
@@ -1458,12 +1517,21 @@ pub async fn discord_view_destroy(
         KEEP_OPEN.store(keep, Ordering::SeqCst);
     }
     WANT_VISIBLE.store(false, Ordering::SeqCst);
-    if !IN_CALL.load(Ordering::SeqCst) {
+    let destroy_now = destroy.unwrap_or(false);
+    let suspended = SUSPENDED.load(Ordering::SeqCst);
+    // A suspended renderer cannot answer ExecuteScript; waiting for the voice
+    // probe would block the task-manager stop for the full 2.5s timeout. The
+    // probe is also pointless before the first paint.
+    if !destroy_now
+        && !suspended
+        && PAINTED.load(Ordering::SeqCst)
+        && !IN_CALL.load(Ordering::SeqCst)
+    {
         if let Some(report) = read_voice_now(&app) {
             handle_voice_report(&app, report);
         }
     }
-    if destroy.unwrap_or(false) {
+    if destroy_now {
         web_log(&app, "page closed on request");
         destroy_view(&app);
         return;
@@ -1482,6 +1550,9 @@ pub async fn discord_view_destroy(
             },
         );
         if let Some(view) = view(&app) {
+            if SUSPENDED.swap(false, Ordering::SeqCst) {
+                let _ = webview_power::resume(&view);
+            }
             // Off-screen, not a hide: the controller must stay visible or the
             // renderer (and with it the call) can be suspended.
             let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
@@ -1489,18 +1560,23 @@ pub async fn discord_view_destroy(
         }
         return;
     }
-    if let Some(view) = view(&app) {
-        // Park it first: a queued suspend must never leave a full-size child
-        // covering the next page if the platform call is delayed.
-        let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
-        let _ = view.show();
-        if webview_power::suspend(&view) {
-            SUSPENDED.store(true, Ordering::SeqCst);
-            web_log(&app, "page suspended after the visit");
-        } else {
-            let _ = view.hide();
-            web_log(&app, "page hidden; suspend bridge unavailable");
+    if suspended {
+        return;
+    }
+    // Never suspend a half-loaded document: it cannot finish its first paint
+    // while asleep. Park it; handle_ready_report suspends it once it paints.
+    if !PAINTED.load(Ordering::SeqCst) {
+        if let Some(view) = view(&app) {
+            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+            let _ = view.show();
         }
+        web_log(&app, "page still loading; parked until its first paint");
+        return;
+    }
+    if suspend_page(&app) {
+        web_log(&app, "page suspended after the visit");
+    } else {
+        web_log(&app, "page hidden; suspend bridge unavailable");
     }
 }
 

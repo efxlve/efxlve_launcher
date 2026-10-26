@@ -1762,6 +1762,7 @@ fn main() {
             discord_host::discord_web_voice_state,
             discord_host::discord_open_conversation,
             discord_host::discord_view_prewarm,
+            discord_host::discord_view_alive,
             taskbar_badge::app_set_taskbar_badge,
             discord_sdk::discord_sdk_start,
             discord_sdk::discord_sdk_state,
