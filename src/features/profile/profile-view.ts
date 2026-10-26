@@ -120,12 +120,10 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
             </div>
             ${g.total_achievements > 0 ? `<div class="profile-ach-bar"><span style="width:${pct}%"></span></div>` : ""}
           </div>
-          ${xpText || (pt && pt.total_seconds > 0) ? `
-            <div class="profile-ach-sub-meta tabular-nums">
-              ${xpText ? `<span class="profile-ach-xp">${esc(xpText)}</span>` : ""}
-              ${pt && pt.total_seconds > 0 ? `<span class="profile-ach-playtime">${fmtPlaytime(pt.total_seconds)}</span>` : ""}
-            </div>
-          ` : ""}
+          <div class="profile-ach-sub-meta tabular-nums">
+            ${xpText ? `<span class="profile-ach-xp">${esc(xpText)}</span>` : ""}
+            ${pt && pt.total_seconds > 0 ? `<span class="profile-ach-playtime">${fmtPlaytime(pt.total_seconds)}</span>` : ""}
+          </div>
         </div>
       </div>`;
   }).join("");

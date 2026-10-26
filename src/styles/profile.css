@@ -750,7 +750,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
   gap: 16px;
-  align-items: start;
 }
 
 /* The footer button and the empty state span the whole grid */
@@ -1194,6 +1193,7 @@
 .profile-ach-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 6px;
   min-width: 0;
 }
@@ -1212,6 +1212,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Games without tracked achievements have no bar; keep the space so every
+     card in a row ends on the same baseline. */
+  min-height: 22px;
+  margin-top: auto;
 }
 
 .profile-ach-meta-row {
@@ -1272,6 +1276,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 14px;
   font-size: 10px;
   color: var(--text-3);
   font-weight: 500;
