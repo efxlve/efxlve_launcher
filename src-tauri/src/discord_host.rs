@@ -1010,7 +1010,9 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                             "web voice: the call ended; hiding the parked page",
                         );
                     }
-                    return;
+                    // Keep the tracker alive: the page is suspended, not
+                    // destroyed, so returning here would leave the next resume
+                    // without a voice poller.
                 }
             }
         });
@@ -1564,11 +1566,17 @@ pub async fn discord_view_destroy(
         return;
     }
     // Never suspend a half-loaded document: it cannot finish its first paint
-    // while asleep. Park it; handle_ready_report suspends it once it paints.
+    // while asleep. Keep its desktop viewport while it parks; a 100x100 sliver
+    // would force Discord to reflow mid-boot. handle_ready_report suspends it
+    // once it paints.
     if !PAINTED.load(Ordering::SeqCst) {
+        let (_, _, width, height) = LAST_RECT
+            .lock()
+            .ok()
+            .and_then(|guard| *guard)
+            .unwrap_or((0.0, 0.0, 1024.0, 640.0));
         if let Some(view) = view(&app) {
-            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
-            let _ = view.show();
+            park_loading(&view, width, height);
         }
         web_log(&app, "page still loading; parked until its first paint");
         return;
