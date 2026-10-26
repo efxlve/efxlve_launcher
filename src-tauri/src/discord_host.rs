@@ -141,12 +141,29 @@ static LAST_RECT: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
 
-/// Read-only readiness check. Two signals are required: Discord's client-side
-/// root has children *and* the page has visible text. The root can mount its
-/// shell several seconds before the login form or channel UI paints, and
-/// showing the child at that point covers the loading note with an empty
-/// rectangle. The report navigation is cancelled, so the page itself never
-/// changes. Small and idempotent on purpose.
+/// Windows readiness probe. It returns the two signals through WebView2's own
+/// `ExecuteScript` completion handler instead of navigating to a fake host: a
+/// navigation while the document is still loading can abort Discord's boot,
+/// which is exactly the blank first page the rebuild used to chase. Two signals
+/// are required: the client root has children *and* the page has visible text
+/// (the shell can mount before the login/channel UI paints).
+#[cfg(windows)]
+const READY_SCRIPT: &str = r#"
+(function () {
+    var mount = document.getElementById('app-mount');
+    var kids = mount ? mount.childElementCount : -1;
+    var text = 0;
+    try {
+        text = document.body ? document.body.innerText.replace(/\s+/g, '').length : 0;
+    } catch (e) {}
+    return { m: kids, t: text };
+})();
+"#;
+
+/// Linux/macOS have no native script bridge here, so the page-load `eval` runs
+/// the probe and reports through the cancelled navigation. The same two signals
+/// decide when the child may cover the loading note.
+#[cfg(not(windows))]
 const READY_SCRIPT: &str = r#"
 (function () {
     var mount = document.getElementById('app-mount');
@@ -681,6 +698,44 @@ fn park_loading(view: &tauri::Webview, width: f64, height: f64) {
     let _ = view.show();
 }
 
+/// One readiness report from the child. The child may cover the loading note
+/// only once the root has children *and* the page has visible text; before that
+/// it stays parked.
+fn handle_ready_report(app: &AppHandle, kids: i64, text: i64) {
+    if READY_LAST.swap(kids, Ordering::SeqCst) != kids
+        || READY_TEXT_LAST.swap(text, Ordering::SeqCst) != text
+    {
+        web_log(app, &format!("page ready report m={kids} t={text}"));
+    }
+    if kids <= 0 || text <= 0 {
+        return;
+    }
+    let first = !PAINTED.swap(true, Ordering::SeqCst);
+    if !WANT_VISIBLE.load(Ordering::SeqCst) {
+        return;
+    }
+    let show_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if first {
+            // Give the first real frame a moment.
+            tokio::time::sleep(Duration::from_millis(260)).await;
+        }
+        if !WANT_VISIBLE.load(Ordering::SeqCst) {
+            return;
+        }
+        let Some(view) = view(&show_app) else {
+            return;
+        };
+        if let Some((x, y, w, h)) = LAST_RECT.lock().ok().and_then(|guard| *guard) {
+            let _ = view.set_bounds(rect_of(x, y, w, h));
+        }
+        let _ = view.show();
+        if first {
+            web_log(&show_app, "page painted; child shown");
+        }
+    });
+}
+
 /// WebView2 denies media permissions unless the host app answers the request,
 /// so the embedded Discord client could not unmute. Microphone and camera are
 /// allowed for this child; nothing else loads in it (external links open in the
@@ -751,8 +806,8 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
         .background_color(tauri::webview::Color(14, 15, 18, 255))
         .on_navigation(move |target| {
             if target.host_str() == Some(PROBE_HOST) {
-                // Readiness report: the web client painted, so the child may
-                // take over from the loading note.
+                // Non-Windows readiness report: the page-load eval runs the
+                // probe and the cancelled navigation carries the result.
                 if target.path() == "/ready" {
                     let kids = target
                         .query_pairs()
@@ -764,50 +819,7 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                         .find(|(key, _)| key == "t")
                         .and_then(|(_, value)| value.parse::<i64>().ok())
                         .unwrap_or(0);
-                    if READY_LAST.swap(kids, Ordering::SeqCst) != kids
-                        || READY_TEXT_LAST.swap(text, Ordering::SeqCst) != text
-                    {
-                        web_log(
-                            &nav_app,
-                            &format!("page ready report m={kids} t={text}"),
-                        );
-                    }
-                    // A shell with no text is not a usable page yet: the
-                    // login form and the channel UI both add text. Showing the
-                    // child here would replace the loading note with an empty
-                    // dark rectangle.
-                    if kids > 0 && text > 0 {
-                        let first = !PAINTED.swap(true, Ordering::SeqCst);
-                        if WANT_VISIBLE.load(Ordering::SeqCst) {
-                            // Refresh the frame on every report: after a
-                            // navigation the child keeps its old (black) frame,
-                            // and the page can report once more before it is
-                            // torn down, so a transition-only refresh would miss
-                            // the new document. Logging stays on the transition.
-                            let show_app = nav_app.clone();
-                            tauri::async_runtime::spawn(async move {
-                                if first {
-                                    // Give the first real frame a moment.
-                                    tokio::time::sleep(Duration::from_millis(260)).await;
-                                }
-                                if !WANT_VISIBLE.load(Ordering::SeqCst) {
-                                    return;
-                                }
-                                let Some(view) = view(&show_app) else {
-                                    return;
-                                };
-                                if let Some((x, y, w, h)) =
-                                    LAST_RECT.lock().ok().and_then(|guard| *guard)
-                                {
-                                    let _ = view.set_bounds(rect_of(x, y, w, h));
-                                }
-                                let _ = view.show();
-                                if first {
-                                    web_log(&show_app, "page painted; child shown");
-                                }
-                            });
-                        }
-                    }
+                    handle_ready_report(&nav_app, kids, text);
                     return false;
                 }
                 // Dev probe report: logged, then cancelled so the child stays
@@ -846,9 +858,12 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                 return;
             }
             // The finished load only means the document arrived; the readiness
-            // probe (sent through WebView2's own script bridge) decides when
-            // the child may show. `webview.eval` does not reach a child
-            // webview, so there is nothing useful to evaluate here.
+            // probe decides when the child may show. Windows uses WebView2's
+            // native script bridge (the watchdog), because `webview.eval` does
+            // not reach a child there. The other platforms do reach the child
+            // and report once through the cancelled navigation.
+            #[cfg(not(windows))]
+            let _ = _webview.eval(READY_SCRIPT);
         })
         .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Deny);
     // Dev-only hooks: boot errors and failed resource loads report back so a
@@ -950,8 +965,8 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
 }
 
 /// Asks the child to report whether the web client has painted, through its own
-/// CoreWebView2. Tauri's `eval` wrapper never reached a child webview, which is
-/// why the watchdog used to time out and rebuild pages that were already fine.
+/// CoreWebView2. The result comes back through the completion handler; there is
+/// no navigation, which used to interrupt Discord's boot on the first visit.
 #[cfg(windows)]
 fn run_ready_script(app: &AppHandle) {
     use webview2_com::ExecuteScriptCompletedHandler;
@@ -959,15 +974,44 @@ fn run_ready_script(app: &AppHandle) {
     let Some(view) = view(app) else {
         return;
     };
+    let report_app = app.clone();
+    let handler_app = report_app.clone();
     let _ = view.with_webview(move |platform| {
         let controller = platform.controller();
         let core = match unsafe { controller.CoreWebView2() } {
             Ok(core) => core,
-            Err(_) => return,
+            Err(error) => {
+                web_log(&report_app, &format!("ready probe: no core ({error})"));
+                return;
+            }
         };
-        // The script's own probe navigation is the report; the answer is empty.
         let handler = ExecuteScriptCompletedHandler::create(Box::new(
-            move |_result: windows::core::Result<()>, _text: String| Ok(()),
+            move |result: windows::core::Result<()>, text: String| {
+                if let Err(error) = result {
+                    web_log(&handler_app, &format!("ready probe failed: {error}"));
+                    return Ok(());
+                }
+                let value = serde_json::from_str::<serde_json::Value>(&text)
+                    .ok()
+                    .and_then(|parsed| match parsed {
+                        serde_json::Value::String(inner) => {
+                            serde_json::from_str::<serde_json::Value>(&inner).ok()
+                        }
+                        other => Some(other),
+                    });
+                if let Some(value) = value {
+                    let kids = value
+                        .get("m")
+                        .and_then(serde_json::Value::as_i64)
+                        .unwrap_or(-1);
+                    let visible_text = value
+                        .get("t")
+                        .and_then(serde_json::Value::as_i64)
+                        .unwrap_or(0);
+                    handle_ready_report(&handler_app, kids, visible_text);
+                }
+                Ok(())
+            },
         ));
         let script: Vec<u16> = READY_SCRIPT
             .encode_utf16()
