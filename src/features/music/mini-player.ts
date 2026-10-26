@@ -126,8 +126,16 @@ export function initMiniPlayer(): void {
     window.addEventListener("pointerup", up);
   });
 
-  window.setInterval(() => void refresh(), 10000);
+  window.setInterval(() => {
+    if (document.hidden) return;
+    void refresh();
+  }, 10000);
   void refresh();
+  // Catch up at once when the launcher comes back instead of waiting for the
+  // next slow tick.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void refresh();
+  });
 }
 
 /* The fast loop only runs while something is playing.
@@ -145,6 +153,7 @@ function setPolling(playing: boolean): void {
     window.clearInterval(idleTimer);
     idleTimer = 0;
     fastTimer = window.setInterval(() => {
+      if (document.hidden) return;
       void quickRefresh();
       paintProgress();
     }, 1000);
@@ -155,7 +164,9 @@ function setPolling(playing: boolean): void {
     fastTimer = 0;
   }
   if (!playing && signedIn && !idleTimer) {
-    idleTimer = window.setInterval(() => void quickRefresh(), 3000);
+    idleTimer = window.setInterval(() => {
+      if (!document.hidden) void quickRefresh();
+    }, 3000);
   }
   if (!signedIn && idleTimer) {
     window.clearInterval(idleTimer);

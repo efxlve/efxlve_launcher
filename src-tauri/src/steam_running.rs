@@ -12,45 +12,119 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 
-/// One `reg query` per tick; three seconds keeps the badge responsive without
-/// spawning the helper too often.
+/// The registry read is a few microseconds; three seconds keeps the badge
+/// responsive without waking the app for long.
 const POLL: Duration = Duration::from_secs(3);
 
-const APPS_KEY: &str = r"HKCU\Software\Valve\Steam\Apps";
-const KEY_PREFIX: &str = r"HKEY_CURRENT_USER\Software\Valve\Steam\Apps\";
+#[cfg(windows)]
+const APPS_SUBKEY: &str = r"Software\Valve\Steam\Apps";
 
 static STARTED: AtomicBool = AtomicBool::new(false);
 
-/// App ids whose `Running` value is `0x1`, from one recursive query.
+/// App ids whose `Running` value is `0x1`.
+///
+/// One direct registry walk instead of spawning `reg query` every poll: the
+/// helper process was visible as a recurring CPU/process spike in the task
+/// manager while the launcher sat in the background.
+#[cfg(windows)]
 fn running_app_ids() -> HashSet<String> {
-    crate::winreg::query_all(APPS_KEY, "Running")
-        .map(|text| parse_running_output(&text))
-        .unwrap_or_default()
-}
+    use windows::core::{PCWSTR, PWSTR};
+    use windows::Win32::Foundation::{ERROR_NO_MORE_ITEMS, ERROR_SUCCESS};
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegEnumKeyExW, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER,
+        KEY_QUERY_VALUE, KEY_READ, REG_VALUE_TYPE,
+    };
 
-/// Parses the `reg query <key> /s /v Running` output: a key line is followed by
-/// its `Running    REG_DWORD    0x1` value line.
-fn parse_running_output(text: &str) -> HashSet<String> {
+    fn wide(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
     let mut out = HashSet::new();
-    let mut current: Option<String> = None;
-    for line in text.lines() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix(KEY_PREFIX) {
-            current = rest.rsplit('\\').next().map(str::to_string);
-        } else if trimmed.starts_with("Running") {
-            let running = trimmed.split_whitespace().nth(2) == Some("0x1");
-            if running {
-                if let Some(id) = current.take() {
-                    if !id.is_empty() && id.chars().all(|c| c.is_ascii_digit()) {
-                        out.insert(id);
-                    }
-                }
-            } else {
-                current = None;
+    let apps = wide(APPS_SUBKEY);
+    unsafe {
+        let mut apps_key = HKEY::default();
+        if RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR(apps.as_ptr()),
+            None,
+            KEY_READ,
+            &mut apps_key,
+        ) != ERROR_SUCCESS
+        {
+            return out;
+        }
+
+        let mut index = 0u32;
+        loop {
+            let mut name = [0u16; 64];
+            let mut name_len = name.len() as u32;
+            let status = RegEnumKeyExW(
+                apps_key,
+                index,
+                Some(PWSTR(name.as_mut_ptr())),
+                &mut name_len,
+                None,
+                None,
+                None,
+                None,
+            );
+            if status == ERROR_NO_MORE_ITEMS {
+                break;
+            }
+            if status != ERROR_SUCCESS {
+                break;
+            }
+            index += 1;
+            let app_id = String::from_utf16_lossy(&name[..name_len as usize]);
+            if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+                continue;
+            }
+
+            let subkey = wide(&app_id);
+            let mut app_key = HKEY::default();
+            if RegOpenKeyExW(
+                apps_key,
+                PCWSTR(subkey.as_ptr()),
+                None,
+                KEY_QUERY_VALUE,
+                &mut app_key,
+            ) != ERROR_SUCCESS
+            {
+                continue;
+            }
+            let value_name = wide("Running");
+            let mut kind = REG_VALUE_TYPE::default();
+            let mut value = 0u32;
+            let mut size = std::mem::size_of::<u32>() as u32;
+            let status = RegQueryValueExW(
+                app_key,
+                PCWSTR(value_name.as_ptr()),
+                None,
+                Some(&mut kind),
+                Some(&mut value as *mut u32 as *mut u8),
+                Some(&mut size),
+            );
+            let _ = RegCloseKey(app_key);
+            if status == ERROR_SUCCESS && is_running_value(kind.0, value) {
+                out.insert(app_id);
             }
         }
+        let _ = RegCloseKey(apps_key);
     }
     out
+}
+
+#[cfg(not(windows))]
+fn running_app_ids() -> HashSet<String> {
+    HashSet::new()
+}
+
+/// `REG_DWORD` from the Windows registry API.
+const REG_DWORD_KIND: u32 = 4;
+
+/// Steam writes `Running` as a DWORD; only `1` means the app is open.
+fn is_running_value(kind: u32, value: u32) -> bool {
+    kind == REG_DWORD_KIND && value == 1
 }
 
 fn emit_status(app: &AppHandle, app_id: &str, running: bool) {
@@ -99,21 +173,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn running_values_map_to_app_ids() {
-        let output = "\r\nHKEY_CURRENT_USER\\Software\\Valve\\Steam\\Apps\\220\r\n    Running    REG_DWORD    0x0\r\n\r\nHKEY_CURRENT_USER\\Software\\Valve\\Steam\\Apps\\730\r\n    Running    REG_DWORD    0x1\r\n\r\nHKEY_CURRENT_USER\\Software\\Valve\\Steam\\Apps\\271590\r\n    Running    REG_DWORD    0x1\r\n";
-        let ids = parse_running_output(output);
-        assert_eq!(ids.len(), 2);
-        assert!(ids.contains("730"));
-        assert!(ids.contains("271590"));
-        assert!(!ids.contains("220"));
-    }
-
-    #[test]
-    fn junk_and_empty_output_yield_nothing() {
-        assert!(parse_running_output("").is_empty());
-        assert!(parse_running_output("no registry output here").is_empty());
-        let non_numeric =
-            "\r\nHKEY_CURRENT_USER\\Software\\Valve\\Steam\\Apps\\SomeName\r\n    Running    REG_DWORD    0x1\r\n";
-        assert!(parse_running_output(non_numeric).is_empty());
+    fn only_a_running_dword_is_active() {
+        assert!(is_running_value(4, 1));
+        assert!(!is_running_value(4, 0));
+        assert!(!is_running_value(1, 1));
     }
 }

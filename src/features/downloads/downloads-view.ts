@@ -150,6 +150,9 @@ export function stopSpeedChartTimer(): void {
 export function startSpeedChartTimer(): void {
   if (S.speedChartTimer !== null) return;
   S.speedChartTimer = window.setInterval(() => {
+    // A minimized launcher does not draw the chart: skipping the sample keeps
+    // the renderer out of the per-second paint/canvas loop while hidden.
+    if (document.hidden) return;
     const active = !!S.activeDlMetrics && !S.activeDlMetrics.done && !S.dlQueueStatus.isPaused;
     const onDownloads = S.view === "downloads";
     // Steam's card rides the same clock: the pulse keeps S.steamSpeedBytes
@@ -172,6 +175,18 @@ export function startSpeedChartTimer(): void {
     if (onDownloads) drawSpeedCanvas();
   }, 1000);
 }
+
+// Hiding the window stops the sampler completely instead of waking it every
+// second to do nothing; a visible window restarts the chart where it left off.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopSpeedChartTimer();
+    return;
+  }
+  if (S.view === "downloads" || (S.activeDlMetrics && !S.activeDlMetrics.done)) {
+    startSpeedChartTimer();
+  }
+});
 
 function thumbOf(s: EpicSummary | undefined): string {
   if (!s) return `<span class="row-thumb dl-thumb-ph">${icon("gamepad-2", 16)}</span>`;

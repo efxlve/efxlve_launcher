@@ -1503,12 +1503,11 @@ fn main() {
                 recovery,
             });
             // A window whose webview cannot start used to die silently and take
-            // the whole interface with it; create both here instead.
+            // the whole interface with it; create the main one here. The overlay
+            // panel is built lazily: a hidden WebView2 renderer is a whole
+            // process tree parked in the background just to wait for Shift+Tab.
             if let Err(error) = create_main_window(app) {
                 report_boot_failure(app.handle(), &error);
-            }
-            if let Err(error) = create_config_window(app, "overlay") {
-                perf::write_line_global(&format!("boot: overlay window failed: {error}"));
             }
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
@@ -1934,6 +1933,7 @@ fn main() {
             overlay::overlay_hide,
             overlay::overlay_show,
             overlay::overlay_show_launcher,
+            overlay::overlay_page_ready,
             overlay::overlay_raise,
             overlay::browser::overlay_browser_open,
             overlay::browser::overlay_browser_is_open,

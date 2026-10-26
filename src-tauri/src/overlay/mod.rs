@@ -14,10 +14,20 @@ pub mod hud;
 pub mod metrics;
 
 use serde::Serialize;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 
 pub const OVERLAY_LABEL: &str = "overlay";
+
+/// Invalidates a pending idle release of the panel. Any show/teardown bumps it;
+/// a timer only destroys the window when its captured value is still current.
+static PANEL_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// How long a closed panel may keep its WebView2 renderer alive. The first open
+/// after this rebuilds the page (the ready handshake restores the context), so
+/// the memory comes back only while the overlay is actually in use.
+const PANEL_IDLE_RELEASE: std::time::Duration = std::time::Duration::from_secs(120);
 
 /// Elevated one-liner that grants the current user the FPS trace permission.
 #[cfg(windows)]
@@ -193,15 +203,14 @@ pub fn overlay_set_hotkey_capture(capturing: bool) {
 /// Turns the whole overlay service on or off. Off is a real stop: the panel
 /// window is destroyed (its WebView2 renderers exit with it), the mini HUD is
 /// hidden and the metrics worker is told to leave, so nothing of the overlay
-/// keeps running behind a multiplayer game.
+/// keeps running behind a multiplayer game. On is only a state change: the
+/// panel is built when the user opens it, never at boot.
 #[tauri::command]
 pub fn overlay_set_enabled(app: AppHandle, enabled: bool) {
     if let Ok(mut s) = STATE.lock() {
         s.enabled = enabled;
     }
-    if enabled {
-        resume(&app);
-    } else {
+    if !enabled {
         teardown(&app);
     }
 }
@@ -365,7 +374,8 @@ pub fn overlay_raise(app: AppHandle) {
 ///
 /// `disabled` is the per-game opt-out: a multiplayer title where the user does
 /// not want any overlay surface running. It stops the service for as long as
-/// that game is the active one.
+/// that game is the active one. The panel itself is built only when it is
+/// opened, so a game that never uses the overlay costs no extra renderer.
 #[tauri::command]
 pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, disabled: bool) {
     let stopped = if let Ok(mut s) = STATE.lock() {
@@ -378,42 +388,18 @@ pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, 
     };
     if stopped {
         teardown(&app);
-    } else {
-        resume(&app);
     }
 }
 
 /// Clears the active game context when a title stops.
 #[tauri::command]
-pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
-    let cleared = if let Ok(mut s) = STATE.lock() {
+pub fn overlay_clear_active_game(app_name: String) {
+    if let Ok(mut s) = STATE.lock() {
         if s.game_app == app_name || s.game_disabled {
             s.game_app.clear();
             s.game_title.clear();
             s.game_disabled = false;
-            true
-        } else {
-            false
         }
-    } else {
-        false
-    };
-    if cleared {
-        resume(&app);
-    }
-}
-
-/// Recreates the overlay window and lets the hotkey listener work again.
-pub(crate) fn resume(app: &AppHandle) {
-    let allowed = STATE
-        .lock()
-        .map(|s| s.enabled && !s.game_disabled)
-        .unwrap_or(true);
-    if !allowed {
-        return;
-    }
-    if let Err(error) = ensure_window(app) {
-        crate::perf::write_line_global(&format!("overlay: window failed: {error}"));
     }
 }
 
@@ -425,6 +411,7 @@ pub(crate) fn resume(app: &AppHandle) {
 /// loop to answer, and a command handler that already owns the loop would
 /// deadlock the whole app there.
 pub(crate) fn teardown(app: &AppHandle) {
+    PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
     hide(app);
     browser::close_window(app);
     hud::hide();
@@ -437,10 +424,12 @@ pub(crate) fn teardown(app: &AppHandle) {
     });
 }
 
-/// Creates the overlay window from the manifest when it is missing.
-pub(crate) fn ensure_window(app: &AppHandle) -> Result<(), String> {
+/// Creates the overlay window from the manifest when it is missing. Returns
+/// true when this call built it, so the caller knows the page still has to
+/// finish loading.
+pub(crate) fn ensure_window(app: &AppHandle) -> Result<bool, String> {
     if app.get_webview_window(OVERLAY_LABEL).is_some() {
-        return Ok(());
+        return Ok(false);
     }
     let config = app
         .config()
@@ -453,7 +442,7 @@ pub(crate) fn ensure_window(app: &AppHandle) -> Result<(), String> {
     tauri::WebviewWindowBuilder::from_config(app, &config)
         .map_err(|error| error.to_string())?
         .build()
-        .map(|_| ())
+        .map(|_| true)
         .map_err(|error| error.to_string())
 }
 
@@ -507,24 +496,11 @@ pub(crate) fn show(app: &AppHandle) {
     if !allowed {
         return;
     }
-    // The window is created on demand: it does not exist while the overlay is
-    // switched off.
-    if ensure_window(app).is_err() {
-        return;
-    }
-    let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
-        return;
-    };
-    let hwnd = STATE.lock().map(|s| s.game_hwnd).unwrap_or(0);
-    place_over_game(&win, hwnd);
-    let _ = win.unminimize();
-    let _ = win.show();
-    let _ = win.set_always_on_top(true);
-    let _ = win.set_focus();
-    #[cfg(windows)]
-    if let Ok(raw_hwnd) = win.hwnd() {
-        hud::focus_window(raw_hwnd.0 as isize);
-    }
+    // A show cancels any pending idle release and makes the current one stale.
+    PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
+    // Mark the panel visible before building it: a freshly created page can
+    // call `overlay_page_ready` as soon as its listeners are up, and that
+    // replay must see an open request.
     let payload = match STATE.lock() {
         Ok(mut s) => {
             s.visible = true;
@@ -538,9 +514,55 @@ pub(crate) fn show(app: &AppHandle) {
             title: String::new(),
         },
     };
-    let _ = app.emit("overlay-open", payload.clone());
-    let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
+    // The window is created on demand: it does not exist while the overlay is
+    // switched off.
+    let created = match ensure_window(app) {
+        Ok(created) => created,
+        Err(_) => {
+            if let Ok(mut s) = STATE.lock() {
+                s.visible = false;
+            }
+            return;
+        }
+    };
+    let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
+        return;
+    };
+    let hwnd = STATE.lock().map(|s| s.game_hwnd).unwrap_or(0);
+    place_over_game(&win, hwnd);
+    let _ = win.unminimize();
+    let _ = win.show();
+    let _ = win.set_always_on_top(true);
+    let _ = win.set_focus();
+    #[cfg(windows)]
+    if let Ok(raw_hwnd) = win.hwnd() {
+        hud::focus_window(raw_hwnd.0 as isize);
+    }
+    // A freshly created page has no listener yet; its ready signal replays this
+    // payload once. An already warm panel gets it now.
+    if !created {
+        let _ = app.emit("overlay-open", payload.clone());
+        let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
+    }
     metrics::ensure_running(app.clone());
+}
+
+/// The panel page finished loading and its listeners are up.
+///
+/// A panel created by `show` becomes visible before its page has painted, so
+/// the `overlay-open` emitted at creation can arrive before the listener exists.
+/// Replaying it here means the first Shift+Tab on a freshly built panel still
+/// gets the game context.
+#[tauri::command]
+pub fn overlay_page_ready(app: AppHandle) {
+    let payload = match STATE.lock() {
+        Ok(s) if s.visible => OverlayOpenPayload {
+            app_name: s.game_app.clone(),
+            title: s.game_title.clone(),
+        },
+        _ => return,
+    };
+    let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
 }
 
 /// Hides the panel and returns focus to the game window it opened over.
@@ -566,6 +588,26 @@ pub(crate) fn hide(app: &AppHandle) {
     let _ = app.emit("overlay-close", ());
     let _ = app.emit_to(OVERLAY_LABEL, "overlay-close", ());
     let _ = app.emit_to(browser::WINDOW_LABEL, "overlay-close", ());
+
+    // A closed panel does not need to keep a WebView2 renderer parked in the
+    // background. The page is rebuilt on the next open and the ready handshake
+    // replays the game context, so this is invisible apart from the first
+    // ~200 ms of that open.
+    let generation = PANEL_GENERATION.fetch_add(1, Ordering::Relaxed) + 1;
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(PANEL_IDLE_RELEASE);
+        if PANEL_GENERATION.load(Ordering::Relaxed) != generation {
+            return;
+        }
+        if STATE.lock().map(|s| s.visible).unwrap_or(false) {
+            return;
+        }
+        browser::close_window(&handle);
+        if let Some(win) = handle.get_webview_window(OVERLAY_LABEL) {
+            let _ = win.destroy();
+        }
+    });
 }
 
 /// Fills the monitor that hosts the game window; keeps the current monitor when

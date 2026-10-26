@@ -45,6 +45,11 @@ the window is hidden.
 | Picture memory cache | 32-entry LRU instead of an unbounded `Map` | Long sessions cannot retain every decoded `data:` URL |
 | Library prefetch | 24 covers normally, 8 in reduced-effects mode | Fewer network/decode jobs on slow disks and integrated GPUs |
 | Steam running poll | Skips ticks while `document.visibilityState !== "visible"` | The hidden launcher stops repainting badges every 15 s; the next visible tick catches up |
+| Steam running watcher | Reads `HKCU\Software\Valve\Steam\Apps` directly instead of spawning `reg query` every 3 s | No recurring helper process and no registry-output parsing in the background |
+| Game process watch | Matches executable names from one name-only snapshot before reading every process image path; the full path walk remains for a name hit and the kill/hotkey paths | An idle machine no longer opens hundreds of process handles every 4 s |
+| Overlay panel | Built on the first Shift+Tab/header open and destroyed two minutes after it closes; the page replays the open payload when it becomes ready | No hidden WebView2 renderer, process tree or overlay app is kept alive from boot for an overlay nobody opened |
+| Download chart | Stops sampling and drawing while the window is hidden | A minimized launcher does not run a per-second canvas/DOM pass for a Steam or Epic transfer |
+| Mini player | Polls and paints only while the launcher is visible | Spotify state checks and sidebar repaints no longer run behind a hidden window |
 | Effects | Global reduced-effects class: no animation, no transition, no backdrop blur; focus ring preserved; spinner exempt | Removes continuous compositing on weak GPUs without moving or hiding controls |
 | Image cache clear | Also clears the in-memory map and request set | The Settings button actually releases RAM, not only disk |
 
@@ -52,8 +57,9 @@ the window is hidden.
 
 - **Inactive WebView2 memory target.** Wry exposes the controller on Windows;
   setting `MemoryUsageTargetLevel = Low` and calling `TrySuspendAsync()` when the
-  launcher is hidden would cut renderer memory. It needs a matching `Resume()`
-  path and testing across WebView2 versions.
+  launcher is hidden would cut the main library renderer's memory. It needs a
+  matching `Resume()` path and testing across WebView2 versions. The overlay
+  panel no longer needs it: the idle release destroys that webview entirely.
 - **Store webview recycling.** Embedded stores keep child webviews alive for fast
   switching. Closing idle ones after a timeout would reduce process memory, but
   reopening must stay instant enough to keep the current UX.

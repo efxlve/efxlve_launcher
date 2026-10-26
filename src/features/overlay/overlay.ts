@@ -6654,6 +6654,11 @@ async function boot(): Promise<void> {
   } catch {
     // Initial boot sync
   }
+
+  // The panel can be created by the first Shift+Tab instead of at launcher
+  // boot. If it was already shown while this page was loading, replay the open
+  // payload now that the listener above exists.
+  void invoke("overlay_page_ready").catch(() => undefined);
 }
 
 void boot();

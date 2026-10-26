@@ -338,6 +338,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_flash_hint` | `overlayFlashHint({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_get_state` | `overlayGetState({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_hide` | `overlayHide({ ... })` | `src-tauri/src/overlay/mod.rs` |
+| `overlay_page_ready` | `overlayPageReady({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_raise` | `overlayRaise({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_active_game` | `overlaySetActiveGame({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_enabled` | `overlaySetEnabled({ ... })` | `src-tauri/src/overlay/mod.rs` |

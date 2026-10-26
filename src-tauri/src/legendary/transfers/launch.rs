@@ -347,6 +347,62 @@ mod win_process {
         !game_process_pids(install_path, candidate_exes).is_empty()
     }
 
+    /// Exe names only. This is the cheap first pass: it walks the same toolhelp
+    /// snapshot but never opens a process, so an idle launcher pays a few
+    /// milliseconds instead of reading every image path.
+    fn process_names() -> std::sync::Arc<Vec<String>> {
+        use std::sync::{Arc, Mutex, OnceLock};
+        use std::time::{Duration, Instant};
+
+        static CACHE: OnceLock<Mutex<Option<(Instant, Arc<Vec<String>>)>>> = OnceLock::new();
+        const TTL: Duration = Duration::from_secs(1);
+
+        let cache = CACHE.get_or_init(|| Mutex::new(None));
+        if let Ok(guard) = cache.lock() {
+            if let Some((at, list)) = guard.as_ref() {
+                if at.elapsed() < TTL {
+                    return list.clone();
+                }
+            }
+        }
+        let list = Arc::new(walk_process_names());
+        if let Ok(mut guard) = cache.lock() {
+            *guard = Some((Instant::now(), list.clone()));
+        }
+        list
+    }
+
+    fn walk_process_names() -> Vec<String> {
+        let mut rows = Vec::new();
+        unsafe {
+            let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if snapshot == INVALID_HANDLE_VALUE {
+                return rows;
+            }
+            let mut entry = std::mem::zeroed::<PROCESSENTRY32W>();
+            entry.dw_size = std::mem::size_of::<PROCESSENTRY32W>() as DWORD;
+            if Process32FirstW(snapshot, &mut entry) == 0 {
+                CloseHandle(snapshot);
+                return rows;
+            }
+            loop {
+                let len = entry
+                    .sz_exe_file
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.sz_exe_file.len());
+                rows.push(
+                    String::from_utf16_lossy(&entry.sz_exe_file[..len]).to_lowercase(),
+                );
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    break;
+                }
+            }
+            CloseHandle(snapshot);
+        }
+        rows
+    }
+
     /// One snapshot of the process list, cached for a second.
     ///
     /// Every session watcher (Epic 1.5 s, GOG 1 s, companion 5 s) and the
@@ -436,6 +492,18 @@ mod win_process {
     pub fn game_process_pids(install_path: Option<&Path>, candidate_exes: &[String]) -> Vec<u32> {
         if candidate_exes.is_empty() && install_path.is_none() {
             return Vec::new();
+        }
+
+        // Idle machines should not pay for a path read of every process. The
+        // exec names are known, so when none of them exists there is nothing
+        // to match and the expensive snapshot is skipped.
+        let wanted: std::collections::HashSet<&str> =
+            candidate_exes.iter().map(String::as_str).collect();
+        if !wanted.is_empty() {
+            let names = process_names();
+            if !names.iter().any(|name| wanted.contains(name.as_str())) {
+                return Vec::new();
+            }
         }
 
         let norm_install_path = install_path.map(|p| {
