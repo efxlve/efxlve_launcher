@@ -7,7 +7,10 @@
 
 #[cfg(windows)]
 mod imp {
-    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2_3;
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        ICoreWebView2_19, ICoreWebView2_3, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
+        COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
+    };
     use webview2_com::TrySuspendCompletedHandler;
     use windows::core::Interface;
 
@@ -28,19 +31,26 @@ mod imp {
                     return;
                 }
             };
-            let Ok(core) = core.cast::<ICoreWebView2_3>() else {
+            let Ok(core3) = core.cast::<ICoreWebView2_3>() else {
                 eprintln!("[webview-power] suspend interface unavailable");
                 return;
             };
+            if let Ok(core19) = core.cast::<ICoreWebView2_19>() {
+                let _ = unsafe {
+                    core19.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW)
+                };
+            }
             let handler = TrySuspendCompletedHandler::create(Box::new(
-                move |result: windows::core::Result<()>, _succeeded: bool| {
+                move |result: windows::core::Result<()>, succeeded: bool| {
                     if let Err(error) = result {
                         eprintln!("[webview-power] TrySuspend failed: {error}");
+                    } else if !succeeded {
+                        eprintln!("[webview-power] TrySuspend did not complete");
                     }
                     Ok(())
                 },
             ));
-            if let Err(error) = unsafe { core.TrySuspend(&handler) } {
+            if let Err(error) = unsafe { core3.TrySuspend(&handler) } {
                 eprintln!("[webview-power] TrySuspend call failed: {error}");
             }
         });
@@ -61,12 +71,17 @@ mod imp {
                     return;
                 }
             };
-            let Ok(core) = core.cast::<ICoreWebView2_3>() else {
+            let Ok(core3) = core.cast::<ICoreWebView2_3>() else {
                 eprintln!("[webview-power] resume interface unavailable");
                 return;
             };
-            if let Err(error) = unsafe { core.Resume() } {
+            if let Err(error) = unsafe { core3.Resume() } {
                 eprintln!("[webview-power] Resume failed: {error}");
+            }
+            if let Ok(core19) = core.cast::<ICoreWebView2_19>() {
+                let _ = unsafe {
+                    core19.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL)
+                };
             }
             if let Err(error) = unsafe { controller.SetIsVisible(true) } {
                 eprintln!("[webview-power] SetIsVisible(true) failed: {error}");
