@@ -89,12 +89,14 @@ export function hydrateDiscordPage(): void {
   clearDiscordUnread();
   ensureListeners();
   paintHeaderActions();
-  observeSlot();
-  syncDiscordPage();
-  // The page-enter animation slides the view for a moment; re-apply the
-  // rectangle afterwards so the webview sits flush under the header.
+  // The page-enter animation slides the view for a moment. Creating the native
+  // child while that animation runs can leave the first renderer stuck on a
+  // blank document, so wait for the layout to settle before measuring the slot
+  // and creating it. The loading note is on screen during the wait.
   window.setTimeout(() => {
-    if (viewVisible) syncDiscordPage();
+    if (!onDiscordView()) return;
+    observeSlot();
+    syncDiscordPage();
   }, 450);
 }
 

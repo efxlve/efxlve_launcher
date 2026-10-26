@@ -1,6 +1,7 @@
 //! Embedded Discord web client (child WebView2) for the launcher's Discord page.
 //!
-//! The page loads the normal `discord.com/app` interface: friends, direct
+//! The page loads the normal Discord web client (`/login` on a cold profile,
+//! which redirects to the app when the session is valid): friends, direct
 //! messages and servers are the real Discord UI, no custom social layer. The
 //! child webview is positioned by the frontend (slot rectangle), stays parked
 //! outside the client area until the web client has actually painted (the page's
@@ -32,13 +33,24 @@ use tauri::{
 use tauri_plugin_opener::OpenerExt;
 
 const LABEL: &str = "discord-view";
-const HOME_URL: &str = "https://discord.com/app";
+/// `/app` first loads an app shell that can sit on a blank document for half a
+/// minute on a cold or wedged WebView2 profile. `/login` is the client's own
+/// entry point: it paints the login form quickly and redirects to the app when
+/// the stored session is valid.
+const HOME_URL: &str = "https://discord.com/login";
 
 /// How long a fresh child may stay parked while it boots. The finished load is
 /// not enough: on a slow network the document arrives long before Discord's
-/// client paints. One automatic rebuild follows; after the second timeout the
-/// child stays parked and the loading note stays in place.
-const FIRST_PAINT_TIMEOUT: Duration = Duration::from_secs(45);
+/// client paints. The first child of a session can also spend this long on
+/// Discord's login/QR-auth retry before the form mounts; the prewarm absorbs
+/// that wait in the background. One automatic rebuild follows, then the loading
+/// note (and the reload action) stays.
+const FIRST_PAINT_TIMEOUT: Duration = Duration::from_secs(35);
+
+/// How long a prewarmed page is kept while the person never opens it. A parked
+/// Discord client costs real CPU; after this window it is closed, so a machine
+/// that never uses the page is not paying for it forever.
+const PREWARM_IDLE: Duration = Duration::from_secs(180);
 
 /// True once the web client reported that it painted; only then may the child
 /// take over from the loading note.
@@ -1089,10 +1101,17 @@ pub async fn discord_view_show(
             if !was_wanted {
                 AUTO_REBUILT.store(false, Ordering::SeqCst);
             }
-            if wedged && !AUTO_REBUILT.swap(true, Ordering::SeqCst) {
-                web_log(&app, "page is wedged on show; rebuilding the client");
-                destroy_view(&app);
-                let _ = create_view(&app, width, height).await;
+            if wedged {
+                if !AUTO_REBUILT.swap(true, Ordering::SeqCst) {
+                    web_log(&app, "page is wedged on show; rebuilding the client");
+                    destroy_view(&app);
+                    let _ = create_view(&app, width, height).await;
+                } else {
+                    // The prewarm already used its rebuild while the person was
+                    // elsewhere; surface the stalled note now that the page is
+                    // on screen instead of leaving a spinner with no action.
+                    let _ = app.emit("discord-view-stalled", ());
+                }
             }
         }
         return Ok(());
@@ -1223,13 +1242,18 @@ pub fn discord_view_reload(app: AppHandle) {
     }
 }
 
-/// Loads the Discord page in the background (parked, hidden) so the client is
-/// already connected when the person opens it — and so messages and calls
-/// arrive while they play. The launcher calls this at startup when the
-/// "keep Discord open" setting is on.
+/// Loads the Discord page in the background (parked) so the client is already
+/// connected when the person opens it — and so messages and calls arrive while
+/// they play. The launcher prewarms at startup when the Discord page is shown;
+/// `keep_open` mirrors the setting that also keeps it parked after the first
+/// visit. A page that is never opened is closed after `PREWARM_IDLE`.
 #[tauri::command]
-pub async fn discord_view_prewarm(app: AppHandle) -> Result<(), String> {
-    KEEP_OPEN.store(true, Ordering::SeqCst);
+pub async fn discord_view_prewarm(
+    app: AppHandle,
+    keep_open: Option<bool>,
+) -> Result<(), String> {
+    let keep_open = keep_open.unwrap_or(true);
+    KEEP_OPEN.store(keep_open, Ordering::SeqCst);
     if view(&app).is_some() || CREATING.load(Ordering::SeqCst) {
         return Ok(());
     }
@@ -1239,7 +1263,21 @@ pub async fn discord_view_prewarm(app: AppHandle) -> Result<(), String> {
         *guard = Some((x, y, width, height));
     }
     AUTO_REBUILT.store(false, Ordering::SeqCst);
-    create_view(&app, width, height).await
+    let result = create_view(&app, width, height).await;
+    if result.is_ok() && !keep_open {
+        let idle_app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(PREWARM_IDLE).await;
+            if !WANT_VISIBLE.load(Ordering::SeqCst)
+                && !IN_CALL.load(Ordering::SeqCst)
+                && !KEEP_OPEN.load(Ordering::SeqCst)
+            {
+                web_log(&idle_app, "prewarmed Discord page expired; closing it");
+                destroy_view(&idle_app);
+            }
+        });
+    }
+    result
 }
 
 /// Brings a conversation forward: the overlay asks for a DM or a voice channel

@@ -10,7 +10,7 @@
 import "./styles/index.css";
 import { invoke } from "@tauri-apps/api/core";
 import { initSidebarLayout } from "./core/sidebar-layout";
-import { applySidebarPageVisibility } from "./core/page-visibility";
+import { applySidebarPageVisibility, discordPageVisible } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
 import { applyCustomCss } from "./core/custom-css";
 import { applySurface } from "./core/themes";
@@ -65,10 +65,15 @@ applySidebarPageVisibility();
 // launcher never claims "Online" while the cable is out.
 watchConnection(updateOfflineModeUi);
 
-// Discord is loaded on demand; keeping the page parked off-screen is opt-in in
-// Settings (Social), because a hidden Discord client costs real idle CPU.
-if (keepDiscordOpen()) {
-  void invoke("discord_view_prewarm").catch(() => undefined);
+// Prewarm the Discord page after the shell settles, so the first visit is
+// instant instead of paying the web-client boot in front of the person. The
+// page is closed after a few idle minutes unless "Keep Discord open" is on,
+// which is what bounds the cost of a parked Discord renderer.
+if (discordPageVisible()) {
+  window.setTimeout(() => {
+    if (!discordPageVisible()) return;
+    void invoke("discord_view_prewarm", { keepOpen: keepDiscordOpen() }).catch(() => undefined);
+  }, 2500);
 }
 
 let lastRenderedView: View | null = null;
