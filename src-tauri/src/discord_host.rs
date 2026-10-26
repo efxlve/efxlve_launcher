@@ -2,10 +2,10 @@
 //!
 //! The page loads the normal `discord.com/app` interface: friends, direct
 //! messages and servers are the real Discord UI, no custom social layer. The
-//! child webview is positioned by the frontend (slot rectangle), stays hidden
-//! until the web client has actually painted (the page's loading note shows
-//! instead) and is parked while a covering surface (modal, command palette) is
-//! open.
+//! child webview is positioned by the frontend (slot rectangle), stays parked
+//! outside the client area until the web client has actually painted (the page's
+//! loading note shows through) and is hidden while a covering surface (modal,
+//! command palette) is open.
 //!
 //! A full Discord client is a heavy renderer, so the view is destroyed when the
 //! user leaves the page; the WebView2 profile keeps the session, so the next
@@ -34,10 +34,10 @@ use tauri_plugin_opener::OpenerExt;
 const LABEL: &str = "discord-view";
 const HOME_URL: &str = "https://discord.com/app";
 
-/// How long a fresh child may stay hidden while it boots. The finished load is
+/// How long a fresh child may stay parked while it boots. The finished load is
 /// not enough: on a slow network the document arrives long before Discord's
-/// client paints. After this the child is shown anyway, so a stuck page (an
-/// error page included) is never hidden forever.
+/// client paints. One automatic rebuild follows; after the second timeout the
+/// child stays parked and the loading note stays in place.
 const FIRST_PAINT_TIMEOUT: Duration = Duration::from_secs(45);
 
 /// True once the web client reported that it painted; only then may the child
@@ -67,9 +67,11 @@ static WEB_VOICE: Mutex<Option<serde_json::Value>> = Mutex::new(None);
 /// so the conversation opener keeps a short cooldown between them.
 static LAST_NAV: Mutex<Option<Instant>> = Mutex::new(None);
 
-/// The generation an automatic recovery reload already ran for: a page that
-/// refuses to paint must not loop reloads forever.
-static RECOVERED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+/// Whether the one allowed automatic rebuild already ran for this visit. It is
+/// reset by a user action (opening the page, reloading, opening a conversation),
+/// not by the rebuild itself: a page that refuses to paint must not loop
+/// destroy/recreate cycles forever.
+static AUTO_REBUILT: AtomicBool = AtomicBool::new(false);
 
 /// When the current child was created. A page that has had half a minute and
 /// never painted is wedged (a navigation can do that), and rebuilding it is
@@ -79,6 +81,11 @@ static CREATED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
 /// The generation a paint watchdog is already polling.
 static WATCHING: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Last `#app-mount` child count reported by the page. Only transitions reach
+/// the log: the probe runs on every watchdog tick.
+static READY_LAST: std::sync::atomic::AtomicI64 =
+    std::sync::atomic::AtomicI64::new(i64::MIN);
 
 static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);
 
@@ -143,62 +150,6 @@ const VOICE_HOOK_SCRIPT: &str = include_str!("discord_voice_hook.js");
 /// failed lookup returns `ok: false`, which leaves the overlay on the RPC
 /// source.
 const VOICE_SCRIPT: &str = include_str!("discord_voice_probe.js");
-
-/// Dev-only page probe. After the document finishes, the page reports its own
-/// render state (title, viewport, app-mount children) through a navigation to
-/// `PROBE_HOST`; that navigation is cancelled and logged, so a blank child can
-/// be told apart from a loaded-but-unpainted page. Empty in release builds.
-const PROBE_SCRIPT: &str = if cfg!(debug_assertions) {
-    r#"
-(function () {
-    function probe(tag) {
-        try {
-            var mount = document.getElementById('app-mount');
-            var ls = 'n/a';
-            try {
-                localStorage.setItem('__efxlve_probe', '1');
-                localStorage.removeItem('__efxlve_probe');
-                ls = 'ok';
-            } catch (e) {
-                ls = String(e);
-            }
-            var info = {
-                tag: tag,
-                ready: document.readyState,
-                title: document.title,
-                href: location.href,
-                origin: location.origin,
-                secure: window.isSecureContext,
-                topFrame: window.top === window,
-                kids: document.body ? document.body.childElementCount : -1,
-                mount: mount ? mount.childElementCount : -1,
-                mountHtml: mount ? mount.innerHTML.replace(/\s+/g, ' ').slice(0, 160) : '',
-                html: document.documentElement ? document.documentElement.outerHTML.length : -1,
-                txt: document.body ? document.body.innerText.replace(/\s+/g, ' ').slice(0, 100) : '',
-                bg: document.body ? getComputedStyle(document.body).backgroundColor : '',
-                vis: document.visibilityState,
-                ck: 'cookieEnabled' in navigator ? navigator.cookieEnabled : null,
-                lsType: typeof window.localStorage,
-                ssType: typeof window.sessionStorage,
-                ls: ls,
-                sc: document.querySelectorAll('script').length,
-                rs: performance.getEntriesByType ? performance.getEntriesByType('resource').length : -1,
-                iw: window.innerWidth,
-                ih: window.innerHeight,
-                dpr: window.devicePixelRatio
-            };
-            location.assign('https://efxlve.local/probe?d=' + encodeURIComponent(JSON.stringify(info)));
-        } catch (e) {
-            location.assign('https://efxlve.local/probe?err=' + encodeURIComponent(String(e)));
-        }
-    }
-    setTimeout(function () { probe('t2'); }, 2000);
-    setTimeout(function () { probe('t8'); }, 8000);
-})();
-"#
-} else {
-    ""
-};
 
 /// Dev-only hooks installed before any page script runs: boot failures (thrown
 /// errors, rejected promises, failed resource loads, `console.error`) are
@@ -695,6 +646,21 @@ fn rect_of(x: f64, y: f64, width: f64, height: f64) -> tauri::Rect {
     }
 }
 
+/// Where a booting child waits: far outside the client area, so the loading note
+/// underneath stays visible. The child is *visible* rather than hidden on
+/// purpose: WebView2 throttles a hidden renderer, which can leave Discord stuck
+/// on its own loading screen. A full desktop viewport keeps its layout normal
+/// until the slot rectangle takes over.
+fn park_loading(view: &tauri::Webview, width: f64, height: f64) {
+    let width = width.max(900.0);
+    let height = height.max(600.0);
+    let _ = view.set_bounds(tauri::Rect {
+        position: Position::Logical(LogicalPosition::new(-10_000.0, -10_000.0)),
+        size: Size::Logical(LogicalSize::new(width, height)),
+    });
+    let _ = view.show();
+}
+
 /// WebView2 denies media permissions unless the host app answers the request,
 /// so the embedded Discord client could not unmute. Microphone and camera are
 /// allowed for this child; nothing else loads in it (external links open in the
@@ -743,7 +709,7 @@ fn allow_media_permissions(view: &tauri::Webview) {
 }
 
 /// Creates the child webview inside the main window.
-async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), String> {
     let window = app
         .get_window("main")
         .ok_or_else(|| "no_main_window".to_string())?;
@@ -773,6 +739,9 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                         .find(|(key, _)| key == "m")
                         .and_then(|(_, value)| value.parse::<i64>().ok())
                         .unwrap_or(-1);
+                    if READY_LAST.swap(kids, Ordering::SeqCst) != kids {
+                        web_log(&nav_app, &format!("page ready report m={kids}"));
+                    }
                     if kids > 0 {
                         let first = !PAINTED.swap(true, Ordering::SeqCst);
                         if WANT_VISIBLE.load(Ordering::SeqCst) {
@@ -809,7 +778,7 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                 }
                 // Dev probe report: logged, then cancelled so the child stays
                 // on Discord.
-                eprintln!("[discord-view] probe {}", target);
+                web_log(&nav_app, &format!("page probe {target}"));
                 return false;
             }
             match target.scheme() {
@@ -830,20 +799,22 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
                 }
             }
         })
-        // Load diagnostics: the terminal that runs `tauri dev` shows whether the
-        // page ever reaches a finished load, which separates a network problem
-        // (blocked host, no `Finished`) from a rendering problem.
-        .on_page_load(|webview, payload| {
-            eprintln!("[discord-view] {:?} {}", payload.event(), payload.url());
+        // Load diagnostics: the shared Discord log records whether the page
+        // ever reaches a finished load, which separates a network problem
+        // (blocked host, no `Finished`) from a rendering problem. The feedback
+        // report already includes this log.
+        .on_page_load(|_webview, payload| {
+            web_log(
+                _webview.app_handle(),
+                &format!("page {:?} {}", payload.event(), payload.url()),
+            );
             if payload.event() != tauri::webview::PageLoadEvent::Finished {
                 return;
             }
             // The finished load only means the document arrived; the readiness
-            // report decides when the child may show.
-            let _ = webview.eval(READY_SCRIPT);
-            if !PROBE_SCRIPT.is_empty() {
-                let _ = webview.eval(PROBE_SCRIPT);
-            }
+            // probe (sent through WebView2's own script bridge) decides when
+            // the child may show. `webview.eval` does not reach a child
+            // webview, so there is nothing useful to evaluate here.
         })
         .on_new_window(|_url, _features| tauri::webview::NewWindowResponse::Deny);
     // Dev-only hooks: boot errors and failed resource loads report back so a
@@ -854,8 +825,13 @@ async fn create_view(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) -
     // Always installed: the client's webpack require is captured before its
     // runtime can replace or drop the global.
     builder = builder.initialization_script(VOICE_HOOK_SCRIPT);
-    let position = Position::Logical(LogicalPosition::new(x, y));
-    let size = Size::Logical(LogicalSize::new(width.max(100.0), height.max(100.0)));
+    // Create the child outside the client area. `add_child` makes it visible
+    // immediately, so the slot rectangle would cover the loading note with the
+    // page's empty background until Discord paints. The ready probe moves it to
+    // the slot; until then it boots at a normal desktop size without the
+    // throttling a hidden renderer would get.
+    let position = Position::Logical(LogicalPosition::new(-10_000.0, -10_000.0));
+    let size = Size::Logical(LogicalSize::new(width.max(900.0), height.max(600.0)));
 
     PAINTED.store(false, Ordering::SeqCst);
     let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
@@ -985,9 +961,11 @@ fn run_ready_script(_app: &AppHandle) {}
 #[cfg(not(windows))]
 fn allow_media_permissions(_view: &tauri::Webview) {}
 
-/// Keeps a fresh document hidden behind the loading note until the web client
-/// really painted. A destroy bumps the generation, so a stale poll is inert;
-/// the timeout shows the child anyway so an error page is never hidden forever.
+/// Keeps a fresh document parked behind the loading note until the web client
+/// really painted. A destroy bumps the generation, so a stale poll is inert. One
+/// automatic rebuild is allowed per visit; after the second timeout the child
+/// stays parked, so a page that never paints cannot cover the note with a blank
+/// rectangle (or loop destroy/recreate cycles forever).
 fn watch_first_paint(app: &AppHandle, generation: u64) {
     // One watchdog per generation: the show path is called on every layout
     // change, and a poller per call would flood the page with readiness probes.
@@ -1017,29 +995,28 @@ fn watch_first_paint(app: &AppHandle, generation: u64) {
         }
         if GENERATION.load(Ordering::SeqCst) == generation && !PAINTED.load(Ordering::SeqCst) {
             // A navigation can wedge the client: a reload does not revive it,
-            // so rebuild the child once per generation and let the fresh page
-            // arm its own watchdog.
-            if RECOVERED.load(Ordering::SeqCst) != generation {
-                RECOVERED.store(generation, Ordering::SeqCst);
-                let (x, y, width, height) = LAST_RECT
+            // so rebuild the child once and let the fresh page arm its own
+            // watchdog. The rebuild must not reset AUTO_REBUILT, or a page that
+            // never paints would keep destroying itself every 45 seconds.
+            if !AUTO_REBUILT.swap(true, Ordering::SeqCst) {
+                let (_, _, width, height) = LAST_RECT
                     .lock()
                     .ok()
                     .and_then(|guard| *guard)
-                    .unwrap_or((0.0, 0.0, 100.0, 100.0));
+                    .unwrap_or((0.0, 0.0, 1024.0, 640.0));
                 web_log(&ready_app, "the client never painted; rebuilding the page");
                 let rebuild_app = ready_app.clone();
                 tauri::async_runtime::spawn(async move {
                     destroy_view(&rebuild_app);
-                    let _ = create_view(&rebuild_app, x, y, width, height).await;
+                    let _ = create_view(&rebuild_app, width, height).await;
                 });
                 return;
             }
-            if WANT_VISIBLE.load(Ordering::SeqCst) {
-                eprintln!("[discord-view] readiness timeout; showing the child anyway");
-                if let Some(view) = view(&ready_app) {
-                    let _ = view.show();
-                }
-            }
+            web_log(
+                &ready_app,
+                "the client never painted after a rebuild; keeping the loading note",
+            );
+            let _ = ready_app.emit("discord-view-stalled", ());
         }
     });
 }
@@ -1053,7 +1030,7 @@ pub async fn discord_view_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    WANT_VISIBLE.store(true, Ordering::SeqCst);
+    let was_wanted = WANT_VISIBLE.swap(true, Ordering::SeqCst);
     // The user is back on the page; a parked keep-alive is over.
     PARKED.store(false, Ordering::SeqCst);
     if let Ok(mut guard) = LAST_RECT.lock() {
@@ -1065,27 +1042,35 @@ pub async fn discord_view_show(
         existing.is_some()
     );
     if let Some(view) = existing {
-        view.set_bounds(rect_of(x, y, width, height))
-            .map_err(|error| error.to_string())?;
-        // A child that has not painted yet stays hidden; the loading note
-        // shows in its place.
+        // A child that has not painted yet stays parked; moving it to the slot
+        // would put its blank background over the loading note. A page that is
+        // merely still warming up is left alone.
         if PAINTED.load(Ordering::SeqCst) {
+            view.set_bounds(rect_of(x, y, width, height))
+                .map_err(|error| error.to_string())?;
             view.show().map_err(|error| error.to_string())?;
         } else {
+            park_loading(&view, width, height);
             // A page that never painted (a navigation can wedge the client) is
             // rebuilt, not reloaded: a reload does not revive it, and the
-            // person would stare at the loading note forever. A page that is
-            // merely still warming up is left alone.
+            // person would stare at the loading note forever.
             let wedged = CREATED_AT
                 .lock()
                 .ok()
                 .and_then(|guard| *guard)
                 .map(|at| at.elapsed() > Duration::from_secs(30))
                 .unwrap_or(false);
-            if wedged {
+            // A prewarmed page can have used its one automatic rebuild before
+            // the person ever saw it. Coming back to the page is a fresh
+            // attempt, so allow the recovery again; the repeated show calls of
+            // the entry animation still share one budget.
+            if !was_wanted {
+                AUTO_REBUILT.store(false, Ordering::SeqCst);
+            }
+            if wedged && !AUTO_REBUILT.swap(true, Ordering::SeqCst) {
                 web_log(&app, "page is wedged on show; rebuilding the client");
                 destroy_view(&app);
-                let _ = create_view(&app, x, y, width, height).await;
+                let _ = create_view(&app, width, height).await;
             }
         }
         return Ok(());
@@ -1095,16 +1080,10 @@ pub async fn discord_view_show(
     if CREATING.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
-    let result = create_view(&app, x, y, width, height).await;
+    // Opening the page is a fresh visit: allow the one automatic recovery.
+    AUTO_REBUILT.store(false, Ordering::SeqCst);
+    let result = create_view(&app, width, height).await;
     CREATING.store(false, Ordering::SeqCst);
-    if result.is_ok() {
-        if let Some(view) = view(&app) {
-            let _ = view.set_bounds(rect_of(x, y, width, height));
-            if PAINTED.load(Ordering::SeqCst) {
-                let _ = view.show();
-            }
-        }
-    }
     result
 }
 
@@ -1125,6 +1104,59 @@ pub fn discord_view_hide(app: AppHandle) {
     }
 }
 
+/// Reloads the current document without WebView2's HTTP cache. A normal reload
+/// keeps serving a stale bundle or a half-written cache entry, which is one of
+/// the ways the client can stay on a blank page. Cookies and storage stay in
+/// place, so the session is not lost.
+#[cfg(windows)]
+fn hard_reload(app: &AppHandle) {
+    use webview2_com::CallDevToolsProtocolMethodCompletedHandler;
+    use windows::core::PCWSTR;
+    let Some(view) = view(app) else {
+        return;
+    };
+    let report_app = app.clone();
+    let registration = view.with_webview(move |platform| {
+        let controller = platform.controller();
+        let core = match unsafe { controller.CoreWebView2() } {
+            Ok(core) => core,
+            Err(error) => {
+                web_log(&report_app, &format!("hard reload: no core ({error})"));
+                return;
+            }
+        };
+        let handler_app = report_app.clone();
+        let handler = CallDevToolsProtocolMethodCompletedHandler::create(Box::new(
+            move |result: windows::core::Result<()>, _text: String| {
+                if let Err(error) = result {
+                    web_log(&handler_app, &format!("hard reload failed: {error}"));
+                }
+                Ok(())
+            },
+        ));
+        let method: Vec<u16> = "Page.reload".encode_utf16().chain(std::iter::once(0)).collect();
+        let params: Vec<u16> = r#"{"ignoreCache":true}"#
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        if let Err(error) = unsafe {
+            core.CallDevToolsProtocolMethod(
+                PCWSTR(method.as_ptr()),
+                PCWSTR(params.as_ptr()),
+                &handler,
+            )
+        } {
+            web_log(&report_app, &format!("hard reload call failed: {error}"));
+        }
+    });
+    if let Err(error) = registration {
+        web_log(app, &format!("hard reload bridge failed: {error}"));
+    }
+}
+
+#[cfg(not(windows))]
+fn hard_reload(_app: &AppHandle) {}
+
 /// Reloads the page (a stuck sign-in or a stale session). The paint gate is
 /// lowered first so the loading note comes back: a Discord reload repaints in
 /// place and would otherwise look like nothing happened.
@@ -1138,8 +1170,30 @@ pub fn discord_view_reload(app: AppHandle) {
         if let Ok(mut guard) = LAST_NAV.lock() {
             *guard = Some(Instant::now());
         }
-        let _ = view.hide();
-        if let Ok(url) = HOME_URL.parse::<url::Url>() {
+        // Park instead of hiding: a hidden WebView2 renderer is throttled and
+        // can stay on Discord's loading screen. Parking keeps the loading note
+        // visible and lets the page boot at full speed.
+        let (_, _, width, height) = LAST_RECT
+            .lock()
+            .ok()
+            .and_then(|guard| *guard)
+            .unwrap_or((0.0, 0.0, 1024.0, 640.0));
+        park_loading(&view, width, height);
+        AUTO_REBUILT.store(false, Ordering::SeqCst);
+        // A real Discord document gets a cache-bypassing reload. An error page
+        // (or any other host) is navigated back to the client instead, since a
+        // reload would only reproduce the same failure.
+        let on_discord = view
+            .url()
+            .ok()
+            .map(|url| is_discord_host(&url))
+            .unwrap_or(false);
+        if on_discord {
+            // `with_webview` waits for the main thread, so run the CDP call
+            // from the async runtime instead of blocking this command.
+            let reload_app = app.clone();
+            tauri::async_runtime::spawn(async move { hard_reload(&reload_app); });
+        } else if let Ok(url) = HOME_URL.parse::<url::Url>() {
             let _ = view.navigate(url);
         }
         watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
@@ -1162,7 +1216,8 @@ pub async fn discord_view_prewarm(app: AppHandle) -> Result<(), String> {
     if let Ok(mut guard) = LAST_RECT.lock() {
         *guard = Some((x, y, width, height));
     }
-    create_view(&app, x, y, width, height).await
+    AUTO_REBUILT.store(false, Ordering::SeqCst);
+    create_view(&app, width, height).await
 }
 
 /// Brings a conversation forward: the overlay asks for a DM or a voice channel
@@ -1203,7 +1258,13 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
             if let Ok(mut guard) = LAST_NAV.lock() {
                 *guard = Some(Instant::now());
             }
-            let _ = view.hide();
+            let (_, _, width, height) = LAST_RECT
+                .lock()
+                .ok()
+                .and_then(|guard| *guard)
+                .unwrap_or((0.0, 0.0, 1024.0, 640.0));
+            park_loading(&view, width, height);
+            AUTO_REBUILT.store(false, Ordering::SeqCst);
             let _ = view.navigate(target);
             watch_first_paint(&app, GENERATION.load(Ordering::SeqCst));
             web_log(&app, "opening a conversation in the launcher client");

@@ -110,7 +110,24 @@
   }
   var picked = pickRequire();
   var req = picked.req;
-  if (!req || !req.c || !req.m) return { ok: false, why: "no-require" };
+  if (!req || !req.c || !req.m) {
+    // The document can finish loading while the client never boots. Name what
+    // the page actually shows so a blank child can be diagnosed from the log:
+    // a Cloudflare/error page, a stale bundle or a page still waiting on its
+    // scripts all look identical from the host side otherwise.
+    var mount = document.getElementById('app-mount');
+    var body = document.body ? document.body.innerText.replace(/\s+/g, ' ').slice(0, 140) : 'no-body';
+    return {
+      ok: false,
+      why: 'no-require'
+        + ' title=' + (document.title || '').slice(0, 80)
+        + ' ready=' + document.readyState
+        + ' mount=' + (mount ? mount.childElementCount : -1)
+        + ' scripts=' + document.querySelectorAll('script').length
+        + ' res=' + (performance.getEntriesByType ? performance.getEntriesByType('resource').length : -1)
+        + ' body=' + body,
+    };
+  }
   S.req = req;
 
   var diag = "runs=" + picked.runs

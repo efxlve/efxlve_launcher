@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord は近日対応！それまでは「あと1試合」を手動で伝える必要があります。",
   "discord.loading": "Discordを読み込み中…",
   "discord.reload": "再読み込み",
+  "discord.stalled": "Discord の読み込みに時間がかかりすぎています。接続を確認して再読み込みしてください。",
   "discord.title": "Discord",
   "coming.soon": "近日",
   "nav.resizeSidebar": "サイドバーの幅を変更（ダブルクリックでリセット）",

@@ -53,6 +53,17 @@ export function renderDiscordPage(): string {
     </div>`;
 }
 
+/** Swaps the note under the child webview between "loading" and the stalled
+ * state. The child itself stays parked, so this note is what the person sees
+ * when Discord never paints. */
+function paintLoadingNote(stalled: boolean): void {
+  const note = document.getElementById("discord-loading");
+  if (!note) return;
+  note.innerHTML = stalled
+    ? `<p>${esc(t("discord.stalled"))}</p><button type="button" class="btn ghost small" data-discord-act="reload">${icon("refresh", 13)} ${esc(t("discord.reload"))}</button>`
+    : `<span class="spinner"></span><p>${esc(t("discord.loading"))}</p>`;
+}
+
 /** Header actions for the Discord page: reload a stuck or erroring page. */
 function paintHeaderActions(): void {
   const host = document.getElementById("page-header-actions");
@@ -214,8 +225,18 @@ document.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
   const action = target.closest<HTMLElement>("[data-discord-act]")?.dataset.discordAct;
   if (action === "reload") {
+    // The backend lowers the paint gate; put the spinner back until the page
+    // reports a paint (or stalls again).
+    paintLoadingNote(false);
     void invoke("discord_view_reload").catch(() => undefined);
   }
+});
+
+// The client never painted after the one automatic rebuild. Keep the page
+// parked and tell the person, instead of showing an empty dark rectangle where
+// the Discord UI should be.
+void listen("discord-view-stalled", () => {
+  if (onDiscordView()) paintLoadingNote(true);
 });
 
 // The overlay can ask for one conversation (a friend's DM or a voice channel);

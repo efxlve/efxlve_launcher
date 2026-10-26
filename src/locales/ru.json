@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord скоро! А пока «ещё одну игру» приходится говорить вручную.",
   "discord.loading": "Загрузка Discord…",
   "discord.reload": "Обновить",
+  "discord.stalled": "Discord загружается слишком долго. Проверьте подключение и перезагрузите.",
   "discord.title": "Discord",
   "coming.soon": "Скоро",
   "nav.resizeSidebar": "Изменить ширину боковой панели (двойной щелчок сбрасывает)",

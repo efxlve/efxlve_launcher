@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord เร็ว ๆ นี้! ระหว่างนี้การบอกเพื่อนว่า 'อีกเกมเดียว' ยังต้องทำเอง",
   "discord.loading": "กำลังโหลด Discord…",
   "discord.reload": "โหลดใหม่",
+  "discord.stalled": "Discord ใช้เวลาโหลดนานเกินไป ตรวจสอบการเชื่อมต่อแล้วโหลดใหม่",
   "discord.title": "Discord",
   "coming.soon": "เร็ว ๆ นี้",
   "nav.resizeSidebar": "ปรับความกว้างแถบด้านข้าง (ดับเบิลคลิกเพื่อรีเซ็ต)",

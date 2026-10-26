@@ -78,6 +78,7 @@
   "coming.discord": "Discord is coming soon! Until then, telling your friends “one more game” stays a manual process.",
   "discord.loading": "Loading Discord…",
   "discord.reload": "Reload",
+  "discord.stalled": "Discord is taking too long to load. Check your connection and reload.",
   "discord.title": "Discord",
   "coming.soon": "Coming soon",
   "nav.online": "Online",

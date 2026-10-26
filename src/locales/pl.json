@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord już wkrótce! Do tego czasu „jeszcze jedna gra” pozostaje procesem ręcznym.",
   "discord.loading": "Ładowanie Discorda…",
   "discord.reload": "Odśwież",
+  "discord.stalled": "Ładowanie Discorda trwa zbyt długo. Sprawdź połączenie i odśwież.",
   "discord.title": "Discord",
   "coming.soon": "Wkrótce",
   "nav.resizeSidebar": "Zmień szerokość paska (dwuklik resetuje)",

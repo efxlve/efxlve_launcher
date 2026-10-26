@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord arrive bientôt ! En attendant, dire « encore une partie » à tes amis reste une opération manuelle.",
   "discord.loading": "Chargement de Discord…",
   "discord.reload": "Recharger",
+  "discord.stalled": "Discord met trop de temps à charger. Vérifiez votre connexion et rechargez.",
   "discord.title": "Discord",
   "coming.soon": "Bientôt",
   "nav.resizeSidebar": "Redimensionner la barre latérale (double-clic pour réinitialiser)",

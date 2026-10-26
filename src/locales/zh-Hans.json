@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord 即将上线！在那之前，“再来一局”还得你亲口说。",
   "discord.loading": "正在加载 Discord…",
   "discord.reload": "重新加载",
+  "discord.stalled": "Discord 加载时间过长。请检查网络连接并重新加载。",
   "discord.title": "Discord",
   "coming.soon": "即将上线",
   "nav.resizeSidebar": "调整侧栏宽度（双击重置）",

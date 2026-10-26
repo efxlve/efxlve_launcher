@@ -1705,6 +1705,7 @@
   "coming.discord": "Discord قادم قريبًا! حتى ذلك الحين، تبقى عبارة «جولة أخيرة» يدوية.",
   "discord.loading": "جارٍ تحميل Discord…",
   "discord.reload": "إعادة التحميل",
+  "discord.stalled": "يستغرق Discord وقتًا طويلاً للتحميل. تحقق من اتصالك وأعد التحميل.",
   "discord.title": "Discord",
   "coming.soon": "قريبًا",
   "nav.resizeSidebar": "تغيير عرض الشريط الجانبي (انقر مرتين للإعادة)",

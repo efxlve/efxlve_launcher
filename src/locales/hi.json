@@ -78,6 +78,7 @@
   "coming.discord": "Discord जल्द आ रहा है! तब तक अपने दोस्तों को “एक गेम और” कहना एक मैन्युअल प्रक्रिया बनी रहेगी।",
   "discord.loading": "Discord लोड हो रहा है…",
   "discord.reload": "रीलोड करें",
+  "discord.stalled": "Discord लोड होने में बहुत समय ले रहा है। अपना कनेक्शन जाँचें और फिर से लोड करें।",
   "discord.title": "Discord",
   "coming.soon": "जल्द आ रहा है",
   "nav.online": "ऑनलाइन",
