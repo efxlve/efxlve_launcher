@@ -661,8 +661,8 @@ function renderSocial(): string {
   );
 
   // The Discord page is the message channel: keeping it loaded is what lets
-  // messages and calls arrive while a game runs. On by default; the person
-  // decides, and turning it off unloads the page on the next start.
+  // messages and calls arrive while a game runs. Off by default (the first
+  // visit is prewarmed); turning it on keeps the page parked after that.
   const discordAlways = row(
     t("settings.discordAlwaysTitle"),
     t("settings.discordAlwaysDesc"),

@@ -815,8 +815,10 @@ document.addEventListener("click", (e) => {
       });
     }
   } else if (act === "toggle-discord-always") {
-    // Default is on: only an explicit "false" turns it off.
-    const next = localStorage.getItem("efxlve-discord-always") === "false";
+    // Default is off: only an explicit "true" keeps the page parked. Reading
+    // `=== "false"` made the very first click write "false" again, so the
+    // setting never turned on until the second click.
+    const next = localStorage.getItem("efxlve-discord-always") !== "true";
     localStorage.setItem("efxlve-discord-always", String(next));
     if (next) {
       void invoke("discord_view_prewarm").catch(() => undefined);
