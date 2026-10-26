@@ -89,10 +89,16 @@ export function hydrateDiscordPage(): void {
   clearDiscordUnread();
   ensureListeners();
   paintHeaderActions();
-  // The page-enter animation slides the view for a moment. Creating the native
-  // child while that animation runs can leave the first renderer stuck on a
-  // blank document, so wait for the layout to settle before measuring the slot
-  // and creating it. The loading note is on screen during the wait.
+  // A prewarmed/suspended child can be shown immediately. A cold child is
+  // created after the page-enter animation; creating it mid-animation can leave
+  // its first renderer stuck. The 450ms pass also re-aligns the warm frame.
+  void invoke<boolean>("discord_view_alive")
+    .then((alive) => {
+      if (!alive || !onDiscordView()) return;
+      observeSlot();
+      syncDiscordPage();
+    })
+    .catch(() => undefined);
   window.setTimeout(() => {
     if (!onDiscordView()) return;
     observeSlot();
