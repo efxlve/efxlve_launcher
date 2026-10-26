@@ -1,7 +1,9 @@
 //! Installed-game list from `appmanifest_*.acf` and `libraryfolders.vdf`.
 //!
 //! Owns `SteamGame` and which folders count as libraries. Download progress
-//! on a manifest is only trusted while the Steam client process is alive.
+//! on a manifest is only trusted while Steam's update flags say the job is
+//! running; a bare `steamapps/downloading/<id>` folder is a leftover, not a
+//! download.
 
 use std::path::{Path, PathBuf};
 
@@ -59,9 +61,11 @@ pub struct SteamGame {
     pub state_flags: u32,
     /// Library folder that holds the game.
     pub library: String,
-    /// True while the Steam client is downloading this app (`steamapps/downloading/<id>`).
+    /// True only while the manifest says Steam is actively transferring this
+    /// app; a leftover `steamapps/downloading/<id>` folder is not enough.
     pub downloading: bool,
-    /// Bytes the client has already pulled (`BytesDownloaded`, else the downloading folder).
+    /// Bytes the client has already pulled (`BytesDownloaded`, or `BytesStaged`
+    /// while the disk pass is ahead of the network counter).
     pub bytes_downloaded: u64,
     /// Total bytes this job still reports (`BytesToDownload`). Zero when Steam has not written it.
     pub bytes_to_download: u64,
@@ -112,16 +116,14 @@ pub fn parse_app_manifest(text: &str, library: &Path) -> Option<SteamGame> {
     // rewritten while the poller is running).
     let bytes_staged = acf_u64(state, "BytesStaged");
     let paused = (state_flags & 512) != 0;
-    let fully_installed = (state_flags & 4) != 0;
-    // UpdateRunning (256) or UpdateStarted (1024): an installed game is patching.
+    // UpdateRunning (256) or UpdateStarted (1024): Steam marked the job as the
+    // one it is transferring. A queued or canceled job keeps the manifest and
+    // the folder but never sets these, so it must not look live.
     let update_active = (state_flags & (256 | 1024)) != 0;
     // Bytes already caught up means Steam parked the job (its "Unscheduled"
     // row at 100%) or a tool such as LuaTools left `downloading/<id>` behind.
     let work_left = bytes_to_download > bytes_downloaded || bytes_to_stage > bytes_staged;
-    let downloading = dl_dir.is_dir()
-        && !paused
-        && work_left
-        && (!fully_installed || update_active);
+    let downloading = dl_dir.is_dir() && !paused && work_left && update_active;
     // Steam's download row ("Veriler indiriliyor") is BytesDownloaded /
     // BytesToDownload. BytesStaged is the separate disk pass ("Dosyalar
     // güncelleniyor") and is a different total, so it must not replace the
@@ -186,35 +188,6 @@ pub fn installed_games(steam: &Path) -> Vec<SteamGame> {
                 // A game left behind in an old library folder must not appear twice.
                 if seen.insert(game.app_id.clone()) {
                     games.push(game);
-                }
-            }
-        }
-        // First-time installs create `downloading/<id>` before a full manifest.
-        if !steam_running {
-            continue;
-        }
-        if let Ok(dl_entries) = std::fs::read_dir(folder.join("downloading")) {
-            for entry in dl_entries.flatten() {
-                let id = entry.file_name().to_string_lossy().to_string();
-                if !entry.path().is_dir() || !id.chars().all(|c| c.is_ascii_digit()) {
-                    continue;
-                }
-                if is_steam_library_noise(&id, "") {
-                    continue;
-                }
-                if seen.insert(id.clone()) {
-                    games.push(SteamGame {
-                        app_id: id.clone(),
-                        name: id,
-                        install_dir: String::new(),
-                        size_bytes: 0,
-                        state_flags: 0,
-                        library: folder.to_string_lossy().to_string(),
-                        downloading: true,
-                        bytes_downloaded: 0,
-                        bytes_to_download: 0,
-                        preloaded: false,
-                    });
                 }
             }
         }
@@ -366,6 +339,39 @@ mod tests {
         std::fs::create_dir_all(&dl).expect("temp downloading dir");
         let game = parse_app_manifest(APP_MANIFEST_DOWNLOADING, &tmp).expect("game");
         assert!(game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn a_queued_or_canceled_install_is_not_a_live_download() {
+        let tmp =
+            std::env::temp_dir().join(format!("efxlve-steam-dl-queued-{}", std::process::id()));
+        let dl = tmp.join("downloading").join("730");
+        std::fs::create_dir_all(&dl).expect("temp downloading dir");
+        // A canceled/unstarted first install keeps the bytes and the folder,
+        // but Steam clears the running bits.
+        let queued = r#"
+    "AppState"
+    {
+        "appid"             "730"
+        "name"              "Counter-Strike 2"
+        "StateFlags"        "2"
+        "BytesToDownload"   "4000"
+        "BytesDownloaded"   "1000"
+    }
+    "#;
+        let game = parse_app_manifest(queued, &tmp).expect("game");
+        assert!(!game.downloading);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+    #[test]
+    fn a_download_folder_without_a_manifest_is_not_a_game() {
+        let tmp =
+            std::env::temp_dir().join(format!("efxlve-steam-dl-ghost-{}", std::process::id()));
+        std::fs::create_dir_all(tmp.join("steamapps").join("downloading").join("632470"))
+            .expect("temp downloading dir");
+        // No app manifest names this app, so there are no byte counters and no
+        // title to show; the folder alone is a leftover, not a download.
+        assert!(installed_games(&tmp).is_empty());
         let _ = std::fs::remove_dir_all(&tmp);
     }
     #[test]
