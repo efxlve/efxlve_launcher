@@ -14,14 +14,20 @@
 //! of in the browser; it only claims the link when the embedded page already
 //! has a Spotify session (`sp_dc` cookie), so callers can fall back otherwise.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder,
     WebviewUrl,
 };
 
+use crate::webview_power;
+
 const LABEL: &str = "spotify-player";
 const HOME_URL: &str = "https://open.spotify.com/";
+/// Off-screen sliver while the page is suspended; a delayed platform call
+/// must not leave the full-size child covering the next page.
+const PARK_RECT: (f64, f64, f64, f64) = (-400.0, -400.0, 1.0, 1.0);
 
 /// Page script for the embedded player (`spotify_extension.js`): hides the
 /// desktop-app promos Spotify puts in the header and the right rail.
@@ -30,6 +36,10 @@ const SPOTIFY_EXTENSION_SCRIPT: &str = include_str!("spotify_extension.js");
 /// Initial URL for the next player creation (`spotify_open_in_launcher` on a
 /// not-yet-created player).
 static PENDING_URL: Mutex<Option<String>> = Mutex::new(None);
+
+/// The page is hidden and suspended by WebView2; `Resume` brings the same DOM
+/// and playback UI back without loading the web client again.
+static SUSPENDED: AtomicBool = AtomicBool::new(false);
 
 fn player(app: &AppHandle) -> Option<tauri::Webview> {
     app.get_window("main")?
@@ -101,6 +111,9 @@ pub async fn spotify_player_show(
     height: f64,
 ) -> Result<(), String> {
     if let Some(view) = player(&app) {
+        if SUSPENDED.swap(false, Ordering::SeqCst) {
+            let _ = webview_power::resume(&view);
+        }
         view.set_bounds(rect_of(x, y, width, height))
             .map_err(|error| error.to_string())?;
         view.show().map_err(|error| error.to_string())?;
@@ -115,11 +128,18 @@ pub async fn spotify_player_show(
     create_player(&app, url, x, y, width, height).await
 }
 
-/// Hides the player; the page stays loaded for the next visit.
+/// Hides and suspends the player; the page stays in memory for the next visit
+/// without running its timers or DOM work in the background.
 #[tauri::command]
 pub fn spotify_player_hide(app: AppHandle) {
     if let Some(view) = player(&app) {
-        let _ = view.hide();
+        let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+        let _ = view.show();
+        if webview_power::suspend(&view) {
+            SUSPENDED.store(true, Ordering::SeqCst);
+        } else {
+            let _ = view.hide();
+        }
     }
 }
 
@@ -127,6 +147,7 @@ pub fn spotify_player_hide(app: AppHandle) {
 /// task manager to hand the renderer's memory back.
 #[tauri::command]
 pub fn spotify_player_destroy(app: AppHandle) {
+    SUSPENDED.store(false, Ordering::SeqCst);
     if let Some(view) = player(&app) {
         let _ = view.close();
     }
@@ -141,6 +162,9 @@ pub fn player_alive(app: &AppHandle) -> bool {
 #[tauri::command]
 pub fn spotify_player_reload(app: AppHandle) {
     if let Some(view) = player(&app) {
+        if SUSPENDED.swap(false, Ordering::SeqCst) {
+            let _ = webview_power::resume(&view);
+        }
         if let Ok(url) = HOME_URL.parse::<url::Url>() {
             let _ = view.navigate(url);
         }
@@ -267,6 +291,9 @@ pub async fn spotify_open_in_launcher(app: AppHandle, url: String) -> Result<boo
     let _ = app.emit_to("main", "spotify-open", target.clone());
 
     if let Some(view) = player(&app) {
+        if SUSPENDED.swap(false, Ordering::SeqCst) {
+            let _ = webview_power::resume(&view);
+        }
         if let Ok(parsed) = target.parse::<url::Url>() {
             let _ = view.navigate(parsed);
         }

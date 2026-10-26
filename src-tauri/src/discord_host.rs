@@ -32,6 +32,8 @@ use tauri::{
 };
 use tauri_plugin_opener::OpenerExt;
 
+use crate::webview_power;
+
 const LABEL: &str = "discord-view";
 /// `/app` first loads an app shell that can sit on a blank document for half a
 /// minute on a cold or wedged WebView2 profile. `/login` is the client's own
@@ -70,6 +72,10 @@ static IN_CALL: AtomicBool = AtomicBool::new(false);
 /// The user left the page while a call was running: the renderer is kept alive
 /// (as a 1x1 sliver, not a hide) until the call ends.
 static PARKED: AtomicBool = AtomicBool::new(false);
+/// The renderer is hidden and parked by WebView2. A suspended page keeps its
+/// DOM and session, but receives no messages/calls; "Keep Discord open" leaves
+/// it live instead.
+static SUSPENDED: AtomicBool = AtomicBool::new(false);
 /// Last web voice report, so a late overlay can pull it while it starts up.
 static WEB_VOICE: Mutex<Option<serde_json::Value>> = Mutex::new(None);
 /// When the last report arrived; a parked page whose reports stop (a broken
@@ -503,6 +509,7 @@ fn destroy_view(app: &AppHandle) {
     PAINTED.store(false, Ordering::SeqCst);
     IN_CALL.store(false, Ordering::SeqCst);
     PARKED.store(false, Ordering::SeqCst);
+    SUSPENDED.store(false, Ordering::SeqCst);
     GENERATION.fetch_add(1, Ordering::SeqCst);
     if let Ok(mut guard) = CREATED_AT.lock() {
         *guard = None;
@@ -923,6 +930,11 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                     );
                     return;
                 }
+                // A suspended renderer cannot answer ExecuteScript; resume
+                // polling when it comes back instead of logging errors.
+                if SUSPENDED.load(Ordering::SeqCst) {
+                    continue;
+                }
                 ticks += 1;
                 if ticks == 1 {
                     web_log(&track_app, "web voice: first tick");
@@ -1120,6 +1132,10 @@ pub async fn discord_view_show(
         existing.is_some()
     );
     if let Some(view) = existing {
+        if SUSPENDED.swap(false, Ordering::SeqCst) {
+            let _ = webview_power::resume(&view);
+            web_log(&app, "page resumed");
+        }
         // A child that has not painted yet stays parked; moving it to the slot
         // would put its blank background over the loading note. A page that is
         // merely still warming up is left alone.
@@ -1172,20 +1188,16 @@ pub async fn discord_view_show(
     result
 }
 
-/// Hides the page while a covering surface (modal, command palette) is open.
-/// The state stays warm for the next show.
+/// Parks the page off-screen while a covering surface (modal, command palette)
+/// is open. It stays visible to WebView2 on purpose: a native hide makes the
+/// dispatcher skip the `with_webview` call that suspends the page when the user
+/// leaves it for good.
 #[tauri::command]
 pub fn discord_view_hide(app: AppHandle) {
     WANT_VISIBLE.store(false, Ordering::SeqCst);
     if let Some(view) = view(&app) {
-        // A call lives in this renderer and a hide can suspend it, so a call
-        // keeps the same off-screen sliver the leave path uses.
-        if IN_CALL.load(Ordering::SeqCst) {
-            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
-            let _ = view.show();
-            return;
-        }
-        let _ = view.hide();
+        let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+        let _ = view.show();
     }
 }
 
@@ -1248,6 +1260,9 @@ fn hard_reload(_app: &AppHandle) {}
 #[tauri::command]
 pub fn discord_view_reload(app: AppHandle) {
     if let Some(view) = view(&app) {
+        if SUSPENDED.swap(false, Ordering::SeqCst) {
+            let _ = webview_power::resume(&view);
+        }
         PAINTED.store(false, Ordering::SeqCst);
         if let Ok(mut guard) = CREATED_AT.lock() {
             *guard = Some(Instant::now());
@@ -1289,8 +1304,8 @@ pub fn discord_view_reload(app: AppHandle) {
 /// Loads the Discord page in the background (parked) so the client is already
 /// connected when the person opens it — and so messages and calls arrive while
 /// they play. The launcher prewarms at startup when the Discord page is shown;
-/// `keep_open` mirrors the setting that also keeps it parked after the first
-/// visit. A page that is never opened is closed after `PREWARM_IDLE`.
+/// `keep_open` mirrors the setting that also keeps it live after the first
+/// visit. A page that is never opened is suspended after `PREWARM_IDLE`.
 #[tauri::command]
 pub async fn discord_view_prewarm(
     app: AppHandle,
@@ -1298,7 +1313,18 @@ pub async fn discord_view_prewarm(
 ) -> Result<(), String> {
     let keep_open = keep_open.unwrap_or(true);
     KEEP_OPEN.store(keep_open, Ordering::SeqCst);
-    if view(&app).is_some() || CREATING.load(Ordering::SeqCst) {
+    if let Some(view) = view(&app) {
+        // Turning "Keep Discord open" on must bring a suspended page back to a
+        // live parked renderer; otherwise it still cannot receive messages.
+        if keep_open && SUSPENDED.swap(false, Ordering::SeqCst) {
+            let _ = webview_power::resume(&view);
+            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+            let _ = view.show();
+            web_log(&app, "keep Discord open: the suspended page resumed");
+        }
+        return Ok(());
+    }
+    if CREATING.load(Ordering::SeqCst) {
         return Ok(());
     }
     web_log(&app, "prewarming the Discord page");
@@ -1316,8 +1342,15 @@ pub async fn discord_view_prewarm(
                 && !IN_CALL.load(Ordering::SeqCst)
                 && !KEEP_OPEN.load(Ordering::SeqCst)
             {
-                web_log(&idle_app, "prewarmed Discord page expired; closing it");
-                destroy_view(&idle_app);
+                if let Some(view) = view(&idle_app) {
+                    if webview_power::suspend(&view) {
+                        SUSPENDED.store(true, Ordering::SeqCst);
+                        web_log(&idle_app, "prewarmed Discord page idle; suspending it");
+                    } else {
+                        let _ = view.hide();
+                        web_log(&idle_app, "prewarmed Discord page idle; hidden");
+                    }
+                }
             }
         });
     }
@@ -1338,12 +1371,16 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
     // during a boot (or during a call) is how the blank page and the dropped
     // call happened before. Otherwise the launcher simply comes forward on its
     // Discord page and the person picks the conversation there.
-    let healthy = LAST_REPORT
-        .lock()
-        .ok()
-        .and_then(|guard| *guard)
-        .map(|at| at.elapsed() < Duration::from_secs(15))
-        .unwrap_or(false);
+    // A suspended page was healthy when it was parked; its reports are stale
+    // only because the tracker stops while suspended, so allow the deep link.
+    let suspended = SUSPENDED.load(Ordering::SeqCst);
+    let healthy = suspended
+        || LAST_REPORT
+            .lock()
+            .ok()
+            .and_then(|guard| *guard)
+            .map(|at| at.elapsed() < Duration::from_secs(15))
+            .unwrap_or(false);
     let too_soon = LAST_NAV
         .lock()
         .ok()
@@ -1352,6 +1389,10 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
         .unwrap_or(false);
     match view(&app) {
         Some(view) if !too_soon && !IN_CALL.load(Ordering::SeqCst) && healthy => {
+            if SUSPENDED.swap(false, Ordering::SeqCst) {
+                let _ = webview_power::resume(&view);
+                web_log(&app, "page resumed for a conversation");
+            }
             PAINTED.store(false, Ordering::SeqCst);
             // The clock the wedged check reads starts at the navigation, not at
             // the view's creation: otherwise a page older than 30s would be
@@ -1401,16 +1442,18 @@ pub fn discord_open_conversation(app: AppHandle, url: String) -> Result<(), Stri
     Ok(())
 }
 
-/// Destroys the child webview when the user leaves the page. A full Discord
-/// client renderer is too heavy to keep alive next to the store/Spotify
-/// children; the WebView2 profile preserves the session for the next visit.
-/// One exception: a running voice call lives in that renderer (no desktop app
-/// involved), so it is kept alive off-screen until the call ends, and the state
-/// is read once more right before the decision: the periodic poll is a few
-/// seconds behind, so a call that started a moment ago would otherwise be
-/// missed and closed along with the renderer.
+/// Leaves the page when the user goes elsewhere. A live call and the "keep
+/// Discord open" setting keep the renderer visible off-screen (calls and
+/// messages keep arriving). Otherwise the renderer is hidden and **suspended**:
+/// the DOM and session stay in memory, the next visit resumes instantly, and an
+/// idle page costs almost no CPU. `destroy` is the task manager's explicit
+/// "free this renderer" action.
 #[tauri::command]
-pub async fn discord_view_destroy(app: AppHandle, keep_alive: Option<bool>) {
+pub async fn discord_view_destroy(
+    app: AppHandle,
+    keep_alive: Option<bool>,
+    destroy: Option<bool>,
+) {
     if let Some(keep) = keep_alive {
         KEEP_OPEN.store(keep, Ordering::SeqCst);
     }
@@ -1420,8 +1463,13 @@ pub async fn discord_view_destroy(app: AppHandle, keep_alive: Option<bool>) {
             handle_voice_report(&app, report);
         }
     }
+    if destroy.unwrap_or(false) {
+        web_log(&app, "page closed on request");
+        destroy_view(&app);
+        return;
+    }
     // A live call and the "keep Discord open" setting keep the renderer alive
-    // off-screen; only when neither wants it does the page really close.
+    // off-screen; only when neither wants it is the page suspended.
     let in_call = IN_CALL.load(Ordering::SeqCst);
     if in_call || KEEP_OPEN.load(Ordering::SeqCst) {
         PARKED.store(true, Ordering::SeqCst);
@@ -1441,7 +1489,19 @@ pub async fn discord_view_destroy(app: AppHandle, keep_alive: Option<bool>) {
         }
         return;
     }
-    destroy_view(&app);
+    if let Some(view) = view(&app) {
+        // Park it first: a queued suspend must never leave a full-size child
+        // covering the next page if the platform call is delayed.
+        let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+        let _ = view.show();
+        if webview_power::suspend(&view) {
+            SUSPENDED.store(true, Ordering::SeqCst);
+            web_log(&app, "page suspended after the visit");
+        } else {
+            let _ = view.hide();
+            web_log(&app, "page hidden; suspend bridge unavailable");
+        }
+    }
 }
 
 /// The last web voice report, so the overlay's card can paint before the next

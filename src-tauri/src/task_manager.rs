@@ -296,7 +296,9 @@ pub async fn task_manager_stop(app: AppHandle, id: String) -> Result<(), String>
         "store_page" => {
             crate::store_host::destroy_store_view(app)?;
         }
-        "discord_page" => crate::discord_host::discord_view_destroy(app, Some(false)).await,
+        "discord_page" => {
+            crate::discord_host::discord_view_destroy(app, Some(false), Some(true)).await
+        }
         "spotify_player" => crate::spotify_host::spotify_player_destroy(app),
         "overlay_browser" => crate::overlay::browser::overlay_browser_close(app),
         _ => return Err("@t:task.notStoppable".to_string()),

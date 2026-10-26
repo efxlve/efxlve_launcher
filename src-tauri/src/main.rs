@@ -10,6 +10,7 @@ mod companion;
 mod controller;
 mod controller_bridge;
 mod discord_host;
+mod webview_power;
 #[cfg_attr(not(debug_assertions), allow(dead_code))]
 mod discord_rpc;
 mod discord_sdk;
