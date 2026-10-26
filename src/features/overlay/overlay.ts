@@ -196,6 +196,7 @@ let vramHistory: number[] = [];
 let ramHistory: number[] = [];
 /** The launcher's Connect receiver (the only source the overlay shows). */
 let spotifyEngineOn = false;
+let spotifyPaired = false;
 let spotifyDeviceName = "";
 let spotifyNow: NowPlaying | null = null;
 let spotifyBaseMs = 0;
@@ -879,7 +880,6 @@ function openWidget(tab: TabId, render = true): void {
     void refreshWebVoice();
     void refreshSdkState();
   } else if (tab === "music") {
-    ensureSpotifyEngine();
     void refreshMedia();
   }
 }
@@ -2929,10 +2929,14 @@ function spotifyLogoSvg(size = 48): string {
 let lastSpotifyStartAttempt = 0;
 
 /** Ensures the Spotify playback engine is running in the background silently. */
-function ensureSpotifyEngine(): void {
+function ensureSpotifyEngine(force = false): void {
   // The Connect receiver is built on librespot, which ships on Windows only; the
   // web player in the launcher's Spotify page keeps working on other platforms.
   if (!IS_WINDOWS) return;
+  // An unpaired receiver would open Spotify's approval page in the browser, so
+  // only an explicit user action may start it before pairing. A paired receiver
+  // comes up quietly in the background.
+  if (!force && !spotifyPaired) return;
   const now = Date.now();
   if (spotifyEngineOn || now - lastSpotifyStartAttempt < 10000) return;
   lastSpotifyStartAttempt = now;
@@ -2950,8 +2954,12 @@ async function refreshMedia(): Promise<void> {
   if (!IS_WINDOWS) return;
   const status = await spotifyPlaybackStatus().catch(() => null);
   spotifyEngineOn = status?.running === true;
+  spotifyPaired = status?.paired === true;
   spotifyDeviceName = status?.deviceName ?? "";
-  if (!spotifyEngineOn) {
+  // Opening the music widget is a user request to use Spotify: a paired
+  // receiver may start on its own then. Opening the panel for performance or
+  // captures never starts it.
+  if (!spotifyEngineOn && spotifyPaired && isWidgetOpen("music")) {
     ensureSpotifyEngine();
   }
 
@@ -3033,7 +3041,6 @@ function updateMusicMiniViewState(): void {
 function renderMusicTab(): void {
   const el = viewEl("music");
   if (!el) return;
-  ensureSpotifyEngine();
   if (!selectedPlaylist && musicViewMode === "tracks") {
     musicViewMode = "playlists";
   }
@@ -5478,7 +5485,7 @@ function wireEvents(): void {
         void overlaySpotifyControl("seek", Math.round(ratio * m.durationMs));
       }
     } else if (action === "sp-engine-start") {
-      ensureSpotifyEngine();
+      ensureSpotifyEngine(true);
     } else if (action === "sp-toggle-mini-view") {
       spotifyMiniView = spotifyMiniView === "player" ? "library" : "player";
       updateMusicMiniViewState();
@@ -6293,9 +6300,9 @@ async function onOpen(payload: OpenPayload): Promise<void> {
     if (openWidgets.has("shots")) void loadScreenshots();
   }
 
-  // The receiver starts only when the music widget is opened; opening the
-  // panel for performance or captures must not start a Spotify session.
-  if (isWidgetOpen("music")) ensureSpotifyEngine();
+  // The receiver starts only when the music widget is opened by a user who has
+  // already approved playback; opening the panel for performance or captures
+  // must not start a Spotify session.
   void refreshMedia();
 
   // A connected pad means the user wants controller affordances right away.
@@ -6638,7 +6645,6 @@ async function boot(): Promise<void> {
   // that arrive meanwhile are already in the log. A first-time user gets the
   // Connect button instead of an unasked prompt.
   void invoke("discord_sdk_start", { silent: true }).catch(() => undefined);
-  ensureSpotifyEngine();
 
   try {
     const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
