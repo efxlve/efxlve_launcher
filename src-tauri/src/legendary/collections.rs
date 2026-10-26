@@ -237,11 +237,94 @@ pub(crate) fn chrono_now_iso() -> String {
 }
 
 // -------------------------------------------------------------
-// EPIC GAMES LAUNCHER LEVELDB IMPORTER
+// EPIC GAMES LAUNCHER IMPORTER
 // -------------------------------------------------------------
 
-/// Scans the EGL LevelDB logs to extract collections and game matches
+/// Imports collections from every Epic Games Launcher generation that has
+/// data on this machine. The new launcher writes clean JSON caches; the legacy
+/// one only has LevelDB logs, and its stored names can carry the serialization
+/// bytes that EGL wrapped around them.
 pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
+    let mut found: HashMap<String, GameCollection> = HashMap::new();
+    // The new launcher's cache wins a name conflict: it is what the user sees
+    // in EGL today, while the legacy webcache may never be updated again.
+    for col in import_egl_v2_collections()
+        .into_iter()
+        .chain(import_egl_v1_collections())
+    {
+        match found.entry(col.id.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut slot) => {
+                let existing = slot.get_mut();
+                if name_needs_repair(&existing.name) && !name_needs_repair(&col.name) {
+                    existing.name = col.name;
+                }
+                let mut app_names = std::mem::take(&mut existing.app_names);
+                app_names.extend(col.app_names);
+                existing.app_names = deduplicate_strings(app_names);
+            }
+            std::collections::hash_map::Entry::Vacant(slot) => {
+                slot.insert(col);
+            }
+        }
+    }
+
+    let mut result: Vec<GameCollection> = found.into_values().collect();
+    result.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(merge_collections(result))
+}
+
+/// Reads the new Epic launcher's per-account JSON cache:
+/// `%LOCALAPPDATA%\com.epicgames.eglv2\cache\prod\account\<id>\`.
+fn import_egl_v2_collections() -> Vec<GameCollection> {
+    let root = egl_v2_cache_root();
+    let Ok(entries) = fs::read_dir(&root) else {
+        return Vec::new();
+    };
+
+    let mut found: HashMap<String, GameCollection> = HashMap::new();
+    for entry in entries.flatten() {
+        let dir = entry.path();
+        if !dir.is_dir() || !dir.join("collections-cache.json").is_file() {
+            continue;
+        }
+        let Ok(text) = fs::read_to_string(dir.join("collections-cache.json")) else {
+            continue;
+        };
+        let Ok(cache) = serde_json::from_str::<serde_json::Value>(&text) else {
+            continue;
+        };
+        let Some(items) = cache.get("items").and_then(|value| value.as_array()) else {
+            continue;
+        };
+        let catalog = egl_v2_catalog_lookup(&dir);
+        for item in items {
+            let Some(id) = item.get("collectionId").and_then(|value| value.as_str()) else {
+                continue;
+            };
+            // The launcher has its own favourites toggle; EGL's static
+            // favourites collection would duplicate it.
+            if id == "EGS_STATIC_FAV_COLLECTION" {
+                continue;
+            }
+            let name = item.get("name").and_then(|value| value.as_str()).unwrap_or("");
+            let clean = clean_collection_name(name);
+            if clean.is_empty() || clean.eq_ignore_ascii_case("favorites") {
+                continue;
+            }
+            found.entry(id.to_string()).or_insert_with(|| GameCollection {
+                id: id.to_string(),
+                name: clean,
+                app_names: deduplicate_strings(egl_v2_collection_items(&dir, id, &catalog)),
+                created_at: Some(chrono_now_iso()),
+                emoji: None,
+            });
+        }
+    }
+    found.into_values().collect()
+}
+
+/// `%LOCALAPPDATA%\com.epicgames.eglv2\cache\prod\account`.
+fn egl_v2_cache_root() -> PathBuf {
     let local_app_data = std::env::var("LOCALAPPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
@@ -252,10 +335,84 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
             p.push("Local");
             p
         });
+    local_app_data
+        .join("com.epicgames.eglv2")
+        .join("cache")
+        .join("prod")
+        .join("account")
+}
 
-    let egl_saved = local_app_data.join("EpicGamesLauncher").join("Saved");
+/// Maps `catalogId`/namespace ids to app names using the launcher's own library
+/// cache, so collection members match the same app names the library uses.
+fn egl_v2_catalog_lookup(dir: &std::path::Path) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    let Ok(text) = fs::read_to_string(dir.join("library-cache.json")) else {
+        return map;
+    };
+    let Ok(cache) = serde_json::from_str::<serde_json::Value>(&text) else {
+        return map;
+    };
+    let Some(items) = cache.get("items").and_then(|value| value.as_array()) else {
+        return map;
+    };
+    for item in items {
+        let Some(app_id) = item.get("appId") else {
+            continue;
+        };
+        let Some(app_name) = app_id.get("appName").and_then(|value| value.as_str()) else {
+            continue;
+        };
+        if let Some(catalog) = app_id.get("itemId").and_then(|value| value.as_str()) {
+            map.insert(catalog.to_lowercase(), app_name.to_string());
+        }
+        if let Some(namespace) = app_id.get("namespaceId").and_then(|value| value.as_str()) {
+            // DLC shares its base game's namespace; the catalog id above is the
+            // precise key and wins whenever it exists.
+            map.entry(namespace.to_lowercase())
+                .or_insert_with(|| app_name.to_string());
+        }
+    }
+    map
+}
+
+/// Members of one collection from `collection-items-<id>.json`.
+fn egl_v2_collection_items(
+    dir: &std::path::Path,
+    id: &str,
+    catalog: &HashMap<String, String>,
+) -> Vec<String> {
+    let Ok(text) = fs::read_to_string(dir.join(format!("collection-items-{id}.json"))) else {
+        return Vec::new();
+    };
+    let Ok(cache) = serde_json::from_str::<serde_json::Value>(&text) else {
+        return Vec::new();
+    };
+    let Some(items) = cache.get("items").and_then(|value| value.as_array()) else {
+        return Vec::new();
+    };
+    let mut app_names = Vec::new();
+    for item in items {
+        let app = item
+            .get("catalogId")
+            .and_then(|value| value.as_str())
+            .and_then(|catalog_id| catalog.get(&catalog_id.to_lowercase()))
+            .or_else(|| {
+                item.get("sandbox")
+                    .and_then(|value| value.as_str())
+                    .and_then(|sandbox| catalog.get(&sandbox.to_lowercase()))
+            });
+        if let Some(app_name) = app {
+            app_names.push(app_name.clone());
+        }
+    }
+    app_names
+}
+
+/// Scans the legacy EGL LevelDB logs to extract collections and game matches.
+fn import_egl_v1_collections() -> Vec<GameCollection> {
+    let egl_saved = egl_v1_saved_root();
     if !egl_saved.exists() {
-        return Ok(Vec::new());
+        return Vec::new();
     }
 
     // Scan the games in the metadata folder
@@ -287,7 +444,7 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
     }
 
     if leveldb_dirs.is_empty() {
-        return Ok(Vec::new());
+        return Vec::new();
     }
 
     let mut found_collections: HashMap<String, (String, Vec<String>)> = HashMap::new(); // id -> (name, app_names)
@@ -330,14 +487,39 @@ pub fn import_egl_collections() -> Result<Vec<GameCollection>, String> {
     }
 
     result.sort_by(|a, b| a.name.cmp(&b.name));
-    Ok(merge_collections(result))
+    result
+}
+
+/// `%LOCALAPPDATA%\EpicGamesLauncher\Saved`.
+fn egl_v1_saved_root() -> PathBuf {
+    let local_app_data = std::env::var("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            let mut p = std::env::var("USERPROFILE")
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| std::env::temp_dir());
+            p.push("AppData");
+            p.push("Local");
+            p
+        });
+    local_app_data
+        .join("EpicGamesLauncher")
+        .join("Saved")
+}
+
+/// A name carried raw serialization bytes or replacement characters, so a
+/// clean name from another launcher generation should replace it.
+pub(crate) fn name_needs_repair(name: &str) -> bool {
+    name.chars()
+        .any(|c| c.is_control() || c == '\u{FFFD}' || c == '\u{FFFE}')
 }
 
 /// Merges imported collections into `collections.json`, matching existing ones
 /// by id or case-insensitive name, and returns the merged list. An empty input
 /// changes nothing. Members are unioned: collections with the same name from
-/// different clients combine instead of overwriting each other, and the name
-/// already stored in the launcher wins (imports only add games).
+/// different clients combine instead of overwriting each other, and a name the
+/// user already has wins over an import unless it still holds raw serialization
+/// bytes, which a clean import repairs.
 pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollection> {
     if incoming.is_empty() {
         return incoming;
@@ -348,6 +530,9 @@ pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollec
             .iter()
             .position(|c| c.id == col.id || c.name.eq_ignore_ascii_case(&col.name))
         {
+            if name_needs_repair(&merged[idx].name) && !name_needs_repair(&col.name) {
+                merged[idx].name = col.name.clone();
+            }
             let mut app_names = merged[idx].app_names.clone();
             app_names.extend(col.app_names.clone());
             merged[idx].app_names = deduplicate_strings(app_names);
@@ -438,47 +623,33 @@ fn parse_leveldb_buffer(
         if id.len() == 36 {
             let start_before = abs_idx.saturating_sub(120);
             let before_bytes = &bytes[start_before..abs_idx];
-            let raw_name =
-                if let Some(name_offset) = before_bytes.windows(4).rposition(|w| w == b"name") {
-                    let name_pos = start_before + name_offset + 4;
-                    if name_pos + 1 < bytes.len() {
-                        let tag = bytes[name_pos];
-                        let len = bytes[name_pos + 1] as usize;
-                        if tag == 0x22 && name_pos + 2 + len <= bytes.len() {
-                            String::from_utf8_lossy(&bytes[name_pos + 2..name_pos + 2 + len])
-                                .to_string()
-                        } else if tag == 0x63 && name_pos + 2 + len <= bytes.len() {
-                            let u16_vec: Vec<u16> = bytes[name_pos + 2..name_pos + 2 + len]
-                                .chunks_exact(2)
-                                .map(|c| u16::from_le_bytes([c[0], c[1]]))
-                                .collect();
-                            String::from_utf16_lossy(&u16_vec)
-                        } else {
-                            let before = &latin1_str[start_before..abs_idx];
-                            if let Some(name_idx) = before.rfind("name") {
-                                let after_name = &before[name_idx + 4..];
-                                let trimmed = after_name.trim_end_matches(|c: char| {
-                                    c <= ' ' || c == '"' || c == '\u{000c}'
-                                });
-                                if let Some(start_idx) = trimmed.find(|c: char| c.is_alphabetic()) {
-                                    trimmed[start_idx..].to_string()
-                                } else {
-                                    String::new()
-                                }
-                            } else {
-                                String::new()
-                            }
-                        }
-                    } else {
-                        String::new()
+            let mut name = String::new();
+            if let Some(name_offset) = before_bytes.windows(4).rposition(|w| w == b"name") {
+                let name_pos = start_before + name_offset + 4;
+                // The value normally starts at `name_pos`; a stray separator
+                // byte in older records can push it back by one or two.
+                for skip in 0..=2 {
+                    let Some((raw, _)) = decode_v8_name(bytes, name_pos + skip) else {
+                        continue;
+                    };
+                    let clean = clean_collection_name(&raw);
+                    if plausible_name(&clean) {
+                        name = clean;
+                        break;
                     }
-                } else {
-                    String::new()
-                };
+                }
+                if name.is_empty() {
+                    if let Some(raw) = fallback_name(&latin1_str[start_before..abs_idx]) {
+                        let clean = clean_collection_name(&raw);
+                        if plausible_name(&clean) {
+                            name = clean;
+                        }
+                    }
+                }
+            }
 
-            let clean = clean_collection_name(&raw_name);
-            if !clean.is_empty() {
-                found.entry(id).or_insert_with(|| (clean, Vec::new()));
+            if !name.is_empty() {
+                found.entry(id).or_insert_with(|| (name, Vec::new()));
             }
         }
 
@@ -556,8 +727,92 @@ fn parse_leveldb_buffer(
     }
 }
 
+/// V8 serialization writes string lengths as varints. Returns the value and how
+/// many bytes the varint used.
+fn read_varint(bytes: &[u8]) -> Option<(usize, usize)> {
+    let mut value = 0usize;
+    let mut shift = 0;
+    for (index, byte) in bytes.iter().take(5).enumerate() {
+        value |= ((byte & 0x7F) as usize) << shift;
+        if byte & 0x80 == 0 {
+            return Some((value, index + 1));
+        }
+        shift += 7;
+    }
+    None
+}
+
+/// Decodes a V8-serialized string starting at `pos`: one tag byte, a varint
+/// length and the payload (`"` is one-byte, `c` is UTF-16LE). Returns the text
+/// and the number of bytes consumed.
+///
+/// EGL sometimes wraps a serialized string inside another one, so a one-byte
+/// payload can itself start with a string header; that inner value is decoded
+/// too instead of surfacing its tag and length bytes as text.
+fn decode_v8_name(bytes: &[u8], pos: usize) -> Option<(String, usize)> {
+    let tag = *bytes.get(pos)?;
+    let (len, length_bytes) = read_varint(bytes.get(pos + 1..)?)?;
+    if len == 0 {
+        return None;
+    }
+    let data_pos = pos + 1 + length_bytes;
+    match tag {
+        0x22 => {
+            let data = bytes.get(data_pos..data_pos + len)?;
+            let text = if data.iter().any(|byte| byte.is_ascii_control()) {
+                decode_v8_name(data, 0)
+                    .map(|(inner, _)| inner)
+                    .unwrap_or_else(|| String::from_utf8_lossy(data).to_string())
+            } else {
+                String::from_utf8_lossy(data).to_string()
+            };
+            Some((text, 1 + length_bytes + len))
+        }
+        0x63 => {
+            let data = bytes.get(data_pos..data_pos + len.checked_mul(2)?)?;
+            let units: Vec<u16> = data
+                .chunks_exact(2)
+                .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+                .collect();
+            Some((
+                String::from_utf16_lossy(&units),
+                1 + length_bytes + len * 2,
+            ))
+        }
+        _ => None,
+    }
+}
+
+/// Last-resort name read from the ASCII view of the record when the V8 header
+/// is not where the field search expects it.
+fn fallback_name(before: &str) -> Option<String> {
+    let name_idx = before.rfind("name")?;
+    let after_name = &before[name_idx + 4..];
+    let trimmed = after_name.trim_end_matches(|c: char| c <= ' ' || c == '"' || c == '\u{000C}');
+    let start_idx = trimmed.find(|c: char| c.is_alphabetic())?;
+    Some(trimmed[start_idx..].to_string())
+}
+
+/// A decoded name worth showing: some text, no serialization leftovers.
+fn plausible_name(name: &str) -> bool {
+    let trimmed = name.trim();
+    !trimmed.is_empty()
+        && trimmed.chars().count() <= 120
+        && trimmed.chars().any(|c| c.is_alphanumeric())
+        && !trimmed.chars().any(|c| c.is_control())
+}
+
 fn clean_collection_name(name: &str) -> String {
-    let mut s = name.replace('\u{0000}', "");
+    // A stored value can still carry the serialized header ("c\x0EOynan…").
+    let mut s = if name.chars().any(|c| c.is_control()) {
+        decode_v8_name(name.as_bytes(), 0)
+            .map(|(inner, _)| inner)
+            .filter(|inner| inner != name && !inner.is_empty())
+            .unwrap_or_else(|| name.to_string())
+    } else {
+        name.to_string()
+    };
+    s = s.replace('\u{0000}', "");
     if s.starts_with("c2") {
         s = s[2..].to_string();
     }
@@ -653,6 +908,28 @@ mod tests {
             clean_collection_name("c2Hikaye/Ba_ ar1 m Tamamlanan"),
             "Hikaye/Başarım Tamamlanan"
         );
+    }
+
+    /// EGL stores some names as a serialized UTF-16 string wrapped in another
+    /// string; the value then starts with the tag and length bytes.
+    #[test]
+    fn test_clean_name_unwraps_serialized_string() {
+        let name = "Oynanılacaklar";
+        let mut wrapped = vec![b'c', (name.encode_utf16().count()) as u8];
+        for unit in name.encode_utf16() {
+            wrapped.extend(unit.to_le_bytes());
+        }
+        let stored = String::from_utf8(wrapped).unwrap();
+        assert_eq!(clean_collection_name(&stored), name);
+    }
+
+    #[test]
+    fn test_plausible_name_rejects_serialization_leftovers() {
+        assert!(plausible_name("Oynanılacaklar"));
+        assert!(!plausible_name(""));
+        assert!(!plausible_name("c\u{000e}Oynan1\u{0001}lacaklar"));
+        assert!(name_needs_repair("c\u{000e}Oynan1\u{0001}lacaklar"));
+        assert!(!name_needs_repair("Oynanılacaklar"));
     }
 
     #[test]
