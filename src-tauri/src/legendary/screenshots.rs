@@ -1679,6 +1679,9 @@ pub fn start_f12_listener(app: AppHandle) {
             let running = get_active_running_game();
             if running.is_none() || !game_window_is_foreground() {
                 was_down = false;
+                // The clip key is tracked separately; a release while another
+                // window was in front must not count as an edge on return.
+                was_clip_down = false;
                 std::thread::sleep(std::time::Duration::from_millis(250));
                 continue;
             }
@@ -1686,6 +1689,7 @@ pub fn start_f12_listener(app: AppHandle) {
             if let Some((app_name, _)) = running.as_ref() {
                 if capture_disabled(app_name) {
                     was_down = false;
+                    was_clip_down = false;
                     std::thread::sleep(std::time::Duration::from_millis(250));
                     continue;
                 }
