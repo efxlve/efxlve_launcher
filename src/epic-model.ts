@@ -276,6 +276,23 @@ export function epicStorePageUrlForGame(g: EpicGame | undefined, title: string):
   return epicStoreSearch(title);
 }
 
+/**
+ * True for an entry that can actually be played: an executable entitlement or
+ * a game managed by another launcher. Bundles, season passes, soundtracks and
+ * Unreal assets are entitlement containers with no executable of their own;
+ * letting one into the library also lets the random picker land on a page that
+ * has no install target.
+ */
+export function isPlayableGame(g: EpicGame): boolean {
+  const metadata = g.metadata as {
+    entitlementType?: unknown;
+    customAttributes?: Record<string, { value?: unknown } | undefined>;
+  } | null;
+  if (metadata?.entitlementType === "EXECUTABLE") return true;
+  const thirdParty = metadata?.customAttributes?.ThirdPartyManagedApp?.value;
+  return typeof thirdParty === "string" && thirdParty.trim().length > 0;
+}
+
 /** Mobile-only catalog entries have no place in the Windows launcher library. */
 export function isMobileOnlyGame(g: EpicGame): boolean {
   const assetPlatforms = Object.keys(g.asset_infos || {}).map((key) => key.toLowerCase());
@@ -527,7 +544,14 @@ export function summarize(
   const byId = new Map(installed.map((i) => [i.app_name, i]));
   const skipSet = new Set(skipped);
   return games
-    .filter((g) => !isDlc(g) && !isNonGameContent(g) && !isMobileOnlyGame(g) && !skipSet.has(g.app_name))
+    .filter(
+      (g) =>
+        !isDlc(g) &&
+        !isNonGameContent(g) &&
+        !isMobileOnlyGame(g) &&
+        isPlayableGame(g) &&
+        !skipSet.has(g.app_name),
+    )
     .map((g) => {
       const ins = byId.get(g.app_name);
       const ver = epicVersion(g);
