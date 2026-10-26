@@ -96,6 +96,7 @@
   "nav.collapse": "Collapse",
   "nav.expand": "Expand",
   "nav.historyBack": "Back (Alt+Left)",
+  "nav.historyForward": "Forward (Alt+Right)",
   "win.minimize": "Minimize",
   "win.maximize": "Maximize",
   "common.toTop": "Back to top",

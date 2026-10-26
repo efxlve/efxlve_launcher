@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Descargas y cola (Ctrl+3)",
   "nav.settingsTitle": "Ajustes (Ctrl+,)",
   "nav.historyBack": "Atrás (Alt+Left)",
+  "nav.historyForward": "Adelante (Alt+Derecha)",
   "win.minimize": "Minimizar",
   "win.maximize": "Maximizar",
   "common.toTop": "Volver arriba",

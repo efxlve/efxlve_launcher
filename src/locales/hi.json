@@ -96,6 +96,7 @@
   "nav.collapse": "संक्षिप्त करें",
   "nav.expand": "विस्तृत करें",
   "nav.historyBack": "पीछे जाएं (Alt+Left)",
+  "nav.historyForward": "आगे जाएं (Alt+Right)",
   "win.minimize": "न्यूनतम करें",
   "win.maximize": "अधिकतम करें",
   "common.toTop": "शीर्ष पर वापस जाएं",

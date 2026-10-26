@@ -8,8 +8,7 @@
   grid-template-columns: 232px minmax(0, 1fr);
   gap: 26px;
   align-items: start;
-  max-width: 1320px;
-  margin: 0 auto;
+  width: 100%;
 }
 .settings-nav {
   position: sticky;
@@ -90,7 +89,7 @@
   box-shadow: inset 2px 0 0 var(--accent);
 }
 .settings-nav-item.active .settings-nav-icon { color: var(--accent); }
-.settings-panel { min-width: 0; max-width: 1040px; padding-bottom: 48px; }
+.settings-panel { min-width: 0; padding-bottom: 48px; }
 /* Section masthead: the nav says where you are, this says what this page does. */
 .settings-panel-head {
   display: flex;

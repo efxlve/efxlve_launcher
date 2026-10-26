@@ -174,6 +174,8 @@ export function updatePageHeader(): void {
   }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();
+  const forward = document.getElementById("nav-forward-btn") as HTMLButtonElement | null;
+  if (forward) forward.disabled = !canNavForward();
 }
 
 /**
@@ -469,6 +471,11 @@ export function updateNavHistoryUi(): void {
     const hasBack = Boolean(S.currentModalAppName) || canNavBack();
     backBtn.disabled = !hasBack;
     backBtn.setAttribute("aria-disabled", String(!hasBack));
+  }
+  const forwardBtn = document.getElementById("nav-forward-btn") as HTMLButtonElement | null;
+  if (forwardBtn) {
+    forwardBtn.disabled = !canNavForward();
+    forwardBtn.setAttribute("aria-disabled", String(!canNavForward()));
   }
 }
 

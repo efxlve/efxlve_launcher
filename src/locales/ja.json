@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "ダウンロードとキュー (Ctrl+3)",
   "nav.settingsTitle": "設定 (Ctrl+,)",
   "nav.historyBack": "戻る (Alt+Left)",
+  "nav.historyForward": "進む (Alt+Right)",
   "win.minimize": "最小化",
   "win.maximize": "最大化",
   "common.toTop": "先頭に戻る",

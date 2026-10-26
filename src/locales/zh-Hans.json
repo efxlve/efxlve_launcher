@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "下载与队列 (Ctrl+3)",
   "nav.settingsTitle": "设置 (Ctrl+,)",
   "nav.historyBack": "后退 (Alt+Left)",
+  "nav.historyForward": "前进 (Alt+Right)",
   "win.minimize": "最小化",
   "win.maximize": "最大化",
   "common.toTop": "回到顶部",

@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Downloads e fila (Ctrl+3)",
   "nav.settingsTitle": "Configurações (Ctrl+,)",
   "nav.historyBack": "Voltar (Alt+Esquerda)",
+  "nav.historyForward": "Avançar (Alt+Direita)",
   "win.minimize": "Minimizar",
   "win.maximize": "Maximizar",
   "common.toTop": "Voltar ao topo",

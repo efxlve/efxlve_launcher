@@ -96,6 +96,7 @@
   "nav.collapse": "Küçült",
   "nav.expand": "Genişlet",
   "nav.historyBack": "Geri (Alt+Sol Ok)",
+  "nav.historyForward": "İleri (Alt+Sağ Ok)",
   "win.minimize": "Simge Durumuna Küçült",
   "win.maximize": "Ekranı Kapla",
   "common.toTop": "Başa dön",

@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Pobieranie i kolejka (Ctrl+3)",
   "nav.settingsTitle": "Ustawienia (Ctrl+,)",
   "nav.historyBack": "Wstecz (Alt+Lewo)",
+  "nav.historyForward": "Dalej (Alt+Prawo)",
   "win.minimize": "Minimalizuj",
   "win.maximize": "Maksymalizuj",
   "common.toTop": "Do góry",

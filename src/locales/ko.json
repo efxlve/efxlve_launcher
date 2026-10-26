@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "다운로드 및 대기열 (Ctrl+3)",
   "nav.settingsTitle": "설정 (Ctrl+,)",
   "nav.historyBack": "뒤로 (Alt+Left)",
+  "nav.historyForward": "앞으로 (Alt+Right)",
   "win.minimize": "최소화",
   "win.maximize": "최대화",
   "common.toTop": "맨 위로",

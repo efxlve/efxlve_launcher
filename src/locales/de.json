@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Downloads und Warteschlange (Ctrl+3)",
   "nav.settingsTitle": "Einstellungen (Ctrl+,)",
   "nav.historyBack": "Zurück (Alt+Left)",
+  "nav.historyForward": "Vorwärts (Alt+Rechts)",
   "win.minimize": "Minimieren",
   "win.maximize": "Maximieren",
   "common.toTop": "Nach oben",

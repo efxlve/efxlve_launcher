@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Download e coda (Ctrl+3)",
   "nav.settingsTitle": "Impostazioni (Ctrl+,)",
   "nav.historyBack": "Indietro (Alt+Sinistra)",
+  "nav.historyForward": "Avanti (Alt+Destra)",
   "win.minimize": "Riduci a icona",
   "win.maximize": "Ingrandisci",
   "common.toTop": "Torna su",

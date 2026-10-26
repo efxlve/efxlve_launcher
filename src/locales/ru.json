@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Загрузки и очередь (Ctrl+3)",
   "nav.settingsTitle": "Настройки (Ctrl+,)",
   "nav.historyBack": "Назад (Alt+Влево)",
+  "nav.historyForward": "Вперёд (Alt+Вправо)",
   "win.minimize": "Свернуть",
   "win.maximize": "Развернуть",
   "common.toTop": "Наверх",

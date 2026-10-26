@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "การดาวน์โหลดและคิว (Ctrl+3)",
   "nav.settingsTitle": "การตั้งค่า (Ctrl+,)",
   "nav.historyBack": "ย้อนกลับ (Alt+Left)",
+  "nav.historyForward": "ไปข้างหน้า (Alt+Right)",
   "win.minimize": "ย่อเล็กสุด",
   "win.maximize": "ขยายใหญ่สุด",
   "common.toTop": "กลับไปด้านบน",

@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "التنزيلات وقائمة الانتظار (Ctrl+3)",
   "nav.settingsTitle": "الإعدادات (Ctrl+,)",
   "nav.historyBack": "رجوع (Alt+Left)",
+  "nav.historyForward": "إلى الأمام (Alt+Right)",
   "win.minimize": "تصغير",
   "win.maximize": "تكبير",
   "common.toTop": "العودة إلى الأعلى",

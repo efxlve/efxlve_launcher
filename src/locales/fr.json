@@ -82,6 +82,7 @@
   "nav.downloadsTitle": "Téléchargements et file (Ctrl+3)",
   "nav.settingsTitle": "Paramètres (Ctrl+,)",
   "nav.historyBack": "Retour (Alt+Left)",
+  "nav.historyForward": "Avancer (Alt+Droite)",
   "win.minimize": "Réduire",
   "win.maximize": "Agrandir",
   "common.toTop": "Haut de page",
