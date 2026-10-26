@@ -1520,22 +1520,35 @@ pub async fn discord_view_destroy(
     }
     WANT_VISIBLE.store(false, Ordering::SeqCst);
     let destroy_now = destroy.unwrap_or(false);
+    if destroy_now {
+        web_log(&app, "page closed on request");
+        destroy_view(&app);
+        return;
+    }
     let suspended = SUSPENDED.load(Ordering::SeqCst);
+    if suspended {
+        return;
+    }
+    // Park before the voice probe. The probe can take up to 2.5s and the child
+    // would otherwise stay on top of the next page for that whole time (the
+    // header says Library while the Discord login page is still covering it).
+    if PAINTED.load(Ordering::SeqCst) {
+        if let Some(view) = view(&app) {
+            let _ = view.set_bounds(rect_of(PARK_RECT.0, PARK_RECT.1, PARK_RECT.2, PARK_RECT.3));
+            let _ = view.show();
+        }
+    }
     // A suspended renderer cannot answer ExecuteScript; waiting for the voice
     // probe would block the task-manager stop for the full 2.5s timeout. The
     // probe is also pointless before the first paint.
-    if !destroy_now
-        && !suspended
-        && PAINTED.load(Ordering::SeqCst)
-        && !IN_CALL.load(Ordering::SeqCst)
-    {
+    if PAINTED.load(Ordering::SeqCst) && !IN_CALL.load(Ordering::SeqCst) {
         if let Some(report) = read_voice_now(&app) {
             handle_voice_report(&app, report);
         }
     }
-    if destroy_now {
-        web_log(&app, "page closed on request");
-        destroy_view(&app);
+    // The person may have come back while the probe was running; do not park
+    // or suspend the page they are looking at.
+    if WANT_VISIBLE.load(Ordering::SeqCst) {
         return;
     }
     // A live call and the "keep Discord open" setting keep the renderer alive
