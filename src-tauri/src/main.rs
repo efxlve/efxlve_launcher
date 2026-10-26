@@ -401,6 +401,7 @@ fn app_minimize(app: AppHandle) -> Result<(), String> {
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
     // "The window closed by itself" was a minimize the user did not ask for;
     // name the caller in the log so the next report says which feature did it.
+    USER_HIDDEN_OR_MINIMIZED.store(true, std::sync::atomic::Ordering::Relaxed);
     perf::write_line_global("win: minimize requested by the interface");
     window.minimize().map_err(|e| e.to_string())
 }
@@ -632,11 +633,23 @@ fn app_close(app: AppHandle) -> Result<(), String> {
 }
 
 fn has_active_download(app: &AppHandle) -> bool {
-    app.state::<AppState>()
+    let epic = app
+        .state::<AppState>()
         .epic_dl
         .lock()
         .map(|state| state.active.is_some())
-        .unwrap_or(false)
+        .unwrap_or(false);
+    let gog = gogdl::transfers::GOG_DL_STATE
+        .lock()
+        .map(|state| {
+            state
+                .as_ref()
+                .and_then(|download| download.active_game_id.as_deref())
+                .is_some()
+        })
+        .unwrap_or(false);
+    let nile = nile::transfers::download_active();
+    epic || gog || nile
 }
 
 /// True while a game session started from this launcher is running. Closing the
@@ -700,6 +713,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => {
                 if let Some(w) = app.get_window("main") {
+                    USER_HIDDEN_OR_MINIMIZED.store(false, std::sync::atomic::Ordering::Relaxed);
                     perf::write_line_global("win: shown from the tray");
                     let _ = w.show();
                     let _ = w.set_focus();
@@ -711,6 +725,8 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     // Keep the backend monitor, downloads and playtime tracking
                     // alive while hidden.
                     if let Some(w) = app.get_window("main") {
+                        USER_HIDDEN_OR_MINIMIZED
+                            .store(true, std::sync::atomic::Ordering::Relaxed);
                         perf::write_line_global("win: tray quit kept the app hidden for a download or game");
                         let _ = w.hide();
                     }
@@ -743,6 +759,10 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 /// Set once the app starts shutting down, so a deliberate close during the first
 /// seconds is not mistaken for a failed webview.
 static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The user minimized or sent the window to the tray during boot. The 5-second
+/// boot watcher must not undo that deliberate action.
+static USER_HIDDEN_OR_MINIMIZED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 /// First instance's show-request event, so a second launch can reveal it even
 /// when the window title lookup fails.
 #[cfg(windows)]
@@ -947,6 +967,12 @@ fn watch_boot_window(app: tauri::AppHandle) {
             perf::write_line_global("boot: main window gone during boot; exiting");
             std::process::exit(1);
         };
+        if USER_HIDDEN_OR_MINIMIZED.load(std::sync::atomic::Ordering::Relaxed) {
+            perf::write_line_global(
+                "boot: window hidden or minimized by the user; leaving it alone",
+            );
+            return;
+        }
         match window.is_visible() {
             Ok(true) => {}
             Ok(false) => {
@@ -1097,6 +1123,7 @@ fn listen_for_show_requests(app: tauri::AppHandle) {
                 return;
             }
             if let Some(window) = app.get_window("main") {
+                USER_HIDDEN_OR_MINIMIZED.store(false, Ordering::Relaxed);
                 let _ = window.set_skip_taskbar(false);
                 let _ = window.unminimize();
                 let _ = window.show();
@@ -1593,6 +1620,8 @@ fn main() {
                     || has_active_download(&window.app_handle())
                     || has_running_game()
                 {
+                    USER_HIDDEN_OR_MINIMIZED
+                        .store(true, std::sync::atomic::Ordering::Relaxed);
                     perf::write_line_global("win: close requested; hidden to the tray");
                     api.prevent_close();
                     let _ = window.hide();

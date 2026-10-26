@@ -6,6 +6,7 @@
 //! session needs.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use serde_json::json;
@@ -68,6 +69,23 @@ pub fn parse_speed_line(line: &str) -> Option<RateUpdate> {
 
 /// Running game processes started by us, keyed by composite id.
 static LAUNCH_PIDS: Mutex<Option<HashMap<String, u32>>> = Mutex::new(None);
+
+/// True while an Amazon install/update child is running. The window-close and
+/// tray-quit guards must keep the app alive for it just like an Epic or GOG
+/// transfer.
+static DL_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+pub fn download_active() -> bool {
+    DL_ACTIVE.load(Ordering::SeqCst)
+}
+
+struct ActiveGuard;
+
+impl Drop for ActiveGuard {
+    fn drop(&mut self) {
+        DL_ACTIVE.store(false, Ordering::SeqCst);
+    }
+}
 
 fn with_pids<R>(f: impl FnOnce(&mut HashMap<String, u32>) -> R) -> R {
     let mut slot = LAUNCH_PIDS.lock().unwrap();
@@ -140,6 +158,8 @@ pub async fn nile_install(
     base_path: Option<String>,
     max_workers: Option<u32>,
 ) -> Result<(), String> {
+    DL_ACTIVE.store(true, Ordering::SeqCst);
+    let _download_guard = ActiveGuard;
     let mut args: Vec<String> = vec!["install".into(), id.clone()];
     if let Some(base) = base_path.filter(|p| !p.trim().is_empty()) {
         // `--base-path` appends the sanitized game title, so the setting reads
