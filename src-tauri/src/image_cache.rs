@@ -14,6 +14,7 @@
 //! nothing is asked for until a page wants it, while the window is idle.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime};
 
 use base64::Engine;
@@ -37,6 +38,10 @@ const MAX_URLS_PER_CALL: usize = 64;
 const MAX_PARALLEL: usize = 4;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// Makes each in-flight `.part` name unique. Two requests for the same URL can
+/// finish together; they must not write into one shared temp file.
+static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -117,15 +122,36 @@ async fn cache_one(client: &reqwest::Client, dir: &Path, url: &str) -> Option<Pa
         .and_then(|value| value.to_str().ok())
         .unwrap_or("");
     let extension = extension_for(content_type)?;
+    // Refuse an oversized body before it is pulled into RAM; the length is not
+    // always advertised, so the post-read check below stays.
+    if response
+        .content_length()
+        .map(|length| length > MAX_FILE_BYTES as u64)
+        .unwrap_or(false)
+    {
+        return None;
+    }
     let bytes = response.bytes().await.ok()?;
     if bytes.is_empty() || bytes.len() > MAX_FILE_BYTES {
         return None;
     }
     let target = dir.join(format!("{key}.{extension}"));
-    // Write beside the target and rename, so a half-written file is never read.
-    let tmp = dir.join(format!("{key}.{extension}.part"));
-    tokio::fs::write(&tmp, &bytes).await.ok()?;
-    tokio::fs::rename(&tmp, &target).await.ok()?;
+    // Write beside the target in a per-request temp file and rename, so a
+    // half-written file is never read and two simultaneous downloads cannot
+    // truncate each other's `.part`.
+    let sequence = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
+    let tmp = dir.join(format!(
+        "{key}.{extension}.{}.{sequence}.part",
+        std::process::id()
+    ));
+    if tokio::fs::write(&tmp, &bytes).await.is_err() {
+        return None;
+    }
+    if tokio::fs::rename(&tmp, &target).await.is_err() {
+        let _ = tokio::fs::remove_file(&tmp).await;
+        // Another request may have won the rename on Windows; use its file.
+        return existing_file(dir, &key);
+    }
     Some(target)
 }
 
