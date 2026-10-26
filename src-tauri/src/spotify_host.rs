@@ -175,6 +175,9 @@ pub fn spotify_player_reload(app: AppHandle) {
 /// instead of the Connect receiver (`playpause` | `next` | `previous`).
 #[tauri::command]
 pub fn spotify_page_control(app: AppHandle, action: String) {
+    if SUSPENDED.load(Ordering::SeqCst) {
+        return;
+    }
     let Some(view) = player(&app) else {
         return;
     };
@@ -210,6 +213,11 @@ pub struct PageCommand {
 
 #[tauri::command]
 pub fn spotify_page_now(app: AppHandle) -> Option<SpotifyPageNow> {
+    // A suspended page's fragment is the last state before it went to sleep;
+    // returning it would report a stale `playing` flag or replay a command.
+    if SUSPENDED.load(Ordering::SeqCst) {
+        return None;
+    }
     let view = player(&app)?;
     let url = view.url().ok()?;
     let fragment = url.fragment()?;
@@ -222,6 +230,9 @@ pub fn spotify_page_now(app: AppHandle) -> Option<SpotifyPageNow> {
 /// Goes back one step in the player's own history (album -> artist -> search).
 #[tauri::command]
 pub fn spotify_player_back(app: AppHandle) {
+    if SUSPENDED.load(Ordering::SeqCst) {
+        return;
+    }
     if let Some(view) = player(&app) {
         let _ = view.eval("history.back()");
     }
