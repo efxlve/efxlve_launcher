@@ -187,6 +187,22 @@ fn store_id_for_label(label: &str) -> String {
 
 /// Sign-in pages a store tab can be left on. Opening the tab again must return
 /// to the storefront instead of showing the account/client page.
+/// True only for the stores' own launcher-installer downloads. The old check
+/// blocked every path containing `/download`, which also caught game slugs and
+/// DLC pages; the injected extension already hides the visible buttons.
+fn is_launcher_download(url: &url::Url) -> bool {
+    if url.host_str() == Some("launcher-public-service-prod06.ol.epicgames.com") {
+        return true;
+    }
+    let path = url.path().to_ascii_lowercase();
+    let path = path.trim_end_matches('/');
+    path == "/download"
+        || path.starts_with("/download/")
+        || path.ends_with("/about/download")
+        || path.contains("epicgameslauncherinstaller")
+        || path.contains("/epicgameslauncher")
+}
+
 fn is_login_page(url: &url::Url) -> bool {
     matches!(
         url.host_str(),
@@ -636,9 +652,7 @@ fn create_store_builder(
                 );
                 return false;
             }
-            if url.path().contains("/download")
-                || url.host_str() == Some("launcher-public-service-prod06.ol.epicgames.com")
-            {
+            if is_launcher_download(&url) {
                 return false;
             }
             true
