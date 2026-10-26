@@ -82,9 +82,11 @@ static CREATED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 /// The generation a paint watchdog is already polling.
 static WATCHING: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-/// Last `#app-mount` child count reported by the page. Only transitions reach
-/// the log: the probe runs on every watchdog tick.
+/// Last `#app-mount` child count and visible-text length reported by the page.
+/// Only transitions reach the log: the probe runs on every watchdog tick.
 static READY_LAST: std::sync::atomic::AtomicI64 =
+    std::sync::atomic::AtomicI64::new(i64::MIN);
+static READY_TEXT_LAST: std::sync::atomic::AtomicI64 =
     std::sync::atomic::AtomicI64::new(i64::MIN);
 
 static LAST_REPORT: Mutex<Option<Instant>> = Mutex::new(None);
@@ -127,16 +129,22 @@ static LAST_RECT: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 /// Fake host the dev page probe reports through; the navigation is cancelled.
 const PROBE_HOST: &str = "efxlve.local";
 
-/// Read-only readiness check: Discord's client-side root gains children only
-/// when the web client has actually painted. The report navigation is
-/// cancelled, so the page itself never changes; the loading note stays visible
-/// until the report arrives. Small and idempotent on purpose.
+/// Read-only readiness check. Two signals are required: Discord's client-side
+/// root has children *and* the page has visible text. The root can mount its
+/// shell several seconds before the login form or channel UI paints, and
+/// showing the child at that point covers the loading note with an empty
+/// rectangle. The report navigation is cancelled, so the page itself never
+/// changes. Small and idempotent on purpose.
 const READY_SCRIPT: &str = r#"
 (function () {
     var mount = document.getElementById('app-mount');
     var kids = mount ? mount.childElementCount : -1;
+    var text = 0;
     try {
-        location.assign('https://efxlve.local/ready?m=' + kids);
+        text = document.body ? document.body.innerText.replace(/\s+/g, '').length : 0;
+    } catch (e) {}
+    try {
+        location.assign('https://efxlve.local/ready?m=' + kids + '&t=' + text);
     } catch (e) {}
 })();
 "#;
@@ -739,10 +747,24 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                         .find(|(key, _)| key == "m")
                         .and_then(|(_, value)| value.parse::<i64>().ok())
                         .unwrap_or(-1);
-                    if READY_LAST.swap(kids, Ordering::SeqCst) != kids {
-                        web_log(&nav_app, &format!("page ready report m={kids}"));
+                    let text = target
+                        .query_pairs()
+                        .find(|(key, _)| key == "t")
+                        .and_then(|(_, value)| value.parse::<i64>().ok())
+                        .unwrap_or(0);
+                    if READY_LAST.swap(kids, Ordering::SeqCst) != kids
+                        || READY_TEXT_LAST.swap(text, Ordering::SeqCst) != text
+                    {
+                        web_log(
+                            &nav_app,
+                            &format!("page ready report m={kids} t={text}"),
+                        );
                     }
-                    if kids > 0 {
+                    // A shell with no text is not a usable page yet: the
+                    // login form and the channel UI both add text. Showing the
+                    // child here would replace the loading note with an empty
+                    // dark rectangle.
+                    if kids > 0 && text > 0 {
                         let first = !PAINTED.swap(true, Ordering::SeqCst);
                         if WANT_VISIBLE.load(Ordering::SeqCst) {
                             // Refresh the frame on every report: after a
