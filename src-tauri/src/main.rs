@@ -1148,6 +1148,36 @@ fn listen_for_show_requests(app: tauri::AppHandle) {
 #[cfg(not(windows))]
 fn listen_for_show_requests(_app: tauri::AppHandle) {}
 
+/// A GUI build starts with no console: stdout/stderr are null handles and any
+/// print panics. Rodio prints when its output stream drops, so an achievement
+/// sound would abort the release build. Point a missing stream at NUL once.
+#[cfg(windows)]
+fn ensure_std_streams() {
+    use std::os::windows::io::AsRawHandle;
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetStdHandle(kind: u32) -> *mut core::ffi::c_void;
+        fn SetStdHandle(kind: u32, handle: *mut core::ffi::c_void) -> i32;
+    }
+    const STD_OUTPUT_HANDLE: u32 = (-11i32) as u32;
+    const STD_ERROR_HANDLE: u32 = (-12i32) as u32;
+    for kind in [STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
+        let current = unsafe { GetStdHandle(kind) };
+        if current.is_null() || current == (-1isize) as *mut core::ffi::c_void {
+            if let Ok(file) = std::fs::OpenOptions::new().write(true).open("NUL") {
+                unsafe {
+                    SetStdHandle(kind, file.as_raw_handle() as *mut core::ffi::c_void);
+                }
+                std::mem::forget(file);
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn ensure_std_streams() {}
+
 /// A panic in a release build leaves no trace: the window simply disappears and
 /// the user has nothing to send. This writes the message, the location and a
 /// backtrace next to the other logs, so a crash report is actionable.
@@ -1178,7 +1208,10 @@ fn install_crash_logger(app: &tauri::App) {
                 let _ = file.write_all(text.as_bytes());
             }
         }
-        eprintln!("{text}");
+        // A GUI launch and a closed console both leave stderr unwritable.
+        // `eprintln!` panics on a failed write, and a panic inside the panic
+        // hook aborts the process, so this write must ignore errors.
+        let _ = std::io::stderr().write_all(text.as_bytes());
     }));
 }
 
@@ -1478,6 +1511,7 @@ fn init_portable_mode() {}
 /// its Start-menu shortcut. An explicit app id here would make Windows drop
 /// the toasts entirely, because that id has no shortcut to resolve against.
 fn main() {
+    ensure_std_streams();
     init_portable_mode();
     // Rockstar's launcher only continues when a process named
     // `EpicGamesLauncher.exe` is in its ancestor chain. This binary runs as
