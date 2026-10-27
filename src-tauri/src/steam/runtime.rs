@@ -9,9 +9,32 @@ use std::time::{Duration, Instant};
 
 use crate::winreg;
 
+/// How long a resolved install path is trusted. The registry value only changes
+/// when Steam is reinstalled or moved, and the achievement watcher asks every
+/// 1.5 s: without this cache each tick spawned two `reg.exe` processes.
+const PATH_TTL: Duration = Duration::from_secs(60);
+
+/// Last resolved install path, with the instant it was read.
+static PATH_CACHE: Mutex<Option<(Instant, Option<PathBuf>)>> = Mutex::new(None);
+
 /// Steam install directory: registry on Windows, the well-known client folders
 /// on Linux/macOS.
 pub fn steam_install_path() -> Option<PathBuf> {
+    if let Ok(slot) = PATH_CACHE.lock() {
+        if let Some((at, path)) = slot.as_ref() {
+            if at.elapsed() < PATH_TTL {
+                return path.clone();
+            }
+        }
+    }
+    let resolved = resolve_steam_install_path();
+    if let Ok(mut slot) = PATH_CACHE.lock() {
+        *slot = Some((Instant::now(), resolved.clone()));
+    }
+    resolved
+}
+
+fn resolve_steam_install_path() -> Option<PathBuf> {
     #[cfg(windows)]
     {
         let hkcu = winreg::query(r"HKCU\Software\Valve\Steam", Some("SteamPath"));

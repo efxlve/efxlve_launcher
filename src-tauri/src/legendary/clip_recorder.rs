@@ -836,10 +836,14 @@ pub fn frame_at(path: &Path, seconds: f64) -> Option<String> {
 
 /// `dwTotalFrames / (dwRate / dwScale)` from the `avih` header.
 fn avi_seconds(path: &Path) -> Option<u64> {
-    let bytes = std::fs::read(path).ok()?;
+    // The duration sits in the first 52 bytes. Reading the whole file pulled
+    // every recording — hundreds of megabytes each — through memory just to
+    // fill in a length column in the clips list.
+    let mut bytes = [0u8; 52];
+    File::open(path).ok()?.read_exact(&mut bytes).ok()?;
     // Layout: RIFF(12) + LIST hdrl(12) + "avih" chunk header(8) → payload at 32.
     // dwMicroSecPerFrame is the first field, dwTotalFrames sits 16 bytes in.
-    if bytes.len() < 52 || &bytes[0..4] != b"RIFF" {
+    if &bytes[0..4] != b"RIFF" {
         return None;
     }
     let read_u32 = |offset: usize| -> u32 {

@@ -24,6 +24,9 @@ const STICK_DEADZONE = 0.42;
 const REPEAT_FIRST_MS = 260;
 const REPEAT_NEXT_MS = 85;
 const IDLE_POLL_MS = 80;
+/** Idle poll for a connected pad: fast enough to catch a tap, slow enough not
+ *  to drive a frame every refresh. */
+const IDLE_PAD_POLL_MS = 40;
 
 const BTN_A = 0;
 const BTN_B = 1;
@@ -418,7 +421,15 @@ function gamepadLoop(): void {
   }
 
   prevButtons = mask;
-  requestAnimationFrame(gamepadLoop);
+  // An idle pad does not need a frame every 16 ms: while nothing is held the
+  // loop wakes on a timer and goes back to rAF on the first press. 40 ms still
+  // samples a human tap, and a connected pad no longer keeps the compositor
+  // rendering at the display's refresh rate for the whole session.
+  if (mask === 0) {
+    window.setTimeout(gamepadLoop, IDLE_PAD_POLL_MS);
+  } else {
+    requestAnimationFrame(gamepadLoop);
+  }
 }
 
 function bindPad(gp: Gamepad): void {

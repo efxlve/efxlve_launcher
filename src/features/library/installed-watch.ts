@@ -32,9 +32,20 @@ function installedGames(): { id: string; path: string }[] {
 /** Pushes the installed list to the watcher whenever it changed. */
 export function syncInstalledWatch(): void {
   if (!isTauri) return;
+  // The signature is rebuilt from every installed game in the library. A hidden
+  // window gains nothing from that: the next visible tick catches up.
+  if (document.hidden) return;
   const list = installedGames();
   const signature = list.map((g) => `${g.id}\u001f${g.path}`).join("\u001e");
   if (signature === lastSignature) return;
   lastSignature = signature;
   void gameWatchInstalled(list).catch(() => {});
+}
+
+// A change made while the window was hidden lands on the first visible frame
+// instead of waiting for the 20 s tick.
+if (isTauri) {
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) syncInstalledWatch();
+  });
 }

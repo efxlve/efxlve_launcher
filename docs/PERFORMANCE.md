@@ -53,6 +53,12 @@ the window is hidden.
 | Effects | Global reduced-effects class: no animation, no transition, no backdrop blur; focus ring preserved; spinner exempt | Removes continuous compositing on weak GPUs without moving or hiding controls |
 | Image cache clear | Also clears the in-memory map and request set | The Settings button actually releases RAM, not only disk |
 | Media Studio scan | The newest 300 captures are chosen before any thumbnail is built, and the thumbnails are spread over four workers with a progress event | The first scan decoded a preview for every file on disk in one blocking response, so the tab stayed empty with no sign of work |
+| Clips list | `avi_seconds` reads the 52-byte `avih` header instead of the whole file | Opening the clips page read every recording end to end — hundreds of megabytes per clip — just to fill a length column |
+| Steam install path | The registry answer is trusted for 60 s instead of being re-read per call | The achievement watcher asked every 1.5 s, and each answer spawned two `reg.exe` processes |
+| Overlay hotkey | Game identity is cloned on the hotkey edge, not every tick; the pad probe runs every fourth tick | Two strings were allocated 50 times a second for a value only an edge reads, and XInput was polled 200 times a second |
+| Gamepad loop | A connected but idle pad polls on a 40 ms timer and returns to rAF on the first press | A pad nobody touched kept the renderer drawing a frame every refresh for the whole session |
+| Installed-game watch | The signature is skipped while the window is hidden and rebuilt on the first visible frame | A hidden launcher rebuilt a string over the whole installed library every 20 s |
+| Library card tilt | The pointer handler returns immediately outside the library view | Every pointer move in settings, the store or the drawer walked ancestors for a card that cannot exist there |
 
 ## Remaining opportunities
 

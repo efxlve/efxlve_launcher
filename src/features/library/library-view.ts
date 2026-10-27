@@ -831,6 +831,15 @@ function wireCardSettle(): void {
     "pointermove",
     (e) => {
       if (e.pointerType === "touch") return;
+      // The tilt only exists on the library grid. Every other view was paying a
+      // `closest()` walk on each pointer move for a card that cannot be there.
+      if (S.view !== "library") {
+        if (activeTiltCard) {
+          clearCardTilt(activeTiltCard);
+          activeTiltCard = null;
+        }
+        return;
+      }
       const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard") ?? null;
       if (activeTiltCard && activeTiltCard !== card) {
         clearCardTilt(activeTiltCard);

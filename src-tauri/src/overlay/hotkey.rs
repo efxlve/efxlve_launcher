@@ -41,8 +41,11 @@ const VK_TAB: i32 = 0x09;
 pub(crate) fn start(app: AppHandle) {
     std::thread::spawn(move || {
         let mut gone_ticks: u32 = 0;
+        // Pad probe bookkeeping: see the throttle below.
+        let mut tick: u32 = 0;
+        let mut pad_down = false;
         loop {
-            let (visible, enabled, game_disabled, capturing, combo, game_hwnd, cur_app, cur_title) = STATE
+            let (visible, enabled, game_disabled, capturing, combo, game_hwnd) = STATE
                 .lock()
                 .map(|s| {
                     (
@@ -52,11 +55,9 @@ pub(crate) fn start(app: AppHandle) {
                         s.capturing,
                         s.combo,
                         s.game_hwnd,
-                        s.game_app.clone(),
-                        s.game_title.clone(),
                     )
                 })
-                .unwrap_or((false, true, false, false, None, 0, String::new(), String::new()));
+                .unwrap_or((false, true, false, false, None, 0));
 
             // Switched off, or this game opted out: sleep without touching the
             // keyboard. The window is already gone (the command tore it down).
@@ -77,6 +78,7 @@ pub(crate) fn start(app: AppHandle) {
                     // (fullscreen switch): re-find it by pid before counting it
                     // gone, so the panel does not close itself mid-session.
                     let mut found = 0isize;
+                    let (cur_app, _) = game_identity();
                     if !cur_app.is_empty() {
                         let pids = crate::legendary::screenshots::active_game_pids();
                         found = super::hud::find_game_window(&pids);
@@ -102,7 +104,12 @@ pub(crate) fn start(app: AppHandle) {
 
             #[cfg(windows)]
             {
-                let pad_down = is_controller_hotkey_down();
+                // XInput costs four calls per probe; the pad combination is a
+                // hold, so probing every fourth tick (80 ms) still catches it.
+                tick = tick.wrapping_add(1);
+                if tick % 4 == 0 {
+                    pad_down = is_controller_hotkey_down();
+                }
                 // The Settings recorder owns the keyboard while it listens; the
                 // old combination must not open the panel over the capture.
                 let down = !capturing && (combo_down(combo) || pad_down);
@@ -126,8 +133,7 @@ pub(crate) fn start(app: AppHandle) {
                             }
 
                             // Determine game identity
-                            let mut app_name = cur_app.clone();
-                            let mut title = cur_title.clone();
+                            let (mut app_name, mut title) = game_identity();
 
                             if app_name.is_empty() {
                                 if let Some((active_app, active_title)) = crate::legendary::screenshots::get_active_running_game() {
@@ -178,6 +184,18 @@ fn combo_down(combo: Option<super::HotkeyCombo>) -> bool {
 #[cfg(windows)]
 fn key_down(vk: i32) -> bool {
     (unsafe { GetAsyncKeyState(vk) } as i16) < 0
+}
+
+/// The game the panel would attach to, read on demand.
+///
+/// The tick used to clone both strings every 20 ms for a value only a hotkey
+/// edge or a dead game window actually reads.
+#[cfg(windows)]
+fn game_identity() -> (String, String) {
+    STATE
+        .lock()
+        .map(|s| (s.game_app.clone(), s.game_title.clone()))
+        .unwrap_or_default()
 }
 
 #[cfg(windows)]
