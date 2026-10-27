@@ -1121,9 +1121,9 @@
   border-radius: 10px !important;
 }
 
-/* Border comet: a short white dash travels along the card outline. A small
-   SVG stroke is far cheaper than a full-size masked conic gradient, which
-   stutters on the transparent toast window. */
+/* Border comet: an elegant perimeter light flare that sweeps around the card
+   once upon entrance, then smoothly dissolves away. Does NOT loop infinitely,
+   leaving the card calm, pristine and readable. */
 .ach-fx-border-beam {
   position: absolute;
   inset: 0;
@@ -1131,7 +1131,7 @@
   height: 100%;
   overflow: visible;
   pointer-events: none;
-  opacity: 0.9;
+  z-index: 4;
 }
 
 .ach-fx-border-beam rect {
@@ -1142,12 +1142,12 @@
   rx: 15px;
   ry: 15px;
   fill: none;
-  stroke: #ffffff;
-  stroke-width: 1.5;
+  stroke: color-mix(in srgb, #ffffff 75%, var(--ach-accent, #f59e0b));
+  stroke-width: 1.75;
   stroke-linecap: round;
-  stroke-dasharray: 8 92;
-  filter: drop-shadow(0 0 4px var(--ach-accent, #f59e0b));
-  animation: ach-beam-travel 3.6s linear infinite;
+  stroke-dasharray: 20 80;
+  filter: drop-shadow(0 0 5px var(--ach-accent, #f59e0b)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+  opacity: 0;
 }
 
 .ach-hud-toast.style-cyber .ach-fx-border-beam rect {
@@ -1167,12 +1167,44 @@
   ry: 999px;
 }
 
-@keyframes ach-beam-travel {
-  from {
-    stroke-dashoffset: 0;
+.ach-hud-toast.seq-0 .ach-fx-border-beam rect {
+  animation: ach-beam-sweep-a 1150ms cubic-bezier(0.2, 0.85, 0.3, 1) 80ms both;
+}
+.ach-hud-toast.seq-1 .ach-fx-border-beam rect {
+  animation: ach-beam-sweep-b 1150ms cubic-bezier(0.2, 0.85, 0.3, 1) 80ms both;
+}
+
+@keyframes ach-beam-sweep-a {
+  0% {
+    stroke-dashoffset: 15;
+    opacity: 0;
   }
-  to {
+  15% {
+    opacity: 0.95;
+  }
+  75% {
+    opacity: 0.8;
+  }
+  100% {
     stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+
+@keyframes ach-beam-sweep-b {
+  0% {
+    stroke-dashoffset: 15;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  75% {
+    opacity: 0.8;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
   }
 }
 
@@ -1538,6 +1570,7 @@
   }
   .ach-fx-border-beam rect {
     animation: none !important;
+    opacity: 0 !important;
   }
 }
 
