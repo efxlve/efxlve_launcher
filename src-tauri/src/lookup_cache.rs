@@ -42,7 +42,7 @@ pub fn read<T: DeserializeOwned>(path: &Path, schema: u32) -> Option<(T, u64)> {
 }
 
 /// Stores one answer, stamped with the current time.
-pub fn write<T: Serialize>(path: &Path, schema: u32, value: &T) {
+pub fn write<T: Serialize + ?Sized>(path: &Path, schema: u32, value: &T) {
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
     }

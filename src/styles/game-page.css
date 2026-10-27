@@ -56,6 +56,12 @@ body.sb-resizing .overlay {
   object-position: center center;
   padding: 12px 0;
 }
+/* A dead URL leaves the hero's gradient visible instead of the browser's
+   broken-image icon. The element stays so the store-header fallback can swap
+   its picture in and clear the class on load. */
+.gp-hero-img.is-broken {
+  visibility: hidden;
+}
 .gp-hero-scrim {
   position: absolute; inset: 0;
   background: linear-gradient(

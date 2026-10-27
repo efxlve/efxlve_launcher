@@ -104,6 +104,13 @@ fn riot_art(id: &str) -> Option<&'static str> {
     RIOT_ART.iter().find(|(code, _)| *code == id).map(|(_, url)| *url)
 }
 
+/// A flat `cdn.*.steamstatic.com/steam/apps/<id>/...` path. Newer titles only
+/// publish the art under a content-hash path, so a flat one 404s and must be
+/// resolved again instead of being trusted from the cache.
+fn flat_steam_art(url: &str) -> bool {
+    url.contains("steamstatic.com/steam/apps/") && !url.contains("store_item_assets")
+}
+
 pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
     let mut cache = load_cache();
     let client = match reqwest::Client::builder().user_agent("efxlve-launcher").timeout(Duration::from_secs(8)).build() {
@@ -136,7 +143,14 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
         let art = cached_art(&cache, &query.store, &query.id);
         // The caller's catalog cover outranks the cached Steam cover.
         let known_cover = if query.cover.is_empty() { art.cover } else { query.cover.clone() };
-        if !known_cover.is_empty() && !art.hero.is_empty() && art.dev_checked {
+        // A cached flat CDN path is a dead link for newer titles; resolve it
+        // once more rather than keeping it forever.
+        if !known_cover.is_empty()
+            && !art.hero.is_empty()
+            && art.dev_checked
+            && !flat_steam_art(&known_cover)
+            && !flat_steam_art(&art.hero)
+        {
             hits.push(CoverHit {
                 store: query.store,
                 id: query.id,
@@ -151,16 +165,46 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
             break;
         }
     }
+
+    let mut fetched = Vec::new();
     for query in pending {
-        // Keep whatever the caller already had; the fetch only fills the gap.
-        let requested_cover = query.cover.clone();
-        let Some((query, fetched_cover, hero, developer)) = fetch_one(client.clone(), query).await else {
-            continue;
-        };
-        if fetched_cover.is_empty() && hero.is_empty() && developer.is_empty() {
+        if let Some(row) = fetch_one(client.clone(), query).await {
+            fetched.push(row);
+        }
+    }
+
+    // Steam's flat capsule path 404s for newer titles: one store lookup covers
+    // every row the name search matched, instead of one request per game.
+    let app_ids: Vec<u64> = fetched.iter().filter_map(|(_, app, _, _, _)| *app).collect();
+    let steam_assets = crate::steam_art::fetch_store_assets(&app_ids)
+        .await
+        .unwrap_or_default();
+
+    for (query, steam_app, fetched_cover, fetched_hero, developer) in fetched {
+        let mut cover = fetched_cover;
+        let mut hero = fetched_hero;
+        if let Some(assets) = steam_app.and_then(|app| steam_assets.get(&app)) {
+            if cover.is_empty() || flat_steam_art(&cover) {
+                if let Some(hashed) = crate::steam_art::cover_url_from_assets(assets) {
+                    cover = hashed;
+                }
+            }
+            if hero.is_empty() || flat_steam_art(&hero) {
+                if let Some(hashed) = crate::steam_art::hero_url_from_assets(assets) {
+                    hero = hashed;
+                }
+            }
+        }
+        if cover.is_empty() && hero.is_empty() && developer.is_empty() {
             continue;
         }
-        let cover = if requested_cover.is_empty() { fetched_cover } else { requested_cover };
+        // Keep whatever the caller already had; the fetch only fills the gap. A
+        // flat Steam path is not a real answer, so the resolved one replaces it.
+        let cover = if query.cover.is_empty() || flat_steam_art(&query.cover) {
+            cover
+        } else {
+            query.cover.clone()
+        };
         cache.insert(
             cache_key(&query.store, &query.id),
             CachedArt { cover: cover.clone(), hero: hero.clone(), developer: developer.clone(), dev_checked: true },
@@ -171,7 +215,12 @@ pub async fn resolve_covers(queries: Vec<CoverQuery>) -> Vec<CoverHit> {
     hits
 }
 
-async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQuery, String, String, String)> {
+/// The matched Steam app id travels back with the row so all the ids can be
+/// resolved in one batched store lookup.
+async fn fetch_one(
+    client: reqwest::Client,
+    query: CoverQuery,
+) -> Option<(CoverQuery, Option<u64>, String, String, String)> {
     // Xbox rows carry a Store id: the product page knows both the poster and
     // the wide art, so the portrait is never stretched into the banner.
     let xbox = if !query.store_id.is_empty() {
@@ -221,7 +270,7 @@ async fn fetch_one(client: reqwest::Client, query: CoverQuery) -> Option<(CoverQ
     if cover.is_empty() && hero.is_empty() && developer.is_empty() {
         return None;
     }
-    Some((query, cover, hero, developer))
+    Some((query, steam, cover, hero, developer))
 }
 
 fn steam_cover(app: u64) -> String {
@@ -460,6 +509,20 @@ mod tests {
         assert!(!names_match("Watch Dogs", "Watch Dogs 2"));
         assert!(!names_match("Far Cry 5", "Far Cry 6"));
         assert!(names_match("Watch Dogs 2", "WATCH_DOGS® 2"));
+    }
+
+    #[test]
+    fn only_a_flat_steam_path_is_stale() {
+        assert!(flat_steam_art(
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/1/library_600x900.jpg"
+        ));
+        assert!(!flat_steam_art(
+            "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1/hash/library_600x900.jpg"
+        ));
+        assert!(!flat_steam_art(
+            "https://store-images.s-microsoft.com/image/poster"
+        ));
+        assert!(!flat_steam_art(""));
     }
 
     #[test]

@@ -1058,12 +1058,19 @@ function ensureOverviewData(s: EpicSummary): void {
           paintAboutText(s);
         }
         if (details.hero_url) {
+          // The store answer is cached, the picture behind it must be too: keep
+          // both the image and its blurred backdrop on the same cached URL.
           const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
           if (heroEl) {
-            heroEl.src = details.hero_url;
-            const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
-            if (bgEl) bgEl.style.backgroundImage = `url('${details.hero_url}')`;
+            heroEl.dataset.imgUrl = details.hero_url;
+            heroEl.src = cachedImage(details.hero_url);
           }
+          const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
+          if (bgEl) {
+            bgEl.dataset.imgUrl = details.hero_url;
+            bgEl.style.backgroundImage = `url('${cachedImage(details.hero_url)}')`;
+          }
+          warmImages([details.hero_url]);
         }
         if (details.developer) {
           const item = S.gogSummariesMap.get(rawId);
@@ -1295,7 +1302,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           ${
             art
               ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" style="background-image:url('${esc(cachedImage(art))}');"></div>
-          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="if(this.naturalWidth && this.naturalHeight && this.naturalWidth/this.naturalHeight < 1.3) this.classList.add('is-portrait')" onerror="this.remove()" />`
+          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="this.classList.remove('is-broken');if(this.naturalWidth && this.naturalHeight && this.naturalWidth/this.naturalHeight < 1.3) this.classList.add('is-portrait')" onerror="this.classList.add('is-broken')" />`
               : ""
           }
           <div class="gp-hero-scrim"></div>
@@ -3034,8 +3041,17 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
       const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
       if (heroEl && details.headerImage) {
         const fallback = details.headerImage;
-        heroEl.addEventListener("error", () => { heroEl.src = fallback; }, { once: true });
-        if (heroEl.complete && heroEl.naturalWidth === 0) heroEl.src = fallback;
+        heroEl.addEventListener("error", () => {
+          // The same disk cache as the hero: the fallback is fetched once.
+          heroEl.dataset.imgUrl = fallback;
+          heroEl.src = cachedImage(fallback);
+          warmImages([fallback]);
+        }, { once: true });
+        if (heroEl.complete && heroEl.naturalWidth === 0) {
+          heroEl.dataset.imgUrl = fallback;
+          heroEl.src = cachedImage(fallback);
+          warmImages([fallback]);
+        }
       }
       const cloud = details.categories.includes(23);
       const item = S.allGamesMap.get(appName) || S.steamSummariesMap.get(appName);

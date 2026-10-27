@@ -17,7 +17,8 @@
 //! asks for caching, and it keeps the limit free for the games users open.
 
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use sha2::{Digest, Sha256};
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
@@ -934,6 +935,52 @@ fn write_map(path: Option<PathBuf>, map: &serde_json::Map<String, serde_json::Va
 /// are fetched again instead of showing up half empty.
 const CACHE_SCHEMA: u32 = 5;
 
+/// Bumped when `IgdbSearchHit` / `IgdbCoverHit` change shape.
+const SEARCH_CACHE_SCHEMA: u32 = 1;
+
+/// A search answer is stable, but IGDB adds games: a hit is trusted for a week,
+/// a miss for the usual month (the same rule the title lookup follows).
+const SEARCH_HIT_TTL_SECS: u64 = 7 * 24 * 3600;
+
+/// A search cache file name, from the normalized query and the limit. Hashed on
+/// purpose: `file_key` folds every non-ASCII character to `_`, so two Japanese
+/// queries would otherwise share one file.
+fn search_cache_name(kind: &str, query: &str, limit: usize) -> String {
+    let digest = Sha256::digest(format!("{kind}\n{}\n{limit}", normalize_title(query)).as_bytes());
+    digest
+        .iter()
+        .take(16)
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn search_cache_path(app: &AppHandle, kind: &str, query: &str, limit: usize) -> Option<PathBuf> {
+    igdb_dir(app).map(|dir| {
+        dir.join(format!(
+            "{kind}-{}.json",
+            search_cache_name(kind, query, limit)
+        ))
+    })
+}
+
+/// A stored search answer while it is still fresh. `None` asks for the network.
+fn read_search_cache<T: serde::de::DeserializeOwned>(path: Option<&Path>) -> Option<Vec<T>> {
+    let path = path?;
+    let (hits, fetched_at) = crate::lookup_cache::read::<Vec<T>>(path, SEARCH_CACHE_SCHEMA)?;
+    let ttl = if hits.is_empty() {
+        crate::lookup_cache::MISS_TTL_SECS
+    } else {
+        SEARCH_HIT_TTL_SECS
+    };
+    crate::lookup_cache::fresh(fetched_at, ttl).then_some(hits)
+}
+
+fn write_search_cache<T: Serialize>(path: Option<&Path>, hits: &[T]) {
+    if let Some(path) = path {
+        crate::lookup_cache::write(path, SEARCH_CACHE_SCHEMA, hits);
+    }
+}
+
 /// What actually lands on disk: the schema marker next to the game itself.
 #[derive(Serialize, Deserialize)]
 struct CachedGame {
@@ -1204,11 +1251,20 @@ pub async fn igdb_probe_proxy(app: AppHandle) -> IgdbProxyProbe {
 #[tauri::command]
 pub async fn igdb_search(app: AppHandle, query: String, limit: Option<usize>) -> Result<Vec<IgdbSearchHit>, String> {
     let limit = limit.unwrap_or(8).clamp(1, 30);
+    if normalize_title(&query).is_empty() {
+        return Ok(Vec::new());
+    }
+    let cache = search_cache_path(&app, "search", &query, limit);
+    if let Some(hits) = read_search_cache::<IgdbSearchHit>(cache.as_deref()) {
+        return Ok(hits);
+    }
     let value = api_post(&app, "games", &search_query(&query, limit)).await?;
-    Ok(value
+    let hits: Vec<IgdbSearchHit> = value
         .as_array()
         .map(|items| items.iter().map(map_search_hit).collect())
-        .unwrap_or_default())
+        .unwrap_or_default();
+    write_search_cache(cache.as_deref(), &hits);
+    Ok(hits)
 }
 
 /// One game by its IGDB id, cache first.
@@ -1224,11 +1280,20 @@ pub async fn igdb_game(app: AppHandle, id: i64) -> Result<IgdbGame, String> {
 #[tauri::command]
 pub async fn igdb_covers(app: AppHandle, query: String, limit: Option<usize>) -> Result<Vec<IgdbCoverHit>, String> {
     let limit = limit.unwrap_or(6).clamp(1, 20);
+    if normalize_title(&query).is_empty() {
+        return Ok(Vec::new());
+    }
+    let cache = search_cache_path(&app, "covers", &query, limit);
+    if let Some(hits) = read_search_cache::<IgdbCoverHit>(cache.as_deref()) {
+        return Ok(hits);
+    }
     let value = api_post(&app, "games", &covers_query(&query, limit)).await?;
-    Ok(value
+    let hits: Vec<IgdbCoverHit> = value
         .as_array()
         .map(|items| items.iter().map(map_cover_hit).collect())
-        .unwrap_or_default())
+        .unwrap_or_default();
+    write_search_cache(cache.as_deref(), &hits);
+    Ok(hits)
 }
 
 /// The game page's entry point: an exact external id when the library knows
@@ -1570,5 +1635,18 @@ mod tests {
     #[test]
     fn normalize_title_keeps_letters_and_digits() {
         assert_eq!(normalize_title("The Witcher 3: Wild Hunt!"), "thewitcher3wildhunt");
+    }
+
+    #[test]
+    fn search_cache_names_separate_kind_query_and_limit() {
+        let base = search_cache_name("search", "Life is Strange", 8);
+        assert_eq!(base, search_cache_name("search", "life-is-strange!", 8));
+        assert_ne!(base, search_cache_name("search", "Life is Strange", 20));
+        assert_ne!(base, search_cache_name("covers", "Life is Strange", 8));
+        // `file_key` would fold both of these to underscores.
+        assert_ne!(
+            search_cache_name("search", "ライフイズストレンジ", 8),
+            search_cache_name("search", "ライフソウル", 8)
+        );
     }
 }
