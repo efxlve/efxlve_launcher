@@ -93,12 +93,37 @@ fn custom_games_path(app: &AppHandle) -> PathBuf {
         .join("custom_games.json")
 }
 
+fn ensure_detected_steam_app_id(game: &mut CustomGame) -> bool {
+    let has_app_id = game
+        .steam_app_id
+        .as_deref()
+        .is_some_and(|id| !id.trim().is_empty());
+    if has_app_id || game.exe_path.trim().is_empty() {
+        return false;
+    }
+    if let Some(detected) = crate::steam::detect_steam_app_id_for_exe(Path::new(game.exe_path.trim())) {
+        game.steam_app_id = Some(detected);
+        return true;
+    }
+    false
+}
+
 pub fn load_custom_games(app: &AppHandle) -> Vec<CustomGame> {
     let path = custom_games_path(app);
-    std::fs::read_to_string(&path)
+    let mut list: Vec<CustomGame> = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    let mut dirty = false;
+    for game in &mut list {
+        if ensure_detected_steam_app_id(game) {
+            dirty = true;
+        }
+    }
+    if dirty {
+        let _ = save_custom_games(app, &list);
+    }
+    list
 }
 
 pub fn save_custom_games(app: &AppHandle, list: &[CustomGame]) -> Result<(), String> {
@@ -185,6 +210,7 @@ pub fn custom_games_add(app: AppHandle, mut game: CustomGame) -> Result<CustomGa
             .map(|d| d.as_secs())
             .unwrap_or(0);
     }
+    let _ = ensure_detected_steam_app_id(&mut game);
 
     list.retain(|g| g.id != game.id);
     list.push(game.clone());
@@ -194,10 +220,11 @@ pub fn custom_games_add(app: AppHandle, mut game: CustomGame) -> Result<CustomGa
 }
 
 #[tauri::command]
-pub fn custom_games_edit(app: AppHandle, game: CustomGame) -> Result<CustomGame, String> {
+pub fn custom_games_edit(app: AppHandle, mut game: CustomGame) -> Result<CustomGame, String> {
     if game.id.is_empty() {
         return Err("Invalid game ID".into());
     }
+    let _ = ensure_detected_steam_app_id(&mut game);
     let mut list = load_custom_games(&app);
     let index = list
         .iter()
@@ -470,7 +497,7 @@ pub fn custom_games_import_folder(
             developer: None,
             release_year: None,
             genres: Vec::new(),
-            steam_app_id: None,
+            steam_app_id: crate::steam::detect_steam_app_id_for_exe(&exe),
             added_at: now,
         };
         list.push(game.clone());

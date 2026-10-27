@@ -38,8 +38,19 @@ import { hydrateGameCompatCard, renderGameCompatCard } from "./game-compat";
 import { hydrateProtonDbChip, renderProtonDbHost } from "./protondb";
 import { hydrateAntiCheatChip, renderAntiCheatHost } from "./awacy";
 import { hydrateDeckChip, renderDeckHost } from "./deck";
-import { steamGetGameDetails, steamFindStoreApp } from "../../steam";
-import { steamGetAchievements, steamGetAchievementCommunity, steamGetEmulatorAchievements, steamGetAchievementSource, steamSetAchievementSource, type AchievementSourceConfig } from "../../steam";
+import {
+  achievementTestNotification,
+  steamFindStoreApp,
+  steamGetAchievementCommunity,
+  steamGetAchievementSource,
+  steamGetAchievements,
+  steamGetEmulatorAchievements,
+  steamGetGameDetails,
+  steamSetAchievementSource,
+  steamStartEmulatorWatcher,
+  steamStopAchievementWatcher,
+  type AchievementSourceConfig,
+} from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
 import { companionAchievements } from "../../companion";
@@ -2303,6 +2314,178 @@ export function renderDrawerAchievements(s: EpicSummary): string {
  * stop command and the process watcher), and both must fold into one fetch.
  */
 const sessionAchRefreshAt = new Map<string, number>();
+const sessionUnlockedBaseline = new Map<string, Set<string>>();
+const sessionPollTimers = new Map<string, number>();
+
+async function resolveCustomGameSteamAppId(customGame: {
+  id: string;
+  title: string;
+  steamAppId?: string | null;
+  exePath?: string;
+}): Promise<string> {
+  if (customGame.steamAppId && /^\d+$/.test(customGame.steamAppId.trim())) {
+    return customGame.steamAppId.trim();
+  }
+  try {
+    const hit = await steamFindStoreApp(customGame.title);
+    if (hit?.appId && /^\d+$/.test(hit.appId)) {
+      customGame.steamAppId = hit.appId;
+      return hit.appId;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
+function classifyStoreRarityTier(
+  rarityPercent: number | null | undefined,
+  tierName: string | undefined,
+  unlockedCount: number,
+  totalCount: number,
+): number {
+  if (totalCount > 0 && unlockedCount >= totalCount) return 4;
+  if (typeof rarityPercent === "number" && Number.isFinite(rarityPercent)) {
+    if (rarityPercent <= 3.5) return 3;
+    if (rarityPercent <= 12.0) return 2;
+    if (rarityPercent <= 30.0) return 1;
+    return 0;
+  }
+  switch ((tierName || "").toLowerCase()) {
+    case "platinum":
+      return 4;
+    case "ultra":
+    case "diamond":
+      return 3;
+    case "gold":
+      return 2;
+    case "silver":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function emitStoreAchievementUnlock(
+  appName: string,
+  ach: {
+    name: string;
+    display_name?: string;
+    description?: string;
+    icon_link?: string;
+    rarity?: { percent?: number | null } | null;
+    tier?: { name?: string } | null;
+  },
+  unlockedCount: number,
+  totalCount: number,
+): void {
+  const pct = ach.rarity?.percent ?? null;
+  const tierCode = classifyStoreRarityTier(pct, ach.tier?.name, unlockedCount, totalCount);
+  const pctText = typeof pct === "number" && Number.isFinite(pct) ? ` • %${pct.toFixed(1)}` : "";
+  const countText = totalCount > 0 ? ` • ${unlockedCount}/${totalCount}` : "";
+  const tagLabel =
+    tierCode === 4
+      ? `PLATİN KUPA${countText} (%100)`
+      : tierCode === 3
+        ? `ULTRA NADİR${pctText}${countText}`
+        : tierCode === 2
+          ? `ALTIN BAŞARIM${pctText}${countText}`
+          : `BAŞARIM KAZANILDI${countText}`;
+  const title = ach.display_name?.trim() || ach.name;
+  const body = ach.description || "";
+  void achievementTestNotification(
+    title,
+    body,
+    tagLabel,
+    tierCode,
+    appName,
+    ach.name,
+    ach.icon_link || "",
+    unlockedCount,
+    totalCount,
+    true,
+  ).catch(() => {});
+}
+
+function checkAndEmitNewStoreUnlocks(appName: string): number {
+  const data = S.loadedAchievements.get(appName);
+  if (!data || !Array.isArray(data.achievements) || data.achievements.length === 0) {
+    return 0;
+  }
+  let baseline = sessionUnlockedBaseline.get(appName);
+  if (!baseline) {
+    baseline = new Set(data.achievements.filter((a) => a.unlocked).map((a) => a.name));
+    sessionUnlockedBaseline.set(appName, baseline);
+    return 0;
+  }
+  let newlyUnlocked = 0;
+  const totalCount = Math.max(data.total_achievements || 0, data.achievements.length);
+  for (const ach of data.achievements) {
+    if (!ach.unlocked || baseline.has(ach.name)) continue;
+    baseline.add(ach.name);
+    newlyUnlocked += 1;
+    emitStoreAchievementUnlock(appName, ach, baseline.size, totalCount);
+  }
+  return newlyUnlocked;
+}
+
+function stopStoreAchievementPoll(appName: string): void {
+  const timer = sessionPollTimers.get(appName);
+  if (timer !== undefined) {
+    window.clearInterval(timer);
+    sessionPollTimers.delete(appName);
+  }
+}
+
+/**
+ * Starts live achievement tracking for a running game across non-Steam stores
+ * (Epic, GOG, Ubisoft Connect, EA App, Xbox) and custom/emulator games.
+ */
+export function startStoreAchievementSession(appName: string): void {
+  if (!isTauri || appName.startsWith("steam::")) return;
+  if (appName.startsWith("custom::")) {
+    const game = S.customGames.find((item) => item.id === appName);
+    if (!game) return;
+    const exeDir = game.exePath?.replace(/[\\/][^\\/]*$/, "");
+    void resolveCustomGameSteamAppId(game).then((appId) => {
+      void steamStartEmulatorWatcher(appId, exeDir).catch(() => {});
+    });
+    return;
+  }
+
+  const source = sourceOfKey(appName);
+  if (source === "amazon" || source === "battlenet" || source === "riot") return;
+
+  const existing = S.loadedAchievements.get(appName);
+  if (existing && existing.achievements.length > 0 && !sessionUnlockedBaseline.has(appName)) {
+    sessionUnlockedBaseline.set(
+      appName,
+      new Set(existing.achievements.filter((a) => a.unlocked).map((a) => a.name)),
+    );
+  } else if (!sessionUnlockedBaseline.has(appName)) {
+    void fetchAndRenderAchievements(appName, false, true).then(() => {
+      checkAndEmitNewStoreUnlocks(appName);
+    });
+  }
+
+  if (sessionPollTimers.has(appName)) return;
+  const isUbi = source === "ubisoft" || ubiAchSource.has(appName);
+  const intervalMs = isUbi ? 5_000 : 20_000;
+  const timer = window.setInterval(() => {
+    if (!S.runningGames.has(appName)) {
+      stopStoreAchievementPoll(appName);
+      return;
+    }
+    void fetchAndRenderAchievements(appName, true, true).then(() => {
+      const unlockedDelta = checkAndEmitNewStoreUnlocks(appName);
+      if (unlockedDelta > 0) {
+        recordSessionSummary(appName, { unlocked: unlockedDelta, at: Date.now() });
+        repaintPersonalBlock(appName);
+      }
+    });
+  }, intervalMs);
+  sessionPollTimers.set(appName, timer);
+}
 
 /**
  * A finished session can unlock achievements in every store, but the caches
@@ -2313,6 +2496,17 @@ const sessionAchRefreshAt = new Map<string, number>();
  */
 export function refreshAchievementsAfterSession(appName: string, sessionSeconds?: number): void {
   if (!isTauri) return;
+  stopStoreAchievementPoll(appName);
+  if (appName.startsWith("custom::")) {
+    const game = S.customGames.find((item) => item.id === appName);
+    if (game?.steamAppId) {
+      const appId = game.steamAppId;
+      window.setTimeout(() => {
+        if (S.runningGames.has(appName)) return;
+        void steamStopAchievementWatcher(appId).catch(() => {});
+      }, 8_000);
+    }
+  }
   // The length arrives with the stop event; the trophies only once the store has
   // answered, which is why the summary is written in two steps.
   if (sessionSeconds !== undefined && sessionSeconds > 0) {
@@ -2324,11 +2518,10 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
   const now = Date.now();
   if (now - (sessionAchRefreshAt.get(appName) ?? 0) < 15_000) return;
   sessionAchRefreshAt.set(appName, now);
-  // The Steam client flushes `UserGameStats_*.bin` a moment after the process
-  // exits, so reading at once caches the pre-session unlocks. The second pass
-  // covers a slow cloud/stats sync; whichever pass sees the higher count
-  // records the delta, the other records none.
-  const delays = appName.startsWith("steam::") ? [2500, 8000] : [0];
+  // The Steam client and external store backends often flush achievement state a
+  // moment after the game process exits. Two passes catch both immediate local
+  // writes and slower cloud syncs.
+  const delays = appName.startsWith("steam::") ? [2500, 8000] : [1500, 6000];
   for (const delay of delays) {
     window.setTimeout(() => refreshAchievementsNow(appName), delay);
   }
@@ -2338,7 +2531,10 @@ function refreshAchievementsNow(appName: string): void {
   // `before` has to be read while the old answer is still here.
   const before = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
   S.loadedAchievements.delete(appName);
-  void fetchAndRenderAchievements(appName, true).then(() => {
+  void fetchAndRenderAchievements(appName, true, true).then(() => {
+    if (!appName.startsWith("steam::") && !appName.startsWith("custom::")) {
+      checkAndEmitNewStoreUnlocks(appName);
+    }
     const after = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
     // The hero numbers repaint themselves: the fetch ends with a soft repaint of
     // the open page. This delta is written *after* that, so the card that shows it
@@ -2350,10 +2546,14 @@ function refreshAchievementsNow(appName: string): void {
   });
 }
 
-export async function fetchAndRenderAchievements(appName: string, forceRefresh = false): Promise<void> {
+export async function fetchAndRenderAchievements(
+  appName: string,
+  forceRefresh = false,
+  silent = false,
+): Promise<void> {
   if (!isTauri || S.loadingAchFor.has(appName)) return;
   S.loadingAchFor.add(appName);
-  if (S.currentModalAppName === appName && S.activeDrawerTab === "achievements") {
+  if (!silent && S.currentModalAppName === appName && S.activeDrawerTab === "achievements") {
     // The tab is already open: repaint its body for the spinner instead of
     // rebuilding the hero and every other tab behind it.
     const content = document.getElementById("drawer-tab-content");
@@ -2368,6 +2568,7 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
     const isCompanion = source !== "epic" && source !== "gog" && source !== "steam" && !isCustom;
     const rawId = isGog ? appName.slice(5) : appName;
     const customGame = isCustom ? S.customGames.find((g) => g.id === appName) : undefined;
+    const customAppId = customGame ? await resolveCustomGameSteamAppId(customGame) : "";
     let data = source === "amazon"
       ? { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
       : isGog
@@ -2375,11 +2576,11 @@ export async function fetchAndRenderAchievements(appName: string, forceRefresh =
         : isSteam
           ? await steamGetAchievements(appName.slice(7), forceRefresh)
           : isCustom
-            ? customGame?.steamAppId
+            ? customAppId || customGame?.exePath
               ? await steamGetEmulatorAchievements(
-                  customGame.steamAppId,
+                  customAppId,
                   forceRefresh,
-                  customGame.exePath?.replace(/[\\/][^\\/]*$/, ""),
+                  customGame?.exePath?.replace(/[\\/][^\\/]*$/, ""),
                 )
               : { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
             : isCompanion

@@ -81,7 +81,6 @@ import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
-import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";
 import { unwatchSteamAchievements, watchSteamAchievements } from "../../core/steam-watch";
 import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings, scheduleLocalBackups } from "../cloud-backup/cloud-backup-actions";
@@ -90,7 +89,13 @@ import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs } from "../library/library-view";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
-import { fetchAndRenderAchievements, openEpicModal, paintGameMeta, refreshAchievementsAfterSession } from "../drawer/drawer-view";
+import {
+  fetchAndRenderAchievements,
+  openEpicModal,
+  paintGameMeta,
+  refreshAchievementsAfterSession,
+  startStoreAchievementSession,
+} from "../drawer/drawer-view";
 import { rememberCloudSync } from "../drawer/drawer-widgets";
 import { initGamepadSupport, updateGamepadHud } from "../gamepad/gamepad";
 import { resetVerifyInPlace, updateManageSyncBar, updateVerifyProgressInPlace } from "../manage/manage-view";
@@ -671,10 +676,12 @@ export async function initApp(hooks: {
       const bootQuiet = Date.now() - GAME_WATCH_BOOT_AT < GAME_WATCH_BOOT_GRACE_MS;
 
       if (running) {
-        // A Steam title needs its unlock watcher whether the launcher, the
-        // Steam client or the running poll reported it. This sits before the
-        // duplicate guard: later reports for the same session return early.
+        // Every store and custom title gets its unlock watcher whether the
+        // launcher, the store client or the running poll reported it. This sits
+        // before the duplicate guard: later reports for the same session return
+        // early.
         watchSteamAchievements(id);
+        startStoreAchievementSession(id);
         // Two watchers can see the same game (Steam's flag and the process
         // watch); only the first report announces and acts.
         if (S.runningGames.has(id)) return;
@@ -728,15 +735,6 @@ export async function initApp(hooks: {
               .catch(() => {});
           }
         }
-        if (id.startsWith("custom::")) {
-          const game = S.customGames.find((item) => item.id === id);
-          if (game?.steamAppId) {
-            void steamStartEmulatorWatcher(
-              game.steamAppId,
-              game.exePath?.replace(/[\\/][^\\/]*$/, ""),
-            );
-          }
-        }
         // Recently played covers games started outside the launcher too.
         pushRecent(id);
         // The hero's state chip ("Online") is part of the meta line, which is
@@ -746,10 +744,6 @@ export async function initApp(hooks: {
         hooks.scheduleRender();
       } else {
         unwatchSteamAchievements(id);
-        if (id.startsWith("custom::")) {
-          const game = S.customGames.find((item) => item.id === id);
-          if (game?.steamAppId) void steamStopAchievementWatcher(game.steamAppId);
-        }
         // The session may have unlocked achievements; refetch before the
         // duplicate-event guard, because a manual stop already cleared the flag
         // and its watcher event would otherwise return early.
@@ -974,10 +968,24 @@ export async function initApp(hooks: {
     notification?: boolean;
   }>("achievement-unlocked", (event) => {
     const { appId, name, displayName, description, notification = true } = event.payload;
-    const appKeys = [
-      `steam::${appId}`,
-      ...S.customGames.filter((g) => g.steamAppId === appId).map((g) => g.id),
-    ];
+    const isDirectKey =
+      appId.includes("::") ||
+      S.epicSummariesMap.has(appId) ||
+      S.loadedAchievements.has(appId);
+    const matchingCustomIds = S.customGames
+      .filter((g) => g.steamAppId === appId)
+      .map((g) => g.id);
+    const fallbackRunningCustomIds =
+      !isDirectKey && matchingCustomIds.length === 0
+        ? [...S.runningGames].filter((k) => k.startsWith("custom::"))
+        : [];
+    const appKeys = isDirectKey
+      ? [appId]
+      : [
+          `steam::${appId}`,
+          ...matchingCustomIds,
+          ...fallbackRunningCustomIds,
+        ];
     // The watcher can fall back to the raw API name when no schema was
     // available; the cached list still knows the pretty label.
     const cachedItem = appKeys

@@ -311,12 +311,24 @@ export const achievementTestNotification = (
   body: string,
   tag?: string,
   rarityTier?: number,
+  appId?: string,
+  achName?: string,
+  iconUrl?: string,
+  unlockedCount?: number,
+  totalCount?: number,
+  isRealUnlock?: boolean,
 ) =>
   invoke<void>("achievement_test_notification", {
     title,
     body,
     tag,
     rarityTier: rarityTier ?? null,
+    appId: appId ?? null,
+    achName: achName ?? null,
+    iconUrl: iconUrl ?? null,
+    unlockedCount: unlockedCount ?? null,
+    totalCount: totalCount ?? null,
+    isRealUnlock: isRealUnlock ?? null,
   });
 
 export const achievementPickCustomSound = () =>
