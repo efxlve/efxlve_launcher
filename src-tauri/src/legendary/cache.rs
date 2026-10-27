@@ -165,13 +165,37 @@ pub fn egl_manifests_dir() -> std::path::PathBuf {
     std::path::PathBuf::from(r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests")
 }
 
-/// Scans main games installed in the Epic Games Launcher and present on disk.
-pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
+/// Unreal Engine, Fab plugins and Quixel Bridge install through the Epic Games
+/// Launcher too, but they are tools and assets, not games. Their manifests
+/// carry the `ue` catalog namespace; the name checks cover older manifests
+/// written before that field existed.
+fn is_game_manifest(val: &serde_json::Value) -> bool {
+    let text = |key: &str| {
+        val.get(key)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+    };
+    if text("CatalogNamespace").eq_ignore_ascii_case("ue") {
+        return false;
+    }
+    let app = text("AppName").to_ascii_lowercase();
+    if app == "unrealengine" || app.starts_with("ue_") {
+        return false;
+    }
+    let title = text("DisplayName").to_ascii_lowercase();
+    !(title.starts_with("unreal engine") || title == "fab ue plugin" || title.starts_with("quixel"))
+}
+
+/// One manifest pass. Alongside the games it reports the tool and asset app
+/// names, so rows older releases already imported can be pruned.
+fn scan_egl_manifests() -> (Vec<EglDetectedGame>, Vec<String>) {
     let dir = egl_manifests_dir();
     if !dir.is_dir() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
     let mut out = Vec::new();
+    let mut tools = Vec::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
@@ -182,7 +206,18 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
                 continue;
             };
             if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
-                // DLC'leri atla (sadece ana oyunlar)
+                let app_name = val
+                    .get("AppName")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim();
+                if !is_game_manifest(&val) {
+                    if !app_name.is_empty() {
+                        tools.push(app_name.to_string());
+                    }
+                    continue;
+                }
+                // Skip DLC entries and keep the main games only.
                 let main_game = val
                     .get("MainGameAppName")
                     .and_then(|v| v.as_str())
@@ -199,11 +234,6 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
                 if install_loc.is_empty() || !Path::new(install_loc).exists() {
                     continue;
                 }
-                let app_name = val
-                    .get("AppName")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim();
                 let title = val
                     .get("DisplayName")
                     .and_then(|v| v.as_str())
@@ -239,7 +269,12 @@ pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
             }
         }
     }
-    out
+    (out, tools)
+}
+
+/// Scans main games installed in the Epic Games Launcher and present on disk.
+pub fn read_egl_installed_games() -> Vec<EglDetectedGame> {
+    scan_egl_manifests().0
 }
 
 /// Deletes all EGL .item manifests in ProgramData for this game (and any of its DLCs).
@@ -624,10 +659,18 @@ pub fn read_installed_with_catalog(
         }
     }
 
-    // 1. Read the Epic Games Launcher manifests and add the missing ones
+    // 1. Read the Epic Games Launcher manifests and add the missing games
     mark(app, "rust:installed/prune", t_prune);
     let t_egl = std::time::Instant::now();
-    for egl in read_egl_installed_games() {
+    let (egl_games, egl_tools) = scan_egl_manifests();
+    // Unreal Engine, Fab and Quixel were imported as games by older releases;
+    // drop those rows so the library stops listing them.
+    for app_name in &egl_tools {
+        if map.remove(app_name).is_some() {
+            changed = true;
+        }
+    }
+    for egl in egl_games {
         ensure_egl_manifest(
             config,
             &egl.app_name,
@@ -810,6 +853,41 @@ mod tests {
         let u: UserFile = serde_json::from_str(SAMPLE_USER).expect("parse edilmeli");
         assert_eq!(u.display_name, "Efxlve");
         assert_eq!(u.account_id, "00000000000000000000000000000000");
+    }
+
+    #[test]
+    fn egl_tools_are_not_games() {
+        // Unreal Engine, Fab and Quixel carry the `ue` namespace.
+        let unreal = serde_json::json!({
+            "AppName": "UnrealEngine",
+            "DisplayName": "Unreal Engine",
+            "CatalogNamespace": "ue"
+        });
+        assert!(!is_game_manifest(&unreal));
+        let fab = serde_json::json!({
+            "AppName": "SomeFabPlugin",
+            "DisplayName": "Some Plugin",
+            "CatalogNamespace": "UE"
+        });
+        assert!(!is_game_manifest(&fab));
+
+        // Older manifests without a namespace fall back to the names.
+        for (app, title) in [
+            ("UnrealEngine", "Unreal Engine"),
+            ("UE_5.4", "Unreal Engine 5.4"),
+            ("FabUePlugin", "Fab UE Plugin"),
+            ("QuixelBridge", "Quixel Bridge"),
+        ] {
+            let val = serde_json::json!({ "AppName": app, "DisplayName": title });
+            assert!(!is_game_manifest(&val), "{title} must not count as a game");
+        }
+
+        let game = serde_json::json!({
+            "AppName": "Ginger",
+            "DisplayName": "Cyberpunk 2077",
+            "CatalogNamespace": "cb2077"
+        });
+        assert!(is_game_manifest(&game));
     }
 
     #[test]
