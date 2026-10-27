@@ -1629,20 +1629,34 @@ fn render_medallion_and_trophy(
 
             // 1. Outer Glow Halo around medallion (matches CSS box-shadow: 0 0 18px ...)
             if dist > mr {
-                let glow = (1.0 - (dist - mr) / 14.0).clamp(0.0, 1.0).powi(2) * 0.40;
+                let glow = (1.0 - (dist - mr) / 18.0).clamp(0.0, 1.0).powi(2) * 0.48;
                 r += ac_r * glow;
                 g += ac_g * glow;
                 b += ac_b * glow;
 
-                // 2. Rotating Dashed Orbit Ring at radius mr + 5.0 (matches CSS .ach-medallion-ring)
-                let d_ring = (dist - (mr + 5.0)).abs();
-                if d_ring <= 1.25 {
-                    let ring_angle = dy.atan2(dx) + t_sec * 1.05;
-                    if (ring_angle * 12.0).sin() > 0.0 {
-                        let ring_cov = (1.0 - d_ring / 1.25).clamp(0.0, 1.0) * 0.85;
-                        r = r * (1.0 - ring_cov) + (ic_r * 0.65 + 255.0 * 0.35) * ring_cov;
-                        g = g * (1.0 - ring_cov) + (ic_g * 0.65 + 255.0 * 0.35) * ring_cov;
-                        b = b * (1.0 - ring_cov) + (ic_b * 0.65 + 255.0 * 0.35) * ring_cov;
+                // 2. Rotating Dashed Orbit Ring with smooth subpixel anti-aliasing
+                // Matches CSS .ach-medallion-ring: 1.5px dashed color-mix(icon 65%, transparent)
+                let ring_r = mr + 5.0;
+                let d_radial = (dist - ring_r).abs();
+                if d_radial <= 1.25 {
+                    // Radial subpixel anti-aliasing across ring thickness
+                    let rad_cov = (1.0 - d_radial / 1.25).clamp(0.0, 1.0);
+
+                    // Angular position and smooth feathered dash segments (16 dashes around circumference)
+                    let theta = dy.atan2(dx) + t_sec * 1.05;
+                    let period = std::f32::consts::TAU / 16.0;
+                    let half_dash = period * 0.30; // 60% dash, 40% gap
+                    let local_theta = ((theta % period) + period) % period - (period * 0.5);
+                    let d_ang_px = (half_dash - local_theta.abs()) * ring_r;
+                    let ang_cov = (d_ang_px + 0.5).clamp(0.0, 1.0);
+
+                    let dash_cov = rad_cov * ang_cov;
+                    if dash_cov > 0.01 {
+                        // Soft 65% opacity matching CSS color-mix(in srgb, var(--ach-icon) 65%, transparent)
+                        let ring_alpha = dash_cov * 0.65;
+                        r = r * (1.0 - ring_alpha) + (ic_r * 0.85 + 255.0 * 0.15) * ring_alpha;
+                        g = g * (1.0 - ring_alpha) + (ic_g * 0.85 + 255.0 * 0.15) * ring_alpha;
+                        b = b * (1.0 - ring_alpha) + (ic_b * 0.85 + 255.0 * 0.15) * ring_alpha;
                     }
                 }
                 pixels[idx] = pack_dib(r, g, b);
