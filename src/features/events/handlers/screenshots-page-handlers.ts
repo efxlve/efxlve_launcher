@@ -31,6 +31,7 @@ import {
   openPageLightbox,
   openPageShotFolder,
   pageLightboxShot,
+  reloadClips,
   repaintScreenshotsPage,
   saveClipJoin,
   saveClipTrim,
@@ -148,7 +149,10 @@ export function handleScreenshotsPageAction(
     }
 
     case "ssp-refresh":
+      // One button for the whole tab: a clip recorded during play must appear
+      // too, not only the photos.
       loadScreenshotsPage(true);
+      reloadClips();
       return true;
 
     case "ssp-batch-clear":

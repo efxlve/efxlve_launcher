@@ -573,6 +573,7 @@
   "ss.winShare": "Windows 공유 메뉴",
   "ss.winShareHint": "근처 장치, 메일 등으로 공유합니다",
   "ss.scanning": "스크린샷 검색 중…",
+  "ss.scanningDesc": "캡처 폴더를 읽는 중입니다. 첫 검사에서 미리보기를 만들기 때문에 잠시 걸릴 수 있습니다.",
   "ss.title": "게임 스크린샷",
   "ss.photoCount": "사진 {count}장",
   "ss.capNote": "최신 {count}개까지 표시됩니다. 더 오래된 항목은 디스크에 남아 있습니다.",

@@ -240,8 +240,13 @@ function patchShotPreviewDom(filePath: string, dataUrl: string): void {
 /**
  * Fills in the previews of every placeholder on screen, one at a time. Called
  * after a render; the microtask waits for the markup to reach the document.
+ *
+ * A gallery that is not in `S.loadedScreenshots` (the Media Studio page keeps
+ * its own list) passes it here, so the same builder works for both. Without
+ * this the page's cards stay icons until a game page fills the disk cache.
  */
-export function hydrateShotPreviews(): void {
+export function hydrateShotPreviews(appName = "", listing?: GameScreenshotItem[]): void {
+  const byPath = listing ? new Map(listing.map((item) => [item.file_path, item])) : null;
   queueMicrotask(() => {
     const hosts = [...document.querySelectorAll<HTMLElement>("[data-shot-preview]")];
     if (hosts.length === 0) return;
@@ -249,8 +254,10 @@ export function hydrateShotPreviews(): void {
       for (const host of hosts) {
         const filePath = host.dataset.shotPreview;
         if (!filePath || S.screenshotPreviewSrc.has(filePath)) continue;
-        const found = findShotByPath(filePath);
-        if (!found) continue;
+        const found = byPath
+          ? { appName, item: byPath.get(filePath) }
+          : findShotByPath(filePath);
+        if (!found?.item) continue;
         await generateShotPreview(found.appName, found.item);
       }
     })();

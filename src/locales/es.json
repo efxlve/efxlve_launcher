@@ -573,6 +573,7 @@
   "ss.winShare": "Menú Compartir de Windows",
   "ss.winShareHint": "Compartir con dispositivos cercanos, correo, etc.",
   "ss.scanning": "Buscando capturas…",
+  "ss.scanningDesc": "Leyendo tus carpetas de capturas. El primer escaneo crea las miniaturas, así que puede tardar un momento.",
   "ss.title": "Capturas del juego",
   "ss.photoCount": "{count} fotos",
   "ss.capNote": "Se muestran hasta {count} de las capturas más recientes; las antiguas siguen en el disco.",

@@ -573,6 +573,7 @@
   "ss.winShare": "Windows 共享菜单",
   "ss.winShareHint": "分享到附近的设备、电子邮件等",
   "ss.scanning": "正在扫描截图…",
+  "ss.scanningDesc": "正在读取你的截图文件夹。首次扫描会生成缩略图，可能需要一点时间。",
   "ss.title": "游戏截图",
   "ss.photoCount": "{count} 张照片",
   "ss.capNote": "最多显示最新的 {count} 张；更早的仍保留在磁盘上。",

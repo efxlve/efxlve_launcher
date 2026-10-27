@@ -603,6 +603,7 @@
   "ss.winShare": "Windows Share Menu",
   "ss.winShareHint": "Share with nearby devices, email, etc.",
   "ss.scanning": "Scanning screenshots…",
+  "ss.scanningDesc": "Reading your capture folders. The first scan builds the thumbnails, so it can take a moment.",
   "ss.title": "Media",
   "ss.photoCount": "{count} Photos",
   "ss.capNote": "Up to {count} of the newest captures are shown; older ones stay on disk.",

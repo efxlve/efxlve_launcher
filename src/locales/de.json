@@ -573,6 +573,7 @@
   "ss.winShare": "Windows-Freigabemenü",
   "ss.winShareHint": "Mit Geräten in der Nähe, per E-Mail usw. teilen",
   "ss.scanning": "Screenshots werden gesucht…",
+  "ss.scanningDesc": "Deine Aufnahmeordner werden gelesen. Der erste Scan erstellt die Vorschaubilder und kann daher etwas dauern.",
   "ss.title": "Spiel-Screenshots",
   "ss.photoCount": "{count} Fotos",
   "ss.capNote": "Es werden bis zu {count} der neuesten Aufnahmen gezeigt; ältere bleiben auf der Festplatte.",

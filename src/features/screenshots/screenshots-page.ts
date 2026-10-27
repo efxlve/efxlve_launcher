@@ -33,6 +33,7 @@ import {
   compressScreenshotItem,
   ensureFullShot,
   forgetFullShot,
+  hydrateShotPreviews,
   openShareModal,
   shotPreviewSrc,
   shotThumbHtml,
@@ -48,6 +49,10 @@ let clips: ClipItem[] = [];
 let loading = false;
 let loadedOnce = false;
 let clipsLoaded = false;
+let clipsLoading = false;
+
+/** Backend scan progress while a load is running; null when it is not. */
+let scanProgress: { phase: string; done: number; total: number } | null = null;
 
 let studioTab: StudioTab = "all";
 let filter: PageFilter = "all";
@@ -113,19 +118,31 @@ export function loadScreenshotsPage(force = false): void {
   if (!isTauri) return;
   if (loading || (loadedOnce && !force)) return;
   loading = true;
+  scanProgress = null;
+  // Paint the spinner before the scan starts: the first run decodes one
+  // thumbnail per capture, and an empty grid reads as "no media" until it ends.
+  queueMicrotask(repaintScreenshotsPage);
   void epicGetAllScreenshots()
     .then((items) => {
+      loading = false;
+      scanProgress = null;
       shots = items ?? [];
       loadedOnce = true;
       S.libraryDataRev++;
-      repaintScreenshotsPage();
     })
-    .catch(() => {
-      shots = [];
-      repaintScreenshotsPage();
+    .catch((error) => {
+      loading = false;
+      scanProgress = null;
+      // A failed scan keeps whatever the page already shows; the row would
+      // otherwise vanish and look like the user has no captures at all.
+      if (!loadedOnce) {
+        shots = [];
+        toast(localizeMessage(String(error)), "err");
+      }
+      loadedOnce = true;
     })
     .finally(() => {
-      loading = false;
+      repaintScreenshotsPage();
     });
 }
 
@@ -136,15 +153,33 @@ export function reloadScreenshotsPage(): void {
   loadScreenshotsPage(true);
 }
 
+/** Backend progress for the running scan; patches the strip without a re-render. */
+export function setMediaScanProgress(phase: string, done: number, total: number): void {
+  if (!loading) return;
+  scanProgress = { phase, done, total };
+  const root = document.getElementById("ss-scan-progress");
+  if (!root) return;
+  const known = phase === "preview" && total > 0;
+  root.classList.toggle("is-indeterminate", !known);
+  const fill = document.getElementById("ss-scan-fill");
+  if (fill) fill.style.width = known ? `${Math.min(100, Math.round((done / total) * 100))}%` : "";
+  const count = document.getElementById("ss-scan-count");
+  if (count) count.textContent = known ? `${done} / ${total}` : "";
+}
+
 export function loadClips(): void {
-  if (!isTauri || clipsLoaded) return;
+  if (!isTauri || clipsLoaded || clipsLoading) return;
+  clipsLoading = true;
   clipsLoaded = true;
   void clipList()
     .then((items) => {
       clips = items ?? [];
-      repaintScreenshotsPage();
     })
-    .catch(() => undefined);
+    .catch(() => undefined)
+    .finally(() => {
+      clipsLoading = false;
+      repaintScreenshotsPage();
+    });
 }
 
 export function reloadClips(): void {
@@ -163,6 +198,7 @@ export function repaintScreenshotsPage(): void {
   const host = document.getElementById("view");
   if (host) host.innerHTML = renderScreenshotsPage();
   hydrateClipThumbs();
+  hydrateShotPreviews("", shots);
   wireSearchInput();
 }
 
@@ -323,6 +359,13 @@ function clipsSectionHtml(): string {
 
   if (visibleClips.length === 0) {
     if (studioTab !== "clips") return "";
+    if (clipsLoading) {
+      return `
+        <div class="ss-scan-strip is-indeterminate ss-clip-scan" role="status" aria-live="polite">
+          <span class="hltb-spinner ss-scan-spinner"></span>
+          <span class="ss-scan-title">${t("ss.scanning")}</span>
+        </div>`;
+    }
     return `
       <div class="screenshots-empty-card" style="margin-top: 24px;">
         <div class="screenshots-empty-icon">${icon("video", 40)}</div>
@@ -345,6 +388,33 @@ function clipsSectionHtml(): string {
 }
 
 const SCAN_CAP = 300;
+
+/**
+ * The scan runs in the background, so the page says so: a full panel while
+ * there is nothing to show yet, a thin strip when the current media stays up.
+ * `setMediaScanProgress` patches this markup in place by id.
+ */
+function scanProgressHtml(compact: boolean): string {
+  const total = scanProgress?.total ?? 0;
+  const known = scanProgress?.phase === "preview" && total > 0;
+  const pct = known ? Math.min(100, Math.round(((scanProgress?.done ?? 0) / total) * 100)) : 0;
+  const track = `<div class="ss-scan-track"><span id="ss-scan-fill" class="ss-scan-fill" style="width:${known ? pct : 0}%"></span></div>`;
+  const count = `<span id="ss-scan-count" class="ss-scan-count">${known ? `${scanProgress?.done} / ${total}` : ""}</span>`;
+  return compact
+    ? `<div id="ss-scan-progress" class="ss-scan-strip${known ? "" : " is-indeterminate"}" role="status" aria-live="polite">
+        <span class="hltb-spinner ss-scan-spinner"></span>
+        <span class="ss-scan-title">${t("ss.scanning")}</span>
+        ${track}
+        ${count}
+      </div>`
+    : `<div id="ss-scan-progress" class="ss-scan-panel${known ? "" : " is-indeterminate"}" role="status" aria-live="polite">
+        <span class="hltb-spinner ss-scan-spinner"></span>
+        <span class="ss-scan-title">${t("ss.scanning")}</span>
+        <span class="ss-scan-desc">${esc(t("ss.scanningDesc"))}</span>
+        ${track}
+        ${count}
+      </div>`;
+}
 
 export function renderScreenshotsPage(): string {
   if (!isTauri) {
@@ -370,21 +440,27 @@ export function renderScreenshotsPage(): string {
         <button type="button" class="btn ghost small${selectMode ? " active" : ""}" data-act="ssp-select">
           ${icon("check", 12)} ${t("ss.selectMode")}
         </button>
-        <button type="button" class="btn ghost small" data-act="ssp-refresh">${icon("refresh", 13)} ${t("task.refresh")}</button>
+        <button type="button" class="btn ghost small${loading ? " spinning" : ""}" data-act="ssp-refresh" ${loading ? "disabled" : ""}>${icon("refresh", 13)} ${t("task.refresh")}</button>
         <button type="button" class="btn ghost small" data-act="ss-open-dir">${icon("folder", 13)} ${t("ss.openFolder")}</button>
       </div>
     </div>`;
+  // Nothing loaded yet: the scan itself is the state, not "no media".
+  const firstScan = loading && shots.length === 0 && clips.length === 0;
 
   if (shots.length === 0 && clips.length === 0) {
     return `
       <div class="page screenshots-page">
         ${header}
         ${studioToolbarHtml()}
-        <div class="screenshots-empty-card">
-          <div class="screenshots-empty-icon">${icon("clapperboard", 44)}</div>
-          <h4 class="screenshots-empty-title">${t("ss.allMediaEmpty")}</h4>
-          <p class="screenshots-empty-desc">${t("ss.allMediaEmptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}</p>
-        </div>
+        ${
+          firstScan
+            ? scanProgressHtml(false)
+            : `<div class="screenshots-empty-card">
+                <div class="screenshots-empty-icon">${icon("clapperboard", 44)}</div>
+                <h4 class="screenshots-empty-title">${t("ss.allMediaEmpty")}</h4>
+                <p class="screenshots-empty-desc">${t("ss.allMediaEmptyDesc", { hotkey: `<strong>${esc(S.screenshotHotkeyName)}</strong>` })}</p>
+              </div>`
+        }
       </div>`;
   }
 
@@ -421,6 +497,7 @@ export function renderScreenshotsPage(): string {
     <div class="page screenshots-page">
       ${header}
       ${studioToolbarHtml()}
+      ${loading ? scanProgressHtml(true) : ""}
       ${content}
       ${
         shots.length >= SCAN_CAP

@@ -573,6 +573,7 @@
   "ss.winShare": "Menu udostępniania Windows",
   "ss.winShareHint": "Udostępnij urządzeniom w pobliżu, e-mailem i inaczej",
   "ss.scanning": "Skanowanie zrzutów ekranu…",
+  "ss.scanningDesc": "Odczyt folderów ze zrzutami. Pierwsze skanowanie tworzy miniatury, więc może chwilę potrwać.",
   "ss.title": "Zrzuty ekranu z gry",
   "ss.photoCount": "{count} zdjęć",
   "ss.capNote": "Pokazywanych jest do {count} najnowszych zrzutów; starsze pozostają na dysku.",

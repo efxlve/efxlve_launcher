@@ -950,20 +950,17 @@ pub fn detect_game_title_from_path(path: &Path) -> String {
     String::new()
 }
 
-fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
-    let metadata = std::fs::metadata(path).ok()?;
-    if !metadata.is_file() {
+/// One gallery row without its preview.
+///
+/// Reading the image is the expensive part of the scan, so it is kept apart:
+/// the Media Studio page lists every capture first, keeps the newest ones and
+/// only then builds their thumbnails.
+fn shot_item(path: &Path) -> Option<GameScreenshotItem> {
+    if !is_screenshot_file(path) {
         return None;
     }
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-    if !matches!(
-        ext.as_str(),
-        "png" | "jpg" | "jpeg" | "webp" | "bmp" | "avif"
-    ) {
+    let metadata = std::fs::metadata(path).ok()?;
+    if !metadata.is_file() {
         return None;
     }
 
@@ -981,7 +978,6 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
 
     // Get Windows' real local file time and date (local timezone instead of UTC)
     let datetime = get_file_local_datetime_str(path, &metadata, timestamp);
-    let data_url = file_to_preview_data_url(path)?;
     let game_title = detect_game_title_from_path(path);
 
     Some(GameScreenshotItem {
@@ -992,10 +988,17 @@ fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
         timestamp,
         size_bytes,
         size_str,
-        data_url,
+        data_url: String::new(),
         full_data_url: String::new(),
         game_title,
     })
+}
+
+/// One item with its grid preview, for the per-game gallery.
+fn parse_file_to_item(path: &Path) -> Option<GameScreenshotItem> {
+    let mut item = shot_item(path)?;
+    item.data_url = file_to_preview_data_url(path).unwrap_or_default();
+    Some(item)
 }
 
 fn chrono_fallback(epoch_sec: u64) -> String {
@@ -1054,7 +1057,7 @@ pub async fn epic_get_game_screenshots(
     title: String,
 ) -> Result<Vec<GameScreenshotItem>, String> {
     tokio::task::spawn_blocking(move || {
-        let mut results = Vec::new();
+        let mut candidates: Vec<ShotCandidate> = Vec::new();
         let clean_t = clean_folder_name(&title);
         let clean_app = clean_folder_name(&app_name);
 
@@ -1072,18 +1075,7 @@ pub async fn epic_get_game_screenshots(
         ];
 
         for dir in dirs_to_check {
-            if dir.is_dir() {
-                if let Ok(entries) = std::fs::read_dir(dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if scanned_paths.insert(path.clone()) {
-                            if let Some(item) = parse_file_to_item(&path) {
-                                results.push(item);
-                            }
-                        }
-                    }
-                }
-            }
+            scan_dir_files(&dir, &mut candidates, &mut scanned_paths);
         }
 
         // 2. Ubisoft Connect's own captures: the client groups them under
@@ -1103,16 +1095,7 @@ pub async fn epic_get_game_screenshots(
                     if path.is_dir() {
                         let folder = clean_folder_name(&entry.file_name().to_string_lossy());
                         if folder.eq_ignore_ascii_case(&clean_t) || folder.eq_ignore_ascii_case(&clean_app) {
-                            if let Ok(files) = std::fs::read_dir(&path) {
-                                for file in files.flatten() {
-                                    let file_path = file.path();
-                                    if scanned_paths.insert(file_path.clone()) {
-                                        if let Some(item) = parse_file_to_item(&file_path) {
-                                            results.push(item);
-                                        }
-                                    }
-                                }
-                            }
+                            scan_dir_files(&path, &mut candidates, &mut scanned_paths);
                         }
                     } else {
                         let name = path
@@ -1124,8 +1107,8 @@ pub async fn epic_get_game_screenshots(
                             || (!clean_app.is_empty() && name.contains(&clean_app.to_lowercase())))
                             && scanned_paths.insert(path.clone())
                         {
-                            if let Some(item) = parse_file_to_item(&path) {
-                                results.push(item);
+                            if let Some(candidate) = shot_candidate(path) {
+                                candidates.push(candidate);
                             }
                         }
                     }
@@ -1151,13 +1134,21 @@ pub async fn epic_get_game_screenshots(
                         || (!lower_app.is_empty() && name.contains(&lower_app)))
                         && scanned_paths.insert(path.clone())
                     {
-                        if let Some(item) = parse_file_to_item(&path) {
-                            results.push(item);
+                        if let Some(candidate) = shot_candidate(path) {
+                            candidates.push(candidate);
                         }
                     }
                 }
             }
         }
+
+        // The cap comes before the previews: a folder with thousands of shots
+        // must not decode files the gallery never shows.
+        newest_candidates(&mut candidates, SCREENSHOT_LIST_CAP);
+        let mut results: Vec<GameScreenshotItem> = candidates
+            .iter()
+            .filter_map(|candidate| parse_file_to_item(&candidate.path))
+            .collect();
 
         let fallback_title = if !title.is_empty() {
             title.clone()
@@ -1172,18 +1163,57 @@ pub async fn epic_get_game_screenshots(
 
         // Sort newest to oldest
         results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-        // A gallery this deep is already past browsing; the newest 300 keep the
-        // response bounded even when a folder holds thousands of captures.
-        results.truncate(300);
         Ok(results)
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
+/// One capture found by a walk, with the timestamp the "newest first" cap needs.
+struct ShotCandidate {
+    path: PathBuf,
+    timestamp: u64,
+}
+
+/// A capture file the gallery can show. Checked while walking so a folder of
+/// videos cannot push a screenshot out of the newest-N cap.
+fn is_screenshot_file(path: &Path) -> bool {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "avif")
+}
+
+fn shot_candidate(path: PathBuf) -> Option<ShotCandidate> {
+    if !is_screenshot_file(&path) {
+        return None;
+    }
+    let metadata = std::fs::metadata(&path).ok()?;
+    if !metadata.is_file() {
+        return None;
+    }
+    let timestamp = metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    Some(ShotCandidate { path, timestamp })
+}
+
+/// Newest first, capped. The cap has to come before any preview is built:
+/// decoding a 4K capture costs far more than listing it, and a library with
+/// thousands of shots would spend the wait on files the grid never shows.
+fn newest_candidates(candidates: &mut Vec<ShotCandidate>, cap: usize) {
+    candidates.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    candidates.truncate(cap);
+}
+
 fn scan_dir_files(
     dir: &Path,
-    results: &mut Vec<GameScreenshotItem>,
+    candidates: &mut Vec<ShotCandidate>,
     scanned: &mut std::collections::HashSet<PathBuf>,
 ) {
     if dir.is_dir() {
@@ -1191,8 +1221,8 @@ fn scan_dir_files(
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() && scanned.insert(path.clone()) {
-                    if let Some(item) = parse_file_to_item(&path) {
-                        results.push(item);
+                    if let Some(candidate) = shot_candidate(path) {
+                        candidates.push(candidate);
                     }
                 }
             }
@@ -1210,7 +1240,7 @@ const MAX_SCREENSHOT_DEPTH: usize = 8;
 fn scan_dir_recursive(
     dir: &Path,
     depth: usize,
-    results: &mut Vec<GameScreenshotItem>,
+    candidates: &mut Vec<ShotCandidate>,
     scanned: &mut std::collections::HashSet<PathBuf>,
 ) {
     if depth == 0 || !dir.is_dir() {
@@ -1228,10 +1258,10 @@ fn scan_dir_recursive(
         }
         let path = entry.path();
         if file_type.is_dir() {
-            scan_dir_recursive(&path, depth - 1, results, scanned);
+            scan_dir_recursive(&path, depth - 1, candidates, scanned);
         } else if file_type.is_file() && scanned.insert(path.clone()) {
-            if let Some(item) = parse_file_to_item(&path) {
-                results.push(item);
+            if let Some(candidate) = shot_candidate(path) {
+                candidates.push(candidate);
             }
         }
     }
@@ -1244,24 +1274,24 @@ fn scan_dir_recursive(
 fn scan_per_game_root(
     root: &Path,
     recursive: bool,
-    results: &mut Vec<GameScreenshotItem>,
+    candidates: &mut Vec<ShotCandidate>,
     scanned: &mut std::collections::HashSet<PathBuf>,
 ) {
     if !root.is_dir() {
         return;
     }
     if recursive {
-        scan_dir_recursive(root, MAX_SCREENSHOT_DEPTH, results, scanned);
+        scan_dir_recursive(root, MAX_SCREENSHOT_DEPTH, candidates, scanned);
         return;
     }
     if let Ok(entries) = std::fs::read_dir(root) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
-                scan_dir_files(&path, results, scanned);
+                scan_dir_files(&path, candidates, scanned);
             } else if path.is_file() && scanned.insert(path.clone()) {
-                if let Some(item) = parse_file_to_item(&path) {
-                    results.push(item);
+                if let Some(candidate) = shot_candidate(path) {
+                    candidates.push(candidate);
                 }
             }
         }
@@ -1272,7 +1302,7 @@ fn scan_per_game_root(
 /// `<game>\Profiles\<profile>\Screenshots`.
 fn scan_rockstar_root(
     root: &Path,
-    results: &mut Vec<GameScreenshotItem>,
+    candidates: &mut Vec<ShotCandidate>,
     scanned: &mut std::collections::HashSet<PathBuf>,
 ) {
     if !root.is_dir() {
@@ -1284,10 +1314,10 @@ fn scan_rockstar_root(
             if !game_path.is_dir() {
                 continue;
             }
-            scan_dir_files(&game_path.join("Screenshots"), results, scanned);
+            scan_dir_files(&game_path.join("Screenshots"), candidates, scanned);
             if let Ok(profiles) = std::fs::read_dir(game_path.join("Profiles")) {
                 for profile in profiles.flatten() {
-                    scan_dir_files(&profile.path().join("Screenshots"), results, scanned);
+                    scan_dir_files(&profile.path().join("Screenshots"), candidates, scanned);
                 }
             }
         }
@@ -1298,7 +1328,7 @@ fn scan_rockstar_root(
 /// `userdata\<account>\760\remote\<app>\screenshots`.
 fn scan_steam_userdata(
     root: &Path,
-    results: &mut Vec<GameScreenshotItem>,
+    candidates: &mut Vec<ShotCandidate>,
     scanned: &mut std::collections::HashSet<PathBuf>,
 ) {
     if !root.is_dir() {
@@ -1309,21 +1339,84 @@ fn scan_steam_userdata(
             let remote = account.path().join("760").join("remote");
             if let Ok(apps) = std::fs::read_dir(remote) {
                 for app in apps.flatten() {
-                    scan_dir_files(&app.path().join("screenshots"), results, scanned);
+                    scan_dir_files(&app.path().join("screenshots"), candidates, scanned);
                 }
             }
         }
     }
 }
 
+/// Most recent captures a gallery keeps. The Media Studio page shows the same
+/// number in its cap note; older files stay on disk.
+const SCREENSHOT_LIST_CAP: usize = 300;
+
+/// How far along a gallery scan is. `phase` is `"scan"` while the folders are
+/// walked (no total yet) and `"preview"` while the grid thumbnails are built.
+#[derive(Clone, Serialize)]
+struct MediaScanProgress<'a> {
+    phase: &'a str,
+    done: usize,
+    total: usize,
+}
+
+fn emit_scan_progress(app: &AppHandle, phase: &'static str, done: usize, total: usize) {
+    let _ = app.emit(
+        "media-scan-progress",
+        MediaScanProgress {
+            phase,
+            done,
+            total,
+        },
+    );
+}
+
+/// Builds the grid previews for the captures the page will show.
+///
+/// Decoding a 4K PNG costs more than the rest of the scan put together, so the
+/// files are split over a few workers and the page hears how far along it is
+/// instead of waiting on an empty grid.
+fn fill_media_previews(items: &mut [GameScreenshotItem], app: &AppHandle) {
+    let total = items.len();
+    emit_scan_progress(app, "preview", 0, total);
+    if total == 0 {
+        return;
+    }
+
+    let workers = std::thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(1)
+        .clamp(1, 4);
+    let chunk = total.div_ceil(workers);
+    let done = std::sync::atomic::AtomicUsize::new(0);
+
+    std::thread::scope(|scope| {
+        for part in items.chunks_mut(chunk) {
+            let done = &done;
+            let app = app.clone();
+            scope.spawn(move || {
+                for item in part {
+                    item.data_url =
+                        file_to_preview_data_url(Path::new(&item.file_path)).unwrap_or_default();
+                    let seen = done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                    // One event per image would cost more than the thumbnail.
+                    if seen % 8 == 0 || seen == total {
+                        emit_scan_progress(&app, "preview", seen, total);
+                    }
+                }
+            });
+        }
+    });
+}
+
 /// Scans and returns all screenshots from all games and capture folders from disk,
 /// sorted chronologically (newest to oldest).
 #[tauri::command]
 pub async fn epic_get_all_screenshots(
-    _app: AppHandle,
+    app: AppHandle,
 ) -> Result<Vec<GameScreenshotItem>, String> {
     tokio::task::spawn_blocking(move || {
-        let mut results = Vec::new();
+        emit_scan_progress(&app, "scan", 0, 0);
+        let mut candidates: Vec<ShotCandidate> = Vec::new();
         let mut scanned_paths = std::collections::HashSet::new();
 
         // The settings page lists exactly the roots this loop scans. Hidden
@@ -1341,26 +1434,39 @@ pub async fn epic_get_all_screenshots(
         for root in screenshot_roots() {
             if same_path(&root, &captures) {
                 // Game Bar writes files directly into Videos\Captures.
-                scan_dir_files(&root, &mut results, &mut scanned_paths);
+                scan_dir_files(&root, &mut candidates, &mut scanned_paths);
             } else if same_path(&root, &ubisoft) || same_path(&root, &uplay) {
-                scan_per_game_root(&root, scan_subfolders, &mut results, &mut scanned_paths);
+                scan_per_game_root(
+                    &root,
+                    scan_subfolders,
+                    &mut candidates,
+                    &mut scanned_paths,
+                );
             } else if same_path(&root, &rockstar) {
-                scan_rockstar_root(&root, &mut results, &mut scanned_paths);
+                scan_rockstar_root(&root, &mut candidates, &mut scanned_paths);
             } else if steam.as_ref().is_some_and(|steam| same_path(&root, steam)) {
-                scan_steam_userdata(&root, &mut results, &mut scanned_paths);
+                scan_steam_userdata(&root, &mut candidates, &mut scanned_paths);
             } else {
                 // The chosen folder, its legacy twin and every user-added
                 // folder keep one subfolder per game.
                 if same_path(&root, &chosen) || same_path(&root, &legacy) {
                     migrate_known_app_folders(&root);
                 }
-                scan_per_game_root(&root, scan_subfolders, &mut results, &mut scanned_paths);
+                scan_per_game_root(
+                    &root,
+                    scan_subfolders,
+                    &mut candidates,
+                    &mut scanned_paths,
+                );
             }
         }
 
-        // Sort newest to oldest
-        results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-        results.truncate(300);
+        newest_candidates(&mut candidates, SCREENSHOT_LIST_CAP);
+        let mut results: Vec<GameScreenshotItem> = candidates
+            .into_iter()
+            .filter_map(|candidate| shot_item(&candidate.path))
+            .collect();
+        fill_media_previews(&mut results, &app);
         Ok(results)
     })
     .await
@@ -2761,16 +2867,36 @@ mod tests {
         let mut scanned = std::collections::HashSet::new();
         scan_per_game_root(&base, true, &mut results, &mut scanned);
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0].file_name, "shot.bmp");
+        assert_eq!(
+            results[0].path.file_name().unwrap_or_default().to_string_lossy(),
+            "shot.bmp"
+        );
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// The Media Studio cap must pick the newest files before any preview is
+    /// built; decoding the ones that get dropped is the whole first-scan wait.
+    #[test]
+    fn newest_candidates_keeps_the_newest_and_drops_the_rest() {
+        let mut candidates: Vec<ShotCandidate> = [100u64, 300, 200]
+            .iter()
+            .map(|timestamp| ShotCandidate {
+                path: PathBuf::from(format!("shot_{timestamp}.png")),
+                timestamp: *timestamp,
+            })
+            .collect();
+        newest_candidates(&mut candidates, 2);
+        assert_eq!(candidates.len(), 2);
+        assert_eq!(candidates[0].timestamp, 300);
+        assert_eq!(candidates[1].timestamp, 200);
     }
 
     #[test]
     #[ignore]
     fn test_live_all_screenshots_scan() {
         let start = std::time::Instant::now();
-        let mut results = Vec::new();
+        let mut candidates = Vec::new();
         let mut scanned_paths = std::collections::HashSet::new();
         let root = screenshots_root();
         migrate_known_app_folders(&root);
@@ -2779,14 +2905,16 @@ mod tests {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_dir() {
-                        scan_dir_files(&path, &mut results, &mut scanned_paths);
+                        scan_dir_files(&path, &mut candidates, &mut scanned_paths);
                     }
                 }
             }
         }
-        println!("Scanned {} screenshots in {:?}", results.len(), start.elapsed());
-        for item in &results {
-            println!("- Game: '{}', File: {}", item.game_title, item.file_name);
+        println!("Scanned {} screenshots in {:?}", candidates.len(), start.elapsed());
+        for candidate in &candidates {
+            if let Some(item) = shot_item(&candidate.path) {
+                println!("- Game: '{}', File: {}", item.game_title, item.file_name);
+            }
         }
     }
 }

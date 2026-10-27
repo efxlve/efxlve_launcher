@@ -603,6 +603,7 @@
   "ss.winShare": "Windows Paylaşım Menüsü",
   "ss.winShareHint": "Yakındakilerle Paylaş, E-posta vb.",
   "ss.scanning": "Ekran görüntüleri taranıyor…",
+  "ss.scanningDesc": "Kayıt klasörlerin okunuyor. İlk tarama küçük resimleri oluşturduğu için biraz sürebilir.",
   "ss.title": "Medya",
   "ss.photoCount": "{count} Fotoğraf",
   "ss.capNote": "En yeni {count} kayda kadar gösterilir; eskileri diskte kalır.",

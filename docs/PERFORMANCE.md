@@ -52,6 +52,7 @@ the window is hidden.
 | Mini player | Polls and paints only while the launcher is visible | Spotify state checks and sidebar repaints no longer run behind a hidden window |
 | Effects | Global reduced-effects class: no animation, no transition, no backdrop blur; focus ring preserved; spinner exempt | Removes continuous compositing on weak GPUs without moving or hiding controls |
 | Image cache clear | Also clears the in-memory map and request set | The Settings button actually releases RAM, not only disk |
+| Media Studio scan | The newest 300 captures are chosen before any thumbnail is built, and the thumbnails are spread over four workers with a progress event | The first scan decoded a preview for every file on disk in one blocking response, so the tab stayed empty with no sign of work |
 
 ## Remaining opportunities
 

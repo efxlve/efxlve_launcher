@@ -573,6 +573,7 @@
   "ss.winShare": "Menu Condividi di Windows",
   "ss.winShareHint": "Condividi con dispositivi vicini, e-mail e altro",
   "ss.scanning": "Scansione delle schermate…",
+  "ss.scanningDesc": "Lettura delle cartelle delle catture. La prima scansione crea le anteprime, quindi può richiedere un momento.",
   "ss.title": "Schermate di gioco",
   "ss.photoCount": "{count} foto",
   "ss.capNote": "Vengono mostrate fino a {count} delle catture più recenti; le più vecchie restano sul disco.",

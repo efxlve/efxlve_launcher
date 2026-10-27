@@ -106,6 +106,7 @@ import {
   renderDrawerScreenshots,
   renderMomentsStrip,
 } from "../screenshots/screenshots-view";
+import { setMediaScanProgress } from "../screenshots/screenshots-page";
 import { setView } from "../store/store-view";
 import { ensureNotesMigration } from "../notes/notes-client";
 import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
@@ -832,6 +833,12 @@ export async function initApp(hooks: {
       if (S.currentModalAppName === id && (S.activeDrawerTab === "overview" || S.activeDrawerTab === "manage")) {
         openEpicModal(id, false);
       }
+    });
+
+    // The Media Studio scan decodes a thumbnail per capture; the page shows how
+    // far along it is instead of an empty grid.
+    listenLater<{ phase: string; done: number; total: number }>("media-scan-progress", (event) => {
+      setMediaScanProgress(event.payload.phase, event.payload.done, event.payload.total);
     });
 
     listenLater<{ id: string; count: number }>("screenshots-updated", (event) => {

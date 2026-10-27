@@ -1949,6 +1949,75 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   margin-bottom: 24px;
 }
 
+/* --- Media Studio scan state -------------------------------------------- */
+/* A scan decodes one thumbnail per capture. The page shows that work instead
+   of an empty grid, and the bar is real once the backend knows the count. */
+.btn.spinning svg { animation: spin 900ms linear infinite; }
+.ss-scan-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(460px, 100%);
+  margin: 28px auto 0;
+  padding: 34px 24px;
+  text-align: center;
+  color: var(--text-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+}
+.ss-scan-spinner { flex-shrink: 0; }
+.ss-scan-panel .ss-scan-spinner { width: 22px; height: 22px; border-width: 3px; }
+.ss-scan-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  color: var(--text-3);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.ss-clip-scan { margin-top: 24px; }
+.ss-scan-title { font-size: 12.5px; font-weight: 500; color: var(--text-2); flex-shrink: 0; }
+.ss-scan-desc { max-width: 360px; font-size: 12px; line-height: 1.5; }
+.ss-scan-track {
+  width: 100%;
+  max-width: 340px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+/* The strip is one row: label, a bar that fills the space, then the count. */
+.ss-scan-strip .ss-scan-track { flex: 1 1 auto; max-width: none; min-width: 80px; }
+.ss-scan-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+.ss-scan-panel.is-indeterminate .ss-scan-fill,
+.ss-scan-strip.is-indeterminate .ss-scan-fill {
+  width: 30% !important;
+  animation: ss-scan-sweep 1.2s ease-in-out infinite;
+}
+.ss-scan-count {
+  min-width: 62px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+@keyframes ss-scan-sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(340%); }
+}
+
 .screenshot-overlay-center {
   position: absolute;
   inset: 0;

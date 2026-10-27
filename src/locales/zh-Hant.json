@@ -573,6 +573,7 @@
   "ss.winShare": "Windows 分享功能表",
   "ss.winShareHint": "分享到附近的裝置、電子郵件等",
   "ss.scanning": "正在掃描螢幕截圖…",
+  "ss.scanningDesc": "正在讀取你的截圖資料夾。首次掃描會產生縮圖，可能需要一點時間。",
   "ss.title": "遊戲螢幕截圖",
   "ss.photoCount": "{count} 張照片",
   "ss.capNote": "最多顯示最新的 {count} 張；更早的仍保留在磁碟上。",
