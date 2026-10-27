@@ -2726,10 +2726,18 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "task-stop":
     case "task-refresh":
     case "task-sort":
-    case "task-toggle-webview":
+    case "task-toggle-group":
+    case "task-toggle-idle":
+    case "task-toggle-pause":
+    case "task-interval":
+    case "task-close-game":
+    case "task-end-process":
     case "task-detail":
     case "task-detail-close":
     case "task-detail-backdrop":
+    case "task-detail-copy-path":
+    case "task-detail-copy-cmd":
+    case "task-detail-reveal":
       return handleTaskAction(act, _el, _targetEl);
     case "ss-open-dir":
       void openScreenshotsFolder();

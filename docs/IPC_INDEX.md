@@ -428,6 +428,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_watch_running` | `steamWatchRunning({ ... })` | `src-tauri/src/steam_running.rs` |
 | `steam_watch_session` | `steamWatchSession({ ... })` | `src-tauri/src/steam_session.rs` |
 | `storage_path_size` | `storagePathSize({ ... })` | `src-tauri/src/storage_usage.rs` |
+| `task_manager_close_game` | `taskManagerCloseGame({ ... })` | `src-tauri/src/task_manager.rs` |
+| `task_manager_end_process` | `taskManagerEndProcess({ ... })` | `src-tauri/src/task_manager.rs` |
 | `task_manager_snapshot` | `taskManagerSnapshot({ ... })` | `src-tauri/src/task_manager.rs` |
 | `task_manager_stop` | `taskManagerStop({ ... })` | `src-tauri/src/task_manager.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |

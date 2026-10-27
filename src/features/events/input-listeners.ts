@@ -67,7 +67,7 @@ import { epicDoLogin } from "../auth/auth-actions";
 import { gogLoginWithCode } from "../auth/gog-auth-actions";
 import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
 import { closeNotifPanel } from "../notifications/notifications";
-import { closeTaskDetail } from "../settings/task-manager";
+import { applyTaskFilter, closeTaskDetail } from "../settings/task-manager";
 import { closePageLightbox, pageLightboxOpen, repaintScreenshotsPage, updateClipRangeNote, updateClipShareNote } from "../screenshots/screenshots-page";
 import { closeScreenshotEditor, editorOpen } from "../screenshots/screenshot-editor";
 import { closeStoreShot, storeShotViewerOpen } from "../screenshots/store-shot-viewer";
@@ -210,7 +210,7 @@ document.addEventListener("keydown", (e) => {
 
   if (e.key === "Enter" || e.key === " ") {
     const active = document.activeElement as HTMLElement | null;
-    if (active && (active.classList.contains("pcard") || active.classList.contains("screenshot-card")) && !active.closest("input, select, textarea")) {
+    if (active && (active.classList.contains("pcard") || active.classList.contains("screenshot-card") || active.dataset.act === "task-detail") && !active.closest("input, select, textarea")) {
       e.preventDefault();
       active.click();
       return;
@@ -527,6 +527,10 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t.id === "tm-search") {
+    applyTaskFilter((t as HTMLInputElement).value);
+    return;
+  }
   if (t.id === "ach-note-input" && S.currentModalAppName) {
     const ach = t.dataset.ach;
     if (!ach) return;

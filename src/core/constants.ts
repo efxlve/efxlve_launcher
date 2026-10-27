@@ -58,8 +58,10 @@ export const CLIP_FPS_KEY = "efxlve-clip-fps";
 /** Frame height for clips; 0 keeps the screen's own size. */
 export const CLIP_HEIGHT_KEY = "efxlve-clip-height";
 export const CLIP_MAX_MIN_KEY = "efxlve-clip-max-min";
-/** Task manager: whether the WebView2 group is expanded. */
-export const TM_EXPANDED_KEY = "efxlve-tm-expanded";
+/** Task manager: which process groups are open (JSON map). */
+export const TM_GROUPS_KEY = "efxlve-tm-groups";
+/** Task manager: poll interval, pause state and the hide-idle toggle (JSON). */
+export const TM_PREFS_KEY = "efxlve-tm-prefs";
 /** Show download speed in bits per second instead of bytes. */
 export const SPEED_BITS_KEY = "efxlve-speed-bits";
 /** Pause active downloads while a game is running. */

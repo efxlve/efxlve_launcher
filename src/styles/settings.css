@@ -609,9 +609,10 @@
 }
 
 /* --- Task manager --------------------------------------------------------- */
-/* A stat strip with one-minute sparklines, a process table with relative bars
-   and a collapsible WebView2 group, and the background jobs as a card grid. */
-.tm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 4px 0 8px; }
+/* A stat strip with recent-history sparklines, the running game, a grouped
+   process table with fixed-scale bars, the background jobs as cards and a live
+   detail drawer. */
+.tm-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 8px; }
 .tm-stat {
   display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 8px;
   background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
@@ -623,10 +624,54 @@
 }
 .tm-stat-value { font-size: 21px; font-weight: 600; line-height: 1.15; color: var(--text); font-variant-numeric: tabular-nums; }
 .tm-stat-of { font-size: 13px; font-weight: 500; color: var(--text-3); }
-.tm-stat-sub { font-size: 11px; color: var(--text-3); }
+.tm-stat-sub {
+  font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .tm-spark { display: block; width: 100%; height: 26px; margin-top: 5px; color: var(--accent); opacity: 0.6; }
 .tm-spark.task-mem-spark { color: var(--text-2); }
 
+/* Toolbar: search, hide-idle, poll interval and pause. */
+.tm-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.tm-search { position: relative; flex: 1 1 220px; min-width: 160px; }
+.tm-search > svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.tm-search-input { width: 100%; padding-left: 30px; }
+.tm-interval {
+  display: inline-flex; align-items: center; padding: 2px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
+}
+.tm-interval-btn {
+  min-width: 38px; height: 24px; padding: 0 8px; border: none; border-radius: calc(var(--r-sm) - 2px);
+  background: transparent; color: var(--text-3); cursor: pointer;
+  font: inherit; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.tm-interval-btn:hover { color: var(--text); }
+.tm-interval-btn.active { background: var(--surface-1); color: var(--text); box-shadow: var(--shadow-sm, none); }
+.tm-toolbar .btn.is-on { background: var(--accent-tint); border-color: transparent; color: var(--accent); }
+
+/* Running game: its own block above the launcher tree. */
+.tm-games-section { margin-bottom: 4px; }
+.tm-games { display: flex; flex-direction: column; gap: 8px; }
+.tm-game-card {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.tm-game-art {
+  display: grid; place-items: center; width: 34px; height: 46px;
+  border-radius: 6px; overflow: hidden; background: var(--surface-3); color: var(--text-2);
+}
+.tm-game-art img { width: 100%; height: 100%; object-fit: cover; }
+.tm-game-art.is-icon { background: var(--accent-tint); color: var(--accent); }
+.tm-game-main { min-width: 0; }
+.tm-game-title { font-size: 13.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-game-sub {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 3px;
+  font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.tm-game-uptime { display: inline-flex; align-items: center; gap: 4px; }
+.tm-game-card .btn { justify-self: end; }
+
+/* Process table: header, app row, one block per ownership group. */
 .tm-thead, .tm-row, .tm-group {
   display: grid; grid-template-columns: 30px minmax(0, 1fr) 118px 118px 128px;
   align-items: center; gap: 12px; padding: 10px 14px;
@@ -641,22 +686,26 @@
   font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--text-3); transition: color var(--ease);
 }
+.tm-sort-left { justify-content: flex-start; }
 .tm-sort:hover { color: var(--text); }
 .tm-sort.active { color: var(--text-2); }
 .tm-row { border-top: 1px solid var(--line); cursor: pointer; transition: background-color var(--ease); }
 .tm-row:hover { background: var(--surface-2); }
+.tm-row:focus-visible, .tm-group:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .tm-row-icon {
   display: grid; place-items: center; width: 28px; height: 28px;
   border-radius: 8px; background: var(--surface-3); color: var(--text-2);
 }
 .tm-row-icon.is-main { background: var(--accent-tint); color: var(--accent); }
 .tm-row-main { min-width: 0; }
-.tm-row-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.tm-row-title { font-size: 13px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tm-row-sub {
   display: flex; align-items: center; gap: 6px; margin-top: 2px;
   font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  min-width: 0;
 }
 .tm-row-exe { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-row-lock { display: inline-flex; align-items: center; color: var(--text-3); flex: 0 0 auto; }
 .tm-badge {
   display: inline-flex; align-items: center; height: 17px; padding: 0 7px;
   border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2);
@@ -665,11 +714,13 @@
 .tm-sub-sep { color: var(--line-strong); }
 .tm-metric { display: grid; grid-template-columns: minmax(0, 1fr) 54px; align-items: center; gap: 8px; }
 .tm-bar { height: 4px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
-.tm-bar-fill { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width 400ms linear; }
+.tm-bar-fill { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+.tm-bar-fill.is-active { min-width: 2px; }
 .tm-bar-fill.mem { background: var(--text-3); }
 .tm-num { font-size: 12px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
 
-/* The collapsible WebView2 group: a header row that folds the children away. */
+/* A group header uses the same columns as its rows; only the chevron replaces
+   the row's role mark. */
 .tm-group {
   width: 100%; border: none; border-top: 1px solid var(--line); border-radius: 0;
   background: var(--surface-1); color: var(--text); font: inherit; text-align: left; cursor: pointer;
@@ -680,14 +731,25 @@
   display: grid; place-items: center; width: 28px; height: 28px;
   border-radius: 8px; background: var(--surface-3); color: var(--text-2);
 }
-.tm-group-title { display: flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 500; }
+.tm-group-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13px; font-weight: 500; }
+.tm-group-lock { display: inline-flex; align-self: center; color: var(--text-3); }
 .tm-group-meta { font-size: 11.5px; font-weight: 400; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.tm-group-rows .tm-row { box-shadow: inset 2px 0 0 var(--surface-3); }
+.tm-group-rows .tm-row-icon { width: 24px; height: 24px; }
 
 .tm-disk { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .tm-disk .tm-num { font-size: 11px; line-height: 1.35; }
 .tm-disk-empty { color: var(--text-3); }
 .tm-disk .task-disk-write { color: var(--text-3); }
+.tm-filter-empty { padding: 18px 14px; text-align: center; }
 
+/* Background jobs, split into always-on, optional and pages. */
+.tm-jobs-wrap { display: flex; flex-direction: column; gap: 14px; }
+.tm-job-group { display: flex; flex-direction: column; gap: 7px; }
+.tm-job-group-title {
+  margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-3);
+}
 .tm-jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 10px; }
 .tm-job {
   display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
@@ -713,12 +775,42 @@
 .tm-job-lock { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); }
 .tm-empty { padding: 14px; font-size: 12px; color: var(--text-3); }
 .tm-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
-.tm-updated { font-size: 11px; color: var(--text-3); }
+.tm-updated { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
-/* The row's detail card. */
-.tm-detail-card { width: min(560px, 100%); }
-.tm-detail-body { display: flex; flex-direction: column; gap: 14px; }
-.tm-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin: 0; }
+/* The row's live detail drawer. */
+.tm-drawer-layer {
+  position: fixed; inset: 0; z-index: 300; display: flex; justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.45);
+}
+.tm-drawer {
+  display: flex; flex-direction: column; width: min(480px, 100%); height: 100%;
+  background: var(--surface-1); border-left: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pop); animation: tm-drawer-in 180ms ease;
+}
+@keyframes tm-drawer-in {
+  from { transform: translateX(24px); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tm-drawer { animation: none; }
+}
+.tm-drawer-head {
+  display: flex; align-items: center; gap: 11px; padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.tm-drawer-title-wrap { flex: 1; min-width: 0; }
+.tm-drawer-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.tm-drawer-sub {
+  margin-top: 2px; font-size: 11.5px; color: var(--text-3);
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tm-drawer-body { flex: 1; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 16px; }
+.tm-drawer-foot {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 12px 18px; border-top: 1px solid var(--line);
+}
+.tm-drawer-foot-spacer { flex: 1; }
+.tm-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; margin: 0; }
 .tm-detail-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tm-detail-field dt {
   font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
@@ -734,13 +826,23 @@
   overflow-wrap: anywhere; max-height: 120px; overflow: auto;
 }
 
+@media (max-width: 1100px) {
+  .tm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 900px) {
-  .tm-stats { grid-template-columns: 1fr; }
   .tm-thead { display: none; }
   .tm-row, .tm-group { grid-template-columns: 30px minmax(0, 1fr); }
-  .tm-row .tm-metric, .tm-row .tm-disk, .tm-group .tm-num { grid-column: 2; }
+  .tm-row .tm-metric, .tm-row .tm-disk,
+  .tm-group .tm-metric, .tm-group .tm-disk { grid-column: 2; }
   .tm-detail-grid { grid-template-columns: 1fr; }
+  .tm-search { flex-basis: 100%; }
 }
+@media (max-width: 700px) {
+  .tm-stats { grid-template-columns: 1fr; }
+  .tm-game-card { grid-template-columns: 34px minmax(0, 1fr); }
+  .tm-game-card .btn { grid-column: 2; justify-self: start; }
+}
+
 
 /* Discord webhook explainer: steps and the safety note under the field. */
 .ss-webhook-howto {

@@ -2093,6 +2093,8 @@ fn main() {
             notes::notes_export,
             task_manager::task_manager_snapshot,
             task_manager::task_manager_stop,
+            task_manager::task_manager_end_process,
+            task_manager::task_manager_close_game,
             spotify_host::spotify_player_destroy,
             igdb::igdb_status,
             igdb::igdb_set_credentials,
