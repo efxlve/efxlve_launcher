@@ -359,6 +359,41 @@ export function achExitKeyframes(exitStyle: string, animStyle: string): AchCardA
 export function playAchCardEntry(card: HTMLElement, animStyle: string, tier = 2): void {
   if (typeof card.animate !== "function") return;
   card.getAnimations().forEach((animation) => animation.cancel());
+
+  // Distinct, buttery-smooth entrance for overlay system hints
+  if (card.classList.contains("ach-hud-hint")) {
+    card.animate(
+      [
+        { opacity: 0, transform: "translateY(-12px) scale(0.97)", filter: "brightness(1.25)" },
+        { opacity: 1, transform: "translateY(0px) scale(1)", filter: "brightness(1)" },
+      ],
+      { duration: 380, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
+    );
+    const badge = card.querySelector<HTMLElement>(".ach-hint-badge");
+    if (badge && typeof badge.animate === "function") {
+      badge.getAnimations().forEach((a) => a.cancel());
+      badge.animate(
+        [
+          { opacity: 0, transform: "scale(0.82) rotate(-6deg)" },
+          { opacity: 1, transform: "scale(1) rotate(0deg)" },
+        ],
+        { duration: 400, delay: 50, easing: "cubic-bezier(0.18, 1.25, 0.32, 1)", fill: "both" },
+      );
+    }
+    const textCol = card.querySelector<HTMLElement>(".ach-hint-text-col");
+    if (textCol && typeof textCol.animate === "function") {
+      textCol.getAnimations().forEach((a) => a.cancel());
+      textCol.animate(
+        [
+          { opacity: 0, transform: "translateX(-10px)" },
+          { opacity: 1, transform: "translateX(0px)" },
+        ],
+        { duration: 380, delay: 90, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
+      );
+    }
+    return;
+  }
+
   const entry = achEntryKeyframes(animStyle);
   card.animate(entry.frames, {
     duration: entry.duration,

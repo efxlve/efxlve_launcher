@@ -88,8 +88,9 @@ function renderToast(payload: ToastPayload): void {
     theme: payload.theme,
     palette,
     seq: sequence,
-    glyph: "trophy",
+    glyph: payload.tagless ? "layers" : "trophy",
     iconSrc: payload.icon || undefined,
+    hint: Boolean(payload.tagless),
   })}</div>`;
 
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
@@ -106,6 +107,18 @@ function renderToast(payload: ToastPayload): void {
 
 function applyIcon(payload: ToastIconPayload): void {
   if (!current || payload.generation !== current.generation) return;
+  if (current.tagless) {
+    const badge = document.querySelector<HTMLElement>(".ach-hint-badge");
+    if (!badge) return;
+    badge.querySelector(".ach-hint-ico")?.remove();
+    badge.querySelector(".ach-hint-app-icon")?.remove();
+    const img = document.createElement("img");
+    img.className = "ach-hint-app-icon";
+    img.alt = "";
+    img.src = payload.src;
+    badge.appendChild(img);
+    return;
+  }
   const medal = document.querySelector<HTMLElement>(".ach-hud-medallion");
   if (!medal) return;
   medal.querySelector(".ach-hud-trophy-ico")?.remove();
@@ -119,27 +132,32 @@ function applyIcon(payload: ToastIconPayload): void {
 }
 
 function renderDemo(): void {
-  const palette = achievementCardPalette("rarity", 3);
   const params = new URLSearchParams(location.search);
+  const isHint = params.get("hint") === "true";
+  const tier = isHint ? 2 : 3;
+  const palette = achievementCardPalette("rarity", tier);
   const style = params.get("style") || "prism";
   const size = params.get("size") || "normal";
   const position = safePosition(params.get("position") || "top-right");
   const root = document.getElementById("ach-toast-root");
   if (!root) return;
   root.innerHTML = `<div class="ach-toast-layer pos-${position}">${achCardHtml({
-    tag: achTagLine(3, 31, 34, 1.8),
-    title: "The Impossible Dream",
-    desc: "Complete the campaign on Legendary difficulty without dying once.",
-    tier: 3,
+    tag: isHint ? "" : achTagLine(3, 31, 34, 1.8),
+    title: isHint ? "Shift+Tab overlay" : "The Impossible Dream",
+    desc: isHint
+      ? "Press Shift+Tab to open the overlay. Esc closes it."
+      : "Complete the campaign on Legendary difficulty without dying once.",
+    tier,
     size,
     style,
     theme: "rarity",
     palette,
     seq: 1,
-    glyph: "trophy",
+    glyph: isHint ? "layers" : "trophy",
+    hint: isHint,
   })}</div>`;
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
-  if (card) playAchCardEntry(card, style, 3);
+  if (card) playAchCardEntry(card, style, tier);
 }
 
 async function boot(): Promise<void> {

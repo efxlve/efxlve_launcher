@@ -38,6 +38,8 @@ export interface AchCardModel {
   glyph: IconName;
   /** The achievement's own picture (data URL); replaces the trophy glyph. */
   iconSrc?: string;
+  /** When true, renders the distinct system / overlay hint UI rather than an achievement trophy. */
+  hint?: boolean;
 }
 
 export interface AchCardParticle {
@@ -106,8 +108,30 @@ export function achTagLine(
   return parts.join(" • ");
 }
 
+function achHintCardHtml(m: AchCardModel): string {
+  const art = m.iconSrc
+    ? `<img class="ach-hint-app-icon" src="${esc(m.iconSrc)}" alt="" />`
+    : `<span class="ach-hint-ico">${icon(m.glyph || "layers", 20)}</span>`;
+  return `
+    <div class="ach-hud-toast ach-hud-hint size-${esc(m.size)} style-${esc(m.style)} theme-${esc(m.theme)} seq-${m.seq % 2}" data-seq="${m.seq}" style="${achCardVars(m.palette)}">
+      <div class="ach-hint-badge">
+        ${art}
+      </div>
+      <div class="ach-hint-text-col">
+        <div class="ach-hint-header-row">
+          <span class="ach-hint-tag">${icon("layers", 11)} <span>${esc(t("overlay.overlayLabel").toUpperCase())}</span></span>
+        </div>
+        <span class="ach-hint-title">${esc(m.title)}</span>
+        <span class="ach-hint-desc">${esc(m.desc)}</span>
+      </div>
+    </div>`;
+}
+
 /** The card itself. No stage, no position: both callers place it. */
 export function achCardHtml(m: AchCardModel): string {
+  if (m.hint) {
+    return achHintCardHtml(m);
+  }
   const art = m.iconSrc
     ? `<img class="ach-hud-ach-icon" src="${esc(m.iconSrc)}" alt="" />`
     : "";
