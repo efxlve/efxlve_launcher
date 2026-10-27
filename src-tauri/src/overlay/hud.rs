@@ -270,9 +270,9 @@ pub struct NotifSizeMetrics {
 
 pub fn size_metrics(code: u8) -> NotifSizeMetrics {
     match code {
-        0 => NotifSizeMetrics { // Küçük (Old "Büyük")
+        0 => NotifSizeMetrics { // Küçük (matches CSS size-small)
             height: 94,
-            min_width: 460,
+            min_width: 440,
             bar_width: 5,
             medallion_r: 22,
             left_pad: 18,
@@ -289,9 +289,9 @@ pub fn size_metrics(code: u8) -> NotifSizeMetrics {
             body_bottom: 84,
             icon_size: 20,
         },
-        2 => NotifSizeMetrics { // Büyük (Brand new extra-large tier)
+        2 => NotifSizeMetrics { // Büyük (matches CSS size-large)
             height: 144,
-            min_width: 640,
+            min_width: 600,
             bar_width: 8,
             medallion_r: 33,
             left_pad: 26,
@@ -308,9 +308,9 @@ pub fn size_metrics(code: u8) -> NotifSizeMetrics {
             body_bottom: 126,
             icon_size: 30,
         },
-        _ => NotifSizeMetrics { // 1 = Normal (Standard, Old "Devasa")
+        _ => NotifSizeMetrics { // 1 = Normal (Standard, matches CSS size-normal)
             height: NOTIF_HEIGHT,
-            min_width: 540,
+            min_width: 520,
             bar_width: 6,
             medallion_r: 27,
             left_pad: 22,
@@ -575,10 +575,10 @@ fn run_dopamine_choreography(
         let elapsed = now.saturating_sub(start_ms);
         NOTIF_FRAME_MS.store(elapsed, Ordering::Relaxed);
 
-        let mut clip_l = 0;
-        let mut clip_t = 0;
+        let clip_l = 0;
+        let clip_t = 0;
         let mut clip_r = w;
-        let mut clip_b = h;
+        let clip_b = h;
 
         let (dx, dy, alpha) = if now >= until {
             let t = ((now - until) as f32 / exit_ms as f32).clamp(0.0, 1.0);
@@ -631,39 +631,21 @@ fn run_dopamine_choreography(
                     (horiz, vert, a)
                 }
                 3 => {
-                    // 3: Epic Dimensional Fold — vertical portal fold toward center line + slide
-                    let ease = t * t;
-                    let pinch = ((h as f32 * 0.46) * ease) as i32;
-                    clip_t = pinch;
-                    clip_b = (h - pinch).max(clip_t + 4);
-                    let slide = ((22.0 * ease) as i32) * if is_bottom { 1 } else { -1 };
+                    // 3: Epic Dimensional Fold — dimensional lift + fade
+                    let ease = t * t * t;
+                    let slide = ((28.0 * ease) as i32) * if is_bottom { 1 } else { -1 };
                     let a = (NOTIF_ALPHA as f32 * (1.0 - ease)) as u8;
                     (0, slide, a)
                 }
                 4 => {
-                    // 4: Laser Collapse — flattens vertically into a 4px laser line, then zips out
-                    if t < 0.65 {
-                        let u = (t / 0.65).clamp(0.0, 1.0);
-                        let ease = u * u;
-                        let mid = h / 2;
-                        let half_h = ((1.0 - ease) * (mid as f32 - 2.0)).max(2.0) as i32;
-                        clip_t = (mid - half_h).max(0);
-                        clip_b = (mid + half_h).min(h);
-                        (0, 0, NOTIF_ALPHA)
-                    } else {
-                        let u = ((t - 0.65) / 0.35).clamp(0.0, 1.0);
-                        let mid = h / 2;
-                        clip_t = (mid - 2).max(0);
-                        clip_b = (mid + 2).min(h);
-                        let h_pinch = ((w as f32 * 0.48) * u) as i32;
-                        clip_l = h_pinch;
-                        clip_r = (w - h_pinch).max(clip_l + 6);
-                        let a = (NOTIF_ALPHA as f32 * (1.0 - u)) as u8;
-                        (0, 0, a)
-                    }
+                    // 4: Laser Snap Exit — razor-fast snap away
+                    let ease = t * t;
+                    let snap = ((32.0 * ease) as i32) * if is_bottom { 1 } else { -1 };
+                    let a = (NOTIF_ALPHA as f32 * (1.0 - ease)) as u8;
+                    (0, snap, a)
                 }
                 5 => {
-                    // 5: Crystal Shatter Implode — brief outward swell then rapid inward implosion
+                    // 5: Crystal Shatter Implode — brief outward swell then rapid drop
                     if t < 0.25 {
                         let u = t / 0.25;
                         let swell = ((-8.0 * (u * std::f32::consts::PI).sin()) as i32)
@@ -672,12 +654,9 @@ fn run_dopamine_choreography(
                     } else {
                         let u = ((t - 0.25) / 0.75).clamp(0.0, 1.0);
                         let ease = u * u;
-                        clip_r = (w as f32 - (w - pill_min_w) as f32 * ease).round() as i32;
-                        let v_pinch = ((h as f32 * 0.35) * ease) as i32;
-                        clip_t = v_pinch;
-                        clip_b = (h - v_pinch).max(clip_t + 8);
+                        let drop = ((38.0 * ease) as i32) * if is_bottom { 1 } else { -1 };
                         let a = (NOTIF_ALPHA as f32 * (1.0 - ease)) as u8;
-                        (0, 0, a)
+                        (0, drop, a)
                     }
                 }
                 _ => {
@@ -761,41 +740,29 @@ fn run_dopamine_choreography(
                     }
                 }
                 6 => {
-                    // 6: Epic Games Portal Unfold (460ms) — vertical dimensional unfold + crisp drop
+                    // 6: Epic Games Portal Unfold (460ms) — crisp dimensional drop + rebound
                     if elapsed < 460 {
                         let u = (elapsed as f32 / 460.0).clamp(0.0, 1.0);
                         let inv = 1.0 - u;
                         let ease = 1.0 - inv * inv * inv;
-                        let v_pinch = ((1.0 - ease) * (h as f32 * 0.44)).round() as i32;
-                        clip_t = v_pinch;
-                        clip_b = (h - v_pinch).max(clip_t + 6);
-                        let drop = (((1.0 - ease) * 32.0).round() as i32)
+                        let drop = (((1.0 - ease) * 36.0).round() as i32)
                             * if is_bottom { 1 } else { -1 };
-                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 140.0).clamp(0.0, 1.0)) as u8;
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 120.0).clamp(0.0, 1.0)) as u8;
                         (0, drop, a)
                     } else {
                         (0, 0, NOTIF_ALPHA)
                     }
                 }
                 1 => {
-                    // 1: Laser Slice (400ms) — horizontal laser beam opens vertically
-                    if elapsed < 160 {
-                        let u = (elapsed as f32 / 160.0).clamp(0.0, 1.0);
-                        let mid = h / 2;
-                        let half_beam = (2.0 + u * 3.0) as i32;
-                        clip_t = (mid - half_beam).max(0);
-                        clip_b = (mid + half_beam).min(h);
-                        let a = (NOTIF_ALPHA as f32 * (u * 0.8 + 0.2)) as u8;
-                        (0, 0, a)
-                    } else if elapsed < 400 {
-                        let u = ((elapsed - 160) as f32 / 240.0).clamp(0.0, 1.0);
+                    // 1: Laser Slice (380ms) — rapid high-tech slide down with neon laser snap
+                    if elapsed < 380 {
+                        let u = (elapsed as f32 / 380.0).clamp(0.0, 1.0);
                         let inv = 1.0 - u;
-                        let ease = 1.0 - inv * inv * inv;
-                        let mid = h / 2;
-                        let half_h = (5.0 + ease * (mid as f32 - 5.0)) as i32;
-                        clip_t = (mid - half_h).max(0);
-                        clip_b = (mid + half_h).min(h);
-                        (0, 0, NOTIF_ALPHA)
+                        let ease = 1.0 - inv.powi(4);
+                        let offset = (((1.0 - ease) * 28.0).round() as i32)
+                            * if is_bottom { 1 } else { -1 };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 90.0).clamp(0.0, 1.0)) as u8;
+                        (0, offset, a)
                     } else {
                         (0, 0, NOTIF_ALPHA)
                     }
@@ -966,7 +933,7 @@ unsafe fn shape_notification_morphed(
     let w = (right - left).max(4);
     let h = (bottom - top).max(4);
     let region = if style == 4 {
-        // True Stadium Capsule: full stadium pill (corner diameter = height)
+        // True Stadium Capsule (Xbox): full stadium pill (corner diameter = height)
         let diameter = h.min(w);
         CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
     } else if style == 1 {
@@ -974,8 +941,12 @@ unsafe fn shape_notification_morphed(
         let diameter = 16.min(h).min(w);
         CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
     } else if style == 6 {
-        // Dimensional Fold: 10px corners
+        // Dimensional Fold (Epic): 10px corners
         let diameter = 20.min(h).min(w);
+        CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
+    } else if style == 5 {
+        // PlayStation: 18px sleek corners
+        let diameter = 36.min(h).min(w);
         CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
     } else {
         let diameter = (NOTIF_RADIUS * 2).min(h).min(w);
@@ -1607,8 +1578,9 @@ fn trophy_sdf(u: f32, v: f32) -> f32 {
         .min(d_base2)
 }
 
-/// Renders the anti-aliased medallion outer ring, dark velvet inner disc, and
-/// 3D metallic vector trophy directly into the 32-bit DIB pixel buffer.
+/// Renders the anti-aliased medallion outer ring, rotating dashed orbit ring,
+/// outer accent glow, dark velvet inner disc, and 3D metallic vector trophy
+/// directly into the 32-bit DIB pixel buffer.
 #[cfg(windows)]
 fn render_medallion_and_trophy(
     pixels: &mut [u32],
@@ -1627,14 +1599,14 @@ fn render_medallion_and_trophy(
     let mr = med_r as f32;
     let inner_r = (mr - 2.6).max(4.0);
     let scale = (inner_r * 0.72).max(1.0);
-    let pad = med_r + 3;
+    let pad = med_r + 15;
 
     for y in (cy - pad).max(0)..=(cy + pad).min(h - 1) {
         let dy = (y - cy) as f32;
         for x in (cx - pad).max(0)..=(cx + pad).min(w - 1) {
             let dx = (x - cx) as f32;
             let dist = (dx * dx + dy * dy).sqrt();
-            if dist > mr + 1.2 {
+            if dist > mr + 14.0 {
                 continue;
             }
 
@@ -1643,6 +1615,28 @@ fn render_medallion_and_trophy(
             let mut r = ((cur >> 16) & 0xFF) as f32;
             let mut g = ((cur >> 8) & 0xFF) as f32;
             let mut b = (cur & 0xFF) as f32;
+
+            // 1. Outer Glow Halo around medallion (matches CSS box-shadow: 0 0 18px ...)
+            if dist > mr {
+                let glow = (1.0 - (dist - mr) / 14.0).clamp(0.0, 1.0).powi(2) * 0.40;
+                r += ac_r * glow;
+                g += ac_g * glow;
+                b += ac_b * glow;
+
+                // 2. Rotating Dashed Orbit Ring at radius mr + 5.0 (matches CSS .ach-medallion-ring)
+                let d_ring = (dist - (mr + 5.0)).abs();
+                if d_ring <= 1.25 {
+                    let ring_angle = dy.atan2(dx) + t_sec * 1.05;
+                    if (ring_angle * 12.0).sin() > 0.0 {
+                        let ring_cov = (1.0 - d_ring / 1.25).clamp(0.0, 1.0) * 0.85;
+                        r = r * (1.0 - ring_cov) + (ic_r * 0.65 + 255.0 * 0.35) * ring_cov;
+                        g = g * (1.0 - ring_cov) + (ic_g * 0.65 + 255.0 * 0.35) * ring_cov;
+                        b = b * (1.0 - ring_cov) + (ic_b * 0.65 + 255.0 * 0.35) * ring_cov;
+                    }
+                }
+                pixels[idx] = pack_dib(r, g, b);
+                continue;
+            }
 
             // Outer anti-aliased medallion coverage
             let outer_cov = (mr + 0.6 - dist).clamp(0.0, 1.0);
@@ -1654,10 +1648,10 @@ fn render_medallion_and_trophy(
 
             // Inner velvet plate coverage
             let inner_cov = (inner_r + 0.5 - dist).clamp(0.0, 1.0);
-            let core_glow = (1.0 - (dist / inner_r).min(1.0)).powi(2) * 0.28;
-            let plate_r = bg_r * 0.52 + ac_r * core_glow;
-            let plate_g = bg_g * 0.52 + ac_g * core_glow;
-            let plate_b = bg_b * 0.52 + ac_b * core_glow;
+            let core_glow = (1.0 - (dist / inner_r).min(1.0)).powi(2) * 0.32;
+            let plate_r = bg_r * 0.48 + ac_r * core_glow;
+            let plate_g = bg_g * 0.48 + ac_g * core_glow;
+            let plate_b = bg_b * 0.48 + ac_b * core_glow;
 
             let mut disc_r = rim_r * (1.0 - inner_cov) + plate_r * inner_cov;
             let mut disc_g = rim_g * (1.0 - inner_cov) + plate_g * inner_cov;
@@ -1694,7 +1688,7 @@ fn render_medallion_and_trophy(
 
 /// Renders the animated 60 FPS background surface, shockwave rings, rotating
 /// god-rays, diagonal holographic foil sweep, rotating conic border comet,
-/// bottom energy progress bar, 34 bursting/floating dopamine particles, and
+/// left gold accent bar gradient & glow, dopamine sparkling particles, and
 /// the anti-aliased medallion + trophy emblem.
 #[cfg(windows)]
 fn render_dopamine_backdrop(
@@ -1708,7 +1702,7 @@ fn render_dopamine_backdrop(
     elapsed_ms: u64,
     style: u8,
     tier: u8,
-    progress_permille: u64,
+    _progress_permille: u64,
 ) {
     let w = width.max(1);
     let h = height.max(1);
@@ -1743,43 +1737,34 @@ fn render_dopamine_backdrop(
     };
     let sweep_x = -90.0 + cycle_ms.clamp(0.0, 1.5) * (w as f32 + 220.0);
 
-    // Animated bottom progress bar fill
-    let prog_ease = ((elapsed_ms as f32 - 180.0) / 820.0).clamp(0.0, 1.0);
-    let prog_ease = 1.0 - (1.0 - prog_ease).powi(3);
-    let target_ratio = (progress_permille.min(1000) as f32 / 1000.0).max(0.15);
-    let bar_fill_x = m.bar_width + ((w - m.bar_width) as f32 * target_ratio * prog_ease) as i32;
-
-    let aura_inv = 1.0 / ((m.medallion_r as f32 * 3.8).max(40.0));
+    let aura_inv = 1.0 / ((m.medallion_r as f32 * 4.2).max(50.0));
     let half_w = w as f32 * 0.5;
     let half_h = h as f32 * 0.5;
-    let show_rays = style == 2 || style == 3 || style == 6 || tier >= 3;
     let cur_w = (NOTIF_CUR_W.load(Ordering::Relaxed) as i32).clamp(16, w);
 
     for y in 0..h {
         let dy = (y - center_y) as f32;
         let dy2 = dy * dy;
         let row_offset = (y * w) as usize;
-        let is_bottom_bar = y >= h - 4 && style != 4;
         let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.10;
-        let scanline_mul = 1.0;
 
         for x in 0..w {
             let dx = (x - center_x) as f32;
             let dist = (dx * dx + dy2).sqrt();
 
-            // 1. Base surface + radial medallion aura
+            // 1. Base surface + rich radial medallion aura (matches CSS radial-gradient)
             let aura = (1.0 - dist * aura_inv).max(0.0).powi(2) * 0.44;
-            let mut r = (bg_r + (ac_r - bg_r) * aura + 255.0 * top_gloss) * scanline_mul;
-            let mut g = (bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss) * scanline_mul;
-            let mut b = (bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss) * scanline_mul;
+            let mut r = bg_r + (ac_r - bg_r) * aura + 255.0 * top_gloss;
+            let mut g = bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss;
+            let mut b = bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss;
 
-            // 2. Rotating God-Rays behind the medallion
-            if show_rays && dist < m.medallion_r as f32 * 3.8 {
+            // 2. Rotating Volumetric God-Rays behind the medallion (all styles & tiers, matches preview)
+            if dist < m.medallion_r as f32 * 4.0 {
                 let angle = dy.atan2(dx);
                 let ray1 = ((angle * 6.0 + t_sec * 2.2).sin() * 0.5 + 0.5).powi(4);
                 let ray2 = ((angle * 4.0 - t_sec * 1.5).cos() * 0.5 + 0.5).powi(3);
-                let falloff = (1.0 - dist / (m.medallion_r as f32 * 3.8)).max(0.0);
-                let ray_int = (ray1 * 0.65 + ray2 * 0.35) * falloff * 0.34;
+                let falloff = (1.0 - dist / (m.medallion_r as f32 * 4.0)).max(0.0);
+                let ray_int = (ray1 * 0.65 + ray2 * 0.35) * falloff * (if tier >= 3 { 0.44 } else { 0.30 });
                 r += ic_r * ray_int;
                 g += ic_g * ray_int;
                 b += ic_b * ray_int;
@@ -1805,7 +1790,7 @@ fn render_dopamine_backdrop(
                 }
             }
 
-            // 4. Diagonal Holographic Shimmer Sweep (wider & brighter for PlayStation style 5)
+            // 4. Diagonal Holographic Shimmer Sweep
             let diag = x as f32 + y as f32 * 0.58;
             let s_dist = (diag - sweep_x).abs();
             let sheen_w = if style == 5 { 64.0 } else { 42.0 };
@@ -1817,29 +1802,49 @@ fn render_dopamine_backdrop(
                 b += (ac_b * 0.5 + 255.0 * 0.5) * sheen;
             }
 
-            // 5. Left Accent Indicator Bar (skipped on Xbox stadium pill style 4)
+            // 5. Left Accent Indicator Bar: vertical gradient + 14px horizontal glow shadow
             if style != 4 && x < m.bar_width {
-                let pulse = (t_sec * 4.5 + y as f32 * 0.05).sin() * 0.14 + 0.86;
-                r = ac_r * pulse + 255.0 * (1.0 - pulse) * 0.38;
-                g = ac_g * pulse + 255.0 * (1.0 - pulse) * 0.38;
-                b = ac_b * pulse + 255.0 * (1.0 - pulse) * 0.38;
-            } else if is_bottom_bar && x <= bar_fill_x {
-                // 6. Animated Bottom Progress Bar + Hot Leading Tip
-                let tip_dist = (bar_fill_x - x) as f32;
-                let tip_glow = (1.0 - tip_dist / 18.0).clamp(0.0, 1.0);
-                r = ac_r * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
-                g = ac_g * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
-                b = ac_b * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
+                let t_y = y as f32 / (h as f32).max(1.0);
+                let (br, bg, bb) = if t_y < 0.22 {
+                    let u = t_y / 0.22;
+                    (255.0 * (1.0 - u) + ic_r * u, 255.0 * (1.0 - u) + ic_g * u, 255.0 * (1.0 - u) + ic_b * u)
+                } else if t_y < 0.75 {
+                    let u = (t_y - 0.22) / 0.53;
+                    (ic_r * (1.0 - u) + ac_r * u, ic_g * (1.0 - u) + ac_g * u, ic_b * (1.0 - u) + ac_b * u)
+                } else {
+                    let u = (t_y - 0.75) / 0.25;
+                    (ac_r * (1.0 - u) + bd_r * u, ac_g * (1.0 - u) + bd_g * u, ac_b * (1.0 - u) + bd_b * u)
+                };
+                r = br;
+                g = bg;
+                b = bb;
+            } else if style != 4 && x >= m.bar_width && x < m.bar_width + 14 {
+                let glow = (1.0 - (x - m.bar_width) as f32 / 14.0).powi(2) * 0.40;
+                r += ac_r * glow;
+                g += ac_g * glow;
+                b += ac_b * glow;
             }
 
-            // 7. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim (exact geometric SDF)
+            // 6. Laser Slice (Cyber) high-tech scanner scanline sweep
+            if style == 1 && elapsed_ms < 380 {
+                let laser_p = elapsed_ms as f32 / 380.0;
+                let laser_y = laser_p * (h as f32);
+                let dy_laser = (y as f32 - laser_y).abs();
+                if dy_laser < 5.0 {
+                    let laser_int = (1.0 - dy_laser / 5.0).powi(2) * (1.0 - laser_p * 0.35);
+                    r += (255.0 * 0.7 + ic_r * 0.3) * laser_int;
+                    g += (255.0 * 0.7 + ic_g * 0.3) * laser_int;
+                    b += (255.0 * 0.7 + ic_b * 0.3) * laser_int;
+                }
+            }
+
+            // 7. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim
             let right_edge = (cur_w - 1).max(1);
             let is_in_card = x <= right_edge;
             let (is_border, edge_fade) = if !is_in_card {
                 (false, 0.0)
             } else if style == 4 {
-                // True Stadium Capsule SDF: radius R = h / 2.
-                // Left cap center = (cap_r, rad), Right cap center = (right_edge - cap_r, rad).
+                // True Stadium Capsule SDF: radius R = h / 2
                 let rad = (h as f32) * 0.5;
                 let cap_r = rad.min((right_edge as f32) * 0.5);
                 let xf = x as f32;
@@ -1865,6 +1870,8 @@ fn render_dopamine_backdrop(
                     8.0f32
                 } else if style == 6 {
                     10.0f32
+                } else if style == 5 {
+                    18.0f32
                 } else {
                     16.0f32
                 }.min((h as f32) * 0.5).min((right_edge as f32) * 0.5);
@@ -1912,34 +1919,64 @@ fn render_dopamine_backdrop(
         }
     }
 
-    // 8. Procedural Dopamine Particles (20 Impact Burst Shards + 10 Rising Ambient Embers)
-    let burst_t = ((elapsed_ms as f32 - 55.0) / 1000.0).clamp(0.0, 1.0);
+    // 8. Dopamine Sparkling Particles ("parıltılı noktalar")
+    // Part A: Initial dynamic burst shards (0..1100ms)
+    let burst_t = ((elapsed_ms as f32 - 40.0) / 1060.0).clamp(0.0, 1.0);
     if burst_t > 0.0 && burst_t < 1.0 {
         let decel = 1.0 - (1.0 - burst_t).powi(3);
         let fade = (1.0 - burst_t).powi(2);
         for i in 0..20u32 {
             let seed = (i.wrapping_mul(2654435761)) ^ ((tier as u32) << 16);
             let angle = (i as f32 / 20.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
-            let speed = 36.0 + ((seed >> 8) & 0x7F) as f32 * 1.1;
+            let speed = 38.0 + ((seed >> 8) & 0x7F) as f32 * 1.1;
             let px = center_x + (angle.cos() * speed * decel) as i32;
-            let py = center_y + (angle.sin() * speed * decel - burst_t * burst_t * 16.0) as i32;
+            let py = center_y + (angle.sin() * speed * decel - burst_t * burst_t * 14.0) as i32;
             let p_rad = if (i & 3) == 0 { 3 } else { 2 };
             let is_diamond = style == 2 || (i & 1 == 0);
-            draw_particle(pixels, w, h, px, py, p_rad, is_diamond, fade, ic_r, ic_g, ic_b);
+            draw_sparkle(pixels, w, h, px, py, p_rad, is_diamond, fade, ic_r, ic_g, ic_b);
         }
     }
 
-    // Rising ambient embers across the card
-    for i in 0..10u32 {
-        let seed = i.wrapping_mul(1597334677);
-        let phase = (t_sec * (0.60 + (i as f32 * 0.07)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
-        let px = m.left_pad + ((seed >> 8) as i32).abs() % (w - m.left_pad - 12).max(20);
-        let py = h - 6 - (phase * (h - 10) as f32) as i32;
-        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.70;
-        draw_particle(pixels, w, h, px, py, 2, true, twinkle, ac_r, ac_g, ac_b);
+    // Part B: Persistent Orbiting Diamond Stars around the medallion (matching STAGE_PARTICLES)
+    const STAGE_OFFSETS: [(i32, i32, bool, f32); 14] = [
+        (-52, -38, true, 0.0),
+        (-28, -56, false, 0.45),
+        (14, -62, true, 0.9),
+        (54, -46, false, 1.35),
+        (76, -18, true, 1.8),
+        (82, 22, false, 2.25),
+        (58, 48, true, 2.7),
+        (18, 58, false, 3.15),
+        (-24, 54, true, 3.6),
+        (-58, 34, false, 4.05),
+        (-68, -4, true, 4.5),
+        (36, -32, false, 4.95),
+        (-38, 28, true, 5.4),
+        (96, -6, true, 5.85),
+    ];
+    let entry_fade = (elapsed_ms as f32 / 280.0).clamp(0.0, 1.0);
+    for &(dx, dy, is_diamond, phase) in &STAGE_OFFSETS {
+        let bob_x = ((t_sec * 1.7 + phase).sin() * 3.5) as i32;
+        let bob_y = ((t_sec * 1.4 + phase).cos() * 3.5) as i32;
+        let px = center_x + dx + bob_x;
+        let py = center_y + dy + bob_y;
+        let twinkle = ((t_sec * 3.4 + phase).sin().abs()).powi(3) * 0.78 + 0.22;
+        let alpha = twinkle * entry_fade;
+        let rad = if is_diamond { 3 } else { 2 };
+        draw_sparkle(pixels, w, h, px, py, rad, is_diamond, alpha, ic_r, ic_g, ic_b);
     }
 
-    // 9. Anti-aliased Medallion Disc & 3D Vector Trophy Cup
+    // Part C: Floating ambient sparkling embers across the card
+    for i in 0..12u32 {
+        let seed = i.wrapping_mul(1597334677);
+        let phase = (t_sec * (0.55 + (i as f32 * 0.06)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
+        let px = m.left_pad + ((seed >> 8) as i32).abs() % (w - m.left_pad - 16).max(20);
+        let py = h - 6 - (phase * (h - 10) as f32) as i32;
+        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.85;
+        draw_sparkle(pixels, w, h, px, py, 2, (i & 1) == 0, twinkle, ac_r, ac_g, ac_b);
+    }
+
+    // 9. Anti-aliased Medallion Disc, Rotating Dashed Orbit Ring & 3D Vector Trophy Cup
     let impact_pulse = if elapsed_ms < 320 {
         let p = elapsed_ms as f32 / 320.0;
         ((p * std::f32::consts::PI).sin() * 2.5) as i32
@@ -1951,7 +1988,7 @@ fn render_dopamine_backdrop(
 }
 
 #[cfg(windows)]
-fn draw_particle(
+fn draw_sparkle(
     pixels: &mut [u32],
     w: i32,
     h: i32,
@@ -1967,33 +2004,62 @@ fn draw_particle(
     if alpha <= 0.02 {
         return;
     }
-    for dy in -rad..=rad {
+    let r_bound = rad + 2;
+    for dy in -r_bound..=r_bound {
         let y = cy + dy;
         if y < 0 || y >= h {
             continue;
         }
-        for dx in -rad..=rad {
+        let ady = dy.abs();
+        for dx in -r_bound..=r_bound {
             let x = cx + dx;
             if x < 0 || x >= w {
                 continue;
             }
-            let norm = if diamond {
-                (dx.abs() + dy.abs()) as f32 / (rad as f32 + 0.5)
+            let adx = dx.abs();
+
+            let dist_diamond = (adx + ady) as f32 / (rad as f32 + 0.6);
+            let is_cross_ray = (adx == 0 && ady <= r_bound) || (ady == 0 && adx <= r_bound);
+
+            let (intensity, is_white_core) = if adx == 0 && ady == 0 {
+                (1.0, true)
+            } else if adx <= 1 && ady <= 1 && (adx + ady) <= 1 {
+                (0.92, true)
+            } else if diamond && dist_diamond <= 1.0 {
+                let falloff = (1.0 - dist_diamond).powi(2);
+                (falloff, dist_diamond < 0.35)
+            } else if is_cross_ray {
+                let ray_dist = (adx.max(ady)) as f32 / (r_bound as f32 + 0.6);
+                ((1.0 - ray_dist).powi(2) * 0.72, false)
             } else {
-                ((dx * dx + dy * dy) as f32).sqrt() / (rad as f32 + 0.5)
+                let dist_circ = ((dx * dx + dy * dy) as f32).sqrt() / (rad as f32 + 0.6);
+                if dist_circ <= 1.0 {
+                    ((1.0 - dist_circ).powi(2) * 0.55, false)
+                } else {
+                    continue;
+                }
             };
-            if norm > 1.0 {
+
+            let final_alpha = (intensity * alpha).clamp(0.0, 1.0);
+            if final_alpha <= 0.01 {
                 continue;
             }
-            let intensity = (1.0 - norm) * alpha;
+
             let idx = (y * w + x) as usize;
             let cur = pixels[idx];
             let cr = ((cur >> 16) & 0xFF) as f32;
             let cg = ((cur >> 8) & 0xFF) as f32;
             let cb = (cur & 0xFF) as f32;
-            let nr = cr + (pr * 0.55 + 255.0 * 0.45) * intensity;
-            let ng = cg + (pg * 0.55 + 255.0 * 0.45) * intensity;
-            let nb = cb + (pb * 0.55 + 255.0 * 0.45) * intensity;
+
+            let (target_r, target_g, target_b) = if is_white_core {
+                (255.0, 255.0, 255.0)
+            } else {
+                (pr * 0.7 + 255.0 * 0.3, pg * 0.7 + 255.0 * 0.3, pb * 0.7 + 255.0 * 0.3)
+            };
+
+            let nr = cr + target_r * final_alpha;
+            let ng = cg + target_g * final_alpha;
+            let nb = cb + target_b * final_alpha;
             pixels[idx] = pack_dib(nr, ng, nb);
         }
     }
