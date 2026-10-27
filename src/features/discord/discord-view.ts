@@ -11,6 +11,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { childBounds } from "../../core/child-bounds";
 import { DISCORD_INVITE_URL, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
@@ -144,11 +145,12 @@ function syncDiscordPage(): void {
   // mid-animation measurement, never real layout: keep the previous rectangle.
   if (rect.width < 360 || rect.height < 240) return;
   viewVisible = true;
+  const bounds = childBounds(rect);
   void invoke("discord_view_show", {
-    x: rect.left,
-    y: rect.top,
-    width: rect.width,
-    height: rect.height,
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
   }).catch((error) => {
     viewVisible = false;
     if (showErrorToasted) return;

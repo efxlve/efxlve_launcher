@@ -8,6 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { childBounds } from "../../core/child-bounds";
 import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
@@ -49,19 +50,19 @@ export function setEmbeddedStoreRect(reader: (() => StoreRect) | null): void {
   embeddedStoreRect = reader;
 }
 
-/** Store webview bounds: the #content area (right of the sidebar, between the header and the status bar). */
+/** Store webview bounds: the #content area, in the logical pixels the native child expects. */
 export function storeRect(): StoreRect {
   const r = document.getElementById("content")?.getBoundingClientRect();
   const x = r ? r.left : 0;
   const y = r ? r.top : 0;
   const height = r ? r.height : window.innerHeight;
-  return {
+  return childBounds({
     x,
     y,
     width: Math.max(100, window.innerWidth - x),
     height: Math.max(100, height),
     bottom: Math.max(0, window.innerHeight - y - height),
-  };
+  });
 }
 
 /**
@@ -129,7 +130,7 @@ export function syncStoreViewSize(): void {
   // must not move or hide the child again.
   const embedded = embeddedStoreRect !== null;
   if ((!embedded && S.view !== "store") || !S.storeShown || !isTauri || storeHoldReasons.size > 0 || storeRestoreInFlight) return;
-  const rect = embedded ? embeddedStoreRect!() : storeRect();
+  const rect = embedded ? childBounds(embeddedStoreRect!()) : storeRect();
   invoke<void>("resize_store_view", rect).catch(() => undefined);
 }
 
@@ -677,7 +678,7 @@ export async function showEmbeddedStore(url: string, rect: StoreRect): Promise<v
   S.storeLoading = !warm;
   try {
     const result = await invoke<string>("show_store_view", {
-      ...rect,
+      ...childBounds(rect),
       url,
       recreate: false,
       ownedLabel: t("store.inLibrary"),

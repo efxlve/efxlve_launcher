@@ -14,6 +14,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { childBounds } from "../../core/child-bounds";
 import { isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
@@ -123,11 +124,12 @@ function syncPlayer(): void {
   const rect = slot.getBoundingClientRect();
   if (rect.width < 50 || rect.height < 50) return;
   playerVisible = true;
+  const bounds = childBounds(rect);
   void invoke("spotify_player_show", {
-    x: rect.left,
-    y: rect.top,
-    width: rect.width,
-    height: rect.height,
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
   }).catch(() => undefined);
 }
 
