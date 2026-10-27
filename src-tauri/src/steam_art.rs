@@ -53,6 +53,12 @@ pub fn hero_url_from_assets(assets: &serde_json::Value) -> Option<String> {
     )
 }
 
+/// The 460x215 store header. Custom games keep it between the portrait cover
+/// and the wide hero, and it is the one asset every store page publishes.
+pub fn header_url_from_assets(assets: &serde_json::Value) -> Option<String> {
+    asset_file_url(assets, &["header_2x", "header"])
+}
+
 /// GetItems ignores the request unless a store context is present. Without it the
 /// response is an empty object, so preloaded games never receive their capsule.
 pub fn store_items_query(ids: &[u64]) -> serde_json::Value {
@@ -69,16 +75,18 @@ pub struct SteamLibraryArt {
     pub cover: String,
     #[serde(default)]
     pub hero: String,
+    #[serde(default)]
+    pub header: String,
 }
 
-/// One GetItems call for up to 40 app ids. Missing art is omitted.
-#[tauri::command]
-pub async fn steam_library_art(
-    app_ids: Vec<String>,
-) -> Result<HashMap<String, SteamLibraryArt>, String> {
+/// The `assets` object of one `GetItems` call per app id. Missing or hidden
+/// items are omitted, so the caller keeps its own fallback.
+pub async fn fetch_store_assets(
+    app_ids: &[u64],
+) -> Result<HashMap<u64, serde_json::Value>, String> {
     let ids: Vec<u64> = app_ids
         .iter()
-        .filter_map(|id| id.parse::<u64>().ok())
+        .copied()
         .filter(|id| *id > 0)
         .take(40)
         .collect();
@@ -120,13 +128,39 @@ pub async fn steam_library_art(
             let Some(assets) = item.get("assets") else {
                 continue;
             };
-            let cover = cover_url_from_assets(assets).unwrap_or_default();
-            let hero = hero_url_from_assets(assets).unwrap_or_default();
-            if cover.is_empty() && hero.is_empty() {
-                continue;
-            }
-            out.insert(app_id.to_string(), SteamLibraryArt { cover, hero });
+            out.insert(app_id, assets.clone());
         }
+    }
+    Ok(out)
+}
+
+/// One GetItems call for up to 40 app ids. Missing art is omitted.
+#[tauri::command]
+pub async fn steam_library_art(
+    app_ids: Vec<String>,
+) -> Result<HashMap<String, SteamLibraryArt>, String> {
+    let ids: Vec<u64> = app_ids
+        .iter()
+        .filter_map(|id| id.parse::<u64>().ok())
+        .filter(|id| *id > 0)
+        .take(40)
+        .collect();
+    if ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let mut out = HashMap::new();
+    for (app_id, assets) in fetch_store_assets(&ids).await? {
+        let cover = cover_url_from_assets(&assets).unwrap_or_default();
+        let hero = hero_url_from_assets(&assets).unwrap_or_default();
+        let header = header_url_from_assets(&assets).unwrap_or_default();
+        if cover.is_empty() && hero.is_empty() && header.is_empty() {
+            continue;
+        }
+        out.insert(
+            app_id.to_string(),
+            SteamLibraryArt { cover, hero, header },
+        );
     }
     Ok(out)
 }
@@ -175,6 +209,17 @@ mod tests {
         });
         let url = hero_url_from_assets(&assets).unwrap();
         assert!(url.contains("library_hero.jpg"));
+    }
+
+    #[test]
+    fn header_url_uses_the_hashed_header_and_never_the_hero() {
+        let assets = serde_json::json!({
+            "asset_url_format": "steam/apps/2624870/${FILENAME}?t=1777999087",
+            "library_hero": "abc/library_hero.jpg",
+            "header": "09c486f1/header.jpg"
+        });
+        let url = header_url_from_assets(&assets).unwrap();
+        assert!(url.ends_with("/09c486f1/header.jpg?t=1777999087"), "got {url}");
     }
 
     #[test]

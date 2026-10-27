@@ -201,6 +201,7 @@ export const steamImportCollections = () =>
 export interface SteamLibraryArt {
   cover: string;
   hero: string;
+  header: string;
 }
 
 /** Current library portraits and heroes for app ids whose flat CDN capsule 404s. */

@@ -1294,8 +1294,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         <div class="gp-hero">
           ${
             art
-              ? `<div class="gp-hero-backdrop" style="background-image:url('${esc(cachedImage(art))}');"></div>
-          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="if(this.naturalWidth && this.naturalHeight && this.naturalWidth/this.naturalHeight < 1.3) this.classList.add('is-portrait')" />`
+              ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" style="background-image:url('${esc(cachedImage(art))}');"></div>
+          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="if(this.naturalWidth && this.naturalHeight && this.naturalWidth/this.naturalHeight < 1.3) this.classList.add('is-portrait')" onerror="this.remove()" />`
               : ""
           }
           <div class="gp-hero-scrim"></div>

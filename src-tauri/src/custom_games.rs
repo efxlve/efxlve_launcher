@@ -715,22 +715,52 @@ pub async fn custom_games_search_steam(query: String) -> Result<Vec<SteamStoreSe
         .map_err(|e| e.to_string())?;
 
     let items = res.items.unwrap_or_default();
+    let items: Vec<RawSteamSearchItem> = items.into_iter().take(12).collect();
+    // The flat `cdn.akamai.steamstatic.com/steam/apps/<id>/...` paths 404 for
+    // many newer titles: their art lives under a content-hash path that only
+    // the store service publishes. Ask it once for the whole result list.
+    let app_ids: Vec<u64> = items.iter().map(|item| item.id).collect();
+    let assets = crate::steam_art::fetch_store_assets(&app_ids)
+        .await
+        .unwrap_or_default();
     let hits = items
         .into_iter()
-        .take(12)
         .map(|item| {
             let id = item.id;
+            let art = assets.get(&id);
+            let cover = art.and_then(crate::steam_art::cover_url_from_assets);
+            let header = art.and_then(crate::steam_art::header_url_from_assets);
+            let hero = art.and_then(crate::steam_art::hero_url_from_assets);
             SteamStoreSearchHit {
                 id,
                 name: item.name,
-                cover_url: format!("https://cdn.akamai.steamstatic.com/steam/apps/{id}/library_600x900.jpg"),
-                header_url: format!("https://cdn.akamai.steamstatic.com/steam/apps/{id}/header.jpg"),
-                hero_url: format!("https://cdn.akamai.steamstatic.com/steam/apps/{id}/library_hero.jpg"),
+                cover_url: cover.unwrap_or_else(|| legacy_steam_cover(id)),
+                header_url: header
+                    .clone()
+                    .or_else(|| hero.clone())
+                    .unwrap_or_else(|| legacy_steam_header(id)),
+                hero_url: hero
+                    .or(header)
+                    .unwrap_or_else(|| legacy_steam_hero(id)),
             }
         })
         .collect();
 
     Ok(hits)
+}
+
+/// Last resort for an app the store service does not publish assets for. The
+/// flat path still answers for older titles.
+fn legacy_steam_cover(app_id: u64) -> String {
+    format!("https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/library_600x900.jpg")
+}
+
+fn legacy_steam_header(app_id: u64) -> String {
+    format!("https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg")
+}
+
+fn legacy_steam_hero(app_id: u64) -> String {
+    format!("https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/library_hero.jpg")
 }
 
 #[tauri::command]

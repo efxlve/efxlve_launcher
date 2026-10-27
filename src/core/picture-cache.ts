@@ -68,14 +68,22 @@ export function warmImages(urls: Array<string | null | undefined>): void {
     });
 }
 
-/** Repaints every image that asked for a URL, now that some are local. */
+/**
+ * Repaints every element that asked for a URL, now that some are local. The
+ * hero paints its picture twice (an `<img>` over a blurred backdrop), and a
+ * backdrop left on the network URL would download again on every open.
+ */
 function swapPaintedImages(): void {
-  document.querySelectorAll<HTMLImageElement>("img[data-img-url]").forEach((img) => {
-    const url = img.dataset.imgUrl;
+  document.querySelectorAll<HTMLElement>("[data-img-url]").forEach((node) => {
+    const url = node.dataset.imgUrl;
     if (!url) return;
     const local = cachedPictures.get(url);
     if (!local) return;
-    if (img.src !== local) img.src = local;
+    if (node instanceof HTMLImageElement) {
+      if (node.src !== local) node.src = local;
+      return;
+    }
+    node.style.backgroundImage = `url("${local}")`;
   });
 }
 
