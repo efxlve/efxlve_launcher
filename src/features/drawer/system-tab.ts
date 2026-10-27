@@ -151,7 +151,7 @@ function statusIcon(status: RequirementStatus): string {
   switch (status) {
     case "ok": return icon("check", 11);
     case "fail": return icon("x", 11);
-    case "manual": return icon("search", 11);
+    case "manual": return icon("info", 11);
     default: return icon("info", 11);
   }
 }
@@ -175,7 +175,8 @@ function statusLabel(status: RequirementStatus): string {
 }
 
 function statusChip(status: RequirementStatus): string {
-  return `<span class="sys-req-state ${statusClass(status)}">${statusIcon(status)}<span>${statusLabel(status)}</span></span>`;
+  const title = status === "manual" ? ` title="${esc(t("sys.checkNote"))}"` : "";
+  return `<span class="sys-req-state ${statusClass(status)}"${title}>${statusIcon(status)}<span>${statusLabel(status)}</span></span>`;
 }
 
 function panelHeader(verdict: SystemVerdict | null): string {

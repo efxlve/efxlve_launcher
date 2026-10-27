@@ -959,7 +959,7 @@ export function renderGameFeatures(
 
   // Offline playability cross-checked against online-only mode and partner launchers
   let offlineVal = i18nT("feat.supportedOffline");
-  let offlineClass = "supported";
+  let offlineClass = "";
   let offlineTooltip = i18nT("feat.supportedOfflineTip");
   if (isOnlineOnly) {
     offlineVal = i18nT("feat.alwaysOnline");
@@ -971,7 +971,7 @@ export function renderGameFeatures(
     offlineTooltip = i18nT("feat.partnerRequiredTip", { name: partner.name });
   } else if (canRunOffline) {
     offlineVal = i18nT("feat.supportedOffline");
-    offlineClass = "supported";
+    offlineClass = "";
   }
 
   return `
@@ -983,7 +983,7 @@ export function renderGameFeatures(
         <div class="hub-feature-icon">${icon("users", 12)}</div>
         <span>${i18nT("feat.mode")}</span>
       </div>
-      <div class="hub-feature-val ${mode === "singlePlayer" ? "supported" : "accent"}">${i18nT(`feat.${mode}`)}</div>
+      <div class="hub-feature-val">${i18nT(`feat.${mode}`)}</div>
     </div>`
         : ""
     }
@@ -1001,7 +1001,7 @@ export function renderGameFeatures(
         <div class="hub-feature-icon">${icon("cloud", 12)}</div>
         <span>${i18nT("feat.cloud")}</span>
       </div>
-      <div class="hub-feature-val ${cloud.synced ? "supported" : "muted"}">${esc(cloud.label)}</div>
+      <div class="hub-feature-val ${cloud.synced ? "" : "muted"}">${esc(cloud.label)}</div>
     </div>
 
     ${
@@ -1077,9 +1077,9 @@ export function renderControllerCard(
         ? `<span class="ctrl-badge is-kb">${icon("keyboard", 12)} ${i18nT("feat.kbMouse")}</span>`
         : `<span class="ctrl-badge is-partial">${i18nT("feat.partialPad")}</span>`;
   return `
-    <div class="ctrl-card">
+    <div class="ctrl-panel">
       <div class="ctrl-hero">
-        <div class="ctrl-glyph">${icon(ctrl.iconName, 22)}</div>
+        <div class="ctrl-glyph">${icon(ctrl.iconName, 21)}</div>
         <div class="ctrl-main">
           <div class="ctrl-head">
             <span class="ctrl-label">${esc(ctrl.label)}</span>
@@ -1088,10 +1088,10 @@ export function renderControllerCard(
           <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
         </div>
       </div>
-      <div class="ctrl-tags">
-        <span class="ctrl-tag">${icon("gamepad-2", 12)} <span>Xbox / XInput</span></span>
-        <span class="ctrl-tag">${icon("gamepad-2", 12)} <span>DualSense</span></span>
-        <span class="ctrl-tag">${icon("keyboard", 12)} <span>${i18nT("feat.kbMouse")}</span></span>
+      <div class="ctrl-support-list">
+        <div class="ctrl-support-item">${icon("gamepad-2", 14)}<span>Xbox / XInput</span></div>
+        <div class="ctrl-support-item">${icon("gamepad-2", 14)}<span>DualSense</span></div>
+        <div class="ctrl-support-item">${icon("keyboard", 14)}<span>${i18nT("feat.kbMouse")}</span></div>
       </div>
     </div>`;
 }
@@ -1140,7 +1140,7 @@ export function renderInstalledCopyFacts(
         <div class="hub-feature-icon">${icon("monitor", 13)}</div>
         <span>${i18nT("feat.platform")}</span>
       </div>
-      <div class="hub-feature-val supported">Windows (PC x64)</div>
+      <div class="hub-feature-val">Windows (PC x64)</div>
     </div>
     ${
       hasNativeEos

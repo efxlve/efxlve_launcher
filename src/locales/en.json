@@ -591,7 +591,7 @@
   "sys.pcLoading": "Reading hardware…",
   "sys.checkOk": "Meets",
   "sys.checkFail": "Below",
-  "sys.checkManual": "Compare",
+  "sys.checkManual": "Manual",
   "sys.checkUnknown": "Unknown",
   "sys.verdictOk": "This PC is ready",
   "sys.verdictPartial": "Partly checked",

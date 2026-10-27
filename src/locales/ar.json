@@ -561,7 +561,7 @@
   "sys.pcLoading": "جارٍ قراءة العتاد…",
   "sys.checkOk": "مطابق",
   "sys.checkFail": "غير كافٍ",
-  "sys.checkManual": "قارن",
+  "sys.checkManual": "يدوي",
   "sys.checkUnknown": "غير معروف",
   "sys.verdictOk": "هذا الكمبيوتر جاهز",
   "sys.verdictPartial": "فحص جزئي",

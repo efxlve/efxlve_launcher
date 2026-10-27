@@ -591,7 +591,7 @@
   "sys.pcLoading": "Donanım okunuyor…",
   "sys.checkOk": "Uygun",
   "sys.checkFail": "Yetersiz",
-  "sys.checkManual": "Karşılaştır",
+  "sys.checkManual": "Manuel",
   "sys.checkUnknown": "Bilinmiyor",
   "sys.verdictOk": "Bu bilgisayar hazır",
   "sys.verdictPartial": "Kısmi kontrol",

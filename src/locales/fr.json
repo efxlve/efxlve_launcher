@@ -561,7 +561,7 @@
   "sys.pcLoading": "Lecture du matériel…",
   "sys.checkOk": "Conforme",
   "sys.checkFail": "Insuffisant",
-  "sys.checkManual": "Comparer",
+  "sys.checkManual": "Manuel",
   "sys.checkUnknown": "Inconnu",
   "sys.verdictOk": "Ce PC est prêt",
   "sys.verdictPartial": "Vérification partielle",

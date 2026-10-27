@@ -561,7 +561,7 @@
   "sys.pcLoading": "Чтение оборудования…",
   "sys.checkOk": "Соответствует",
   "sys.checkFail": "Недостаточно",
-  "sys.checkManual": "Сравнить",
+  "sys.checkManual": "Вручную",
   "sys.checkUnknown": "Неизвестно",
   "sys.verdictOk": "Этот ПК готов",
   "sys.verdictPartial": "Частичная проверка",

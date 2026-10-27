@@ -561,7 +561,7 @@
   "sys.pcLoading": "Odczyt sprzętu…",
   "sys.checkOk": "Spełnia",
   "sys.checkFail": "Za mało",
-  "sys.checkManual": "Porównaj",
+  "sys.checkManual": "Ręcznie",
   "sys.checkUnknown": "Nieznane",
   "sys.verdictOk": "Ten PC jest gotowy",
   "sys.verdictPartial": "Częściowa kontrola",

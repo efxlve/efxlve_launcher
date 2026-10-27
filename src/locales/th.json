@@ -561,7 +561,7 @@
   "sys.pcLoading": "กำลังอ่านฮาร์ดแวร์…",
   "sys.checkOk": "ผ่าน",
   "sys.checkFail": "ไม่พอ",
-  "sys.checkManual": "เปรียบเทียบ",
+  "sys.checkManual": "ด้วยตนเอง",
   "sys.checkUnknown": "ไม่ทราบ",
   "sys.verdictOk": "พีซีนี้พร้อม",
   "sys.verdictPartial": "ตรวจสอบบางส่วน",

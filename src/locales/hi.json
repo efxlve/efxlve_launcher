@@ -591,7 +591,7 @@
   "sys.pcLoading": "हार्डवेयर पढ़ा जा रहा है…",
   "sys.checkOk": "पूरा",
   "sys.checkFail": "कम",
-  "sys.checkManual": "तुलना करें",
+  "sys.checkManual": "मैनुअल",
   "sys.checkUnknown": "अज्ञात",
   "sys.verdictOk": "यह पीसी तैयार है",
   "sys.verdictPartial": "आंशिक जाँच",

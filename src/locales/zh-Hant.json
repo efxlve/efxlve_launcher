@@ -561,7 +561,7 @@
   "sys.pcLoading": "正在讀取硬體…",
   "sys.checkOk": "符合",
   "sys.checkFail": "不足",
-  "sys.checkManual": "比較",
+  "sys.checkManual": "手動",
   "sys.checkUnknown": "未知",
   "sys.verdictOk": "這台電腦已就緒",
   "sys.verdictPartial": "部分已檢查",

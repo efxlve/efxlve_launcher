@@ -561,7 +561,7 @@
   "sys.pcLoading": "하드웨어 읽는 중…",
   "sys.checkOk": "충족",
   "sys.checkFail": "부족",
-  "sys.checkManual": "비교",
+  "sys.checkManual": "수동",
   "sys.checkUnknown": "알 수 없음",
   "sys.verdictOk": "이 PC는 준비되었습니다",
   "sys.verdictPartial": "부분 확인됨",

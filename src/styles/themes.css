@@ -405,10 +405,6 @@
   color: var(--text-2);
   border: 1px solid var(--line);
 }
-:root[data-surface="white"] .ctrl-card {
-  background: var(--surface-2);
-  border-color: var(--line);
-}
 :root[data-surface="white"] .ctrl-glyph {
   background: var(--surface-1);
   border-color: var(--line);
@@ -432,11 +428,6 @@
   background: rgba(245, 158, 11, 0.12);
   border-color: rgba(180, 83, 9, 0.35);
   color: #b45309;
-}
-:root[data-surface="white"] .ctrl-tag {
-  background: var(--surface-1);
-  border-color: var(--line);
-  color: var(--text-2);
 }
 :root[data-surface="white"] :is(.deck-pill.verified, .awacy-pill.supported) {
   color: #047857;
@@ -1171,19 +1162,11 @@
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] .ctrl-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 248, 255, 0.68) 100%);
-  border: 1px solid rgba(16, 78, 130, 0.16);
-  box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(8, 60, 110, 0.06);
-}
 :root[data-surface="gloss"] .ctrl-glyph {
   background: linear-gradient(180deg, #ffffff 0%, #e6f4fc 100%);
   border: 1px solid rgba(74, 166, 230, 0.35);
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 4px rgba(8, 60, 110, 0.1);
-}
-:root[data-surface="gloss"] .ctrl-facts {
-  border-top-color: rgba(16, 78, 130, 0.14);
 }
 :root[data-surface="gloss"] .ctrl-badge.is-full {
   background: linear-gradient(180deg, #e6f9ed 0%, #cbf2d8 100%);
@@ -1194,15 +1177,6 @@
   background: linear-gradient(180deg, #fffbf0 0%, #feeec8 100%);
   border-color: rgba(180, 110, 0, 0.45);
   color: #945900;
-}
-:root[data-surface="gloss"] .ctrl-tag {
-  background: linear-gradient(180deg, #ffffff 0%, #f0f7fc 100%);
-  border: 1px solid rgba(16, 78, 130, 0.18);
-  box-shadow: inset 0 1px 0 #ffffff;
-  color: var(--text-2);
-}
-:root[data-surface="gloss"] .ctrl-tag svg {
-  color: #104e82;
 }
 
 /* Gloss: Steam Deck, ProtonDB, AWACY compatibility pills */
