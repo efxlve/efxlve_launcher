@@ -2817,6 +2817,7 @@ fn toast_payload(
 pub fn show_system_hint(app: &tauri::AppHandle, title: &str, body: &str) {
     let options = achievement_notification_options(app);
     let mut payload = toast_payload(&options, 2, 0, 0, None, title, body);
+    payload.theme = "launcher".to_string();
     payload.tagless = true;
     payload.hold_ms = 5_200;
     crate::overlay::toast::show(app, payload);

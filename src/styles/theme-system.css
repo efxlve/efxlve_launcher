@@ -1737,30 +1737,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
   flex: 1;
   justify-content: center;
-}
-
-.ach-hint-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.ach-hint-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--ach-accent, #38bdf8);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--ach-accent, #38bdf8) 35%, transparent);
-  line-height: 1.2;
 }
 
 .ach-hint-title {

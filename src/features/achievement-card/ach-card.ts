@@ -118,9 +118,6 @@ function achHintCardHtml(m: AchCardModel): string {
         ${art}
       </div>
       <div class="ach-hint-text-col">
-        <div class="ach-hint-header-row">
-          <span class="ach-hint-tag">${icon("layers", 11)} <span>${esc(t("overlay.overlayLabel").toUpperCase())}</span></span>
-        </div>
         <span class="ach-hint-title">${esc(m.title)}</span>
         <span class="ach-hint-desc">${esc(m.desc)}</span>
       </div>

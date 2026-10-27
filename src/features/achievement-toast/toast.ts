@@ -70,14 +70,14 @@ function renderToast(payload: ToastPayload): void {
   current = payload;
   sequence += 1;
   const position = safePosition(payload.position);
-  // Static themes come from the same TS palette the preview uses; "launcher"
-  // needs the live theme tokens, which the main window pushes to Rust.
+  const isHint = Boolean(payload.tagless);
+  const theme = isHint ? "launcher" : payload.theme;
   const palette =
-    payload.theme === "launcher"
+    theme === "launcher"
       ? payload.palette
       : achievementCardPalette(payload.theme, payload.tier);
   root.innerHTML = `<div class="ach-toast-layer pos-${position}">${achCardHtml({
-    tag: payload.tagless
+    tag: isHint
       ? ""
       : achTagLine(payload.tier, payload.unlocked, payload.total, payload.rarityPercent),
     title: payload.title,
@@ -85,12 +85,12 @@ function renderToast(payload: ToastPayload): void {
     tier: payload.tier,
     size: payload.size,
     style: payload.style,
-    theme: payload.theme,
+    theme,
     palette,
     seq: sequence,
-    glyph: payload.tagless ? "layers" : "trophy",
+    glyph: isHint ? "layers" : "trophy",
     iconSrc: payload.icon || undefined,
-    hint: Boolean(payload.tagless),
+    hint: isHint,
   })}</div>`;
 
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
@@ -135,7 +135,8 @@ function renderDemo(): void {
   const params = new URLSearchParams(location.search);
   const isHint = params.get("hint") === "true";
   const tier = isHint ? 2 : 3;
-  const palette = achievementCardPalette("rarity", tier);
+  const theme = isHint ? "launcher" : "rarity";
+  const palette = achievementCardPalette(theme, tier);
   const style = params.get("style") || "prism";
   const size = params.get("size") || "normal";
   const position = safePosition(params.get("position") || "top-right");
@@ -150,7 +151,7 @@ function renderDemo(): void {
     tier,
     size,
     style,
-    theme: "rarity",
+    theme,
     palette,
     seq: 1,
     glyph: isHint ? "layers" : "trophy",
