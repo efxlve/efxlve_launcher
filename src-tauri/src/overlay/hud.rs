@@ -641,18 +641,20 @@ fn run_dopamine_choreography(
                     (0, slide, a)
                 }
                 4 => {
-                    // 4: Cyber Laser Collapse — flattens vertically into a 6px neon beam, then zips horizontally
-                    if t < 0.60 {
-                        let u = (t / 0.60).clamp(0.0, 1.0);
-                        let pinch = ((h as f32 * 0.5 - 3.0) * (u * u)) as i32;
-                        clip_t = pinch;
-                        clip_b = (h - pinch).max(clip_t + 6);
+                    // 4: Laser Collapse — flattens vertically into a 4px laser line, then zips out
+                    if t < 0.65 {
+                        let u = (t / 0.65).clamp(0.0, 1.0);
+                        let ease = u * u;
+                        let mid = h / 2;
+                        let half_h = ((1.0 - ease) * (mid as f32 - 2.0)).max(2.0) as i32;
+                        clip_t = (mid - half_h).max(0);
+                        clip_b = (mid + half_h).min(h);
                         (0, 0, NOTIF_ALPHA)
                     } else {
-                        let u = ((t - 0.60) / 0.40).clamp(0.0, 1.0);
+                        let u = ((t - 0.65) / 0.35).clamp(0.0, 1.0);
                         let mid = h / 2;
-                        clip_t = (mid - 3).max(0);
-                        clip_b = (mid + 3).min(h);
+                        clip_t = (mid - 2).max(0);
+                        clip_b = (mid + 2).min(h);
                         let h_pinch = ((w as f32 * 0.48) * u) as i32;
                         clip_l = h_pinch;
                         clip_r = (w - h_pinch).max(clip_l + 6);
@@ -776,26 +778,24 @@ fn run_dopamine_choreography(
                     }
                 }
                 1 => {
-                    // 1: Cyber Overload (420ms) — laser beam vertical slice + horizontal stepped glitch
-                    if elapsed < 420 {
-                        let u = (elapsed as f32 / 420.0).clamp(0.0, 1.0);
+                    // 1: Laser Slice (400ms) — horizontal laser beam opens vertically
+                    if elapsed < 160 {
+                        let u = (elapsed as f32 / 160.0).clamp(0.0, 1.0);
+                        let mid = h / 2;
+                        let half_beam = (2.0 + u * 3.0) as i32;
+                        clip_t = (mid - half_beam).max(0);
+                        clip_b = (mid + half_beam).min(h);
+                        let a = (NOTIF_ALPHA as f32 * (u * 0.8 + 0.2)) as u8;
+                        (0, 0, a)
+                    } else if elapsed < 400 {
+                        let u = ((elapsed - 160) as f32 / 240.0).clamp(0.0, 1.0);
                         let inv = 1.0 - u;
                         let ease = 1.0 - inv * inv * inv;
-                        if elapsed < 190 {
-                            let beam_u = (elapsed as f32 / 190.0).clamp(0.0, 1.0);
-                            let v_pinch = ((1.0 - beam_u * beam_u) * (h as f32 * 0.45)) as i32;
-                            clip_t = v_pinch;
-                            clip_b = (h - v_pinch).max(clip_t + 6);
-                        }
-                        let side_base = ((1.0 - ease) * 68.0).round() as i32;
-                        let glitch = if elapsed >= 50 && elapsed <= 240 {
-                            (((elapsed / 28) as i32 & 1) * 2 - 1) * 7
-                        } else {
-                            0
-                        };
-                        let horiz = (if is_left { -side_base } else { side_base }) + glitch;
-                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 90.0).clamp(0.0, 1.0)) as u8;
-                        (horiz, 0, a)
+                        let mid = h / 2;
+                        let half_h = (5.0 + ease * (mid as f32 - 5.0)) as i32;
+                        clip_t = (mid - half_h).max(0);
+                        clip_b = (mid + half_h).min(h);
+                        (0, 0, NOTIF_ALPHA)
                     } else {
                         (0, 0, NOTIF_ALPHA)
                     }
@@ -965,23 +965,17 @@ unsafe fn shape_notification_morphed(
 ) {
     let w = (right - left).max(4);
     let h = (bottom - top).max(4);
-    let region = if style == 1 {
-        // Cyber Overload: chamfered octagonal tech corners
-        let cut = 14.min(h / 4).min(w / 4);
-        let pts = [
-            POINT { x: left + cut, y: top },
-            POINT { x: right - cut, y: top },
-            POINT { x: right, y: top + cut },
-            POINT { x: right, y: bottom - cut },
-            POINT { x: right - cut, y: bottom },
-            POINT { x: left + cut, y: bottom },
-            POINT { x: left, y: bottom - cut },
-            POINT { x: left, y: top + cut },
-        ];
-        CreatePolygonRgn(pts.as_ptr(), pts.len() as i32, 1)
-    } else if style == 4 {
-        // Xbox Series Capsule: full stadium pill (corner diameter = height)
+    let region = if style == 4 {
+        // True Stadium Capsule: full stadium pill (corner diameter = height)
         let diameter = h.min(w);
+        CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
+    } else if style == 1 {
+        // Laser Slice: sharp 8px tech corners
+        let diameter = 16.min(h).min(w);
+        CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
+    } else if style == 6 {
+        // Dimensional Fold: 10px corners
+        let diameter = 20.min(h).min(w);
         CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
     } else {
         let diameter = (NOTIF_RADIUS * 2).min(h).min(w);
@@ -1318,6 +1312,7 @@ extern "system" {
         ellipse_w: i32,
         ellipse_h: i32,
     ) -> isize;
+    #[allow(dead_code)]
     fn CreatePolygonRgn(pptl: *const POINT, c_point: i32, i_mode: i32) -> isize;
     #[allow(dead_code)]
     fn FrameRgn(hdc: isize, region: isize, brush: isize, width: i32, height: i32) -> i32;
@@ -1766,7 +1761,7 @@ fn render_dopamine_backdrop(
         let row_offset = (y * w) as usize;
         let is_bottom_bar = y >= h - 4 && style != 4;
         let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.10;
-        let scanline_mul = if style == 1 && (y & 1 == 0) { 0.90 } else { 1.0 };
+        let scanline_mul = 1.0;
 
         for x in 0..w {
             let dx = (x - center_x) as f32;
@@ -1864,33 +1859,16 @@ fn render_dopamine_backdrop(
                 } else {
                     (false, 0.0)
                 }
-            } else if style == 1 {
-                // Cyber Overload: chamfer octagonal tech corners
-                let cut = 14.0f32.min(h as f32 * 0.25).min(right_edge as f32 * 0.25);
-                let xf = x as f32;
-                let yf = y as f32;
-                let rf = right_edge as f32;
-                let hf = h as f32 - 1.0;
-                let d_left = xf;
-                let d_right = rf - xf;
-                let d_top = yf;
-                let d_bot = hf - yf;
-                let d_c1 = ((cut - xf) + (cut - yf)) * 0.7071;
-                let d_c2 = (((xf - (rf - cut)) + (cut - yf))) * 0.7071;
-                let d_c3 = (((xf - (rf - cut)) + (yf - (hf - cut)))) * 0.7071;
-                let d_c4 = (((cut - xf) + (yf - (hf - cut)))) * 0.7071;
-                let d_box = d_left.min(d_right).min(d_top.min(d_bot));
-                let d_chamfer = d_c1.max(d_c2).max(d_c3.max(d_c4));
-                let d_edge = if d_chamfer > 0.0 { d_chamfer } else { d_box };
-                if d_edge <= 2.2 {
-                    let fade = (1.0 - d_edge / 2.2).clamp(0.0, 1.0);
-                    (true, fade)
-                } else {
-                    (false, 0.0)
-                }
             } else {
-                // Smooth Rounded Rect for styles 0, 2, 3, 5, 6
-                let cr = (NOTIF_RADIUS as f32).min((h as f32) * 0.5).min((right_edge as f32) * 0.5);
+                // Smooth Rounded Rect with exact corner radius matching each style
+                let cr = if style == 1 {
+                    8.0f32
+                } else if style == 6 {
+                    10.0f32
+                } else {
+                    16.0f32
+                }.min((h as f32) * 0.5).min((right_edge as f32) * 0.5);
+
                 let xf = x as f32;
                 let yf = y as f32;
                 let rf = right_edge as f32;

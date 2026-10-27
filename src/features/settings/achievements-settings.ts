@@ -484,35 +484,31 @@ function getEntryKeyframes(animStyle: string): { frames: Keyframe[]; duration: n
       };
     case "cyber":
       return {
-        duration: 760,
-        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        duration: 480,
+        easing: "cubic-bezier(0.2, 1, 0.3, 1)",
         frames: [
           {
             opacity: 0,
-            transform: "translateX(120px) skewX(-22deg) scaleY(0.12)",
-            filter: "contrast(2.4) brightness(2.0)",
+            transform: "scaleY(0.04)",
+            filter: "brightness(2.8)",
             offset: 0,
           },
           {
             opacity: 1,
-            transform: "translateX(-22px) skewX(12deg) scaleY(1.06)",
-            filter: "contrast(1.5) brightness(1.4)",
-            offset: 0.28,
+            transform: "scaleY(0.04)",
+            filter: "brightness(2.4)",
+            offset: 0.25,
           },
           {
             opacity: 1,
-            transform: "translateX(14px) skewX(-8deg) scaleY(0.96)",
-            offset: 0.5,
+            transform: "scaleY(1.03)",
+            filter: "brightness(1.15)",
+            offset: 0.65,
           },
           {
             opacity: 1,
-            transform: "translateX(-6px) skewX(4deg) scaleY(1.01)",
-            offset: 0.74,
-          },
-          {
-            opacity: 1,
-            transform: "translateX(0px) skewX(0deg) scaleY(1)",
-            filter: "contrast(1) brightness(1)",
+            transform: "scaleY(1)",
+            filter: "brightness(1)",
             offset: 1,
           },
         ],
@@ -871,7 +867,7 @@ function getPreviewTierMeta(tier: number): {
         rarityBadge: "%1.8",
         progressPct: 92,
         progressText: "31 / 34 • %92",
-        iconName: "sparkles",
+        iconName: "trophy",
       };
     case 4:
       return {
@@ -881,7 +877,7 @@ function getPreviewTierMeta(tier: number): {
         rarityBadge: "100% PLATINUM",
         progressPct: 100,
         progressText: "34 / 34 • %100",
-        iconName: "crown",
+        iconName: "trophy",
       };
     default:
       return {
@@ -1239,20 +1235,9 @@ export function renderAchievementsSettingsView(): string {
             </div>
 
             <div class="ach-hud-text-col">
-              <div class="ach-hud-top-row">
-                <span class="ach-hud-tag">${esc(tierMeta.tag)}</span>
-                <span class="ach-hud-rarity-pill">${esc(tierMeta.rarityBadge)}</span>
-              </div>
+              <span class="ach-hud-tag">${esc(tierMeta.tag)}</span>
               <span class="ach-hud-title">${esc(tierMeta.title)}</span>
               <span class="ach-hud-desc">${esc(tierMeta.desc)}</span>
-              <div class="ach-hud-progress-row">
-                <div class="ach-hud-progress-track">
-                  <div class="ach-hud-progress-fill">
-                    <span class="ach-hud-progress-tip"></span>
-                  </div>
-                </div>
-                <span class="ach-hud-progress-meta">${esc(tierMeta.progressText)}</span>
-              </div>
             </div>
           </div>
         </div>
