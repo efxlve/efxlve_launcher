@@ -30,8 +30,40 @@ interface SearchHit {
 }
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+/** Bumped per keystroke so a slow source cannot paint an older query. */
+let searchSeq = 0;
 let currentHits: SearchHit[] = [];
 let escapeWired = false;
+
+/** Letters and digits only, so one game is not listed twice under two spellings. */
+function hitNameKey(name: string): string {
+  return name.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+/** Steam rows stay above IGDB when the two sources answer out of order. */
+function orderedHits(hits: SearchHit[]): SearchHit[] {
+  return [...hits].sort(
+    (a, b) => Number(a.source !== "steam") - Number(b.source !== "steam"),
+  );
+}
+
+/** Dropdown rows, capped so two sources cannot bury the form. */
+function searchResultRows(hits: SearchHit[]): string {
+  return hits
+    .slice(0, 12)
+    .map(
+      (hit, idx) => `
+            <div class="search-result-item" data-hit-idx="${idx}">
+              <img src="${esc(hit.coverUrl)}" class="result-thumb" onerror="this.style.display='none'" />
+              <div class="result-info">
+                <span class="result-name">${esc(hit.name)}</span>
+                <span class="result-sub">${hit.source === "steam" ? `Steam AppID: ${hit.id}` : `IGDB${hit.year ? ` · ${hit.year}` : ""}`}</span>
+              </div>
+            </div>
+          `,
+    )
+    .join("");
+}
 
 /** Escape closes the form before any other modal handler sees the key. */
 function wireEscape(): void {
@@ -112,6 +144,11 @@ export function openEditCustomGameModal(id: string): void {
 
 export function closeAddCustomGameModal(): void {
   S.isAddCustomGameOpen = false;
+  searchSeq += 1;
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+    searchTimeout = null;
+  }
   currentHits = [];
   editingId = null;
   pickedHit = null;
@@ -237,32 +274,66 @@ function attachSearchListeners(modalEl: HTMLElement): void {
   if (searchInput && resultsDropdown) {
     searchInput.addEventListener("input", () => {
       const query = searchInput.value.trim();
+      const generation = ++searchSeq;
       if (searchTimeout) clearTimeout(searchTimeout);
-      if (query.length < 2) {
-        resultsDropdown.classList.add("hidden");
-        resultsDropdown.innerHTML = "";
-        return;
-      }
+      // Rows of the previous query are not this query's answers.
+      resultsDropdown.classList.add("hidden");
+      resultsDropdown.innerHTML = "";
+      currentHits = [];
+      if (query.length < 2) return;
 
-      searchTimeout = setTimeout(async () => {
-        try {
-          let hits: SearchHit[] = [];
-          try {
-            hits = (await customGamesSearchSteam(query)).map((hit) => ({
-              source: "steam",
-              id: String(hit.id),
-              name: hit.name,
-              coverUrl: hit.coverUrl,
-              headerUrl: hit.headerUrl,
-              heroUrl: hit.heroUrl,
-            }));
-          } catch {
-            // Steam Store unreachable: still try the second metadata source.
+      searchTimeout = setTimeout(() => {
+        const hits: SearchHit[] = [];
+        const seen = new Set<string>();
+        let pending = 2;
+
+        const paint = (final: boolean) => {
+          if (generation !== searchSeq) return;
+          currentHits = orderedHits(hits);
+          if (currentHits.length > 0) {
+            resultsDropdown.innerHTML = searchResultRows(currentHits);
+            resultsDropdown.classList.remove("hidden");
+          } else if (final) {
+            resultsDropdown.innerHTML = `<div class="search-result-empty">${esc(t("common.noResults"))}</div>`;
+            resultsDropdown.classList.remove("hidden");
           }
-          // No store match: IGDB still knows games Steam never listed.
-          if (hits.length === 0) {
-            try {
-              hits = (await igdbSearch(query, 8)).map((hit) => ({
+        };
+        const settle = () => {
+          pending -= 1;
+          if (pending === 0) paint(true);
+        };
+
+        // The two sources answer independently: Steam rows appear at once and
+        // IGDB adds what Steam does not sell, such as console-only titles.
+        void customGamesSearchSteam(query)
+          .then((rows) => {
+            if (generation !== searchSeq) return;
+            for (const hit of rows) {
+              const key = hitNameKey(hit.name);
+              if (seen.has(key)) continue;
+              seen.add(key);
+              hits.push({
+                source: "steam",
+                id: String(hit.id),
+                name: hit.name,
+                coverUrl: hit.coverUrl,
+                headerUrl: hit.headerUrl,
+                heroUrl: hit.heroUrl,
+              });
+            }
+            paint(false);
+          })
+          .catch(() => undefined)
+          .finally(settle);
+
+        void igdbSearch(query, 8)
+          .then((rows) => {
+            if (generation !== searchSeq) return;
+            for (const hit of rows) {
+              const key = hitNameKey(hit.name);
+              if (seen.has(key)) continue;
+              seen.add(key);
+              hits.push({
                 source: "igdb",
                 id: String(hit.id),
                 name: hit.name,
@@ -270,31 +341,12 @@ function attachSearchListeners(modalEl: HTMLElement): void {
                 coverUrl: igdbImage(hit.coverId, "cover_big_2x"),
                 headerUrl: igdbImage(hit.coverId, "cover_big"),
                 heroUrl: igdbImage(hit.coverId, "cover_big"),
-              }));
-            } catch {
-              // IGDB is optional; an unconfigured proxy simply means no rows.
+              });
             }
-          }
-          currentHits = hits;
-          if (hits.length === 0) {
-            resultsDropdown.innerHTML = `<div class="search-result-empty">${esc(t("common.noResults"))}</div>`;
-            resultsDropdown.classList.remove("hidden");
-            return;
-          }
-
-          resultsDropdown.innerHTML = hits.map((hit, idx) => `
-            <div class="search-result-item" data-hit-idx="${idx}">
-              <img src="${esc(hit.coverUrl)}" class="result-thumb" onerror="this.style.display='none'" />
-              <div class="result-info">
-                <span class="result-name">${esc(hit.name)}</span>
-                <span class="result-sub">${hit.source === "steam" ? `Steam AppID: ${hit.id}` : `IGDB${hit.year ? ` · ${hit.year}` : ""}`}</span>
-              </div>
-            </div>
-          `).join("");
-          resultsDropdown.classList.remove("hidden");
-        } catch {
-          resultsDropdown.classList.add("hidden");
-        }
+            paint(false);
+          })
+          .catch(() => undefined)
+          .finally(settle);
       }, 250);
     });
 
