@@ -369,7 +369,7 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
 
     const playEntry = () => {
       if (!card.isConnected) return;
-      playAchCardEntry(card, animStyle);
+      playAchCardEntry(card, animStyle, previewRarityTier);
     };
 
     const playExitThenRestore = () => {

@@ -94,7 +94,7 @@ function renderToast(payload: ToastPayload): void {
 
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
   if (!card) return;
-  playAchCardEntry(card, payload.style);
+  playAchCardEntry(card, payload.style, payload.tier);
 
   clearExitTimer();
   exitTimer = window.setTimeout(() => {
@@ -139,7 +139,7 @@ function renderDemo(): void {
     glyph: "trophy",
   })}</div>`;
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
-  if (card) playAchCardEntry(card, style);
+  if (card) playAchCardEntry(card, style, 3);
 }
 
 async function boot(): Promise<void> {

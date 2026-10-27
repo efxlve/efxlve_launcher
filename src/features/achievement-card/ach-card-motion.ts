@@ -356,7 +356,7 @@ export function achExitKeyframes(exitStyle: string, animStyle: string): AchCardA
 }
 
 /** Plays the opening: the card, the medallion pop and the text slide. */
-export function playAchCardEntry(card: HTMLElement, animStyle: string): void {
+export function playAchCardEntry(card: HTMLElement, animStyle: string, tier = 2): void {
   if (typeof card.animate !== "function") return;
   card.getAnimations().forEach((animation) => animation.cancel());
   const entry = achEntryKeyframes(animStyle);
@@ -366,29 +366,72 @@ export function playAchCardEntry(card: HTMLElement, animStyle: string): void {
     fill: "both",
   });
 
+  // Medallion punch: tier-graded overshoot + specular brightness spike
   const medallion = card.querySelector<HTMLElement>(".ach-hud-medallion");
   if (medallion && typeof medallion.animate === "function") {
     medallion.getAnimations().forEach((animation) => animation.cancel());
+    // Bronze (0) soft 1.08x, Silver 1.13x, Gold 1.18x, Ultra 1.23x, Platinum 1.28x
+    const peakScale = 1.08 + tier * 0.05;
+    // Specular glint: low tier subtle brightness, high tier punchy flash
+    const peakBright = 1.3 + tier * 0.25;
     medallion.animate(
       [
-        { transform: "scale(0.35) rotate(-25deg)", opacity: 0, offset: 0 },
-        { transform: "scale(1.18) rotate(5deg)", opacity: 1, offset: 0.58 },
-        { transform: "scale(1) rotate(0deg)", opacity: 1, offset: 1 },
+        { transform: "scale(0.35) rotate(-25deg)", opacity: 0, filter: "brightness(1)", offset: 0 },
+        { transform: `scale(${peakScale}) rotate(5deg)`, opacity: 1, filter: `brightness(${peakBright})`, offset: 0.45 },
+        { transform: "scale(1.02) rotate(1deg)", opacity: 1, filter: "brightness(1.1)", offset: 0.72 },
+        { transform: "scale(1) rotate(0deg)", opacity: 1, filter: "brightness(1)", offset: 1 },
       ],
-      { duration: 640, easing: "cubic-bezier(0.18, 1.25, 0.32, 1)", fill: "both" },
+      { duration: 680, easing: "cubic-bezier(0.18, 1.25, 0.32, 1)", fill: "both" },
     );
   }
 
+  // Text choreography: container slide + staggered children reveal
+  const baseDelay = animStyle === "xbox" ? 280 : 120;
+  const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
+  const cancelAnims = (el: HTMLElement) => el.getAnimations().forEach((a) => a.cancel());
+
   const textCol = card.querySelector<HTMLElement>(".ach-hud-text-col");
   if (textCol && typeof textCol.animate === "function") {
-    textCol.getAnimations().forEach((animation) => animation.cancel());
-    const delay = animStyle === "xbox" ? 280 : 120;
+    cancelAnims(textCol);
     textCol.animate(
+      [{ transform: "translateX(-14px)" }, { transform: "translateX(0px)" }],
+      { duration: 420, delay: baseDelay, easing: ease, fill: "both" },
+    );
+  }
+
+  const tag = card.querySelector<HTMLElement>(".ach-hud-tag");
+  if (tag && typeof tag.animate === "function") {
+    cancelAnims(tag);
+    tag.animate(
       [
-        { opacity: 0, transform: "translateX(-24px)" },
-        { opacity: 1, transform: "translateX(0px)" },
+        { opacity: 0, clipPath: "inset(0 100% 0 0)" },
+        { opacity: 1, clipPath: "inset(0 0% 0 0)" },
       ],
-      { duration: 540, delay, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
+      { duration: 450, delay: baseDelay + 40, easing: ease, fill: "both" },
+    );
+  }
+
+  const title = card.querySelector<HTMLElement>(".ach-hud-title");
+  if (title && typeof title.animate === "function") {
+    cancelAnims(title);
+    title.animate(
+      [
+        { opacity: 0, transform: "translateY(10px)" },
+        { opacity: 1, transform: "translateY(0px)" },
+      ],
+      { duration: 480, delay: baseDelay + 100, easing: ease, fill: "both" },
+    );
+  }
+
+  const desc = card.querySelector<HTMLElement>(".ach-hud-desc");
+  if (desc && typeof desc.animate === "function") {
+    cancelAnims(desc);
+    desc.animate(
+      [
+        { opacity: 0, transform: "translateY(6px)" },
+        { opacity: 1, transform: "translateY(0px)" },
+      ],
+      { duration: 420, delay: baseDelay + 200, easing: ease, fill: "both" },
     );
   }
 }

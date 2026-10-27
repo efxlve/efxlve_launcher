@@ -1081,6 +1081,20 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
+
+/* Tier-graded outer glow: lower tiers are calmer */
+.ach-hud-toast.tier-0 {
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.82),
+    0 0 14px color-mix(in srgb, var(--ach-accent, #cd7f32) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.ach-hud-toast.tier-1 {
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.84),
+    0 0 20px color-mix(in srgb, var(--ach-accent, #94a3b8) 22%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
 /* Laser Slice: sharp 8px tech corners with neon glow */
 .ach-hud-toast.style-cyber {
   border-radius: 8px !important;
@@ -1183,6 +1197,8 @@
   animation: ach-godrays-rotate 9s linear infinite;
 }
 
+.ach-hud-toast.tier-0 .ach-fx-godrays { opacity: 0.28; }
+.ach-hud-toast.tier-1 .ach-fx-godrays { opacity: 0.38; }
 .ach-hud-toast.tier-3 .ach-fx-godrays,
 .ach-hud-toast.tier-4 .ach-fx-godrays,
 .ach-hud-toast.style-jackpot .ach-fx-godrays {
@@ -1411,6 +1427,52 @@
   }
 }
 
+/* One-shot diagonal light sweep across the card surface */
+.ach-hud-toast::after {
+  content: '';
+  position: absolute;
+  inset: -20% 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.07) 45%,
+    rgba(255, 255, 255, 0.13) 50%,
+    rgba(255, 255, 255, 0.07) 55%,
+    transparent 60%
+  );
+  transform: translateX(-150%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ach-hud-toast.tier-3::after,
+.ach-hud-toast.tier-4::after {
+  background: linear-gradient(
+    105deg,
+    transparent 36%,
+    rgba(255, 255, 255, 0.12) 42%,
+    rgba(255, 255, 255, 0.24) 50%,
+    rgba(255, 255, 255, 0.12) 58%,
+    transparent 64%
+  );
+}
+
+.ach-hud-toast.seq-0::after {
+  animation: ach-sweep-a 720ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+}
+.ach-hud-toast.seq-1::after {
+  animation: ach-sweep-b 720ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+}
+
+@keyframes ach-sweep-a {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+@keyframes ach-sweep-b {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+
 .ach-hud-medallion {
   position: relative;
   width: 54px;
@@ -1455,6 +1517,28 @@
 @keyframes ach-trophy-pulse {
   0% { transform: scale(0.95); filter: drop-shadow(0 0 5px var(--ach-accent, #f59e0b)); }
   100% { transform: scale(1.08); filter: drop-shadow(0 0 12px #ffffff); }
+}
+
+/* Reduced motion: disable looping FX, keep the card readable */
+@media (prefers-reduced-motion: reduce) {
+  .ach-hud-toast::after,
+  .ach-fx-particle,
+  .ach-fx-shockwave {
+    animation: none !important;
+  }
+  .ach-fx-godrays {
+    animation: none !important;
+    transform: none !important;
+  }
+  .ach-medallion-ring {
+    animation: none !important;
+  }
+  .ach-hud-trophy-ico {
+    animation: none !important;
+  }
+  .ach-fx-border-beam rect {
+    animation: none !important;
+  }
 }
 
 .ach-hud-text-col {
