@@ -699,7 +699,6 @@ export async function initApp(hooks: {
         // fresh start: show its Running state, but do not toast, flash the
         // overlay, or minimize the window the user just opened.
         if (!initial && !bootQuiet) {
-          toast(t("status.running", { title }), "ok");
           // Point at the Shift+Tab overlay on the first start of the title, unless
           // the overlay is off globally or the user opted this game out.
           if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {

@@ -418,8 +418,7 @@ export async function importAmazonGame(id: string, installPath: string): Promise
 /** Launches one installed game and starts the playtime session. */
 export async function playAmazonGame(id: string): Promise<void> {
   try {
-    const msg = await nileLaunch(id);
-    toast(msg, "ok");
+    await nileLaunch(id);
   } catch (err) {
     toast(String(err), "err");
   }

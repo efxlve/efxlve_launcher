@@ -68,9 +68,8 @@ async function launchWithStatus(
 ): Promise<void> {
   beginLaunch(appName);
   try {
-    const message = await run();
+    await run();
     clearLaunchStatus(appName);
-    toast(message, "ok");
   } catch (error) {
     clearLaunchStatus(appName);
     toast(String(error), "err");
@@ -165,9 +164,8 @@ export async function epicPlay(appName: string): Promise<void> {
   }
   beginLaunch(appName);
   try {
-    const msg = await epicLaunchGame(appName);
+    await epicLaunchGame(appName);
     clearLaunchStatus(appName);
-    toast(msg, "ok");
   } catch (e) {
     clearLaunchStatus(appName);
     const raw = String(e);
