@@ -140,12 +140,17 @@ pub(crate) fn games_from_uninstall(entries_text: &str) -> Vec<FoundGame> {
         if id.is_empty() {
             continue;
         }
+        let install_path = entry.location.trim().to_string();
+        // Clients leave the uninstall key behind when the game folder is
+        // deleted by hand (Ubisoft Connect does), so only a folder still on
+        // disk proves an install. An empty location cannot be checked.
+        let installed = install_path.is_empty() || Path::new(&install_path).is_dir();
         games.push(FoundGame {
             store: store.to_string(),
             id,
             name: entry.name,
-            install_path: entry.location,
-            installed: true,
+            install_path,
+            installed,
             store_id: String::new(),
             launch_exe: String::new(),
             launch_uri: String::new(),
@@ -477,7 +482,15 @@ mod tests {
 
     #[test]
     fn uninstall_rows_become_store_games_and_skip_the_clients() {
-        let text = r#"
+        // A folder that exists proves the install; a leftover registry key
+        // whose folder is gone does not.
+        let existing = std::env::temp_dir().join(format!("efxlve-uninstall-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&existing);
+        std::fs::create_dir_all(existing.join("FC25")).unwrap();
+        let installed_path = existing.join("FC25").to_string_lossy().to_string();
+        let missing_path = existing.join("gone").join("AC").to_string_lossy().to_string();
+        let text = format!(
+            r#"
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EA
     DisplayName    REG_SZ    EA App
     Publisher    REG_SZ    Electronic Arts
@@ -486,17 +499,16 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EA
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\FC
     DisplayName    REG_SZ    EA SPORTS FC 25
     Publisher    REG_SZ    Electronic Arts
-    InstallLocation    REG_SZ    C:\Games\FC25
+    InstallLocation    REG_SZ    {installed_path}
 
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AC
     DisplayName    REG_SZ    Assassin's Creed Mirage
     Publisher    REG_SZ    Ubisoft
-    InstallLocation    REG_SZ    C:\Games\AC
+    InstallLocation    REG_SZ    {missing_path}
 
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OW
     DisplayName    REG_SZ    Overwatch
     Publisher    REG_SZ    Blizzard Entertainment
-    InstallLocation    REG_SZ    C:\Games\OW
 
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Ubi
     DisplayName    REG_SZ    Ubisoft Connect
@@ -506,14 +518,18 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\UbiAC
     DisplayName    REG_SZ    Ubisoft AntiCheat
     Publisher    REG_SZ    Ubisoft
     InstallLocation    REG_SZ    C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher
-"#;
-        let games = games_from_uninstall(text);
+"#
+        );
+        let games = games_from_uninstall(&text);
         assert_eq!(games.len(), 3);
         assert!(games.iter().any(|g| g.store == "ea" && g.name.contains("FC 25") && g.installed));
-        assert!(games.iter().any(|g| g.store == "ubisoft" && g.id == "assassin-s-creed-mirage"));
+        let mirage = games.iter().find(|g| g.id == "assassin-s-creed-mirage").unwrap();
+        assert!(!mirage.installed, "a deleted folder must not count as installed");
+        assert_eq!(mirage.install_path, missing_path);
         assert!(games.iter().any(|g| g.store == "battlenet" && g.name == "Overwatch"));
         assert!(games.iter().all(|g| g.name != "EA App" && g.name != "Ubisoft Connect"));
         assert!(games.iter().all(|g| !g.name.contains("AntiCheat")));
+        let _ = std::fs::remove_dir_all(&existing);
     }
 
     /// The Win32 enumeration must hand the parser exactly what `reg query /s`

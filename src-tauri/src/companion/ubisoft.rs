@@ -51,7 +51,10 @@ pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -
             hero_url: String::new(),
             description: String::new(),
         };
-        if let Some(hit) = installed.iter().find(|g| g.store == "ubisoft" && slug(&g.name) == slug(&row.name)) {
+        if let Some(hit) = installed
+            .iter()
+            .find(|g| g.store == "ubisoft" && g.installed && slug(&g.name) == slug(&row.name))
+        {
             game.installed = true;
             game.install_path = hit.install_path.clone();
         }
@@ -377,6 +380,34 @@ mod tests {
         assert_eq!(games[0].install_uri, "uplay://install/12");
         assert_eq!(games[0].uninstall_uri, "uplay://uninstall/34");
         assert!(!games[0].installed);
+    }
+
+    #[test]
+    fn a_leftover_uninstall_row_does_not_mark_a_game_installed() {
+        let bytes = record(
+            12,
+            34,
+            "root:\n  name: Watch Dogs\n  start_game:\n    online: {}\n",
+        );
+        let stale = FoundGame {
+            store: "ubisoft".into(),
+            id: "watch-dogs".into(),
+            name: "Watch Dogs".into(),
+            install_path: r"C:\Games\Gone".into(),
+            installed: false,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: String::new(),
+            install_uri: String::new(),
+            uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
+            description: String::new(),
+        };
+        let games = games_from_configurations(&bytes, &[stale]);
+        assert_eq!(games.len(), 1);
+        assert!(!games[0].installed);
+        assert!(games[0].install_path.is_empty());
     }
 
     #[test]
