@@ -245,6 +245,8 @@ pub struct EpicSettings {
     #[serde(default)]
     pub achievement_notifications_position: Option<String>,
     pub achievement_notifications_size: Option<String>,
+    /// "gold" keeps the classic card; "launcher" follows the active theme.
+    pub achievement_notifications_card_theme: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -1882,6 +1884,7 @@ fn main() {
             steam::achievement_pick_custom_sound,
             steam::achievement_clear_custom_sound,
             steam::achievement_test_notification,
+            steam::achievement_set_notification_colors,
             steam::steam_start_emulator_watcher,
             steam::steam_start_achievement_watcher,
             steam::steam_stop_achievement_watcher,

@@ -8,6 +8,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `achievement_clear_custom_sound` | `achievementClearCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_get_notification_options` | `achievementGetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_pick_custom_sound` | `achievementPickCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
+| `achievement_set_notification_colors` | `achievementSetNotificationColors({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_set_notification_options` | `achievementSetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_test_notification` | `achievementTestNotification({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `amazon_default_install_dir` | `amazonDefaultInstallDir({ ... })` | `src-tauri/src/nile/mod.rs` |

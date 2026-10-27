@@ -281,6 +281,18 @@ export interface AchievementNotificationOptions {
   size: string;
   customSound: boolean;
   customSoundName: string | null;
+  /** "gold" keeps the classic card; "launcher" follows the active theme. */
+  cardTheme: string;
+}
+
+/** The card palette, resolved from the live CSS tokens by the frontend. */
+export interface AchievementCardColors {
+  background: string;
+  accent: string;
+  border: string;
+  icon: string;
+  title: string;
+  body: string;
 }
 
 export const achievementGetNotificationOptions = () =>
@@ -288,6 +300,9 @@ export const achievementGetNotificationOptions = () =>
 
 export const achievementSetNotificationOptions = (options: AchievementNotificationOptions) =>
   invoke<void>("achievement_set_notification_options", { options });
+
+export const achievementSetNotificationColors = (colors: AchievementCardColors) =>
+  invoke<void>("achievement_set_notification_colors", { colors });
 
 export const achievementTestNotification = (title: string, body: string, tag?: string) =>
   invoke<void>("achievement_test_notification", { title, body, tag });

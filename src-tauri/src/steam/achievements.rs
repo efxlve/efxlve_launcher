@@ -1663,6 +1663,9 @@ pub struct AchievementNotificationOptions {
     pub custom_sound: bool,
     #[serde(default)]
     pub custom_sound_name: Option<String>,
+    /// "gold" (classic card) or "launcher" (follows the active theme).
+    #[serde(default = "default_card_theme")]
+    pub card_theme: String,
 }
 
 impl Default for AchievementNotificationOptions {
@@ -1677,8 +1680,72 @@ impl Default for AchievementNotificationOptions {
             size: default_notification_size(),
             custom_sound: false,
             custom_sound_name: None,
+            card_theme: default_card_theme(),
         }
     }
+}
+
+fn default_card_theme() -> String {
+    "gold".to_string()
+}
+
+fn normalize_card_theme(value: Option<&str>) -> String {
+    match value {
+        Some("launcher") => "launcher",
+        _ => "gold",
+    }
+    .to_string()
+}
+
+/// The card palette the frontend derived from the live theme tokens.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationCardColors {
+    pub background: String,
+    pub accent: String,
+    pub border: String,
+    pub icon: String,
+    pub title: String,
+    pub body: String,
+}
+
+/// `#rrggbb` → Windows `COLORREF` (`0x00BBGGRR`).
+fn colorref(hex: &str) -> Option<u32> {
+    let text = hex.trim().trim_start_matches('#');
+    if text.len() != 6 {
+        return None;
+    }
+    let value = u32::from_str_radix(text, 16).ok()?;
+    Some(((value & 0xFF) << 16) | (value & 0x00FF_00) | ((value >> 16) & 0xFF))
+}
+
+static CARD_COLORS: StdMutex<Option<crate::overlay::hud::AchievementCardColors>> =
+    StdMutex::new(None);
+
+/// The frontend pushes the palette once at boot and after every theme change;
+/// until then the gold card is used.
+#[tauri::command]
+pub fn achievement_set_notification_colors(colors: NotificationCardColors) {
+    let gold = crate::overlay::hud::GOLD_ACHIEVEMENT_CARD;
+    let themed = crate::overlay::hud::AchievementCardColors {
+        background: colorref(&colors.background).unwrap_or(gold.background),
+        accent: colorref(&colors.accent).unwrap_or(gold.accent),
+        border: colorref(&colors.border).unwrap_or(gold.border),
+        icon: colorref(&colors.icon).unwrap_or(gold.icon),
+        title: colorref(&colors.title).unwrap_or(gold.title),
+        body: colorref(&colors.body).unwrap_or(gold.body),
+    };
+    if let Ok(mut slot) = CARD_COLORS.lock() {
+        *slot = Some(themed);
+    }
+}
+
+fn achievement_card_colors() -> crate::overlay::hud::AchievementCardColors {
+    CARD_COLORS
+        .lock()
+        .ok()
+        .and_then(|slot| *slot)
+        .unwrap_or(crate::overlay::hud::GOLD_ACHIEVEMENT_CARD)
 }
 
 fn default_notification_size() -> String {
@@ -1747,6 +1814,9 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         } else {
             None
         },
+        card_theme: normalize_card_theme(
+            settings.achievement_notifications_card_theme.as_deref(),
+        ),
     }
 }
 
@@ -1772,6 +1842,9 @@ pub fn achievement_set_notification_options(
         Some(normalize_notification_position(Some(options.position.as_str())));
     settings.achievement_notifications_size =
         Some(normalize_notification_size(Some(options.size.as_str())));
+    settings.achievement_notifications_card_theme = Some(normalize_card_theme(Some(
+        options.card_theme.as_str(),
+    )));
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -1959,7 +2032,12 @@ pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body:
     crate::overlay::hud::set_notification_hold(options.duration_ms);
     let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
     if options.overlay {
-        crate::overlay::hud::notify_ext(&tag_text, &title, &body);
+        crate::overlay::hud::notify_achievement(
+            &tag_text,
+            &title,
+            &body,
+            achievement_card_colors(),
+        );
     }
     play_achievement_notification_sound(&app, &options);
     let payload = AchievementUnlockedPayload {
@@ -2063,7 +2141,12 @@ fn emit_new_achievement_unlocks(
         if options.enabled {
             // 1. Native in-game HUD toast card
             if options.overlay {
-                crate::overlay::hud::notify_ext("BAŞARIM KAZANILDI", &display, &ach.description);
+                crate::overlay::hud::notify_achievement(
+                    "BAŞARIM KAZANILDI",
+                    &display,
+                    &ach.description,
+                    achievement_card_colors(),
+                );
             }
             // 2. Native notification sound: the user's file when set,
             // otherwise the Windows system chime.
@@ -2335,6 +2418,23 @@ mod tests {
 
     use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
     use super::super::runtime::steam_install_path;
+
+    #[test]
+    fn css_hex_colours_become_colorrefs() {
+        // COLORREF is 0x00BBGGRR, the reverse of the CSS byte order.
+        assert_eq!(colorref("#f59e0b"), Some(0x000B_9EF5));
+        assert_eq!(colorref("#0d0f14"), Some(0x0014_0F0D));
+        assert_eq!(colorref("fbbf24"), Some(0x0024_BFFB));
+        assert_eq!(colorref("#12345"), None);
+        assert_eq!(colorref("rgb(1,2,3)"), None);
+    }
+
+    #[test]
+    fn a_missing_card_theme_falls_back_to_gold() {
+        assert_eq!(normalize_card_theme(None), "gold");
+        assert_eq!(normalize_card_theme(Some("launcher")), "launcher");
+        assert_eq!(normalize_card_theme(Some("neon")), "gold");
+    }
 
 
     #[test]

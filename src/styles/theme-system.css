@@ -994,6 +994,36 @@
   transition: all 180ms ease-out;
 }
 
+/* "Launcher theme": follow the live tokens, so the preview matches the native
+   GDI card the backend paints from the same palette. */
+.ach-hud-toast.themed {
+  background: var(--surface-1);
+  border-color: var(--line-strong);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 16px var(--accent-tint);
+}
+.ach-hud-toast.themed .ach-hud-gold-bar {
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
+  box-shadow: 0 0 8px var(--accent-tint);
+}
+.ach-hud-toast.themed .ach-hud-medallion {
+  background: radial-gradient(circle at 35% 35%, var(--surface-2) 0%, var(--bg) 100%);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-tint);
+}
+.ach-hud-toast.themed .ach-hud-trophy-ico {
+  color: var(--accent-hover);
+  filter: drop-shadow(0 0 4px var(--accent-tint));
+}
+.ach-hud-toast.themed .ach-hud-tag {
+  color: var(--accent);
+}
+.ach-hud-toast.themed .ach-hud-title {
+  color: var(--text);
+}
+.ach-hud-toast.themed .ach-hud-desc {
+  color: var(--text-2);
+}
+
 /* Scalable Toast Sizes (3 Tiers: Küçük / Normal / Büyük) */
 .ach-hud-toast.size-small {
   width: min(440px, 92%);

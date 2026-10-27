@@ -14,6 +14,8 @@ import { applySidebarPageVisibility, discordPageVisible } from "./core/page-visi
 import { perfMark } from "./core/perf";
 import { applyCustomCss } from "./core/custom-css";
 import { applySurface } from "./core/themes";
+import { syncAchievementCardTheme } from "./core/achievement-card-theme";
+import { achievementGetNotificationOptions } from "./steam";
 import { applyReduceEffects } from "./core/effects";
 import { S } from "./core/state";
 import { closeModal, modalRoot, playtimeRoot, selectiveRoot, viewEl } from "./core/dom";
@@ -52,6 +54,14 @@ import { applyWinbarAppIcon } from "./core/app-icon";
 import { applyUiScale } from "./core/game-status";
 
 applySurface(S.surface, false);
+// The native achievement card follows the saved theme mode. The palette needs
+// the hydrated options, so it is pushed again as soon as the backend answers.
+void achievementGetNotificationOptions()
+  .then((options) => {
+    S.achievementNotificationOptions = options;
+    syncAchievementCardTheme();
+  })
+  .catch(() => undefined);
 applyReduceEffects(S.reduceEffects);
 if (S.uiScale !== 100) void applyUiScale(S.uiScale);
 applyCustomCss(S.customCss);

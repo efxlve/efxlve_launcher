@@ -9,6 +9,7 @@
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
+import { syncAchievementCardTheme } from "../../core/achievement-card-theme";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import {
@@ -119,6 +120,20 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
+  const cardTheme = options.cardTheme === "launcher" ? "launcher" : "gold";
+  const cardThemeButtons = [
+    { id: "gold", label: t("settings.achCardThemeGold") },
+    { id: "launcher", label: t("settings.achCardThemeLauncher") },
+  ]
+    .map(
+      (option) => `
+        <button type="button" class="${cardTheme === option.id ? "active" : ""}" data-act="set-ach-card-theme" data-val="${option.id}">
+          ${esc(option.label)}
+        </button>
+      `,
+    )
+    .join("");
+
   // Position anchors for the visual monitor pad
   const positions: Array<{ id: string; label: string; iconName: string }> = [
     { id: "top-left", label: t("settings.achPositionTopLeft"), iconName: "arrow-up-left" },
@@ -169,7 +184,7 @@ export function renderAchievementsSettingsView(): string {
           <div class="ach-stage-backdrop"></div>
           
           <!-- Next-Gen Console Toast Card -->
-          <div class="ach-hud-toast size-${esc(currentSize)}">
+          <div class="ach-hud-toast size-${esc(currentSize)}${cardTheme === "launcher" ? " themed" : ""}">
             <div class="ach-hud-gold-bar"></div>
             <div class="ach-hud-medallion">
               <span class="ach-hud-trophy-ico">${icon("trophy", 16)}</span>
@@ -185,6 +200,17 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
+        <!-- Card theme -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achCardThemeTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achCardThemeDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${cardThemeButtons}</div>
+          </div>
+        </div>
+
         <!-- Size Selector -->
         <div class="row settings-row">
           <div class="row-main">
@@ -340,6 +366,16 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       };
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
+    case "set-ach-card-theme": {
+      const cardTheme = el.dataset.val === "launcher" ? "launcher" : "gold";
+      const next = { ...S.achievementNotificationOptions, cardTheme };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      syncAchievementCardTheme();
       render();
       return true;
     }

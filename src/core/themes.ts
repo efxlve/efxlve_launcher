@@ -1397,6 +1397,12 @@ export function previewCustomTheme(input: CustomThemeInput): void {
 }
 
 /**
+ * Fires after `applySurface` paints a theme. The achievement card uses it to
+ * repaint its native palette from the new tokens.
+ */
+export const SURFACE_APPLIED_EVENT = "efxlve:surface-applied";
+
+/**
  * Applies a theme and remembers it. Returns the id that was applied, so the
  * caller can store `S.surface` without a second lookup.
  */
@@ -1411,5 +1417,6 @@ export function applySurface(id: string, persist = true): string {
       /* private mode: the theme still applies for this session */
     }
   }
+  window.dispatchEvent(new CustomEvent(SURFACE_APPLIED_EVENT, { detail: theme.id }));
   return theme.id;
 }

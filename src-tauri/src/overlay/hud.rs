@@ -49,6 +49,39 @@ static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
 /// 5 center-bottom.
 static NOTIF_POSITION: AtomicU8 = AtomicU8::new(0);
 
+/// Palette the achievement card paints with, in Windows `COLORREF` order
+/// (`0x00BBGGRR`). The frontend supplies the launcher-theme values because the
+/// CSS tokens live there; gold is the built-in default.
+#[derive(Clone, Copy)]
+pub struct AchievementCardColors {
+    pub background: u32,
+    pub accent: u32,
+    pub border: u32,
+    pub icon: u32,
+    pub title: u32,
+    pub body: u32,
+}
+
+pub const GOLD_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
+    background: 0x00140F0D,
+    accent: 0x000B9EF5,
+    border: 0x00185078,
+    icon: 0x0024BFFB,
+    title: 0x00FFFFFF,
+    body: 0x00B8B2AC,
+};
+
+/// The palette of the card currently on screen; a fresh card sets it before it
+/// is shown, so the animation thread paints the right one.
+static NOTIF_COLORS: Mutex<AchievementCardColors> = Mutex::new(GOLD_ACHIEVEMENT_CARD);
+
+/// A darker tint of `color` for the medallion's inner disc.
+#[cfg(windows)]
+fn shade(color: u32, percent: u32) -> u32 {
+    let channel = |value: u32| ((value & 0xFF) * percent / 100) & 0xFF;
+    channel(color) | (channel(color >> 8) << 8) | (channel(color >> 16) << 16)
+}
+
 fn notification_is_left(position: u8) -> bool {
     position == 1 || position == 3
 }
@@ -235,10 +268,23 @@ pub fn notify(title: &str, body: &str) {
     }
 }
 
-/// Explicit notification showing tag line (gold uppercase), title (bold white), and body (silver).
+/// Explicit notification showing tag line (accent uppercase), title (bold), and body (muted).
 pub fn notify_ext(tag: &str, title: &str, body: &str) {
+    notify_card(tag, title, body, GOLD_ACHIEVEMENT_CARD);
+}
+
+/// Achievement cards can follow the launcher theme instead of the gold card;
+/// the palette is passed in so a later hint keeps its own colours.
+pub fn notify_achievement(tag: &str, title: &str, body: &str, colors: AchievementCardColors) {
+    notify_card(tag, title, body, colors);
+}
+
+fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors) {
     #[cfg(windows)]
     {
+        if let Ok(mut slot) = NOTIF_COLORS.lock() {
+            *slot = colors;
+        }
         ensure_window();
         {
             let mut wide_tag = tag.encode_utf16().collect::<Vec<u16>>();
@@ -313,7 +359,7 @@ pub fn notify_ext(tag: &str, title: &str, body: &str) {
     }
     #[cfg(not(windows))]
     {
-        let _ = (tag, title, body);
+        let _ = (tag, title, body, colors);
     }
 }
 
@@ -841,46 +887,50 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let height = rect.bottom - rect.top;
     let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(2) as usize;
     let m = size_metrics(size_code as u8);
+    let colors = NOTIF_COLORS
+        .lock()
+        .map(|colors| *colors)
+        .unwrap_or(GOLD_ACHIEVEMENT_CARD);
 
-    // 1. Deep luxury smoked obsidian plate
-    let plate = CreateSolidBrush(0x00140F0D);
+    // 1. Smoked plate, themed to the launcher surface when the user wants it
+    let plate = CreateSolidBrush(colors.background);
     FillRect(hdc, rect, plate);
     let _ = DeleteObject(plate);
 
-    // 2. Radiant gold accent indicator bar on left edge
+    // 2. Accent indicator bar on left edge
     let bar_rect = RECT {
         left: rect.left,
         top: rect.top,
         right: rect.left + m.bar_width,
         bottom: rect.bottom,
     };
-    let bar_brush = CreateSolidBrush(0x000B9EF5);
+    let bar_brush = CreateSolidBrush(colors.accent);
     FillRect(hdc, &bar_rect, bar_brush);
     let _ = DeleteObject(bar_brush);
 
-    // 3. Hairline border; warm subtle amber-bronze
+    // 3. Hairline border
     let diameter = NOTIF_RADIUS * 2;
     let region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
     if region != 0 {
-        let edge = CreateSolidBrush(0x00185078);
+        let edge = CreateSolidBrush(colors.border);
         FrameRgn(hdc, region, edge, 1, 1);
         let _ = DeleteObject(edge);
         let _ = DeleteObject(region);
     }
 
-    // 4. Gold Trophy Medallion Emblem
+    // 4. Trophy medallion emblem
     let center_x = rect.left + m.left_pad + m.medallion_r;
     let center_y = (rect.top + rect.bottom) / 2;
 
-    // Outer gold rim
-    let rim = CreateSolidBrush(0x000B9EF5);
+    // Outer rim
+    let rim = CreateSolidBrush(colors.accent);
     let prev_rim = SelectObject(hdc, rim);
     Ellipse(hdc, center_x - m.medallion_r, center_y - m.medallion_r, center_x + m.medallion_r, center_y + m.medallion_r);
     SelectObject(hdc, prev_rim);
     let _ = DeleteObject(rim);
 
     // Inner velvet medallion plate
-    let inner_disc = CreateSolidBrush(0x00080E12);
+    let inner_disc = CreateSolidBrush(shade(colors.background, 62));
     let prev_inner = SelectObject(hdc, inner_disc);
     let inner_r = m.medallion_r - 2;
     Ellipse(hdc, center_x - inner_r, center_y - inner_r, center_x + inner_r, center_y + inner_r);
@@ -891,7 +941,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let icon_font = SIZE_ICON_FONTS[size_code].load(Ordering::Relaxed);
     if icon_font != 0 {
         SetBkMode(hdc, TRANSPARENT_BK);
-        SetTextColor(hdc, 0x0024BFFB); // Radiant trophy gold #fbbf24
+        SetTextColor(hdc, colors.icon);
         SelectObject(hdc, icon_font);
         let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
         let half_icon = m.icon_size;
@@ -909,14 +959,14 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
         );
     } else {
-        let gold_mark = CreateSolidBrush(0x0024BFFB);
-        let prev = SelectObject(hdc, gold_mark);
+        let mark = CreateSolidBrush(colors.icon);
+        let prev = SelectObject(hdc, mark);
         let bw = m.medallion_r * 2 / 5;
         RoundRect(hdc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
         RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
         RoundRect(hdc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
         SelectObject(hdc, prev);
-        let _ = DeleteObject(gold_mark);
+        let _ = DeleteObject(mark);
     }
 
     // Text column: 3-tier layout (Tag, Title, Body)
@@ -933,7 +983,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 if tag_font != 0 {
                     SelectObject(hdc, tag_font);
                 }
-                SetTextColor(hdc, 0x000B9EF5); // #f59e0b (Amber gold)
+                SetTextColor(hdc, colors.accent);
                 let mut tag_rect = RECT {
                     left: text_left,
                     top: rect.top + m.tag_top,
@@ -956,7 +1006,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 if title_font != 0 {
                     SelectObject(hdc, title_font);
                 }
-                SetTextColor(hdc, 0x00FFFFFF);
+                SetTextColor(hdc, colors.title);
                 let mut title_rect = RECT {
                     left: text_left,
                     top: rect.top + m.title_top,
@@ -979,7 +1029,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 if body_font != 0 {
                     SelectObject(hdc, body_font);
                 }
-                SetTextColor(hdc, 0x00B8B2AC);
+                SetTextColor(hdc, colors.body);
                 let mut body_rect = RECT {
                     left: text_left,
                     top: rect.top + m.body_top,
@@ -1002,7 +1052,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 if title_font != 0 {
                     SelectObject(hdc, title_font);
                 }
-                SetTextColor(hdc, 0x00FFFFFF);
+                SetTextColor(hdc, colors.title);
                 let mut text_rect = RECT {
                     left: text_left,
                     top: rect.top + m.title_top - 6,
@@ -1024,7 +1074,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 if body_font != 0 {
                     SelectObject(hdc, body_font);
                 }
-                SetTextColor(hdc, 0x00B8B2AC);
+                SetTextColor(hdc, colors.body);
                 let mut text_rect = RECT {
                     left: text_left,
                     top: rect.top + m.body_top,
