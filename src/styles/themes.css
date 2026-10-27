@@ -413,18 +413,6 @@
   background: var(--surface-1);
   border-color: var(--line);
 }
-:root[data-surface="white"] .sys-hw-cell {
-  background: var(--surface-2);
-  border-color: var(--line);
-}
-:root[data-surface="white"] .sys-hw-icon {
-  background: var(--surface-1);
-  border-color: var(--line);
-}
-:root[data-surface="white"] .sys-lang-block {
-  background: var(--surface-2);
-  border-color: var(--line);
-}
 :root[data-surface="white"] .sys-lang-chip {
   background: var(--surface-1);
   border-color: var(--line);
@@ -658,7 +646,7 @@
 /* Panels: frosted white with a bright top edge and a thin blue outer rim. */
 :root[data-surface="gloss"] :is(
   .card, .list, .lib-list, .modal, .toast, .gp-side-card, .settings-group, .info-box,
-  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
+  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
   .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
   .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
@@ -1270,36 +1258,6 @@
   filter: brightness(1.03);
   box-shadow: inset 0 1px 0 #ffffff, 0 2px 6px rgba(8, 60, 110, 0.14);
 }
-:root[data-surface="gloss"] .sys-hw-cell {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 248, 255, 0.72) 100%);
-  border: 1px solid rgba(16, 78, 130, 0.16);
-  box-shadow: inset 0 1px 0 #ffffff, 0 2px 6px rgba(8, 60, 110, 0.05);
-}
-:root[data-surface="gloss"] .sys-hw-cell:hover {
-  border-color: rgba(74, 166, 230, 0.5);
-  box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.25), 0 4px 14px rgba(8, 60, 110, 0.1);
-}
-:root[data-surface="gloss"] .sys-hw-icon {
-  background: linear-gradient(180deg, #ffffff 0%, #e6f4fc 100%);
-  border: 1px solid rgba(74, 166, 230, 0.35);
-  color: #104e82;
-  box-shadow: inset 0 1px 0 #ffffff;
-}
-:root[data-surface="gloss"] .sys-req-tabs.seg {
-  background: rgba(16, 78, 130, 0.08);
-  border-color: rgba(16, 78, 130, 0.18);
-}
-:root[data-surface="gloss"] .sys-req-tabs.seg button.active {
-  background: var(--aero-gloss-blue);
-  color: #ffffff;
-  text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 3px rgba(10, 90, 160, 0.35);
-}
-:root[data-surface="gloss"] .sys-lang-block {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(242, 249, 255, 0.65) 100%);
-  border: 1px solid rgba(16, 78, 130, 0.16);
-  box-shadow: inset 0 1px 0 #ffffff;
-}
 :root[data-surface="gloss"] .sys-lang-chip {
   background: linear-gradient(180deg, #ffffff 0%, #f0f7fc 100%);
   border: 1px solid rgba(16, 78, 130, 0.18);
@@ -1672,7 +1630,7 @@
 /* Glass cards: smoked emerald console body, a hairline rim and a top sheen */
 :root[data-surface="blades"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
-  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
+  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
   .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
   .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
@@ -2090,7 +2048,7 @@
 /* Neon Grid: Cards & Panels */
 :root[data-surface="neongrid"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
-  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card, .specs-card,
+  .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
   .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
   .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,

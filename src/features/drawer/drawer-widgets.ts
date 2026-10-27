@@ -1707,12 +1707,12 @@ export function renderSupportedLanguages(rawLanguages: string[]): string {
     .join("");
 
   return `
-    <div class="sys-lang-block">
+    <section class="card sys-lang-block">
       <div class="sys-lang-head">
         <span class="sys-lang-title">${icon("globe", 13)} <span>${i18nT("sys.languages")}</span> <span class="gp-section-meta num">${sorted.length}</span></span>
       </div>
       <div class="sys-lang-chips">${chips}</div>
-    </div>`;
+    </section>`;
 }
 
 export function isWinSys(type: string): boolean {
