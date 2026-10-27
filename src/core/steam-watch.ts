@@ -30,11 +30,13 @@ export function watchSteamAchievements(appName: string): void {
 export function unwatchSteamAchievements(appName: string): void {
   const appId = appIdOf(appName);
   if (!appId || !watched.delete(appId)) return;
-  // The client flushes its stats file a moment after the process exits. A
-  // watcher that stops at once misses the last unlock, so give it time for one
-  // more read; a session restarted in the meantime keeps its new watcher.
+  // The client flushes its stats file a moment after the process exits, and a
+  // slow cloud sync can push that to several seconds. The watcher only reads a
+  // couple of small local files per poll, so keeping it alive this long costs
+  // no measurable CPU or memory; a session restarted in the meantime keeps its
+  // new watcher.
   window.setTimeout(() => {
     if (watched.has(appId)) return;
     void steamStopAchievementWatcher(appId).catch(() => {});
-  }, 4000);
+  }, 8000);
 }
