@@ -51,10 +51,36 @@ const STAGE_PARTICLES: ReadonlyArray<{
   { dx: 96, dy: -6, rot: 45, delay: 105, size: 5, diamond: true },
 ];
 
+let sharedAudioCtx: AudioContext | null = null;
+let activeMasterGain: GainNode | null = null;
+
+function stopWebAudioAchievementChime(): void {
+  try {
+    if (activeMasterGain && sharedAudioCtx) {
+      const now = sharedAudioCtx.currentTime;
+      const prev = activeMasterGain;
+      activeMasterGain = null;
+      prev.gain.cancelScheduledValues(now);
+      prev.gain.setValueAtTime(Math.max(0.0001, prev.gain.value), now);
+      prev.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+      window.setTimeout(() => {
+        try {
+          prev.disconnect();
+        } catch {
+          /* ignore */
+        }
+      }, 40);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Synthesizes the multi-harmonic dopamine chime live in the browser using Web Audio,
  * tailored to the chosen animation style ("prism", "cyber", "shatter", "jackpot")
- * and rarity tier (0..4).
+ * and rarity tier (0..4). Reuses a single AudioContext and stops any previous
+ * preview sound so rapid clicks never overlap or clip.
  */
 export function playWebAudioAchievementChime(
   volumePct = 100,
@@ -66,25 +92,47 @@ export function playWebAudioAchievementChime(
       window.AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    if (!sharedAudioCtx || sharedAudioCtx.state === "closed") {
+      sharedAudioCtx = new AudioCtx();
+    }
+    const ctx = sharedAudioCtx;
+    if (ctx.state === "suspended") {
+      void ctx.resume().catch(() => {});
+    }
+    stopWebAudioAchievementChime();
+
     const now = ctx.currentTime;
-    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.36;
+    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.28;
     if (vol <= 0.001) return;
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(1.0, now);
+    activeMasterGain = masterGain;
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-14, now);
+    compressor.knee.setValueAtTime(18, now);
+    compressor.ratio.setValueAtTime(4, now);
+    compressor.attack.setValueAtTime(0.005, now);
+    compressor.release.setValueAtTime(0.18, now);
 
     const masterFilter = ctx.createBiquadFilter();
     masterFilter.type = "lowpass";
-    masterFilter.frequency.setValueAtTime(rarityTier >= 3 ? 4800 : 3400, now);
-    masterFilter.Q.setValueAtTime(0.85, now);
-    masterFilter.connect(ctx.destination);
+    masterFilter.frequency.setValueAtTime(rarityTier >= 3 ? 3800 : 3000, now);
+    masterFilter.Q.setValueAtTime(0.7, now);
 
-    // 1. Sub-bass impact drop (74 Hz -> 34 Hz)
+    masterFilter.connect(compressor);
+    compressor.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    // 1. Warm sub-bass thump (96 Hz -> 42 Hz)
     const subOsc = ctx.createOscillator();
     const subGain = ctx.createGain();
     subOsc.type = "sine";
-    subOsc.frequency.setValueAtTime(74, now);
-    subOsc.frequency.exponentialRampToValueAtTime(34, now + 0.22);
+    subOsc.frequency.setValueAtTime(96, now);
+    subOsc.frequency.exponentialRampToValueAtTime(42, now + 0.22);
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(vol * 0.75, now + 0.012);
+    subGain.gain.linearRampToValueAtTime(vol * 0.55, now + 0.015);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
     subOsc.connect(subGain);
     subGain.connect(masterFilter);
@@ -94,41 +142,46 @@ export function playWebAudioAchievementChime(
     const noteCount = rarityTier <= 0 ? 3 : rarityTier === 1 ? 4 : rarityTier === 2 ? 5 : 6;
 
     if (animStyle === "cyber") {
-      const freqs = [220.0, 329.63, 440.0, 659.25, 880.0, 1318.51].slice(0, noteCount);
+      // Cyber Overload: warm analog synth fifths & octave arpeggio (no harsh sawtooth)
+      const freqs = [220.0, 329.63, 440.0, 493.88, 554.37, 659.25].slice(0, noteCount);
       freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.055;
+        const at = now + idx * 0.068;
         const osc = ctx.createOscillator();
         const over = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = "sawtooth";
-        over.type = "triangle";
+        const overGain = ctx.createGain();
+        osc.type = "triangle";
+        over.type = "sine";
         osc.frequency.setValueAtTime(hz, at);
         over.frequency.setValueAtTime(hz * 2.0, at);
+        overGain.gain.setValueAtTime(0.28, at);
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.exponentialRampToValueAtTime(vol * 0.42, at + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.15 + rarityTier * 0.12);
+        gain.gain.linearRampToValueAtTime(vol * 0.42, at + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.25 + rarityTier * 0.12);
+        over.connect(overGain);
+        overGain.connect(gain);
         osc.connect(gain);
-        over.connect(gain);
         gain.connect(masterFilter);
         osc.start(at);
         over.start(at);
-        osc.stop(at + 1.45 + rarityTier * 0.12);
-        over.stop(at + 1.45 + rarityTier * 0.12);
+        osc.stop(at + 1.35 + rarityTier * 0.12);
+        over.stop(at + 1.35 + rarityTier * 0.12);
       });
     } else if (animStyle === "shatter") {
-      const freqs = [783.99, 1046.5, 1318.51, 1567.98, 2093.0, 2637.02].slice(0, noteCount);
+      // Crystal Shatter: pure Lydian celesta / vibraphone harmonics (F5..G6)
+      const freqs = [698.46, 783.99, 880.0, 1046.5, 1318.51, 1567.98].slice(0, noteCount);
       freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.062;
+        const at = now + idx * 0.065;
         for (const [mult, weight, decay] of [
-          [1.0, 0.58, 1.35],
-          [2.756, 0.22, 0.55],
+          [1.0, 0.48, 1.35],
+          [2.0, 0.16, 0.65],
         ] as const) {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = "sine";
           osc.frequency.setValueAtTime(hz * mult, at);
           gain.gain.setValueAtTime(0.0001, at);
-          gain.gain.exponentialRampToValueAtTime(vol * weight, at + 0.008);
+          gain.gain.linearRampToValueAtTime(vol * weight, at + 0.012);
           gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
           osc.connect(gain);
           gain.connect(masterFilter);
@@ -137,54 +190,67 @@ export function playWebAudioAchievementChime(
         }
       });
     } else if (animStyle === "jackpot") {
-      const coins = 4 + rarityTier * 2;
-      for (let c = 0; c < coins; c++) {
-        const at = now + c * 0.052;
+      // Arcade Jackpot: crisp 3-note grace flourish into a lush Major-9th triumph chord
+      [523.25, 659.25, 783.99].forEach((hz, c) => {
+        const at = now + c * 0.062;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(987.77, at);
-        osc.frequency.setValueAtTime(1318.51, at + 0.032);
+        osc.frequency.setValueAtTime(hz, at);
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.exponentialRampToValueAtTime(vol * 0.45, at + 0.006);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.26);
+        gain.gain.linearRampToValueAtTime(vol * 0.38, at + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.34);
         osc.connect(gain);
         gain.connect(masterFilter);
         osc.start(at);
-        osc.stop(at + 0.28);
-      }
-      const chordAt = now + 0.22;
-      [523.25, 659.25, 783.99, 987.77, 1567.98].slice(0, Math.min(5, noteCount)).forEach((hz) => {
+        osc.stop(at + 0.36);
+      });
+      const chordAt = now + 0.18;
+      [261.63, 523.25, 659.25, 783.99, 987.77, 1174.66].slice(0, noteCount).forEach((hz) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "triangle";
         osc.frequency.setValueAtTime(hz, chordAt);
         gain.gain.setValueAtTime(0.0001, chordAt);
-        gain.gain.exponentialRampToValueAtTime(vol * 0.34, chordAt + 0.024);
-        gain.gain.exponentialRampToValueAtTime(0.0001, chordAt + 1.55);
+        gain.gain.linearRampToValueAtTime(vol * 0.28, chordAt + 0.026);
+        gain.gain.exponentialRampToValueAtTime(0.0001, chordAt + 1.65);
         osc.connect(gain);
         gain.connect(masterFilter);
         osc.start(chordAt);
-        osc.stop(chordAt + 1.6);
+        osc.stop(chordAt + 1.7);
       });
     } else {
-      // Prism Unfurl (default): crystalline harmonic arpeggio + warm bell overtone
-      const freqs = [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98].slice(0, noteCount);
+      // Prism Unfurl (default): PS5-inspired warm D-Maj9 crystal pad + chime arpeggio
+      [146.83, 220.0].forEach((padHz) => {
+        const padOsc = ctx.createOscillator();
+        const padGain = ctx.createGain();
+        padOsc.type = "sine";
+        padOsc.frequency.setValueAtTime(padHz, now);
+        padGain.gain.setValueAtTime(0.0001, now);
+        padGain.gain.linearRampToValueAtTime(vol * 0.24, now + 0.05);
+        padGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.65);
+        padOsc.connect(padGain);
+        padGain.connect(masterFilter);
+        padOsc.start(now);
+        padOsc.stop(now + 1.7);
+      });
+
+      const freqs = [587.33, 739.99, 880.0, 1108.73, 1318.51, 1760.0].slice(0, noteCount);
       freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.072;
+        const at = now + idx * 0.075;
         const osc = ctx.createOscillator();
         const bell = ctx.createOscillator();
         const gain = ctx.createGain();
+        const bellGain = ctx.createGain();
         osc.type = "sine";
         bell.type = "triangle";
         osc.frequency.setValueAtTime(hz, at);
         bell.frequency.setValueAtTime(hz * 2.0, at);
-        const decay = 1.35 + rarityTier * 0.14;
+        const decay = 1.4 + rarityTier * 0.14;
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.exponentialRampToValueAtTime(vol * 0.56, at + 0.016);
+        gain.gain.linearRampToValueAtTime(vol * 0.46, at + 0.016);
         gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-        const bellGain = ctx.createGain();
-        bellGain.gain.setValueAtTime(0.26, at);
+        bellGain.gain.setValueAtTime(0.2, at);
         bell.connect(bellGain);
         bellGain.connect(gain);
         osc.connect(gain);
@@ -196,22 +262,22 @@ export function playWebAudioAchievementChime(
       });
     }
 
-    // Ultra-Rare / Platinum high-octave choir shimmer tail
+    // Ultra-Rare / Platinum warm choir shimmer tail
     if (rarityTier >= 3) {
-      const shimmerFreqs = rarityTier >= 4 ? [2093.0, 2637.02, 3135.96] : [2093.0, 2637.02];
+      const shimmerFreqs = rarityTier >= 4 ? [1174.66, 1479.98, 1760.0] : [1174.66, 1479.98];
       shimmerFreqs.forEach((hz, i) => {
-        const at = now + 0.3 + i * 0.06;
+        const at = now + 0.3 + i * 0.065;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
         osc.frequency.setValueAtTime(hz, at);
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.exponentialRampToValueAtTime(vol * 0.24, at + 0.06);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.75);
+        gain.gain.linearRampToValueAtTime(vol * 0.22, at + 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.8);
         osc.connect(gain);
         gain.connect(masterFilter);
         osc.start(at);
-        osc.stop(at + 1.8);
+        osc.stop(at + 1.85);
       });
     }
   } catch {
@@ -811,6 +877,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-test-notification": {
+      stopWebAudioAchievementChime();
       stageReplaySeq++;
       render();
       const meta = getPreviewTierMeta(previewRarityTier);

@@ -63,6 +63,11 @@ static NOTIF_FRAME_MS: AtomicU64 = AtomicU64::new(0);
 /// Target full card width so the renderer knows the unfurl ratio while morphing.
 static NOTIF_FULL_W: AtomicIsize = AtomicIsize::new(540);
 
+/// Packs CSS `(r, g, b)` channels into Windows `COLORREF` (`0x00BBGGRR`) order.
+const fn rgb(r: u8, g: u8, b: u8) -> u32 {
+    (r as u32) | ((g as u32) << 8) | ((b as u32) << 16)
+}
+
 /// Palette the achievement card paints with, in Windows `COLORREF` order
 /// (`0x00BBGGRR`). The frontend supplies the launcher-theme values because the
 /// CSS tokens live there; gold is the built-in default.
@@ -77,84 +82,85 @@ pub struct AchievementCardColors {
 }
 
 pub const GOLD_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
-    background: 0x00140F0D,
-    accent: 0x000B9EF5,
-    border: 0x00185078,
-    icon: 0x0024BFFB,
-    title: 0x00FFFFFF,
-    body: 0x00B8B2AC,
+    background: rgb(0x0D, 0x0F, 0x14),
+    accent: rgb(0xF5, 0x9E, 0x0B),
+    border: rgb(0x78, 0x50, 0x18),
+    icon: rgb(0xFB, 0xBF, 0x24),
+    title: rgb(0xFF, 0xFF, 0xFF),
+    body: rgb(0xAC, 0xB2, 0xB8),
 };
 
 pub const CYBER_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
-    background: 0x00120A07,
-    accent: 0x000AEEFC,
-    border: 0x00FFF000,
-    icon: 0x00FFF000,
-    title: 0x00FFFFFF,
-    body: 0x00D8D090,
+    background: rgb(0x09, 0x0B, 0x16),
+    accent: rgb(0x00, 0xF0, 0xFF),
+    border: rgb(0x0E, 0x74, 0x90),
+    icon: rgb(0x38, 0xBD, 0xF8),
+    title: rgb(0xF8, 0xFA, 0xFC),
+    body: rgb(0x94, 0xA3, 0xB8),
 };
 
 pub const EMERALD_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
-    background: 0x000E1206,
-    accent: 0x0081B910,
-    border: 0x00527A0A,
-    icon: 0x0099D334,
-    title: 0x00FFFFFF,
-    body: 0x00B8D4C4,
+    background: rgb(0x08, 0x12, 0x0E),
+    accent: rgb(0x10, 0xB9, 0x81),
+    border: rgb(0x04, 0x78, 0x57),
+    icon: rgb(0x34, 0xD3, 0x99),
+    title: rgb(0xF8, 0xFA, 0xFC),
+    body: rgb(0xA7, 0xF3, 0xD0),
 };
 
 pub const CRIMSON_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
-    background: 0x000B0714,
-    accent: 0x005E3FF4,
-    border: 0x003B249E,
-    icon: 0x008571FB,
-    title: 0x00FFFFFF,
-    body: 0x00C4B4D8,
+    background: rgb(0x13, 0x09, 0x0C),
+    accent: rgb(0xF4, 0x3F, 0x5E),
+    border: rgb(0xBE, 0x12, 0x3C),
+    icon: rgb(0xFB, 0x71, 0x85),
+    title: rgb(0xFF, 0xF1, 0xF2),
+    body: rgb(0xFD, 0xA4, 0xAF),
 };
 
 pub const AMETHYST_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
-    background: 0x00180912,
-    accent: 0x00F755A8,
-    border: 0x009E326B,
-    icon: 0x00FC84C0,
-    title: 0x00FFFFFF,
-    body: 0x00D8B8CE,
+    background: rgb(0x0F, 0x09, 0x18),
+    accent: rgb(0xA8, 0x55, 0xF7),
+    border: rgb(0x6B, 0x21, 0xA8),
+    icon: rgb(0xC0, 0x84, 0xFC),
+    title: rgb(0xFA, 0xF5, 0xFF),
+    body: rgb(0xD8, 0xB4, 0xFE),
 };
 
-/// Returns a rarity-driven palette for `tier` (0 bronze .. 4 platinum).
+/// Returns a rarity-driven palette for `tier` (0 bronze .. 4 platinum),
+/// matching `rarityCardPalette` in `src/core/achievement-card-theme.ts`.
 pub fn rarity_card_colors(tier: u8) -> AchievementCardColors {
     match tier {
         0 => AchievementCardColors {
-            background: 0x000D1016,
-            accent: 0x004F80CD,
-            border: 0x00305084,
-            icon: 0x0072A4EE,
-            title: 0x00FFFFFF,
-            body: 0x00A8B6C8,
+            background: rgb(0x11, 0x0D, 0x0B),
+            accent: rgb(0xCD, 0x7F, 0x32),
+            border: rgb(0x7C, 0x47, 0x1C),
+            icon: rgb(0xE0, 0x9F, 0x5A),
+            title: rgb(0xFF, 0xFF, 0xFF),
+            body: rgb(0xCB, 0xB8, 0xA8),
         },
         1 => AchievementCardColors {
-            background: 0x0016100B,
-            accent: 0x00F8BD38,
-            border: 0x009E741E,
-            icon: 0x00FFDA75,
-            title: 0x00FFFFFF,
-            body: 0x00D4C4B0,
+            background: rgb(0x0D, 0x10, 0x15),
+            accent: rgb(0x94, 0xA3, 0xB8),
+            border: rgb(0x47, 0x55, 0x69),
+            icon: rgb(0xE2, 0xE8, 0xF0),
+            title: rgb(0xFF, 0xFF, 0xFF),
+            body: rgb(0xCB, 0xD5, 0xE1),
         },
         3 => AchievementCardColors {
-            background: 0x001B0914,
-            accent: 0x00F755A8,
-            border: 0x009948EC,
-            icon: 0x00FF96E8,
-            title: 0x00FFFFFF,
-            body: 0x00E6B8D8,
+            background: rgb(0x08, 0x10, 0x1D),
+            accent: rgb(0x22, 0xD3, 0xEE),
+            border: rgb(0x02, 0x84, 0xC7),
+            icon: rgb(0x67, 0xE8, 0xF9),
+            title: rgb(0xF0, 0xF9, 0xFF),
+            body: rgb(0xBA, 0xE6, 0xFD),
         },
         4 => AchievementCardColors {
-            background: 0x001A1208,
-            accent: 0x00FFE600,
-            border: 0x0024BFFB,
-            icon: 0x0024BFFB,
-            title: 0x00FFFFFF,
-            body: 0x00F2E2B8,
+            background: rgb(0x11, 0x0C, 0x1D),
+            accent: rgb(0xE8, 0x79, 0xF9),
+            border: rgb(0x93, 0x33, 0xEA),
+            icon: rgb(0xF5, 0xD0, 0xFE),
+            title: rgb(0xFF, 0xFF, 0xFF),
+            body: rgb(0xF3, 0xE8, 0xFF),
         },
         _ => GOLD_ACHIEVEMENT_CARD,
     }
@@ -163,13 +169,6 @@ pub fn rarity_card_colors(tier: u8) -> AchievementCardColors {
 /// The palette of the card currently on screen; a fresh card sets it before it
 /// is shown, so the animation thread paints the right one.
 static NOTIF_COLORS: Mutex<AchievementCardColors> = Mutex::new(GOLD_ACHIEVEMENT_CARD);
-
-/// A darker tint of `color` for the medallion's inner disc.
-#[cfg(windows)]
-fn shade(color: u32, percent: u32) -> u32 {
-    let channel = |value: u32| ((value & 0xFF) * percent / 100) & 0xFF;
-    channel(color) | (channel(color >> 8) << 8) | (channel(color >> 16) << 16)
-}
 
 fn notification_is_left(position: u8) -> bool {
     position == 1 || position == 3
@@ -472,20 +471,18 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
         let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
         NOTIF_FULL_W.store(w as isize, Ordering::Relaxed);
 
-        let pill_w = (m.left_pad * 2 + m.medallion_r * 2 + 8).min(w);
-        let init_x = anchored_x(x, w, pill_w, position);
-        let init_y = if notification_is_bottom(position) { y + 18 } else { y - 18 };
+        let init_y = if notification_is_bottom(position) { y + 22 } else { y - 22 };
 
         unsafe {
-            shape_notification(hwnd, pill_w, h);
-            MoveWindow(hwnd, init_x, init_y, pill_w, h, 1);
+            shape_notification(hwnd, w, h);
+            MoveWindow(hwnd, x, init_y, w, h, 1);
             set_alpha(hwnd, 0);
             ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
             InvalidateRect(hwnd, std::ptr::null(), 0);
         }
 
         std::thread::spawn(move || {
-            run_dopamine_choreography(hwnd, generation, start_ms, x, y, w, h, pill_w, position);
+            run_dopamine_choreography(hwnd, generation, start_ms, x, y, w, h, position);
             if NOTIF_GEN.load(Ordering::Relaxed) == generation {
                 NOTIF_ON.store(false, Ordering::SeqCst);
                 hide_window();
@@ -500,22 +497,10 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
     }
 }
 
-#[cfg(windows)]
-fn anchored_x(x: i32, full_w: i32, cur_w: i32, position: u8) -> i32 {
-    if notification_is_left(position) {
-        x
-    } else if notification_is_center(position) {
-        x + (full_w - cur_w) / 2
-    } else {
-        x + full_w - cur_w
-    }
-}
-
-/// 5-stage 60 FPS choreography:
-/// 1. Medallion Impact Drop (0..180ms) with optional micro-shake
-/// 2. Morphing Capsule Unfurl (180..560ms)
-/// 3. Live Particle, Shimmer, God-Ray & Border-Beam Showcase (560ms..hold_end)
-/// 4. Vacuum Collapse back into Medallion (last 320ms)
+/// 60 FPS choreography:
+/// 1. Elastic slide-in + impact micro-shake (0..380ms)
+/// 2. Live 32-bit DIB shockwaves, god-rays, shimmer, progress bar & particle burst
+/// 3. Smooth slide-out + fade at `until` (last 280ms)
 #[cfg(windows)]
 fn run_dopamine_choreography(
     hwnd: isize,
@@ -525,14 +510,12 @@ fn run_dopamine_choreography(
     y: i32,
     w: i32,
     h: i32,
-    pill_w: i32,
     position: u8,
 ) {
     let style = NOTIF_STYLE.load(Ordering::Relaxed);
     let tier = NOTIF_RARITY_TIER.load(Ordering::Relaxed);
-    let mut last_w = pill_w;
-    let mut last_x = anchored_x(x, w, pill_w, position);
-    let mut last_y = y;
+    let mut last_x = x;
+    let mut last_y = if notification_is_bottom(position) { y + 22 } else { y - 22 };
     let mut last_alpha = 0u8;
 
     loop {
@@ -541,69 +524,54 @@ fn run_dopamine_choreography(
         }
         let now = now_ms();
         let until = NOTIF_UNTIL.load(Ordering::Relaxed);
-        let collapse_ms = 320u64;
-        if now >= until + collapse_ms {
+        let exit_ms = 280u64;
+        if now >= until + exit_ms {
             break;
         }
         let elapsed = now.saturating_sub(start_ms);
         NOTIF_FRAME_MS.store(elapsed, Ordering::Relaxed);
 
-        let (cur_w, dy, alpha) = if now >= until {
-            // Stage 4: Collapse back into medallion capsule
-            let t = ((now - until) as f32 / collapse_ms as f32).clamp(0.0, 1.0);
-            let eased = t * t * (2.5 * t - 1.5).max(0.0);
-            let cw = w - ((w - pill_w) as f32 * eased.clamp(0.0, 1.0)) as i32;
-            let drop = if notification_is_bottom(position) {
-                (14.0 * t * t) as i32
-            } else {
-                -(14.0 * t * t) as i32
-            };
+        let (dx, dy, alpha) = if now >= until {
+            let t = ((now - until) as f32 / exit_ms as f32).clamp(0.0, 1.0);
+            let slide = (18.0 * t * t) as i32;
+            let drop = if notification_is_bottom(position) { slide } else { -slide };
             let a = (NOTIF_ALPHA as f32 * (1.0 - t).powi(2)) as u8;
-            (cw.clamp(pill_w, w), drop, a)
-        } else if elapsed < 175 {
-            // Stage 1: Medallion drop & impact bounce
-            let t = (elapsed as f32 / 175.0).clamp(0.0, 1.0);
-            let spring = 1.0 - (-6.5 * t).exp() * (4.2 * t).cos();
-            let offset = (1.0 - spring) * 20.0;
-            let drop = if notification_is_bottom(position) {
-                offset as i32
+            (0, drop, a)
+        } else if elapsed < 360 {
+            let t = (elapsed as f32 / 360.0).clamp(0.0, 1.0);
+            let inv = 1.0 - t;
+            // Smooth cubic ease-out with gentle spring settle
+            let ease = 1.0 - inv * inv * inv * (1.0 - 0.35 * (t * std::f32::consts::PI).sin());
+            let offset = ((1.0 - ease) * 22.0).round() as i32;
+            let drop = if notification_is_bottom(position) { offset } else { -offset };
+            let horiz = if style == 1 {
+                let side = ((1.0 - ease) * 26.0).round() as i32;
+                if notification_is_left(position) { -side } else { side }
             } else {
-                -(offset as i32)
+                0
             };
-            let a = (NOTIF_ALPHA as f32 * (t * 2.2).min(1.0)) as u8;
-            (pill_w, drop, a)
-        } else if elapsed < 560 {
-            // Stage 2: Elastic capsule unfurl
-            let u = ((elapsed - 175) as f32 / 385.0).clamp(0.0, 1.0);
-            let inv = 1.0 - u;
-            let eased = 1.0 - inv * inv * inv * (1.0 - 0.35 * u);
-            let cw = pill_w + ((w - pill_w) as f32 * eased.clamp(0.0, 1.0)) as i32;
-            (cw.clamp(pill_w, w), 0, NOTIF_ALPHA)
+            let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 140.0).clamp(0.0, 1.0)) as u8;
+            (horiz, drop, a)
         } else {
-            // Stage 3: Full card showcase
-            (w, 0, NOTIF_ALPHA)
+            (0, 0, NOTIF_ALPHA)
         };
 
         // Impact micro-shake for Arcade Jackpot style or Ultra-Rare/Platinum unlocks
-        let (shake_x, shake_y) = if (style == 3 || tier >= 3) && elapsed >= 65 && elapsed <= 250 {
-            let damp = 1.0 - ((elapsed - 65) as f32 / 185.0);
-            let sx = ((elapsed as f32 * 0.11).sin() * 4.5 * damp) as i32;
-            let sy = ((elapsed as f32 * 0.17).cos() * 2.5 * damp) as i32;
+        let (shake_x, shake_y) = if (style == 3 || tier >= 3) && elapsed >= 70 && elapsed <= 240 {
+            let damp = 1.0 - ((elapsed - 70) as f32 / 170.0);
+            let sx = ((elapsed as f32 * 0.12).sin() * 3.5 * damp) as i32;
+            let sy = ((elapsed as f32 * 0.18).cos() * 2.0 * damp) as i32;
             (sx, sy)
         } else {
             (0, 0)
         };
 
-        let cur_x = anchored_x(x, w, cur_w, position) + shake_x;
+        let cur_x = x + dx + shake_x;
         let cur_y = y + dy + shake_y;
 
         unsafe {
-            if cur_w != last_w {
-                shape_notification(hwnd, cur_w, h);
-            }
-            if cur_w != last_w || cur_x != last_x || cur_y != last_y {
-                MoveWindow(hwnd, cur_x, cur_y, cur_w, h, 0);
-                last_w = cur_w;
+            if cur_x != last_x || cur_y != last_y {
+                MoveWindow(hwnd, cur_x, cur_y, w, h, 0);
                 last_x = cur_x;
                 last_y = cur_y;
             }
@@ -1028,9 +996,7 @@ extern "system" {
     fn CreatePolygonRgn(pptl: *const POINT, c_point: i32, i_mode: i32) -> isize;
     #[allow(dead_code)]
     fn FrameRgn(hdc: isize, region: isize, brush: isize, width: i32, height: i32) -> i32;
-    fn Ellipse(hdc: isize, left: i32, top: i32, right: i32, bottom: i32) -> i32;
     fn CreateEllipticRgn(left: i32, top: i32, right: i32, bottom: i32) -> isize;
-    fn RoundRect(hdc: isize, left: i32, top: i32, right: i32, bottom: i32, width: i32, height: i32) -> i32;
     fn CreateFontW(
         height: i32,
         width: i32,
@@ -1139,8 +1105,6 @@ const WM_DESTROY: u32 = 0x0002;
 const HTTRANSPARENT: isize = -1;
 #[cfg(windows)]
 const DT_LEFT: u32 = 0x0000;
-#[cfg(windows)]
-const DT_CENTER: u32 = 0x0001;
 #[cfg(windows)]
 const DT_VCENTER: u32 = 0x0004;
 #[cfg(windows)]
@@ -1287,28 +1251,131 @@ fn pack_dib(r: f32, g: f32, b: f32) -> u32 {
     (ri << 16) | (gi << 8) | bi
 }
 
+/// Signed distance to a 2D trophy cup in normalized `[-1.2, 1.2]` coordinates.
+/// Returns `< 0.0` inside the trophy silhouette and `> 0.0` outside.
 #[cfg(windows)]
 #[inline]
-fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (f32, f32, f32) {
-    let h6 = (h.rem_euclid(1.0)) * 6.0;
-    let i = h6.floor() as i32;
-    let f = h6 - i as f32;
-    let p = v * (1.0 - s);
-    let q = v * (1.0 - s * f);
-    let t = v * (1.0 - s * (1.0 - f));
-    match i.rem_euclid(6) {
-        0 => (v * 255.0, t * 255.0, p * 255.0),
-        1 => (q * 255.0, v * 255.0, p * 255.0),
-        2 => (p * 255.0, v * 255.0, t * 255.0),
-        3 => (p * 255.0, q * 255.0, v * 255.0),
-        4 => (t * 255.0, p * 255.0, v * 255.0),
-        _ => (v * 255.0, p * 255.0, q * 255.0),
+fn trophy_sdf(u: f32, v: f32) -> f32 {
+    let ax = u.abs();
+
+    // 1. Top lip rim: y in [-0.70, -0.58], half-width 0.56
+    let d_rim = (ax - 0.56).max((v + 0.64).abs() - 0.065);
+
+    // 2. Cup bowl: y in [-0.58, 0.16], tapered parabolic chalice
+    let t_bowl = ((v + 0.58) / 0.74).clamp(0.0, 1.0);
+    let w_bowl = 0.52 * (1.0 - 0.72 * t_bowl * t_bowl);
+    let d_bowl = (ax - w_bowl).max((v + 0.21).abs() - 0.37);
+
+    // 3. Side C-handles: elliptical ring centered at (0.50, -0.25)
+    let hx = ax - 0.48;
+    let hy = v + 0.26;
+    let h_rad = (hx * hx + hy * hy).sqrt();
+    let d_handle = ((h_rad - 0.23).abs() - 0.068).max(0.32 - ax);
+
+    // 4. Stem: y in [0.14, 0.48]
+    let d_stem = (ax - 0.11).max((v - 0.31).abs() - 0.17);
+
+    // 5. Tiered pedestal base: upper step y in [0.46, 0.58], lower plinth y in [0.57, 0.72]
+    let d_base1 = (ax - 0.34).max((v - 0.52).abs() - 0.065);
+    let d_base2 = (ax - 0.48).max((v - 0.65).abs() - 0.075);
+
+    d_rim
+        .min(d_bowl)
+        .min(d_handle)
+        .min(d_stem)
+        .min(d_base1)
+        .min(d_base2)
+}
+
+/// Renders the anti-aliased medallion outer ring, dark velvet inner disc, and
+/// 3D metallic vector trophy directly into the 32-bit DIB pixel buffer.
+#[cfg(windows)]
+fn render_medallion_and_trophy(
+    pixels: &mut [u32],
+    w: i32,
+    h: i32,
+    cx: i32,
+    cy: i32,
+    med_r: i32,
+    colors: AchievementCardColors,
+    t_sec: f32,
+) {
+    let (bg_r, bg_g, bg_b) = colorref_rgb(colors.background);
+    let (ac_r, ac_g, ac_b) = colorref_rgb(colors.accent);
+    let (ic_r, ic_g, ic_b) = colorref_rgb(colors.icon);
+
+    let mr = med_r as f32;
+    let inner_r = (mr - 2.6).max(4.0);
+    let scale = (inner_r * 0.72).max(1.0);
+    let pad = med_r + 3;
+
+    for y in (cy - pad).max(0)..=(cy + pad).min(h - 1) {
+        let dy = (y - cy) as f32;
+        for x in (cx - pad).max(0)..=(cx + pad).min(w - 1) {
+            let dx = (x - cx) as f32;
+            let dist = (dx * dx + dy * dy).sqrt();
+            if dist > mr + 1.2 {
+                continue;
+            }
+
+            let idx = (y * w + x) as usize;
+            let cur = pixels[idx];
+            let mut r = ((cur >> 16) & 0xFF) as f32;
+            let mut g = ((cur >> 8) & 0xFF) as f32;
+            let mut b = (cur & 0xFF) as f32;
+
+            // Outer anti-aliased medallion coverage
+            let outer_cov = (mr + 0.6 - dist).clamp(0.0, 1.0);
+            // Rim lighting gradient (brighter top-left, rich accent bottom-right)
+            let rim_sheen = ((-dx - dy) / (mr * 2.0)).clamp(-0.5, 0.6) + 0.35;
+            let rim_r = ac_r * (1.0 - rim_sheen * 0.45) + (ic_r * 0.5 + 255.0 * 0.5) * (rim_sheen * 0.45);
+            let rim_g = ac_g * (1.0 - rim_sheen * 0.45) + (ic_g * 0.5 + 255.0 * 0.5) * (rim_sheen * 0.45);
+            let rim_b = ac_b * (1.0 - rim_sheen * 0.45) + (ic_b * 0.5 + 255.0 * 0.5) * (rim_sheen * 0.45);
+
+            // Inner velvet plate coverage
+            let inner_cov = (inner_r + 0.5 - dist).clamp(0.0, 1.0);
+            let core_glow = (1.0 - (dist / inner_r).min(1.0)).powi(2) * 0.28;
+            let plate_r = bg_r * 0.52 + ac_r * core_glow;
+            let plate_g = bg_g * 0.52 + ac_g * core_glow;
+            let plate_b = bg_b * 0.52 + ac_b * core_glow;
+
+            let mut disc_r = rim_r * (1.0 - inner_cov) + plate_r * inner_cov;
+            let mut disc_g = rim_g * (1.0 - inner_cov) + plate_g * inner_cov;
+            let mut disc_b = rim_b * (1.0 - inner_cov) + plate_b * inner_cov;
+
+            // Vector Trophy Cup inside the inner disc
+            if inner_cov > 0.05 {
+                let u = dx / scale;
+                let v = dy / scale;
+                let sdf = trophy_sdf(u, v);
+                let aa = 1.15 / scale;
+                let cup_cov = ((aa - sdf) / (2.0 * aa)).clamp(0.0, 1.0) * inner_cov;
+                if cup_cov > 0.0 {
+                    // 3D cylindrical specular highlight across the cup bowl
+                    let spec = (1.0 - (u + 0.18).abs() * 1.45).clamp(0.0, 1.0).powi(2);
+                    let vert = (0.5 - v * 0.45).clamp(0.0, 1.0);
+                    let pulse = (t_sec * 3.2).sin() * 0.08 + 0.92;
+                    let tr = (ac_r * (1.0 - vert * 0.5) + ic_r * (vert * 0.5)) * pulse + 255.0 * spec * 0.42;
+                    let tg = (ac_g * (1.0 - vert * 0.5) + ic_g * (vert * 0.5)) * pulse + 255.0 * spec * 0.42;
+                    let tb = (ac_b * (1.0 - vert * 0.5) + ic_b * (vert * 0.5)) * pulse + 255.0 * spec * 0.42;
+                    disc_r = disc_r * (1.0 - cup_cov) + tr * cup_cov;
+                    disc_g = disc_g * (1.0 - cup_cov) + tg * cup_cov;
+                    disc_b = disc_b * (1.0 - cup_cov) + tb * cup_cov;
+                }
+            }
+
+            r = r * (1.0 - outer_cov) + disc_r * outer_cov;
+            g = g * (1.0 - outer_cov) + disc_g * outer_cov;
+            b = b * (1.0 - outer_cov) + disc_b * outer_cov;
+            pixels[idx] = pack_dib(r, g, b);
+        }
     }
 }
 
 /// Renders the animated 60 FPS background surface, shockwave rings, rotating
 /// god-rays, diagonal holographic foil sweep, rotating conic border comet,
-/// bottom energy progress bar, and 32 bursting/floating dopamine particles.
+/// bottom energy progress bar, 34 bursting/floating dopamine particles, and
+/// the anti-aliased medallion + trophy emblem.
 #[cfg(windows)]
 fn render_dopamine_backdrop(
     pixels: &mut [u32],
@@ -1357,7 +1424,7 @@ fn render_dopamine_backdrop(
     let sweep_x = -90.0 + cycle_ms.clamp(0.0, 1.5) * (w as f32 + 220.0);
 
     // Animated bottom progress bar fill
-    let prog_ease = ((elapsed_ms as f32 - 220.0) / 850.0).clamp(0.0, 1.0);
+    let prog_ease = ((elapsed_ms as f32 - 180.0) / 820.0).clamp(0.0, 1.0);
     let prog_ease = 1.0 - (1.0 - prog_ease).powi(3);
     let target_ratio = (progress_permille.min(1000) as f32 / 1000.0).max(0.15);
     let bar_fill_x = m.bar_width + ((w - m.bar_width) as f32 * target_ratio * prog_ease) as i32;
@@ -1365,99 +1432,89 @@ fn render_dopamine_backdrop(
     let aura_inv = 1.0 / ((m.medallion_r as f32 * 3.8).max(40.0));
     let half_w = w as f32 * 0.5;
     let half_h = h as f32 * 0.5;
-    let show_rays = style == 2 || tier >= 3;
+    let show_rays = style == 2 || style == 3 || tier >= 3;
 
     for y in 0..h {
         let dy = (y - center_y) as f32;
         let dy2 = dy * dy;
         let row_offset = (y * w) as usize;
         let is_bottom_bar = y >= h - 4;
-        let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.12;
-        let scanline_mul = if style == 1 && (y & 1 == 0) { 0.88 } else { 1.0 };
+        let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.10;
+        let scanline_mul = if style == 1 && (y & 1 == 0) { 0.90 } else { 1.0 };
 
         for x in 0..w {
             let dx = (x - center_x) as f32;
             let dist = (dx * dx + dy2).sqrt();
 
             // 1. Base surface + radial medallion aura
-            let aura = (1.0 - dist * aura_inv).max(0.0).powi(2) * 0.48;
+            let aura = (1.0 - dist * aura_inv).max(0.0).powi(2) * 0.44;
             let mut r = (bg_r + (ac_r - bg_r) * aura + 255.0 * top_gloss) * scanline_mul;
             let mut g = (bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss) * scanline_mul;
             let mut b = (bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss) * scanline_mul;
 
-            // 2. Rotating God-Rays behind the medallion (Crystal Shatter / Ultra Rare / Platinum)
-            if show_rays && dist < m.medallion_r as f32 * 4.2 {
+            // 2. Rotating God-Rays behind the medallion
+            if show_rays && dist < m.medallion_r as f32 * 3.8 {
                 let angle = dy.atan2(dx);
-                let ray1 = ((angle * 6.0 + t_sec * 2.4).sin() * 0.5 + 0.5).powi(4);
-                let ray2 = ((angle * 4.0 - t_sec * 1.7).cos() * 0.5 + 0.5).powi(3);
-                let falloff = (1.0 - dist / (m.medallion_r as f32 * 4.2)).max(0.0);
-                let ray_int = (ray1 * 0.7 + ray2 * 0.3) * falloff * 0.42;
+                let ray1 = ((angle * 6.0 + t_sec * 2.2).sin() * 0.5 + 0.5).powi(4);
+                let ray2 = ((angle * 4.0 - t_sec * 1.5).cos() * 0.5 + 0.5).powi(3);
+                let falloff = (1.0 - dist / (m.medallion_r as f32 * 3.8)).max(0.0);
+                let ray_int = (ray1 * 0.65 + ray2 * 0.35) * falloff * 0.34;
                 r += ic_r * ray_int;
                 g += ic_g * ray_int;
                 b += ic_b * ray_int;
             }
 
-            // 3. Polychrome iridescent rainbow wave (Arcade Jackpot / Platinum)
-            if style == 3 || tier == 4 {
-                let wave = ((x as f32 * 0.014 + y as f32 * 0.024 - t_sec * 1.6).sin()) * 0.5 + 0.5;
-                let (rr, rg, rb) = hsv_to_rgb(wave, 0.75, 1.0);
-                let mix = if style == 3 { 0.18 } else { 0.11 };
-                r = r * (1.0 - mix) + rr * mix;
-                g = g * (1.0 - mix) + rg * mix;
-                b = b * (1.0 - mix) + rb * mix;
-            }
-
-            // 4. Dual Expanding Shockwave Rings
+            // 3. Dual Expanding Shockwave Rings
             if sw1_amp > 0.0 {
                 let d1 = (dist - sw1_r).abs();
-                if d1 < 9.0 {
-                    let ring = (1.0 - d1 / 9.0).powi(2) * sw1_amp;
-                    r += (ic_r * 0.65 + 255.0 * 0.35) * ring * 0.9;
-                    g += (ic_g * 0.65 + 255.0 * 0.35) * ring * 0.9;
-                    b += (ic_b * 0.65 + 255.0 * 0.35) * ring * 0.9;
+                if d1 < 8.5 {
+                    let ring = (1.0 - d1 / 8.5).powi(2) * sw1_amp;
+                    r += (ic_r * 0.65 + 255.0 * 0.35) * ring * 0.85;
+                    g += (ic_g * 0.65 + 255.0 * 0.35) * ring * 0.85;
+                    b += (ic_b * 0.65 + 255.0 * 0.35) * ring * 0.85;
                 }
             }
             if sw2_amp > 0.0 {
                 let d2 = (dist - sw2_r).abs();
-                if d2 < 6.5 {
-                    let ring = (1.0 - d2 / 6.5).powi(2) * sw2_amp;
-                    r += ac_r * ring * 0.75;
-                    g += ac_g * ring * 0.75;
-                    b += ac_b * ring * 0.75;
+                if d2 < 6.0 {
+                    let ring = (1.0 - d2 / 6.0).powi(2) * sw2_amp;
+                    r += ac_r * ring * 0.70;
+                    g += ac_g * ring * 0.70;
+                    b += ac_b * ring * 0.70;
                 }
             }
 
-            // 5. Diagonal Holographic Shimmer Sweep
+            // 4. Diagonal Holographic Shimmer Sweep
             let diag = x as f32 + y as f32 * 0.58;
             let s_dist = (diag - sweep_x).abs();
-            if s_dist < 46.0 {
-                let sheen = (1.0 - s_dist / 46.0).powi(2) * 0.28;
+            if s_dist < 42.0 {
+                let sheen = (1.0 - s_dist / 42.0).powi(2) * 0.22;
                 r += (ac_r * 0.5 + 255.0 * 0.5) * sheen;
                 g += (ac_g * 0.5 + 255.0 * 0.5) * sheen;
                 b += (ac_b * 0.5 + 255.0 * 0.5) * sheen;
             }
 
-            // 6. Left Accent Indicator Bar
+            // 5. Left Accent Indicator Bar
             if x < m.bar_width {
-                let pulse = (t_sec * 5.0 + y as f32 * 0.05).sin() * 0.15 + 0.85;
-                r = ac_r * pulse + 255.0 * (1.0 - pulse) * 0.4;
-                g = ac_g * pulse + 255.0 * (1.0 - pulse) * 0.4;
-                b = ac_b * pulse + 255.0 * (1.0 - pulse) * 0.4;
+                let pulse = (t_sec * 4.5 + y as f32 * 0.05).sin() * 0.14 + 0.86;
+                r = ac_r * pulse + 255.0 * (1.0 - pulse) * 0.38;
+                g = ac_g * pulse + 255.0 * (1.0 - pulse) * 0.38;
+                b = ac_b * pulse + 255.0 * (1.0 - pulse) * 0.38;
             } else if is_bottom_bar && x <= bar_fill_x {
-                // 7. Animated Bottom Progress Bar + Hot Leading Tip
+                // 6. Animated Bottom Progress Bar + Hot Leading Tip
                 let tip_dist = (bar_fill_x - x) as f32;
                 let tip_glow = (1.0 - tip_dist / 18.0).clamp(0.0, 1.0);
-                r = ac_r * (1.0 - tip_glow * 0.6) + 255.0 * (tip_glow * 0.6);
-                g = ac_g * (1.0 - tip_glow * 0.6) + 255.0 * (tip_glow * 0.6);
-                b = ac_b * (1.0 - tip_glow * 0.6) + 255.0 * (tip_glow * 0.6);
+                r = ac_r * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
+                g = ac_g * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
+                b = ac_b * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
             }
 
-            // 8. Rotating Conic Energy Border Beam (perimeter 2px)
+            // 7. Rotating Conic Energy Border Beam (perimeter 2px)
             let edge_dist = x.min(w - 1 - x).min(y.min(h - 1 - y));
             if edge_dist <= 2 {
                 let b_angle = (y as f32 - half_h).atan2(x as f32 - half_w);
-                let comet1 = ((b_angle - t_sec * 3.4).cos() * 0.5 + 0.5).powi(6);
-                let comet2 = ((b_angle - t_sec * 3.4 + std::f32::consts::PI).cos() * 0.5 + 0.5).powi(6);
+                let comet1 = ((b_angle - t_sec * 3.2).cos() * 0.5 + 0.5).powi(6);
+                let comet2 = ((b_angle - t_sec * 3.2 + std::f32::consts::PI).cos() * 0.5 + 0.5).powi(6);
                 let beam = (comet1 + comet2 * 0.7).clamp(0.0, 1.0);
                 let edge_fade = if edge_dist == 0 { 1.0 } else if edge_dist == 1 { 0.65 } else { 0.25 };
                 let br = bd_r * (1.0 - beam) + (ic_r * 0.6 + 255.0 * 0.4) * beam;
@@ -1472,17 +1529,17 @@ fn render_dopamine_backdrop(
         }
     }
 
-    // 9. Procedural Dopamine Particles (22 Impact Burst Shards + 12 Rising Ambient Embers)
-    let burst_t = ((elapsed_ms as f32 - 55.0) / 1050.0).clamp(0.0, 1.0);
+    // 8. Procedural Dopamine Particles (20 Impact Burst Shards + 10 Rising Ambient Embers)
+    let burst_t = ((elapsed_ms as f32 - 55.0) / 1000.0).clamp(0.0, 1.0);
     if burst_t > 0.0 && burst_t < 1.0 {
         let decel = 1.0 - (1.0 - burst_t).powi(3);
         let fade = (1.0 - burst_t).powi(2);
-        for i in 0..22u32 {
+        for i in 0..20u32 {
             let seed = (i.wrapping_mul(2654435761)) ^ ((tier as u32) << 16);
-            let angle = (i as f32 / 22.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
-            let speed = 38.0 + ((seed >> 8) & 0x7F) as f32 * 1.15;
+            let angle = (i as f32 / 20.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
+            let speed = 36.0 + ((seed >> 8) & 0x7F) as f32 * 1.1;
             let px = center_x + (angle.cos() * speed * decel) as i32;
-            let py = center_y + (angle.sin() * speed * decel - burst_t * burst_t * 18.0) as i32;
+            let py = center_y + (angle.sin() * speed * decel - burst_t * burst_t * 16.0) as i32;
             let p_rad = if (i & 3) == 0 { 3 } else { 2 };
             let is_diamond = style == 2 || (i & 1 == 0);
             draw_particle(pixels, w, h, px, py, p_rad, is_diamond, fade, ic_r, ic_g, ic_b);
@@ -1490,14 +1547,24 @@ fn render_dopamine_backdrop(
     }
 
     // Rising ambient embers across the card
-    for i in 0..12u32 {
+    for i in 0..10u32 {
         let seed = i.wrapping_mul(1597334677);
-        let phase = (t_sec * (0.65 + (i as f32 * 0.07)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
+        let phase = (t_sec * (0.60 + (i as f32 * 0.07)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
         let px = m.left_pad + ((seed >> 8) as i32).abs() % (w - m.left_pad - 12).max(20);
         let py = h - 6 - (phase * (h - 10) as f32) as i32;
-        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.75;
+        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.70;
         draw_particle(pixels, w, h, px, py, 2, true, twinkle, ac_r, ac_g, ac_b);
     }
+
+    // 9. Anti-aliased Medallion Disc & 3D Vector Trophy Cup
+    let impact_pulse = if elapsed_ms < 320 {
+        let p = elapsed_ms as f32 / 320.0;
+        ((p * std::f32::consts::PI).sin() * 2.5) as i32
+    } else {
+        0
+    };
+    let med_r = m.medallion_r + impact_pulse;
+    render_medallion_and_trophy(pixels, w, h, center_x, center_y, med_r, colors, t_sec);
 }
 
 #[cfg(windows)]
@@ -1593,13 +1660,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
         hdc
     };
 
-    // Trophy medallion center: centered inside the capsule while collapsed,
-    // anchored at left_pad + medallion_r once unfurling.
-    let center_x = if width <= m.left_pad * 2 + m.medallion_r * 2 + 12 {
-        width / 2
-    } else {
-        rect.left + m.left_pad + m.medallion_r
-    };
+    let center_x = rect.left + m.left_pad + m.medallion_r;
     let center_y = (rect.top + rect.bottom) / 2;
 
     if dib != 0 && !bits.is_null() {
@@ -1623,75 +1684,10 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
         let _ = DeleteObject(plate);
     }
 
-    // 4. Trophy medallion emblem with subtle pulse on impact
-    let impact_pulse = if elapsed_ms < 320 {
-        let p = elapsed_ms as f32 / 320.0;
-        ((p * std::f32::consts::PI).sin() * 3.0) as i32
-    } else {
-        0
-    };
-    let med_r = m.medallion_r + impact_pulse;
-
-    // Outer rim
-    let rim = CreateSolidBrush(colors.accent);
-    let prev_rim = SelectObject(target_dc, rim);
-    Ellipse(
-        target_dc,
-        center_x - med_r,
-        center_y - med_r,
-        center_x + med_r,
-        center_y + med_r,
-    );
-    SelectObject(target_dc, prev_rim);
-    let _ = DeleteObject(rim);
-
-    // Inner velvet medallion plate
-    let inner_disc = CreateSolidBrush(shade(colors.background, 58));
-    let prev_inner = SelectObject(target_dc, inner_disc);
-    let inner_r = (med_r - 2).max(4);
-    Ellipse(
-        target_dc,
-        center_x - inner_r,
-        center_y - inner_r,
-        center_x + inner_r,
-        center_y + inner_r,
-    );
-    SelectObject(target_dc, prev_inner);
-    let _ = DeleteObject(inner_disc);
-
-    // The achievement's own icon once it has downloaded; the trophy until then.
-    if !paint_medallion_picture(target_dc, center_x, center_y, inner_r) {
-        let icon_font = SIZE_ICON_FONTS[size_code].load(Ordering::Relaxed);
-        if icon_font != 0 {
-            SetBkMode(target_dc, TRANSPARENT_BK);
-            SetTextColor(target_dc, colors.icon);
-            SelectObject(target_dc, icon_font);
-            let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
-            let half_icon = m.icon_size;
-            let mut icon_rect = RECT {
-                left: center_x - half_icon,
-                top: center_y - half_icon,
-                right: center_x + half_icon,
-                bottom: center_y + half_icon,
-            };
-            DrawTextW(
-                target_dc,
-                glyph.as_ptr(),
-                1,
-                &mut icon_rect,
-                DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-            );
-        } else {
-            let mark = CreateSolidBrush(colors.icon);
-            let prev = SelectObject(target_dc, mark);
-            let bw = m.medallion_r * 2 / 5;
-            RoundRect(target_dc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
-            RoundRect(target_dc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
-            RoundRect(target_dc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
-            SelectObject(target_dc, prev);
-            let _ = DeleteObject(mark);
-        }
-    }
+    // If the achievement's own icon has downloaded, paint it inside the medallion core;
+    // otherwise the anti-aliased 3D vector trophy rendered into the DIB remains visible.
+    let inner_r = (m.medallion_r - 3).max(4);
+    let _ = paint_medallion_picture(target_dc, center_x, center_y, inner_r);
 
     // Text column: painted once the capsule has unfurled past the medallion
     let text_left = rect.left + m.text_left;
@@ -1991,6 +1987,25 @@ mod tests {
         let latin = text_px(&[b'a' as u16, b'b' as u16], 15);
         assert_eq!(cjk, 30);
         assert!(latin < cjk);
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn card_palettes_keep_colorref_byte_order() {
+        assert_eq!(
+            super::colorref_rgb(super::GOLD_ACHIEVEMENT_CARD.accent),
+            (0xF5 as f32, 0x9E as f32, 0x0B as f32)
+        );
+        assert_eq!(
+            super::colorref_rgb(super::CYBER_ACHIEVEMENT_CARD.accent),
+            (0x00 as f32, 0xF0 as f32, 0xFF as f32)
+        );
+        assert_eq!(
+            super::colorref_rgb(super::rarity_card_colors(4).accent),
+            (0xE8 as f32, 0x79 as f32, 0xF9 as f32)
+        );
+        assert!(super::trophy_sdf(0.0, -0.25) < 0.0);
+        assert!(super::trophy_sdf(0.95, -0.95) > 0.0);
     }
 
     /// The medallion draws the achievement's picture through GDI+; a broken
