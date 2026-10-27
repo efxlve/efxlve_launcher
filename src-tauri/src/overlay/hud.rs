@@ -1837,10 +1837,84 @@ fn render_dopamine_backdrop(
                 b = ac_b * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
             }
 
-            // 7. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim
+            // 7. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim (exact geometric SDF)
             let right_edge = (cur_w - 1).max(1);
-            let edge_dist = x.min((right_edge - x).max(0)).min(y.min(h - 1 - y));
-            if x <= right_edge && edge_dist <= 2 {
+            let is_in_card = x <= right_edge;
+            let (is_border, edge_fade) = if !is_in_card {
+                (false, 0.0)
+            } else if style == 4 {
+                // True Stadium Capsule SDF: radius R = h / 2.
+                // Left cap center = (cap_r, rad), Right cap center = (right_edge - cap_r, rad).
+                let rad = (h as f32) * 0.5;
+                let cap_r = rad.min((right_edge as f32) * 0.5);
+                let xf = x as f32;
+                let yf = y as f32;
+                let d_edge = if xf < cap_r {
+                    let d = (xf - cap_r).hypot(yf - rad);
+                    (cap_r - d).abs()
+                } else if xf > (right_edge as f32) - cap_r {
+                    let d = (xf - ((right_edge as f32) - cap_r)).hypot(yf - rad);
+                    (cap_r - d).abs()
+                } else {
+                    yf.min(h as f32 - 1.0 - yf)
+                };
+                if d_edge <= 2.2 {
+                    let fade = (1.0 - d_edge / 2.2).clamp(0.0, 1.0);
+                    (true, fade)
+                } else {
+                    (false, 0.0)
+                }
+            } else if style == 1 {
+                // Cyber Overload: chamfer octagonal tech corners
+                let cut = 14.0f32.min(h as f32 * 0.25).min(right_edge as f32 * 0.25);
+                let xf = x as f32;
+                let yf = y as f32;
+                let rf = right_edge as f32;
+                let hf = h as f32 - 1.0;
+                let d_left = xf;
+                let d_right = rf - xf;
+                let d_top = yf;
+                let d_bot = hf - yf;
+                let d_c1 = ((cut - xf) + (cut - yf)) * 0.7071;
+                let d_c2 = (((xf - (rf - cut)) + (cut - yf))) * 0.7071;
+                let d_c3 = (((xf - (rf - cut)) + (yf - (hf - cut)))) * 0.7071;
+                let d_c4 = (((cut - xf) + (yf - (hf - cut)))) * 0.7071;
+                let d_box = d_left.min(d_right).min(d_top.min(d_bot));
+                let d_chamfer = d_c1.max(d_c2).max(d_c3.max(d_c4));
+                let d_edge = if d_chamfer > 0.0 { d_chamfer } else { d_box };
+                if d_edge <= 2.2 {
+                    let fade = (1.0 - d_edge / 2.2).clamp(0.0, 1.0);
+                    (true, fade)
+                } else {
+                    (false, 0.0)
+                }
+            } else {
+                // Smooth Rounded Rect for styles 0, 2, 3, 5, 6
+                let cr = (NOTIF_RADIUS as f32).min((h as f32) * 0.5).min((right_edge as f32) * 0.5);
+                let xf = x as f32;
+                let yf = y as f32;
+                let rf = right_edge as f32;
+                let hf = h as f32 - 1.0;
+                let d_edge = if xf < cr && yf < cr {
+                    (cr - (xf - cr).hypot(yf - cr)).abs()
+                } else if xf > rf - cr && yf < cr {
+                    (cr - (xf - (rf - cr)).hypot(yf - cr)).abs()
+                } else if xf > rf - cr && yf > hf - cr {
+                    (cr - (xf - (rf - cr)).hypot(yf - (hf - cr))).abs()
+                } else if xf < cr && yf > hf - cr {
+                    (cr - (xf - cr).hypot(yf - (hf - cr))).abs()
+                } else {
+                    xf.min(rf - xf).min(yf.min(hf - yf))
+                };
+                if d_edge <= 2.2 {
+                    let fade = (1.0 - d_edge / 2.2).clamp(0.0, 1.0);
+                    (true, fade)
+                } else {
+                    (false, 0.0)
+                }
+            };
+
+            if is_border {
                 let b_angle = (y as f32 - half_h).atan2(x as f32 - half_w);
                 let comet1 = ((b_angle - t_sec * 3.2).cos() * 0.5 + 0.5).powi(6);
                 let comet2 = ((b_angle - t_sec * 3.2 + std::f32::consts::PI).cos() * 0.5 + 0.5).powi(6);
@@ -1848,7 +1922,6 @@ fn render_dopamine_backdrop(
                 if cur_w < w && (right_edge - x) <= 3 {
                     beam = 1.0;
                 }
-                let edge_fade = if edge_dist == 0 { 1.0 } else if edge_dist == 1 { 0.65 } else { 0.25 };
                 let br = bd_r * (1.0 - beam) + (ic_r * 0.6 + 255.0 * 0.4) * beam;
                 let bg = bd_g * (1.0 - beam) + (ic_g * 0.6 + 255.0 * 0.4) * beam;
                 let bb = bd_b * (1.0 - beam) + (ic_b * 0.6 + 255.0 * 0.4) * beam;
@@ -1992,7 +2065,11 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
         hdc
     };
 
-    let center_x = rect.left + m.left_pad + m.medallion_r;
+    let center_x = if style == 4 {
+        rect.left + height / 2
+    } else {
+        rect.left + m.left_pad + m.medallion_r
+    };
     let center_y = (rect.top + rect.bottom) / 2;
 
     if dib != 0 && !bits.is_null() {

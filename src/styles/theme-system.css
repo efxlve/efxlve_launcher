@@ -1096,14 +1096,17 @@
   );
 }
 
-/* Xbox Series Capsule: true stadium pill shape */
+/* True Stadium Capsule Pill Shape */
 .ach-hud-toast.style-xbox {
   border-radius: 999px !important;
-  padding-left: 16px !important;
-  padding-right: 26px !important;
+  padding-left: 18px !important;
+  padding-right: 28px !important;
 }
 .ach-hud-toast.style-xbox .ach-hud-gold-bar {
-  display: none;
+  display: none !important;
+}
+.ach-hud-toast.style-xbox .ach-fx-border-beam {
+  border-radius: 999px !important;
 }
 
 /* PlayStation 5 Trophy: sleek glass card with diagonal prism sheen */
@@ -1264,16 +1267,18 @@
 }
 
 @keyframes ach-choreo-xbox-a {
-  0% { opacity: 0; transform: scale(0.4); clip-path: inset(0 calc(100% - 88px) 0 0 round 999px); }
-  26% { opacity: 1; transform: scale(1.06); clip-path: inset(0 calc(100% - 88px) 0 0 round 999px); }
-  38% { transform: scale(1); clip-path: inset(0 calc(100% - 88px) 0 0 round 999px); }
-  100% { opacity: 1; transform: scale(1); clip-path: inset(0 0% 0 0 round 999px); }
+  0% { opacity: 0; transform: scale(0.4); clip-path: inset(0 calc(100% - 94px) 0 0 round 999px); }
+  26% { opacity: 1; transform: scale(1.04); clip-path: inset(0 calc(100% - 94px) 0 0 round 999px); }
+  38% { transform: scale(1); clip-path: inset(0 calc(100% - 94px) 0 0 round 999px); }
+  98% { opacity: 1; transform: scale(1); clip-path: inset(0 0% 0 0 round 999px); }
+  100% { opacity: 1; transform: scale(1); clip-path: none; }
 }
 @keyframes ach-choreo-xbox-b {
-  0% { opacity: 0; transform: scale(0.4); clip-path: inset(0 calc(100% - 88px) 0 0 round 999px); }
-  26% { opacity: 1; transform: scale(1.06); clip-path: inset(0 calc(100% - 88px) 0 0 round 999px); }
-  38% { transform: scale(1); clip-path: inset(0 calc(100% - 88px) 0 0 round 999px); }
-  100% { opacity: 1; transform: scale(1); clip-path: inset(0 0% 0 0 round 999px); }
+  0% { opacity: 0; transform: scale(0.4); clip-path: inset(0 calc(100% - 94px) 0 0 round 999px); }
+  26% { opacity: 1; transform: scale(1.04); clip-path: inset(0 calc(100% - 94px) 0 0 round 999px); }
+  38% { transform: scale(1); clip-path: inset(0 calc(100% - 94px) 0 0 round 999px); }
+  98% { opacity: 1; transform: scale(1); clip-path: inset(0 0% 0 0 round 999px); }
+  100% { opacity: 1; transform: scale(1); clip-path: none; }
 }
 
 @keyframes ach-choreo-playstation-a {

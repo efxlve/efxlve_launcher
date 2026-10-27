@@ -422,6 +422,12 @@ function getEntryKeyframes(animStyle: string): { frames: Keyframe[]; duration: n
             opacity: 1,
             transform: "scale(1)",
             clipPath: "inset(0 0% 0 0 round 999px)",
+            offset: 0.98,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1)",
+            clipPath: "none",
             offset: 1,
           },
         ],
@@ -924,7 +930,7 @@ export function renderAchievementsSettingsView(): string {
     { id: "ea", label: "EA App", logoId: "ea" },
     { id: "xbox", label: "Xbox / Game Pass", logoId: "xbox" },
     { id: "amazon", label: "Amazon Games", logoId: "amazon" },
-    { id: "custom", label: t("nav.customGames"), ico: "gamepad-2" },
+    { id: "custom", label: t("settings.storeCustom"), ico: "gamepad-2" },
   ];
 
   const generalStoreChips = generalStoreList
@@ -953,7 +959,7 @@ export function renderAchievementsSettingsView(): string {
     { id: "ubisoft", label: "Ubisoft Connect", logoId: "ubisoft" },
     { id: "ea", label: "EA App", logoId: "ea" },
     { id: "xbox", label: "Xbox / Game Pass", logoId: "xbox" },
-    { id: "custom", label: t("nav.customGames"), ico: "gamepad-2" },
+    { id: "custom", label: t("settings.storeCustom"), ico: "gamepad-2" },
   ];
 
   const achStoreChips = achStoreList
@@ -1014,11 +1020,11 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
-  const animStyleOptions: Array<{ id: string; label: string; ico?: IconName; logoId?: string }> = [
-    { id: "xbox", label: t("settings.achAnimXbox"), logoId: "xbox" },
-    { id: "playstation", label: t("settings.achAnimPlaystation"), ico: "trophy" },
-    { id: "epic", label: t("settings.achAnimEpic"), logoId: "epic" },
-    { id: "prism", label: t("settings.achAnimPrism"), ico: "sparkles" },
+  const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+    { id: "xbox", label: t("settings.achAnimXbox"), ico: "circle" },
+    { id: "playstation", label: t("settings.achAnimPlaystation"), ico: "sparkles" },
+    { id: "epic", label: t("settings.achAnimEpic"), ico: "layers" },
+    { id: "prism", label: t("settings.achAnimPrism"), ico: "maximize-2" },
     { id: "cyber", label: t("settings.achAnimCyber"), ico: "zap" },
     { id: "shatter", label: t("settings.achAnimShatter"), ico: "star" },
     { id: "jackpot", label: t("settings.achAnimJackpot"), ico: "trophy" },
@@ -1028,27 +1034,6 @@ export function renderAchievementsSettingsView(): string {
     .map(
       (opt) => `
         <button type="button" class="ach-style-chip ${animStyle === opt.id ? "active" : ""}" data-act="set-ach-anim-style" data-val="${opt.id}">
-          ${opt.logoId ? storeLogo(opt.logoId, 14) : icon(opt.ico || "sparkles", 13)}
-          <span>${esc(opt.label)}</span>
-        </button>
-      `,
-    )
-    .join("");
-
-  const exitStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
-    { id: "auto", label: t("settings.achExitAuto"), ico: "sparkles" },
-    { id: "collapse", label: t("settings.achExitCollapse"), ico: "minimize-2" },
-    { id: "glide", label: t("settings.achExitGlide"), ico: "arrow-right" },
-    { id: "fold", label: t("settings.achExitFold"), ico: "layers" },
-    { id: "laser", label: t("settings.achExitLaser"), ico: "zap" },
-    { id: "implode", label: t("settings.achExitImplode"), ico: "star" },
-    { id: "zoom", label: t("settings.achExitZoom"), ico: "maximize-2" },
-  ];
-
-  const exitStyleButtons = exitStyleOptions
-    .map(
-      (opt) => `
-        <button type="button" class="ach-style-chip ${exitStyle === opt.id ? "active" : ""}" data-act="set-ach-exit-style" data-val="${opt.id}">
           ${icon(opt.ico, 13)}
           <span>${esc(opt.label)}</span>
         </button>
@@ -1213,9 +1198,6 @@ export function renderAchievementsSettingsView(): string {
           <button type="button" class="btn ghost small" data-act="ach-replay-stage">
             ${icon("refresh", 13)} <span>${esc(t("settings.achReplayBtn"))}</span>
           </button>
-          <button type="button" class="btn ghost small" data-act="ach-test-exit-stage">
-            ${icon("minimize-2", 13)} <span>${esc(t("settings.achTestExitBtn"))}</span>
-          </button>
           <button type="button" class="btn primary small" data-act="ach-test-notification">
             ${icon("bell", 13)} <span>${esc(t("settings.achTestTitle"))}</span>
           </button>
@@ -1278,7 +1260,7 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
-        <!-- Opening Animation Style -->
+        <!-- Animation Style -->
         <div class="row settings-row stacked">
           <div class="row-main">
             <div class="settings-row-title">${esc(t("settings.achAnimStyleTitle"))}</div>
@@ -1286,17 +1268,6 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control" style="width: 100%;">
             <div class="ach-style-grid" role="group">${animStyleButtons}</div>
-          </div>
-        </div>
-
-        <!-- Closing Animation Style -->
-        <div class="row settings-row stacked">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(t("settings.achExitStyleTitle"))}</div>
-            <div class="settings-row-desc">${esc(t("settings.achExitStyleDesc"))}</div>
-          </div>
-          <div class="settings-row-control" style="width: 100%;">
-            <div class="ach-style-grid" role="group">${exitStyleButtons}</div>
           </div>
         </div>
 
@@ -1534,7 +1505,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     case "set-ach-anim-style": {
       const allowed = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
       const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "prism";
-      const next = { ...S.achievementNotificationOptions, animStyle };
+      const next = { ...S.achievementNotificationOptions, animStyle, exitStyle: "auto" };
       S.achievementNotificationOptions = next;
       stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
@@ -1543,23 +1514,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       if (next.sound) {
         playWebAudioAchievementChime(next.volume, animStyle, previewRarityTier);
       }
-      return true;
-    }
-
-    case "set-ach-exit-style": {
-      const allowed = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];
-      const exitStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "auto";
-      const next = { ...S.achievementNotificationOptions, exitStyle };
-      S.achievementNotificationOptions = next;
-      stageReplaySeq++;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      runStagePreviewChoreography("exit");
-      return true;
-    }
-
-    case "ach-test-exit-stage": {
-      runStagePreviewChoreography("exit");
       return true;
     }
 
