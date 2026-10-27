@@ -8,6 +8,7 @@
 
 import { clearCoverCaches, type EpicGame, type EpicSummary } from "../epic";
 import { t } from "../i18n";
+import { cachedSteamCover, cachedSteamHero, isFlatSteamArt } from "./steam-art-cache";
 import { S } from "./state";
 import type { GameSource, LibraryItem } from "./types";
 
@@ -649,11 +650,23 @@ export function epicWideArt(s: EpicSummary): string | null {
   }
 
   if (s.appName.startsWith("steam::")) {
-    const item = S.steamSummariesMap.get(s.appName);
-    if (item?.heroUrl) {
-      wideArtCache.set(s.appName, item.heroUrl);
-      return item.heroUrl;
+    // The flat CDN hero 404s for newer titles. Only the resolved store art is
+    // worth remembering; guessing the flat path would hide it for the session.
+    const appId = s.appName.slice("steam::".length);
+    const resolved = cachedSteamHero(appId);
+    if (resolved && !isFlatSteamArt(resolved)) {
+      wideArtCache.set(s.appName, resolved);
+      return resolved;
     }
+    const hero = S.steamSummariesMap.get(s.appName)?.heroUrl;
+    // Older titles still answer on the flat path, so it is not discarded when
+    // it is all we have.
+    if (hero && !isFlatSteamArt(hero)) return hero;
+    // A store without a wide picture still has its portrait capsule, which the
+    // hero renders contained instead of stretching a thumbnail.
+    const resolvedCover = cachedSteamCover(appId);
+    if (resolvedCover && !isFlatSteamArt(resolvedCover)) return resolvedCover;
+    if (hero) return hero;
   }
 
   if (s.appName.startsWith("gog::")) {

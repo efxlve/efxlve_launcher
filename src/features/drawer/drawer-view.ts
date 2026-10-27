@@ -20,10 +20,11 @@ import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingSt
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
-import { steamNews, steamWatchRunning, type SteamNewsItem } from "../../steam";
+import { cachedSteamCover, cachedSteamHero, isFlatSteamArt, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
+import { steamLibraryArt, steamNews, steamWatchRunning, type SteamLibraryArt, type SteamNewsItem } from "../../steam";
 import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
 import { gameStatusOf, gameStatusOptions, statusMenuHtml, type GameStatus } from "../library/game-status";
-import { canonicalGameTitle, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, clearWideArtCache, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { sideCard } from "./side-widgets";
 import { storeLogo } from "../store/store-logos";
@@ -1286,6 +1287,9 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   // The hero is the one picture the page waits for: ask for it as soon as the
   // page opens, and paint from the cached copy the moment it arrives.
   warmImages([art]);
+  // A Steam title's wide art only exists under the store's hashed path; resolve
+  // it before the hero settles on a low-resolution fallback.
+  if (isSteam) void ensureSteamHeroArt(appName);
   const meta = gameMetaHtml(s, partner, antiCheat);
 
   const tabs = `${tabButton("overview", t("drawer.overview"))}
@@ -1302,7 +1306,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
           ${
             art
               ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" style="background-image:url('${esc(cachedImage(art))}');"></div>
-          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="this.classList.remove('is-broken');if(this.naturalWidth && this.naturalHeight && this.naturalWidth/this.naturalHeight < 1.3) this.classList.add('is-portrait')" onerror="this.classList.add('is-broken')" />`
+          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3)" onerror="this.classList.add('is-broken')" />`
               : ""
           }
           <div class="gp-hero-scrim"></div>
@@ -3000,6 +3004,58 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
   }
 }
 
+/** In-flight official Steam art lookups, one per game page. */
+const steamHeroLookups = new Map<string, Promise<void>>();
+
+/**
+ * Steam's flat hero path (`/steam/apps/<id>/library_hero.jpg`) 404s for newer
+ * titles, and the 460x215 store header is not a banner: stretching it over the
+ * hero is the pixelated picture those pages used to show. Resolve the published
+ * wide art once, remember it for the library and repaint the hero in place.
+ */
+function ensureSteamHeroArt(appName: string): Promise<void> {
+  if (!appName.startsWith("steam::")) return Promise.resolve();
+  const existing = steamHeroLookups.get(appName);
+  if (existing) return existing;
+
+  const run = (async () => {
+    const appId = appName.slice("steam::".length);
+    if (!/^\d+$/.test(appId)) return;
+    const known = cachedSteamHero(appId);
+    if (known !== undefined && !isFlatSteamArt(known)) return;
+    let art: SteamLibraryArt | undefined;
+    try {
+      art = (await steamLibraryArt([appId]))[appId];
+    } catch {
+      return;
+    }
+    if (!art) return;
+    rememberSteamCover(appId, art.cover);
+    rememberSteamHero(appId, art.hero);
+    clearWideArtCache(appName);
+    const item = S.steamSummariesMap.get(appName);
+    if (item && art.hero) item.heroUrl = art.hero;
+    // A store with no wide art still has its portrait capsule, which the hero
+    // renders contained instead of stretching.
+    const url = art.hero || art.cover;
+    if (!url || S.currentModalAppName !== appName) return;
+    const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
+    if (heroEl) {
+      heroEl.dataset.imgUrl = url;
+      heroEl.src = cachedImage(url);
+    }
+    const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
+    if (bgEl) {
+      bgEl.dataset.imgUrl = url;
+      bgEl.style.backgroundImage = `url('${cachedImage(url)}')`;
+    }
+    warmImages([url]);
+  })().finally(() => steamHeroLookups.delete(appName));
+
+  steamHeroLookups.set(appName, run);
+  return run;
+}
+
 /**
  * Steam store details arrive in a single call: description, developer, hero art
  * and the requirement bullets. The Rust side caches the payload for six hours.
@@ -3027,9 +3083,12 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
       // Never downgrade the hero: `library_hero.jpg` is 1920×620 while the
       // store header is only 460×215, so swapping it in later looked pixelated.
       // It is used only when the hero art itself fails to load.
+      // A failed wide hero falls back to the portrait capsule, never the
+      // 460x215 store header: stretched over the banner that header is the
+      // pixelated picture this page used to show.
+      const fallback = cachedSteamCover(appName.slice("steam::".length));
       const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
-      if (heroEl && details.headerImage) {
-        const fallback = details.headerImage;
+      if (heroEl && fallback) {
         heroEl.addEventListener("error", () => {
           // The same disk cache as the hero: the fallback is fetched once.
           heroEl.dataset.imgUrl = fallback;

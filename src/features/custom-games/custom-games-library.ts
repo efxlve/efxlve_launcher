@@ -3,27 +3,21 @@ import { isTauri } from "../../core/constants";
 import { S } from "../../core/state";
 import { setCustomSummaries } from "../../core/selectors";
 import { openEpicModal, scheduleRender } from "../../core/render";
-import { rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
+import { rememberSteamCover, rememberSteamHero, isFlatSteamArt } from "../../core/steam-art-cache";
 import { customGamesEdit, customGamesList, customGameToLibraryItem, type CustomGame } from "../../custom-games";
 import { steamLibraryArt, type SteamLibraryArt } from "../../steam";
 import { syncInstalledWatch } from "../library/installed-watch";
 
 /**
- * The flat `cdn.*.steamstatic.com/steam/apps/<id>/...` path. Older builds saved
- * it for every store hit; newer titles only publish the hashed
- * `store_item_assets` path, so a flat URL there 404s and no picture can be
- * cached. A URL on another host, or an uploaded `data:` cover, is the user's
- * own choice and is never rewritten.
+ * A missing picture, or the flat CDN path older builds saved. Newer titles only
+ * publish the hashed `store_item_assets` path, so a flat URL 404s and no
+ * picture can be cached. A URL on another host, or an uploaded `data:` cover,
+ * is the user's own choice and is never rewritten.
  */
-function flatSteamArt(url: string | undefined, appId: string): boolean {
-  if (!url || url.startsWith("data:")) return false;
-  if (!url.includes("steamstatic.com/steam/apps/")) return false;
-  if (url.includes("store_item_assets")) return false;
-  return url.includes(`/steam/apps/${appId}/`);
-}
-
 function missingOrFlat(url: string | undefined, appId: string): boolean {
-  return !url || flatSteamArt(url, appId);
+  if (!url) return true;
+  if (url.startsWith("data:")) return false;
+  return isFlatSteamArt(url) && url.includes(`/steam/apps/${appId}/`);
 }
 
 /**

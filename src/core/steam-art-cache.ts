@@ -32,6 +32,9 @@ function loadDisk(key: string): Map<string, string> {
               : url.includes("library_capsule.jpg")
                 ? url.replace("library_capsule.jpg", "library_capsule_2x.jpg")
                 : url;
+            // A flat path is dead for newer titles; let the store lookup
+            // resolve it again instead of keeping the 404.
+            if (isFlatSteamArt(hq)) continue;
             upgraded[id] = hq;
             map.set(id, hq);
           }
@@ -44,8 +47,9 @@ function loadDisk(key: string): Map<string, string> {
     const parsed = JSON.parse(raw) as Record<string, string>;
     for (const [id, url] of Object.entries(parsed)) {
       // Older builds persisted confirmed misses (""); skip them so the CDN is
-      // tried again instead of leaving a permanent placeholder.
-      if (id && typeof url === "string" && url) map.set(id, url);
+      // tried again instead of leaving a permanent placeholder. A flat Steam
+      // path 404s for newer titles, so it is not an answer either.
+      if (id && typeof url === "string" && url && !isFlatSteamArt(url)) map.set(id, url);
     }
   } catch {
     /* a corrupt cache just means the CDN path is tried again */
@@ -115,6 +119,15 @@ export function forgetSteamCover(appId: string): void {
 export function cachedSteamHero(appId: string): string | undefined {
   if (heroMemory.has(appId)) return heroMemory.get(appId);
   return heroDisk.get(appId);
+}
+
+/**
+ * A flat `cdn.*.steamstatic.com/steam/apps/<id>/...` path. Newer titles only
+ * publish the art under a content-hash path, so a stored flat URL 404s and has
+ * to be treated as "not resolved yet".
+ */
+export function isFlatSteamArt(url: string | undefined): boolean {
+  return Boolean(url && url.includes("steamstatic.com/steam/apps/") && !url.includes("store_item_assets"));
 }
 
 export function rememberSteamHero(appId: string, url: string): void {

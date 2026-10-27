@@ -16,7 +16,7 @@ import { localizeMessage, t } from "../../i18n";
 
 import { epicGetSteamGridCovers, epicSearchSteamGrid, type SteamGridGame, type SteamGridImage } from "../../epic";
 import { igdbCovers, igdbImage } from "../../igdb";
-import { cachedSteamCover, cachedSteamHero, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
+import { cachedSteamCover, cachedSteamHero, isFlatSteamArt, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
 import { steamLibraryArt } from "../../steam";
 export function saveCustomCover(appName: string, url: string): void {
   S.customCovers[appName] = url.trim();
@@ -188,7 +188,8 @@ function pickSteamGridGame(games: SteamGridGame[], term: string): SteamGridGame 
 async function warmOfficialSteamArt(appName: string): Promise<void> {
   const id = steamAppIdOf(appName);
   if (!/^\d+$/.test(id)) return;
-  if (cachedSteamCover(id) !== undefined && cachedSteamHero(id) !== undefined) return;
+  const knownHero = cachedSteamHero(id);
+  if (cachedSteamCover(id) !== undefined && knownHero !== undefined && !isFlatSteamArt(knownHero)) return;
   try {
     const map = await steamLibraryArt([id]);
     const art = map[id];
