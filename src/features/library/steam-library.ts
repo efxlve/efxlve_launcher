@@ -18,6 +18,7 @@ import { notify, openEpicModal, scheduleRender } from "../../core/render";
 import { updateBadge } from "../../core/nav";
 import { patchLibraryCardDom } from "../../core/game-view";
 import { S } from "../../core/state";
+import { watchSteamAchievements } from "../../core/steam-watch";
 import type { LibraryItem } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
 import { fmtBytes } from "../../core/utils";
@@ -680,6 +681,9 @@ async function syncSteamRunningState(): Promise<void> {
   let changed = false;
   for (const id of ids) {
     const key = `steam::${id}`;
+    // A game the poll found (started from Steam, or already open at boot) still
+    // needs its unlock watcher; the helper ignores a session already armed.
+    watchSteamAchievements(key);
     if (S.runningGames.has(key)) continue;
     S.runningGames.add(key);
     pushRecent(key);

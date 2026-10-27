@@ -81,7 +81,9 @@ import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
-import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";import { loadSavedAccounts } from "../auth/account-switcher";
+import { steamStartEmulatorWatcher, steamStopAchievementWatcher } from "../../steam";
+import { unwatchSteamAchievements, watchSteamAchievements } from "../../core/steam-watch";
+import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings, scheduleLocalBackups } from "../cloud-backup/cloud-backup-actions";
 import { scheduleProfileUploads } from "../cloud-backup/profile-sync-actions";
 import { initContextMenu } from "../context-menu/context-menu";
@@ -668,6 +670,10 @@ export async function initApp(hooks: {
       const bootQuiet = Date.now() - GAME_WATCH_BOOT_AT < GAME_WATCH_BOOT_GRACE_MS;
 
       if (running) {
+        // A Steam title needs its unlock watcher whether the launcher, the
+        // Steam client or the running poll reported it. This sits before the
+        // duplicate guard: later reports for the same session return early.
+        watchSteamAchievements(id);
         // Two watchers can see the same game (Steam's flag and the process
         // watch); only the first report announces and acts.
         if (S.runningGames.has(id)) return;
@@ -738,6 +744,7 @@ export async function initApp(hooks: {
         if (sum && S.currentModalAppName === id) paintGameMeta(sum);
         hooks.scheduleRender();
       } else {
+        unwatchSteamAchievements(id);
         if (id.startsWith("custom::")) {
           const game = S.customGames.find((item) => item.id === id);
           if (game?.steamAppId) void steamStopAchievementWatcher(game.steamAppId);
