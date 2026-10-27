@@ -1121,9 +1121,9 @@
   border-radius: 10px !important;
 }
 
-/* Border comet: an elegant perimeter light flare that sweeps around the card
-   once upon entrance, then smoothly dissolves away. Does NOT loop infinitely,
-   leaving the card calm, pristine and readable. */
+/* Border beam: instead of an annoying looping dash circling around the card,
+   the entire border silhouette illuminates cleanly with an elegant, unified accent
+   glow pulse on entrance (synchronized with the medallion impact), then peacefully dissolves. */
 .ach-fx-border-beam {
   position: absolute;
   inset: 0;
@@ -1142,11 +1142,9 @@
   rx: 15px;
   ry: 15px;
   fill: none;
-  stroke: color-mix(in srgb, #ffffff 75%, var(--ach-accent, #f59e0b));
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-dasharray: 20 80;
-  filter: drop-shadow(0 0 5px var(--ach-accent, #f59e0b)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+  stroke: color-mix(in srgb, #ffffff 65%, var(--ach-accent, #f59e0b));
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px var(--ach-accent, #f59e0b));
   opacity: 0;
 }
 
@@ -1168,42 +1166,32 @@
 }
 
 .ach-hud-toast.seq-0 .ach-fx-border-beam rect {
-  animation: ach-beam-sweep-a 1150ms cubic-bezier(0.2, 0.85, 0.3, 1) 80ms both;
+  animation: ach-beam-pulse-a 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both;
 }
 .ach-hud-toast.seq-1 .ach-fx-border-beam rect {
-  animation: ach-beam-sweep-b 1150ms cubic-bezier(0.2, 0.85, 0.3, 1) 80ms both;
+  animation: ach-beam-pulse-b 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both;
 }
 
-@keyframes ach-beam-sweep-a {
+@keyframes ach-beam-pulse-a {
   0% {
-    stroke-dashoffset: 15;
     opacity: 0;
   }
-  15% {
-    opacity: 0.95;
-  }
-  75% {
-    opacity: 0.8;
+  25% {
+    opacity: 0.85;
   }
   100% {
-    stroke-dashoffset: -100;
     opacity: 0;
   }
 }
 
-@keyframes ach-beam-sweep-b {
+@keyframes ach-beam-pulse-b {
   0% {
-    stroke-dashoffset: 15;
     opacity: 0;
   }
-  15% {
-    opacity: 0.95;
-  }
-  75% {
-    opacity: 0.8;
+  25% {
+    opacity: 0.85;
   }
   100% {
-    stroke-dashoffset: -100;
     opacity: 0;
   }
 }
