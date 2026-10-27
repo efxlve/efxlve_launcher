@@ -235,6 +235,14 @@ const PROBE_HOOKS_SCRIPT: &str = if cfg!(debug_assertions) {
     ""
 };
 
+/// stderr is not a console in a release build: writing to a closed pipe fails,
+/// and `eprintln!` turns that into a panic. Diagnostics must never crash the
+/// app, so the failure is ignored here.
+fn log_line(args: std::fmt::Arguments<'_>) {
+    use std::io::Write;
+    let _ = writeln!(std::io::stderr(), "{args}");
+}
+
 /// Appends one web-side line to the shared Discord log (the file the RPC
 /// worker also writes) so page diagnostics land in the same place. Lines carry
 /// a UTC stamp: the ordering of create/destroy/park is what matters.
@@ -249,7 +257,7 @@ fn web_log(app: &AppHandle, line: &str) {
         (seconds / 60) % 60,
         seconds % 60
     );
-    eprintln!("[discord-view] {line}");
+    log_line(format_args!("[discord-view] {line}"));
     if let Ok(dir) = app.path().app_data_dir() {
         let path = dir.join("logs").join("discord-rpc.log");
         if let Ok(mut file) = std::fs::OpenOptions::new()
@@ -530,7 +538,7 @@ fn destroy_view(app: &AppHandle) {
         }),
     );
     if let Some(view) = view(app) {
-        eprintln!("[discord-view] destroy");
+        log_line(format_args!("[discord-view] destroy"));
         web_log(app, "view destroy");
         let _ = view.close();
     }
@@ -804,7 +812,7 @@ fn allow_media_permissions(view: &tauri::Webview) {
         let core = match unsafe { controller.CoreWebView2() } {
             Ok(core) => core,
             Err(error) => {
-                eprintln!("[discord-view] media permission setup failed: {error}");
+                log_line(format_args!("[discord-view] media permission setup failed: {error}"));
                 return;
             }
         };
@@ -825,11 +833,11 @@ fn allow_media_permissions(view: &tauri::Webview) {
         ));
         let mut token = 0i64;
         if let Err(error) = unsafe { core.add_PermissionRequested(&handler, &mut token) } {
-            eprintln!("[discord-view] media permission registration failed: {error}");
+            log_line(format_args!("[discord-view] media permission registration failed: {error}"));
         }
     });
     if let Err(error) = registration {
-        eprintln!("[discord-view] media permission bridge failed: {error}");
+        log_line(format_args!("[discord-view] media permission bridge failed: {error}"));
     }
 }
 
@@ -1187,10 +1195,10 @@ pub async fn discord_view_show(
         *guard = Some((x, y, width, height));
     }
     let existing = view(&app);
-    eprintln!(
+    log_line(format_args!(
         "[discord-view] show rect=({x:.0},{y:.0},{width:.0}x{height:.0}) existing={}",
         existing.is_some()
-    );
+    ));
     if let Some(view) = existing {
         if SUSPENDED.swap(false, Ordering::SeqCst) {
             let _ = webview_power::resume(&view);
