@@ -90,8 +90,11 @@ export function achTagLine(
   rarityPercent: number | null | undefined,
 ): string {
   const counts = total > 0 ? `${unlocked}/${total}` : "";
-  const pct = typeof rarityPercent === "number" && Number.isFinite(rarityPercent)
-    ? `%${rarityPercent.toFixed(1)}`
+  // Platinum means the set is complete; the rarity percentage (often <1%) is
+  // not what the line should show, and the preview already reads 100%.
+  const percentValue = tier >= 4 ? 100 : rarityPercent;
+  const pct = typeof percentValue === "number" && Number.isFinite(percentValue)
+    ? `%${percentValue.toFixed(1)}`
     : "";
   const parts: string[] = [];
   if (tier >= 4) parts.push(t("ach.tierPlatinum").toUpperCase());
@@ -110,7 +113,7 @@ export function achCardHtml(m: AchCardModel): string {
     : "";
   return `
     <div class="ach-hud-toast size-${esc(m.size)} style-${esc(m.style)} theme-${esc(m.theme)} tier-${m.tier} seq-${m.seq % 2}" data-seq="${m.seq}" style="${achCardVars(m.palette)}">
-      <div class="ach-fx-border-beam"></div>
+      <svg class="ach-fx-border-beam" aria-hidden="true"><rect pathLength="100" /></svg>
       <div class="ach-fx-godrays"></div>
       <div class="ach-hud-gold-bar"></div>
 

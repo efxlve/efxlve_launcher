@@ -1096,9 +1096,6 @@
 .ach-hud-toast.style-xbox .ach-hud-gold-bar {
   display: none !important;
 }
-.ach-hud-toast.style-xbox .ach-fx-border-beam {
-  border-radius: 999px !important;
-}
 
 /* PlayStation 5 Trophy: sleek glass card with diagonal prism sheen */
 .ach-hud-toast.style-playstation {
@@ -1106,51 +1103,62 @@
   backdrop-filter: blur(18px);
 }
 
-/* Epic Games EOS Portal: crisp modern frame */
-.ach-hud-toast.style-epic {
+/* Epic Games EOS Portal: crisp modern frame */.ach-hud-toast.style-epic {
   border-radius: 10px !important;
 }
 
-/* Rotating Conic Border Beam */
+/* Border comet: a short white dash travels along the card outline. A small
+   SVG stroke is far cheaper than a full-size masked conic gradient, which
+   stutters on the transparent toast window. */
 .ach-fx-border-beam {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  padding: 1.5px;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
-  overflow: hidden;
-  opacity: 0.88;
+  opacity: 0.9;
 }
 
-.ach-fx-border-beam::before {
-  content: "";
-  position: absolute;
-  left: -50%;
-  top: -200%;
-  width: 200%;
-  height: 500%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 230deg,
-    var(--ach-accent, #f59e0b) 305deg,
-    #ffffff 345deg,
-    transparent 360deg
-  );
-  animation: ach-border-spin 3.6s linear infinite;
+.ach-fx-border-beam rect {
+  x: 1px;
+  y: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  rx: 15px;
+  ry: 15px;
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 8 92;
+  filter: drop-shadow(0 0 4px var(--ach-accent, #f59e0b));
+  animation: ach-beam-travel 3.6s linear infinite;
 }
 
-@keyframes ach-border-spin {
+.ach-hud-toast.style-cyber .ach-fx-border-beam rect {
+  rx: 7px;
+  ry: 7px;
+}
+.ach-hud-toast.style-epic .ach-fx-border-beam rect {
+  rx: 9px;
+  ry: 9px;
+}
+.ach-hud-toast.style-playstation .ach-fx-border-beam rect {
+  rx: 17px;
+  ry: 17px;
+}
+.ach-hud-toast.style-xbox .ach-fx-border-beam rect {
+  rx: 999px;
+  ry: 999px;
+}
+
+@keyframes ach-beam-travel {
   from {
-    transform: rotate(0deg);
+    stroke-dashoffset: 0;
   }
   to {
-    transform: rotate(360deg);
+    stroke-dashoffset: -100;
   }
 }
 

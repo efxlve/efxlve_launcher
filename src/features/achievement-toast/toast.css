@@ -10,7 +10,6 @@ body.ach-toast-page {
 }
 
 body.ach-toast-page {
-  font-family: var(--font);
   -webkit-user-select: none;
   user-select: none;
 }
