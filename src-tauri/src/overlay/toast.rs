@@ -86,12 +86,20 @@ pub fn show(app: &AppHandle, mut payload: ToastPayload) -> u64 {
     if let Ok(mut slot) = PENDING.lock() {
         *slot = Some(payload.clone());
     }
+    // Building a webview waits for the event loop. Doing that on the command
+    // thread leaves the window half-built (hidden, default size), so the card
+    // is placed and shown from a worker, the same path the startup probe used.
+    let handle = app.clone();
+    std::thread::spawn(move || show_now(&handle, payload));
+    generation
+}
 
+fn show_now(app: &AppHandle, payload: ToastPayload) {
     let win = match ensure_window(app) {
         Ok(win) => win,
         Err(error) => {
             crate::perf::write_line_global(&format!("toast: {error}"));
-            return generation;
+            return;
         }
     };
     place_on_active_monitor(&win);
@@ -104,8 +112,7 @@ pub fn show(app: &AppHandle, mut payload: ToastPayload) -> u64 {
             *slot = None;
         }
     }
-    schedule_watchdog(app.clone(), generation, payload.hold_ms);
-    generation
+    schedule_watchdog(app.clone(), payload.generation, payload.hold_ms);
 }
 
 /// The page is listening: replay whatever arrived while it booted.
