@@ -701,10 +701,8 @@ export async function initApp(hooks: {
         if (!initial && !bootQuiet) {
           toast(t("status.running", { title }), "ok");
           // Point at the Shift+Tab overlay on the first start of the title, unless
-          // the overlay is off globally or the user opted this game out. The game
-          // gets a console-like card; the launcher keeps its own toast.
+          // the overlay is off globally or the user opted this game out.
           if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
-            toast(t("overlay.startHint", { key: overlayHotkeyLabel() }), "");
             void invoke("overlay_flash_hint", {
               title: t("overlay.enabledTitle", { key: overlayHotkeyLabel() }),
               body: t("overlay.startHint", { key: overlayHotkeyLabel() }),
