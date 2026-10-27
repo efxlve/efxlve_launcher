@@ -950,9 +950,15 @@
 .profile-game-progress span {
   display: block;
   height: 100%;
-  background: #ffffff;
+  background: var(--text);
   border-radius: 3px;
   transition: width 0.3s ease;
+}
+
+/* The list keeps the same colour language as the cards. */
+.profile-game-row.is-plat .profile-game-progress span {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-tint);
 }
 
 .profile-game-progress.is-empty span {
@@ -1258,17 +1264,19 @@
   overflow: hidden;
 }
 
+/* Unfinished progress stays neutral (white on dark surfaces), so a finished
+   game is the only one that carries the theme colour. */
 .profile-ach-bar > span {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: var(--accent);
+  background: var(--text);
   transition: width var(--ease);
 }
 
 .profile-ach-card.is-plat .profile-ach-bar > span {
-  background: #ffffff;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-tint);
 }
 
 /* Sub Meta (XP / Playtime) */

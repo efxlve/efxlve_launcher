@@ -166,10 +166,13 @@
 :root[data-surface="white"] .profile-ach-bar {
   background: rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .profile-ach-bar > span,
+:root[data-surface="white"] .profile-ach-bar > span {
+  background: var(--text);
+  box-shadow: none;
+}
 :root[data-surface="white"] .profile-ach-card.is-plat .profile-ach-bar > span {
   background: var(--accent);
-  box-shadow: none;
+  box-shadow: 0 0 6px var(--accent-tint);
 }
 :root[data-surface="white"] .profile-ach-title {
   color: var(--text);
@@ -956,8 +959,8 @@
   background: rgba(43, 143, 239, 0.16);
 }
 :root[data-surface="gloss"] .profile-ach-bar > span {
-  background: var(--aero-gloss-blue);
-  box-shadow: 0 0 4px rgba(43, 143, 239, 0.35);
+  background: var(--text);
+  box-shadow: none;
 }
 :root[data-surface="gloss"] .profile-ach-card.is-plat .profile-ach-bar > span {
   background: linear-gradient(180deg, #2b8fef 0%, #1068c8 100%);
@@ -1809,6 +1812,19 @@
   border: 1px solid rgba(155, 212, 74, 0.2);
 }
 :root[data-surface="blades"] .profile-ach-bar > span {
+  background: var(--text);
+  box-shadow: none;
+}
+:root[data-surface="blades"] .profile-ach-card.is-plat .profile-ach-bar > span {
+  background: var(--x360-gloss);
+  box-shadow: 0 0 6px rgba(155, 212, 74, 0.4);
+}
+/* The generic `.progress` green fill would otherwise hide the state split. */
+:root[data-surface="blades"] .profile-game-progress > span {
+  background: var(--text);
+  box-shadow: none;
+}
+:root[data-surface="blades"] .profile-game-row.is-plat .profile-game-progress > span {
   background: var(--x360-gloss);
   box-shadow: 0 0 6px rgba(155, 212, 74, 0.4);
 }
