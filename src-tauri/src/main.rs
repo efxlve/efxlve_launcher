@@ -247,6 +247,9 @@ pub struct EpicSettings {
     pub achievement_notifications_size: Option<String>,
     /// "gold" keeps the classic card; "launcher" follows the active theme.
     pub achievement_notifications_card_theme: Option<String>,
+    /// "prism", "cyber", "shatter", or "jackpot".
+    #[serde(default)]
+    pub achievement_notifications_anim_style: Option<String>,
 }
 
 fn default_true() -> bool {

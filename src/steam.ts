@@ -281,8 +281,10 @@ export interface AchievementNotificationOptions {
   size: string;
   customSound: boolean;
   customSoundName: string | null;
-  /** "gold" keeps the classic card; "launcher" follows the active theme. */
+  /** "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst". */
   cardTheme: string;
+  /** "prism", "cyber", "shatter", or "jackpot". */
+  animStyle: string;
 }
 
 /** The card palette, resolved from the live CSS tokens by the frontend. */
@@ -304,8 +306,18 @@ export const achievementSetNotificationOptions = (options: AchievementNotificati
 export const achievementSetNotificationColors = (colors: AchievementCardColors) =>
   invoke<void>("achievement_set_notification_colors", { colors });
 
-export const achievementTestNotification = (title: string, body: string, tag?: string) =>
-  invoke<void>("achievement_test_notification", { title, body, tag });
+export const achievementTestNotification = (
+  title: string,
+  body: string,
+  tag?: string,
+  rarityTier?: number,
+) =>
+  invoke<void>("achievement_test_notification", {
+    title,
+    body,
+    tag,
+    rarityTier: rarityTier ?? null,
+  });
 
 export const achievementPickCustomSound = () =>
   invoke<string | null>("achievement_pick_custom_sound");

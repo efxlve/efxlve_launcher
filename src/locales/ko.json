@@ -3146,5 +3146,20 @@
   "task.ramShare": "런처 메모리 비중",
   "task.noMatches": "일치하는 프로세스 없음",
   "task.groupPages": "웹 페이지",
-  "task.groupInfra": "웹 인프라"
+  "task.groupInfra": "웹 인프라",
+  "settings.achAnimStyleTitle": "Animation style",
+  "settings.achAnimStyleDesc": "Choose the multi-stage entry choreography, shockwave and particle effects.",
+  "settings.achAnimPrism": "Prism Unfurl",
+  "settings.achAnimCyber": "Cyber Overload",
+  "settings.achAnimShatter": "Crystal Shatter",
+  "settings.achAnimJackpot": "Arcade Jackpot",
+  "settings.achCardThemeRarity": "Rarity Aura",
+  "settings.achCardThemeCyber": "Cyber Neon",
+  "settings.achCardThemeEmerald": "Emerald",
+  "settings.achCardThemeCrimson": "Crimson",
+  "settings.achCardThemeAmethyst": "Amethyst",
+  "settings.achRarityStageLabel": "Preview Rarity",
+  "settings.achTierUltra": "Ultra Rare",
+  "settings.achReplayBtn": "Replay",
+  "settings.achAuditionBtn": "Listen"
 }

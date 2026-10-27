@@ -51,6 +51,17 @@ static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
 /// 0 top-right, 1 top-left, 2 bottom-right, 3 bottom-left, 4 center-top,
 /// 5 center-bottom.
 static NOTIF_POSITION: AtomicU8 = AtomicU8::new(0);
+/// Animation style preset: 0 = prism (unfurl), 1 = cyber (chamfer + scanline),
+/// 2 = shatter (god-rays + diamond shards), 3 = jackpot (rainbow foil + shake).
+static NOTIF_STYLE: AtomicU8 = AtomicU8::new(0);
+/// Rarity tier: 0 = bronze/normal, 1 = silver, 2 = gold, 3 = ultra-rare diamond, 4 = platinum.
+static NOTIF_RARITY_TIER: AtomicU8 = AtomicU8::new(2);
+/// Completion ratio in permille (0..=1000) for the animated bottom progress bar.
+static NOTIF_PROGRESS_PERMILLE: AtomicU64 = AtomicU64::new(650);
+/// Elapsed milliseconds since the active card started, updated at 60 FPS.
+static NOTIF_FRAME_MS: AtomicU64 = AtomicU64::new(0);
+/// Target full card width so the renderer knows the unfurl ratio while morphing.
+static NOTIF_FULL_W: AtomicIsize = AtomicIsize::new(540);
 
 /// Palette the achievement card paints with, in Windows `COLORREF` order
 /// (`0x00BBGGRR`). The frontend supplies the launcher-theme values because the
@@ -73,6 +84,81 @@ pub const GOLD_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
     title: 0x00FFFFFF,
     body: 0x00B8B2AC,
 };
+
+pub const CYBER_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
+    background: 0x00120A07,
+    accent: 0x000AEEFC,
+    border: 0x00FFF000,
+    icon: 0x00FFF000,
+    title: 0x00FFFFFF,
+    body: 0x00D8D090,
+};
+
+pub const EMERALD_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
+    background: 0x000E1206,
+    accent: 0x0081B910,
+    border: 0x00527A0A,
+    icon: 0x0099D334,
+    title: 0x00FFFFFF,
+    body: 0x00B8D4C4,
+};
+
+pub const CRIMSON_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
+    background: 0x000B0714,
+    accent: 0x005E3FF4,
+    border: 0x003B249E,
+    icon: 0x008571FB,
+    title: 0x00FFFFFF,
+    body: 0x00C4B4D8,
+};
+
+pub const AMETHYST_ACHIEVEMENT_CARD: AchievementCardColors = AchievementCardColors {
+    background: 0x00180912,
+    accent: 0x00F755A8,
+    border: 0x009E326B,
+    icon: 0x00FC84C0,
+    title: 0x00FFFFFF,
+    body: 0x00D8B8CE,
+};
+
+/// Returns a rarity-driven palette for `tier` (0 bronze .. 4 platinum).
+pub fn rarity_card_colors(tier: u8) -> AchievementCardColors {
+    match tier {
+        0 => AchievementCardColors {
+            background: 0x000D1016,
+            accent: 0x004F80CD,
+            border: 0x00305084,
+            icon: 0x0072A4EE,
+            title: 0x00FFFFFF,
+            body: 0x00A8B6C8,
+        },
+        1 => AchievementCardColors {
+            background: 0x0016100B,
+            accent: 0x00F8BD38,
+            border: 0x009E741E,
+            icon: 0x00FFDA75,
+            title: 0x00FFFFFF,
+            body: 0x00D4C4B0,
+        },
+        3 => AchievementCardColors {
+            background: 0x001B0914,
+            accent: 0x00F755A8,
+            border: 0x009948EC,
+            icon: 0x00FF96E8,
+            title: 0x00FFFFFF,
+            body: 0x00E6B8D8,
+        },
+        4 => AchievementCardColors {
+            background: 0x001A1208,
+            accent: 0x00FFE600,
+            border: 0x0024BFFB,
+            icon: 0x0024BFFB,
+            title: 0x00FFFFFF,
+            body: 0x00F2E2B8,
+        },
+        _ => GOLD_ACHIEVEMENT_CARD,
+    }
+}
 
 /// The palette of the card currently on screen; a fresh card sets it before it
 /// is shown, so the animation thread paints the right one.
@@ -258,6 +344,24 @@ pub fn set_notification_position(position: &str) {
     NOTIF_POSITION.store(code, Ordering::Relaxed);
 }
 
+pub fn set_notification_style(style: &str) {
+    let code = match style {
+        "cyber" => 1,
+        "shatter" => 2,
+        "jackpot" => 3,
+        _ => 0,
+    };
+    NOTIF_STYLE.store(code, Ordering::Relaxed);
+}
+
+pub fn set_notification_rarity_tier(tier: u8) {
+    NOTIF_RARITY_TIER.store(tier.min(4), Ordering::Relaxed);
+}
+
+pub fn set_notification_progress(permille: u64) {
+    NOTIF_PROGRESS_PERMILLE.store(permille.min(1000), Ordering::Relaxed);
+}
+
 /// Shows a console-like system notification over the game (game start: the overlay
 /// hint). Reuses the HUD window: a Windows toast is invisible for many setups,
 /// this card is not. `title` is the bold line, `body` the muted one.
@@ -346,11 +450,11 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
                 *slot = wide_body;
             }
         }
+        let start_ms = now_ms();
+        let hold_ms = NOTIF_HOLD_MS.load(Ordering::Relaxed);
+        NOTIF_FRAME_MS.store(0, Ordering::Relaxed);
         NOTIF_ON.store(true, Ordering::SeqCst);
-        NOTIF_UNTIL.store(
-            now_ms() + NOTIF_HOLD_MS.load(Ordering::Relaxed),
-            Ordering::Relaxed,
-        );
+        NOTIF_UNTIL.store(start_ms + hold_ms, Ordering::Relaxed);
         let generation = NOTIF_GEN.fetch_add(1, Ordering::Relaxed) + 1;
         let hwnd = HWND.load(Ordering::SeqCst);
         if hwnd == 0 {
@@ -366,34 +470,22 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
         let title_px = text_px(&title.encode_utf16().collect::<Vec<u16>>(), m.title_px).max(tag_px);
         let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), m.body_px);
         let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
-        let start_x = if notification_is_center(position) {
-            x
-        } else if notification_is_left(position) {
-            mon_x - w - 8
-        } else {
-            mon_x + mon_w as i32 + 8
-        };
+        NOTIF_FULL_W.store(w as isize, Ordering::Relaxed);
+
+        let pill_w = (m.left_pad * 2 + m.medallion_r * 2 + 8).min(w);
+        let init_x = anchored_x(x, w, pill_w, position);
+        let init_y = if notification_is_bottom(position) { y + 18 } else { y - 18 };
 
         unsafe {
-            shape_notification(hwnd, w, h);
-            MoveWindow(hwnd, start_x, y, w, h, 1);
+            shape_notification(hwnd, pill_w, h);
+            MoveWindow(hwnd, init_x, init_y, pill_w, h, 1);
             set_alpha(hwnd, 0);
             ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
             InvalidateRect(hwnd, std::ptr::null(), 0);
         }
 
         std::thread::spawn(move || {
-            slide_in(hwnd, generation, start_x, x, y, w, h);
-            while NOTIF_GEN.load(Ordering::Relaxed) == generation
-                && NOTIF_ON.load(Ordering::Relaxed)
-                && now_ms() < NOTIF_UNTIL.load(Ordering::Relaxed)
-            {
-                std::thread::sleep(std::time::Duration::from_millis(40));
-            }
-            if NOTIF_GEN.load(Ordering::Relaxed) != generation {
-                return;
-            }
-            slide_out(hwnd, generation, x, y, w, h, notification_is_left(position));
+            run_dopamine_choreography(hwnd, generation, start_ms, x, y, w, h, pill_w, position);
             if NOTIF_GEN.load(Ordering::Relaxed) == generation {
                 NOTIF_ON.store(false, Ordering::SeqCst);
                 hide_window();
@@ -405,6 +497,125 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
     {
         let _ = (tag, title, body, colors);
         0
+    }
+}
+
+#[cfg(windows)]
+fn anchored_x(x: i32, full_w: i32, cur_w: i32, position: u8) -> i32 {
+    if notification_is_left(position) {
+        x
+    } else if notification_is_center(position) {
+        x + (full_w - cur_w) / 2
+    } else {
+        x + full_w - cur_w
+    }
+}
+
+/// 5-stage 60 FPS choreography:
+/// 1. Medallion Impact Drop (0..180ms) with optional micro-shake
+/// 2. Morphing Capsule Unfurl (180..560ms)
+/// 3. Live Particle, Shimmer, God-Ray & Border-Beam Showcase (560ms..hold_end)
+/// 4. Vacuum Collapse back into Medallion (last 320ms)
+#[cfg(windows)]
+fn run_dopamine_choreography(
+    hwnd: isize,
+    generation: u64,
+    start_ms: u64,
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+    pill_w: i32,
+    position: u8,
+) {
+    let style = NOTIF_STYLE.load(Ordering::Relaxed);
+    let tier = NOTIF_RARITY_TIER.load(Ordering::Relaxed);
+    let mut last_w = pill_w;
+    let mut last_x = anchored_x(x, w, pill_w, position);
+    let mut last_y = y;
+    let mut last_alpha = 0u8;
+
+    loop {
+        if NOTIF_GEN.load(Ordering::Relaxed) != generation || !hint_active() {
+            return;
+        }
+        let now = now_ms();
+        let until = NOTIF_UNTIL.load(Ordering::Relaxed);
+        let collapse_ms = 320u64;
+        if now >= until + collapse_ms {
+            break;
+        }
+        let elapsed = now.saturating_sub(start_ms);
+        NOTIF_FRAME_MS.store(elapsed, Ordering::Relaxed);
+
+        let (cur_w, dy, alpha) = if now >= until {
+            // Stage 4: Collapse back into medallion capsule
+            let t = ((now - until) as f32 / collapse_ms as f32).clamp(0.0, 1.0);
+            let eased = t * t * (2.5 * t - 1.5).max(0.0);
+            let cw = w - ((w - pill_w) as f32 * eased.clamp(0.0, 1.0)) as i32;
+            let drop = if notification_is_bottom(position) {
+                (14.0 * t * t) as i32
+            } else {
+                -(14.0 * t * t) as i32
+            };
+            let a = (NOTIF_ALPHA as f32 * (1.0 - t).powi(2)) as u8;
+            (cw.clamp(pill_w, w), drop, a)
+        } else if elapsed < 175 {
+            // Stage 1: Medallion drop & impact bounce
+            let t = (elapsed as f32 / 175.0).clamp(0.0, 1.0);
+            let spring = 1.0 - (-6.5 * t).exp() * (4.2 * t).cos();
+            let offset = (1.0 - spring) * 20.0;
+            let drop = if notification_is_bottom(position) {
+                offset as i32
+            } else {
+                -(offset as i32)
+            };
+            let a = (NOTIF_ALPHA as f32 * (t * 2.2).min(1.0)) as u8;
+            (pill_w, drop, a)
+        } else if elapsed < 560 {
+            // Stage 2: Elastic capsule unfurl
+            let u = ((elapsed - 175) as f32 / 385.0).clamp(0.0, 1.0);
+            let inv = 1.0 - u;
+            let eased = 1.0 - inv * inv * inv * (1.0 - 0.35 * u);
+            let cw = pill_w + ((w - pill_w) as f32 * eased.clamp(0.0, 1.0)) as i32;
+            (cw.clamp(pill_w, w), 0, NOTIF_ALPHA)
+        } else {
+            // Stage 3: Full card showcase
+            (w, 0, NOTIF_ALPHA)
+        };
+
+        // Impact micro-shake for Arcade Jackpot style or Ultra-Rare/Platinum unlocks
+        let (shake_x, shake_y) = if (style == 3 || tier >= 3) && elapsed >= 65 && elapsed <= 250 {
+            let damp = 1.0 - ((elapsed - 65) as f32 / 185.0);
+            let sx = ((elapsed as f32 * 0.11).sin() * 4.5 * damp) as i32;
+            let sy = ((elapsed as f32 * 0.17).cos() * 2.5 * damp) as i32;
+            (sx, sy)
+        } else {
+            (0, 0)
+        };
+
+        let cur_x = anchored_x(x, w, cur_w, position) + shake_x;
+        let cur_y = y + dy + shake_y;
+
+        unsafe {
+            if cur_w != last_w {
+                shape_notification(hwnd, cur_w, h);
+            }
+            if cur_w != last_w || cur_x != last_x || cur_y != last_y {
+                MoveWindow(hwnd, cur_x, cur_y, cur_w, h, 0);
+                last_w = cur_w;
+                last_x = cur_x;
+                last_y = cur_y;
+            }
+            if alpha != last_alpha {
+                set_alpha(hwnd, alpha);
+                last_alpha = alpha;
+            }
+            InvalidateRect(hwnd, std::ptr::null(), 0);
+            UpdateWindow(hwnd);
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(16));
     }
 }
 
@@ -461,11 +672,28 @@ fn hide_window() {
     }
 }
 
-/// Layers the window into the rounded card shape; the OS owns the region after.
+/// Layers the window into the rounded or chamfered card shape; the OS owns the region after.
 #[cfg(windows)]
 unsafe fn shape_notification(hwnd: isize, width: i32, height: i32) {
-    let diameter = NOTIF_RADIUS * 2;
-    let region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
+    let style = NOTIF_STYLE.load(Ordering::Relaxed);
+    let region = if style == 1 {
+        // Cyber Overload: chamfered octagonal tech corners
+        let cut = 14.min(height / 4).min(width / 4);
+        let pts = [
+            POINT { x: cut, y: 0 },
+            POINT { x: width - cut, y: 0 },
+            POINT { x: width, y: cut },
+            POINT { x: width, y: height - cut },
+            POINT { x: width - cut, y: height },
+            POINT { x: cut, y: height },
+            POINT { x: 0, y: height - cut },
+            POINT { x: 0, y: cut },
+        ];
+        CreatePolygonRgn(pts.as_ptr(), pts.len() as i32, 1)
+    } else {
+        let diameter = NOTIF_RADIUS * 2;
+        CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter)
+    };
     if region != 0 {
         SetWindowRgn(hwnd, region, 1);
     }
@@ -480,47 +708,6 @@ unsafe fn reset_shape(hwnd: isize) {
 #[cfg(windows)]
 unsafe fn set_alpha(hwnd: isize, alpha: u8) {
     SetLayeredWindowAttributes(hwnd, 0, alpha, 0x0000_0002 /* LWA_ALPHA */);
-}
-
-/// Slides the card in from the monitor's right edge with a short ease-out.
-#[cfg(windows)]
-fn slide_in(hwnd: isize, generation: u64, start_x: i32, x: i32, y: i32, w: i32, h: i32) {
-    const STEPS: i32 = 16;
-    for step in 0..=STEPS {
-        if NOTIF_GEN.load(Ordering::Relaxed) != generation || !hint_active() {
-            return;
-        }
-        let t = step as f32 / STEPS as f32;
-        let eased = 1.0 - (1.0 - t) * (1.0 - t) * (1.0 - t);
-        let cx = start_x + ((x - start_x) as f32 * eased) as i32;
-        let alpha = (NOTIF_ALPHA as f32 * (t * 1.6).min(1.0)) as u8;
-        unsafe {
-            MoveWindow(hwnd, cx, y, w, h, 1);
-            set_alpha(hwnd, alpha);
-        }
-        std::thread::sleep(std::time::Duration::from_millis(12));
-    }
-}
-
-/// Slides the card back out while it fades; the caller then hides the window.
-#[cfg(windows)]
-fn slide_out(hwnd: isize, generation: u64, x: i32, y: i32, w: i32, h: i32, to_left: bool) {
-    const STEPS: i32 = 12;
-    let end_x = if to_left { x - w - 40 } else { x + w + 40 };
-    for step in 0..=STEPS {
-        if NOTIF_GEN.load(Ordering::Relaxed) != generation {
-            return;
-        }
-        let t = step as f32 / STEPS as f32;
-        let eased = t * t;
-        let cx = x + ((end_x - x) as f32 * eased) as i32;
-        let alpha = (NOTIF_ALPHA as f32 * (1.0 - t)) as u8;
-        unsafe {
-            MoveWindow(hwnd, cx, y, w, h, 1);
-            set_alpha(hwnd, alpha);
-        }
-        std::thread::sleep(std::time::Duration::from_millis(14));
-    }
 }
 
 /* ---------- Window helpers (used by the overlay panel too) ---------- */
@@ -772,6 +959,7 @@ extern "system" {
     fn ShowWindow(hwnd: isize, cmd: i32) -> i32;
     fn MoveWindow(hwnd: isize, x: i32, y: i32, width: i32, height: i32, repaint: i32) -> i32;
     fn InvalidateRect(hwnd: isize, rect: *const RECT, erase: i32) -> i32;
+    fn UpdateWindow(hwnd: isize) -> i32;
     fn GetClientRect(hwnd: isize, rect: *mut RECT) -> i32;
     fn BeginPaint(hwnd: isize, paint: *mut u8) -> isize;
     fn EndPaint(hwnd: isize, paint: *const u8) -> i32;
@@ -787,10 +975,47 @@ extern "system" {
 }
 
 #[cfg(windows)]
+#[repr(C)]
+struct BITMAPINFOHEADER {
+    bi_size: u32,
+    bi_width: i32,
+    bi_height: i32,
+    bi_planes: u16,
+    bi_bit_count: u16,
+    bi_compression: u32,
+    bi_size_image: u32,
+    bi_x_pels_per_meter: i32,
+    bi_y_pels_per_meter: i32,
+    bi_clr_used: u32,
+    bi_clr_important: u32,
+}
+
+#[cfg(windows)]
 #[link(name = "gdi32")]
 extern "system" {
     fn CreateSolidBrush(color: u32) -> isize;
     fn DeleteObject(object: isize) -> i32;
+    fn CreateCompatibleDC(hdc: isize) -> isize;
+    fn DeleteDC(hdc: isize) -> i32;
+    fn CreateDIBSection(
+        hdc: isize,
+        pbmi: *const BITMAPINFOHEADER,
+        usage: u32,
+        ppv_bits: *mut *mut u32,
+        h_section: isize,
+        offset: u32,
+    ) -> isize;
+    fn BitBlt(
+        hdc_dest: isize,
+        x: i32,
+        y: i32,
+        cx: i32,
+        cy: i32,
+        hdc_src: isize,
+        x1: i32,
+        y1: i32,
+        rop: u32,
+    ) -> i32;
     /// Region for the rounded notification card (`x2`/`y2` are exclusive).
     fn CreateRoundRectRgn(
         x1: i32,
@@ -800,6 +1025,8 @@ extern "system" {
         ellipse_w: i32,
         ellipse_h: i32,
     ) -> isize;
+    fn CreatePolygonRgn(pptl: *const POINT, c_point: i32, i_mode: i32) -> isize;
+    #[allow(dead_code)]
     fn FrameRgn(hdc: isize, region: isize, brush: isize, width: i32, height: i32) -> i32;
     fn Ellipse(hdc: isize, left: i32, top: i32, right: i32, bottom: i32) -> i32;
     fn CreateEllipticRgn(left: i32, top: i32, right: i32, bottom: i32) -> isize;
@@ -1041,70 +1268,404 @@ unsafe fn paint_medallion_picture(
     painted
 }
 
-/// The console-like card: rounded plate, icon disc, bold title, muted body.
+#[cfg(windows)]
+#[inline]
+fn colorref_rgb(c: u32) -> (f32, f32, f32) {
+    (
+        (c & 0xFF) as f32,
+        ((c >> 8) & 0xFF) as f32,
+        ((c >> 16) & 0xFF) as f32,
+    )
+}
+
+#[cfg(windows)]
+#[inline]
+fn pack_dib(r: f32, g: f32, b: f32) -> u32 {
+    let ri = (r.clamp(0.0, 255.0)) as u32;
+    let gi = (g.clamp(0.0, 255.0)) as u32;
+    let bi = (b.clamp(0.0, 255.0)) as u32;
+    (ri << 16) | (gi << 8) | bi
+}
+
+#[cfg(windows)]
+#[inline]
+fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (f32, f32, f32) {
+    let h6 = (h.rem_euclid(1.0)) * 6.0;
+    let i = h6.floor() as i32;
+    let f = h6 - i as f32;
+    let p = v * (1.0 - s);
+    let q = v * (1.0 - s * f);
+    let t = v * (1.0 - s * (1.0 - f));
+    match i.rem_euclid(6) {
+        0 => (v * 255.0, t * 255.0, p * 255.0),
+        1 => (q * 255.0, v * 255.0, p * 255.0),
+        2 => (p * 255.0, v * 255.0, t * 255.0),
+        3 => (p * 255.0, q * 255.0, v * 255.0),
+        4 => (t * 255.0, p * 255.0, v * 255.0),
+        _ => (v * 255.0, p * 255.0, q * 255.0),
+    }
+}
+
+/// Renders the animated 60 FPS background surface, shockwave rings, rotating
+/// god-rays, diagonal holographic foil sweep, rotating conic border comet,
+/// bottom energy progress bar, and 32 bursting/floating dopamine particles.
+#[cfg(windows)]
+fn render_dopamine_backdrop(
+    pixels: &mut [u32],
+    width: i32,
+    height: i32,
+    center_x: i32,
+    center_y: i32,
+    m: &NotifSizeMetrics,
+    colors: AchievementCardColors,
+    elapsed_ms: u64,
+    style: u8,
+    tier: u8,
+    progress_permille: u64,
+) {
+    let w = width.max(1);
+    let h = height.max(1);
+    let t_sec = elapsed_ms as f32 * 0.001;
+    let (bg_r, bg_g, bg_b) = colorref_rgb(colors.background);
+    let (ac_r, ac_g, ac_b) = colorref_rgb(colors.accent);
+    let (ic_r, ic_g, ic_b) = colorref_rgb(colors.icon);
+    let (bd_r, bd_g, bd_b) = colorref_rgb(colors.border);
+
+    // Shockwave 1 (40..780ms) & Shockwave 2 (190..920ms)
+    let sw1_p = ((elapsed_ms as f32 - 40.0) / 740.0).clamp(0.0, 1.0);
+    let sw1_r = m.medallion_r as f32 * 0.7 + sw1_p * (w as f32 * 0.92);
+    let sw1_amp = if elapsed_ms >= 40 && elapsed_ms <= 780 {
+        (1.0 - sw1_p) * (1.0 - sw1_p)
+    } else {
+        0.0
+    };
+
+    let sw2_p = ((elapsed_ms as f32 - 190.0) / 730.0).clamp(0.0, 1.0);
+    let sw2_r = m.medallion_r as f32 * 0.6 + sw2_p * (w as f32 * 0.72);
+    let sw2_amp = if elapsed_ms >= 190 && elapsed_ms <= 920 {
+        (1.0 - sw2_p) * (1.0 - sw2_p) * 0.85
+    } else {
+        0.0
+    };
+
+    // Holographic diagonal shimmer sweep (200..1150ms, then repeats every 2400ms)
+    let cycle_ms = if elapsed_ms < 1200 {
+        elapsed_ms.saturating_sub(180) as f32 / 950.0
+    } else {
+        ((elapsed_ms - 1200) % 2400) as f32 / 1100.0
+    };
+    let sweep_x = -90.0 + cycle_ms.clamp(0.0, 1.5) * (w as f32 + 220.0);
+
+    // Animated bottom progress bar fill
+    let prog_ease = ((elapsed_ms as f32 - 220.0) / 850.0).clamp(0.0, 1.0);
+    let prog_ease = 1.0 - (1.0 - prog_ease).powi(3);
+    let target_ratio = (progress_permille.min(1000) as f32 / 1000.0).max(0.15);
+    let bar_fill_x = m.bar_width + ((w - m.bar_width) as f32 * target_ratio * prog_ease) as i32;
+
+    let aura_inv = 1.0 / ((m.medallion_r as f32 * 3.8).max(40.0));
+    let half_w = w as f32 * 0.5;
+    let half_h = h as f32 * 0.5;
+    let show_rays = style == 2 || tier >= 3;
+
+    for y in 0..h {
+        let dy = (y - center_y) as f32;
+        let dy2 = dy * dy;
+        let row_offset = (y * w) as usize;
+        let is_bottom_bar = y >= h - 4;
+        let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.12;
+        let scanline_mul = if style == 1 && (y & 1 == 0) { 0.88 } else { 1.0 };
+
+        for x in 0..w {
+            let dx = (x - center_x) as f32;
+            let dist = (dx * dx + dy2).sqrt();
+
+            // 1. Base surface + radial medallion aura
+            let aura = (1.0 - dist * aura_inv).max(0.0).powi(2) * 0.48;
+            let mut r = (bg_r + (ac_r - bg_r) * aura + 255.0 * top_gloss) * scanline_mul;
+            let mut g = (bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss) * scanline_mul;
+            let mut b = (bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss) * scanline_mul;
+
+            // 2. Rotating God-Rays behind the medallion (Crystal Shatter / Ultra Rare / Platinum)
+            if show_rays && dist < m.medallion_r as f32 * 4.2 {
+                let angle = dy.atan2(dx);
+                let ray1 = ((angle * 6.0 + t_sec * 2.4).sin() * 0.5 + 0.5).powi(4);
+                let ray2 = ((angle * 4.0 - t_sec * 1.7).cos() * 0.5 + 0.5).powi(3);
+                let falloff = (1.0 - dist / (m.medallion_r as f32 * 4.2)).max(0.0);
+                let ray_int = (ray1 * 0.7 + ray2 * 0.3) * falloff * 0.42;
+                r += ic_r * ray_int;
+                g += ic_g * ray_int;
+                b += ic_b * ray_int;
+            }
+
+            // 3. Polychrome iridescent rainbow wave (Arcade Jackpot / Platinum)
+            if style == 3 || tier == 4 {
+                let wave = ((x as f32 * 0.014 + y as f32 * 0.024 - t_sec * 1.6).sin()) * 0.5 + 0.5;
+                let (rr, rg, rb) = hsv_to_rgb(wave, 0.75, 1.0);
+                let mix = if style == 3 { 0.18 } else { 0.11 };
+                r = r * (1.0 - mix) + rr * mix;
+                g = g * (1.0 - mix) + rg * mix;
+                b = b * (1.0 - mix) + rb * mix;
+            }
+
+            // 4. Dual Expanding Shockwave Rings
+            if sw1_amp > 0.0 {
+                let d1 = (dist - sw1_r).abs();
+                if d1 < 9.0 {
+                    let ring = (1.0 - d1 / 9.0).powi(2) * sw1_amp;
+                    r += (ic_r * 0.65 + 255.0 * 0.35) * ring * 0.9;
+                    g += (ic_g * 0.65 + 255.0 * 0.35) * ring * 0.9;
+                    b += (ic_b * 0.65 + 255.0 * 0.35) * ring * 0.9;
+                }
+            }
+            if sw2_amp > 0.0 {
+                let d2 = (dist - sw2_r).abs();
+                if d2 < 6.5 {
+                    let ring = (1.0 - d2 / 6.5).powi(2) * sw2_amp;
+                    r += ac_r * ring * 0.75;
+                    g += ac_g * ring * 0.75;
+                    b += ac_b * ring * 0.75;
+                }
+            }
+
+            // 5. Diagonal Holographic Shimmer Sweep
+            let diag = x as f32 + y as f32 * 0.58;
+            let s_dist = (diag - sweep_x).abs();
+            if s_dist < 46.0 {
+                let sheen = (1.0 - s_dist / 46.0).powi(2) * 0.28;
+                r += (ac_r * 0.5 + 255.0 * 0.5) * sheen;
+                g += (ac_g * 0.5 + 255.0 * 0.5) * sheen;
+                b += (ac_b * 0.5 + 255.0 * 0.5) * sheen;
+            }
+
+            // 6. Left Accent Indicator Bar
+            if x < m.bar_width {
+                let pulse = (t_sec * 5.0 + y as f32 * 0.05).sin() * 0.15 + 0.85;
+                r = ac_r * pulse + 255.0 * (1.0 - pulse) * 0.4;
+                g = ac_g * pulse + 255.0 * (1.0 - pulse) * 0.4;
+                b = ac_b * pulse + 255.0 * (1.0 - pulse) * 0.4;
+            } else if is_bottom_bar && x <= bar_fill_x {
+                // 7. Animated Bottom Progress Bar + Hot Leading Tip
+                let tip_dist = (bar_fill_x - x) as f32;
+                let tip_glow = (1.0 - tip_dist / 18.0).clamp(0.0, 1.0);
+                r = ac_r * (1.0 - tip_glow * 0.6) + 255.0 * (tip_glow * 0.6);
+                g = ac_g * (1.0 - tip_glow * 0.6) + 255.0 * (tip_glow * 0.6);
+                b = ac_b * (1.0 - tip_glow * 0.6) + 255.0 * (tip_glow * 0.6);
+            }
+
+            // 8. Rotating Conic Energy Border Beam (perimeter 2px)
+            let edge_dist = x.min(w - 1 - x).min(y.min(h - 1 - y));
+            if edge_dist <= 2 {
+                let b_angle = (y as f32 - half_h).atan2(x as f32 - half_w);
+                let comet1 = ((b_angle - t_sec * 3.4).cos() * 0.5 + 0.5).powi(6);
+                let comet2 = ((b_angle - t_sec * 3.4 + std::f32::consts::PI).cos() * 0.5 + 0.5).powi(6);
+                let beam = (comet1 + comet2 * 0.7).clamp(0.0, 1.0);
+                let edge_fade = if edge_dist == 0 { 1.0 } else if edge_dist == 1 { 0.65 } else { 0.25 };
+                let br = bd_r * (1.0 - beam) + (ic_r * 0.6 + 255.0 * 0.4) * beam;
+                let bg = bd_g * (1.0 - beam) + (ic_g * 0.6 + 255.0 * 0.4) * beam;
+                let bb = bd_b * (1.0 - beam) + (ic_b * 0.6 + 255.0 * 0.4) * beam;
+                r = r * (1.0 - edge_fade) + br * edge_fade;
+                g = g * (1.0 - edge_fade) + bg * edge_fade;
+                b = b * (1.0 - edge_fade) + bb * edge_fade;
+            }
+
+            pixels[row_offset + x as usize] = pack_dib(r, g, b);
+        }
+    }
+
+    // 9. Procedural Dopamine Particles (22 Impact Burst Shards + 12 Rising Ambient Embers)
+    let burst_t = ((elapsed_ms as f32 - 55.0) / 1050.0).clamp(0.0, 1.0);
+    if burst_t > 0.0 && burst_t < 1.0 {
+        let decel = 1.0 - (1.0 - burst_t).powi(3);
+        let fade = (1.0 - burst_t).powi(2);
+        for i in 0..22u32 {
+            let seed = (i.wrapping_mul(2654435761)) ^ ((tier as u32) << 16);
+            let angle = (i as f32 / 22.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
+            let speed = 38.0 + ((seed >> 8) & 0x7F) as f32 * 1.15;
+            let px = center_x + (angle.cos() * speed * decel) as i32;
+            let py = center_y + (angle.sin() * speed * decel - burst_t * burst_t * 18.0) as i32;
+            let p_rad = if (i & 3) == 0 { 3 } else { 2 };
+            let is_diamond = style == 2 || (i & 1 == 0);
+            draw_particle(pixels, w, h, px, py, p_rad, is_diamond, fade, ic_r, ic_g, ic_b);
+        }
+    }
+
+    // Rising ambient embers across the card
+    for i in 0..12u32 {
+        let seed = i.wrapping_mul(1597334677);
+        let phase = (t_sec * (0.65 + (i as f32 * 0.07)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
+        let px = m.left_pad + ((seed >> 8) as i32).abs() % (w - m.left_pad - 12).max(20);
+        let py = h - 6 - (phase * (h - 10) as f32) as i32;
+        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.75;
+        draw_particle(pixels, w, h, px, py, 2, true, twinkle, ac_r, ac_g, ac_b);
+    }
+}
+
+#[cfg(windows)]
+fn draw_particle(
+    pixels: &mut [u32],
+    w: i32,
+    h: i32,
+    cx: i32,
+    cy: i32,
+    rad: i32,
+    diamond: bool,
+    alpha: f32,
+    pr: f32,
+    pg: f32,
+    pb: f32,
+) {
+    if alpha <= 0.02 {
+        return;
+    }
+    for dy in -rad..=rad {
+        let y = cy + dy;
+        if y < 0 || y >= h {
+            continue;
+        }
+        for dx in -rad..=rad {
+            let x = cx + dx;
+            if x < 0 || x >= w {
+                continue;
+            }
+            let norm = if diamond {
+                (dx.abs() + dy.abs()) as f32 / (rad as f32 + 0.5)
+            } else {
+                ((dx * dx + dy * dy) as f32).sqrt() / (rad as f32 + 0.5)
+            };
+            if norm > 1.0 {
+                continue;
+            }
+            let intensity = (1.0 - norm) * alpha;
+            let idx = (y * w + x) as usize;
+            let cur = pixels[idx];
+            let cr = ((cur >> 16) & 0xFF) as f32;
+            let cg = ((cur >> 8) & 0xFF) as f32;
+            let cb = (cur & 0xFF) as f32;
+            let nr = cr + (pr * 0.55 + 255.0 * 0.45) * intensity;
+            let ng = cg + (pg * 0.55 + 255.0 * 0.45) * intensity;
+            let nb = cb + (pb * 0.55 + 255.0 * 0.45) * intensity;
+            pixels[idx] = pack_dib(nr, ng, nb);
+        }
+    }
+}
+
+/// The console-like card: double-buffered 32-bit DIB shader plate, medallion, and 3-tier typography.
 #[cfg(windows)]
 unsafe fn paint_notification(hdc: isize, rect: &RECT) {
-    let width = rect.right - rect.left;
-    let height = rect.bottom - rect.top;
+    let width = (rect.right - rect.left).max(1);
+    let height = (rect.bottom - rect.top).max(1);
     let size_code = NOTIF_SIZE.load(Ordering::Relaxed).min(2) as usize;
     let m = size_metrics(size_code as u8);
     let colors = NOTIF_COLORS
         .lock()
         .map(|colors| *colors)
         .unwrap_or(GOLD_ACHIEVEMENT_CARD);
+    let elapsed_ms = NOTIF_FRAME_MS.load(Ordering::Relaxed);
+    let style = NOTIF_STYLE.load(Ordering::Relaxed);
+    let tier = NOTIF_RARITY_TIER.load(Ordering::Relaxed);
+    let progress_permille = NOTIF_PROGRESS_PERMILLE.load(Ordering::Relaxed);
 
-    // 1. Smoked plate, themed to the launcher surface when the user wants it
-    let plate = CreateSolidBrush(colors.background);
-    FillRect(hdc, rect, plate);
-    let _ = DeleteObject(plate);
-
-    // 2. Accent indicator bar on left edge
-    let bar_rect = RECT {
-        left: rect.left,
-        top: rect.top,
-        right: rect.left + m.bar_width,
-        bottom: rect.bottom,
+    let mem_dc = CreateCompatibleDC(hdc);
+    let bmi = BITMAPINFOHEADER {
+        bi_size: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+        bi_width: width,
+        bi_height: -height, // top-down DIB
+        bi_planes: 1,
+        bi_bit_count: 32,
+        bi_compression: 0, // BI_RGB
+        bi_size_image: 0,
+        bi_x_pels_per_meter: 0,
+        bi_y_pels_per_meter: 0,
+        bi_clr_used: 0,
+        bi_clr_important: 0,
     };
-    let bar_brush = CreateSolidBrush(colors.accent);
-    FillRect(hdc, &bar_rect, bar_brush);
-    let _ = DeleteObject(bar_brush);
+    let mut bits: *mut u32 = std::ptr::null_mut();
+    let dib = if mem_dc != 0 {
+        CreateDIBSection(hdc, &bmi, 0, &mut bits, 0, 0)
+    } else {
+        0
+    };
 
-    // 3. Hairline border
-    let diameter = NOTIF_RADIUS * 2;
-    let region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
-    if region != 0 {
-        let edge = CreateSolidBrush(colors.border);
-        FrameRgn(hdc, region, edge, 1, 1);
-        let _ = DeleteObject(edge);
-        let _ = DeleteObject(region);
+    let target_dc = if dib != 0 && !bits.is_null() {
+        SelectObject(mem_dc, dib);
+        mem_dc
+    } else {
+        hdc
+    };
+
+    // Trophy medallion center: centered inside the capsule while collapsed,
+    // anchored at left_pad + medallion_r once unfurling.
+    let center_x = if width <= m.left_pad * 2 + m.medallion_r * 2 + 12 {
+        width / 2
+    } else {
+        rect.left + m.left_pad + m.medallion_r
+    };
+    let center_y = (rect.top + rect.bottom) / 2;
+
+    if dib != 0 && !bits.is_null() {
+        let slice = std::slice::from_raw_parts_mut(bits, (width * height) as usize);
+        render_dopamine_backdrop(
+            slice,
+            width,
+            height,
+            center_x,
+            center_y,
+            &m,
+            colors,
+            elapsed_ms,
+            style,
+            tier,
+            progress_permille,
+        );
+    } else {
+        let plate = CreateSolidBrush(colors.background);
+        FillRect(target_dc, rect, plate);
+        let _ = DeleteObject(plate);
     }
 
-    // 4. Trophy medallion emblem
-    let center_x = rect.left + m.left_pad + m.medallion_r;
-    let center_y = (rect.top + rect.bottom) / 2;
+    // 4. Trophy medallion emblem with subtle pulse on impact
+    let impact_pulse = if elapsed_ms < 320 {
+        let p = elapsed_ms as f32 / 320.0;
+        ((p * std::f32::consts::PI).sin() * 3.0) as i32
+    } else {
+        0
+    };
+    let med_r = m.medallion_r + impact_pulse;
 
     // Outer rim
     let rim = CreateSolidBrush(colors.accent);
-    let prev_rim = SelectObject(hdc, rim);
-    Ellipse(hdc, center_x - m.medallion_r, center_y - m.medallion_r, center_x + m.medallion_r, center_y + m.medallion_r);
-    SelectObject(hdc, prev_rim);
+    let prev_rim = SelectObject(target_dc, rim);
+    Ellipse(
+        target_dc,
+        center_x - med_r,
+        center_y - med_r,
+        center_x + med_r,
+        center_y + med_r,
+    );
+    SelectObject(target_dc, prev_rim);
     let _ = DeleteObject(rim);
 
     // Inner velvet medallion plate
-    let inner_disc = CreateSolidBrush(shade(colors.background, 62));
-    let prev_inner = SelectObject(hdc, inner_disc);
-    let inner_r = m.medallion_r - 2;
-    Ellipse(hdc, center_x - inner_r, center_y - inner_r, center_x + inner_r, center_y + inner_r);
-    SelectObject(hdc, prev_inner);
+    let inner_disc = CreateSolidBrush(shade(colors.background, 58));
+    let prev_inner = SelectObject(target_dc, inner_disc);
+    let inner_r = (med_r - 2).max(4);
+    Ellipse(
+        target_dc,
+        center_x - inner_r,
+        center_y - inner_r,
+        center_x + inner_r,
+        center_y + inner_r,
+    );
+    SelectObject(target_dc, prev_inner);
     let _ = DeleteObject(inner_disc);
 
     // The achievement's own icon once it has downloaded; the trophy until then.
-    if !paint_medallion_picture(hdc, center_x, center_y, inner_r) {
+    if !paint_medallion_picture(target_dc, center_x, center_y, inner_r) {
         let icon_font = SIZE_ICON_FONTS[size_code].load(Ordering::Relaxed);
         if icon_font != 0 {
-            SetBkMode(hdc, TRANSPARENT_BK);
-            SetTextColor(hdc, colors.icon);
-            SelectObject(hdc, icon_font);
+            SetBkMode(target_dc, TRANSPARENT_BK);
+            SetTextColor(target_dc, colors.icon);
+            SelectObject(target_dc, icon_font);
             let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
             let half_icon = m.icon_size;
             let mut icon_rect = RECT {
@@ -1114,7 +1675,7 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
                 bottom: center_y + half_icon,
             };
             DrawTextW(
-                hdc,
+                target_dc,
                 glyph.as_ptr(),
                 1,
                 &mut icon_rect,
@@ -1122,137 +1683,161 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
             );
         } else {
             let mark = CreateSolidBrush(colors.icon);
-            let prev = SelectObject(hdc, mark);
+            let prev = SelectObject(target_dc, mark);
             let bw = m.medallion_r * 2 / 5;
-            RoundRect(hdc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
-            RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
-            RoundRect(hdc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
-            SelectObject(hdc, prev);
+            RoundRect(target_dc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
+            RoundRect(target_dc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
+            RoundRect(target_dc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
+            SelectObject(target_dc, prev);
             let _ = DeleteObject(mark);
         }
     }
 
-    // Text column: 3-tier layout (Tag, Title, Body)
-    SetBkMode(hdc, TRANSPARENT_BK);
+    // Text column: painted once the capsule has unfurled past the medallion
     let text_left = rect.left + m.text_left;
     let text_right = rect.right - m.text_right;
+    if text_right > text_left + 24 {
+        SetBkMode(target_dc, TRANSPARENT_BK);
+        let has_tag = NOTIF_TAG.lock().map(|t| t.len() > 1).unwrap_or(false);
 
-    let has_tag = NOTIF_TAG.lock().map(|t| t.len() > 1).unwrap_or(false);
+        if has_tag {
+            let tag_font = SIZE_TAG_FONTS[size_code].load(Ordering::Relaxed);
+            if let Ok(tag) = NOTIF_TAG.lock() {
+                if tag.len() > 1 {
+                    if tag_font != 0 {
+                        SelectObject(target_dc, tag_font);
+                    }
+                    SetTextColor(target_dc, colors.accent);
+                    let mut tag_rect = RECT {
+                        left: text_left,
+                        top: rect.top + m.tag_top,
+                        right: text_right,
+                        bottom: rect.top + m.tag_bottom,
+                    };
+                    DrawTextW(
+                        target_dc,
+                        tag.as_ptr(),
+                        (tag.len() - 1) as i32,
+                        &mut tag_rect,
+                        NOTIF_TEXT_FORMAT,
+                    );
+                }
+            }
 
-    if has_tag {
-        let tag_font = SIZE_TAG_FONTS[size_code].load(Ordering::Relaxed);
-        if let Ok(tag) = NOTIF_TAG.lock() {
-            if tag.len() > 1 {
-                if tag_font != 0 {
-                    SelectObject(hdc, tag_font);
+            let title_font = SIZE_TITLE_FONTS[size_code].load(Ordering::Relaxed);
+            if let Ok(title) = NOTIF_TITLE.lock() {
+                if title.len() > 1 {
+                    if title_font != 0 {
+                        SelectObject(target_dc, title_font);
+                    }
+                    // Subtle 1px dark drop shadow so title pops over shimmer/particles
+                    SetTextColor(target_dc, 0x00050505);
+                    let mut shadow_rect = RECT {
+                        left: text_left + 1,
+                        top: rect.top + m.title_top + 1,
+                        right: text_right + 1,
+                        bottom: rect.top + m.title_bottom + 1,
+                    };
+                    DrawTextW(
+                        target_dc,
+                        title.as_ptr(),
+                        (title.len() - 1) as i32,
+                        &mut shadow_rect,
+                        NOTIF_TEXT_FORMAT,
+                    );
+                    SetTextColor(target_dc, colors.title);
+                    let mut title_rect = RECT {
+                        left: text_left,
+                        top: rect.top + m.title_top,
+                        right: text_right,
+                        bottom: rect.top + m.title_bottom,
+                    };
+                    DrawTextW(
+                        target_dc,
+                        title.as_ptr(),
+                        (title.len() - 1) as i32,
+                        &mut title_rect,
+                        NOTIF_TEXT_FORMAT,
+                    );
                 }
-                SetTextColor(hdc, colors.accent);
-                let mut tag_rect = RECT {
-                    left: text_left,
-                    top: rect.top + m.tag_top,
-                    right: text_right,
-                    bottom: rect.top + m.tag_bottom,
-                };
-                DrawTextW(
-                    hdc,
-                    tag.as_ptr(),
-                    (tag.len() - 1) as i32,
-                    &mut tag_rect,
-                    NOTIF_TEXT_FORMAT,
-                );
             }
-        }
 
-        let title_font = SIZE_TITLE_FONTS[size_code].load(Ordering::Relaxed);
-        if let Ok(title) = NOTIF_TITLE.lock() {
-            if title.len() > 1 {
-                if title_font != 0 {
-                    SelectObject(hdc, title_font);
+            let body_font = SIZE_BODY_FONTS[size_code].load(Ordering::Relaxed);
+            if let Ok(body) = NOTIF_BODY.lock() {
+                if body.len() > 1 {
+                    if body_font != 0 {
+                        SelectObject(target_dc, body_font);
+                    }
+                    SetTextColor(target_dc, colors.body);
+                    let mut body_rect = RECT {
+                        left: text_left,
+                        top: rect.top + m.body_top,
+                        right: text_right,
+                        bottom: rect.top + m.body_bottom,
+                    };
+                    DrawTextW(
+                        target_dc,
+                        body.as_ptr(),
+                        (body.len() - 1) as i32,
+                        &mut body_rect,
+                        NOTIF_TEXT_FORMAT,
+                    );
                 }
-                SetTextColor(hdc, colors.title);
-                let mut title_rect = RECT {
-                    left: text_left,
-                    top: rect.top + m.title_top,
-                    right: text_right,
-                    bottom: rect.top + m.title_bottom,
-                };
-                DrawTextW(
-                    hdc,
-                    title.as_ptr(),
-                    (title.len() - 1) as i32,
-                    &mut title_rect,
-                    NOTIF_TEXT_FORMAT,
-                );
+            }
+        } else {
+            let title_font = SIZE_TITLE_FONTS[size_code].load(Ordering::Relaxed);
+            if let Ok(title) = NOTIF_TITLE.lock() {
+                if title.len() > 1 {
+                    if title_font != 0 {
+                        SelectObject(target_dc, title_font);
+                    }
+                    SetTextColor(target_dc, colors.title);
+                    let mut text_rect = RECT {
+                        left: text_left,
+                        top: rect.top + m.title_top - 6,
+                        right: text_right,
+                        bottom: rect.top + m.title_bottom + 6,
+                    };
+                    DrawTextW(
+                        target_dc,
+                        title.as_ptr(),
+                        (title.len() - 1) as i32,
+                        &mut text_rect,
+                        NOTIF_TEXT_FORMAT,
+                    );
+                }
+            }
+            let body_font = SIZE_BODY_FONTS[size_code].load(Ordering::Relaxed);
+            if let Ok(body) = NOTIF_BODY.lock() {
+                if body.len() > 1 {
+                    if body_font != 0 {
+                        SelectObject(target_dc, body_font);
+                    }
+                    SetTextColor(target_dc, colors.body);
+                    let mut text_rect = RECT {
+                        left: text_left,
+                        top: rect.top + m.body_top,
+                        right: text_right,
+                        bottom: rect.top + m.body_bottom + 6,
+                    };
+                    DrawTextW(
+                        target_dc,
+                        body.as_ptr(),
+                        (body.len() - 1) as i32,
+                        &mut text_rect,
+                        NOTIF_TEXT_FORMAT,
+                    );
+                }
             }
         }
+    }
 
-        let body_font = SIZE_BODY_FONTS[size_code].load(Ordering::Relaxed);
-        if let Ok(body) = NOTIF_BODY.lock() {
-            if body.len() > 1 {
-                if body_font != 0 {
-                    SelectObject(hdc, body_font);
-                }
-                SetTextColor(hdc, colors.body);
-                let mut body_rect = RECT {
-                    left: text_left,
-                    top: rect.top + m.body_top,
-                    right: text_right,
-                    bottom: rect.top + m.body_bottom,
-                };
-                DrawTextW(
-                    hdc,
-                    body.as_ptr(),
-                    (body.len() - 1) as i32,
-                    &mut body_rect,
-                    NOTIF_TEXT_FORMAT,
-                );
-            }
-        }
-    } else {
-        let title_font = SIZE_TITLE_FONTS[size_code].load(Ordering::Relaxed);
-        if let Ok(title) = NOTIF_TITLE.lock() {
-            if title.len() > 1 {
-                if title_font != 0 {
-                    SelectObject(hdc, title_font);
-                }
-                SetTextColor(hdc, colors.title);
-                let mut text_rect = RECT {
-                    left: text_left,
-                    top: rect.top + m.title_top - 6,
-                    right: text_right,
-                    bottom: rect.top + m.title_bottom + 6,
-                };
-                DrawTextW(
-                    hdc,
-                    title.as_ptr(),
-                    (title.len() - 1) as i32,
-                    &mut text_rect,
-                    NOTIF_TEXT_FORMAT,
-                );
-            }
-        }
-        let body_font = SIZE_BODY_FONTS[size_code].load(Ordering::Relaxed);
-        if let Ok(body) = NOTIF_BODY.lock() {
-            if body.len() > 1 {
-                if body_font != 0 {
-                    SelectObject(hdc, body_font);
-                }
-                SetTextColor(hdc, colors.body);
-                let mut text_rect = RECT {
-                    left: text_left,
-                    top: rect.top + m.body_top,
-                    right: text_right,
-                    bottom: rect.top + m.body_bottom + 6,
-                };
-                DrawTextW(
-                    hdc,
-                    body.as_ptr(),
-                    (body.len() - 1) as i32,
-                    &mut text_rect,
-                    NOTIF_TEXT_FORMAT,
-                );
-            }
-        }
+    if dib != 0 {
+        BitBlt(hdc, 0, 0, width, height, mem_dc, 0, 0, 0x00CC_0020 /* SRCCOPY */);
+        let _ = DeleteObject(dib);
+    }
+    if mem_dc != 0 {
+        let _ = DeleteDC(mem_dc);
     }
 }
 

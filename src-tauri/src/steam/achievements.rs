@@ -1641,6 +1641,14 @@ pub struct AchievementUnlockedPayload {
     /// unlock so the achievement list stays correct.
     #[serde(default)]
     pub notification: bool,
+    #[serde(default)]
+    pub rarity_percent: Option<f64>,
+    #[serde(default)]
+    pub tier: Option<String>,
+    #[serde(default)]
+    pub unlocked_count: Option<u32>,
+    #[serde(default)]
+    pub total_count: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1663,9 +1671,12 @@ pub struct AchievementNotificationOptions {
     pub custom_sound: bool,
     #[serde(default)]
     pub custom_sound_name: Option<String>,
-    /// "gold" (classic card) or "launcher" (follows the active theme).
+    /// "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst".
     #[serde(default = "default_card_theme")]
     pub card_theme: String,
+    /// "prism", "cyber", "shatter", or "jackpot".
+    #[serde(default = "default_anim_style")]
+    pub anim_style: String,
 }
 
 impl Default for AchievementNotificationOptions {
@@ -1681,6 +1692,7 @@ impl Default for AchievementNotificationOptions {
             custom_sound: false,
             custom_sound_name: None,
             card_theme: default_card_theme(),
+            anim_style: default_anim_style(),
         }
     }
 }
@@ -1692,7 +1704,26 @@ fn default_card_theme() -> String {
 fn normalize_card_theme(value: Option<&str>) -> String {
     match value {
         Some("launcher") => "launcher",
+        Some("rarity") => "rarity",
+        Some("cyber") => "cyber",
+        Some("emerald") => "emerald",
+        Some("crimson") => "crimson",
+        Some("amethyst") => "amethyst",
         _ => "gold",
+    }
+    .to_string()
+}
+
+fn default_anim_style() -> String {
+    "prism".to_string()
+}
+
+fn normalize_anim_style(value: Option<&str>) -> String {
+    match value {
+        Some("cyber") => "cyber",
+        Some("shatter") => "shatter",
+        Some("jackpot") => "jackpot",
+        _ => "prism",
     }
     .to_string()
 }
@@ -1746,6 +1777,18 @@ fn achievement_card_colors() -> crate::overlay::hud::AchievementCardColors {
         .ok()
         .and_then(|slot| *slot)
         .unwrap_or(crate::overlay::hud::GOLD_ACHIEVEMENT_CARD)
+}
+
+fn resolve_card_colors(card_theme: &str, tier: u8) -> crate::overlay::hud::AchievementCardColors {
+    match card_theme {
+        "launcher" => achievement_card_colors(),
+        "rarity" => crate::overlay::hud::rarity_card_colors(tier),
+        "cyber" => crate::overlay::hud::CYBER_ACHIEVEMENT_CARD,
+        "emerald" => crate::overlay::hud::EMERALD_ACHIEVEMENT_CARD,
+        "crimson" => crate::overlay::hud::CRIMSON_ACHIEVEMENT_CARD,
+        "amethyst" => crate::overlay::hud::AMETHYST_ACHIEVEMENT_CARD,
+        _ => crate::overlay::hud::GOLD_ACHIEVEMENT_CARD,
+    }
 }
 
 fn default_notification_size() -> String {
@@ -1817,6 +1860,9 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         card_theme: normalize_card_theme(
             settings.achievement_notifications_card_theme.as_deref(),
         ),
+        anim_style: normalize_anim_style(
+            settings.achievement_notifications_anim_style.as_deref(),
+        ),
     }
 }
 
@@ -1845,6 +1891,9 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_card_theme = Some(normalize_card_theme(Some(
         options.card_theme.as_str(),
     )));
+    settings.achievement_notifications_anim_style = Some(normalize_anim_style(Some(
+        options.anim_style.as_str(),
+    )));
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -1858,6 +1907,175 @@ fn achievement_sound_dir(app: &tauri::AppHandle) -> PathBuf {
         .join("sounds");
     let _ = std::fs::create_dir_all(&dir);
     dir
+}
+
+/// Synthesizes a stereo 44.1 kHz 16-bit PCM WAV chime tailored to the active
+/// animation style ("prism", "cyber", "shatter", "jackpot") and rarity tier
+/// (0 = bronze, 1 = silver, 2 = gold, 3 = ultra-rare diamond, 4 = platinum).
+#[cfg(windows)]
+fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
+    const SAMPLE_RATE: u32 = 44_100;
+    let duration_secs: f32 = match tier {
+        0 | 1 => 1.40,
+        2 => 1.75,
+        3 => 2.15,
+        _ => 2.55,
+    };
+    let num_samples = (SAMPLE_RATE as f32 * duration_secs) as usize;
+    let data_bytes = (num_samples * 4) as u32;
+    let mut wav = Vec::with_capacity(44 + data_bytes as usize);
+
+    // Standard RIFF/WAVE header (44 bytes, stereo 16-bit PCM).
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(36 + data_bytes).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes()); // PCM
+    wav.extend_from_slice(&2u16.to_le_bytes()); // 2 channels
+    wav.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
+    wav.extend_from_slice(&(SAMPLE_RATE * 4).to_le_bytes());
+    wav.extend_from_slice(&4u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&data_bytes.to_le_bytes());
+
+    let tau = std::f32::consts::TAU;
+    let note_count: usize = match tier {
+        0 => 3,
+        1 => 4,
+        2 => 5,
+        _ => 6,
+    };
+
+    for i in 0..num_samples {
+        let t = i as f32 / SAMPLE_RATE as f32;
+        let mut left = 0.0f32;
+        let mut right = 0.0f32;
+
+        // 1. Sub-bass impact drop (0.00s..0.22s)
+        if t < 0.22 {
+            let env = (1.0 - t / 0.22).powi(2);
+            let f_sub = 74.0 * (-t * 7.5).exp() + 34.0;
+            let sub = (t * f_sub * tau).sin() * env * 0.28;
+            left += sub;
+            right += sub;
+        }
+
+        match style {
+            "cyber" => {
+                // Cyber Overload: FM synth chord + rapid digital arpeggio
+                let notes: [f32; 6] = [220.0, 329.63, 440.0, 659.25, 880.0, 1318.51];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = idx as f32 * 0.055;
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = (dt / 0.008).min(1.0);
+                        let decay = (-dt * (2.6 - (tier.min(4) as f32) * 0.25)).exp();
+                        let mod_wave = (dt * freq * 2.0 * tau).sin() * 0.85 * (-dt * 6.0).exp();
+                        let sig_l = (dt * freq * 0.998 * tau + mod_wave).sin();
+                        let sig_r = (dt * freq * 1.002 * tau + mod_wave).sin();
+                        let amp = attack * decay * 0.16;
+                        left += sig_l * amp;
+                        right += sig_r * amp;
+                    }
+                }
+            }
+            "shatter" => {
+                // Crystal Shatter: glass bell inharmonic partials (1x, 2.756x, 4.1x)
+                let notes: [f32; 6] = [783.99, 1046.50, 1318.51, 1567.98, 2093.00, 2637.02];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = idx as f32 * 0.062;
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = (dt / 0.004).min(1.0);
+                        let decay = (-dt * 2.4).exp();
+                        let p1_l = (dt * freq * 0.997 * tau).sin();
+                        let p1_r = (dt * freq * 1.003 * tau).sin();
+                        let p2 = (dt * freq * 2.756 * tau).sin() * (-dt * 5.5).exp() * 0.38;
+                        let p3 = (dt * freq * 4.09 * tau).sin() * (-dt * 9.0).exp() * 0.18;
+                        let amp = attack * decay * 0.16;
+                        left += (p1_l + p2 + p3) * amp;
+                        right += (p1_r + p2 - p3) * amp;
+                    }
+                }
+            }
+            "jackpot" => {
+                // Arcade Jackpot: rapid coin cascade + triumphant major-9th fanfare
+                let coin_count = 4 + (tier.min(4) as usize) * 2;
+                for c in 0..coin_count {
+                    let onset = c as f32 * 0.052;
+                    if t >= onset && t < onset + 0.28 {
+                        let dt = t - onset;
+                        let f_coin = if dt < 0.032 { 987.77 } else { 1318.51 };
+                        let env = (-dt * 11.0).exp();
+                        let pan = if c % 2 == 0 { 0.72 } else { 0.28 };
+                        let wave = (dt * f_coin * tau).sin() * env * 0.18;
+                        left += wave * pan;
+                        right += wave * (1.0 - pan);
+                    }
+                }
+                let chord_onset = 0.22;
+                if t >= chord_onset {
+                    let dt = t - chord_onset;
+                    let chord: [f32; 5] = [523.25, 659.25, 783.99, 987.77, 1567.98];
+                    let attack = (dt / 0.018).min(1.0);
+                    let decay = (-dt * 1.85).exp();
+                    for &freq in chord.iter().take(note_count.min(5)) {
+                        let l = (dt * freq * 0.998 * tau).sin()
+                            + 0.35 * (dt * freq * 2.0 * tau).sin();
+                        let r = (dt * freq * 1.002 * tau).sin()
+                            + 0.35 * (dt * freq * 2.0 * tau).sin();
+                        left += l * attack * decay * 0.11;
+                        right += r * attack * decay * 0.11;
+                    }
+                }
+            }
+            _ => {
+                // Prism Unfurl: crystalline harmonic arpeggio + choir shimmer
+                let notes: [f32; 6] = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = idx as f32 * 0.072;
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = (dt / 0.007).min(1.0);
+                        let decay = (-dt * (2.25 - (tier.min(4) as f32) * 0.22)).exp();
+                        let fund_l = (dt * freq * 0.9975 * tau).sin();
+                        let fund_r = (dt * freq * 1.0025 * tau).sin();
+                        let over2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.8).exp() * 0.34;
+                        let over3 = (dt * freq * 3.0 * tau).sin() * (-dt * 6.0).exp() * 0.16;
+                        let amp = attack * decay * 0.165;
+                        left += (fund_l + over2 + over3) * amp;
+                        right += (fund_r + over2 - over3) * amp;
+                    }
+                }
+            }
+        }
+
+        // High-tier diamond/platinum sparkle tail (tiers 3 and 4)
+        if tier >= 3 && t >= 0.28 {
+            let dt = t - 0.28;
+            let shimmer_env = (dt / 0.08).min(1.0) * (-dt * 1.65).exp();
+            let vibrato = (dt * 14.0 * tau).sin() * 0.5 + 0.5;
+            let s1 = (dt * 2093.00 * tau).sin();
+            let s2 = (dt * 2637.02 * tau).sin();
+            let s3 = if tier >= 4 {
+                (dt * 3135.96 * tau).sin() * 0.7
+            } else {
+                0.0
+            };
+            let sparkle = (s1 + s2 + s3) * shimmer_env * (0.045 + 0.035 * vibrato);
+            left += sparkle;
+            right += sparkle * 0.92;
+        }
+
+        // Soft saturation limiter so peaks never clip harshly
+        let sample_l = (left.tanh() * 30_000.0).clamp(-32_767.0, 32_767.0) as i16;
+        let sample_r = (right.tanh() * 30_000.0).clamp(-32_767.0, 32_767.0) as i16;
+        wav.extend_from_slice(&sample_l.to_le_bytes());
+        wav.extend_from_slice(&sample_r.to_le_bytes());
+    }
+
+    wav
 }
 
 /// Plays a custom notification file on a background thread so the watcher
@@ -1891,6 +2109,7 @@ fn play_custom_sound(path: &str, volume: u8) -> bool {
 fn play_achievement_notification_sound(
     app: &tauri::AppHandle,
     options: &AchievementNotificationOptions,
+    tier: u8,
 ) {
     if !options.sound {
         return;
@@ -1906,6 +2125,23 @@ fn play_achievement_notification_sound(
                 return;
             }
         }
+    }
+    let wav_bytes = synthesize_dopamine_chime_wav(&options.anim_style, tier);
+    if let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(wav_bytes)) {
+        let volume = (options.volume.min(100) as f32) / 100.0;
+        std::thread::spawn(move || {
+            if let Ok(stream) = rodio::OutputStreamBuilder::open_default_stream() {
+                let sink = rodio::Sink::connect_new(stream.mixer());
+                sink.set_volume(volume);
+                sink.append(decoder);
+                sink.sleep_until_end();
+            } else {
+                unsafe {
+                    MessageBeep(0x00000040);
+                }
+            }
+        });
+        return;
     }
     const DEFAULT_CHIME: &[u8] = include_bytes!("../../assets/achievement-chime.wav");
     if let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(DEFAULT_CHIME)) {
@@ -1933,6 +2169,7 @@ fn play_achievement_notification_sound(
 fn play_achievement_notification_sound(
     _app: &tauri::AppHandle,
     _options: &AchievementNotificationOptions,
+    _tier: u8,
 ) {
 }
 
@@ -2025,21 +2262,45 @@ pub fn achievement_clear_custom_sound(app: tauri::AppHandle) -> Result<(), Strin
 /// Settings > Achievements: preview the current notification settings. The
 /// payload goes through the same frontend listener as a real unlock.
 #[tauri::command]
-pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body: String, tag: Option<String>) {
+pub fn achievement_test_notification(
+    app: tauri::AppHandle,
+    title: String,
+    body: String,
+    tag: Option<String>,
+    rarity_tier: Option<u8>,
+) {
     let options = achievement_notification_options(&app);
+    let tier = rarity_tier.unwrap_or(2).min(4);
+    let permille = match tier {
+        0 => 320,
+        1 => 560,
+        2 => 740,
+        3 => 920,
+        _ => 1000,
+    };
     crate::overlay::hud::set_notification_position(&options.position);
     crate::overlay::hud::set_notification_size(&options.size);
     crate::overlay::hud::set_notification_hold(options.duration_ms);
+    crate::overlay::hud::set_notification_style(&options.anim_style);
+    crate::overlay::hud::set_notification_rarity_tier(tier);
+    crate::overlay::hud::set_notification_progress(permille);
     let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
     if options.overlay {
         let _ = crate::overlay::hud::notify_achievement(
             &tag_text,
             &title,
             &body,
-            achievement_card_colors(),
+            resolve_card_colors(&options.card_theme, tier),
         );
     }
-    play_achievement_notification_sound(&app, &options);
+    play_achievement_notification_sound(&app, &options, tier);
+    let (rarity_percent, tier_name, unlocked_count, total_count) = match tier {
+        0 => (Some(64.2), Some("bronze".to_string()), Some(11), Some(34)),
+        1 => (Some(21.8), Some("silver".to_string()), Some(19), Some(34)),
+        2 => (Some(8.4), Some("gold".to_string()), Some(25), Some(34)),
+        3 => (Some(1.8), Some("ultra".to_string()), Some(31), Some(34)),
+        _ => (Some(0.4), Some("platinum".to_string()), Some(34), Some(34)),
+    };
     let payload = AchievementUnlockedPayload {
         app_id: "0".into(),
         name: "TEST_ACHIEVEMENT".into(),
@@ -2047,6 +2308,10 @@ pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body:
         description: body,
         icon_url: String::new(),
         notification: false,
+        rarity_percent,
+        tier: tier_name,
+        unlocked_count,
+        total_count,
     };
     let _ = app.emit("achievement-unlocked", payload);
 }
@@ -2127,6 +2392,35 @@ fn attach_achievement_icon(app: &tauri::AppHandle, icon_url: &str, generation: u
     });
 }
 
+fn classify_achievement_rarity_tier(
+    rarity_percent: Option<f64>,
+    tier_name: Option<&str>,
+    unlocked_count: u32,
+    total_count: u32,
+) -> (u8, String) {
+    if total_count > 0 && unlocked_count >= total_count {
+        return (4, "platinum".to_string());
+    }
+    if let Some(pct) = rarity_percent {
+        if pct <= 3.5 {
+            return (3, "ultra".to_string());
+        } else if pct <= 12.0 {
+            return (2, "gold".to_string());
+        } else if pct <= 30.0 {
+            return (1, "silver".to_string());
+        } else {
+            return (0, "bronze".to_string());
+        }
+    }
+    match tier_name.unwrap_or("bronze") {
+        "platinum" => (4, "platinum".to_string()),
+        "ultra" | "diamond" => (3, "ultra".to_string()),
+        "gold" => (2, "gold".to_string()),
+        "silver" => (1, "silver".to_string()),
+        _ => (0, "bronze".to_string()),
+    }
+}
+
 /// Emits the card, sound and frontend event for every achievement that was not
 /// in `unlocked_set` yet.
 fn emit_new_achievement_unlocks(
@@ -2137,12 +2431,30 @@ fn emit_new_achievement_unlocks(
     write_cache: bool,
 ) {
     let mut emitted = false;
+    let total_count = response
+        .total_achievements
+        .max(response.achievements.len() as u32);
     for ach in &response.achievements {
         if !ach.unlocked || unlocked_set.contains(&ach.name) {
             continue;
         }
         unlocked_set.insert(ach.name.clone());
         emitted = true;
+
+        let unlocked_count = (unlocked_set.len() as u32).min(total_count.max(1));
+        let rarity_percent = ach.rarity.as_ref().and_then(|r| r.percent);
+        let raw_tier_name = ach.tier.as_ref().map(|t| t.name.as_str());
+        let (tier_code, resolved_tier_name) = classify_achievement_rarity_tier(
+            rarity_percent,
+            raw_tier_name,
+            unlocked_count,
+            total_count,
+        );
+        let progress_permille = if total_count > 0 {
+            ((unlocked_count as u64) * 1000 / (total_count as u64)).min(1000)
+        } else {
+            650
+        };
 
         // 1. Native in-game HUD toast card
         let display = if ach.display_name.trim().is_empty() {
@@ -2154,20 +2466,41 @@ fn emit_new_achievement_unlocks(
         crate::overlay::hud::set_notification_position(&options.position);
         crate::overlay::hud::set_notification_size(&options.size);
         crate::overlay::hud::set_notification_hold(options.duration_ms);
+        crate::overlay::hud::set_notification_style(&options.anim_style);
+        crate::overlay::hud::set_notification_rarity_tier(tier_code);
+        crate::overlay::hud::set_notification_progress(progress_permille);
+        let tag_label = match tier_code {
+            4 => format!("PLATİN KUPA • {unlocked_count}/{total_count} (%100)"),
+            3 => match rarity_percent {
+                Some(pct) => format!("ULTRA NADİR • %{pct:.1} • {unlocked_count}/{total_count}"),
+                None => format!("ULTRA NADİR • {unlocked_count}/{total_count}"),
+            },
+            2 => match rarity_percent {
+                Some(pct) => format!("ALTIN BAŞARIM • %{pct:.1} • {unlocked_count}/{total_count}"),
+                None => format!("ALTIN BAŞARIM • {unlocked_count}/{total_count}"),
+            },
+            _ => {
+                if total_count > 0 {
+                    format!("BAŞARIM KAZANILDI • {unlocked_count}/{total_count}")
+                } else {
+                    "BAŞARIM KAZANILDI".to_string()
+                }
+            }
+        };
         if options.enabled {
             // 1. Native in-game HUD toast card
             if options.overlay {
                 let generation = crate::overlay::hud::notify_achievement(
-                    "BAŞARIM KAZANILDI",
+                    &tag_label,
                     &display,
                     &ach.description,
-                    achievement_card_colors(),
+                    resolve_card_colors(&options.card_theme, tier_code),
                 );
                 attach_achievement_icon(app, &ach.icon_link, generation);
             }
             // 2. Native notification sound: the user's file when set,
-            // otherwise the Windows system chime.
-            play_achievement_notification_sound(app, &options);
+            // otherwise the synthesized multi-tier dopamine chime.
+            play_achievement_notification_sound(app, &options, tier_code);
         }
 
         // 3. Emit event to frontend; the UI records the unlock even when the
@@ -2179,6 +2512,10 @@ fn emit_new_achievement_unlocks(
             description: ach.description.clone(),
             icon_url: ach.icon_link.clone(),
             notification: options.enabled,
+            rarity_percent,
+            tier: Some(resolved_tier_name),
+            unlocked_count: Some(unlocked_count),
+            total_count: Some(total_count),
         };
         let _ = app.emit("achievement-unlocked", payload);
     }
@@ -2737,6 +3074,38 @@ mod tests {
         assert_eq!(bit.get("hidden").and_then(Vdf::as_str), Some("1"));
         assert!(parse_binary_vdf(b"garbage").is_none());
         assert!(parse_binary_vdf(&[0, 1, 2]).is_none());
+    }
+
+    #[test]
+    fn anim_style_and_rarity_tier_normalize_cleanly() {
+        assert_eq!(normalize_card_theme(Some("rarity")), "rarity");
+        assert_eq!(normalize_card_theme(Some("cyber")), "cyber");
+        assert_eq!(normalize_card_theme(Some("emerald")), "emerald");
+        assert_eq!(normalize_card_theme(Some("crimson")), "crimson");
+        assert_eq!(normalize_card_theme(Some("amethyst")), "amethyst");
+        assert_eq!(normalize_anim_style(None), "prism");
+        assert_eq!(normalize_anim_style(Some("cyber")), "cyber");
+        assert_eq!(normalize_anim_style(Some("shatter")), "shatter");
+        assert_eq!(normalize_anim_style(Some("jackpot")), "jackpot");
+        assert_eq!(normalize_anim_style(Some("unknown")), "prism");
+
+        assert_eq!(
+            classify_achievement_rarity_tier(Some(1.5), Some("gold"), 5, 34),
+            (3, "ultra".to_string())
+        );
+        assert_eq!(
+            classify_achievement_rarity_tier(Some(50.0), Some("bronze"), 34, 34),
+            (4, "platinum".to_string())
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn synthesized_dopamine_chime_produces_valid_riff_wav() {
+        let wav = synthesize_dopamine_chime_wav("prism", 3);
+        assert!(wav.len() > 44);
+        assert_eq!(&wav[0..4], b"RIFF");
+        assert_eq!(&wav[8..12], b"WAVE");
     }
     /// Live check of the local achievement cache (needs the Steam client).
     /// Run: `cargo test live_steam_local_achievements -- --ignored --nocapture`

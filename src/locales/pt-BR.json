@@ -3146,5 +3146,20 @@
   "task.ramShare": "Parte da memória do launcher",
   "task.noMatches": "Nenhum processo correspondente",
   "task.groupPages": "Páginas web",
-  "task.groupInfra": "Infraestrutura web"
+  "task.groupInfra": "Infraestrutura web",
+  "settings.achAnimStyleTitle": "Animation style",
+  "settings.achAnimStyleDesc": "Choose the multi-stage entry choreography, shockwave and particle effects.",
+  "settings.achAnimPrism": "Prism Unfurl",
+  "settings.achAnimCyber": "Cyber Overload",
+  "settings.achAnimShatter": "Crystal Shatter",
+  "settings.achAnimJackpot": "Arcade Jackpot",
+  "settings.achCardThemeRarity": "Rarity Aura",
+  "settings.achCardThemeCyber": "Cyber Neon",
+  "settings.achCardThemeEmerald": "Emerald",
+  "settings.achCardThemeCrimson": "Crimson",
+  "settings.achCardThemeAmethyst": "Amethyst",
+  "settings.achRarityStageLabel": "Preview Rarity",
+  "settings.achTierUltra": "Ultra Rare",
+  "settings.achReplayBtn": "Replay",
+  "settings.achAuditionBtn": "Listen"
 }

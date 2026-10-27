@@ -3146,5 +3146,20 @@
   "task.ramShare": "लॉन्चर मेमोरी में हिस्सा",
   "task.noMatches": "कोई मिलती प्रक्रिया नहीं",
   "task.groupPages": "वेब पेज",
-  "task.groupInfra": "वेब अधोसंरचना"
+  "task.groupInfra": "वेब अधोसंरचना",
+  "settings.achAnimStyleTitle": "Animation style",
+  "settings.achAnimStyleDesc": "Choose the multi-stage entry choreography, shockwave and particle effects.",
+  "settings.achAnimPrism": "Prism Unfurl",
+  "settings.achAnimCyber": "Cyber Overload",
+  "settings.achAnimShatter": "Crystal Shatter",
+  "settings.achAnimJackpot": "Arcade Jackpot",
+  "settings.achCardThemeRarity": "Rarity Aura",
+  "settings.achCardThemeCyber": "Cyber Neon",
+  "settings.achCardThemeEmerald": "Emerald",
+  "settings.achCardThemeCrimson": "Crimson",
+  "settings.achCardThemeAmethyst": "Amethyst",
+  "settings.achRarityStageLabel": "Preview Rarity",
+  "settings.achTierUltra": "Ultra Rare",
+  "settings.achReplayBtn": "Replay",
+  "settings.achAuditionBtn": "Listen"
 }

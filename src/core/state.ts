@@ -313,6 +313,7 @@ export const S = {
     customSound: false,
     customSoundName: null,
     cardTheme: "gold",
+    animStyle: "prism",
   } as import("../steam").AchievementNotificationOptions,
   customGames: ([]) as import("../custom-games").CustomGame[],
   customSummaries: ([]) as LibraryItem[],

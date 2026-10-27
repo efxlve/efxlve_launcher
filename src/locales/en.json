@@ -3146,5 +3146,20 @@
   "task.ramShare": "Share of launcher memory",
   "task.noMatches": "No matching processes",
   "task.groupPages": "Web pages",
-  "task.groupInfra": "Web infrastructure"
+  "task.groupInfra": "Web infrastructure",
+  "settings.achAnimStyleTitle": "Animation style",
+  "settings.achAnimStyleDesc": "Choose the multi-stage entry choreography, shockwave and particle effects.",
+  "settings.achAnimPrism": "Prism Unfurl",
+  "settings.achAnimCyber": "Cyber Overload",
+  "settings.achAnimShatter": "Crystal Shatter",
+  "settings.achAnimJackpot": "Arcade Jackpot",
+  "settings.achCardThemeRarity": "Rarity Aura",
+  "settings.achCardThemeCyber": "Cyber Neon",
+  "settings.achCardThemeEmerald": "Emerald",
+  "settings.achCardThemeCrimson": "Crimson",
+  "settings.achCardThemeAmethyst": "Amethyst",
+  "settings.achRarityStageLabel": "Preview Rarity",
+  "settings.achTierUltra": "Ultra Rare",
+  "settings.achReplayBtn": "Replay",
+  "settings.achAuditionBtn": "Listen"
 }

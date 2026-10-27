@@ -2,14 +2,15 @@
  * Modern Achievements & Notifications settings view and live interactive stage.
  *
  * Provides a live monitor stage showing the real-time notification toast at the
- * user's chosen screen position, visual position selector, audio chime audition,
- * volume/duration controls, and toggle switches.
+ * user's chosen screen position, visual position selector, animation style &
+ * theme presets, rarity-tier escalation preview, multi-harmonic audio chime
+ * audition, volume/duration controls, and toggle switches.
  */
 
-import { icon } from "../../core/icons";
+import { icon, type IconName } from "../../core/icons";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
-import { syncAchievementCardTheme } from "../../core/achievement-card-theme";
+import { achievementCardPalette, syncAchievementCardTheme } from "../../core/achievement-card-theme";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import {
@@ -21,51 +22,263 @@ import {
 } from "../../steam";
 import { t } from "../../i18n";
 
-/** Synthesizes the warm velvet console chime live in the browser using Web Audio. */
-function playWebAudioAchievementChime(volumePct = 100): void {
+/** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
+let previewRarityTier = 2;
+/** Incremented on every replay/preset change so CSS animations restart cleanly. */
+let stageReplaySeq = 1;
+
+const STAGE_PARTICLES: ReadonlyArray<{
+  dx: number;
+  dy: number;
+  rot: number;
+  delay: number;
+  size: number;
+  diamond: boolean;
+}> = [
+  { dx: -52, dy: -38, rot: 45, delay: 40, size: 6, diamond: true },
+  { dx: -28, dy: -56, rot: 120, delay: 65, size: 5, diamond: false },
+  { dx: 14, dy: -62, rot: 210, delay: 30, size: 7, diamond: true },
+  { dx: 54, dy: -46, rot: 85, delay: 80, size: 5, diamond: false },
+  { dx: 76, dy: -18, rot: 160, delay: 50, size: 6, diamond: true },
+  { dx: 82, dy: 22, rot: 310, delay: 95, size: 4, diamond: false },
+  { dx: 58, dy: 48, rot: 45, delay: 60, size: 6, diamond: true },
+  { dx: 18, dy: 58, rot: 195, delay: 70, size: 5, diamond: false },
+  { dx: -24, dy: 54, rot: 260, delay: 45, size: 6, diamond: true },
+  { dx: -58, dy: 34, rot: 135, delay: 85, size: 5, diamond: false },
+  { dx: -68, dy: -4, rot: 25, delay: 55, size: 7, diamond: true },
+  { dx: 36, dy: -32, rot: 70, delay: 110, size: 4, diamond: false },
+  { dx: -38, dy: 28, rot: 150, delay: 120, size: 5, diamond: true },
+  { dx: 96, dy: -6, rot: 45, delay: 105, size: 5, diamond: true },
+];
+
+/**
+ * Synthesizes the multi-harmonic dopamine chime live in the browser using Web Audio,
+ * tailored to the chosen animation style ("prism", "cyber", "shatter", "jackpot")
+ * and rarity tier (0..4).
+ */
+export function playWebAudioAchievementChime(
+  volumePct = 100,
+  animStyle = S.achievementNotificationOptions.animStyle || "prism",
+  rarityTier = previewRarityTier,
+): void {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const now = ctx.currentTime;
-    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.4;
+    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.36;
+    if (vol <= 0.001) return;
 
-    // Warm D-major acoustic bell harmonics matching scripts/achievement-chime.mjs
-    const notes = [
-      { hz: 293.665, at: 0.0, gain: 0.85, decay: 1.4 },   // D4
-      { hz: 440.000, at: 0.08, gain: 0.75, decay: 1.3 },  // A4
-      { hz: 587.330, at: 0.16, gain: 0.90, decay: 1.5 },  // D5
-      { hz: 739.989, at: 0.24, gain: 0.70, decay: 1.2 },  // F#5
-    ];
+    const masterFilter = ctx.createBiquadFilter();
+    masterFilter.type = "lowpass";
+    masterFilter.frequency.setValueAtTime(rarityTier >= 3 ? 4800 : 3400, now);
+    masterFilter.Q.setValueAtTime(0.85, now);
+    masterFilter.connect(ctx.destination);
 
-    // Master lowpass filter to eliminate ear-piercing high frequencies
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(2400, now);
-    filter.Q.setValueAtTime(0.7, now);
-    filter.connect(ctx.destination);
+    // 1. Sub-bass impact drop (74 Hz -> 34 Hz)
+    const subOsc = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    subOsc.type = "sine";
+    subOsc.frequency.setValueAtTime(74, now);
+    subOsc.frequency.exponentialRampToValueAtTime(34, now + 0.22);
+    subGain.gain.setValueAtTime(0.0001, now);
+    subGain.gain.linearRampToValueAtTime(vol * 0.75, now + 0.012);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+    subOsc.connect(subGain);
+    subGain.connect(masterFilter);
+    subOsc.start(now);
+    subOsc.stop(now + 0.26);
 
-    for (const note of notes) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    const noteCount = rarityTier <= 0 ? 3 : rarityTier === 1 ? 4 : rarityTier === 2 ? 5 : 6;
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(note.hz, now + note.at);
+    if (animStyle === "cyber") {
+      const freqs = [220.0, 329.63, 440.0, 659.25, 880.0, 1318.51].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + idx * 0.055;
+        const osc = ctx.createOscillator();
+        const over = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        over.type = "triangle";
+        osc.frequency.setValueAtTime(hz, at);
+        over.frequency.setValueAtTime(hz * 2.0, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.42, at + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.15 + rarityTier * 0.12);
+        osc.connect(gain);
+        over.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        over.start(at);
+        osc.stop(at + 1.45 + rarityTier * 0.12);
+        over.stop(at + 1.45 + rarityTier * 0.12);
+      });
+    } else if (animStyle === "shatter") {
+      const freqs = [783.99, 1046.5, 1318.51, 1567.98, 2093.0, 2637.02].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + idx * 0.062;
+        for (const [mult, weight, decay] of [
+          [1.0, 0.58, 1.35],
+          [2.756, 0.22, 0.55],
+        ] as const) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(hz * mult, at);
+          gain.gain.setValueAtTime(0.0001, at);
+          gain.gain.exponentialRampToValueAtTime(vol * weight, at + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+          osc.connect(gain);
+          gain.connect(masterFilter);
+          osc.start(at);
+          osc.stop(at + decay + 0.05);
+        }
+      });
+    } else if (animStyle === "jackpot") {
+      const coins = 4 + rarityTier * 2;
+      for (let c = 0; c < coins; c++) {
+        const at = now + c * 0.052;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(987.77, at);
+        osc.frequency.setValueAtTime(1318.51, at + 0.032);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.45, at + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.26);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        osc.stop(at + 0.28);
+      }
+      const chordAt = now + 0.22;
+      [523.25, 659.25, 783.99, 987.77, 1567.98].slice(0, Math.min(5, noteCount)).forEach((hz) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(hz, chordAt);
+        gain.gain.setValueAtTime(0.0001, chordAt);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.34, chordAt + 0.024);
+        gain.gain.exponentialRampToValueAtTime(0.0001, chordAt + 1.55);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(chordAt);
+        osc.stop(chordAt + 1.6);
+      });
+    } else {
+      // Prism Unfurl (default): crystalline harmonic arpeggio + warm bell overtone
+      const freqs = [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + idx * 0.072;
+        const osc = ctx.createOscillator();
+        const bell = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        bell.type = "triangle";
+        osc.frequency.setValueAtTime(hz, at);
+        bell.frequency.setValueAtTime(hz * 2.0, at);
+        const decay = 1.35 + rarityTier * 0.14;
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.56, at + 0.016);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+        const bellGain = ctx.createGain();
+        bellGain.gain.setValueAtTime(0.26, at);
+        bell.connect(bellGain);
+        bellGain.connect(gain);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        bell.start(at);
+        osc.stop(at + decay + 0.05);
+        bell.stop(at + decay + 0.05);
+      });
+    }
 
-      const startTime = now + note.at;
-      // Soft 20ms attack curve
-      gain.gain.setValueAtTime(0.0001, startTime);
-      gain.gain.exponentialRampToValueAtTime(vol * note.gain, startTime + 0.022);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + note.decay);
-
-      osc.connect(gain);
-      gain.connect(filter);
-
-      osc.start(startTime);
-      osc.stop(startTime + note.decay + 0.05);
+    // Ultra-Rare / Platinum high-octave choir shimmer tail
+    if (rarityTier >= 3) {
+      const shimmerFreqs = rarityTier >= 4 ? [2093.0, 2637.02, 3135.96] : [2093.0, 2637.02];
+      shimmerFreqs.forEach((hz, i) => {
+        const at = now + 0.3 + i * 0.06;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(hz, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.24, at + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.75);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        osc.stop(at + 1.8);
+      });
     }
   } catch {
     /* browser audio blocked or unavailable */
+  }
+}
+
+function getPreviewTierMeta(tier: number): {
+  tag: string;
+  title: string;
+  desc: string;
+  rarityBadge: string;
+  progressPct: number;
+  progressText: string;
+  iconName: IconName;
+} {
+  switch (tier) {
+    case 0:
+      return {
+        tag: t("settings.achUnlockedTag"),
+        title: "İlk Adım",
+        desc: t("settings.achTestDesc"),
+        rarityBadge: "%64.2",
+        progressPct: 32,
+        progressText: "11 / 34 • %32",
+        iconName: "trophy",
+      };
+    case 1:
+      return {
+        tag: t("settings.achUnlockedTag"),
+        title: "Keskin Gözlemci",
+        desc: t("settings.achTestDesc"),
+        rarityBadge: "%21.8",
+        progressPct: 56,
+        progressText: "19 / 34 • %56",
+        iconName: "trophy",
+      };
+    case 3:
+      return {
+        tag: `${t("settings.achTierUltra").toUpperCase()} • %1.8`,
+        title: "Kusursuz Senkron",
+        desc: t("settings.achTestDesc"),
+        rarityBadge: "%1.8",
+        progressPct: 92,
+        progressText: "31 / 34 • %92",
+        iconName: "sparkles",
+      };
+    case 4:
+      return {
+        tag: `${t("ach.tierPlatinum").toUpperCase()} • %100`,
+        title: "Platin Avcısı",
+        desc: t("ach.platinumEarnedDesc"),
+        rarityBadge: "100% PLATINUM",
+        progressPct: 100,
+        progressText: "34 / 34 • %100",
+        iconName: "crown",
+      };
+    default:
+      return {
+        tag: `${t("ach.tierGold").toUpperCase()} • %8.4`,
+        title: "Zamanın Efendisi",
+        desc: t("settings.achTestDesc"),
+        rarityBadge: "%8.4",
+        progressPct: 74,
+        progressText: "25 / 34 • %74",
+        iconName: "trophy",
+      };
   }
 }
 
@@ -79,6 +292,15 @@ export function renderAchievementsSettingsView(): string {
     : options.size === "compact"
       ? "small"
       : "normal";
+
+  const allowedThemes = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
+  const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "gold";
+
+  const allowedStyles = ["prism", "cyber", "shatter", "jackpot"];
+  const animStyle = allowedStyles.includes(options.animStyle) ? options.animStyle : "prism";
+
+  const palette = achievementCardPalette(cardTheme, previewRarityTier);
+  const tierMeta = getPreviewTierMeta(previewRarityTier);
 
   const sizeOptions: Array<{ id: string; label: string }> = [
     { id: "small", label: t("settings.achSizeSmall") },
@@ -120,19 +342,64 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
-  const cardTheme = options.cardTheme === "launcher" ? "launcher" : "gold";
-  const cardThemeButtons = [
-    { id: "gold", label: t("settings.achCardThemeGold") },
-    { id: "launcher", label: t("settings.achCardThemeLauncher") },
-  ]
+  const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+    { id: "prism", label: t("settings.achAnimPrism"), ico: "sparkles" },
+    { id: "cyber", label: t("settings.achAnimCyber"), ico: "zap" },
+    { id: "shatter", label: t("settings.achAnimShatter"), ico: "star" },
+    { id: "jackpot", label: t("settings.achAnimJackpot"), ico: "trophy" },
+  ];
+
+  const animStyleButtons = animStyleOptions
     .map(
-      (option) => `
-        <button type="button" class="${cardTheme === option.id ? "active" : ""}" data-act="set-ach-card-theme" data-val="${option.id}">
-          ${esc(option.label)}
+      (opt) => `
+        <button type="button" class="ach-style-chip ${animStyle === opt.id ? "active" : ""}" data-act="set-ach-anim-style" data-val="${opt.id}">
+          ${icon(opt.ico, 13)}
+          <span>${esc(opt.label)}</span>
         </button>
       `,
     )
     .join("");
+
+  const cardThemeButtons = [
+    { id: "gold", label: t("settings.achCardThemeGold"), swatch: "#f59e0b" },
+    { id: "rarity", label: t("settings.achCardThemeRarity"), swatch: "conic-gradient(#cd7f32, #94a3b8, #f59e0b, #22d3ee, #e879f9)" },
+    { id: "launcher", label: t("settings.achCardThemeLauncher"), swatch: "var(--accent)" },
+    { id: "cyber", label: t("settings.achCardThemeCyber"), swatch: "#00f0ff" },
+    { id: "emerald", label: t("settings.achCardThemeEmerald"), swatch: "#10b981" },
+    { id: "crimson", label: t("settings.achCardThemeCrimson"), swatch: "#f43f5e" },
+    { id: "amethyst", label: t("settings.achCardThemeAmethyst"), swatch: "#a855f7" },
+  ]
+    .map(
+      (option) => `
+        <button type="button" class="ach-theme-chip ${cardTheme === option.id ? "active" : ""}" data-act="set-ach-card-theme" data-val="${option.id}">
+          <span class="ach-theme-swatch" style="background: ${option.swatch};"></span>
+          <span>${esc(option.label)}</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  const rarityTierPills = [
+    { tier: 0, label: t("ach.tierBronze"), dot: "#cd7f32" },
+    { tier: 1, label: t("ach.tierSilver"), dot: "#94a3b8" },
+    { tier: 2, label: t("ach.tierGold"), dot: "#f59e0b" },
+    { tier: 3, label: t("settings.achTierUltra"), dot: "#22d3ee" },
+    { tier: 4, label: t("ach.tierPlatinum"), dot: "#e879f9" },
+  ]
+    .map(
+      (r) => `
+        <button type="button" class="ach-tier-pill ${previewRarityTier === r.tier ? "active" : ""}" data-act="set-ach-preview-tier" data-val="${r.tier}">
+          <span class="ach-tier-dot" style="background: ${r.dot}; box-shadow: 0 0 6px ${r.dot};"></span>
+          <span>${esc(r.label)}</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  const particlesHtml = STAGE_PARTICLES.map(
+    (p) =>
+      `<span class="ach-fx-particle ${p.diamond ? "diamond" : "spark"}" style="--dx:${p.dx}px;--dy:${p.dy}px;--rot:${p.rot}deg;--delay:${p.delay}ms;--sz:${p.size}px;"></span>`,
+  ).join("");
 
   // Position anchors for the visual monitor pad
   const positions: Array<{ id: string; label: string; iconName: string }> = [
@@ -144,16 +411,18 @@ export function renderAchievementsSettingsView(): string {
     { id: "bottom-right", label: t("settings.achPositionBottomRight"), iconName: "arrow-down-right" },
   ];
 
-  const positionPadButtons = positions.map((p) => {
-    const isCurrent = position === p.id;
-    return `
+  const positionPadButtons = positions
+    .map((p) => {
+      const isCurrent = position === p.id;
+      return `
       <button type="button" class="ach-pad-btn ${isCurrent ? "active" : ""}" data-act="set-ach-position" data-val="${esc(p.id)}" title="${esc(p.label)}">
         <span class="ach-pad-dot"></span>
         <span class="ach-pad-label">${esc(p.label)}</span>
         ${isCurrent ? `<span class="ach-pad-check">${icon("check", 11)}</span>` : ""}
       </button>
     `;
-  }).join("");
+    })
+    .join("");
 
   return `
     <div class="ach-settings-view">
@@ -164,6 +433,9 @@ export function renderAchievementsSettingsView(): string {
           <p class="page-sub">${esc(t("settings.achNotifyDesc"))}</p>
         </div>
         <div class="theme-section-actions">
+          <button type="button" class="btn ghost small" data-act="ach-replay-stage">
+            ${icon("refresh", 13)} <span>${esc(t("settings.achReplayBtn"))}</span>
+          </button>
           <button type="button" class="btn primary small" data-act="ach-test-notification">
             ${icon("bell", 13)} <span>${esc(t("settings.achTestTitle"))}</span>
           </button>
@@ -177,22 +449,48 @@ export function renderAchievementsSettingsView(): string {
             <span class="theme-pulse-dot"></span>
             <span>${esc(t("settings.achPreviewTitle"))}</span>
           </span>
+          <div class="ach-stage-tier-bar" role="group" aria-label="${esc(t("settings.achRarityStageLabel"))}">
+            ${rarityTierPills}
+          </div>
           <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(position)}</strong></span>
         </div>
 
-        <div class="ach-stage-screen pos-${esc(position)}">
+        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="--ach-bg:${palette.background};--ach-accent:${palette.accent};--ach-border:${palette.border};--ach-icon:${palette.icon};--ach-title:${palette.title};--ach-body:${palette.body};--ach-progress:${tierMeta.progressPct}%;">
           <div class="ach-stage-backdrop"></div>
-          
-          <!-- Next-Gen Console Toast Card -->
-          <div class="ach-hud-toast size-${esc(currentSize)}${cardTheme === "launcher" ? " themed" : ""}">
+          <div class="ach-stage-aura"></div>
+
+          <!-- Dopamine Choreography Toast Capsule -->
+          <div class="ach-hud-toast size-${esc(currentSize)} style-${esc(animStyle)} theme-${esc(cardTheme)} tier-${previewRarityTier} seq-${stageReplaySeq % 2}" data-seq="${stageReplaySeq}">
+            <div class="ach-fx-border-beam"></div>
+            <div class="ach-fx-godrays"></div>
+            <div class="ach-fx-shimmer"></div>
             <div class="ach-hud-gold-bar"></div>
-            <div class="ach-hud-medallion">
-              <span class="ach-hud-trophy-ico">${icon("trophy", 16)}</span>
+
+            <div class="ach-hud-medallion-wrap">
+              <span class="ach-fx-shockwave ring-1"></span>
+              <span class="ach-fx-shockwave ring-2"></span>
+              <div class="ach-fx-particles">${particlesHtml}</div>
+              <div class="ach-hud-medallion">
+                <span class="ach-medallion-ring"></span>
+                <span class="ach-hud-trophy-ico">${icon(tierMeta.iconName, 18)}</span>
+              </div>
             </div>
+
             <div class="ach-hud-text-col">
-              <span class="ach-hud-tag">${esc(t("settings.achUnlockedTag"))}</span>
-              <span class="ach-hud-title">Platin Avcısı</span>
-              <span class="ach-hud-desc">${esc(t("settings.achTestDesc"))}</span>
+              <div class="ach-hud-top-row">
+                <span class="ach-hud-tag">${esc(tierMeta.tag)}</span>
+                <span class="ach-hud-rarity-pill">${esc(tierMeta.rarityBadge)}</span>
+              </div>
+              <span class="ach-hud-title">${esc(tierMeta.title)}</span>
+              <span class="ach-hud-desc">${esc(tierMeta.desc)}</span>
+              <div class="ach-hud-progress-row">
+                <div class="ach-hud-progress-track">
+                  <div class="ach-hud-progress-fill">
+                    <span class="ach-hud-progress-tip"></span>
+                  </div>
+                </div>
+                <span class="ach-hud-progress-meta">${esc(tierMeta.progressText)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -200,14 +498,25 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
-        <!-- Card theme -->
-        <div class="row settings-row">
+        <!-- Animation Style -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achAnimStyleTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achAnimStyleDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-style-grid" role="group">${animStyleButtons}</div>
+          </div>
+        </div>
+
+        <!-- Card Theme -->
+        <div class="row settings-row stacked">
           <div class="row-main">
             <div class="settings-row-title">${esc(t("settings.achCardThemeTitle"))}</div>
             <div class="settings-row-desc">${esc(t("settings.achCardThemeDesc"))}</div>
           </div>
-          <div class="settings-row-control">
-            <div class="seg" role="group">${cardThemeButtons}</div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-theme-grid" role="group">${cardThemeButtons}</div>
           </div>
         </div>
 
@@ -285,8 +594,8 @@ export function renderAchievementsSettingsView(): string {
           <div class="settings-row-control">
             <div class="ach-sound-control-wrap">
               <span class="ach-sound-file-label" title="${esc(soundName)}">${esc(soundName)}</span>
-              <button type="button" class="btn ghost small" data-act="ach-audition-sound" title="Sesi Önizle">
-                ${icon("volume-2", 13)} <span>Dinle</span>
+              <button type="button" class="btn ghost small" data-act="ach-audition-sound" title="${esc(t("settings.achAuditionBtn"))}">
+                ${icon("volume-2", 13)} <span>${esc(t("settings.achAuditionBtn"))}</span>
               </button>
               <button type="button" class="btn ghost small" data-act="ach-pick-sound">
                 ${icon("folder", 13)} <span>${esc(t("settings.achSoundChoose"))}</span>
@@ -370,13 +679,57 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       return true;
     }
 
+    case "set-ach-anim-style": {
+      const allowed = ["prism", "cyber", "shatter", "jackpot"];
+      const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "prism";
+      const next = { ...S.achievementNotificationOptions, animStyle };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      if (next.sound) {
+        playWebAudioAchievementChime(next.volume, animStyle, previewRarityTier);
+      }
+      return true;
+    }
+
     case "set-ach-card-theme": {
-      const cardTheme = el.dataset.val === "launcher" ? "launcher" : "gold";
+      const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
+      const cardTheme = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "gold";
       const next = { ...S.achievementNotificationOptions, cardTheme };
       S.achievementNotificationOptions = next;
+      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       syncAchievementCardTheme();
       render();
+      return true;
+    }
+
+    case "set-ach-preview-tier": {
+      const tier = Math.max(0, Math.min(4, Number(el.dataset.val ?? 2)));
+      previewRarityTier = Number.isNaN(tier) ? 2 : tier;
+      stageReplaySeq++;
+      render();
+      if (S.achievementNotificationOptions.sound) {
+        playWebAudioAchievementChime(
+          S.achievementNotificationOptions.volume,
+          S.achievementNotificationOptions.animStyle,
+          previewRarityTier,
+        );
+      }
+      return true;
+    }
+
+    case "ach-replay-stage": {
+      stageReplaySeq++;
+      render();
+      if (S.achievementNotificationOptions.sound) {
+        playWebAudioAchievementChime(
+          S.achievementNotificationOptions.volume,
+          S.achievementNotificationOptions.animStyle,
+          previewRarityTier,
+        );
+      }
       return true;
     }
 
@@ -385,6 +738,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       const size = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "normal";
       const next = { ...S.achievementNotificationOptions, size };
       S.achievementNotificationOptions = next;
+      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       return true;
@@ -395,6 +749,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       const position = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "top-right";
       const next = { ...S.achievementNotificationOptions, position };
       S.achievementNotificationOptions = next;
+      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       return true;
@@ -406,7 +761,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
-      playWebAudioAchievementChime(volume);
+      playWebAudioAchievementChime(volume, next.animStyle, previewRarityTier);
       return true;
     }
 
@@ -420,7 +775,11 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-audition-sound": {
-      playWebAudioAchievementChime(S.achievementNotificationOptions.volume);
+      playWebAudioAchievementChime(
+        S.achievementNotificationOptions.volume,
+        S.achievementNotificationOptions.animStyle,
+        previewRarityTier,
+      );
       return true;
     }
 
@@ -452,11 +811,14 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-test-notification": {
-      playWebAudioAchievementChime(S.achievementNotificationOptions.volume);
+      stageReplaySeq++;
+      render();
+      const meta = getPreviewTierMeta(previewRarityTier);
       void achievementTestNotification(
-        "Platin Avcısı",
-        t("settings.achTestDesc"),
-        t("settings.achUnlockedTag"),
+        meta.title,
+        meta.desc,
+        meta.tag,
+        previewRarityTier,
       ).catch((e) => toast(String(e), "err"));
       return true;
     }

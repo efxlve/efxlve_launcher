@@ -3146,5 +3146,20 @@
   "task.ramShare": "Доля памяти лаунчера",
   "task.noMatches": "Нет подходящих процессов",
   "task.groupPages": "Веб-страницы",
-  "task.groupInfra": "Веб-инфраструктура"
+  "task.groupInfra": "Веб-инфраструктура",
+  "settings.achAnimStyleTitle": "Animation style",
+  "settings.achAnimStyleDesc": "Choose the multi-stage entry choreography, shockwave and particle effects.",
+  "settings.achAnimPrism": "Prism Unfurl",
+  "settings.achAnimCyber": "Cyber Overload",
+  "settings.achAnimShatter": "Crystal Shatter",
+  "settings.achAnimJackpot": "Arcade Jackpot",
+  "settings.achCardThemeRarity": "Rarity Aura",
+  "settings.achCardThemeCyber": "Cyber Neon",
+  "settings.achCardThemeEmerald": "Emerald",
+  "settings.achCardThemeCrimson": "Crimson",
+  "settings.achCardThemeAmethyst": "Amethyst",
+  "settings.achRarityStageLabel": "Preview Rarity",
+  "settings.achTierUltra": "Ultra Rare",
+  "settings.achReplayBtn": "Replay",
+  "settings.achAuditionBtn": "Listen"
 }

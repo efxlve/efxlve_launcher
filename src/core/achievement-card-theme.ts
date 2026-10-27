@@ -10,7 +10,6 @@
 import type { AchievementCardColors } from "../steam";
 import { achievementSetNotificationColors } from "../steam";
 import { isTauri } from "./constants";
-import { S } from "./state";
 import { SURFACE_APPLIED_EVENT } from "./themes";
 
 /** The built-in console card: warm gold on smoked obsidian. */
@@ -22,6 +21,85 @@ export const GOLD_ACHIEVEMENT_CARD: AchievementCardColors = {
   title: "#ffffff",
   body: "#acb2b8",
 };
+
+export const CYBER_ACHIEVEMENT_CARD: AchievementCardColors = {
+  background: "#090b16",
+  accent: "#00f0ff",
+  border: "#0e7490",
+  icon: "#38bdf8",
+  title: "#f8fafc",
+  body: "#94a3b8",
+};
+
+export const EMERALD_ACHIEVEMENT_CARD: AchievementCardColors = {
+  background: "#08120e",
+  accent: "#10b981",
+  border: "#047857",
+  icon: "#34d399",
+  title: "#f8fafc",
+  body: "#a7f3d0",
+};
+
+export const CRIMSON_ACHIEVEMENT_CARD: AchievementCardColors = {
+  background: "#13090c",
+  accent: "#f43f5e",
+  border: "#be123c",
+  icon: "#fb7185",
+  title: "#fff1f2",
+  body: "#fda4af",
+};
+
+export const AMETHYST_ACHIEVEMENT_CARD: AchievementCardColors = {
+  background: "#0f0918",
+  accent: "#a855f7",
+  border: "#6b21a8",
+  icon: "#c084fc",
+  title: "#faf5ff",
+  body: "#d8b4fe",
+};
+
+export function rarityCardPalette(tier = 2): AchievementCardColors {
+  switch (tier) {
+    case 0:
+      return {
+        background: "#110d0b",
+        accent: "#cd7f32",
+        border: "#7c471c",
+        icon: "#e09f5a",
+        title: "#ffffff",
+        body: "#cbb8a8",
+      };
+    case 1:
+      return {
+        background: "#0d1015",
+        accent: "#94a3b8",
+        border: "#475569",
+        icon: "#e2e8f0",
+        title: "#ffffff",
+        body: "#cbd5e1",
+      };
+    case 3:
+      return {
+        background: "#08101d",
+        accent: "#22d3ee",
+        border: "#0284c7",
+        icon: "#67e8f9",
+        title: "#f0f9ff",
+        body: "#bae6fd",
+      };
+    case 4:
+      return {
+        background: "#110c1d",
+        accent: "#e879f9",
+        border: "#9333ea",
+        icon: "#f5d0fe",
+        title: "#ffffff",
+        body: "#f3e8ff",
+      };
+    default:
+      return GOLD_ACHIEVEMENT_CARD;
+  }
+}
 
 type Rgba = [number, number, number, number];
 
@@ -78,31 +156,47 @@ function toHex(color: Rgba): string {
  * opaque because GDI brushes have no alpha; translucent theme tokens are
  * flattened over the plate first.
  */
-export function achievementCardPalette(cardTheme: string): AchievementCardColors {
-  if (cardTheme !== "launcher" || typeof document === "undefined") {
-    return GOLD_ACHIEVEMENT_CARD;
+export function achievementCardPalette(cardTheme: string, rarityTier = 2): AchievementCardColors {
+  switch (cardTheme) {
+    case "cyber":
+      return CYBER_ACHIEVEMENT_CARD;
+    case "emerald":
+      return EMERALD_ACHIEVEMENT_CARD;
+    case "crimson":
+      return CRIMSON_ACHIEVEMENT_CARD;
+    case "amethyst":
+      return AMETHYST_ACHIEVEMENT_CARD;
+    case "rarity":
+      return rarityCardPalette(rarityTier);
+    case "launcher": {
+      if (typeof document === "undefined") {
+        return GOLD_ACHIEVEMENT_CARD;
+      }
+      const styles = getComputedStyle(document.documentElement);
+      const token = (name: string) => readColor(styles.getPropertyValue(name));
+      const black: Rgba = [0, 0, 0, 1];
+      const bg = over(token("--bg"), black);
+      const surface = over(token("--surface-1"), bg);
+      const accent = over(token("--accent"), surface);
+      return {
+        background: toHex(surface),
+        accent: toHex(accent),
+        // A 45% accent hairline reads the same weight as the gold card's bronze.
+        border: toHex(over([accent[0], accent[1], accent[2], 0.45], surface)),
+        icon: toHex(over(token("--accent-hover"), accent)),
+        title: toHex(over(token("--text"), surface)),
+        body: toHex(over(token("--text-2"), surface)),
+      };
+    }
+    default:
+      return GOLD_ACHIEVEMENT_CARD;
   }
-  const styles = getComputedStyle(document.documentElement);
-  const token = (name: string) => readColor(styles.getPropertyValue(name));
-  const black: Rgba = [0, 0, 0, 1];
-  const bg = over(token("--bg"), black);
-  const surface = over(token("--surface-1"), bg);
-  const accent = over(token("--accent"), surface);
-  return {
-    background: toHex(surface),
-    accent: toHex(accent),
-    // A 45% accent hairline reads the same weight as the gold card's bronze.
-    border: toHex(over([accent[0], accent[1], accent[2], 0.45], surface)),
-    icon: toHex(over(token("--accent-hover"), accent)),
-    title: toHex(over(token("--text"), surface)),
-    body: toHex(over(token("--text-2"), surface)),
-  };
 }
 
 /** Pushes the palette for the current mode to the native card. */
 export function syncAchievementCardTheme(): void {
   if (!isTauri) return;
-  const palette = achievementCardPalette(S.achievementNotificationOptions.cardTheme);
+  const palette = achievementCardPalette("launcher");
   void achievementSetNotificationColors(palette).catch(() => {});
 }
 

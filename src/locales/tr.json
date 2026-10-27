@@ -3146,5 +3146,20 @@
   "task.ramShare": "Launcher belleğindeki pay",
   "task.noMatches": "Eşleşen süreç yok",
   "task.groupPages": "Web sayfaları",
-  "task.groupInfra": "Web altyapısı"
+  "task.groupInfra": "Web altyapısı",
+  "settings.achAnimStyleTitle": "Animasyon stili",
+  "settings.achAnimStyleDesc": "Çok aşamalı açılış koreografisini, şok dalgalarını ve parçacık efektlerini seçin.",
+  "settings.achAnimPrism": "Prizma Açılımı",
+  "settings.achAnimCyber": "Siber Yükleme",
+  "settings.achAnimShatter": "Kristal Kırılma",
+  "settings.achAnimJackpot": "Jackpot Patlaması",
+  "settings.achCardThemeRarity": "Nadirlik Aurası",
+  "settings.achCardThemeCyber": "Siber Neon",
+  "settings.achCardThemeEmerald": "Zümrüt",
+  "settings.achCardThemeCrimson": "Kızıl Kor",
+  "settings.achCardThemeAmethyst": "Ametist",
+  "settings.achRarityStageLabel": "Nadirlik Önizlemesi",
+  "settings.achTierUltra": "Ultra Nadir",
+  "settings.achReplayBtn": "Tekrar Oynat",
+  "settings.achAuditionBtn": "Dinle"
 }
