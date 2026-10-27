@@ -205,7 +205,18 @@ fn notif_rect(
     let card_height = m.height;
     let max_width = (mon_w as i32 - 2 * NOTIF_MARGIN).max(m.min_width);
     let text_width = title_px.max(body_px).max(1);
-    let width = (m.text_left + m.text_right + text_width).clamp(m.min_width, max_width);
+    let style = NOTIF_STYLE.load(Ordering::Relaxed);
+    let (t_left, t_right, min_w) = if style == 4 {
+        // Generous spacing for capsule style (Xbox stadium pill):
+        // comfortable padding between medallion and text, and ample margin before the right rounded cap
+        let pad_l = (card_height / 2) + m.medallion_r + 26;
+        let pad_r = (card_height / 2) + 24;
+        let min_w = (m.min_width + 80).min(max_width);
+        (pad_l, pad_r, min_w)
+    } else {
+        (m.text_left, m.text_right, m.min_width)
+    };
+    let width = (t_left + t_right + text_width).clamp(min_w, max_width);
     let x = if notification_is_left(position) {
         mon_x + NOTIF_MARGIN
     } else if notification_is_center(position) {
@@ -1729,14 +1740,6 @@ fn render_dopamine_backdrop(
         0.0
     };
 
-    // Holographic diagonal shimmer sweep (200..1150ms, then repeats every 2400ms)
-    let cycle_ms = if elapsed_ms < 1200 {
-        elapsed_ms.saturating_sub(180) as f32 / 950.0
-    } else {
-        ((elapsed_ms - 1200) % 2400) as f32 / 1100.0
-    };
-    let sweep_x = -90.0 + cycle_ms.clamp(0.0, 1.5) * (w as f32 + 220.0);
-
     let aura_inv = 1.0 / ((m.medallion_r as f32 * 4.2).max(50.0));
     let half_w = w as f32 * 0.5;
     let half_h = h as f32 * 0.5;
@@ -1746,25 +1749,25 @@ fn render_dopamine_backdrop(
         let dy = (y - center_y) as f32;
         let dy2 = dy * dy;
         let row_offset = (y * w) as usize;
-        let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.10;
+        let top_gloss = if y <= 1 { (1.0 - y as f32) * 0.08 } else { 0.0 };
 
         for x in 0..w {
             let dx = (x - center_x) as f32;
             let dist = (dx * dx + dy2).sqrt();
 
             // 1. Base surface + rich radial medallion aura (matches CSS radial-gradient)
-            let aura = (1.0 - dist * aura_inv).max(0.0).powi(2) * 0.44;
+            let aura = (1.0 - dist * aura_inv).max(0.0).powi(2) * 0.32;
             let mut r = bg_r + (ac_r - bg_r) * aura + 255.0 * top_gloss;
             let mut g = bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss;
             let mut b = bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss;
 
             // 2. Rotating Volumetric God-Rays behind the medallion (all styles & tiers, matches preview)
-            if dist < m.medallion_r as f32 * 4.0 {
+            if dist < m.medallion_r as f32 * 3.8 {
                 let angle = dy.atan2(dx);
-                let ray1 = ((angle * 6.0 + t_sec * 2.2).sin() * 0.5 + 0.5).powi(4);
-                let ray2 = ((angle * 4.0 - t_sec * 1.5).cos() * 0.5 + 0.5).powi(3);
-                let falloff = (1.0 - dist / (m.medallion_r as f32 * 4.0)).max(0.0);
-                let ray_int = (ray1 * 0.65 + ray2 * 0.35) * falloff * (if tier >= 3 { 0.44 } else { 0.30 });
+                let ray1 = ((angle * 6.0 + t_sec * 2.0).sin() * 0.5 + 0.5).powi(4);
+                let ray2 = ((angle * 4.0 - t_sec * 1.4).cos() * 0.5 + 0.5).powi(3);
+                let falloff = (1.0 - dist / (m.medallion_r as f32 * 3.8)).max(0.0);
+                let ray_int = (ray1 * 0.65 + ray2 * 0.35) * falloff * (if tier >= 3 { 0.38 } else { 0.24 });
                 r += ic_r * ray_int;
                 g += ic_g * ray_int;
                 b += ic_b * ray_int;
@@ -1790,19 +1793,7 @@ fn render_dopamine_backdrop(
                 }
             }
 
-            // 4. Diagonal Holographic Shimmer Sweep
-            let diag = x as f32 + y as f32 * 0.58;
-            let s_dist = (diag - sweep_x).abs();
-            let sheen_w = if style == 5 { 64.0 } else { 42.0 };
-            if s_dist < sheen_w {
-                let sheen_amp = if style == 5 { 0.34 } else { 0.22 };
-                let sheen = (1.0 - s_dist / sheen_w).powi(2) * sheen_amp;
-                r += (ac_r * 0.5 + 255.0 * 0.5) * sheen;
-                g += (ac_g * 0.5 + 255.0 * 0.5) * sheen;
-                b += (ac_b * 0.5 + 255.0 * 0.5) * sheen;
-            }
-
-            // 5. Left Accent Indicator Bar: vertical gradient + 14px horizontal glow shadow
+            // 4. Left Accent Indicator Bar: vertical gradient + 14px horizontal glow shadow (skipped on Xbox stadium pill style 4)
             if style != 4 && x < m.bar_width {
                 let t_y = y as f32 / (h as f32).max(1.0);
                 let (br, bg, bb) = if t_y < 0.22 {
@@ -1825,7 +1816,7 @@ fn render_dopamine_backdrop(
                 b += ac_b * glow;
             }
 
-            // 6. Laser Slice (Cyber) high-tech scanner scanline sweep
+            // 5. Laser Slice (Cyber) high-tech scanner scanline sweep
             if style == 1 && elapsed_ms < 380 {
                 let laser_p = elapsed_ms as f32 / 380.0;
                 let laser_y = laser_p * (h as f32);
@@ -1838,7 +1829,7 @@ fn render_dopamine_backdrop(
                 }
             }
 
-            // 7. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim
+            // 6. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim
             let right_edge = (cur_w - 1).max(1);
             let is_in_card = x <= right_edge;
             let (is_border, edge_fade) = if !is_in_card {
@@ -1919,60 +1910,51 @@ fn render_dopamine_backdrop(
         }
     }
 
-    // 8. Dopamine Sparkling Particles ("parıltılı noktalar")
-    // Part A: Initial dynamic burst shards (0..1100ms)
-    let burst_t = ((elapsed_ms as f32 - 40.0) / 1060.0).clamp(0.0, 1.0);
+    // 7. Dopamine Sparkling Particles ("parıltılı noktalar")
+    // Part A: Initial dynamic burst shards (0..1000ms)
+    let burst_t = ((elapsed_ms as f32 - 40.0) / 960.0).clamp(0.0, 1.0);
     if burst_t > 0.0 && burst_t < 1.0 {
         let decel = 1.0 - (1.0 - burst_t).powi(3);
         let fade = (1.0 - burst_t).powi(2);
-        for i in 0..20u32 {
+        for i in 0..16u32 {
             let seed = (i.wrapping_mul(2654435761)) ^ ((tier as u32) << 16);
-            let angle = (i as f32 / 20.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
-            let speed = 38.0 + ((seed >> 8) & 0x7F) as f32 * 1.1;
-            let px = center_x + (angle.cos() * speed * decel) as i32;
-            let py = center_y + (angle.sin() * speed * decel - burst_t * burst_t * 14.0) as i32;
-            let p_rad = if (i & 3) == 0 { 3 } else { 2 };
-            let is_diamond = style == 2 || (i & 1 == 0);
-            draw_sparkle(pixels, w, h, px, py, p_rad, is_diamond, fade, ic_r, ic_g, ic_b);
+            let angle = (i as f32 / 16.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
+            let max_r = (m.medallion_r as f32) + 14.0 + ((seed >> 8) & 0x1F) as f32 * 0.6;
+            let px = center_x + (angle.cos() * max_r * decel) as i32;
+            let py = center_y + (angle.sin() * (max_r * 0.72) * decel) as i32;
+            let is_diamond = (i & 1) == 0;
+            draw_sparkle(pixels, w, h, px, py, 2, is_diamond, fade * 0.9, ic_r, ic_g, ic_b);
         }
     }
 
-    // Part B: Persistent Orbiting Diamond Stars around the medallion (matching STAGE_PARTICLES)
-    const STAGE_OFFSETS: [(i32, i32, bool, f32); 14] = [
-        (-52, -38, true, 0.0),
-        (-28, -56, false, 0.45),
-        (14, -62, true, 0.9),
-        (54, -46, false, 1.35),
-        (76, -18, true, 1.8),
-        (82, 22, false, 2.25),
-        (58, 48, true, 2.7),
-        (18, 58, false, 3.15),
-        (-24, 54, true, 3.6),
-        (-58, 34, false, 4.05),
-        (-68, -4, true, 4.5),
-        (36, -32, false, 4.95),
-        (-38, 28, true, 5.4),
-        (96, -6, true, 5.85),
-    ];
-    let entry_fade = (elapsed_ms as f32 / 280.0).clamp(0.0, 1.0);
-    for &(dx, dy, is_diamond, phase) in &STAGE_OFFSETS {
-        let bob_x = ((t_sec * 1.7 + phase).sin() * 3.5) as i32;
-        let bob_y = ((t_sec * 1.4 + phase).cos() * 3.5) as i32;
-        let px = center_x + dx + bob_x;
-        let py = center_y + dy + bob_y;
-        let twinkle = ((t_sec * 3.4 + phase).sin().abs()).powi(3) * 0.78 + 0.22;
+    // Part B: Persistent Orbiting Diamond Stars around the medallion disc (14 points, scaled to fit inside window bounds!)
+    let entry_fade = (elapsed_ms as f32 / 240.0).clamp(0.0, 1.0);
+    let mr_f = m.medallion_r as f32;
+    for i in 0..14u32 {
+        let angle = (i as f32 / 14.0) * std::f32::consts::TAU;
+        let ring_dist = mr_f + 8.0 + ((i % 3) as f32) * 4.0;
+        let phase = i as f32 * 0.75;
+        let bob = (t_sec * 1.6 + phase).sin() * 2.5;
+        let rad_dist = ring_dist + bob;
+        // Keep vertical stretch slightly condensed so top/bottom never touch the window edge
+        let px = center_x + (angle.cos() * rad_dist).round() as i32;
+        let py = center_y + (angle.sin() * (rad_dist * 0.78)).round() as i32;
+
+        let twinkle = ((t_sec * 3.5 + phase).sin().abs()).powi(3) * 0.78 + 0.22;
         let alpha = twinkle * entry_fade;
-        let rad = if is_diamond { 3 } else { 2 };
-        draw_sparkle(pixels, w, h, px, py, rad, is_diamond, alpha, ic_r, ic_g, ic_b);
+        let is_diamond = (i & 1) == 0;
+        let sz = if is_diamond { 3 } else { 2 };
+        draw_sparkle(pixels, w, h, px, py, sz, is_diamond, alpha, ic_r, ic_g, ic_b);
     }
 
-    // Part C: Floating ambient sparkling embers across the card
-    for i in 0..12u32 {
+    // Part C: Floating ambient sparkling embers across the card text area
+    let text_area_w = (w - center_x - (m.medallion_r + 30)).max(60);
+    for i in 0..10u32 {
         let seed = i.wrapping_mul(1597334677);
-        let phase = (t_sec * (0.55 + (i as f32 * 0.06)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
-        let px = m.left_pad + ((seed >> 8) as i32).abs() % (w - m.left_pad - 16).max(20);
-        let py = h - 6 - (phase * (h - 10) as f32) as i32;
-        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.85;
+        let phase = (t_sec * (0.50 + (i as f32 * 0.05)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
+        let px = center_x + m.medallion_r + 28 + (((seed >> 8) as i32).abs() % text_area_w);
+        let py = (h - 12) - (phase * (h - 24) as f32) as i32;
+        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.82;
         draw_sparkle(pixels, w, h, px, py, 2, (i & 1) == 0, twinkle, ac_r, ac_g, ac_b);
     }
 
@@ -2143,8 +2125,13 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     let _ = paint_medallion_picture(target_dc, center_x, center_y, inner_r);
 
     // Text column: painted once the capsule has unfurled past the medallion
-    let text_left = rect.left + m.text_left;
-    let text_right = rect.right - m.text_right;
+    let (text_left, text_right) = if style == 4 {
+        let t_l = rect.left + (height / 2) + m.medallion_r + 26;
+        let t_r = rect.right - (height / 2) - 24;
+        (t_l, t_r)
+    } else {
+        (rect.left + m.text_left, rect.right - m.text_right)
+    };
     if text_right > text_left + 24 {
         SetBkMode(target_dc, TRANSPARENT_BK);
         let has_tag = NOTIF_TAG.lock().map(|t| t.len() > 1).unwrap_or(false);
