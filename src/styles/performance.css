@@ -2,9 +2,9 @@
    The layout, pages and every feature stay; only motion and glass blur are
    removed so low-end GPUs and integrated graphics spend less time compositing. */
 
-html.reduce-effects *,
-html.reduce-effects *::before,
-html.reduce-effects *::after {
+html.reduce-effects *:not(.ach-stage-screen):not(.ach-stage-screen *),
+html.reduce-effects *:not(.ach-stage-screen):not(.ach-stage-screen *)::before,
+html.reduce-effects *:not(.ach-stage-screen):not(.ach-stage-screen *)::after {
   animation: none !important;
   transition: none !important;
   scroll-behavior: auto !important;

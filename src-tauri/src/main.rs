@@ -247,9 +247,16 @@ pub struct EpicSettings {
     pub achievement_notifications_size: Option<String>,
     /// "gold" keeps the classic card; "launcher" follows the active theme.
     pub achievement_notifications_card_theme: Option<String>,
-    /// "prism", "cyber", "shatter", or "jackpot".
+    /// "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic".
     #[serde(default)]
     pub achievement_notifications_anim_style: Option<String>,
+    /// "auto", "collapse", "glide", "fold", "laser", "implode", or "zoom".
+    #[serde(default)]
+    pub achievement_notifications_exit_style: Option<String>,
+    /// Store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom")
+    /// whose achievement notifications are muted.
+    #[serde(default)]
+    pub achievement_notifications_disabled_stores: Vec<String>,
 }
 
 fn default_true() -> bool {

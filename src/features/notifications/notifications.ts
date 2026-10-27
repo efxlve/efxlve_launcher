@@ -76,8 +76,100 @@ export interface NotifInput {
   toast?: boolean;
 }
 
+const GENERAL_NOTIF_PREFS_KEY = "efxlve.notifPrefs.v1";
+
+export interface GeneralNotificationPrefs {
+  enabled: boolean;
+  toasts: boolean;
+  downloads: boolean;
+  updates: boolean;
+  social: boolean;
+  errors: boolean;
+  disabledStores: string[];
+}
+
+const DEFAULT_GENERAL_NOTIF_PREFS: GeneralNotificationPrefs = {
+  enabled: true,
+  toasts: true,
+  downloads: true,
+  updates: true,
+  social: true,
+  errors: true,
+  disabledStores: [],
+};
+
+let cachedGeneralPrefs: GeneralNotificationPrefs | null = null;
+
+export function getGeneralNotifPrefs(): GeneralNotificationPrefs {
+  if (cachedGeneralPrefs) return cachedGeneralPrefs;
+  try {
+    const raw = localStorage.getItem(GENERAL_NOTIF_PREFS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<GeneralNotificationPrefs>;
+      cachedGeneralPrefs = {
+        enabled: parsed.enabled !== false,
+        toasts: parsed.toasts !== false,
+        downloads: parsed.downloads !== false,
+        updates: parsed.updates !== false,
+        social: parsed.social !== false,
+        errors: parsed.errors !== false,
+        disabledStores: Array.isArray(parsed.disabledStores)
+          ? parsed.disabledStores.filter((s): s is string => typeof s === "string")
+          : [],
+      };
+      return cachedGeneralPrefs;
+    }
+  } catch {
+    /* ignore */
+  }
+  cachedGeneralPrefs = { ...DEFAULT_GENERAL_NOTIF_PREFS, disabledStores: [] };
+  return cachedGeneralPrefs;
+}
+
+export function setGeneralNotifPrefs(next: Partial<GeneralNotificationPrefs>): GeneralNotificationPrefs {
+  const cur = getGeneralNotifPrefs();
+  cachedGeneralPrefs = {
+    enabled: next.enabled ?? cur.enabled,
+    toasts: next.toasts ?? cur.toasts,
+    downloads: next.downloads ?? cur.downloads,
+    updates: next.updates ?? cur.updates,
+    social: next.social ?? cur.social,
+    errors: next.errors ?? cur.errors,
+    disabledStores: next.disabledStores ? [...next.disabledStores] : [...cur.disabledStores],
+  };
+  try {
+    localStorage.setItem(GENERAL_NOTIF_PREFS_KEY, JSON.stringify(cachedGeneralPrefs));
+  } catch {
+    /* ignore */
+  }
+  return cachedGeneralPrefs;
+}
+
+export function storeKeyFromAppName(appName?: string): string | null {
+  if (!appName) return null;
+  if (appName.startsWith("steam::")) return "steam";
+  if (appName.startsWith("gog::")) return "gog";
+  if (appName.startsWith("ubisoft::")) return "ubisoft";
+  if (appName.startsWith("ea::")) return "ea";
+  if (appName.startsWith("xbox::")) return "xbox";
+  if (appName.startsWith("amazon::")) return "amazon";
+  if (appName.startsWith("custom::")) return "custom";
+  if (appName.startsWith("battlenet::")) return "battlenet";
+  if (appName.startsWith("riot::")) return "riot";
+  return "epic";
+}
+
 /** Adds a notification (deduping identical recent events) and updates the badge. */
 export function pushNotification(input: NotifInput): void {
+  const prefs = getGeneralNotifPrefs();
+  if (!prefs.enabled) return;
+  if (input.kind === "download" && !prefs.downloads) return;
+  if (input.kind === "update" && !prefs.updates) return;
+  if (input.kind === "social" && !prefs.social) return;
+  if (input.kind === "error" && !prefs.errors) return;
+  const storeKey = storeKeyFromAppName(input.appName);
+  if (storeKey && prefs.disabledStores.includes(storeKey)) return;
+
   const now = Date.now();
   let isNew = false;
   const existing = S.notifications.find(
@@ -112,7 +204,7 @@ export function pushNotification(input: NotifInput): void {
   updateNotifBadge();
   // Some events (an achievement unlock) also want a short visible toast, not
   // only a new row in the bell's history.
-  if (input.toast && isNew) toast(input.title, input.kind === "error" ? "err" : "ok");
+  if (input.toast && isNew && prefs.toasts) toast(input.title, input.kind === "error" ? "err" : "ok");
 }
 
 export function unreadCount(): number {

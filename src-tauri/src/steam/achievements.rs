@@ -2006,9 +2006,15 @@ pub struct AchievementNotificationOptions {
     /// "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst".
     #[serde(default = "default_card_theme")]
     pub card_theme: String,
-    /// "prism", "cyber", "shatter", or "jackpot".
+    /// "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic".
     #[serde(default = "default_anim_style")]
     pub anim_style: String,
+    /// "auto", "collapse", "glide", "fold", "laser", "implode", or "zoom".
+    #[serde(default = "default_exit_style")]
+    pub exit_style: String,
+    /// Muted store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom").
+    #[serde(default)]
+    pub disabled_stores: Vec<String>,
 }
 
 impl Default for AchievementNotificationOptions {
@@ -2025,6 +2031,8 @@ impl Default for AchievementNotificationOptions {
             custom_sound_name: None,
             card_theme: default_card_theme(),
             anim_style: default_anim_style(),
+            exit_style: default_exit_style(),
+            disabled_stores: Vec::new(),
         }
     }
 }
@@ -2055,9 +2063,44 @@ fn normalize_anim_style(value: Option<&str>) -> String {
         Some("cyber") => "cyber",
         Some("shatter") => "shatter",
         Some("jackpot") => "jackpot",
+        Some("xbox") => "xbox",
+        Some("playstation") => "playstation",
+        Some("epic") => "epic",
         _ => "prism",
     }
     .to_string()
+}
+
+fn default_exit_style() -> String {
+    "auto".to_string()
+}
+
+fn normalize_exit_style(value: Option<&str>) -> String {
+    match value {
+        Some("collapse") => "collapse",
+        Some("glide") => "glide",
+        Some("fold") => "fold",
+        Some("laser") => "laser",
+        Some("implode") => "implode",
+        Some("zoom") => "zoom",
+        _ => "auto",
+    }
+    .to_string()
+}
+
+fn normalize_disabled_stores(stores: &[String]) -> Vec<String> {
+    let mut out = Vec::new();
+    for raw in stores {
+        let key = raw.trim().to_ascii_lowercase();
+        if matches!(
+            key.as_str(),
+            "steam" | "epic" | "gog" | "ubisoft" | "ea" | "xbox" | "amazon" | "custom"
+        ) && !out.contains(&key)
+        {
+            out.push(key);
+        }
+    }
+    out
 }
 
 /// The card palette the frontend derived from the live theme tokens.
@@ -2195,6 +2238,12 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         anim_style: normalize_anim_style(
             settings.achievement_notifications_anim_style.as_deref(),
         ),
+        exit_style: normalize_exit_style(
+            settings.achievement_notifications_exit_style.as_deref(),
+        ),
+        disabled_stores: normalize_disabled_stores(
+            &settings.achievement_notifications_disabled_stores,
+        ),
     }
 }
 
@@ -2226,6 +2275,11 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_anim_style = Some(normalize_anim_style(Some(
         options.anim_style.as_str(),
     )));
+    settings.achievement_notifications_exit_style = Some(normalize_exit_style(Some(
+        options.exit_style.as_str(),
+    )));
+    settings.achievement_notifications_disabled_stores =
+        normalize_disabled_stores(&options.disabled_stores);
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -2384,6 +2438,70 @@ fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
                             + 0.26 * (dt * freq * 2.0 * tau).sin() * (-dt * 3.2).exp();
                         left += l * attack * decay * 0.105;
                         right += r * attack * decay * 0.105;
+                    }
+                }
+            }
+            "xbox" => {
+                // Xbox Series Capsule: signature warm two-tone sonar chime (A4 -> E5) + rare diamond bell tail
+                let notes: [f32; 6] = [440.00, 659.25, 880.00, 1108.73, 1318.51, 1760.00];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = if idx == 0 {
+                        0.0
+                    } else if idx == 1 {
+                        0.135
+                    } else {
+                        0.26 + (idx - 2) as f32 * 0.068
+                    };
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = smooth_attack(dt, 0.015);
+                        let decay = (-dt * (1.85 - (tier.min(4) as f32) * 0.15)).exp();
+                        let fund_l = (dt * freq * 0.9988 * tau).sin();
+                        let fund_r = (dt * freq * 1.0012 * tau).sin();
+                        let over2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.6).exp() * 0.24;
+                        let amp = attack * decay * (if idx <= 1 { 0.175 } else { 0.125 });
+                        left += (fund_l + over2) * amp;
+                        right += (fund_r + over2) * amp;
+                    }
+                }
+            }
+            "playstation" => {
+                // PlayStation 5 Trophy: airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
+                let pad_env = smooth_attack(t, 0.05) * (-t * 1.35).exp() * 0.11;
+                left += ((t * 196.00 * tau).sin() + 0.55 * (t * 293.66 * tau).sin()) * pad_env;
+                right += ((t * 196.30 * tau).sin() + 0.55 * (t * 293.35 * tau).sin()) * pad_env;
+
+                let notes: [f32; 6] = [783.99, 1174.66, 1479.98, 1567.98, 1975.53, 2349.32];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = 0.04 + idx as f32 * 0.058;
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = smooth_attack(dt, 0.010);
+                        let decay = (-dt * 2.15).exp();
+                        let fund_l = (dt * freq * 0.9985 * tau).sin();
+                        let fund_r = (dt * freq * 1.0015 * tau).sin();
+                        let bell = (dt * freq * 2.41 * tau).sin() * (-dt * 5.8).exp() * 0.20;
+                        let amp = attack * decay * 0.135;
+                        left += (fund_l + bell) * amp;
+                        right += (fund_r - bell) * amp;
+                    }
+                }
+            }
+            "epic" => {
+                // Epic Games EOS Portal: modern crisp ascending triad + warm sub-octave resonance (C4, G4, D5, E5, G5, B5)
+                let notes: [f32; 6] = [261.63, 392.00, 587.33, 659.25, 783.99, 987.77];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = idx as f32 * 0.062;
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = smooth_attack(dt, 0.012);
+                        let decay = (-dt * 1.95).exp();
+                        let fund_l = (dt * freq * 0.9985 * tau).sin();
+                        let fund_r = (dt * freq * 1.0015 * tau).sin();
+                        let over2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.5).exp() * 0.30;
+                        let amp = attack * decay * 0.145;
+                        left += (fund_l + over2) * amp;
+                        right += (fund_r + over2) * amp;
                     }
                 }
             }
@@ -2645,11 +2763,38 @@ pub fn achievement_test_notification(
         },
     };
     let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
-    if !real_unlock || options.enabled {
+    let resolved_app_id = app_id.unwrap_or_else(|| "0".into());
+    let store_key = if resolved_app_id.starts_with("gog::") {
+        "gog"
+    } else if resolved_app_id.starts_with("ubisoft::") {
+        "ubisoft"
+    } else if resolved_app_id.starts_with("ea::") {
+        "ea"
+    } else if resolved_app_id.starts_with("xbox::") {
+        "xbox"
+    } else if resolved_app_id.starts_with("amazon::") {
+        "amazon"
+    } else if resolved_app_id.starts_with("custom::") {
+        "custom"
+    } else if resolved_app_id.starts_with("steam::")
+        || resolved_app_id.chars().all(|c| c.is_ascii_digit())
+    {
+        "steam"
+    } else {
+        "epic"
+    };
+    let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
+    let should_notify = if real_unlock {
+        options.enabled && store_enabled
+    } else {
+        true
+    };
+    if should_notify {
         crate::overlay::hud::set_notification_position(&options.position);
         crate::overlay::hud::set_notification_size(&options.size);
         crate::overlay::hud::set_notification_hold(options.duration_ms);
         crate::overlay::hud::set_notification_style(&options.anim_style);
+        crate::overlay::hud::set_notification_exit_style(&options.exit_style);
         crate::overlay::hud::set_notification_rarity_tier(tier);
         crate::overlay::hud::set_notification_progress(permille);
         if options.overlay {
@@ -2673,12 +2818,12 @@ pub fn achievement_test_notification(
         _ => (Some(0.4), Some("platinum".to_string()), Some(34), Some(34)),
     };
     let payload = AchievementUnlockedPayload {
-        app_id: app_id.unwrap_or_else(|| "0".into()),
+        app_id: resolved_app_id,
         name: ach_name.unwrap_or_else(|| "TEST_ACHIEVEMENT".into()),
         display_name: title,
         description: body,
         icon_url: icon_url.unwrap_or_default(),
-        notification: if real_unlock { options.enabled } else { false },
+        notification: if real_unlock { should_notify } else { false },
         rarity_percent: default_pct,
         tier: tier_name,
         unlocked_count: unlocked_count.or(default_unlocked),
@@ -2857,10 +3002,14 @@ fn emit_new_achievement_unlocks(
             ach.display_name.clone()
         };
         let options = achievement_notification_options(app);
+        let store_key = if write_cache { "steam" } else { "custom" };
+        let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
+        let should_notify = options.enabled && store_enabled;
         crate::overlay::hud::set_notification_position(&options.position);
         crate::overlay::hud::set_notification_size(&options.size);
         crate::overlay::hud::set_notification_hold(options.duration_ms);
         crate::overlay::hud::set_notification_style(&options.anim_style);
+        crate::overlay::hud::set_notification_exit_style(&options.exit_style);
         crate::overlay::hud::set_notification_rarity_tier(tier_code);
         crate::overlay::hud::set_notification_progress(progress_permille);
         let tag_label = match tier_code {
@@ -2881,7 +3030,7 @@ fn emit_new_achievement_unlocks(
                 }
             }
         };
-        if options.enabled {
+        if should_notify {
             // 1. Native in-game HUD toast card
             if options.overlay {
                 let generation = crate::overlay::hud::notify_achievement(
@@ -2905,7 +3054,7 @@ fn emit_new_achievement_unlocks(
             display_name: display,
             description: ach.description.clone(),
             icon_url: ach.icon_link.clone(),
-            notification: options.enabled,
+            notification: should_notify,
             rarity_percent,
             tier: Some(resolved_tier_name),
             unlocked_count: Some(unlocked_count),
@@ -3474,7 +3623,26 @@ mod tests {
         assert_eq!(normalize_anim_style(Some("cyber")), "cyber");
         assert_eq!(normalize_anim_style(Some("shatter")), "shatter");
         assert_eq!(normalize_anim_style(Some("jackpot")), "jackpot");
+        assert_eq!(normalize_anim_style(Some("xbox")), "xbox");
+        assert_eq!(normalize_anim_style(Some("playstation")), "playstation");
+        assert_eq!(normalize_anim_style(Some("epic")), "epic");
         assert_eq!(normalize_anim_style(Some("unknown")), "prism");
+        assert_eq!(normalize_exit_style(None), "auto");
+        assert_eq!(normalize_exit_style(Some("collapse")), "collapse");
+        assert_eq!(normalize_exit_style(Some("glide")), "glide");
+        assert_eq!(normalize_exit_style(Some("fold")), "fold");
+        assert_eq!(normalize_exit_style(Some("laser")), "laser");
+        assert_eq!(normalize_exit_style(Some("implode")), "implode");
+        assert_eq!(normalize_exit_style(Some("zoom")), "zoom");
+        assert_eq!(
+            normalize_disabled_stores(&[
+                "Steam".into(),
+                "EPIC".into(),
+                "steam".into(),
+                "invalid".into()
+            ]),
+            vec!["steam".to_string(), "epic".to_string()]
+        );
 
         assert_eq!(
             classify_achievement_rarity_tier(Some(1.5), Some("gold"), 5, 34),

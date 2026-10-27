@@ -20,6 +20,8 @@ import {
   achievementSetNotificationOptions,
   achievementTestNotification,
 } from "../../steam";
+import { getGeneralNotifPrefs, setGeneralNotifPrefs } from "../notifications/notifications";
+import { storeLogo } from "../store/store-logos";
 import { t } from "../../i18n";
 
 /** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
@@ -219,6 +221,89 @@ export function playWebAudioAchievementChime(
         osc.start(chordAt);
         osc.stop(chordAt + 1.7);
       });
+    } else if (animStyle === "xbox") {
+      // Xbox Series Capsule: signature warm two-tone sonar chime (A4 -> E5) + rare diamond bell tail
+      const freqs = [440.0, 659.25, 880.0, 1108.73, 1318.51, 1760.0].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + (idx === 0 ? 0 : idx === 1 ? 0.135 : 0.26 + (idx - 2) * 0.068);
+        const osc = ctx.createOscillator();
+        const over = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const overGain = ctx.createGain();
+        osc.type = "sine";
+        over.type = "triangle";
+        osc.frequency.setValueAtTime(hz, at);
+        over.frequency.setValueAtTime(hz * 2.0, at);
+        overGain.gain.setValueAtTime(0.22, at);
+        const decay = 1.45 + rarityTier * 0.12;
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(vol * (idx <= 1 ? 0.52 : 0.36), at + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+        over.connect(overGain);
+        overGain.connect(gain);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        over.start(at);
+        osc.stop(at + decay + 0.05);
+        over.stop(at + decay + 0.05);
+      });
+    } else if (animStyle === "playstation") {
+      // PlayStation 5 Trophy: airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
+      [196.0, 293.66].forEach((padHz) => {
+        const padOsc = ctx.createOscillator();
+        const padGain = ctx.createGain();
+        padOsc.type = "sine";
+        padOsc.frequency.setValueAtTime(padHz, now);
+        padGain.gain.setValueAtTime(0.0001, now);
+        padGain.gain.linearRampToValueAtTime(vol * 0.28, now + 0.05);
+        padGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.75);
+        padOsc.connect(padGain);
+        padGain.connect(masterFilter);
+        padOsc.start(now);
+        padOsc.stop(now + 1.8);
+      });
+      const freqs = [783.99, 1174.66, 1479.98, 1567.98, 1975.53, 2349.32].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + 0.04 + idx * 0.058;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(hz, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(vol * 0.42, at + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.25);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        osc.stop(at + 1.3);
+      });
+    } else if (animStyle === "epic") {
+      // Epic Games EOS Portal: modern crisp ascending triad + warm sub-octave resonance (C4..B5)
+      const freqs = [261.63, 392.0, 587.33, 659.25, 783.99, 987.77].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + idx * 0.062;
+        const osc = ctx.createOscillator();
+        const over = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const overGain = ctx.createGain();
+        osc.type = "triangle";
+        over.type = "sine";
+        osc.frequency.setValueAtTime(hz, at);
+        over.frequency.setValueAtTime(hz * 2.0, at);
+        overGain.gain.setValueAtTime(0.3, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(vol * 0.44, at + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.35);
+        over.connect(overGain);
+        overGain.connect(gain);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        over.start(at);
+        osc.stop(at + 1.4);
+        over.stop(at + 1.4);
+      });
     } else {
       // Prism Unfurl (default): PS5-inspired warm D-Maj9 crystal pad + chime arpeggio
       [146.83, 220.0].forEach((padHz) => {
@@ -285,6 +370,463 @@ export function playWebAudioAchievementChime(
   }
 }
 
+let stagePreviewTimer: number | null = null;
+
+function resolveEffectiveExitStyle(animStyle: string, exitStyle?: string): string {
+  if (exitStyle && exitStyle !== "auto") return exitStyle;
+  switch (animStyle) {
+    case "xbox":
+    case "prism":
+      return "collapse";
+    case "playstation":
+      return "glide";
+    case "epic":
+      return "fold";
+    case "cyber":
+      return "laser";
+    case "shatter":
+      return "implode";
+    case "jackpot":
+      return "zoom";
+    default:
+      return "collapse";
+  }
+}
+
+function getEntryKeyframes(animStyle: string): { frames: Keyframe[]; duration: number; easing: string } {
+  switch (animStyle) {
+    case "xbox":
+      return {
+        duration: 920,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "scale(0.35)",
+            clipPath: "inset(0 calc(100% - 88px) 0 0 round 999px)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1.08)",
+            clipPath: "inset(0 calc(100% - 88px) 0 0 round 999px)",
+            offset: 0.26,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1)",
+            clipPath: "inset(0 calc(100% - 88px) 0 0 round 999px)",
+            offset: 0.38,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1)",
+            clipPath: "inset(0 0% 0 0 round 999px)",
+            offset: 1,
+          },
+        ],
+      };
+    case "playstation":
+      return {
+        duration: 820,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateX(145px) scale(0.92)",
+            filter: "brightness(1.85) blur(8px)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateX(-8px) scale(1.015)",
+            filter: "brightness(1.22) blur(0px)",
+            offset: 0.62,
+          },
+          {
+            opacity: 1,
+            transform: "translateX(0px) scale(1)",
+            filter: "brightness(1) blur(0px)",
+            offset: 1,
+          },
+        ],
+      };
+    case "epic":
+      return {
+        duration: 840,
+        easing: "cubic-bezier(0.18, 1.15, 0.32, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "perspective(700px) rotateX(-78deg) translateY(-38px) scaleY(0.28)",
+            filter: "brightness(2.0)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "perspective(700px) rotateX(12deg) translateY(6px) scaleY(1.04)",
+            filter: "brightness(1.2)",
+            offset: 0.55,
+          },
+          {
+            opacity: 1,
+            transform: "perspective(700px) rotateX(0deg) translateY(0px) scaleY(1)",
+            filter: "brightness(1)",
+            offset: 1,
+          },
+        ],
+      };
+    case "cyber":
+      return {
+        duration: 760,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateX(120px) skewX(-22deg) scaleY(0.12)",
+            filter: "contrast(2.4) brightness(2.0)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateX(-22px) skewX(12deg) scaleY(1.06)",
+            filter: "contrast(1.5) brightness(1.4)",
+            offset: 0.28,
+          },
+          {
+            opacity: 1,
+            transform: "translateX(14px) skewX(-8deg) scaleY(0.96)",
+            offset: 0.5,
+          },
+          {
+            opacity: 1,
+            transform: "translateX(-6px) skewX(4deg) scaleY(1.01)",
+            offset: 0.74,
+          },
+          {
+            opacity: 1,
+            transform: "translateX(0px) skewX(0deg) scaleY(1)",
+            filter: "contrast(1) brightness(1)",
+            offset: 1,
+          },
+        ],
+      };
+    case "shatter":
+      return {
+        duration: 820,
+        easing: "cubic-bezier(0.18, 1.15, 0.32, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateY(-60px) scale(1.48)",
+            filter: "brightness(2.4) blur(10px)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(10px) scale(0.89)",
+            filter: "brightness(1.4) blur(0px)",
+            offset: 0.34,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(-5px) scale(1.05)",
+            offset: 0.64,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(2px) scale(0.99)",
+            offset: 0.84,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(0px) scale(1)",
+            filter: "brightness(1) blur(0px)",
+            offset: 1,
+          },
+        ],
+      };
+    case "jackpot":
+      return {
+        duration: 880,
+        easing: "cubic-bezier(0.2, 1.18, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateY(72px) scale(0.42)",
+            filter: "brightness(2.2)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(-16px) scale(1.1)",
+            offset: 0.24,
+          },
+          {
+            opacity: 1,
+            transform: "translate(-12px, 7px) rotate(-2.5deg) scale(0.96)",
+            offset: 0.4,
+          },
+          {
+            opacity: 1,
+            transform: "translate(11px, -6px) rotate(2.5deg) scale(1.04)",
+            offset: 0.56,
+          },
+          {
+            opacity: 1,
+            transform: "translate(-7px, 4px) rotate(-1.2deg) scale(0.99)",
+            offset: 0.72,
+          },
+          {
+            opacity: 1,
+            transform: "translate(4px, -2px) rotate(0.6deg) scale(1.01)",
+            offset: 0.86,
+          },
+          {
+            opacity: 1,
+            transform: "translate(0px, 0px) rotate(0deg) scale(1)",
+            filter: "brightness(1)",
+            offset: 1,
+          },
+        ],
+      };
+    default:
+      return {
+        duration: 840,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateY(-48px) scale(0.74)",
+            clipPath: "inset(0 78% 0 0 round 16px)",
+            filter: "brightness(1.9) blur(6px)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(6px) scale(1.035)",
+            clipPath: "inset(0 0% 0 0 round 16px)",
+            filter: "brightness(1.22) blur(0px)",
+            offset: 0.48,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(-2px) scale(0.995)",
+            clipPath: "inset(0 0% 0 0 round 16px)",
+            offset: 0.76,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(0px) scale(1)",
+            clipPath: "inset(0 0% 0 0 round 16px)",
+            filter: "brightness(1) blur(0px)",
+            offset: 1,
+          },
+        ],
+      };
+  }
+}
+
+function getExitKeyframes(exitStyle: string, animStyle: string): { frames: Keyframe[]; duration: number; easing: string } {
+  const effective = resolveEffectiveExitStyle(animStyle, exitStyle);
+  const round = animStyle === "xbox" ? "999px" : "16px";
+  switch (effective) {
+    case "collapse":
+      return {
+        duration: 680,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          {
+            opacity: 1,
+            transform: "scale(1)",
+            clipPath: `inset(0 0% 0 0 round ${round})`,
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1.03)",
+            clipPath: `inset(0 calc(100% - 88px) 0 0 round ${round})`,
+            offset: 0.68,
+          },
+          {
+            opacity: 0,
+            transform: "scale(0.32) translateY(-14px)",
+            clipPath: `inset(0 calc(100% - 88px) 0 0 round ${round})`,
+            offset: 1,
+          },
+        ],
+      };
+    case "glide":
+      return {
+        duration: 620,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          { opacity: 1, transform: "translateX(0px) scale(1)", filter: "blur(0px)", offset: 0 },
+          { opacity: 1, transform: "translateX(-10px) scale(1.01)", filter: "blur(0px)", offset: 0.22 },
+          { opacity: 0, transform: "translateX(140px) scale(0.92)", filter: "blur(6px)", offset: 1 },
+        ],
+      };
+    case "fold":
+      return {
+        duration: 620,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          {
+            opacity: 1,
+            transform: "perspective(700px) rotateX(0deg) scaleY(1)",
+            filter: "brightness(1)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "perspective(700px) rotateX(-15deg) scaleY(1.04)",
+            filter: "brightness(1.35)",
+            offset: 0.25,
+          },
+          {
+            opacity: 0,
+            transform: "perspective(700px) rotateX(78deg) translateY(-28px) scaleY(0.15)",
+            filter: "brightness(2.0)",
+            offset: 1,
+          },
+        ],
+      };
+    case "laser":
+      return {
+        duration: 640,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          {
+            opacity: 1,
+            transform: "scaleX(1) scaleY(1)",
+            filter: "brightness(1) contrast(1)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "scaleX(1.04) scaleY(0.06)",
+            filter: "brightness(2.4) contrast(2.0)",
+            offset: 0.56,
+          },
+          {
+            opacity: 0,
+            transform: "scaleX(0.02) scaleY(0.02)",
+            filter: "brightness(3.0)",
+            offset: 1,
+          },
+        ],
+      };
+    case "implode":
+      return {
+        duration: 620,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          { opacity: 1, transform: "scale(1)", filter: "brightness(1) blur(0px)", offset: 0 },
+          { opacity: 1, transform: "scale(1.12)", filter: "brightness(1.5) blur(0px)", offset: 0.28 },
+          { opacity: 0, transform: "scale(0.18) rotate(8deg)", filter: "brightness(2.4) blur(6px)", offset: 1 },
+        ],
+      };
+    default:
+      return {
+        duration: 620,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          { opacity: 1, transform: "translateY(0px) scale(1)", offset: 0 },
+          { opacity: 1, transform: "translateY(12px) scale(0.95)", offset: 0.28 },
+          { opacity: 0, transform: "translateY(-68px) scale(0.65)", offset: 1 },
+        ],
+      };
+  }
+}
+
+/**
+ * Drives the live preview stage card using the Web Animations API so that
+ * opening and closing animations ALWAYS play visibly on every click.
+ */
+export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "entry"): void {
+  if (stagePreviewTimer !== null) {
+    window.clearTimeout(stagePreviewTimer);
+    stagePreviewTimer = null;
+  }
+  window.requestAnimationFrame(() => {
+    const toastEl = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
+    if (!toastEl || typeof toastEl.animate !== "function") return;
+
+    const animStyle = S.achievementNotificationOptions.animStyle || "prism";
+    const exitStyle = S.achievementNotificationOptions.exitStyle || "auto";
+
+    toastEl.getAnimations().forEach((a) => a.cancel());
+
+    const medallionEl = toastEl.querySelector<HTMLElement>(".ach-hud-medallion");
+    const textColEl = toastEl.querySelector<HTMLElement>(".ach-hud-text-col");
+    const fillEl = toastEl.querySelector<HTMLElement>(".ach-hud-progress-fill");
+
+    const playEntry = () => {
+      const entry = getEntryKeyframes(animStyle);
+      toastEl.animate(entry.frames, {
+        duration: entry.duration,
+        easing: entry.easing,
+        fill: "both",
+      });
+      if (medallionEl && typeof medallionEl.animate === "function") {
+        medallionEl.getAnimations().forEach((a) => a.cancel());
+        medallionEl.animate(
+          [
+            { transform: "scale(0.35) rotate(-25deg)", opacity: 0, offset: 0 },
+            { transform: "scale(1.18) rotate(5deg)", opacity: 1, offset: 0.58 },
+            { transform: "scale(1) rotate(0deg)", opacity: 1, offset: 1 },
+          ],
+          { duration: 640, easing: "cubic-bezier(0.18, 1.25, 0.32, 1)", fill: "both" },
+        );
+      }
+      if (textColEl && typeof textColEl.animate === "function") {
+        textColEl.getAnimations().forEach((a) => a.cancel());
+        const textDelay = animStyle === "xbox" ? 280 : 120;
+        textColEl.animate(
+          [
+            { opacity: 0, transform: "translateX(-24px)" },
+            { opacity: 1, transform: "translateX(0px)" },
+          ],
+          { duration: 540, delay: textDelay, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
+        );
+      }
+      if (fillEl && typeof fillEl.animate === "function") {
+        fillEl.getAnimations().forEach((a) => a.cancel());
+        const targetW = getPreviewTierMeta(previewRarityTier).progressPct;
+        fillEl.animate(
+          [{ width: "0%" }, { width: `${targetW}%` }],
+          { duration: 760, delay: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "both" },
+        );
+      }
+    };
+
+    const playExitThenRestore = () => {
+      const exit = getExitKeyframes(exitStyle, animStyle);
+      const anim = toastEl.animate(exit.frames, {
+        duration: exit.duration,
+        easing: exit.easing,
+        fill: "both",
+      });
+      anim.onfinish = () => {
+        stagePreviewTimer = window.setTimeout(() => {
+          playEntry();
+        }, 220);
+      };
+    };
+
+    if (mode === "exit") {
+      playExitThenRestore();
+    } else if (mode === "cycle") {
+      playEntry();
+      stagePreviewTimer = window.setTimeout(() => {
+        playExitThenRestore();
+      }, 1550);
+    } else {
+      playEntry();
+    }
+  });
+}
+
 function getPreviewTierMeta(tier: number): {
   tag: string;
   title: string;
@@ -348,9 +890,10 @@ function getPreviewTierMeta(tier: number): {
   }
 }
 
-/** Renders the full modern Achievements & Notifications view. */
+/** Renders the full modern Achievements & Notifications view with 2 distinct sections. */
 export function renderAchievementsSettingsView(): string {
   const options = S.achievementNotificationOptions;
+  const genPrefs = getGeneralNotifPrefs();
   const soundName = options.customSoundName || t("settings.achDefaultChime");
   const position = options.position || "top-right";
   const currentSize = ["small", "normal", "large"].includes(options.size)
@@ -362,11 +905,74 @@ export function renderAchievementsSettingsView(): string {
   const allowedThemes = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
   const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "gold";
 
-  const allowedStyles = ["prism", "cyber", "shatter", "jackpot"];
+  const allowedStyles = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
   const animStyle = allowedStyles.includes(options.animStyle) ? options.animStyle : "prism";
+
+  const allowedExitStyles = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];
+  const exitStyle = allowedExitStyles.includes(options.exitStyle || "auto")
+    ? (options.exitStyle as string)
+    : "auto";
 
   const palette = achievementCardPalette(cardTheme, previewRarityTier);
   const tierMeta = getPreviewTierMeta(previewRarityTier);
+
+  const generalStoreList: Array<{ id: string; label: string; logoId?: string; ico?: IconName }> = [
+    { id: "steam", label: "Steam", logoId: "steam" },
+    { id: "epic", label: "Epic Games", logoId: "epic" },
+    { id: "gog", label: "GOG Galaxy", logoId: "gog" },
+    { id: "ubisoft", label: "Ubisoft Connect", logoId: "ubisoft" },
+    { id: "ea", label: "EA App", logoId: "ea" },
+    { id: "xbox", label: "Xbox / Game Pass", logoId: "xbox" },
+    { id: "amazon", label: "Amazon Games", logoId: "amazon" },
+    { id: "custom", label: t("nav.customGames"), ico: "gamepad-2" },
+  ];
+
+  const generalStoreChips = generalStoreList
+    .map((s) => {
+      const enabled = !genPrefs.disabledStores.includes(s.id);
+      const badgeIco = s.logoId ? storeLogo(s.logoId, 16) : icon(s.ico || "gamepad-2", 16);
+      return `
+        <button type="button" class="ach-store-chip ${enabled ? "active" : "muted"}" data-act="toggle-gen-store-notif" data-val="${esc(s.id)}">
+          <span class="ach-store-chip-left">
+            ${badgeIco}
+            <span>${esc(s.label)}</span>
+          </span>
+          <span class="ach-store-chip-status ${enabled ? "on" : "off"}">
+            ${esc(enabled ? t("settings.storeNotifOn") : t("settings.storeNotifOff"))}
+          </span>
+        </button>
+      `;
+    })
+    .join("");
+
+  const achDisabledStores = options.disabledStores || [];
+  const achStoreList: Array<{ id: string; label: string; logoId?: string; ico?: IconName }> = [
+    { id: "steam", label: "Steam", logoId: "steam" },
+    { id: "epic", label: "Epic Games", logoId: "epic" },
+    { id: "gog", label: "GOG Galaxy", logoId: "gog" },
+    { id: "ubisoft", label: "Ubisoft Connect", logoId: "ubisoft" },
+    { id: "ea", label: "EA App", logoId: "ea" },
+    { id: "xbox", label: "Xbox / Game Pass", logoId: "xbox" },
+    { id: "custom", label: t("nav.customGames"), ico: "gamepad-2" },
+  ];
+
+  const achStoreChips = achStoreList
+    .map((s) => {
+      const enabled = !achDisabledStores.includes(s.id);
+      const badgeIco = s.logoId ? storeLogo(s.logoId, 16) : icon(s.ico || "gamepad-2", 16);
+      return `
+        <button type="button" class="ach-store-chip ${enabled ? "active" : "muted"}" data-act="toggle-ach-store-notif" data-val="${esc(s.id)}">
+          <span class="ach-store-chip-left">
+            ${badgeIco}
+            <span>${esc(s.label)}</span>
+          </span>
+          <span class="ach-store-chip-status ${enabled ? "on" : "off"}">
+            ${esc(enabled ? t("settings.storeNotifOn") : t("settings.storeNotifOff"))}
+          </span>
+        </button>
+      `;
+    })
+    .join("");
 
   const sizeOptions: Array<{ id: string; label: string }> = [
     { id: "small", label: t("settings.achSizeSmall") },
@@ -408,7 +1014,10 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
-  const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+  const animStyleOptions: Array<{ id: string; label: string; ico?: IconName; logoId?: string }> = [
+    { id: "xbox", label: t("settings.achAnimXbox"), logoId: "xbox" },
+    { id: "playstation", label: t("settings.achAnimPlaystation"), ico: "trophy" },
+    { id: "epic", label: t("settings.achAnimEpic"), logoId: "epic" },
     { id: "prism", label: t("settings.achAnimPrism"), ico: "sparkles" },
     { id: "cyber", label: t("settings.achAnimCyber"), ico: "zap" },
     { id: "shatter", label: t("settings.achAnimShatter"), ico: "star" },
@@ -419,6 +1028,27 @@ export function renderAchievementsSettingsView(): string {
     .map(
       (opt) => `
         <button type="button" class="ach-style-chip ${animStyle === opt.id ? "active" : ""}" data-act="set-ach-anim-style" data-val="${opt.id}">
+          ${opt.logoId ? storeLogo(opt.logoId, 14) : icon(opt.ico || "sparkles", 13)}
+          <span>${esc(opt.label)}</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  const exitStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+    { id: "auto", label: t("settings.achExitAuto"), ico: "sparkles" },
+    { id: "collapse", label: t("settings.achExitCollapse"), ico: "minimize-2" },
+    { id: "glide", label: t("settings.achExitGlide"), ico: "arrow-right" },
+    { id: "fold", label: t("settings.achExitFold"), ico: "layers" },
+    { id: "laser", label: t("settings.achExitLaser"), ico: "zap" },
+    { id: "implode", label: t("settings.achExitImplode"), ico: "star" },
+    { id: "zoom", label: t("settings.achExitZoom"), ico: "maximize-2" },
+  ];
+
+  const exitStyleButtons = exitStyleOptions
+    .map(
+      (opt) => `
+        <button type="button" class="ach-style-chip ${exitStyle === opt.id ? "active" : ""}" data-act="set-ach-exit-style" data-val="${opt.id}">
           ${icon(opt.ico, 13)}
           <span>${esc(opt.label)}</span>
         </button>
@@ -492,15 +1122,99 @@ export function renderAchievementsSettingsView(): string {
 
   return `
     <div class="ach-settings-view">
-      <!-- Section Header -->
+      <!-- ================================================================
+           SECTION 1: BİLDİRİMLER (GENERAL NOTIFICATIONS)
+           ================================================================ -->
       <div class="theme-section-header">
         <div class="theme-section-titles">
-          <h3 class="section-title">${esc(t("settings.secAchievements"))}</h3>
+          <h3 class="section-title">${esc(t("settings.generalNotifHeading"))}</h3>
+          <p class="page-sub">${esc(t("settings.generalNotifDesc"))}</p>
+        </div>
+      </div>
+
+      <div class="list settings-group">
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.genNotifEnabledTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.genNotifEnabledDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-gen-notif-enabled" ${genPrefs.enabled ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.genNotifToastsTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.genNotifToastsDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-gen-notif-toasts" ${genPrefs.toasts ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.genNotifDownloadsTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.genNotifDownloadsDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-gen-notif-downloads" ${genPrefs.downloads ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.genNotifUpdatesTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.genNotifUpdatesDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-gen-notif-updates" ${genPrefs.updates ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Per-store General Notification Toggles -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.storeNotifTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.storeNotifDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-store-grid" role="group">
+              ${generalStoreChips}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ach-section-divider"></div>
+
+      <!-- ================================================================
+           SECTION 2: BAŞARIM BİLDİRİMLERİ (ACHIEVEMENT NOTIFICATIONS)
+           ================================================================ -->
+      <div class="theme-section-header">
+        <div class="theme-section-titles">
+          <h3 class="section-title">${esc(t("settings.achNotifHeading"))}</h3>
           <p class="page-sub">${esc(t("settings.achNotifyDesc"))}</p>
         </div>
         <div class="theme-section-actions">
           <button type="button" class="btn ghost small" data-act="ach-replay-stage">
             ${icon("refresh", 13)} <span>${esc(t("settings.achReplayBtn"))}</span>
+          </button>
+          <button type="button" class="btn ghost small" data-act="ach-test-exit-stage">
+            ${icon("minimize-2", 13)} <span>${esc(t("settings.achTestExitBtn"))}</span>
           </button>
           <button type="button" class="btn primary small" data-act="ach-test-notification">
             ${icon("bell", 13)} <span>${esc(t("settings.achTestTitle"))}</span>
@@ -564,7 +1278,7 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
-        <!-- Animation Style -->
+        <!-- Opening Animation Style -->
         <div class="row settings-row stacked">
           <div class="row-main">
             <div class="settings-row-title">${esc(t("settings.achAnimStyleTitle"))}</div>
@@ -572,6 +1286,28 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control" style="width: 100%;">
             <div class="ach-style-grid" role="group">${animStyleButtons}</div>
+          </div>
+        </div>
+
+        <!-- Closing Animation Style -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achExitStyleTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achExitStyleDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-style-grid" role="group">${exitStyleButtons}</div>
+          </div>
+        </div>
+
+        <!-- Per-store Achievement Notification Toggles -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achStoreNotifTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achStoreNotifDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-store-grid" role="group">${achStoreChips}</div>
           </div>
         </div>
 
@@ -707,11 +1443,61 @@ export function renderAchievementsSettingsView(): string {
   `;
 }
 
-/** Handles all achievement settings actions from click-router. */
+/** Handles all achievement & notification settings actions from click-router. */
 export function handleAchievementsSettingsAction(act: string | undefined, el: HTMLElement): boolean {
   if (!act) return false;
 
   switch (act) {
+    case "toggle-gen-notif-enabled": {
+      setGeneralNotifPrefs({ enabled: (el as HTMLInputElement).checked });
+      render();
+      return true;
+    }
+
+    case "toggle-gen-notif-toasts": {
+      setGeneralNotifPrefs({ toasts: (el as HTMLInputElement).checked });
+      render();
+      return true;
+    }
+
+    case "toggle-gen-notif-downloads": {
+      setGeneralNotifPrefs({ downloads: (el as HTMLInputElement).checked });
+      render();
+      return true;
+    }
+
+    case "toggle-gen-notif-updates": {
+      setGeneralNotifPrefs({ updates: (el as HTMLInputElement).checked });
+      render();
+      return true;
+    }
+
+    case "toggle-gen-store-notif": {
+      const store = (el.dataset.val || "").trim().toLowerCase();
+      if (!store) return true;
+      const cur = getGeneralNotifPrefs().disabledStores;
+      const nextDisabled = cur.includes(store)
+        ? cur.filter((s) => s !== store)
+        : [...cur, store];
+      setGeneralNotifPrefs({ disabledStores: nextDisabled });
+      render();
+      return true;
+    }
+
+    case "toggle-ach-store-notif": {
+      const store = (el.dataset.val || "").trim().toLowerCase();
+      if (!store) return true;
+      const cur = S.achievementNotificationOptions.disabledStores || [];
+      const disabledStores = cur.includes(store)
+        ? cur.filter((s) => s !== store)
+        : [...cur, store];
+      const next = { ...S.achievementNotificationOptions, disabledStores };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
     case "toggle-ach-notifications": {
       const next = {
         ...S.achievementNotificationOptions,
@@ -746,16 +1532,34 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "set-ach-anim-style": {
-      const allowed = ["prism", "cyber", "shatter", "jackpot"];
+      const allowed = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
       const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "prism";
       const next = { ...S.achievementNotificationOptions, animStyle };
       S.achievementNotificationOptions = next;
       stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
+      runStagePreviewChoreography("entry");
       if (next.sound) {
         playWebAudioAchievementChime(next.volume, animStyle, previewRarityTier);
       }
+      return true;
+    }
+
+    case "set-ach-exit-style": {
+      const allowed = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];
+      const exitStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "auto";
+      const next = { ...S.achievementNotificationOptions, exitStyle };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("exit");
+      return true;
+    }
+
+    case "ach-test-exit-stage": {
+      runStagePreviewChoreography("exit");
       return true;
     }
 
@@ -768,6 +1572,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       syncAchievementCardTheme();
       render();
+      runStagePreviewChoreography("entry");
       return true;
     }
 
@@ -776,6 +1581,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       previewRarityTier = Number.isNaN(tier) ? 2 : tier;
       stageReplaySeq++;
       render();
+      runStagePreviewChoreography("entry");
       if (S.achievementNotificationOptions.sound) {
         playWebAudioAchievementChime(
           S.achievementNotificationOptions.volume,
@@ -789,6 +1595,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     case "ach-replay-stage": {
       stageReplaySeq++;
       render();
+      runStagePreviewChoreography("cycle");
       if (S.achievementNotificationOptions.sound) {
         playWebAudioAchievementChime(
           S.achievementNotificationOptions.volume,
@@ -807,6 +1614,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
+      runStagePreviewChoreography("entry");
       return true;
     }
 
@@ -818,6 +1626,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
+      runStagePreviewChoreography("entry");
       return true;
     }
 
@@ -880,6 +1689,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       stopWebAudioAchievementChime();
       stageReplaySeq++;
       render();
+      runStagePreviewChoreography("cycle");
       const meta = getPreviewTierMeta(previewRarityTier);
       void achievementTestNotification(
         meta.title,

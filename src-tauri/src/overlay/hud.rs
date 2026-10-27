@@ -52,8 +52,14 @@ static NOTIF_HOLD_MS: std::sync::atomic::AtomicU64 =
 /// 5 center-bottom.
 static NOTIF_POSITION: AtomicU8 = AtomicU8::new(0);
 /// Animation style preset: 0 = prism (unfurl), 1 = cyber (chamfer + scanline),
-/// 2 = shatter (god-rays + diamond shards), 3 = jackpot (rainbow foil + shake).
+/// 2 = shatter (god-rays + diamond shards), 3 = jackpot (rainbow foil + shake),
+/// 4 = xbox (pill capsule unroll), 5 = playstation (sleek edge glide + prism sweep),
+/// 6 = epic (dimensional portal unfold).
 static NOTIF_STYLE: AtomicU8 = AtomicU8::new(0);
+/// Exit animation preset: 0 = auto (matches opening style), 1 = collapse (Xbox pill),
+/// 2 = glide (PS5 edge slide), 3 = fold (Epic vertical fold), 4 = laser (Cyber beam),
+/// 5 = implode (Shatter inward pull), 6 = zoom (Jackpot drop).
+static NOTIF_EXIT_STYLE: AtomicU8 = AtomicU8::new(0);
 /// Rarity tier: 0 = bronze/normal, 1 = silver, 2 = gold, 3 = ultra-rare diamond, 4 = platinum.
 static NOTIF_RARITY_TIER: AtomicU8 = AtomicU8::new(2);
 /// Completion ratio in permille (0..=1000) for the animated bottom progress bar.
@@ -62,6 +68,8 @@ static NOTIF_PROGRESS_PERMILLE: AtomicU64 = AtomicU64::new(650);
 static NOTIF_FRAME_MS: AtomicU64 = AtomicU64::new(0);
 /// Target full card width so the renderer knows the unfurl ratio while morphing.
 static NOTIF_FULL_W: AtomicIsize = AtomicIsize::new(540);
+/// Current visible card width during horizontal capsule unroll/collapse morphing.
+static NOTIF_CUR_W: AtomicIsize = AtomicIsize::new(540);
 
 /// Packs CSS `(r, g, b)` channels into Windows `COLORREF` (`0x00BBGGRR`) order.
 const fn rgb(r: u8, g: u8, b: u8) -> u32 {
@@ -348,9 +356,25 @@ pub fn set_notification_style(style: &str) {
         "cyber" => 1,
         "shatter" => 2,
         "jackpot" => 3,
+        "xbox" => 4,
+        "playstation" => 5,
+        "epic" => 6,
         _ => 0,
     };
     NOTIF_STYLE.store(code, Ordering::Relaxed);
+}
+
+pub fn set_notification_exit_style(style: &str) {
+    let code = match style {
+        "collapse" => 1,
+        "glide" => 2,
+        "fold" => 3,
+        "laser" => 4,
+        "implode" => 5,
+        "zoom" => 6,
+        _ => 0,
+    };
+    NOTIF_EXIT_STYLE.store(code, Ordering::Relaxed);
 }
 
 pub fn set_notification_rarity_tier(tier: u8) {
@@ -470,11 +494,12 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
         let body_px = text_px(&body.encode_utf16().collect::<Vec<u16>>(), m.body_px);
         let (x, y, w, h) = notif_rect(mon_x, mon_y, mon_w, mon_h, position, title_px, body_px);
         NOTIF_FULL_W.store(w as isize, Ordering::Relaxed);
+        NOTIF_CUR_W.store(w as isize, Ordering::Relaxed);
 
         let init_y = if notification_is_bottom(position) { y + 22 } else { y - 22 };
 
         unsafe {
-            shape_notification(hwnd, w, h);
+            shape_notification_morphed(hwnd, 0, 0, w, h, NOTIF_STYLE.load(Ordering::Relaxed));
             MoveWindow(hwnd, x, init_y, w, h, 1);
             set_alpha(hwnd, 0);
             ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
@@ -498,9 +523,9 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
 }
 
 /// 60 FPS choreography:
-/// 1. Elastic slide-in + impact micro-shake (0..380ms)
+/// 1. Distinct console/arcade entry choreography per `style` (`0..=6`: Prism, Cyber, Shatter, Jackpot, Xbox, PlayStation, Epic)
 /// 2. Live 32-bit DIB shockwaves, god-rays, shimmer, progress bar & particle burst
-/// 3. Smooth slide-out + fade at `until` (last 280ms)
+/// 3. Distinct closing choreography (`0..=6`: Auto, Collapse, Glide, Fold, Laser, Implode, Zoom) at `until`
 #[cfg(windows)]
 fn run_dopamine_choreography(
     hwnd: isize,
@@ -513,10 +538,29 @@ fn run_dopamine_choreography(
     position: u8,
 ) {
     let style = NOTIF_STYLE.load(Ordering::Relaxed);
+    let exit_raw = NOTIF_EXIT_STYLE.load(Ordering::Relaxed);
+    let exit_code = if exit_raw == 0 {
+        match style {
+            4 | 0 => 1, // Xbox / Prism -> Capsule Collapse
+            5 => 2,     // PlayStation -> Edge Glide
+            6 => 3,     // Epic -> Dimensional Fold
+            1 => 4,     // Cyber -> Laser Beam Collapse
+            2 => 5,     // Shatter -> Crystal Implode
+            3 => 6,     // Jackpot -> Rocket Zoom
+            _ => 1,
+        }
+    } else {
+        exit_raw
+    };
     let tier = NOTIF_RARITY_TIER.load(Ordering::Relaxed);
+    let pill_min_w = h.min(w);
+    let is_left = notification_is_left(position);
+    let is_center = notification_is_center(position);
+    let is_bottom = notification_is_bottom(position);
     let mut last_x = x;
-    let mut last_y = if notification_is_bottom(position) { y + 22 } else { y - 22 };
+    let mut last_y = if is_bottom { y + 22 } else { y - 22 };
     let mut last_alpha = 0u8;
+    let mut last_clip = (0i32, 0i32, w, h);
 
     loop {
         if NOTIF_GEN.load(Ordering::Relaxed) != generation || !hint_active() {
@@ -524,43 +568,305 @@ fn run_dopamine_choreography(
         }
         let now = now_ms();
         let until = NOTIF_UNTIL.load(Ordering::Relaxed);
-        let exit_ms = 280u64;
+        let exit_ms = 380u64;
         if now >= until + exit_ms {
             break;
         }
         let elapsed = now.saturating_sub(start_ms);
         NOTIF_FRAME_MS.store(elapsed, Ordering::Relaxed);
 
+        let mut clip_l = 0;
+        let mut clip_t = 0;
+        let mut clip_r = w;
+        let mut clip_b = h;
+
         let (dx, dy, alpha) = if now >= until {
             let t = ((now - until) as f32 / exit_ms as f32).clamp(0.0, 1.0);
-            let slide = (18.0 * t * t) as i32;
-            let drop = if notification_is_bottom(position) { slide } else { -slide };
-            let a = (NOTIF_ALPHA as f32 * (1.0 - t).powi(2)) as u8;
-            (0, drop, a)
-        } else if elapsed < 360 {
-            let t = (elapsed as f32 / 360.0).clamp(0.0, 1.0);
-            let inv = 1.0 - t;
-            // Smooth cubic ease-out with gentle spring settle
-            let ease = 1.0 - inv * inv * inv * (1.0 - 0.35 * (t * std::f32::consts::PI).sin());
-            let offset = ((1.0 - ease) * 22.0).round() as i32;
-            let drop = if notification_is_bottom(position) { offset } else { -offset };
-            let horiz = if style == 1 {
-                let side = ((1.0 - ease) * 26.0).round() as i32;
-                if notification_is_left(position) { -side } else { side }
-            } else {
-                0
-            };
-            let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 140.0).clamp(0.0, 1.0)) as u8;
-            (horiz, drop, a)
+            match exit_code {
+                1 => {
+                    // 1: Xbox Capsule Collapse — rolls horizontally back into the medallion pill, then pops out
+                    if t < 0.72 {
+                        let u = (t / 0.72).clamp(0.0, 1.0);
+                        let ease = u * u * (3.0 - 2.0 * u);
+                        clip_r = (w as f32 - (w - pill_min_w) as f32 * ease).round() as i32;
+                        let shift = if is_left {
+                            0
+                        } else if is_center {
+                            (w - clip_r) / 2
+                        } else {
+                            w - clip_r
+                        };
+                        (shift, 0, NOTIF_ALPHA)
+                    } else {
+                        clip_r = pill_min_w;
+                        let u = ((t - 0.72) / 0.28).clamp(0.0, 1.0);
+                        let shift = if is_left {
+                            0
+                        } else if is_center {
+                            (w - pill_min_w) / 2
+                        } else {
+                            w - pill_min_w
+                        };
+                        let drop = ((18.0 * u * u) as i32) * if is_bottom { 1 } else { -1 };
+                        let a = (NOTIF_ALPHA as f32 * (1.0 - u).powi(2)) as u8;
+                        (shift, drop, a)
+                    }
+                }
+                2 => {
+                    // 2: PlayStation Edge Glide — sleek horizontal accelerate-out toward screen edge
+                    let ease = t * t * t;
+                    let horiz = if is_center {
+                        0
+                    } else {
+                        let dist = (96.0 * ease) as i32;
+                        if is_left { -dist } else { dist }
+                    };
+                    let vert = if is_center {
+                        let dist = (38.0 * ease) as i32;
+                        if is_bottom { dist } else { -dist }
+                    } else {
+                        0
+                    };
+                    let a = (NOTIF_ALPHA as f32 * (1.0 - t * t)) as u8;
+                    (horiz, vert, a)
+                }
+                3 => {
+                    // 3: Epic Dimensional Fold — vertical portal fold toward center line + slide
+                    let ease = t * t;
+                    let pinch = ((h as f32 * 0.46) * ease) as i32;
+                    clip_t = pinch;
+                    clip_b = (h - pinch).max(clip_t + 4);
+                    let slide = ((22.0 * ease) as i32) * if is_bottom { 1 } else { -1 };
+                    let a = (NOTIF_ALPHA as f32 * (1.0 - ease)) as u8;
+                    (0, slide, a)
+                }
+                4 => {
+                    // 4: Cyber Laser Collapse — flattens vertically into a 6px neon beam, then zips horizontally
+                    if t < 0.60 {
+                        let u = (t / 0.60).clamp(0.0, 1.0);
+                        let pinch = ((h as f32 * 0.5 - 3.0) * (u * u)) as i32;
+                        clip_t = pinch;
+                        clip_b = (h - pinch).max(clip_t + 6);
+                        (0, 0, NOTIF_ALPHA)
+                    } else {
+                        let u = ((t - 0.60) / 0.40).clamp(0.0, 1.0);
+                        let mid = h / 2;
+                        clip_t = (mid - 3).max(0);
+                        clip_b = (mid + 3).min(h);
+                        let h_pinch = ((w as f32 * 0.48) * u) as i32;
+                        clip_l = h_pinch;
+                        clip_r = (w - h_pinch).max(clip_l + 6);
+                        let a = (NOTIF_ALPHA as f32 * (1.0 - u)) as u8;
+                        (0, 0, a)
+                    }
+                }
+                5 => {
+                    // 5: Crystal Shatter Implode — brief outward swell then rapid inward implosion
+                    if t < 0.25 {
+                        let u = t / 0.25;
+                        let swell = ((-8.0 * (u * std::f32::consts::PI).sin()) as i32)
+                            * if is_bottom { 1 } else { -1 };
+                        (0, swell, NOTIF_ALPHA)
+                    } else {
+                        let u = ((t - 0.25) / 0.75).clamp(0.0, 1.0);
+                        let ease = u * u;
+                        clip_r = (w as f32 - (w - pill_min_w) as f32 * ease).round() as i32;
+                        let v_pinch = ((h as f32 * 0.35) * ease) as i32;
+                        clip_t = v_pinch;
+                        clip_b = (h - v_pinch).max(clip_t + 8);
+                        let a = (NOTIF_ALPHA as f32 * (1.0 - ease)) as u8;
+                        (0, 0, a)
+                    }
+                }
+                _ => {
+                    // 6: Jackpot Rocket Zoom — quick windup then fast launch
+                    let windup = if t < 0.28 {
+                        let u = t / 0.28;
+                        (-10.0 * (u * std::f32::consts::FRAC_PI_2).sin()) as i32
+                    } else {
+                        let u = (t - 0.28) / 0.72;
+                        (44.0 * u * u) as i32
+                    };
+                    let drop = if is_bottom { windup } else { -windup };
+                    let a = (NOTIF_ALPHA as f32 * (1.0 - t.powi(2))) as u8;
+                    (0, drop, a)
+                }
+            }
         } else {
-            (0, 0, NOTIF_ALPHA)
+            // Opening choreography per `style`
+            match style {
+                4 => {
+                    // 4: Xbox Series Capsule Unroll (680ms)
+                    // Phase 1 (0..220ms): Medallion circle pops in
+                    // Phase 2 (220..680ms): Pill unrolls horizontally from `pill_min_w` to `w`
+                    if elapsed < 220 {
+                        clip_r = pill_min_w;
+                        let u = (elapsed as f32 / 220.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let ease = 1.0 - inv * inv * inv;
+                        let pop = (((1.0 - ease) * 28.0).round() as i32)
+                            * if is_bottom { 1 } else { -1 };
+                        let shift = if is_left {
+                            0
+                        } else if is_center {
+                            (w - pill_min_w) / 2
+                        } else {
+                            w - pill_min_w
+                        };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 110.0).clamp(0.0, 1.0)) as u8;
+                        (shift, pop, a)
+                    } else if elapsed < 680 {
+                        let u = ((elapsed - 220) as f32 / 460.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let ease = 1.0 - inv * inv * inv * (1.0 - 0.25 * (u * std::f32::consts::PI).sin());
+                        clip_r = (pill_min_w as f32 + (w - pill_min_w) as f32 * ease)
+                            .round()
+                            .clamp(pill_min_w as f32, w as f32) as i32;
+                        let shift = if is_left {
+                            0
+                        } else if is_center {
+                            (w - clip_r) / 2
+                        } else {
+                            w - clip_r
+                        };
+                        (shift, 0, NOTIF_ALPHA)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+                5 => {
+                    // 5: PlayStation 5 Trophy Glide (520ms) — long sleek horizontal slide from screen edge
+                    if elapsed < 520 {
+                        let u = (elapsed as f32 / 520.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let ease = 1.0 - inv.powi(4);
+                        let horiz = if is_center {
+                            0
+                        } else {
+                            let side = ((1.0 - ease) * 110.0).round() as i32;
+                            if is_left { -side } else { side }
+                        };
+                        let vert = if is_center {
+                            let v = ((1.0 - ease) * 44.0).round() as i32;
+                            if is_bottom { v } else { -v }
+                        } else {
+                            0
+                        };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 180.0).clamp(0.0, 1.0)) as u8;
+                        (horiz, vert, a)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+                6 => {
+                    // 6: Epic Games Portal Unfold (460ms) — vertical dimensional unfold + crisp drop
+                    if elapsed < 460 {
+                        let u = (elapsed as f32 / 460.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let ease = 1.0 - inv * inv * inv;
+                        let v_pinch = ((1.0 - ease) * (h as f32 * 0.44)).round() as i32;
+                        clip_t = v_pinch;
+                        clip_b = (h - v_pinch).max(clip_t + 6);
+                        let drop = (((1.0 - ease) * 32.0).round() as i32)
+                            * if is_bottom { 1 } else { -1 };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 140.0).clamp(0.0, 1.0)) as u8;
+                        (0, drop, a)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+                1 => {
+                    // 1: Cyber Overload (420ms) — laser beam vertical slice + horizontal stepped glitch
+                    if elapsed < 420 {
+                        let u = (elapsed as f32 / 420.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let ease = 1.0 - inv * inv * inv;
+                        if elapsed < 190 {
+                            let beam_u = (elapsed as f32 / 190.0).clamp(0.0, 1.0);
+                            let v_pinch = ((1.0 - beam_u * beam_u) * (h as f32 * 0.45)) as i32;
+                            clip_t = v_pinch;
+                            clip_b = (h - v_pinch).max(clip_t + 6);
+                        }
+                        let side_base = ((1.0 - ease) * 68.0).round() as i32;
+                        let glitch = if elapsed >= 50 && elapsed <= 240 {
+                            (((elapsed / 28) as i32 & 1) * 2 - 1) * 7
+                        } else {
+                            0
+                        };
+                        let horiz = (if is_left { -side_base } else { side_base }) + glitch;
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 90.0).clamp(0.0, 1.0)) as u8;
+                        (horiz, 0, a)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+                2 => {
+                    // 2: Crystal Shatter (420ms) — high-impact diagonal slam + rebound
+                    if elapsed < 420 {
+                        let u = (elapsed as f32 / 420.0).clamp(0.0, 1.0);
+                        let bounce = if u < 0.62 {
+                            let s = u / 0.62;
+                            1.0 - s * s
+                        } else {
+                            let s = (u - 0.62) / 0.38;
+                            -(s * std::f32::consts::PI).sin() * 0.18
+                        };
+                        let vert = ((bounce * 46.0).round() as i32) * if is_bottom { 1 } else { -1 };
+                        let horiz = ((bounce * 22.0).round() as i32) * if is_left { -1 } else { 1 };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 110.0).clamp(0.0, 1.0)) as u8;
+                        (horiz, vert, a)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+                3 => {
+                    // 3: Arcade Jackpot (460ms) — deep spring pop with overshoot
+                    if elapsed < 460 {
+                        let u = (elapsed as f32 / 460.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let spring = 1.0 - inv * inv * ((u * std::f32::consts::PI * 1.65).cos());
+                        let offset = ((1.0 - spring) * 44.0).round() as i32;
+                        let drop = if is_bottom { offset } else { -offset };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 110.0).clamp(0.0, 1.0)) as u8;
+                        (0, drop, a)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+                _ => {
+                    // 0: Prism Unfurl (500ms) — smooth vertical spring + capsule unroll
+                    if elapsed < 500 {
+                        let u = (elapsed as f32 / 500.0).clamp(0.0, 1.0);
+                        let inv = 1.0 - u;
+                        let ease = 1.0 - inv * inv * inv * (1.0 - 0.35 * (u * std::f32::consts::PI).sin());
+                        let offset = ((1.0 - ease) * 32.0).round() as i32;
+                        let drop = if is_bottom { offset } else { -offset };
+                        let w_ease = ((elapsed as f32 / 380.0).clamp(0.0, 1.0)).powf(0.65);
+                        clip_r = (pill_min_w as f32 + (w - pill_min_w) as f32 * w_ease)
+                            .round()
+                            .clamp(pill_min_w as f32, w as f32) as i32;
+                        let shift = if is_left {
+                            0
+                        } else if is_center {
+                            (w - clip_r) / 2
+                        } else {
+                            w - clip_r
+                        };
+                        let a = (NOTIF_ALPHA as f32 * (elapsed as f32 / 130.0).clamp(0.0, 1.0)) as u8;
+                        (shift, drop, a)
+                    } else {
+                        (0, 0, NOTIF_ALPHA)
+                    }
+                }
+            }
         };
 
-        // Impact micro-shake for Arcade Jackpot style or Ultra-Rare/Platinum unlocks
-        let (shake_x, shake_y) = if (style == 3 || tier >= 3) && elapsed >= 70 && elapsed <= 240 {
-            let damp = 1.0 - ((elapsed - 70) as f32 / 170.0);
-            let sx = ((elapsed as f32 * 0.12).sin() * 3.5 * damp) as i32;
-            let sy = ((elapsed as f32 * 0.18).cos() * 2.0 * damp) as i32;
+        // Impact micro-shake for Arcade Jackpot style, Shatter slam, or Ultra-Rare/Platinum unlocks
+        let (shake_x, shake_y) = if (style == 3 || style == 2 || tier >= 3) && elapsed >= 65 && elapsed <= 290 {
+            let damp = 1.0 - ((elapsed - 65) as f32 / 225.0);
+            let amp = if style == 3 { 5.5 } else { 3.5 };
+            let sx = ((elapsed as f32 * 0.14).sin() * amp * damp) as i32;
+            let sy = ((elapsed as f32 * 0.20).cos() * (amp * 0.65) * damp) as i32;
             (sx, sy)
         } else {
             (0, 0)
@@ -568,8 +874,14 @@ fn run_dopamine_choreography(
 
         let cur_x = x + dx + shake_x;
         let cur_y = y + dy + shake_y;
+        let cur_clip = (clip_l, clip_t, clip_r, clip_b);
+        NOTIF_CUR_W.store(clip_r as isize, Ordering::Relaxed);
 
         unsafe {
+            if cur_clip != last_clip {
+                shape_notification_morphed(hwnd, clip_l, clip_t, clip_r, clip_b, style);
+                last_clip = cur_clip;
+            }
             if cur_x != last_x || cur_y != last_y {
                 MoveWindow(hwnd, cur_x, cur_y, w, h, 0);
                 last_x = cur_x;
@@ -640,27 +952,40 @@ fn hide_window() {
     }
 }
 
-/// Layers the window into the rounded or chamfered card shape; the OS owns the region after.
+/// Layers the window into the rounded, pill-shaped, or chamfered card region;
+/// supports live horizontal/vertical morphing during opening and closing animations.
 #[cfg(windows)]
-unsafe fn shape_notification(hwnd: isize, width: i32, height: i32) {
-    let style = NOTIF_STYLE.load(Ordering::Relaxed);
+unsafe fn shape_notification_morphed(
+    hwnd: isize,
+    left: i32,
+    top: i32,
+    right: i32,
+    bottom: i32,
+    style: u8,
+) {
+    let w = (right - left).max(4);
+    let h = (bottom - top).max(4);
     let region = if style == 1 {
         // Cyber Overload: chamfered octagonal tech corners
-        let cut = 14.min(height / 4).min(width / 4);
+        let cut = 14.min(h / 4).min(w / 4);
         let pts = [
-            POINT { x: cut, y: 0 },
-            POINT { x: width - cut, y: 0 },
-            POINT { x: width, y: cut },
-            POINT { x: width, y: height - cut },
-            POINT { x: width - cut, y: height },
-            POINT { x: cut, y: height },
-            POINT { x: 0, y: height - cut },
-            POINT { x: 0, y: cut },
+            POINT { x: left + cut, y: top },
+            POINT { x: right - cut, y: top },
+            POINT { x: right, y: top + cut },
+            POINT { x: right, y: bottom - cut },
+            POINT { x: right - cut, y: bottom },
+            POINT { x: left + cut, y: bottom },
+            POINT { x: left, y: bottom - cut },
+            POINT { x: left, y: top + cut },
         ];
         CreatePolygonRgn(pts.as_ptr(), pts.len() as i32, 1)
+    } else if style == 4 {
+        // Xbox Series Capsule: full stadium pill (corner diameter = height)
+        let diameter = h.min(w);
+        CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
     } else {
-        let diameter = NOTIF_RADIUS * 2;
-        CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter)
+        let diameter = (NOTIF_RADIUS * 2).min(h).min(w);
+        CreateRoundRectRgn(left, top, right + 1, bottom + 1, diameter, diameter)
     };
     if region != 0 {
         SetWindowRgn(hwnd, region, 1);
@@ -1432,13 +1757,14 @@ fn render_dopamine_backdrop(
     let aura_inv = 1.0 / ((m.medallion_r as f32 * 3.8).max(40.0));
     let half_w = w as f32 * 0.5;
     let half_h = h as f32 * 0.5;
-    let show_rays = style == 2 || style == 3 || tier >= 3;
+    let show_rays = style == 2 || style == 3 || style == 6 || tier >= 3;
+    let cur_w = (NOTIF_CUR_W.load(Ordering::Relaxed) as i32).clamp(16, w);
 
     for y in 0..h {
         let dy = (y - center_y) as f32;
         let dy2 = dy * dy;
         let row_offset = (y * w) as usize;
-        let is_bottom_bar = y >= h - 4;
+        let is_bottom_bar = y >= h - 4 && style != 4;
         let top_gloss = ((1.0 - (y as f32 / (h as f32 * 0.42))).max(0.0)).powi(2) * 0.10;
         let scanline_mul = if style == 1 && (y & 1 == 0) { 0.90 } else { 1.0 };
 
@@ -1484,18 +1810,20 @@ fn render_dopamine_backdrop(
                 }
             }
 
-            // 4. Diagonal Holographic Shimmer Sweep
+            // 4. Diagonal Holographic Shimmer Sweep (wider & brighter for PlayStation style 5)
             let diag = x as f32 + y as f32 * 0.58;
             let s_dist = (diag - sweep_x).abs();
-            if s_dist < 42.0 {
-                let sheen = (1.0 - s_dist / 42.0).powi(2) * 0.22;
+            let sheen_w = if style == 5 { 64.0 } else { 42.0 };
+            if s_dist < sheen_w {
+                let sheen_amp = if style == 5 { 0.34 } else { 0.22 };
+                let sheen = (1.0 - s_dist / sheen_w).powi(2) * sheen_amp;
                 r += (ac_r * 0.5 + 255.0 * 0.5) * sheen;
                 g += (ac_g * 0.5 + 255.0 * 0.5) * sheen;
                 b += (ac_b * 0.5 + 255.0 * 0.5) * sheen;
             }
 
-            // 5. Left Accent Indicator Bar
-            if x < m.bar_width {
+            // 5. Left Accent Indicator Bar (skipped on Xbox stadium pill style 4)
+            if style != 4 && x < m.bar_width {
                 let pulse = (t_sec * 4.5 + y as f32 * 0.05).sin() * 0.14 + 0.86;
                 r = ac_r * pulse + 255.0 * (1.0 - pulse) * 0.38;
                 g = ac_g * pulse + 255.0 * (1.0 - pulse) * 0.38;
@@ -1509,13 +1837,17 @@ fn render_dopamine_backdrop(
                 b = ac_b * (1.0 - tip_glow * 0.55) + 255.0 * (tip_glow * 0.55);
             }
 
-            // 7. Rotating Conic Energy Border Beam (perimeter 2px)
-            let edge_dist = x.min(w - 1 - x).min(y.min(h - 1 - y));
-            if edge_dist <= 2 {
+            // 7. Rotating Conic Energy Border Beam + Capsule Unroll Leading Rim
+            let right_edge = (cur_w - 1).max(1);
+            let edge_dist = x.min((right_edge - x).max(0)).min(y.min(h - 1 - y));
+            if x <= right_edge && edge_dist <= 2 {
                 let b_angle = (y as f32 - half_h).atan2(x as f32 - half_w);
                 let comet1 = ((b_angle - t_sec * 3.2).cos() * 0.5 + 0.5).powi(6);
                 let comet2 = ((b_angle - t_sec * 3.2 + std::f32::consts::PI).cos() * 0.5 + 0.5).powi(6);
-                let beam = (comet1 + comet2 * 0.7).clamp(0.0, 1.0);
+                let mut beam = (comet1 + comet2 * 0.7).clamp(0.0, 1.0);
+                if cur_w < w && (right_edge - x) <= 3 {
+                    beam = 1.0;
+                }
                 let edge_fade = if edge_dist == 0 { 1.0 } else if edge_dist == 1 { 0.65 } else { 0.25 };
                 let br = bd_r * (1.0 - beam) + (ic_r * 0.6 + 255.0 * 0.4) * beam;
                 let bg = bd_g * (1.0 - beam) + (ic_g * 0.6 + 255.0 * 0.4) * beam;

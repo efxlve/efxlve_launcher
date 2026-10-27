@@ -283,8 +283,12 @@ export interface AchievementNotificationOptions {
   customSoundName: string | null;
   /** "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst". */
   cardTheme: string;
-  /** "prism", "cyber", "shatter", or "jackpot". */
+  /** "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic". */
   animStyle: string;
+  /** "auto", "collapse", "glide", "fold", "laser", "implode", or "zoom". */
+  exitStyle?: string;
+  /** Store keys whose achievement notifications are disabled ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom"). */
+  disabledStores?: string[];
 }
 
 /** The card palette, resolved from the live CSS tokens by the frontend. */

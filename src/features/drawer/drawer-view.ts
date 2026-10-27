@@ -2379,6 +2379,11 @@ function emitStoreAchievementUnlock(
   unlockedCount: number,
   totalCount: number,
 ): void {
+  if (!S.achievementNotificationOptions.enabled) return;
+  const storeKey = sourceOfKey(appName);
+  if ((S.achievementNotificationOptions.disabledStores || []).includes(storeKey)) {
+    return;
+  }
   const pct = ach.rarity?.percent ?? null;
   const tierCode = classifyStoreRarityTier(pct, ach.tier?.name, unlockedCount, totalCount);
   const pctText = typeof pct === "number" && Number.isFinite(pct) ? ` • %${pct.toFixed(1)}` : "";
