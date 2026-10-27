@@ -1638,27 +1638,26 @@ fn render_medallion_and_trophy(
                 // Matches CSS .ach-medallion-ring: 1.5px dashed color-mix(icon 65%, transparent)
                 let ring_r = mr + 5.0;
                 let d_radial = (dist - ring_r).abs();
-                if d_radial <= 1.35 {
-                    // Crisp 1.5px stroke with subpixel anti-aliasing (0.75px half-width + 0.5px margin)
-                    let rad_cov = (0.75 + 0.5 - d_radial).clamp(0.0, 1.0);
+                if d_radial <= 1.25 {
+                    // Delicate 1.4px stroke with subpixel anti-aliasing
+                    let rad_cov = (0.70 + 0.5 - d_radial).clamp(0.0, 1.0);
 
-                    // Angular position and smooth feathered dash segments (24 sleek dashes around circumference)
-                    // Synchronized with background god-rays: 8.0s per rotation, clockwise
-                    let rot_speed = std::f32::consts::TAU / 8.0;
-                    let period = std::f32::consts::TAU / 24.0;
-                    let theta = dy.atan2(dx) - t_sec * rot_speed + (period * 0.5);
-                    let half_dash = period * 0.275; // 55% dash (~4.5px), 45% gap
+                    // 16 soft, delicate dashes matching Chromium's circular dashed border (6.0s smooth drift)
+                    let rot_speed = std::f32::consts::TAU / 6.0;
+                    let period = std::f32::consts::TAU / 16.0;
+                    let theta = dy.atan2(dx) - t_sec * rot_speed;
+                    let half_dash = period * 0.28;
                     let local_theta = theta.rem_euclid(period) - (period * 0.5);
                     let d_ang_px = (half_dash - local_theta.abs()) * ring_r;
-                    let ang_cov = (d_ang_px + 0.6).clamp(0.0, 1.0);
+                    let ang_cov = (d_ang_px + 0.7).clamp(0.0, 1.0);
 
                     let dash_cov = rad_cov * ang_cov;
                     if dash_cov > 0.01 {
-                        // Soft 68% opacity matching CSS color-mix(in srgb, var(--ach-icon) 65%, transparent)
-                        let ring_alpha = dash_cov * 0.68;
-                        r = r * (1.0 - ring_alpha) + (ic_r * 0.90 + 255.0 * 0.10) * ring_alpha;
-                        g = g * (1.0 - ring_alpha) + (ic_g * 0.90 + 255.0 * 0.10) * ring_alpha;
-                        b = b * (1.0 - ring_alpha) + (ic_b * 0.90 + 255.0 * 0.10) * ring_alpha;
+                        // Soft 55% opacity matching CSS color-mix(in srgb, var(--ach-icon) 65%, transparent)
+                        let ring_alpha = dash_cov * 0.55;
+                        r = r * (1.0 - ring_alpha) + ic_r * ring_alpha;
+                        g = g * (1.0 - ring_alpha) + ic_g * ring_alpha;
+                        b = b * (1.0 - ring_alpha) + ic_b * ring_alpha;
                     }
                 }
                 pixels[idx] = pack_dib(r, g, b);
@@ -1777,18 +1776,16 @@ fn render_dopamine_backdrop(
             let mut g = bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss;
             let mut b = bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss;
 
-            // 2. Rotating Volumetric God-Rays behind the medallion (matches preview .ach-fx-godrays, 8s sync cycle)
-            if dist < m.medallion_r as f32 * 3.8 {
+            // 2. Soft Volumetric Radiant Aura behind the medallion (matches preview .ach-fx-godrays)
+            let max_ray_r = (m.medallion_r as f32) * 2.4;
+            if dist < max_ray_r {
                 let angle = dy.atan2(dx);
-                // Synchronized rotation speed with dashed ring: 8.0s per rotation, clockwise
-                let rot_speed = std::f32::consts::TAU / 8.0;
+                let rot_speed = std::f32::consts::TAU / 9.0;
                 let rot_angle = angle - t_sec * rot_speed;
-                // 12 rays around circle (matching CSS repeating-conic-gradient 30deg period)
-                let beam = ((rot_angle * 12.0).cos() * 0.5 + 0.5).powi(3);
-                let falloff = (1.0 - dist / (m.medallion_r as f32 * 3.8)).max(0.0);
-                // Breathing scale factor matching CSS keyframe scale(0.96..1.06)
-                let breathe = 0.95 + (t_sec * rot_speed).sin() * 0.08;
-                let ray_int = beam * falloff * breathe * (if tier >= 3 { 0.36 } else { 0.22 });
+                // Soft, warm multi-lobe ambient radiance (smooth sinusoidal glow, no harsh cutoffs or spokes)
+                let lobe = (rot_angle * 6.0).sin().powi(2) * 0.35 + 0.65;
+                let falloff = (1.0 - dist / max_ray_r).clamp(0.0, 1.0).powi(2);
+                let ray_int = lobe * falloff * (if tier >= 3 { 0.18 } else { 0.12 });
                 r += ic_r * ray_int;
                 g += ic_g * ray_int;
                 b += ic_b * ray_int;
@@ -1932,51 +1929,43 @@ fn render_dopamine_backdrop(
     }
 
     // 7. Dopamine Sparkling Particles ("parıltılı noktalar")
-    // Part A: Initial dynamic burst shards (0..1000ms)
-    let burst_t = ((elapsed_ms as f32 - 40.0) / 960.0).clamp(0.0, 1.0);
-    if burst_t > 0.0 && burst_t < 1.0 {
-        let decel = 1.0 - (1.0 - burst_t).powi(3);
-        let fade = (1.0 - burst_t).powi(2);
-        for i in 0..16u32 {
-            let seed = (i.wrapping_mul(2654435761)) ^ ((tier as u32) << 16);
-            let angle = (i as f32 / 16.0) * std::f32::consts::TAU + ((seed & 0xFF) as f32 * 0.012);
-            let max_r = (m.medallion_r as f32) + 14.0 + ((seed >> 8) & 0x1F) as f32 * 0.6;
-            let px = center_x + (angle.cos() * max_r * decel) as i32;
-            let py = center_y + (angle.sin() * (max_r * 0.72) * decel) as i32;
-            let is_diamond = (i & 1) == 0;
-            draw_sparkle(pixels, w, h, px, py, 2, is_diamond, fade * 0.9, ic_r, ic_g, ic_b);
+    // Exact 1:1 match to preview STAGE_OFFSETS: 14 diamond & spark particles burst on unlock and fade gracefully (0..1000ms)
+    // No artificial persistent dots or floating embers cluttering the card afterwards
+    const STAGE_OFFSETS: [(i32, i32, bool, u64); 14] = [
+        (-24, -24, true, 40),
+        (0, -32, false, 90),
+        (24, -24, true, 140),
+        (32, 0, false, 60),
+        (24, 24, true, 180),
+        (0, 32, false, 120),
+        (-24, 24, true, 80),
+        (-32, 0, false, 150),
+        (-18, -30, true, 110),
+        (18, -30, false, 70),
+        (30, -18, true, 160),
+        (30, 18, false, 100),
+        (-30, -18, false, 130),
+        (-30, 18, true, 50),
+    ];
+
+    if elapsed_ms < 1100 {
+        for &(dx, dy, is_diamond, delay_ms) in &STAGE_OFFSETS {
+            if elapsed_ms > delay_ms {
+                let p_t = ((elapsed_ms - delay_ms) as f32 / 820.0).clamp(0.0, 1.0);
+                if p_t < 1.0 {
+                    let ease_out = 1.0 - (1.0 - p_t).powi(3);
+                    let alpha = if p_t < 0.20 {
+                        (p_t / 0.20).clamp(0.0, 1.0)
+                    } else {
+                        (1.0 - (p_t - 0.20) / 0.80).powi(2)
+                    };
+                    let px = center_x + (dx as f32 * ease_out).round() as i32;
+                    let py = center_y + (dy as f32 * ease_out).round() as i32;
+                    let sz = if is_diamond { 3 } else { 2 };
+                    draw_sparkle(pixels, w, h, px, py, sz, is_diamond, alpha * 0.95, ic_r, ic_g, ic_b);
+                }
+            }
         }
-    }
-
-    // Part B: Persistent Orbiting Diamond Stars around the medallion disc (14 points, scaled to fit inside window bounds!)
-    let entry_fade = (elapsed_ms as f32 / 240.0).clamp(0.0, 1.0);
-    let mr_f = m.medallion_r as f32;
-    for i in 0..14u32 {
-        let angle = (i as f32 / 14.0) * std::f32::consts::TAU;
-        let ring_dist = mr_f + 8.0 + ((i % 3) as f32) * 4.0;
-        let phase = i as f32 * 0.75;
-        let bob = (t_sec * 1.6 + phase).sin() * 2.5;
-        let rad_dist = ring_dist + bob;
-        // Keep vertical stretch slightly condensed so top/bottom never touch the window edge
-        let px = center_x + (angle.cos() * rad_dist).round() as i32;
-        let py = center_y + (angle.sin() * (rad_dist * 0.78)).round() as i32;
-
-        let twinkle = ((t_sec * 3.5 + phase).sin().abs()).powi(3) * 0.78 + 0.22;
-        let alpha = twinkle * entry_fade;
-        let is_diamond = (i & 1) == 0;
-        let sz = if is_diamond { 3 } else { 2 };
-        draw_sparkle(pixels, w, h, px, py, sz, is_diamond, alpha, ic_r, ic_g, ic_b);
-    }
-
-    // Part C: Floating ambient sparkling embers across the card text area
-    let text_area_w = (w - center_x - (m.medallion_r + 30)).max(60);
-    for i in 0..10u32 {
-        let seed = i.wrapping_mul(1597334677);
-        let phase = (t_sec * (0.50 + (i as f32 * 0.05)) + (seed & 0xFF) as f32 * 0.04) % 1.0;
-        let px = center_x + m.medallion_r + 28 + (((seed >> 8) as i32).abs() % text_area_w);
-        let py = (h - 12) - (phase * (h - 24) as f32) as i32;
-        let twinkle = ((phase * std::f32::consts::PI).sin()).powi(2) * 0.82;
-        draw_sparkle(pixels, w, h, px, py, 2, (i & 1) == 0, twinkle, ac_r, ac_g, ac_b);
     }
 
     // 9. Anti-aliased Medallion Disc, Rotating Dashed Orbit Ring & 3D Vector Trophy Cup
