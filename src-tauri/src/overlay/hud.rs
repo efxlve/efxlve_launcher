@@ -33,6 +33,9 @@ static NOTIF_ON: AtomicBool = AtomicBool::new(false);
 static NOTIF_TAG: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 static NOTIF_TITLE: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 static NOTIF_BODY: Mutex<Vec<u16>> = Mutex::new(Vec::new());
+/// The achievement's own picture, when the download already landed: the card
+/// paints it inside the medallion instead of the trophy glyph.
+static NOTIF_ICON: Mutex<Option<Vec<u16>>> = Mutex::new(None);
 /// The card stays until this epoch-ms timestamp.
 static NOTIF_UNTIL: AtomicU64 = AtomicU64::new(0);
 /// Bumped per card; a stale animation thread must not hide a newer one.
@@ -274,16 +277,56 @@ pub fn notify_ext(tag: &str, title: &str, body: &str) {
 }
 
 /// Achievement cards can follow the launcher theme instead of the gold card;
-/// the palette is passed in so a later hint keeps its own colours.
-pub fn notify_achievement(tag: &str, title: &str, body: &str, colors: AchievementCardColors) {
-    notify_card(tag, title, body, colors);
+/// the palette is passed in so a later hint keeps its own colours. The returned
+/// generation lets a late icon fetch paint the card that is still on screen.
+pub fn notify_achievement(
+    tag: &str,
+    title: &str,
+    body: &str,
+    colors: AchievementCardColors,
+) -> u64 {
+    notify_card(tag, title, body, colors)
 }
 
-fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors) {
+/// Puts a downloaded achievement icon on the card `generation` named. A stale
+/// generation (a newer card is already up) is ignored.
+pub fn set_notification_icon(generation: u64, path: &std::path::Path) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStrExt;
+        if generation == 0
+            || NOTIF_GEN.load(Ordering::Relaxed) != generation
+            || !NOTIF_ON.load(Ordering::Relaxed)
+        {
+            return;
+        }
+        let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+        wide.push(0);
+        if let Ok(mut slot) = NOTIF_ICON.lock() {
+            *slot = Some(wide);
+        }
+        let hwnd = HWND.load(Ordering::SeqCst);
+        if hwnd != 0 {
+            unsafe {
+                InvalidateRect(hwnd, std::ptr::null(), 0);
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (generation, path);
+    }
+}
+
+fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors) -> u64 {
     #[cfg(windows)]
     {
         if let Ok(mut slot) = NOTIF_COLORS.lock() {
             *slot = colors;
+        }
+        // A new card never inherits the previous achievement's picture.
+        if let Ok(mut slot) = NOTIF_ICON.lock() {
+            *slot = None;
         }
         ensure_window();
         {
@@ -311,7 +354,7 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
         let generation = NOTIF_GEN.fetch_add(1, Ordering::Relaxed) + 1;
         let hwnd = HWND.load(Ordering::SeqCst);
         if hwnd == 0 {
-            return;
+            return generation;
         }
 
         let (mon_x, mon_y, mon_w, mon_h) =
@@ -356,10 +399,12 @@ fn notify_card(tag: &str, title: &str, body: &str, colors: AchievementCardColors
                 hide_window();
             }
         });
+        generation
     }
     #[cfg(not(windows))]
     {
         let _ = (tag, title, body, colors);
+        0
     }
 }
 
@@ -757,6 +802,7 @@ extern "system" {
     ) -> isize;
     fn FrameRgn(hdc: isize, region: isize, brush: isize, width: i32, height: i32) -> i32;
     fn Ellipse(hdc: isize, left: i32, top: i32, right: i32, bottom: i32) -> i32;
+    fn CreateEllipticRgn(left: i32, top: i32, right: i32, bottom: i32) -> isize;
     fn RoundRect(hdc: isize, left: i32, top: i32, right: i32, bottom: i32, width: i32, height: i32) -> i32;
     fn CreateFontW(
         height: i32,
@@ -780,6 +826,66 @@ extern "system" {
 #[link(name = "kernel32")]
 extern "system" {
     fn GetModuleHandleW(name: *const u16) -> isize;
+}
+
+#[cfg(windows)]
+#[repr(C)]
+struct GdiplusStartupInput {
+    gdiplus_version: u32,
+    debug_event_callback: usize,
+    suppress_background_thread: i32,
+    suppress_external_codecs: i32,
+}
+
+#[cfg(windows)]
+#[link(name = "gdiplus")]
+extern "system" {
+    fn GdiplusStartup(
+        token: *mut usize,
+        input: *const GdiplusStartupInput,
+        output: *mut core::ffi::c_void,
+    ) -> i32;
+    fn GdipCreateFromHDC(hdc: isize, graphics: *mut *mut core::ffi::c_void) -> i32;
+    fn GdipLoadImageFromFile(
+        filename: *const u16,
+        image: *mut *mut core::ffi::c_void,
+    ) -> i32;
+    fn GdipDrawImageRectI(
+        graphics: *mut core::ffi::c_void,
+        image: *mut core::ffi::c_void,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) -> i32;
+    fn GdipSetClipHrgn(
+        graphics: *mut core::ffi::c_void,
+        region: isize,
+        combine_mode: i32,
+    ) -> i32;
+    fn GdipResetClip(graphics: *mut core::ffi::c_void) -> i32;
+    fn GdipDeleteGraphics(graphics: *mut core::ffi::c_void) -> i32;
+    fn GdipDisposeImage(image: *mut core::ffi::c_void) -> i32;
+}
+
+/// GDI+ is started once for the process; the codec providers stay loaded. The
+/// screenshot module does the same for its encoder, and neither ever shuts it
+/// down because the app is long-lived.
+#[cfg(windows)]
+static GDIPLUS_READY: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+
+#[cfg(windows)]
+fn ensure_gdiplus() -> bool {
+    *GDIPLUS_READY.get_or_init(|| unsafe {
+        let input = GdiplusStartupInput {
+            gdiplus_version: 1,
+            debug_event_callback: 0,
+            suppress_background_thread: 0,
+            suppress_external_codecs: 0,
+        };
+        let mut token: usize = 0;
+        GdiplusStartup(&mut token, &input, std::ptr::null_mut()) == 0
+    })
 }
 
 #[cfg(windows)]
@@ -880,6 +986,61 @@ unsafe fn paint_hud(hdc: isize, rect: &RECT) {
     }
 }
 
+/// Draws the achievement's own picture inside the medallion, clipped to the
+/// disc. False when no picture landed yet, so the card keeps the trophy glyph.
+#[cfg(windows)]
+unsafe fn paint_medallion_picture(
+    hdc: isize,
+    center_x: i32,
+    center_y: i32,
+    radius: i32,
+) -> bool {
+    let file = match NOTIF_ICON.lock() {
+        Ok(slot) => slot.clone(),
+        Err(_) => None,
+    };
+    let Some(file) = file else {
+        return false;
+    };
+    if !ensure_gdiplus() {
+        return false;
+    }
+    let mut graphics: *mut core::ffi::c_void = std::ptr::null_mut();
+    if GdipCreateFromHDC(hdc, &mut graphics) != 0 || graphics.is_null() {
+        return false;
+    }
+    let region = CreateEllipticRgn(
+        center_x - radius,
+        center_y - radius,
+        center_x + radius + 1,
+        center_y + radius + 1,
+    );
+    if region == 0 {
+        GdipDeleteGraphics(graphics);
+        return false;
+    }
+    // A square picture over a round medallion would break the card's shape, so
+    // the draw is skipped when the round clip cannot be installed.
+    let clipped = GdipSetClipHrgn(graphics, region, 0) == 0;
+    let mut image: *mut core::ffi::c_void = std::ptr::null_mut();
+    let mut painted = false;
+    if clipped && GdipLoadImageFromFile(file.as_ptr(), &mut image) == 0 && !image.is_null() {
+        painted = GdipDrawImageRectI(
+            graphics,
+            image,
+            center_x - radius,
+            center_y - radius,
+            radius * 2,
+            radius * 2,
+        ) == 0;
+        GdipDisposeImage(image);
+    }
+    GdipResetClip(graphics);
+    let _ = DeleteObject(region);
+    GdipDeleteGraphics(graphics);
+    painted
+}
+
 /// The console-like card: rounded plate, icon disc, bold title, muted body.
 #[cfg(windows)]
 unsafe fn paint_notification(hdc: isize, rect: &RECT) {
@@ -937,36 +1098,38 @@ unsafe fn paint_notification(hdc: isize, rect: &RECT) {
     SelectObject(hdc, prev_inner);
     let _ = DeleteObject(inner_disc);
 
-    // Trophy Icon
-    let icon_font = SIZE_ICON_FONTS[size_code].load(Ordering::Relaxed);
-    if icon_font != 0 {
-        SetBkMode(hdc, TRANSPARENT_BK);
-        SetTextColor(hdc, colors.icon);
-        SelectObject(hdc, icon_font);
-        let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
-        let half_icon = m.icon_size;
-        let mut icon_rect = RECT {
-            left: center_x - half_icon,
-            top: center_y - half_icon,
-            right: center_x + half_icon,
-            bottom: center_y + half_icon,
-        };
-        DrawTextW(
-            hdc,
-            glyph.as_ptr(),
-            1,
-            &mut icon_rect,
-            DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-        );
-    } else {
-        let mark = CreateSolidBrush(colors.icon);
-        let prev = SelectObject(hdc, mark);
-        let bw = m.medallion_r * 2 / 5;
-        RoundRect(hdc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
-        RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
-        RoundRect(hdc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
-        SelectObject(hdc, prev);
-        let _ = DeleteObject(mark);
+    // The achievement's own icon once it has downloaded; the trophy until then.
+    if !paint_medallion_picture(hdc, center_x, center_y, inner_r) {
+        let icon_font = SIZE_ICON_FONTS[size_code].load(Ordering::Relaxed);
+        if icon_font != 0 {
+            SetBkMode(hdc, TRANSPARENT_BK);
+            SetTextColor(hdc, colors.icon);
+            SelectObject(hdc, icon_font);
+            let glyph: [u16; 2] = [0xE8D6, 0]; // Segoe MDL2 Trophy
+            let half_icon = m.icon_size;
+            let mut icon_rect = RECT {
+                left: center_x - half_icon,
+                top: center_y - half_icon,
+                right: center_x + half_icon,
+                bottom: center_y + half_icon,
+            };
+            DrawTextW(
+                hdc,
+                glyph.as_ptr(),
+                1,
+                &mut icon_rect,
+                DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
+            );
+        } else {
+            let mark = CreateSolidBrush(colors.icon);
+            let prev = SelectObject(hdc, mark);
+            let bw = m.medallion_r * 2 / 5;
+            RoundRect(hdc, center_x - bw, center_y - bw, center_x + bw, center_y + 1, 4, 4);
+            RoundRect(hdc, center_x - 2, center_y + 1, center_x + 2, center_y + bw, 2, 2);
+            RoundRect(hdc, center_x - bw * 3 / 4, center_y + bw, center_x + bw * 3 / 4, center_y + bw + 3, 2, 2);
+            SelectObject(hdc, prev);
+            let _ = DeleteObject(mark);
+        }
     }
 
     // Text column: 3-tier layout (Tag, Title, Body)
@@ -1243,5 +1406,59 @@ mod tests {
         let latin = text_px(&[b'a' as u16, b'b' as u16], 15);
         assert_eq!(cjk, 30);
         assert!(latin < cjk);
+    }
+
+    /// The medallion draws the achievement's picture through GDI+; a broken
+    /// declaration or a missing codec must not silently paint nothing.
+    #[test]
+    #[cfg(windows)]
+    fn a_downloaded_icon_paints_inside_the_medallion() {
+        use std::os::windows::ffi::OsStrExt;
+
+        #[link(name = "user32")]
+        extern "system" {
+            fn GetDC(hwnd: isize) -> isize;
+            fn ReleaseDC(hwnd: isize, hdc: isize) -> i32;
+        }
+        #[link(name = "gdi32")]
+        extern "system" {
+            fn CreateCompatibleDC(hdc: isize) -> isize;
+            fn CreateCompatibleBitmap(hdc: isize, width: i32, height: i32) -> isize;
+            fn DeleteDC(hdc: isize) -> i32;
+        }
+
+        // A one-pixel PNG: enough for the decoder to answer with a bitmap.
+        let bytes: Vec<u8> = vec![
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+            0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+            0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78,
+            0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+            0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+        ];
+        let path = std::env::temp_dir().join(format!(
+            "efxlve-achievement-icon-{}.png",
+            std::process::id()
+        ));
+        std::fs::write(&path, &bytes).expect("write the test picture");
+        let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+        wide.push(0);
+        *super::NOTIF_ICON.lock().expect("icon slot") = Some(wide);
+
+        unsafe {
+            let screen = GetDC(0);
+            let dc = CreateCompatibleDC(screen);
+            let bitmap = CreateCompatibleBitmap(screen, 64, 64);
+            let previous = super::SelectObject(dc, bitmap);
+            assert!(
+                super::paint_medallion_picture(dc, 32, 32, 24),
+                "the icon decodes and draws"
+            );
+            super::SelectObject(dc, previous);
+            super::DeleteObject(bitmap);
+            DeleteDC(dc);
+            ReleaseDC(0, screen);
+        }
+        *super::NOTIF_ICON.lock().expect("icon slot") = None;
+        let _ = std::fs::remove_file(&path);
     }
 }

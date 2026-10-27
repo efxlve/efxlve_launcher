@@ -2032,7 +2032,7 @@ pub fn achievement_test_notification(app: tauri::AppHandle, title: String, body:
     crate::overlay::hud::set_notification_hold(options.duration_ms);
     let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
     if options.overlay {
-        crate::overlay::hud::notify_achievement(
+        let _ = crate::overlay::hud::notify_achievement(
             &tag_text,
             &title,
             &body,
@@ -2111,6 +2111,22 @@ pub fn steam_start_emulator_watcher(
     steam_start_custom_achievement_watcher(app, app_id);
 }
 
+/// The card paints the achievement's own icon when the picture cache answers in
+/// time; a missing picture leaves the trophy medallion.
+fn attach_achievement_icon(app: &tauri::AppHandle, icon_url: &str, generation: u64) {
+    if generation == 0 || icon_url.trim().is_empty() {
+        return;
+    }
+    let app = app.clone();
+    let url = icon_url.to_string();
+    std::thread::spawn(move || {
+        let cached = tauri::async_runtime::block_on(crate::image_cache::cache_image(&app, &url));
+        if let Some(path) = cached {
+            crate::overlay::hud::set_notification_icon(generation, &path);
+        }
+    });
+}
+
 /// Emits the card, sound and frontend event for every achievement that was not
 /// in `unlocked_set` yet.
 fn emit_new_achievement_unlocks(
@@ -2141,12 +2157,13 @@ fn emit_new_achievement_unlocks(
         if options.enabled {
             // 1. Native in-game HUD toast card
             if options.overlay {
-                crate::overlay::hud::notify_achievement(
+                let generation = crate::overlay::hud::notify_achievement(
                     "BAŞARIM KAZANILDI",
                     &display,
                     &ach.description,
                     achievement_card_colors(),
                 );
+                attach_achievement_icon(app, &ach.icon_link, generation);
             }
             // 2. Native notification sound: the user's file when set,
             // otherwise the Windows system chime.

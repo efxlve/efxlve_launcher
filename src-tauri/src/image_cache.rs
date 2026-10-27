@@ -155,6 +155,22 @@ async fn cache_one(client: &reqwest::Client, dir: &Path, url: &str) -> Option<Pa
     Some(target)
 }
 
+/// One picture for a caller outside the game page (the achievement card): the
+/// cached file on disk, downloading it first when needed.
+pub(crate) async fn cache_image(app: &AppHandle, url: &str) -> Option<PathBuf> {
+    let url = url.trim();
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return None;
+    }
+    let dir = image_dir(app)?;
+    tokio::fs::create_dir_all(&dir).await.ok()?;
+    let client = reqwest::Client::builder()
+        .timeout(REQUEST_TIMEOUT)
+        .build()
+        .ok()?;
+    cache_one(&client, &dir, url).await
+}
+
 /// Keeps the directory under the cap, oldest file first. Runs after a download
 /// batch, never on a cache hit.
 async fn trim_dir(dir: &Path) {
