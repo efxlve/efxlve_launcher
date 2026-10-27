@@ -2324,6 +2324,17 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
   const now = Date.now();
   if (now - (sessionAchRefreshAt.get(appName) ?? 0) < 15_000) return;
   sessionAchRefreshAt.set(appName, now);
+  // The Steam client flushes `UserGameStats_*.bin` a moment after the process
+  // exits, so reading at once caches the pre-session unlocks. The second pass
+  // covers a slow cloud/stats sync; whichever pass sees the higher count
+  // records the delta, the other records none.
+  const delays = appName.startsWith("steam::") ? [2500, 8000] : [0];
+  for (const delay of delays) {
+    window.setTimeout(() => refreshAchievementsNow(appName), delay);
+  }
+}
+
+function refreshAchievementsNow(appName: string): void {
   // `before` has to be read while the old answer is still here.
   const before = S.loadedAchievements.get(appName)?.user_unlocked ?? 0;
   S.loadedAchievements.delete(appName);

@@ -171,6 +171,53 @@ pub(super) fn stats_dir(steam: &Path) -> PathBuf {
     steam.join("appcache").join("stats")
 }
 
+/// The client's per-account stats file for one app: unlock times live here.
+pub(super) fn app_stats_file(steam: &Path, account: u64, app_id: &str) -> PathBuf {
+    stats_dir(steam).join(format!("UserGameStats_{account}_{app_id}.bin"))
+}
+
+/// File modification time in whole seconds, or `None` when it is missing.
+fn modified_secs(path: &Path) -> Option<u64> {
+    std::fs::metadata(path)
+        .and_then(|meta| meta.modified())
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .map(|time| time.as_secs())
+}
+
+/// True when the client rewrote the file after the answer was cached. The TTL
+/// alone is not enough: Steam unlocks achievements while the launcher runs.
+fn stats_file_changed_since(steam: &Path, app_id: &str, fetched_at: u64) -> bool {
+    let Some(account) = steam_account_id(steam) else {
+        return false;
+    };
+    modified_secs(&app_stats_file(steam, account, app_id))
+        .map(|at| at > fetched_at)
+        .unwrap_or(false)
+}
+
+/// True when any app's stats file changed after `fetched_at`; used to discard
+/// the whole-library totals cache.
+fn stats_dir_changed_since(steam: &Path, fetched_at: u64) -> bool {
+    let Ok(entries) = std::fs::read_dir(stats_dir(steam)) else {
+        return false;
+    };
+    entries.flatten().any(|entry| {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        name.starts_with("UserGameStats_")
+            && !name.starts_with("UserGameStatsSchema_")
+            && entry
+                .metadata()
+                .and_then(|meta| meta.modified())
+                .ok()
+                .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|time| time.as_secs() > fetched_at)
+                .unwrap_or(false)
+    })
+}
+
 /// Public global unlock rates (no Web API key needed) → `name` → percent.
 pub(super) fn parse_global_percentages(
     payload: &serde_json::Value,
@@ -260,7 +307,7 @@ pub(super) fn read_unlock_times(
     let Some(account) = steam_account_id(steam) else {
         return unlock_times;
     };
-    let user_file = stats_dir(steam).join(format!("UserGameStats_{account}_{app_id}.bin"));
+    let user_file = app_stats_file(steam, account, app_id);
     let Ok(bytes) = std::fs::read(user_file) else {
         return unlock_times;
     };
@@ -1191,6 +1238,59 @@ pub(super) struct CachedAchievements {
     response: GameAchievementsResponse,
 }
 
+/// Writes the on-disk answer that the drawer, the library summary and the TTL
+/// read, and returns it. The watcher calls this too, so an unlock in a running
+/// game reaches the library without reopening the page.
+fn write_achievements_cache(
+    app: &tauri::AppHandle,
+    app_id: &str,
+    response: &GameAchievementsResponse,
+) -> GameAchievementsResponse {
+    let path = achievements_cache_dir(app).join(format!("{app_id}.json"));
+    let mut merged = response.clone();
+    // A Web API answer carries rarity the local read has no source for. The
+    // fresh unlocks always win; only the tier metadata is carried over.
+    if let Some(previous) = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<CachedAchievements>(&text).ok())
+        .map(|cached| cached.response)
+        .filter(|previous| {
+            previous.achievements.len() == merged.achievements.len()
+                && previous.total_achievements == merged.total_achievements
+        })
+    {
+        {
+            let old: std::collections::HashMap<&str, &AchievementItem> = previous
+                .achievements
+                .iter()
+                .map(|item| (item.name.as_str(), item))
+                .collect();
+            for item in merged.achievements.iter_mut() {
+                if item.tier.is_some() {
+                    continue;
+                }
+                if let Some(old) = old.get(item.name.as_str()) {
+                    item.tier = old.tier.clone();
+                    item.rarity = old.rarity.clone();
+                }
+            }
+        }
+        // A fetch that started before an unlock can finish after the watcher
+        // wrote it; the cached count must never move backwards.
+        if previous.user_unlocked > merged.user_unlocked {
+            merged = previous;
+        }
+    }
+    let cached = CachedAchievements {
+        fetched_at: now_secs(),
+        response: merged.clone(),
+    };
+    if let Ok(text) = serde_json::to_string(&cached) {
+        let _ = std::fs::write(path, text);
+    }
+    merged
+}
+
 /// Achievements for one Steam game. Read from the Steam client's own cache
 /// first (offline, no key); the optional Web API key still answers for games
 /// whose local schema is missing.
@@ -1207,7 +1307,15 @@ pub async fn steam_get_achievements(
     if force != Some(true) {
         if let Ok(text) = std::fs::read_to_string(&cache) {
             if let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) {
-                if now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS {
+                let within_ttl =
+                    now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS;
+                // The client rewrites its stats file mid-session; when that file
+                // is newer than the answer, the TTL alone would keep the old
+                // unlocks for an hour.
+                let unchanged = steam_install_path()
+                    .map(|steam| !stats_file_changed_since(&steam, &app_id, cached.fetched_at))
+                    .unwrap_or(true);
+                if within_ttl && unchanged {
                     return Ok(cached.response);
                 }
             }
@@ -1223,14 +1331,7 @@ pub async fn steam_get_achievements(
         if !percentages.is_empty() {
             apply_rarity(&mut response, &percentages);
         }
-        let cached = CachedAchievements {
-            fetched_at: now_secs(),
-            response: response.clone(),
-        };
-        if let Ok(text) = serde_json::to_string(&cached) {
-            let _ = std::fs::write(&cache, text);
-        }
-        return Ok(response);
+        return Ok(write_achievements_cache(&app, &app_id, &response));
     }
 
     // 2) Web API fallback (adds global rarity) when no local schema exists.
@@ -1402,14 +1503,7 @@ pub async fn steam_get_achievements(
         supported: Some(true),
         ..Default::default()
     };
-    let cached = CachedAchievements {
-        fetched_at: now_secs(),
-        response: response.clone(),
-    };
-    if let Ok(text) = serde_json::to_string(&cached) {
-        let _ = std::fs::write(&cache, text);
-    }
-    Ok(response)
+    Ok(write_achievements_cache(&app, &app_id, &response))
 }
 
 /// Achievements for a custom/emulator-owned title: definitions come from the
@@ -1946,12 +2040,15 @@ fn emit_new_achievement_unlocks(
     app_id: &str,
     response: &GameAchievementsResponse,
     unlocked_set: &mut std::collections::HashSet<String>,
+    write_cache: bool,
 ) {
+    let mut emitted = false;
     for ach in &response.achievements {
         if !ach.unlocked || unlocked_set.contains(&ach.name) {
             continue;
         }
         unlocked_set.insert(ach.name.clone());
+        emitted = true;
 
         // 1. Native in-game HUD toast card
         let display = if ach.display_name.trim().is_empty() {
@@ -1984,6 +2081,12 @@ fn emit_new_achievement_unlocks(
             notification: options.enabled,
         };
         let _ = app.emit("achievement-unlocked", payload);
+    }
+    // The drawer and the library summary read this file; an unlock must land
+    // there without waiting for the next page open. Emulator-only titles have
+    // no Steam client entry, so they keep their own store.
+    if emitted && write_cache {
+        let _ = write_achievements_cache(app, app_id, response);
     }
 }
 
@@ -2077,6 +2180,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 &target_app_id,
                 &response,
                 &mut unlocked_set,
+                !emulator_only,
             );
         }
 
@@ -2105,6 +2209,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                     &target_app_id,
                     &response,
                     &mut unlocked_set,
+                    !emulator_only,
                 );
             }
         }
@@ -2127,6 +2232,8 @@ fn steam_achievements_summary_for(
     app: &tauri::AppHandle,
 ) -> std::collections::HashMap<String, GameAchievementSummary> {
     let mut out = std::collections::HashMap::new();
+    let steam = steam_install_path();
+    let account = steam.as_deref().and_then(steam_account_id);
     if let Ok(entries) = std::fs::read_dir(achievements_cache_dir(&app)) {
         for entry in entries.flatten() {
             let path = entry.path();
@@ -2144,6 +2251,14 @@ fn steam_achievements_summary_for(
             let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) else {
                 continue;
             };
+            // A cached answer older than the client's stats file is stale: the
+            // stats scan below owns that app until the next fetch rewrites it.
+            if let (Some(steam), Some(account)) = (steam.as_deref(), account) {
+                let stats = app_stats_file(steam, account, &app_id);
+                if modified_secs(&stats).map(|at| at > cached.fetched_at).unwrap_or(false) {
+                    continue;
+                }
+            }
             let response = cached.response;
             if response.total_achievements == 0 {
                 continue;
@@ -2167,12 +2282,20 @@ fn steam_achievements_summary_for(
     let cached = std::fs::read_to_string(&cache_path)
         .ok()
         .and_then(|text| serde_json::from_str::<CachedTotals>(&text).ok())
-        .filter(|cached| now_secs().saturating_sub(cached.fetched_at) < ACH_TOTALS_TTL_SECS);
+        .filter(|cached| now_secs().saturating_sub(cached.fetched_at) < ACH_TOTALS_TTL_SECS)
+        // Any unlock in any game changes the scan; the per-app check above
+        // cannot see a game whose page was never opened.
+        .filter(|cached| {
+            steam
+                .as_deref()
+                .map(|steam| !stats_dir_changed_since(steam, cached.fetched_at))
+                .unwrap_or(true)
+        });
     let totals = match cached {
         Some(cached) => cached.totals,
-        None => match steam_install_path() {
+        None => match steam.as_deref() {
             Some(steam) => {
-                let totals = read_local_achievement_totals(&steam);
+                let totals = read_local_achievement_totals(steam);
                 let fresh = CachedTotals {
                     fetched_at: now_secs(),
                     totals: totals.clone(),
