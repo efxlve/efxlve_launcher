@@ -1638,7 +1638,7 @@
   border-radius: 50%;
   border: 1.5px dashed color-mix(in srgb, var(--ach-icon, #fbbf24) 65%, transparent);
   pointer-events: none;
-  animation: ach-ring-orbit 6s linear infinite;
+  animation: ach-ring-orbit 3.2s linear infinite;
 }
 
 @keyframes ach-ring-orbit {
