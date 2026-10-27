@@ -27,6 +27,8 @@ export default defineConfig({
         overlay: "overlay.html",
         // The overlay's browser window (chrome bar over a native page webview).
         browser: "browser.html",
+        // The achievement toast: the same card component as the Settings preview.
+        toast: "toast.html",
       },
       output: {
         // Split third-party code out of the app chunk: it stays cacheable between

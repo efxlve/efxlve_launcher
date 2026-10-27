@@ -180,8 +180,11 @@ runs and SMTC otherwise.
    "overlay"`): transparent, undecorated, always-on-top, skip-taskbar, hidden by
    default, sized to the monitor that hosts the game window (positioned over the game
    rect). `Shift+Tab` shows and focuses it; `Esc`/`Shift+Tab` hides it and returns
-   focus to the game. Because it is hidden when inactive, the WebView2
-   transparency/click-through conflict never applies.
+   focus to the game. Because it is hidden when inactive, the WebView2 renderer
+   memory is released while the game plays. The achievement toast reuses the
+   same recipe with `set_ignore_cursor_events(true)`; a transparent WebView2
+   window is both per-pixel transparent and click-through, so the card stays
+   HTML/CSS instead of a second native painting.
 2. **Always-on mini HUD (optional, later)** — FPS/CPU/GPU corner readout.
    If a transparent WebView proves unreliable in the click-through case, draw this
    one **natively in Rust** (a small layered GDI/Direct2D window: `WS_EX_LAYERED |

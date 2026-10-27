@@ -433,6 +433,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `task_manager_end_process` | `taskManagerEndProcess({ ... })` | `src-tauri/src/task_manager.rs` |
 | `task_manager_snapshot` | `taskManagerSnapshot({ ... })` | `src-tauri/src/task_manager.rs` |
 | `task_manager_stop` | `taskManagerStop({ ... })` | `src-tauri/src/task_manager.rs` |
+| `toast_done` | `toastDone({ ... })` | `src-tauri/src/overlay/toast.rs` |
+| `toast_ready` | `toastReady({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
 | `xbox_login_hide` | `xboxLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_login_open` | `xboxLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |

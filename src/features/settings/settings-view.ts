@@ -10,7 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { handleThemeSettingsAction, renderThemeSection } from "./theme-settings";
-import { handleAchievementsSettingsAction, renderAchievementsSettingsView } from "./achievements-settings";
+import { handleAchievementsSettingsAction, renderAchievementsSettingsView, runStagePreviewChoreography } from "./achievements-settings";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon, type IconName } from "../../core/icons";
@@ -1413,7 +1413,11 @@ function renderAppearance(): string {
 }
 
 function renderAchievementsSettings(): string {
-  return renderAchievementsSettingsView();
+  const html = renderAchievementsSettingsView();
+  // The card no longer carries a CSS entry animation; the shared motion runs
+  // once the panel is in the DOM, exactly like the in-game toast.
+  window.requestAnimationFrame(() => runStagePreviewChoreography("entry"));
+  return html;
 }
 
 function renderNotes(): string {

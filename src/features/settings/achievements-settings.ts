@@ -23,35 +23,13 @@ import {
 import { getGeneralNotifPrefs, setGeneralNotifPrefs } from "../notifications/notifications";
 import { storeLogo } from "../store/store-logos";
 import { t } from "../../i18n";
+import { achCardHtml, achCardVars, achTagLine } from "../achievement-card/ach-card";
+import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
 
 /** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
 let previewRarityTier = 2;
 /** Incremented on every replay/preset change so CSS animations restart cleanly. */
 let stageReplaySeq = 1;
-
-const STAGE_PARTICLES: ReadonlyArray<{
-  dx: number;
-  dy: number;
-  rot: number;
-  delay: number;
-  size: number;
-  diamond: boolean;
-}> = [
-  { dx: -52, dy: -38, rot: 45, delay: 40, size: 6, diamond: true },
-  { dx: -28, dy: -56, rot: 120, delay: 65, size: 5, diamond: false },
-  { dx: 14, dy: -62, rot: 210, delay: 30, size: 7, diamond: true },
-  { dx: 54, dy: -46, rot: 85, delay: 80, size: 5, diamond: false },
-  { dx: 76, dy: -18, rot: 160, delay: 50, size: 6, diamond: true },
-  { dx: 82, dy: 22, rot: 310, delay: 95, size: 4, diamond: false },
-  { dx: 58, dy: 48, rot: 45, delay: 60, size: 6, diamond: true },
-  { dx: 18, dy: 58, rot: 195, delay: 70, size: 5, diamond: false },
-  { dx: -24, dy: 54, rot: 260, delay: 45, size: 6, diamond: true },
-  { dx: -58, dy: 34, rot: 135, delay: 85, size: 5, diamond: false },
-  { dx: -68, dy: -4, rot: 25, delay: 55, size: 7, diamond: true },
-  { dx: 36, dy: -32, rot: 70, delay: 110, size: 4, diamond: false },
-  { dx: -38, dy: 28, rot: 150, delay: 120, size: 5, diamond: true },
-  { dx: 96, dy: -6, rot: 45, delay: 105, size: 5, diamond: true },
-];
 
 let sharedAudioCtx: AudioContext | null = null;
 let activeMasterGain: GainNode | null = null;
@@ -372,378 +350,10 @@ export function playWebAudioAchievementChime(
 
 let stagePreviewTimer: number | null = null;
 
-function resolveEffectiveExitStyle(animStyle: string, exitStyle?: string): string {
-  if (exitStyle && exitStyle !== "auto") return exitStyle;
-  switch (animStyle) {
-    case "xbox":
-    case "prism":
-      return "collapse";
-    case "playstation":
-      return "glide";
-    case "epic":
-      return "fold";
-    case "cyber":
-      return "laser";
-    case "shatter":
-      return "implode";
-    case "jackpot":
-      return "zoom";
-    default:
-      return "collapse";
-  }
-}
-
-function getEntryKeyframes(animStyle: string): { frames: Keyframe[]; duration: number; easing: string } {
-  switch (animStyle) {
-    case "xbox":
-      return {
-        duration: 920,
-        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "scale(0.35)",
-            clipPath: "inset(0 calc(100% - 88px) 0 0 round 999px)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "scale(1.08)",
-            clipPath: "inset(0 calc(100% - 88px) 0 0 round 999px)",
-            offset: 0.26,
-          },
-          {
-            opacity: 1,
-            transform: "scale(1)",
-            clipPath: "inset(0 calc(100% - 88px) 0 0 round 999px)",
-            offset: 0.38,
-          },
-          {
-            opacity: 1,
-            transform: "scale(1)",
-            clipPath: "inset(0 0% 0 0 round 999px)",
-            offset: 0.98,
-          },
-          {
-            opacity: 1,
-            transform: "scale(1)",
-            clipPath: "none",
-            offset: 1,
-          },
-        ],
-      };
-    case "playstation":
-      return {
-        duration: 820,
-        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "translateX(145px) scale(0.92)",
-            filter: "brightness(1.85) blur(8px)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "translateX(-8px) scale(1.015)",
-            filter: "brightness(1.22) blur(0px)",
-            offset: 0.62,
-          },
-          {
-            opacity: 1,
-            transform: "translateX(0px) scale(1)",
-            filter: "brightness(1) blur(0px)",
-            offset: 1,
-          },
-        ],
-      };
-    case "epic":
-      return {
-        duration: 840,
-        easing: "cubic-bezier(0.18, 1.15, 0.32, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "perspective(700px) rotateX(-78deg) translateY(-38px) scaleY(0.28)",
-            filter: "brightness(2.0)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "perspective(700px) rotateX(12deg) translateY(6px) scaleY(1.04)",
-            filter: "brightness(1.2)",
-            offset: 0.55,
-          },
-          {
-            opacity: 1,
-            transform: "perspective(700px) rotateX(0deg) translateY(0px) scaleY(1)",
-            filter: "brightness(1)",
-            offset: 1,
-          },
-        ],
-      };
-    case "cyber":
-      return {
-        duration: 480,
-        easing: "cubic-bezier(0.2, 1, 0.3, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "scaleY(0.04)",
-            filter: "brightness(2.8)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "scaleY(0.04)",
-            filter: "brightness(2.4)",
-            offset: 0.25,
-          },
-          {
-            opacity: 1,
-            transform: "scaleY(1.03)",
-            filter: "brightness(1.15)",
-            offset: 0.65,
-          },
-          {
-            opacity: 1,
-            transform: "scaleY(1)",
-            filter: "brightness(1)",
-            offset: 1,
-          },
-        ],
-      };
-    case "shatter":
-      return {
-        duration: 820,
-        easing: "cubic-bezier(0.18, 1.15, 0.32, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "translateY(-60px) scale(1.48)",
-            filter: "brightness(2.4) blur(10px)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(10px) scale(0.89)",
-            filter: "brightness(1.4) blur(0px)",
-            offset: 0.34,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(-5px) scale(1.05)",
-            offset: 0.64,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(2px) scale(0.99)",
-            offset: 0.84,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(0px) scale(1)",
-            filter: "brightness(1) blur(0px)",
-            offset: 1,
-          },
-        ],
-      };
-    case "jackpot":
-      return {
-        duration: 880,
-        easing: "cubic-bezier(0.2, 1.18, 0.3, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "translateY(72px) scale(0.42)",
-            filter: "brightness(2.2)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(-16px) scale(1.1)",
-            offset: 0.24,
-          },
-          {
-            opacity: 1,
-            transform: "translate(-12px, 7px) rotate(-2.5deg) scale(0.96)",
-            offset: 0.4,
-          },
-          {
-            opacity: 1,
-            transform: "translate(11px, -6px) rotate(2.5deg) scale(1.04)",
-            offset: 0.56,
-          },
-          {
-            opacity: 1,
-            transform: "translate(-7px, 4px) rotate(-1.2deg) scale(0.99)",
-            offset: 0.72,
-          },
-          {
-            opacity: 1,
-            transform: "translate(4px, -2px) rotate(0.6deg) scale(1.01)",
-            offset: 0.86,
-          },
-          {
-            opacity: 1,
-            transform: "translate(0px, 0px) rotate(0deg) scale(1)",
-            filter: "brightness(1)",
-            offset: 1,
-          },
-        ],
-      };
-    default:
-      return {
-        duration: 840,
-        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-        frames: [
-          {
-            opacity: 0,
-            transform: "translateY(-48px) scale(0.74)",
-            clipPath: "inset(0 78% 0 0 round 16px)",
-            filter: "brightness(1.9) blur(6px)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(6px) scale(1.035)",
-            clipPath: "inset(0 0% 0 0 round 16px)",
-            filter: "brightness(1.22) blur(0px)",
-            offset: 0.48,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(-2px) scale(0.995)",
-            clipPath: "inset(0 0% 0 0 round 16px)",
-            offset: 0.76,
-          },
-          {
-            opacity: 1,
-            transform: "translateY(0px) scale(1)",
-            clipPath: "inset(0 0% 0 0 round 16px)",
-            filter: "brightness(1) blur(0px)",
-            offset: 1,
-          },
-        ],
-      };
-  }
-}
-
-function getExitKeyframes(exitStyle: string, animStyle: string): { frames: Keyframe[]; duration: number; easing: string } {
-  const effective = resolveEffectiveExitStyle(animStyle, exitStyle);
-  const round = animStyle === "xbox" ? "999px" : "16px";
-  switch (effective) {
-    case "collapse":
-      return {
-        duration: 680,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        frames: [
-          {
-            opacity: 1,
-            transform: "scale(1)",
-            clipPath: `inset(0 0% 0 0 round ${round})`,
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "scale(1.03)",
-            clipPath: `inset(0 calc(100% - 88px) 0 0 round ${round})`,
-            offset: 0.68,
-          },
-          {
-            opacity: 0,
-            transform: "scale(0.32) translateY(-14px)",
-            clipPath: `inset(0 calc(100% - 88px) 0 0 round ${round})`,
-            offset: 1,
-          },
-        ],
-      };
-    case "glide":
-      return {
-        duration: 620,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        frames: [
-          { opacity: 1, transform: "translateX(0px) scale(1)", filter: "blur(0px)", offset: 0 },
-          { opacity: 1, transform: "translateX(-10px) scale(1.01)", filter: "blur(0px)", offset: 0.22 },
-          { opacity: 0, transform: "translateX(140px) scale(0.92)", filter: "blur(6px)", offset: 1 },
-        ],
-      };
-    case "fold":
-      return {
-        duration: 620,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        frames: [
-          {
-            opacity: 1,
-            transform: "perspective(700px) rotateX(0deg) scaleY(1)",
-            filter: "brightness(1)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "perspective(700px) rotateX(-15deg) scaleY(1.04)",
-            filter: "brightness(1.35)",
-            offset: 0.25,
-          },
-          {
-            opacity: 0,
-            transform: "perspective(700px) rotateX(78deg) translateY(-28px) scaleY(0.15)",
-            filter: "brightness(2.0)",
-            offset: 1,
-          },
-        ],
-      };
-    case "laser":
-      return {
-        duration: 640,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        frames: [
-          {
-            opacity: 1,
-            transform: "scaleX(1) scaleY(1)",
-            filter: "brightness(1) contrast(1)",
-            offset: 0,
-          },
-          {
-            opacity: 1,
-            transform: "scaleX(1.04) scaleY(0.06)",
-            filter: "brightness(2.4) contrast(2.0)",
-            offset: 0.56,
-          },
-          {
-            opacity: 0,
-            transform: "scaleX(0.02) scaleY(0.02)",
-            filter: "brightness(3.0)",
-            offset: 1,
-          },
-        ],
-      };
-    case "implode":
-      return {
-        duration: 620,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        frames: [
-          { opacity: 1, transform: "scale(1)", filter: "brightness(1) blur(0px)", offset: 0 },
-          { opacity: 1, transform: "scale(1.12)", filter: "brightness(1.5) blur(0px)", offset: 0.28 },
-          { opacity: 0, transform: "scale(0.18) rotate(8deg)", filter: "brightness(2.4) blur(6px)", offset: 1 },
-        ],
-      };
-    default:
-      return {
-        duration: 620,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        frames: [
-          { opacity: 1, transform: "translateY(0px) scale(1)", offset: 0 },
-          { opacity: 1, transform: "translateY(12px) scale(0.95)", offset: 0.28 },
-          { opacity: 0, transform: "translateY(-68px) scale(0.65)", offset: 1 },
-        ],
-      };
-  }
-}
-
 /**
  * Drives the live preview stage card using the Web Animations API so that
- * opening and closing animations ALWAYS play visibly on every click.
+ * opening and closing animations ALWAYS play visibly on every click. The
+ * keyframes come from the same module as the in-game toast.
  */
 export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "entry"): void {
   if (stagePreviewTimer !== null) {
@@ -751,78 +361,28 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
     stagePreviewTimer = null;
   }
   window.requestAnimationFrame(() => {
-    const toastEl = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
-    if (!toastEl || typeof toastEl.animate !== "function") return;
+    const card = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
+    if (!card) return;
 
     const animStyle = S.achievementNotificationOptions.animStyle || "prism";
     const exitStyle = S.achievementNotificationOptions.exitStyle || "auto";
 
-    toastEl.getAnimations().forEach((a) => a.cancel());
-
-    const medallionEl = toastEl.querySelector<HTMLElement>(".ach-hud-medallion");
-    const textColEl = toastEl.querySelector<HTMLElement>(".ach-hud-text-col");
-    const fillEl = toastEl.querySelector<HTMLElement>(".ach-hud-progress-fill");
-
     const playEntry = () => {
-      const entry = getEntryKeyframes(animStyle);
-      toastEl.animate(entry.frames, {
-        duration: entry.duration,
-        easing: entry.easing,
-        fill: "both",
-      });
-      if (medallionEl && typeof medallionEl.animate === "function") {
-        medallionEl.getAnimations().forEach((a) => a.cancel());
-        medallionEl.animate(
-          [
-            { transform: "scale(0.35) rotate(-25deg)", opacity: 0, offset: 0 },
-            { transform: "scale(1.18) rotate(5deg)", opacity: 1, offset: 0.58 },
-            { transform: "scale(1) rotate(0deg)", opacity: 1, offset: 1 },
-          ],
-          { duration: 640, easing: "cubic-bezier(0.18, 1.25, 0.32, 1)", fill: "both" },
-        );
-      }
-      if (textColEl && typeof textColEl.animate === "function") {
-        textColEl.getAnimations().forEach((a) => a.cancel());
-        const textDelay = animStyle === "xbox" ? 280 : 120;
-        textColEl.animate(
-          [
-            { opacity: 0, transform: "translateX(-24px)" },
-            { opacity: 1, transform: "translateX(0px)" },
-          ],
-          { duration: 540, delay: textDelay, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
-        );
-      }
-      if (fillEl && typeof fillEl.animate === "function") {
-        fillEl.getAnimations().forEach((a) => a.cancel());
-        const targetW = getPreviewTierMeta(previewRarityTier).progressPct;
-        fillEl.animate(
-          [{ width: "0%" }, { width: `${targetW}%` }],
-          { duration: 760, delay: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "both" },
-        );
-      }
+      if (!card.isConnected) return;
+      playAchCardEntry(card, animStyle);
     };
 
     const playExitThenRestore = () => {
-      const exit = getExitKeyframes(exitStyle, animStyle);
-      const anim = toastEl.animate(exit.frames, {
-        duration: exit.duration,
-        easing: exit.easing,
-        fill: "both",
+      playAchCardExit(card, animStyle, exitStyle, () => {
+        stagePreviewTimer = window.setTimeout(playEntry, 220);
       });
-      anim.onfinish = () => {
-        stagePreviewTimer = window.setTimeout(() => {
-          playEntry();
-        }, 220);
-      };
     };
 
     if (mode === "exit") {
       playExitThenRestore();
     } else if (mode === "cycle") {
       playEntry();
-      stagePreviewTimer = window.setTimeout(() => {
-        playExitThenRestore();
-      }, 1550);
+      stagePreviewTimer = window.setTimeout(playExitThenRestore, 1550);
     } else {
       playEntry();
     }
@@ -841,8 +401,8 @@ function getPreviewTierMeta(tier: number): {
   switch (tier) {
     case 0:
       return {
-        tag: t("settings.achUnlockedTag"),
-        title: "İlk Adım",
+        tag: achTagLine(0, 11, 34, 64.2),
+        title: "First Steps",
         desc: t("settings.achTestDesc"),
         rarityBadge: "%64.2",
         progressPct: 32,
@@ -851,8 +411,8 @@ function getPreviewTierMeta(tier: number): {
       };
     case 1:
       return {
-        tag: t("settings.achUnlockedTag"),
-        title: "Keskin Gözlemci",
+        tag: achTagLine(1, 19, 34, 21.8),
+        title: "Keen Observer",
         desc: t("settings.achTestDesc"),
         rarityBadge: "%21.8",
         progressPct: 56,
@@ -861,8 +421,8 @@ function getPreviewTierMeta(tier: number): {
       };
     case 3:
       return {
-        tag: `${t("settings.achTierUltra").toUpperCase()} • %1.8`,
-        title: "Kusursuz Senkron",
+        tag: achTagLine(3, 31, 34, 1.8),
+        title: "Perfect Sync",
         desc: t("settings.achTestDesc"),
         rarityBadge: "%1.8",
         progressPct: 92,
@@ -871,8 +431,8 @@ function getPreviewTierMeta(tier: number): {
       };
     case 4:
       return {
-        tag: `${t("ach.tierPlatinum").toUpperCase()} • %100`,
-        title: "Platin Avcısı",
+        tag: achTagLine(4, 34, 34, 100),
+        title: "Platinum Hunter",
         desc: t("ach.platinumEarnedDesc"),
         rarityBadge: "100% PLATINUM",
         progressPct: 100,
@@ -881,8 +441,8 @@ function getPreviewTierMeta(tier: number): {
       };
     default:
       return {
-        tag: `${t("ach.tierGold").toUpperCase()} • %8.4`,
-        title: "Zamanın Efendisi",
+        tag: achTagLine(2, 25, 34, 8.4),
+        title: "Master of Time",
         desc: t("settings.achTestDesc"),
         rarityBadge: "%8.4",
         progressPct: 74,
@@ -955,6 +515,7 @@ export function renderAchievementsSettingsView(): string {
     { id: "ubisoft", label: "Ubisoft Connect", logoId: "ubisoft" },
     { id: "ea", label: "EA App", logoId: "ea" },
     { id: "xbox", label: "Xbox / Game Pass", logoId: "xbox" },
+    { id: "amazon", label: "Amazon Games", logoId: "amazon" },
     { id: "custom", label: t("settings.storeCustom"), ico: "gamepad-2" },
   ];
 
@@ -1072,11 +633,6 @@ export function renderAchievementsSettingsView(): string {
       `,
     )
     .join("");
-
-  const particlesHtml = STAGE_PARTICLES.map(
-    (p) =>
-      `<span class="ach-fx-particle ${p.diamond ? "diamond" : "spark"}" style="--dx:${p.dx}px;--dy:${p.dy}px;--rot:${p.rot}deg;--delay:${p.delay}ms;--sz:${p.size}px;"></span>`,
-  ).join("");
 
   // Position anchors for the visual monitor pad
   const positions: Array<{ id: string; label: string; iconName: string }> = [
@@ -1213,33 +769,23 @@ export function renderAchievementsSettingsView(): string {
           <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(position)}</strong></span>
         </div>
 
-        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="--ach-bg:${palette.background};--ach-accent:${palette.accent};--ach-border:${palette.border};--ach-icon:${palette.icon};--ach-title:${palette.title};--ach-body:${palette.body};--ach-progress:${tierMeta.progressPct}%;">
+        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="${achCardVars(palette)}--ach-progress:${tierMeta.progressPct}%;">
           <div class="ach-stage-backdrop"></div>
           <div class="ach-stage-aura"></div>
 
-          <!-- Dopamine Choreography Toast Capsule -->
-          <div class="ach-hud-toast size-${esc(currentSize)} style-${esc(animStyle)} theme-${esc(cardTheme)} tier-${previewRarityTier} seq-${stageReplaySeq % 2}" data-seq="${stageReplaySeq}">
-            <div class="ach-fx-border-beam"></div>
-            <div class="ach-fx-godrays"></div>
-            <div class="ach-fx-shimmer"></div>
-            <div class="ach-hud-gold-bar"></div>
-
-            <div class="ach-hud-medallion-wrap">
-              <span class="ach-fx-shockwave ring-1"></span>
-              <span class="ach-fx-shockwave ring-2"></span>
-              <div class="ach-fx-particles">${particlesHtml}</div>
-              <div class="ach-hud-medallion">
-                <span class="ach-medallion-ring"></span>
-                <span class="ach-hud-trophy-ico">${icon(tierMeta.iconName, 18)}</span>
-              </div>
-            </div>
-
-            <div class="ach-hud-text-col">
-              <span class="ach-hud-tag">${esc(tierMeta.tag)}</span>
-              <span class="ach-hud-title">${esc(tierMeta.title)}</span>
-              <span class="ach-hud-desc">${esc(tierMeta.desc)}</span>
-            </div>
-          </div>
+          <!-- The same component the in-game toast renders -->
+          ${achCardHtml({
+            tag: tierMeta.tag,
+            title: tierMeta.title,
+            desc: tierMeta.desc,
+            tier: previewRarityTier,
+            size: currentSize,
+            style: animStyle,
+            theme: cardTheme,
+            palette,
+            seq: stageReplaySeq,
+            glyph: tierMeta.iconName,
+          })}
         </div>
       </div>
 
@@ -1626,14 +1172,10 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
 
     case "ach-test-notification": {
       stopWebAudioAchievementChime();
-      stageReplaySeq++;
-      render();
-      runStagePreviewChoreography("cycle");
       const meta = getPreviewTierMeta(previewRarityTier);
       void achievementTestNotification(
         meta.title,
         meta.desc,
-        meta.tag,
         previewRarityTier,
       ).catch((e) => toast(String(e), "err"));
       return true;

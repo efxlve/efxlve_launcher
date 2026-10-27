@@ -1973,6 +1973,10 @@ pub struct AchievementUnlockedPayload {
     /// unlock so the achievement list stays correct.
     #[serde(default)]
     pub notification: bool,
+    /// True when the in-game toast card played, so the launcher's own small
+    /// toast stays quiet instead of showing the same unlock twice.
+    #[serde(default)]
+    pub card: bool,
     #[serde(default)]
     pub rarity_percent: Option<f64>,
     #[serde(default)]
@@ -2103,67 +2107,32 @@ fn normalize_disabled_stores(stores: &[String]) -> Vec<String> {
     out
 }
 
-/// The card palette the frontend derived from the live theme tokens.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NotificationCardColors {
-    pub background: String,
-    pub accent: String,
-    pub border: String,
-    pub icon: String,
-    pub title: String,
-    pub body: String,
-}
+/// The `launcher` card palette, resolved from the live theme tokens by the
+/// frontend. The other themes are resolved by the toast page from the same TS
+/// palette function the Settings preview uses.
+static CARD_COLORS: StdMutex<Option<crate::overlay::toast::ToastPalette>> = StdMutex::new(None);
 
-/// `#rrggbb` → Windows `COLORREF` (`0x00BBGGRR`).
-fn colorref(hex: &str) -> Option<u32> {
-    let text = hex.trim().trim_start_matches('#');
-    if text.len() != 6 {
-        return None;
-    }
-    let value = u32::from_str_radix(text, 16).ok()?;
-    Some(((value & 0xFF) << 16) | (value & 0x00FF_00) | ((value >> 16) & 0xFF))
-}
-
-static CARD_COLORS: StdMutex<Option<crate::overlay::hud::AchievementCardColors>> =
-    StdMutex::new(None);
-
-/// The frontend pushes the palette once at boot and after every theme change;
-/// until then the gold card is used.
+/// Pushed once at boot and after every theme change.
 #[tauri::command]
-pub fn achievement_set_notification_colors(colors: NotificationCardColors) {
-    let gold = crate::overlay::hud::GOLD_ACHIEVEMENT_CARD;
-    let themed = crate::overlay::hud::AchievementCardColors {
-        background: colorref(&colors.background).unwrap_or(gold.background),
-        accent: colorref(&colors.accent).unwrap_or(gold.accent),
-        border: colorref(&colors.border).unwrap_or(gold.border),
-        icon: colorref(&colors.icon).unwrap_or(gold.icon),
-        title: colorref(&colors.title).unwrap_or(gold.title),
-        body: colorref(&colors.body).unwrap_or(gold.body),
-    };
+pub fn achievement_set_notification_colors(colors: crate::overlay::toast::ToastPalette) {
     if let Ok(mut slot) = CARD_COLORS.lock() {
-        *slot = Some(themed);
+        *slot = Some(colors);
     }
 }
 
-fn achievement_card_colors() -> crate::overlay::hud::AchievementCardColors {
+fn launcher_palette() -> crate::overlay::toast::ToastPalette {
     CARD_COLORS
         .lock()
         .ok()
-        .and_then(|slot| *slot)
-        .unwrap_or(crate::overlay::hud::GOLD_ACHIEVEMENT_CARD)
-}
-
-fn resolve_card_colors(card_theme: &str, tier: u8) -> crate::overlay::hud::AchievementCardColors {
-    match card_theme {
-        "launcher" => achievement_card_colors(),
-        "rarity" => crate::overlay::hud::rarity_card_colors(tier),
-        "cyber" => crate::overlay::hud::CYBER_ACHIEVEMENT_CARD,
-        "emerald" => crate::overlay::hud::EMERALD_ACHIEVEMENT_CARD,
-        "crimson" => crate::overlay::hud::CRIMSON_ACHIEVEMENT_CARD,
-        "amethyst" => crate::overlay::hud::AMETHYST_ACHIEVEMENT_CARD,
-        _ => crate::overlay::hud::GOLD_ACHIEVEMENT_CARD,
-    }
+        .and_then(|slot| slot.clone())
+        .unwrap_or_else(|| crate::overlay::toast::ToastPalette {
+            background: "#0d0f14".into(),
+            accent: "#f59e0b".into(),
+            border: "#785018".into(),
+            icon: "#fbbf24".into(),
+            title: "#ffffff".into(),
+            body: "#acb2b8".into(),
+        })
 }
 
 fn default_notification_size() -> String {
@@ -2740,7 +2709,6 @@ pub fn achievement_test_notification(
     app: tauri::AppHandle,
     title: String,
     body: String,
-    tag: Option<String>,
     rarity_tier: Option<u8>,
     app_id: Option<String>,
     ach_name: Option<String>,
@@ -2752,17 +2720,6 @@ pub fn achievement_test_notification(
     let options = achievement_notification_options(&app);
     let real_unlock = is_real_unlock == Some(true);
     let tier = rarity_tier.unwrap_or(2).min(4);
-    let permille = match (unlocked_count, total_count) {
-        (Some(u), Some(t)) if t > 0 => ((u as u64) * 1000 / (t as u64)).min(1000),
-        _ => match tier {
-            0 => 320,
-            1 => 560,
-            2 => 740,
-            3 => 920,
-            _ => 1000,
-        },
-    };
-    let tag_text = tag.unwrap_or_else(|| "BAŞARIM KAZANILDI".to_string());
     let resolved_app_id = app_id.unwrap_or_else(|| "0".into());
     let store_key = if resolved_app_id.starts_with("gog::") {
         "gog"
@@ -2789,27 +2746,6 @@ pub fn achievement_test_notification(
     } else {
         true
     };
-    if should_notify {
-        crate::overlay::hud::set_notification_position(&options.position);
-        crate::overlay::hud::set_notification_size(&options.size);
-        crate::overlay::hud::set_notification_hold(options.duration_ms);
-        crate::overlay::hud::set_notification_style(&options.anim_style);
-        crate::overlay::hud::set_notification_exit_style(&options.exit_style);
-        crate::overlay::hud::set_notification_rarity_tier(tier);
-        crate::overlay::hud::set_notification_progress(permille);
-        if options.overlay {
-            let generation = crate::overlay::hud::notify_achievement(
-                &tag_text,
-                &title,
-                &body,
-                resolve_card_colors(&options.card_theme, tier),
-            );
-            if let Some(ref url) = icon_url {
-                attach_achievement_icon(&app, url, generation);
-            }
-        }
-        play_achievement_notification_sound(&app, &options, tier);
-    }
     let (default_pct, tier_name, default_unlocked, default_total) = match tier {
         0 => (Some(64.2), Some("bronze".to_string()), Some(11), Some(34)),
         1 => (Some(21.8), Some("silver".to_string()), Some(19), Some(34)),
@@ -2817,6 +2753,20 @@ pub fn achievement_test_notification(
         3 => (Some(1.8), Some("ultra".to_string()), Some(31), Some(34)),
         _ => (Some(0.4), Some("platinum".to_string()), Some(34), Some(34)),
     };
+    let unlocked = unlocked_count.or(default_unlocked).unwrap_or(0);
+    let total = total_count.or(default_total).unwrap_or(0);
+    if should_notify {
+        if options.overlay {
+            let generation = crate::overlay::toast::show(
+                &app,
+                toast_payload(&options, tier, unlocked, total, default_pct, &title, &body),
+            );
+            if let Some(ref url) = icon_url {
+                attach_achievement_icon(&app, url, generation);
+            }
+        }
+        play_achievement_notification_sound(&app, &options, tier);
+    }
     let payload = AchievementUnlockedPayload {
         app_id: resolved_app_id,
         name: ach_name.unwrap_or_else(|| "TEST_ACHIEVEMENT".into()),
@@ -2824,12 +2774,52 @@ pub fn achievement_test_notification(
         description: body,
         icon_url: icon_url.unwrap_or_default(),
         notification: if real_unlock { should_notify } else { false },
+        card: should_notify && options.overlay,
         rarity_percent: default_pct,
         tier: tier_name,
-        unlocked_count: unlocked_count.or(default_unlocked),
-        total_count: total_count.or(default_total),
+        unlocked_count: Some(unlocked),
+        total_count: Some(total),
     };
     let _ = app.emit("achievement-unlocked", payload);
+}
+
+/// One payload shape for real unlocks, the Settings test and system hints.
+fn toast_payload(
+    options: &AchievementNotificationOptions,
+    tier: u8,
+    unlocked: u32,
+    total: u32,
+    rarity_percent: Option<f64>,
+    title: &str,
+    body: &str,
+) -> crate::overlay::toast::ToastPayload {
+    crate::overlay::toast::ToastPayload {
+        generation: 0,
+        title: title.to_string(),
+        body: body.to_string(),
+        tier,
+        unlocked,
+        total,
+        rarity_percent,
+        theme: options.card_theme.clone(),
+        size: options.size.clone(),
+        position: options.position.clone(),
+        style: options.anim_style.clone(),
+        exit_style: options.exit_style.clone(),
+        hold_ms: options.duration_ms.clamp(2_000, 15_000),
+        palette: launcher_palette(),
+        tagless: false,
+        icon: None,
+    }
+}
+
+/// Game-start / overlay hints: the same card, without the rarity line.
+pub fn show_system_hint(app: &tauri::AppHandle, title: &str, body: &str) {
+    let options = achievement_notification_options(app);
+    let mut payload = toast_payload(&options, 2, 0, 0, None, title, body);
+    payload.tagless = true;
+    payload.hold_ms = 5_200;
+    crate::overlay::toast::show(app, payload);
 }
 
 #[cfg(windows)]
@@ -2926,7 +2916,7 @@ fn attach_achievement_icon(app: &tauri::AppHandle, icon_url: &str, generation: u
     std::thread::spawn(move || {
         let cached = tauri::async_runtime::block_on(crate::image_cache::cache_image(&app, &url));
         if let Some(path) = cached {
-            crate::overlay::hud::set_notification_icon(generation, &path);
+            crate::overlay::toast::set_icon(&app, generation, &path);
         }
     });
 }
@@ -2989,13 +2979,8 @@ fn emit_new_achievement_unlocks(
             unlocked_count,
             total_count,
         );
-        let progress_permille = if total_count > 0 {
-            ((unlocked_count as u64) * 1000 / (total_count as u64)).min(1000)
-        } else {
-            650
-        };
 
-        // 1. Native in-game HUD toast card
+        // 1. In-game toast card (the same component as the Settings preview)
         let display = if ach.display_name.trim().is_empty() {
             ach.name.clone()
         } else {
@@ -3005,39 +2990,19 @@ fn emit_new_achievement_unlocks(
         let store_key = if write_cache { "steam" } else { "custom" };
         let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
         let should_notify = options.enabled && store_enabled;
-        crate::overlay::hud::set_notification_position(&options.position);
-        crate::overlay::hud::set_notification_size(&options.size);
-        crate::overlay::hud::set_notification_hold(options.duration_ms);
-        crate::overlay::hud::set_notification_style(&options.anim_style);
-        crate::overlay::hud::set_notification_exit_style(&options.exit_style);
-        crate::overlay::hud::set_notification_rarity_tier(tier_code);
-        crate::overlay::hud::set_notification_progress(progress_permille);
-        let tag_label = match tier_code {
-            4 => format!("PLATİN KUPA • {unlocked_count}/{total_count} (%100)"),
-            3 => match rarity_percent {
-                Some(pct) => format!("ULTRA NADİR • %{pct:.1} • {unlocked_count}/{total_count}"),
-                None => format!("ULTRA NADİR • {unlocked_count}/{total_count}"),
-            },
-            2 => match rarity_percent {
-                Some(pct) => format!("ALTIN BAŞARIM • %{pct:.1} • {unlocked_count}/{total_count}"),
-                None => format!("ALTIN BAŞARIM • {unlocked_count}/{total_count}"),
-            },
-            _ => {
-                if total_count > 0 {
-                    format!("BAŞARIM KAZANILDI • {unlocked_count}/{total_count}")
-                } else {
-                    "BAŞARIM KAZANILDI".to_string()
-                }
-            }
-        };
         if should_notify {
-            // 1. Native in-game HUD toast card
             if options.overlay {
-                let generation = crate::overlay::hud::notify_achievement(
-                    &tag_label,
-                    &display,
-                    &ach.description,
-                    resolve_card_colors(&options.card_theme, tier_code),
+                let generation = crate::overlay::toast::show(
+                    app,
+                    toast_payload(
+                        &options,
+                        tier_code,
+                        unlocked_count,
+                        total_count,
+                        rarity_percent,
+                        &display,
+                        &ach.description,
+                    ),
                 );
                 attach_achievement_icon(app, &ach.icon_link, generation);
             }
@@ -3055,6 +3020,7 @@ fn emit_new_achievement_unlocks(
             description: ach.description.clone(),
             icon_url: ach.icon_link.clone(),
             notification: should_notify,
+            card: should_notify && options.overlay,
             rarity_percent,
             tier: Some(resolved_tier_name),
             unlocked_count: Some(unlocked_count),
@@ -3308,16 +3274,6 @@ mod tests {
 
     use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
     use super::super::runtime::steam_install_path;
-
-    #[test]
-    fn css_hex_colours_become_colorrefs() {
-        // COLORREF is 0x00BBGGRR, the reverse of the CSS byte order.
-        assert_eq!(colorref("#f59e0b"), Some(0x000B_9EF5));
-        assert_eq!(colorref("#0d0f14"), Some(0x0014_0F0D));
-        assert_eq!(colorref("fbbf24"), Some(0x0024_BFFB));
-        assert_eq!(colorref("#12345"), None);
-        assert_eq!(colorref("rgb(1,2,3)"), None);
-    }
 
     #[test]
     fn a_missing_card_theme_falls_back_to_gold() {

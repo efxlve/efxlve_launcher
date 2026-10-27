@@ -2393,22 +2393,11 @@ function emitStoreAchievementUnlock(
   }
   const pct = ach.rarity?.percent ?? null;
   const tierCode = classifyStoreRarityTier(pct, ach.tier?.name, unlockedCount, totalCount);
-  const pctText = typeof pct === "number" && Number.isFinite(pct) ? ` • %${pct.toFixed(1)}` : "";
-  const countText = totalCount > 0 ? ` • ${unlockedCount}/${totalCount}` : "";
-  const tagLabel =
-    tierCode === 4
-      ? `PLATİN KUPA${countText} (%100)`
-      : tierCode === 3
-        ? `ULTRA NADİR${pctText}${countText}`
-        : tierCode === 2
-          ? `ALTIN BAŞARIM${pctText}${countText}`
-          : `BAŞARIM KAZANILDI${countText}`;
   const title = ach.display_name?.trim() || ach.name;
   const body = ach.description || "";
   void achievementTestNotification(
     title,
     body,
-    tagLabel,
     tierCode,
     appName,
     ach.name,

@@ -1979,6 +1979,8 @@ fn main() {
             overlay::overlay_show_launcher,
             overlay::overlay_page_ready,
             overlay::overlay_raise,
+            overlay::toast::toast_ready,
+            overlay::toast::toast_done,
             overlay::browser::overlay_browser_open,
             overlay::browser::overlay_browser_is_open,
             overlay::browser::overlay_browser_show,

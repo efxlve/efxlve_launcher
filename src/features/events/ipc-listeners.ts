@@ -966,8 +966,9 @@ export async function initApp(hooks: {
     description: string;
     iconUrl: string;
     notification?: boolean;
+    card?: boolean;
   }>("achievement-unlocked", (event) => {
-    const { appId, name, displayName, description, notification = true } = event.payload;
+    const { appId, name, displayName, description, notification = true, card = false } = event.payload;
     const isDirectKey =
       appId.includes("::") ||
       S.epicSummariesMap.has(appId) ||
@@ -997,7 +998,8 @@ export async function initApp(hooks: {
         kind: "info",
         title: t("ach.unlockedNotification", { name: label }),
         body: description || cachedItem?.description || "",
-        toast: true,
+        // The in-game card already announced it; the bell keeps the history.
+        toast: !card,
       });
     }
     for (const key of appKeys) {

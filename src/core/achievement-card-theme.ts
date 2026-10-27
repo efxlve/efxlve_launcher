@@ -1,10 +1,11 @@
 /**
- * Palette of the native in-game achievement card.
+ * Palette of the achievement card.
  *
- * The card is painted by Win32 GDI in `overlay/hud.rs`, which cannot read CSS.
- * The frontend therefore resolves the active theme's tokens to plain hex and
- * pushes them once at boot and after every theme change, so the native card and
- * the Settings preview always show the same colours.
+ * The Settings preview and the in-game toast share one component, so most
+ * themes are plain constants resolved here. The "launcher" theme follows the
+ * live CSS tokens, which only the main window can read: it is resolved here and
+ * pushed to Rust at boot and after every theme change, then travels in the
+ * toast payload.
  */
 
 import type { AchievementCardColors } from "../steam";
@@ -152,9 +153,8 @@ function toHex(color: Rgba): string {
 }
 
 /**
- * Resolves the selected mode against the live CSS tokens. The card palette is
- * opaque because GDI brushes have no alpha; translucent theme tokens are
- * flattened over the plate first.
+ * Resolves the selected mode against the live CSS tokens. Translucent theme
+ * tokens are flattened over the plate so the toast and the preview agree.
  */
 export function achievementCardPalette(cardTheme: string, rarityTier = 2): AchievementCardColors {
   switch (cardTheme) {
@@ -193,7 +193,7 @@ export function achievementCardPalette(cardTheme: string, rarityTier = 2): Achie
   }
 }
 
-/** Pushes the palette for the current mode to the native card. */
+/** Pushes the `launcher` palette to Rust for the in-game toast. */
 export function syncAchievementCardTheme(): void {
   if (!isTauri) return;
   const palette = achievementCardPalette("launcher");

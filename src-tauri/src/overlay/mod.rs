@@ -1,9 +1,11 @@
-//! In-game overlay: window control, hotkey, metrics and the native HUD.
+//! In-game overlay: window control, hotkey, metrics, the native metrics strip
+//! and the achievement toast.
 //!
 //! External overlay only: no DLL injection and no game-process hooks. The panel
-//! is a hidden Tauri window shown over the game; the always-on HUD is a native
-//! layered window because WebView2 cannot combine per-pixel transparency with
-//! click-through (see docs/OVERLAY_ROADMAP.md).
+//! is a hidden Tauri window shown over the game. The always-on metrics strip is
+//! a native layered window because it repaints every second and must cost
+//! nothing; the achievement toast is a transparent, click-through WebView2
+//! window that renders the same card component as the Settings preview.
 //!
 //! The panel is driven entirely from Rust: the hotkey thread shows/hides the
 //! window and emits `overlay-open` / `overlay-close` with the running game.
@@ -12,6 +14,7 @@ pub mod browser;
 pub mod hotkey;
 pub mod hud;
 pub mod metrics;
+pub mod toast;
 
 use serde::Serialize;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -261,11 +264,11 @@ pub fn overlay_set_hud(app: AppHandle, enabled: bool) {
 /// the overlay"). The Windows toast is invisible for many setups, this card is
 /// not. `title` is the bold line, `body` the muted one.
 #[tauri::command]
-pub fn overlay_flash_hint(title: String, body: String) {
+pub fn overlay_flash_hint(app: AppHandle, title: String, body: String) {
     if title.trim().is_empty() && body.trim().is_empty() {
         return;
     }
-    hud::notify(&title, &body);
+    crate::steam::show_system_hint(&app, &title, &body);
 }
 
 /// One-time elevation: adds the current user to the "Performance Log Users"

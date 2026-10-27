@@ -314,7 +314,6 @@ export const achievementSetNotificationColors = (colors: AchievementCardColors) 
 export const achievementTestNotification = (
   title: string,
   body: string,
-  tag?: string,
   rarityTier?: number,
   appId?: string,
   achName?: string,
@@ -326,7 +325,6 @@ export const achievementTestNotification = (
   invoke<void>("achievement_test_notification", {
     title,
     body,
-    tag,
     rarityTier: rarityTier ?? null,
     appId: appId ?? null,
     achName: achName ?? null,
