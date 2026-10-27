@@ -1643,9 +1643,10 @@ fn render_medallion_and_trophy(
                     let rad_cov = (0.75 + 0.5 - d_radial).clamp(0.0, 1.0);
 
                     // Angular position and smooth feathered dash segments (24 sleek dashes around circumference)
-                    // Speed: 3.2s per rotation (tau / 3.2 ~= 1.9635 rad/s)
-                    let theta = dy.atan2(dx) + t_sec * 1.9635;
+                    // Synchronized with background god-rays: 8.0s per rotation, clockwise
+                    let rot_speed = std::f32::consts::TAU / 8.0;
                     let period = std::f32::consts::TAU / 24.0;
+                    let theta = dy.atan2(dx) - t_sec * rot_speed + (period * 0.5);
                     let half_dash = period * 0.275; // 55% dash (~4.5px), 45% gap
                     let local_theta = theta.rem_euclid(period) - (period * 0.5);
                     let d_ang_px = (half_dash - local_theta.abs()) * ring_r;
@@ -1776,13 +1777,18 @@ fn render_dopamine_backdrop(
             let mut g = bg_g + (ac_g - bg_g) * aura + 255.0 * top_gloss;
             let mut b = bg_b + (ac_b - bg_b) * aura + 255.0 * top_gloss;
 
-            // 2. Rotating Volumetric God-Rays behind the medallion (all styles & tiers, matches preview)
+            // 2. Rotating Volumetric God-Rays behind the medallion (matches preview .ach-fx-godrays, 8s sync cycle)
             if dist < m.medallion_r as f32 * 3.8 {
                 let angle = dy.atan2(dx);
-                let ray1 = ((angle * 6.0 + t_sec * 2.0).sin() * 0.5 + 0.5).powi(4);
-                let ray2 = ((angle * 4.0 - t_sec * 1.4).cos() * 0.5 + 0.5).powi(3);
+                // Synchronized rotation speed with dashed ring: 8.0s per rotation, clockwise
+                let rot_speed = std::f32::consts::TAU / 8.0;
+                let rot_angle = angle - t_sec * rot_speed;
+                // 12 rays around circle (matching CSS repeating-conic-gradient 30deg period)
+                let beam = ((rot_angle * 12.0).cos() * 0.5 + 0.5).powi(3);
                 let falloff = (1.0 - dist / (m.medallion_r as f32 * 3.8)).max(0.0);
-                let ray_int = (ray1 * 0.65 + ray2 * 0.35) * falloff * (if tier >= 3 { 0.38 } else { 0.24 });
+                // Breathing scale factor matching CSS keyframe scale(0.96..1.06)
+                let breathe = 0.95 + (t_sec * rot_speed).sin() * 0.08;
+                let ray_int = beam * falloff * breathe * (if tier >= 3 { 0.36 } else { 0.22 });
                 r += ic_r * ray_int;
                 g += ic_g * ray_int;
                 b += ic_b * ray_int;
