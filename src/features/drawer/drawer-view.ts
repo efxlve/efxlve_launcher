@@ -73,12 +73,10 @@ import { installDriveLabel } from "./system-check";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
-import { localAchievementData, localAchievementSet } from "../../core/achievement-sets";
 import { raGameFor } from "../../core/ra-games";
 import { raGameProgress } from "../../retroachievements";
 import { renderAchievementDetail } from "./ach-detail";
 import { renderAchievementEditorCard } from "./ach-editor";
-import { renderAchievementSetPanel } from "./ach-set-editor";
 import { renderRaPanel } from "./ra-panel";
 import { renderAchSidePanel } from "./ach-side-panel";
 import { renderPowerPyxCard } from "./ach-powerpyx";
@@ -1956,10 +1954,11 @@ export function ensurePowerPyxGuide(appName: string, title: string): void {
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const partner = gamePartner(s, rawOf(s.appName));
-  const localSet = localAchievementSet(s.appName);
-  const raMapping = raGameFor(s.appName);
-  const setPanel = S.achSetPanelOpen === s.appName ? renderAchievementSetPanel(s) : "";
-  const raPanel = S.raPanelOpen === s.appName ? renderRaPanel(s) : "";
+  // RetroAchievements is offered for custom (user-added) games only: those are
+  // the emulated titles a store never had a set for.
+  const raEnabled = s.appName.startsWith("custom::");
+  const raMapping = raEnabled ? raGameFor(s.appName) : undefined;
+  const raPanel = raEnabled && S.raPanelOpen === s.appName ? renderRaPanel(s) : "";
 
   if (S.loadingAchFor.has(s.appName)) return loadingState(t("ach.loadingStore"));
   const data = S.loadedAchievements.get(s.appName);
@@ -1969,11 +1968,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   }
 
   if (data.achievements.length === 0) {
-    // Every empty state also offers the user-authored set: a title with no
-    // store achievements (delisted, regional, too small) can still have one here.
-    const createSet = `<button class="btn ghost small" data-act="ach-set-create" data-id="${esc(s.appName)}">${icon("plus", 13)}<span>${esc(t("ach.setCreate"))}</span></button>`;
-    const raAction = `<button class="btn ghost small" data-act="ra-panel" data-id="${esc(s.appName)}">${icon("globe", 13)}<span>${esc(t("ach.raTitle"))}</span></button>`;
-    const withPanel = (html: string): string => `${setPanel}${raPanel}${html}`;
+    const raAction = raEnabled
+      ? `<button class="btn ghost small" data-act="ra-panel" data-id="${esc(s.appName)}">${icon("globe", 13)}<span>${esc(t("ach.raTitle"))}</span></button>`
+      : "";
+    const withPanel = (html: string): string => `${raPanel}${html}`;
     // Epic copies of Ubisoft games: Epic ships no achievement set for some of
     // them (Watch Dogs), so the local Ubisoft Connect cache is the source.
     if (sourceOfKey(s.appName) === "epic" && partner?.type === "ubisoft") {
@@ -1983,7 +1981,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         "gamepad-2",
         t("ach.ubiEpicTitle"),
         s.installed ? t("ach.ubiEpicEmptyInstalled") : t("ach.ubiEpicEmptyNotInstalled"),
-        `${s.installed ? openClient : install}${createSet}${raAction}`,
+        `${s.installed ? openClient : install}${raAction}`,
       ));
     }
     // Ubisoft has no public achievement API: the list comes from the client's
@@ -1993,18 +1991,18 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         "gamepad-2",
         t("ach.ubiTitle"),
         t("ach.ubiDesc"),
-        `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>${createSet}${raAction}`,
+        `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>${raAction}`,
       ));
     }
     // EA games ship achievements through the EA account service; a title with
     // no achievement set of its own stays empty here.
     if (s.appName.startsWith("ea::")) {
-      return withPanel(emptyState("trophy", t("ach.eaTitle"), t("ach.eaDesc"), createSet + raAction));
+      return withPanel(emptyState("trophy", t("ach.eaTitle"), t("ach.eaDesc"), raAction));
     }
     if (partner) {
-      return withPanel(emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }), createSet + raAction));
+      return withPanel(emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }), raAction));
     }
-    return withPanel(emptyState("trophy", t("ach.noSupportTitle"), t("ach.noSupportDesc"), createSet + raAction));
+    return withPanel(emptyState("trophy", t("ach.noSupportTitle"), t("ach.noSupportDesc"), raAction));
   }
 
   enrichAchievementsData(s.appName, data);
@@ -2227,11 +2225,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     <div class="ach-workspace${detailItem ? " has-detail" : ""}">
       <div class="ach-list-pane">
     ${sourceCard}
-    ${setPanel}
     ${raPanel}
     ${S.achEditPanelOpen === s.appName ? renderAchievementEditorCard(s, data) : ""}
-    ${localSet ? `<div class="ach-source-note">${icon("info", 13)}<span>${esc(t("ach.setPageNote"))}</span></div>` : ""}
-    ${!localSet && data.data_source === "ra" ? `<div class="ach-source-note">${icon("globe", 13)}<span>${esc(t("ach.raSourceNote", { id: raMapping?.gameId ?? "" }))}</span></div>` : ""}
+    ${data.data_source === "ra" ? `<div class="ach-source-note">${icon("globe", 13)}<span>${esc(t("ach.raSourceNote", { id: raMapping?.gameId ?? "" }))}</span></div>` : ""}
     ${sourceNote}
     <div class="ach-notif-row">
       <span class="ach-notif-label">
@@ -2262,8 +2258,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           ${data.user_cleared ? `<div class="ach-stat" title="${esc(t("ach.userClearedHint"))}"><span class="ach-stat-label">${esc(t("ach.statCleared"))}</span><strong class="ach-stat-value tabular-nums">${data.user_cleared}</strong></div>` : ""}
         </div>
         <div class="ach-summary-actions">
-          ${localSet ? "" : `<button class="icon-btn ${S.raPanelOpen === s.appName ? "active" : ""}" data-act="ra-panel" data-id="${esc(s.appName)}" title="${esc(t("ach.raTitle"))}">${icon("globe", 14)}</button>`}
-          ${localSet ? `<button class="icon-btn ${S.achSetPanelOpen === s.appName ? "active" : ""}" data-act="ach-set-editor" data-id="${esc(s.appName)}" title="${esc(t("ach.setEdit"))}">${icon("list", 14)}</button>` : ""}
+          ${raEnabled ? `<button class="icon-btn ${S.raPanelOpen === s.appName ? "active" : ""}" data-act="ra-panel" data-id="${esc(s.appName)}" title="${esc(t("ach.raTitle"))}">${icon("globe", 14)}</button>` : ""}
           <button class="icon-btn ${S.achEditPanelOpen === s.appName ? "active" : ""}" data-act="ach-edit-settings" data-id="${esc(s.appName)}" title="${esc(t("ach.editorOpen"))}">${icon("edit", 14)}</button>
           ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
           <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
@@ -2619,12 +2614,9 @@ export async function fetchAndRenderAchievements(
     const isCompanion = source !== "epic" && source !== "gog" && source !== "steam" && !isCustom;
     const rawId = isGog ? appName.slice(5) : appName;
     const customGame = isCustom ? S.customGames.find((g) => g.id === appName) : undefined;
-    // A user-authored set is the page's source while it exists: it exists for
-    // games with no store set, and the editor says so. No store call runs.
-    const localSet = localAchievementData(appName);
-    // RetroAchievements is the next explicit choice: a mapped game gets the RA
-    // set, and a failed request falls back to the store answer below.
-    const raMapping = localSet ? undefined : raGameFor(appName);
+    // RetroAchievements supplies the page for a mapped custom game; a failed
+    // request falls back to the emulator/store answer below.
+    const raMapping = appName.startsWith("custom::") ? raGameFor(appName) : undefined;
     let raSet: EpicAchievementsData | null = null;
     if (raMapping && S.raConfigured) {
       const cached = raProgressCache.get(appName);
@@ -2635,12 +2627,11 @@ export async function fetchAndRenderAchievements(
         if (raSet) raProgressCache.set(appName, { at: Date.now(), data: raSet });
       }
     }
-    // An empty answer (wrong id, no achievements) must not blank a store set.
     const raData = raSet && (raSet.achievements?.length ?? 0) > 0 ? raSet : null;
-    const customAppId = !localSet && !raData && customGame
+    const customAppId = !raData && customGame
       ? await resolveCustomGameSteamAppId(customGame)
       : "";
-    let data = localSet ?? raData ?? (source === "amazon"
+    let data = raData ?? (source === "amazon"
       ? { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
       : isGog
         ? await gogGetAchievements(rawId)
@@ -2664,7 +2655,7 @@ export async function fetchAndRenderAchievements(
               : await epicGetAchievements(appName, forceRefresh));
     // The page paints provenance from this, so a store answer never claims to
     // be the local set (or the other way round).
-    data.data_source = localSet ? "local" : raData ? "ra" : "store";
+    data.data_source = raData ? "ra" : "store";
     // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
     // while Ubisoft Connect tracks them for the same account. Read the client's
     // local cache as the fallback and flag the page so it can say so.

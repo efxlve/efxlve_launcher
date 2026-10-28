@@ -425,8 +425,6 @@ export const S = {
   achSourceModalOpen: (null) as string | null,
   /** Game whose launcher-only achievement state editor is open. */
   achEditPanelOpen: (null) as string | null,
-  /** Game whose local achievement set editor is open. */
-  achSetPanelOpen: (null) as string | null,
   /** RetroAchievements account; the web API key never reaches the webview. */
   raConfigured: false,
   raUsername: "",
