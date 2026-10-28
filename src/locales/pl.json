@@ -606,6 +606,7 @@
   "sys.pcTitle": "Mój PC",
   "sys.pcLoading": "Odczyt sprzętu…",
   "sys.refreshPc": "Odśwież sprzęt",
+  "sys.gpuDriver": "Sterownik GPU",
   "sys.checkOk": "Spełnia",
   "sys.checkFail": "Za mało",
   "sys.checkManual": "Ręcznie",

@@ -636,6 +636,7 @@
   "sys.pcTitle": "Bilgisayarım",
   "sys.pcLoading": "Donanım okunuyor…",
   "sys.refreshPc": "Donanımı yenile",
+  "sys.gpuDriver": "GPU sürücüsü",
   "sys.checkOk": "Uygun",
   "sys.checkFail": "Yetersiz",
   "sys.checkManual": "Manuel",

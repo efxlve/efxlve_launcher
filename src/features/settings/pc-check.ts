@@ -11,6 +11,7 @@ import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { hasConnection } from "../../core/offline";
 import { S } from "../../core/state";
+import { driverAgeDays, formatDriverDate } from "../../core/utils";
 import { epicGetSystemDrives, epicSetupStatus } from "../../epic";
 import { t } from "../../i18n";
 
@@ -35,6 +36,8 @@ interface PcCheckSystem {
   gpuVendorId?: number;
   gpuDeviceId?: number;
   gpuMemoryMb: number;
+  gpuDriverVersion?: string;
+  gpuDriverDate?: string;
   directx?: string;
   directxLevel?: number;
   raytracingTier?: number;
@@ -85,6 +88,9 @@ function hardwareChecks(system: PcCheckSystem | null): Check[] {
     ? `${system.gpu}${system.gpuMemoryMb > 0 ? ` · ${gigabytes(system.gpuMemoryMb)}` : ""}`
     : "—";
   const ramGb = system.memoryMb / 1024;
+  const driverDate = formatDriverDate(system.gpuDriverDate ?? "");
+  const driverAge = driverAgeDays(system.gpuDriverDate ?? "");
+  const driverValue = [system.gpuDriverVersion, driverDate].filter(Boolean).join(" · ");
   const rayTracing = system.raytracingTier ?? 0;
   const meshShaders = system.meshShaderTier ?? 0;
   const shadingRate = system.shadingRateTier ?? 0;
@@ -124,6 +130,13 @@ function hardwareChecks(system: PcCheckSystem | null): Check[] {
       value: gpuValue,
       level: system.gpu ? "ok" : "warn",
     },
+    ...(driverValue
+      ? [{
+          label: t("sys.gpuDriver"),
+          value: driverValue,
+          level: driverAge !== null && driverAge > 365 ? "warn" as const : "ok" as const,
+        }]
+      : []),
     {
       label: "DirectX",
       value: system.directx || "—",

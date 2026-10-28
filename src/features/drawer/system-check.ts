@@ -29,6 +29,10 @@ export interface PcFacts {
   gpuVendorId: number;
   gpuDeviceId: number;
   gpuMemoryMb: number;
+  /** Display driver version from the Windows display class, e.g. "32.0.16.2101". */
+  gpuDriverVersion: string;
+  /** Display driver date as Windows stores it, e.g. "10-19-2026". */
+  gpuDriverDate: string;
   /** "DirectX 12 (12_1)" or empty when the feature level is unknown. */
   directx: string;
   /** 122, 121, 120, 111, 110… / 0. */
@@ -108,6 +112,8 @@ export function ensurePcFacts(): Promise<void> {
       // hot-reloaded webview does not compare undefined tiers.
       cachedFacts = {
         ...system,
+        gpuDriverVersion: system.gpuDriverVersion ?? "",
+        gpuDriverDate: system.gpuDriverDate ?? "",
         raytracingTier: system.raytracingTier ?? 0,
         meshShaderTier: system.meshShaderTier ?? 0,
         shadingRateTier: system.shadingRateTier ?? 0,

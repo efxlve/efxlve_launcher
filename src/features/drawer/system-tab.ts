@@ -10,7 +10,7 @@
 import { emptyPanel, icon, loadingState } from "../../core/icons";
 import { isCompanionKey, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc } from "../../core/utils";
+import { esc, formatDriverDate } from "../../core/utils";
 import { t } from "../../i18n";
 import type { EpicSummary, ThirdPartyLauncherInfo } from "../../epic";
 import { renderAntiCheatHost } from "./awacy";
@@ -244,7 +244,7 @@ function panelHeader(
     </div>`;
 }
 
-function pcValue(facts: PcFacts): Array<{ label: string; glyph: "cpu" | "sliders" | "layers" | "monitor"; value: string }> {
+function pcValue(facts: PcFacts): Array<{ label: string; glyph: "cpu" | "sliders" | "layers" | "monitor"; value: string; hint?: string }> {
   const cpuCores = facts.logicalCores > 0
     ? `${facts.physicalCores}C/${facts.logicalCores}T`
     : "";
@@ -252,9 +252,17 @@ function pcValue(facts: PcFacts): Array<{ label: string; glyph: "cpu" | "sliders
     ? `${formatGb(facts.gpuMemoryMb / 1024)} GB`
     : "";
   const memory = facts.memoryMb > 0 ? `${formatGb(facts.memoryMb / 1024)} GB` : "";
+  const driver = [facts.gpuDriverVersion, formatDriverDate(facts.gpuDriverDate)]
+    .filter(Boolean)
+    .join(" · ");
   return [
     { label: "CPU", glyph: "cpu", value: [facts.cpu, cpuCores].filter(Boolean).join(" · ") },
-    { label: "GPU", glyph: "sliders", value: [facts.gpu, vram].filter(Boolean).join(" · ") },
+    {
+      label: "GPU",
+      glyph: "sliders",
+      value: [facts.gpu, vram].filter(Boolean).join(" · "),
+      hint: driver ? `${t("sys.gpuDriver")}: ${driver}` : "",
+    },
     { label: "RAM", glyph: "layers", value: memory },
     { label: "OS", glyph: "monitor", value: facts.os },
   ];
@@ -277,16 +285,17 @@ function pcStripHtml(): string {
   return `
     <div class="sys-pc-strip">
       ${pcValue(facts)
-        .map(
-          (cell) => `
+        .map((cell) => {
+          const title = cell.hint ? `${cell.value} · ${cell.hint}` : cell.value;
+          return `
         <div class="sys-pc-cell">
           <span class="sys-pc-icon">${icon(cell.glyph, 15)}</span>
           <div class="sys-pc-main">
             <span class="sys-pc-label">${cell.label}</span>
-            <span class="sys-pc-value" title="${esc(cell.value)}">${esc(cell.value || "—")}</span>
+            <span class="sys-pc-value" title="${esc(title)}">${esc(cell.value || "—")}</span>
           </div>
-        </div>`,
-        )
+        </div>`;
+        })
         .join("")}
     </div>`;
 }

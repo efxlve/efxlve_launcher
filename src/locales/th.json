@@ -606,6 +606,7 @@
   "sys.pcTitle": "พีซีของฉัน",
   "sys.pcLoading": "กำลังอ่านฮาร์ดแวร์…",
   "sys.refreshPc": "รีเฟรชฮาร์ดแวร์",
+  "sys.gpuDriver": "ไดรเวอร์ GPU",
   "sys.checkOk": "ผ่าน",
   "sys.checkFail": "ไม่พอ",
   "sys.checkManual": "ด้วยตนเอง",

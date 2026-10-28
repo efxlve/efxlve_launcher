@@ -636,6 +636,7 @@
   "sys.pcTitle": "My PC",
   "sys.pcLoading": "Reading hardware…",
   "sys.refreshPc": "Refresh hardware",
+  "sys.gpuDriver": "GPU driver",
   "sys.checkOk": "Meets",
   "sys.checkFail": "Below",
   "sys.checkManual": "Manual",

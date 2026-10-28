@@ -606,6 +606,7 @@
   "sys.pcTitle": "我的電腦",
   "sys.pcLoading": "正在讀取硬體…",
   "sys.refreshPc": "重新整理硬體",
+  "sys.gpuDriver": "GPU 驅動程式",
   "sys.checkOk": "符合",
   "sys.checkFail": "不足",
   "sys.checkManual": "手動",

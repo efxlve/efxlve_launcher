@@ -96,6 +96,54 @@ export function fmtAchDate(iso: string | null): string {
   }
 }
 
+/** Parses the Windows display-driver date (`10-19-2026` or `2026-10-19`). */
+export function parseDriverDate(value: string): Date | null {
+  const text = value.trim();
+  let year = 0;
+  let month = 0;
+  let day = 0;
+  const mdy = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/.exec(text);
+  if (mdy) {
+    month = Number(mdy[1]);
+    day = Number(mdy[2]);
+    year = Number(mdy[3]);
+  } else {
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+    if (!iso) return null;
+    year = Number(iso[1]);
+    month = Number(iso[2]);
+    day = Number(iso[3]);
+  }
+  if (year < 1990 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+/** Localized display-driver date; an unparseable value is shown unchanged. */
+export function formatDriverDate(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+  const date = parseDriverDate(text);
+  return date
+    ? date.toLocaleDateString(currentLanguage(), { day: "numeric", month: "short", year: "numeric" })
+    : text;
+}
+
+/** Days since the driver date, or null when it is missing or invalid. */
+export function driverAgeDays(value: string): number | null {
+  const date = parseDriverDate(value);
+  if (!date) return null;
+  const days = Math.floor((Date.now() - date.getTime()) / 86_400_000);
+  return days >= 0 ? days : null;
+}
+
 /**
  * One decimal in the reader's own notation. `toFixed` always writes a dot, so a
  * Turkish page said "%43.0" where it should say "%43,0".

@@ -606,6 +606,7 @@
   "sys.pcTitle": "このPC",
   "sys.pcLoading": "ハードウェアを読み込み中…",
   "sys.refreshPc": "ハードウェアを更新",
+  "sys.gpuDriver": "GPU ドライバー",
   "sys.checkOk": "適合",
   "sys.checkFail": "不足",
   "sys.checkManual": "手動",

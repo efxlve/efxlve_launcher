@@ -37,7 +37,15 @@ struct GpuInfo {
     directx: String,
     directx_level: u32,
     tiers: Dx12Tiers,
+    driver_version: String,
+    driver_date: String,
 }
+
+/// Display adapter class key: one subkey per adapter, each with DriverDesc,
+/// DriverVersion and DriverDate.
+#[cfg(windows)]
+const DISPLAY_CLASS: &str =
+    r"HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
 
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +70,10 @@ pub struct PcCheckSystem {
     pub gpu_device_id: u32,
     /// Dedicated video memory in MiB; 0 when unknown or shared.
     pub gpu_memory_mb: u64,
+    /// Display driver version, e.g. "32.0.16.2101".
+    pub gpu_driver_version: String,
+    /// Display driver date as Windows stores it, e.g. "10-19-2026".
+    pub gpu_driver_date: String,
     /// "DirectX 12 (12_1)" or empty when the feature level cannot be read.
     pub directx: String,
     /// Highest D3D12/D3D11 feature level: 122, 121, 120, 111, 110… / 0.
@@ -142,6 +154,8 @@ fn pc_check_system_blocking() -> PcCheckSystem {
         gpu_vendor_id: gpu.vendor_id,
         gpu_device_id: gpu.device_id,
         gpu_memory_mb: nominal_vram_mb(gpu.memory_mb),
+        gpu_driver_version: gpu.driver_version,
+        gpu_driver_date: gpu.driver_date,
         directx: gpu.directx,
         directx_level: gpu.directx_level,
         raytracing_tier: tiers.raytracing,
@@ -194,8 +208,6 @@ fn windows_release() -> (String, String) {
 /// the GPU a game would actually use.
 #[cfg(windows)]
 fn gpu_adapters() -> (String, u64) {
-    const DISPLAY_CLASS: &str =
-        r"HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
     let mut names: Vec<String> = Vec::new();
     if let Some(output) = crate::winreg::query_all(DISPLAY_CLASS, "DriverDesc") {
         for line in output.lines() {
@@ -223,6 +235,58 @@ fn gpu_adapters() -> (String, u64) {
         .find(|name| !is_integrated_adapter(name))
         .or_else(|| names.first());
     (primary.cloned().unwrap_or_default(), vram / (1024 * 1024))
+}
+
+/// Driver version and date for the adapter whose registry name matches.
+#[cfg(windows)]
+fn gpu_driver_info(name: &str) -> (String, String) {
+    if name.trim().is_empty() {
+        return (String::new(), String::new());
+    }
+    let Some(descs) = crate::winreg::query_all(DISPLAY_CLASS, "DriverDesc") else {
+        return (String::new(), String::new());
+    };
+    let Some(suffix) = adapter_blocks(&descs)
+        .into_iter()
+        .find(|(_, desc)| desc.eq_ignore_ascii_case(name))
+        .map(|(suffix, _)| suffix)
+    else {
+        return (String::new(), String::new());
+    };
+    let value_for = |value: &str| {
+        crate::winreg::query_all(DISPLAY_CLASS, value)
+            .map(|output| adapter_blocks(&output))
+            .unwrap_or_default()
+            .into_iter()
+            .find(|(block, _)| block == &suffix)
+            .map(|(_, data)| data)
+            .unwrap_or_default()
+    };
+    (value_for("DriverVersion"), value_for("DriverDate"))
+}
+
+/// Splits `reg query /s /v` output into (subkey suffix, REG_SZ value).
+#[cfg(windows)]
+fn adapter_blocks(output: &str) -> Vec<(String, String)> {
+    let mut blocks = Vec::new();
+    let mut suffix = String::new();
+    for line in output.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if trimmed.starts_with("HKEY_") {
+            suffix = trimmed.rsplit('\\').next().unwrap_or("").to_string();
+            continue;
+        }
+        if let Some((_, data)) = trimmed.split_once("REG_SZ") {
+            let value = data.trim();
+            if !suffix.is_empty() && !value.is_empty() {
+                blocks.push((suffix.clone(), value.to_string()));
+            }
+        }
+    }
+    blocks
 }
 
 #[cfg(windows)]
@@ -302,6 +366,7 @@ fn gpu_and_directx() -> GpuInfo {
         .as_ref()
         .map(|(device, _)| dx12_feature_tiers(device))
         .unwrap_or_default();
+    let (driver_version, driver_date) = gpu_driver_info(&name);
     GpuInfo {
         name,
         memory_mb,
@@ -310,6 +375,8 @@ fn gpu_and_directx() -> GpuInfo {
         directx,
         directx_level: level,
         tiers,
+        driver_version,
+        driver_date,
     }
 }
 
@@ -324,6 +391,8 @@ fn gpu_and_directx() -> GpuInfo {
         directx: String::new(),
         directx_level: 0,
         tiers: Dx12Tiers::default(),
+        driver_version: String::new(),
+        driver_date: String::new(),
     }
 }
 
@@ -584,6 +653,23 @@ mod tests {
         assert_eq!(super::reg_value(output, "DisplayVersion"), "26H2");
         assert_eq!(super::reg_value(output, "CurrentBuild"), "26300");
         assert_eq!(super::reg_value(output, "Missing"), "");
+    }
+
+    #[test]
+    fn driver_blocks_keep_names_and_suffixes() {
+        let output = "\r\nHKEY_LOCAL_MACHINE\\...\\0000\r\n    DriverDesc    REG_SZ    NVIDIA GeForce RTX 5070 Laptop GPU\r\n\r\nHKEY_LOCAL_MACHINE\\...\\0001\r\n    DriverDesc    REG_SZ    Intel(R) UHD Graphics\r\n\r\nEnd of search: 2 match(es) found.\r\n";
+        let blocks = super::adapter_blocks(output);
+        assert_eq!(
+            blocks[0],
+            (
+                "0000".to_string(),
+                "NVIDIA GeForce RTX 5070 Laptop GPU".to_string()
+            )
+        );
+        assert_eq!(
+            blocks[1],
+            ("0001".to_string(), "Intel(R) UHD Graphics".to_string())
+        );
     }
 
     #[test]

@@ -606,6 +606,7 @@
   "sys.pcTitle": "Мой ПК",
   "sys.pcLoading": "Чтение оборудования…",
   "sys.refreshPc": "Обновить оборудование",
+  "sys.gpuDriver": "Драйвер GPU",
   "sys.checkOk": "Соответствует",
   "sys.checkFail": "Недостаточно",
   "sys.checkManual": "Вручную",
