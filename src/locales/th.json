@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "ไม่พบสิ่งที่ตรงกัน",
   "manage.searchTitle": "ค้นหาการตั้งค่า",
   "sys.thisCopy": "สำเนาบนเครื่องนี้",
+  "sys.store": "ร้านค้า",
+  "sys.compatibilityTitle": "ความเข้ากันได้ของแพลตฟอร์ม",
   "critic.scoresTitle": "คะแนน",
   "settings.ssRootsTitle": "โฟลเดอร์ที่แกลเลอรีอ่าน",
   "settings.ssRootsDesc": "โฟลเดอร์ที่คุณเลือก โฟลเดอร์ของสโตร์และ Game Bar และโฟลเดอร์ที่คุณเพิ่ม:",

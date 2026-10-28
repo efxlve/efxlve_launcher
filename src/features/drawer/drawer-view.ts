@@ -455,9 +455,11 @@ export function paintGameMeta(s: EpicSummary): void {
   el.innerHTML = gameMetaHtml(s, gamePartner(s, g), gameAntiCheat(s, g));
 }
 
-/// Detects whether the game bundles the EOS SDK, once per game (result cached).
-/// The filesystem scan runs only when a game page opens, never per library card.
+/// Detects whether an Epic copy bundles the EOS SDK, once per game (result
+/// cached). EOS is Epic's own overlay; scanning Steam or GOG copies would only
+/// surface a row that does not apply to them.
 function ensureEosSupport(appName: string): void {
+  if (sourceOfKey(appName) !== "epic" || appName.startsWith("custom::")) return;
   const s = summaryOf(appName);
   if (!isTauri || !s?.installed || !s.installPath || S.eosSupportMap.has(appName)) return;
   S.eosSupportMap.set(appName, false);

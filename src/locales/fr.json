@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Rien ne correspond.",
   "manage.searchTitle": "Rechercher des réglages",
   "sys.thisCopy": "La copie sur ce PC",
+  "sys.store": "Boutique",
+  "sys.compatibilityTitle": "Compatibilité de la plateforme",
   "critic.scoresTitle": "Notes",
   "settings.ssRootsTitle": "Dossiers de la galerie",
   "settings.ssRootsDesc": "Ton dossier choisi, ceux des boutiques et de la Game Bar, et les dossiers que tu ajoutes :",

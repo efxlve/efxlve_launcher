@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Niente corrisponde.",
   "manage.searchTitle": "Cerca impostazioni",
   "sys.thisCopy": "La copia su questo PC",
+  "sys.store": "Negozio",
+  "sys.compatibilityTitle": "Compatibilità della piattaforma",
   "critic.scoresTitle": "Punteggi",
   "settings.ssRootsTitle": "Cartelle della galleria",
   "settings.ssRootsDesc": "La tua cartella, quelle degli store e della Game Bar e le cartelle che aggiungi:",

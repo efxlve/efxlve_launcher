@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "沒有符合的項目。",
   "manage.searchTitle": "搜尋設定",
   "sys.thisCopy": "此電腦上的副本",
+  "sys.store": "商店",
+  "sys.compatibilityTitle": "平台相容性",
   "critic.scoresTitle": "評分",
   "settings.ssRootsTitle": "圖庫讀取的資料夾",
   "settings.ssRootsDesc": "你選擇的資料夾、商店與 Game Bar 儲存的位置，以及你新增的資料夾：",

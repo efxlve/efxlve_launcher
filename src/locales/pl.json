@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Nic nie pasuje.",
   "manage.searchTitle": "Szukaj ustawień",
   "sys.thisCopy": "Kopia na tym PC",
+  "sys.store": "Sklep",
+  "sys.compatibilityTitle": "Zgodność z platformą",
   "critic.scoresTitle": "Oceny",
   "settings.ssRootsTitle": "Foldery galerii",
   "settings.ssRootsDesc": "Twój folder, foldery sklepów i Game Bara oraz foldery dodane przez Ciebie:",

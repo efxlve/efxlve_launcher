@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Nothing here matches that.",
   "manage.searchTitle": "Search settings",
   "sys.thisCopy": "The copy on this PC",
+  "sys.store": "Store",
+  "sys.compatibilityTitle": "Platform compatibility",
   "critic.scoresTitle": "Scores",
   "settings.ssRootsTitle": "Folders the gallery reads",
   "settings.ssRootsDesc": "Your chosen folder, the folders the stores and Game Bar capture into, and any folder you add:",

@@ -1097,8 +1097,8 @@ export function renderControllerCard(
 }
 
 /**
- * The verified facts of the copy on this PC: platform, disk size, build version
- * and native EOS overlay support.
+ * The verified facts of an installed copy: store, platform, disk size, build
+ * version and — for an Epic copy only — native EOS overlay support.
  */
 export function renderInstalledCopyFacts(
   s: EpicSummary,
@@ -1121,9 +1121,12 @@ export function renderInstalledCopyFacts(
       ? rawBytes
       : 0;
 
-  // Games delegated to Rockstar / EA / Ubisoft launchers run that client's own
-  // overlay and only ship EOSSDK as a store ticket bridge, not for Shift+F3.
+  // EOS is Epic's own SDK; a Steam or GOG copy that happens to bundle it is not
+  // the launcher's overlay. Games delegated to Rockstar / EA / Ubisoft launchers
+  // only ship EOSSDK as a store ticket bridge, not for Shift+F3.
+  const isNativeEpic = source === "epic" && !s.appName.startsWith("custom::");
   const hasNativeEos =
+    isNativeEpic &&
     S.eosSupportMap.get(s.appName) === true &&
     (!partner || (partner.type !== "rockstar" && partner.type !== "ea" && partner.type !== "ubisoft"));
 
@@ -1131,7 +1134,7 @@ export function renderInstalledCopyFacts(
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("package", 13)}</div>
-        <span>${i18nT("filter.source")}</span>
+        <span>${i18nT("sys.store")}</span>
       </div>
       <div class="hub-feature-val">${esc(storeLabel)}</div>
     </div>
@@ -1160,15 +1163,11 @@ export function renderInstalledCopyFacts(
         <span>${i18nT("feat.installedSize")}</span>
       </div>
       <div class="hub-feature-val">
-        ${
-          s.installed
-            ? `<span class="hub-size-val">${validBytes > 0 ? fmtBytes(validBytes) : i18nT("common.installed")}</span>`
-            : `<span class="muted">${i18nT("common.notInstalled")}</span>`
-        }
+        <span class="hub-size-val">${validBytes > 0 ? fmtBytes(validBytes) : i18nT("common.installed")}</span>
       </div>
     </div>
     ${
-      s.installed && versionOk
+      versionOk
         ? `
     <div class="hub-feature-row" title="${esc(i18nT("feat.versionBuild", { v: versionInfo.full }))}">
       <div class="hub-feature-label">

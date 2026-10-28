@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Nada corresponde a isso.",
   "manage.searchTitle": "Buscar configurações",
   "sys.thisCopy": "A cópia neste PC",
+  "sys.store": "Loja",
+  "sys.compatibilityTitle": "Compatibilidade da plataforma",
   "critic.scoresTitle": "Notas",
   "settings.ssRootsTitle": "Pastas da galeria",
   "settings.ssRootsDesc": "Sua pasta escolhida, as pastas das lojas e da Game Bar e as pastas que você adicionar:",

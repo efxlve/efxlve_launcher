@@ -1584,42 +1584,48 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .sys-side-card > .gp-section-title { margin: 0; }
 .sys-side-card .hub-features-list { gap: 6px; }
-/* The copy card is a plain spec list: small icons, hairlines, no row boxes. */
-.sys-copy-list { display: flex; flex-direction: column; gap: 0; }
+/* Copy facts and platform compatibility share one plain spec list: small icons,
+   hairlines, no row boxes. The compatibility card hides itself until a chip
+   actually has an answer. */
+.sys-fact-list { display: flex; flex-direction: column; gap: 0; }
 #sys-copy-body { display: contents; }
-.sys-copy-list > div:empty { display: none; }
-#sys-copy-list .hub-feature-row {
+.sys-fact-list > div:empty { display: none; }
+#sys-compat-card:not(:has(.hub-feature-row)) { display: none; }
+.sys-fact-list .hub-feature-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; margin: 0; padding: 9px 0;
   background: none; border: 0; border-top: 1px solid var(--line);
   border-radius: 0; box-shadow: none;
 }
-#sys-copy-body .hub-feature-row:first-child { border-top: 0; padding-top: 0; }
-#sys-copy-list .hub-feature-row:hover {
+#sys-copy-body .hub-feature-row:first-child,
+#sys-compat-list > div:first-child .hub-feature-row {
+  border-top: 0; padding-top: 0;
+}
+.sys-fact-list .hub-feature-row:hover {
   background: none; border-top-color: var(--line); box-shadow: none;
 }
-#sys-copy-list .hub-feature-icon {
+.sys-fact-list .hub-feature-icon {
   width: 16px; height: 16px; flex: 0 0 16px;
   display: grid; place-items: center;
   background: none; border: 0; border-radius: 0; color: var(--text-2);
 }
-#sys-copy-list .hub-feature-icon svg { width: 14px; height: 14px; }
-#sys-copy-list .hub-feature-label {
+.sys-fact-list .hub-feature-icon svg { width: 14px; height: 14px; }
+.sys-fact-list .hub-feature-label {
   flex: 1 1 auto; min-width: 0; gap: 8px;
   font-size: 12px; font-weight: 500; color: var(--text-3);
 }
-#sys-copy-list .hub-feature-val {
+.sys-fact-list .hub-feature-val {
   flex: 0 0 auto; max-width: 62%;
   font-size: 12.5px; font-weight: 600; color: var(--text);
   text-align: right; white-space: normal; overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
-#sys-copy-list .sys-copy-status {
+.sys-fact-list .sys-copy-status {
   height: auto; padding: 0; border: 0; border-radius: 0;
   background: transparent; box-shadow: none; filter: none;
   font-size: 12.5px; font-weight: 600;
 }
-#sys-copy-list .sys-copy-status:hover {
+.sys-fact-list .sys-copy-status:hover {
   background: transparent; border: 0; box-shadow: none;
   filter: none; text-decoration: underline;
 }

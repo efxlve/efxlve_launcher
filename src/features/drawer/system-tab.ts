@@ -78,6 +78,25 @@ export function renderSystemTab(
     reqData,
     igdbTagsFor(s.appName),
   );
+  // "The copy on this PC" only exists when there is a copy. Steam Deck,
+  // ProtonDB and anti-cheat describe the game's platform, not the local files,
+  // so they live in their own card and also show before installation.
+  const copyCard = s.installed
+    ? `
+          <section class="card sys-side-card sys-copy-card">
+            <h3 class="gp-section-title">${icon("layers", 14)} <span>${t("sys.thisCopy")}</span></h3>
+            <div class="sys-fact-list" id="sys-copy-list">
+              <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>
+            </div>
+          </section>`
+    : "";
+  const compatCard = `
+          <section class="card sys-side-card" id="sys-compat-card">
+            <h3 class="gp-section-title">${icon("monitor", 14)} <span>${t("sys.compatibilityTitle")}</span></h3>
+            <div class="sys-fact-list" id="sys-compat-list">
+              ${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}
+            </div>
+          </section>`;
   return `
     <div class="sys-page">
       <div class="sys-layout">
@@ -88,13 +107,8 @@ export function renderSystemTab(
           <div class="sys-lang-host" id="sys-lang-host">${renderLanguageBlock(s)}</div>
         </div>
         <aside class="sys-side">
-          <section class="card sys-side-card">
-            <h3 class="gp-section-title">${icon("layers", 14)} <span>${t("sys.thisCopy")}</span></h3>
-            <div class="sys-copy-list" id="sys-copy-list">
-              <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>
-              ${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}
-            </div>
-          </section>
+          ${copyCard}
+          ${compatCard}
           <section class="card sys-side-card">
             <h3 class="gp-section-title">${icon("gamepad-2", 14)} <span>${t("feat.controller")}</span></h3>
             <div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>

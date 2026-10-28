@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "일치하는 항목이 없습니다.",
   "manage.searchTitle": "설정 검색",
   "sys.thisCopy": "이 PC의 복사본",
+  "sys.store": "스토어",
+  "sys.compatibilityTitle": "플랫폼 호환성",
   "critic.scoresTitle": "점수",
   "settings.ssRootsTitle": "갤러리가 읽는 폴더",
   "settings.ssRootsDesc": "선택한 폴더, 스토어 및 게임 바 저장 폴더, 직접 추가한 폴더:",

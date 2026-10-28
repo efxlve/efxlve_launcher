@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Nada coincide con eso.",
   "manage.searchTitle": "Buscar ajustes",
   "sys.thisCopy": "La copia en este PC",
+  "sys.store": "Tienda",
+  "sys.compatibilityTitle": "Compatibilidad de la plataforma",
   "critic.scoresTitle": "Puntuaciones",
   "settings.ssRootsTitle": "Carpetas de la galería",
   "settings.ssRootsDesc": "Tu carpeta elegida, las carpetas de las tiendas y Game Bar y las carpetas que añadas:",

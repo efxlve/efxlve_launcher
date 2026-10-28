@@ -2422,6 +2422,8 @@
   "manage.searchEmpty": "Aramanla eşleşen bir şey yok.",
   "manage.searchTitle": "Ayarlarda ara",
   "sys.thisCopy": "Bu bilgisayardaki kopya",
+  "sys.store": "Mağaza",
+  "sys.compatibilityTitle": "Platform uyumluluğu",
   "critic.scoresTitle": "Puanlar",
   "settings.ssRootsTitle": "Galerinin okuduğu klasörler",
   "settings.ssRootsDesc": "Seçtiğin klasör, mağazalar ile Game Bar'ın kaydettiği klasörler ve eklediğin klasörler:",
