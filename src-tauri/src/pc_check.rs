@@ -39,7 +39,7 @@ struct GpuInfo {
     tiers: Dx12Tiers,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PcCheckSystem {
     /// "Windows 11 Pro" or the kernel name on other platforms.
@@ -82,7 +82,16 @@ pub struct PcCheckSystem {
 }
 
 #[tauri::command]
-pub fn pc_check_system() -> PcCheckSystem {
+pub async fn pc_check_system() -> PcCheckSystem {
+    // Reading the CPU, the registry and the D3D device takes long enough to
+    // drop frames; keep it off the UI thread. The webview paints the skeleton
+    // strip while this runs.
+    tauri::async_runtime::spawn_blocking(pc_check_system_blocking)
+        .await
+        .unwrap_or_default()
+}
+
+fn pc_check_system_blocking() -> PcCheckSystem {
     let mut system = sysinfo::System::new();
     system.refresh_cpu_all();
     system.refresh_memory();
@@ -148,12 +157,29 @@ pub fn pc_check_system() -> PcCheckSystem {
 #[cfg(windows)]
 fn windows_release() -> (String, String) {
     let key = r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
-    let read = |value: &str| {
-        crate::winreg::query(key, Some(value))
-            .map(|output| crate::winreg::parse_reg_sz(&output))
-            .unwrap_or_default()
+    // One `reg query` for the whole key; two separate /v calls cost a second
+    // process spawn on every PC check.
+    let Some(output) = crate::winreg::query(key, None) else {
+        return (String::new(), String::new());
     };
-    (read("DisplayVersion"), read("CurrentBuild"))
+    (
+        reg_value(&output, "DisplayVersion"),
+        reg_value(&output, "CurrentBuild"),
+    )
+}
+
+#[cfg(windows)]
+fn reg_value(output: &str, name: &str) -> String {
+    output
+        .lines()
+        .find(|line| {
+            let trimmed = line.trim_start();
+            trimmed.starts_with(name)
+                && trimmed[name.len()..].trim_start().starts_with("REG_")
+        })
+        .and_then(|line| line.split("REG_SZ").nth(1))
+        .map(|value| value.trim().to_string())
+        .unwrap_or_default()
 }
 
 #[cfg(not(windows))]
@@ -253,28 +279,37 @@ fn gpu_adapters() -> (String, u64) {
 /// only a fallback.
 #[cfg(windows)]
 fn gpu_and_directx() -> GpuInfo {
-    if let Some((name, vendor, device, memory_mb, adapter)) = dxgi_gpu() {
-        let (directx, level) = directx_info(Some(&adapter));
-        return GpuInfo {
-            name,
-            memory_mb,
-            vendor_id: vendor,
-            device_id: device,
-            directx,
-            directx_level: level,
-            tiers: dx12_feature_tiers(Some(&adapter)),
-        };
-    }
-    let (name, memory_mb) = gpu_adapters();
-    let (directx, level) = directx_info(None);
+    let (name, memory_mb, vendor_id, device_id, adapter) = match dxgi_gpu() {
+        Some((name, vendor, device, memory_mb, adapter)) => {
+            (name, memory_mb, vendor, device, Some(adapter))
+        }
+        None => {
+            let (name, memory_mb) = gpu_adapters();
+            (name, memory_mb, 0, 0, None)
+        }
+    };
+    // One device answers both the feature level and the tier queries. Creating
+    // it once keeps the System tab from spawning several D3D12 devices.
+    let d3d12 = d3d12_device(adapter.as_ref());
+    let (directx, level) = match &d3d12 {
+        Some((_, level)) => (directx_name(*level), *level),
+        None => {
+            let level = d3d11_feature_level(adapter.as_ref());
+            (directx_name(level), level)
+        }
+    };
+    let tiers = d3d12
+        .as_ref()
+        .map(|(device, _)| dx12_feature_tiers(device))
+        .unwrap_or_default();
     GpuInfo {
         name,
         memory_mb,
-        vendor_id: 0,
-        device_id: 0,
+        vendor_id,
+        device_id,
         directx,
         directx_level: level,
-        tiers: dx12_feature_tiers(None),
+        tiers,
     }
 }
 
@@ -344,14 +379,6 @@ fn dxgi_gpu() -> Option<(
     ))
 }
 
-#[cfg(windows)]
-fn directx_info(
-    adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>,
-) -> (String, u32) {
-    let level = d3d12_feature_level(adapter).max(d3d11_feature_level(adapter));
-    (directx_name(level), level)
-}
-
 /// DXGI reports a little less than the physical chips (driver-reserved memory),
 /// so an 8 GB card lands around 7891 MiB. Report the size the card is sold as;
 /// 7.7 GB is not a real SKU and makes the comparison look wrong.
@@ -387,7 +414,9 @@ fn directx_name(level: u32) -> String {
 }
 
 #[cfg(windows)]
-fn d3d12_feature_level(adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>) -> u32 {
+fn d3d12_device(
+    adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>,
+) -> Option<(windows::Win32::Graphics::Direct3D12::ID3D12Device, u32)> {
     use windows::core::Interface;
     use windows::Win32::Graphics::Direct3D::{
         D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2,
@@ -402,38 +431,24 @@ fn d3d12_feature_level(adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAda
     ] {
         let mut device: Option<ID3D12Device> = None;
         if unsafe { D3D12CreateDevice(device_owner.as_ref(), level, &mut device) }.is_ok() {
-            return value;
+            if let Some(device) = device {
+                return Some((device, value));
+            }
         }
     }
-    0
+    None
 }
 
-/// DXR, mesh shader, VRS and sampler-feedback tiers of the selected adapter.
-/// A single D3D12 device answers all three option queries; `known` stays false
-/// when the device could not be created, so the UI can say "manual" instead of
-/// blaming the GPU.
+/// DXR, mesh shader, VRS and sampler-feedback tiers of the device that was
+/// already created for the adapter. `known` is true because a device exists.
 #[cfg(windows)]
 fn dx12_feature_tiers(
-    adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>,
+    device: &windows::Win32::Graphics::Direct3D12::ID3D12Device,
 ) -> Dx12Tiers {
-    use windows::core::Interface;
-    use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_12_0;
     use windows::Win32::Graphics::Direct3D12::{
-        D3D12CreateDevice, D3D12_FEATURE_DATA_D3D12_OPTIONS5,
-        D3D12_FEATURE_DATA_D3D12_OPTIONS6, D3D12_FEATURE_DATA_D3D12_OPTIONS7,
-        D3D12_FEATURE_D3D12_OPTIONS5, D3D12_FEATURE_D3D12_OPTIONS6,
-        D3D12_FEATURE_D3D12_OPTIONS7, ID3D12Device,
-    };
-
-    let device_owner = adapter.and_then(|adapter| adapter.cast::<windows::core::IUnknown>().ok());
-    let mut device: Option<ID3D12Device> = None;
-    if unsafe { D3D12CreateDevice(device_owner.as_ref(), D3D_FEATURE_LEVEL_12_0, &mut device) }
-        .is_err()
-    {
-        return Dx12Tiers::default();
-    }
-    let Some(device) = device else {
-        return Dx12Tiers::default();
+        D3D12_FEATURE_DATA_D3D12_OPTIONS5, D3D12_FEATURE_DATA_D3D12_OPTIONS6,
+        D3D12_FEATURE_DATA_D3D12_OPTIONS7, D3D12_FEATURE_D3D12_OPTIONS5,
+        D3D12_FEATURE_D3D12_OPTIONS6, D3D12_FEATURE_D3D12_OPTIONS7,
     };
 
     let mut tiers = Dx12Tiers {
@@ -564,6 +579,14 @@ mod tests {
     }
 
     #[test]
+    fn the_release_values_are_read_from_one_query() {
+        let output = "\r\nHKEY_LOCAL_MACHINE\\...\r\n    DisplayVersion    REG_SZ    26H2\r\n    CurrentBuildNumber    REG_SZ    26300\r\n    CurrentBuild      REG_SZ    26300\r\n";
+        assert_eq!(super::reg_value(output, "DisplayVersion"), "26H2");
+        assert_eq!(super::reg_value(output, "CurrentBuild"), "26300");
+        assert_eq!(super::reg_value(output, "Missing"), "");
+    }
+
+    #[test]
     fn directx_feature_levels_are_named() {
         assert_eq!(super::directx_name(122), "DirectX 12 (12_2)");
         assert_eq!(super::directx_name(120), "DirectX 12 (12_0)");
@@ -599,7 +622,7 @@ mod tests {
 
     #[test]
     fn system_facts_are_read() {
-        let info = super::pc_check_system();
+        let info = super::pc_check_system_blocking();
         assert!(!info.os.is_empty());
         assert!(info.logical_cores > 0);
         assert!(info.memory_mb > 0);
