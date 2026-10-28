@@ -297,15 +297,15 @@
   fill: currentColor;
 }
 .pcard-play-btn.is-running {
-  color: #ff6b6b;
-  border-color: rgba(229, 72, 77, 0.5);
-  background: rgba(229, 72, 77, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.16);
 }
 .pcard-play-btn.is-running svg {
   margin-left: 0;
-  width: 8px;
-  height: 8px;
-  fill: currentColor;
+  width: 9px;
+  height: 9px;
+  fill: none;
 }
 .pcard-play-btn.is-update {
   color: var(--warn);
@@ -351,9 +351,9 @@
   background: rgba(255, 255, 255, 0.16);
 }
 .pcard:hover .pcard-play-btn.is-running {
-  color: #ff8585;
-  border-color: rgba(229, 72, 77, 0.7);
-  background: rgba(229, 72, 77, 0.25);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.24);
 }
 .pcard:hover .pcard-play-btn.is-update {
   color: var(--warn);
@@ -372,9 +372,9 @@
   transform: scale(1.12);
 }
 .pcard-play-btn.is-running:hover {
-  background: var(--err, #e5484d);
+  background: rgba(255, 255, 255, 0.28);
   color: #ffffff;
-  border-color: var(--err, #e5484d);
+  border-color: rgba(255, 255, 255, 0.7);
   transform: scale(1.12);
 }
 .pcard-play-btn.is-update:hover {

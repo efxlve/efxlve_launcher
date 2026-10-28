@@ -181,7 +181,7 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
 
   if (S.runningGames.has(appName)) {
     const stopLabel = t("common.stop");
-    return `<button type="button" class="pcard-play-btn is-running" data-act="epic-stop" data-id="${esc(appName)}" aria-label="${esc(stopLabel)}" title="${esc(stopLabel)}">${icon("square", 8)}</button>`;
+    return `<button type="button" class="pcard-play-btn is-running" data-act="epic-stop" data-id="${esc(appName)}" aria-label="${esc(stopLabel)}" title="${esc(stopLabel)}">${icon("x", 8)}</button>`;
   }
 
   const updateId = libraryUpdateTarget(appName);
@@ -464,9 +464,9 @@ export function epicActionButtons(
   // a status chip for the client-owned stores it cannot (Steam, Xbox, EA...).
   if (S.runningGames.has(s.appName)) {
     if (s.appName.startsWith("amazon::")) {
-      return `<button class="btn stop${btn}" data-act="amazon-stop" data-id="${esc(s.appName.slice(8))}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
+      return `<button class="btn stop${btn}" data-act="amazon-stop" data-id="${esc(s.appName.slice(8))}" title="${t("common.stop")}">${icon("x", 12)} ${t("common.stop")}</button>`;
     }
-    return `<button class="btn stop${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
+    return `<button class="btn stop${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("x", 12)} ${t("common.stop")}</button>`;
   }
   if (installPathIssue(s)) {
     return `<button class="btn danger${btn} is-unavailable" disabled title="${esc(t("sys.copyHealthTip"))}">${icon("alert-triangle", 14)} ${t("lib.copyMissing")}</button>`;
