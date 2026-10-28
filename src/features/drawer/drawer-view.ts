@@ -32,7 +32,7 @@ import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { esc, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
+import { esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { checkInstallPathState, epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
@@ -2015,8 +2015,12 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     return !isMaskedHidden(a) && !isAchievementUnlocked(a) && progress >= 0.5 && progress < 1;
   }).length;
   const hiddenCount = data.achievements.filter((a) => Boolean(a.hidden)).length;
+  // Only the edits that actually change the answer: an "unlocked" edit the
+  // store already agrees with is not a visible difference.
+  const editedCount = data.achievements.filter((a) => Boolean(a.user_state)).length;
   if (S.activeAchFilter === "near" && nearCount === 0) S.activeAchFilter = "all";
   if (S.activeAchFilter === "hidden" && hiddenCount === 0) S.activeAchFilter = "all";
+  if (S.activeAchFilter === "edited" && editedCount === 0) S.activeAchFilter = "all";
   const playtime = libraryPlaytime(s);
   const hltb = S.loadedHltb.get(s.appName);
   const remainingHours = isDemo
@@ -2024,6 +2028,14 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     : estimateRemainingHours(achStats, playtime.seconds, hltb?.completionist);
   const estimate = remainingHours != null ? Math.max(1, Math.round(remainingHours)) : null;
   const remaining = Math.max(0, data.total_achievements - effectiveUnlocked);
+  // Epic ships the platinum award with the day it was earned; the summary can
+  // say when the set was completed instead of only that it is complete.
+  const platinumAward = (data.user_awards || []).find(
+    (award) => (award.award_type || "").toUpperCase() === "PLATINUM",
+  );
+  const platinumAwardDate = platinumAward
+    ? fmtAchDate(platinumAward.unlocked_date_time)
+    : "";
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filtered = data.achievements.filter((a) => {
@@ -2031,6 +2043,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (S.activeAchFilter === "unlocked" && !unlocked) return false;
     if (S.activeAchFilter === "locked" && unlocked) return false;
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+    if (S.activeAchFilter === "edited" && !a.user_state) return false;
     if (S.activeAchFilter === "near") {
       const progress = achievementProgress(a);
       if (unlocked || progress < 0.5 || progress >= 1) return false;
@@ -2213,6 +2226,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           <div class="ach-summary-count">${effectiveUnlocked} <span>/ ${data.total_achievements}</span></div>
           <div class="ach-summary-label">${isPlat ? t("ach.platinumComplete") : t("drawer.achievements")}</div>
           ${data.total_xp > 0 && !isPlat ? `<div class="ach-summary-xp tabular-nums">${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP</div>` : ""}
+          ${platinumAwardDate ? `<div class="ach-summary-award">${icon("crown", 11)}<span>${esc(t("ach.platinumAwarded", { date: platinumAwardDate }))}</span></div>` : ""}
           <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
         </div>
         <div class="ach-summary-stats">
@@ -2243,6 +2257,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         ${filterChip("unlocked", t("ach.filterUnlocked"), unlockedCount, "check-circle")}
         ${filterChip("locked", t("ach.filterLocked"), data.achievements.length - unlockedCount, "lock")}
         ${nearCount > 0 ? filterChip("near", t("ach.filterNear"), nearCount, "activity") : ""}
+        ${editedCount > 0 ? filterChip("edited", t("ach.filterEdited"), editedCount, "edit") : ""}
         ${filterChip("hidden", t("ach.filterHidden"), hiddenCount, "eye-off", hiddenCount === 0)}
       </div>
       <div class="gp-toolbar-right">

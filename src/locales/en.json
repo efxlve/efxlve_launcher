@@ -603,6 +603,8 @@
   "settings.achRarityDesc": "Announce every unlock, or only the rare ones. A store that reports no rarity is always announced.",
   "settings.achRarityAll": "All",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "Edited",
+  "ach.platinumAwarded": "Platinum earned {date}",
   "ach.editsSettingsTitle": "Launcher-only achievement states",
   "ach.editsSettingsDesc": "Edits made on a game page live here. Syncing a game drops its edits and uses the store's own progress again.",
   "ach.editsSettingsEmpty": "No achievement edits on this PC.",

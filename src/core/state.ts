@@ -40,6 +40,7 @@ import {
   PROFILE_CARD_CHUNK,
   PROFILE_VIEW_MODE_KEY,
   RECENT_KEY,
+  REVEALED_ACH_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
   SS_HOTKEY_KEY,
@@ -416,11 +417,12 @@ export const S = {
   loadingScreenshotsFor: new Set<string>(),
   activeLightboxScreenshot: (null) as { appName: string; index: number } | null,
   activeShareScreenshot: (null) as { appName: string; item: GameScreenshotItem } | null,
-  activeAchFilter: ("all") as "all" | "unlocked" | "locked" | "hidden" | "near",
+  activeAchFilter: ("all") as "all" | "unlocked" | "locked" | "hidden" | "near" | "edited",
   achTierFilter: ("all") as "all" | "platinum" | "gold" | "silver" | "bronze",
   achSearchQuery: "",
   achSortOrder: ("default") as "default" | "rarity" | "xp" | "date",
-  revealedAchievements: (new Set()) as Set<string>,
+  /** Hidden achievements whose spoiler is open; kept across sessions. */
+  revealedAchievements: (loadStrSet(REVEALED_ACH_KEY)) as Set<string>,
   currentModalAppName: (null) as string | null,
   achSourceModalOpen: (null) as string | null,
   /** Game whose launcher-only achievement state editor is open. */

@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "แจ้งทุกความสำเร็จหรือเฉพาะที่หายาก ร้านค้าที่ไม่ระบุความหายากจะแจ้งเสมอ",
   "settings.achRarityAll": "ทั้งหมด",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "แก้ไขแล้ว",
+  "ach.platinumAwarded": "ได้รับแพลตินัมเมื่อ {date}",
   "ach.editsSettingsTitle": "สถานะความสำเร็จเฉพาะตัวเรียกใช้",
   "ach.editsSettingsDesc": "การแก้ไขที่ทำในหน้าเกมจะอยู่ที่นี่ การซิงค์เกมจะทิ้งการแก้ไขและใช้ความคืบหน้าของร้านค้าอีกครั้ง",
   "ach.editsSettingsEmpty": "ไม่มีการแก้ไขความสำเร็จในเครื่องนี้",

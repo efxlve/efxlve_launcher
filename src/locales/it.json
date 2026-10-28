@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "Avvisa per ogni obiettivo o solo per quelli rari. Gli store senza percentuale di rarità vengono sempre avvisati.",
   "settings.achRarityAll": "Tutti",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "Modificati",
+  "ach.platinumAwarded": "Platino ottenuto il {date}",
   "ach.editsSettingsTitle": "Stati obiettivi solo del launcher",
   "ach.editsSettingsDesc": "Le modifiche fatte nella pagina di un gioco restano qui. Sincronizzare un gioco le elimina e usa di nuovo i progressi dello store.",
   "ach.editsSettingsEmpty": "Nessuna modifica agli obiettivi su questo PC.",

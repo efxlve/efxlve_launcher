@@ -259,6 +259,8 @@ export const HIDDEN_KEY = "efxlve-hidden-games";
 export const IGNORED_UPDATES_KEY = "efxlve-ignored-updates";
 /** Achievement sandbox ids hidden from the profile list. Separate from hidden games. */
 export const HIDDEN_ACH_KEY = "efxlve-hidden-achievements";
+/** Hidden achievements whose spoiler the player opened; kept across sessions. */
+export const REVEALED_ACH_KEY = "efxlve-revealed-achievements";
 /** Recently launched game ids. */
 export const RECENT_KEY = "efxlve-recent";
 /** Recently installed and updated game ids. */
@@ -317,6 +319,17 @@ export function loadStrSet(key: string): Set<string> {
     return new Set(JSON.parse(localStorage.getItem(key) ?? "[]") as string[]);
   } catch {
     return new Set();
+  }
+}
+
+/** Persist a string set; an empty set removes the key. */
+export function saveStrSet(key: string, values: Iterable<string>): void {
+  try {
+    const list = [...values];
+    if (list.length === 0) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    // Storage is best-effort; the session value still applies.
   }
 }
 

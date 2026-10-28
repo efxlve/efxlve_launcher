@@ -253,6 +253,13 @@ export interface EpicAchievementItem {
 /** Launcher-only achievement state, never sent to a store. */
 export type AchievementUserState = "unlocked" | "locked";
 
+/** Epic player award (a platinum trophy with the day it was earned). */
+export interface EpicAchievementAward {
+  award_type: string;
+  unlocked_date_time: string;
+  achievement_set_id: string;
+}
+
 export interface EpicAchievementsData {
   achievements: EpicAchievementItem[];
   hidden: EpicAchievementItem[];
@@ -269,6 +276,8 @@ export interface EpicAchievementsData {
   user_marked?: number;
   /** Launcher-only: store unlocks the user cleared here. */
   user_cleared?: number;
+  /** Epic player awards (platinum), each with the day it was earned. */
+  user_awards?: EpicAchievementAward[];
 }
 
 export interface EpicAchievementSummary {

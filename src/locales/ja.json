@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "すべての解除を通知するか、レアなものだけを通知します。レア度を提供しないストアは常に通知されます。",
   "settings.achRarityAll": "すべて",
   "settings.achRarityAtMost": "{n}% 以下",
+  "ach.filterEdited": "編集済み",
+  "ach.platinumAwarded": "プラチナ獲得 {date}",
   "ach.editsSettingsTitle": "ランチャー限定の実績状態",
   "ach.editsSettingsDesc": "ゲームページで行った編集はここに残ります。同期するとその編集を破棄し、ストアの進行状況を使います。",
   "ach.editsSettingsEmpty": "この PC に実績の編集はありません。",

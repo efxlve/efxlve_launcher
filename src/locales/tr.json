@@ -603,6 +603,8 @@
   "settings.achRarityDesc": "Her başarımı duyur veya yalnızca nadir olanları. Nadirlik vermeyen mağazalar her zaman duyurulur.",
   "settings.achRarityAll": "Tümü",
   "settings.achRarityAtMost": "≤ %{n}",
+  "ach.filterEdited": "Düzenlenen",
+  "ach.platinumAwarded": "Platin {date} tarihinde kazanıldı",
   "ach.editsSettingsTitle": "Yalnızca launcher'a özel başarım durumları",
   "ach.editsSettingsDesc": "Oyun sayfasında yaptığın düzenlemeler burada durur. Bir oyunu senkronize etmek düzenlemelerini siler ve mağazanın kendi ilerlemesini kullanır.",
   "ach.editsSettingsEmpty": "Bu bilgisayarda başarım düzenlemesi yok.",

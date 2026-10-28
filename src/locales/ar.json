@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "أبلغ عن كل إنجاز أو عن الإنجازات النادرة فقط. المتاجر التي لا توفر نسبة الندرة تُبلَّغ دائمًا.",
   "settings.achRarityAll": "الكل",
   "settings.achRarityAtMost": "≤ %{n}",
+  "ach.filterEdited": "معدّلة",
+  "ach.platinumAwarded": "حصلت على البلاتينية في {date}",
   "ach.editsSettingsTitle": "حالات إنجازات خاصة بالمشغّل",
   "ach.editsSettingsDesc": "تظهر هنا التعديلات التي أجريتها في صفحة اللعبة. مزامنة لعبة تحذف تعديلاتها وتستخدم تقدّم المتجر مجددًا.",
   "ach.editsSettingsEmpty": "لا توجد تعديلات إنجازات على هذا الجهاز.",

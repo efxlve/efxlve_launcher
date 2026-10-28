@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "Powiadamiaj o każdym osiągnięciu lub tylko o rzadkich. Sklepy bez wskaźnika rzadkości są zawsze powiadamiane.",
   "settings.achRarityAll": "Wszystkie",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "Edytowane",
+  "ach.platinumAwarded": "Platyna zdobyta {date}",
   "ach.editsSettingsTitle": "Stany osiągnięć tylko w launcherze",
   "ach.editsSettingsDesc": "Zmiany wykonane na stronie gry są przechowywane tutaj. Synchronizacja usuwa je i znów używa postępów sklepu.",
   "ach.editsSettingsEmpty": "Brak zmian osiągnięć na tym PC.",

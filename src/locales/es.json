@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "Avisar de cada logro o solo de los raros. Las tiendas sin porcentaje de rareza siempre se avisan.",
   "settings.achRarityAll": "Todos",
   "settings.achRarityAtMost": "≤ {n} %",
+  "ach.filterEdited": "Editados",
+  "ach.platinumAwarded": "Platino conseguido el {date}",
   "ach.editsSettingsTitle": "Estados de logros solo del launcher",
   "ach.editsSettingsDesc": "Los cambios hechos en la página de un juego viven aquí. Sincronizar un juego descarta sus cambios y vuelve a usar el progreso de la tienda.",
   "ach.editsSettingsEmpty": "No hay cambios de logros en este PC.",

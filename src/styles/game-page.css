@@ -3010,6 +3010,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .ach-summary-count span { color: var(--text-3); font-weight: 400; }
 .ach-summary-label { color: var(--text-3); font-size: 11px; }
 .ach-summary-xp { color: var(--text-3); font-size: 11px; }
+.ach-summary-award { display: flex; align-items: center; gap: 4px; color: var(--text-3); font-size: 11px; }
 .ach-summary-info .ach-summary-progress { width: 100%; max-width: none; margin-top: 5px; }
 
 .ach-summary-stats { display: flex; align-items: center; gap: 20px; margin-left: auto; flex-wrap: wrap; }

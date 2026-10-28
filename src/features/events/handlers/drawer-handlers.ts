@@ -12,7 +12,7 @@ function targetSteamAppIdOf(key: string): string | null {
  * screenshots, manage), store URLs and selective install.
  */
 
-import { FAV_KEY } from "../../../core/constants";
+import { FAV_KEY, REVEALED_ACH_KEY, saveStrSet } from "../../../core/constants";
 import { isSafeExternalUrl } from "../../../core/achievements";
 import {
   applyAchievementEdits,
@@ -460,6 +460,8 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         } else {
           S.revealedAchievements.add(key);
         }
+        // A spoiler the player opened stays open after a restart.
+        saveStrSet(REVEALED_ACH_KEY, S.revealedAchievements);
         openEpicModal(S.currentModalAppName, false, false);
       }
       return true;

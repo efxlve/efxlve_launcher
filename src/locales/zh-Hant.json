@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "通知每項成就，或只通知稀有成就。未提供稀有度的商店一律通知。",
   "settings.achRarityAll": "全部",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "已編輯",
+  "ach.platinumAwarded": "白金獎盃獲得於 {date}",
   "ach.editsSettingsTitle": "僅啟動器內的成就狀態",
   "ach.editsSettingsDesc": "在遊戲頁面做的修改保存在這裡。同步某款遊戲會放棄其修改，並重新使用商店的進度。",
   "ach.editsSettingsEmpty": "此電腦上沒有成就修改。",

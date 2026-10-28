@@ -625,6 +625,7 @@ document.addEventListener("input", (e) => {
           if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (S.activeAchFilter === "locked" && isUnlocked) return false;
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;
+          if (S.activeAchFilter === "edited" && !a.user_state) return false;
           if (
             S.activeAchFilter !== "hidden" &&
             a.hidden &&

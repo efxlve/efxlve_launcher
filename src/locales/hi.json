@@ -603,6 +603,8 @@
   "settings.achRarityDesc": "हर उपलब्धि की सूचना दें या केवल दुर्लभ की। जो स्टोर दुर्लभता नहीं देते उनकी सूचना हमेशा दी जाती है।",
   "settings.achRarityAll": "सभी",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "संपादित",
+  "ach.platinumAwarded": "प्लेटिनम {date} को प्राप्त",
   "ach.editsSettingsTitle": "केवल लॉन्चर वाली उपलब्धि स्थितियाँ",
   "ach.editsSettingsDesc": "गेम पेज पर किए गए बदलाव यहाँ रहते हैं। किसी गेम को सिंक करने पर उसके बदलाव हट जाते हैं और स्टोर की प्रगति फिर उपयोग होती है।",
   "ach.editsSettingsEmpty": "इस PC पर कोई उपलब्धि बदलाव नहीं है।",

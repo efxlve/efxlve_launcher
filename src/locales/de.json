@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "Jeden Erfolg melden oder nur seltene. Stores ohne Seltenheitswert werden immer gemeldet.",
   "settings.achRarityAll": "Alle",
   "settings.achRarityAtMost": "≤ {n} %",
+  "ach.filterEdited": "Bearbeitet",
+  "ach.platinumAwarded": "Platin am {date} verdient",
   "ach.editsSettingsTitle": "Nur im Launcher geltende Erfolgszustände",
   "ach.editsSettingsDesc": "Änderungen von einer Spielseite stehen hier. Eine Synchronisierung verwirft sie und nutzt wieder den Fortschritt des Stores.",
   "ach.editsSettingsEmpty": "Keine Erfolgsänderungen auf diesem PC.",

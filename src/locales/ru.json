@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "Сообщать о каждом достижении или только о редких. Магазины без процента редкости всегда показываются.",
   "settings.achRarityAll": "Все",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "Изменённые",
+  "ach.platinumAwarded": "Платина получена {date}",
   "ach.editsSettingsTitle": "Состояния достижений только для лаунчера",
   "ach.editsSettingsDesc": "Правки со страницы игры хранятся здесь. Синхронизация отбрасывает их и снова использует прогресс магазина.",
   "ach.editsSettingsEmpty": "На этом ПК нет правок достижений.",

@@ -573,6 +573,8 @@
   "settings.achRarityDesc": "Avisar sobre todas as conquistas ou apenas as raras. Lojas sem percentual de raridade são sempre avisadas.",
   "settings.achRarityAll": "Todas",
   "settings.achRarityAtMost": "≤ {n}%",
+  "ach.filterEdited": "Editadas",
+  "ach.platinumAwarded": "Platina obtida em {date}",
   "ach.editsSettingsTitle": "Estados de conquistas só do launcher",
   "ach.editsSettingsDesc": "As edições feitas na página de um jogo ficam aqui. Sincronizar um jogo descarta as edições e volta a usar o progresso da loja.",
   "ach.editsSettingsEmpty": "Nenhuma edição de conquista neste PC.",
