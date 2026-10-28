@@ -19,6 +19,7 @@ import {
   epicGetOfflineMode,
   epicGetPlaytimes,
   epicGetQueue,
+  epicGetSystemDrives,
   epicListSkipped,
   epicPauseDownload,
   epicPrepareComet,
@@ -87,7 +88,7 @@ import { loadSavedAccounts } from "../auth/account-switcher";
 import { initCloudBackupSettings, scheduleLocalBackups } from "../cloud-backup/cloud-backup-actions";
 import { scheduleProfileUploads } from "../cloud-backup/profile-sync-actions";
 import { initContextMenu } from "../context-menu/context-menu";
-import { initCollectionTabs } from "../library/library-view";
+import { initCollectionTabs, refreshLibraryResultsInPlace } from "../library/library-view";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import {
@@ -1067,11 +1068,12 @@ export async function initApp(hooks: {
       })
       .catch(() => undefined);
     // Independent boot reads; running them together removes serial IPC round trips.
-    const [networkProfile, settings, autoShortcut, defaultDir] = await Promise.all([
+    const [networkProfile, settings, autoShortcut, defaultDir, drives] = await Promise.all([
       epicGetNetworkProfile().catch(() => null),
       epicGetSettings().catch(() => null),
       epicGetAutoDesktopShortcut().catch(() => null),
       epicDefaultInstallDir().catch(() => ""),
+      epicGetSystemDrives().catch(() => []),
     ]);
     if (networkProfile !== null) S.networkProfile = networkProfile ?? "";
     if (settings) {
@@ -1079,6 +1081,10 @@ export async function initApp(hooks: {
       S.preferredCdn = settings.preferred_cdn ?? "";
     }
     if (defaultDir) S.epicDefaultDir = defaultDir;
+    S.moveSystemDrives = Array.isArray(drives) ? drives : [];
+    // The library can paint from the cached list before the drive list lands;
+    // repaint the visible cards so the missing-drive badge appears.
+    refreshLibraryResultsInPlace();
     if (autoShortcut !== null) S.autoDesktopShortcut = autoShortcut;
 
     // Other accounts' games come from disk snapshots (no network) so the shared

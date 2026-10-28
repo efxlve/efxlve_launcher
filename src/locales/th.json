@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "ความสำเร็จ",
   "lib.sortInstalled": "ติดตั้งแล้วก่อน",
   "lib.running": "กำลังทำงาน",
+  "lib.copyMissing": "ใช้งานไม่ได้",
   "lib.noGames": "ไม่พบเกม",
   "lib.updates": "อัปเดต",
   "lib.epicIntegration": "การเชื่อมต่อ Epic",

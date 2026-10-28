@@ -102,10 +102,26 @@ export function libraryCoverStats(appName: string): string {
   return `<div class="cover-stats" data-cover-stats>${chips.join("")}</div>`;
 }
 
+/** True when this installed copy's drive is missing or its folder is known gone. */
+function installPathIssue(s: EpicSummary): boolean {
+  if (!s.installed || !s.installPath) return false;
+  const known = S.copyPathStates.get(s.appName)?.state;
+  if (known === "missing" || known === "driveMissing") return true;
+  if (S.moveSystemDrives.length === 0) return false;
+  const match = /^([A-Za-z]):(?:[\\/]|$)/.exec(s.installPath);
+  if (!match) return false;
+  return !S.moveSystemDrives.some(
+    (drive) => drive.letter.toUpperCase() === match[1].toUpperCase(),
+  );
+}
+
 /** Live state on a library tile. Updates stay on the downloads page. */
 export function libraryCardBadge(s: EpicSummary): string {
   if (S.runningGames.has(s.appName)) {
     return `<span class="pbadge running">${t("lib.running")}</span>`;
+  }
+  if (installPathIssue(s)) {
+    return `<span class="pbadge missing" title="${esc(t("sys.copyHealthTip"))}">${icon("alert-triangle", 9)}<span>${t("lib.copyMissing")}</span></span>`;
   }
   return "";
 }

@@ -1540,6 +1540,7 @@
   "lib.sortAchievements": "Başarımlar",
   "lib.sortInstalled": "Önce yüklü olanlar",
   "lib.running": "Çalışıyor",
+  "lib.copyMissing": "Erişilemiyor",
   "lib.noGames": "Oyun bulunamadı.",
   "lib.updates": "Güncellemeler",
   "lib.epicIntegration": "Epic entegrasyonu",

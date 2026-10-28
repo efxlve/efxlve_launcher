@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "成就",
   "lib.sortInstalled": "已安裝優先",
   "lib.running": "執行中",
+  "lib.copyMissing": "無法使用",
   "lib.noGames": "找不到遊戲。",
   "lib.updates": "更新",
   "lib.epicIntegration": "Epic 整合",

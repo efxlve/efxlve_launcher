@@ -1540,6 +1540,7 @@
   "lib.sortAchievements": "उपलब्धियां",
   "lib.sortInstalled": "पहले इंस्टॉल किए गए",
   "lib.running": "चल रहा है",
+  "lib.copyMissing": "उपलब्ध नहीं",
   "lib.noGames": "कोई गेम नहीं मिला।",
   "lib.updates": "अपडेट",
   "lib.epicIntegration": "Epic एकीकरण",

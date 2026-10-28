@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "Достижения",
   "lib.sortInstalled": "Сначала установленные",
   "lib.running": "Запущена",
+  "lib.copyMissing": "Недоступно",
   "lib.noGames": "Игры не найдены.",
   "lib.updates": "Обновления",
   "lib.epicIntegration": "Интеграция Epic",

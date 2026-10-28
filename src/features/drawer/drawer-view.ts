@@ -487,6 +487,7 @@ export function ensureCopyHealth(appName: string): void {
   void checkInstallPathState(path)
     .then((state) => {
       S.copyPathStates.set(appName, state);
+      patchLibraryCardDom(appName);
       repaintCopyFacts(appName);
     })
     .catch(() => {})

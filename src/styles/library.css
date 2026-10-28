@@ -512,6 +512,7 @@
 /* The badge sits on cover art, not on the theme surface: its text stays light
    and its status colours stay bright in every palette, light themes included. */
 .pbadge.running { color: #3ddc84; }
+.pbadge.missing { color: #e5484d; gap: 4px; pointer-events: auto; }
 .pbadge.update { color: #f0b232; }
 .pbadge.now { color: #3ddc84; }
 

@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "実績",
   "lib.sortInstalled": "インストール済みを先に",
   "lib.running": "実行中",
+  "lib.copyMissing": "利用不可",
   "lib.noGames": "ゲームが見つかりません。",
   "lib.updates": "アップデート",
   "lib.epicIntegration": "Epic 連携",

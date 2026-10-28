@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "Obiettivi",
   "lib.sortInstalled": "Installati prima",
   "lib.running": "In esecuzione",
+  "lib.copyMissing": "Non disponibile",
   "lib.noGames": "Nessun gioco trovato.",
   "lib.updates": "Aggiornamenti",
   "lib.epicIntegration": "Integrazione Epic",

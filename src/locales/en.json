@@ -1540,6 +1540,7 @@
   "lib.sortAchievements": "Achievements",
   "lib.sortInstalled": "Installed first",
   "lib.running": "Running",
+  "lib.copyMissing": "Unavailable",
   "lib.noGames": "No games found.",
   "lib.updates": "Updates",
   "lib.epicIntegration": "Epic integration",

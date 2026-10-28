@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "Erfolge",
   "lib.sortInstalled": "Installierte zuerst",
   "lib.running": "Läuft",
+  "lib.copyMissing": "Nicht verfügbar",
   "lib.noGames": "Keine Spiele gefunden.",
   "lib.updates": "Updates",
   "lib.epicIntegration": "Epic-Integration",

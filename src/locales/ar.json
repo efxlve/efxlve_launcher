@@ -1440,6 +1440,7 @@
   "lib.sortAchievements": "الإنجازات",
   "lib.sortInstalled": "المثبتة أولًا",
   "lib.running": "قيد التشغيل",
+  "lib.copyMissing": "غير متاح",
   "lib.noGames": "لم يُعثر على ألعاب.",
   "lib.updates": "التحديثات",
   "lib.epicIntegration": "تكامل Epic",
