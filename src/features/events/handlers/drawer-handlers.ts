@@ -22,6 +22,7 @@ import {
   storeFactsOf,
   type AchievementEditMeta,
 } from "../../../core/achievement-edits";
+import { recordAchievementUnlocks } from "../../../core/achievement-history";
 import { addAchievementGuide, deleteAchievementNote, flushAchievementNoteSave, removeAchievementGuide } from "../../drawer/ach-notes";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
@@ -76,6 +77,12 @@ function applyAchievementEditsNow(appName: string): void {
   const data = S.loadedAchievements.get(appName);
   if (!data) return;
   applyAchievementEdits(appName, data);
+  // A mark is part of the player's history too; the row keeps the flag so the
+  // profile can say it exists only in this launcher.
+  recordAchievementUnlocks(appName, data, {
+    game: summaryOf(appName)?.title || appName,
+    store: sourceOfKey(appName),
+  });
   refreshAchievementSummary(appName);
 }
 

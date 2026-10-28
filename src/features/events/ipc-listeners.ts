@@ -60,7 +60,8 @@ import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companio
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
-import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
+import { recordAchievementUnlocks } from "../../core/achievement-history";
+import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
 import { BRAND_ICONS, icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import { pushRecentInstall, pushRecent } from "../../core/recent";
@@ -1011,6 +1012,13 @@ export async function initApp(hooks: {
         entry.unlocked = true;
         entry.progress = 1;
         entry.unlock_date = new Date().toISOString().slice(0, 10);
+        // One history row per unlock, whichever store/path announced it.
+        if (list) {
+          recordAchievementUnlocks(key, list, {
+            game: summaryOf(key)?.title || key,
+            store: sourceOfKey(key),
+          });
+        }
       }
       const summary = S.epicAchSummaries[key];
       if (summary && !wasUnlocked) {

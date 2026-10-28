@@ -96,6 +96,7 @@ import { closeCollectionGallery, toggleCollectionGame, toggleCoverGame, updateCo
 import { gameStatusOf, setGameStatus, type GameStatus } from "../library/game-status";
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
+import { clearAchievementHistory } from "../../core/achievement-history";
 import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
@@ -445,6 +446,17 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "unhide-achievement" && id) {
     unhideAchievement(id);
+  } else if (act === "clear-ach-history") {
+    void askConfirm({
+      title: i18nT("profile.unlocksClearTitle"),
+      body: i18nT("profile.unlocksClearBody"),
+      confirm: i18nT("common.delete"),
+      cancel: i18nT("common.cancel"),
+    }).then((ok) => {
+      if (!ok) return;
+      clearAchievementHistory();
+      render();
+    });
   } else if (act === "profile-account" && t.dataset.key) {
     // Profile header account selector: switch which account's stats are shown.
     S.profileAccount = t.dataset.key;

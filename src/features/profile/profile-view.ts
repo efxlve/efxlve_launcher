@@ -12,12 +12,13 @@
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
+import { achievementHistoryStats, clearAchievementHistory, sortedAchievementHistory } from "../../core/achievement-history";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
-import { esc, fmtPlaytime, isOpaqueId } from "../../core/utils";
+import { esc, fmtAchDate, fmtDecimal1, fmtPlaytime, isOpaqueId } from "../../core/utils";
 import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
@@ -992,9 +993,67 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     </section>`;
 }
 
+/**
+ * Recent unlocks across every store, newest first. The strip is the one place
+ * the launcher's own history is visible: the bell forgets after a day and a
+ * game page only knows one set.
+ */
+function renderUnlockRow(scope: "all" | StoreKind): string {
+  const entries = sortedAchievementHistory().filter((entry) => {
+    if (scope !== "all" && entry.store !== scope) return false;
+    if (S.hiddenGames.has(entry.appName)) return false;
+    if (S.hiddenAchievements.has(entry.appName)) return false;
+    return true;
+  });
+  if (entries.length === 0) return "";
+
+  const stats = achievementHistoryStats(entries);
+  const cards = entries
+    .slice(0, 10)
+    .map((entry) => {
+      const date = entry.date ? fmtAchDate(entry.date) : "";
+      const meta = [
+        date,
+        entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "",
+        entry.manual ? t("profile.unlockManual") : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return `
+        <button type="button" class="profile-unlock-card" data-act="open-game-from-profile" data-id="${esc(entry.appName)}" title="${esc(entry.title)} · ${esc(entry.game)}">
+          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" />` : icon("trophy", 16)}</span>
+          <span class="profile-unlock-main">
+            <span class="profile-unlock-name">${esc(entry.title)}</span>
+            <span class="profile-unlock-game">${esc(entry.game)}</span>
+            ${meta ? `<span class="profile-unlock-meta tabular-nums">${esc(meta)}</span>` : ""}
+          </span>
+        </button>`;
+    })
+    .join("");
+
+  const facts = [
+    t("profile.unlocksThisMonth", { n: stats.thisMonth }),
+    stats.streakDays > 1 ? t("profile.unlocksStreak", { n: stats.streakDays }) : "",
+    stats.rarest?.rarity != null
+      ? t("profile.unlocksRarest", { n: fmtDecimal1(stats.rarest.rarity) })
+      : "",
+  ].filter(Boolean);
+
+  return `
+    <section class="profile-row">
+      <div class="profile-row-head">
+        <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
+        <div class="profile-unlock-head-right">
+          ${facts.length ? `<span class="profile-unlock-stats tabular-nums">${facts.map((fact) => esc(fact)).join(" · ")}</span>` : ""}
+          <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">${icon("trash", 14)}</button>
+        </div>
+      </div>
+      <div class="profile-unlock-row">${cards}</div>
+    </section>`;
+}
+
 /** Xbox-style horizontal strip of recently played covers. */
-function renderRecentRow(scope: "all" | StoreKind): string {
-  const recents = recentApps(scope).slice(0, 10);
+function renderRecentRow(scope: "all" | StoreKind): string {  const recents = recentApps(scope).slice(0, 10);
   if (recents.length === 0) return "";
   const cards = recents.map((appName) => {
     const title = summaryOf(appName)?.title || appName;
@@ -1139,6 +1198,7 @@ export function renderProfile(): string {
   return `
     <div class="page profile-page">
       ${heroHtml}
+      ${showData ? renderUnlockRow(scope) : ""}
       ${showData ? renderRecentRow(scope) : ""}
       ${renderAchievementsPanel(games, filtered)}
     </div>`;

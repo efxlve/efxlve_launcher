@@ -71,6 +71,7 @@ import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } fr
 import { installDriveLabel } from "./system-check";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
+import { recordAchievementUnlocks } from "../../core/achievement-history";
 import { renderAchievementDetail } from "./ach-detail";
 import { renderAchievementEditorCard } from "./ach-editor";
 import { renderAchSidePanel } from "./ach-side-panel";
@@ -2599,6 +2600,11 @@ export async function fetchAndRenderAchievements(
     // The store answer is on the page now; fold in the launcher's own edits
     // before anything counts, sorts or paints from it.
     applyAchievementEdits(appName, data);
+    // Opening a page also backfills the unlock history for this game.
+    recordAchievementUnlocks(appName, data, {
+      game: summaryOf(appName)?.title || appName,
+      store: sourceOfKey(appName),
+    });
     S.loadedAchievements.set(appName, data);
     const summary: EpicAchievementSummary = {
       app_name: appName,

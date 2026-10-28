@@ -29,6 +29,9 @@ const STORAGE_KEY = "efxlve-ach-edits";
  */
 export interface AchievementStateItem {
   name: string;
+  display_name?: string;
+  description?: string;
+  icon_link?: string;
   unlocked?: boolean;
   progress?: number;
   unlock_date?: string | null;
