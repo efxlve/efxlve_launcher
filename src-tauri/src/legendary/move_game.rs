@@ -15,6 +15,9 @@ pub struct SystemDriveInfo {
     pub label: String,
     pub total_bytes: u64,
     pub available_bytes: u64,
+    /// `Some(true)` for SSD, `Some(false)` for HDD, `None` when Windows cannot
+    /// report the seek penalty.
+    pub is_ssd: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,6 +110,25 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
 
     #[cfg(windows)]
     {
+        use sysinfo::{DiskKind, Disks};
+
+        let disks = Disks::new_with_refreshed_list();
+        let kind_for = |letter: char| -> Option<bool> {
+            let bare = format!("{letter}:");
+            let root = format!("{letter}:\\");
+            disks
+                .iter()
+                .find(|disk| {
+                    let mount = disk.mount_point().to_string_lossy();
+                    mount.eq_ignore_ascii_case(&bare) || mount.eq_ignore_ascii_case(&root)
+                })
+                .and_then(|disk| match disk.kind() {
+                    DiskKind::SSD => Some(true),
+                    DiskKind::HDD => Some(false),
+                    _ => None,
+                })
+        };
+
         let mask = win_disk::logical_drive_mask();
         for i in 0..26 {
             if mask & (1 << i) == 0 {
@@ -127,6 +149,7 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
                         label: String::new(),
                         total_bytes: total,
                         available_bytes: free,
+                        is_ssd: kind_for(letter_char as char),
                     });
                 }
             }
@@ -153,6 +176,11 @@ pub fn get_system_drives() -> Vec<SystemDriveInfo> {
                 label,
                 total_bytes: disk.total_space(),
                 available_bytes: disk.available_space(),
+                is_ssd: match disk.kind() {
+                    sysinfo::DiskKind::SSD => Some(true),
+                    sysinfo::DiskKind::HDD => Some(false),
+                    _ => None,
+                },
             });
         }
     }
@@ -1118,6 +1146,7 @@ mod tests {
     #[test]
     fn test_system_drives_detection() {
         let drives = get_system_drives();
+        println!("{drives:?}");
         // On Windows there must be at least C:
         #[cfg(windows)]
         {

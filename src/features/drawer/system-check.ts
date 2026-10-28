@@ -183,24 +183,31 @@ function gpuDetected(facts: PcFacts): string {
  * is unknown or the drive is not in the list; the row then shows the largest
  * free volume but stays a manual check instead of passing on another drive.
  */
-function freeSpace(installPath: string | null | undefined): { bytes: number; exact: boolean } {
-  if (cachedDrives.length === 0) return { bytes: 0, exact: false };
+function freeSpace(
+  installPath: string | null | undefined,
+): { bytes: number; exact: boolean; isSsd: boolean | null } {
+  if (cachedDrives.length === 0) return { bytes: 0, exact: false, isSsd: null };
   if (installPath) {
     const windowsDrive = /^([A-Za-z]):[\\/]/.exec(installPath);
     if (windowsDrive) {
       const hit = cachedDrives.find(
         (drive) => drive.letter.toLowerCase() === windowsDrive[1].toLowerCase(),
       );
-      if (hit) return { bytes: hit.available_bytes, exact: true };
+      if (hit) {
+        return { bytes: hit.available_bytes, exact: true, isSsd: hit.is_ssd ?? null };
+      }
     }
     const mount = cachedDrives
       .filter((drive) => installPath.startsWith(drive.letter))
       .sort((a, b) => b.letter.length - a.letter.length)[0];
-    if (mount) return { bytes: mount.available_bytes, exact: true };
+    if (mount) {
+      return { bytes: mount.available_bytes, exact: true, isSsd: mount.is_ssd ?? null };
+    }
   }
   return {
     bytes: Math.max(0, ...cachedDrives.map((drive) => drive.available_bytes)),
     exact: false,
+    isSsd: null,
   };
 }
 
@@ -288,13 +295,29 @@ function checkRam(required: string, facts: PcFacts): RequirementCheck | null {
 function checkStorage(required: string, installPath?: string | null): RequirementCheck | null {
   const free = freeSpace(installPath);
   if (free.bytes <= 0) return null;
-  const detected = `${fmtBytes(free.bytes)} ${t("storage.free")}`;
+  const diskKind = free.isSsd === true ? " · SSD" : free.isSsd === false ? " · HDD" : "";
+  const detected = `${fmtBytes(free.bytes)} ${t("storage.free")}${diskKind}`;
   const values = parseSizeValuesGb(required);
+  const ssdMentioned = /\bssd\b/i.test(required);
+  const ssdRecommended = /recommend|öneril|empfohlen|recommand|recomend/i.test(required);
+  // A modern game can require an SSD; a HDD with enough free space would
+  // otherwise pass the size test and stutter in play.
+  if (ssdMentioned && !ssdRecommended && free.isSsd === false) {
+    return { status: "fail", detected };
+  }
+  if (ssdMentioned && free.isSsd === null) {
+    return { status: "manual", detected };
+  }
+  if (ssdMentioned && !ssdRecommended && free.isSsd === true && values.length === 0) {
+    return { status: "ok", detected };
+  }
   if (values.length === 0 || !free.exact) return { status: "manual", detected };
-  return {
-    status: free.bytes / 1024 ** 3 + 0.5 >= values[0] ? "ok" : "fail",
-    detected,
-  };
+  const diskPassed = free.bytes / 1024 ** 3 + 0.5 >= values[0];
+  if (!diskPassed) return { status: "fail", detected };
+  if (ssdMentioned && ssdRecommended && free.isSsd === false) {
+    return { status: "partial", detected };
+  }
+  return { status: "ok", detected };
 }
 
 /**

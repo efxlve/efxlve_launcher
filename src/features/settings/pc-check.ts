@@ -151,9 +151,10 @@ export async function runPcCheck(): Promise<string> {
     } else {
       for (const drive of drives) {
         const free = drive.available_bytes ?? 0;
+        const kind = drive.is_ssd === true ? " · SSD" : drive.is_ssd === false ? " · HDD" : "";
         checks.push({
           label: `${t("settings.pcCheckDisk")} ${drive.letter}:`,
-          value: `${bytes(free)} / ${bytes(drive.total_bytes)}`,
+          value: `${bytes(free)} / ${bytes(drive.total_bytes)}${kind}`,
           level: free >= 10 * 1024 ** 3 ? "ok" : free >= 2 * 1024 ** 3 ? "warn" : "fail",
         });
       }

@@ -908,6 +908,7 @@ export interface SystemDriveInfo {
   label: string;
   total_bytes: number;
   available_bytes: number;
+  is_ssd?: boolean | null;
 }
 
 export interface MoveGameProgress {
