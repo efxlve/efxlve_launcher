@@ -25,6 +25,10 @@ pub struct PcCheckSystem {
     pub gpu: String,
     /// Dedicated video memory in MiB; 0 when unknown or shared.
     pub gpu_memory_mb: u64,
+    /// "DirectX 12 (12_1)" or empty when the feature level cannot be read.
+    pub directx: String,
+    /// Highest D3D12/D3D11 feature level: 122, 121, 120, 111, 110… / 0.
+    pub directx_level: u32,
     pub app_version: String,
 }
 
@@ -66,6 +70,7 @@ pub fn pc_check_system() -> PcCheckSystem {
     let physical_cores = system.physical_core_count().unwrap_or(logical_cores);
 
     let (gpu, gpu_memory_mb) = gpu_adapters();
+    let (directx, directx_level) = directx_info();
 
     PcCheckSystem {
         os,
@@ -77,6 +82,8 @@ pub fn pc_check_system() -> PcCheckSystem {
         memory_mb: system.total_memory() / (1024 * 1024),
         gpu,
         gpu_memory_mb,
+        directx,
+        directx_level,
         app_version: env!("CARGO_PKG_VERSION").to_string(),
     }
 }
@@ -183,6 +190,116 @@ fn gpu_adapters() -> (String, u64) {
     (String::new(), 0)
 }
 
+/// The installed API is the highest device feature level the primary adapter
+/// can create. D3D12 is tried first; a GPU without it falls back to D3D11.
+#[cfg(windows)]
+fn directx_info() -> (String, u32) {
+    let level = d3d12_feature_level().max(d3d11_feature_level());
+    (directx_name(level), level)
+}
+
+#[cfg(not(windows))]
+fn directx_info() -> (String, u32) {
+    (String::new(), 0)
+}
+
+fn directx_name(level: u32) -> String {
+    match level {
+        122 => "DirectX 12 (12_2)".to_string(),
+        121 => "DirectX 12 (12_1)".to_string(),
+        120 => "DirectX 12 (12_0)".to_string(),
+        111 => "DirectX 11.1".to_string(),
+        110 => "DirectX 11".to_string(),
+        101 => "DirectX 10.1".to_string(),
+        100 => "DirectX 10".to_string(),
+        93 => "DirectX 9.3".to_string(),
+        92 => "DirectX 9.2".to_string(),
+        91 => "DirectX 9.1".to_string(),
+        _ => String::new(),
+    }
+}
+
+#[cfg(windows)]
+fn d3d12_feature_level() -> u32 {
+    use windows::Win32::Graphics::Direct3D::{
+        D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2,
+    };
+    use windows::Win32::Graphics::Direct3D12::{D3D12CreateDevice, ID3D12Device};
+
+    for (level, value) in [
+        (D3D_FEATURE_LEVEL_12_2, 122u32),
+        (D3D_FEATURE_LEVEL_12_1, 121u32),
+        (D3D_FEATURE_LEVEL_12_0, 120u32),
+    ] {
+        let mut device: Option<ID3D12Device> = None;
+        if unsafe { D3D12CreateDevice(None::<&windows::core::IUnknown>, level, &mut device) }.is_ok() {
+            return value;
+        }
+    }
+    0
+}
+
+#[cfg(windows)]
+fn d3d11_feature_level() -> u32 {
+    use windows::Win32::Foundation::HMODULE;
+    use windows::Win32::Graphics::Direct3D::{
+        D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_9_1, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_3,
+    };
+    use windows::Win32::Graphics::Direct3D11::{
+        D3D11CreateDevice, D3D11_CREATE_DEVICE_FLAG, D3D11_SDK_VERSION, ID3D11Device,
+        ID3D11DeviceContext,
+    };
+    use windows::Win32::Graphics::Dxgi::IDXGIAdapter;
+
+    let levels = [
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_9_3,
+        D3D_FEATURE_LEVEL_9_2,
+        D3D_FEATURE_LEVEL_9_1,
+    ];
+    let mut device: Option<ID3D11Device> = None;
+    let mut context: Option<ID3D11DeviceContext> = None;
+    let mut found = D3D_FEATURE_LEVEL(0);
+    let result = unsafe {
+        D3D11CreateDevice(
+            None::<&IDXGIAdapter>,
+            D3D_DRIVER_TYPE_HARDWARE,
+            HMODULE::default(),
+            D3D11_CREATE_DEVICE_FLAG(0),
+            Some(&levels),
+            D3D11_SDK_VERSION,
+            Some(&mut device),
+            Some(&mut found),
+            Some(&mut context),
+        )
+    };
+    if result.is_err() {
+        return 0;
+    }
+    if found == D3D_FEATURE_LEVEL_11_1 {
+        111
+    } else if found == D3D_FEATURE_LEVEL_11_0 {
+        110
+    } else if found == D3D_FEATURE_LEVEL_10_1 {
+        101
+    } else if found == D3D_FEATURE_LEVEL_10_0 {
+        100
+    } else if found == D3D_FEATURE_LEVEL_9_3 {
+        93
+    } else if found == D3D_FEATURE_LEVEL_9_2 {
+        92
+    } else if found == D3D_FEATURE_LEVEL_9_1 {
+        91
+    } else {
+        0
+    }
+}
+
 #[cfg(all(test, windows))]
 mod tests {
     use super::parse_reg_memory;
@@ -196,6 +313,14 @@ mod tests {
     #[test]
     fn a_missing_memory_value_is_zero() {
         assert_eq!(parse_reg_memory("no value here"), 0);
+    }
+
+    #[test]
+    fn directx_feature_levels_are_named() {
+        assert_eq!(super::directx_name(122), "DirectX 12 (12_2)");
+        assert_eq!(super::directx_name(120), "DirectX 12 (12_0)");
+        assert_eq!(super::directx_name(110), "DirectX 11");
+        assert_eq!(super::directx_name(0), "");
     }
 
     #[test]

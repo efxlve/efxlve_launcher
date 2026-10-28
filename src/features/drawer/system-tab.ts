@@ -178,6 +178,7 @@ function verdictLabel(verdict: SystemVerdict): string {
 function statusIcon(status: RequirementStatus): string {
   switch (status) {
     case "ok": return icon("check", 11);
+    case "partial": return icon("alert-triangle", 11);
     case "fail": return icon("x", 11);
     case "manual": return icon("info", 11);
     default: return icon("info", 11);
@@ -187,6 +188,7 @@ function statusIcon(status: RequirementStatus): string {
 function statusClass(status: RequirementStatus): string {
   switch (status) {
     case "ok": return "is-ok";
+    case "partial": return "is-partial";
     case "fail": return "is-fail";
     case "manual": return "is-manual";
     default: return "is-unknown";
@@ -196,6 +198,7 @@ function statusClass(status: RequirementStatus): string {
 function statusLabel(status: RequirementStatus): string {
   switch (status) {
     case "ok": return t("sys.checkOk");
+    case "partial": return t("sys.checkPartial");
     case "fail": return t("sys.checkFail");
     case "manual": return t("sys.checkManual");
     default: return t("sys.checkUnknown");
@@ -203,7 +206,9 @@ function statusLabel(status: RequirementStatus): string {
 }
 
 function statusChip(status: RequirementStatus): string {
-  const title = status === "manual" ? ` title="${esc(t("sys.checkNote"))}"` : "";
+  const title = status === "manual" || status === "partial"
+    ? ` title="${esc(t("sys.checkNote"))}"`
+    : "";
   return `<span class="sys-req-state ${statusClass(status)}"${title}>${statusIcon(status)}<span>${statusLabel(status)}</span></span>`;
 }
 
@@ -376,9 +381,13 @@ export function renderRequirementPanel(s: EpicSummary): string {
   const { rows, checks } = requirementRows(activeItems, showingMinimum, facts, s.installPath);
   // A table with only model names has nothing automatic to summarize; showing
   // "cannot compare" above "compare" rows would just repeat itself.
-  const hasAutomatic = checks.some((check) => check.status === "ok" || check.status === "fail");
+  const hasAutomatic = checks.some(
+    (check) => check.status === "ok" || check.status === "partial" || check.status === "fail",
+  );
   const verdict = hasAutomatic ? systemVerdict(checks) : null;
-  const hasManual = checks.some((check) => check.status === "manual");
+  const needsReview = checks.some(
+    (check) => check.status === "manual" || check.status === "partial",
+  );
 
   const tierSwitch = hasBothTiers
     ? `<div class="seg sys-req-tabs">
@@ -412,7 +421,7 @@ export function renderRequirementPanel(s: EpicSummary): string {
     </div>
     <div class="sys-req-list">${rows}</div>
     ${
-      hasManual
+      needsReview
         ? `<p class="sys-check-note">${icon("info", 12)} <span>${t("sys.checkNote")}</span></p>`
         : ""
     }`;

@@ -2,10 +2,11 @@
  * Local hardware facts and requirement comparison for the System tab.
  *
  * The facts come from the same offline command as Settings > PC check: the
- * module never uploads anything and reads the OS once per session. Only the
- * rows that can be measured (OS, RAM, storage, core count, VRAM) are compared;
- * a CPU or GPU model needs a benchmark database, so those rows stay a manual
- * comparison and the UI says so.
+ * module never uploads anything and reads the OS once per session. Measurable
+ * rows (OS, RAM, storage, DirectX feature level, core count, VRAM) are compared
+ * automatically. A row that also names a CPU or GPU model is marked partial:
+ * the numeric part passed, but ranking the model itself needs a benchmark
+ * database, so the UI does not claim a full match.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -25,13 +26,17 @@ export interface PcFacts {
   memoryMb: number;
   gpu: string;
   gpuMemoryMb: number;
+  /** "DirectX 12 (12_1)" or empty when the feature level is unknown. */
+  directx: string;
+  /** 122, 121, 120, 111, 110… / 0. */
+  directxLevel: number;
 }
 
 interface PcCheckSystem extends PcFacts {
   appVersion: string;
 }
 
-export type RequirementStatus = "ok" | "fail" | "manual" | "unknown";
+export type RequirementStatus = "ok" | "partial" | "fail" | "manual" | "unknown";
 
 export interface RequirementCheck {
   status: RequirementStatus;
@@ -134,6 +139,27 @@ function requiredWindowsVersion(text: string): number | null {
   }
 }
 
+function requiredDirectXLevel(text: string): number | null {
+  const match = /(?:directx|dx)\s*(\d+)(?:\.(\d+))?/i.exec(text);
+  if (!match) return null;
+  const major = Number(match[1]);
+  const minor = Number(match[2] ?? 0);
+  if (major >= 12) return minor >= 2 ? 122 : minor >= 1 ? 121 : 120;
+  if (major === 11) return minor >= 1 ? 111 : 110;
+  if (major === 10) return minor >= 1 ? 101 : 100;
+  if (major === 9) return minor >= 3 ? 93 : 90;
+  return null;
+}
+
+function checkDirectX(required: string, facts: PcFacts): RequirementCheck | null {
+  const detected = facts.directx || "";
+  const level = Number(facts.directxLevel) || 0;
+  if (level <= 0) return detected ? { status: "manual", detected } : null;
+  const needed = requiredDirectXLevel(required);
+  if (!needed) return { status: "manual", detected };
+  return { status: level >= needed ? "ok" : "fail", detected };
+}
+
 function osDetected(facts: PcFacts): string {
   return [facts.os, facts.osVersion].filter(Boolean).join(" · ");
 }
@@ -199,7 +225,10 @@ function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
   const needed = Number(cores[1]);
   const has = /threads?|iş parçacığı/i.test(cores[0]) ? facts.logicalCores : facts.physicalCores;
   if (has <= 0) return { status: "manual", detected };
-  return { status: has >= needed ? "ok" : "fail", detected };
+  if (has < needed) return { status: "fail", detected };
+  // A core count next to a model name proves only half the row.
+  const namesModel = /intel|amd|ryzen|core\s*i[3579]|phenom|athlon|fx[-\s]?\d|processor/i.test(required);
+  return { status: namesModel ? "partial" : "ok", detected };
 }
 
 function checkGpu(required: string, facts: PcFacts): RequirementCheck | null {
@@ -210,7 +239,10 @@ function checkGpu(required: string, facts: PcFacts): RequirementCheck | null {
     // A GPU row can list two cards; the smaller card is the threshold.
     const needed = Math.min(...vramValues);
     const has = facts.gpuMemoryMb / 1024;
-    return { status: has + 0.25 >= needed ? "ok" : "fail", detected };
+    if (has + 0.25 < needed) return { status: "fail", detected };
+    // VRAM alone cannot rank a named GPU against the listed model.
+    const namesModel = /nvidia|geforce|gtx|rtx|radeon|rx\s*\d|arc\s*a\d|intel|amd/i.test(required);
+    return { status: namesModel ? "partial" : "ok", detected };
   }
   return { status: "manual", detected };
 }
@@ -256,14 +288,7 @@ export function checkRequirement(
     case "ram": return checkRam(required, facts);
     case "gpu": return checkGpu(required, facts);
     case "storage": return checkStorage(required, installPath);
-    case "directx": {
-      const win = windowsFacts(facts);
-      if (!win) return null;
-      return {
-        status: "manual",
-        detected: win.version >= 10 ? "DirectX 12" : "",
-      };
-    }
+    case "directx": return checkDirectX(required, facts);
     default:
       return null;
   }
@@ -277,6 +302,7 @@ export type SystemVerdict = "ok" | "partial" | "fail" | "unknown";
  */
 export function systemVerdict(checks: RequirementCheck[]): SystemVerdict {
   if (checks.some((check) => check.status === "fail")) return "fail";
+  if (checks.some((check) => check.status === "partial")) return "partial";
   const ok = checks.filter((check) => check.status === "ok").length;
   const pending = checks.filter(
     (check) => check.status === "manual" || check.status === "unknown",

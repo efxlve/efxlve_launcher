@@ -33,6 +33,8 @@ interface PcCheckSystem {
   memoryMb: number;
   gpu: string;
   gpuMemoryMb: number;
+  directx?: string;
+  directxLevel?: number;
   appVersion: string;
 }
 
@@ -97,6 +99,11 @@ function hardwareChecks(system: PcCheckSystem | null): Check[] {
       label: "GPU",
       value: gpuValue,
       level: system.gpu ? "ok" : "warn",
+    },
+    {
+      label: "DirectX",
+      value: system.directx || "—",
+      level: system.directx ? "ok" : "warn",
     },
   ];
 }
