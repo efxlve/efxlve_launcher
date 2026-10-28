@@ -1760,6 +1760,7 @@
   "ctrl.helpNone": "Nessuna informazione di supporto disponibile per questa famiglia di controller.",
   "ctrl.statusDs4": "Richiede DS4Windows",
   "ctrl.ds4Tip": "DualSense non è nativo qui; DS4Windows lo presenta come controller Xbox (XInput).",
+  "ctrl.helpFull": "I controller Xbox e compatibili XInput funzionano direttamente.",
   "feat.partialPad": "Supporto controller parziale",
   "feat.partialPadTip": "Il negozio indica un supporto controller limitato. Tastiera e mouse sono i controlli principali.",
   "controller.kindSteamDeck": "Steam Deck",

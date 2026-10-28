@@ -717,6 +717,7 @@
   "ctrl.helpNone": "इस कंट्रोलर परिवार के लिए कोई समर्थन जानकारी उपलब्ध नहीं है।",
   "ctrl.statusDs4": "DS4Windows आवश्यक",
   "ctrl.ds4Tip": "DualSense यहाँ मूल रूप से समर्थित नहीं है; DS4Windows इसे Xbox (XInput) कंट्रोलर के रूप में दिखाता है।",
+  "ctrl.helpFull": "Xbox और XInput-संगत कंट्रोलर सीधे काम करते हैं।",
   "feat.partialPad": "आंशिक कंट्रोलर समर्थन",
   "feat.partialPadTip": "स्टोर सीमित कंट्रोलर समर्थन सूचीबद्ध करता है। कीबोर्ड और माउस मुख्य नियंत्रण हैं।",
   "feat.partnerCloud": "{name} क्लाउड",

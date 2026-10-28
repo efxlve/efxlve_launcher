@@ -717,6 +717,7 @@
   "ctrl.helpNone": "No support information is available for this controller family.",
   "ctrl.statusDs4": "DS4Windows required",
   "ctrl.ds4Tip": "DualSense is not native here; DS4Windows presents it as an Xbox (XInput) controller.",
+  "ctrl.helpFull": "Xbox and XInput-compatible controllers work directly.",
   "feat.partialPad": "Partial controller support",
   "feat.partialPadTip": "The store lists limited controller support. Keyboard and mouse are the main controls.",
   "feat.partnerCloud": "{name} Cloud",

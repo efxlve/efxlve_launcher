@@ -1149,7 +1149,8 @@ export function renderControllerHelp(
 ): string {
   const ctrl = detectControllerSupport(s, g, reqData);
   const nativeDualSense = ctrl.label === i18nT("feat.dualSense");
-  const fullTip = nativeDualSense ? i18nT("feat.dualSenseTip") : i18nT("feat.xboxGamepadTip");
+  const showDs4 = ctrl.className === "supported" && !nativeDualSense;
+  const fullTip = nativeDualSense ? i18nT("feat.dualSenseTip") : i18nT("ctrl.helpFull");
   const row = (state: string, title: string, body: string): string => `
     <div class="help-tip-row ${state}">
       <div class="help-tip-row-title">${esc(title)}</div>
@@ -1159,6 +1160,7 @@ export function renderControllerHelp(
     <div class="help-tip-pop" id="ctrl-help-pop">
       <p class="help-tip-note">${esc(i18nT("ctrl.helpSource"))}</p>
       ${row("is-ok", i18nT("ctrl.statusFull"), fullTip)}
+      ${showDs4 ? row("is-partial", i18nT("ctrl.statusDs4"), i18nT("ctrl.ds4Tip")) : ""}
       ${row("is-partial", i18nT("ctrl.statusPartial"), i18nT("feat.partialPadTip"))}
       ${row("is-primary", i18nT("ctrl.statusPrimary"), i18nT("feat.kbMouseTip"))}
       ${row("is-none", i18nT("ctrl.statusNone"), i18nT("ctrl.helpNone"))}

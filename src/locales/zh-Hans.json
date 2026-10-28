@@ -1760,6 +1760,7 @@
   "ctrl.helpNone": "没有此控制器系列的兼容性信息。",
   "ctrl.statusDs4": "需要 DS4Windows",
   "ctrl.ds4Tip": "DualSense 在此不是原生支持；DS4Windows 会将其识别为 Xbox（XInput）控制器。",
+  "ctrl.helpFull": "Xbox 和兼容 XInput 的控制器可直接使用。",
   "feat.partialPad": "部分支持手柄",
   "feat.partialPadTip": "商店标明手柄支持有限。主要操作方式是键盘和鼠标。",
   "controller.kindSteamDeck": "Steam Deck",

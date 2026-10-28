@@ -1760,6 +1760,7 @@
   "ctrl.helpNone": "このコントローラー種別の対応情報はありません。",
   "ctrl.statusDs4": "DS4Windows が必要",
   "ctrl.ds4Tip": "ここでは DualSense はネイティブ非対応です。DS4Windows が Xbox（XInput）コントローラーとして認識させます。",
+  "ctrl.helpFull": "Xbox と XInput 対応コントローラーはそのまま使えます。",
   "feat.partialPad": "コントローラー対応は一部のみ",
   "feat.partialPadTip": "ストアはコントローラー対応が限定的と示しています。主な操作はキーボードとマウスです。",
   "controller.kindSteamDeck": "Steam Deck",

@@ -717,6 +717,7 @@
   "ctrl.helpNone": "Bu kol ailesi için destek bilgisi yok.",
   "ctrl.statusDs4": "DS4Windows gerekli",
   "ctrl.ds4Tip": "DualSense burada yerel değil; DS4Windows onu Xbox (XInput) kolu olarak gösterir.",
+  "ctrl.helpFull": "Xbox ve XInput uyumlu kollar doğrudan çalışır.",
   "feat.partialPad": "Kısmi kol desteği",
   "feat.partialPadTip": "Mağaza sınırlı kol desteği listeliyor. Ana kontrol klavye ve fare.",
   "feat.partnerCloud": "{name} Bulut",

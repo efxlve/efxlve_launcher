@@ -1760,6 +1760,7 @@
   "ctrl.helpNone": "Нет информации о поддержке этого семейства контроллеров.",
   "ctrl.statusDs4": "Нужен DS4Windows",
   "ctrl.ds4Tip": "DualSense здесь не поддерживается нативно; DS4Windows представляет его как контроллер Xbox (XInput).",
+  "ctrl.helpFull": "Контроллеры Xbox и совместимые с XInput работают напрямую.",
   "feat.partialPad": "Частичная поддержка контроллера",
   "feat.partialPadTip": "Магазин указывает ограниченную поддержку контроллера. Основные средства управления — клавиатура и мышь.",
   "controller.kindSteamDeck": "Steam Deck",
