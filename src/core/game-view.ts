@@ -103,7 +103,7 @@ export function libraryCoverStats(appName: string): string {
 }
 
 /** True when this installed copy's drive is missing or its folder is known gone. */
-function installPathIssue(s: EpicSummary): boolean {
+export function installPathIssue(s: EpicSummary): boolean {
   if (!s.installed || !s.installPath) return false;
   const known = S.copyPathStates.get(s.appName)?.state;
   if (known === "missing" || known === "driveMissing") return true;
@@ -475,6 +475,9 @@ export function epicActionButtons(
       return `<button class="btn play${btn} running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
     }
     return `<button class="btn play${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("square", 12)} ${t("common.stop")}</button>`;
+  }
+  if (installPathIssue(s)) {
+    return `<button class="btn danger${btn} is-unavailable" disabled title="${esc(t("sys.copyHealthTip"))}">${icon("alert-triangle", 14)} ${t("lib.copyMissing")}</button>`;
   }
   // Steam games belong to the Steam client: play/install/update all go through it.
   if (s.appName.startsWith("steam::")) {

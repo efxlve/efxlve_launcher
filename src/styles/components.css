@@ -33,6 +33,8 @@
 /* A running client-owned game has no stop action here: the button is a state
    chip, so it stays fully visible while disabled. */
 .btn.running:disabled { opacity: 1; cursor: default; }
+/* A missing copy is a state, not a button the user should try to press. */
+.btn.danger.is-unavailable:disabled { opacity: 1; cursor: default; }
 .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 .btn.primary, .btn.install, .btn.play { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .btn.primary:hover, .btn.install:hover, .btn.play:hover { background: var(--accent-hover); }

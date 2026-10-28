@@ -15,7 +15,7 @@ import { isTauri, NO_DESC } from "../../core/constants";
 import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
-import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
+import { achSummaryOf, epicDlProgress, installPathIssue, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
 import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
@@ -489,6 +489,7 @@ export function ensureCopyHealth(appName: string): void {
       S.copyPathStates.set(appName, state);
       patchLibraryCardDom(appName);
       repaintCopyFacts(appName);
+      repaintDrawerActions(appName);
     })
     .catch(() => {})
     .finally(() => copyHealthPending.delete(appName));
@@ -508,6 +509,20 @@ function repaintCopyFacts(appName: string): void {
   );
 }
 
+/** Repaints only the drawer action row after the copy-health answer. */
+function repaintDrawerActions(appName: string): void {
+  if (S.currentModalAppName !== appName) return;
+  const s = summaryOf(appName);
+  const host = document.querySelector<HTMLElement>(".gp-actions");
+  if (!s || !host) return;
+  host.innerHTML = actionsHtml(s, gamePartner(s, rawOf(appName)));
+}
+
+/** A copy on a missing drive/folder cannot play; the System tab says why. */
+function unavailableAction(): string {
+  return `<button class="btn danger lg is-unavailable" disabled title="${esc(t("sys.copyHealthTip"))}">${icon("alert-triangle", 16)} ${t("lib.copyMissing")}</button>`;
+}
+
 function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLauncherInfo | null): string {
   if (p !== null) {
     return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 16)} ${t("common.downloading", { p })}</button>`;
@@ -523,6 +538,7 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     }
     return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
+  if (installPathIssue(s)) return unavailableAction();
   // Amazon Games: installed and launched by the launcher through Nile.
   if (s.appName.startsWith("amazon::")) {
     const amazonId = s.appName.slice(8);
@@ -750,9 +766,11 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     const store = sourceOfKey(s.appName);
     const primary = S.runningGames.has(s.appName)
       ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
-      : s.installed
-        ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
-        : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+      : installPathIssue(s)
+        ? unavailableAction()
+        : s.installed
+          ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
+          : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
@@ -770,11 +788,13 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       ? `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}" title="${esc(t("steam.downloadingHint"))}">${icon("download", 16)} ${steamPct !== null ? t("common.downloading", { p: steamPct }) : t("steam.downloading")}</button>`
       : S.runningGames.has(s.appName)
         ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
-        : !s.installed
-          ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
-          : s.updateAvailable
-            ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="update">${icon("download", 16)} ${t("common.update")}</button>`
-            : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
+        : installPathIssue(s)
+          ? unavailableAction()
+          : !s.installed
+            ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
+            : s.updateAvailable
+              ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="update">${icon("download", 16)} ${t("common.update")}</button>`
+              : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
