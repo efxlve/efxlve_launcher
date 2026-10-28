@@ -17,6 +17,7 @@ import {
   rarityMultiplier,
 } from "../../core/achievements";
 import { achievementGuides, achievementNote } from "./ach-notes";
+import { renderAchievementEditBar } from "./ach-editor";
 import { icon, type IconName } from "../../core/icons";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -316,6 +317,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
           <h2 class="ach-detail-name">${esc(title)}</h2>
           <p class="ach-detail-desc">${esc(description)}</p>
           ${facts ? `<div class="ach-detail-facts">${facts}</div>` : ""}
+          ${masked ? "" : renderAchievementEditBar(summary, item)}
           ${progressLine}
         </div>
       </section>

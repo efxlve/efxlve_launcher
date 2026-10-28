@@ -69,7 +69,9 @@ import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbG
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } from "./system-tab";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
+import { applyAchievementEdits } from "../../core/achievement-edits";
 import { renderAchievementDetail } from "./ach-detail";
+import { renderAchievementEditorCard } from "./ach-editor";
 import { renderAchSidePanel } from "./ach-side-panel";
 import { renderPowerPyxCard } from "./ach-powerpyx";
 import { powerpyxGameGuide } from "../../guides";
@@ -2170,6 +2172,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     <div class="ach-workspace${detailItem ? " has-detail" : ""}">
       <div class="ach-list-pane">
     ${sourceCard}
+    ${S.achEditPanelOpen === s.appName ? renderAchievementEditorCard(s, data) : ""}
     ${sourceNote}
     <div class="ach-notif-row">
       <span class="ach-notif-label">
@@ -2194,8 +2197,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           ${remaining > 0 ? `<div class="ach-stat"><span class="ach-stat-label">${esc(t("ach.statRemaining"))}</span><strong class="ach-stat-value tabular-nums">${remaining}</strong></div>` : ""}
           ${achStats.rarestUnlocked != null ? `<div class="ach-stat"><span class="ach-stat-label">${esc(t("ach.statRarest"))}</span><strong class="ach-stat-value tabular-nums">%${fmtDecimal1(achStats.rarestUnlocked)}</strong></div>` : ""}
           ${estimate != null ? `<div class="ach-stat" title="${esc(t("ach.insightEstimateHint"))}"><span class="ach-stat-label">${esc(t("ach.statEstimate"))}</span><strong class="ach-stat-value tabular-nums">~${fmtHours(estimate)} ${t("common.hoursShort")}</strong></div>` : ""}
+          ${data.user_marked ? `<div class="ach-stat" title="${esc(t("ach.userMarkedHint"))}"><span class="ach-stat-label">${esc(t("ach.statMarked"))}</span><strong class="ach-stat-value tabular-nums">${data.user_marked}</strong></div>` : ""}
+          ${data.user_cleared ? `<div class="ach-stat" title="${esc(t("ach.userClearedHint"))}"><span class="ach-stat-label">${esc(t("ach.statCleared"))}</span><strong class="ach-stat-value tabular-nums">${data.user_cleared}</strong></div>` : ""}
         </div>
         <div class="ach-summary-actions">
+          <button class="icon-btn ${S.achEditPanelOpen === s.appName ? "active" : ""}" data-act="ach-edit-settings" data-id="${esc(s.appName)}" title="${esc(t("ach.editorOpen"))}">${icon("edit", 14)}</button>
           ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
           <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
           ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
@@ -2546,6 +2552,9 @@ export async function fetchAndRenderAchievements(
     } else {
       ubiAchSource.delete(appName);
     }
+    // The store answer is on the page now; fold in the launcher's own edits
+    // before anything counts, sorts or paints from it.
+    applyAchievementEdits(appName, data);
     S.loadedAchievements.set(appName, data);
     const summary: EpicAchievementSummary = {
       app_name: appName,
@@ -2579,10 +2588,8 @@ export async function fetchAndRenderAchievements(
 }
 
 /**
- * Paints the late achievement answer where it is visible: the hero chips, the
- * achievements tab when it is open, and the personal block's next-trophy row.
- * A full `openEpicModal` here rebuilt the overview (and reset its scroll) for
- * three numbers.
+ * Repaints the DLC tab after a late answer. Same contract as the achievement
+ * tab: patch the open tab, never rebuild the whole page.
  */
 export function repaintDlcsTab(appName: string): void {
   if (S.currentModalAppName !== appName || S.activeDrawerTab !== "dlcs") return;
@@ -2592,7 +2599,13 @@ export function repaintDlcsTab(appName: string): void {
   content.innerHTML = renderDrawerDlcs(s);
 }
 
-function repaintAchievementSummary(appName: string): void {
+/**
+ * Paints the late achievement answer where it is visible: the hero chips, the
+ * achievements tab when it is open, and the personal block's next-trophy row.
+ * A full `openEpicModal` here rebuilt the overview (and reset its scroll) for
+ * three numbers.
+ */
+function repaintAchievementSummary(appName: string, soft = false): void {
   if (S.currentModalAppName !== appName) return;
   const s = summaryOf(appName);
   if (!s) return;
@@ -2612,11 +2625,44 @@ function repaintAchievementSummary(appName: string): void {
     }
   }
   if (S.activeDrawerTab === "achievements") {
+    if (soft) {
+      repaintAchievementsTab(appName, true);
+      return;
+    }
     const content = document.getElementById("drawer-tab-content");
     if (content) content.innerHTML = renderDrawerAchievements(s);
   } else if (S.activeDrawerTab === "overview") {
     repaintPersonalBlock(appName);
   }
+}
+
+/**
+ * Re-publishes everything that reads one game's counts after a local edit: the
+ * library cover badge, the profile summaries and the open page. The store
+ * answer is already in `S.loadedAchievements`, so no fetch is needed.
+ */
+export function refreshAchievementSummary(appName: string): void {
+  const data = S.loadedAchievements.get(appName);
+  if (!data) return;
+  const summary: EpicAchievementSummary = {
+    app_name: appName,
+    user_unlocked: data.user_unlocked,
+    total_achievements: data.total_achievements,
+    user_xp: data.user_xp,
+    total_xp: data.total_xp,
+    is_platinum: data.is_platinum,
+    supported: (data.total_achievements ?? 0) > 0,
+    progress_known: true,
+  };
+  S.epicAchSummaries[appName] = summary;
+  if (appName.startsWith("gog::")) {
+    const rawId = appName.slice(5);
+    S.epicAchSummaries[rawId] = summary;
+    S.epicAchSummaries[`gog::${rawId}`] = summary;
+  }
+  patchLibraryCardDom(appName);
+  invalidateLibraryVisibleCache();
+  repaintAchievementSummary(appName, true);
 }
 
 /* ---------- System requirements ---------- */

@@ -10,6 +10,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { childBounds } from "../../core/child-bounds";
 import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
+import { applyAchievementEditsToSummaries } from "../../core/achievement-edits";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -633,6 +634,7 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
     ]);
     if (gen !== profileLoadGen) return;
     S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
+    applyAchievementEditsToSummaries(S.epicAchSummaries);
     S.libraryDataRev++;
   } catch {
     // The page still renders whatever was already cached.

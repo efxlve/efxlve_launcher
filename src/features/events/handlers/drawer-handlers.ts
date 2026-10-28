@@ -14,6 +14,14 @@ function targetSteamAppIdOf(key: string): string | null {
 
 import { FAV_KEY } from "../../../core/constants";
 import { isSafeExternalUrl } from "../../../core/achievements";
+import {
+  applyAchievementEdits,
+  clearAchievementEdits,
+  replaceAchievementEdits,
+  setAchievementEdit,
+  storeFactsOf,
+  type AchievementEditMeta,
+} from "../../../core/achievement-edits";
 import { addAchievementGuide, deleteAchievementNote, flushAchievementNoteSave, removeAchievementGuide } from "../../drawer/ach-notes";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
@@ -26,11 +34,12 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
 import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
 import { t as i18n } from "../../../i18n";
+import { achievementStoreName } from "../../drawer/ach-editor";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { renderBackupListHtml } from "../../drawer/drawer-widgets";
 import { toggleSideWidget } from "../../drawer/side-widgets";
@@ -55,6 +64,19 @@ function selectGameVersion(appName: string): void {
     openEpicModal(appName, false);
   }
   if (S.view === "library") refreshLibraryResultsInPlace();
+}
+
+/** The title and store an achievement edit remembers for the profile export. */
+function achievementEditMeta(appName: string): AchievementEditMeta {
+  return { title: summaryOf(appName)?.title ?? appName, store: sourceOfKey(appName) };
+}
+
+/** Re-folds one game's edits and repaints every surface that counts them. */
+function applyAchievementEditsNow(appName: string): void {
+  const data = S.loadedAchievements.get(appName);
+  if (!data) return;
+  applyAchievementEdits(appName, data);
+  refreshAchievementSummary(appName);
 }
 
 export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
@@ -499,6 +521,114 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           });
         }
       }
+      return true;
+    }
+
+    /* ---------- Launcher-only achievement state ---------- */
+
+    case "ach-edit-settings":
+    case "ach-edit-close": {
+      const appName = id ?? S.currentModalAppName;
+      if (!appName) return true;
+      S.achEditPanelOpen = act === "ach-edit-close" || S.achEditPanelOpen === appName ? null : appName;
+      const s = summaryOf(appName);
+      const content = document.getElementById("drawer-tab-content");
+      if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      return true;
+    }
+
+    case "ach-edit-mark":
+    case "ach-edit-clear":
+    case "ach-edit-restore": {
+      const appName = id ?? S.currentModalAppName;
+      const achName = t.dataset.ach;
+      const data = appName ? S.loadedAchievements.get(appName) : undefined;
+      const item = data?.achievements.find((entry) => entry.name === achName);
+      if (!appName || !data || !item) return true;
+      if (act === "ach-edit-restore") {
+        setAchievementEdit(appName, achievementEditMeta(appName), item.name, null);
+      } else if (act === "ach-edit-mark") {
+        setAchievementEdit(appName, achievementEditMeta(appName), item.name, "unlocked");
+      } else {
+        const facts = storeFactsOf(item);
+        setAchievementEdit(appName, achievementEditMeta(appName), item.name, "locked", facts.date);
+      }
+      applyAchievementEditsNow(appName);
+      return true;
+    }
+
+    case "ach-edit-mark-all": {
+      const appName = id ?? S.currentModalAppName;
+      const data = appName ? S.loadedAchievements.get(appName) : undefined;
+      if (!appName || !data) return true;
+      const pending = data.achievements.filter((item) => !storeFactsOf(item).unlocked);
+      if (pending.length === 0) return true;
+      void askConfirm({
+        title: i18n("ach.editorMarkAll"),
+        body: i18n("ach.editorMarkAllBody", { n: pending.length }),
+        confirm: i18n("ach.editorMarkAll"),
+        cancel: i18n("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        replaceAchievementEdits(
+          appName,
+          achievementEditMeta(appName),
+          pending.map((item) => ({ name: item.name, state: "unlocked" as const, date: null })),
+        );
+        applyAchievementEditsNow(appName);
+        toast(i18n("ach.editorDone"), "ok");
+      });
+      return true;
+    }
+
+    case "ach-edit-reset-all": {
+      const appName = id ?? S.currentModalAppName;
+      const data = appName ? S.loadedAchievements.get(appName) : undefined;
+      if (!appName || !data) return true;
+      const earned = data.achievements
+        .map((item) => ({ item, facts: storeFactsOf(item) }))
+        .filter((entry) => entry.facts.unlocked);
+      if (earned.length === 0) return true;
+      void askConfirm({
+        title: i18n("ach.editorResetAll"),
+        body: i18n("ach.editorResetAllBody", { n: earned.length }),
+        confirm: i18n("ach.editorResetAll"),
+        cancel: i18n("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        replaceAchievementEdits(
+          appName,
+          achievementEditMeta(appName),
+          earned.map((entry) => ({
+            name: entry.item.name,
+            state: "locked" as const,
+            date: entry.facts.date,
+          })),
+        );
+        applyAchievementEditsNow(appName);
+        toast(i18n("ach.editorDone"), "ok");
+      });
+      return true;
+    }
+
+    case "ach-edit-sync": {
+      const appName = id ?? S.currentModalAppName;
+      if (!appName) return true;
+      void askConfirm({
+        title: i18n("ach.editorSyncConfirm"),
+        body: i18n("ach.editorSyncBody", { store: achievementStoreName(appName) }),
+        confirm: i18n("ach.editsSettingsSync"),
+        cancel: i18n("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        clearAchievementEdits(appName);
+        // Put the last known store answer on screen before the fetch: an
+        // offline refresh must not leave the edited numbers behind.
+        applyAchievementEditsNow(appName);
+        void fetchAndRenderAchievements(appName, true).then(() => {
+          toast(i18n("ach.editorSynced"), "ok");
+        });
+      });
       return true;
     }
 

@@ -6,6 +6,7 @@
  */
 
 import { isTauri } from "../../core/constants";
+import { applyAchievementEditsToSummaries } from "../../core/achievement-edits";
 import { refreshUpdates } from "../../core/epic-actions";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { pruneRecent } from "../../core/recent";
@@ -151,6 +152,9 @@ export function loadEpicAchSummaries(force = false): Promise<void> {
         companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
       ]);
       S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
+      // Local edits survive a restart as a count delta, so covers and the
+      // profile agree with the game page before it is opened again.
+      applyAchievementEditsToSummaries(S.epicAchSummaries);
       achSummariesAt = Date.now();
       S.libraryDataRev++;
       if (S.view === "library" || S.view === "profile") scheduleRender();

@@ -49,6 +49,7 @@ import {
   nextAchievements,
   rarityMultiplier,
 } from "../../core/achievements";
+import { applyAchievementEdits } from "../../core/achievement-edits";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
 import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
@@ -124,6 +125,8 @@ interface AchievementItem {
   is_base?: boolean;
   tier?: { name?: string } | null;
   rarity?: { percent?: number | null } | null;
+  /** Launcher-only state edit folded in by `applyAchievementEdits`. */
+  user_state?: "unlocked" | "locked";
 }
 
 interface AchievementsData {
@@ -2429,6 +2432,8 @@ function renderAchDetail(item: AchievementItem): string {
   const meta = masked
     ? ""
     : [
+        item.user_state === "unlocked" ? `<span class="ov-ach-tag">${icon("user", 10)} ${esc(t("ach.userMarked"))}</span>` : "",
+        item.user_state === "locked" ? `<span class="ov-ach-tag">${icon("lock", 10)} ${esc(t("ach.userCleared"))}</span>` : "",
         tier ? `<span class="ov-ach-tag">${icon("trophy", 10)} ${esc(t(`trophy.${tier === "platinum" ? "plat" : tier}`))}</span>` : "",
         rarity != null ? `<span class="ov-ach-tag">${icon("sparkles", 10)} ${esc(t("ach.rarityShort", { n: fmtDecimal1(rarity) }))}</span>` : "",
         multiplier != null ? `<span class="ov-ach-tag">${esc(t("ach.multiplierShort", { n: fmtDecimal1(multiplier) }))}</span>` : "",
@@ -2557,6 +2562,11 @@ function renderAchList(data: AchievementsData): string {
         <div class="ov-ach-side">
           ${rarity != null ? `<span class="ov-ach-rarity tabular-nums">%${fmtDecimal1(rarity)}</span>` : ""}
           ${
+            item.user_state
+              ? `<span class="ov-ach-edit" title="${esc(item.user_state === "unlocked" ? t("ach.userMarkedHint") : t("ach.userClearedHint"))}">${icon(item.user_state === "unlocked" ? "user" : "lock", 11)}</span>`
+              : ""
+          }
+          ${
             unlocked
               ? `<span class="ov-ach-check" title="${esc(t("ach.earned"))}">${icon("check", 13)}</span>`
               : `<span class="ov-ach-locked" title="${esc(t("ach.locked"))}">${icon("lock", 11)}</span>`
@@ -2647,6 +2657,9 @@ async function loadAchievements(force = false): Promise<void> {
       }
       // The panel can open for another game while the store is answering.
       if (generation !== achLoadGeneration) return;
+      // The launcher's own edits are folded in here too: marking an
+      // achievement on the game page must not leave the overlay behind.
+      if (next) applyAchievementEdits(context.appName, next);
       cachedAchievements = next;
     } catch {
       if (generation === achLoadGeneration) cachedAchievements = null;

@@ -2016,6 +2016,17 @@
   color: var(--text-3);
 }
 
+/* Launcher-only state edit folded into the store answer. */
+.ov-ach-edit {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-2);
+  opacity: 0.9;
+}
+
 .ov-ach-icon {
   width: 36px;
   height: 36px;

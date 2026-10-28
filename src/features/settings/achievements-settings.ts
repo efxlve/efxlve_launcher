@@ -25,6 +25,13 @@ import { storeLogo } from "../store/store-logos";
 import { t } from "../../i18n";
 import { achCardHtml, achCardVars, achTagLine } from "../achievement-card/ach-card";
 import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
+import {
+  clearAchievementEdits,
+  editedAchievementGames,
+  revertAchievementEditsFromSummaries,
+} from "../../core/achievement-edits";
+import { achievementStoreName } from "../drawer/ach-editor";
+import { askConfirm } from "../../core/confirm-dialog";
 
 /** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
 let previewRarityTier = 2;
@@ -657,6 +664,65 @@ export function renderAchievementsSettingsView(): string {
     })
     .join("");
 
+  // Launcher-only achievement state, one row per game. The count comes from the
+  // stored edit list, so a game whose page was never opened still shows up.
+  const editGames = editedAchievementGames();
+  const editRows = editGames
+    .map(({ appName, edits }) => {
+      const marked = Object.values(edits.items).filter((entry) => entry.state === "unlocked").length;
+      const cleared = Object.values(edits.items).filter((entry) => entry.state === "locked").length;
+      const facts = [
+        achievementStoreName(appName),
+        marked > 0 ? t("ach.editsSettingsMarked", { n: marked }) : "",
+        cleared > 0 ? t("ach.editsSettingsCleared", { n: cleared }) : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return `
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(edits.title || appName)}</div>
+            <div class="settings-row-desc tabular-nums">${esc(facts)}</div>
+          </div>
+          <div class="settings-row-control">
+            <button type="button" class="btn ghost small" data-act="ach-edits-sync-game" data-id="${esc(appName)}">
+              ${icon("refresh", 13)}<span>${esc(t("ach.editsSettingsSync"))}</span>
+            </button>
+          </div>
+        </div>`;
+    })
+    .join("");
+
+  const editsSection = `
+      <div class="ach-section-divider"></div>
+
+      <div class="theme-section-header">
+        <div class="theme-section-titles">
+          <h3 class="section-title">${esc(t("ach.editsSettingsTitle"))}</h3>
+          <p class="page-sub">${esc(t("ach.editsSettingsDesc"))}</p>
+        </div>
+        ${
+          editGames.length > 0
+            ? `<div class="theme-section-actions">
+                 <button type="button" class="btn ghost small danger" data-act="ach-edits-clear-all">
+                   ${icon("trash", 13)}<span>${esc(t("ach.editsSettingsClearAll"))}</span>
+                 </button>
+               </div>`
+            : ""
+        }
+      </div>
+
+      <div class="list settings-group">
+        ${
+          editRows ||
+          `<div class="row settings-row">
+             <div class="row-main">
+               <div class="settings-row-desc">${esc(t("ach.editsSettingsEmpty"))}</div>
+             </div>
+           </div>`
+        }
+      </div>`;
+
   return `
     <div class="ach-settings-view">
       <!-- ================================================================
@@ -941,6 +1007,8 @@ export function renderAchievementsSettingsView(): string {
         ${icon("info", 14)}
         <span>${esc(t("settings.achNotificationsNote"))}</span>
       </div>
+
+      ${editsSection}
     </div>
   `;
 }
@@ -1181,7 +1249,52 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       return true;
     }
 
+    case "ach-edits-sync-game": {
+      const appName = (el.dataset.id || "").trim();
+      if (!appName) return true;
+      void askConfirm({
+        title: t("ach.editsSettingsSync"),
+        body: t("ach.editsSettingsConfirm"),
+        confirm: t("ach.editsSettingsSync"),
+        cancel: t("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        dropLocalEdits(appName);
+        toast(t("ach.editsSettingsClearedAll"), "ok");
+        render();
+      });
+      return true;
+    }
+
+    case "ach-edits-clear-all": {
+      const games = editedAchievementGames();
+      if (games.length === 0) return true;
+      void askConfirm({
+        title: t("ach.editsSettingsClearAll"),
+        body: t("ach.editsSettingsClearAllBody"),
+        confirm: t("common.delete"),
+        cancel: t("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        for (const { appName } of games) dropLocalEdits(appName);
+        toast(t("ach.editsSettingsClearedAll"), "ok");
+        render();
+      });
+      return true;
+    }
+
     default:
       return false;
   }
+}
+
+/**
+ * Drops one game's launcher-only edits and takes its stored delta back out of
+ * the in-memory summaries. The cached page data is thrown away so the next
+ * open reads the store again instead of re-painting the edited answer.
+ */
+function dropLocalEdits(appName: string): void {
+  revertAchievementEditsFromSummaries(appName, S.epicAchSummaries);
+  clearAchievementEdits(appName);
+  S.loadedAchievements.delete(appName);
 }

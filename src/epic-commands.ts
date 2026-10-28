@@ -236,7 +236,19 @@ export interface EpicAchievementItem {
   rarity?: EpicAchievementRarity;
   hidden: boolean;
   is_base: boolean;
+  /**
+   * Launcher-only overlay: `unlocked` when the user marked this achievement
+   * here, `locked` when the user cleared a store unlock. The store is untouched.
+   */
+  user_state?: AchievementUserState;
+  /** Launcher-only: the store's own answer the edit is folded over. */
+  store_unlocked?: boolean;
+  store_progress?: number;
+  store_unlock_date?: string | null;
 }
+
+/** Launcher-only achievement state, never sent to a store. */
+export type AchievementUserState = "unlocked" | "locked";
 
 export interface EpicAchievementsData {
   achievements: EpicAchievementItem[];
@@ -250,6 +262,10 @@ export interface EpicAchievementsData {
   base_unlocked?: number;
   base_xp?: number;
   base_user_xp?: number;
+  /** Launcher-only: earned achievements the user marked by hand. */
+  user_marked?: number;
+  /** Launcher-only: store unlocks the user cleared here. */
+  user_cleared?: number;
 }
 
 export interface EpicAchievementSummary {

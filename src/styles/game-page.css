@@ -3148,6 +3148,83 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .ach-group-section .ach-list { margin-top: 0; }
 .ach-group-section .ach-group-bar { margin-bottom: 8px; }
 
+/* --- Achievements 3.0: launcher-only state edits --- */
+.ach-row-tag.user,
+.ach-row-tag.cleared {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ach-row-tag.user { color: var(--text-2); }
+.ach-row-tag.cleared { color: var(--text-3); }
+
+.ach-edit-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 10px;
+  padding: 7px 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 11px;
+}
+.ach-edit-bar.is-marked { border-color: var(--line-strong); }
+.ach-edit-bar-note { min-width: 0; flex: 1; color: var(--text-3); line-height: 1.4; }
+.ach-edit-bar-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  color: var(--text);
+  font-weight: 600;
+}
+.ach-edit-bar.is-marked .ach-edit-bar-state { color: var(--ok); }
+.ach-edit-bar.is-cleared .ach-edit-bar-state { color: var(--text-2); }
+.ach-edit-bar-btn { flex: 0 0 auto; }
+
+.ach-edit-card {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.ach-edit-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ach-edit-card-title { display: inline-flex; align-items: center; gap: 7px; color: var(--text); font-size: 13px; font-weight: 600; }
+.ach-edit-card-desc { margin: 0; color: var(--text-2); font-size: 12px; line-height: 1.5; }
+.ach-edit-counts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ach-edit-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.ach-edit-count.is-marked { color: var(--ok); }
+.ach-edit-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ach-edit-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; scrollbar-width: thin; }
+.ach-edit-list-title { padding: 2px 0 6px; color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ach-edit-empty { display: flex; align-items: center; gap: 7px; padding: 4px 0; color: var(--text-3); font-size: 11.5px; }
+.ach-edit-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
+.ach-edit-row:first-of-type { border-top: none; }
+.ach-edit-row-icon { display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-2); }
+.ach-edit-row-icon.is-marked { color: var(--ok); }
+.ach-edit-row-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.ach-edit-row-title { overflow: hidden; color: var(--text); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.ach-edit-row-meta { color: var(--text-3); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.ach-edit-row-undo { flex: 0 0 auto; }
+
 @media (max-width: 1100px) {
   .ach-summary-main { gap: 12px; }
   .ach-summary-stats { margin-left: 0; width: 100%; }
