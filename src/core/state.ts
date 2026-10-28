@@ -566,6 +566,8 @@ export const S = {
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),
+  /** Install-folder health per game; filled when the drawer opens. */
+  copyPathStates: new Map<string, import("../epic").InstallPathState>(),
   notifications: ([]) as AppNotification[],
   notifOpen: false,
   studioFilter: "",

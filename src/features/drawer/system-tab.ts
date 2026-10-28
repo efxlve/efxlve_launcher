@@ -88,7 +88,7 @@ export function renderSystemTab(
           <section class="card sys-side-card sys-copy-card">
             <h3 class="gp-section-title">${icon("layers", 14)} <span>${t("sys.thisCopy")}</span></h3>
             <div class="sys-fact-list" id="sys-copy-list">
-              <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>
+              <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner, S.copyPathStates.get(s.appName))}</div>
             </div>
           </section>`
     : "";

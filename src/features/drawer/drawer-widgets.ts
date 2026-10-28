@@ -20,7 +20,7 @@ import { igdbGameFor } from "./igdb-view";
 import { sideCard } from "./side-widgets";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { type SteamNewsItem } from "../../steam";
-import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { type CriticData, type EpicAchievementItem, type EpicGame, type EpicSummary, type GameRequirementsResponse, type HltbData, type InstallPathState, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 
 /** Map an achievement to its trophy tier. Unknown data stays bronze for the
  *  existing filter buckets, but the card/detail hides the pill when the store
@@ -1191,12 +1191,20 @@ export function renderCompatibilityHelp(s: EpicSummary): string {
 
 /**
  * The verified facts of an installed copy: store, platform, disk size, build
- * version and — for an Epic copy only — native EOS overlay support.
+ * version and — for an Epic copy only — native EOS overlay support. A copy
+ * whose folder or drive disappeared gets an explicit warning first.
  */
 export function renderInstalledCopyFacts(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null = null,
+  pathState?: InstallPathState,
 ): string {
+  const pathIssue =
+    pathState?.state === "driveMissing" && pathState.drive
+      ? i18nT("storage.driveMissing", { drive: `${pathState.drive}:` })
+      : pathState?.state === "missing"
+        ? i18nT("sys.copyPathMissing")
+        : "";
   const source = sourceOfKey(s.appName);
   const storeLabel = source === "steam" ? "Steam" : source === "gog" ? "GOG" : source === "epic" ? "Epic Games" : source === "amazon" ? "Amazon" : (source || "—");
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
@@ -1224,6 +1232,18 @@ export function renderInstalledCopyFacts(
     (!partner || (partner.type !== "rockstar" && partner.type !== "ea" && partner.type !== "ubisoft"));
 
   return `
+    ${
+      pathIssue
+        ? `
+    <div class="hub-feature-row" title="${esc(i18nT("sys.copyHealthTip"))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon is-err">${icon("alert-triangle", 13)}</div>
+        <span>${i18nT("sys.copyHealth")}</span>
+      </div>
+      <div class="hub-feature-val is-err">${esc(pathIssue)}</div>
+    </div>`
+        : ""
+    }
     <div class="hub-feature-row">
       <div class="hub-feature-label">
         <div class="hub-feature-icon">${icon("package", 13)}</div>

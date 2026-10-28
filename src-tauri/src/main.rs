@@ -2044,6 +2044,7 @@ fn main() {
             spotify_host::spotify_signed_in,
             spotify_host::spotify_open_in_launcher,
             legendary::commands::epic_get_system_drives,
+            legendary::commands::check_install_path_state,
             legendary::commands::epic_select_folder_dialog,
             legendary::commands::epic_move_game,
             legendary::commands::epic_cancel_move_game,

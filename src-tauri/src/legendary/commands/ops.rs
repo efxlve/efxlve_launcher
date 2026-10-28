@@ -325,6 +325,69 @@ pub async fn epic_get_system_drives() -> Vec<crate::legendary::move_game::System
         .unwrap_or_default()
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstallPathState {
+    /// `"ok"`, `"missing"`, `"driveMissing"`, or `"unknown"`.
+    pub state: String,
+    /// Windows drive letter without the colon, when the path has one.
+    pub drive: String,
+}
+
+/// Checks whether an installed game's folder is still reachable. A missing
+/// drive is kept apart from a deleted folder so the UI can name the drive.
+#[tauri::command]
+pub async fn check_install_path_state(path: String) -> InstallPathState {
+    // A disconnected network share can block on stat: keep it off the UI thread.
+    tauri::async_runtime::spawn_blocking(move || install_path_state(&path))
+        .await
+        .unwrap_or(InstallPathState {
+            state: "unknown".to_string(),
+            drive: String::new(),
+        })
+}
+
+fn install_path_state(raw: &str) -> InstallPathState {
+    let value = raw.trim();
+    if value.is_empty() {
+        return InstallPathState {
+            state: "unknown".to_string(),
+            drive: String::new(),
+        };
+    }
+    let path = Path::new(value);
+    let drive = path
+        .components()
+        .next()
+        .and_then(|component| match component {
+            std::path::Component::Prefix(prefix) => match prefix.kind() {
+                std::path::Prefix::Disk(letter)
+                | std::path::Prefix::VerbatimDisk(letter) => {
+                    Some((letter as char).to_ascii_uppercase().to_string())
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .unwrap_or_default();
+    if path.exists() {
+        return InstallPathState {
+            state: "ok".to_string(),
+            drive,
+        };
+    }
+    let root = format!("{drive}:\\");
+    let drive_missing = !drive.is_empty() && !Path::new(&root).exists();
+    InstallPathState {
+        state: if drive_missing {
+            "driveMissing".to_string()
+        } else {
+            "missing".to_string()
+        },
+        drive,
+    }
+}
+
 /// Scans a folder for Epic installs (`.egstore`) and registers them.
 #[tauri::command]
 pub async fn epic_import_installed_folder(
@@ -382,5 +445,23 @@ mod tests {
         assert_eq!(display_version("Some_Game_2026"), "2026");
         // Nothing number-like to pull out: the value is shown unchanged.
         assert_eq!(display_version("BuildNightly"), "BuildNightly");
+    }
+
+    #[test]
+    fn an_existing_install_path_is_ok_and_a_missing_one_is_not() {
+        let existing = install_path_state(".");
+        assert_eq!(existing.state, "ok");
+
+        let missing = std::env::temp_dir().join("__efxlve_missing_install_path__");
+        let state = install_path_state(&missing.to_string_lossy());
+        assert_ne!(state.state, "ok");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_windows_path_reports_its_drive_letter() {
+        let state = install_path_state("C:\\");
+        assert_eq!(state.drive, "C");
+        assert_eq!(state.state, "ok");
     }
 }

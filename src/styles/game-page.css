@@ -1620,6 +1620,8 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   text-align: right; white-space: normal; overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
+.sys-fact-list .hub-feature-icon.is-err { color: var(--err); }
+.sys-fact-list .hub-feature-val.is-err { color: var(--err); }
 .sys-fact-list .sys-copy-status {
   height: auto; padding: 0; border: 0; border-radius: 0;
   background: transparent; box-shadow: none; filter: none;

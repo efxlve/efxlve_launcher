@@ -30,6 +30,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
 | `cache_images` | `cacheImages({ ... })` | `src-tauri/src/image_cache.rs` |
+| `check_install_path_state` | `checkInstallPathState({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `clear_image_cache` | `clearImageCache({ ... })` | `src-tauri/src/image_cache.rs` |
 | `clip_delete` | `clipDelete({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
 | `clip_folder_path` | `clipFolderPath({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |

@@ -28,7 +28,7 @@ pub use game_local::*;
 #[allow(unused_imports)]
 pub use metadata::*;
 
-// ops.rs: GameUpdateInfo, epic_check_updates, epic_get_playtimes, epic_set_playtime, epic_get_network_profile, epic_set_network_profile, epic_get_offline_mode, epic_set_offline_mode, epic_get_auto_desktop_shortcut, epic_set_auto_desktop_shortcut, epic_backup_save, epic_list_backups, epic_restore_backup, epic_delete_backup, epic_open_backup_folder, epic_get_collections, epic_save_collection, epic_reorder_collections, epic_delete_collection, epic_set_game_collections, epic_import_egl_collections, epic_get_player_profile, epic_get_system_drives, epic_import_installed_folder, epic_select_folder_dialog, epic_move_game, epic_cancel_move_game
+// ops.rs: GameUpdateInfo, epic_check_updates, epic_get_playtimes, epic_set_playtime, epic_get_network_profile, epic_set_network_profile, epic_get_offline_mode, epic_set_offline_mode, epic_get_auto_desktop_shortcut, epic_set_auto_desktop_shortcut, epic_backup_save, epic_list_backups, epic_restore_backup, epic_delete_backup, epic_open_backup_folder, epic_get_collections, epic_save_collection, epic_reorder_collections, epic_delete_collection, epic_set_game_collections, epic_import_egl_collections, epic_get_player_profile, epic_get_system_drives, InstallPathState, check_install_path_state, epic_import_installed_folder, epic_select_folder_dialog, epic_move_game, epic_cancel_move_game
 #[allow(unused_imports)]
 pub use ops::*;
 

@@ -6,6 +6,7 @@
  */
 
 import {
+  checkInstallPathState,
   epicCancelDownload,
   epicCheckUpdates,
   epicGetQueue,
@@ -33,7 +34,7 @@ import { epicDlProgress, patchLibraryCardDom, refreshGameActionUi } from "./game
 import { updateBadge } from "./nav";
 import { pruneRecent, pushRecent } from "./recent";
 import { notify, render } from "./render";
-import { isCompanionKey, rawOf, setEpicSummaries } from "./selectors";
+import { isCompanionKey, rawOf, setEpicSummaries, summaryOf } from "./selectors";
 import { S } from "./state";
 import { progressToast, toast, type ProgressToast } from "./toast";
 import {
@@ -116,6 +117,18 @@ export async function epicPlay(appName: string): Promise<void> {
       toast(String(e), "err");
     }
     return;
+  }
+  // A copy whose drive or folder disappeared cannot launch. Name the problem
+  // instead of letting the store CLI return a raw filesystem error.
+  if (isTauri && !appName.startsWith("steam::") && !isCompanionKey(appName)) {
+    const summary = summaryOf(appName);
+    if (summary?.installed && summary.installPath) {
+      const state = await checkInstallPathState(summary.installPath).catch(() => null);
+      if (state?.state === "driveMissing" || state?.state === "missing") {
+        toast(t("sys.copyHealthTip"), "err");
+        return;
+      }
+    }
   }
   // Amazon Games is installed and launched by the launcher through Nile.
   if (appName.startsWith("amazon::")) {

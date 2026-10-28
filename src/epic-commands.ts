@@ -190,6 +190,19 @@ export const eosOverlayStatus = () => invoke<EosOverlayStatus>("eos_overlay_stat
 export const epicDetectEos = (installPath: string) =>
   invoke<boolean>("epic_detect_eos", { installPath });
 
+/** Result of checking an installed game's folder on disk. */
+export type InstallPathStateValue = "ok" | "missing" | "driveMissing" | "unknown";
+
+export interface InstallPathState {
+  state: InstallPathStateValue;
+  /** Windows drive letter without the colon, when the path has one. */
+  drive: string;
+}
+
+/** Checks the folder and, when it is gone, whether its drive is still mounted. */
+export const checkInstallPathState = (path: string) =>
+  invoke<InstallPathState>("check_install_path_state", { path });
+
 /** Opens an arbitrary folder path in the OS file manager (returns a @t: status message). */
 export const epicOpenFolderPath = (path: string) => invoke<string>("open_folder", { path });
 export const epicDefaultInstallDir = () => invoke<string>("epic_default_install_dir");

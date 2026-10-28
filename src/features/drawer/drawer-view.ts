@@ -33,7 +33,7 @@ import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
-import { epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { checkInstallPathState, epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
 import { hydrateGameCompatCard } from "./game-compat";
@@ -466,18 +466,41 @@ function ensureEosSupport(appName: string): void {
   void epicDetectEos(s.installPath)
     .then((has) => {
       S.eosSupportMap.set(appName, has);
-      if (has) repaintEosSupport(appName);
+      if (has) repaintCopyFacts(appName);
     })
     .catch(() => {});
 }
 
-/** The EOS row lives in the "this copy" card; the rest of the page did not change. */
-function repaintEosSupport(appName: string): void {
+/** One folder check per drawer visit. A failed check is repeated next time so
+ *  a drive that was plugged back in recovers without restarting the app. */
+const copyHealthPending = new Set<string>();
+
+function ensureCopyHealth(appName: string): void {
+  const s = summaryOf(appName);
+  if (!isTauri || !s?.installed || !s.installPath) return;
+  if (S.copyPathStates.get(appName)?.state === "ok" || copyHealthPending.has(appName)) return;
+  copyHealthPending.add(appName);
+  const path = s.installPath;
+  void checkInstallPathState(path)
+    .then((state) => {
+      S.copyPathStates.set(appName, state);
+      repaintCopyFacts(appName);
+    })
+    .catch(() => {})
+    .finally(() => copyHealthPending.delete(appName));
+}
+
+/** The EOS row and the copy-health warning live in the "this copy" card. */
+function repaintCopyFacts(appName: string): void {
   if (S.currentModalAppName !== appName) return;
   const s = summaryOf(appName);
   const host = document.getElementById("sys-copy-body");
   if (!s || !host) return;
-  host.innerHTML = renderInstalledCopyFacts(s, gamePartner(s, rawOf(appName)));
+  host.innerHTML = renderInstalledCopyFacts(
+    s,
+    gamePartner(s, rawOf(appName)),
+    S.copyPathStates.get(appName),
+  );
 }
 
 function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLauncherInfo | null): string {
@@ -1221,6 +1244,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.title);
     if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
     ensureEosSupport(appName);
+    ensureCopyHealth(appName);
   }
   // The notes tab's list and badge; the client caches, so this is one call.
   ensureDrawerNotes(appName, () => {
