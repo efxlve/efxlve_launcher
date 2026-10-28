@@ -2609,16 +2609,19 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .ctrl-support-item {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 9px 0; border-top: 1px solid var(--line);
-  transition: background-color var(--ease);
 }
-.ctrl-support-item:hover { background: var(--surface-2); }
 .ctrl-support-item:first-child { border-top: 0; padding-top: 10px; }
 .ctrl-support-item:last-child { padding-bottom: 0; }
 .ctrl-support-name {
   display: flex; align-items: center; gap: 8px; min-width: 0;
   font-size: 12px; color: var(--text-3);
 }
-.ctrl-support-name svg { width: 14px; height: 14px; color: var(--text-2); flex: 0 0 auto; }
+.ctrl-support-name svg {
+  width: 14px; height: 14px; color: var(--text-2); flex: 0 0 auto;
+  transition: color var(--ease);
+}
+/* The row is the hover target; only its icon responds, like the fact rows. */
+.ctrl-support-item:hover .ctrl-support-name svg { color: var(--text); }
 .ctrl-support-state { font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .ctrl-support-state.is-ok { color: var(--ok); }
 .ctrl-support-state.is-partial { color: var(--warn); }
