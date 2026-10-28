@@ -674,7 +674,6 @@
   "ss.allCompressed": "ภาพหน้าจอทั้งหมดถูกบีบอัดแล้ว",
   "ss.compressingCount": "กำลังบีบอัดภาพหน้าจอ {count} รูป…",
   "ss.compressedCount": "บีบอัดภาพหน้าจอ {count} รูปเป็น {format} แล้ว",
-  "common.playNow": "เล่นเลย",
   "common.installed": "ติดตั้งแล้ว",
   "common.notInstalled": "ยังไม่ติดตั้ง",
   "common.downloading": "กำลังดาวน์โหลด %{p}…",

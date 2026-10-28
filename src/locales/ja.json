@@ -674,7 +674,6 @@
   "ss.allCompressed": "すべてのスクリーンショットはすでに圧縮されています",
   "ss.compressingCount": "{count} 枚のスクリーンショットを圧縮中…",
   "ss.compressedCount": "{count} 枚のスクリーンショットを {format} に圧縮しました",
-  "common.playNow": "今すぐプレイ",
   "common.installed": "インストール済み",
   "common.notInstalled": "未インストール",
   "common.downloading": "ダウンロード中 %{p}…",

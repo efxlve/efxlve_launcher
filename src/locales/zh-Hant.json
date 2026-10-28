@@ -674,7 +674,6 @@
   "ss.allCompressed": "所有螢幕截圖都已壓縮",
   "ss.compressingCount": "正在壓縮 {count} 張螢幕截圖…",
   "ss.compressedCount": "已將 {count} 張螢幕截圖壓縮為 {format}",
-  "common.playNow": "立即開始",
   "common.installed": "已安裝",
   "common.notInstalled": "未安裝",
   "common.downloading": "正在下載 %{p}…",

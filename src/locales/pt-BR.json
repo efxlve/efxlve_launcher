@@ -674,7 +674,6 @@
   "ss.allCompressed": "Todas as capturas já estão compactadas",
   "ss.compressingCount": "Compactando {count} capturas…",
   "ss.compressedCount": "{count} capturas compactadas em {format}",
-  "common.playNow": "Jogar agora",
   "common.installed": "Instalado",
   "common.notInstalled": "Não instalado",
   "common.downloading": "Baixando %{p}…",

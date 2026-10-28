@@ -674,7 +674,6 @@
   "ss.allCompressed": "Tutte le schermate sono già compresse",
   "ss.compressingCount": "Compressione di {count} schermate…",
   "ss.compressedCount": "{count} schermate compresse in {format}",
-  "common.playNow": "Gioca ora",
   "common.installed": "Installato",
   "common.notInstalled": "Non installato",
   "common.downloading": "Download %{p}…",

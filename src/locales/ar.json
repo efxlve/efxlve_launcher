@@ -674,7 +674,6 @@
   "ss.allCompressed": "كل لقطات الشاشة مضغوطة أصلًا",
   "ss.compressingCount": "جارٍ ضغط {count} من لقطات الشاشة…",
   "ss.compressedCount": "ضُغطت {count} من لقطات الشاشة إلى {format}",
-  "common.playNow": "العب الآن",
   "common.installed": "مثبتة",
   "common.notInstalled": "غير مثبتة",
   "common.downloading": "جارٍ التنزيل %{p}…",

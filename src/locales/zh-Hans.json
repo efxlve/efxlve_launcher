@@ -674,7 +674,6 @@
   "ss.allCompressed": "所有截图都已压缩",
   "ss.compressingCount": "正在压缩 {count} 张截图…",
   "ss.compressedCount": "已将 {count} 张截图压缩为 {format}",
-  "common.playNow": "立即开始",
   "common.installed": "已安装",
   "common.notInstalled": "未安装",
   "common.downloading": "正在下载 %{p}…",

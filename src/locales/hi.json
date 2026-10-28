@@ -704,7 +704,6 @@
   "ss.allCompressed": "सभी स्क्रीनशॉट पहले से ही कंप्रेस हैं",
   "ss.compressingCount": "{count} स्क्रीनशॉट कंप्रेस हो रहे हैं…",
   "ss.compressedCount": "{count} स्क्रीनशॉट {format} में कंप्रेस किए गए",
-  "common.playNow": "अभी खेलें",
   "common.installed": "इंस्टॉल है",
   "common.notInstalled": "इंस्टॉल नहीं है",
   "common.downloading": "डाउनलोड हो रहा है %{p}…",

@@ -674,7 +674,6 @@
   "ss.allCompressed": "Все скриншоты уже сжаты",
   "ss.compressingCount": "Сжатие скриншотов: {count}…",
   "ss.compressedCount": "{count} скриншотов сжато в {format}",
-  "common.playNow": "Играть",
   "common.installed": "Установлена",
   "common.notInstalled": "Не установлена",
   "common.downloading": "Загрузка %{p}…",

@@ -674,7 +674,6 @@
   "ss.allCompressed": "Wszystkie zrzuty ekranu są już skompresowane",
   "ss.compressingCount": "Kompresowanie {count} zrzutów ekranu…",
   "ss.compressedCount": "Skompresowano {count} zrzutów do {format}",
-  "common.playNow": "Graj teraz",
   "common.installed": "Zainstalowana",
   "common.notInstalled": "Niezainstalowana",
   "common.downloading": "Pobieranie %{p}…",

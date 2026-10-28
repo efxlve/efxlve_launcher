@@ -536,11 +536,11 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     if (s.updateAvailable) {
       return `<button class="btn update lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.update")}</button>`;
     }
-    return `<button class="btn play lg" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+    return `<button class="btn play lg" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 16)} ${t("common.play")}</button>`;
   }
   if (isCompanionApp(s.appName)) {
     return s.installed
-      ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
+      ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
       : `<button class="btn install lg" data-act="epic-play" data-id="${s.appName}">${icon("download", 16)} ${t("common.install")}</button>`;
   }
   if (s.appName.startsWith("custom::")) {
@@ -549,12 +549,12 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     if (!hasExe) {
       return `<button class="btn ghost lg" data-act="pick-custom-exe-for" data-id="${s.appName}" title="${esc(t("customGames.setExeHint"))}">${icon("folder", 16)} ${esc(t("customGames.setExe"))}</button>`;
     }
-    return `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+    return `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`;
   }
   if (s.installed) {
     return s.updateAvailable || S.availableUpdates.has(s.appName)
       ? `<button class="btn update lg" data-act="epic-install" data-id="${s.appName}">${icon("download", 16)} ${t("common.update")}</button>`
-      : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+      : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`;
   }
   return requiresThirdPartyLauncher(partner)
     ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("external", 16)} ${t("drawer.launchInstallWith", { name: esc(partner!.name) })}</button>`
@@ -721,7 +721,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       ? `<button class="btn install lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.install")}</button>`
       : s.updateAvailable
         ? `<button class="btn update lg" data-act="amazon-install" data-id="${esc(amazonId)}">${icon("download", 16)} ${t("common.update")}</button>`
-        : `<button class="btn play lg" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+        : `<button class="btn play lg" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 16)} ${t("common.play")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
@@ -736,7 +736,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
       ? `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`
       : !hasExe
         ? `<button class="btn ghost lg" data-act="pick-custom-exe-for" data-id="${s.appName}" title="${esc(t("customGames.setExeHint"))}">${icon("folder", 16)} ${esc(t("customGames.setExe"))}</button>`
-        : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`;
+        : `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`;
     return `${primary}
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
       <button class="btn ghost lg icon-only" data-act="edit-custom-game" data-id="${s.appName}" title="${esc(t("common.edit"))}">${icon("edit", 16)}</button>
@@ -748,9 +748,11 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   // go through that client's protocol handlers.
   if (isCompanionApp(s.appName)) {
     const store = sourceOfKey(s.appName);
-    const primary = s.installed
-      ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.playNow")}</button>`
-      : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+    const primary = S.runningGames.has(s.appName)
+      ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
+      : s.installed
+        ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
+        : `<button class="btn install lg" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
@@ -766,11 +768,13 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     const steamPct = isDl ? epicDlProgress(s.appName) : null;
     const primary = isDl
       ? `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}" title="${esc(t("steam.downloadingHint"))}">${icon("download", 16)} ${steamPct !== null ? t("common.downloading", { p: steamPct }) : t("steam.downloading")}</button>`
-      : !s.installed
-        ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
-        : s.updateAvailable
-          ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="update">${icon("download", 16)} ${t("common.update")}</button>`
-          : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
+      : S.runningGames.has(s.appName)
+        ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
+        : !s.installed
+          ? `<button class="btn install lg" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 16)} ${t("common.install")}</button>`
+          : s.updateAvailable
+            ? `<button class="btn update lg" data-act="steam-action" data-id="${steamId}" data-mode="update">${icon("download", 16)} ${t("common.update")}</button>`
+            : `<button class="btn play lg" data-act="steam-action" data-id="${steamId}" data-mode="launch">${icon("play", 16)} ${t("common.play")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>

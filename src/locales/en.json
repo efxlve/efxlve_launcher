@@ -704,7 +704,6 @@
   "ss.allCompressed": "All screenshots are already compressed",
   "ss.compressingCount": "Compressing {count} screenshots…",
   "ss.compressedCount": "{count} screenshots compressed to {format}",
-  "common.playNow": "Play Now",
   "common.installed": "Installed",
   "common.notInstalled": "Not Installed",
   "common.downloading": "Downloading %{p}…",

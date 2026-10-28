@@ -704,7 +704,6 @@
   "ss.allCompressed": "Tüm ekran görüntüleri zaten sıkıştırılmış",
   "ss.compressingCount": "{count} ekran görüntüsü sıkıştırılıyor…",
   "ss.compressedCount": "{count} ekran görüntüsü {format} formatına sıkıştırıldı",
-  "common.playNow": "Hemen Oyna",
   "common.installed": "Kurulu",
   "common.notInstalled": "Kurulu Değil",
   "common.downloading": "%{p} indiriliyor…",

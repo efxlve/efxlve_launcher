@@ -59,7 +59,7 @@ import { syncInstalledWatch } from "../library/installed-watch";
 import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
-import { patchLibraryCardDom } from "../../core/game-view";
+import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { libraryItemOf, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { BRAND_ICONS, icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
@@ -740,6 +740,7 @@ export async function initApp(hooks: {
         // painted once: without this it would keep saying "Installed" while the
         // game is running.
         if (sum && S.currentModalAppName === id) paintGameMeta(sum);
+        if (S.currentModalAppName === id) refreshGameActionUi(id);
         hooks.scheduleRender();
       } else {
         unwatchSteamAchievements(id);
@@ -750,6 +751,7 @@ export async function initApp(hooks: {
         // A duplicate stop event must not toast or resume downloads twice.
         if (!S.runningGames.delete(id)) return;
         if (sum && S.currentModalAppName === id) paintGameMeta(sum);
+        if (S.currentModalAppName === id) refreshGameActionUi(id);
         void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});
         if (totalSeconds !== undefined) {
           // The local counter only knows the sessions this launcher started.

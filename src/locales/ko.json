@@ -674,7 +674,6 @@
   "ss.allCompressed": "모든 스크린샷이 이미 압축되어 있습니다",
   "ss.compressingCount": "스크린샷 {count}장 압축 중…",
   "ss.compressedCount": "스크린샷 {count}장을 {format}(으)로 압축했습니다",
-  "common.playNow": "지금 플레이",
   "common.installed": "설치됨",
   "common.notInstalled": "설치 안 됨",
   "common.downloading": "다운로드 중 %{p}…",
