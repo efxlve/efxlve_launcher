@@ -1477,11 +1477,6 @@ export function repaintIgdbBlocks(appName: string): void {
     }
     return;
   }
-  if (S.activeDrawerTab === "dlcs") {
-    const host = document.getElementById("igdb-dlc-extras");
-    if (host) host.outerHTML = renderIgdbDlcExtras(s, storeDlcTitles(s));
-    return;
-  }
   if (S.activeDrawerTab !== "overview") return;
   const about = document.getElementById("hub-about-section");
   if (about) about.outerHTML = renderAboutSection(s);
@@ -1662,71 +1657,6 @@ export function renderDrawerOverview(
     </div>`;
 }
 
-function igdbExtraUrl(hit: { slug: string; name: string }): string {
-  return hit.slug
-    ? `https://www.igdb.com/games/${hit.slug}`
-    : `https://www.igdb.com/search?type=1&q=${encodeURIComponent(hit.name)}`;
-}
-
-/** Store DLC titles, so an IGDB row does not repeat what the store already lists. */
-function storeDlcTitles(s: EpicSummary): string[] {
-  return S.dlcCache.get(s.appName)?.dlcs.map((dlc) => dlc.title) ?? [];
-}
-
-/**
- * The add-ons IGDB knows but the store's install list may not name. The store
- * rows stay the install surface; this block only adds names, years, covers and
- * a link to the IGDB page.
- */
-function renderIgdbDlcExtras(s: EpicSummary, storeTitles: string[]): string {
-  const game = igdbGameFor(s.appName);
-  if (!game) {
-    if (S.igdbConfigured && !S.offlineMode && !igdbAboutSettled(s.appName)) {
-      return `<div id="igdb-dlc-extras" class="dlc-igdb-block">${loadingState(t("dlc.scanning"))}</div>`;
-    }
-    return "";
-  }
-  const seen = new Set(storeTitles.map((title) => canonicalGameTitle(title)));
-  seen.add(canonicalGameTitle(s.title));
-  const query = S.dlcSearchQuery.trim().toLowerCase();
-  const extras = [
-    ...(game.dlcs ?? []).map((hit) => ({ hit, kind: "dlc" as const })),
-    ...(game.expansions ?? []).map((hit) => ({ hit, kind: "expansion" as const })),
-  ].filter(({ hit }) => {
-    const canon = canonicalGameTitle(hit.name);
-    if (!canon || seen.has(canon)) return false;
-    if (query && !hit.name.toLowerCase().includes(query)) return false;
-    seen.add(canon);
-    return true;
-  });
-  if (extras.length === 0) return "";
-  warmImages(extras.map(({ hit }) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
-  const rows = extras
-    .map(({ hit, kind }) => {
-      const cover = hit.coverId ? igdbImage(hit.coverId, "cover_big") : "";
-      const thumb = cover
-        ? `<img class="row-thumb" src="${esc(cachedImage(cover))}" data-img-url="${esc(cover)}" alt="" loading="lazy" />`
-        : `<span class="row-thumb gp-thumb-ph">${icon("layers", 14)}</span>`;
-      return `
-        <div class="row">
-          ${thumb}
-          <div class="row-main">
-            <div class="row-title" title="${esc(hit.name)}">${esc(hit.name)}</div>
-            <div class="row-meta">${hit.year ? `${hit.year} · ` : ""}${esc(t(kind === "expansion" ? "drawer.expansion" : "drawer.dlcKind"))}</div>
-          </div>
-          <div class="row-actions">
-            <button class="btn ghost small" data-act="open-external-url" data-url="${esc(igdbExtraUrl(hit))}">${icon("external", 13)} IGDB</button>
-          </div>
-        </div>`;
-    })
-    .join("");
-  return `
-    <div id="igdb-dlc-extras" class="dlc-igdb-block">
-      <h3 class="gp-section-title">${icon("sparkles", 14)} ${esc(t("drawer.igdbAddons"))}</h3>
-      <div class="list">${rows}</div>
-    </div>`;
-}
-
 export function renderDrawerDlcs(s: EpicSummary): string {
   // Companion games: their client lists no add-ons, so the Steam store page of
   // the same title supplies the count and the browsing hand-off.
@@ -1737,15 +1667,12 @@ export function renderDrawerDlcs(s: EpicSummary): string {
       return loadingState(t("dlc.scanning"));
     }
     const count = details?.dlc.length ?? 0;
-    const extras = renderIgdbDlcExtras(s, []);
-    if (count === 0 && !extras) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
     const dlcStoreBtn = s.appName.startsWith("amazon::")
       ? ""
       : `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("ctx.storePage")}</button>`;
     return `
-      ${
-        count > 0
-          ? `<div class="dlc-tab-content">
+      <div class="dlc-tab-content">
         <div class="row">
           <div class="row-main">
             <div class="row-title">${t("drawer.addonsCount", { count })}</div>
@@ -1755,10 +1682,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
             ${dlcStoreBtn}
           </div>
         </div>
-      </div>`
-          : ""
-      }
-      ${extras}`;
+      </div>`;
   }
   // Steam lists DLC ids only; names would need one store call per add-on, so the
   // tab reports the count and hands the browsing over to Steam.
@@ -1769,12 +1693,9 @@ export function renderDrawerDlcs(s: EpicSummary): string {
       return loadingState(t("dlc.scanning"));
     }
     const count = details?.dlc.length ?? 0;
-    const extras = renderIgdbDlcExtras(s, []);
-    if (count === 0 && !extras) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
     return `
-      ${
-        count > 0
-          ? `<div class="dlc-tab-content">
+      <div class="dlc-tab-content">
         <div class="row">
           <div class="row-main">
             <div class="row-title">${t("steam.dlcCount", { count })}</div>
@@ -1784,19 +1705,13 @@ export function renderDrawerDlcs(s: EpicSummary): string {
             <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.storeTitleSteam")}</button>
           </div>
         </div>
-      </div>`
-          : ""
-      }
-      ${extras}`;
+      </div>`;
   }
   if (s.appName.startsWith("gog::")) {
     const count = s.dlcCount || S.allGamesMap.get(s.appName)?.dlcCount || 0;
-    const extras = renderIgdbDlcExtras(s, []);
-    if (count === 0 && !extras) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
+    if (count === 0) return emptyState("package", t("drawer.noDlc"), t("drawer.noDlcDesc"));
     return `
-      ${
-        count > 0
-          ? `<div class="dlc-tab-content">
+      <div class="dlc-tab-content">
         <div class="row">
           <div class="row-main">
             <div class="row-title">${t("gog.dlcCount", { count })}</div>
@@ -1806,17 +1721,13 @@ export function renderDrawerDlcs(s: EpicSummary): string {
             <button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.storeTitleGog")}</button>
           </div>
         </div>
-      </div>`
-          : ""
-      }
-      ${extras}`;
+      </div>`;
   }
   const dlcRes = S.dlcCache.get(s.appName);
   if (S.dlcLoading && !dlcRes) return loadingState(t("dlc.scanning"));
   const allDlcs = dlcRes?.dlcs || [];
-  const extras = renderIgdbDlcExtras(s, allDlcs.map((dlc) => dlc.title));
   const storeBtn = `<button class="btn ghost small" data-act="epic-store-page" data-id="${s.appName}">${icon("external", 13)} ${t("drawer.discoverDlc")}</button>`;
-  if (allDlcs.length === 0 && !extras) return `<div class="dlc-empty-panel">${emptyPanel("package", t("drawer.noDlc"), t("drawer.noDlcDesc"), storeBtn)}</div>`;
+  if (allDlcs.length === 0) return `<div class="dlc-empty-panel">${emptyPanel("package", t("drawer.noDlc"), t("drawer.noDlcDesc"), storeBtn)}</div>`;
 
   const query = S.dlcSearchQuery.trim().toLowerCase();
   const filtered = query ? allDlcs.filter((d) => d.title.toLowerCase().includes(query)) : allDlcs;
@@ -1845,11 +1756,8 @@ export function renderDrawerDlcs(s: EpicSummary): string {
     ${
       rows
         ? `<div class="list">${rows}</div>`
-        : extras
-          ? ""
-          : `<div class="list"><div class="row"><div class="row-meta">${t("ach.emptyTitle")}</div></div></div>`
-    }
-    ${extras}`;
+        : `<div class="list"><div class="row"><div class="row-meta">${t("ach.emptyTitle")}</div></div></div>`
+    }`;
 }
 
 export function enrichAchievementsData(appName: string, data: EpicAchievementsData): void {
