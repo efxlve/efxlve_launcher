@@ -23,6 +23,10 @@ pub struct PcCheckSystem {
     pub memory_mb: u64,
     /// Display adapter name; empty when it cannot be read.
     pub gpu: String,
+    /// PCI vendor id (0x10DE NVIDIA, 0x1002 AMD, 0x8086 Intel); 0 unknown.
+    pub gpu_vendor_id: u32,
+    /// PCI device id; 0 unknown.
+    pub gpu_device_id: u32,
     /// Dedicated video memory in MiB; 0 when unknown or shared.
     pub gpu_memory_mb: u64,
     /// "DirectX 12 (12_1)" or empty when the feature level cannot be read.
@@ -69,8 +73,8 @@ pub fn pc_check_system() -> PcCheckSystem {
     let logical_cores = cpus.len();
     let physical_cores = system.physical_core_count().unwrap_or(logical_cores);
 
-    let (gpu, gpu_memory_mb) = gpu_adapters();
-    let (directx, directx_level) = directx_info();
+    let (gpu, gpu_memory_mb, gpu_vendor_id, gpu_device_id, directx, directx_level) =
+        gpu_and_directx();
 
     PcCheckSystem {
         os,
@@ -81,6 +85,8 @@ pub fn pc_check_system() -> PcCheckSystem {
         logical_cores,
         memory_mb: system.total_memory() / (1024 * 1024),
         gpu,
+        gpu_vendor_id,
+        gpu_device_id,
         gpu_memory_mb,
         directx,
         directx_level,
@@ -190,17 +196,84 @@ fn gpu_adapters() -> (String, u64) {
     (String::new(), 0)
 }
 
-/// The installed API is the highest device feature level the primary adapter
-/// can create. D3D12 is tried first; a GPU without it falls back to D3D11.
+/// The GPU a game would actually use, plus the DirectX level of that adapter.
+/// DXGI picks the adapter with the most dedicated VRAM, so a laptop's discrete
+/// GPU wins over the integrated one; registry text is only a fallback.
 #[cfg(windows)]
-fn directx_info() -> (String, u32) {
-    let level = d3d12_feature_level().max(d3d11_feature_level());
-    (directx_name(level), level)
+fn gpu_and_directx() -> (String, u64, u32, u32, String, u32) {
+    if let Some((name, vendor, device, memory_mb, adapter)) = dxgi_gpu() {
+        let (directx, level) = directx_info(Some(&adapter));
+        return (name, memory_mb, vendor, device, directx, level);
+    }
+    let (gpu, memory_mb) = gpu_adapters();
+    let (directx, level) = directx_info(None);
+    (gpu, memory_mb, 0, 0, directx, level)
 }
 
 #[cfg(not(windows))]
-fn directx_info() -> (String, u32) {
-    (String::new(), 0)
+fn gpu_and_directx() -> (String, u64, u32, u32, String, u32) {
+    let (gpu, memory_mb) = gpu_adapters();
+    (gpu, memory_mb, 0, 0, String::new(), 0)
+}
+
+#[cfg(windows)]
+fn dxgi_gpu() -> Option<(
+    String,
+    u32,
+    u32,
+    u64,
+    windows::Win32::Graphics::Dxgi::IDXGIAdapter1,
+)> {
+    use windows::Win32::Graphics::Dxgi::{
+        CreateDXGIFactory1, IDXGIAdapter1, IDXGIFactory1, DXGI_ADAPTER_DESC1,
+        DXGI_ADAPTER_FLAG_SOFTWARE,
+    };
+
+    let factory: IDXGIFactory1 = unsafe { CreateDXGIFactory1() }.ok()?;
+    let mut best: Option<(IDXGIAdapter1, DXGI_ADAPTER_DESC1)> = None;
+    for index in 0..16 {
+        let Ok(adapter) = (unsafe { factory.EnumAdapters1(index) }) else {
+            break;
+        };
+        let Ok(desc) = (unsafe { adapter.GetDesc1() }) else {
+            continue;
+        };
+        if desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32 != 0 {
+            continue;
+        }
+        if best
+            .as_ref()
+            .map_or(true, |(_, current)| {
+                desc.DedicatedVideoMemory > current.DedicatedVideoMemory
+            })
+        {
+            best = Some((adapter, desc));
+        }
+    }
+
+    let (adapter, desc) = best?;
+    let name = String::from_utf16_lossy(&desc.Description)
+        .trim_end_matches('\0')
+        .trim()
+        .to_string();
+    if name.is_empty() {
+        return None;
+    }
+    Some((
+        name,
+        desc.VendorId,
+        desc.DeviceId,
+        (desc.DedicatedVideoMemory as u64) / (1024 * 1024),
+        adapter,
+    ))
+}
+
+#[cfg(windows)]
+fn directx_info(
+    adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>,
+) -> (String, u32) {
+    let level = d3d12_feature_level(adapter).max(d3d11_feature_level(adapter));
+    (directx_name(level), level)
 }
 
 fn directx_name(level: u32) -> String {
@@ -220,19 +293,21 @@ fn directx_name(level: u32) -> String {
 }
 
 #[cfg(windows)]
-fn d3d12_feature_level() -> u32 {
+fn d3d12_feature_level(adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>) -> u32 {
+    use windows::core::Interface;
     use windows::Win32::Graphics::Direct3D::{
         D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2,
     };
     use windows::Win32::Graphics::Direct3D12::{D3D12CreateDevice, ID3D12Device};
 
+    let device_owner = adapter.and_then(|adapter| adapter.cast::<windows::core::IUnknown>().ok());
     for (level, value) in [
         (D3D_FEATURE_LEVEL_12_2, 122u32),
         (D3D_FEATURE_LEVEL_12_1, 121u32),
         (D3D_FEATURE_LEVEL_12_0, 120u32),
     ] {
         let mut device: Option<ID3D12Device> = None;
-        if unsafe { D3D12CreateDevice(None::<&windows::core::IUnknown>, level, &mut device) }.is_ok() {
+        if unsafe { D3D12CreateDevice(device_owner.as_ref(), level, &mut device) }.is_ok() {
             return value;
         }
     }
@@ -240,7 +315,8 @@ fn d3d12_feature_level() -> u32 {
 }
 
 #[cfg(windows)]
-fn d3d11_feature_level() -> u32 {
+fn d3d11_feature_level(adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>) -> u32 {
+    use windows::core::Interface;
     use windows::Win32::Foundation::HMODULE;
     use windows::Win32::Graphics::Direct3D::{
         D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_10_0,
@@ -253,6 +329,7 @@ fn d3d11_feature_level() -> u32 {
     };
     use windows::Win32::Graphics::Dxgi::IDXGIAdapter;
 
+    let adapter = adapter.and_then(|adapter| adapter.cast::<IDXGIAdapter>().ok());
     let levels = [
         D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_11_0,
@@ -267,7 +344,7 @@ fn d3d11_feature_level() -> u32 {
     let mut found = D3D_FEATURE_LEVEL(0);
     let result = unsafe {
         D3D11CreateDevice(
-            None::<&IDXGIAdapter>,
+            adapter.as_ref(),
             D3D_DRIVER_TYPE_HARDWARE,
             HMODULE::default(),
             D3D11_CREATE_DEVICE_FLAG(0),

@@ -32,6 +32,8 @@ interface PcCheckSystem {
   logicalCores: number;
   memoryMb: number;
   gpu: string;
+  gpuVendorId?: number;
+  gpuDeviceId?: number;
   gpuMemoryMb: number;
   directx?: string;
   directxLevel?: number;

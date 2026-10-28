@@ -25,6 +25,8 @@ export interface PcFacts {
   logicalCores: number;
   memoryMb: number;
   gpu: string;
+  gpuVendorId: number;
+  gpuDeviceId: number;
   gpuMemoryMb: number;
   /** "DirectX 12 (12_1)" or empty when the feature level is unknown. */
   directx: string;
@@ -220,12 +222,34 @@ function checkOs(required: string, facts: PcFacts): RequirementCheck | null {
 function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
   const detected = cpuDetected(facts);
   if (!detected) return null;
-  const cores = /(\d+)\s*(?:cores?|threads?|çekirdek|iş parçacığı)/i.exec(required);
-  if (!cores) return { status: "manual", detected };
-  const needed = Number(cores[1]);
-  const has = /threads?|iş parçacığı/i.test(cores[0]) ? facts.logicalCores : facts.physicalCores;
-  if (has <= 0) return { status: "manual", detected };
-  if (has < needed) return { status: "fail", detected };
+  // A row can list alternatives ("6 cores or 4 cores") or a pair
+  // ("4 cores / 8 threads"): the easiest alternative is the threshold.
+  const requirements = [
+    ...required.matchAll(
+      /(\d+)(?:\s+(?:hardware|cpu|logical|physical|işlemci))*\s*(cores?|threads?|çekirdek|iş parçacığı)/gi,
+    ),
+  ];
+  if (requirements.length === 0) return { status: "manual", detected };
+  const coreNeeds = requirements
+    .filter((match) => /core|çekirdek/i.test(match[2]))
+    .map((match) => Number(match[1]));
+  const threadNeeds = requirements
+    .filter((match) => /thread|iş parçacığı/i.test(match[2]))
+    .map((match) => Number(match[1]));
+  const coreNeed = coreNeeds.length > 0 ? Math.min(...coreNeeds) : 0;
+  const threadNeed = threadNeeds.length > 0 ? Math.min(...threadNeeds) : 0;
+  if (
+    (coreNeed > 0 && facts.physicalCores <= 0) ||
+    (threadNeed > 0 && facts.logicalCores <= 0)
+  ) {
+    return { status: "manual", detected };
+  }
+  if (
+    (coreNeed > 0 && facts.physicalCores < coreNeed) ||
+    (threadNeed > 0 && facts.logicalCores < threadNeed)
+  ) {
+    return { status: "fail", detected };
+  }
   // A core count next to a model name proves only half the row.
   const namesModel = /intel|amd|ryzen|core\s*i[3579]|phenom|athlon|fx[-\s]?\d|processor/i.test(required);
   return { status: namesModel ? "partial" : "ok", detected };
@@ -239,7 +263,9 @@ function checkGpu(required: string, facts: PcFacts): RequirementCheck | null {
     // A GPU row can list two cards; the smaller card is the threshold.
     const needed = Math.min(...vramValues);
     const has = facts.gpuMemoryMb / 1024;
-    if (has + 0.25 < needed) return { status: "fail", detected };
+    // DXGI reports a little less than the physical chips (driver-reserved
+    // memory), so an 8 GB card often lands around 7.7 GB.
+    if (has + 0.5 < needed) return { status: "fail", detected };
     // VRAM alone cannot rank a named GPU against the listed model.
     const namesModel = /nvidia|geforce|gtx|rtx|radeon|rx\s*\d|arc\s*a\d|intel|amd/i.test(required);
     return { status: namesModel ? "partial" : "ok", detected };
