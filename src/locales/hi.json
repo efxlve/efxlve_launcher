@@ -2443,7 +2443,6 @@
   "sys.compatDeckHelp": "Valve की Steam Deck संगतता रेटिंग।",
   "sys.compatProtonHelp": "समुदाय की Linux संगतता रेटिंग।",
   "sys.compatAntiCheatHelp": "Linux और Wine पर एंटी-चीट स्थिति।",
-  "sys.featuresHelpNote": "मान स्टोर पेज, IGDB और इंस्टॉल किए गए क्लाइंट से आते हैं। किसी मान का अर्थ देखने के लिए पंक्ति पर होवर करें।",
   "critic.scoresTitle": "स्कोर",
   "settings.ssRootsTitle": "गैलरी जिन फ़ोल्डरों को पढ़ती है",
   "settings.ssRootsDesc": "आपका चुना फ़ोल्डर, स्टोर और Game Bar के फ़ोल्डर तथा आपके जोड़े गए फ़ोल्डर:",

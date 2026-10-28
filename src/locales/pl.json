@@ -2443,7 +2443,6 @@
   "sys.compatDeckHelp": "Ocena zgodności ze Steam Deckiem od Valve.",
   "sys.compatProtonHelp": "Społecznościowa ocena zgodności z Linuksem.",
   "sys.compatAntiCheatHelp": "Stan ochrony anty-cheat na Linuksie i Wine.",
-  "sys.featuresHelpNote": "Wartości pochodzą ze strony sklepu, IGDB i zainstalowanego klienta. Najedź na wiersz, aby zobaczyć, co oznacza dana wartość.",
   "critic.scoresTitle": "Oceny",
   "settings.ssRootsTitle": "Foldery galerii",
   "settings.ssRootsDesc": "Twój folder, foldery sklepów i Game Bara oraz foldery dodane przez Ciebie:",

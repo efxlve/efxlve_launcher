@@ -2443,7 +2443,6 @@
   "sys.compatDeckHelp": "Valve'ın Steam Deck uyumluluk derecesi.",
   "sys.compatProtonHelp": "Topluluğun Linux uyumluluk derecesi.",
   "sys.compatAntiCheatHelp": "Linux ve Wine üzerinde hile koruması durumu.",
-  "sys.featuresHelpNote": "Değerler mağaza sayfası, IGDB ve yüklü istemciden gelir. Bir değerin ne anlattığını görmek için satırın üzerine gel.",
   "critic.scoresTitle": "Puanlar",
   "settings.ssRootsTitle": "Galerinin okuduğu klasörler",
   "settings.ssRootsDesc": "Seçtiğin klasör, mağazalar ile Game Bar'ın kaydettiği klasörler ve eklediğin klasörler:",

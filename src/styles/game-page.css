@@ -2660,11 +2660,8 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .help-tip:is(.is-hover, .is-pinned)::after { display: block; }
 .help-tip-note {
-  font-size: 12px; line-height: 1.55; color: var(--text-2);
-}
-/* A note followed by definitions needs a rule; a note on its own does not. */
-.help-tip-note:not(:last-child) {
   margin: 0 0 12px; padding-bottom: 11px;
+  font-size: 12px; line-height: 1.55; color: var(--text-2);
   border-bottom: 1px solid var(--line);
 }
 .help-tip-row + .help-tip-row { margin-top: 10px; }
