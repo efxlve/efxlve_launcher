@@ -651,17 +651,16 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--line);
   border-radius: var(--r-sm); font-size: 13px;
-  transition: background var(--ease), border-color var(--ease);
 }
-.hub-feature-row:hover { background: var(--surface-3); border-color: var(--line-strong); }
 .hub-feature-label { display: flex; align-items: center; gap: 10px; color: var(--text-2); font-weight: 500; flex: 0 0 auto; }
 .hub-feature-icon {
   width: 26px; height: 26px; display: grid; place-items: center;
   border-radius: 6px; background: var(--surface-3); color: var(--text-2);
-  flex-shrink: 0; transition: color var(--ease);
+  flex-shrink: 0; transition: color var(--ease), border-color var(--ease);
 }
 .hub-feature-icon svg { width: 13px; height: 13px; }
-.hub-feature-row:hover .hub-feature-icon { color: var(--text); }
+/* Read-only rows do not react as a block: hovering brightens only the icon. */
+.hub-feature-row:hover .hub-feature-icon { color: var(--text); border-color: var(--line-strong); }
 .hub-feature-val {
   text-align: right; color: var(--text); font-weight: 600; font-size: 12.5px;
   flex: 1 1 auto; min-width: 0; line-height: 1.35;
@@ -1605,9 +1604,6 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 #sys-copy-body .hub-feature-row:first-child,
 #sys-compat-list > div:first-child .hub-feature-row {
   border-top: 0; padding-top: 0;
-}
-.sys-fact-list .hub-feature-row:hover {
-  background: var(--surface-2); border-top-color: var(--line); box-shadow: none;
 }
 .sys-fact-list .hub-feature-icon {
   width: 16px; height: 16px; flex: 0 0 16px;

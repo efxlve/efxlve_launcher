@@ -1147,10 +1147,9 @@
   border: 1px solid rgba(16, 78, 130, 0.15);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(8, 60, 110, 0.05);
 }
-:root[data-surface="gloss"] .hub-feature-row:hover {
-  background: var(--aero-gloss-hover, rgba(255, 255, 255, 0.95));
-  border-color: rgba(74, 166, 230, 0.45);
-  box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.25), 0 2px 8px rgba(8, 60, 110, 0.08);
+:root[data-surface="gloss"] .hub-feature-row:hover .hub-feature-icon {
+  border-color: #4aa6e6;
+  color: var(--aero-heading);
 }
 :root[data-surface="gloss"] .hub-feature-icon {
   background: linear-gradient(180deg, #ffffff 0%, #e8f4fc 100%);
