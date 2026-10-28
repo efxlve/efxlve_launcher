@@ -1,8 +1,8 @@
 /**
- * Per-game achievement notification bell on the game page.
+ * Per-game achievement notification switch (game page > Achievements).
  *
- * The button only flips the stored flag and repaints itself; the running
- * watcher is told immediately so a mid-session change takes effect.
+ * The switch only flips the stored flag; a running watcher is told immediately
+ * so a mid-session change takes effect.
  */
 
 import { achGameNotificationsEnabled, setAchGameNotifications } from "../../../core/ach-game-prefs";
@@ -13,24 +13,31 @@ import { steamSetAchievementNotifications } from "../../../steam";
 
 export function handleAchievementGameAction(
   act: string | undefined,
-  button: HTMLElement,
+  control: HTMLElement,
 ): boolean {
   if (act !== "toggle-ach-game-notif") return false;
 
-  const key = button.dataset.id?.trim();
+  const key = control.dataset.id?.trim();
   if (!key) return true;
 
+  const checkbox =
+    control instanceof HTMLInputElement && control.type === "checkbox"
+      ? control
+      : control.querySelector<HTMLInputElement>('input[type="checkbox"]');
   const enabled = !achGameNotificationsEnabled(key);
   setAchGameNotifications(key, enabled);
+  if (checkbox) checkbox.checked = enabled;
 
-  const steamId = button.dataset.steamAppid?.trim();
+  const steamId = control.dataset.steamAppid?.trim();
   if (steamId) {
     void steamSetAchievementNotifications(steamId, enabled).catch(() => {});
   }
 
-  button.classList.toggle("is-off", !enabled);
-  button.setAttribute("aria-pressed", String(enabled));
-  button.innerHTML = icon(enabled ? "bell" : "bell-off", 16);
+  // The switch itself already reflects the state; only the leading glyph is
+  // swapped, so the page does not have to re-render for one toggle.
+  const glyph = control.closest(".ach-notif-row")?.querySelector<HTMLElement>(".ach-notif-icon");
+  if (glyph) glyph.innerHTML = icon(enabled ? "bell" : "bell-off", 14);
+
   toast(t(enabled ? "ach.gameNotifOn" : "ach.gameNotifOff"), "ok");
   return true;
 }

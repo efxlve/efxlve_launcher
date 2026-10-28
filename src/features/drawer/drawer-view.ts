@@ -1186,10 +1186,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const g = rawOf(appName);
   const partner = gamePartner(s, g);
   const antiCheat = gameAntiCheat(s, g);
-  const achNotifOn = achGameNotificationsEnabled(appName);
-  const achSteamId = appName.startsWith("steam::")
-    ? appName.slice("steam::".length)
-    : (S.customGames.find((game) => game.id === appName)?.steamAppId?.trim() ?? "");
   const companion = isCompanionApp(appName);
   // Companion games open on Overview; the rest of the tabs read their own
   // local or store data and are available too.
@@ -1302,7 +1298,6 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
               <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
             </div>
             <div class="gp-hero-actions">
-              <button class="icon-btn gp-hero-tool ${achNotifOn ? "" : "is-off"}" data-act="toggle-ach-game-notif" data-id="${esc(appName)}" data-steam-appid="${esc(achSteamId)}" title="${esc(t("ach.gameNotifToggle"))}" aria-pressed="${achNotifOn}">${icon(achNotifOn ? "bell" : "bell-off", 16)}</button>
               <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
             </div>
           </div>
@@ -2242,6 +2237,16 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       <div class="ach-list-pane">
     ${sourceCard}
     ${sourceNote}
+    <div class="ach-notif-row">
+      <span class="ach-notif-label">
+        <span class="ach-notif-icon">${icon(achGameNotificationsEnabled(s.appName) ? "bell" : "bell-off", 14)}</span>
+        <span>${esc(t("ach.gameNotifToggle"))}</span>
+      </span>
+      <label class="switch" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-steam-appid="${esc(targetSteamAppId ?? "")}">
+        <input type="checkbox" ${achGameNotificationsEnabled(s.appName) ? "checked" : ""} />
+        <span class="track"></span>
+      </label>
+    </div>
     <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
       <div class="ach-summary-main">
         <div class="ach-summary-percent ${isPlat ? "plat" : ""}">${isPlat ? platCup : `${pct}%`}</div>

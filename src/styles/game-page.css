@@ -79,7 +79,26 @@ body.sb-resizing .overlay {
 .gp-hero-nav { display: flex; align-items: center; gap: 6px; }
 .gp-hero-nav .icon-btn:disabled { opacity: 0.35; }
 .gp-hero-actions { display: flex; align-items: center; gap: 6px; }
-.gp-hero-tool.is-off { opacity: 0.55; }
+
+.ach-notif-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+}
+.ach-notif-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.ach-notif-icon { display: flex; align-items: center; }
 .gp-hero-tool { background: rgba(14, 15, 18, 0.72); border: 1px solid var(--hero-line); color: var(--hero-fg); }
 .gp-hero-bottom { position: absolute; left: 32px; right: 32px; bottom: 20px; z-index: 1; }
 .gp-title {

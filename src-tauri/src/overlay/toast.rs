@@ -9,10 +9,12 @@
 //! after the last one, then destroyed so its renderer memory returns. It never
 //! takes focus and never receives the mouse.
 
+#![allow(clashing_extern_declarations)]
+
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU64, Ordering};
 use std::sync::Mutex;
 use tauri::{
     AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow,
@@ -107,6 +109,7 @@ fn show_now(app: &AppHandle, payload: ToastPayload) {
     place_on_active_monitor(&win);
     let _ = win.set_always_on_top(true);
     let _ = win.show();
+    make_click_through(&win);
     if let Ok(hwnd) = win.hwnd() {
         crate::overlay::hud::raise_topmost(hwnd.0 as isize);
     }
@@ -121,6 +124,7 @@ fn show_now(app: &AppHandle, payload: ToastPayload) {
                 return;
             }
             if let Some(win) = handle.get_webview_window(TOAST_LABEL) {
+                make_click_through(&win);
                 if let Ok(hwnd) = win.hwnd() {
                     crate::overlay::hud::raise_topmost(hwnd.0 as isize);
                 }
@@ -241,9 +245,96 @@ fn ensure_window(app: &AppHandle) -> Result<WebviewWindow, String> {
         .inner_size(720.0, 240.0)
         .build()
         .map_err(|error| error.to_string())?;
-    win.set_ignore_cursor_events(true)
-        .map_err(|error| error.to_string())?;
+    make_click_through(&win);
     Ok(win)
+}
+
+/// Makes the toast click-through without `WS_EX_LAYERED`.
+///
+/// Tauri's `set_ignore_cursor_events` adds `WS_EX_LAYERED`, and a layered window
+/// can sit behind a fullscreen game even when it is topmost. The toast keeps
+/// DWM per-pixel transparency and instead uses `WS_EX_TRANSPARENT` plus a
+/// `WM_NCHITTEST -> HTTRANSPARENT` subclass on the window and its WebView2
+/// children.
+#[cfg(windows)]
+fn make_click_through(win: &WebviewWindow) {
+    let Ok(hwnd) = win.hwnd() else {
+        return;
+    };
+    let hwnd = hwnd.0 as isize;
+    unsafe {
+        let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        let next = (ex | WS_EX_TRANSPARENT) & !WS_EX_LAYERED;
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next);
+        if GetWindowLongPtrW(hwnd, GWLP_WNDPROC) != toast_click_through_proc as usize as isize {
+            let old = SetWindowLongPtrW(
+                hwnd,
+                GWLP_WNDPROC,
+                toast_click_through_proc as usize as isize,
+            );
+            if old != 0 {
+                TOAST_OLD_PROC.store(old, Ordering::Relaxed);
+            }
+        }
+        // The WebView2 host and renderer are child windows; they must inherit
+        // the pass-through or a click on the card still reaches the toast.
+        EnumChildWindows(hwnd, Some(mark_child_transparent), 0);
+    }
+}
+
+#[cfg(not(windows))]
+fn make_click_through(_win: &WebviewWindow) {}
+
+#[cfg(windows)]
+static TOAST_OLD_PROC: AtomicIsize = AtomicIsize::new(0);
+
+#[cfg(windows)]
+const GWL_EXSTYLE: i32 = -20;
+#[cfg(windows)]
+const GWLP_WNDPROC: i32 = -4;
+#[cfg(windows)]
+const WS_EX_TRANSPARENT: isize = 0x0000_0020;
+#[cfg(windows)]
+const WS_EX_LAYERED: isize = 0x0008_0000;
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn GetWindowLongPtrW(hwnd: isize, index: i32) -> isize;
+    fn SetWindowLongPtrW(hwnd: isize, index: i32, value: isize) -> isize;
+    fn CallWindowProcW(prev: isize, hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize;
+    fn DefWindowProcW(hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize;
+    fn EnumChildWindows(
+        parent: isize,
+        callback: Option<unsafe extern "system" fn(isize, isize) -> i32>,
+        param: isize,
+    ) -> i32;
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn toast_click_through_proc(
+    hwnd: isize,
+    msg: u32,
+    wparam: usize,
+    lparam: isize,
+) -> isize {
+    if msg == 0x0084 {
+        // WM_NCHITTEST: let the click reach the game below the card.
+        return -1;
+    }
+    let old = TOAST_OLD_PROC.load(Ordering::Relaxed);
+    if old != 0 {
+        CallWindowProcW(old, hwnd, msg, wparam, lparam)
+    } else {
+        DefWindowProcW(hwnd, msg, wparam, lparam)
+    }
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn mark_child_transparent(hwnd: isize, _param: isize) -> i32 {
+    let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_TRANSPARENT);
+    1
 }
 
 /// Fills the monitor that hosts the game (or the foreground window).
