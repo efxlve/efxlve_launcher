@@ -8,7 +8,7 @@ import { icon, type IconName } from "../../core/icons";
 import { IS_WINDOWS } from "../../core/platform";
 import { lastPlayedLabel, rawOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtPlaytime } from "../../core/utils";
+import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { formatSyncStamp, t } from "../../i18n";
 
 import { epicGetGameSettings, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary, type GameLocalSettings } from "../../epic";
@@ -50,9 +50,9 @@ type ManageTab = "files" | "saves" | "cover" | "launch" | "playtime" | "library"
  * once. The title is repeated in the header, so the in-body caption only
  * appears while that search mixes sections.
  */
-function group(tab: ManageTab, iconName: IconName, title: string, body: string, tone = ""): string {
+function group(tab: ManageTab, iconName: IconName, title: string, body: string, nav = ""): string {
   return `
-    <section class="manage-group${tone ? ` ${tone}` : ""}" data-tab="${tab}" data-title="${esc(title)}" id="manage-panel-${tab}" role="tabpanel">
+    <section class="manage-group" data-tab="${tab}" data-title="${esc(title)}" data-nav="${esc(nav)}" data-icon="${iconName}" id="manage-panel-${tab}" role="tabpanel">
       <h3 class="manage-group-title">${icon(iconName, 14)} ${title}</h3>
       <div class="list">${body}</div>
     </section>`;
@@ -62,7 +62,7 @@ function group(tab: ManageTab, iconName: IconName, title: string, body: string, 
 function dangerGroup(body: string): string {
   const title = t("manage.dangerTitle");
   return `
-    <section class="manage-group" data-tab="danger" data-title="${esc(title)}" data-nav="${esc(t("common.uninstall"))}" id="manage-panel-danger" role="tabpanel">
+    <section class="manage-group" data-tab="danger" data-title="${esc(title)}" data-nav="${esc(t("common.uninstall"))}" data-icon="trash" id="manage-panel-danger" role="tabpanel">
       <h3 class="manage-group-title">${icon("trash", 14)} ${title}</h3>
       <div class="list mg-danger">${body}</div>
     </section>`;
@@ -99,6 +99,8 @@ export function setManageTab(tab: string): void {
       title.textContent = target.dataset.title ?? "";
       title.title = target.dataset.title ?? "";
     }
+    const iconEl = document.getElementById("manage-section-icon");
+    if (iconEl) iconEl.innerHTML = icon(target.dataset.icon as IconName, 17);
   }
   const body = dialog.querySelector<HTMLElement>(".manage-body");
   if (body) body.scrollTop = 0;
@@ -108,6 +110,12 @@ export function setManageTab(tab: string): void {
 function activeManageTitle(): string {
   const active = document.querySelector<HTMLElement>(".manage-group.is-active[data-tab]");
   return active?.dataset.title ?? "";
+}
+
+/** Icon of the open section; search swaps it for the magnifier. */
+function activeManageIcon(): IconName {
+  const active = document.querySelector<HTMLElement>(".manage-group.is-active[data-tab]");
+  return (active?.dataset.icon as IconName) || "sliders";
 }
 
 /**
@@ -145,6 +153,8 @@ function applyManageSearch(query: string): void {
     title.textContent = heading;
     title.title = tokens.length > 0 ? "" : heading;
   }
+  const iconEl = document.getElementById("manage-section-icon");
+  if (iconEl) iconEl.innerHTML = icon(tokens.length > 0 ? "search" : activeManageIcon(), 17);
 }
 
 let manageSearchWired = false;
@@ -271,10 +281,20 @@ export function openManagePopup(appName: string): void {
             <div class="manage-side-sub">${esc(storeVersionLabel(source))}</div>
           </div>
           <nav class="manage-nav" role="tablist" aria-orientation="vertical" aria-label="${esc(t("drawer.manage"))}"></nav>
+          <div class="manage-side-foot">
+            <span class="manage-side-state${s.installed ? " is-installed" : ""}">
+              <span class="manage-side-dot"></span>
+              ${s.installed ? esc(t("common.installed")) : esc(t("common.notInstalled"))}
+            </span>
+            ${s.installed && s.installSize > 0 ? `<span class="manage-side-size tabular-nums">${esc(fmtBytes(s.installSize))}</span>` : ""}
+          </div>
         </aside>
         <div class="manage-main">
           <div class="manage-head">
-            <h2 id="manage-section-title"></h2>
+            <div class="manage-head-title">
+              <span class="manage-head-icon" id="manage-section-icon" aria-hidden="true"></span>
+              <h2 id="manage-section-title"></h2>
+            </div>
             <div class="manage-head-actions">
               <div class="manage-search" id="manage-search-wrap">
                 ${icon("search", 13)}
@@ -302,7 +322,8 @@ export function openManagePopup(appName: string): void {
       .map((section) => {
         const tab = section.dataset.tab ?? "";
         const label = section.dataset.nav || section.dataset.title || "";
-        return `<button type="button" class="manage-nav-item" role="tab" id="manage-tab-${esc(tab)}" data-act="manage-tab" data-tab="${esc(tab)}" aria-controls="manage-panel-${esc(tab)}" aria-selected="false" tabindex="-1">${esc(label)}</button>`;
+        const iconName = (section.dataset.icon as IconName) || "sliders";
+        return `<button type="button" class="manage-nav-item" role="tab" id="manage-tab-${esc(tab)}" data-act="manage-tab" data-tab="${esc(tab)}" aria-controls="manage-panel-${esc(tab)}" aria-selected="false" tabindex="-1" title="${esc(label)}"><span class="manage-nav-icon">${icon(iconName, 16)}</span><span class="manage-nav-label">${esc(label)}</span></button>`;
       })
       .join("");
     sections.forEach((section) => {
@@ -423,7 +444,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       ${group("files", "folder", t("manage.groupFiles"), files)}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-      ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)))}
+      ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
       ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
       ${s.installed ? dangerGroup(row(t("manage.uninstallTitle"), t("accounts.companionUninstallDesc", { name: brand }),
@@ -556,7 +577,7 @@ function amazonManageBody(s: EpicSummary): string {
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtime)}</span>`,
         pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${s.appName}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
-          playtimeBreakdownHtml(s.appName, s.title), "manage-playtime-meta"))}
+          playtimeBreakdownHtml(s.appName, s.title), "manage-playtime-meta"), t("manage.totalPlaytime"))}
       ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
       ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("amazon.uninstallDesc"),
@@ -600,7 +621,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           `)}
           ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
             `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-          ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, playtimeSources(s.appName, s.title).length > 1 ? t("manage.playtimeAllCopies") : t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)))}
+          ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, playtimeSources(s.appName, s.title).length > 1 ? t("manage.playtimeAllCopies") : t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
           ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
             `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         </div>`;
@@ -629,7 +650,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
-        ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)))}
+        ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
 
         ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
           `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
@@ -664,7 +685,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         `)}
         ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-        ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)))}
+        ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
         ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
           `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("manage.dangerDesc"),
@@ -786,7 +807,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           <div class="mg-desc">${t("manage.epicDataP1")}</div>
           <div class="mg-desc">${t("manage.epicDataP2")}</div>
         </div>
-      `)}
+      `, t("manage.totalPlaytime"))}
 
       ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${id}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
