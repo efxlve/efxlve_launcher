@@ -1034,6 +1034,7 @@ pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchieveme
                 }),
             hidden: achievement.get("isSecret").and_then(|v| v.as_bool()).unwrap_or(false),
             is_base: true,
+            hardcore: false,
         });
     }
     let total = achievements.len() as u32;

@@ -1432,6 +1432,7 @@ export function renderAchievementRow(a: EpicAchievementItem, s: EpicSummary): st
           <span class="ach-row-title">${esc(title)}</span>
           ${a.user_state === "unlocked" ? `<span class="ach-row-tag user" title="${esc(i18nT("ach.userMarkedHint"))}">${icon("user", 9)}<span>${esc(i18nT("ach.userTag"))}</span></span>` : ""}
           ${a.user_state === "locked" ? `<span class="ach-row-tag cleared" title="${esc(i18nT("ach.userClearedHint"))}">${icon("lock", 9)}<span>${esc(i18nT("ach.clearedTag"))}</span></span>` : ""}
+          ${a.hardcore ? `<span class="ach-row-tag" title="${esc(i18nT("ach.hardcoreHint"))}">HC</span>` : ""}
           ${!a.is_base ? `<span class="ach-row-tag">DLC</span>` : ""}
           ${a.hidden && !isSecretMasked ? `<span class="ach-row-tag secret">${i18nT("ach.secret")}</span>` : ""}
         </div>

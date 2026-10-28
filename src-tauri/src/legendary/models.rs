@@ -227,6 +227,9 @@ pub struct AchievementItem {
     pub hidden: bool,
     #[serde(default)]
     pub is_base: bool,
+    /// RetroAchievements hardcore unlock: earned without save states or cheats.
+    #[serde(default)]
+    pub hardcore: bool,
 }
 
 /// User reward (e.g. PLATINUM trophy).
@@ -275,6 +278,9 @@ pub struct GameAchievementsResponse {
     pub base_xp: u32,
     #[serde(default)]
     pub base_user_xp: u32,
+    /// Epic's share of players who completed the game (the platinum trophy).
+    #[serde(default)]
+    pub platinum_rarity: Option<AchievementRarity>,
 }
 
 impl GameAchievementsResponse {
@@ -521,6 +527,10 @@ mod tests {
             Some(73.0)
         );
         assert_eq!(res.is_platinum, true);
+        assert_eq!(
+            res.platinum_rarity.as_ref().and_then(|rarity| rarity.percent),
+            Some(1.0)
+        );
     }
 
     #[test]

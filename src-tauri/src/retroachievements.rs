@@ -259,10 +259,12 @@ fn map_game_progress(payload: &serde_json::Value) -> GameAchievementsResponse {
         let earned = text(entry, &["DateEarned", "dateEarned"]);
         let earned_hardcore = text(entry, &["DateEarnedHardcore", "dateEarnedHardcore"]);
         let unlocked = !earned.is_empty() || !earned_hardcore.is_empty();
-        let date = civil_date(if earned.is_empty() {
-            &earned_hardcore
-        } else {
+        // Prefer the hardcore date: it is the stricter of the two, and the row
+        // carries the flag so the UI can say so.
+        let date = civil_date(if earned_hardcore.is_empty() {
             &earned
+        } else {
+            &earned_hardcore
         });
         let awarded = number(entry, &["NumAwarded", "numAwarded"]);
         let rarity = if players > 0.0 {
@@ -291,6 +293,7 @@ fn map_game_progress(payload: &serde_json::Value) -> GameAchievementsResponse {
             }),
             hidden: false,
             is_base: true,
+            hardcore: !earned_hardcore.is_empty(),
         });
     }
 
@@ -440,6 +443,8 @@ mod tests {
             Some(25.0)
         );
         assert_eq!(response.achievements[1].unlock_date.as_deref(), Some("2024-04-23"));
+        assert!(response.achievements[1].hardcore);
+        assert!(!response.achievements[0].hardcore);
     }
 
     #[test]

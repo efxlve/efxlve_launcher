@@ -2052,6 +2052,13 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const platinumAwardDate = platinumAward
     ? fmtAchDate(platinumAward.unlocked_date_time)
     : "";
+  // Epic ships the share of players who completed the set; a 0 percent answer
+  // means "not reported", not "nobody".
+  const platinumRarityValue = Number(data.platinum_rarity?.percent);
+  const platinumRarity =
+    Number.isFinite(platinumRarityValue) && platinumRarityValue > 0
+      ? platinumRarityValue
+      : null;
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filtered = data.achievements.filter((a) => {
@@ -2247,6 +2254,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           <div class="ach-summary-label">${isPlat ? t("ach.platinumComplete") : t("drawer.achievements")}</div>
           ${data.total_xp > 0 && !isPlat ? `<div class="ach-summary-xp tabular-nums">${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP</div>` : ""}
           ${platinumAwardDate ? `<div class="ach-summary-award">${icon("crown", 11)}<span>${esc(t("ach.platinumAwarded", { date: platinumAwardDate }))}</span></div>` : ""}
+          ${platinumRarity != null ? `<div class="ach-summary-award" title="${esc(t("ach.platRarityHint"))}">${icon("users", 11)}<span>${esc(t("ach.platRarity", { n: fmtDecimal1(platinumRarity) }))}</span></div>` : ""}
           <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
         </div>
         <div class="ach-summary-stats">

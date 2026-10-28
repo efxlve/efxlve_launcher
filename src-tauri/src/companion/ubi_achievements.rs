@@ -471,6 +471,7 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
             rarity: None,
             hidden: false,
             is_base: true,
+            hardcore: false,
         });
     }
     let total = achievements.len() as u32;

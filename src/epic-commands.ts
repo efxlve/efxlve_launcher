@@ -239,6 +239,8 @@ export interface EpicAchievementItem {
   rarity?: EpicAchievementRarity;
   hidden: boolean;
   is_base: boolean;
+  /** RetroAchievements hardcore unlock (no save states or cheats). */
+  hardcore?: boolean;
   /**
    * Launcher-only overlay: `unlocked` when the user marked this achievement
    * here, `locked` when the user cleared a store unlock. The store is untouched.
@@ -278,6 +280,8 @@ export interface EpicAchievementsData {
   user_cleared?: number;
   /** Epic player awards (platinum), each with the day it was earned. */
   user_awards?: EpicAchievementAward[];
+  /** Epic's share of players who completed the game. */
+  platinum_rarity?: { percent?: number };
   /** Frontend-only: which source filled this page (store, local set, RA). */
   data_source?: "store" | "local" | "ra";
 }

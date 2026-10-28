@@ -814,6 +814,7 @@ pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievemen
             rarity: None,
             hidden: item.hidden,
             is_base: true,
+            hardcore: false,
         })
         .collect();
     let unlocked = achievements.iter().filter(|item| item.unlocked).count() as u32;
