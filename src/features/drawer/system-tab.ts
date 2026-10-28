@@ -37,6 +37,7 @@ import {
   getPcDrives,
   getPcFacts,
   pcFactsState,
+  resetPcFacts,
   systemVerdict,
   type PcFacts,
   type RequirementCheck,
@@ -54,6 +55,13 @@ function queueSystemRepaint(appName: string): void {
     repaintQueued.delete(appName);
     repaintSystemRequirements(appName);
   });
+}
+
+/** Hardware refresh: drop the cached facts and paint the loading state again. */
+export function refreshSystemFacts(appName: string): void {
+  resetPcFacts();
+  repaintQueued.delete(appName);
+  repaintSystemRequirements(appName);
 }
 
 /** Store languages arrive with the requirements; keep their host separate so a
@@ -212,14 +220,27 @@ function statusChip(status: RequirementStatus): string {
   return `<span class="sys-req-state ${statusClass(status)}"${title}>${statusIcon(status)}<span>${statusLabel(status)}</span></span>`;
 }
 
-function panelHeader(verdict: SystemVerdict | null): string {
+function panelHeader(
+  appName: string,
+  verdict: SystemVerdict | null,
+  refresh = true,
+): string {
   return `
     <div class="sys-req-head">
       <div class="sys-req-heading">
         <span class="sys-eyebrow">${icon("monitor", 12)} <span>${t("sys.pcTitle")}</span></span>
         <h2 class="sys-req-title">${t("sys.reqCardTitle")}</h2>
       </div>
-      ${verdict ? `<div class="sys-verdict ${verdictClass(verdict)}">${verdictIcon(verdict)}<span>${verdictLabel(verdict)}</span></div>` : ""}
+      <div class="sys-req-head-actions">
+        ${
+          refresh
+            ? `<button type="button" class="btn ghost small" data-act="pc-refresh" data-id="${esc(appName)}" title="${esc(t("sys.refreshPc"))}">
+          ${icon("refresh", 13)} <span>${t("sys.refreshPc")}</span>
+        </button>`
+            : ""
+        }
+        ${verdict ? `<div class="sys-verdict ${verdictClass(verdict)}">${verdictIcon(verdict)}<span>${verdictLabel(verdict)}</span></div>` : ""}
+      </div>
     </div>`;
 }
 
@@ -334,17 +355,17 @@ function requirementRows(
 export function renderRequirementPanel(s: EpicSummary): string {
   queueSystemRepaint(s.appName);
   if (S.loadingReqFor.has(s.appName)) {
-    return `${panelHeader(null)}<div class="sys-req-loading">${loadingState(t("sys.loadingStore"))}</div>`;
+    return `${panelHeader(s.appName, null, false)}<div class="sys-req-loading">${loadingState(t("sys.loadingStore"))}</div>`;
   }
   const data = S.loadedRequirements.get(s.appName);
   if (!data) {
-    return `${panelHeader(null)}<div class="sys-req-loading">${loadingState(t("sys.loading"))}</div>`;
+    return `${panelHeader(s.appName, null, false)}<div class="sys-req-loading">${loadingState(t("sys.loading"))}</div>`;
   }
 
   const actions = sourceActions(s);
   if (!data.supported || data.systems.length === 0) {
     return `
-      ${panelHeader(null)}
+      ${panelHeader(s.appName, null, false)}
       <div class="sys-req-empty">
         ${emptyPanel(
           "cpu",
@@ -367,7 +388,7 @@ export function renderRequirementPanel(s: EpicSummary): string {
   const recommended = verified.filter((item) => item.recommended);
   if (minimum.length === 0 && recommended.length === 0) {
     return `
-      ${panelHeader(null)}
+      ${panelHeader(s.appName, null, false)}
       <div class="sys-req-empty">
         ${emptyPanel("cpu", t("sys.notFoundTitle"), t("sys.notFoundDesc"))}
         ${actions}
@@ -408,7 +429,7 @@ export function renderRequirementPanel(s: EpicSummary): string {
       : "";
 
   return `
-    ${panelHeader(verdict)}
+    ${panelHeader(s.appName, verdict)}
     ${pcStripHtml()}
     <div class="sys-req-toolbar">
       <div class="sys-req-tier">

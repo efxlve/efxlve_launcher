@@ -26,7 +26,8 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
 import { t as i18n } from "../../../i18n";
@@ -276,6 +277,17 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         if (s) void fetchAndRenderRequirements(id, s.title, true);
       }
       return true;
+
+    case "pc-refresh": {
+      const appName = t.dataset.id ?? S.currentModalAppName ?? "";
+      if (!appName) return true;
+      // Drives and the copy health both change when a disk is plugged in; read
+      // them again and repaint the loading skeleton in place.
+      S.copyPathStates.delete(appName);
+      refreshSystemFacts(appName);
+      ensureCopyHealth(appName);
+      return true;
+    }
 
     case "open-store-achievements":
       if (id) {

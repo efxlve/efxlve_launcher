@@ -563,6 +563,7 @@
   "sys.requery": "Neu abfragen",
   "sys.pcTitle": "Mein PC",
   "sys.pcLoading": "Hardware wird gelesen…",
+  "sys.refreshPc": "Hardware aktualisieren",
   "sys.checkOk": "Erfüllt",
   "sys.checkFail": "Zu wenig",
   "sys.checkManual": "Manuell",

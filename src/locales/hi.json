@@ -593,6 +593,7 @@
   "sys.requery": "पुनः जांचें",
   "sys.pcTitle": "मेरा पीसी",
   "sys.pcLoading": "हार्डवेयर पढ़ा जा रहा है…",
+  "sys.refreshPc": "हार्डवेयर रीफ़्रेश करें",
   "sys.checkOk": "पूरा",
   "sys.checkFail": "कम",
   "sys.checkManual": "मैनुअल",

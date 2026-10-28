@@ -53,6 +53,7 @@ let cachedFacts: PcFacts | null = null;
 let cachedDrives: SystemDriveInfo[] = [];
 let loadState: "idle" | "loading" | "done" = isTauri ? "idle" : "done";
 let pending: Promise<void> | null = null;
+let loadGeneration = 0;
 
 export function getPcFacts(): PcFacts | null {
   return cachedFacts;
@@ -66,19 +67,34 @@ export function pcFactsState(): "idle" | "loading" | "done" {
   return loadState;
 }
 
+/**
+ * Drops the cached answer so the next read sees a drive that was plugged in or
+ * a monitor that was connected. A running read is ignored when it lands.
+ */
+export function resetPcFacts(): void {
+  loadGeneration++;
+  cachedFacts = null;
+  cachedDrives = [];
+  loadState = isTauri ? "idle" : "done";
+  pending = null;
+}
+
 /** Reads the hardware once; every later call returns the same answer. */
 export function ensurePcFacts(): Promise<void> {
   if (loadState === "done") return Promise.resolve();
   if (pending) return pending;
   loadState = "loading";
+  const generation = loadGeneration;
   pending = (async () => {
     const [system, drives] = await Promise.all([
       invoke<PcCheckSystem>("pc_check_system").catch(() => null),
       epicGetSystemDrives().catch(() => [] as SystemDriveInfo[]),
     ]);
+    if (generation !== loadGeneration) return;
     if (system && system.memoryMb > 0) cachedFacts = system;
     cachedDrives = Array.isArray(drives) ? drives : [];
   })().finally(() => {
+    if (generation !== loadGeneration) return;
     loadState = "done";
     pending = null;
   });

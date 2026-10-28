@@ -1450,6 +1450,10 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 14px; flex-wrap: wrap; margin-bottom: 16px;
 }
+.sys-req-head-actions {
+  display: inline-flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; justify-content: flex-end;
+}
 .sys-req-heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .sys-eyebrow {
   display: inline-flex; align-items: center; gap: 6px;

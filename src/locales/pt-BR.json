@@ -563,6 +563,7 @@
   "sys.requery": "Consultar de novo",
   "sys.pcTitle": "Meu PC",
   "sys.pcLoading": "Lendo o hardware…",
+  "sys.refreshPc": "Atualizar hardware",
   "sys.checkOk": "Atende",
   "sys.checkFail": "Abaixo",
   "sys.checkManual": "Manual",

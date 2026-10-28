@@ -563,6 +563,7 @@
   "sys.requery": "إعادة الاستعلام",
   "sys.pcTitle": "جهاز الكمبيوتر",
   "sys.pcLoading": "جارٍ قراءة العتاد…",
+  "sys.refreshPc": "تحديث العتاد",
   "sys.checkOk": "مطابق",
   "sys.checkFail": "غير كافٍ",
   "sys.checkManual": "يدوي",

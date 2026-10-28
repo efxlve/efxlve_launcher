@@ -593,6 +593,7 @@
   "sys.requery": "Re-query",
   "sys.pcTitle": "My PC",
   "sys.pcLoading": "Reading hardware…",
+  "sys.refreshPc": "Refresh hardware",
   "sys.checkOk": "Meets",
   "sys.checkFail": "Below",
   "sys.checkManual": "Manual",

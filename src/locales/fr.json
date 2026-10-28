@@ -563,6 +563,7 @@
   "sys.requery": "Relancer la requête",
   "sys.pcTitle": "Mon PC",
   "sys.pcLoading": "Lecture du matériel…",
+  "sys.refreshPc": "Actualiser le matériel",
   "sys.checkOk": "Conforme",
   "sys.checkFail": "Insuffisant",
   "sys.checkManual": "Manuel",

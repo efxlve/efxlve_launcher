@@ -563,6 +563,7 @@
   "sys.requery": "Ricarica",
   "sys.pcTitle": "Il mio PC",
   "sys.pcLoading": "Lettura dell'hardware…",
+  "sys.refreshPc": "Aggiorna hardware",
   "sys.checkOk": "Conforme",
   "sys.checkFail": "Insufficiente",
   "sys.checkManual": "Manuale",

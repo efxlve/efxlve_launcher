@@ -475,7 +475,7 @@ function ensureEosSupport(appName: string): void {
  *  a drive that was plugged back in recovers without restarting the app. */
 const copyHealthPending = new Set<string>();
 
-function ensureCopyHealth(appName: string): void {
+export function ensureCopyHealth(appName: string): void {
   const s = summaryOf(appName);
   if (!isTauri || !s?.installed || !s.installPath) return;
   if (S.copyPathStates.get(appName)?.state === "ok" || copyHealthPending.has(appName)) return;
