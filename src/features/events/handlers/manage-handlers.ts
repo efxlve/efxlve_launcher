@@ -19,6 +19,7 @@ import {
   openManagePopup,
   resetVerifyInPlace,
   setManageSearchOpen,
+  setManageTab,
   updateManageModalInputsInPlace,
   updateManageSyncBar,
   updateVerifyProgressInPlace,
@@ -74,6 +75,10 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
 
     case "manage-search-toggle":
       setManageSearchOpen(!manageSearchOpen());
+      return true;
+
+    case "manage-tab":
+      if (t.dataset.tab) setManageTab(t.dataset.tab);
       return true;
 
     case "manage-overlay-close":

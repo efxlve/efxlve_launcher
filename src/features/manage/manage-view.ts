@@ -41,16 +41,30 @@ function row(title: string, desc: string, actions: string, extra = "", descId = 
     </div>`;
 }
 
+/** Left-rail sections of the manage panel. */
+type ManageTab = "files" | "saves" | "cover" | "launch" | "playtime" | "library" | "danger";
+
 /**
- * One titled block of the panel. Sections are the panel's spine: every store
- * uses the same order, and the search hides a section whose rows all filtered
- * out instead of leaving an empty caption behind.
+ * One titled block of the panel. Every group is also a tab: the rail switches
+ * between them, and the search can temporarily show every matching group at
+ * once. The title is repeated in the header, so the in-body caption only
+ * appears while that search mixes sections.
  */
-function group(iconName: IconName, title: string, body: string, tone = ""): string {
+function group(tab: ManageTab, iconName: IconName, title: string, body: string, tone = ""): string {
   return `
-    <section class="manage-group${tone ? ` ${tone}` : ""}">
+    <section class="manage-group${tone ? ` ${tone}` : ""}" data-tab="${tab}" data-title="${esc(title)}" id="manage-panel-${tab}" role="tabpanel">
       <h3 class="manage-group-title">${icon(iconName, 14)} ${title}</h3>
       <div class="list">${body}</div>
+    </section>`;
+}
+
+/** Removal lives in its own tab; the rail says it in one word. */
+function dangerGroup(body: string): string {
+  const title = t("manage.dangerTitle");
+  return `
+    <section class="manage-group" data-tab="danger" data-title="${esc(title)}" data-nav="${esc(t("common.uninstall"))}" id="manage-panel-danger" role="tabpanel">
+      <h3 class="manage-group-title">${icon("trash", 14)} ${title}</h3>
+      <div class="list mg-danger">${body}</div>
     </section>`;
 }
 
@@ -58,14 +72,57 @@ function group(iconName: IconName, title: string, body: string, tone = ""): stri
 const MANAGE_HIDE = "manage-hide";
 
 /**
+ * Switches the panel to one rail section. The body keeps every group in the
+ * DOM, so verification progress, backup lists and settings inputs survive a
+ * tab change without a re-render.
+ */
+export function setManageTab(tab: string): void {
+  const dialog = document.querySelector<HTMLElement>(".manage-dialog");
+  if (!dialog) return;
+  const sections = Array.from(dialog.querySelectorAll<HTMLElement>(".manage-group[data-tab]"));
+  if (!sections.length) return;
+  // A tab choice is a way out of mixed search results.
+  if (manageSearchOpen()) setManageSearchOpen(false);
+  const target = sections.find((section) => section.dataset.tab === tab) ?? sections[0];
+
+  sections.forEach((section) => section.classList.toggle("is-active", section === target));
+  dialog.querySelectorAll<HTMLElement>(".manage-nav-item").forEach((item) => {
+    const active = item.dataset.tab === target.dataset.tab;
+    item.classList.toggle("is-active", active);
+    item.setAttribute("aria-selected", String(active));
+    item.tabIndex = active ? 0 : -1;
+  });
+
+  if (!dialog.classList.contains("manage-searching")) {
+    const title = document.getElementById("manage-section-title");
+    if (title) {
+      title.textContent = target.dataset.title ?? "";
+      title.title = target.dataset.title ?? "";
+    }
+  }
+  const body = dialog.querySelector<HTMLElement>(".manage-body");
+  if (body) body.scrollTop = 0;
+}
+
+/** Reads the section the panel is showing, for the search header. */
+function activeManageTitle(): string {
+  const active = document.querySelector<HTMLElement>(".manage-group.is-active[data-tab]");
+  return active?.dataset.title ?? "";
+}
+
+/**
  * Filters the panel the way Settings does: every row matches on its own text,
  * empty sections disappear with their rows, and when nothing matches the panel
- * says so instead of looking empty.
+ * says so instead of looking empty. A non-empty query breaks out of the active
+ * tab and shows every matching section, so searching never depends on which
+ * rail item happens to be open.
  */
 function applyManageSearch(query: string): void {
-  const body = document.querySelector<HTMLElement>(".manage-body");
-  if (!body) return;
+  const dialog = document.querySelector<HTMLElement>(".manage-dialog");
+  const body = dialog?.querySelector<HTMLElement>(".manage-body");
+  if (!dialog || !body) return;
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  body.scrollTop = 0;
   let visible = 0;
   body.querySelectorAll<HTMLElement>(".row[data-search]").forEach((line) => {
     const text = (line.dataset.search ?? "").toLowerCase();
@@ -73,14 +130,21 @@ function applyManageSearch(query: string): void {
     line.classList.toggle(MANAGE_HIDE, !match);
     if (match) visible += 1;
   });
-  body.querySelectorAll<HTMLElement>(".manage-group").forEach((section) => {
+  body.querySelectorAll<HTMLElement>(".manage-group[data-tab]").forEach((section) => {
     const any = Array.from(section.querySelectorAll<HTMLElement>(".row[data-search]")).some(
       (line) => !line.classList.contains(MANAGE_HIDE),
     );
     section.classList.toggle(MANAGE_HIDE, tokens.length > 0 && !any);
   });
+  dialog.classList.toggle("manage-searching", tokens.length > 0);
   const empty = document.getElementById("manage-search-empty");
   if (empty) empty.hidden = tokens.length === 0 || visible > 0;
+  const title = document.getElementById("manage-section-title");
+  if (title) {
+    const heading = tokens.length > 0 ? t("manage.searchTitle") : activeManageTitle();
+    title.textContent = heading;
+    title.title = tokens.length > 0 ? "" : heading;
+  }
 }
 
 let manageSearchWired = false;
@@ -195,31 +259,61 @@ export function openManagePopup(appName: string): void {
   const s = summaryOf(appName);
   if (!s) return;
   openManageAppName = appName;
+  const source = sourceOfKey(appName);
+  const companion = source !== "epic" && source !== "gog" && source !== "steam" && source !== "amazon";
   wireManageSearch();
   manageRoot.innerHTML = `
     <div class="manage-overlay" data-act="manage-overlay-close">
-      <div class="manage-dialog">
-        <div class="manage-head">
-          <div class="manage-head-text">
-            <h2>${t("drawer.manage")}</h2>
-            <div class="manage-head-sub">${esc(s.title)}</div>
+      <div class="manage-dialog" role="dialog" aria-modal="true" aria-label="${esc(t("drawer.manage"))}: ${esc(s.title)}">
+        <aside class="manage-side">
+          <div class="manage-side-head">
+            <div class="manage-side-title" id="manage-side-title">${esc(s.title)}</div>
+            <div class="manage-side-sub">${esc(storeVersionLabel(source))}</div>
           </div>
-          <div class="manage-search" id="manage-search-wrap">
-            ${icon("search", 13)}
-            <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
+          <nav class="manage-nav" role="tablist" aria-orientation="vertical" aria-label="${esc(t("drawer.manage"))}"></nav>
+        </aside>
+        <div class="manage-main">
+          <div class="manage-head">
+            <h2 id="manage-section-title"></h2>
+            <div class="manage-head-actions">
+              <div class="manage-search" id="manage-search-wrap">
+                ${icon("search", 13)}
+                <input id="manage-search" class="input" type="text" placeholder="${esc(t("manage.searchPlaceholder"))}" spellcheck="false" autocomplete="off" />
+              </div>
+              <button class="icon-btn manage-search-toggle" data-act="manage-search-toggle" title="${esc(t("manage.searchTitle"))}" aria-expanded="false">${icon("search", 15)}</button>
+              <button class="manage-head-close" data-act="close-manage-popup" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
+            </div>
           </div>
-          <button class="icon-btn manage-search-toggle" data-act="manage-search-toggle" title="${esc(t("manage.searchTitle"))}" aria-expanded="false">${icon("search", 15)}</button>
-          <button class="manage-head-close" data-act="close-manage-popup" title="${t("common.close")}">${icon("x", 16)}</button>
+          <div class="manage-body">
+            <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>
+            ${renderDrawerManage(s)}
+          </div>
         </div>
-        <div class="manage-body">${renderDrawerManage(s)}</div>
-        <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>
       </div>
     </div>`;
 
+  // The rail is built from the groups this store actually rendered, so an
+  // uninstalled game or a companion title never shows a tab it cannot fill.
+  const body = manageRoot.querySelector<HTMLElement>(".manage-body");
+  const nav = manageRoot.querySelector<HTMLElement>(".manage-nav");
+  const sections = Array.from(body?.querySelectorAll<HTMLElement>(".manage-group[data-tab]") ?? []);
+  if (nav) {
+    nav.innerHTML = sections
+      .map((section) => {
+        const tab = section.dataset.tab ?? "";
+        const label = section.dataset.nav || section.dataset.title || "";
+        return `<button type="button" class="manage-nav-item" role="tab" id="manage-tab-${esc(tab)}" data-act="manage-tab" data-tab="${esc(tab)}" aria-controls="manage-panel-${esc(tab)}" aria-selected="false" tabindex="-1">${esc(label)}</button>`;
+      })
+      .join("");
+    sections.forEach((section) => {
+      section.setAttribute("aria-labelledby", `manage-tab-${section.dataset.tab ?? ""}`);
+    });
+    wireManageNavKeys(nav);
+  }
+  setManageTab(sections[0]?.dataset.tab ?? "");
+
   // Ensure cloud settings and backups are hydrated when the popup opens.
   // Companion games have no cloud saves here, so the fetch is skipped.
-  const source = sourceOfKey(appName);
-  const companion = source !== "epic" && source !== "gog" && source !== "steam" && source !== "amazon";
   if (!companion && !S.cloudBackupSettings) {
     void initCloudBackupSettings().then((st) => {
       updateManageCloudRowInPlace(appName);
@@ -230,6 +324,25 @@ export function openManagePopup(appName: string): void {
   } else if (!companion && S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
     void loadCloudBackupsAction(appName);
   }
+}
+
+/** Arrow keys move between tabs, as they do in any vertical tab list. */
+function wireManageNavKeys(nav: HTMLElement): void {
+  nav.addEventListener("keydown", (event) => {
+    const items = Array.from(nav.querySelectorAll<HTMLButtonElement>(".manage-nav-item"));
+    if (!items.length) return;
+    const current = items.indexOf(document.activeElement as HTMLButtonElement);
+    let next = current;
+    if (event.key === "ArrowDown") next = (current + 1) % items.length;
+    else if (event.key === "ArrowUp") next = (current - 1 + items.length) % items.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = items.length - 1;
+    else return;
+    event.preventDefault();
+    const target = items[next];
+    setManageTab(target.dataset.tab ?? "");
+    target.focus();
+  });
 }
 
 /** Renders action buttons for the save directory row. */
@@ -307,16 +420,14 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("folder", t("manage.groupFiles"), files)}
-      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+      ${group("files", "folder", t("manage.groupFiles"), files)}
+      ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-      ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)))}
-      ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+      ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)))}
+      ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
-      ${s.installed ? `<div class="list mg-danger">
-        ${row(t("manage.uninstallTitle"), t("accounts.companionUninstallDesc", { name: brand }),
-          `<button class="btn danger small" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)}
-      </div>` : ""}
+      ${s.installed ? dangerGroup(row(t("manage.uninstallTitle"), t("accounts.companionUninstallDesc", { name: brand }),
+        `<button class="btn danger small" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)) : ""}
     </div>`;
 }
 
@@ -402,7 +513,7 @@ function amazonManageBody(s: EpicSummary): string {
          <button class="btn ghost small" data-act="amazon-import" data-id="${esc(id)}" title="${t("amazon.importDesc")}">${icon("folder", 13)} ${t("amazon.importTitle")}</button>`,
       );
   const saves = s.installed
-    ? group("cloud", t("manage.groupSaves"), `
+    ? group("saves", "cloud", t("manage.groupSaves"), `
         <div class="row mg-row">
           <div class="row-main">
             <div class="mg-title">${t("manage.saveFolderTitle")}</div>
@@ -422,11 +533,11 @@ function amazonManageBody(s: EpicSummary): string {
     : "";
   return `
     <div class="manage-tab-content">
-      ${group("folder", t("manage.groupFiles"), files)}
+      ${group("files", "folder", t("manage.groupFiles"), files)}
       ${saves}
-      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+      ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-      ${s.installed ? group("play", t("manage.groupLaunch"), `
+      ${s.installed ? group("launch", "play", t("manage.groupLaunch"), `
         <div class="row mg-row stack">
           <div class="mg-title">${t("manage.argsTitle")}</div>
           <div class="mg-desc">${t("manage.argsDesc")}</div>
@@ -442,16 +553,14 @@ function amazonManageBody(s: EpicSummary): string {
           <div class="mg-inline end"><button class="btn primary small" data-act="manage-save-launch-extras" data-id="${s.appName}">${t("common.save")}</button></div>
         </div>
       `) : ""}
-      ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtime)}</span>`,
+      ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtime)}</span>`,
         pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${s.appName}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
           playtimeBreakdownHtml(s.appName, s.title), "manage-playtime-meta"))}
-      ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+      ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
-      ${s.installed ? `<div class="list mg-danger">
-        ${row(t("manage.dangerTitle"), t("amazon.uninstallDesc"),
-          `<button class="btn danger small" data-act="amazon-uninstall" data-id="${esc(id)}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)}
-      </div>` : ""}
+      ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("amazon.uninstallDesc"),
+        `<button class="btn danger small" data-act="amazon-uninstall" data-id="${esc(id)}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)) : ""}
     </div>`;
 }
 
@@ -477,9 +586,9 @@ export function renderDrawerManage(s: EpicSummary): string {
     if (!s.installed) {
       return `
         <div class="manage-tab-content">
-          ${group("folder", t("manage.groupFiles"), row(t("steam.managedBy"), t("steam.managedByDesc"),
+          ${group("files", "folder", t("manage.groupFiles"), row(t("steam.managedBy"), t("steam.managedByDesc"),
             `<button class="btn primary small" data-act="steam-action" data-id="${steamId}" data-mode="install">${icon("download", 13)} ${t("common.install")}</button>`))}
-          ${group("cloud", t("manage.groupSaves"), `
+          ${group("saves", "cloud", t("manage.groupSaves"), `
             <div class="row mg-row stack mg-callout">
               <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
               <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
@@ -489,16 +598,16 @@ export function renderDrawerManage(s: EpicSummary): string {
             </div>
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
           `)}
-          ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+          ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
             `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-          ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, playtimeSources(s.appName, s.title).length > 1 ? t("manage.playtimeAllCopies") : t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)))}
-          ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+          ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, playtimeSources(s.appName, s.title).length > 1 ? t("manage.playtimeAllCopies") : t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)))}
+          ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
             `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
         </div>`;
     }
     return `
       <div class="manage-tab-content">
-        ${group("folder", t("manage.groupFiles"), `
+        ${group("files", "folder", t("manage.groupFiles"), `
           ${row(t("steam.managedBy"), t("steam.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
@@ -506,7 +615,7 @@ export function renderDrawerManage(s: EpicSummary): string {
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
         `)}
 
-        ${group("cloud", t("manage.groupSaves"), `
+        ${group("saves", "cloud", t("manage.groupSaves"), `
           <div class="row mg-row stack mg-callout">
             <div class="mg-title">${icon("cloud", 14)} ${t("steam.cloudNoticeTitle")}</div>
             <div class="mg-desc">${t("steam.cloudNoticeDesc")}</div>
@@ -517,18 +626,16 @@ export function renderDrawerManage(s: EpicSummary): string {
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
         `)}
 
-        ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+        ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
-        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)))}
+        ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)))}
 
-        ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+        ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
           `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
 
-        <div class="list mg-danger">
-          ${row(t("manage.dangerTitle"), t("steam.uninstallDesc"),
-            `<button class="btn danger small" data-act="steam-action" data-id="${steamId}" data-mode="uninstall">${icon("trash", 13)} ${t("steam.uninstall")}</button>`)}
-        </div>
+        ${dangerGroup(row(t("manage.dangerTitle"), t("steam.uninstallDesc"),
+          `<button class="btn danger small" data-act="steam-action" data-id="${steamId}" data-mode="uninstall">${icon("trash", 13)} ${t("steam.uninstall")}</button>`))}
       </div>`;
   }
 
@@ -537,7 +644,7 @@ export function renderDrawerManage(s: EpicSummary): string {
     const playtimeGog = playtimeTotalLabel(s.appName, s.title);
     return `
       <div class="manage-tab-content">
-        ${group("folder", t("manage.groupFiles"), `
+        ${group("files", "folder", t("manage.groupFiles"), `
           ${row(t("gog.managedBy"), t("gog.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
@@ -545,7 +652,7 @@ export function renderDrawerManage(s: EpicSummary): string {
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
             `<div id="manage-verify-box-container"></div>`) : ""}
         `)}
-        ${group("cloud", t("manage.groupSaves"), `
+        ${group("saves", "cloud", t("manage.groupSaves"), `
           <div class="row mg-row stack mg-callout">
             <div class="mg-title">${icon("cloud", 14)} ${t("gog.cloudNoticeTitle")}</div>
             <div class="mg-desc">${t("gog.cloudNoticeDesc")}</div>
@@ -555,15 +662,13 @@ export function renderDrawerManage(s: EpicSummary): string {
           </div>
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
         `)}
-        ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+        ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
-        ${group("clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)))}
-        ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+        ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)))}
+        ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
           `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
-        ${s.installed ? `<div class="list mg-danger">
-          ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
-            `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)}
-        </div>` : ""}
+        ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("manage.dangerDesc"),
+          `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)) : ""}
       </div>`;
   }
 
@@ -613,7 +718,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
   return `
     <div class="manage-tab-content">
-      ${s.installed ? group("folder", t("manage.groupFiles"), `
+      ${s.installed ? group("files", "folder", t("manage.groupFiles"), `
         ${row(t("manage.verifyTitle"), t("manage.verifyDesc"),
           `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>`,
           `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
@@ -626,7 +731,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           : ""}
       `) : ""}
 
-      ${s.installed ? group("cloud", t("manage.groupSaves"), `
+      ${s.installed ? group("saves", "cloud", t("manage.groupSaves"), `
         ${partnerSaves
           ? row(t("manage.eosCloudTitle"), t("manage.partnerSaves", { name: partner!.name }), "")
           : `${row(t("manage.eosCloudTitle"), cloudDesc,
@@ -646,10 +751,10 @@ export function renderDrawerManage(s: EpicSummary): string {
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(id)}</div>`}
       `) : ""}
 
-      ${group("image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
+      ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${id}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
 
-      ${s.installed ? group("play", t("manage.groupLaunch"), `
+      ${s.installed ? group("launch", "play", t("manage.groupLaunch"), `
         ${row(t("manage.autoUpdateTitle"), t("manage.autoUpdateDesc"), toggle("manage-toggle-autoupdate", st.autoUpdate))}
         ${row(t("manage.priorityTitle"), t("manage.priorityDesc"), toggle("manage-toggle-priority", st.highPriority))}
         <div class="row mg-row stack">
@@ -671,7 +776,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         </div>
       `) : ""}
 
-      ${group("clock", t("manage.groupPlaytime"), `
+      ${group("playtime", "clock", t("manage.groupPlaytime"), `
         ${row(`${t("manage.totalPlaytime")}: <span id="manage-playtime-val" class="tabular-nums">${esc(playtimeStr)}</span>`,
           pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${id}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
@@ -683,13 +788,11 @@ export function renderDrawerManage(s: EpicSummary): string {
         </div>
       `)}
 
-      ${group("eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
+      ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${id}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
 
-      ${s.installed ? `<div class="list mg-danger">
-        ${row(t("manage.dangerTitle"), t("manage.dangerDesc"),
-          `<button class="btn danger small" data-act="epic-uninstall" data-id="${id}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)}
-      </div>` : ""}
+      ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("manage.dangerDesc"),
+        `<button class="btn danger small" data-act="epic-uninstall" data-id="${id}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)) : ""}
     </div>`;
 }
 
