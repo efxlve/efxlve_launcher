@@ -427,6 +427,8 @@ export const S = {
   achSourceModalOpen: (null) as string | null,
   /** Game whose launcher-only achievement state editor is open. */
   achEditPanelOpen: (null) as string | null,
+  /** Game whose local achievement set editor is open. */
+  achSetPanelOpen: (null) as string | null,
   /** Achievement name whose detail view is open in the game page. */
   achDetail: (null) as string | null,
   /** Steam guide/thread answers keyed by `<appName>:<achievement>`. */

@@ -25,6 +25,16 @@ import {
 import { recordAchievementUnlocks } from "../../../core/achievement-history";
 import { toggleAchievementPin } from "../../../core/achievement-pins";
 import { addAchievementGuide, deleteAchievementNote, flushAchievementNoteSave, removeAchievementGuide } from "../../drawer/ach-notes";
+import {
+  clearAchievementSetScratch,
+  readAchievementSetRows,
+  repaintAchievementSetPanel,
+  setAchievementSetScratch,
+} from "../../drawer/ach-set-editor";
+import {
+  deleteLocalAchievementSet,
+  saveLocalAchievementSet,
+} from "../../../core/achievement-sets";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { askConfirm } from "../../../core/confirm-dialog";
@@ -535,6 +545,87 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     }
 
     /* ---------- Launcher-only achievement state ---------- */
+
+    case "ach-set-editor":
+    case "ach-set-close": {
+      const appName = id ?? S.currentModalAppName;
+      if (!appName) return true;
+      const open = act === "ach-set-editor" && S.achSetPanelOpen !== appName;
+      S.achSetPanelOpen = open ? appName : null;
+      clearAchievementSetScratch();
+      const s = summaryOf(appName);
+      const content = document.getElementById("drawer-tab-content");
+      if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      return true;
+    }
+
+    case "ach-set-create": {
+      const appName = id ?? S.currentModalAppName;
+      if (!appName) return true;
+      S.achSetPanelOpen = appName;
+      setAchievementSetScratch(appName, [{ title: "", description: "" }]);
+      const s = summaryOf(appName);
+      const content = document.getElementById("drawer-tab-content");
+      if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      return true;
+    }
+
+    case "ach-set-add": {
+      const appName = S.achSetPanelOpen;
+      const s = appName ? summaryOf(appName) : undefined;
+      if (!appName || !s) return true;
+      const rows = readAchievementSetRows();
+      rows.push({ title: "", description: "" });
+      setAchievementSetScratch(appName, rows);
+      repaintAchievementSetPanel(appName, s);
+      return true;
+    }
+
+    case "ach-set-remove": {
+      const appName = S.achSetPanelOpen;
+      const s = appName ? summaryOf(appName) : undefined;
+      const index = Number(t.dataset.index);
+      if (!appName || !s || !Number.isInteger(index)) return true;
+      const rows = readAchievementSetRows();
+      if (index < 0 || index >= rows.length) return true;
+      rows.splice(index, 1);
+      setAchievementSetScratch(appName, rows);
+      repaintAchievementSetPanel(appName, s);
+      return true;
+    }
+
+    case "ach-set-save": {
+      const appName = id ?? S.achSetPanelOpen;
+      const s = appName ? summaryOf(appName) : undefined;
+      if (!appName || !s) return true;
+      const count = saveLocalAchievementSet(appName, s.title, readAchievementSetRows());
+      clearAchievementSetScratch();
+      S.achSetPanelOpen = count > 0 ? appName : null;
+      void fetchAndRenderAchievements(appName, true).then(() => {
+        toast(i18n(count > 0 ? "ach.setSaved" : "ach.setDeleted", { n: count }), count > 0 ? "ok" : "");
+      });
+      return true;
+    }
+
+    case "ach-set-delete": {
+      const appName = id ?? S.achSetPanelOpen;
+      if (!appName) return true;
+      void askConfirm({
+        title: i18n("ach.setDeleteTitle"),
+        body: i18n("ach.setDeleteBody"),
+        confirm: i18n("common.delete"),
+        cancel: i18n("common.cancel"),
+      }).then((ok) => {
+        if (!ok) return;
+        deleteLocalAchievementSet(appName);
+        clearAchievementSetScratch();
+        S.achSetPanelOpen = null;
+        void fetchAndRenderAchievements(appName, true).then(() => {
+          toast(i18n("ach.setDeleted"), "ok");
+        });
+      });
+      return true;
+    }
 
     case "ach-pin": {
       const appName = id ?? S.currentModalAppName;
