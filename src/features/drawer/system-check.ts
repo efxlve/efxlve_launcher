@@ -183,34 +183,66 @@ function gpuDetected(facts: PcFacts): string {
 
 /**
  * Free space for the drive the game lives on. `exact` is false when the path
- * is unknown or the drive is not in the list; the row then shows the largest
- * free volume but stays a manual check instead of passing on another drive.
+ * is unknown or the drive is not in the list; the row then stays a manual
+ * check instead of passing on another drive. `missing` means the install path
+ * names a volume that is not currently mounted, so no other drive's free space
+ * may stand in for it.
  */
-function freeSpace(
-  installPath: string | null | undefined,
-): { bytes: number; exact: boolean; isSsd: boolean | null } {
-  if (cachedDrives.length === 0) return { bytes: 0, exact: false, isSsd: null };
+interface FreeSpace {
+  bytes: number;
+  exact: boolean;
+  isSsd: boolean | null;
+  /** Drive letter (no colon) or mount the figure belongs to. */
+  drive: string | null;
+  missing: boolean;
+}
+
+function freeSpace(installPath: string | null | undefined): FreeSpace {
+  if (cachedDrives.length === 0) {
+    return { bytes: 0, exact: false, isSsd: null, drive: null, missing: false };
+  }
   if (installPath) {
     const windowsDrive = /^([A-Za-z]):[\\/]/.exec(installPath);
     if (windowsDrive) {
+      const letter = windowsDrive[1].toUpperCase();
       const hit = cachedDrives.find(
-        (drive) => drive.letter.toLowerCase() === windowsDrive[1].toLowerCase(),
+        (drive) => drive.letter.toUpperCase() === letter,
       );
       if (hit) {
-        return { bytes: hit.available_bytes, exact: true, isSsd: hit.is_ssd ?? null };
+        return {
+          bytes: hit.available_bytes,
+          exact: true,
+          isSsd: hit.is_ssd ?? null,
+          drive: letter,
+          missing: false,
+        };
       }
+      // A disconnected install drive cannot be checked against another
+      // volume; naming it is more honest than showing C: free space.
+      return { bytes: 0, exact: false, isSsd: null, drive: letter, missing: true };
     }
     const mount = cachedDrives
       .filter((drive) => installPath.startsWith(drive.letter))
       .sort((a, b) => b.letter.length - a.letter.length)[0];
     if (mount) {
-      return { bytes: mount.available_bytes, exact: true, isSsd: mount.is_ssd ?? null };
+      return {
+        bytes: mount.available_bytes,
+        exact: true,
+        isSsd: mount.is_ssd ?? null,
+        drive: mount.letter,
+        missing: false,
+      };
     }
   }
+  const largest = cachedDrives.reduce((a, b) =>
+    b.available_bytes > a.available_bytes ? b : a,
+  );
   return {
-    bytes: Math.max(0, ...cachedDrives.map((drive) => drive.available_bytes)),
+    bytes: largest.available_bytes,
     exact: false,
-    isSsd: null,
+    isSsd: largest.is_ssd ?? null,
+    drive: largest.letter,
+    missing: false,
   };
 }
 
@@ -311,11 +343,28 @@ function checkRam(required: string, facts: PcFacts): RequirementCheck | null {
   return { status: has + 0.5 >= values[0] ? "ok" : "fail", detected };
 }
 
+function driveLabel(drive: string): string {
+  return /^[A-Za-z]$/.test(drive) ? `${drive.toUpperCase()}:` : drive;
+}
+
+function storageDetected(free: FreeSpace): string {
+  if (free.missing && free.drive) {
+    return t("storage.driveMissing", { drive: driveLabel(free.drive) });
+  }
+  const parts = [`${fmtBytes(free.bytes)} ${t("storage.free")}`];
+  if (free.drive) parts.push(driveLabel(free.drive));
+  if (free.isSsd === true) parts.push("SSD");
+  else if (free.isSsd === false) parts.push("HDD");
+  return parts.join(" · ");
+}
+
 function checkStorage(required: string, installPath?: string | null): RequirementCheck | null {
   const free = freeSpace(installPath);
+  if (free.missing) {
+    return { status: "manual", detected: storageDetected(free) };
+  }
   if (free.bytes <= 0) return null;
-  const diskKind = free.isSsd === true ? " · SSD" : free.isSsd === false ? " · HDD" : "";
-  const detected = `${fmtBytes(free.bytes)} ${t("storage.free")}${diskKind}`;
+  const detected = storageDetected(free);
   const values = parseSizeValuesGb(required);
   const ssdMentioned = /\bssd\b/i.test(required);
   const ssdRecommended = /recommend|öneril|empfohlen|recommand|recomend/i.test(required);

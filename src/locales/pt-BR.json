@@ -402,6 +402,7 @@
   "storage.games": "Jogos",
   "storage.other": "Outros",
   "storage.free": "Livre",
+  "storage.driveMissing": "A unidade {drive} não foi encontrada",
   "storage.sortSizeDesc": "Maiores primeiro",
   "storage.sortSizeAsc": "Menores primeiro",
   "storage.noGames": "Nenhum jogo instalado neste disco.",

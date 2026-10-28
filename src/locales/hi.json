@@ -420,6 +420,7 @@
   "storage.games": "गेम",
   "storage.other": "अन्य",
   "storage.free": "खाली",
+  "storage.driveMissing": "{drive} ड्राइव नहीं मिली",
   "storage.sortSizeDesc": "सबसे बड़ा पहले",
   "storage.sortSizeAsc": "सबसे छोटा पहले",
   "storage.noGames": "इस ड्राइव पर कोई गेम इंस्टॉल नहीं है।",

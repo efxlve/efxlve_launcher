@@ -420,6 +420,7 @@
   "storage.games": "Oyunlar",
   "storage.other": "Diğer",
   "storage.free": "Boş",
+  "storage.driveMissing": "{drive} sürücüsü bulunamadı",
   "storage.sortSizeDesc": "En büyük önce",
   "storage.sortSizeAsc": "En küçük önce",
   "storage.noGames": "Bu sürücüde kurulu oyun yok.",

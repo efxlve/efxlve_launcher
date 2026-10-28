@@ -402,6 +402,7 @@
   "storage.games": "Игры",
   "storage.other": "Прочее",
   "storage.free": "Свободно",
+  "storage.driveMissing": "Диск {drive} не найден",
   "storage.sortSizeDesc": "Сначала больше",
   "storage.sortSizeAsc": "Сначала меньше",
   "storage.noGames": "На этом диске нет установленных игр.",

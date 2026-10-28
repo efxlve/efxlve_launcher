@@ -402,6 +402,7 @@
   "storage.games": "الألعاب",
   "storage.other": "أخرى",
   "storage.free": "متاح",
+  "storage.driveMissing": "لم يتم العثور على محرك الأقراص {drive}",
   "storage.sortSizeDesc": "الأكبر أولاً",
   "storage.sortSizeAsc": "الأصغر أولاً",
   "storage.noGames": "لا توجد ألعاب مثبتة على محرك الأقراص هذا.",

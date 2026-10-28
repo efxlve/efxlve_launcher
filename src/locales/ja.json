@@ -402,6 +402,7 @@
   "storage.games": "ゲーム",
   "storage.other": "その他",
   "storage.free": "空き",
+  "storage.driveMissing": "ドライブ {drive} が見つかりません",
   "storage.sortSizeDesc": "大きい順",
   "storage.sortSizeAsc": "小さい順",
   "storage.noGames": "このドライブにインストールされたゲームはありません。",

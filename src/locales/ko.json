@@ -402,6 +402,7 @@
   "storage.games": "게임",
   "storage.other": "기타",
   "storage.free": "여유",
+  "storage.driveMissing": "{drive} 드라이브를 찾을 수 없습니다",
   "storage.sortSizeDesc": "큰 용량 순",
   "storage.sortSizeAsc": "작은 용량 순",
   "storage.noGames": "이 드라이브에 설치된 게임이 없습니다.",

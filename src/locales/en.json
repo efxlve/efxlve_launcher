@@ -420,6 +420,7 @@
   "storage.games": "Games",
   "storage.other": "Other",
   "storage.free": "Free",
+  "storage.driveMissing": "Drive {drive} was not found",
   "storage.sortSizeDesc": "Largest first",
   "storage.sortSizeAsc": "Smallest first",
   "storage.noGames": "No games installed on this drive.",

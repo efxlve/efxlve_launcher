@@ -402,6 +402,7 @@
   "storage.games": "Gry",
   "storage.other": "Inne",
   "storage.free": "Wolne",
+  "storage.driveMissing": "Nie znaleziono dysku {drive}",
   "storage.sortSizeDesc": "Największe najpierw",
   "storage.sortSizeAsc": "Najmniejsze najpierw",
   "storage.noGames": "Na tym dysku nie ma zainstalowanych gier.",

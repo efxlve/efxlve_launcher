@@ -402,6 +402,7 @@
   "storage.games": "Jeux",
   "storage.other": "Autre",
   "storage.free": "Libre",
+  "storage.driveMissing": "Le lecteur {drive} est introuvable",
   "storage.sortSizeDesc": "Plus volumineux d'abord",
   "storage.sortSizeAsc": "Plus légers d'abord",
   "storage.noGames": "Aucun jeu installé sur ce lecteur.",

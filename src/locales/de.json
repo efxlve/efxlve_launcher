@@ -402,6 +402,7 @@
   "storage.games": "Spiele",
   "storage.other": "Sonstiges",
   "storage.free": "Frei",
+  "storage.driveMissing": "Laufwerk {drive} wurde nicht gefunden",
   "storage.sortSizeDesc": "Größte zuerst",
   "storage.sortSizeAsc": "Kleinste zuerst",
   "storage.noGames": "Auf diesem Laufwerk sind keine Spiele installiert.",
