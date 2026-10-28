@@ -90,7 +90,7 @@ export function renderSystemTab(
         <aside class="sys-side">
           <section class="card sys-side-card">
             <h3 class="gp-section-title">${icon("layers", 14)} <span>${t("sys.thisCopy")}</span></h3>
-            <div class="sys-copy-list">
+            <div class="sys-copy-list" id="sys-copy-list">
               <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner)}</div>
               ${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}
             </div>

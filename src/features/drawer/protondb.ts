@@ -45,7 +45,7 @@ function summaryHtml(appId: string, summary: ProtonDbSummary): string {
         <span>${esc(t("protondb.title"))}</span>
       </div>
       <div class="hub-feature-val">
-        <button type="button" class="protondb-pill ${esc(tier)}" data-act="open-external-url" data-url="https://www.protondb.com/app/${esc(appId)}" title="${esc(hint)}">${esc(label)}</button>
+        <button type="button" class="protondb-pill ${esc(tier)} sys-copy-status" data-act="open-external-url" data-url="https://www.protondb.com/app/${esc(appId)}" title="${esc(hint)}">${esc(label)}</button>
       </div>
     </div>`;
 }

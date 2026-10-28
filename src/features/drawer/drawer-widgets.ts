@@ -1150,7 +1150,7 @@ export function renderInstalledCopyFacts(
         <div class="hub-feature-icon">${icon("users", 13)}</div>
         <span>${i18nT("feat.eos")}</span>
       </div>
-      <div class="hub-feature-val supported">${i18nT("feat.eosSupported")}</div>
+      <div class="hub-feature-val">${i18nT("feat.eosSupported")}</div>
     </div>`
         : ""
     }

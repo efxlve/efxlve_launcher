@@ -39,7 +39,7 @@ function summaryHtml(appId: string, info: DeckStatus): string {
         <span>${esc(t("deck.title"))}</span>
       </div>
       <div class="hub-feature-val">
-        <button type="button" class="deck-pill ${statusClass(info.category)}" data-act="open-external-url" data-url="https://store.steampowered.com/app/${esc(appId)}/" title="${esc(t("deck.hint"))}">${esc(label)}</button>
+        <button type="button" class="deck-pill ${statusClass(info.category)} sys-copy-status" data-act="open-external-url" data-url="https://store.steampowered.com/app/${esc(appId)}/" title="${esc(t("deck.hint"))}">${esc(label)}</button>
       </div>
     </div>`;
 }

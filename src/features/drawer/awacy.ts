@@ -48,7 +48,7 @@ function summaryHtml(info: AntiCheatStatus): string {
         <span>${esc(t("awacy.title"))}</span>
       </div>
       <div class="hub-feature-val">
-        <button type="button" class="awacy-pill ${esc(known)}" data-act="open-external-url" data-url="${esc(url)}" title="${esc(hint)}">${esc(statusName(status))}</button>
+        <button type="button" class="awacy-pill ${esc(known)} sys-copy-status" data-act="open-external-url" data-url="${esc(url)}" title="${esc(hint)}">${esc(statusName(status))}</button>
       </div>
     </div>`;
 }
