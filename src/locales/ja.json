@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "この PC のコピー",
   "sys.store": "ストア",
   "sys.compatibilityTitle": "プラットフォーム互換性",
+  "sys.compatHelpTitle": "プラットフォーム互換性の詳細",
+  "sys.compatHelpNote": "これらの評価は Linux と Steam Deck 上のゲームについてのもので、この Windows PC のものではありません。",
   "critic.scoresTitle": "スコア",
   "settings.ssRootsTitle": "ギャラリーが読むフォルダー",
   "settings.ssRootsDesc": "選択したフォルダー、ストアと Game Bar の保存先、追加したフォルダー:",

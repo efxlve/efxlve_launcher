@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "The copy on this PC",
   "sys.store": "Store",
   "sys.compatibilityTitle": "Platform compatibility",
+  "sys.compatHelpTitle": "Platform compatibility details",
+  "sys.compatHelpNote": "These ratings describe the game on Linux and Steam Deck, not this Windows PC.",
   "critic.scoresTitle": "Scores",
   "settings.ssRootsTitle": "Folders the gallery reads",
   "settings.ssRootsDesc": "Your chosen folder, the folders the stores and Game Bar capture into, and any folder you add:",

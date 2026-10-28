@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "Kopia na tym PC",
   "sys.store": "Sklep",
   "sys.compatibilityTitle": "Zgodność z platformą",
+  "sys.compatHelpTitle": "Szczegóły zgodności z platformą",
+  "sys.compatHelpNote": "Te oceny dotyczą gry na Linuksie i Steam Decku, a nie tego komputera z Windows.",
   "critic.scoresTitle": "Oceny",
   "settings.ssRootsTitle": "Foldery galerii",
   "settings.ssRootsDesc": "Twój folder, foldery sklepów i Game Bara oraz foldery dodane przez Ciebie:",

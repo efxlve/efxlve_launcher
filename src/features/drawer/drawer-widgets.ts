@@ -1152,18 +1152,40 @@ export function renderControllerHelp(
   const fullTip = nativeDualSense ? i18nT("feat.dualSenseTip") : i18nT("feat.xboxGamepadTip");
   const showDs4 = ctrl.className === "supported" && !nativeDualSense;
   const row = (dot: string, title: string, body: string): string => `
-    <div class="ctrl-help-row">
-      <div class="ctrl-help-row-title"><span class="ctrl-help-dot ${dot}"></span>${esc(title)}</div>
+    <div class="help-tip-row">
+      <div class="help-tip-row-title"><span class="help-tip-dot ${dot}"></span>${esc(title)}</div>
       <p>${esc(body)}</p>
     </div>`;
   return `
-    <div class="ctrl-help-pop">
-      <p class="ctrl-help-note">${esc(i18nT("ctrl.helpSource"))}</p>
+    <div class="help-tip-pop" id="ctrl-help-pop">
+      <p class="help-tip-note">${esc(i18nT("ctrl.helpSource"))}</p>
       ${row("is-ok", i18nT("ctrl.statusFull"), fullTip)}
       ${row("is-partial", i18nT("ctrl.statusPartial"), i18nT("feat.partialPadTip"))}
       ${row("is-primary", i18nT("ctrl.statusPrimary"), i18nT("feat.kbMouseTip"))}
       ${row("is-none", i18nT("ctrl.statusNone"), i18nT("ctrl.helpNone"))}
       ${showDs4 ? row("is-partial", "DS4Windows", i18nT("feat.xboxGamepadTip")) : ""}
+    </div>`;
+}
+
+/**
+ * The help popover behind the platform compatibility card: the two Linux
+ * ratings and the anti-cheat source, none of which describe this PC.
+ */
+export function renderCompatibilityHelp(s: EpicSummary): string {
+  const source = sourceOfKey(s.appName);
+  const steam = source === "steam";
+  const anticheat = steam || source === "epic";
+  const row = (title: string, body: string): string => `
+    <div class="help-tip-row">
+      <div class="help-tip-row-title"><span class="help-tip-dot is-source"></span>${esc(title)}</div>
+      <p>${esc(body)}</p>
+    </div>`;
+  return `
+    <div class="help-tip-pop" id="compat-help-pop">
+      <p class="help-tip-note">${esc(i18nT("sys.compatHelpNote"))}</p>
+      ${steam ? row(i18nT("deck.title"), i18nT("deck.hint")) : ""}
+      ${steam ? row(i18nT("protondb.title"), i18nT("protondb.hint")) : ""}
+      ${anticheat ? row(i18nT("awacy.title"), i18nT("awacy.hint")) : ""}
     </div>`;
 }
 

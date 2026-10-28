@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "इस पीसी पर मौजूद कॉपी",
   "sys.store": "स्टोर",
   "sys.compatibilityTitle": "प्लेटफ़ॉर्म संगतता",
+  "sys.compatHelpTitle": "प्लेटफ़ॉर्म संगतता विवरण",
+  "sys.compatHelpNote": "ये रेटिंग गेम की Linux और Steam Deck पर स्थिति बताती हैं, इस Windows PC पर नहीं।",
   "critic.scoresTitle": "स्कोर",
   "settings.ssRootsTitle": "गैलरी जिन फ़ोल्डरों को पढ़ती है",
   "settings.ssRootsDesc": "आपका चुना फ़ोल्डर, स्टोर और Game Bar के फ़ोल्डर तथा आपके जोड़े गए फ़ोल्डर:",

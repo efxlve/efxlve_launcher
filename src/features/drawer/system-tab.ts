@@ -23,6 +23,7 @@ import {
   isWinSys,
   renderControllerCard,
   renderControllerHelp,
+  renderCompatibilityHelp,
   renderGameFeatures,
   renderInstalledCopyFacts,
   renderSupportedLanguages,
@@ -93,7 +94,13 @@ export function renderSystemTab(
     : "";
   const compatCard = `
           <section class="card sys-side-card" id="sys-compat-card">
-            <h3 class="gp-section-title">${icon("monitor", 14)} <span>${t("sys.compatibilityTitle")}</span></h3>
+            <div class="sys-side-head">
+              <h3 class="gp-section-title">${icon("monitor", 14)} <span>${t("sys.compatibilityTitle")}</span></h3>
+              <div class="help-tip" data-help-tip>
+                <button type="button" class="help-tip-btn" data-help-btn aria-expanded="false" aria-controls="compat-help-pop" aria-label="${esc(t("sys.compatHelpTitle"))}">${icon("info", 14)}</button>
+                ${renderCompatibilityHelp(s)}
+              </div>
+            </div>
             <div class="sys-fact-list" id="sys-compat-list">
               ${renderDeckHost(s)}${renderProtonDbHost(s)}${renderAntiCheatHost(s)}
             </div>
@@ -113,10 +120,10 @@ export function renderSystemTab(
           <section class="card sys-side-card">
             <div class="sys-side-head">
               <h3 class="gp-section-title">${icon("gamepad-2", 14)} <span>${t("feat.controller")}</span></h3>
-              <details class="ctrl-help">
-                <summary class="ctrl-help-btn" title="${esc(t("ctrl.helpTitle"))}" aria-label="${esc(t("ctrl.helpTitle"))}">${icon("info", 14)}</summary>
+              <div class="help-tip" data-help-tip>
+                <button type="button" class="help-tip-btn" data-help-btn aria-expanded="false" aria-controls="ctrl-help-pop" aria-label="${esc(t("ctrl.helpTitle"))}">${icon("info", 14)}</button>
                 ${renderControllerHelp(s, g, reqData)}
-              </details>
+              </div>
             </div>
             <div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>
           </section>
@@ -410,3 +417,71 @@ export function renderRequirementPanel(s: EpicSummary): string {
         : ""
     }`;
 }
+
+/**
+ * The System tab's info popovers. Hover previews the note, a click pins it
+ * open, and a click anywhere else closes it. Delegated, so a repaint of the
+ * tab never leaves a listener behind.
+ */
+let pinnedHelp: HTMLElement | null = null;
+
+function helpTipOf(target: EventTarget | null): HTMLElement | null {
+  return target instanceof Element ? target.closest<HTMLElement>("[data-help-tip]") : null;
+}
+
+function setHelpExpanded(root: HTMLElement, expanded: boolean): void {
+  root.querySelector<HTMLElement>("[data-help-btn]")?.setAttribute("aria-expanded", expanded ? "true" : "false");
+}
+
+function closeHelpTip(root: HTMLElement): void {
+  root.classList.remove("is-hover", "is-pinned");
+  root.removeAttribute("data-help-suppress");
+  setHelpExpanded(root, false);
+  if (pinnedHelp === root) pinnedHelp = null;
+}
+
+function pinHelpTip(root: HTMLElement): void {
+  if (pinnedHelp && pinnedHelp !== root) closeHelpTip(pinnedHelp);
+  pinnedHelp = root;
+  root.classList.add("is-pinned");
+  setHelpExpanded(root, true);
+}
+
+document.addEventListener("pointerover", (event) => {
+  const root = helpTipOf(event.target);
+  if (!root || root.hasAttribute("data-help-suppress")) return;
+  root.classList.add("is-hover");
+  setHelpExpanded(root, true);
+  // Only one note is on screen: inspecting another tip yields the pinned one.
+  if (pinnedHelp && pinnedHelp !== root) closeHelpTip(pinnedHelp);
+});
+
+document.addEventListener("pointerout", (event) => {
+  const root = helpTipOf(event.target);
+  if (!root) return;
+  const next = event.relatedTarget;
+  if (next instanceof Node && root.contains(next)) return;
+  root.classList.remove("is-hover");
+  root.removeAttribute("data-help-suppress");
+  if (pinnedHelp !== root) setHelpExpanded(root, false);
+});
+
+document.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const button = target?.closest<HTMLElement>("[data-help-btn]");
+  if (button) {
+    const root = button.closest<HTMLElement>("[data-help-tip]");
+    if (!root) return;
+    if (pinnedHelp === root) {
+      const wasHovered = root.classList.contains("is-hover");
+      closeHelpTip(root);
+      // The pointer still rests on the button; keep it closed until it leaves.
+      if (wasHovered) root.setAttribute("data-help-suppress", "1");
+    } else {
+      pinHelpTip(root);
+    }
+    return;
+  }
+  if (target?.closest(".help-tip-pop")) return;
+  if (pinnedHelp) closeHelpTip(pinnedHelp);
+});

@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "สำเนาบนเครื่องนี้",
   "sys.store": "ร้านค้า",
   "sys.compatibilityTitle": "ความเข้ากันได้ของแพลตฟอร์ม",
+  "sys.compatHelpTitle": "รายละเอียดความเข้ากันได้ของแพลตฟอร์ม",
+  "sys.compatHelpNote": "คะแนนเหล่านี้บอกสถานะของเกมบน Linux และ Steam Deck ไม่ใช่บนพีซี Windows เครื่องนี้",
   "critic.scoresTitle": "คะแนน",
   "settings.ssRootsTitle": "โฟลเดอร์ที่แกลเลอรีอ่าน",
   "settings.ssRootsDesc": "โฟลเดอร์ที่คุณเลือก โฟลเดอร์ของสโตร์และ Game Bar และโฟลเดอร์ที่คุณเพิ่ม:",

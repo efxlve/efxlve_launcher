@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "Bu bilgisayardaki kopya",
   "sys.store": "Mağaza",
   "sys.compatibilityTitle": "Platform uyumluluğu",
+  "sys.compatHelpTitle": "Platform uyumluluğu detayları",
+  "sys.compatHelpNote": "Bu dereceler oyunun Linux ve Steam Deck üzerindeki durumunu anlatır; bu Windows PC'yi değil.",
   "critic.scoresTitle": "Puanlar",
   "settings.ssRootsTitle": "Galerinin okuduğu klasörler",
   "settings.ssRootsDesc": "Seçtiğin klasör, mağazalar ile Game Bar'ın kaydettiği klasörler ve eklediğin klasörler:",

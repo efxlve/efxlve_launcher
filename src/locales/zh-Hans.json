@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "此电脑上的副本",
   "sys.store": "商店",
   "sys.compatibilityTitle": "平台兼容性",
+  "sys.compatHelpTitle": "平台兼容性详情",
+  "sys.compatHelpNote": "这些评级描述的是游戏在 Linux 和 Steam Deck 上的情况，而不是这台 Windows PC。",
   "critic.scoresTitle": "评分",
   "settings.ssRootsTitle": "图库读取的文件夹",
   "settings.ssRootsDesc": "你选择的文件夹、商店和 Game Bar 保存的位置，以及你添加的文件夹：",

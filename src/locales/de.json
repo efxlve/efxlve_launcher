@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "Die Kopie auf diesem PC",
   "sys.store": "Shop",
   "sys.compatibilityTitle": "Plattform-Kompatibilität",
+  "sys.compatHelpTitle": "Details zur Plattform-Kompatibilität",
+  "sys.compatHelpNote": "Diese Bewertungen beschreiben das Spiel unter Linux und auf dem Steam Deck, nicht diesen Windows-PC.",
   "critic.scoresTitle": "Wertungen",
   "settings.ssRootsTitle": "Ordner der Galerie",
   "settings.ssRootsDesc": "Dein gewählter Ordner, die Ordner der Stores und der Game Bar und alle von dir hinzugefügten Ordner:",

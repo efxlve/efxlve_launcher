@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "النسخة على هذا الجهاز",
   "sys.store": "المتجر",
   "sys.compatibilityTitle": "توافق المنصة",
+  "sys.compatHelpTitle": "تفاصيل توافق المنصة",
+  "sys.compatHelpNote": "تصف هذه التقييمات اللعبة على Linux وSteam Deck، وليس على هذا الكمبيوتر بنظام Windows.",
   "critic.scoresTitle": "التقييمات",
   "settings.ssRootsTitle": "المجلدات التي تقرأها المعرض",
   "settings.ssRootsDesc": "مجلدك المختار ومجلدات المتاجر وGame Bar والمجلدات التي تضيفها:",

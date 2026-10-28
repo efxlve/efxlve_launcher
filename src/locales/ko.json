@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "이 PC의 복사본",
   "sys.store": "스토어",
   "sys.compatibilityTitle": "플랫폼 호환성",
+  "sys.compatHelpTitle": "플랫폼 호환성 세부 정보",
+  "sys.compatHelpNote": "이 평가는 이 Windows PC가 아니라 Linux 및 Steam Deck에서의 게임 상태를 나타냅니다.",
   "critic.scoresTitle": "점수",
   "settings.ssRootsTitle": "갤러리가 읽는 폴더",
   "settings.ssRootsDesc": "선택한 폴더, 스토어 및 게임 바 저장 폴더, 직접 추가한 폴더:",

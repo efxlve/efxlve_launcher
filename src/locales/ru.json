@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "Копия на этом ПК",
   "sys.store": "Магазин",
   "sys.compatibilityTitle": "Совместимость с платформой",
+  "sys.compatHelpTitle": "Подробности о совместимости с платформой",
+  "sys.compatHelpNote": "Эти оценки описывают игру в Linux и на Steam Deck, а не на этом ПК с Windows.",
   "critic.scoresTitle": "Оценки",
   "settings.ssRootsTitle": "Папки галереи",
   "settings.ssRootsDesc": "Ваша папка, папки магазинов и Game Bar и добавленные вами папки:",

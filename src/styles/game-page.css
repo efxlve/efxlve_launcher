@@ -2628,19 +2628,19 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .ctrl-support-state.is-primary { color: var(--text-2); }
 .ctrl-support-state.is-none { color: var(--text-3); }
 
-/* Controller help popover */
-.ctrl-help { position: relative; display: flex; }
-.ctrl-help summary { list-style: none; }
-.ctrl-help summary::-webkit-details-marker { display: none; }
-.ctrl-help-btn {
+/* Info popovers (controller and platform cards): hover previews, click pins. */
+.help-tip { position: relative; display: flex; }
+.help-tip-btn {
   width: 24px; height: 24px; display: grid; place-items: center;
+  padding: 0; border: none; background: transparent;
   border-radius: var(--r-sm); color: var(--text-3); cursor: pointer;
   transition: background-color var(--ease), color var(--ease);
 }
-.ctrl-help-btn:hover, .ctrl-help[open] .ctrl-help-btn {
+.help-tip-btn:hover, .help-tip:is(.is-hover, .is-pinned) .help-tip-btn {
   background: var(--surface-2); color: var(--text);
 }
-.ctrl-help-pop {
+.help-tip-pop {
+  display: none;
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 70;
   width: 300px; max-width: calc(100vw - 48px);
   max-height: min(420px, calc(100vh - 120px)); overflow-y: auto;
@@ -2652,20 +2652,29 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
 }
-.ctrl-help-note { margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
-.ctrl-help-row + .ctrl-help-row {
+.help-tip:is(.is-hover, .is-pinned) .help-tip-pop { display: block; }
+/* Bridge the 8px gap so the pointer can travel from the button to the note. */
+.help-tip::after {
+  content: ""; display: none;
+  position: absolute; top: 100%; right: 0;
+  width: 300px; max-width: calc(100vw - 48px); height: 8px;
+}
+.help-tip:is(.is-hover, .is-pinned)::after { display: block; }
+.help-tip-note { margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
+.help-tip-row + .help-tip-row {
   margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line);
 }
-.ctrl-help-row-title {
+.help-tip-row-title {
   display: flex; align-items: center; gap: 7px;
   font-size: 12px; font-weight: 600; color: var(--text);
 }
-.ctrl-help-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
-.ctrl-help-dot.is-ok { color: var(--ok); }
-.ctrl-help-dot.is-partial { color: var(--warn); }
-.ctrl-help-dot.is-primary { color: var(--text-2); }
-.ctrl-help-dot.is-none { color: var(--text-3); }
-.ctrl-help-row p { margin: 3px 0 0 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
+.help-tip-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.help-tip-dot.is-ok { color: var(--ok); }
+.help-tip-dot.is-partial { color: var(--warn); }
+.help-tip-dot.is-primary { color: var(--text-2); }
+.help-tip-dot.is-none { color: var(--text-3); }
+.help-tip-dot.is-source { color: var(--text-3); }
+.help-tip-row p { margin: 3px 0 0 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
 
 /* A sidebar card whose own block came back empty: it has nothing to frame. */
 .gp-side-card.is-empty,

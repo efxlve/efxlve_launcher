@@ -2434,6 +2434,8 @@
   "sys.thisCopy": "La copia en este PC",
   "sys.store": "Tienda",
   "sys.compatibilityTitle": "Compatibilidad de la plataforma",
+  "sys.compatHelpTitle": "Detalles de compatibilidad de la plataforma",
+  "sys.compatHelpNote": "Estas valoraciones describen el juego en Linux y Steam Deck, no en este PC con Windows.",
   "critic.scoresTitle": "Puntuaciones",
   "settings.ssRootsTitle": "Carpetas de la galería",
   "settings.ssRootsDesc": "Tu carpeta elegida, las carpetas de las tiendas y Game Bar y las carpetas que añadas:",
