@@ -33,6 +33,18 @@ export interface PcFacts {
   directx: string;
   /** 122, 121, 120, 111, 110… / 0. */
   directxLevel: number;
+  /** 0 = no DXR, 10 = DXR 1.0, 11 = DXR 1.1, 12 = DXR 1.2. */
+  raytracingTier: number;
+  /** 0 = no mesh shaders, 10 = tier 1. */
+  meshShaderTier: number;
+  /** 0 = no VRS, 1 = tier 1, 2 = tier 2. */
+  shadingRateTier: number;
+  /** 0 = no sampler feedback, 90 = tier 0.9, 100 = tier 1.0. */
+  samplerFeedbackTier: number;
+  /** False when Windows could not answer the DX12 feature queries. */
+  dx12FeaturesKnown: boolean;
+  /** DXR 1.1 + mesh shaders + VRS tier 2 + sampler feedback 0.9. */
+  dx12Ultimate: boolean;
 }
 
 interface PcCheckSystem extends PcFacts {
@@ -91,7 +103,19 @@ export function ensurePcFacts(): Promise<void> {
       epicGetSystemDrives().catch(() => [] as SystemDriveInfo[]),
     ]);
     if (generation !== loadGeneration) return;
-    if (system && system.memoryMb > 0) cachedFacts = system;
+    if (system && system.memoryMb > 0) {
+      // Older dev backends do not send the DX12 fields yet; default them so a
+      // hot-reloaded webview does not compare undefined tiers.
+      cachedFacts = {
+        ...system,
+        raytracingTier: system.raytracingTier ?? 0,
+        meshShaderTier: system.meshShaderTier ?? 0,
+        shadingRateTier: system.shadingRateTier ?? 0,
+        samplerFeedbackTier: system.samplerFeedbackTier ?? 0,
+        dx12FeaturesKnown: system.dx12FeaturesKnown ?? false,
+        dx12Ultimate: system.dx12Ultimate ?? false,
+      };
+    }
     cachedDrives = Array.isArray(drives) ? drives : [];
   })().finally(() => {
     if (generation !== loadGeneration) return;
@@ -173,9 +197,16 @@ function requiredDirectXLevel(text: string): number | null {
 }
 
 function checkDirectX(required: string, facts: PcFacts): RequirementCheck | null {
-  const detected = facts.directx || "";
+  const detected = [facts.directx, facts.dx12Ultimate ? "DX12 Ultimate" : ""]
+    .filter(Boolean)
+    .join(" · ");
   const level = Number(facts.directxLevel) || 0;
   if (level <= 0) return detected ? { status: "manual", detected } : null;
+  // "DirectX 12 Ultimate" is a feature set, not only feature level 12_2.
+  if (/\bultimate\b/i.test(required)) {
+    if (!facts.dx12FeaturesKnown) return { status: "manual", detected };
+    if (!facts.dx12Ultimate) return { status: "fail", detected };
+  }
   const needed = requiredDirectXLevel(required);
   if (!needed) return { status: "manual", detected };
   return { status: level >= needed ? "ok" : "fail", detected };
@@ -275,6 +306,61 @@ function checkOs(required: string, facts: PcFacts): RequirementCheck | null {
   const neededVersion = requiredWindowsVersion(required);
   if (!neededVersion) return { status: "manual", detected };
   return { status: win.version >= neededVersion ? "ok" : "fail", detected };
+}
+
+function checkGraphicsFeature(
+  item: VerifiedHardwareItem,
+  required: string,
+  facts: PcFacts,
+): RequirementCheck | null {
+  const text = required.trim().toLowerCase();
+  const negative = /^(no|none|not required|n\/?a|yok|gerekmiyor|non|nein|nicht)\b/.test(text);
+  const optional = /optional|recommended|öneril|empfohlen|recommand|recomend/.test(text);
+  const status = (supported: boolean): RequirementStatus =>
+    supported ? "ok" : optional ? "partial" : "fail";
+  // The row says the feature is not required: it is met even when the probe
+  // could not run.
+  if (negative) return { status: "ok", detected: "—" };
+  // Some stores put the feature name in a generic "Other" row instead of the
+  // title; read the value in that case.
+  const label = item.label.toLowerCase();
+  const target = /^(other|additional|ek|notes)/.test(label) ? text : label;
+
+  if (/ray\s*tracing|raytracing|lancer de rayons|strahlverfolgung|trazado de rayos|ışın izleme|işın izleme/.test(target)) {
+    if (!facts.dx12FeaturesKnown) return { status: "manual", detected: "—" };
+    const needs12 = /\b1[.,]2\b/.test(text);
+    const needs11 = /\b1[.,]1\b/.test(text) || needs12;
+    const tier = facts.raytracingTier;
+    const supported = needs12 ? tier >= 12 : needs11 ? tier >= 11 : tier >= 10;
+    const detected = tier >= 12 ? "DXR 1.2" : tier >= 11 ? "DXR 1.1" : tier >= 10 ? "DXR 1.0" : "—";
+    return { status: status(supported), detected };
+  }
+
+  if (/mesh\s*shader|mesh-shader|nuanceur de maillage|mesh gölgelendirici/.test(target)) {
+    if (!facts.dx12FeaturesKnown) return { status: "manual", detected: "—" };
+    const supported = facts.meshShaderTier >= 10;
+    return { status: status(supported), detected: supported ? "Mesh Shader Tier 1" : "—" };
+  }
+
+  if (/variable\s*rate\s*shading|\bvrs\b|taux de rafraîchissement variable|değişken hızlı gölgelendirme/.test(target)) {
+    if (!facts.dx12FeaturesKnown) return { status: "manual", detected: "—" };
+    const tier = facts.shadingRateTier;
+    const needs2 = /\btier\s*2\b|\b2\b/.test(text);
+    const supported = needs2 ? tier >= 2 : tier >= 1;
+    const detected = tier >= 2 ? "VRS Tier 2" : tier >= 1 ? "VRS Tier 1" : "—";
+    return { status: status(supported), detected };
+  }
+
+  if (/sampler\s*feedback|rétroaction d'échantillonnage|örnekleyici geri bildirimi/.test(target)) {
+    if (!facts.dx12FeaturesKnown) return { status: "manual", detected: "—" };
+    const tier = facts.samplerFeedbackTier;
+    const needs10 = /\b1[.,]0\b/.test(text);
+    const supported = needs10 ? tier >= 100 : tier >= 90;
+    const detected = tier >= 100 ? "Sampler Feedback 1.0" : tier >= 90 ? "Sampler Feedback 0.9" : "—";
+    return { status: status(supported), detected };
+  }
+
+  return { status: "manual", detected: "—" };
 }
 
 function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
@@ -422,6 +508,7 @@ export function checkRequirement(
     case "gpu": return checkGpu(required, facts);
     case "storage": return checkStorage(required, installPath);
     case "directx": return checkDirectX(required, facts);
+    case "feature": return checkGraphicsFeature(item, required, facts);
     default:
       return null;
   }

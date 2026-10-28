@@ -37,6 +37,12 @@ interface PcCheckSystem {
   gpuMemoryMb: number;
   directx?: string;
   directxLevel?: number;
+  raytracingTier?: number;
+  meshShaderTier?: number;
+  shadingRateTier?: number;
+  samplerFeedbackTier?: number;
+  dx12FeaturesKnown?: boolean;
+  dx12Ultimate?: boolean;
   appVersion: string;
 }
 
@@ -79,6 +85,22 @@ function hardwareChecks(system: PcCheckSystem | null): Check[] {
     ? `${system.gpu}${system.gpuMemoryMb > 0 ? ` · ${gigabytes(system.gpuMemoryMb)}` : ""}`
     : "—";
   const ramGb = system.memoryMb / 1024;
+  const rayTracing = system.raytracingTier ?? 0;
+  const meshShaders = system.meshShaderTier ?? 0;
+  const shadingRate = system.shadingRateTier ?? 0;
+  const samplerFeedback = system.samplerFeedbackTier ?? 0;
+  const dx12Features = [
+    rayTracing >= 12 ? "DXR 1.2" : rayTracing >= 11 ? "DXR 1.1" : rayTracing >= 10 ? "DXR 1.0" : "",
+    meshShaders >= 10 ? "Mesh 1" : "",
+    shadingRate >= 2 ? "VRS 2" : shadingRate >= 1 ? "VRS 1" : "",
+    samplerFeedback >= 100 ? "SF 1.0" : samplerFeedback >= 90 ? "SF 0.9" : "",
+  ].filter(Boolean);
+  const dx12UltimateValue =
+    system.dx12FeaturesKnown === false
+      ? "—"
+      : dx12Features.length > 0
+        ? dx12Features.join(" · ")
+        : "—";
 
   return [
     {
@@ -107,6 +129,13 @@ function hardwareChecks(system: PcCheckSystem | null): Check[] {
       value: system.directx || "—",
       level: system.directx ? "ok" : "warn",
     },
+    ...((system.directxLevel ?? 0) >= 120
+      ? [{
+          label: "DirectX 12 Ultimate",
+          value: dx12UltimateValue,
+          level: system.dx12Ultimate ? "ok" as const : "warn" as const,
+        }]
+      : []),
   ];
 }
 

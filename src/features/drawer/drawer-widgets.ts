@@ -1464,6 +1464,7 @@ export type HardwareKind =
   | "ram"
   | "gpu"
   | "directx"
+  | "feature"
   | "storage"
   | "sound"
   | "network"
@@ -1483,6 +1484,7 @@ const HW_ORDER: HardwareKind[] = [
   "ram",
   "gpu",
   "directx",
+  "feature",
   "storage",
   "sound",
   "network",
@@ -1495,6 +1497,7 @@ const HW_ICON: Record<HardwareKind, IconName> = {
   ram: "layers",
   gpu: "sliders",
   directx: "zap",
+  feature: "sparkles",
   storage: "hard-drive",
   sound: "volume-2",
   network: "globe",
@@ -1508,6 +1511,7 @@ export function classifyHardwareKind(title: string, sampleValue = ""): HardwareK
   if (h.includes("memory") || h.includes("bellek") || h.includes("ram") || h.includes("mémoire") || h.includes("arbeitsspeicher") || h.includes("memoria")) return "ram";
   if (h.includes("storage") || h.includes("depolama") || h.includes("space") || h.includes("disk") || h.includes("hard drive") || h.includes("hdd") || h.includes("ssd") || h.includes("alan") || h.includes("speicherplatz") || h.includes("espace")) return "storage";
   if (h.includes("graphics") || h.includes("video") || h.includes("ekran") || h.includes("gpu") || h.includes("grafik") || h.includes("carte graphique") || h.includes("tarjet")) return "gpu";
+  if (/ray\s*tracing|raytracing|mesh\s*shader|variable\s*rate\s*shading|\bvrs\b|sampler\s*feedback|ışın\s*izleme|işın\s*izleme|strahlverfolgung|trazado de rayos|lancer de rayons/.test(h)) return "feature";
   if (h.includes("direct") || h.includes("vulkan") || h.includes("opengl") || h.includes("shader")) return "directx";
   if (h.includes("sound") || h.includes("ses") || h.includes("audio")) return "sound";
   if (h.includes("net") || h.includes("ağ") || h.includes("internet") || h.includes("broadband") || h.includes("réseau")) return "network";
@@ -1516,6 +1520,7 @@ export function classifyHardwareKind(title: string, sampleValue = ""): HardwareK
   const v = sampleValue.toLowerCase().trim();
   if (v) {
     if (/^(windows|win\s*\d|macos|os\s*x|ubuntu|linux|64-bit\s+windows)\b/i.test(v)) return "os";
+    if (/ray\s*tracing|mesh\s*shader|variable\s*rate\s*shading|\bvrs\b|sampler\s*feedback/i.test(v)) return "feature";
     if (/^(directx|dx\s*\d|version\s*(9|10|11|12)|11|12)\b/i.test(v)) return "directx";
     if (/^\d+\s*(gb|mb)\s*(ram|bellek|memory)?$/i.test(v)) return "ram";
     if (/^\d+([.,]\d+)?\s*(gb|mb|tb)\s*(available|free|boş|disk|ssd|hdd)\b/i.test(v)) return "storage";
@@ -1534,6 +1539,8 @@ export function hardwareLabelForKind(kind: HardwareKind, fallbackTitle = ""): st
     case "storage": return i18nT("hw.storage");
     case "gpu": return i18nT("hw.gpu");
     case "directx": return i18nT("hw.directx");
+    case "feature":
+      return fallbackTitle.trim() || i18nT("hw.other");
     case "sound": return i18nT("hw.sound");
     case "network": return i18nT("hw.net");
     case "other":
@@ -1613,7 +1620,9 @@ function mergeHardwareValues(existing: string, incoming: string): string {
  * when a store omits them on the second column.
  */
 export function verifySystemDetails(details: SystemDetailItem[]): VerifiedHardwareItem[] {
-  const byKind = new Map<HardwareKind, VerifiedHardwareItem>();
+  // Feature rows keep their own names (Ray Tracing, Mesh Shaders…), so they
+  // are keyed by title; the fixed hardware rows keep one entry per kind.
+  const byKey = new Map<string, VerifiedHardwareItem>();
 
   for (const d of details) {
     const rawTitle = (d.title || "").trim();
@@ -1623,12 +1632,13 @@ export function verifySystemDetails(details: SystemDetailItem[]): VerifiedHardwa
     const recVal = sanitizeRequirementText(d.recommended, rawTitle, kind);
     if (!minVal && !recVal) continue;
 
-    const existing = byKind.get(kind);
+    const key = kind === "feature" ? `feature:${rawTitle.toLowerCase()}` : kind;
+    const existing = byKey.get(key);
     if (existing) {
       existing.minimum = mergeHardwareValues(existing.minimum, minVal);
       existing.recommended = mergeHardwareValues(existing.recommended, recVal);
     } else {
-      byKind.set(kind, {
+      byKey.set(key, {
         kind,
         label: hardwareLabelForKind(kind, rawTitle),
         iconName: HW_ICON[kind],
@@ -1638,7 +1648,7 @@ export function verifySystemDetails(details: SystemDetailItem[]): VerifiedHardwa
     }
   }
 
-  const list = Array.from(byKind.values()).sort(
+  const list = Array.from(byKey.values()).sort(
     (a, b) => HW_ORDER.indexOf(a.kind) - HW_ORDER.indexOf(b.kind),
   );
 

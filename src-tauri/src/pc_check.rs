@@ -6,6 +6,39 @@
 
 use serde::Serialize;
 
+/// Tiers reported by the D3D12 feature queries for the gaming adapter.
+#[derive(Debug, Clone, Copy, Default)]
+struct Dx12Tiers {
+    /// False when no D3D12 device could be created, so a missing tier is not
+    /// mistaken for hardware that answered "not supported".
+    known: bool,
+    raytracing: u32,
+    mesh_shader: u32,
+    shading_rate: u32,
+    sampler_feedback: u32,
+}
+
+impl Dx12Tiers {
+    fn ultimate(&self) -> bool {
+        // DX12 12_2 / Ultimate requires DXR 1.1, mesh tier 1, VRS tier 2 and
+        // sampler feedback tier 0.9; tier 1.0 is a higher optional step.
+        self.raytracing >= 11
+            && self.mesh_shader >= 10
+            && self.shading_rate >= 2
+            && self.sampler_feedback >= 90
+    }
+}
+
+struct GpuInfo {
+    name: String,
+    memory_mb: u64,
+    vendor_id: u32,
+    device_id: u32,
+    directx: String,
+    directx_level: u32,
+    tiers: Dx12Tiers,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PcCheckSystem {
@@ -33,6 +66,18 @@ pub struct PcCheckSystem {
     pub directx: String,
     /// Highest D3D12/D3D11 feature level: 122, 121, 120, 111, 110… / 0.
     pub directx_level: u32,
+    /// 0 = no DXR, 10 = DXR 1.0, 11 = DXR 1.1.
+    pub raytracing_tier: u32,
+    /// 0 = no mesh shaders, 10 = tier 1.
+    pub mesh_shader_tier: u32,
+    /// 0 = no VRS, 1 = tier 1, 2 = tier 2.
+    pub shading_rate_tier: u32,
+    /// 0 = no sampler feedback, 90 = tier 0.9, 100 = tier 1.0.
+    pub sampler_feedback_tier: u32,
+    /// True when the device answered the DX12 feature queries.
+    pub dx12_features_known: bool,
+    /// DXR 1.1 + mesh shaders + VRS tier 2 + sampler feedback tier 1.0.
+    pub dx12_ultimate: bool,
     pub app_version: String,
 }
 
@@ -73,8 +118,8 @@ pub fn pc_check_system() -> PcCheckSystem {
     let logical_cores = cpus.len();
     let physical_cores = system.physical_core_count().unwrap_or(logical_cores);
 
-    let (gpu, gpu_memory_mb, gpu_vendor_id, gpu_device_id, directx, directx_level) =
-        gpu_and_directx();
+    let gpu = gpu_and_directx();
+    let tiers = gpu.tiers;
 
     PcCheckSystem {
         os,
@@ -84,12 +129,18 @@ pub fn pc_check_system() -> PcCheckSystem {
         physical_cores,
         logical_cores,
         memory_mb: system.total_memory() / (1024 * 1024),
-        gpu,
-        gpu_vendor_id,
-        gpu_device_id,
-        gpu_memory_mb: nominal_vram_mb(gpu_memory_mb),
-        directx,
-        directx_level,
+        gpu: gpu.name,
+        gpu_vendor_id: gpu.vendor_id,
+        gpu_device_id: gpu.device_id,
+        gpu_memory_mb: nominal_vram_mb(gpu.memory_mb),
+        directx: gpu.directx,
+        directx_level: gpu.directx_level,
+        raytracing_tier: tiers.raytracing,
+        mesh_shader_tier: tiers.mesh_shader,
+        shading_rate_tier: tiers.shading_rate,
+        sampler_feedback_tier: tiers.sampler_feedback,
+        dx12_features_known: tiers.known,
+        dx12_ultimate: tiers.ultimate(),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
     }
 }
@@ -196,24 +247,49 @@ fn gpu_adapters() -> (String, u64) {
     (String::new(), 0)
 }
 
-/// The GPU a game would actually use, plus the DirectX level of that adapter.
-/// DXGI picks the adapter with the most dedicated VRAM, so a laptop's discrete
-/// GPU wins over the integrated one; registry text is only a fallback.
+/// The GPU a game would actually use, plus the DirectX level and DX12 Ultimate
+/// tiers of that adapter. DXGI picks the adapter with the most dedicated VRAM,
+/// so a laptop's discrete GPU wins over the integrated one; registry text is
+/// only a fallback.
 #[cfg(windows)]
-fn gpu_and_directx() -> (String, u64, u32, u32, String, u32) {
+fn gpu_and_directx() -> GpuInfo {
     if let Some((name, vendor, device, memory_mb, adapter)) = dxgi_gpu() {
         let (directx, level) = directx_info(Some(&adapter));
-        return (name, memory_mb, vendor, device, directx, level);
+        return GpuInfo {
+            name,
+            memory_mb,
+            vendor_id: vendor,
+            device_id: device,
+            directx,
+            directx_level: level,
+            tiers: dx12_feature_tiers(Some(&adapter)),
+        };
     }
-    let (gpu, memory_mb) = gpu_adapters();
+    let (name, memory_mb) = gpu_adapters();
     let (directx, level) = directx_info(None);
-    (gpu, memory_mb, 0, 0, directx, level)
+    GpuInfo {
+        name,
+        memory_mb,
+        vendor_id: 0,
+        device_id: 0,
+        directx,
+        directx_level: level,
+        tiers: dx12_feature_tiers(None),
+    }
 }
 
 #[cfg(not(windows))]
-fn gpu_and_directx() -> (String, u64, u32, u32, String, u32) {
-    let (gpu, memory_mb) = gpu_adapters();
-    (gpu, memory_mb, 0, 0, String::new(), 0)
+fn gpu_and_directx() -> GpuInfo {
+    let (name, memory_mb) = gpu_adapters();
+    GpuInfo {
+        name,
+        memory_mb,
+        vendor_id: 0,
+        device_id: 0,
+        directx: String::new(),
+        directx_level: 0,
+        tiers: Dx12Tiers::default(),
+    }
 }
 
 #[cfg(windows)]
@@ -332,6 +408,83 @@ fn d3d12_feature_level(adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAda
     0
 }
 
+/// DXR, mesh shader, VRS and sampler-feedback tiers of the selected adapter.
+/// A single D3D12 device answers all three option queries; `known` stays false
+/// when the device could not be created, so the UI can say "manual" instead of
+/// blaming the GPU.
+#[cfg(windows)]
+fn dx12_feature_tiers(
+    adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>,
+) -> Dx12Tiers {
+    use windows::core::Interface;
+    use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_12_0;
+    use windows::Win32::Graphics::Direct3D12::{
+        D3D12CreateDevice, D3D12_FEATURE_DATA_D3D12_OPTIONS5,
+        D3D12_FEATURE_DATA_D3D12_OPTIONS6, D3D12_FEATURE_DATA_D3D12_OPTIONS7,
+        D3D12_FEATURE_D3D12_OPTIONS5, D3D12_FEATURE_D3D12_OPTIONS6,
+        D3D12_FEATURE_D3D12_OPTIONS7, ID3D12Device,
+    };
+
+    let device_owner = adapter.and_then(|adapter| adapter.cast::<windows::core::IUnknown>().ok());
+    let mut device: Option<ID3D12Device> = None;
+    if unsafe { D3D12CreateDevice(device_owner.as_ref(), D3D_FEATURE_LEVEL_12_0, &mut device) }
+        .is_err()
+    {
+        return Dx12Tiers::default();
+    }
+    let Some(device) = device else {
+        return Dx12Tiers::default();
+    };
+
+    let mut tiers = Dx12Tiers {
+        known: true,
+        ..Dx12Tiers::default()
+    };
+
+    let mut options5 = D3D12_FEATURE_DATA_D3D12_OPTIONS5::default();
+    if unsafe {
+        device.CheckFeatureSupport(
+            D3D12_FEATURE_D3D12_OPTIONS5,
+            &mut options5 as *mut _ as *mut core::ffi::c_void,
+            std::mem::size_of::<D3D12_FEATURE_DATA_D3D12_OPTIONS5>() as u32,
+        )
+    }
+    .is_ok()
+    {
+        // Keep the raw tier: newer cards report 12 (DXR 1.2).
+        tiers.raytracing = options5.RaytracingTier.0.max(0) as u32;
+    }
+
+    let mut options6 = D3D12_FEATURE_DATA_D3D12_OPTIONS6::default();
+    if unsafe {
+        device.CheckFeatureSupport(
+            D3D12_FEATURE_D3D12_OPTIONS6,
+            &mut options6 as *mut _ as *mut core::ffi::c_void,
+            std::mem::size_of::<D3D12_FEATURE_DATA_D3D12_OPTIONS6>() as u32,
+        )
+    }
+    .is_ok()
+    {
+        tiers.shading_rate = options6.VariableShadingRateTier.0.max(0) as u32;
+    }
+
+    let mut options7 = D3D12_FEATURE_DATA_D3D12_OPTIONS7::default();
+    if unsafe {
+        device.CheckFeatureSupport(
+            D3D12_FEATURE_D3D12_OPTIONS7,
+            &mut options7 as *mut _ as *mut core::ffi::c_void,
+            std::mem::size_of::<D3D12_FEATURE_DATA_D3D12_OPTIONS7>() as u32,
+        )
+    }
+    .is_ok()
+    {
+        tiers.mesh_shader = options7.MeshShaderTier.0.max(0) as u32;
+        tiers.sampler_feedback = options7.SamplerFeedbackTier.0.max(0) as u32;
+    }
+
+    tiers
+}
+
 #[cfg(windows)]
 fn d3d11_feature_level(adapter: Option<&windows::Win32::Graphics::Dxgi::IDXGIAdapter1>) -> u32 {
     use windows::core::Interface;
@@ -424,6 +577,24 @@ mod tests {
         assert_eq!(super::nominal_vram_mb(8151), 8192);
         assert_eq!(super::nominal_vram_mb(6144), 6144);
         assert_eq!(super::nominal_vram_mb(0), 0);
+    }
+
+    #[test]
+    fn ultimate_needs_all_four_features() {
+        let all = super::Dx12Tiers {
+            known: true,
+            raytracing: 12,
+            mesh_shader: 10,
+            shading_rate: 2,
+            sampler_feedback: 90,
+        };
+        assert!(all.ultimate());
+        // DXR 1.2 also satisfies the DXR 1.1 requirement.
+        assert!(super::Dx12Tiers { raytracing: 11, ..all }.ultimate());
+        assert!(!super::Dx12Tiers { raytracing: 10, ..all }.ultimate());
+        assert!(!super::Dx12Tiers { mesh_shader: 0, ..all }.ultimate());
+        assert!(!super::Dx12Tiers { shading_rate: 1, ..all }.ultimate());
+        assert!(!super::Dx12Tiers { sampler_feedback: 0, ..all }.ultimate());
     }
 
     #[test]
