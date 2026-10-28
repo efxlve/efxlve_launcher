@@ -1818,6 +1818,7 @@ fn main() {
             legendary::transfers::epic_launch_game,
             legendary::transfers::epic_launch_support,
             legendary::transfers::epic_stop_game,
+            legendary::transfers::stop_game_at_path,
             store_host::show_store_view,
             store_host::resize_store_view,
             store_host::hide_store_view,

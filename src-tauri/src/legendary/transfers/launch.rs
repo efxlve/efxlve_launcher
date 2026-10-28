@@ -142,20 +142,7 @@ pub async fn epic_stop_game(app: AppHandle, app_name: String) -> Result<String, 
         return Err("@t:dl.notRunning".to_string());
     }
     for pid in &pids {
-        #[cfg(windows)]
-        {
-            let mut cmd = tokio::process::Command::new("taskkill");
-            cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
-            cmd.creation_flags(CREATE_NO_WINDOW);
-            let _ = cmd.output().await;
-        }
-        #[cfg(not(windows))]
-        {
-            let _ = tokio::process::Command::new("kill")
-                .args(["-9", &pid.to_string()])
-                .output()
-                .await;
-        }
+        kill_process_tree(*pid).await;
     }
     crate::legendary::screenshots::clear_active_running_game(&app_name);
     wake_main_window(&app);
@@ -164,6 +151,52 @@ pub async fn epic_stop_game(app: AppHandle, app_name: String) -> Result<String, 
         serde_json::json!({ "id": app_name, "running": false }),
     );
     Ok("@t:dl.stopped".to_string())
+}
+
+/// Ends a game the launcher did not start (Steam, EA/Ubisoft, …) by killing
+/// the processes whose image sits inside its install folder. The store watcher
+/// still receives the `game-status` event and closes the session normally.
+#[tauri::command]
+pub async fn stop_game_at_path(
+    app: AppHandle,
+    app_name: String,
+    install_path: String,
+) -> Result<String, String> {
+    let root = PathBuf::from(install_path.trim());
+    if !root.is_dir() {
+        return Err("@t:dl.notInstalled".to_string());
+    }
+    let pids = game_process_pids(Some(&root), &[]);
+    if pids.is_empty() {
+        return Err("@t:dl.notRunning".to_string());
+    }
+    for pid in &pids {
+        kill_process_tree(*pid).await;
+    }
+    crate::legendary::screenshots::clear_active_running_game(&app_name);
+    wake_main_window(&app);
+    let _ = app.emit(
+        "game-status",
+        serde_json::json!({ "id": app_name, "running": false }),
+    );
+    Ok("@t:dl.stopped".to_string())
+}
+
+async fn kill_process_tree(pid: u32) {
+    #[cfg(windows)]
+    {
+        let mut cmd = tokio::process::Command::new("taskkill");
+        cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output().await;
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = tokio::process::Command::new("kill")
+            .args(["-9", &pid.to_string()])
+            .output()
+            .await;
+    }
 }
 
 /// Detects executable (.exe) files in the game directory.

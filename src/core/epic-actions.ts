@@ -20,6 +20,7 @@ import {
   getThirdPartyLauncher,
   requiresThirdPartyLauncher,
   summarize,
+  stopGameAtPath,
 } from "../epic";
 import { isTauri, IGNORED_UPDATES_KEY } from "./constants";
 import { closeModal } from "./dom";
@@ -86,6 +87,19 @@ export async function epicStop(appName: string): Promise<void> {
       // clear the running state here or that event would be treated as a
       // duplicate and the hours would be dropped.
       await customGamesStop(appName);
+      return;
+    }
+    if (appName.startsWith("steam::") || isCompanionKey(appName)) {
+      // Client-owned stores have no stop command of their own: kill the
+      // processes under this install folder; the backend emits game-status
+      // false so the playtime session still closes.
+      const summary = summaryOf(appName);
+      if (!summary?.installPath) {
+        toast(t("dl.notInstalled"), "err");
+        return;
+      }
+      const msg = await stopGameAtPath(appName, summary.installPath);
+      toast(msg, "ok");
       return;
     }
     if (appName.startsWith("amazon::")) {

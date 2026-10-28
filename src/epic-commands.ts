@@ -85,6 +85,9 @@ export const epicLaunchSupport = (appName: string) =>
   invoke<EpicLaunchSupport>("epic_launch_support", { appName });
 export const epicStopGame = (appName: string) =>
   invoke<string>("epic_stop_game", { appName });
+/** Stops a game the launcher did not start by its install folder. */
+export const stopGameAtPath = (appName: string, installPath: string) =>
+  invoke<string>("stop_game_at_path", { appName, installPath });
 /** Game requested by a desktop shortcut (`--launch <app>`), consumed once. */
 export const epicTakePendingLaunch = () => invoke<string | null>("epic_take_pending_launch");
 

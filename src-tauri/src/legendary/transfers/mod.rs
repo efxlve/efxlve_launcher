@@ -21,7 +21,7 @@ mod uninstall;
 
 // guard.rs — helpers stay in that file (no crate-level re-export).
 
-// launch.rs: epic_launch_game, epic_stop_game, discover_game_executables, image_inside_install, wake_main_window, game_process_pids, is_game_process_running
+// launch.rs: epic_launch_game, epic_stop_game, stop_game_at_path, discover_game_executables, image_inside_install, wake_main_window, game_process_pids, is_game_process_running
 #[allow(unused_imports)]
 pub use launch::*;
 

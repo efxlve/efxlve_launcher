@@ -531,12 +531,7 @@ function primaryAction(s: EpicSummary, p: number | null, partner: ThirdPartyLaun
     return `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}">${icon("download", 16)} ${t("steam.downloading")}</button>`;
   }
   if (S.runningGames.has(s.appName)) {
-    // Client-owned stores cannot be stopped here: show the running state.
-    if (s.appName.startsWith("steam::") || isCompanionKey(s.appName)) {
-      const label = t("lib.running");
-      return `<button class="btn play lg running" disabled title="${esc(label)}"><span class="running-dot"></span> ${t("lib.running")}</button>`;
-    }
-    return `<button class="btn play lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
+    return `<button class="btn stop lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`;
   }
   if (installPathIssue(s)) return unavailableAction();
   // Amazon Games: installed and launched by the launcher through Nile.
@@ -765,7 +760,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   if (isCompanionApp(s.appName)) {
     const store = sourceOfKey(s.appName);
     const primary = S.runningGames.has(s.appName)
-      ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
+      ? `<button class="btn stop lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`
       : installPathIssue(s)
         ? unavailableAction()
         : s.installed
@@ -787,7 +782,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     const primary = isDl
       ? `<button class="btn primary lg" data-view="downloads" data-dlbtn="${s.appName}" title="${esc(t("steam.downloadingHint"))}">${icon("download", 16)} ${steamPct !== null ? t("common.downloading", { p: steamPct }) : t("steam.downloading")}</button>`
       : S.runningGames.has(s.appName)
-        ? `<button class="btn play lg running" disabled title="${esc(t("lib.running"))}"><span class="running-dot"></span> ${t("lib.running")}</button>`
+        ? `<button class="btn stop lg" data-act="epic-stop" data-id="${s.appName}">${icon("square", 16)} ${t("common.stop")}</button>`
         : installPathIssue(s)
           ? unavailableAction()
           : !s.installed
@@ -2348,6 +2343,13 @@ function emitStoreAchievementUnlock(
     return;
   }
   const pct = ach.rarity?.percent ?? null;
+  // The threshold only filters what it can measure. A store that ships no
+  // rarity figure keeps its card; hiding an unlock we cannot rate would be a
+  // silent lie about the player's progress.
+  const minRarity = Number(S.achievementNotificationOptions.minRarityPercent) || 0;
+  if (minRarity > 0 && pct != null && pct > 0 && pct > minRarity) {
+    return;
+  }
   const tierCode = classifyStoreRarityTier(pct, ach.tier?.name, unlockedCount, totalCount);
   const title = ach.display_name?.trim() || ach.name;
   const body = ach.description || "";
