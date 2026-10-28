@@ -1123,21 +1123,47 @@ export function renderControllerCard(
 
   return `
     <div class="ctrl-panel">
-      <div class="ctrl-hero">
-        <div class="ctrl-glyph">${icon(ctrl.iconName, 21)}</div>
-        <div class="ctrl-main">
-          <div class="ctrl-head">
-            <span class="ctrl-label">${esc(ctrl.label)}</span>
-            ${badge}
-          </div>
-          <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
+      <div class="ctrl-main">
+        <div class="ctrl-head">
+          <span class="ctrl-label">${esc(ctrl.label)}</span>
+          ${badge}
         </div>
+        <p class="ctrl-note">${esc(ctrl.tooltip)}</p>
       </div>
       <div class="ctrl-support-list">
         ${row("gamepad-2", "Xbox / XInput", xboxState)}
         ${row("gamepad-2", "DualSense", dualSenseState, dualSenseState === "ds4" ? i18nT("feat.xboxGamepadTip") : "")}
         ${row("keyboard", i18nT("feat.kbMouse"), keyboardState)}
       </div>
+    </div>`;
+}
+
+/**
+ * The detailed popup behind the controller card's info button: where the
+ * verdict comes from and what each support state means.
+ */
+export function renderControllerHelp(
+  s: EpicSummary,
+  g?: EpicGame,
+  reqData?: GameRequirementsResponse,
+): string {
+  const ctrl = detectControllerSupport(s, g, reqData);
+  const nativeDualSense = ctrl.label === i18nT("feat.dualSense");
+  const fullTip = nativeDualSense ? i18nT("feat.dualSenseTip") : i18nT("feat.xboxGamepadTip");
+  const showDs4 = ctrl.className === "supported" && !nativeDualSense;
+  const row = (dot: string, title: string, body: string): string => `
+    <div class="ctrl-help-row">
+      <div class="ctrl-help-row-title"><span class="ctrl-help-dot ${dot}"></span>${esc(title)}</div>
+      <p>${esc(body)}</p>
+    </div>`;
+  return `
+    <div class="ctrl-help-pop">
+      <p class="ctrl-help-note">${esc(i18nT("ctrl.helpSource"))}</p>
+      ${row("is-ok", i18nT("ctrl.statusFull"), fullTip)}
+      ${row("is-partial", i18nT("ctrl.statusPartial"), i18nT("feat.partialPadTip"))}
+      ${row("is-primary", i18nT("ctrl.statusPrimary"), i18nT("feat.kbMouseTip"))}
+      ${row("is-none", i18nT("ctrl.statusNone"), i18nT("ctrl.helpNone"))}
+      ${showDs4 ? row("is-partial", "DS4Windows", i18nT("feat.xboxGamepadTip")) : ""}
     </div>`;
 }
 

@@ -22,6 +22,7 @@ import {
   isMacSys,
   isWinSys,
   renderControllerCard,
+  renderControllerHelp,
   renderGameFeatures,
   renderInstalledCopyFacts,
   renderSupportedLanguages,
@@ -110,7 +111,13 @@ export function renderSystemTab(
           ${copyCard}
           ${compatCard}
           <section class="card sys-side-card">
-            <h3 class="gp-section-title">${icon("gamepad-2", 14)} <span>${t("feat.controller")}</span></h3>
+            <div class="sys-side-head">
+              <h3 class="gp-section-title">${icon("gamepad-2", 14)} <span>${t("feat.controller")}</span></h3>
+              <details class="ctrl-help">
+                <summary class="ctrl-help-btn" title="${esc(t("ctrl.helpTitle"))}" aria-label="${esc(t("ctrl.helpTitle"))}">${icon("info", 14)}</summary>
+                ${renderControllerHelp(s, g, reqData)}
+              </details>
+            </div>
             <div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>
           </section>
           <section class="card sys-side-card">

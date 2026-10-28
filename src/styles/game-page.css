@@ -1584,6 +1584,11 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .sys-side-card > .gp-section-title { margin: 0; }
 .sys-side-card .hub-features-list { gap: 6px; }
+.sys-side-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+}
+.sys-side-head > .gp-section-title { margin: 0; }
 /* Copy facts and platform compatibility share one plain spec list: small icons,
    hairlines, no row boxes. The compatibility card hides itself until a chip
    actually has an answer. */
@@ -1602,7 +1607,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   border-top: 0; padding-top: 0;
 }
 .sys-fact-list .hub-feature-row:hover {
-  background: none; border-top-color: var(--line); box-shadow: none;
+  background: var(--surface-2); border-top-color: var(--line); box-shadow: none;
 }
 .sys-fact-list .hub-feature-icon {
   width: 16px; height: 16px; flex: 0 0 16px;
@@ -2590,15 +2595,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 /* Controller support card */
 .ctrl-panel { display: flex; flex-direction: column; gap: 14px; }
-.ctrl-hero { display: flex; align-items: flex-start; gap: 12px; }
-.ctrl-glyph {
-  width: 44px; height: 44px; flex: 0 0 44px;
-  display: grid; place-items: center; border-radius: var(--r-sm);
-  background: var(--surface-2); border: 1px solid var(--line);
-  color: var(--text-2);
-}
-.ctrl-glyph svg { width: 21px; height: 21px; }
-.ctrl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.ctrl-main { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .ctrl-head {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 8px; flex-wrap: wrap;
@@ -2616,7 +2613,9 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .ctrl-support-item {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 9px 0; border-top: 1px solid var(--line);
+  transition: background-color var(--ease);
 }
+.ctrl-support-item:hover { background: var(--surface-2); }
 .ctrl-support-item:first-child { border-top: 0; padding-top: 10px; }
 .ctrl-support-item:last-child { padding-bottom: 0; }
 .ctrl-support-name {
@@ -2629,6 +2628,45 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .ctrl-support-state.is-partial { color: var(--warn); }
 .ctrl-support-state.is-primary { color: var(--text-2); }
 .ctrl-support-state.is-none { color: var(--text-3); }
+
+/* Controller help popover */
+.ctrl-help { position: relative; display: flex; }
+.ctrl-help summary { list-style: none; }
+.ctrl-help summary::-webkit-details-marker { display: none; }
+.ctrl-help-btn {
+  width: 24px; height: 24px; display: grid; place-items: center;
+  border-radius: var(--r-sm); color: var(--text-3); cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+.ctrl-help-btn:hover, .ctrl-help[open] .ctrl-help-btn {
+  background: var(--surface-2); color: var(--text);
+}
+.ctrl-help-pop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 70;
+  width: 300px; max-width: calc(100vw - 48px);
+  max-height: min(420px, calc(100vh - 120px)); overflow-y: auto;
+  padding: 12px;
+  /* Opaque base under the themed surface: an open popover must not let the
+     page show through a translucent theme. */
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--surface-1), var(--surface-1));
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+}
+.ctrl-help-note { margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
+.ctrl-help-row + .ctrl-help-row {
+  margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line);
+}
+.ctrl-help-row-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; color: var(--text);
+}
+.ctrl-help-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.ctrl-help-dot.is-ok { color: var(--ok); }
+.ctrl-help-dot.is-partial { color: var(--warn); }
+.ctrl-help-dot.is-primary { color: var(--text-2); }
+.ctrl-help-dot.is-none { color: var(--text-3); }
+.ctrl-help-row p { margin: 3px 0 0 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
 
 /* A sidebar card whose own block came back empty: it has nothing to frame. */
 .gp-side-card.is-empty,
