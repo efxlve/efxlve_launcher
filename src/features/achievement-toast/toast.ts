@@ -7,7 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../../core/constants";
 import { achievementCardPalette } from "../../core/achievement-card-theme";
-import { initialLanguage, setLanguage } from "../../i18n";
+import { initialLanguage, setLanguage, t } from "../../i18n";
 import { achCardHtml, achTagLine, type AchCardPalette } from "../achievement-card/ach-card";
 import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
 import "../../styles/tokens.css";
@@ -31,6 +31,9 @@ interface ToastPayload {
   palette: AchCardPalette;
   tagless?: boolean;
   icon?: string;
+  /** Greater than one when the card stands for a burst of unlocks. */
+  batch?: number;
+  batchNames?: string[];
 }
 
 interface ToastIconPayload {
@@ -76,12 +79,23 @@ function renderToast(payload: ToastPayload): void {
     theme === "launcher"
       ? payload.palette
       : achievementCardPalette(payload.theme, payload.tier);
+  // A save load can unlock a whole set at once; one card then names the count
+  // and the first few achievements instead of twenty cards overwriting itself.
+  const batch = Math.max(0, payload.batch ?? 0);
+  const batchNames = (payload.batchNames ?? []).filter((name) => name.trim().length > 0);
+  const isBatch = !isHint && batch > 1 && batchNames.length > 0;
+  const shown = batchNames.slice(0, 3);
+  const extra = Math.max(0, batchNames.length - shown.length);
+  const title = isBatch ? t("ach.batchTitle", { n: batch }) : payload.title;
+  const desc = isBatch
+    ? `${shown.join(" · ")}${extra > 0 ? ` +${extra}` : ""}`
+    : payload.body;
   root.innerHTML = `<div class="ach-toast-layer pos-${position}">${achCardHtml({
     tag: isHint
       ? ""
       : achTagLine(payload.tier, payload.unlocked, payload.total, payload.rarityPercent),
-    title: payload.title,
-    desc: payload.body,
+    title,
+    desc,
     tier: payload.tier,
     size: payload.size,
     style: payload.style,

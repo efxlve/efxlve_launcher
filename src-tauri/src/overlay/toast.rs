@@ -62,6 +62,14 @@ pub struct ToastPayload {
     /// The achievement picture, when it landed before the card was emitted.
     #[serde(default)]
     pub icon: Option<String>,
+    /// Greater than one when this card stands for a burst of unlocks (a save
+    /// load can unlock twenty at once). The page then paints the localized
+    /// "N achievements unlocked" title and `batch_names` as the body, so one
+    /// card does not bury the others.
+    #[serde(default)]
+    pub batch: u32,
+    #[serde(default)]
+    pub batch_names: Vec<String>,
 }
 
 #[derive(Serialize, Clone)]

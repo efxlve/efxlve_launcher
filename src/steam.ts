@@ -290,6 +290,12 @@ export interface AchievementNotificationOptions {
   exitStyle?: string;
   /** Store keys whose achievement notifications are disabled ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom"). */
   disabledStores?: string[];
+  /**
+   * 0 announces every unlock; 5, 10 or 25 only achievements whose global
+   * unlock rate is at or below that percent. A store without a rarity figure
+   * is always announced.
+   */
+  minRarityPercent?: number;
 }
 
 /** The card palette, resolved from the live CSS tokens by the frontend. */

@@ -2040,6 +2040,11 @@ pub struct AchievementNotificationOptions {
     /// Muted store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom").
     #[serde(default)]
     pub disabled_stores: Vec<String>,
+    /// 0 announces every unlock; 5, 10 or 25 announce only achievements whose
+    /// global unlock rate is at or below that percent. A store that ships no
+    /// rarity figure is always announced: there is nothing to measure.
+    #[serde(default)]
+    pub min_rarity_percent: u8,
 }
 
 impl Default for AchievementNotificationOptions {
@@ -2058,6 +2063,7 @@ impl Default for AchievementNotificationOptions {
             anim_style: default_anim_style(),
             exit_style: default_exit_style(),
             disabled_stores: Vec::new(),
+            min_rarity_percent: 0,
         }
     }
 }
@@ -2126,6 +2132,31 @@ fn normalize_disabled_stores(stores: &[String]) -> Vec<String> {
         }
     }
     out
+}
+
+/// The rarity threshold is a fixed choice, not a free number: 0, 5, 10 or 25.
+fn normalize_min_rarity(value: Option<u8>) -> u8 {
+    match value {
+        Some(25) => 25,
+        Some(10) => 10,
+        Some(5) => 5,
+        _ => 0,
+    }
+}
+
+/// True when a card may be shown for this rarity. A store without a figure
+/// always passes: the launcher must not hide an unlock it cannot measure.
+fn rarity_allows_notification(
+    options: &AchievementNotificationOptions,
+    rarity_percent: Option<f64>,
+) -> bool {
+    if options.min_rarity_percent == 0 {
+        return true;
+    }
+    match rarity_percent {
+        Some(percent) if percent > 0.0 => percent <= f64::from(options.min_rarity_percent),
+        _ => true,
+    }
 }
 
 /// The `launcher` card palette, resolved from the live theme tokens by the
@@ -2234,6 +2265,9 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         disabled_stores: normalize_disabled_stores(
             &settings.achievement_notifications_disabled_stores,
         ),
+        min_rarity_percent: normalize_min_rarity(
+            settings.achievement_notifications_min_rarity,
+        ),
     }
 }
 
@@ -2270,6 +2304,9 @@ pub fn achievement_set_notification_options(
     )));
     settings.achievement_notifications_disabled_stores =
         normalize_disabled_stores(&options.disabled_stores);
+    settings.achievement_notifications_min_rarity = Some(normalize_min_rarity(Some(
+        options.min_rarity_percent,
+    )));
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -2831,6 +2868,8 @@ fn toast_payload(
         palette: launcher_palette(),
         tagless: false,
         icon: None,
+        batch: 0,
+        batch_names: Vec::new(),
     }
 }
 
@@ -2974,6 +3013,11 @@ fn classify_achievement_rarity_tier(
 
 /// Emits the card, sound and frontend event for every achievement that was not
 /// in `unlocked_set` yet.
+///
+/// A save load can unlock a whole set in one poll. One card per achievement
+/// used to overwrite the previous one (the toast window shows a single card),
+/// so the player saw only the last unlock. The burst now shares one card that
+/// names the count, while every achievement still gets its own frontend event.
 fn emit_new_achievement_unlocks(
     app: &tauri::AppHandle,
     app_id: &str,
@@ -2981,69 +3025,119 @@ fn emit_new_achievement_unlocks(
     unlocked_set: &mut std::collections::HashSet<String>,
     write_cache: bool,
 ) {
-    let mut emitted = false;
     let total_count = response
         .total_achievements
         .max(response.achievements.len() as u32);
+
+    // Collect first: the card decision needs the whole burst.
+    let mut newly: Vec<&AchievementItem> = Vec::new();
     for ach in &response.achievements {
         if !ach.unlocked || unlocked_set.contains(&ach.name) {
             continue;
         }
         unlocked_set.insert(ach.name.clone());
-        emitted = true;
+        newly.push(ach);
+    }
+    if newly.is_empty() {
+        return;
+    }
 
-        let unlocked_count = (unlocked_set.len() as u32).min(total_count.max(1));
-        let rarity_percent = ach.rarity.as_ref().and_then(|r| r.percent);
-        let raw_tier_name = ach.tier.as_ref().map(|t| t.name.as_str());
-        let (tier_code, resolved_tier_name) = classify_achievement_rarity_tier(
-            rarity_percent,
-            raw_tier_name,
-            unlocked_count,
-            total_count,
-        );
+    let options = achievement_notification_options(app);
+    let store_key = if write_cache { "steam" } else { "custom" };
+    let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
+    let game_enabled = achievement_game_notifications_enabled(app_id);
+    let base_notify = options.enabled && store_enabled && game_enabled;
 
-        // 1. In-game toast card (the same component as the Settings preview)
+    // Achievements that earn a visible card. The threshold only filters what it
+    // can measure; a store without a rarity figure always passes.
+    let announced: Vec<&AchievementItem> = newly
+        .iter()
+        .copied()
+        .filter(|ach| {
+            rarity_allows_notification(
+                &options,
+                ach.rarity.as_ref().and_then(|r| r.percent),
+            )
+        })
+        .collect();
+
+    let unlocked_count = (unlocked_set.len() as u32).min(total_count.max(1));
+    if base_notify && !announced.is_empty() {
+        let tier_of = |ach: &AchievementItem| {
+            classify_achievement_rarity_tier(
+                ach.rarity.as_ref().and_then(|r| r.percent),
+                ach.tier.as_ref().map(|t| t.name.as_str()),
+                unlocked_count,
+                total_count,
+            )
+            .0
+        };
+        // One chime for the burst, tuned to its rarest member.
+        let card_tier = announced.iter().map(|ach| tier_of(ach)).max().unwrap_or(2);
+        let rarest = announced
+            .iter()
+            .filter_map(|ach| ach.rarity.as_ref().and_then(|r| r.percent))
+            .fold(None::<f64>, |acc, pct| Some(acc.map_or(pct, |best| best.min(pct))));
+        let lead = announced[0];
+        let lead_display = if lead.display_name.trim().is_empty() {
+            lead.name.clone()
+        } else {
+            lead.display_name.clone()
+        };
+
+        if options.overlay {
+            let mut payload = toast_payload(
+                &options,
+                card_tier,
+                unlocked_count,
+                total_count,
+                rarest,
+                &lead_display,
+                &lead.description,
+            );
+            if announced.len() > 1 {
+                payload.batch = announced.len() as u32;
+                payload.batch_names = announced
+                    .iter()
+                    .map(|ach| {
+                        if ach.display_name.trim().is_empty() {
+                            ach.name.clone()
+                        } else {
+                            ach.display_name.clone()
+                        }
+                    })
+                    .collect();
+            }
+            let generation = crate::overlay::toast::show(app, payload);
+            attach_achievement_icon(app, &lead.icon_link, generation);
+        }
+        play_achievement_notification_sound(app, &options, card_tier);
+    }
+
+    // Every new unlock still reaches the lists and the bell, whether or not a
+    // card played for it.
+    for ach in &newly {
         let display = if ach.display_name.trim().is_empty() {
             ach.name.clone()
         } else {
             ach.display_name.clone()
         };
-        let options = achievement_notification_options(app);
-        let store_key = if write_cache { "steam" } else { "custom" };
-        let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
-        let game_enabled = achievement_game_notifications_enabled(app_id);
-        let should_notify = options.enabled && store_enabled && game_enabled;
-        if should_notify {
-            if options.overlay {
-                let generation = crate::overlay::toast::show(
-                    app,
-                    toast_payload(
-                        &options,
-                        tier_code,
-                        unlocked_count,
-                        total_count,
-                        rarity_percent,
-                        &display,
-                        &ach.description,
-                    ),
-                );
-                attach_achievement_icon(app, &ach.icon_link, generation);
-            }
-            // 2. Native notification sound: the user's file when set,
-            // otherwise the synthesized multi-tier dopamine chime.
-            play_achievement_notification_sound(app, &options, tier_code);
-        }
-
-        // 3. Emit event to frontend; the UI records the unlock even when the
-        // user silenced the visible notification.
+        let rarity_percent = ach.rarity.as_ref().and_then(|r| r.percent);
+        let (_, resolved_tier_name) = classify_achievement_rarity_tier(
+            rarity_percent,
+            ach.tier.as_ref().map(|t| t.name.as_str()),
+            unlocked_count,
+            total_count,
+        );
+        let notified = base_notify && announced.iter().any(|entry| entry.name == ach.name);
         let payload = AchievementUnlockedPayload {
             app_id: app_id.to_string(),
             name: ach.name.clone(),
             display_name: display,
             description: ach.description.clone(),
             icon_url: ach.icon_link.clone(),
-            notification: should_notify,
-            card: should_notify && options.overlay,
+            notification: notified,
+            card: notified && options.overlay,
             rarity_percent,
             tier: Some(resolved_tier_name),
             unlocked_count: Some(unlocked_count),
@@ -3054,7 +3148,7 @@ fn emit_new_achievement_unlocks(
     // The drawer and the library summary read this file; an unlock must land
     // there without waiting for the next page open. Emulator-only titles have
     // no Steam client entry, so they keep their own store.
-    if emitted && write_cache {
+    if write_cache {
         let _ = write_achievements_cache(app, app_id, response);
     }
 }
@@ -3303,6 +3397,31 @@ mod tests {
         assert_eq!(normalize_card_theme(None), "gold");
         assert_eq!(normalize_card_theme(Some("launcher")), "launcher");
         assert_eq!(normalize_card_theme(Some("neon")), "gold");
+    }
+
+    #[test]
+    fn the_rarity_threshold_only_filters_what_it_can_measure() {
+        let mut options = AchievementNotificationOptions::default();
+        assert!(rarity_allows_notification(&options, Some(80.0)));
+        assert!(rarity_allows_notification(&options, None));
+
+        options.min_rarity_percent = 10;
+        assert!(rarity_allows_notification(&options, Some(4.2)));
+        assert!(rarity_allows_notification(&options, Some(10.0)));
+        assert!(!rarity_allows_notification(&options, Some(10.5)));
+        assert!(!rarity_allows_notification(&options, Some(80.0)));
+        // A store with no rarity figure is never hidden by the threshold.
+        assert!(rarity_allows_notification(&options, None));
+        assert!(rarity_allows_notification(&options, Some(0.0)));
+    }
+
+    #[test]
+    fn the_rarity_threshold_is_one_of_four_choices() {
+        assert_eq!(normalize_min_rarity(Some(25)), 25);
+        assert_eq!(normalize_min_rarity(Some(10)), 10);
+        assert_eq!(normalize_min_rarity(Some(5)), 5);
+        assert_eq!(normalize_min_rarity(Some(12)), 0);
+        assert_eq!(normalize_min_rarity(None), 0);
     }
 
 

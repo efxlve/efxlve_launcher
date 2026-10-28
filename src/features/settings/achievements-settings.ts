@@ -570,6 +570,26 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
+  // Rarity threshold: every unlock, or only the rare ones. A store without a
+  // rarity figure is never filtered out, so the row explains that too.
+  const minRarity = [0, 5, 10, 25].includes(Number(options.minRarityPercent))
+    ? Number(options.minRarityPercent)
+    : 0;
+  const rarityButtons = [
+    { value: 0, label: t("settings.achRarityAll") },
+    { value: 25, label: t("settings.achRarityAtMost", { n: 25 }) },
+    { value: 10, label: t("settings.achRarityAtMost", { n: 10 }) },
+    { value: 5, label: t("settings.achRarityAtMost", { n: 5 }) },
+  ]
+    .map(
+      (mode) => `
+        <button type="button" class="${minRarity === mode.value ? "active" : ""}" data-act="set-ach-min-rarity" data-val="${mode.value}">
+          ${esc(mode.label)}
+        </button>
+      `,
+    )
+    .join("");
+
   const durationButtons = [
     [3000, "3s"],
     [5000, "5s"],
@@ -879,6 +899,17 @@ export function renderAchievementsSettingsView(): string {
           </div>
         </div>
 
+        <!-- Rarity threshold -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achRarityTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achRarityDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${rarityButtons}</div>
+          </div>
+        </div>
+
         <!-- Card Theme -->
         <div class="row settings-row stacked">
           <div class="row-main">
@@ -1062,6 +1093,16 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
         ? cur.filter((s) => s !== store)
         : [...cur, store];
       const next = { ...S.achievementNotificationOptions, disabledStores };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
+    case "set-ach-min-rarity": {
+      const requested = Number(el.dataset.val);
+      const minRarityPercent = [0, 5, 10, 25].includes(requested) ? requested : 0;
+      const next = { ...S.achievementNotificationOptions, minRarityPercent };
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();

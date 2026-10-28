@@ -257,6 +257,10 @@ pub struct EpicSettings {
     /// whose achievement notifications are muted.
     #[serde(default)]
     pub achievement_notifications_disabled_stores: Vec<String>,
+    /// 0 = every unlock; 5/10/25 = only achievements at or below that global
+    /// unlock rate. Stores without a rarity figure are never filtered out.
+    #[serde(default)]
+    pub achievement_notifications_min_rarity: Option<u8>,
 }
 
 fn default_true() -> bool {
