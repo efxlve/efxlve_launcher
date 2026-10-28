@@ -59,6 +59,7 @@ the window is hidden.
 | Gamepad loop | A connected but idle pad polls on a 40 ms timer and returns to rAF on the first press | A pad nobody touched kept the renderer drawing a frame every refresh for the whole session |
 | Installed-game watch | The signature is skipped while the window is hidden and rebuilt on the first visible frame | A hidden launcher rebuilt a string over the whole installed library every 20 s |
 | Library card tilt | The pointer handler returns immediately outside the library view | Every pointer move in settings, the store or the drawer walked ancestors for a card that cannot exist there |
+| Achievement watcher | The unlock parse runs only when the Steam stats file or the emulator achievement file changed (size + mtime), with a 10 s safety rebuild | The 800 ms loop used to re-read and parse the Steam schema and rescan every emulator folder 4,500 times an hour for a fact that had not changed |
 
 ## Remaining opportunities
 

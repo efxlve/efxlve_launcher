@@ -3236,6 +3236,61 @@ fn emit_new_achievement_unlocks(
     }
 }
 
+/// Cheap change detector for the watcher: the Steam stats file (the client
+/// writes it on every unlock) and the emulator achievement file. Without it the
+/// loop parsed the schema and scanned emulator folders every 800 ms for a fact
+/// that had not changed.
+fn file_stamp(path: &Path) -> (u64, u64) {
+    std::fs::metadata(path)
+        .map(|meta| {
+            let modified = meta
+                .modified()
+                .ok()
+                .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|duration| duration.as_millis() as u64)
+                .unwrap_or(0);
+            (modified, meta.len())
+        })
+        .unwrap_or((0, 0))
+}
+
+fn watcher_stamp(
+    steam: Option<&Path>,
+    account: Option<u64>,
+    app_id: &str,
+    emulator_file: Option<&Path>,
+) -> (u64, u64, u64, u64) {
+    let stats = steam
+        .zip(account)
+        .map(|(root, id)| app_stats_file(root, id, app_id))
+        .map(|path| file_stamp(&path))
+        .unwrap_or((0, 0));
+    let emulator = emulator_file.map(file_stamp).unwrap_or((0, 0));
+    (stats.0, stats.1, emulator.0, emulator.1)
+}
+
+/// The emulator file a watcher should watch, honoring the per-game source
+/// config. Resolved once; the loop refreshes it while it is missing (the game
+/// writes its first unlock after launch).
+fn watcher_emulator_file(app: &tauri::AppHandle, app_id: &str) -> Option<PathBuf> {
+    let overrides = load_source_overrides(app);
+    let config = overrides.get(app_id).cloned().unwrap_or_default();
+    let mode = if config.mode.is_empty() {
+        "auto"
+    } else {
+        config.mode.as_str()
+    };
+    if mode == "disabled" {
+        return None;
+    }
+    let custom = config.custom_path.as_deref().map(Path::new);
+    let remembered = ACHIEVEMENT_DIRS
+        .lock()
+        .ok()
+        .and_then(|lock| lock.as_ref().and_then(|map| map.get(app_id).cloned()));
+    find_emulator_achievement_file(app_id, custom.or(remembered.as_deref()))
+}
+
 fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return;
@@ -3275,6 +3330,19 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
             None
         };
 
+        // One metadata read per tick, and the full parse only when one of the
+        // two files the unlock lands in actually changed. The baseline stamp is
+        // taken before the snapshot, so an unlock between the two is caught by
+        // the next tick instead of waiting for the safety rebuild.
+        let account = steam.as_deref().and_then(steam_account_id);
+        let mut emulator_file = watcher_emulator_file(&app_handle, &target_app_id);
+        let mut last_stamp = watcher_stamp(
+            steam.as_deref(),
+            account,
+            &target_app_id,
+            emulator_file.as_deref(),
+        );
+
         let initial = local_snapshot.or_else(|| {
             watcher_snapshot(
                 &app_handle,
@@ -3299,11 +3367,35 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
             })
             .unwrap_or_default();
 
+        let mut ticks: u64 = 0;
+
         while running_flag.load(Ordering::Relaxed) {
             std::thread::sleep(std::time::Duration::from_millis(800));
             if !running_flag.load(Ordering::Relaxed) {
                 break;
             }
+            ticks += 1;
+
+            // The emulator file can appear after launch and later be replaced
+            // under a new name; look again while the cached path is missing.
+            if ticks % 4 == 0 && emulator_file.is_none() {
+                emulator_file = watcher_emulator_file(&app_handle, &target_app_id);
+            }
+
+            let stamp = watcher_stamp(
+                steam.as_deref(),
+                account,
+                &target_app_id,
+                emulator_file.as_deref(),
+            );
+            // 12 ticks (~10 s) is the safety net for a file rewritten with the
+            // same size and a rounded timestamp: the parse still happens, just
+            // not twelve times in a row.
+            let forced = ticks % 12 == 0;
+            if stamp == last_stamp && !forced {
+                continue;
+            }
+            last_stamp = stamp;
 
             let Some(response) = watcher_snapshot(
                 &app_handle,
@@ -3505,6 +3597,19 @@ mod tests {
         assert_eq!(normalize_min_rarity(Some(5)), 5);
         assert_eq!(normalize_min_rarity(Some(12)), 0);
         assert_eq!(normalize_min_rarity(None), 0);
+    }
+
+    #[test]
+    fn the_watcher_stamp_changes_when_the_unlock_file_is_rewritten() {
+        let dir = std::env::temp_dir().join(format!("efx-stamp-{}", std::process::id()));
+        let path = dir.join("UserGameStats_1_2.bin");
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        std::fs::write(&path, b"one").expect("first write");
+        let first = file_stamp(&path);
+        std::fs::write(&path, b"two!").expect("second write");
+        let second = file_stamp(&path);
+        assert_ne!(first, second, "a rewritten stats file must invalidate the skip");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
 
