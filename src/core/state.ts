@@ -465,6 +465,8 @@ export const S = {
   profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
+  /** Recent unlocks shown on the profile; "Show all" grows this by 20. */
+  profileUnlockCount: 10,
   offlineMode: false,
   networkProfile: ("balanced") as string,
   gameBackupsMap: (new Map()) as Map<string, SaveBackupInfo[]>,

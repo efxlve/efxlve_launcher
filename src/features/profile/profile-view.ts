@@ -1057,8 +1057,8 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   if (entries.length === 0) return "";
 
   const stats = achievementHistoryStats(entries);
-  const cards = entries
-    .slice(0, 10)
+  const shown = entries.slice(0, Math.max(10, S.profileUnlockCount));
+  const cards = shown
     .map((entry) => {
       const date = entry.date ? fmtAchDate(entry.date) : "";
       const meta = [
@@ -1101,6 +1101,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
         </div>
       </div>
       <div class="profile-unlock-row">${cards}</div>
+      ${entries.length > shown.length ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showAll"))}</button>` : ""}
     </section>`;
 }
 

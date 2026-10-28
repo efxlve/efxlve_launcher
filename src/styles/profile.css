@@ -721,6 +721,8 @@
   color: var(--text-3);
 }
 
+.profile-unlock-more { align-self: flex-start; }
+
 /* --- 4c. Curated showcase (pinned achievements) --- */
 .profile-showcase-row {
   display: grid;
