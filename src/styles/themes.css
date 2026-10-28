@@ -1157,6 +1157,14 @@
   color: #104e82;
   box-shadow: inset 0 1px 0 #ffffff;
 }
+/* Gloss: the System tab's info note floats above the cards, so it takes the
+   same near-white glass as the menus instead of the token surface. */
+:root[data-surface="gloss"] .help-tip-pop {
+  background-color: #f7fbff;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 251, 255, 0.94) 100%);
+  border-color: rgba(16, 78, 130, 0.24);
+  box-shadow: var(--aero-glass-edge), 0 14px 34px rgba(8, 60, 110, 0.22), inset 0 1px 0 #ffffff;
+}
 :root[data-surface="gloss"] .ctrl-badge.is-full {
   background: linear-gradient(180deg, #e6f9ed 0%, #cbf2d8 100%);
   border-color: rgba(16, 124, 65, 0.45);

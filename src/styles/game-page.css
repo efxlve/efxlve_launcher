@@ -1551,6 +1551,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .sys-req-state svg { width: 11px; height: 11px; }
 .sys-req-state.is-ok { color: var(--ok); background: var(--ok-tint); }
+.sys-req-state.is-partial { color: var(--warn); background: var(--warn-tint); }
 .sys-req-state.is-fail { color: var(--err); background: var(--err-tint); }
 .sys-req-state.is-manual, .sys-req-state.is-unknown {
   color: var(--text-2); background: var(--surface-3);
@@ -2642,13 +2643,13 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .help-tip-pop {
   display: none;
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 70;
-  width: 300px; max-width: calc(100vw - 48px);
+  width: 340px; max-width: calc(100vw - 48px);
   max-height: min(420px, calc(100vh - 120px)); overflow-y: auto;
-  padding: 12px;
+  padding: 14px;
   /* Opaque base under the themed surface: an open popover must not let the
      page show through a translucent theme. */
   background-color: var(--bg);
-  background-image: linear-gradient(var(--surface-1), var(--surface-1));
+  background-image: linear-gradient(var(--surface-2), var(--surface-2));
   border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
 }
@@ -2657,24 +2658,23 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .help-tip::after {
   content: ""; display: none;
   position: absolute; top: 100%; right: 0;
-  width: 300px; max-width: calc(100vw - 48px); height: 8px;
+  width: 340px; max-width: calc(100vw - 48px); height: 8px;
 }
 .help-tip:is(.is-hover, .is-pinned)::after { display: block; }
-.help-tip-note { margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
-.help-tip-row + .help-tip-row {
-  margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line);
+.help-tip-note {
+  margin: 0 0 12px; padding-bottom: 11px;
+  font-size: 12px; line-height: 1.55; color: var(--text-2);
+  border-bottom: 1px solid var(--line);
 }
+.help-tip-row + .help-tip-row { margin-top: 10px; }
 .help-tip-row-title {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 12px; font-weight: 600; color: var(--text);
+  font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.4;
 }
-.help-tip-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
-.help-tip-dot.is-ok { color: var(--ok); }
-.help-tip-dot.is-partial { color: var(--warn); }
-.help-tip-dot.is-primary { color: var(--text-2); }
-.help-tip-dot.is-none { color: var(--text-3); }
-.help-tip-dot.is-source { color: var(--text-3); }
-.help-tip-row p { margin: 3px 0 0 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
+.help-tip-row.is-ok .help-tip-row-title { color: var(--ok); }
+.help-tip-row.is-partial .help-tip-row-title { color: var(--warn); }
+.help-tip-row.is-primary .help-tip-row-title,
+.help-tip-row.is-none .help-tip-row-title { color: var(--text-2); }
+.help-tip-row p { margin: 2px 0 0; font-size: 12px; line-height: 1.55; color: var(--text-2); }
 
 /* A sidebar card whose own block came back empty: it has nothing to frame. */
 .gp-side-card.is-empty,
