@@ -24,8 +24,6 @@ export const NO_DESC = "__no_description__";
 
 /** Selected UI language. */
 export const LANG_KEY = "efxlve-lang";
-/** Demo platinum trophy set. */
-export const DEMO_PLAT_KEY = "efxlve-demo-platinum";
 /** Global screenshot hotkey (virtual key code). */
 export const SS_HOTKEY_KEY = "efxlve-ss-hotkey";
 /** Global screenshot hotkey display name. */

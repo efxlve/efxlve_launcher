@@ -325,7 +325,7 @@ export function refreshGameActionUi(appName: string): void {
 
 /** True when the game has the platinum trophy (100% achievements). */
 export function isAppPlatinum(appName: string): boolean {
-  return Boolean(S.demoPlatinumApps.has(appName) || achSummaryOf(appName)?.is_platinum);
+  return Boolean(achSummaryOf(appName)?.is_platinum);
 }
 
 /** Active download progress for a game, or null when not downloading. */

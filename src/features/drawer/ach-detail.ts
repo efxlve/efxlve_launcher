@@ -178,8 +178,7 @@ function renderCommunity(
 
 export function renderAchievementDetail(input: AchievementDetailInput): string {
   const { summary, item, steamAppId, community, communityLoading } = input;
-  const isDemo = S.demoPlatinumApps.has(summary.appName);
-  const isUnlocked = isAchievementUnlocked(item) || isDemo;
+  const isUnlocked = isAchievementUnlocked(item);
   const isSecret = item.hidden && !isUnlocked;
   const revealed = S.revealedAchievements.has(`${summary.appName}:${item.name}`);
   const masked = isSecret && !revealed;

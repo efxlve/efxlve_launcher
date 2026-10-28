@@ -1955,7 +1955,6 @@ export function ensurePowerPyxGuide(appName: string, title: string): void {
 
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
-  const isDemo = S.demoPlatinumApps.has(s.appName);
   const partner = gamePartner(s, rawOf(s.appName));
   const localSet = localAchievementSet(s.appName);
   const raMapping = raGameFor(s.appName);
@@ -2022,8 +2021,8 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   ensurePowerPyxGuide(s.appName, s.title);
   const hasDlc = data.achievements.some((a) => !a.is_base);
-  const effectiveUnlocked = isDemo ? data.total_achievements : data.user_unlocked;
-  const effectiveXp = isDemo ? data.total_xp : data.user_xp;
+  const effectiveUnlocked = data.user_unlocked;
+  const effectiveXp = data.user_xp;
   const pct = data.total_achievements > 0 ? Math.round((effectiveUnlocked / data.total_achievements) * 100) : 0;
   const achStats = achievementStats(data.achievements);
   const nearCount = data.achievements.filter((a) => {
@@ -2039,9 +2038,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   if (S.activeAchFilter === "edited" && editedCount === 0) S.activeAchFilter = "all";
   const playtime = libraryPlaytime(s);
   const hltb = S.loadedHltb.get(s.appName);
-  const remainingHours = isDemo
-    ? null
-    : estimateRemainingHours(achStats, playtime.seconds, hltb?.completionist);
+  const remainingHours = estimateRemainingHours(achStats, playtime.seconds, hltb?.completionist);
   const estimate = remainingHours != null ? Math.max(1, Math.round(remainingHours)) : null;
   const remaining = Math.max(0, data.total_achievements - effectiveUnlocked);
   // Epic ships the platinum award with the day it was earned; the summary can
@@ -2062,7 +2059,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   const query = S.achSearchQuery.trim().toLowerCase();
 
   const filtered = data.achievements.filter((a) => {
-    const unlocked = isAchievementUnlocked(a) || isDemo;
+    const unlocked = isAchievementUnlocked(a);
     if (S.activeAchFilter === "unlocked" && !unlocked) return false;
     if (S.activeAchFilter === "locked" && unlocked) return false;
     if (S.activeAchFilter === "hidden" && !a.hidden) return false;
@@ -2091,7 +2088,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   let unlockedCount = 0;
   for (const a of data.achievements) {
     const tier = tiers[getAchTier(a)];
-    const u = isAchievementUnlocked(a) || isDemo;
+    const u = isAchievementUnlocked(a);
     tier[0]++;
     if (u) { tier[1]++; unlockedCount++; }
   }

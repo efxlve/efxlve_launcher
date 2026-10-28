@@ -619,9 +619,8 @@ document.addEventListener("input", (e) => {
       if (data && s) {
         enrichAchievementsData(s.appName, data);
         const query = S.achSearchQuery.trim().toLowerCase();
-        const isDemo = S.demoPlatinumApps.has(s.appName);
         const filteredItems = data.achievements.filter((a) => {
-          const isUnlocked = isAchievementUnlocked(a) || isDemo;
+          const isUnlocked = isAchievementUnlocked(a);
           if (S.activeAchFilter === "unlocked" && !isUnlocked) return false;
           if (S.activeAchFilter === "locked" && isUnlocked) return false;
           if (S.activeAchFilter === "hidden" && !a.hidden) return false;

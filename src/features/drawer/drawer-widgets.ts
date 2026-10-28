@@ -1325,7 +1325,6 @@ export function renderAchievementSections(
     `;
   }
 
-  const isDemo = S.demoPlatinumApps.has(s.appName);
 
   if (!shouldGroup) {
     return renderAchievementList(items, s);
@@ -1343,14 +1342,14 @@ export function renderAchievementSections(
   const allDlc = allSource.filter((a) => !a.is_base);
 
   const baseTotal = allBase.length;
-  const baseUnlocked = isDemo ? baseTotal : allBase.filter((a) => isAchievementUnlocked(a)).length;
+  const baseUnlocked = allBase.filter((a) => isAchievementUnlocked(a)).length;
   const basePct = baseTotal > 0 ? Math.round((baseUnlocked / baseTotal) * 100) : 0;
-  const baseXp = allBase.filter((a) => isDemo || isAchievementUnlocked(a)).reduce((sum, a) => sum + a.xp, 0);
+  const baseXp = allBase.filter((a) => isAchievementUnlocked(a)).reduce((sum, a) => sum + a.xp, 0);
 
   const dlcTotal = allDlc.length;
-  const dlcUnlocked = isDemo ? dlcTotal : allDlc.filter((a) => isAchievementUnlocked(a)).length;
+  const dlcUnlocked = allDlc.filter((a) => isAchievementUnlocked(a)).length;
   const dlcPct = dlcTotal > 0 ? Math.round((dlcUnlocked / dlcTotal) * 100) : 0;
-  const dlcXp = allDlc.filter((a) => isDemo || isAchievementUnlocked(a)).reduce((sum, a) => sum + a.xp, 0);
+  const dlcXp = allDlc.filter((a) => isAchievementUnlocked(a)).reduce((sum, a) => sum + a.xp, 0);
 
   let html = "";
 
@@ -1398,8 +1397,7 @@ export function renderAchievementSections(
 /** One scannable achievement row: icon, title/description, rarity/tier/date,
  *  and one status mark. Hidden unrevealed rows stay deliberately bare. */
 export function renderAchievementRow(a: EpicAchievementItem, s: EpicSummary): string {
-  const isDemo = S.demoPlatinumApps.has(s.appName);
-  const isUnlocked = isAchievementUnlocked(a) || isDemo;
+  const isUnlocked = isAchievementUnlocked(a);
   const isRevealed = S.revealedAchievements.has(`${s.appName}:${a.name}`);
   const isSecretMasked = Boolean(a.hidden) && !isUnlocked && !isRevealed;
   const rarity = achievementRarity(a);
