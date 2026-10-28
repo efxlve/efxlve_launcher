@@ -35,7 +35,7 @@ function summaryHtml(appId: string, info: DeckStatus): string {
   return `
     <div class="hub-feature-row deck-row">
       <div class="hub-feature-label">
-        <div class="hub-feature-icon">${icon("monitor", 12)}</div>
+        <div class="hub-feature-icon">${icon("gamepad-2", 12)}</div>
         <span>${esc(t("deck.title"))}</span>
       </div>
       <div class="hub-feature-val">
