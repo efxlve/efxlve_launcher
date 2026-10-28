@@ -68,6 +68,16 @@ function dangerGroup(body: string): string {
     </section>`;
 }
 
+/** Disk size of the installed copy, shown with the files it describes. */
+function installSizeRow(size: number, installed: boolean): string {
+  if (!installed || !size || size <= 0) return "";
+  return row(
+    t("feat.installedSize"),
+    "",
+    `<span class="mg-size-value tabular-nums">${esc(fmtBytes(size))}</span>`,
+  );
+}
+
 /** Class that hides a row or a section while the search box filters. */
 const MANAGE_HIDE = "manage-hide";
 
@@ -278,16 +288,15 @@ export function openManagePopup(appName: string): void {
         <aside class="manage-side">
           <div class="manage-side-head">
             <div class="manage-side-title" id="manage-side-title">${esc(s.title)}</div>
-            <div class="manage-side-sub">${esc(storeVersionLabel(source))}</div>
+            <div class="manage-side-sub">
+              <span>${esc(storeVersionLabel(source))}</span>
+              <span class="manage-side-state${s.installed ? " is-installed" : ""}">
+                <span class="manage-side-dot"></span>
+                ${s.installed ? esc(t("common.installed")) : esc(t("common.notInstalled"))}
+              </span>
+            </div>
           </div>
           <nav class="manage-nav" role="tablist" aria-orientation="vertical" aria-label="${esc(t("drawer.manage"))}"></nav>
-          <div class="manage-side-foot">
-            <span class="manage-side-state${s.installed ? " is-installed" : ""}">
-              <span class="manage-side-dot"></span>
-              ${s.installed ? esc(t("common.installed")) : esc(t("common.notInstalled"))}
-            </span>
-            ${s.installed && s.installSize > 0 ? `<span class="manage-side-size tabular-nums">${esc(fmtBytes(s.installSize))}</span>` : ""}
-          </div>
         </aside>
         <div class="manage-main">
           <div class="manage-head">
@@ -441,7 +450,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), files)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${installSizeRow(s.installSize, s.installed)}`)}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
@@ -554,7 +563,7 @@ function amazonManageBody(s: EpicSummary): string {
     : "";
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), files)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${installSizeRow(st.installSize || s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
@@ -632,6 +641,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${row(t("steam.managedBy"), t("steam.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
+          ${installSizeRow(s.installSize, s.installed)}
           ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
         `)}
@@ -669,6 +679,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${row(t("gog.managedBy"), t("gog.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
+          ${installSizeRow(s.installSize, s.installed)}
           ${s.installed ? row(t("manage.verifyTitle"), t("manage.verifyDesc"),
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
             `<div id="manage-verify-box-container"></div>`) : ""}
@@ -746,6 +757,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
           blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : "")}
+        ${installSizeRow(st.installSize || s.installSize, s.installed)}
         ${IS_WINDOWS
           ? row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
               `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)
