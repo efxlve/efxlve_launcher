@@ -84,6 +84,13 @@ static READY: AtomicBool = AtomicBool::new(false);
 /// A running game keeps the toast page warm so the first card is instant.
 static PINNED: AtomicBool = AtomicBool::new(false);
 static PENDING: Mutex<Option<ToastPayload>> = Mutex::new(None);
+/// Cards wait their turn instead of overwriting the one on screen. A burst that
+/// arrives while a card plays is shown afterwards, in order.
+static QUEUE: Mutex<Option<std::collections::VecDeque<ToastPayload>>> = Mutex::new(None);
+static DRAINING: AtomicBool = AtomicBool::new(false);
+/// The card on screen; `toast_done` and late icons compare against this.
+static CURRENT: AtomicU64 = AtomicU64::new(0);
+static QUEUED_ICONS: Mutex<Option<std::collections::HashMap<u64, String>>> = Mutex::new(None);
 /// Serializes window creation: two unlocks can race before the label exists.
 static CREATE_LOCK: Mutex<()> = Mutex::new(());
 
@@ -91,22 +98,56 @@ fn emit_card(app: &AppHandle, payload: &ToastPayload) {
     let _ = app.emit_to(TOAST_LABEL, "ach-toast", payload.clone());
 }
 
+fn take_queued_icon(generation: u64) -> Option<String> {
+    QUEUED_ICONS
+        .lock()
+        .ok()
+        .and_then(|mut map| map.as_mut().and_then(|map| map.remove(&generation)))
+}
+
 /// Shows one card. Returns the generation a late icon download must match.
 pub fn show(app: &AppHandle, mut payload: ToastPayload) -> u64 {
     let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     payload.generation = generation;
-    if let Ok(mut slot) = PENDING.lock() {
-        *slot = Some(payload.clone());
+    if let Ok(mut queue) = QUEUE.lock() {
+        queue.get_or_insert_with(std::collections::VecDeque::new).push_back(payload);
     }
-    // Building a webview waits for the event loop. Doing that on the command
-    // thread leaves the window half-built (hidden, default size), so the card
-    // is placed and shown from a worker, the same path the startup probe used.
-    let handle = app.clone();
-    std::thread::spawn(move || show_now(&handle, payload));
+    start_drain(app.clone());
     generation
 }
 
-fn show_now(app: &AppHandle, payload: ToastPayload) {
+/// One worker shows the queue in order, leaving each card its own hold time.
+fn start_drain(app: AppHandle) {
+    if DRAINING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    std::thread::spawn(move || {
+        loop {
+            let next = QUEUE.lock().ok().and_then(|mut queue| {
+                queue.as_mut().and_then(|queue| queue.pop_front())
+            });
+            let Some(payload) = next else {
+                break;
+            };
+            CURRENT.store(payload.generation, Ordering::SeqCst);
+            let hold = payload.hold_ms.saturating_add(1_400);
+            show_now(&app, payload);
+            std::thread::sleep(std::time::Duration::from_millis(hold));
+        }
+        DRAINING.store(false, Ordering::SeqCst);
+    });
+}
+
+fn show_now(app: &AppHandle, mut payload: ToastPayload) {
+    // The icon download can land while the card is still queued.
+    if let Some(icon) = take_queued_icon(payload.generation) {
+        payload.icon = Some(icon);
+    }
+    if !READY.load(Ordering::SeqCst) {
+        if let Ok(mut slot) = PENDING.lock() {
+            *slot = Some(payload.clone());
+        }
+    }
     let win = match ensure_window(app) {
         Ok(win) => win,
         Err(error) => {
@@ -181,7 +222,7 @@ pub fn toast_ready(app: AppHandle) {
 /// The card finished its exit animation: hide now, destroy later if idle.
 #[tauri::command]
 pub fn toast_done(app: AppHandle, generation: u64) {
-    if GENERATION.load(Ordering::SeqCst) != generation {
+    if CURRENT.load(Ordering::SeqCst) != generation {
         return;
     }
     if let Some(win) = app.get_webview_window(TOAST_LABEL) {
@@ -192,7 +233,7 @@ pub fn toast_done(app: AppHandle, generation: u64) {
 
 /// Puts the downloaded achievement picture on the card that is still playing.
 pub fn set_icon(app: &AppHandle, generation: u64, path: &Path) {
-    if generation == 0 || GENERATION.load(Ordering::SeqCst) != generation {
+    if generation == 0 {
         return;
     }
     let Ok(bytes) = std::fs::read(path) else {
@@ -224,11 +265,17 @@ pub fn set_icon(app: &AppHandle, generation: u64, path: &Path) {
             pending.icon = Some(src.clone());
         }
     }
-    let _ = app.emit_to(
-        TOAST_LABEL,
-        "ach-toast-icon",
-        ToastIconPayload { generation, src },
-    );
+    if CURRENT.load(Ordering::SeqCst) == generation {
+        let _ = app.emit_to(
+            TOAST_LABEL,
+            "ach-toast-icon",
+            ToastIconPayload { generation, src },
+        );
+    } else if let Ok(mut map) = QUEUED_ICONS.lock() {
+        // The card is still queued; `show_now` picks the picture up.
+        map.get_or_insert_with(std::collections::HashMap::new)
+            .insert(generation, src);
+    }
 }
 
 fn ensure_window(app: &AppHandle) -> Result<WebviewWindow, String> {
