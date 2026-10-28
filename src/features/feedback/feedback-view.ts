@@ -15,73 +15,159 @@ import { toast } from "../../core/toast";
 import { epicOpenFolderPath } from "../../epic-commands";
 import { feedbackCreateReport, type FeedbackReport } from "../../feedback";
 
+const NOTE_MAX = 2000;
+
 let report: FeedbackReport | null = null;
 let currentNote = "";
 let includeLogs = true;
+let creating = false;
+let noteError = "";
+let createError = "";
 let generation = 0;
 
 function fileName(path: string): string {
   return path.split(/[\\/]/).pop() || "report.zip";
 }
 
-function renderFeedback(): void {
-  const close = `<button type="button" class="manage-head-close" data-act="feedback-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>`;
-  const head = (title: string): string => `
-    <div class="modal-head">
-      <h3 class="modal-title">${esc(title)}</h3>
-      ${close}
+/** One file row in the ready state: the icon names the kind of content. */
+function fileIcon(name: string): string {
+  if (name.endsWith(".json")) return icon("settings", 13);
+  if (name.endsWith(".log")) return icon("terminal", 13);
+  return icon("clipboard", 13);
+}
+
+function head(title: string, subtitle: string, done: boolean): string {
+  return `
+    <div class="feedback-head">
+      <span class="feedback-head-mark${done ? " is-ok" : ""}">${icon(done ? "check-circle" : "alert-triangle", 18)}</span>
+      <div class="feedback-head-text">
+        <h3 class="feedback-title" id="feedback-title">${esc(title)}</h3>
+        <p class="feedback-sub">${esc(subtitle)}</p>
+      </div>
+      <button type="button" class="manage-head-close" data-act="feedback-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
     </div>`;
+}
 
-  const content = report
-    ? `
-      ${head(t("feedback.readyTitle"))}
-      <p class="feedback-intro">${esc(t("feedback.readyBody"))}</p>
-      <div class="feedback-report-file"><code>${esc(fileName(report.path))}</code></div>
-      <ul class="feedback-file-list">
-        ${report.files.map((file) => `<li>${esc(file)}</li>`).join("")}
-      </ul>
-      <p class="feedback-warning">${icon("info", 14)} ${esc(t("feedback.attachHint"))}</p>
-      <div class="modal-foot">
-        <button type="button" class="btn ghost" data-act="feedback-close">${esc(t("common.close"))}</button>
-        <button type="button" class="btn ghost" data-act="feedback-open-folder">${icon("folder", 13)} ${esc(t("feedback.openFolder"))}</button>
-        <button type="button" class="btn primary" data-act="feedback-open-github">${icon("github", 13)} ${esc(t("feedback.openGithub"))}</button>
+function renderReady(created: FeedbackReport): string {
+  const files = created.files
+    .map(
+      (file) => `
+        <li class="feedback-file-item" title="${esc(file)}">
+          ${fileIcon(file)}
+          <span class="feedback-file-name">${esc(file)}</span>
+        </li>`,
+    )
+    .join("");
+
+  const contents = created.files.length
+    ? `<div class="feedback-contents">
+        <span class="feedback-contents-title">${esc(t("feedback.contents"))}</span>
+        <ul class="feedback-files">${files}</ul>
       </div>`
-    : `
-      ${head(t("feedback.title"))}
-      <p class="feedback-intro">${esc(t("feedback.intro"))}</p>
-      <label class="feedback-label" for="feedback-note">${esc(t("feedback.noteLabel"))}</label>
-      <textarea id="feedback-note" class="feedback-note" maxlength="2000" placeholder="${esc(t("feedback.notePlaceholder"))}"></textarea>
-      <label class="feedback-check">
-        <input type="checkbox" id="feedback-include-logs" ${includeLogs ? "checked" : ""} />
-        <span>${esc(t("feedback.includeLogs"))}</span>
-      </label>
-      <p class="feedback-warning">${icon("info", 14)} ${esc(t("feedback.privacy"))}</p>
-      <div class="modal-foot">
-        <button type="button" class="btn ghost" data-act="feedback-close">${esc(t("common.cancel"))}</button>
-        <button type="button" class="btn primary" id="feedback-create" data-act="feedback-create">${esc(t("feedback.create"))}</button>
-      </div>`;
+    : "";
 
+  return `
+    ${head(t("feedback.readyTitle"), t("feedback.readyBody"), true)}
+    <div class="feedback-body">
+      <div class="feedback-report">
+        <span class="feedback-report-mark">${icon("package", 20)}</span>
+        <div class="feedback-report-text">
+          <span class="feedback-report-name" title="${esc(created.path)}">${esc(fileName(created.path))}</span>
+          <span class="feedback-report-path" title="${esc(created.folder)}">${esc(created.folder)}</span>
+        </div>
+      </div>
+      ${contents}
+      <p class="info-box">${icon("info", 14)} <span>${esc(t("feedback.attachHint"))}</span></p>
+    </div>
+    <div class="feedback-foot">
+      <button type="button" class="btn ghost" data-act="feedback-close">${esc(t("common.close"))}</button>
+      <button type="button" class="btn ghost" data-act="feedback-open-folder">${icon("folder", 14)} ${esc(t("feedback.openFolder"))}</button>
+      <button type="button" class="btn primary" id="feedback-open-github" data-act="feedback-open-github">${icon("github", 14)} ${esc(t("feedback.openGithub"))}</button>
+    </div>`;
+}
+
+function renderCreate(): string {
+  const createButton = creating
+    ? `<span class="spinner feedback-btn-spinner"></span><span>${esc(t("feedback.creating"))}</span>`
+    : `${icon("package", 14)} <span>${esc(t("feedback.create"))}</span>`;
+
+  return `
+    ${head(t("feedback.title"), t("feedback.intro"), false)}
+    <div class="feedback-body">
+      <div class="feedback-field">
+        <div class="feedback-field-head">
+          <label class="feedback-label" for="feedback-note">${esc(t("feedback.noteLabel"))}</label>
+          <span class="feedback-count${currentNote.length >= NOTE_MAX - 100 ? " is-near" : ""}" data-feedback-count>${currentNote.length} / ${NOTE_MAX}</span>
+        </div>
+        <textarea id="feedback-note" class="feedback-note${noteError ? " is-invalid" : ""}" maxlength="${NOTE_MAX}" placeholder="${esc(t("feedback.notePlaceholder"))}"${creating ? " disabled" : ""}></textarea>
+        <p class="feedback-error${noteError ? "" : " hidden"}" data-feedback-note-error role="alert">${icon("alert-triangle", 13)}<span>${esc(noteError)}</span></p>
+        <p class="feedback-hint">${esc(t("feedback.noteHint"))}</p>
+      </div>
+      <label class="feedback-toggle">
+        <span class="feedback-toggle-text">
+          <span class="feedback-toggle-title">${esc(t("feedback.diagnosticsTitle"))}</span>
+          <span class="feedback-toggle-desc">${esc(t("feedback.diagnosticsDesc"))}</span>
+        </span>
+        <span class="switch">
+          <input type="checkbox" id="feedback-include-logs" ${includeLogs ? "checked" : ""}${creating ? " disabled" : ""} />
+          <span class="track"></span>
+        </span>
+      </label>
+      ${createError ? `<p class="feedback-error" data-feedback-create-error role="alert">${icon("alert-triangle", 13)}<span>${esc(createError)}</span></p>` : ""}
+      <p class="info-box feedback-privacy">${icon("info", 14)} <span>${esc(t("feedback.privacy"))}</span></p>
+    </div>
+    <div class="feedback-foot">
+      <button type="button" class="btn ghost" data-act="feedback-close">${esc(t("common.cancel"))}</button>
+      <button type="button" class="btn primary" id="feedback-create" data-act="feedback-create"${creating ? " disabled" : ""}>${createButton}</button>
+    </div>`;
+}
+
+function renderFeedback(): void {
   feedbackRoot.innerHTML = `
     <div class="confirm-layer feedback-layer">
       <div class="modal-backdrop" data-act="feedback-close">
-        <div class="modal feedback-modal" role="dialog" aria-modal="true" data-act="prevent-modal-close">
-          ${content}
+        <div class="modal feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-title" data-act="prevent-modal-close">
+          ${report ? renderReady(report) : renderCreate()}
         </div>
       </div>
     </div>`;
 
-  const note = document.getElementById("feedback-note") as HTMLTextAreaElement | null;
-  if (note) {
-    note.value = currentNote;
-    note.addEventListener("input", () => {
-      currentNote = note.value;
-    });
-    note.focus();
+  if (report) {
+    (document.getElementById("feedback-open-github") as HTMLButtonElement | null)?.focus();
+    return;
   }
+
+  const note = document.getElementById("feedback-note") as HTMLTextAreaElement | null;
+  if (!note) return;
+  note.value = currentNote;
+  note.focus();
+  note.setSelectionRange(note.value.length, note.value.length);
+  note.addEventListener("input", () => {
+    currentNote = note.value;
+    syncNoteCount(note);
+    if (noteError) {
+      noteError = "";
+      note.classList.remove("is-invalid");
+      document.querySelector("[data-feedback-note-error]")?.classList.add("hidden");
+    }
+    if (createError) {
+      createError = "";
+      document.querySelector("[data-feedback-create-error]")?.remove();
+    }
+  });
+
   const logs = document.getElementById("feedback-include-logs") as HTMLInputElement | null;
   logs?.addEventListener("change", () => {
     includeLogs = logs.checked;
   });
+}
+
+/** Counter and near-limit warning live next to the label, not under the field. */
+function syncNoteCount(note: HTMLTextAreaElement): void {
+  const counter = document.querySelector<HTMLElement>("[data-feedback-count]");
+  if (!counter) return;
+  counter.textContent = `${note.value.length} / ${NOTE_MAX}`;
+  counter.classList.toggle("is-near", note.value.length >= NOTE_MAX - 100);
 }
 
 export function openFeedback(): void {
@@ -89,6 +175,9 @@ export function openFeedback(): void {
   report = null;
   currentNote = "";
   includeLogs = true;
+  creating = false;
+  noteError = "";
+  createError = "";
   renderFeedback();
 }
 
@@ -97,34 +186,45 @@ export function closeFeedback(): void {
   report = null;
   currentNote = "";
   includeLogs = true;
+  creating = false;
+  noteError = "";
+  createError = "";
   feedbackRoot.innerHTML = "";
 }
 
 export async function createFeedbackReport(): Promise<void> {
+  if (creating) return;
   const note = currentNote.trim();
   if (!note) {
-    toast(t("feedback.noteRequired"), "err");
-    document.getElementById("feedback-note")?.focus();
+    noteError = t("feedback.noteRequired");
+    renderFeedback();
     return;
   }
+
   const token = generation;
+  creating = true;
+  createError = "";
   const button = document.getElementById("feedback-create") as HTMLButtonElement | null;
+  const noteField = document.getElementById("feedback-note") as HTMLTextAreaElement | null;
+  const logs = document.getElementById("feedback-include-logs") as HTMLInputElement | null;
   if (button) {
     button.disabled = true;
-    button.textContent = t("feedback.creating");
+    button.innerHTML = `<span class="spinner feedback-btn-spinner"></span><span>${esc(t("feedback.creating"))}</span>`;
   }
+  if (noteField) noteField.disabled = true;
+  if (logs) logs.disabled = true;
+
   try {
     const created = await feedbackCreateReport(note, includeLogs);
+    creating = false;
     if (token !== generation) return;
     report = created;
     renderFeedback();
   } catch (error) {
+    creating = false;
     if (token !== generation) return;
-    if (button) {
-      button.disabled = false;
-      button.textContent = t("feedback.create");
-    }
-    toast(`${t("feedback.createFailed")} ${String(error)}`, "err");
+    createError = `${t("feedback.createFailed")} ${String(error)}`;
+    renderFeedback();
   }
 }
 
@@ -158,4 +258,3 @@ document.addEventListener(
   },
   true,
 );
-
