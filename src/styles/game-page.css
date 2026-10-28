@@ -1584,19 +1584,25 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .sys-side-card > .gp-section-title { margin: 0; }
 .sys-side-card .hub-features-list { gap: 6px; }
-/* The copy facts read as a compact spec table, not label-left/value-right with
-   a dead middle. */
-#sys-copy-body { gap: 4px; }
-#sys-copy-body .hub-feature-row {
-  display: grid; grid-template-columns: 132px minmax(0, 1fr);
-  align-items: center; gap: 8px; padding: 7px 10px;
+/* The copy facts and the compatibility chips are one continuous spec table. */
+.sys-copy-list {
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); overflow: hidden;
 }
-#sys-copy-body .hub-feature-label { min-width: 0; }
-#sys-copy-body .hub-feature-icon { width: 24px; height: 24px; }
-#sys-copy-body .hub-feature-icon svg { width: 12px; height: 12px; }
-#sys-copy-body .hub-feature-val { text-align: left; }
-.sys-compat-list > div:empty { display: none; }
-.sys-compat-list:not(:has(> div:not(:empty))) { display: none; }
+#sys-copy-body { display: contents; }
+.sys-copy-list > div:empty { display: none; }
+.sys-copy-list .hub-feature-row {
+  display: grid; grid-template-columns: 132px minmax(0, 1fr);
+  align-items: center; gap: 8px; padding: 8px 10px;
+  background: transparent; border: 0; border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+#sys-copy-body .hub-feature-row:first-child { border-top: 0; }
+.sys-copy-list .hub-feature-row:hover { background: var(--surface-3); border-color: var(--line); }
+.sys-copy-list .hub-feature-label { min-width: 0; }
+.sys-copy-list .hub-feature-icon { width: 24px; height: 24px; }
+.sys-copy-list .hub-feature-icon svg { width: 12px; height: 12px; }
+.sys-copy-list .hub-feature-val { text-align: left; }
 
 .sys-lang-block {
   display: flex; flex-direction: column; gap: 12px;
