@@ -278,6 +278,8 @@ export interface EpicAchievementsData {
   user_cleared?: number;
   /** Epic player awards (platinum), each with the day it was earned. */
   user_awards?: EpicAchievementAward[];
+  /** Frontend-only: which source filled this page (store, local set, RA). */
+  data_source?: "store" | "local" | "ra";
 }
 
 export interface EpicAchievementSummary {

@@ -429,6 +429,11 @@ export const S = {
   achEditPanelOpen: (null) as string | null,
   /** Game whose local achievement set editor is open. */
   achSetPanelOpen: (null) as string | null,
+  /** RetroAchievements account; the web API key never reaches the webview. */
+  raConfigured: false,
+  raUsername: "",
+  /** Game whose RetroAchievements mapping panel is open. */
+  raPanelOpen: (null) as string | null,
   /** Achievement name whose detail view is open in the game page. */
   achDetail: (null) as string | null,
   /** Steam guide/thread answers keyed by `<appName>:<achievement>`. */

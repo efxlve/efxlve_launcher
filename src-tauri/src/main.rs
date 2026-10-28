@@ -33,6 +33,7 @@ mod pc_check;
 mod task_manager;
 mod game_running;
 mod presence;
+mod retroachievements;
 mod shared_library;
 mod steam;
 mod steam_art;
@@ -265,6 +266,12 @@ pub struct EpicSettings {
     /// the game's screenshot folder. Off by default: it is a screen capture.
     #[serde(default)]
     pub achievement_unlock_screenshots: Option<bool>,
+    /// RetroAchievements username; paired with the web API key below. The key
+    /// is write-only: the frontend only ever learns whether one is stored.
+    #[serde(default)]
+    pub ra_username: Option<String>,
+    #[serde(default)]
+    pub ra_api_key: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -1928,6 +1935,10 @@ fn main() {
             steam::steam_get_achievements_summary,
             steam::steam_get_achievement_community,
             steam::achievement_capture_souvenir,
+            retroachievements::ra_status,
+            retroachievements::ra_set_credentials,
+            retroachievements::ra_test,
+            retroachievements::ra_game_progress,
             guides::powerpyx::powerpyx_game_guide,
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,

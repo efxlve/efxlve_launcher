@@ -45,6 +45,7 @@ import { refreshLibraryResultsInPlace } from "../library/library-view";
 import { DEFAULT_STORE_COLORS, syncCaseCustomStoreColors } from "../library/case-colors";
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
 import { toast } from "../../core/toast";
+import { raSetCredentials, raTest } from "../../retroachievements";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
 import { loadSavedAccounts } from "../auth/account-switcher";
@@ -600,6 +601,20 @@ function renderIntegrations(): string {
      ${S.igdbMode === "direct" ? `<button class="btn ghost small" data-act="clear-igdb-credentials">${t("common.delete")}</button>` : ""}`,
   );
 
+  // RetroAchievements: the official web API key is write-only; the row only
+  // learns whether one is stored and which username it belongs to.
+  const ra = detailsRow(
+    "ra",
+    t("settings.raTitle"),
+    t("settings.raDesc"),
+    `<span class="chip ${S.raConfigured ? "ok" : ""}">${S.raConfigured ? t("settings.connected") : t("settings.keyMissing")}</span>`,
+    `<input id="settings-ra-username" class="input settings-path-input" placeholder="${esc(t("settings.raUsernamePlaceholder"))}" value="${esc(S.raUsername)}" spellcheck="false" autocomplete="off" />
+     <input id="settings-ra-key" type="password" class="input settings-path-input" placeholder="${esc(t("settings.raKeyPlaceholder"))}" value="" spellcheck="false" autocomplete="off" />
+     <button class="btn primary small" data-act="save-ra-credentials">${t("common.save")}</button>
+     <button class="btn ghost small" data-act="test-ra">${t("settings.test")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="https://retroachievements.org/controlpanel.php">${esc(t("settings.raGetKey"))}</button>`,
+  );
+
   // Amazon Games runs through the open-source Nile helper; the row reports
   // whether it is already on disk and links to the account card.
   const nileReady = Boolean(S.amazonStatus?.binary);
@@ -636,7 +651,8 @@ function renderIntegrations(): string {
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
-    group(igdb, t("settings.igdbGroup"))
+    group(igdb, t("settings.igdbGroup")) +
+    group(ra, t("settings.raGroup"))
   );
 }
 
@@ -2895,6 +2911,27 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       }
       syncCaseCustomStoreColors();
       render();
+      return true;
+    }
+    case "save-ra-credentials": {
+      const username =
+        (document.getElementById("settings-ra-username") as HTMLInputElement | null)?.value ?? "";
+      const key =
+        (document.getElementById("settings-ra-key") as HTMLInputElement | null)?.value ?? "";
+      void raSetCredentials(username, key)
+        .then((status) => {
+          S.raConfigured = status.configured;
+          S.raUsername = status.username;
+          toast(t(status.configured ? "settings.raSaved" : "settings.raCleared"), "ok");
+          render();
+        })
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
+    case "test-ra": {
+      void raTest()
+        .then((user) => toast(t("settings.raConnected", { user }), "ok"))
+        .catch((error) => toast(String(error), "err"));
       return true;
     }
     default:

@@ -360,6 +360,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `profile_cloud_upload` | `profileCloudUpload({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `profile_export` | `profileExport({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `profile_import` | `profileImport({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `ra_game_progress` | `raGameProgress({ ... })` | `src-tauri/src/retroachievements.rs` |
+| `ra_set_credentials` | `raSetCredentials({ ... })` | `src-tauri/src/retroachievements.rs` |
+| `ra_status` | `raStatus({ ... })` | `src-tauri/src/retroachievements.rs` |
+| `ra_test` | `raTest({ ... })` | `src-tauri/src/retroachievements.rs` |
 | `resize_store_view` | `resizeStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `screenshot_scan_roots` | `screenshotScanRoots({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `screenshot_share_discord` | `screenshotShareDiscord({ ... })` | `src-tauri/src/legendary/screenshots.rs` |

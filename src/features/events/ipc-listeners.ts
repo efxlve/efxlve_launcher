@@ -61,6 +61,7 @@ import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
+import { raStatus } from "../../retroachievements";
 import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
 import { BRAND_ICONS, icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
@@ -1080,17 +1081,22 @@ export async function initApp(hooks: {
       })
       .catch(() => undefined);
     // Independent boot reads; running them together removes serial IPC round trips.
-    const [networkProfile, settings, autoShortcut, defaultDir, drives] = await Promise.all([
+    const [networkProfile, settings, autoShortcut, defaultDir, drives, ra] = await Promise.all([
       epicGetNetworkProfile().catch(() => null),
       epicGetSettings().catch(() => null),
       epicGetAutoDesktopShortcut().catch(() => null),
       epicDefaultInstallDir().catch(() => ""),
       epicGetSystemDrives().catch(() => []),
+      raStatus().catch(() => null),
     ]);
     if (networkProfile !== null) S.networkProfile = networkProfile ?? "";
     if (settings) {
       S.epicSettingsCache = settings;
       S.preferredCdn = settings.preferred_cdn ?? "";
+    }
+    if (ra) {
+      S.raConfigured = ra.configured;
+      S.raUsername = ra.username;
     }
     if (defaultDir) S.epicDefaultDir = defaultDir;
     S.moveSystemDrives = Array.isArray(drives) ? drives : [];

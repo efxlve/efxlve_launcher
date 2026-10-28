@@ -35,6 +35,7 @@ import {
   deleteLocalAchievementSet,
   saveLocalAchievementSet,
 } from "../../../core/achievement-sets";
+import { setRaGame } from "../../../core/ra-games";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { askConfirm } from "../../../core/confirm-dialog";
@@ -46,7 +47,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
 import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
@@ -624,6 +625,47 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           toast(i18n("ach.setDeleted"), "ok");
         });
       });
+      return true;
+    }
+
+    /* ---------- RetroAchievements mapping ---------- */
+
+    case "ra-panel":
+    case "ra-panel-close": {
+      const appName = id ?? S.currentModalAppName;
+      if (!appName) return true;
+      const open = act === "ra-panel" && S.raPanelOpen !== appName;
+      S.raPanelOpen = open ? appName : null;
+      const s = summaryOf(appName);
+      const content = document.getElementById("drawer-tab-content");
+      if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      return true;
+    }
+
+    case "ra-save": {
+      const appName = id ?? S.raPanelOpen;
+      if (!appName) return true;
+      const input = document.getElementById("ra-game-id") as HTMLInputElement | null;
+      const value = input?.value?.trim() || "";
+      if (!/^\d+$/.test(value) || !setRaGame(appName, value)) {
+        toast(i18n("ach.raInvalid"), "err");
+        return true;
+      }
+      S.raPanelOpen = null;
+      toast(i18n("ach.raSaved"), "ok");
+      forgetRaProgress(appName);
+      void fetchAndRenderAchievements(appName, true);
+      return true;
+    }
+
+    case "ra-clear": {
+      const appName = id ?? S.raPanelOpen;
+      if (!appName) return true;
+      setRaGame(appName, "");
+      S.raPanelOpen = null;
+      toast(i18n("ach.raCleared"), "ok");
+      forgetRaProgress(appName);
+      void fetchAndRenderAchievements(appName, true);
       return true;
     }
 
