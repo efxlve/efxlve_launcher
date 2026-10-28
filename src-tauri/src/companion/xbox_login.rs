@@ -905,10 +905,54 @@ pub(crate) async fn achievements(title_id: &str) -> GameAchievementsResponse {
     achievements_from_json(&value)
 }
 
+/// One numeric requirement value; the service sends numbers and numeric
+/// strings, and `null` for "not started".
+fn xbox_requirement_value(value: Option<&serde_json::Value>) -> Option<f64> {
+    let value = value?;
+    if let Some(number) = value.as_f64() {
+        return Some(number);
+    }
+    value.as_str()?.trim().parse::<f64>().ok()
+}
+
+/// How far the player is inside one achievement. `progression.requirements`
+/// carries `current`/`target` pairs and the game page already knows how to draw
+/// a progress bar; before this they were all 0/1.
+fn xbox_achievement_progress(achievement: &serde_json::Value, unlocked: bool) -> f64 {
+    if unlocked {
+        return 1.0;
+    }
+    let Some(requirements) = achievement
+        .pointer("/progression/requirements")
+        .and_then(|value| value.as_array())
+    else {
+        return 0.0;
+    };
+    let mut current = 0.0;
+    let mut target = 0.0;
+    for requirement in requirements {
+        let Some(done) = xbox_requirement_value(requirement.get("current")) else {
+            continue;
+        };
+        let Some(goal) = xbox_requirement_value(requirement.get("target")) else {
+            continue;
+        };
+        if goal <= 0.0 {
+            continue;
+        }
+        current += done.max(0.0);
+        target += goal;
+    }
+    if target > 0.0 {
+        (current / target).clamp(0.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
 /// Maps the achievements endpoint answer to the shared model: names,
 /// descriptions, unlock times, gamerscore and the icon media asset.
-pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchievementsResponse {
-    let Some(list) = value.get("achievements").and_then(|v| v.as_array()) else {
+pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchievementsResponse {    let Some(list) = value.get("achievements").and_then(|v| v.as_array()) else {
         return GameAchievementsResponse::default();
     };
     let mut total_xp = 0u32;
@@ -973,12 +1017,21 @@ pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchieveme
             description,
             xp: gamerscore,
             unlocked,
-            progress: if unlocked { 1.0 } else { 0.0 },
+            progress: xbox_achievement_progress(achievement, unlocked),
             unlock_date,
             icon_id: String::new(),
             icon_link: icon,
             tier: None,
-            rarity: None,
+            // The v2 JSON does not guarantee a rarity block; when the service
+            // includes it, the shared rarity model paints the same tier the
+            // frontend derives for Steam.
+            rarity: achievement
+                .pointer("/rarity/percentage")
+                .and_then(|value| value.as_f64())
+                .filter(|percent| *percent > 0.0)
+                .map(|percent| crate::legendary::models::AchievementRarity {
+                    percent: Some(percent),
+                }),
             hidden: achievement.get("isSecret").and_then(|v| v.as_bool()).unwrap_or(false),
             is_base: true,
         });
@@ -1212,7 +1265,14 @@ mod tests {
                     "lockedDescription": "This is secret",
                     "progressState": "NotStarted",
                     "isSecret": true,
-                    "progression": {"timeUnlocked": "0001-01-01T00:00:00Z"},
+                    "progression": {
+                        "timeUnlocked": "0001-01-01T00:00:00Z",
+                        "requirements": [
+                            {"id": "a", "current": "37", "target": "100"},
+                            {"id": "b", "current": 13.0, "target": 50.0}
+                        ]
+                    },
+                    "rarity": {"currentCategory": "Rare", "percentage": 4.2},
                     "rewards": [{"type": "Gamerscore", "value": "25"}]
                 }
             ]
@@ -1227,8 +1287,19 @@ mod tests {
             response.achievements[0].unlock_date.as_deref(),
             Some("2024-05-06T07:08:09.000Z")
         );
+        assert_eq!(response.achievements[0].progress, 1.0);
         assert!(response.achievements[1].hidden);
         assert_eq!(response.achievements[1].unlock_date, None);
+        // 37/100 + 13/50 = 50/150; the game page draws this as a third.
+        let progress = response.achievements[1].progress;
+        assert!((progress - 0.3333).abs() < 0.001, "progress was {progress}");
+        assert_eq!(
+            response.achievements[1]
+                .rarity
+                .as_ref()
+                .and_then(|rarity| rarity.percent),
+            Some(4.2)
+        );
     }
 
     #[test]
