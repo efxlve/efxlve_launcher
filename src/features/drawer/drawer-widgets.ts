@@ -1060,9 +1060,32 @@ export function renderGameFeatures(
   `;
 }
 
+type ControllerRowState = "full" | "partial" | "primary" | "none" | "ds4";
+
+function controllerStateClass(state: ControllerRowState): string {
+  switch (state) {
+    case "full": return "is-ok";
+    case "partial": return "is-partial";
+    case "primary": return "is-primary";
+    case "none": return "is-none";
+    default: return "is-partial";
+  }
+}
+
+function controllerStateLabel(state: ControllerRowState): string {
+  switch (state) {
+    case "full": return i18nT("ctrl.statusFull");
+    case "partial": return i18nT("ctrl.statusPartial");
+    case "primary": return i18nT("ctrl.statusPrimary");
+    case "none": return i18nT("ctrl.statusNone");
+    default: return "DS4Windows";
+  }
+}
+
 /**
- * Controller support as a structured hardware card: icon tile on the left,
- * verified controller type + support badge on top, and explanation below.
+ * Controller support as a small support matrix: the verified headline on top,
+ * then what each controller family can actually do. The keyboard row is the
+ * primary control on a partial or keyboard-only game, not another status tag.
  */
 export function renderControllerCard(
   s: EpicSummary,
@@ -1070,12 +1093,34 @@ export function renderControllerCard(
   reqData?: GameRequirementsResponse,
 ): string {
   const ctrl = detectControllerSupport(s, g, reqData);
-  const badge =
-    ctrl.className === "supported"
-      ? `<span class="ctrl-badge is-full">${icon("check", 12)} ${i18nT("ctrl.fullSupport")}</span>`
-      : ctrl.iconName === "keyboard"
-        ? `<span class="ctrl-badge is-kb">${icon("keyboard", 12)} ${i18nT("feat.kbMouse")}</span>`
-        : `<span class="ctrl-badge is-partial">${i18nT("feat.partialPad")}</span>`;
+  const isFull = ctrl.className === "supported";
+  const isKeyboard = ctrl.iconName === "keyboard";
+  const isDualSenseNative = ctrl.label === i18nT("feat.dualSense");
+  const badge = isFull
+    ? `<span class="ctrl-badge is-full">${icon("check", 12)} ${i18nT("ctrl.fullSupport")}</span>`
+    : isKeyboard
+      ? ""
+      : `<span class="ctrl-badge is-partial">${i18nT("ctrl.statusPartial")}</span>`;
+
+  const xboxState: ControllerRowState = isKeyboard ? "none" : isFull ? "full" : "partial";
+  const dualSenseState: ControllerRowState = isKeyboard
+    ? "none"
+    : isFull
+      ? (isDualSenseNative ? "full" : "ds4")
+      : "partial";
+  const keyboardState: ControllerRowState = isFull ? "full" : "primary";
+
+  const row = (
+    glyph: "gamepad-2" | "keyboard",
+    label: string,
+    state: ControllerRowState,
+    title = "",
+  ): string => `
+    <div class="ctrl-support-item"${title ? ` title="${esc(title)}"` : ""}>
+      <span class="ctrl-support-name">${icon(glyph, 14)}<span>${esc(label)}</span></span>
+      <span class="ctrl-support-state ${controllerStateClass(state)}">${controllerStateLabel(state)}</span>
+    </div>`;
+
   return `
     <div class="ctrl-panel">
       <div class="ctrl-hero">
@@ -1089,9 +1134,9 @@ export function renderControllerCard(
         </div>
       </div>
       <div class="ctrl-support-list">
-        <div class="ctrl-support-item">${icon("gamepad-2", 14)}<span>Xbox / XInput</span></div>
-        <div class="ctrl-support-item">${icon("gamepad-2", 14)}<span>DualSense</span></div>
-        <div class="ctrl-support-item">${icon("keyboard", 14)}<span>${i18nT("feat.kbMouse")}</span></div>
+        ${row("gamepad-2", "Xbox / XInput", xboxState)}
+        ${row("gamepad-2", "DualSense", dualSenseState, dualSenseState === "ds4" ? i18nT("feat.xboxGamepadTip") : "")}
+        ${row("keyboard", i18nT("feat.kbMouse"), keyboardState)}
       </div>
     </div>`;
 }
