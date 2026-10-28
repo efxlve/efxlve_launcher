@@ -369,6 +369,21 @@ function requirementRows(
 }
 
 /**
+ * Where the install would go. An installed copy uses its own folder; a game
+ * that is not installed yet is checked against the store's target folder so
+ * the storage row does not guess the largest free drive.
+ */
+function storageTargetFor(s: EpicSummary): string | null {
+  if (s.installPath) return s.installPath;
+  if (s.appName.startsWith("gog::")) return S.gogInstallDir || S.gogDefaultDir || null;
+  if (s.appName.startsWith("amazon::")) return S.amazonInstallDir || S.amazonDefaultDir || null;
+  if (s.appName.startsWith("steam::") || s.appName.startsWith("custom::") || isCompanionKey(s.appName)) {
+    return null;
+  }
+  return S.epicSettingsCache?.install_dir || S.epicDefaultDir || null;
+}
+
+/**
  * The panel content only. `drawer-view` keeps the fetch trigger next to the
  * fetch itself, so this module stays presentational and free of a cycle.
  */
@@ -419,7 +434,7 @@ export function renderRequirementPanel(s: EpicSummary): string {
   const showingMinimum = !hasBothTiers ? minimum.length > 0 : S.reqTab !== "rec";
   const activeItems = showingMinimum ? minimum : recommended;
   const facts = getPcFacts();
-  const { rows, checks } = requirementRows(activeItems, showingMinimum, facts, s.installPath);
+  const { rows, checks } = requirementRows(activeItems, showingMinimum, facts, storageTargetFor(s));
   // A table with only model names has nothing automatic to summarize; showing
   // "cannot compare" above "compare" rows would just repeat itself.
   const hasAutomatic = checks.some(

@@ -12,6 +12,7 @@ import { Bell, CircleUserRound, Clapperboard, Download, Image, LayoutGrid, Monit
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
+  epicDefaultInstallDir,
   epicGetAutoDesktopShortcut,
   epicGetNetworkProfile,
   epicGetSettings,
@@ -1065,15 +1066,19 @@ export async function initApp(hooks: {
         void syncEpicServerPlaytimes();
       })
       .catch(() => undefined);
-    // Three independent disk reads; running them together removes two serial
-    // IPC round trips from the boot path.
-    const [networkProfile, settings, autoShortcut] = await Promise.all([
+    // Independent boot reads; running them together removes serial IPC round trips.
+    const [networkProfile, settings, autoShortcut, defaultDir] = await Promise.all([
       epicGetNetworkProfile().catch(() => null),
       epicGetSettings().catch(() => null),
       epicGetAutoDesktopShortcut().catch(() => null),
+      epicDefaultInstallDir().catch(() => ""),
     ]);
     if (networkProfile !== null) S.networkProfile = networkProfile ?? "";
-    if (settings) S.preferredCdn = settings.preferred_cdn ?? "";
+    if (settings) {
+      S.epicSettingsCache = settings;
+      S.preferredCdn = settings.preferred_cdn ?? "";
+    }
+    if (defaultDir) S.epicDefaultDir = defaultDir;
     if (autoShortcut !== null) S.autoDesktopShortcut = autoShortcut;
 
     // Other accounts' games come from disk snapshots (no network) so the shared
