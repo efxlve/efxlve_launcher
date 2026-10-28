@@ -36,6 +36,7 @@ import {
   formatGb,
   getPcDrives,
   getPcFacts,
+  installDriveLabel,
   pcFactsState,
   resetPcFacts,
   systemVerdict,
@@ -53,8 +54,18 @@ function queueSystemRepaint(appName: string): void {
   repaintQueued.add(appName);
   void ensurePcFacts().then(() => {
     repaintQueued.delete(appName);
+    paintCopyDrive(appName);
     repaintSystemRequirements(appName);
   });
+}
+
+/** Patches only the install-drive row after the drive list lands. */
+function paintCopyDrive(appName: string): void {
+  if (S.currentModalAppName !== appName) return;
+  const s = summaryOf(appName);
+  const el = document.getElementById("sys-copy-drive-val");
+  if (!s || !el) return;
+  el.textContent = installDriveLabel(s.installPath);
 }
 
 /** Hardware refresh: drop the cached facts and paint the loading state again. */
@@ -96,7 +107,7 @@ export function renderSystemTab(
           <section class="card sys-side-card sys-copy-card">
             <h3 class="gp-section-title">${icon("layers", 14)} <span>${t("sys.thisCopy")}</span></h3>
             <div class="sys-fact-list" id="sys-copy-list">
-              <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner, S.copyPathStates.get(s.appName))}</div>
+              <div id="sys-copy-body">${renderInstalledCopyFacts(s, partner, S.copyPathStates.get(s.appName), installDriveLabel(s.installPath))}</div>
             </div>
           </section>`
     : "";

@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "The copy on this PC",
   "sys.copyHealth": "Copy status",
   "sys.copyPathMissing": "Game folder not found",
+  "sys.installDrive": "Install drive",
   "sys.copyHealthTip": "The game files are not reachable. Reconnect the drive or verify the install location.",
   "sys.store": "Store",
   "sys.compatibilityTitle": "Platform compatibility",

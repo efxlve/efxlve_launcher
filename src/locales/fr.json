@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "La copie sur ce PC",
   "sys.copyHealth": "État de la copie",
   "sys.copyPathMissing": "Dossier du jeu introuvable",
+  "sys.installDrive": "Lecteur d’installation",
   "sys.copyHealthTip": "Les fichiers du jeu sont inaccessibles. Rebranchez le lecteur ou vérifiez le dossier d’installation.",
   "sys.store": "Boutique",
   "sys.compatibilityTitle": "Compatibilité de la plateforme",

@@ -17,7 +17,7 @@ import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import type { GameSource } from "../../core/types";
 import { t } from "../../i18n";
-import { epicGetSystemDrives, getThirdPartyLauncher, requiresThirdPartyLauncher } from "../../epic";
+import { epicGetSystemDrives, getThirdPartyLauncher, requiresThirdPartyLauncher, type SystemDriveInfo } from "../../epic";
 import { coverOf, steamArtAttrs, storeName } from "../profile/profile-view";
 import { storeLogo } from "../store/store-logos";
 
@@ -60,6 +60,12 @@ export function closeStorageManager(): void {
 function driveOf(path: string | null | undefined): string {
   if (!path || path.length < 2 || path[1] !== ":") return "";
   return path[0].toUpperCase();
+}
+
+function driveKindText(drive: SystemDriveInfo | undefined): string {
+  if (drive?.is_ssd === true) return "SSD";
+  if (drive?.is_ssd === false) return "HDD";
+  return "";
 }
 
 function shownSize(g: StorageGame): number {
@@ -250,6 +256,7 @@ export function renderStorageManager(): void {
 
   const activeLetter = S_STORAGE.activeDrive;
   const activeSysDrive = systemDrives.find((d) => d.letter.toUpperCase() === activeLetter);
+  const activeKind = driveKindText(activeSysDrive);
   const gamesOnDrive = gamesByDrive.get(activeLetter) ?? [];
   const gamesSize = gamesOnDrive.reduce((acc, g) => acc + shownSize(g), 0);
 
@@ -270,12 +277,13 @@ export function renderStorageManager(): void {
   // Drive tabs
   const driveTabs = sortedLetters.map((ltr) => {
     const sys = systemDrives.find((d) => d.letter.toUpperCase() === ltr);
+    const kind = driveKindText(sys);
     const freeText = sys?.available_bytes ? fmtBytes(sys.available_bytes) : "";
     const active = ltr === activeLetter;
     return `
       <button type="button" class="storage-drive-tab ${active ? "active" : ""}" data-act="storage-select-drive" data-drive="${ltr}">
         <span class="storage-drive-tab-icon">${icon("hard-drive", 15)}</span>
-        <span>${ltr}:${sys?.label ? ` ${esc(sys.label)}` : ""}</span>
+        <span>${ltr}:${sys?.label ? ` ${esc(sys.label)}` : ""}${kind ? ` · ${kind}` : ""}</span>
         <span class="storage-drive-tab-badge">${freeText ? `${freeText} ${t("storage.free")}` : "—"}</span>
       </button>`;
   }).join("");
@@ -315,7 +323,7 @@ export function renderStorageManager(): void {
             <div class="storage-overview-top">
               <div class="storage-overview-drive-name">
                 ${icon("hard-drive", 16)}
-                <span>${activeLetter}:${activeSysDrive?.label ? ` ${esc(activeSysDrive.label)}` : ""}</span>
+                <span>${activeLetter}:${activeSysDrive?.label ? ` ${esc(activeSysDrive.label)}` : ""}${activeKind ? ` · ${activeKind}` : ""}</span>
               </div>
               <div class="storage-overview-free-text">
                 ${t("storage.free")}: <strong>${fmtBytes(free)}</strong> / ${fmtBytes(total)}

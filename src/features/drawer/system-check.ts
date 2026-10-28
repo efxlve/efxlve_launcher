@@ -79,6 +79,21 @@ export function getPcDrives(): SystemDriveInfo[] {
   return cachedDrives;
 }
 
+/**
+ * `D: · SSD`, `D: · HDD` or just `D:` for the drive an install path lives on.
+ * The drive kind is omitted when the list has not loaded or Windows cannot
+ * report the seek penalty.
+ */
+export function installDriveLabel(installPath: string | null | undefined): string {
+  if (!installPath) return "";
+  const match = /^([A-Za-z]):(?:[\\/]|$)/.exec(installPath);
+  if (!match) return "";
+  const letter = match[1].toUpperCase();
+  const drive = cachedDrives.find((candidate) => candidate.letter.toUpperCase() === letter);
+  const kind = drive?.is_ssd === true ? "SSD" : drive?.is_ssd === false ? "HDD" : "";
+  return [`${letter}:`, kind].filter(Boolean).join(" · ");
+}
+
 export function pcFactsState(): "idle" | "loading" | "done" {
   return loadState;
 }

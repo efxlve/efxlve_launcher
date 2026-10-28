@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "สำเนาบนเครื่องนี้",
   "sys.copyHealth": "สถานะสำเนา",
   "sys.copyPathMissing": "ไม่พบโฟลเดอร์เกม",
+  "sys.installDrive": "ไดรฟ์ติดตั้ง",
   "sys.copyHealthTip": "ไม่สามารถเข้าถึงไฟล์เกมได้ โปรดเชื่อมต่อไดรฟ์อีกครั้งหรือตรวจสอบตำแหน่งติดตั้ง",
   "sys.store": "ร้านค้า",
   "sys.compatibilityTitle": "ความเข้ากันได้ของแพลตฟอร์ม",

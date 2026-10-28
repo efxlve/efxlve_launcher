@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "النسخة على هذا الجهاز",
   "sys.copyHealth": "حالة النسخة",
   "sys.copyPathMissing": "لم يتم العثور على مجلد اللعبة",
+  "sys.installDrive": "محرك التثبيت",
   "sys.copyHealthTip": "تعذر الوصول إلى ملفات اللعبة. أعد توصيل محرك الأقراص أو تحقق من موقع التثبيت.",
   "sys.store": "المتجر",
   "sys.compatibilityTitle": "توافق المنصة",

@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "この PC のコピー",
   "sys.copyHealth": "コピーの状態",
   "sys.copyPathMissing": "ゲームフォルダが見つかりません",
+  "sys.installDrive": "インストールドライブ",
   "sys.copyHealthTip": "ゲームファイルにアクセスできません。ドライブを再接続するか、インストール先を確認してください。",
   "sys.store": "ストア",
   "sys.compatibilityTitle": "プラットフォーム互換性",

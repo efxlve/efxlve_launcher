@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "이 PC의 복사본",
   "sys.copyHealth": "복사본 상태",
   "sys.copyPathMissing": "게임 폴더를 찾을 수 없습니다",
+  "sys.installDrive": "설치 드라이브",
   "sys.copyHealthTip": "게임 파일에 접근할 수 없습니다. 드라이브를 다시 연결하거나 설치 위치를 확인하세요.",
   "sys.store": "스토어",
   "sys.compatibilityTitle": "플랫폼 호환성",

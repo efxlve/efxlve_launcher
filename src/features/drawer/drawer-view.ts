@@ -68,6 +68,7 @@ import { igdbImage, igdbStatus } from "../../igdb";
 import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbGameFor, igdbTagsFor, renderIgdbCredits, renderIgdbMedia, renderIgdbSimilar } from "./igdb-view";
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } from "./system-tab";
+import { installDriveLabel } from "./system-check";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
 import { renderAchievementDetail } from "./ach-detail";
@@ -502,6 +503,7 @@ function repaintCopyFacts(appName: string): void {
     s,
     gamePartner(s, rawOf(appName)),
     S.copyPathStates.get(appName),
+    installDriveLabel(s.installPath),
   );
 }
 

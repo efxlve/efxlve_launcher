@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "Bu bilgisayardaki kopya",
   "sys.copyHealth": "Kopya durumu",
   "sys.copyPathMissing": "Oyun klasörü bulunamadı",
+  "sys.installDrive": "Kurulum sürücüsü",
   "sys.copyHealthTip": "Oyun dosyalarına ulaşılamıyor. Sürücüyü yeniden bağla veya kurulum konumunu doğrula.",
   "sys.store": "Mağaza",
   "sys.compatibilityTitle": "Platform uyumluluğu",

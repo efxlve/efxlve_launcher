@@ -1198,6 +1198,7 @@ export function renderInstalledCopyFacts(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null = null,
   pathState?: InstallPathState,
+  driveLabel?: string,
 ): string {
   const pathIssue =
     pathState?.state === "driveMissing" && pathState.drive
@@ -1258,6 +1259,18 @@ export function renderInstalledCopyFacts(
       </div>
       <div class="hub-feature-val">Windows (PC x64)</div>
     </div>
+    ${
+      driveLabel
+        ? `
+    <div class="hub-feature-row" id="sys-copy-drive-row" title="${esc(i18nT("sys.installDrive"))}">
+      <div class="hub-feature-label">
+        <div class="hub-feature-icon">${icon("folder", 13)}</div>
+        <span>${i18nT("sys.installDrive")}</span>
+      </div>
+      <div class="hub-feature-val" id="sys-copy-drive-val">${esc(driveLabel)}</div>
+    </div>`
+        : ""
+    }
     ${
       hasNativeEos
         ? `

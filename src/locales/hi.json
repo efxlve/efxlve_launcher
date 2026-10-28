@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "इस पीसी पर मौजूद कॉपी",
   "sys.copyHealth": "कॉपी की स्थिति",
   "sys.copyPathMissing": "गेम फ़ोल्डर नहीं मिला",
+  "sys.installDrive": "इंस्टॉल ड्राइव",
   "sys.copyHealthTip": "गेम फ़ाइलें उपलब्ध नहीं हैं। ड्राइव फिर से कनेक्ट करें या इंस्टॉल स्थान जाँचें।",
   "sys.store": "स्टोर",
   "sys.compatibilityTitle": "प्लेटफ़ॉर्म संगतता",

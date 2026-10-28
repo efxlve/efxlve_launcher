@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "A cópia neste PC",
   "sys.copyHealth": "Estado da cópia",
   "sys.copyPathMissing": "Pasta do jogo não encontrada",
+  "sys.installDrive": "Unidade de instalação",
   "sys.copyHealthTip": "Os arquivos do jogo não estão acessíveis. Reconecte a unidade ou verifique a pasta de instalação.",
   "sys.store": "Loja",
   "sys.compatibilityTitle": "Compatibilidade da plataforma",

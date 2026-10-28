@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "Копия на этом ПК",
   "sys.copyHealth": "Состояние копии",
   "sys.copyPathMissing": "Папка игры не найдена",
+  "sys.installDrive": "Диск установки",
   "sys.copyHealthTip": "Файлы игры недоступны. Подключите диск снова или проверьте папку установки.",
   "sys.store": "Магазин",
   "sys.compatibilityTitle": "Совместимость с платформой",

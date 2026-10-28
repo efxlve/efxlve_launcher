@@ -2483,6 +2483,7 @@
   "sys.thisCopy": "此電腦上的副本",
   "sys.copyHealth": "副本狀態",
   "sys.copyPathMissing": "找不到遊戲資料夾",
+  "sys.installDrive": "安裝磁碟機",
   "sys.copyHealthTip": "無法存取遊戲檔案。請重新連接磁碟機或檢查安裝位置。",
   "sys.store": "商店",
   "sys.compatibilityTitle": "平台相容性",
