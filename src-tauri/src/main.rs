@@ -1932,6 +1932,7 @@ fn main() {
             steam::steam_start_emulator_watcher,
             steam::steam_start_achievement_watcher,
             steam::steam_stop_achievement_watcher,
+            steam::steam_set_achievement_notifications,
             custom_games::custom_games_list,
             custom_games::custom_games_add,
             custom_games::custom_games_edit,

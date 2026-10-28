@@ -16,12 +16,13 @@ import { currentLanguage, t } from "../../i18n";
 import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
 import { achSummaryOf, epicDlProgress, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
+import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { cachedSteamCover, cachedSteamHero, isFlatSteamArt, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
-import { steamLibraryArt, steamNews, steamWatchRunning, type SteamLibraryArt, type SteamNewsItem } from "../../steam";
+import { steamLibraryArt, steamNews, steamSetAchievementNotifications, steamWatchRunning, type SteamLibraryArt, type SteamNewsItem } from "../../steam";
 import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
 import { gameStatusOf, gameStatusOptions, statusMenuHtml, type GameStatus } from "../library/game-status";
 import { canonicalGameTitle, clearWideArtCache, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -1185,6 +1186,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const g = rawOf(appName);
   const partner = gamePartner(s, g);
   const antiCheat = gameAntiCheat(s, g);
+  const achNotifOn = achGameNotificationsEnabled(appName);
+  const achSteamId = appName.startsWith("steam::")
+    ? appName.slice("steam::".length)
+    : (S.customGames.find((game) => game.id === appName)?.steamAppId?.trim() ?? "");
   const companion = isCompanionApp(appName);
   // Companion games open on Overview; the rest of the tabs read their own
   // local or store data and are available too.
@@ -1296,7 +1301,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
             <div class="gp-hero-nav">
               <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
             </div>
-            <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
+            <div class="gp-hero-actions">
+              <button class="icon-btn gp-hero-tool ${achNotifOn ? "" : "is-off"}" data-act="toggle-ach-game-notif" data-id="${esc(appName)}" data-steam-appid="${esc(achSteamId)}" title="${esc(t("ach.gameNotifToggle"))}" aria-pressed="${achNotifOn}">${icon(achNotifOn ? "bell" : "bell-off", 16)}</button>
+              <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
+            </div>
           </div>
           <div class="gp-hero-bottom">
             <h1 class="gp-title">${esc(s.title)}</h1>
@@ -2362,6 +2370,7 @@ function emitStoreAchievementUnlock(
   totalCount: number,
 ): void {
   if (!S.achievementNotificationOptions.enabled) return;
+  if (!achGameNotificationsEnabled(appName)) return;
   const storeKey = sourceOfKey(appName);
   if ((S.achievementNotificationOptions.disabledStores || []).includes(storeKey)) {
     return;
@@ -2424,6 +2433,9 @@ export function startStoreAchievementSession(appName: string): void {
     if (!game) return;
     const exeDir = game.exePath?.replace(/[\\/][^\\/]*$/, "");
     void resolveCustomGameSteamAppId(game).then((appId) => {
+      void steamSetAchievementNotifications(appId, achGameNotificationsEnabled(appName)).catch(
+        () => {},
+      );
       void steamStartEmulatorWatcher(appId, exeDir).catch(() => {});
     });
     return;
@@ -2446,7 +2458,9 @@ export function startStoreAchievementSession(appName: string): void {
 
   if (sessionPollTimers.has(appName)) return;
   const isUbi = source === "ubisoft" || ubiAchSource.has(appName);
-  const intervalMs = isUbi ? 5_000 : 20_000;
+  // A running game is the only thing polled here; a short interval is what
+  // makes the card feel immediate. The calls are small local/store reads.
+  const intervalMs = isUbi ? 3_000 : 4_000;
   const timer = window.setInterval(() => {
     if (!S.runningGames.has(appName)) {
       stopStoreAchievementPoll(appName);

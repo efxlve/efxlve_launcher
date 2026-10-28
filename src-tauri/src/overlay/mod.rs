@@ -391,18 +391,33 @@ pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, 
     };
     if stopped {
         teardown(&app);
+    } else {
+        // Warm the toast page while the game runs: the first card then only
+        // has to show a window, not boot a WebView2 renderer.
+        let options = crate::steam::achievement_notification_options(&app);
+        if options.enabled && options.overlay {
+            crate::overlay::toast::prewarm(&app);
+        }
     }
 }
 
 /// Clears the active game context when a title stops.
 #[tauri::command]
-pub fn overlay_clear_active_game(app_name: String) {
-    if let Ok(mut s) = STATE.lock() {
+pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
+    let cleared = if let Ok(mut s) = STATE.lock() {
         if s.game_app == app_name || s.game_disabled {
             s.game_app.clear();
             s.game_title.clear();
             s.game_disabled = false;
+            true
+        } else {
+            false
         }
+    } else {
+        false
+    };
+    if cleared {
+        crate::overlay::toast::release(&app);
     }
 }
 

@@ -160,6 +160,8 @@ export const OVERLAY_HUD_KEY = "efxlve-overlay-hud";
 export const OVERLAY_OPACITY_KEY = "efxlve-overlay-opacity";
 /** In-game overlay: games the user opted out of, as a JSON app-name array. */
 export const OVERLAY_DISABLED_KEY = "efxlve-overlay-disabled-games";
+/** Achievement cards: games whose notifications are muted, as a JSON app-name array. */
+export const ACH_DISABLED_GAMES_KEY = "efxlve-ach-disabled-games";
 /** Library storefronts that stay visible. Missing means every store. */
 export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 /** Canonical game title → library key of the store version the player picked. */

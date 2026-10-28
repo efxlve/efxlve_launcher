@@ -8,7 +8,8 @@
  * idempotent, because restarting a watcher resets its unlock baseline.
  */
 
-import { steamStartAchievementWatcher, steamStopAchievementWatcher } from "../steam";
+import { steamSetAchievementNotifications, steamStartAchievementWatcher, steamStopAchievementWatcher } from "../steam";
+import { achGameNotificationsEnabled } from "./ach-game-prefs";
 
 const watched = new Set<string>();
 
@@ -21,7 +22,13 @@ function appIdOf(appName: string): string | null {
 /** Starts the watcher for a running Steam game once per session. */
 export function watchSteamAchievements(appName: string): void {
   const appId = appIdOf(appName);
-  if (!appId || watched.has(appId)) return;
+  if (!appId) return;
+  // The Rust watcher only knows the AppID; carry the per-game mute over before
+  // it can see an unlock (a watcher that outlived a page change too).
+  void steamSetAchievementNotifications(appId, achGameNotificationsEnabled(appName)).catch(
+    () => {},
+  );
+  if (watched.has(appId)) return;
   watched.add(appId);
   void steamStartAchievementWatcher(appId).catch(() => watched.delete(appId));
 }

@@ -1961,6 +1961,27 @@ pub fn steam_detect_achievement_path(app_id: String) -> Option<String> {
 
 static ACTIVE_WATCHERS: StdMutex<Option<std::collections::HashMap<String, Arc<AtomicBool>>>> = StdMutex::new(None);
 
+/// Per-game achievement switch written by the game page bell. The watcher
+/// consults it at unlock time; an id missing from the map stays enabled.
+static GAME_NOTIFICATIONS: StdMutex<Option<std::collections::HashMap<String, bool>>> =
+    StdMutex::new(None);
+
+#[tauri::command]
+pub fn steam_set_achievement_notifications(app_id: String, enabled: bool) {
+    if let Ok(mut lock) = GAME_NOTIFICATIONS.lock() {
+        lock.get_or_insert_with(std::collections::HashMap::new)
+            .insert(app_id, enabled);
+    }
+}
+
+fn achievement_game_notifications_enabled(app_id: &str) -> bool {
+    GAME_NOTIFICATIONS
+        .lock()
+        .ok()
+        .and_then(|lock| lock.as_ref().and_then(|map| map.get(app_id).copied()))
+        .unwrap_or(true)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AchievementUnlockedPayload {
@@ -2990,7 +3011,8 @@ fn emit_new_achievement_unlocks(
         let options = achievement_notification_options(app);
         let store_key = if write_cache { "steam" } else { "custom" };
         let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
-        let should_notify = options.enabled && store_enabled;
+        let game_enabled = achievement_game_notifications_enabled(app_id);
+        let should_notify = options.enabled && store_enabled && game_enabled;
         if should_notify {
             if options.overlay {
                 let generation = crate::overlay::toast::show(
@@ -3101,7 +3123,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
             .unwrap_or_default();
 
         while running_flag.load(Ordering::Relaxed) {
-            std::thread::sleep(std::time::Duration::from_millis(1500));
+            std::thread::sleep(std::time::Duration::from_millis(800));
             if !running_flag.load(Ordering::Relaxed) {
                 break;
             }

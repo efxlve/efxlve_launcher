@@ -343,6 +343,9 @@ export const achievementClearCustomSound = () =>
 export const steamStartAchievementWatcher = (appId: string) =>
   invoke<void>("steam_start_achievement_watcher", { appId });
 
+export const steamSetAchievementNotifications = (appId: string, enabled: boolean) =>
+  invoke<void>("steam_set_achievement_notifications", { appId, enabled });
+
 export const steamStartEmulatorWatcher = (appId: string, installDir?: string) =>
   invoke<void>("steam_start_emulator_watcher", { appId, installDir: installDir ?? null });
 

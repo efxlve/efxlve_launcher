@@ -78,6 +78,8 @@ body.sb-resizing .overlay {
 .gp-hero-top { position: absolute; top: 16px; left: 32px; right: 32px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
 .gp-hero-nav { display: flex; align-items: center; gap: 6px; }
 .gp-hero-nav .icon-btn:disabled { opacity: 0.35; }
+.gp-hero-actions { display: flex; align-items: center; gap: 6px; }
+.gp-hero-tool.is-off { opacity: 0.55; }
 .gp-hero-tool { background: rgba(14, 15, 18, 0.72); border: 1px solid var(--hero-line); color: var(--hero-fg); }
 .gp-hero-bottom { position: absolute; left: 32px; right: 32px; bottom: 20px; z-index: 1; }
 .gp-title {

@@ -70,6 +70,7 @@ import { closeAllModals, openEpicModal, render, scheduleRender } from "../../cor
 import { S, applyTabSort, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { copyPcCheck, runPcCheck } from "../settings/pc-check";
+import { handleAchievementGameAction } from "./handlers/ach-game-handlers";
 import { saveCustomCss } from "../../core/custom-css";
 import { applySurface } from "../../core/themes";
 import { applyReduceEffects } from "../../core/effects";
@@ -341,6 +342,7 @@ document.addEventListener("click", (e) => {
   if (handleScreenshotsPageAction(act, t, targetEl)) return;
   if (handleScreenshotEditorAction(act, t, targetEl)) return;
   if (handleSteamAction(act, t, id)) return;
+  if (handleAchievementGameAction(act, t)) return;
   if (handleCustomGamesAction(act, id)) return;
 
   // Global Navigation & Modal Controls

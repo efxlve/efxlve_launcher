@@ -71,6 +71,8 @@ struct ToastIconPayload {
 
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 static READY: AtomicBool = AtomicBool::new(false);
+/// A running game keeps the toast page warm so the first card is instant.
+static PINNED: AtomicBool = AtomicBool::new(false);
 static PENDING: Mutex<Option<ToastPayload>> = Mutex::new(None);
 /// Serializes window creation: two unlocks can race before the label exists.
 static CREATE_LOCK: Mutex<()> = Mutex::new(());
@@ -105,6 +107,26 @@ fn show_now(app: &AppHandle, payload: ToastPayload) {
     place_on_active_monitor(&win);
     let _ = win.set_always_on_top(true);
     let _ = win.show();
+    if let Ok(hwnd) = win.hwnd() {
+        crate::overlay::hud::raise_topmost(hwnd.0 as isize);
+    }
+    // Some games raise themselves right after losing/regaining fullscreen.
+    // Nudge the card back into the topmost band a couple of times.
+    let handle = app.clone();
+    let generation = payload.generation;
+    std::thread::spawn(move || {
+        for delay in [500u64, 1200] {
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+            if GENERATION.load(Ordering::SeqCst) != generation {
+                return;
+            }
+            if let Some(win) = handle.get_webview_window(TOAST_LABEL) {
+                if let Ok(hwnd) = win.hwnd() {
+                    crate::overlay::hud::raise_topmost(hwnd.0 as isize);
+                }
+            }
+        }
+    });
     // The window may be fresh (its page is still booting) or warm.
     if READY.load(Ordering::SeqCst) {
         emit_card(app, &payload);
@@ -113,6 +135,25 @@ fn show_now(app: &AppHandle, payload: ToastPayload) {
         }
     }
     schedule_watchdog(app.clone(), payload.generation, payload.hold_ms);
+}
+
+/// Keeps the toast page loaded while a game runs, so the first card arrives
+/// without waiting for a WebView2 boot.
+pub fn prewarm(app: &AppHandle) {
+    PINNED.store(true, Ordering::SeqCst);
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        if let Err(error) = ensure_window(&handle) {
+            crate::perf::write_line_global(&format!("toast prewarm: {error}"));
+        }
+    });
+}
+
+/// The game session ended: let the usual idle release collect the window.
+pub fn release(app: &AppHandle) {
+    PINNED.store(false, Ordering::SeqCst);
+    let generation = GENERATION.load(Ordering::SeqCst);
+    schedule_idle_release(app.clone(), generation);
 }
 
 /// The page is listening: replay whatever arrived while it booted.
@@ -233,6 +274,9 @@ fn schedule_idle_release(app: AppHandle, generation: u64) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(IDLE_RELEASE_MS));
         if GENERATION.load(Ordering::SeqCst) != generation {
+            return;
+        }
+        if PINNED.load(Ordering::SeqCst) {
             return;
         }
         let Some(win) = app.get_webview_window(TOAST_LABEL) else {

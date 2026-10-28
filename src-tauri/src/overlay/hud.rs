@@ -87,6 +87,30 @@ pub fn focus_window(hwnd: isize) {
     }
 }
 
+/// Re-asserts the topmost band without moving, sizing or activating the window.
+/// A game can raise its own window above a topmost toast; this puts the card
+/// back on top right after it appears (and again a moment later).
+pub fn raise_topmost(hwnd: isize) {
+    #[cfg(windows)]
+    if hwnd != 0 {
+        unsafe {
+            SetWindowPos(
+                hwnd as *mut core::ffi::c_void,
+                -1isize as *mut core::ffi::c_void, // HWND_TOPMOST
+                0,
+                0,
+                0,
+                0,
+                0x0001 | 0x0002 | 0x0010 | 0x0040, // NOSIZE | NOMOVE | NOACTIVATE | SHOWWINDOW
+            );
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = hwnd;
+    }
+}
+
 /// True while `hwnd` still names a live, visible window. The overlay panel
 /// follows its game window with this: the running-game watch can flap for
 /// titles the launcher did not start, and that must not close the panel.
