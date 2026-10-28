@@ -1939,6 +1939,7 @@ fn main() {
             retroachievements::ra_set_credentials,
             retroachievements::ra_test,
             retroachievements::ra_game_progress,
+            retroachievements::ra_recent_games,
             guides::powerpyx::powerpyx_game_guide,
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,

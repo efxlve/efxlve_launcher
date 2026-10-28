@@ -596,6 +596,8 @@
   "ach.raSaved": "Jogo do RetroAchievements associado.",
   "ach.raCleared": "Associação do RetroAchievements removida.",
   "ach.raSourceNote": "Set do RetroAchievements · jogo #{id}",
+  "ach.raRecent": "Jogados recentemente no RA",
+  "ach.raLoading": "Carregando jogos recentes…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "Conta do RetroAchievements",
   "settings.raDesc": "A chave web API oficial conecta seu perfil. Ela fica neste PC e nunca é mostrada de novo.",

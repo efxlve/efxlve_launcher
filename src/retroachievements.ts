@@ -11,6 +11,12 @@ export interface RaStatus {
   username: string;
 }
 
+export interface RaRecentGame {
+  gameId: string;
+  title: string;
+  console: string;
+}
+
 export const raStatus = () => invoke<RaStatus>("ra_status");
 
 /** An empty pair clears the credentials; a missing key keeps the stored one. */
@@ -23,3 +29,6 @@ export const raTest = () => invoke<string>("ra_test");
 /** One game's set plus the player's progress, mapped onto the shared model. */
 export const raGameProgress = (gameId: string) =>
   invoke<EpicAchievementsData>("ra_game_progress", { gameId });
+
+/** The account's recent RA games, for the mapping picker. */
+export const raRecentGames = () => invoke<RaRecentGame[]>("ra_recent_games");

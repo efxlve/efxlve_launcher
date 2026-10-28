@@ -307,10 +307,87 @@ fn map_game_progress(payload: &serde_json::Value) -> GameAchievementsResponse {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RaRecentGame {
+    pub game_id: String,
+    pub title: String,
+    pub console: String,
+}
+
+fn map_recent_games(payload: &serde_json::Value) -> Vec<RaRecentGame> {
+    let Some(list) = payload.as_array() else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for entry in list {
+        let game_id = id_text(entry, &["GameID", "gameId"]);
+        let title = text(entry, &["Title", "title"]);
+        if game_id.is_empty() || title.is_empty() {
+            continue;
+        }
+        out.push(RaRecentGame {
+            game_id,
+            title,
+            console: text(entry, &["ConsoleName", "consoleName"]),
+        });
+        if out.len() >= 12 {
+            break;
+        }
+    }
+    out
+}
+
+/// The player's most recent RA games: the mapping panel's picker. Finding the
+/// numeric game id by hand is the one rough edge of the RA flow.
+#[tauri::command]
+pub async fn ra_recent_games(app: tauri::AppHandle) -> Result<Vec<RaRecentGame>, String> {
+    let Some((username, key)) = credentials(&app) else {
+        return Err("RetroAchievements: no credentials".into());
+    };
+    let client = http()?;
+    let response = client
+        .get(format!("{API_ROOT}/API_GetUserRecentlyPlayedGames.php"))
+        .query(&[
+            ("u", username.as_str()),
+            ("y", key.as_str()),
+            ("c", "12"),
+            ("o", "0"),
+        ])
+        .send()
+        .await
+        .map_err(|error| format!("RetroAchievements: {error}"))?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "RetroAchievements: recent games could not be read (HTTP {})",
+            response.status().as_u16()
+        ));
+    }
+    let payload: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|error| format!("RetroAchievements: {error}"))?;
+    Ok(map_recent_games(&payload))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn recent_games_map_ids_titles_and_consoles() {
+        let payload = json!([
+            {"GameID": 1, "Title": "Sonic the Hedgehog", "ConsoleName": "Mega Drive"},
+            {"gameId": "14402", "title": "Dragster", "consoleName": "Atari 2600"},
+            {"GameID": 0, "Title": ""}
+        ]);
+        let games = map_recent_games(&payload);
+        assert_eq!(games.len(), 2);
+        assert_eq!(games[0].game_id, "1");
+        assert_eq!(games[1].title, "Dragster");
+        assert_eq!(games[1].console, "Atari 2600");
+    }
 
     #[test]
     fn progress_maps_titles_badges_rarity_and_unlocks() {

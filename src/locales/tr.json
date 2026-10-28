@@ -626,6 +626,8 @@
   "ach.raSaved": "RetroAchievements oyunu eşlendi.",
   "ach.raCleared": "RetroAchievements eşlemesi kaldırıldı.",
   "ach.raSourceNote": "RetroAchievements seti · oyun #{id}",
+  "ach.raRecent": "RA'da son oynananlar",
+  "ach.raLoading": "Son oyunlar yükleniyor…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements hesabı",
   "settings.raDesc": "Resmî web API anahtarı profilini bağlar. Bu bilgisayarda saklanır ve bir daha gösterilmez.",

@@ -596,6 +596,8 @@
   "ach.raSaved": "Przypisano grę RetroAchievements.",
   "ach.raCleared": "Usunięto przypisanie RetroAchievements.",
   "ach.raSourceNote": "Zestaw RetroAchievements · gra #{id}",
+  "ach.raRecent": "Ostatnio grane na RA",
+  "ach.raLoading": "Ładowanie ostatnich gier…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "Konto RetroAchievements",
   "settings.raDesc": "Oficjalny klucz web API łączy profil. Jest przechowywany na tym PC i nigdy więcej nie jest pokazywany.",

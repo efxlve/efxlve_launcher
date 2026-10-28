@@ -596,6 +596,8 @@
   "ach.raSaved": "已关联 RetroAchievements 游戏。",
   "ach.raCleared": "已移除 RetroAchievements 关联。",
   "ach.raSourceNote": "RetroAchievements 套装 · 游戏 #{id}",
+  "ach.raRecent": "最近在 RA 玩过",
+  "ach.raLoading": "正在加载最近的游戏…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements 账号",
   "settings.raDesc": "官方 Web API 密钥用于连接你的个人资料。它保存在此电脑上，之后不再显示。",

@@ -596,6 +596,8 @@
   "ach.raSaved": "RetroAchievements 게임을 연결했습니다.",
   "ach.raCleared": "RetroAchievements 연결을 해제했습니다.",
   "ach.raSourceNote": "RetroAchievements 세트 · 게임 #{id}",
+  "ach.raRecent": "RA 최근 플레이",
+  "ach.raLoading": "최근 게임을 불러오는 중…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements 계정",
   "settings.raDesc": "공식 웹 API 키로 프로필을 연결합니다. 이 PC에 저장되며 다시 표시되지 않습니다.",

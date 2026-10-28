@@ -432,6 +432,9 @@ export const S = {
   /** RetroAchievements account; the web API key never reaches the webview. */
   raConfigured: false,
   raUsername: "",
+  /** Account-wide recent RA games for the mapping picker. */
+  raRecent: ([]) as Array<{ gameId: string; title: string; console: string }>,
+  raRecentLoading: false,
   /** Game whose RetroAchievements mapping panel is open. */
   raPanelOpen: (null) as string | null,
   /** Achievement name whose detail view is open in the game page. */

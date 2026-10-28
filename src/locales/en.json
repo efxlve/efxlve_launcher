@@ -626,6 +626,8 @@
   "ach.raSaved": "RetroAchievements game mapped.",
   "ach.raCleared": "RetroAchievements mapping cleared.",
   "ach.raSourceNote": "RetroAchievements set · game #{id}",
+  "ach.raRecent": "Recently played on RA",
+  "ach.raLoading": "Loading recent games…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements account",
   "settings.raDesc": "The official web API key connects your profile. It is stored on this PC and never shown again.",

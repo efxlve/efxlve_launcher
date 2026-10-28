@@ -596,6 +596,8 @@
   "ach.raSaved": "RetroAchievements のゲームを紐づけました。",
   "ach.raCleared": "RetroAchievements の紐づけを解除しました。",
   "ach.raSourceNote": "RetroAchievements セット · ゲーム #{id}",
+  "ach.raRecent": "RA で最近プレイ",
+  "ach.raLoading": "最近のゲームを読み込み中…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements アカウント",
   "settings.raDesc": "公式の Web API キーでプロフィールを接続します。この PC に保存され、再表示されることはありません。",

@@ -596,6 +596,8 @@
   "ach.raSaved": "RetroAchievements-Spiel zugeordnet.",
   "ach.raCleared": "RetroAchievements-Zuordnung entfernt.",
   "ach.raSourceNote": "RetroAchievements-Set · Spiel #{id}",
+  "ach.raRecent": "Zuletzt auf RA gespielt",
+  "ach.raLoading": "Letzte Spiele werden geladen…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements-Konto",
   "settings.raDesc": "Der offizielle Web-API-Schlüssel verbindet dein Profil. Er wird auf diesem PC gespeichert und nie wieder angezeigt.",

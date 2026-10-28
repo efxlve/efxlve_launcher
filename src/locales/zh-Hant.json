@@ -596,6 +596,8 @@
   "ach.raSaved": "已關聯 RetroAchievements 遊戲。",
   "ach.raCleared": "已移除 RetroAchievements 關聯。",
   "ach.raSourceNote": "RetroAchievements 套裝 · 遊戲 #{id}",
+  "ach.raRecent": "最近在 RA 玩過",
+  "ach.raLoading": "正在載入最近的遊戲…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements 帳號",
   "settings.raDesc": "官方 Web API 金鑰用於連接你的個人檔案。它儲存在此電腦上，之後不再顯示。",

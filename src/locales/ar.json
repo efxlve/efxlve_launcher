@@ -596,6 +596,8 @@
   "ach.raSaved": "تم ربط لعبة RetroAchievements.",
   "ach.raCleared": "تمت إزالة ربط RetroAchievements.",
   "ach.raSourceNote": "مجموعة RetroAchievements · اللعبة #{id}",
+  "ach.raRecent": "لعبت مؤخرًا على RA",
+  "ach.raLoading": "جارٍ تحميل الألعاب الأخيرة…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "حساب RetroAchievements",
   "settings.raDesc": "مفتاح الويب API الرسمي يربط ملفك الشخصي. يُخزَّن على هذا الجهاز ولا يُعرض مرة أخرى.",

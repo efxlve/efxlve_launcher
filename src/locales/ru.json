@@ -596,6 +596,8 @@
   "ach.raSaved": "Игра RetroAchievements привязана.",
   "ach.raCleared": "Привязка RetroAchievements удалена.",
   "ach.raSourceNote": "Набор RetroAchievements · игра #{id}",
+  "ach.raRecent": "Недавно играли в RA",
+  "ach.raLoading": "Загрузка недавних игр…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "Аккаунт RetroAchievements",
   "settings.raDesc": "Официальный ключ веб-API подключает профиль. Он хранится на этом ПК и больше не показывается.",

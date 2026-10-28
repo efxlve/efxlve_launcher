@@ -36,6 +36,8 @@ import {
   saveLocalAchievementSet,
 } from "../../../core/achievement-sets";
 import { setRaGame } from "../../../core/ra-games";
+import { raRecentGames } from "../../../retroachievements";
+import { repaintRaPanel } from "../../drawer/ra-panel";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
 import { askConfirm } from "../../../core/confirm-dialog";
@@ -639,6 +641,33 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       const s = summaryOf(appName);
       const content = document.getElementById("drawer-tab-content");
       if (content && s) content.innerHTML = renderDrawerAchievements(s);
+      return true;
+    }
+
+    case "ra-recent": {
+      const appName = S.raPanelOpen;
+      const s = appName ? summaryOf(appName) : undefined;
+      if (!appName || !s || S.raRecentLoading) return true;
+      S.raRecentLoading = true;
+      repaintRaPanel(appName, s);
+      void raRecentGames()
+        .then((games) => {
+          S.raRecent = games;
+        })
+        .catch((error) => toast(String(error), "err"))
+        .finally(() => {
+          S.raRecentLoading = false;
+          if (S.raPanelOpen === appName && S.currentModalAppName === appName) {
+            repaintRaPanel(appName, s);
+          }
+        });
+      return true;
+    }
+
+    case "ra-use": {
+      const gameId = t.dataset.game || "";
+      const input = document.getElementById("ra-game-id") as HTMLInputElement | null;
+      if (input && /^\d+$/.test(gameId)) input.value = gameId;
       return true;
     }
 

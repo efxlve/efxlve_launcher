@@ -626,6 +626,8 @@
   "ach.raSaved": "RetroAchievements गेम जोड़ा गया।",
   "ach.raCleared": "RetroAchievements लिंक हटा दिया गया।",
   "ach.raSourceNote": "RetroAchievements सेट · गेम #{id}",
+  "ach.raRecent": "RA पर हाल में खेले",
+  "ach.raLoading": "हाल के गेम लोड हो रहे हैं…",
   "settings.raGroup": "RetroAchievements",
   "settings.raTitle": "RetroAchievements खाता",
   "settings.raDesc": "आधिकारिक Web API कुंजी आपकी प्रोफ़ाइल जोड़ती है। यह इस PC पर सहेजी जाती है और दोबारा नहीं दिखाई जाती।",
