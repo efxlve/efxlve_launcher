@@ -24,6 +24,7 @@ import {
   renderControllerCard,
   renderControllerHelp,
   renderCompatibilityHelp,
+  renderFeaturesHelp,
   renderGameFeatures,
   renderInstalledCopyFacts,
   renderSupportedLanguages,
@@ -128,8 +129,14 @@ export function renderSystemTab(
             <div id="sys-ctrl-body">${renderControllerCard(s, g, reqData)}</div>
           </section>
           <section class="card sys-side-card">
-            <h3 class="gp-section-title">${icon("sliders", 14)} <span>${t("drawer.featuresSupport")}</span></h3>
-            <div class="hub-features-list" id="hub-features-list">${features}</div>
+            <div class="sys-side-head">
+              <h3 class="gp-section-title">${icon("sliders", 14)} <span>${t("drawer.featuresSupport")}</span></h3>
+              <div class="help-tip" data-help-tip>
+                <button type="button" class="help-tip-btn" data-help-btn aria-expanded="false" aria-controls="features-help-pop" aria-label="${esc(t("drawer.featuresSupport"))}">${icon("info", 14)}</button>
+                ${renderFeaturesHelp()}
+              </div>
+            </div>
+            <div class="sys-fact-list" id="hub-features-list">${features}</div>
           </section>
         </aside>
       </div>

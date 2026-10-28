@@ -2443,6 +2443,7 @@
   "sys.compatDeckHelp": "Valves Steam-Deck-Kompatibilitätsbewertung.",
   "sys.compatProtonHelp": "Die Linux-Kompatibilitätsbewertung der Community.",
   "sys.compatAntiCheatHelp": "Anti-Cheat-Status unter Linux und Wine.",
+  "sys.featuresHelpNote": "Die Werte stammen aus dem Store, von IGDB und vom installierten Client. Fahre über eine Zeile, um die Bedeutung des Werts zu sehen.",
   "critic.scoresTitle": "Wertungen",
   "settings.ssRootsTitle": "Ordner der Galerie",
   "settings.ssRootsDesc": "Dein gewählter Ordner, die Ordner der Stores und der Game Bar und alle von dir hinzugefügten Ordner:",

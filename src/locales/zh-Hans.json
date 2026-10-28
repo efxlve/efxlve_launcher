@@ -2443,6 +2443,7 @@
   "sys.compatDeckHelp": "Valve 的 Steam Deck 兼容性评级。",
   "sys.compatProtonHelp": "社区的 Linux 兼容性评级。",
   "sys.compatAntiCheatHelp": "Linux 和 Wine 上的反作弊状态。",
+  "sys.featuresHelpNote": "数值来自商店页面、IGDB 和已安装的客户端。将鼠标悬停在某一行上可查看该值的含义。",
   "critic.scoresTitle": "评分",
   "settings.ssRootsTitle": "图库读取的文件夹",
   "settings.ssRootsDesc": "你选择的文件夹、商店和 Game Bar 保存的位置，以及你添加的文件夹：",

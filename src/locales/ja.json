@@ -2443,6 +2443,7 @@
   "sys.compatDeckHelp": "Valve による Steam Deck 互換性評価。",
   "sys.compatProtonHelp": "コミュニティによる Linux 互換性評価。",
   "sys.compatAntiCheatHelp": "Linux と Wine でのアンチチートの状態。",
+  "sys.featuresHelpNote": "値はストアページ、IGDB、インストール済みクライアントから取得します。値の意味は行にカーソルを合わせると確認できます。",
   "critic.scoresTitle": "スコア",
   "settings.ssRootsTitle": "ギャラリーが読むフォルダー",
   "settings.ssRootsDesc": "選択したフォルダー、ストアと Game Bar の保存先、追加したフォルダー:",

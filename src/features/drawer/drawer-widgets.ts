@@ -1190,6 +1190,17 @@ export function renderCompatibilityHelp(s: EpicSummary): string {
 }
 
 /**
+ * The help note behind the game features card's info button: where the values
+ * come from, plus the hint that each row explains its own value on hover.
+ */
+export function renderFeaturesHelp(): string {
+  return `
+    <div class="help-tip-pop" id="features-help-pop">
+      <p class="help-tip-note">${esc(i18nT("sys.featuresHelpNote"))}</p>
+    </div>`;
+}
+
+/**
  * The verified facts of an installed copy: store, platform, disk size, build
  * version and — for an Epic copy only — native EOS overlay support.
  */

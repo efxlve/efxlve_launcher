@@ -2443,6 +2443,7 @@
   "sys.compatDeckHelp": "La valutazione di compatibilità con Steam Deck di Valve.",
   "sys.compatProtonHelp": "La valutazione di compatibilità con Linux della community.",
   "sys.compatAntiCheatHelp": "Stato dell'anti-cheat su Linux e Wine.",
+  "sys.featuresHelpNote": "I valori provengono dallo store, da IGDB e dal client installato. Passa il mouse su una riga per capire il significato del valore.",
   "critic.scoresTitle": "Punteggi",
   "settings.ssRootsTitle": "Cartelle della galleria",
   "settings.ssRootsDesc": "La tua cartella, quelle degli store e della Game Bar e le cartelle che aggiungi:",

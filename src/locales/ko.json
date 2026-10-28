@@ -2443,6 +2443,7 @@
   "sys.compatDeckHelp": "Valve의 Steam Deck 호환성 평가.",
   "sys.compatProtonHelp": "커뮤니티의 Linux 호환성 평가.",
   "sys.compatAntiCheatHelp": "Linux 및 Wine에서의 안티치트 상태.",
+  "sys.featuresHelpNote": "값은 스토어 페이지, IGDB 및 설치된 클라이언트에서 가져옵니다. 값의 의미는 행 위에 마우스를 올리면 확인할 수 있습니다.",
   "critic.scoresTitle": "점수",
   "settings.ssRootsTitle": "갤러리가 읽는 폴더",
   "settings.ssRootsDesc": "선택한 폴더, 스토어 및 게임 바 저장 폴더, 직접 추가한 폴더:",

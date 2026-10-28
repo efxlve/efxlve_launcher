@@ -646,7 +646,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .hltb-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface-3); border-top-color: var(--accent); animation: spin 0.8s linear infinite; display: inline-block; }
 
 /* Features & Copy facts */
-.hub-features-list { display: flex; flex-direction: column; gap: 8px; }
 .hub-feature-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--line);
@@ -1583,7 +1582,6 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   flex: 0 0 auto; align-self: flex-start; width: 100%; height: fit-content;
 }
 .sys-side-card > .gp-section-title { margin: 0; }
-.sys-side-card .hub-features-list { gap: 6px; }
 .sys-side-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 8px;
@@ -2662,8 +2660,11 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .help-tip:is(.is-hover, .is-pinned)::after { display: block; }
 .help-tip-note {
-  margin: 0 0 12px; padding-bottom: 11px;
   font-size: 12px; line-height: 1.55; color: var(--text-2);
+}
+/* A note followed by definitions needs a rule; a note on its own does not. */
+.help-tip-note:not(:last-child) {
+  margin: 0 0 12px; padding-bottom: 11px;
   border-bottom: 1px solid var(--line);
 }
 .help-tip-row + .help-tip-row { margin-top: 10px; }

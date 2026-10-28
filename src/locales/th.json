@@ -2443,6 +2443,7 @@
   "sys.compatDeckHelp": "คะแนนความเข้ากันได้กับ Steam Deck จาก Valve",
   "sys.compatProtonHelp": "คะแนนความเข้ากันได้กับ Linux จากชุมชน",
   "sys.compatAntiCheatHelp": "สถานะระบบป้องกันโกงบน Linux และ Wine",
+  "sys.featuresHelpNote": "ค่าต่าง ๆ มาจากหน้าร้านค้า IGDB และไคลเอนต์ที่ติดตั้งไว้ วางเมาส์เหนือแถวเพื่อดูความหมายของค่า",
   "critic.scoresTitle": "คะแนน",
   "settings.ssRootsTitle": "โฟลเดอร์ที่แกลเลอรีอ่าน",
   "settings.ssRootsDesc": "โฟลเดอร์ที่คุณเลือก โฟลเดอร์ของสโตร์และ Game Bar และโฟลเดอร์ที่คุณเพิ่ม:",
