@@ -1031,6 +1031,20 @@ export function renderAchievementsSettingsView(): string {
             <div class="seg" role="group">${durationButtons}</div>
           </div>
         </div>
+
+        <!-- Souvenir screenshot on unlock -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achSouvenirTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achSouvenirDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-ach-souvenir" ${options.unlockScreenshots ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <!-- Info note -->
@@ -1103,6 +1117,17 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       const requested = Number(el.dataset.val);
       const minRarityPercent = [0, 5, 10, 25].includes(requested) ? requested : 0;
       const next = { ...S.achievementNotificationOptions, minRarityPercent };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
+    case "toggle-ach-souvenir": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        unlockScreenshots: (el as HTMLInputElement).checked,
+      };
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();

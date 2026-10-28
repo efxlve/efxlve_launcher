@@ -39,6 +39,8 @@ export interface AchievementHistoryEntry {
   manual: boolean;
   /** Unix ms the launcher first saw it; the sort key when `date` is absent. */
   seenAt: number;
+  /** Screenshot saved at the unlock (the souvenir setting), or "". */
+  shot: string;
 }
 
 let cache: AchievementHistoryEntry[] | null = null;
@@ -68,6 +70,7 @@ function cleanEntry(value: unknown): AchievementHistoryEntry | null {
         : null,
     manual: row.manual === true,
     seenAt: typeof row.seenAt === "number" && Number.isFinite(row.seenAt) ? row.seenAt : 0,
+    shot: typeof row.shot === "string" ? row.shot : "",
   };
 }
 
@@ -153,6 +156,7 @@ function toEntry(
     rarity: achievementRarity(item),
     manual: item.user_state === "unlocked",
     seenAt,
+    shot: "",
   };
 }
 
@@ -203,7 +207,12 @@ export function recordAchievementUnlocks(
       (next.date && next.date !== existing.date && nextValue >= existingValue) ||
       next.manual !== existing.manual
     ) {
-      byKey.set(key, { ...existing, ...next, seenAt: existing.seenAt || now });
+      byKey.set(key, {
+        ...existing,
+        ...next,
+        shot: existing.shot || next.shot,
+        seenAt: existing.seenAt || now,
+      });
       changed = true;
     }
   }
@@ -285,4 +294,26 @@ export function achievementHistoryStats(
 /** Drops the whole history; the game pages refill it on their next open. */
 export function clearAchievementHistory(): void {
   persist([]);
+}
+
+/**
+ * Attaches a souvenir screenshot to an unlock already in the history. The
+ * capture finishes after the unlock event, so the row exists by the time this
+ * runs; an unknown key is ignored.
+ */
+export function attachAchievementScreenshot(
+  appName: string,
+  achievement: string,
+  shot: string,
+): boolean {
+  if (!appName || !achievement || !shot) return false;
+  const key = `${appName}:${achievement}`;
+  const entries = achievementHistory();
+  const index = entries.findIndex((entry) => entry.key === key);
+  if (index < 0) return false;
+  if (entries[index].shot === shot) return false;
+  const next = [...entries];
+  next[index] = { ...entries[index], shot };
+  persist(next);
+  return true;
 }

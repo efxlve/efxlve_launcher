@@ -41,6 +41,7 @@ import { hydrateProtonDbChip } from "./protondb";
 import { hydrateAntiCheatChip } from "./awacy";
 import { hydrateDeckChip } from "./deck";
 import {
+  achievementCaptureSouvenir,
   achievementTestNotification,
   steamFindStoreApp,
   steamGetAchievementCommunity,
@@ -71,7 +72,7 @@ import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } fr
 import { installDriveLabel } from "./system-check";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
-import { recordAchievementUnlocks } from "../../core/achievement-history";
+import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { renderAchievementDetail } from "./ach-detail";
 import { renderAchievementEditorCard } from "./ach-editor";
 import { renderAchSidePanel } from "./ach-side-panel";
@@ -2382,6 +2383,34 @@ function emitStoreAchievementUnlock(
   ).catch(() => {});
 }
 
+/** Last souvenir per game: a burst shares one frame, and no game floods the folder. */
+const souvenirAt = new Map<string, number>();
+
+/**
+ * Saves one frame for a non-Steam unlock burst. The game must be in the
+ * foreground; the Rust capture refuses otherwise and the gallery simply misses
+ * one souvenir.
+ */
+async function captureStoreSouvenir(appName: string, achievement: string): Promise<void> {
+  if (!S.achievementNotificationOptions.unlockScreenshots) return;
+  if (!achGameNotificationsEnabled(appName)) return;
+  if ((S.achievementNotificationOptions.disabledStores || []).includes(sourceOfKey(appName))) {
+    return;
+  }
+  const now = Date.now();
+  if (now - (souvenirAt.get(appName) ?? 0) < 15_000) return;
+  souvenirAt.set(appName, now);
+  try {
+    const path = await achievementCaptureSouvenir(
+      appName,
+      summaryOf(appName)?.title || appName,
+    );
+    if (path) attachAchievementScreenshot(appName, achievement, path);
+  } catch {
+    // A missing souvenir must not interrupt the unlock itself.
+  }
+}
+
 function checkAndEmitNewStoreUnlocks(appName: string): number {
   const data = S.loadedAchievements.get(appName);
   if (!data || !Array.isArray(data.achievements) || data.achievements.length === 0) {
@@ -2394,13 +2423,17 @@ function checkAndEmitNewStoreUnlocks(appName: string): number {
     return 0;
   }
   let newlyUnlocked = 0;
+  let lead: string | null = null;
   const totalCount = Math.max(data.total_achievements || 0, data.achievements.length);
   for (const ach of data.achievements) {
     if (!ach.unlocked || baseline.has(ach.name)) continue;
     baseline.add(ach.name);
     newlyUnlocked += 1;
+    if (!lead) lead = ach.name;
     emitStoreAchievementUnlock(appName, ach, baseline.size, totalCount);
   }
+  // One souvenir per burst, attached to the first unlock of the group.
+  if (lead) void captureStoreSouvenir(appName, lead);
   return newlyUnlocked;
 }
 

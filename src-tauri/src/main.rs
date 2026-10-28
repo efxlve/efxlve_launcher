@@ -261,6 +261,10 @@ pub struct EpicSettings {
     /// unlock rate. Stores without a rarity figure are never filtered out.
     #[serde(default)]
     pub achievement_notifications_min_rarity: Option<u8>,
+    /// Capture the screen when a burst of achievements unlocks and save it to
+    /// the game's screenshot folder. Off by default: it is a screen capture.
+    #[serde(default)]
+    pub achievement_unlock_screenshots: Option<bool>,
 }
 
 fn default_true() -> bool {
@@ -1923,6 +1927,7 @@ fn main() {
             steam::steam_get_achievements,
             steam::steam_get_achievements_summary,
             steam::steam_get_achievement_community,
+            steam::achievement_capture_souvenir,
             guides::powerpyx::powerpyx_game_guide,
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,

@@ -5,6 +5,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 
 | Rust command | JS wrapper shape | File |
 |---|---|---|
+| `achievement_capture_souvenir` | `achievementCaptureSouvenir({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_clear_custom_sound` | `achievementClearCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_get_notification_options` | `achievementGetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_pick_custom_sound` | `achievementPickCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |

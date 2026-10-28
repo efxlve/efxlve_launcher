@@ -1068,13 +1068,16 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
       ]
         .filter(Boolean)
         .join(" · ");
+      const shot = entry.shot
+        ? ` <span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 10)}</span>`
+        : "";
       return `
         <button type="button" class="profile-unlock-card" data-act="open-game-from-profile" data-id="${esc(entry.appName)}" title="${esc(entry.title)} · ${esc(entry.game)}">
           <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" />` : icon("trophy", 16)}</span>
           <span class="profile-unlock-main">
             <span class="profile-unlock-name">${esc(entry.title)}</span>
             <span class="profile-unlock-game">${esc(entry.game)}</span>
-            ${meta ? `<span class="profile-unlock-meta tabular-nums">${esc(meta)}</span>` : ""}
+            ${meta || shot ? `<span class="profile-unlock-meta tabular-nums">${esc(meta)}${shot}</span>` : ""}
           </span>
         </button>`;
     })

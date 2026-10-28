@@ -60,7 +60,7 @@ import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companio
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
-import { recordAchievementUnlocks } from "../../core/achievement-history";
+import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
 import { BRAND_ICONS, icon } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
@@ -969,8 +969,9 @@ export async function initApp(hooks: {
     iconUrl: string;
     notification?: boolean;
     card?: boolean;
+    screenshot?: string | null;
   }>("achievement-unlocked", (event) => {
-    const { appId, name, displayName, description, notification = true, card = false } = event.payload;
+    const { appId, name, displayName, description, notification = true, card = false, screenshot = null } = event.payload;
     const isDirectKey =
       appId.includes("::") ||
       S.epicSummariesMap.has(appId) ||
@@ -1018,6 +1019,7 @@ export async function initApp(hooks: {
             game: summaryOf(key)?.title || key,
             store: sourceOfKey(key),
           });
+          if (screenshot) attachAchievementScreenshot(key, name, screenshot);
         }
       }
       const summary = S.epicAchSummaries[key];

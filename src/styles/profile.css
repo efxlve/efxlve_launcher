@@ -714,6 +714,13 @@
   font-size: 10px;
 }
 
+.profile-unlock-shot {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -1px;
+  color: var(--text-3);
+}
+
 /* --- 4c. Curated showcase (pinned achievements) --- */
 .profile-showcase-row {
   display: grid;

@@ -296,6 +296,8 @@ export interface AchievementNotificationOptions {
    * is always announced.
    */
   minRarityPercent?: number;
+  /** Save a screenshot of the moment to the game's screenshot folder. */
+  unlockScreenshots?: boolean;
 }
 
 /** The card palette, resolved from the live CSS tokens by the frontend. */
@@ -316,6 +318,10 @@ export const achievementSetNotificationOptions = (options: AchievementNotificati
 
 export const achievementSetNotificationColors = (colors: AchievementCardColors) =>
   invoke<void>("achievement_set_notification_colors", { colors });
+
+/** Saves the current frame as an unlock souvenir; null when it was not taken. */
+export const achievementCaptureSouvenir = (appName: string, title?: string) =>
+  invoke<string | null>("achievement_capture_souvenir", { appName, title: title ?? null });
 
 export const achievementTestNotification = (
   title: string,

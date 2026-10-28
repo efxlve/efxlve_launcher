@@ -2006,6 +2006,10 @@ pub struct AchievementUnlockedPayload {
     pub unlocked_count: Option<u32>,
     #[serde(default)]
     pub total_count: Option<u32>,
+    /// Screenshot saved for this unlock (a "souvenir" of the moment), when the
+    /// setting is on and the capture succeeded.
+    #[serde(default)]
+    pub screenshot: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -2045,6 +2049,10 @@ pub struct AchievementNotificationOptions {
     /// rarity figure is always announced: there is nothing to measure.
     #[serde(default)]
     pub min_rarity_percent: u8,
+    /// Save a screenshot of the moment to the game's screenshot folder when a
+    /// burst of achievements unlocks.
+    #[serde(default)]
+    pub unlock_screenshots: bool,
 }
 
 impl Default for AchievementNotificationOptions {
@@ -2064,6 +2072,7 @@ impl Default for AchievementNotificationOptions {
             exit_style: default_exit_style(),
             disabled_stores: Vec::new(),
             min_rarity_percent: 0,
+            unlock_screenshots: false,
         }
     }
 }
@@ -2268,6 +2277,7 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         min_rarity_percent: normalize_min_rarity(
             settings.achievement_notifications_min_rarity,
         ),
+        unlock_screenshots: settings.achievement_unlock_screenshots.unwrap_or(false),
     }
 }
 
@@ -2307,6 +2317,7 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_min_rarity = Some(normalize_min_rarity(Some(
         options.min_rarity_percent,
     )));
+    settings.achievement_unlock_screenshots = Some(options.unlock_screenshots);
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -2837,8 +2848,33 @@ pub fn achievement_test_notification(
         tier: tier_name,
         unlocked_count: Some(unlocked),
         total_count: Some(total),
+        screenshot: None,
     };
     let _ = app.emit("achievement-unlocked", payload);
+}
+
+/// Captures the moment for a non-Steam unlock. The frontend poll asks once per
+/// burst; the capture itself refuses when the game is not in the foreground.
+#[tauri::command]
+pub async fn achievement_capture_souvenir(
+    app: tauri::AppHandle,
+    app_name: String,
+    title: Option<String>,
+) -> Option<String> {
+    if !achievement_notification_options(&app).unlock_screenshots {
+        return None;
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::legendary::screenshots::capture_game_screenshot_sync(
+            &app_name,
+            title.as_deref().unwrap_or(""),
+        )
+        .ok()
+        .map(|item| item.file_path)
+    })
+    .await
+    .ok()
+    .flatten()
 }
 
 /// One payload shape for real unlocks, the Settings test and system hints.
@@ -3011,6 +3047,32 @@ fn classify_achievement_rarity_tier(
     }
 }
 
+/// One souvenir screenshot per burst, and at most one every 15 seconds: a game
+/// that unlocks steadily must not fill the folder with near-identical frames.
+static LAST_UNLOCK_SHOT_MS: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+
+fn unlock_screenshot_allowed() -> bool {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or(0);
+    let last = LAST_UNLOCK_SHOT_MS.load(Ordering::SeqCst);
+    if now.saturating_sub(last) < 15_000 {
+        return false;
+    }
+    LAST_UNLOCK_SHOT_MS.store(now, Ordering::SeqCst);
+    true
+}
+
+/// Saves the current frame to the running game's screenshot folder. The empty
+/// app name asks the capture code to use the launcher's active session.
+fn capture_unlock_souvenir() -> Option<String> {
+    crate::legendary::screenshots::capture_game_screenshot_sync("", "")
+        .ok()
+        .map(|item| item.file_path)
+}
+
 /// Emits the card, sound and frontend event for every achievement that was not
 /// in `unlocked_set` yet.
 ///
@@ -3062,6 +3124,22 @@ fn emit_new_achievement_unlocks(
         .collect();
 
     let unlocked_count = (unlocked_set.len() as u32).min(total_count.max(1));
+    let lead_name = announced.first().map(|ach| ach.name.clone());
+    // A souvenir of the moment: one frame per burst, at most every 15 seconds.
+    // The capture refuses when the game window is not foreground, so an
+    // alt-tabbed desktop never ends up in the game's gallery. The store and
+    // game mutes still apply; the master card switch does not, because a saved
+    // frame is not a notification.
+    let souvenir = if options.unlock_screenshots
+        && store_enabled
+        && game_enabled
+        && !announced.is_empty()
+        && unlock_screenshot_allowed()
+    {
+        capture_unlock_souvenir()
+    } else {
+        None
+    };
     if base_notify && !announced.is_empty() {
         let tier_of = |ach: &AchievementItem| {
             classify_achievement_rarity_tier(
@@ -3142,6 +3220,11 @@ fn emit_new_achievement_unlocks(
             tier: Some(resolved_tier_name),
             unlocked_count: Some(unlocked_count),
             total_count: Some(total_count),
+            screenshot: if lead_name.as_deref() == Some(ach.name.as_str()) {
+                souvenir.clone()
+            } else {
+                None
+            },
         };
         let _ = app.emit("achievement-unlocked", payload);
     }
