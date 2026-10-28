@@ -13,6 +13,7 @@
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achievementHistoryStats, clearAchievementHistory, sortedAchievementHistory } from "../../core/achievement-history";
+import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -994,6 +995,54 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
 }
 
 /**
+ * The curated showcase: up to three pinned achievements. A pin is a snapshot,
+ * so it reads even when the game page was never opened this session.
+ */
+function renderShowcase(): string {
+  const pins = achievementPins();
+  if (pins.length === 0) return "";
+
+  const cards = pins
+    .map((pin) => {
+      const tierLabel =
+        pin.tier === "platinum"
+          ? t("trophy.plat")
+          : pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
+            ? t(`trophy.${pin.tier}`)
+            : "";
+      const meta = [
+        tierLabel,
+        pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "",
+        pin.date ? fmtAchDate(pin.date) : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return `
+        <div class="profile-showcase-card">
+          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
+            <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" />` : icon("trophy", 26)}</span>
+            <span class="profile-showcase-body">
+              <span class="profile-showcase-title">${esc(pin.title)}</span>
+              <span class="profile-showcase-game">${esc(pin.game)}</span>
+              ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
+            </span>
+          </button>
+          <button type="button" class="icon-btn profile-showcase-unpin" data-act="unpin-ach" data-key="${esc(pin.key)}" title="${esc(t("ach.unpin"))}" aria-label="${esc(t("ach.unpin"))}">${icon("x", 12)}</button>
+        </div>`;
+    })
+    .join("");
+
+  return `
+    <section class="profile-row profile-showcase">
+      <div class="profile-row-head">
+        <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
+        <span class="profile-unlock-stats">${esc(t("profile.pinsHint"))}</span>
+      </div>
+      <div class="profile-showcase-row">${cards}</div>
+    </section>`;
+}
+
+/**
  * Recent unlocks across every store, newest first. The strip is the one place
  * the launcher's own history is visible: the bell forgets after a day and a
  * game page only knows one set.
@@ -1198,6 +1247,7 @@ export function renderProfile(): string {
   return `
     <div class="page profile-page">
       ${heroHtml}
+      ${renderShowcase()}
       ${showData ? renderUnlockRow(scope) : ""}
       ${showData ? renderRecentRow(scope) : ""}
       ${renderAchievementsPanel(games, filtered)}

@@ -97,6 +97,7 @@ import { gameStatusOf, setGameStatus, type GameStatus } from "../library/game-st
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import { clearAchievementHistory } from "../../core/achievement-history";
+import { removeAchievementPin } from "../../core/achievement-pins";
 import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
@@ -457,6 +458,18 @@ document.addEventListener("click", (e) => {
       clearAchievementHistory();
       render();
     });
+  } else if (act === "unpin-ach" && t.dataset.key) {
+    removeAchievementPin(t.dataset.key);
+    render();
+  } else if (act === "open-pinned-achievement" && id) {
+    const achievement = t.dataset.ach || "";
+    openEpicModal(id, true);
+    if (achievement) {
+      S.achDetail = achievement;
+      // The tab click owns the active tab strip and the content repaint; the
+      // detail was set first so the achievements tab opens on that card.
+      document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
+    }
   } else if (act === "profile-account" && t.dataset.key) {
     // Profile header account selector: switch which account's stats are shown.
     S.profileAccount = t.dataset.key;

@@ -1063,7 +1063,6 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-left: auto;
   padding: 0;
   border: none;
   background: transparent;
@@ -1074,6 +1073,29 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 }
 
 .ach-detail-hide:hover { color: var(--text); }
+
+.ach-detail-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.ach-detail-pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.ach-detail-pin:hover { color: var(--text); }
+.ach-detail-pin.is-active { color: var(--accent); }
 
 .ach-detail-name {
   margin: 0;

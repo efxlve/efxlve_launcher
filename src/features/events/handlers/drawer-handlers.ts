@@ -23,6 +23,7 @@ import {
   type AchievementEditMeta,
 } from "../../../core/achievement-edits";
 import { recordAchievementUnlocks } from "../../../core/achievement-history";
+import { toggleAchievementPin } from "../../../core/achievement-pins";
 import { addAchievementGuide, deleteAchievementNote, flushAchievementNoteSave, removeAchievementGuide } from "../../drawer/ach-notes";
 import { S } from "../../../core/state";
 import { openEpicModal } from "../../../core/render";
@@ -534,6 +535,18 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     }
 
     /* ---------- Launcher-only achievement state ---------- */
+
+    case "ach-pin": {
+      const appName = id ?? S.currentModalAppName;
+      const achName = t.dataset.ach;
+      const data = appName ? S.loadedAchievements.get(appName) : undefined;
+      const item = data?.achievements.find((entry) => entry.name === achName);
+      if (!appName || !item) return true;
+      const pinned = toggleAchievementPin(appName, summaryOf(appName)?.title || appName, item);
+      toast(i18n(pinned ? "ach.pinToast" : "ach.unpinToast"), "ok");
+      if (S.currentModalAppName === appName) repaintAchievementsTab(appName, true);
+      return true;
+    }
 
     case "ach-edit-settings":
     case "ach-edit-close": {

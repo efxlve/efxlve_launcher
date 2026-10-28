@@ -18,6 +18,7 @@ import {
 } from "../../core/achievements";
 import { achievementGuides, achievementNote } from "./ach-notes";
 import { renderAchievementEditBar } from "./ach-editor";
+import { isAchievementPinned } from "../../core/achievement-pins";
 import { icon, type IconName } from "../../core/icons";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -223,6 +224,12 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
   const hideButton = isSecret && !masked
     ? `<button type="button" class="ach-detail-hide" data-act="ach-reveal" data-id="${appId}" data-ach="${achId}" title="${esc(t("ach.hideTitle"))}">${icon("eye-off", 11)}<span>${esc(t("ach.hide"))}</span></button>`
     : "";
+  // Pinning is a local display choice: the card survives even when the store
+  // page is closed or offline.
+  const pinned = isAchievementPinned(summary.appName, item.name);
+  const pinButton = masked
+    ? ""
+    : `<button type="button" class="ach-detail-pin${pinned ? " is-active" : ""}" data-act="ach-pin" data-id="${appId}" data-ach="${achId}" title="${esc(pinned ? t("ach.unpin") : t("ach.pin"))}" aria-pressed="${pinned}">${icon("pin", 11)}</button>`;
   // One quiet fact line carries state, date, tier, rarity and XP; the rarity
   // tooltip keeps the multiplier so the rail stays scannable.
   const facts = masked
@@ -312,7 +319,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
           <div class="ach-detail-eyebrow">
             <span class="ach-detail-game">${esc(summary.title)}</span>
             ${eyebrowTags}
-            ${hideButton}
+            <span class="ach-detail-tools">${hideButton}${pinButton}</span>
           </div>
           <h2 class="ach-detail-name">${esc(title)}</h2>
           <p class="ach-detail-desc">${esc(description)}</p>
