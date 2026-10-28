@@ -601,7 +601,7 @@
   "sys.verdictPartial": "Kısmi kontrol",
   "sys.verdictFail": "Gereksinimlerin altında",
   "sys.verdictUnknown": "Karşılaştırılamıyor",
-  "sys.checkNote": "İşletim sistemi, RAM, depolama ve DirectX otomatik kontrol edilir. CPU ve GPU modellerini kendin karşılaştır.",
+  "sys.checkNote": "İşletim sistemi, RAM, depolama ve DirectX otomatik kontrol edilir. CPU ve GPU modelleri kaba bir kılavuz olarak Blender Open Data render puanlarıyla (CC0) karşılaştırılır; yakın veya bilinmeyen modeller tam eşleşme sayılmaz.",
   "sys.onThisPc": "Bu bilgisayarda",
   "common.installPathUnknown": "Kurulum klasörü bilinmiyor",
   "ss.shareTitle": "Görseli Paylaş",

@@ -571,7 +571,7 @@
   "sys.verdictPartial": "فحص جزئي",
   "sys.verdictFail": "أقل من المتطلبات",
   "sys.verdictUnknown": "تعذرت المقارنة",
-  "sys.checkNote": "يتم فحص نظام التشغيل والذاكرة ومساحة التخزين وDirectX تلقائيًا. قارن CPU وGPU بنفسك.",
+  "sys.checkNote": "يتم فحص نظام التشغيل والذاكرة ومساحة التخزين وDirectX تلقائيًا. تُقارن طرازات CPU وGPU بنتائج عرض Blender Open Data (CC0) كدليل تقريبي؛ ولا تُعد الطرازات القريبة أو غير المعروفة مطابقة كاملة.",
   "sys.onThisPc": "على هذا الكمبيوتر",
   "common.installPathUnknown": "مجلد التثبيت غير معروف",
   "ss.shareTitle": "مشاركة الصورة",

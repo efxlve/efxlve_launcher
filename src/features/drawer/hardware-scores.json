@@ -1,0 +1,3661 @@
+{
+  "source": "Blender Open Data (CC0)",
+  "sourceUrl": "https://opendata.blender.org",
+  "snapshot": "2026-10-28",
+  "gpus": [
+    {
+      "key": "arc a310",
+      "score": 359
+    },
+    {
+      "key": "arc a380",
+      "score": 465
+    },
+    {
+      "key": "arc a580",
+      "score": 1861
+    },
+    {
+      "key": "arc a750",
+      "score": 2042
+    },
+    {
+      "key": "arc a770",
+      "score": 2050
+    },
+    {
+      "key": "arc b370",
+      "score": 1289
+    },
+    {
+      "key": "arc b390",
+      "score": 1255
+    },
+    {
+      "key": "arc b570",
+      "score": 1813
+    },
+    {
+      "key": "arc b580",
+      "score": 2228
+    },
+    {
+      "key": "gt 1030",
+      "score": 70
+    },
+    {
+      "key": "gt 640",
+      "score": 37
+    },
+    {
+      "key": "gt 650",
+      "score": 28
+    },
+    {
+      "key": "gt 710",
+      "score": 21
+    },
+    {
+      "key": "gt 730",
+      "score": 40
+    },
+    {
+      "key": "gt 740",
+      "score": 45
+    },
+    {
+      "key": "gt 750",
+      "score": 51
+    },
+    {
+      "key": "gt 755",
+      "score": 54
+    },
+    {
+      "key": "gtx 1050",
+      "score": 169
+    },
+    {
+      "key": "gtx 1050 maxq",
+      "score": 162
+    },
+    {
+      "key": "gtx 1050 ti",
+      "score": 213
+    },
+    {
+      "key": "gtx 1050 ti maxq",
+      "score": 221
+    },
+    {
+      "key": "gtx 1060",
+      "score": 375
+    },
+    {
+      "key": "gtx 1060 maxq",
+      "score": 347
+    },
+    {
+      "key": "gtx 1070",
+      "score": 556
+    },
+    {
+      "key": "gtx 1070 maxq",
+      "score": 511
+    },
+    {
+      "key": "gtx 1070 ti",
+      "score": 627
+    },
+    {
+      "key": "gtx 1080",
+      "score": 606
+    },
+    {
+      "key": "gtx 1080 maxq",
+      "score": 559
+    },
+    {
+      "key": "gtx 1080 ti",
+      "score": 859
+    },
+    {
+      "key": "gtx 1650",
+      "score": 436
+    },
+    {
+      "key": "gtx 1650 maxq",
+      "score": 371
+    },
+    {
+      "key": "gtx 1650 super",
+      "score": 544
+    },
+    {
+      "key": "gtx 1650 ti",
+      "score": 470
+    },
+    {
+      "key": "gtx 1650 ti maxq",
+      "score": 441
+    },
+    {
+      "key": "gtx 1660",
+      "score": 719
+    },
+    {
+      "key": "gtx 1660 super",
+      "score": 765
+    },
+    {
+      "key": "gtx 1660 ti",
+      "score": 790
+    },
+    {
+      "key": "gtx 1660 ti maxq",
+      "score": 731
+    },
+    {
+      "key": "gtx 650",
+      "score": 49
+    },
+    {
+      "key": "gtx 650 ti",
+      "score": 109
+    },
+    {
+      "key": "gtx 660",
+      "score": 122
+    },
+    {
+      "key": "gtx 660 ti",
+      "score": 150
+    },
+    {
+      "key": "gtx 670",
+      "score": 184
+    },
+    {
+      "key": "gtx 680",
+      "score": 194
+    },
+    {
+      "key": "gtx 690",
+      "score": 184
+    },
+    {
+      "key": "gtx 750",
+      "score": 95
+    },
+    {
+      "key": "gtx 750 ti",
+      "score": 103
+    },
+    {
+      "key": "gtx 760",
+      "score": 157
+    },
+    {
+      "key": "gtx 770",
+      "score": 201
+    },
+    {
+      "key": "gtx 780",
+      "score": 311
+    },
+    {
+      "key": "gtx 780 ti",
+      "score": 344
+    },
+    {
+      "key": "gtx 850",
+      "score": 105
+    },
+    {
+      "key": "gtx 860",
+      "score": 107
+    },
+    {
+      "key": "gtx 870",
+      "score": 151
+    },
+    {
+      "key": "gtx 880",
+      "score": 178
+    },
+    {
+      "key": "gtx 950",
+      "score": 117
+    },
+    {
+      "key": "gtx 960",
+      "score": 165
+    },
+    {
+      "key": "gtx 965",
+      "score": 118
+    },
+    {
+      "key": "gtx 970",
+      "score": 279
+    },
+    {
+      "key": "gtx 980",
+      "score": 352
+    },
+    {
+      "key": "gtx 980 ti",
+      "score": 533
+    },
+    {
+      "key": "iris xe",
+      "score": 101
+    },
+    {
+      "key": "radeon 610m",
+      "score": 47
+    },
+    {
+      "key": "radeon 660m",
+      "score": 93
+    },
+    {
+      "key": "radeon 680m",
+      "score": 233
+    },
+    {
+      "key": "radeon 740m",
+      "score": 159
+    },
+    {
+      "key": "radeon 760m",
+      "score": 172
+    },
+    {
+      "key": "radeon 780m",
+      "score": 215
+    },
+    {
+      "key": "radeon 840m",
+      "score": 121
+    },
+    {
+      "key": "radeon 860m",
+      "score": 205
+    },
+    {
+      "key": "radeon 880m",
+      "score": 219
+    },
+    {
+      "key": "radeon 890m",
+      "score": 291
+    },
+    {
+      "key": "rtx 1000",
+      "score": 2158
+    },
+    {
+      "key": "rtx 2000",
+      "score": 2496
+    },
+    {
+      "key": "rtx 2050",
+      "score": 750
+    },
+    {
+      "key": "rtx 2060",
+      "score": 1626
+    },
+    {
+      "key": "rtx 2060 maxq",
+      "score": 1372
+    },
+    {
+      "key": "rtx 2060 super",
+      "score": 2187
+    },
+    {
+      "key": "rtx 2070",
+      "score": 2194
+    },
+    {
+      "key": "rtx 2070 maxq",
+      "score": 1793
+    },
+    {
+      "key": "rtx 2070 super",
+      "score": 2352
+    },
+    {
+      "key": "rtx 2070 super maxq",
+      "score": 1817
+    },
+    {
+      "key": "rtx 2080",
+      "score": 2328
+    },
+    {
+      "key": "rtx 2080 maxq",
+      "score": 1547
+    },
+    {
+      "key": "rtx 2080 super",
+      "score": 2394
+    },
+    {
+      "key": "rtx 2080 super maxq",
+      "score": 1851
+    },
+    {
+      "key": "rtx 2080 ti",
+      "score": 3031
+    },
+    {
+      "key": "rtx 3000",
+      "score": 2931
+    },
+    {
+      "key": "rtx 3050",
+      "score": 1461
+    },
+    {
+      "key": "rtx 3050 laptop",
+      "score": 1153
+    },
+    {
+      "key": "rtx 3050 ti laptop",
+      "score": 1313
+    },
+    {
+      "key": "rtx 3060",
+      "score": 2288
+    },
+    {
+      "key": "rtx 3060 laptop",
+      "score": 2324
+    },
+    {
+      "key": "rtx 3060 ti",
+      "score": 2978
+    },
+    {
+      "key": "rtx 3070",
+      "score": 3355
+    },
+    {
+      "key": "rtx 3070 laptop",
+      "score": 2974
+    },
+    {
+      "key": "rtx 3070 ti",
+      "score": 3731
+    },
+    {
+      "key": "rtx 3070 ti laptop",
+      "score": 3102
+    },
+    {
+      "key": "rtx 3080",
+      "score": 4789
+    },
+    {
+      "key": "rtx 3080 laptop",
+      "score": 3245
+    },
+    {
+      "key": "rtx 3080 ti",
+      "score": 5547
+    },
+    {
+      "key": "rtx 3080 ti laptop",
+      "score": 3490
+    },
+    {
+      "key": "rtx 3090",
+      "score": 5779
+    },
+    {
+      "key": "rtx 3090 ti",
+      "score": 6046
+    },
+    {
+      "key": "rtx 3500",
+      "score": 4178
+    },
+    {
+      "key": "rtx 4000",
+      "score": 4448
+    },
+    {
+      "key": "rtx 4050 laptop",
+      "score": 2567
+    },
+    {
+      "key": "rtx 4060",
+      "score": 3132
+    },
+    {
+      "key": "rtx 4060 laptop",
+      "score": 3292
+    },
+    {
+      "key": "rtx 4060 ti",
+      "score": 3832
+    },
+    {
+      "key": "rtx 4070",
+      "score": 5386
+    },
+    {
+      "key": "rtx 4070 laptop",
+      "score": 3585
+    },
+    {
+      "key": "rtx 4070 super",
+      "score": 6147
+    },
+    {
+      "key": "rtx 4070 ti",
+      "score": 6628
+    },
+    {
+      "key": "rtx 4080",
+      "score": 8675
+    },
+    {
+      "key": "rtx 4080 laptop",
+      "score": 5454
+    },
+    {
+      "key": "rtx 4080 super",
+      "score": 8417
+    },
+    {
+      "key": "rtx 4090",
+      "score": 11677
+    },
+    {
+      "key": "rtx 4090 laptop",
+      "score": 7033
+    },
+    {
+      "key": "rtx 4500",
+      "score": 5577
+    },
+    {
+      "key": "rtx 500",
+      "score": 1539
+    },
+    {
+      "key": "rtx 5000",
+      "score": 5643
+    },
+    {
+      "key": "rtx 5050",
+      "score": 2847
+    },
+    {
+      "key": "rtx 5050 laptop",
+      "score": 2748
+    },
+    {
+      "key": "rtx 5060",
+      "score": 3693
+    },
+    {
+      "key": "rtx 5060 laptop",
+      "score": 3398
+    },
+    {
+      "key": "rtx 5060 ti",
+      "score": 4304
+    },
+    {
+      "key": "rtx 5070",
+      "score": 6105
+    },
+    {
+      "key": "rtx 5070 laptop",
+      "score": 4008
+    },
+    {
+      "key": "rtx 5070 ti",
+      "score": 7620
+    },
+    {
+      "key": "rtx 5070 ti laptop",
+      "score": 5013
+    },
+    {
+      "key": "rtx 5080",
+      "score": 9146
+    },
+    {
+      "key": "rtx 5080 laptop",
+      "score": 6660
+    },
+    {
+      "key": "rtx 5090",
+      "score": 15080
+    },
+    {
+      "key": "rtx 5090 laptop",
+      "score": 8012
+    },
+    {
+      "key": "rtx 5880",
+      "score": 10832
+    },
+    {
+      "key": "rtx 6000",
+      "score": 11056
+    },
+    {
+      "key": "rx 480",
+      "score": 350
+    },
+    {
+      "key": "rx 5300",
+      "score": 343
+    },
+    {
+      "key": "rx 5500",
+      "score": 349
+    },
+    {
+      "key": "rx 5500 xt",
+      "score": 503
+    },
+    {
+      "key": "rx 560",
+      "score": 130
+    },
+    {
+      "key": "rx 5600",
+      "score": 659
+    },
+    {
+      "key": "rx 5600 xt",
+      "score": 618
+    },
+    {
+      "key": "rx 570",
+      "score": 329
+    },
+    {
+      "key": "rx 5700",
+      "score": 877
+    },
+    {
+      "key": "rx 5700 xt",
+      "score": 977
+    },
+    {
+      "key": "rx 580",
+      "score": 391
+    },
+    {
+      "key": "rx 6400",
+      "score": 304
+    },
+    {
+      "key": "rx 6500",
+      "score": 384
+    },
+    {
+      "key": "rx 6500 xt",
+      "score": 423
+    },
+    {
+      "key": "rx 6600",
+      "score": 966
+    },
+    {
+      "key": "rx 6600 xt",
+      "score": 1065
+    },
+    {
+      "key": "rx 6650",
+      "score": 913
+    },
+    {
+      "key": "rx 6650 xt",
+      "score": 1137
+    },
+    {
+      "key": "rx 6700",
+      "score": 1350
+    },
+    {
+      "key": "rx 6700 xt",
+      "score": 1516
+    },
+    {
+      "key": "rx 6750 gre",
+      "score": 1404
+    },
+    {
+      "key": "rx 6750 xt",
+      "score": 1614
+    },
+    {
+      "key": "rx 6800",
+      "score": 1897
+    },
+    {
+      "key": "rx 6800 xt",
+      "score": 2424
+    },
+    {
+      "key": "rx 6850",
+      "score": 1438
+    },
+    {
+      "key": "rx 6900 xt",
+      "score": 2495
+    },
+    {
+      "key": "rx 6950 xt",
+      "score": 2750
+    },
+    {
+      "key": "rx 7600",
+      "score": 1261
+    },
+    {
+      "key": "rx 7600 xt",
+      "score": 1270
+    },
+    {
+      "key": "rx 7650 gre",
+      "score": 1255
+    },
+    {
+      "key": "rx 7700",
+      "score": 987
+    },
+    {
+      "key": "rx 7700 xt",
+      "score": 2110
+    },
+    {
+      "key": "rx 7800",
+      "score": 1936
+    },
+    {
+      "key": "rx 7800 xt",
+      "score": 2423
+    },
+    {
+      "key": "rx 7900 gre",
+      "score": 2828
+    },
+    {
+      "key": "rx 7900 xt",
+      "score": 3561
+    },
+    {
+      "key": "rx 7900 xtx",
+      "score": 4082
+    },
+    {
+      "key": "rx 9060",
+      "score": 1468
+    },
+    {
+      "key": "rx 9060 xt",
+      "score": 1631
+    },
+    {
+      "key": "rx 9070",
+      "score": 2789
+    },
+    {
+      "key": "rx 9070 gre",
+      "score": 2352
+    },
+    {
+      "key": "rx 9070 xt",
+      "score": 3300
+    },
+    {
+      "key": "uhd 630",
+      "score": 75
+    },
+    {
+      "key": "vega 10",
+      "score": 76
+    },
+    {
+      "key": "vega 11",
+      "score": 89
+    },
+    {
+      "key": "vega 3",
+      "score": 43
+    },
+    {
+      "key": "vega 56",
+      "score": 638
+    },
+    {
+      "key": "vega 64",
+      "score": 764
+    },
+    {
+      "key": "vega 8",
+      "score": 89
+    }
+  ],
+  "cpus": [
+    {
+      "key": "apple m1",
+      "score": 95
+    },
+    {
+      "key": "apple m1 max",
+      "score": 201
+    },
+    {
+      "key": "apple m1 pro",
+      "score": 185
+    },
+    {
+      "key": "apple m1 ultra",
+      "score": 410
+    },
+    {
+      "key": "apple m2",
+      "score": 109
+    },
+    {
+      "key": "apple m2 max",
+      "score": 253
+    },
+    {
+      "key": "apple m2 pro",
+      "score": 199
+    },
+    {
+      "key": "apple m2 ultra",
+      "score": 502
+    },
+    {
+      "key": "apple m3",
+      "score": 155
+    },
+    {
+      "key": "apple m3 max",
+      "score": 400
+    },
+    {
+      "key": "apple m3 pro",
+      "score": 227
+    },
+    {
+      "key": "apple m3 ultra",
+      "score": 715
+    },
+    {
+      "key": "apple m4",
+      "score": 224
+    },
+    {
+      "key": "apple m4 max",
+      "score": 467
+    },
+    {
+      "key": "apple m4 pro",
+      "score": 350
+    },
+    {
+      "key": "apple m5",
+      "score": 251
+    },
+    {
+      "key": "apple m5 max",
+      "score": 578
+    },
+    {
+      "key": "apple m5 pro",
+      "score": 522
+    },
+    {
+      "key": "apple m5 ultra",
+      "score": 1142
+    },
+    {
+      "key": "apple m6",
+      "score": 335
+    },
+    {
+      "key": "core 5 120u",
+      "score": 87
+    },
+    {
+      "key": "core 5 210h",
+      "score": 132
+    },
+    {
+      "key": "core 7 150u",
+      "score": 81
+    },
+    {
+      "key": "core 7 240h",
+      "score": 197
+    },
+    {
+      "key": "core 9 270h",
+      "score": 239
+    },
+    {
+      "key": "i3-10100",
+      "score": 75
+    },
+    {
+      "key": "i3-10100f",
+      "score": 77
+    },
+    {
+      "key": "i3-10100t",
+      "score": 57
+    },
+    {
+      "key": "i3-10105",
+      "score": 80
+    },
+    {
+      "key": "i3-10105f",
+      "score": 74
+    },
+    {
+      "key": "i3-10105t",
+      "score": 78
+    },
+    {
+      "key": "i3-10110u",
+      "score": 23
+    },
+    {
+      "key": "i3-10320",
+      "score": 83
+    },
+    {
+      "key": "i3-12100",
+      "score": 111
+    },
+    {
+      "key": "i3-12100f",
+      "score": 107
+    },
+    {
+      "key": "i3-1215u",
+      "score": 57
+    },
+    {
+      "key": "i3-1220p",
+      "score": 85
+    },
+    {
+      "key": "i3-1305u",
+      "score": 30
+    },
+    {
+      "key": "i3-13100",
+      "score": 106
+    },
+    {
+      "key": "i3-13100f",
+      "score": 122
+    },
+    {
+      "key": "i3-13100t",
+      "score": 92
+    },
+    {
+      "key": "i3-1315u",
+      "score": 58
+    },
+    {
+      "key": "i3-14100",
+      "score": 119
+    },
+    {
+      "key": "i3-14100f",
+      "score": 111
+    },
+    {
+      "key": "i3-2100",
+      "score": 16
+    },
+    {
+      "key": "i3-2120",
+      "score": 14
+    },
+    {
+      "key": "i3-2130",
+      "score": 15
+    },
+    {
+      "key": "i3-2330m",
+      "score": 10
+    },
+    {
+      "key": "i3-2350m",
+      "score": 10
+    },
+    {
+      "key": "i3-3110m",
+      "score": 13
+    },
+    {
+      "key": "i3-3120m",
+      "score": 13
+    },
+    {
+      "key": "i3-3217u",
+      "score": 11
+    },
+    {
+      "key": "i3-3220",
+      "score": 18
+    },
+    {
+      "key": "i3-3227u",
+      "score": 10
+    },
+    {
+      "key": "i3-3240",
+      "score": 19
+    },
+    {
+      "key": "i3-4005u",
+      "score": 12
+    },
+    {
+      "key": "i3-4010u",
+      "score": 13
+    },
+    {
+      "key": "i3-4030u",
+      "score": 12
+    },
+    {
+      "key": "i3-4100m",
+      "score": 18
+    },
+    {
+      "key": "i3-4130",
+      "score": 24
+    },
+    {
+      "key": "i3-4150",
+      "score": 27
+    },
+    {
+      "key": "i3-4160",
+      "score": 23
+    },
+    {
+      "key": "i3-4160t",
+      "score": 24
+    },
+    {
+      "key": "i3-4170",
+      "score": 27
+    },
+    {
+      "key": "i3-4170t",
+      "score": 23
+    },
+    {
+      "key": "i3-4330",
+      "score": 36
+    },
+    {
+      "key": "i3-5005u",
+      "score": 13
+    },
+    {
+      "key": "i3-5010u",
+      "score": 13
+    },
+    {
+      "key": "i3-6006u",
+      "score": 13
+    },
+    {
+      "key": "i3-6100",
+      "score": 31
+    },
+    {
+      "key": "i3-6100t",
+      "score": 27
+    },
+    {
+      "key": "i3-6100u",
+      "score": 18
+    },
+    {
+      "key": "i3-7020u",
+      "score": 18
+    },
+    {
+      "key": "i3-7100",
+      "score": 34
+    },
+    {
+      "key": "i3-7100t",
+      "score": 24
+    },
+    {
+      "key": "i3-7100u",
+      "score": 19
+    },
+    {
+      "key": "i3-7130u",
+      "score": 20
+    },
+    {
+      "key": "i3-8100",
+      "score": 47
+    },
+    {
+      "key": "i3-8100b",
+      "score": 50
+    },
+    {
+      "key": "i3-8100t",
+      "score": 40
+    },
+    {
+      "key": "i3-8130u",
+      "score": 18
+    },
+    {
+      "key": "i3-8145u",
+      "score": 24
+    },
+    {
+      "key": "i3-8350k",
+      "score": 66
+    },
+    {
+      "key": "i3-9100",
+      "score": 53
+    },
+    {
+      "key": "i3-9100f",
+      "score": 53
+    },
+    {
+      "key": "i3-9100t",
+      "score": 40
+    },
+    {
+      "key": "i5-10200h",
+      "score": 65
+    },
+    {
+      "key": "i5-10210u",
+      "score": 36
+    },
+    {
+      "key": "i5-10300h",
+      "score": 65
+    },
+    {
+      "key": "i5-10310u",
+      "score": 45
+    },
+    {
+      "key": "i5-10400",
+      "score": 114
+    },
+    {
+      "key": "i5-10400f",
+      "score": 111
+    },
+    {
+      "key": "i5-10400h",
+      "score": 81
+    },
+    {
+      "key": "i5-10400t",
+      "score": 73
+    },
+    {
+      "key": "i5-10500",
+      "score": 125
+    },
+    {
+      "key": "i5-10500h",
+      "score": 89
+    },
+    {
+      "key": "i5-10500t",
+      "score": 81
+    },
+    {
+      "key": "i5-10505",
+      "score": 112
+    },
+    {
+      "key": "i5-10600",
+      "score": 139
+    },
+    {
+      "key": "i5-10600k",
+      "score": 135
+    },
+    {
+      "key": "i5-10600kf",
+      "score": 130
+    },
+    {
+      "key": "i5-11260h",
+      "score": 105
+    },
+    {
+      "key": "i5-11300h",
+      "score": 65
+    },
+    {
+      "key": "i5-11320h",
+      "score": 67
+    },
+    {
+      "key": "i5-11400",
+      "score": 144
+    },
+    {
+      "key": "i5-11400f",
+      "score": 129
+    },
+    {
+      "key": "i5-11400h",
+      "score": 107
+    },
+    {
+      "key": "i5-11500",
+      "score": 143
+    },
+    {
+      "key": "i5-11500h",
+      "score": 125
+    },
+    {
+      "key": "i5-11600",
+      "score": 159
+    },
+    {
+      "key": "i5-11600k",
+      "score": 157
+    },
+    {
+      "key": "i5-11600kf",
+      "score": 152
+    },
+    {
+      "key": "i5-1230u",
+      "score": 88
+    },
+    {
+      "key": "i5-1235u",
+      "score": 73
+    },
+    {
+      "key": "i5-12400",
+      "score": 164
+    },
+    {
+      "key": "i5-12400f",
+      "score": 160
+    },
+    {
+      "key": "i5-12400t",
+      "score": 121
+    },
+    {
+      "key": "i5-1240p",
+      "score": 110
+    },
+    {
+      "key": "i5-12450h",
+      "score": 113
+    },
+    {
+      "key": "i5-12450hx",
+      "score": 132
+    },
+    {
+      "key": "i5-1245u",
+      "score": 90
+    },
+    {
+      "key": "i5-12490f",
+      "score": 166
+    },
+    {
+      "key": "i5-12500",
+      "score": 171
+    },
+    {
+      "key": "i5-12500h",
+      "score": 149
+    },
+    {
+      "key": "i5-12500t",
+      "score": 118
+    },
+    {
+      "key": "i5-12600",
+      "score": 178
+    },
+    {
+      "key": "i5-12600h",
+      "score": 164
+    },
+    {
+      "key": "i5-12600hx",
+      "score": 165
+    },
+    {
+      "key": "i5-12600k",
+      "score": 234
+    },
+    {
+      "key": "i5-12600kf",
+      "score": 227
+    },
+    {
+      "key": "i5-1334u",
+      "score": 60
+    },
+    {
+      "key": "i5-1335u",
+      "score": 73
+    },
+    {
+      "key": "i5-13400",
+      "score": 196
+    },
+    {
+      "key": "i5-13400f",
+      "score": 199
+    },
+    {
+      "key": "i5-1340p",
+      "score": 116
+    },
+    {
+      "key": "i5-13420h",
+      "score": 121
+    },
+    {
+      "key": "i5-13450hx",
+      "score": 193
+    },
+    {
+      "key": "i5-1345u",
+      "score": 86
+    },
+    {
+      "key": "i5-13490f",
+      "score": 210
+    },
+    {
+      "key": "i5-13500",
+      "score": 256
+    },
+    {
+      "key": "i5-13500h",
+      "score": 164
+    },
+    {
+      "key": "i5-13500hx",
+      "score": 219
+    },
+    {
+      "key": "i5-13500t",
+      "score": 171
+    },
+    {
+      "key": "i5-13600",
+      "score": 251
+    },
+    {
+      "key": "i5-13600h",
+      "score": 162
+    },
+    {
+      "key": "i5-13600k",
+      "score": 308
+    },
+    {
+      "key": "i5-13600kf",
+      "score": 306
+    },
+    {
+      "key": "i5-14400",
+      "score": 204
+    },
+    {
+      "key": "i5-14400f",
+      "score": 196
+    },
+    {
+      "key": "i5-14450hx",
+      "score": 164
+    },
+    {
+      "key": "i5-14500",
+      "score": 240
+    },
+    {
+      "key": "i5-14500hx",
+      "score": 206
+    },
+    {
+      "key": "i5-14500t",
+      "score": 243
+    },
+    {
+      "key": "i5-14600",
+      "score": 286
+    },
+    {
+      "key": "i5-14600k",
+      "score": 307
+    },
+    {
+      "key": "i5-14600kf",
+      "score": 312
+    },
+    {
+      "key": "i5-2300",
+      "score": 26
+    },
+    {
+      "key": "i5-2310",
+      "score": 24
+    },
+    {
+      "key": "i5-2320",
+      "score": 25
+    },
+    {
+      "key": "i5-2400",
+      "score": 27
+    },
+    {
+      "key": "i5-2400s",
+      "score": 25
+    },
+    {
+      "key": "i5-2410m",
+      "score": 12
+    },
+    {
+      "key": "i5-2415m",
+      "score": 16
+    },
+    {
+      "key": "i5-2430m",
+      "score": 16
+    },
+    {
+      "key": "i5-2435m",
+      "score": 15
+    },
+    {
+      "key": "i5-2450m",
+      "score": 7
+    },
+    {
+      "key": "i5-2500",
+      "score": 27
+    },
+    {
+      "key": "i5-2500k",
+      "score": 34
+    },
+    {
+      "key": "i5-2500s",
+      "score": 26
+    },
+    {
+      "key": "i5-2520m",
+      "score": 13
+    },
+    {
+      "key": "i5-2540m",
+      "score": 17
+    },
+    {
+      "key": "i5-2550k",
+      "score": 38
+    },
+    {
+      "key": "i5-3210m",
+      "score": 17
+    },
+    {
+      "key": "i5-3230m",
+      "score": 18
+    },
+    {
+      "key": "i5-3317u",
+      "score": 11
+    },
+    {
+      "key": "i5-3320m",
+      "score": 17
+    },
+    {
+      "key": "i5-3330",
+      "score": 23
+    },
+    {
+      "key": "i5-3330s",
+      "score": 28
+    },
+    {
+      "key": "i5-3337u",
+      "score": 10
+    },
+    {
+      "key": "i5-3340m",
+      "score": 17
+    },
+    {
+      "key": "i5-3450",
+      "score": 30
+    },
+    {
+      "key": "i5-3470",
+      "score": 30
+    },
+    {
+      "key": "i5-3470s",
+      "score": 28
+    },
+    {
+      "key": "i5-3550",
+      "score": 29
+    },
+    {
+      "key": "i5-3570",
+      "score": 32
+    },
+    {
+      "key": "i5-3570k",
+      "score": 36
+    },
+    {
+      "key": "i5-3570s",
+      "score": 28
+    },
+    {
+      "key": "i5-4200h",
+      "score": 23
+    },
+    {
+      "key": "i5-4200m",
+      "score": 20
+    },
+    {
+      "key": "i5-4200u",
+      "score": 15
+    },
+    {
+      "key": "i5-4210m",
+      "score": 22
+    },
+    {
+      "key": "i5-4210u",
+      "score": 18
+    },
+    {
+      "key": "i5-4250u",
+      "score": 17
+    },
+    {
+      "key": "i5-4258u",
+      "score": 21
+    },
+    {
+      "key": "i5-4260u",
+      "score": 15
+    },
+    {
+      "key": "i5-4278u",
+      "score": 23
+    },
+    {
+      "key": "i5-4288u",
+      "score": 23
+    },
+    {
+      "key": "i5-4300m",
+      "score": 19
+    },
+    {
+      "key": "i5-4300u",
+      "score": 20
+    },
+    {
+      "key": "i5-4308u",
+      "score": 26
+    },
+    {
+      "key": "i5-4310u",
+      "score": 18
+    },
+    {
+      "key": "i5-4430",
+      "score": 42
+    },
+    {
+      "key": "i5-4440",
+      "score": 41
+    },
+    {
+      "key": "i5-4460",
+      "score": 41
+    },
+    {
+      "key": "i5-4570",
+      "score": 42
+    },
+    {
+      "key": "i5-4570r",
+      "score": 43
+    },
+    {
+      "key": "i5-4570s",
+      "score": 40
+    },
+    {
+      "key": "i5-4570t",
+      "score": 30
+    },
+    {
+      "key": "i5-4590",
+      "score": 45
+    },
+    {
+      "key": "i5-4590s",
+      "score": 46
+    },
+    {
+      "key": "i5-4590t",
+      "score": 33
+    },
+    {
+      "key": "i5-4670",
+      "score": 47
+    },
+    {
+      "key": "i5-4670k",
+      "score": 50
+    },
+    {
+      "key": "i5-4670s",
+      "score": 40
+    },
+    {
+      "key": "i5-4690",
+      "score": 47
+    },
+    {
+      "key": "i5-4690k",
+      "score": 53
+    },
+    {
+      "key": "i5-4690s",
+      "score": 54
+    },
+    {
+      "key": "i5-5200u",
+      "score": 18
+    },
+    {
+      "key": "i5-5250u",
+      "score": 19
+    },
+    {
+      "key": "i5-5257u",
+      "score": 24
+    },
+    {
+      "key": "i5-5287u",
+      "score": 28
+    },
+    {
+      "key": "i5-5300u",
+      "score": 20
+    },
+    {
+      "key": "i5-5350u",
+      "score": 22
+    },
+    {
+      "key": "i5-5575r",
+      "score": 44
+    },
+    {
+      "key": "i5-5675c",
+      "score": 45
+    },
+    {
+      "key": "i5-5675r",
+      "score": 52
+    },
+    {
+      "key": "i5-6198du",
+      "score": 22
+    },
+    {
+      "key": "i5-6200u",
+      "score": 21
+    },
+    {
+      "key": "i5-6267u",
+      "score": 26
+    },
+    {
+      "key": "i5-6300hq",
+      "score": 39
+    },
+    {
+      "key": "i5-6300u",
+      "score": 21
+    },
+    {
+      "key": "i5-6360u",
+      "score": 28
+    },
+    {
+      "key": "i5-6400",
+      "score": 40
+    },
+    {
+      "key": "i5-6400t",
+      "score": 33
+    },
+    {
+      "key": "i5-6402p",
+      "score": 37
+    },
+    {
+      "key": "i5-6440hq",
+      "score": 32
+    },
+    {
+      "key": "i5-6500",
+      "score": 44
+    },
+    {
+      "key": "i5-6500t",
+      "score": 45
+    },
+    {
+      "key": "i5-6600",
+      "score": 48
+    },
+    {
+      "key": "i5-6600k",
+      "score": 56
+    },
+    {
+      "key": "i5-6600t",
+      "score": 47
+    },
+    {
+      "key": "i5-7200u",
+      "score": 23
+    },
+    {
+      "key": "i5-7260u",
+      "score": 36
+    },
+    {
+      "key": "i5-7267u",
+      "score": 31
+    },
+    {
+      "key": "i5-7287u",
+      "score": 38
+    },
+    {
+      "key": "i5-7300hq",
+      "score": 39
+    },
+    {
+      "key": "i5-7300u",
+      "score": 24
+    },
+    {
+      "key": "i5-7360u",
+      "score": 29
+    },
+    {
+      "key": "i5-7400",
+      "score": 43
+    },
+    {
+      "key": "i5-7400t",
+      "score": 33
+    },
+    {
+      "key": "i5-7440hq",
+      "score": 39
+    },
+    {
+      "key": "i5-7500",
+      "score": 49
+    },
+    {
+      "key": "i5-7500t",
+      "score": 38
+    },
+    {
+      "key": "i5-7600",
+      "score": 52
+    },
+    {
+      "key": "i5-7600k",
+      "score": 62
+    },
+    {
+      "key": "i5-8200y",
+      "score": 12
+    },
+    {
+      "key": "i5-8210y",
+      "score": 19
+    },
+    {
+      "key": "i5-8250u",
+      "score": 38
+    },
+    {
+      "key": "i5-8257u",
+      "score": 57
+    },
+    {
+      "key": "i5-8259u",
+      "score": 65
+    },
+    {
+      "key": "i5-8265u",
+      "score": 36
+    },
+    {
+      "key": "i5-8279u",
+      "score": 59
+    },
+    {
+      "key": "i5-8300h",
+      "score": 55
+    },
+    {
+      "key": "i5-8350u",
+      "score": 42
+    },
+    {
+      "key": "i5-8365u",
+      "score": 41
+    },
+    {
+      "key": "i5-8400",
+      "score": 78
+    },
+    {
+      "key": "i5-8400h",
+      "score": 40
+    },
+    {
+      "key": "i5-8400t",
+      "score": 53
+    },
+    {
+      "key": "i5-8500",
+      "score": 83
+    },
+    {
+      "key": "i5-8500b",
+      "score": 80
+    },
+    {
+      "key": "i5-8500t",
+      "score": 58
+    },
+    {
+      "key": "i5-8600",
+      "score": 85
+    },
+    {
+      "key": "i5-8600k",
+      "score": 89
+    },
+    {
+      "key": "i5-9300h",
+      "score": 54
+    },
+    {
+      "key": "i5-9300hf",
+      "score": 55
+    },
+    {
+      "key": "i5-9400",
+      "score": 80
+    },
+    {
+      "key": "i5-9400f",
+      "score": 78
+    },
+    {
+      "key": "i5-9400h",
+      "score": 61
+    },
+    {
+      "key": "i5-9400t",
+      "score": 61
+    },
+    {
+      "key": "i5-9500",
+      "score": 95
+    },
+    {
+      "key": "i5-9500f",
+      "score": 82
+    },
+    {
+      "key": "i5-9500t",
+      "score": 55
+    },
+    {
+      "key": "i5-9600k",
+      "score": 94
+    },
+    {
+      "key": "i5-9600kf",
+      "score": 89
+    },
+    {
+      "key": "i7-10510u",
+      "score": 42
+    },
+    {
+      "key": "i7-10610u",
+      "score": 43
+    },
+    {
+      "key": "i7-10700",
+      "score": 147
+    },
+    {
+      "key": "i7-10700f",
+      "score": 162
+    },
+    {
+      "key": "i7-10700k",
+      "score": 178
+    },
+    {
+      "key": "i7-10700kf",
+      "score": 175
+    },
+    {
+      "key": "i7-10700t",
+      "score": 112
+    },
+    {
+      "key": "i7-10710u",
+      "score": 70
+    },
+    {
+      "key": "i7-10750h",
+      "score": 92
+    },
+    {
+      "key": "i7-10810u",
+      "score": 69
+    },
+    {
+      "key": "i7-10850h",
+      "score": 95
+    },
+    {
+      "key": "i7-10870h",
+      "score": 119
+    },
+    {
+      "key": "i7-10875h",
+      "score": 117
+    },
+    {
+      "key": "i7-11370h",
+      "score": 72
+    },
+    {
+      "key": "i7-11375h",
+      "score": 64
+    },
+    {
+      "key": "i7-11390h",
+      "score": 52
+    },
+    {
+      "key": "i7-11600h",
+      "score": 109
+    },
+    {
+      "key": "i7-11700",
+      "score": 161
+    },
+    {
+      "key": "i7-11700b",
+      "score": 175
+    },
+    {
+      "key": "i7-11700f",
+      "score": 165
+    },
+    {
+      "key": "i7-11700k",
+      "score": 208
+    },
+    {
+      "key": "i7-11700kf",
+      "score": 198
+    },
+    {
+      "key": "i7-11800h",
+      "score": 150
+    },
+    {
+      "key": "i7-11850h",
+      "score": 147
+    },
+    {
+      "key": "i7-1250u",
+      "score": 55
+    },
+    {
+      "key": "i7-1255u",
+      "score": 75
+    },
+    {
+      "key": "i7-1260p",
+      "score": 112
+    },
+    {
+      "key": "i7-12650h",
+      "score": 155
+    },
+    {
+      "key": "i7-12650hx",
+      "score": 167
+    },
+    {
+      "key": "i7-1265u",
+      "score": 87
+    },
+    {
+      "key": "i7-12700",
+      "score": 258
+    },
+    {
+      "key": "i7-12700f",
+      "score": 268
+    },
+    {
+      "key": "i7-12700h",
+      "score": 195
+    },
+    {
+      "key": "i7-12700k",
+      "score": 303
+    },
+    {
+      "key": "i7-12700kf",
+      "score": 304
+    },
+    {
+      "key": "i7-12700t",
+      "score": 224
+    },
+    {
+      "key": "i7-1270p",
+      "score": 121
+    },
+    {
+      "key": "i7-12800h",
+      "score": 175
+    },
+    {
+      "key": "i7-12800hx",
+      "score": 255
+    },
+    {
+      "key": "i7-1280p",
+      "score": 169
+    },
+    {
+      "key": "i7-12850hx",
+      "score": 241
+    },
+    {
+      "key": "i7-1355u",
+      "score": 91
+    },
+    {
+      "key": "i7-1360p",
+      "score": 122
+    },
+    {
+      "key": "i7-13620h",
+      "score": 172
+    },
+    {
+      "key": "i7-13650hx",
+      "score": 235
+    },
+    {
+      "key": "i7-1365u",
+      "score": 103
+    },
+    {
+      "key": "i7-13700",
+      "score": 333
+    },
+    {
+      "key": "i7-13700f",
+      "score": 312
+    },
+    {
+      "key": "i7-13700h",
+      "score": 186
+    },
+    {
+      "key": "i7-13700hx",
+      "score": 251
+    },
+    {
+      "key": "i7-13700k",
+      "score": 398
+    },
+    {
+      "key": "i7-13700kf",
+      "score": 391
+    },
+    {
+      "key": "i7-13700t",
+      "score": 305
+    },
+    {
+      "key": "i7-13705h",
+      "score": 178
+    },
+    {
+      "key": "i7-1370p",
+      "score": 169
+    },
+    {
+      "key": "i7-13790f",
+      "score": 393
+    },
+    {
+      "key": "i7-13800h",
+      "score": 193
+    },
+    {
+      "key": "i7-13850hx",
+      "score": 289
+    },
+    {
+      "key": "i7-14650hx",
+      "score": 280
+    },
+    {
+      "key": "i7-14700",
+      "score": 304
+    },
+    {
+      "key": "i7-14700f",
+      "score": 300
+    },
+    {
+      "key": "i7-14700hx",
+      "score": 309
+    },
+    {
+      "key": "i7-14700k",
+      "score": 446
+    },
+    {
+      "key": "i7-14700kf",
+      "score": 442
+    },
+    {
+      "key": "i7-14700t",
+      "score": 215
+    },
+    {
+      "key": "i7-2600",
+      "score": 39
+    },
+    {
+      "key": "i7-2600k",
+      "score": 44
+    },
+    {
+      "key": "i7-2600s",
+      "score": 40
+    },
+    {
+      "key": "i7-2620m",
+      "score": 16
+    },
+    {
+      "key": "i7-2630qm",
+      "score": 24
+    },
+    {
+      "key": "i7-2635qm",
+      "score": 30
+    },
+    {
+      "key": "i7-2670qm",
+      "score": 27
+    },
+    {
+      "key": "i7-2700k",
+      "score": 44
+    },
+    {
+      "key": "i7-2720qm",
+      "score": 25
+    },
+    {
+      "key": "i7-2760qm",
+      "score": 32
+    },
+    {
+      "key": "i7-2860qm",
+      "score": 28
+    },
+    {
+      "key": "i7-3517u",
+      "score": 7
+    },
+    {
+      "key": "i7-3520m",
+      "score": 20
+    },
+    {
+      "key": "i7-3610qm",
+      "score": 38
+    },
+    {
+      "key": "i7-3612qm",
+      "score": 32
+    },
+    {
+      "key": "i7-3615qe",
+      "score": 48
+    },
+    {
+      "key": "i7-3615qm",
+      "score": 39
+    },
+    {
+      "key": "i7-3630qm",
+      "score": 36
+    },
+    {
+      "key": "i7-3632qm",
+      "score": 31
+    },
+    {
+      "key": "i7-3635qm",
+      "score": 39
+    },
+    {
+      "key": "i7-3667u",
+      "score": 14
+    },
+    {
+      "key": "i7-3720qm",
+      "score": 43
+    },
+    {
+      "key": "i7-3740qm",
+      "score": 43
+    },
+    {
+      "key": "i7-3770",
+      "score": 46
+    },
+    {
+      "key": "i7-3770k",
+      "score": 47
+    },
+    {
+      "key": "i7-3770s",
+      "score": 45
+    },
+    {
+      "key": "i7-3820",
+      "score": 39
+    },
+    {
+      "key": "i7-3840qm",
+      "score": 40
+    },
+    {
+      "key": "i7-3930k",
+      "score": 69
+    },
+    {
+      "key": "i7-3940xm",
+      "score": 51
+    },
+    {
+      "key": "i7-3960x",
+      "score": 70
+    },
+    {
+      "key": "i7-4500u",
+      "score": 16
+    },
+    {
+      "key": "i7-4510u",
+      "score": 16
+    },
+    {
+      "key": "i7-4558u",
+      "score": 24
+    },
+    {
+      "key": "i7-4578u",
+      "score": 29
+    },
+    {
+      "key": "i7-4600m",
+      "score": 31
+    },
+    {
+      "key": "i7-4600u",
+      "score": 17
+    },
+    {
+      "key": "i7-4650u",
+      "score": 18
+    },
+    {
+      "key": "i7-4700hq",
+      "score": 49
+    },
+    {
+      "key": "i7-4700mq",
+      "score": 47
+    },
+    {
+      "key": "i7-4702mq",
+      "score": 44
+    },
+    {
+      "key": "i7-4710hq",
+      "score": 48
+    },
+    {
+      "key": "i7-4710mq",
+      "score": 42
+    },
+    {
+      "key": "i7-4712hq",
+      "score": 46
+    },
+    {
+      "key": "i7-4712mq",
+      "score": 30
+    },
+    {
+      "key": "i7-4720hq",
+      "score": 49
+    },
+    {
+      "key": "i7-4750hq",
+      "score": 46
+    },
+    {
+      "key": "i7-4765t",
+      "score": 40
+    },
+    {
+      "key": "i7-4770",
+      "score": 62
+    },
+    {
+      "key": "i7-4770hq",
+      "score": 59
+    },
+    {
+      "key": "i7-4770k",
+      "score": 66
+    },
+    {
+      "key": "i7-4770s",
+      "score": 61
+    },
+    {
+      "key": "i7-4770te",
+      "score": 42
+    },
+    {
+      "key": "i7-4771",
+      "score": 61
+    },
+    {
+      "key": "i7-4785t",
+      "score": 49
+    },
+    {
+      "key": "i7-4790",
+      "score": 64
+    },
+    {
+      "key": "i7-4790k",
+      "score": 74
+    },
+    {
+      "key": "i7-4790s",
+      "score": 61
+    },
+    {
+      "key": "i7-4800mq",
+      "score": 49
+    },
+    {
+      "key": "i7-4810mq",
+      "score": 50
+    },
+    {
+      "key": "i7-4820k",
+      "score": 46
+    },
+    {
+      "key": "i7-4850hq",
+      "score": 52
+    },
+    {
+      "key": "i7-4870hq",
+      "score": 58
+    },
+    {
+      "key": "i7-4900mq",
+      "score": 55
+    },
+    {
+      "key": "i7-4910mq",
+      "score": 51
+    },
+    {
+      "key": "i7-4930k",
+      "score": 69
+    },
+    {
+      "key": "i7-4930mx",
+      "score": 50
+    },
+    {
+      "key": "i7-4940mx",
+      "score": 57
+    },
+    {
+      "key": "i7-4960hq",
+      "score": 59
+    },
+    {
+      "key": "i7-4960x",
+      "score": 60
+    },
+    {
+      "key": "i7-4980hq",
+      "score": 63
+    },
+    {
+      "key": "i7-5500u",
+      "score": 19
+    },
+    {
+      "key": "i7-5557u",
+      "score": 31
+    },
+    {
+      "key": "i7-5600u",
+      "score": 26
+    },
+    {
+      "key": "i7-5650u",
+      "score": 21
+    },
+    {
+      "key": "i7-5700hq",
+      "score": 55
+    },
+    {
+      "key": "i7-5820k",
+      "score": 96
+    },
+    {
+      "key": "i7-5930k",
+      "score": 99
+    },
+    {
+      "key": "i7-5960x",
+      "score": 141
+    },
+    {
+      "key": "i7-6500u",
+      "score": 24
+    },
+    {
+      "key": "i7-6560u",
+      "score": 23
+    },
+    {
+      "key": "i7-6567u",
+      "score": 27
+    },
+    {
+      "key": "i7-6600u",
+      "score": 23
+    },
+    {
+      "key": "i7-6700",
+      "score": 69
+    },
+    {
+      "key": "i7-6700hq",
+      "score": 56
+    },
+    {
+      "key": "i7-6700k",
+      "score": 81
+    },
+    {
+      "key": "i7-6700t",
+      "score": 57
+    },
+    {
+      "key": "i7-6770hq",
+      "score": 51
+    },
+    {
+      "key": "i7-6800k",
+      "score": 103
+    },
+    {
+      "key": "i7-6820hk",
+      "score": 60
+    },
+    {
+      "key": "i7-6820hq",
+      "score": 58
+    },
+    {
+      "key": "i7-6850k",
+      "score": 106
+    },
+    {
+      "key": "i7-6900k",
+      "score": 146
+    },
+    {
+      "key": "i7-6920hq",
+      "score": 56
+    },
+    {
+      "key": "i7-6950x",
+      "score": 195
+    },
+    {
+      "key": "i7-7500u",
+      "score": 24
+    },
+    {
+      "key": "i7-7560u",
+      "score": 27
+    },
+    {
+      "key": "i7-7567u",
+      "score": 33
+    },
+    {
+      "key": "i7-7600u",
+      "score": 28
+    },
+    {
+      "key": "i7-7660u",
+      "score": 28
+    },
+    {
+      "key": "i7-7700",
+      "score": 74
+    },
+    {
+      "key": "i7-7700hq",
+      "score": 60
+    },
+    {
+      "key": "i7-7700k",
+      "score": 85
+    },
+    {
+      "key": "i7-7700t",
+      "score": 74
+    },
+    {
+      "key": "i7-7740x",
+      "score": 87
+    },
+    {
+      "key": "i7-7800x",
+      "score": 113
+    },
+    {
+      "key": "i7-7820hk",
+      "score": 61
+    },
+    {
+      "key": "i7-7820hq",
+      "score": 59
+    },
+    {
+      "key": "i7-7820x",
+      "score": 165
+    },
+    {
+      "key": "i7-7920hq",
+      "score": 65
+    },
+    {
+      "key": "i7-8086k",
+      "score": 132
+    },
+    {
+      "key": "i7-8550u",
+      "score": 43
+    },
+    {
+      "key": "i7-8557u",
+      "score": 54
+    },
+    {
+      "key": "i7-8559u",
+      "score": 65
+    },
+    {
+      "key": "i7-8565u",
+      "score": 40
+    },
+    {
+      "key": "i7-8569u",
+      "score": 66
+    },
+    {
+      "key": "i7-8650u",
+      "score": 45
+    },
+    {
+      "key": "i7-8665u",
+      "score": 45
+    },
+    {
+      "key": "i7-8700",
+      "score": 110
+    },
+    {
+      "key": "i7-8700b",
+      "score": 110
+    },
+    {
+      "key": "i7-8700k",
+      "score": 126
+    },
+    {
+      "key": "i7-8700t",
+      "score": 92
+    },
+    {
+      "key": "i7-8705g",
+      "score": 61
+    },
+    {
+      "key": "i7-8750h",
+      "score": 81
+    },
+    {
+      "key": "i7-8809g",
+      "score": 62
+    },
+    {
+      "key": "i7-8850h",
+      "score": 84
+    },
+    {
+      "key": "i7-9700",
+      "score": 107
+    },
+    {
+      "key": "i7-9700f",
+      "score": 111
+    },
+    {
+      "key": "i7-9700k",
+      "score": 134
+    },
+    {
+      "key": "i7-9700kf",
+      "score": 124
+    },
+    {
+      "key": "i7-9700t",
+      "score": 72
+    },
+    {
+      "key": "i7-9750h",
+      "score": 92
+    },
+    {
+      "key": "i7-9750hf",
+      "score": 79
+    },
+    {
+      "key": "i7-9800x",
+      "score": 162
+    },
+    {
+      "key": "i7-9850h",
+      "score": 87
+    },
+    {
+      "key": "i9-10850k",
+      "score": 228
+    },
+    {
+      "key": "i9-10885h",
+      "score": 124
+    },
+    {
+      "key": "i9-10900",
+      "score": 172
+    },
+    {
+      "key": "i9-10900f",
+      "score": 207
+    },
+    {
+      "key": "i9-10900k",
+      "score": 231
+    },
+    {
+      "key": "i9-10900kf",
+      "score": 227
+    },
+    {
+      "key": "i9-10900x",
+      "score": 202
+    },
+    {
+      "key": "i9-10910",
+      "score": 218
+    },
+    {
+      "key": "i9-10920x",
+      "score": 252
+    },
+    {
+      "key": "i9-10940x",
+      "score": 258
+    },
+    {
+      "key": "i9-10980hk",
+      "score": 126
+    },
+    {
+      "key": "i9-10980xe",
+      "score": 337
+    },
+    {
+      "key": "i9-11900",
+      "score": 170
+    },
+    {
+      "key": "i9-11900f",
+      "score": 167
+    },
+    {
+      "key": "i9-11900h",
+      "score": 145
+    },
+    {
+      "key": "i9-11900k",
+      "score": 212
+    },
+    {
+      "key": "i9-11900kb",
+      "score": 166
+    },
+    {
+      "key": "i9-11900kf",
+      "score": 205
+    },
+    {
+      "key": "i9-11950h",
+      "score": 149
+    },
+    {
+      "key": "i9-11980hk",
+      "score": 205
+    },
+    {
+      "key": "i9-12900",
+      "score": 282
+    },
+    {
+      "key": "i9-12900e",
+      "score": 254
+    },
+    {
+      "key": "i9-12900f",
+      "score": 294
+    },
+    {
+      "key": "i9-12900h",
+      "score": 208
+    },
+    {
+      "key": "i9-12900hk",
+      "score": 178
+    },
+    {
+      "key": "i9-12900hx",
+      "score": 280
+    },
+    {
+      "key": "i9-12900k",
+      "score": 364
+    },
+    {
+      "key": "i9-12900kf",
+      "score": 361
+    },
+    {
+      "key": "i9-12900ks",
+      "score": 373
+    },
+    {
+      "key": "i9-12950hx",
+      "score": 250
+    },
+    {
+      "key": "i9-13900",
+      "score": 384
+    },
+    {
+      "key": "i9-13900f",
+      "score": 411
+    },
+    {
+      "key": "i9-13900h",
+      "score": 200
+    },
+    {
+      "key": "i9-13900hk",
+      "score": 215
+    },
+    {
+      "key": "i9-13900hx",
+      "score": 349
+    },
+    {
+      "key": "i9-13900k",
+      "score": 522
+    },
+    {
+      "key": "i9-13900kf",
+      "score": 526
+    },
+    {
+      "key": "i9-13900ks",
+      "score": 524
+    },
+    {
+      "key": "i9-13905h",
+      "score": 228
+    },
+    {
+      "key": "i9-13950hx",
+      "score": 331
+    },
+    {
+      "key": "i9-13980hx",
+      "score": 369
+    },
+    {
+      "key": "i9-14900",
+      "score": 341
+    },
+    {
+      "key": "i9-14900f",
+      "score": 326
+    },
+    {
+      "key": "i9-14900hx",
+      "score": 342
+    },
+    {
+      "key": "i9-14900k",
+      "score": 508
+    },
+    {
+      "key": "i9-14900kf",
+      "score": 509
+    },
+    {
+      "key": "i9-14900ks",
+      "score": 517
+    },
+    {
+      "key": "i9-7900x",
+      "score": 207
+    },
+    {
+      "key": "i9-7920x",
+      "score": 274
+    },
+    {
+      "key": "i9-7940x",
+      "score": 262
+    },
+    {
+      "key": "i9-7960x",
+      "score": 297
+    },
+    {
+      "key": "i9-7980xe",
+      "score": 371
+    },
+    {
+      "key": "i9-8950hk",
+      "score": 86
+    },
+    {
+      "key": "i9-9820x",
+      "score": 203
+    },
+    {
+      "key": "i9-9880h",
+      "score": 127
+    },
+    {
+      "key": "i9-9900",
+      "score": 148
+    },
+    {
+      "key": "i9-9900k",
+      "score": 176
+    },
+    {
+      "key": "i9-9900kf",
+      "score": 176
+    },
+    {
+      "key": "i9-9900ks",
+      "score": 173
+    },
+    {
+      "key": "i9-9900t",
+      "score": 121
+    },
+    {
+      "key": "i9-9900x",
+      "score": 220
+    },
+    {
+      "key": "i9-9920x",
+      "score": 225
+    },
+    {
+      "key": "i9-9940x",
+      "score": 257
+    },
+    {
+      "key": "i9-9960x",
+      "score": 290
+    },
+    {
+      "key": "i9-9980hk",
+      "score": 133
+    },
+    {
+      "key": "i9-9980xe",
+      "score": 308
+    },
+    {
+      "key": "ryzen 3 1200",
+      "score": 41
+    },
+    {
+      "key": "ryzen 3 1300x",
+      "score": 46
+    },
+    {
+      "key": "ryzen 3 2200g",
+      "score": 39
+    },
+    {
+      "key": "ryzen 3 3100",
+      "score": 86
+    },
+    {
+      "key": "ryzen 3 3200g",
+      "score": 49
+    },
+    {
+      "key": "ryzen 3 3300x",
+      "score": 88
+    },
+    {
+      "key": "ryzen 3 4100",
+      "score": 80
+    },
+    {
+      "key": "ryzen 3 5300u",
+      "score": 56
+    },
+    {
+      "key": "ryzen 3 5425u",
+      "score": 88
+    },
+    {
+      "key": "ryzen 5 1400",
+      "score": 53
+    },
+    {
+      "key": "ryzen 5 1500x",
+      "score": 65
+    },
+    {
+      "key": "ryzen 5 1600",
+      "score": 100
+    },
+    {
+      "key": "ryzen 5 1600x",
+      "score": 105
+    },
+    {
+      "key": "ryzen 5 2400g",
+      "score": 78
+    },
+    {
+      "key": "ryzen 5 2500x",
+      "score": 78
+    },
+    {
+      "key": "ryzen 5 2600",
+      "score": 107
+    },
+    {
+      "key": "ryzen 5 2600x",
+      "score": 114
+    },
+    {
+      "key": "ryzen 5 3400g",
+      "score": 60
+    },
+    {
+      "key": "ryzen 5 3500",
+      "score": 85
+    },
+    {
+      "key": "ryzen 5 3500u",
+      "score": 41
+    },
+    {
+      "key": "ryzen 5 3500x",
+      "score": 86
+    },
+    {
+      "key": "ryzen 5 3550h",
+      "score": 55
+    },
+    {
+      "key": "ryzen 5 3600",
+      "score": 134
+    },
+    {
+      "key": "ryzen 5 3600x",
+      "score": 137
+    },
+    {
+      "key": "ryzen 5 3600xt",
+      "score": 140
+    },
+    {
+      "key": "ryzen 5 4500",
+      "score": 124
+    },
+    {
+      "key": "ryzen 5 4500u",
+      "score": 83
+    },
+    {
+      "key": "ryzen 5 4600g",
+      "score": 121
+    },
+    {
+      "key": "ryzen 5 4600h",
+      "score": 133
+    },
+    {
+      "key": "ryzen 5 5500",
+      "score": 142
+    },
+    {
+      "key": "ryzen 5 5500gt",
+      "score": 177
+    },
+    {
+      "key": "ryzen 5 5500u",
+      "score": 81
+    },
+    {
+      "key": "ryzen 5 5600",
+      "score": 152
+    },
+    {
+      "key": "ryzen 5 5600g",
+      "score": 152
+    },
+    {
+      "key": "ryzen 5 5600gt",
+      "score": 154
+    },
+    {
+      "key": "ryzen 5 5600h",
+      "score": 114
+    },
+    {
+      "key": "ryzen 5 5600t",
+      "score": 144
+    },
+    {
+      "key": "ryzen 5 5600u",
+      "score": 55
+    },
+    {
+      "key": "ryzen 5 5600x",
+      "score": 155
+    },
+    {
+      "key": "ryzen 5 5600xt",
+      "score": 151
+    },
+    {
+      "key": "ryzen 5 5625u",
+      "score": 59
+    },
+    {
+      "key": "ryzen 5 6600h",
+      "score": 140
+    },
+    {
+      "key": "ryzen 5 6600hs",
+      "score": 105
+    },
+    {
+      "key": "ryzen 5 7235hs",
+      "score": 79
+    },
+    {
+      "key": "ryzen 5 7400f",
+      "score": 181
+    },
+    {
+      "key": "ryzen 5 7430u",
+      "score": 110
+    },
+    {
+      "key": "ryzen 5 7500f",
+      "score": 199
+    },
+    {
+      "key": "ryzen 5 7520u",
+      "score": 48
+    },
+    {
+      "key": "ryzen 5 7530u",
+      "score": 109
+    },
+    {
+      "key": "ryzen 5 7535hs",
+      "score": 103
+    },
+    {
+      "key": "ryzen 5 7600",
+      "score": 200
+    },
+    {
+      "key": "ryzen 5 7600x",
+      "score": 209
+    },
+    {
+      "key": "ryzen 5 7640u",
+      "score": 156
+    },
+    {
+      "key": "ryzen 5 8400f",
+      "score": 182
+    },
+    {
+      "key": "ryzen 5 8500g",
+      "score": 164
+    },
+    {
+      "key": "ryzen 5 8600g",
+      "score": 200
+    },
+    {
+      "key": "ryzen 5 8645hs",
+      "score": 158
+    },
+    {
+      "key": "ryzen 5 9500f",
+      "score": 220
+    },
+    {
+      "key": "ryzen 5 9600",
+      "score": 245
+    },
+    {
+      "key": "ryzen 5 9600x",
+      "score": 243
+    },
+    {
+      "key": "ryzen 7 1700",
+      "score": 128
+    },
+    {
+      "key": "ryzen 7 1700x",
+      "score": 134
+    },
+    {
+      "key": "ryzen 7 1800x",
+      "score": 142
+    },
+    {
+      "key": "ryzen 7 2700",
+      "score": 130
+    },
+    {
+      "key": "ryzen 7 2700x",
+      "score": 150
+    },
+    {
+      "key": "ryzen 7 3700x",
+      "score": 180
+    },
+    {
+      "key": "ryzen 7 3800x",
+      "score": 186
+    },
+    {
+      "key": "ryzen 7 3800xt",
+      "score": 186
+    },
+    {
+      "key": "ryzen 7 4800h",
+      "score": 144
+    },
+    {
+      "key": "ryzen 7 5700",
+      "score": 189
+    },
+    {
+      "key": "ryzen 7 5700g",
+      "score": 197
+    },
+    {
+      "key": "ryzen 7 5700u",
+      "score": 120
+    },
+    {
+      "key": "ryzen 7 5700x",
+      "score": 208
+    },
+    {
+      "key": "ryzen 7 5800",
+      "score": 191
+    },
+    {
+      "key": "ryzen 7 5800h",
+      "score": 163
+    },
+    {
+      "key": "ryzen 7 5800hs",
+      "score": 148
+    },
+    {
+      "key": "ryzen 7 5800x",
+      "score": 214
+    },
+    {
+      "key": "ryzen 7 5800xt",
+      "score": 220
+    },
+    {
+      "key": "ryzen 7 5825u",
+      "score": 126
+    },
+    {
+      "key": "ryzen 7 6800h",
+      "score": 184
+    },
+    {
+      "key": "ryzen 7 6800hs",
+      "score": 159
+    },
+    {
+      "key": "ryzen 7 7435hs",
+      "score": 174
+    },
+    {
+      "key": "ryzen 7 7445hs",
+      "score": 134
+    },
+    {
+      "key": "ryzen 7 7700",
+      "score": 268
+    },
+    {
+      "key": "ryzen 7 7700x",
+      "score": 283
+    },
+    {
+      "key": "ryzen 7 7730u",
+      "score": 127
+    },
+    {
+      "key": "ryzen 7 7735hs",
+      "score": 184
+    },
+    {
+      "key": "ryzen 7 7745hx",
+      "score": 287
+    },
+    {
+      "key": "ryzen 7 7840hs",
+      "score": 225
+    },
+    {
+      "key": "ryzen 7 7840u",
+      "score": 192
+    },
+    {
+      "key": "ryzen 7 8700f",
+      "score": 235
+    },
+    {
+      "key": "ryzen 7 8700g",
+      "score": 266
+    },
+    {
+      "key": "ryzen 7 8745hs",
+      "score": 253
+    },
+    {
+      "key": "ryzen 7 8840hs",
+      "score": 139
+    },
+    {
+      "key": "ryzen 7 8840u",
+      "score": 187
+    },
+    {
+      "key": "ryzen 7 8845hs",
+      "score": 228
+    },
+    {
+      "key": "ryzen 7 9700x",
+      "score": 310
+    },
+    {
+      "key": "ryzen 9 3900",
+      "score": 256
+    },
+    {
+      "key": "ryzen 9 3900x",
+      "score": 277
+    },
+    {
+      "key": "ryzen 9 3900xt",
+      "score": 275
+    },
+    {
+      "key": "ryzen 9 3950x",
+      "score": 369
+    },
+    {
+      "key": "ryzen 9 5900",
+      "score": 297
+    },
+    {
+      "key": "ryzen 9 5900hs",
+      "score": 113
+    },
+    {
+      "key": "ryzen 9 5900hx",
+      "score": 163
+    },
+    {
+      "key": "ryzen 9 5900x",
+      "score": 314
+    },
+    {
+      "key": "ryzen 9 5900xt",
+      "score": 382
+    },
+    {
+      "key": "ryzen 9 5950x",
+      "score": 407
+    },
+    {
+      "key": "ryzen 9 6900hs",
+      "score": 186
+    },
+    {
+      "key": "ryzen 9 6900hx",
+      "score": 196
+    },
+    {
+      "key": "ryzen 9 7845hx",
+      "score": 386
+    },
+    {
+      "key": "ryzen 9 7900",
+      "score": 399
+    },
+    {
+      "key": "ryzen 9 7900x",
+      "score": 414
+    },
+    {
+      "key": "ryzen 9 7940hs",
+      "score": 236
+    },
+    {
+      "key": "ryzen 9 7940hx",
+      "score": 472
+    },
+    {
+      "key": "ryzen 9 7945hx",
+      "score": 507
+    },
+    {
+      "key": "ryzen 9 7950x",
+      "score": 568
+    },
+    {
+      "key": "ryzen 9 8940hx",
+      "score": 480
+    },
+    {
+      "key": "ryzen 9 8945hs",
+      "score": 217
+    },
+    {
+      "key": "ryzen 9 8945hx",
+      "score": 515
+    },
+    {
+      "key": "ryzen 9 9900x",
+      "score": 477
+    },
+    {
+      "key": "ryzen 9 9950x",
+      "score": 622
+    },
+    {
+      "key": "ryzen 9 9955hx",
+      "score": 554
+    },
+    {
+      "key": "ryzen ai 5 340",
+      "score": 153
+    },
+    {
+      "key": "ryzen ai 7 350",
+      "score": 217
+    },
+    {
+      "key": "ryzen ai 7 445",
+      "score": 126
+    },
+    {
+      "key": "ryzen ai 9 365",
+      "score": 245
+    },
+    {
+      "key": "ultra 5 125h",
+      "score": 143
+    },
+    {
+      "key": "ultra 5 125u",
+      "score": 91
+    },
+    {
+      "key": "ultra 5 135h",
+      "score": 71
+    },
+    {
+      "key": "ultra 5 135u",
+      "score": 124
+    },
+    {
+      "key": "ultra 5 225",
+      "score": 223
+    },
+    {
+      "key": "ultra 5 225f",
+      "score": 218
+    },
+    {
+      "key": "ultra 5 225h",
+      "score": 201
+    },
+    {
+      "key": "ultra 5 225u",
+      "score": 126
+    },
+    {
+      "key": "ultra 5 226v",
+      "score": 110
+    },
+    {
+      "key": "ultra 5 228v",
+      "score": 128
+    },
+    {
+      "key": "ultra 5 230f",
+      "score": 224
+    },
+    {
+      "key": "ultra 5 235",
+      "score": 312
+    },
+    {
+      "key": "ultra 5 235u",
+      "score": 117
+    },
+    {
+      "key": "ultra 5 236v",
+      "score": 116
+    },
+    {
+      "key": "ultra 5 238v",
+      "score": 116
+    },
+    {
+      "key": "ultra 5 245k",
+      "score": 317
+    },
+    {
+      "key": "ultra 5 245kf",
+      "score": 327
+    },
+    {
+      "key": "ultra 5 250k",
+      "score": 460
+    },
+    {
+      "key": "ultra 5 250kf",
+      "score": 478
+    },
+    {
+      "key": "ultra 5 322",
+      "score": 83
+    },
+    {
+      "key": "ultra 5 325",
+      "score": 137
+    },
+    {
+      "key": "ultra 5 338h",
+      "score": 205
+    },
+    {
+      "key": "ultra 7 155h",
+      "score": 160
+    },
+    {
+      "key": "ultra 7 155u",
+      "score": 97
+    },
+    {
+      "key": "ultra 7 165h",
+      "score": 195
+    },
+    {
+      "key": "ultra 7 165u",
+      "score": 113
+    },
+    {
+      "key": "ultra 7 255h",
+      "score": 216
+    },
+    {
+      "key": "ultra 7 255hx",
+      "score": 394
+    },
+    {
+      "key": "ultra 7 255u",
+      "score": 76
+    },
+    {
+      "key": "ultra 7 256v",
+      "score": 116
+    },
+    {
+      "key": "ultra 7 258v",
+      "score": 127
+    },
+    {
+      "key": "ultra 7 265",
+      "score": 365
+    },
+    {
+      "key": "ultra 7 265f",
+      "score": 359
+    },
+    {
+      "key": "ultra 7 265h",
+      "score": 208
+    },
+    {
+      "key": "ultra 7 265hx",
+      "score": 363
+    },
+    {
+      "key": "ultra 7 265k",
+      "score": 470
+    },
+    {
+      "key": "ultra 7 265kf",
+      "score": 472
+    },
+    {
+      "key": "ultra 7 268v",
+      "score": 117
+    },
+    {
+      "key": "ultra 7 270k",
+      "score": 631
+    },
+    {
+      "key": "ultra 7 355",
+      "score": 136
+    },
+    {
+      "key": "ultra 7 356h",
+      "score": 245
+    },
+    {
+      "key": "ultra 7 366h",
+      "score": 239
+    },
+    {
+      "key": "ultra 9 185h",
+      "score": 206
+    },
+    {
+      "key": "ultra 9 275hx",
+      "score": 477
+    },
+    {
+      "key": "ultra 9 285",
+      "score": 491
+    },
+    {
+      "key": "ultra 9 285h",
+      "score": 239
+    },
+    {
+      "key": "ultra 9 285hx",
+      "score": 499
+    },
+    {
+      "key": "ultra 9 285k",
+      "score": 563
+    },
+    {
+      "key": "ultra 9 288v",
+      "score": 121
+    },
+    {
+      "key": "ultra 9 290hx",
+      "score": 543
+    },
+    {
+      "key": "ultra 9 386h",
+      "score": 275
+    }
+  ]
+}

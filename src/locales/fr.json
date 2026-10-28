@@ -571,7 +571,7 @@
   "sys.verdictPartial": "Vérification partielle",
   "sys.verdictFail": "Sous les exigences",
   "sys.verdictUnknown": "Comparaison impossible",
-  "sys.checkNote": "Le système, la RAM, le stockage et DirectX sont vérifiés automatiquement. Comparez vous-même le CPU et le GPU.",
+  "sys.checkNote": "Le système, la RAM, le stockage et DirectX sont vérifiés automatiquement. Les modèles de CPU et de GPU sont comparés aux scores de rendu de Blender Open Data (CC0) à titre indicatif ; les modèles proches ou inconnus ne sont pas considérés comme entièrement compatibles.",
   "sys.onThisPc": "Sur ce PC",
   "common.installPathUnknown": "Dossier d'installation inconnu",
   "ss.shareTitle": "Partager l'image",

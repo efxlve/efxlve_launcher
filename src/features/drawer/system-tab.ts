@@ -388,6 +388,7 @@ export function renderRequirementPanel(s: EpicSummary): string {
   const needsReview = checks.some(
     (check) => check.status === "manual" || check.status === "partial",
   );
+  const usedScores = checks.some((check) => check.scored);
 
   const tierSwitch = hasBothTiers
     ? `<div class="seg sys-req-tabs">
@@ -421,7 +422,7 @@ export function renderRequirementPanel(s: EpicSummary): string {
     </div>
     <div class="sys-req-list">${rows}</div>
     ${
-      needsReview
+      needsReview || usedScores
         ? `<p class="sys-check-note">${icon("info", 12)} <span>${t("sys.checkNote")}</span></p>`
         : ""
     }`;

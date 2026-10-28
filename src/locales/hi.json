@@ -601,7 +601,7 @@
   "sys.verdictPartial": "आंशिक जाँच",
   "sys.verdictFail": "आवश्यकताओं से कम",
   "sys.verdictUnknown": "तुलना नहीं हो सकती",
-  "sys.checkNote": "OS, RAM, स्टोरेज और DirectX अपने आप जाँचे जाते हैं। CPU और GPU की तुलना खुद करें।",
+  "sys.checkNote": "OS, RAM, स्टोरेज और DirectX अपने आप जाँचे जाते हैं। CPU और GPU मॉडलों की तुलना Blender Open Data रेंडर स्कोर (CC0) से अनुमानित आधार पर की जाती है; करीबी या अज्ञात मॉडल पूर्ण मेल नहीं माने जाते।",
   "sys.onThisPc": "इस पीसी पर",
   "common.installPathUnknown": "इंस्टॉल फ़ोल्डर अज्ञात है",
   "ss.shareTitle": "छवि साझा करें",

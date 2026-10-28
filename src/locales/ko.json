@@ -571,7 +571,7 @@
   "sys.verdictPartial": "부분 확인됨",
   "sys.verdictFail": "요구 사항 미달",
   "sys.verdictUnknown": "비교할 수 없음",
-  "sys.checkNote": "OS, RAM, 저장 공간, DirectX는 자동으로 확인됩니다. CPU와 GPU는 직접 비교하세요.",
+  "sys.checkNote": "OS, RAM, 저장 공간, DirectX는 자동으로 확인됩니다. CPU와 GPU 모델은 Blender Open Data 렌더 점수(CC0)를 대략적인 기준으로 비교하며, 비슷하거나 알 수 없는 모델은 완전 일치로 표시되지 않습니다.",
   "sys.onThisPc": "이 PC에서",
   "common.installPathUnknown": "설치 폴더를 알 수 없음",
   "ss.shareTitle": "이미지 공유",

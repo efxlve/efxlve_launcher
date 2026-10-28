@@ -4,9 +4,9 @@
  * The facts come from the same offline command as Settings > PC check: the
  * module never uploads anything and reads the OS once per session. Measurable
  * rows (OS, RAM, storage, DirectX feature level, core count, VRAM) are compared
- * automatically. A row that also names a CPU or GPU model is marked partial:
- * the numeric part passed, but ranking the model itself needs a benchmark
- * database, so the UI does not claim a full match.
+ * automatically. A CPU or GPU model is ranked with the generated offline score
+ * table; a model the table does not know, or one that is close to the
+ * requirement, stays partial instead of claiming a full match.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -15,6 +15,7 @@ import { fmtBytes } from "../../core/utils";
 import { epicGetSystemDrives, type SystemDriveInfo } from "../../epic";
 import { t } from "../../i18n";
 import type { VerifiedHardwareItem } from "./drawer-widgets";
+import { compareHardwareScore } from "./hardware-scores";
 
 export interface PcFacts {
   os: string;
@@ -44,6 +45,8 @@ export interface RequirementCheck {
   status: RequirementStatus;
   /** The value read from this PC, already formatted for the row. */
   detected: string;
+  /** True when the CPU/GPU model was ranked with the offline score table. */
+  scored?: boolean;
 }
 
 let cachedFacts: PcFacts | null = null;
@@ -236,7 +239,6 @@ function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
       /(\d+)(?:\s+(?:hardware|cpu|logical|physical|işlemci))*\s*(cores?|threads?|çekirdek|iş parçacığı)/gi,
     ),
   ];
-  if (requirements.length === 0) return { status: "manual", detected };
   const coreNeeds = requirements
     .filter((match) => /core|çekirdek/i.test(match[2]))
     .map((match) => Number(match[1]));
@@ -245,6 +247,7 @@ function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
     .map((match) => Number(match[1]));
   const coreNeed = coreNeeds.length > 0 ? Math.min(...coreNeeds) : 0;
   const threadNeed = threadNeeds.length > 0 ? Math.min(...threadNeeds) : 0;
+  const hasCounts = coreNeed > 0 || threadNeed > 0;
   if (
     (coreNeed > 0 && facts.physicalCores <= 0) ||
     (threadNeed > 0 && facts.logicalCores <= 0)
@@ -257,27 +260,43 @@ function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
   ) {
     return { status: "fail", detected };
   }
-  // A core count next to a model name proves only half the row.
-  const namesModel = /intel|amd|ryzen|core\s*i[3579]|phenom|athlon|fx[-\s]?\d|processor/i.test(required);
-  return { status: namesModel ? "partial" : "ok", detected };
+  const namesModel = /intel|amd|ryzen|core\s*i[3579]|core\s*ultra|apple\s*m\d|phenom|athlon|fx[-\s]?\d|processor/i.test(required);
+  if (namesModel) {
+    const score = compareHardwareScore("cpu", facts.cpu, required);
+    if (score) return { status: score, detected, scored: true };
+    // A core count next to an unknown model proves only half the row.
+    return { status: hasCounts ? "partial" : "manual", detected };
+  }
+  return { status: hasCounts ? "ok" : "manual", detected };
 }
 
 function checkGpu(required: string, facts: PcFacts): RequirementCheck | null {
   const detected = gpuDetected(facts);
   if (!detected) return null;
   const vramValues = parseSizeValuesGb(required);
-  if (vramValues.length > 0 && facts.gpuMemoryMb > 0) {
+  const hasVram = vramValues.length > 0 && facts.gpuMemoryMb > 0;
+  if (hasVram) {
     // A GPU row can list two cards; the smaller card is the threshold.
     const needed = Math.min(...vramValues);
     const has = facts.gpuMemoryMb / 1024;
-    // DXGI reports a little less than the physical chips (driver-reserved
-    // memory), so an 8 GB card often lands around 7.7 GB.
+    // Rust reports nominal VRAM (7891 MiB becomes 8192), but a non-Windows
+    // backend can still round differently; half a gigabyte covers that.
     if (has + 0.5 < needed) return { status: "fail", detected };
-    // VRAM alone cannot rank a named GPU against the listed model.
-    const namesModel = /nvidia|geforce|gtx|rtx|radeon|rx\s*\d|arc\s*a\d|intel|amd/i.test(required);
-    return { status: namesModel ? "partial" : "ok", detected };
   }
-  return { status: "manual", detected };
+  const namesModel = /nvidia|geforce|gtx|rtx|radeon|rx\s*\d|arc\s*a\d|intel|amd/i.test(required);
+  if (namesModel) {
+    const score = compareHardwareScore("gpu", facts.gpu, required);
+    if (score) {
+      // A named model without readable VRAM cannot be confirmed even when the
+      // score table likes it.
+      if (vramValues.length > 0 && !hasVram && score === "ok") {
+        return { status: "partial", detected, scored: true };
+      }
+      return { status: score, detected, scored: true };
+    }
+    return { status: hasVram ? "partial" : "manual", detected };
+  }
+  return { status: hasVram ? "ok" : "manual", detected };
 }
 
 function checkRam(required: string, facts: PcFacts): RequirementCheck | null {

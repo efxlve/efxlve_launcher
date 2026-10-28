@@ -571,7 +571,7 @@
   "sys.verdictPartial": "部分已检查",
   "sys.verdictFail": "低于配置要求",
   "sys.verdictUnknown": "无法对比",
-  "sys.checkNote": "系统、内存、存储和 DirectX 会自动检查。请自行对比 CPU 和 GPU。",
+  "sys.checkNote": "系统、内存、存储和 DirectX 会自动检查。CPU 和 GPU 型号会参考 Blender Open Data 渲染分数（CC0）进行粗略比较；相近或未知的型号不会标记为完全符合。",
   "sys.onThisPc": "本机",
   "common.installPathUnknown": "安装文件夹未知",
   "ss.shareTitle": "分享图像",

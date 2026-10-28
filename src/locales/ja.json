@@ -571,7 +571,7 @@
   "sys.verdictPartial": "一部確認済み",
   "sys.verdictFail": "要件を下回る",
   "sys.verdictUnknown": "比較できません",
-  "sys.checkNote": "OS、RAM、ストレージ、DirectXは自動で確認されます。CPUとGPUはご自身で比較してください。",
+  "sys.checkNote": "OS、RAM、ストレージ、DirectXは自動で確認されます。CPUとGPUのモデルはBlender Open Dataのレンダースコア（CC0）を目安に比較され、近いモデルや不明なモデルは完全一致とはみなされません。",
   "sys.onThisPc": "このPCでは",
   "common.installPathUnknown": "インストールフォルダーが不明です",
   "ss.shareTitle": "画像を共有",

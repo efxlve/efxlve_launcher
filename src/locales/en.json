@@ -601,7 +601,7 @@
   "sys.verdictPartial": "Partly checked",
   "sys.verdictFail": "Below requirements",
   "sys.verdictUnknown": "Cannot compare",
-  "sys.checkNote": "OS, RAM, storage and DirectX are checked automatically. Compare the CPU and GPU models yourself.",
+  "sys.checkNote": "OS, RAM, storage and DirectX are checked automatically. CPU and GPU models use Blender Open Data render scores (CC0) as a rough guide; close or unknown models are not marked as a full match.",
   "sys.onThisPc": "On this PC",
   "common.installPathUnknown": "Install folder is unknown",
   "ss.shareTitle": "Share Image",

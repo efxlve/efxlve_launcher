@@ -571,7 +571,7 @@
   "sys.verdictPartial": "Controllo parziale",
   "sys.verdictFail": "Sotto i requisiti",
   "sys.verdictUnknown": "Confronto impossibile",
-  "sys.checkNote": "Sistema operativo, RAM, spazio e DirectX sono controllati automaticamente. Confronta tu CPU e GPU.",
+  "sys.checkNote": "Sistema operativo, RAM, spazio e DirectX sono controllati automaticamente. I modelli di CPU e GPU vengono confrontati con i punteggi di rendering di Blender Open Data (CC0) come riferimento approssimativo; i modelli simili o sconosciuti non vengono considerati una corrispondenza completa.",
   "sys.onThisPc": "Su questo PC",
   "common.installPathUnknown": "Cartella di installazione sconosciuta",
   "ss.shareTitle": "Condividi immagine",
