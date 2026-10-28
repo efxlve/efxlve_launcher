@@ -1078,7 +1078,7 @@ function controllerStateLabel(state: ControllerRowState): string {
     case "partial": return i18nT("ctrl.statusPartial");
     case "primary": return i18nT("ctrl.statusPrimary");
     case "none": return i18nT("ctrl.statusNone");
-    default: return "DS4Windows";
+    default: return i18nT("ctrl.statusDs4");
   }
 }
 
@@ -1132,7 +1132,7 @@ export function renderControllerCard(
       </div>
       <div class="ctrl-support-list">
         ${row("gamepad-2", "Xbox / XInput", xboxState)}
-        ${row("gamepad-2", "DualSense", dualSenseState, dualSenseState === "ds4" ? i18nT("feat.xboxGamepadTip") : "")}
+        ${row("gamepad-2", "DualSense", dualSenseState, dualSenseState === "ds4" ? i18nT("ctrl.ds4Tip") : "")}
         ${row("keyboard", i18nT("feat.kbMouse"), keyboardState)}
       </div>
     </div>`;

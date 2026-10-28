@@ -1758,6 +1758,8 @@
   "ctrl.helpSource": "Ce résultat provient des catégories du store, du texte des exigences et des données connues du jeu.",
   "ctrl.helpTitle": "Détails de prise en charge des manettes",
   "ctrl.helpNone": "Aucune information de prise en charge n'est disponible pour cette famille de manettes.",
+  "ctrl.statusDs4": "DS4Windows requis",
+  "ctrl.ds4Tip": "DualSense n'est pas natif ici ; DS4Windows le présente comme une manette Xbox (XInput).",
   "feat.partialPad": "Prise en charge partielle de la manette",
   "feat.partialPadTip": "La boutique indique une prise en charge limitée de la manette. Le clavier et la souris restent les commandes principales.",
   "controller.kindSteamDeck": "Steam Deck",

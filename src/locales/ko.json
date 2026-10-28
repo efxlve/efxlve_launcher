@@ -1758,6 +1758,8 @@
   "ctrl.helpSource": "이 결과는 스토어 카테고리, 요구 사항 텍스트 및 알려진 게임 데이터를 바탕으로 합니다.",
   "ctrl.helpTitle": "컨트롤러 지원 세부 정보",
   "ctrl.helpNone": "이 컨트롤러 계열에 대한 지원 정보가 없습니다.",
+  "ctrl.statusDs4": "DS4Windows 필요",
+  "ctrl.ds4Tip": "여기서 DualSense는 기본 지원되지 않습니다. DS4Windows가 Xbox(XInput) 컨트롤러로 인식시킵니다.",
   "feat.partialPad": "컨트롤러 일부 지원",
   "feat.partialPadTip": "스토어에 컨트롤러 지원이 제한적이라고 나와 있습니다. 주 조작은 키보드와 마우스입니다.",
   "controller.kindSteamDeck": "Steam Deck",

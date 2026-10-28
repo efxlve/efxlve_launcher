@@ -1758,6 +1758,8 @@
   "ctrl.helpSource": "Este resultado procede de las categorías de la tienda, el texto de los requisitos y los datos conocidos del juego.",
   "ctrl.helpTitle": "Detalles de compatibilidad del mando",
   "ctrl.helpNone": "No hay información de compatibilidad para esta familia de mandos.",
+  "ctrl.statusDs4": "Requiere DS4Windows",
+  "ctrl.ds4Tip": "DualSense no es nativo aquí; DS4Windows lo presenta como un mando Xbox (XInput).",
   "feat.partialPad": "Soporte de mando parcial",
   "feat.partialPadTip": "La tienda indica soporte de mando limitado. El teclado y el ratón son los controles principales.",
   "controller.kindSteamDeck": "Steam Deck",
