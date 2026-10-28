@@ -35,11 +35,10 @@
 .btn.running:disabled { opacity: 1; cursor: default; }
 /* A missing copy is a state, not a button the user should try to press. */
 .btn.danger.is-unavailable:disabled { opacity: 1; cursor: default; }
-/* Stop is a state action, not the accent Play action: outline it and keep the
-   square red while the label stays readable. */
+/* Stop is a normal ghost action; only the square carries the error tone. */
 .btn.stop { background: transparent; border-color: var(--line-strong); color: var(--text); }
 .btn.stop svg { color: var(--err); fill: currentColor; }
-.btn.stop:hover { background: var(--err-tint); border-color: rgba(229, 72, 77, 0.35); }
+.btn.stop:hover { background: var(--surface-2); border-color: var(--line-strong); }
 .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 .btn.primary, .btn.install, .btn.play { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .btn.primary:hover, .btn.install:hover, .btn.play:hover { background: var(--accent-hover); }
