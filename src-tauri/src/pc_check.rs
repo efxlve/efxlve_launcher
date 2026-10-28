@@ -87,7 +87,7 @@ pub fn pc_check_system() -> PcCheckSystem {
         gpu,
         gpu_vendor_id,
         gpu_device_id,
-        gpu_memory_mb,
+        gpu_memory_mb: nominal_vram_mb(gpu_memory_mb),
         directx,
         directx_level,
         app_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -276,6 +276,24 @@ fn directx_info(
     (directx_name(level), level)
 }
 
+/// DXGI reports a little less than the physical chips (driver-reserved memory),
+/// so an 8 GB card lands around 7891 MiB. Report the size the card is sold as;
+/// 7.7 GB is not a real SKU and makes the comparison look wrong.
+fn nominal_vram_mb(reported_mb: u64) -> u64 {
+    if reported_mb == 0 {
+        return 0;
+    }
+    const SIZES_GB: [u64; 12] = [1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32];
+    let reported_gb = reported_mb as f64 / 1024.0;
+    for size in SIZES_GB {
+        let tolerance = (size as f64 * 0.08).max(0.5);
+        if (reported_gb - size as f64).abs() <= tolerance {
+            return size * 1024;
+        }
+    }
+    reported_mb
+}
+
 fn directx_name(level: u32) -> String {
     match level {
         122 => "DirectX 12 (12_2)".to_string(),
@@ -398,6 +416,14 @@ mod tests {
         assert_eq!(super::directx_name(120), "DirectX 12 (12_0)");
         assert_eq!(super::directx_name(110), "DirectX 11");
         assert_eq!(super::directx_name(0), "");
+    }
+
+    #[test]
+    fn vram_is_reported_as_the_nominal_size() {
+        assert_eq!(super::nominal_vram_mb(7891), 8192);
+        assert_eq!(super::nominal_vram_mb(8151), 8192);
+        assert_eq!(super::nominal_vram_mb(6144), 6144);
+        assert_eq!(super::nominal_vram_mb(0), 0);
     }
 
     #[test]
