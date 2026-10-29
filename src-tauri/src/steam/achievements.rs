@@ -2405,18 +2405,19 @@ impl Default for AchievementNotificationOptions {
 }
 
 fn default_card_theme() -> String {
-    "gold".to_string()
+    "rarity".to_string()
 }
 
 fn normalize_card_theme(value: Option<&str>) -> String {
     match value {
+        Some("gold") => "gold",
         Some("launcher") => "launcher",
         Some("rarity") => "rarity",
         Some("cyber") => "cyber",
         Some("emerald") => "emerald",
         Some("crimson") => "crimson",
         Some("amethyst") => "amethyst",
-        _ => "gold",
+        _ => "rarity",
     }
     .to_string()
 }
@@ -3598,10 +3599,10 @@ mod tests {
     use super::super::runtime::steam_install_path;
 
     #[test]
-    fn a_missing_card_theme_falls_back_to_gold() {
-        assert_eq!(normalize_card_theme(None), "gold");
+    fn a_missing_card_theme_follows_the_trophy_tier() {
+        assert_eq!(normalize_card_theme(None), "rarity");
         assert_eq!(normalize_card_theme(Some("launcher")), "launcher");
-        assert_eq!(normalize_card_theme(Some("neon")), "gold");
+        assert_eq!(normalize_card_theme(Some("neon")), "rarity");
     }
 
     #[test]

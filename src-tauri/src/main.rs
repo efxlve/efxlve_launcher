@@ -246,7 +246,8 @@ pub struct EpicSettings {
     #[serde(default)]
     pub achievement_notifications_position: Option<String>,
     pub achievement_notifications_size: Option<String>,
-    /// "gold" keeps the classic card; "launcher" follows the active theme.
+    /// "rarity" colours the card by trophy tier; "gold" keeps the classic card;
+    /// "launcher" follows the active theme.
     pub achievement_notifications_card_theme: Option<String>,
     /// "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic".
     #[serde(default)]

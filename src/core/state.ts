@@ -312,7 +312,7 @@ export const S = {
     size: "normal",
     customSound: false,
     customSoundName: null,
-    cardTheme: "gold",
+    cardTheme: "rarity",
     animStyle: "prism",
     exitStyle: "auto",
     disabledStores: [],

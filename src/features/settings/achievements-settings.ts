@@ -472,7 +472,7 @@ export function renderAchievementsSettingsView(): string {
       : "normal";
 
   const allowedThemes = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
-  const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "gold";
+  const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "rarity";
 
   const allowedStyles = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
   const animStyle = allowedStyles.includes(options.animStyle) ? options.animStyle : "prism";
@@ -626,8 +626,8 @@ export function renderAchievementsSettingsView(): string {
     .join("");
 
   const cardThemeButtons = [
-    { id: "gold", label: t("settings.achCardThemeGold"), swatch: "#f59e0b" },
     { id: "rarity", label: t("settings.achCardThemeRarity"), swatch: "conic-gradient(#cd7f32, #94a3b8, #f59e0b, #22d3ee, #e879f9)" },
+    { id: "gold", label: t("settings.achCardThemeGold"), swatch: "#f59e0b" },
     { id: "launcher", label: t("settings.achCardThemeLauncher"), swatch: "var(--accent)" },
     { id: "cyber", label: t("settings.achCardThemeCyber"), swatch: "#00f0ff" },
     { id: "emerald", label: t("settings.achCardThemeEmerald"), swatch: "#10b981" },
@@ -1184,7 +1184,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
 
     case "set-ach-card-theme": {
       const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
-      const cardTheme = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "gold";
+      const cardTheme = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "rarity";
       const next = { ...S.achievementNotificationOptions, cardTheme };
       S.achievementNotificationOptions = next;
       stageReplaySeq++;

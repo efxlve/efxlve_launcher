@@ -158,6 +158,8 @@ function toHex(color: Rgba): string {
  */
 export function achievementCardPalette(cardTheme: string, rarityTier = 2): AchievementCardColors {
   switch (cardTheme) {
+    case "gold":
+      return GOLD_ACHIEVEMENT_CARD;
     case "cyber":
       return CYBER_ACHIEVEMENT_CARD;
     case "emerald":
@@ -189,7 +191,7 @@ export function achievementCardPalette(cardTheme: string, rarityTier = 2): Achie
       };
     }
     default:
-      return GOLD_ACHIEVEMENT_CARD;
+      return rarityCardPalette(rarityTier);
   }
 }
 
