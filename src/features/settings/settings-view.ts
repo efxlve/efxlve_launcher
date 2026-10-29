@@ -1784,7 +1784,7 @@ function renderSystem(): string {
       ? `<button type="button" class="btn primary small" data-act="app-update-download">${t("appUpdate.downloadNow")}</button>`
       : `<button type="button" class="btn ghost small" data-act="app-update-check" ${S.appUpdateStatus === "checking" ? "disabled" : ""}>${t("appUpdate.checkBtn")}</button>`;
 
-  const updateDesc = [t("appUpdate.desc"), `<span class="app-update-status">${statusText}</span>`, S.appUpdateStatus === "ready" && blocked ? t("appUpdate.blockedHint") : ""]
+  const updateDesc = [t("appUpdate.desc"), `<span class="app-update-status" id="app-update-status">${statusText}</span>`, S.appUpdateStatus === "ready" && blocked ? t("appUpdate.blockedHint") : ""]
     .filter(Boolean)
     .join(" ");
   const progress = S.appUpdateStatus === "downloading" || S.appUpdateStatus === "ready"

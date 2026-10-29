@@ -65,8 +65,14 @@ async function announceUpdate(title: string, body: string): Promise<void> {
 function updateProgressDom(): void {
   const bar = document.getElementById("app-update-bar");
   const pct = document.getElementById("app-update-pct");
+  const status = document.getElementById("app-update-status");
   if (bar) bar.style.width = `${S.appUpdateProgress}%`;
   if (pct) pct.textContent = `${S.appUpdateProgress}%`;
+  // The description carries the same number as the badge; leaving it at the
+  // value from the last full render makes the two disagree while downloading.
+  if (status && S.appUpdateStatus === "downloading") {
+    status.textContent = t("appUpdate.downloading", { p: S.appUpdateProgress });
+  }
 }
 
 /** One-shot startup check plus throttled focus checks. */
