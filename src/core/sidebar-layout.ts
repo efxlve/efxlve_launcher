@@ -161,6 +161,9 @@ let compactMode = false;
  */
 function autoFitSidebar(): void {
   const width = window.innerWidth;
+  // Minimize reports a 0/1 px viewport. That is not a compact layout; treating
+  // it as one folds the rail and makes the restore unfold it again.
+  if (width <= 1) return;
   if (!compactMode && width < COMPACT_AT) {
     compactMode = true;
   } else if (compactMode && width >= COMPACT_LEAVE_AT) {
@@ -172,7 +175,10 @@ function autoFitSidebar(): void {
   if (compactMode) {
     if (measuredWidth() >= SIDEBAR_COLLAPSE_AT) applySidebarWidth(SIDEBAR_MIN);
   } else {
-    applySidebarWidth(readExpandedWidth());
+    // Restore the player's last width, not the last expanded one: a rail the
+    // user closed stays closed when the window is minimized, restored or
+    // switched to full screen. The compact-mode fold is not persisted.
+    applySidebarWidth(readStoredWidth());
   }
   handleWindowResize();
 }
