@@ -106,8 +106,11 @@ export async function gogGetGameDetails(gameId: string): Promise<GogGameDetails>
   return invoke<GogGameDetails>("gog_get_game_details", { gameId });
 }
 
-export async function gogGetAchievements(gameId: string): Promise<EpicAchievementsData> {
-  return invoke<EpicAchievementsData>("gog_get_achievements", { gameId });
+export async function gogGetAchievements(
+  gameId: string,
+  forceRefresh = false,
+): Promise<EpicAchievementsData> {
+  return invoke<EpicAchievementsData>("gog_get_achievements", { gameId, forceRefresh });
 }
 
 export async function gogGetAchievementsSummary(): Promise<Record<string, EpicAchievementSummary>> {

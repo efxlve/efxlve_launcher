@@ -1,5 +1,9 @@
 //! Tauri IPC commands for GOG.COM integration.
 
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
 use tauri::{command, AppHandle, Manager};
 
 use super::api_client::{
@@ -231,14 +235,42 @@ pub async fn gog_get_game_details(
     game_details(&app, game_id.trim_start_matches("gog::")).await
 }
 
+/// Short-lived answer cache. The drawer and the running-session poll both ask
+/// for the same game; without this, every open became a Gameplay API request.
+static ACHIEVEMENTS_CACHE: Mutex<Option<HashMap<String, (Instant, GameAchievementsResponse)>>> =
+    Mutex::new(None);
+const ACHIEVEMENTS_TTL: Duration = Duration::from_secs(60);
+
+fn cached_achievements(key: &str) -> Option<GameAchievementsResponse> {
+    let cache = ACHIEVEMENTS_CACHE.lock().ok()?;
+    let (at, data) = cache.as_ref()?.get(key)?;
+    (at.elapsed() < ACHIEVEMENTS_TTL).then(|| data.clone())
+}
+
+fn store_cached_achievements(key: String, data: GameAchievementsResponse) {
+    if let Ok(mut cache) = ACHIEVEMENTS_CACHE.lock() {
+        let map = cache.get_or_insert_with(HashMap::new);
+        map.retain(|_, (at, _)| at.elapsed() < ACHIEVEMENTS_TTL);
+        map.insert(key, (Instant::now(), data));
+    }
+}
+
 /// Retrieves user achievements for a GOG game from the official Gameplay API.
 #[command]
 pub async fn gog_get_achievements(
     app: AppHandle,
     game_id: String,
+    force_refresh: Option<bool>,
 ) -> Result<GameAchievementsResponse, String> {
     let mut tokens = load_auth_tokens(&app).ok_or_else(|| cmd_error(GogError::NotAuthenticated))?;
     let clean_id = game_id.trim_start_matches("gog::");
+    let cache_key = format!("{}:{clean_id}", tokens.user_id);
+
+    if !force_refresh.unwrap_or(false) {
+        if let Some(cached) = cached_achievements(&cache_key) {
+            return Ok(cached);
+        }
+    }
 
     let res = fetch_gog_achievements(&tokens.access_token, &tokens.user_id, clean_id).await;
     let data = match res {
@@ -255,6 +287,7 @@ pub async fn gog_get_achievements(
         }
         Err(e) => return Err(cmd_error(e)),
     };
+    store_cached_achievements(cache_key, data.clone());
 
     let summary = GameAchievementSummary {
         app_name: format!("gog::{clean_id}"),
@@ -488,4 +521,24 @@ pub async fn gog_import_galaxy_tags() -> Result<crate::legendary::collections::C
     tauri::async_runtime::spawn_blocking(super::galaxy_tags::import_galaxy_tags)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{cached_achievements, store_cached_achievements};
+    use crate::legendary::models::GameAchievementsResponse;
+
+    #[test]
+    fn a_cached_answer_is_served_to_the_next_open() {
+        let key = format!("gog-cache-test-{}", std::process::id());
+        let data = GameAchievementsResponse {
+            total_achievements: 7,
+            user_unlocked: 3,
+            ..Default::default()
+        };
+        store_cached_achievements(key.clone(), data);
+        let cached = cached_achievements(&key).expect("cached answer");
+        assert_eq!(cached.total_achievements, 7);
+        assert_eq!(cached.user_unlocked, 3);
+    }
 }

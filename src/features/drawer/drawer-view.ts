@@ -3135,7 +3135,7 @@ export async function fetchAndRenderAchievements(
     let data = raData ?? (source === "amazon"
       ? { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
       : isGog
-        ? await gogGetAchievements(rawId)
+        ? await gogGetAchievements(rawId, forceRefresh)
         : isSteam
           ? await steamGetAchievements(appName.slice(7), forceRefresh, currentLanguage())
           : isCustom
