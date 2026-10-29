@@ -67,7 +67,7 @@ import { epicDoLogin } from "../auth/auth-actions";
 import { gogLoginWithCode } from "../auth/gog-auth-actions";
 import { submitSteamCredentials, submitSteamGuardCode } from "../auth/steam-auth-actions";
 import { closeNotifPanel } from "../notifications/notifications";
-import { applyTaskFilter, closeTaskDetail } from "../settings/task-manager";
+import { applyTaskFilter, closeTaskDetail } from "../settings/task-manager-bridge";
 import { closePageLightbox, pageLightboxOpen, repaintScreenshotsPage, updateClipRangeNote, updateClipShareNote } from "../screenshots/screenshots-page";
 import { closeScreenshotEditor, editorOpen } from "../screenshots/screenshot-editor";
 import { closeStoreShot, storeShotViewerOpen } from "../screenshots/store-shot-viewer";

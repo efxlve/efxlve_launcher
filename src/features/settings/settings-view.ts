@@ -9,8 +9,7 @@
 import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
-import { handleThemeSettingsAction, renderThemeSection } from "./theme-settings";
-import { handleAchievementsSettingsAction, renderAchievementsSettingsView, runStagePreviewChoreography } from "./achievements-settings";
+import { createLazyPanel, panelLoadingState } from "./lazy-panel";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize } from "../../core/picture-cache";
 import { emptyState, icon, type IconName } from "../../core/icons";
@@ -96,7 +95,6 @@ import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, n
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
-import { handleTaskAction, renderTasks } from "./task-manager";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
@@ -114,6 +112,11 @@ import {
 import type { ControllerKind } from "../../core/types";
 import { gogDetectGalaxyGames, type GalaxyDetectedGame } from "../../gog";
 import { igdbProbeProxy, igdbStatus } from "../../igdb";
+
+/** Heavy panels load when their section opens; see lazy-panel.ts. */
+const taskPanel = createLazyPanel(() => import("./task-manager"));
+const achievementsPanel = createLazyPanel(() => import("./achievements-settings"));
+const themePanel = createLazyPanel(() => import("./theme-settings"));
 
 const SECTIONS: { id: SettingsSection; labelKey: string; icon: IconName }[] = [
   { id: "account", labelKey: "settings.secAccount", icon: "user" },
@@ -1369,13 +1372,18 @@ function renderCustomCssRow(): string {
 }
 
 function renderAppearance(): string {
+  const theme = themePanel.get();
+  if (!theme) {
+    themePanel.ensure();
+    return panelLoadingState();
+  }
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
       <span class="lang-flag">${esc(l.code.toUpperCase())}</span>
       <span class="lang-name">${esc(l.label)}</span>
     </button>`).join("");
   return (
-    renderThemeSection() +
+    theme.renderThemeSection() +
     group(
       renderCustomCssRow() +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
@@ -1429,10 +1437,15 @@ function renderAppearance(): string {
 }
 
 function renderAchievementsSettings(): string {
-  const html = renderAchievementsSettingsView();
+  const panel = achievementsPanel.get();
+  if (!panel) {
+    achievementsPanel.ensure();
+    return panelLoadingState();
+  }
+  const html = panel.renderAchievementsSettingsView();
   // The card no longer carries a CSS entry animation; the shared motion runs
   // once the panel is in the DOM, exactly like the in-game toast.
-  window.requestAnimationFrame(() => runStagePreviewChoreography("entry"));
+  window.requestAnimationFrame(() => panel.runStagePreviewChoreography("entry"));
   return html;
 }
 
@@ -1954,7 +1967,14 @@ function renderSection(section: SettingsSection): string {
     case "screenshots": return renderScreenshots();
     case "achievements": return renderAchievementsSettings();
     case "notes": return renderNotes();
-    case "tasks": return renderTasks();
+    case "tasks": {
+      const panel = taskPanel.get();
+      if (!panel) {
+        taskPanel.ensure();
+        return panelLoadingState();
+      }
+      return panel.renderTasks();
+    }
     case "system": return renderSystem();
     case "hidden": return renderHidden();
     case "about": return renderAbout();
@@ -2528,8 +2548,10 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
   // here on click re-rendered the page while the native dropdown was opening,
   // which made the platform picker appear dead.
   if (_el.tagName !== "SELECT" && handleCompatAction(act, _el)) return true;
-  if (handleThemeSettingsAction(act, _el)) return true;
-  if (handleAchievementsSettingsAction(act, _el)) return true;
+  const theme = themePanel.get();
+  if (theme && theme.handleThemeSettingsAction(act, _el)) return true;
+  const achievements = achievementsPanel.get();
+  if (achievements && achievements.handleAchievementsSettingsAction(act, _el)) return true;
   switch (act) {
     case "toggle-overlay": {
       const enabled = (_el as HTMLInputElement).checked;
@@ -2758,7 +2780,7 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "task-detail-copy-path":
     case "task-detail-copy-cmd":
     case "task-detail-reveal":
-      return handleTaskAction(act, _el, _targetEl);
+      return taskPanel.get()?.handleTaskAction(act, _el, _targetEl) ?? false;
     case "ss-open-dir":
       void openScreenshotsFolder();
       return true;

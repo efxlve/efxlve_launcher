@@ -60,6 +60,7 @@ the window is hidden.
 | Installed-game watch | The signature is skipped while the window is hidden and rebuilt on the first visible frame | A hidden launcher rebuilt a string over the whole installed library every 20 s |
 | Library card tilt | The pointer handler returns immediately outside the library view | Every pointer move in settings, the store or the drawer walked ancestors for a card that cannot exist there |
 | Achievement watcher | The unlock parse runs only when the Steam stats file or the emulator achievement file changed (size + mtime), with a 10 s safety rebuild | The 800 ms loop used to re-read and parse the Steam schema and rescan every emulator folder 4,500 times an hour for a fact that had not changed |
+| Settings panels | Task Manager, Achievements and Theme are separate chunks loaded when their section opens; the boot bundle no longer parses them | Three self-contained panels sat in the page chunk even when the user never opened them |
 
 ## Remaining opportunities
 
@@ -71,9 +72,10 @@ the window is hidden.
 - **Store webview recycling.** Embedded stores keep child webviews alive for fast
   switching. Closing idle ones after a timeout would reduce process memory, but
   reopening must stay instant enough to keep the current UX.
-- **Settings code split.** `settings-view.ts` is the largest frontend module. A
-  dynamic import when Settings first opens would shorten initial parse; the
-  handler surface has to be separated first.
+- **Settings action surface.** The Task Manager, Achievements and Theme panels
+  are separate chunks loaded when their section opens. The outer Settings page
+  still ships in the main chunk because its action handlers import the library
+  graph; splitting that surface is the next step.
 - **Image decode budget.** `loading="lazy"` helps network and decode, but very
   large cover sources still decode at full size. Asking the image cache for a
   width-appropriate rendition is the next step.
