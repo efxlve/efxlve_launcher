@@ -8,8 +8,15 @@ const enKeys = Object.keys(read("en.json"));
 const enSet = new Set(enKeys);
 let failed = false;
 
+// A "?" glued to a letter, or two in a row, is a non-ASCII character that a
+// lossy edit replaced. URLs are skipped: "?a=1" is a query string, not a
+// mangled letter.
+const mangled = (text) =>
+  /[\uFFFD]|\?\?|\p{L}\?\p{L}|\?\p{L}/u.test(text.replace(/https?:\/\/\S+/g, ""));
+
 for (const name of files) {
-  const keys = Object.keys(read(name));
+  const locale = read(name);
+  const keys = Object.keys(locale);
   const set = new Set(keys);
   const missing = enKeys.filter((key) => !set.has(key));
   const extra = keys.filter((key) => !enSet.has(key));
@@ -18,6 +25,14 @@ for (const name of files) {
     console.error(name);
     if (missing.length) console.error("  missing:", missing.join(", "));
     if (extra.length) console.error("  extra:", extra.join(", "));
+  }
+  const broken = Object.entries(locale)
+    .filter(([, value]) => typeof value === "string" && mangled(value))
+    .map(([key]) => key);
+  if (broken.length) {
+    failed = true;
+    console.error(name);
+    console.error("  mangled characters:", broken.join(", "));
   }
 }
 

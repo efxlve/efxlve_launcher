@@ -2573,7 +2573,7 @@
   "settings.ssScanAllTitle": "Auch die Store-Ordner durchsuchen",
   "settings.ssScanAllDesc": "An: die Galerie liest auch Game Bar-, Steam-, Ubisoft- und Rockstar-Ordner. Aus: nur der gewählte Ordner und die von dir hinzugefügten Ordner.",
   "settings.ssSubfoldersTitle": "Unterordner mit einbeziehen",
-  "settings.ssSubfoldersDesc": "Ein: Jeder Unterordner im gew?hlten Ordner und in den hinzugef?gten Ordnern wird gelesen. Aus: nur eine Ebene pro Ordner.",
+  "settings.ssSubfoldersDesc": "An: jeder Unterordner im gewählten Ordner und in den hinzugefügten Ordnern wird gelesen. Aus: nur eine Ebene pro Ordner.",
   "ss.clipRes": "Auflösung",
   "ss.clipResDesc": "Geringere Höhen schreiben viel kleinere Dateien; nativ lässt den Bildschirm unverändert.",
   "ss.clipResNative": "Nativ",
