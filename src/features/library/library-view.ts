@@ -479,7 +479,7 @@ function epicListRow(s: EpicSummary): string {
     <div class="lrow${libraryListDimmed(s) ? " not-installed" : ""}" role="button" tabindex="0" aria-label="${title}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}" data-lib-item="${s.appName}">
       <div class="lrow-art" data-card-art>${epicArt(s)}${libraryDlBar(s.appName, epicDlProgress(s.appName))}</div>
       <div class="lrow-main">
-        <div class="lrow-title" data-badge-host><span class="lrow-name">${title}</span>${libraryCardBadge(s)}</div>
+        <div class="lrow-title"><span class="lrow-name">${title}</span></div>
         <div class="lrow-meta">${metaText}</div>
       </div>
       ${storeCell}
