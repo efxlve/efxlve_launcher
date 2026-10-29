@@ -27,7 +27,9 @@ fn port_busy() -> bool {
 
 /// True while the Comet instance started by this launcher is alive.
 pub fn is_running() -> bool {
-    let mut slot = COMET_CHILD.lock().unwrap();
+    let mut slot = COMET_CHILD
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     match slot.as_mut() {
         Some(child) => match child.try_wait() {
             Ok(None) => true,
@@ -96,7 +98,10 @@ pub async fn start_for_session(app: &AppHandle) -> bool {
 
     match cmd.spawn() {
         Ok(child) => {
-            *COMET_CHILD.lock().unwrap() = Some(child);
+            let mut slot = COMET_CHILD
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            *slot = Some(child);
             true
         }
         Err(_) => false,
@@ -105,8 +110,15 @@ pub async fn start_for_session(app: &AppHandle) -> bool {
 
 /// Stops the tracked instance, if any. Safe to call when nothing runs.
 pub fn stop() {
-    let mut slot = COMET_CHILD.lock().unwrap();
-    if let Some(mut child) = slot.take() {
+    // Take the child out before waiting: the registry lock must not be held
+    // across a blocking `wait()` (or a panic in the caller would poison it).
+    let child = {
+        let mut slot = COMET_CHILD
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        slot.take()
+    };
+    if let Some(mut child) = child {
         let _ = child.kill();
         let _ = child.wait();
     }

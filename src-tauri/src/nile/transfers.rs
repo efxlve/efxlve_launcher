@@ -88,7 +88,9 @@ impl Drop for ActiveGuard {
 }
 
 fn with_pids<R>(f: impl FnOnce(&mut HashMap<String, u32>) -> R) -> R {
-    let mut slot = LAUNCH_PIDS.lock().unwrap();
+    let mut slot = LAUNCH_PIDS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let map = slot.get_or_insert_with(HashMap::new);
     f(map)
 }

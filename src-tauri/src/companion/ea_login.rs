@@ -86,7 +86,7 @@ pub(crate) fn clear_owned() {
 
 /// Drops the in-memory session (used when the account is unlinked).
 pub(crate) fn clear_session() {
-    *SESSION.lock().unwrap() = None;
+    *SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
 }
 
 /* ---------- Session ---------- */
@@ -114,7 +114,7 @@ fn token_expired(access: &str) -> bool {
 /// A usable access token: the sealed session's own, refreshed when needed.
 pub(crate) async fn ensure_access() -> Result<String, String> {
     let tokens = {
-        let memory = SESSION.lock().unwrap().clone();
+        let memory = SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).clone();
         memory.or_else(ea_vault::load)
     };
     let Some(tokens) = tokens else {
@@ -129,7 +129,7 @@ pub(crate) async fn ensure_access() -> Result<String, String> {
     let fresh = refresh(&tokens.refresh).await?;
     let stored = EaTokens { name: tokens.name, ..fresh };
     ea_vault::save(&stored);
-    *SESSION.lock().unwrap() = Some(stored.clone());
+    *SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(stored.clone());
     Ok(stored.access)
 }
 
@@ -205,7 +205,7 @@ pub async fn open_login(app: AppHandle) -> Result<(), String> {
     let pc_sign = tauri::async_runtime::spawn_blocking(pcsign::generate)
         .await
         .map_err(|e| e.to_string())??;
-    *VERIFIER.lock().unwrap() = Some(verifier);
+    *VERIFIER.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(verifier);
     let url = auth_url(&pc_sign, &code_challenge)?;
     let parsed = url::Url::parse(&url).map_err(|e| e.to_string())?;
 
@@ -314,7 +314,7 @@ async fn import(code: &str) -> Result<usize, String> {
         saved_at: 0,
     };
     ea_vault::save(&stored);
-    *SESSION.lock().unwrap() = Some(stored);
+    *SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(stored);
     let _ = accounts::link_named("ea", &name);
     let _ = accounts::mark_needs_login("ea", false);
     save_owned(&owned);
@@ -614,7 +614,7 @@ const PLAYTIME_TTL: std::time::Duration = std::time::Duration::from_secs(5 * 60)
 
 /// `totalPlayTimeSeconds` per game slug, straight from the EA account service.
 pub(crate) async fn fetch_playtimes(access: &str) -> Result<Vec<(String, u64)>, String> {
-    if let Some((at, rows)) = PLAYTIME.lock().unwrap().as_ref() {
+    if let Some((at, rows)) = PLAYTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).as_ref() {
         if at.elapsed() < PLAYTIME_TTL {
             return Ok(rows.clone());
         }
@@ -648,7 +648,7 @@ pub(crate) async fn fetch_playtimes(access: &str) -> Result<Vec<(String, u64)>, 
             rows.push((slug.to_string(), seconds));
         }
     }
-    *PLAYTIME.lock().unwrap() = Some((std::time::Instant::now(), rows.clone()));
+    *PLAYTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some((std::time::Instant::now(), rows.clone()));
     Ok(rows)
 }
 

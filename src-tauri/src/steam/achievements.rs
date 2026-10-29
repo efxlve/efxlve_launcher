@@ -3307,15 +3307,20 @@ fn start_achievement_watcher(
         return;
     }
 
-    let mut lock = ACTIVE_WATCHERS.lock().unwrap();
-    let map = lock.get_or_insert_with(std::collections::HashMap::new);
-
-    if let Some(flag) = map.get(&app_id) {
-        flag.store(false, Ordering::SeqCst);
-    }
-
     let running_flag = Arc::new(AtomicBool::new(true));
-    map.insert(app_id.clone(), running_flag.clone());
+    {
+        // Do not hold the registry lock while the OS thread is created: a
+        // failed spawn panics, and a poisoned lock would turn every later
+        // watcher start into a second panic.
+        let mut lock = ACTIVE_WATCHERS
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let map = lock.get_or_insert_with(std::collections::HashMap::new);
+        if let Some(flag) = map.get(&app_id) {
+            flag.store(false, Ordering::SeqCst);
+        }
+        map.insert(app_id.clone(), running_flag.clone());
+    }
 
     let app_handle = app.clone();
     let target_app_id = app_id.clone();

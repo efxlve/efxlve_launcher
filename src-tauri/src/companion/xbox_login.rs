@@ -112,10 +112,10 @@ pub(crate) fn clear_owned() {
 
 /// Drops the in-memory session and XSTS token (used when the account unlinks).
 pub(crate) fn clear_session() {
-    *SESSION.lock().unwrap() = None;
-    *XSTS.lock().unwrap() = None;
-    *PLAYTIME.lock().unwrap() = None;
-    *ACHIEVEMENT_TOTALS.lock().unwrap() = None;
+    *SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
+    *XSTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
+    *PLAYTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
+    *ACHIEVEMENT_TOTALS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
 }
 
 /// The cached account row behind a title id (playtime works in title ids).
@@ -176,13 +176,13 @@ fn xbl_header(xsts: &Xsts) -> String {
 /// A usable XSTS token: cached while fresh, otherwise re-issued from the
 /// sealed Microsoft refresh token.
 pub(crate) async fn ensure_xsts() -> Result<Xsts, String> {
-    if let Some(xsts) = XSTS.lock().unwrap().clone() {
+    if let Some(xsts) = XSTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).clone() {
         if xsts.not_after > now_secs() + 60 && !xsts.token.is_empty() {
             return Ok(xsts);
         }
     }
     let tokens = {
-        let memory = SESSION.lock().unwrap().clone();
+        let memory = SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).clone();
         memory.or_else(xbox_vault::load)
     };
     let Some(tokens) = tokens else {
@@ -200,8 +200,8 @@ pub(crate) async fn ensure_xsts() -> Result<Xsts, String> {
         saved_at: 0,
     };
     xbox_vault::save(&stored);
-    *SESSION.lock().unwrap() = Some(stored);
-    *XSTS.lock().unwrap() = Some(xsts.clone());
+    *SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(stored);
+    *XSTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(xsts.clone());
     Ok(xsts)
 }
 
@@ -484,8 +484,8 @@ async fn import(code: &str) -> Result<usize, String> {
         saved_at: 0,
     };
     xbox_vault::save(&stored);
-    *SESSION.lock().unwrap() = Some(stored);
-    *XSTS.lock().unwrap() = Some(xsts);
+    *SESSION.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(stored);
+    *XSTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(xsts);
     let _ = accounts::link_named("xbox", &name);
     let count = sync_owned().await?;
     Ok(count)
@@ -798,7 +798,7 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
 
 /// `MinutesPlayed` per title id, straight from the account service.
 pub(crate) async fn fetch_playtimes() -> Result<Vec<(String, u64)>, String> {
-    if let Some((at, rows)) = PLAYTIME.lock().unwrap().as_ref() {
+    if let Some((at, rows)) = PLAYTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).as_ref() {
         if at.elapsed() < PLAYTIME_TTL {
             return Ok(rows.clone());
         }
@@ -840,7 +840,7 @@ pub(crate) async fn fetch_playtimes() -> Result<Vec<(String, u64)>, String> {
         };
         rows.extend(parse_playtime_batch(&value));
     }
-    *PLAYTIME.lock().unwrap() = Some((std::time::Instant::now(), rows.clone()));
+    *PLAYTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some((std::time::Instant::now(), rows.clone()));
     Ok(rows)
 }
 
@@ -1055,7 +1055,7 @@ pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchieveme
 /// account-wide achievements feed is paged instead: every entry carries its
 /// title association and unlock state, and the counts fall out.
 pub(crate) async fn achievement_totals() -> Result<HashMap<String, XboxAchievementTotals>, String> {
-    if let Some((at, rows)) = ACHIEVEMENT_TOTALS.lock().unwrap().as_ref() {
+    if let Some((at, rows)) = ACHIEVEMENT_TOTALS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).as_ref() {
         if at.elapsed() < ACHIEVEMENT_TOTALS_TTL {
             return Ok(rows.clone());
         }
@@ -1096,7 +1096,7 @@ pub(crate) async fn achievement_totals() -> Result<HashMap<String, XboxAchieveme
             break;
         }
     }
-    *ACHIEVEMENT_TOTALS.lock().unwrap() = Some((std::time::Instant::now(), rows.clone()));
+    *ACHIEVEMENT_TOTALS.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some((std::time::Instant::now(), rows.clone()));
     Ok(rows)
 }
 
