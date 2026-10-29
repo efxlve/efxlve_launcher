@@ -793,50 +793,12 @@ static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 /// boot watcher must not undo that deliberate action.
 static USER_HIDDEN_OR_MINIMIZED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
-/// True while the main library renderer is parked by `webview_power`.
-#[cfg(windows)]
-static MAIN_VIEW_SUSPENDED: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
-
-/// Parks or wakes the main library renderer with the window. Suspend keeps the
-/// page in memory but stops its timers and lowers its memory target; `Resume`
-/// brings the same page back without a reload.
+/// Parks or wakes the child storefront renderers with the window. The main
+/// shell itself stays awake: WebView2 can recover a suspended controller that
+/// owns child webviews by reloading the page, which resets the whole view.
 fn set_main_view_suspended(app: &tauri::AppHandle, suspended: bool) {
-    // The store children are separate WebView2 controllers: suspending the
-    // library renderer does not park them. Keep their timers asleep with the
-    // main window and wake only the storefront that is actually on screen.
     if let Some(window) = app.get_window("main") {
         crate::store_host::set_store_views_suspended(&window, suspended);
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = (app, suspended);
-    }
-    #[cfg(windows)]
-    {
-        let Some(view) = app.get_webview("main") else {
-            return;
-        };
-        let was_suspended =
-            MAIN_VIEW_SUSPENDED.swap(suspended, std::sync::atomic::Ordering::Relaxed);
-        if suspended && was_suspended {
-            return;
-        }
-        // Wake even when the flag says the view was not suspended: a renderer
-        // reload can leave the controller parked after the flag was cleared.
-        // `Resume` on an already-awake webview is a no-op.
-        let ok = if suspended {
-            webview_power::suspend(&view)
-        } else {
-            webview_power::resume(&view)
-        };
-        if !ok {
-            perf::write_line_global(if suspended {
-                "win: main webview suspend failed"
-            } else {
-                "win: main webview resume failed"
-            });
-        }
     }
 }
 /// First instance's show-request event, so a second launch can reveal it even
