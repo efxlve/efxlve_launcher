@@ -1417,7 +1417,7 @@
 .target-segment-pill.active, .cover-tab-btn.active { background: var(--surface-3); color: var(--text); }
 .cover-preview-section { display: flex; gap: 16px; align-items: flex-start; }
 .cover-preview-card { position: relative; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-2); }
-.cover-preview-card.portrait { width: 120px; aspect-ratio: 3 / 4; }
+.cover-preview-card.portrait { width: 120px; aspect-ratio: 2 / 3; }
 .cover-preview-card.wide { width: 260px; aspect-ratio: 16 / 9; }
 .cover-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cover-preview-empty { width: 100%; height: 100%; display: grid; place-items: center; color: var(--text-3); }

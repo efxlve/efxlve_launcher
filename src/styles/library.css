@@ -170,7 +170,7 @@
 }
 .pcard:focus-visible { outline-offset: 3px; }
 .pcard-art {
-  position: relative; aspect-ratio: 3 / 4; border-radius: var(--r-md); overflow: hidden;
+  position: relative; aspect-ratio: 2 / 3; border-radius: var(--r-md); overflow: hidden;
   background: var(--surface-2); outline: 1px solid var(--line); outline-offset: -1px;
   transform-origin: center center;
   /* Smooth spring settle when leaving; fast tracking while moving the pointer. */
@@ -515,7 +515,7 @@
 .pgrid.contrast-titles .pcard.not-installed:focus-visible .pcard-title {
   color: var(--text);
 }
-.pgrid.has-captions > .pcard { contain-intrinsic-size: auto 338px; }
+.pgrid.has-captions > .pcard { contain-intrinsic-size: auto 460px; }
 
 .cover-stats {
   position: absolute; top: 8px; left: 8px; z-index: 3; display: flex; flex-direction: column;
