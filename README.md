@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-222" alt="Windows, Linux and macOS" />
-  <img src="https://img.shields.io/badge/version-0.1.39-222" alt="Version 0.1.39" />
+  <img src="https://img.shields.io/badge/version-0.1.40-222" alt="Version 0.1.39" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
@@ -46,7 +46,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.39**:
+The current release is **v0.1.40**:
 [github.com/efxlve/efxlve_launcher/releases/tag/v0.1.39](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.39)
 
 ### Which file should I download?

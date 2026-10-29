@@ -31,9 +31,63 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.39",
+    version: "0.1.40",
     date: "2026-10-29",
     isCurrent: true,
+    items: [
+      {
+        en: "Library cards now name the other stores that own the same game, with short labels such as Epic · Steam; a +N count covers the rest.",
+        tr: "Kütüphane kartları aynı oyuna sahip diğer mağazaları da gösteriyor: Epic · Steam gibi kısa adlar kullanılıyor, kalanlar için +N sayacı var.",
+      },
+      {
+        en: "Achievement notifications now colour the card by trophy tier by default: bronze, silver, gold, ultra rare and platinum each get their own palette. Classic gold and the other themes remain available.",
+        tr: "Başarım bildirimleri artık varsayılan olarak kupa seviyesine göre renkleniyor: bronz, gümüş, altın, ultra nadir ve platin kendi paletini kullanıyor. Klasik altın ve diğer temalar seçilebilir kalıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Library covers use their full 2:3 aspect ratio in the grid and in the cover picker preview, so the artwork is no longer cropped.",
+        tr: "Kütüphane kapakları ızgarada ve kapak seçici önizlemesinde tam 2:3 oranını kullanıyor; görseller artık kırpılmıyor.",
+      },
+      {
+        en: "Changing a custom cover or a custom game's artwork updates the library card immediately, without switching tabs.",
+        tr: "Özel kapak veya özel oyun görseli değiştirildiğinde kütüphane kartı sekme değiştirmeden hemen güncelleniyor.",
+      },
+      {
+        en: "An unavailable copy keeps its play chip as a red warning with an exclamation icon instead of hiding the button.",
+        tr: "Erişilemeyen kopyanın oynat düğmesi kaybolmak yerine kırmızı uyarı ve ünlem ikonuyla duruyor.",
+      },
+      {
+        en: "The update status line now shows the same percentage as the progress bar and the badge.",
+        tr: "Güncelleme durum satırı artık ilerleme çubuğu ve rozetle aynı yüzdeyi gösteriyor.",
+      },
+      {
+        en: "EOS-only store games now label their achievement source as Steam definitions instead of Epic Games.",
+        tr: "Yalnızca EOS kullanan mağaza oyunları başarım kaynağını Epic Games yerine Steam tanımları olarak gösteriyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The Xbox store no longer reloads a few seconds after it opens; its localized all-games page is treated as the storefront home.",
+        tr: "Xbox mağazası açıldıktan birkaç saniye sonra artık yenilenmiyor; yerelleştirilmiş tüm oyunlar sayfası mağaza ana sayfası olarak kabul ediliyor.",
+      },
+      {
+        en: "The feedback dialog no longer opens on every launch after a normal exit or an update; it only appears after an early crash.",
+        tr: "Geri bildirim penceresi normal kapanış veya güncellemeden sonra her açılışta çıkmıyor; yalnızca erken bir çöküşten sonra açılıyor.",
+      },
+      {
+        en: "The list view no longer repeats the store name under the title or the Unavailable badge next to it; the STORE column and the action button carry those.",
+        tr: "Liste görünümü mağaza adını başlığın altında ve Unavailable rozetini başlığın yanında tekrarlamıyor; bunları STORE sütunu ve işlem düğmesi gösteriyor.",
+      },
+      {
+        en: "Store names under a cover are separated by a quiet dot instead of a plus sign; the +N count remains for extra stores.",
+        tr: "Kapak altındaki mağaza adları artık artı işareti yerine sakin bir orta nokta ile ayrılıyor; fazladan mağazalar için +N sayacı kalıyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.39",
+    date: "2026-10-29",
     items: [
       {
         en: "The left sidebar now keeps the width you left it at. Minimizing, restoring or switching to Full Screen Mode no longer reopens a rail you had closed.",
