@@ -3003,8 +3003,10 @@ fn attach_achievement_icon(app: &tauri::AppHandle, icon_url: &str, generation: u
     }
     let app = app.clone();
     let url = icon_url.to_string();
-    std::thread::spawn(move || {
-        let cached = tauri::async_runtime::block_on(crate::image_cache::cache_image(&app, &url));
+    // The cache call is already async; a fresh OS thread only to `block_on` it
+    // reserves a stack and turns a burst of unlocks into a thread burst.
+    tauri::async_runtime::spawn(async move {
+        let cached = crate::image_cache::cache_image(&app, &url).await;
         if let Some(path) = cached {
             crate::overlay::toast::set_icon(&app, generation, &path);
         }
