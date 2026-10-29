@@ -85,8 +85,20 @@ export const companionPlaytimes = (store: CompanionStore) =>
  * the library card id; uninstalled owned games use their catalog space id and
  * the title matcher bridges it to the client's cache.
  */
-export const companionAchievements = (store: CompanionStore, id: string, title: string, language: string) =>
-  invoke<import("./epic").EpicAchievementsData>("companion_achievements", { store, id, title, language });
+export const companionAchievements = (
+  store: CompanionStore,
+  id: string,
+  title: string,
+  language: string,
+  forceRefresh = false,
+) =>
+  invoke<import("./epic").EpicAchievementsData>("companion_achievements", {
+    store,
+    id,
+    title,
+    language,
+    forceRefresh,
+  });
 
 /**
  * Bulk summaries for stores that keep achievements on disk (Ubisoft reads the

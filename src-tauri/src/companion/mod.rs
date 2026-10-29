@@ -28,7 +28,7 @@ mod xbox_vault;
 pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
 use ubisoft_login::UbiSync;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -278,11 +278,13 @@ pub async fn companion_store_status() -> Vec<CompanionStoreStatus> {
 
 #[tauri::command]
 pub fn companion_link(store: String) -> Result<CompanionAccount, String> {
+    clear_achievement_cache();
     accounts::link_store(&store)
 }
 
 #[tauri::command]
 pub fn companion_unlink(store: String) -> Result<(), String> {
+    clear_achievement_cache();
     if store == "ubisoft" {
         ubi_vault::clear();
     }
@@ -777,6 +779,36 @@ async fn xbox_playtimes() -> Vec<ubisoft_login::PlaytimeRow> {
     rows
 }
 
+/// Short-lived answers for the two network-backed companion stores. A drawer
+/// open and the running-session poll ask for the same game; the second open
+/// should not spend another EA GraphQL or Xbox REST request.
+const COMPANION_ACHIEVEMENTS_TTL: std::time::Duration = std::time::Duration::from_secs(60);
+static COMPANION_ACHIEVEMENTS_CACHE: std::sync::Mutex<
+    Option<HashMap<String, (std::time::Instant, GameAchievementsResponse)>>,
+> = std::sync::Mutex::new(None);
+
+fn cached_companion_achievements(key: &str) -> Option<GameAchievementsResponse> {
+    let cache = COMPANION_ACHIEVEMENTS_CACHE.lock().ok()?;
+    let (at, data) = cache.as_ref()?.get(key)?;
+    (at.elapsed() < COMPANION_ACHIEVEMENTS_TTL).then(|| data.clone())
+}
+
+fn store_companion_achievements(key: String, data: GameAchievementsResponse) {
+    if let Ok(mut cache) = COMPANION_ACHIEVEMENTS_CACHE.lock() {
+        let map = cache.get_or_insert_with(HashMap::new);
+        map.retain(|_, (at, _)| at.elapsed() < COMPANION_ACHIEVEMENTS_TTL);
+        map.insert(key, (std::time::Instant::now(), data));
+    }
+}
+
+fn clear_achievement_cache() {
+    if let Ok(mut cache) = COMPANION_ACHIEVEMENTS_CACHE.lock() {
+        if let Some(map) = cache.as_mut() {
+            map.clear();
+        }
+    }
+}
+
 /// Achievements the store's own service reports. Ubisoft's client cache needs
 /// no session; EA reads the achievement set of the owned offer with the sealed
 /// account session. The id is the library card id, `title` the fallback
@@ -787,24 +819,38 @@ pub async fn companion_achievements(
     id: String,
     title: Option<String>,
     language: Option<String>,
+    force_refresh: Option<bool>,
 ) -> GameAchievementsResponse {
-    if store == "ea" {
-        return ea_login::achievements(&id, title.as_deref().unwrap_or("")).await;
+    let cacheable = store == "ea" || store == "xbox";
+    let cache_key = format!("{store}:{id}:{}", language.as_deref().unwrap_or(""));
+    if cacheable && !force_refresh.unwrap_or(false) {
+        if let Some(cached) = cached_companion_achievements(&cache_key) {
+            return cached;
+        }
     }
-    if store == "xbox" {
+
+    let data = if store == "ea" {
+        ea_login::achievements(&id, title.as_deref().unwrap_or("")).await
+    } else if store == "xbox" {
         let Some(title_id) = xbox_login::title_id_for(&id, title.as_deref().unwrap_or("")) else {
             return GameAchievementsResponse::default();
         };
-        return xbox_login::achievements(&title_id).await;
-    }
-    if store != "ubisoft" {
+        xbox_login::achievements(&title_id).await
+    } else if store == "ubisoft" {
+        ubi_achievements::achievements_for(
+            &id,
+            title.as_deref().unwrap_or(""),
+            language.as_deref().unwrap_or("en"),
+        )
+    } else {
         return GameAchievementsResponse::default();
+    };
+    // Do not cache an empty answer: it can mean "the session is still being
+    // linked", and the next open should retry instead of showing stale empty.
+    if cacheable && data.total_achievements > 0 {
+        store_companion_achievements(cache_key, data.clone());
     }
-    ubi_achievements::achievements_for(
-        &id,
-        title.as_deref().unwrap_or(""),
-        language.as_deref().unwrap_or("en"),
-    )
+    data
 }
 
 /// Library-keyed Xbox summaries. The store answers achievements per title,
@@ -976,5 +1022,17 @@ mod tests {
         let games = vec![game("x", false)];
         let visible = visible_games("ea", games, &std::collections::HashMap::new());
         assert_eq!(visible.len(), 1);
+    }
+
+    #[test]
+    fn a_companion_achievement_answer_is_cached_for_the_next_open() {
+        let key = format!("companion-cache-test-{}", std::process::id());
+        let data = GameAchievementsResponse {
+            total_achievements: 5,
+            ..Default::default()
+        };
+        store_companion_achievements(key.clone(), data);
+        let cached = cached_companion_achievements(&key).expect("cached answer");
+        assert_eq!(cached.total_achievements, 5);
     }
 }

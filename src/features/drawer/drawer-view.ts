@@ -3153,6 +3153,7 @@ export async function fetchAndRenderAchievements(
                   appName.slice(appName.indexOf("::") + 2),
                   summaryOf(appName)?.title || appName,
                   currentLanguage(),
+                  forceRefresh,
                 )
               : await epicGetAchievements(appName, forceRefresh));
     // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
@@ -3168,6 +3169,7 @@ export async function fetchAndRenderAchievements(
           ubi?.id ?? "",
           ubi?.title ?? s?.title ?? appName,
           currentLanguage(),
+          forceRefresh,
         );
         if (ubiData.achievements.length > 0) {
           data = ubiData;
