@@ -135,6 +135,16 @@ fn start_drain(app: AppHandle) {
             std::thread::sleep(std::time::Duration::from_millis(hold));
         }
         DRAINING.store(false, Ordering::SeqCst);
+        // A push can land between the empty check and the flag reset; restart
+        // once so the card is never stranded in the queue.
+        let pending = QUEUE
+            .lock()
+            .ok()
+            .and_then(|queue| queue.as_ref().map(|queue| !queue.is_empty()))
+            .unwrap_or(false);
+        if pending {
+            start_drain(app.clone());
+        }
     });
 }
 

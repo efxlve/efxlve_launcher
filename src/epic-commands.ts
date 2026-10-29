@@ -257,9 +257,9 @@ export type AchievementUserState = "unlocked" | "locked";
 
 /** Epic player award (a platinum trophy with the day it was earned). */
 export interface EpicAchievementAward {
-  award_type: string;
-  unlocked_date_time: string;
-  achievement_set_id: string;
+  awardType: string;
+  unlockedDateTime: string;
+  achievementSetId: string;
 }
 
 export interface EpicAchievementsData {

@@ -252,6 +252,9 @@ export function achievementHistoryStats(
   const days = new Set<string>();
 
   for (const entry of entries) {
+    // Launcher-only marks stay in the list, but they must not inflate the
+    // monthly count, the streak or the rarest find.
+    if (entry.manual) continue;
     const at = historySortValue(entry);
     const date = new Date(at);
     if (!Number.isNaN(date.getTime())) {

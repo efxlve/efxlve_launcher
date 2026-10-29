@@ -2042,10 +2042,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   // Epic ships the platinum award with the day it was earned; the summary can
   // say when the set was completed instead of only that it is complete.
   const platinumAward = (data.user_awards || []).find(
-    (award) => (award.award_type || "").toUpperCase() === "PLATINUM",
+    (award) => (award.awardType || "").toUpperCase() === "PLATINUM",
   );
   const platinumAwardDate = platinumAward
-    ? fmtAchDate(platinumAward.unlocked_date_time)
+    ? fmtAchDate(platinumAward.unlockedDateTime)
     : "";
   // Epic ships the share of players who completed the set; a 0 percent answer
   // means "not reported", not "nobody".
