@@ -1287,9 +1287,30 @@ async fn fetch_community_schema(
     }
 }
 
+/// The community page publishes achievement icons as bare file names
+/// (`8a61….jpg`), not URLs. The launcher renders them from Steam's public CDN,
+/// so an absolute URL stays as it is and a file name gets the app path.
+fn community_icon_url(app_id: &str, raw: &str) -> String {
+    let value = raw.trim();
+    if value.is_empty() {
+        return String::new();
+    }
+    if value.starts_with("https://") || value.starts_with("http://") {
+        return value.to_string();
+    }
+    if let Some(rest) = value.strip_prefix("//") {
+        return format!("https://{rest}");
+    }
+    format!(
+        "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/{app_id}/{}",
+        value.trim_start_matches('/')
+    )
+}
+
 /// Builds the achievement card directly from emulator state and the public
 /// community definitions, without reading any Steam client file.
 fn build_emulator_achievements(
+    app_id: &str,
     schema: &[CommunityAchievement],
     emu: &ParsedEmulatorAchievements,
 ) -> GameAchievementsResponse {
@@ -1301,10 +1322,12 @@ fn build_emulator_achievements(
         // wrong achievement.
         let state = is_emulator_unlocked(emu, &entry.api_name, index, "");
         let (unlocked, unlock_time, progress) = state.unwrap_or((false, 0, 0.0));
+        let achieved_icon = community_icon_url(app_id, &entry.icon_achieved);
+        let unachieved_icon = community_icon_url(app_id, &entry.icon_unachieved);
         let icon = if unlocked {
-            &entry.icon_achieved
+            &achieved_icon
         } else {
-            &entry.icon_unachieved
+            &unachieved_icon
         };
         let item = AchievementItem {
             name: entry.api_name.clone(),
@@ -1317,8 +1340,8 @@ fn build_emulator_achievements(
             } else {
                 None
             },
-            icon_link: if icon.is_empty() {
-                entry.icon_achieved.clone()
+            icon_link: if icon.trim().is_empty() {
+                achieved_icon
             } else {
                 icon.clone()
             },
@@ -1770,7 +1793,7 @@ pub async fn steam_get_achievements(
             fetch_community_schema(&app, &app_id, force == Some(true), language).await
         {
             let mut response =
-                build_emulator_achievements(&schema, &emu_present.unwrap_or_default());
+                build_emulator_achievements(&app_id, &schema, &emu_present.unwrap_or_default());
             if response.total_achievements > 0 {
                 let percentages = fetch_global_percentages(&app_id).await;
                 if !percentages.is_empty() {
@@ -2011,8 +2034,8 @@ pub async fn steam_get_emulator_achievements(
     let community = fetch_community_schema(&app, &app_id, force == Some(true), language).await;
     let emu = read_emulator_achievements(Some(&app), &app_id);
     let mut response = match (community, emu) {
-        (Some(schema), Some(emu)) => build_emulator_achievements(&schema, &emu),
-        (Some(schema), None) => build_emulator_achievements(&schema, &Default::default()),
+        (Some(schema), Some(emu)) => build_emulator_achievements(&app_id, &schema, &emu),
+        (Some(schema), None) => build_emulator_achievements(&app_id, &schema, &Default::default()),
         // No community answer (offline first run): the Steam client schema is
         // still a useful definition source when the game also exists on Steam.
         (None, maybe_emu) => steam_install_path()
@@ -2899,6 +2922,7 @@ fn watcher_snapshot(
     let emu = read_emulator_achievements(Some(app), app_id);
     if let Some(schema) = community {
         return Some(build_emulator_achievements(
+            app_id,
             schema,
             &emu.unwrap_or_default(),
         ));
@@ -3734,13 +3758,33 @@ mod tests {
             icon_unachieved: "off.jpg".into(),
         }];
         let emu = parse_achievements_ini("[ACH_ONE]\nAchieved=1\nUnlockTime=1700000000\n");
-        let response = build_emulator_achievements(&schema, &emu);
+        let response = build_emulator_achievements("384190", &schema, &emu);
         assert_eq!(response.total_achievements, 1);
         assert_eq!(response.user_unlocked, 1);
         assert!(response.achievements[0].unlocked);
         assert_eq!(response.achievements[0].display_name, "First");
-        assert_eq!(response.achievements[0].icon_link, "on.jpg");
+        assert_eq!(
+            response.achievements[0].icon_link,
+            "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/384190/on.jpg"
+        );
         assert_eq!(response.achievements[0].unlock_date.as_deref(), Some("2023-11-14"));
+    }
+
+    #[test]
+    fn community_icon_file_names_become_cdn_urls() {
+        assert_eq!(
+            community_icon_url("384190", "on.jpg"),
+            "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/384190/on.jpg"
+        );
+        assert_eq!(
+            community_icon_url("384190", "https://cdn.example/on.jpg"),
+            "https://cdn.example/on.jpg"
+        );
+        assert_eq!(
+            community_icon_url("384190", "//cdn.example/on.jpg"),
+            "https://cdn.example/on.jpg"
+        );
+        assert_eq!(community_icon_url("384190", "  "), "");
     }
 
     #[test]
@@ -3802,7 +3846,7 @@ mod tests {
              [31]\nAchieved=1\nUnlockTime=1700000002\n\
              [SteamAchievements]\n00000=1\n00001=2\n00002=31\nCount=3\n",
         );
-        let response = build_emulator_achievements(&schema, &emu);
+        let response = build_emulator_achievements("384190", &schema, &emu);
         assert_eq!(response.user_unlocked, 3);
         let unlocked: Vec<&str> = response
             .achievements
