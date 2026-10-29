@@ -179,6 +179,11 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
 
   if (!installed) return "";
 
+  // A copy whose drive or folder is gone cannot launch; the cover badge and
+  // the list action already say so, and the play chip must not contradict them.
+  const summary = summaryOf(appName);
+  if (summary && installPathIssue(summary)) return "";
+
   if (S.runningGames.has(appName)) {
     const stopLabel = t("common.stop");
     return `<button type="button" class="pcard-play-btn is-running" data-act="epic-stop" data-id="${esc(appName)}" aria-label="${esc(stopLabel)}" title="${esc(stopLabel)}">${icon("x", 8)}</button>`;
