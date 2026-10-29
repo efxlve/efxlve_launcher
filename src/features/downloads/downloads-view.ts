@@ -14,10 +14,11 @@ import { updateBadge } from "../../core/nav";
 import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import type { DlMetrics } from "../../core/types";
+import type { DlMetrics, GameSource } from "../../core/types";
 import { esc, fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { localizeMessage, formatSyncStamp, t } from "../../i18n";
 import { storeName } from "../profile/profile-view";
+import { storeLogo } from "../store/store-logos";
 import { getRecentDownloads, type RecentDownload } from "../../core/recent";
 import { epicPortrait, type EpicSummary } from "../../epic";
 import type { SteamGame } from "../../steam";
@@ -197,6 +198,11 @@ function thumbOf(s: EpicSummary | undefined): string {
     : `<span class="row-thumb dl-thumb-ph">${icon("gamepad-2", 16)}</span>`;
 }
 
+/** Storefront identity plate: the mark plus its brand name, never a state colour. */
+function storePlate(source: GameSource): string {
+  return `<span class="dl-store">${storeLogo(source, 12, "dl-store-logo")}<span>${esc(storeName(source))}</span></span>`;
+}
+
 function section(title: string, count: number | null, body: string, action = ""): string {
   return `
     <section class="dl-section">
@@ -212,7 +218,7 @@ function gameRow(s: EpicSummary | undefined, id: string, meta: string, actions: 
       ${lead}
       <div class="dl-row-open" role="button" tabindex="0" data-act="epic-detail" data-id="${esc(id)}" title="${title}">
         ${thumbOf(s)}
-        <div class="row-main"><div class="row-title">${title}</div><div class="row-meta">${meta}</div></div>
+        <div class="row-main"><div class="row-title">${title}</div><div class="row-meta dl-row-meta">${storePlate(sourceOfKey(id))}<span class="dl-row-note">${meta}</span></div></div>
       </div>
       <div class="row-actions">${actions}</div>
     </div>`;
@@ -247,6 +253,7 @@ function renderActiveCard(dl: DlMetrics): string {
         <div class="dl-active-head">
           <div class="dl-active-text">
             <div class="dl-active-title" title="${title}">${title}</div>
+            ${storePlate(sourceOfKey(dl.id))}
             <span class="chip ${paused ? "warn" : "accent"}">${paused ? t("dl.statusPaused") : t("dl.statusActive")}</span>
           </div>
           <div class="row-actions">
@@ -450,7 +457,7 @@ export function renderDownloads(): string {
     .filter((entry): entry is RecentDownload & { summary: EpicSummary } => Boolean(entry.summary))
     .slice(0, 6);
   const completedRows = completed.map(({ id, at, bytes, summary }) => {
-    const metaParts = [esc(storeName(sourceOfKey(id)))];
+    const metaParts: string[] = [];
     // The size of the transfer itself: an update downloads a fraction of the
     // install, so the game folder size is never shown here.
     if (bytes > 0) metaParts.push(fmtBytes(bytes));

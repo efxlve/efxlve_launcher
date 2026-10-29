@@ -22,6 +22,16 @@
 .dl-active-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dl-active-text { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .dl-active-title { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Storefront identity: a neutral plate beside a transfer, so a mixed queue
+   always names where the bytes come from. It never borrows a state colour. */
+.dl-store {
+  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2);
+  color: var(--text-2); font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+}
+.dl-store-logo { width: 12px; height: 12px; object-fit: contain; }
+.dl-row-meta { display: flex; align-items: center; gap: 6px; }
+.dl-row-note { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .dl-active-progress { display: flex; align-items: center; gap: 12px; }
 .dl-active-progress .progress { flex: 1; height: 6px; border-radius: 3px; }
 .dl-progress-pct { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }

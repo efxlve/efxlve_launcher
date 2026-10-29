@@ -61,7 +61,7 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
+:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
   filter: brightness(0);
   opacity: 0.85;
 }
@@ -769,7 +769,7 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
+:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
