@@ -8,6 +8,7 @@
  * idempotent, because restarting a watcher resets its unlock baseline.
  */
 
+import { currentLanguage } from "../i18n";
 import { steamSetAchievementNotifications, steamStartAchievementWatcher, steamStopAchievementWatcher } from "../steam";
 import { achGameNotificationsEnabled } from "./ach-game-prefs";
 
@@ -30,7 +31,7 @@ export function watchSteamAchievements(appName: string): void {
   );
   if (watched.has(appId)) return;
   watched.add(appId);
-  void steamStartAchievementWatcher(appId).catch(() => watched.delete(appId));
+  void steamStartAchievementWatcher(appId, currentLanguage()).catch(() => watched.delete(appId));
 }
 
 /** Stops the watcher; the backend emits the final snapshot on its way out. */

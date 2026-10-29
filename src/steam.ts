@@ -208,8 +208,12 @@ export interface SteamLibraryArt {
 export const steamLibraryArt = (appIds: string[]) =>
   invoke<Record<string, SteamLibraryArt>>("steam_library_art", { appIds });
 /** Schema + the player's unlocks + global rarity; cached on disk for an hour. */
-export const steamGetAchievements = (appId: string, force = false) =>
-  invoke<import("./epic").EpicAchievementsData>("steam_get_achievements", { appId, force });
+export const steamGetAchievements = (appId: string, force = false, language?: string) =>
+  invoke<import("./epic").EpicAchievementsData>("steam_get_achievements", {
+    appId,
+    force,
+    language: language ?? null,
+  });
 
 /**
  * Achievements for a custom/emulator-owned title: definitions from the public
@@ -219,11 +223,13 @@ export const steamGetEmulatorAchievements = (
   appId: string,
   force = false,
   installDir?: string,
+  language?: string,
 ) =>
   invoke<import("./epic").EpicAchievementsData>("steam_get_emulator_achievements", {
     appId,
     force,
     installDir: installDir ?? null,
+    language: language ?? null,
   });
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
@@ -352,14 +358,18 @@ export const achievementPickCustomSound = () =>
 export const achievementClearCustomSound = () =>
   invoke<void>("achievement_clear_custom_sound");
 
-export const steamStartAchievementWatcher = (appId: string) =>
-  invoke<void>("steam_start_achievement_watcher", { appId });
+export const steamStartAchievementWatcher = (appId: string, language?: string) =>
+  invoke<void>("steam_start_achievement_watcher", { appId, language: language ?? null });
 
 export const steamSetAchievementNotifications = (appId: string, enabled: boolean) =>
   invoke<void>("steam_set_achievement_notifications", { appId, enabled });
 
-export const steamStartEmulatorWatcher = (appId: string, installDir?: string) =>
-  invoke<void>("steam_start_emulator_watcher", { appId, installDir: installDir ?? null });
+export const steamStartEmulatorWatcher = (appId: string, installDir?: string, language?: string) =>
+  invoke<void>("steam_start_emulator_watcher", {
+    appId,
+    installDir: installDir ?? null,
+    language: language ?? null,
+  });
 
 export const steamStopAchievementWatcher = (appId: string) =>
   invoke<void>("steam_stop_achievement_watcher", { appId });

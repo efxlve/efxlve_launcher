@@ -2479,7 +2479,7 @@ export function startStoreAchievementSession(appName: string): void {
       void steamSetAchievementNotifications(appId, achGameNotificationsEnabled(appName)).catch(
         () => {},
       );
-      void steamStartEmulatorWatcher(appId, exeDir).catch(() => {});
+      void steamStartEmulatorWatcher(appId, exeDir, currentLanguage()).catch(() => {});
     });
     return;
   }
@@ -2642,13 +2642,14 @@ export async function fetchAndRenderAchievements(
       : isGog
         ? await gogGetAchievements(rawId)
         : isSteam
-          ? await steamGetAchievements(appName.slice(7), forceRefresh)
+          ? await steamGetAchievements(appName.slice(7), forceRefresh, currentLanguage())
           : isCustom
             ? customAppId || customGame?.exePath
               ? await steamGetEmulatorAchievements(
                   customAppId,
                   forceRefresh,
                   customGame?.exePath?.replace(/[\\/][^\\/]*$/, ""),
+                  currentLanguage(),
                 )
               : { achievements: [], hidden: [], user_unlocked: 0, user_xp: 0, total_achievements: 0, total_xp: 0, is_platinum: false }
             : isCompanion

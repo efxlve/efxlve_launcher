@@ -56,6 +56,49 @@ pub fn unix_date(seconds: i64) -> String {
     format!("{year:04}-{month:02}-{day:02}")
 }
 
+/// Steam's own language key for a launcher locale: `display.<field>.<key>` in
+/// the client schema, `?l=<key>` on the community and Web API endpoints. Steam
+/// ships no Hindi text, so that locale keeps the English answer.
+fn steam_language(language: Option<&str>) -> &'static str {
+    let raw = language.unwrap_or("en").trim().to_ascii_lowercase();
+    if raw.starts_with("zh") {
+        return if raw.contains("hant") || raw.ends_with("-tw") || raw.ends_with("-hk") {
+            "tchinese"
+        } else {
+            "schinese"
+        };
+    }
+    match raw.split(|c| c == '-' || c == '_').next().unwrap_or("en") {
+        "tr" => "turkish",
+        "de" => "german",
+        "es" => "spanish",
+        "fr" => "french",
+        "it" => "italian",
+        "ja" => "japanese",
+        "ko" => "koreana",
+        "pl" => "polish",
+        "pt" => "brazilian",
+        "ru" => "russian",
+        "ar" => "arabic",
+        "th" => "thai",
+        _ => "english",
+    }
+}
+
+/// One localized string out of a binary schema `display` block: the requested
+/// language wins, then English, then the caller's fallback.
+fn localized_display(display: Option<&Vdf>, field: &str, language: &str, fallback: &str) -> String {
+    let Some(values) = display.and_then(|block| block.get(field)) else {
+        return fallback.to_string();
+    };
+    values
+        .get(language)
+        .or_else(|| values.get("english"))
+        .and_then(Vdf::as_str)
+        .unwrap_or(fallback)
+        .to_string()
+}
+
 /// Tier by global unlock rate: Steam has no fixed tiers, so rarity stands in.
 pub(super) fn tier_for_percent(percent: f64) -> AchievementTier {
     let (name, hex) = if percent <= 5.0 {
@@ -1032,6 +1075,10 @@ pub struct CommunityAchievement {
 #[serde(rename_all = "camelCase")]
 struct CommunitySchemaCache {
     fetched_at: u64,
+    /// Language the page was read in; empty on caches written before the
+    /// launcher asked for one (English).
+    #[serde(default)]
+    lang: String,
     achievements: Vec<CommunityAchievement>,
 }
 
@@ -1112,17 +1159,22 @@ fn community_schema_cache_path(app: &tauri::AppHandle, app_id: &str) -> PathBuf 
 fn read_community_schema_cache(
     app: &tauri::AppHandle,
     app_id: &str,
+    language: &str,
 ) -> Option<CommunitySchemaCache> {
     let text = std::fs::read_to_string(community_schema_cache_path(app, app_id)).ok()?;
-    serde_json::from_str(&text).ok()
+    let cached = serde_json::from_str::<CommunitySchemaCache>(&text).ok()?;
+    let same_language =
+        cached.lang == language || (cached.lang.is_empty() && language == "english");
+    same_language.then_some(cached)
 }
 
 async fn fetch_community_schema(
     app: &tauri::AppHandle,
     app_id: &str,
     force: bool,
+    language: &str,
 ) -> Option<Vec<CommunityAchievement>> {
-    let cached = read_community_schema_cache(app, app_id);
+    let cached = read_community_schema_cache(app, app_id, language);
     if !force {
         if let Some(ref cached) = cached {
             if now_secs().saturating_sub(cached.fetched_at) < COMMUNITY_SCHEMA_TTL_SECS {
@@ -1136,7 +1188,7 @@ async fn fetch_community_schema(
         .user_agent("efxlve-launcher")
         .build()
         .ok()?;
-    let url = format!("https://steamcommunity.com/stats/{app_id}/achievements?l=english");
+    let url = format!("https://steamcommunity.com/stats/{app_id}/achievements?l={language}");
     let fetched = match client.get(&url).send().await {
         Ok(response) if response.status().is_success() => match response.text().await {
             Ok(html) => parse_community_schema(&html),
@@ -1149,6 +1201,7 @@ async fn fetch_community_schema(
         Some(achievements) => {
             let cache = CommunitySchemaCache {
                 fetched_at: now_secs(),
+                lang: language.to_string(),
                 achievements: achievements.clone(),
             };
             if let Ok(text) = serde_json::to_string(&cache) {
@@ -1156,7 +1209,8 @@ async fn fetch_community_schema(
             }
             Some(achievements)
         }
-        // Offline: a stale definition list is still better than no icons.
+        // Offline: a stale definition list in the same language is still better
+        // than no icons.
         None => cached.map(|cached| cached.achievements),
     }
 }
@@ -1265,6 +1319,7 @@ pub fn read_local_achievements_with_app(
     app: Option<&tauri::AppHandle>,
     steam: &Path,
     app_id: &str,
+    language: &str,
 ) -> Option<GameAchievementsResponse> {
     let schema_bytes =
         std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
@@ -1296,18 +1351,8 @@ pub fn read_local_achievements_with_app(
                 continue;
             }
             let display = bit.get("display");
-            let display_name = display
-                .and_then(|d| d.get("name"))
-                .and_then(|n| n.get("english"))
-                .and_then(Vdf::as_str)
-                .unwrap_or(&api_name)
-                .to_string();
-            let description = display
-                .and_then(|d| d.get("desc"))
-                .and_then(|n| n.get("english"))
-                .and_then(Vdf::as_str)
-                .unwrap_or("")
-                .to_string();
+            let display_name = localized_display(display, "name", language, &api_name);
+            let description = localized_display(display, "desc", language, "");
             let hidden = display
                 .and_then(|d| d.get("hidden"))
                 .and_then(Vdf::as_str)
@@ -1398,7 +1443,7 @@ pub fn read_local_achievements_with_app(
 /// Web API key and no public profile; `None` when the client has no schema.
 #[allow(dead_code)]
 pub fn read_local_achievements(steam: &Path, app_id: &str) -> Option<GameAchievementsResponse> {
-    read_local_achievements_with_app(None, steam, app_id)
+    read_local_achievements_with_app(None, steam, app_id, "english")
 }
 
 /// Unlocked/total counts for every game the client keeps stats for.
@@ -1529,6 +1574,10 @@ pub(super) fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u
 #[derive(Serialize, Deserialize)]
 pub(super) struct CachedAchievements {
     fetched_at: u64,
+    /// Language the text was fetched in; empty on caches written before the
+    /// launcher asked for one (English).
+    #[serde(default)]
+    lang: String,
     response: GameAchievementsResponse,
 }
 
@@ -1539,6 +1588,7 @@ fn write_achievements_cache(
     app: &tauri::AppHandle,
     app_id: &str,
     response: &GameAchievementsResponse,
+    language: &str,
 ) -> GameAchievementsResponse {
     let path = achievements_cache_dir(app).join(format!("{app_id}.json"));
     let mut merged = response.clone();
@@ -1547,11 +1597,14 @@ fn write_achievements_cache(
     if let Some(previous) = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str::<CachedAchievements>(&text).ok())
-        .map(|cached| cached.response)
-        .filter(|previous| {
-            previous.achievements.len() == merged.achievements.len()
-                && previous.total_achievements == merged.total_achievements
+        .filter(|cached| {
+            // Only a same-language answer may donate its text; a language
+            // switch must not drag the old strings back in.
+            (cached.lang == language || (cached.lang.is_empty() && language == "english"))
+                && cached.response.achievements.len() == merged.achievements.len()
+                && cached.response.total_achievements == merged.total_achievements
         })
+        .map(|cached| cached.response)
     {
         {
             let old: std::collections::HashMap<&str, &AchievementItem> = previous
@@ -1577,6 +1630,7 @@ fn write_achievements_cache(
     }
     let cached = CachedAchievements {
         fetched_at: now_secs(),
+        lang: language.to_string(),
         response: merged.clone(),
     };
     if let Ok(text) = serde_json::to_string(&cached) {
@@ -1593,16 +1647,20 @@ pub async fn steam_get_achievements(
     app: tauri::AppHandle,
     app_id: String,
     force: Option<bool>,
+    language: Option<String>,
 ) -> Result<GameAchievementsResponse, String> {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return Err("Invalid Steam app id".into());
     }
+    let language = steam_language(language.as_deref());
     let cache = achievements_cache_dir(&app).join(format!("{app_id}.json"));
     if force != Some(true) {
         if let Ok(text) = std::fs::read_to_string(&cache) {
             if let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) {
-                let within_ttl =
-                    now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS;
+                let same_language =
+                    cached.lang == language || (cached.lang.is_empty() && language == "english");
+                let within_ttl = same_language
+                    && now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS;
                 // The client rewrites its stats file mid-session; when that file
                 // is newer than the answer, the TTL alone would keep the old
                 // unlocks for an hour.
@@ -1619,15 +1677,15 @@ pub async fn steam_get_achievements(
     }
 
     // 1) The Steam client's own cache: instant, offline, no key, no rate limit.
-    if let Some(mut response) =
-        steam_install_path().and_then(|path| read_local_achievements_with_app(Some(&app), &path, &app_id))
+    if let Some(mut response) = steam_install_path()
+        .and_then(|path| read_local_achievements_with_app(Some(&app), &path, &app_id, language))
     {
         // Global unlock rates are public, so even the local path gets rarity.
         let percentages = fetch_global_percentages(&app_id).await;
         if !percentages.is_empty() {
             apply_rarity(&mut response, &percentages);
         }
-        return Ok(write_achievements_cache(&app, &app_id, &response));
+        return Ok(write_achievements_cache(&app, &app_id, &response, language));
     }
 
     // 1b) Public Steam Community schema + local emulator unlocks when the Steam
@@ -1636,7 +1694,9 @@ pub async fn steam_get_achievements(
     let api_key = steam_get_api_key(app.clone());
     let emu_present = read_emulator_achievements(Some(&app), &app_id);
     if api_key.is_none() || emu_present.is_some() {
-        if let Some(schema) = fetch_community_schema(&app, &app_id, force == Some(true)).await {
+        if let Some(schema) =
+            fetch_community_schema(&app, &app_id, force == Some(true), language).await
+        {
             let mut response =
                 build_emulator_achievements(&schema, &emu_present.unwrap_or_default());
             if response.total_achievements > 0 {
@@ -1645,12 +1705,13 @@ pub async fn steam_get_achievements(
                     apply_rarity(&mut response, &percentages);
                 }
             }
-            return Ok(write_achievements_cache(&app, &app_id, &response));
+            return Ok(write_achievements_cache(&app, &app_id, &response, language));
         } else if let Some(ref emu) = emu_present {
             return Ok(write_achievements_cache(
                 &app,
                 &app_id,
                 &build_raw_emulator_achievements(emu),
+                language,
             ));
         }
     }
@@ -1668,7 +1729,7 @@ pub async fn steam_get_achievements(
 
     // 1) Schema: display names, descriptions and icons.
     let schema_url = format!(
-        "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={app_id}&l=english"
+        "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={app_id}&l={language}"
     );
     let schema: serde_json::Value = client
         .get(&schema_url)
@@ -1694,7 +1755,7 @@ pub async fn steam_get_achievements(
 
     // 2) The player's own unlocks.
     let player_url = format!(
-        "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key={key}&steamid={steam_id}&appid={app_id}&l=english"
+        "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key={key}&steamid={steam_id}&appid={app_id}&l={language}"
     );
     let player: serde_json::Value = client
         .get(&player_url)
@@ -1824,7 +1885,7 @@ pub async fn steam_get_achievements(
         supported: Some(true),
         ..Default::default()
     };
-    Ok(write_achievements_cache(&app, &app_id, &response))
+    Ok(write_achievements_cache(&app, &app_id, &response, language))
 }
 
 /// Achievements for a custom/emulator-owned title: definitions come from the
@@ -1836,7 +1897,9 @@ pub async fn steam_get_emulator_achievements(
     app_id: String,
     force: Option<bool>,
     install_dir: Option<String>,
+    language: Option<String>,
 ) -> Result<GameAchievementsResponse, String> {
+    let language = steam_language(language.as_deref());
     let root_buf = install_dir
         .as_deref()
         .map(str::trim)
@@ -1867,13 +1930,13 @@ pub async fn steam_get_emulator_achievements(
     // achievements at all: the Steam client's own stats still count.
     if config.mode == "disabled" {
         if let Some(local) = steam_install_path().and_then(|steam| {
-            read_local_achievements_with_app(Some(&app), &steam, &app_id)
+            read_local_achievements_with_app(Some(&app), &steam, &app_id, language)
         }) {
             return Ok(local);
         }
     }
 
-    let community = fetch_community_schema(&app, &app_id, force == Some(true)).await;
+    let community = fetch_community_schema(&app, &app_id, force == Some(true), language).await;
     let emu = read_emulator_achievements(Some(&app), &app_id);
     let mut response = match (community, emu) {
         (Some(schema), Some(emu)) => build_emulator_achievements(&schema, &emu),
@@ -1881,7 +1944,9 @@ pub async fn steam_get_emulator_achievements(
         // No community answer (offline first run): the Steam client schema is
         // still a useful definition source when the game also exists on Steam.
         (None, maybe_emu) => steam_install_path()
-            .and_then(|steam| read_local_achievements_with_app(Some(&app), &steam, &app_id))
+            .and_then(|steam| {
+                read_local_achievements_with_app(Some(&app), &steam, &app_id, language)
+            })
             .or_else(|| maybe_emu.as_ref().map(build_raw_emulator_achievements))
             .unwrap_or_else(|| GameAchievementsResponse {
                 supported: Some(false),
@@ -2579,10 +2644,13 @@ fn watcher_snapshot(
     steam: Option<&Path>,
     community: Option<&[CommunityAchievement]>,
     emulator_only: bool,
+    language: &str,
 ) -> Option<GameAchievementsResponse> {
     if !emulator_only {
         if let Some(steam) = steam {
-            if let Some(response) = read_local_achievements_with_app(Some(app), steam, app_id) {
+            if let Some(response) =
+                read_local_achievements_with_app(Some(app), steam, app_id, language)
+            {
                 return Some(response);
             }
         }
@@ -2599,16 +2667,24 @@ fn watcher_snapshot(
 
 /// Starts the watch for a Steam client game.
 #[tauri::command]
-pub fn steam_start_achievement_watcher(app: tauri::AppHandle, app_id: String) {
-    start_achievement_watcher(app, app_id, false);
+pub fn steam_start_achievement_watcher(
+    app: tauri::AppHandle,
+    app_id: String,
+    language: Option<String>,
+) {
+    start_achievement_watcher(app, app_id, false, steam_language(language.as_deref()));
 }
 
 /// Starts the watch for a custom game: the emulator file is the truth, even
 /// when the same AppID also has Steam client stats on this PC.
-pub fn steam_start_custom_achievement_watcher(app: tauri::AppHandle, app_id: String) {
+pub fn steam_start_custom_achievement_watcher(
+    app: tauri::AppHandle,
+    app_id: String,
+    language: &'static str,
+) {
     // "Disabled (Steam client only)" must fall back to the client watcher.
     let emulator_only = get_achievement_source_config(&app, &app_id).mode != "disabled";
-    start_achievement_watcher(app, app_id, emulator_only);
+    start_achievement_watcher(app, app_id, emulator_only, language);
 }
 
 /// Frontend entry point for external custom launches: registers the install
@@ -2618,7 +2694,9 @@ pub fn steam_start_emulator_watcher(
     app: tauri::AppHandle,
     app_id: String,
     install_dir: Option<String>,
+    language: Option<String>,
 ) {
+    let language = steam_language(language.as_deref());
     let root_buf = install_dir
         .as_deref()
         .map(str::trim)
@@ -2645,7 +2723,7 @@ pub fn steam_start_emulator_watcher(
     if let Some(ref root) = root_buf {
         remember_achievement_dir(&resolved_app_id, root);
     }
-    steam_start_custom_achievement_watcher(app, resolved_app_id);
+    steam_start_custom_achievement_watcher(app, resolved_app_id, language);
 }
 
 /// The card paints the achievement's own icon when the picture cache answers in
@@ -2732,6 +2810,7 @@ fn emit_new_achievement_unlocks(
     response: &GameAchievementsResponse,
     unlocked_set: &mut std::collections::HashSet<String>,
     write_cache: bool,
+    language: &str,
 ) {
     let total_count = response
         .total_achievements
@@ -2878,7 +2957,7 @@ fn emit_new_achievement_unlocks(
     // there without waiting for the next page open. Emulator-only titles have
     // no Steam client entry, so they keep their own store.
     if write_cache {
-        let _ = write_achievements_cache(app, app_id, response);
+        let _ = write_achievements_cache(app, app_id, response, language);
     }
 }
 
@@ -2937,7 +3016,12 @@ fn watcher_emulator_file(app: &tauri::AppHandle, app_id: &str) -> Option<PathBuf
     find_emulator_achievement_file(app_id, custom.or(remembered.as_deref()))
 }
 
-fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_only: bool) {
+fn start_achievement_watcher(
+    app: tauri::AppHandle,
+    app_id: String,
+    emulator_only: bool,
+    language: &'static str,
+) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return;
     }
@@ -2961,7 +3045,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
             None
         } else {
             steam.as_deref().and_then(|path| {
-                read_local_achievements_with_app(Some(&app_handle), path, &target_app_id)
+                read_local_achievements_with_app(Some(&app_handle), path, &target_app_id, language)
             })
         };
         // A custom game usually has no Steam client schema. Only ask the public
@@ -2971,6 +3055,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 &app_handle,
                 &target_app_id,
                 false,
+                language,
             ))
         } else {
             None
@@ -2996,6 +3081,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 steam.as_deref(),
                 community.as_deref(),
                 emulator_only,
+                language,
             )
         });
         // Local stats and emulator files were already checked synchronously at
@@ -3049,6 +3135,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 steam.as_deref(),
                 community.as_deref(),
                 emulator_only,
+                language,
             ) else {
                 continue;
             };
@@ -3058,6 +3145,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 &response,
                 &mut unlocked_set,
                 !emulator_only,
+                language,
             );
         }
 
@@ -3080,6 +3168,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                 steam.as_deref(),
                 community.as_deref(),
                 emulator_only,
+                language,
             ) {
                 emit_new_achievement_unlocks(
                     &app_handle,
@@ -3087,6 +3176,7 @@ fn start_achievement_watcher(app: tauri::AppHandle, app_id: String, emulator_onl
                     &response,
                     &mut unlocked_set,
                     !emulator_only,
+                    language,
                 );
             }
         }
@@ -3496,6 +3586,59 @@ mod tests {
         assert_eq!(tier_for_percent(12.0).name, "silver");
         assert_eq!(tier_for_percent(60.0).name, "bronze");
     }
+
+    #[test]
+    fn steam_language_follows_the_launcher_locale() {
+        assert_eq!(steam_language(Some("tr")), "turkish");
+        assert_eq!(steam_language(Some("pt-BR")), "brazilian");
+        assert_eq!(steam_language(Some("zh-Hans")), "schinese");
+        assert_eq!(steam_language(Some("zh-Hant")), "tchinese");
+        assert_eq!(steam_language(Some("ko")), "koreana");
+        // Steam ships no Hindi text; the English schema is the fallback.
+        assert_eq!(steam_language(Some("hi")), "english");
+        assert_eq!(steam_language(Some("unknown")), "english");
+        assert_eq!(steam_language(None), "english");
+    }
+
+    #[test]
+    fn schema_display_text_follows_the_requested_language() {
+        // display -> name -> { english, turkish }
+        let mut data: Vec<u8> = Vec::new();
+        data.push(0);
+        data.extend_from_slice(b"1\0");
+        data.push(0);
+        data.extend_from_slice(b"display\0");
+        data.push(0);
+        data.extend_from_slice(b"name\0");
+        data.push(1);
+        data.extend_from_slice(b"english\0");
+        data.extend_from_slice(b"Prism Unfurl\0");
+        data.push(1);
+        data.extend_from_slice(b"turkish\0");
+        data.extend_from_slice(b"Prizma\0");
+        data.push(8); // end name
+        data.push(8); // end display
+        data.push(8); // end 1
+        data.push(8); // end root object
+
+        let root = parse_binary_vdf(&data).expect("parsed");
+        let display = root.get("1").and_then(|app| app.get("display"));
+        assert_eq!(
+            localized_display(display, "name", "turkish", "fallback"),
+            "Prizma"
+        );
+        // A language the schema does not carry falls back to English.
+        assert_eq!(
+            localized_display(display, "name", "german", "fallback"),
+            "Prism Unfurl"
+        );
+        // A missing field falls back to the caller's value.
+        assert_eq!(
+            localized_display(display, "desc", "turkish", "fallback"),
+            "fallback"
+        );
+    }
+
     /// Live check for the SteamID and the achievement pipeline (needs the key).
     /// Run: `cargo test live_steam_achievements -- --ignored --nocapture`
     #[test]
