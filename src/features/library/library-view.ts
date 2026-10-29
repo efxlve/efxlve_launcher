@@ -11,7 +11,7 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
-import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, gameStoresLabel, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
+import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker } from "../../core/collection-icons";
 import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
@@ -469,10 +469,8 @@ function epicListRow(s: EpicSummary): string {
   const secs = libraryPlaytime(s).seconds;
   const sizeBytes = measuredSize(s.appName) ?? s.installSize;
   const source = sourceOfKey(s.appName);
-  const showStores = S.showStoreBadge && S.enabledStores.size > 1;
-  const storesLabel = showStores ? esc(gameStoresLabel(s.title || s.appName)) : "";
   const studio = esc(studioOf(s));
-  const metaText = [studio, storesLabel].filter(Boolean).join(" · ");
+  const metaText = studio;
   // The storefront column is always on, aligned like the achievements column.
   const storeCell = `<div class="lrow-store">${storeLogo(source, 16, "lrow-store-logo")}<span class="lrow-store-name">${esc(sourceLabel(source))}</span></div>`;
   return `
