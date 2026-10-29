@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "حفظ EOS السحابي",
   "manage.partnerSaves": "تستخدم هذه اللعبة نظام الحفظ الخاص بـ {name}. لا يُخزَّن الحفظ في سحابة Epic.",
   "manage.saveFolderTitle": "دليل الحفظ",
+  "manage.confirmSaveFolder": "استخدام هذا المجلد",
+  "manage.confirmSaveFolderHint": "الاحتفاظ بمجلد الحفظ المكتشف للنسخ الاحتياطي والمزامنة السحابية.",
   "manage.chooseSaveFolder": "تغيير",
   "manage.chooseSaveFolderTitle": "حدد دليل الحفظ",
   "manage.resetSaveFolder": "إعادة التعيين إلى الافتراضي",

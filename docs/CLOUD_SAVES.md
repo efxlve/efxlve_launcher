@@ -302,14 +302,8 @@ profile.
 
 ## 6. Open work
 
-Ordered by user value:
-
-1. **Confirm the detected save folder** — discovery now covers the XDG roots,
-   macOS `~/Library/Application Support`, the launcher's Wine/Proton prefixes and
-   Steam's `compatdata` prefixes; a detected path the user can confirm once and
-   then reuse would make the result explicit.
-2. **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
-   paths, and writable permissions.
+- **Real Linux/macOS validation** — save paths, restore targets, case-sensitive
+  paths, and writable permissions.
 
 ---
 

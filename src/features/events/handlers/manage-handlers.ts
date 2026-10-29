@@ -230,6 +230,28 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
       }
       return true;
 
+    case "manage-confirm-save-folder":
+      if (id) {
+        void (async () => {
+          const detected =
+            S.activeManageSettings?.detectedSavePath?.trim() ||
+            S.activeManageSettings?.savePath?.trim() ||
+            "";
+          if (!detected) return;
+          try {
+            await epicSetCustomSavePath(id, detected);
+            if (S.activeManageSettings && S.activeManageSettings.appName === id) {
+              S.activeManageSettings.customSavePath = detected;
+              updateManageModalInputsInPlace(S.activeManageSettings);
+            }
+            toast(i18nT("manage.saveFolderUpdated"), "ok");
+          } catch (err) {
+            toast(String(err), "err");
+          }
+        })();
+      }
+      return true;
+
     case "manage-choose-save-folder":
       if (id) {
         void (async () => {

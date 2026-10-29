@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "EOS 云存档",
   "manage.partnerSaves": "此游戏使用 {name} 自己的存档系统。存档不保存在 Epic 云中。",
   "manage.saveFolderTitle": "存档目录",
+  "manage.confirmSaveFolder": "使用此文件夹",
+  "manage.confirmSaveFolderHint": "将检测到的存档文件夹用于备份和云同步。",
   "manage.chooseSaveFolder": "更改",
   "manage.chooseSaveFolderTitle": "选择存档目录",
   "manage.resetSaveFolder": "重置为默认值",

@@ -1085,6 +1085,8 @@
   "cloud.openSettings": "क्लाउड बैकअप सेटिंग्स",
   "manage.partnerSaves": "यह गेम {name} के अपने सेव सिस्टम का उपयोग करता है। सेव Epic क्लाउड में संग्रहीत नहीं होते हैं।",
   "manage.saveFolderTitle": "सेव निर्देशिका",
+  "manage.confirmSaveFolder": "इस फ़ोल्डर का उपयोग करें",
+  "manage.confirmSaveFolderHint": "पहचाने गए सेव फ़ोल्डर को बैकअप और क्लाउड सिंक के लिए रखें।",
   "manage.chooseSaveFolder": "बदलें",
   "manage.chooseSaveFolderTitle": "सेव निर्देशिका चुनें",
   "manage.resetSaveFolder": "डिफ़ॉल्ट पर रीसेट करें",

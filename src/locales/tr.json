@@ -1085,6 +1085,8 @@
   "cloud.openSettings": "Bulut Yedekleme Ayarları",
   "manage.partnerSaves": "Bu oyun {name} uygulamasının kendi kayıt sistemini kullanır. Kayıtlar Epic bulutunda tutulmaz.",
   "manage.saveFolderTitle": "Kayıt Klasörü",
+  "manage.confirmSaveFolder": "Bu klasörü kullan",
+  "manage.confirmSaveFolderHint": "Tespit edilen kayıt klasörünü yedeklemeler ve bulut eşitleme için kullan.",
   "manage.chooseSaveFolder": "Değiştir",
   "manage.chooseSaveFolderTitle": "Kayıt klasörünü seç",
   "manage.resetSaveFolder": "Varsayılana Sıfırla",

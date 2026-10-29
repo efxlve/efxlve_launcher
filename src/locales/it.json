@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "Salvataggi cloud EOS",
   "manage.partnerSaves": "Questo gioco usa il sistema di salvataggio di {name}. I salvataggi non sono nel cloud Epic.",
   "manage.saveFolderTitle": "Cartella dei salvataggi",
+  "manage.confirmSaveFolder": "Usa questa cartella",
+  "manage.confirmSaveFolderHint": "Mantieni la cartella di salvataggio rilevata per backup e sincronizzazione cloud.",
   "manage.chooseSaveFolder": "Modifica",
   "manage.chooseSaveFolderTitle": "Seleziona cartella dei salvataggi",
   "manage.resetSaveFolder": "Ripristina predefinito",

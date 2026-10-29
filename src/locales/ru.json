@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "Облачные сохранения EOS",
   "manage.partnerSaves": "У этой игры своя система сохранений {name}. В облаке Epic их нет.",
   "manage.saveFolderTitle": "Папка сохранений",
+  "manage.confirmSaveFolder": "Использовать эту папку",
+  "manage.confirmSaveFolderHint": "Сохранить обнаруженную папку сохранений для резервных копий и облачной синхронизации.",
   "manage.chooseSaveFolder": "Изменить",
   "manage.chooseSaveFolderTitle": "Выбрать папку сохранений",
   "manage.resetSaveFolder": "Сбросить по умолчанию",

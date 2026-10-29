@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "EOS クラウドセーブ",
   "manage.partnerSaves": "このゲームは {name} 独自のセーブ方式を使います。セーブは Epic クラウドには保存されません。",
   "manage.saveFolderTitle": "セーブディレクトリ",
+  "manage.confirmSaveFolder": "このフォルダーを使用",
+  "manage.confirmSaveFolderHint": "検出されたセーブフォルダーをバックアップとクラウド同期に使います。",
   "manage.chooseSaveFolder": "変更",
   "manage.chooseSaveFolderTitle": "セーブディレクトリを選択",
   "manage.resetSaveFolder": "デフォルトにリセット",

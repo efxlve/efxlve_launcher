@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "EOS 클라우드 저장",
   "manage.partnerSaves": "이 게임은 {name} 자체 저장 방식을 사용합니다. 저장 데이터는 Epic 클라우드에 저장되지 않습니다.",
   "manage.saveFolderTitle": "세이브 디렉터리",
+  "manage.confirmSaveFolder": "이 폴더 사용",
+  "manage.confirmSaveFolderHint": "감지된 저장 폴더를 백업 및 클라우드 동기화에 사용합니다.",
   "manage.chooseSaveFolder": "변경",
   "manage.chooseSaveFolderTitle": "세이브 디렉터리 선택",
   "manage.resetSaveFolder": "기본값으로 초기화",

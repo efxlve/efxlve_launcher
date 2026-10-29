@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "Zapisy w chmurze EOS",
   "manage.partnerSaves": "Ta gra używa własnego systemu zapisów {name}. Zapisy nie są w chmurze Epic.",
   "manage.saveFolderTitle": "Katalog zapisów",
+  "manage.confirmSaveFolder": "Użyj tego folderu",
+  "manage.confirmSaveFolderHint": "Zachowaj wykryty folder zapisu dla kopii zapasowych i synchronizacji w chmurze.",
   "manage.chooseSaveFolder": "Zmień",
   "manage.chooseSaveFolderTitle": "Wybierz katalog zapisów",
   "manage.resetSaveFolder": "Przywróć domyślne",

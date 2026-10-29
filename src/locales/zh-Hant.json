@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "EOS 雲端存檔",
   "manage.partnerSaves": "此遊戲使用 {name} 自己的存檔系統。存檔不會保存在 Epic 雲端。",
   "manage.saveFolderTitle": "存檔目錄",
+  "manage.confirmSaveFolder": "使用此資料夾",
+  "manage.confirmSaveFolderHint": "將偵測到的存檔資料夾用於備份和雲端同步。",
   "manage.chooseSaveFolder": "變更",
   "manage.chooseSaveFolderTitle": "選擇存檔目錄",
   "manage.resetSaveFolder": "重設為預設值",

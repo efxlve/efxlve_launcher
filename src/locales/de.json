@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "EOS-Cloud-Spielstände",
   "manage.partnerSaves": "Dieses Spiel nutzt das eigene Spielstandssystem von {name}. Spielstände liegen nicht in der Epic-Cloud.",
   "manage.saveFolderTitle": "Speicherverzeichnis",
+  "manage.confirmSaveFolder": "Diesen Ordner verwenden",
+  "manage.confirmSaveFolderHint": "Den erkannten Speicherordner für Backups und Cloud-Sync behalten.",
   "manage.chooseSaveFolder": "Ändern",
   "manage.chooseSaveFolderTitle": "Speicherverzeichnis auswählen",
   "manage.resetSaveFolder": "Auf Standard zurücksetzen",

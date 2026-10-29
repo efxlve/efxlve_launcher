@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "Saves na nuvem EOS",
   "manage.partnerSaves": "Este jogo usa o sistema de saves de {name}. Os saves não ficam na nuvem da Epic.",
   "manage.saveFolderTitle": "Diretório de salvamento",
+  "manage.confirmSaveFolder": "Usar esta pasta",
+  "manage.confirmSaveFolderHint": "Mantenha a pasta de saves detectada para backups e sincronização na nuvem.",
   "manage.chooseSaveFolder": "Alterar",
   "manage.chooseSaveFolderTitle": "Selecionar diretório de salvamento",
   "manage.resetSaveFolder": "Restaurar padrão",

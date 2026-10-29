@@ -376,7 +376,15 @@ function wireManageNavKeys(nav: HTMLElement): void {
 }
 
 /** Renders action buttons for the save directory row. */
-export function renderSavePathActions(id: string, activeSavePath: string, isCustom: boolean): string {
+export function renderSavePathActions(
+  id: string,
+  activeSavePath: string,
+  isCustom: boolean,
+  detectedSavePath = "",
+): string {
+  const confirmBtn = !isCustom && detectedSavePath
+    ? `<button class="btn ghost small" data-act="manage-confirm-save-folder" data-id="${id}" title="${t("manage.confirmSaveFolderHint")}">${icon("check", 13)} ${t("manage.confirmSaveFolder")}</button>`
+    : "";
   const openBtn = activeSavePath
     ? `<button class="btn ghost small" data-act="manage-open-save-folder" data-id="${id}" title="${t("manage.openSaveFolder")}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`
     : "";
@@ -384,7 +392,7 @@ export function renderSavePathActions(id: string, activeSavePath: string, isCust
     ? `<button class="btn ghost small" data-act="manage-reset-save-folder" data-id="${id}" title="${t("manage.resetSaveFolder")}">${icon("refresh", 13)}</button>`
     : "";
   const chooseBtn = `<button class="btn ghost small" data-act="manage-choose-save-folder" data-id="${id}" title="${t("manage.chooseSaveFolderTitle")}">${icon("edit", 13)} ${t("manage.chooseSaveFolder")}</button>`;
-  return `${openBtn}${resetBtn}${chooseBtn}`;
+  return `${confirmBtn}${openBtn}${resetBtn}${chooseBtn}`;
 }
 
 /**
@@ -549,7 +557,7 @@ function amazonManageBody(s: EpicSummary): string {
             <div class="mg-title">${t("manage.saveFolderTitle")}</div>
             <div class="mg-desc"><span id="manage-save-path" class="mg-path">${esc(activeSavePath || t("manage.noSaveDirDetected"))}</span></div>
           </div>
-          <div id="manage-save-path-actions" class="row-actions">${renderSavePathActions(s.appName, activeSavePath, Boolean(st.customSavePath))}</div>
+          <div id="manage-save-path-actions" class="row-actions">${renderSavePathActions(s.appName, activeSavePath, Boolean(st.customSavePath), st.detectedSavePath || "")}</div>
         </div>
         ${row(
           t("manage.localBackupTitle"),
@@ -775,7 +783,7 @@ export function renderDrawerManage(s: EpicSummary): string {
                 <div class="mg-title">${t("manage.saveFolderTitle")}</div>
                 <div class="mg-desc"><span id="manage-save-path" class="mg-path">${esc(activeSavePath || t("manage.noSaveDirDetected"))}</span></div>
               </div>
-              <div id="manage-save-path-actions" class="row-actions">${renderSavePathActions(id, activeSavePath, Boolean(st.customSavePath))}</div>
+              <div id="manage-save-path-actions" class="row-actions">${renderSavePathActions(id, activeSavePath, Boolean(st.customSavePath), st.detectedSavePath || "")}</div>
             </div>
             ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
               `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
@@ -871,7 +879,7 @@ export function updateManageModalInputsInPlace(st: GameLocalSettings): void {
 
   const actionsEl = document.getElementById("manage-save-path-actions");
   if (actionsEl) {
-    actionsEl.innerHTML = renderSavePathActions(st.appName, activeSavePath, Boolean(st.customSavePath));
+    actionsEl.innerHTML = renderSavePathActions(st.appName, activeSavePath, Boolean(st.customSavePath), st.detectedSavePath || "");
   }
 
   updateManageCloudRowInPlace(st.appName);

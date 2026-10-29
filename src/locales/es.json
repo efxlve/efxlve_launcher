@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "Partidas en la nube de EOS",
   "manage.partnerSaves": "Este juego usa el sistema de partidas de {name}. Las partidas no se guardan en la nube de Epic.",
   "manage.saveFolderTitle": "Directorio de guardado",
+  "manage.confirmSaveFolder": "Usar esta carpeta",
+  "manage.confirmSaveFolderHint": "Mantén la carpeta de guardado detectada para copias y sincronización en la nube.",
   "manage.chooseSaveFolder": "Cambiar",
   "manage.chooseSaveFolderTitle": "Seleccionar directorio de guardado",
   "manage.resetSaveFolder": "Restablecer a valores predeterminados",

@@ -1013,6 +1013,8 @@
   "manage.eosCloudTitle": "เซฟบนคลาวด์ EOS",
   "manage.partnerSaves": "เกมนี้ใช้ระบบเซฟของ {name} เอง เซฟไม่ได้เก็บในคลาวด์ Epic",
   "manage.saveFolderTitle": "ไดเรกทอรีบันทึก",
+  "manage.confirmSaveFolder": "ใช้โฟลเดอร์นี้",
+  "manage.confirmSaveFolderHint": "ใช้โฟลเดอร์บันทึกที่ตรวจพบสำหรับการสำรองข้อมูลและซิงค์คลาวด์",
   "manage.chooseSaveFolder": "เปลี่ยน",
   "manage.chooseSaveFolderTitle": "เลือกไดเรกทอรีบันทึก",
   "manage.resetSaveFolder": "รีเซ็ตเป็นค่าเริ่มต้น",

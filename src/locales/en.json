@@ -1085,6 +1085,8 @@
   "cloud.openSettings": "Cloud Backup Settings",
   "manage.partnerSaves": "This game uses {name}'s own save system. Saves are not stored in the Epic cloud.",
   "manage.saveFolderTitle": "Save Directory",
+  "manage.confirmSaveFolder": "Use this folder",
+  "manage.confirmSaveFolderHint": "Keep the detected save folder for backups and cloud sync.",
   "manage.chooseSaveFolder": "Change",
   "manage.chooseSaveFolderTitle": "Select save directory",
   "manage.resetSaveFolder": "Reset to Default",
