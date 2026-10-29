@@ -22,6 +22,7 @@ import {
   summarize,
   stopGameAtPath,
 } from "../epic";
+import { customGamesLaunch, customGamesStop } from "../custom-games";
 import { isTauri, IGNORED_UPDATES_KEY } from "./constants";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
@@ -82,7 +83,6 @@ async function launchWithStatus(
 export async function epicStop(appName: string): Promise<void> {
   try {
     if (appName.startsWith("custom::")) {
-      const { customGamesStop } = await import("../custom-games");
       // The Rust launch thread reports the exit and the session totals; do not
       // clear the running state here or that event would be treated as a
       // duplicate and the hours would be dropped.
@@ -125,7 +125,6 @@ export async function epicPlay(appName: string): Promise<void> {
     pushRecent(appName);
     toast(t("dl.launching"), "");
     try {
-      const { customGamesLaunch } = await import("../custom-games");
       await customGamesLaunch(appName);
     } catch (e) {
       toast(String(e), "err");
