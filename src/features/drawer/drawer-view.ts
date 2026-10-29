@@ -2773,6 +2773,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 const sessionAchRefreshAt = new Map<string, number>();
 const sessionUnlockedBaseline = new Map<string, Set<string>>();
 const sessionPollTimers = new Map<string, number>();
+/** Last store-backed achievement read per game. The native watcher owns local
+ * unlocks, so a running session only needs a slow store sync. */
+const storeAchFetchedAt = new Map<string, number>();
+const STORE_ACH_POLL_MS = 60_000;
+const UBI_ACH_POLL_MS = 30_000;
 
 async function resolveCustomGameSteamAppId(customGame: {
   id: string;
@@ -2926,6 +2931,7 @@ function stopStoreAchievementPoll(appName: string): void {
     window.clearInterval(timer);
     sessionPollTimers.delete(appName);
   }
+  storeAchFetchedAt.delete(appName);
 }
 
 /**
@@ -2976,25 +2982,27 @@ export function startStoreAchievementSession(appName: string): void {
 
   if (sessionPollTimers.has(appName)) return;
   const isUbi = source === "ubisoft" || ubiAchSource.has(appName);
-  // A running game is the only thing polled here; a short interval is what
-  // makes the card feel immediate. The calls are small local/store reads.
+  // The timer only watches the session; the store read itself is slow. Epic's
+  // forced answer spawns the legendary CLI, GOG/EA/Xbox hit their APIs, and a
+  // local emulator answer is already live through the native watcher. A
+  // definition list does not change during a session either.
   const intervalMs = isUbi ? 3_000 : 4_000;
-  let tick = 0;
+  const refreshMs = isUbi ? UBI_ACH_POLL_MS : STORE_ACH_POLL_MS;
+  storeAchFetchedAt.set(appName, Date.now());
   const timer = window.setInterval(() => {
     if (!S.runningGames.has(appName)) {
       stopStoreAchievementPoll(appName);
       return;
     }
-    // Epic's cache is free to read, while a forced answer spawns the legendary
-    // CLI. Force every fourth tick (~16 s) and read the disk cache in between;
-    // the session-end refresh still catches anything that landed late. A local
-    // emulator answer is already live through the native watcher, and a
-    // definition list does not change during a session.
-    tick += 1;
     const dataSource = S.loadedAchievements.get(appName)?.data_source;
-    const force =
-      tick % 4 === 0 && dataSource !== "local" && dataSource !== "definitions";
-    void fetchAndRenderAchievements(appName, force, true).then(() => {
+    if (dataSource === "local" || dataSource === "definitions") return;
+    // The store has already told us this title has no achievement set: no
+    // amount of polling will change that inside this session.
+    if (S.epicAchSummaries[appName]?.supported === false) return;
+    const now = Date.now();
+    if (now - (storeAchFetchedAt.get(appName) ?? 0) < refreshMs) return;
+    storeAchFetchedAt.set(appName, now);
+    void fetchAndRenderAchievements(appName, true, true).then(() => {
       const unlockedDelta = checkAndEmitNewStoreUnlocks(appName);
       if (unlockedDelta > 0) {
         recordSessionSummary(appName, { unlocked: unlockedDelta, at: Date.now() });
