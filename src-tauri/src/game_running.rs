@@ -15,7 +15,9 @@ use std::time::{Duration, Instant};
 use serde::Deserialize;
 use tauri::{AppHandle, Emitter};
 
-use crate::legendary::transfers::{discover_game_executables, is_game_process_running};
+use crate::legendary::transfers::{
+    discover_game_executables, is_game_process_running, process_name_snapshot,
+};
 
 /// The process list is cached for a second, so one tick here is cheap; four
 /// seconds keeps the badge responsive without a tight loop.
@@ -65,6 +67,11 @@ fn watch_loop(app: AppHandle) {
     loop {
         thread::sleep(POLL);
         let games = WATCHED.lock().map(|g| g.clone()).unwrap_or_default();
+        // One name-only snapshot for every installed game. Matching a folder
+        // against its own process list used to scan the whole process table
+        // once per game; this turns the tick into one scan plus set lookups.
+        let names = process_name_snapshot();
+        let names: HashSet<&str> = names.iter().map(String::as_str).collect();
         let mut now = HashSet::new();
         for (id, path) in &games {
             // The launcher's own launch thread owns the event and the playtime
@@ -74,7 +81,12 @@ fn watch_loop(app: AppHandle) {
                 continue;
             }
             let list = exes_for(&mut exes, path);
-            if !list.is_empty() && is_game_process_running(Some(path), list) {
+            if list.is_empty() || !list.iter().any(|exe| names.contains(exe.as_str())) {
+                continue;
+            }
+            // A name hit is still confirmed against the install folder, so a
+            // same-named helper elsewhere does not mark the game as running.
+            if is_game_process_running(Some(path), list) {
                 now.insert(id.clone());
             }
         }

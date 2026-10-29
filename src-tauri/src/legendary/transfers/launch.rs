@@ -522,6 +522,10 @@ mod win_process {
     /// PIDs whose image name matches a candidate exe, or whose full path sits
     /// inside the install folder. Used both to detect a running game and to
     /// stop it (Steam-style) without killing unrelated processes.
+    pub fn process_name_snapshot() -> std::sync::Arc<Vec<String>> {
+        process_names()
+    }
+
     pub fn game_process_pids(install_path: Option<&Path>, candidate_exes: &[String]) -> Vec<u32> {
         if candidate_exes.is_empty() && install_path.is_none() {
             return Vec::new();
@@ -637,9 +641,26 @@ mod win_process {
     pub fn is_game_process_running(install_path: Option<&Path>, candidate_exes: &[String]) -> bool {
         !game_process_pids(install_path, candidate_exes).is_empty()
     }
+
+    /// One process-name snapshot for callers that test many install folders in
+    /// the same tick. The Windows path above already caches this for a second;
+    /// this Unix implementation deliberately refreshes once per caller instead
+    /// of once per game.
+    pub fn process_name_snapshot() -> std::sync::Arc<Vec<String>> {
+        use sysinfo::{ProcessesToUpdate, System};
+        let mut system = System::new();
+        system.refresh_processes(ProcessesToUpdate::All, true);
+        std::sync::Arc::new(
+            system
+                .processes()
+                .values()
+                .map(|process| process.name().to_string_lossy().to_lowercase())
+                .collect(),
+        )
+    }
 }
 
-pub use win_process::{game_process_pids, is_game_process_running};
+pub use win_process::{game_process_pids, is_game_process_running, process_name_snapshot};
 
 /// Epic ships some titles behind a small `PlayTitle.exe`. Rockstar then
 /// refuses to start unless Epic Games Launcher is the parent process, so
