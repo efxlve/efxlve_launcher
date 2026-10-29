@@ -61,6 +61,7 @@ the window is hidden.
 | Library card tilt | The pointer handler returns immediately outside the library view | Every pointer move in settings, the store or the drawer walked ancestors for a card that cannot exist there |
 | Achievement watcher | The unlock parse runs only when the Steam stats file or the emulator achievement file changed (size + mtime), with a 10 s safety rebuild | The 800 ms loop used to re-read and parse the Steam schema and rescan every emulator folder 4,500 times an hour for a fact that had not changed |
 | Settings panels | Task Manager, Achievements and Theme are separate chunks loaded when their section opens; the boot bundle no longer parses them | Three self-contained panels sat in the page chunk even when the user never opened them |
+| Picture renditions | The cache resizes wide pictures to the width the page paints (hero 1600, screenshot 640, cover 480, thumbnail 240) and stores that JPEG variant | Full-size covers and screenshots were decoded and carried over IPC even when painted at a fraction of their size |
 
 ## Remaining opportunities
 
@@ -76,8 +77,8 @@ the window is hidden.
   are separate chunks loaded when their section opens. The outer Settings page
   still ships in the main chunk because its action handlers import the library
   graph; splitting that surface is the next step.
-- **Image decode budget.** `loading="lazy"` helps network and decode, but very
-  large cover sources still decode at full size. Asking the image cache for a
-  width-appropriate rendition is the next step.
+- **Custom cover renditions.** The game page and its panels ask the picture cache
+  for sized renditions, but the library grid still paints the source URL
+  directly. Very large user-chosen covers would benefit from the same cache.
 - **WebView2 environment sharing.** Child store webviews should share one
   environment; this must be verified in the Windows host rather than assumed.

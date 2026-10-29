@@ -106,11 +106,82 @@ fn existing_file(dir: &Path, key: &str) -> Option<PathBuf> {
     None
 }
 
+/// The JPEG rendition the page asked for. `None` means the source is already
+/// small enough or its format cannot be decoded here (AVIF); the caller then
+/// keeps the original bytes.
+fn resize_image(bytes: &[u8], max_width: u32) -> Option<Vec<u8>> {
+    if max_width == 0 {
+        return None;
+    }
+    let format = image::guess_format(bytes).ok()?;
+    if format == image::ImageFormat::Avif {
+        return None;
+    }
+    let source = image::load_from_memory_with_format(bytes, format).ok()?;
+    if source.width() <= max_width {
+        return None;
+    }
+    let height = ((source.height() as u64 * max_width as u64) / source.width().max(1) as u64)
+        .max(1) as u32;
+    let resized = source.resize_exact(max_width, height, image::imageops::FilterType::Triangle);
+    let mut output = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, 82)
+        .encode_image(&resized.to_rgb8())
+        .ok()?;
+    Some(output)
+}
+
+fn variant_path(dir: &Path, key: &str, max_width: u32) -> PathBuf {
+    dir.join(format!("{key}_w{max_width}.jpg"))
+}
+
+async fn write_atomic(dir: &Path, target: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let sequence = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
+    let name = target
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("image");
+    let tmp = dir.join(format!("{name}.{}.{}.part", std::process::id(), sequence));
+    tokio::fs::write(&tmp, bytes).await?;
+    if tokio::fs::rename(&tmp, target).await.is_err() {
+        let _ = tokio::fs::remove_file(&tmp).await;
+        // Another request may have won the rename on Windows; use its file.
+        if target.is_file() {
+            return Ok(());
+        }
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(())
+}
+
 /// Downloads one URL into the cache. `None` means "keep using the network URL".
-async fn cache_one(client: &reqwest::Client, dir: &Path, url: &str) -> Option<PathBuf> {
+/// `max_width` asks for a resized JPEG variant; zero keeps the original bytes.
+async fn cache_one(
+    client: &reqwest::Client,
+    dir: &Path,
+    url: &str,
+    max_width: u32,
+) -> Option<PathBuf> {
     let key = cache_key(url);
-    if let Some(hit) = existing_file(dir, &key) {
-        return Some(hit);
+    if max_width > 0 {
+        let variant = variant_path(dir, &key, max_width);
+        if variant.is_file() {
+            return Some(variant);
+        }
+    }
+    // An original already on disk is resized locally; no second download.
+    if let Some(original) = existing_file(dir, &key) {
+        if max_width == 0 {
+            return Some(original);
+        }
+        let bytes = tokio::fs::read(&original).await.ok()?;
+        if let Some(resized) = resize_image(&bytes, max_width) {
+            let target = variant_path(dir, &key, max_width);
+            if write_atomic(dir, &target, &resized).await.is_ok() {
+                return Some(target);
+            }
+        }
+        return Some(original);
     }
     let response = client.get(url).send().await.ok()?;
     if !response.status().is_success() {
@@ -135,22 +206,19 @@ async fn cache_one(client: &reqwest::Client, dir: &Path, url: &str) -> Option<Pa
     if bytes.is_empty() || bytes.len() > MAX_FILE_BYTES {
         return None;
     }
-    let target = dir.join(format!("{key}.{extension}"));
-    // Write beside the target in a per-request temp file and rename, so a
-    // half-written file is never read and two simultaneous downloads cannot
-    // truncate each other's `.part`.
-    let sequence = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let tmp = dir.join(format!(
-        "{key}.{extension}.{}.{sequence}.part",
-        std::process::id()
-    ));
-    if tokio::fs::write(&tmp, &bytes).await.is_err() {
+    let resized = if max_width > 0 {
+        resize_image(&bytes, max_width)
+    } else {
+        None
+    };
+    let target = if resized.is_some() {
+        variant_path(dir, &key, max_width)
+    } else {
+        dir.join(format!("{key}.{extension}"))
+    };
+    let payload: &[u8] = resized.as_deref().unwrap_or(bytes.as_ref());
+    if write_atomic(dir, &target, payload).await.is_err() {
         return None;
-    }
-    if tokio::fs::rename(&tmp, &target).await.is_err() {
-        let _ = tokio::fs::remove_file(&tmp).await;
-        // Another request may have won the rename on Windows; use its file.
-        return existing_file(dir, &key);
     }
     Some(target)
 }
@@ -168,7 +236,7 @@ pub(crate) async fn cache_image(app: &AppHandle, url: &str) -> Option<PathBuf> {
         .timeout(REQUEST_TIMEOUT)
         .build()
         .ok()?;
-    cache_one(&client, &dir, url).await
+    cache_one(&client, &dir, url, 0).await
 }
 
 /// Keeps the directory under the cap, oldest file first. Runs after a download
@@ -217,7 +285,12 @@ fn file_to_data_url(path: &Path) -> Option<String> {
 /// The pictures the page asked for, as `data:` URLs. A URL that cannot be cached
 /// comes back with an empty string, and the page keeps the network URL for it.
 #[tauri::command]
-pub async fn cache_images(app: AppHandle, urls: Vec<String>) -> Vec<CachedImage> {
+pub async fn cache_images(
+    app: AppHandle,
+    urls: Vec<String>,
+    max_width: Option<u32>,
+) -> Vec<CachedImage> {
+    let max_width = max_width.unwrap_or(0).min(4096);
     let mut answer: Vec<CachedImage> = urls
         .iter()
         .map(|url| CachedImage {
@@ -259,8 +332,10 @@ pub async fn cache_images(app: AppHandle, urls: Vec<String>) -> Vec<CachedImage>
             let dir = dir.clone();
             let client = client.clone();
             tasks.push(tokio::spawn(async move {
-                let before = existing_file(&dir, &cache_key(&url)).is_some();
-                let hit = cache_one(&client, &dir, &url).await;
+                let key = cache_key(&url);
+                let before = existing_file(&dir, &key).is_some()
+                    || (max_width > 0 && variant_path(&dir, &key, max_width).is_file());
+                let hit = cache_one(&client, &dir, &url, max_width).await;
                 (index, hit, before)
             }));
         }
@@ -367,5 +442,21 @@ mod tests {
         assert_eq!(mime_for(Path::new("x.jpg")), "image/jpeg");
         assert_eq!(file_to_data_url(&dir.join("missing.png")), None);
         let _ = std::fs::remove_file(&png);
+    }
+
+    #[test]
+    fn wide_pictures_are_resized_to_the_requested_width() {
+        let source = image::RgbImage::from_fn(800, 600, |x, y| image::Rgb([x as u8, y as u8, 128]));
+        let mut bytes = Vec::new();
+        image::DynamicImage::ImageRgb8(source)
+            .write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
+            .expect("encode");
+        let resized = resize_image(&bytes, 480).expect("resized");
+        let decoded = image::load_from_memory(&resized).expect("decode");
+        assert_eq!(decoded.width(), 480);
+        assert_eq!(decoded.height(), 360);
+        // At or below the target width, and a non-image, keep the original.
+        assert!(resize_image(&bytes, 800).is_none());
+        assert!(resize_image(b"not an image", 480).is_none());
     }
 }

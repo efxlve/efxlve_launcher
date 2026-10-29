@@ -11,7 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { createLazyPanel, panelLoadingState } from "./lazy-panel";
 import { measuredSize } from "../../core/folder-size";
-import { imageCacheSize } from "../../core/picture-cache";
+import { imageCacheSize, IMAGE_THUMB_WIDTH } from "../../core/picture-cache";
 import { emptyState, icon, type IconName } from "../../core/icons";
 import { discordPageVisible, hotkeyLabel, isValidHotkey, DEFAULT_OVERLAY_HOTKEY, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
@@ -392,7 +392,7 @@ function renderCollections(): string {
           if (cover) thumbs.push(cover);
         }
         const visualHtml = thumbs.length > 0
-          ? `<div class="col-settings-mini-strip">${thumbs.map((img) => `<div class="col-settings-mini-thumb"><img src="${esc(cachedImage(img))}" alt="" loading="lazy" /></div>`).join("")}</div>`
+          ? `<div class="col-settings-mini-strip">${thumbs.map((img) => `<div class="col-settings-mini-thumb"><img src="${esc(cachedImage(img, IMAGE_THUMB_WIDTH))}" alt="" loading="lazy" /></div>`).join("")}</div>`
           : `<span class="col-settings-marker">${collectionMarker(c.emoji, 16)}</span>`;
 
         return `

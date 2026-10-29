@@ -27,27 +27,42 @@ const PICTURE_CACHE_LIMIT = 32;
 /** URLs asked for in this session, so a repaint does not ask twice. */
 const requested = new Set<string>();
 
+/** Standard renditions: the CSS size and the cache request must not drift. */
+export const IMAGE_HERO_WIDTH = 1600;
+export const IMAGE_SHOT_WIDTH = 640;
+export const IMAGE_COVER_WIDTH = 480;
+export const IMAGE_THUMB_WIDTH = 240;
+
+function pictureKey(url: string, width: number): string {
+  return `${width}|${url}`;
+}
+
 /** The source to paint: the cached picture when there is one, the URL otherwise. */
-export function cachedImage(url: string | null | undefined): string {
+export function cachedImage(url: string | null | undefined, width = 0): string {
   if (!url) return "";
-  return cachedPictures.get(url) ?? url;
+  return cachedPictures.get(pictureKey(url, width)) ?? url;
 }
 
 /**
  * Asks for a batch of pictures in the background and swaps whatever is on screen
  * when the answers land. Safe to call with duplicates, `null`s and data URLs.
+ * `width` chooses a resized rendition; zero keeps the original.
  */
-export function warmImages(urls: Array<string | null | undefined>): void {
+export function warmImages(
+  urls: Array<string | null | undefined>,
+  width = 0,
+): void {
   if (!isTauri || S.offlineMode) return;
   const wanted: string[] = [];
   for (const url of urls) {
     if (!url || !url.startsWith("http")) continue;
-    if (cachedPictures.has(url) || requested.has(url)) continue;
-    requested.add(url);
+    const key = pictureKey(url, width);
+    if (cachedPictures.has(key) || requested.has(key)) continue;
+    requested.add(key);
     wanted.push(url);
   }
   if (wanted.length === 0) return;
-  void invoke<CachedImage[]>("cache_images", { urls: wanted })
+  void invoke<CachedImage[]>("cache_images", { urls: wanted, maxWidth: width })
     .then((entries) => {
       let landed = false;
       for (const entry of entries) {
@@ -56,7 +71,7 @@ export function warmImages(urls: Array<string | null | undefined>): void {
             const oldest = cachedPictures.keys().next().value;
             if (oldest) cachedPictures.delete(oldest);
           }
-          cachedPictures.set(entry.url, entry.dataUrl);
+          cachedPictures.set(pictureKey(entry.url, width), entry.dataUrl);
           landed = true;
         }
       }
@@ -64,7 +79,7 @@ export function warmImages(urls: Array<string | null | undefined>): void {
     })
     .catch(() => {
       // A cache miss is not an error: the network URL stays on screen.
-      for (const url of wanted) requested.delete(url);
+      for (const url of wanted) requested.delete(pictureKey(url, width));
     });
 }
 
@@ -77,7 +92,10 @@ function swapPaintedImages(): void {
   document.querySelectorAll<HTMLElement>("[data-img-url]").forEach((node) => {
     const url = node.dataset.imgUrl;
     if (!url) return;
-    const local = cachedPictures.get(url);
+    const width = Number(node.dataset.imgWidth ?? "0") || 0;
+    const local =
+      cachedPictures.get(pictureKey(url, width)) ??
+      cachedPictures.get(pictureKey(url, 0));
     if (!local) return;
     if (node instanceof HTMLImageElement) {
       if (node.src !== local) node.src = local;
@@ -114,7 +132,7 @@ export function prefetchRecentPicturesWhenIdle(): void {
       const art = summary ? epicWideArt(summary) || summary.cover : "";
       if (art) urls.push(art);
     }
-    warmImages(urls);
+    warmImages(urls, IMAGE_HERO_WIDTH);
   };
   const idleHost = window as Window & { requestIdleCallback?: (cb: () => void) => number };
   if (typeof idleHost.requestIdleCallback === "function") idleHost.requestIdleCallback(run);

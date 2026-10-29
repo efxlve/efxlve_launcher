@@ -9,7 +9,7 @@
 import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
-import { cachedImage, warmImages } from "../../core/picture-cache";
+import { cachedImage, warmImages, IMAGE_COVER_WIDTH } from "../../core/picture-cache";
 import { icon, type IconName } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { allStoreSummaries, canonicalGameTitle, gameStoresLabel, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -711,34 +711,34 @@ export function openCollectionGallery(): void {
     } else if (foundCovers.length === 1) {
       artHtml = `
         <div class="col-poster-fan">
-          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[0]))}')"></div>
+          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[0], IMAGE_COVER_WIDTH))}')"></div>
           <div class="col-poster-item col-poster-single">
-            <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
+            <img src="${esc(cachedImage(foundCovers[0], IMAGE_COVER_WIDTH))}" data-img-url="${esc(foundCovers[0])}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" decoding="async" />
           </div>
         </div>`;
     } else if (foundCovers.length === 2) {
       artHtml = `
         <div class="col-poster-fan">
-          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[0]))}')"></div>
+          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[0], IMAGE_COVER_WIDTH))}')"></div>
           <div class="col-poster-item col-poster-pair-1">
-            <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
+            <img src="${esc(cachedImage(foundCovers[0], IMAGE_COVER_WIDTH))}" data-img-url="${esc(foundCovers[0])}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" decoding="async" />
           </div>
           <div class="col-poster-item col-poster-pair-2">
-            <img src="${esc(cachedImage(foundCovers[1]))}" data-img-url="${esc(foundCovers[1])}" alt="" loading="lazy" decoding="async" />
+            <img src="${esc(cachedImage(foundCovers[1], IMAGE_COVER_WIDTH))}" data-img-url="${esc(foundCovers[1])}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" decoding="async" />
           </div>
         </div>`;
     } else {
       artHtml = `
         <div class="col-poster-fan">
-          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[1]))}')"></div>
+          <div class="col-poster-ambient" style="--ambient: url('${esc(cachedImage(foundCovers[1], IMAGE_COVER_WIDTH))}')"></div>
           <div class="col-poster-item col-poster-fan-1">
-            <img src="${esc(cachedImage(foundCovers[0]))}" data-img-url="${esc(foundCovers[0])}" alt="" loading="lazy" decoding="async" />
+            <img src="${esc(cachedImage(foundCovers[0], IMAGE_COVER_WIDTH))}" data-img-url="${esc(foundCovers[0])}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" decoding="async" />
           </div>
           <div class="col-poster-item col-poster-fan-2">
-            <img src="${esc(cachedImage(foundCovers[1]))}" data-img-url="${esc(foundCovers[1])}" alt="" loading="lazy" decoding="async" />
+            <img src="${esc(cachedImage(foundCovers[1], IMAGE_COVER_WIDTH))}" data-img-url="${esc(foundCovers[1])}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" decoding="async" />
           </div>
           <div class="col-poster-item col-poster-fan-3">
-            <img src="${esc(cachedImage(foundCovers[2]))}" data-img-url="${esc(foundCovers[2])}" alt="" loading="lazy" decoding="async" />
+            <img src="${esc(cachedImage(foundCovers[2], IMAGE_COVER_WIDTH))}" data-img-url="${esc(foundCovers[2])}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" decoding="async" />
           </div>
         </div>`;
     }
@@ -829,7 +829,7 @@ export function openCollectionGallery(): void {
   // once so the next open paints from local data instead of the CDN. The ask
   // waits for the open to settle: its answer decodes every picture in the
   // WebView, and doing that while the panel animates in was a visible hitch.
-  window.setTimeout(() => warmImages(warmUrls), 900);
+  window.setTimeout(() => warmImages(warmUrls, IMAGE_COVER_WIDTH), 900);
   collectionRoot.querySelectorAll<HTMLImageElement>(".col-poster-item img").forEach((img) => {
     img.addEventListener("error", () => {
       img.closest<HTMLElement>(".col-poster-item")?.remove();

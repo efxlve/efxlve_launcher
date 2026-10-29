@@ -12,7 +12,7 @@ import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { igdbEnrich, igdbExternalId, igdbImage, type IgdbGame } from "../../igdb";
-import { cachedImage, warmImages } from "../../core/picture-cache";
+import { cachedImage, warmImages, IMAGE_COVER_WIDTH, IMAGE_SHOT_WIDTH } from "../../core/picture-cache";
 import { canonicalGameTitle, storeKeysForTitle } from "../../core/selectors";
 import { sharedSummaries } from "../library/shared-library";
 
@@ -209,7 +209,7 @@ export function renderIgdbMedia(target: IgdbTarget): string {
   if (!game || game.screenshots.length === 0) return "";
   // The pictures are asked for in one batch; the ones already on disk paint from
   // their cached copy, the rest keep their URL until the answer lands.
-  warmImages(game.screenshots.map((id) => igdbImage(id, "screenshot_big")));
+  warmImages(game.screenshots.map((id) => igdbImage(id, "screenshot_big")), IMAGE_SHOT_WIDTH);
   return `
     <div class="gp-about-shots">
       <div class="gp-about-shots-title">${icon("image", 13)} <span>${esc(t("igdb.cardTitle"))}</span></div>
@@ -217,7 +217,7 @@ export function renderIgdbMedia(target: IgdbTarget): string {
         .map((id) => {
           const url = igdbImage(id, "screenshot_big");
           // A click opens the picture here, not the IGDB page in a browser.
-          return `<button type="button" class="igdb-shot" data-act="open-store-shot" data-src="${esc(url)}" data-title="${esc(game.name)}"><img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" /></button>`;
+          return `<button type="button" class="igdb-shot" data-act="open-store-shot" data-src="${esc(url)}" data-title="${esc(game.name)}"><img src="${esc(cachedImage(url, IMAGE_SHOT_WIDTH))}" data-img-url="${esc(url)}" data-img-width="${IMAGE_SHOT_WIDTH}" alt="" loading="lazy" /></button>`;
         })
         .join("")}</div>
     </div>`;
@@ -261,7 +261,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
   const resolved = game.similar.map((hit) => ({ hit, owned: ownedAppFor(hit.name) }));
   // Titles already in the player's library lead the strip so they are spotted first.
   resolved.sort((a, b) => Number(Boolean(b.owned)) - Number(Boolean(a.owned)));
-  warmImages(resolved.map(({ hit }) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")));
+  warmImages(resolved.map(({ hit }) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : "")), IMAGE_COVER_WIDTH);
   return `
     <section class="card gp-section igdb-card">
       <h3 class="gp-section-title">${icon("gamepad-2", 14)} ${esc(t("igdb.similarTitle"))}</h3>
@@ -280,7 +280,7 @@ export function renderIgdbSimilar(target: IgdbTarget): string {
                      hit.coverId
                        ? (() => {
                            const url = igdbImage(hit.coverId, "cover_big");
-                           return `<img src="${esc(cachedImage(url))}" data-img-url="${esc(url)}" alt="" loading="lazy" />`;
+                           return `<img src="${esc(cachedImage(url, IMAGE_COVER_WIDTH))}" data-img-url="${esc(url)}" data-img-width="${IMAGE_COVER_WIDTH}" alt="" loading="lazy" />`;
                          })()
                        : `<span class="igdb-similar-ph">${icon("gamepad-2", 16)}</span>`
                    }

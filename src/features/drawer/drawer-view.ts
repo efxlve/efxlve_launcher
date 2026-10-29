@@ -26,7 +26,7 @@ import {
 } from "../../core/store-achievement-prefs";
 import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
-import { cachedImage, warmImages } from "../../core/picture-cache";
+import { cachedImage, warmImages, IMAGE_COVER_WIDTH, IMAGE_HERO_WIDTH, IMAGE_SHOT_WIDTH } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { cachedSteamCover, cachedSteamHero, isFlatSteamArt, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
 import { steamLibraryArt, steamNews, steamSetAchievementNotifications, steamWatchRunning, type SteamLibraryArt, type SteamNewsItem } from "../../steam";
@@ -1118,14 +1118,16 @@ function ensureOverviewData(s: EpicSummary): void {
           const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
           if (heroEl) {
             heroEl.dataset.imgUrl = details.hero_url;
-            heroEl.src = cachedImage(details.hero_url);
+            heroEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+            heroEl.src = cachedImage(details.hero_url, IMAGE_HERO_WIDTH);
           }
           const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
           if (bgEl) {
             bgEl.dataset.imgUrl = details.hero_url;
-            bgEl.style.backgroundImage = `url('${cachedImage(details.hero_url)}')`;
+            bgEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+            bgEl.style.backgroundImage = `url('${cachedImage(details.hero_url, IMAGE_HERO_WIDTH)}')`;
           }
-          warmImages([details.hero_url]);
+          warmImages([details.hero_url], IMAGE_HERO_WIDTH);
         }
         if (details.developer) {
           const item = S.gogSummariesMap.get(rawId);
@@ -1341,7 +1343,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   // The hero is the one picture the page waits for: ask for it as soon as the
   // page opens, and paint from the cached copy the moment it arrives.
-  warmImages([art]);
+  warmImages([art], IMAGE_HERO_WIDTH);
   // A Steam title's wide art only exists under the store's hashed path; resolve
   // it before the hero settles on a low-resolution fallback.
   if (isSteam) void ensureSteamHeroArt(appName);
@@ -1360,8 +1362,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
         <div class="gp-hero">
           ${
             art
-              ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" style="background-image:url('${esc(cachedImage(art))}');"></div>
-          <img class="gp-hero-img" src="${esc(cachedImage(art))}" data-img-url="${esc(art)}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3)" onerror="this.classList.add('is-broken')" />`
+              ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" style="background-image:url('${esc(cachedImage(art, IMAGE_HERO_WIDTH))}');"></div>
+          <img class="gp-hero-img" src="${esc(cachedImage(art, IMAGE_HERO_WIDTH))}" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3)" onerror="this.classList.add('is-broken')" />`
               : ""
           }
           <div class="gp-hero-scrim"></div>
@@ -3493,14 +3495,16 @@ function ensureSteamHeroArt(appName: string): Promise<void> {
     const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
     if (heroEl) {
       heroEl.dataset.imgUrl = url;
-      heroEl.src = cachedImage(url);
+      heroEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+      heroEl.src = cachedImage(url, IMAGE_HERO_WIDTH);
     }
     const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
     if (bgEl) {
       bgEl.dataset.imgUrl = url;
-      bgEl.style.backgroundImage = `url('${cachedImage(url)}')`;
+      bgEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+      bgEl.style.backgroundImage = `url('${cachedImage(url, IMAGE_HERO_WIDTH)}')`;
     }
-    warmImages([url]);
+    warmImages([url], IMAGE_HERO_WIDTH);
   })().finally(() => steamHeroLookups.delete(appName));
 
   steamHeroLookups.set(appName, run);
@@ -3543,13 +3547,15 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
         heroEl.addEventListener("error", () => {
           // The same disk cache as the hero: the fallback is fetched once.
           heroEl.dataset.imgUrl = fallback;
-          heroEl.src = cachedImage(fallback);
-          warmImages([fallback]);
+          heroEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+          heroEl.src = cachedImage(fallback, IMAGE_HERO_WIDTH);
+          warmImages([fallback], IMAGE_HERO_WIDTH);
         }, { once: true });
         if (heroEl.complete && heroEl.naturalWidth === 0) {
           heroEl.dataset.imgUrl = fallback;
-          heroEl.src = cachedImage(fallback);
-          warmImages([fallback]);
+          heroEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+          heroEl.src = cachedImage(fallback, IMAGE_HERO_WIDTH);
+          warmImages([fallback], IMAGE_HERO_WIDTH);
         }
       }
       const cloud = details.categories.includes(23);
@@ -3632,7 +3638,7 @@ export async function prefetchGamePage(appName: string): Promise<void> {
   }
   // The hero is the one picture the page waits for; the rest (IGDB screenshots,
   // similar-game covers) is warmed once the IGDB answer lands.
-  warmImages([epicWideArt(s) || s.cover]);
+  warmImages([epicWideArt(s) || s.cover], IMAGE_HERO_WIDTH);
 
   // News is Steam's feed. Asking for a Steam store search on every Epic game
   // would cost a request for nothing, so only titles with a Steam copy do it.
@@ -3647,11 +3653,14 @@ export async function prefetchGamePage(appName: string): Promise<void> {
     ensureIgdbOverview({ appName, title: lookupTitle }, year, () => {
       const game = igdbGameFor(appName);
       if (!game) return;
-      const urls: Array<string | null> = [
-        ...game.screenshots.map((id) => igdbImage(id, "screenshot_big")),
-        ...game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : null)),
-      ];
-      warmImages(urls);
+      warmImages(
+        game.screenshots.map((id) => igdbImage(id, "screenshot_big")),
+        IMAGE_SHOT_WIDTH,
+      );
+      warmImages(
+        game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : null)),
+        IMAGE_COVER_WIDTH,
+      );
     });
   });
 }
