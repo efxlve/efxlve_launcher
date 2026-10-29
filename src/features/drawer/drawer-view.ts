@@ -2725,7 +2725,6 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="ach-source-line">
           ${icon("layers", 12)}
           <span class="ach-source-line-label">${esc(t("ach.sourceLabel", { source: sourceLabel }))}</span>
-          ${canManageSource ? `<button type="button" class="icon-btn ach-source-change" data-act="ach-manage-tab" data-tab="source" data-id="${esc(s.appName)}" data-toggle="1" title="${esc(t("ach.changeSource"))}" aria-label="${esc(t("ach.changeSource"))}">${icon("edit", 12)}</button>` : ""}
         </div>
       </div>
     </section>`;
