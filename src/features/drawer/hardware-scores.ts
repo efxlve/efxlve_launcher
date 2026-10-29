@@ -81,6 +81,48 @@ function cpuKeys(name: string): string[] {
   for (const match of n.matchAll(/\bi([3579])[- ]?(\d{4,5}[a-z]*)\b/g)) {
     keys.add(`i${match[1]}-${match[2]}`);
   }
+  // Core 2 (2006-2009). Desktop models carry an E/Q prefix, but Windows also
+  // reports "Core2 CPU 6300" for an E6300, so a bare number becomes E-series.
+  // Rows also spell the model apart from the family ("Core2 Duo 1.86 GHz
+  // (E6300)"), so the model code is searched across the whole name.
+  if (/\bcore\s*2\b/.test(n)) {
+    const model =
+      /\b([eqptx]\d{3,4}[a-z]?)\b/.exec(n) ??
+      /\bcore\s*2\b(?:\s*(?:duo|quad|extreme))?\s*(?:cpu\s*)?(\d{4})\b/.exec(n);
+    keys.add(model ? `core 2 ${/^\d/.test(model[1]) ? `e${model[1]}` : model[1]}` : "core 2");
+  }
+  // Athlon 64 X2 (2005-2007); the model number can follow "Dual Core".
+  for (const match of n.matchAll(
+    /\bathlon\s*64\s*x2\b(?:\s*dual core)?(?:\s*(\d{3,4}))?/g,
+  )) {
+    keys.add(match[1] ? `athlon 64 x2 ${match[1]}` : "athlon 64 x2");
+  }
+  // Athlon II X2/X3/X4 (2009-2011).
+  for (const match of n.matchAll(
+    /\bathlon\s*ii\s*x([234])\b(?:\s*(\d{3,4}[a-z]?))?/g,
+  )) {
+    keys.add(match[2] ? `athlon ii x${match[1]} ${match[2]}` : `athlon ii x${match[1]}`);
+  }
+  // Athlon X4 (2013-2015) and the 200GE/3000G line.
+  for (const match of n.matchAll(
+    /\bathlon\s*x([234])\b(?:\s*(\d{3,4}[a-z]?))?/g,
+  )) {
+    keys.add(match[2] ? `athlon x${match[1]} ${match[2]}` : `athlon x${match[1]}`);
+  }
+  for (const match of n.matchAll(/\bathlon\s+(\d{3,4}[a-z]{0,2})\b/g)) {
+    keys.add(`athlon ${match[1]}`);
+  }
+  // Phenom II X2/X3/X4/X6 (2009-2011).
+  for (const match of n.matchAll(
+    /\bphenom\s*ii\s*x([2346])\b(?:\s*(\d{3,4}[a-z]?))?/g,
+  )) {
+    keys.add(match[2] ? `phenom ii x${match[1]} ${match[2]}` : `phenom ii x${match[1]}`);
+  }
+  // FX-4300..FX-9590. The FX APUs are reported with "Radeon" and are skipped
+  // as GPUs before this runs.
+  for (const match of n.matchAll(/\bfx\s*(\d{4}[a-z]?)\b/g)) {
+    keys.add(`fx ${match[1]}`);
+  }
   for (const match of n.matchAll(/\bultra ([3579]) (\d{3}[a-z]*)\b/g)) {
     keys.add(`ultra ${match[1]} ${match[2]}`);
   }
@@ -100,6 +142,34 @@ function cpuKeys(name: string): string[] {
   return [...keys];
 }
 
+/** Family rows: the weakest member is the threshold a store row implies. */
+const CPU_FAMILIES = [
+  "core 2",
+  "athlon 64 x2",
+  "athlon ii x2",
+  "athlon ii x3",
+  "athlon ii x4",
+  "athlon x2",
+  "athlon x3",
+  "athlon x4",
+  "phenom ii x2",
+  "phenom ii x3",
+  "phenom ii x4",
+  "phenom ii x6",
+  "fx",
+];
+
+/** The family a key belongs to, longest match first ("phenom ii x4 955"
+ *  belongs to "phenom ii x4", not to "phenom"). */
+function cpuFamilyOf(key: string): string | null {
+  let family: string | null = null;
+  for (const candidate of CPU_FAMILIES) {
+    if (key !== candidate && !key.startsWith(`${candidate} `)) continue;
+    if (!family || candidate.length > family.length) family = candidate;
+  }
+  return family;
+}
+
 /** Table score for a device name, or null when the model is not listed. */
 export function hardwareScore(kind: HardwareKind, name: string): number | null {
   if (!name) return null;
@@ -111,6 +181,15 @@ export function hardwareScore(kind: HardwareKind, name: string): number | null {
   for (const key of keys) {
     const score = TABLES[kind].get(key);
     if (score !== undefined) return score;
+  }
+  // A store row can name a model the table only knows by family ("Athlon 64
+  // X2 4050+" next to the 4800+ entry); the family row is the floor.
+  if (kind === "cpu") {
+    for (const key of keys) {
+      const family = cpuFamilyOf(key);
+      const score = family ? TABLES.cpu.get(family) : undefined;
+      if (score !== undefined) return score;
+    }
   }
   return null;
 }

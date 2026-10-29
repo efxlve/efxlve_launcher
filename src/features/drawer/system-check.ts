@@ -411,9 +411,32 @@ function checkCpu(required: string, facts: PcFacts): RequirementCheck | null {
       /(\d+)(?:\s+(?:hardware|cpu|logical|physical|işlemci))*\s*(cores?|threads?|çekirdek|iş parçacığı)/gi,
     ),
   ];
-  const coreNeeds = requirements
-    .filter((match) => /core|çekirdek/i.test(match[2]))
-    .map((match) => Number(match[1]));
+  // Rows also spell the count out: "Dual core CPU", "quad-core processor".
+  const wordCores: Record<string, number> = {
+    single: 1,
+    dual: 2,
+    triple: 3,
+    quad: 4,
+    penta: 5,
+    hexa: 6,
+    six: 6,
+    octa: 8,
+    eight: 8,
+    deca: 10,
+    ten: 10,
+    twelve: 12,
+  };
+  const spelledCores = [
+    ...required.matchAll(
+      /\b(single|dual|triple|quad|penta|hexa|six|octa|eight|deca|ten|twelve)[\s-]*cores?\b/gi,
+    ),
+  ].map((match) => wordCores[match[1].toLowerCase()]);
+  const coreNeeds = [
+    ...requirements
+      .filter((match) => /core|çekirdek/i.test(match[2]))
+      .map((match) => Number(match[1])),
+    ...spelledCores,
+  ];
   const threadNeeds = requirements
     .filter((match) => /thread|iş parçacığı/i.test(match[2]))
     .map((match) => Number(match[1]));
@@ -465,6 +488,19 @@ function checkGpu(required: string, facts: PcFacts): RequirementCheck | null {
         return { status: "partial", detected, scored: true };
       }
       return { status: score, detected, scored: true };
+    }
+    // The score table starts at DirectX 10 hardware, so a row that only names
+    // DirectX 9-era cards ("Radeon HD 2600 XT, nVidia 8600") has no score. A
+    // PC at a DirectX 12 feature level is above the whole class the row
+    // describes, and the VRAM part of the row was already checked above.
+    const rowLevel = requiredDirectXLevel(required);
+    if (
+      rowLevel !== null &&
+      rowLevel <= 100 &&
+      Number(facts.directxLevel) >= 120 &&
+      (vramValues.length === 0 || hasVram)
+    ) {
+      return { status: "ok", detected };
     }
     return { status: hasVram ? "partial" : "manual", detected };
   }
