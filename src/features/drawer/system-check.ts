@@ -314,15 +314,32 @@ function freeSpace(installPath: string | null | undefined): FreeSpace {
   };
 }
 
+/**
+ * Every bit width a row accepts. A row can offer both ("32bit/64bit") or
+ * write them once per version ("Windows 7 (32-bit), Windows 7 (64-bit)").
+ */
+function requiredBitWidths(text: string): number[] {
+  const widths = new Set<number>();
+  for (const match of text.matchAll(
+    /(32|64)\s*(?:(?:\/|,|-|or)\s*(32|64)\s*)?-?\s*bit\b/gi,
+  )) {
+    widths.add(Number(match[1]));
+    if (match[2]) widths.add(Number(match[2]));
+  }
+  return [...widths];
+}
+
 function checkOs(required: string, facts: PcFacts): RequirementCheck | null {
   const detected = osDetected(facts);
   if (!/windows/i.test(required) || !detected) return detected ? { status: "manual", detected } : null;
   const win = windowsFacts(facts);
   if (!win) return { status: "manual", detected };
-  const bits = /(64|32)[\s-]?bit/i.exec(required);
-  if (bits) {
-    const needed = Number(bits[1]);
-    if (win.bits && win.bits !== needed) return { status: "fail", detected };
+  const widths = requiredBitWidths(required);
+  // A row that offers either width only needs one of them to match, and a
+  // 64-bit Windows still runs 32-bit builds. Only a 64-bit-only row on a
+  // 32-bit PC is a real mismatch.
+  if (win.bits === 32 && widths.length > 0 && !widths.includes(32)) {
+    return { status: "fail", detected };
   }
   const neededVersion = requiredWindowsVersion(required);
   if (!neededVersion) return { status: "manual", detected };
