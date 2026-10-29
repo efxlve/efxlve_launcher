@@ -17,6 +17,13 @@ import { modalRoot, syncSidebarGameActive } from "../../core/dom";
 
 import { achSummaryOf, epicDlProgress, installPathIssue, isAppDownloading, isAppPlatinum, patchLibraryCardDom } from "../../core/game-view";
 import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
+import {
+  clearStoreSteamAppId,
+  setStoreDefinitionSource,
+  setStoreSteamAppId,
+  storeDefinitionSourceEnabled,
+  storeSteamAppIdFor,
+} from "../../core/store-achievement-prefs";
 import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages } from "../../core/picture-cache";
@@ -2017,6 +2024,23 @@ function emptyAchievementProbe(): SteamAchievementProbe {
   };
 }
 
+/** Manual Steam AppID for a store game whose title does not match Steam. */
+function renderStoreAppIdEditor(s: EpicSummary): string {
+  const current = storeSteamAppIdFor(s.appName);
+  return `<div class="ach-source-card">
+    <div class="ach-source-header">
+      <span class="ach-source-title">${icon("hash", 14)} ${t("ach.appIdLabel")}</span>
+      <button class="icon-btn" data-act="ach-appid-close" data-id="${esc(s.appName)}" title="${t("common.close")}">${icon("x", 12)}</button>
+    </div>
+    <div class="ach-source-desc">${esc(t("ach.appIdHint"))}</div>
+    <div class="ach-source-custom-row">
+      <input id="ach-store-appid-input" class="ach-custom-input" type="text" inputmode="numeric" autocomplete="off" value="${esc(current)}" placeholder="e.g. 1325200" />
+      <button class="btn play small" data-act="ach-appid-save" data-id="${esc(s.appName)}">${t("common.save")}</button>
+      ${current ? `<button class="btn ghost small" data-act="ach-appid-clear" data-id="${esc(s.appName)}">${t("common.delete")}</button>` : ""}
+    </div>
+  </div>`;
+}
+
 /**
  * Reads the install once per game: the Steamworks DLL and any emulator file.
  * The empty state paints from this cache; a miss starts one read and repaints
@@ -2064,6 +2088,10 @@ async function resolveStoreSteamAppId(
   appName: string,
   probe: SteamAchievementProbe,
 ): Promise<string> {
+  // The player's explicit choice wins over the install file and the title
+  // match: it is the only way to correct a delisted or renamed store page.
+  const manual = storeSteamAppIdFor(appName);
+  if (manual) return manual;
   if (probe.appId) return probe.appId;
   const title = summaryOf(appName)?.title ?? "";
   if (!title) return "";
@@ -2144,9 +2172,11 @@ async function storeDefinitionAchievements(
     return current;
   }
   const probe = await ensureAchievementProbe(appName, force);
-  // A Steamworks game has a real local source; its setup card is the better
-  // answer. EOS-only titles are the ones this list serves.
-  if (!probe.eos || probe.steamworks) return null;
+  // Automatically this list serves EOS-only titles. A Steamworks game gets it
+  // when the player explicitly chose the manual definition source.
+  if (!storeDefinitionSourceEnabled(appName) && (!probe.eos || probe.steamworks)) {
+    return null;
+  }
   const steamAppId = await resolveStoreSteamAppId(appName, probe);
   if (!steamAppId) return null;
   if (probe.appId !== steamAppId) {
@@ -2165,6 +2195,37 @@ async function storeDefinitionAchievements(
 
 /** Loads the local emulator set after the user accepts the empty-state card. */
 export function useLocalAchievementSource(appName: string): void {
+  setStoreDefinitionSource(appName, false);
+  achievementProbeCache.delete(appName);
+  void fetchAndRenderAchievements(appName, true);
+}
+
+/** Saves the manual AppID and reloads the page through it. */
+export function applyStoreSteamAppId(appName: string, raw: string): boolean {
+  if (!raw.trim()) {
+    // An empty field means "go back to automatic detection"; the editor's
+    // hint says so, and the Delete button does the same thing.
+    clearStoreSteamAppIdForGame(appName);
+    return true;
+  }
+  if (!setStoreSteamAppId(appName, raw)) return false;
+  S.achStoreAppIdEditor = null;
+  achievementProbeCache.delete(appName);
+  void fetchAndRenderAchievements(appName, true);
+  return true;
+}
+
+/** Drops the manual AppID and goes back to automatic detection. */
+export function clearStoreSteamAppIdForGame(appName: string): void {
+  clearStoreSteamAppId(appName);
+  S.achStoreAppIdEditor = null;
+  achievementProbeCache.delete(appName);
+  void fetchAndRenderAchievements(appName, true);
+}
+
+/** Shows the Steam definition list without setting up an emulator. */
+export function useStoreDefinitionSource(appName: string): void {
+  setStoreDefinitionSource(appName, true);
   achievementProbeCache.delete(appName);
   void fetchAndRenderAchievements(appName, true);
 }
@@ -2246,7 +2307,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     const raAction = raEnabled
       ? `<button class="btn ghost small" data-act="ra-panel" data-id="${esc(s.appName)}">${icon("globe", 13)}<span>${esc(t("ach.raTitle"))}</span></button>`
       : "";
-    const withPanel = (html: string): string => `${raPanel}${html}`;
+    const appIdEditor =
+      S.achStoreAppIdEditor === s.appName ? renderStoreAppIdEditor(s) : "";
+    const withPanel = (html: string): string => `${appIdEditor}${raPanel}${html}`;
     // Epic copies of Ubisoft games: Epic ships no achievement set for some of
     // them (Watch Dogs), so the local Ubisoft Connect cache is the source.
     if (sourceOfKey(s.appName) === "epic" && partner?.type === "ubisoft") {
@@ -2298,20 +2361,23 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         const generate = s.installed
           ? `<button class="btn ghost small" data-act="ach-generate-definitions" data-id="${esc(s.appName)}">${icon("download", 13)} ${t("ach.swGenerate")}</button>`
           : "";
+        const showDefinitions = `<button class="btn ghost small" data-act="ach-show-definitions" data-id="${esc(s.appName)}">${icon("list", 13)} ${t("ach.showDefinitions")}</button>`;
+        const appIdButton = `<button class="btn ghost small" data-act="ach-appid-open" data-id="${esc(s.appName)}">${icon("hash", 13)} ${t("ach.appIdLabel")}</button>`;
         return withPanel(achSetupState(
           "package",
           t("ach.swMissingTitle", { store }),
           t("ach.swMissingDesc", { store }),
           [t("ach.swStep1"), t("ach.swStep2"), t("ach.swStep3")],
-          generate,
+          `${generate}${showDefinitions}${appIdButton}`,
         ));
       }
       if (probe.eos) {
+        const appIdButton = `<button class="btn ghost small" data-act="ach-appid-open" data-id="${esc(s.appName)}">${icon("hash", 13)} ${t("ach.appIdLabel")}</button>`;
         return withPanel(emptyState(
           "globe",
           t("ach.eosTitle"),
           esc(t("ach.eosDesc", { store })),
-          `<button class="btn ghost small" data-act="ach-refresh" data-id="${esc(s.appName)}">${icon("refresh", 13)} ${t("ach.refreshData")}</button>${raAction}`,
+          `${appIdButton}<button class="btn ghost small" data-act="ach-refresh" data-id="${esc(s.appName)}">${icon("refresh", 13)} ${t("ach.refreshData")}</button>${raAction}`,
         ));
       }
       if (s.installed) {
@@ -2482,7 +2548,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     : data.data_source === "local"
       ? `<div class="ach-source-note">${icon("hard-drive", 13)}<span>${esc(t("ach.localSourceNote"))}</span></div>`
       : data.data_source === "definitions"
-        ? `<div class="ach-source-note">${icon("globe", 13)}<span>${esc(t("ach.eosSourceNote"))}</span></div>`
+        ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
         : "";
 
   // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot
@@ -2555,6 +2621,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   return `
     <div class="ach-workspace${detailItem ? " has-detail" : ""}">
       <div class="ach-list-pane">
+    ${S.achStoreAppIdEditor === s.appName ? renderStoreAppIdEditor(s) : ""}
     ${sourceCard}
     ${raPanel}
     ${S.achEditPanelOpen === s.appName ? renderAchievementEditorCard(s, data) : ""}
@@ -2591,6 +2658,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="ach-summary-actions">
           ${raEnabled ? `<button class="icon-btn ${S.raPanelOpen === s.appName ? "active" : ""}" data-act="ra-panel" data-id="${esc(s.appName)}" title="${esc(t("ach.raTitle"))}">${icon("globe", 14)}</button>` : ""}
           <button class="icon-btn ${S.achEditPanelOpen === s.appName ? "active" : ""}" data-act="ach-edit-settings" data-id="${esc(s.appName)}" title="${esc(t("ach.editorOpen"))}">${icon("edit", 14)}</button>
+          ${data.data_source === "definitions" ? `<button class="icon-btn ${S.achStoreAppIdEditor === s.appName ? "active" : ""}" data-act="ach-appid-open" data-id="${esc(s.appName)}" title="${esc(t("ach.appIdLabel"))}">${icon("hash", 14)}</button>` : ""}
           ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
           <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
           ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}

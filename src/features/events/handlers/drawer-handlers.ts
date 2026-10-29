@@ -39,7 +39,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache, createEmulatorAchievements, useLocalAchievementSource } from "../../drawer/drawer-view";
+import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache, createEmulatorAchievements, useLocalAchievementSource, applyStoreSteamAppId, clearStoreSteamAppIdForGame, useStoreDefinitionSource } from "../../drawer/drawer-view";
 import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
@@ -546,6 +546,44 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
 
     case "ach-generate-definitions": {
       if (id) void createEmulatorAchievements(id);
+      return true;
+    }
+
+    case "ach-show-definitions": {
+      if (id) useStoreDefinitionSource(id);
+      return true;
+    }
+
+    /* ---------- Manual Steam AppID for store games ---------- */
+
+    case "ach-appid-open": {
+      if (id) {
+        S.achStoreAppIdEditor = S.achStoreAppIdEditor === id ? null : id;
+        repaintAchievementsTab(id);
+      }
+      return true;
+    }
+
+    case "ach-appid-close": {
+      if (id) {
+        S.achStoreAppIdEditor = null;
+        repaintAchievementsTab(id);
+      }
+      return true;
+    }
+
+    case "ach-appid-save": {
+      if (id) {
+        const input = document.getElementById("ach-store-appid-input") as HTMLInputElement | null;
+        if (!applyStoreSteamAppId(id, input?.value ?? "")) {
+          toast(i18n("ach.appIdInvalid"), "err");
+        }
+      }
+      return true;
+    }
+
+    case "ach-appid-clear": {
+      if (id) clearStoreSteamAppIdForGame(id);
       return true;
     }
 

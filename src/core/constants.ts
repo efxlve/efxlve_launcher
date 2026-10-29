@@ -160,6 +160,10 @@ export const OVERLAY_OPACITY_KEY = "efxlve-overlay-opacity";
 export const OVERLAY_DISABLED_KEY = "efxlve-overlay-disabled-games";
 /** Achievement cards: games whose notifications are muted, as a JSON app-name array. */
 export const ACH_DISABLED_GAMES_KEY = "efxlve-ach-disabled-games";
+/** Store game key → Steam AppID the player entered for its achievement list. */
+export const STORE_STEAM_APP_IDS_KEY = "efxlve-store-steam-appids";
+/** Store games whose achievements the player wants from Steam definitions. */
+export const STORE_DEFINITION_SOURCES_KEY = "efxlve-store-definition-sources";
 /** Library storefronts that stay visible. Missing means every store. */
 export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 /** Canonical game title → library key of the store version the player picked. */

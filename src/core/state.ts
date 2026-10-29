@@ -423,6 +423,8 @@ export const S = {
   revealedAchievements: (loadStrSet(REVEALED_ACH_KEY)) as Set<string>,
   currentModalAppName: (null) as string | null,
   achSourceModalOpen: (null) as string | null,
+  /** Store game whose manual Steam AppID editor is open. */
+  achStoreAppIdEditor: (null) as string | null,
   /** Game whose launcher-only achievement state editor is open. */
   achEditPanelOpen: (null) as string | null,
   /** RetroAchievements account; the web API key never reaches the webview. */
