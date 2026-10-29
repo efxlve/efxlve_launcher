@@ -297,6 +297,7 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     }
 
     let started = std::time::Instant::now();
+    let watch_dir = working_dir.to_path_buf();
     let _ = app.emit(
         "game-status",
         serde_json::json!({ "id": app_key, "running": true }),
@@ -305,6 +306,20 @@ pub async fn custom_games_launch(app: AppHandle, id: String) -> Result<(), Strin
     std::thread::spawn(move || {
         let _ = child.wait();
         let elapsed = started.elapsed().as_secs();
+        // A custom entry can be a launcher/updater stub that starts the real
+        // game and exits after a second. Do not report a stop while that game
+        // is still running; let the folder watcher own the rest of the session.
+        if elapsed < 5 {
+            std::thread::sleep(std::time::Duration::from_millis(1000));
+            let exes = crate::legendary::transfers::discover_game_executables(&watch_dir, None);
+            if !exes.is_empty()
+                && crate::legendary::transfers::is_game_process_running(Some(&watch_dir), &exes)
+            {
+                forget_pid(&app_key, child_pid);
+                let _ = app_clone.emit("custom-games-changed", ());
+                return;
+            }
+        }
         // The frontend starts/stops the watcher from the game-status event, so
         // both launcher and external launches use the same path.
         crate::legendary::screenshots::clear_active_running_game(&app_key);
