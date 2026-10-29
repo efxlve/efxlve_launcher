@@ -169,6 +169,7 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
     let _ = win.set_always_on_top(true);
     let _ = win.show();
     make_click_through(&win);
+    #[cfg(windows)]
     if let Ok(hwnd) = win.hwnd() {
         crate::overlay::hud::raise_topmost(hwnd.0 as isize);
     }
@@ -184,6 +185,7 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
             }
             if let Some(win) = handle.get_webview_window(TOAST_LABEL) {
                 make_click_through(&win);
+                #[cfg(windows)]
                 if let Ok(hwnd) = win.hwnd() {
                     crate::overlay::hud::raise_topmost(hwnd.0 as isize);
                 }
