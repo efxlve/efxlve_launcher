@@ -316,13 +316,12 @@ fn ensure_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     Ok(win)
 }
 
-/// Makes the toast click-through without `WS_EX_LAYERED`.
+/// Makes the toast click-through.
 ///
-/// Tauri's `set_ignore_cursor_events` adds `WS_EX_LAYERED`, and a layered window
-/// can sit behind a fullscreen game even when it is topmost. The toast keeps
-/// DWM per-pixel transparency and instead uses `WS_EX_TRANSPARENT` plus a
-/// `WM_NCHITTEST -> HTTRANSPARENT` subclass on the window and its WebView2
-/// children.
+/// `WS_EX_TRANSPARENT` alone only hands the mouse to windows of the same
+/// thread, so the WebView2 child kept swallowing every click. `WS_EX_LAYERED`
+/// makes the pass-through global, and DWM per-pixel transparency is unchanged.
+/// The hit-test subclass below stays as a guard for WebView2 child windows.
 #[cfg(windows)]
 fn make_click_through(win: &WebviewWindow) {
     let Ok(hwnd) = win.hwnd() else {
@@ -331,7 +330,7 @@ fn make_click_through(win: &WebviewWindow) {
     let hwnd = hwnd.0 as isize;
     unsafe {
         let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-        let next = (ex | WS_EX_TRANSPARENT) & !WS_EX_LAYERED;
+        let next = ex | WS_EX_TRANSPARENT | WS_EX_LAYERED;
         SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next);
         let proc = toast_click_through_proc as *const () as isize;
         if GetWindowLongPtrW(hwnd, GWLP_WNDPROC) != proc {
