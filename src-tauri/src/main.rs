@@ -898,6 +898,13 @@ fn reset_crash_streak(app: &AppHandle) {
 }
 
 fn recover_broken_webview(app: &tauri::App, recovery: bool, early_crash: bool) {
+    // `tauri dev` restarts the child process on every Rust edit. Those are not
+    // WebView2 crashes; quarantining the profile on each one loses the store
+    // sessions (and flips the app to software rendering) during development.
+    if cfg!(debug_assertions) {
+        write_crash_streak(app.handle(), 0);
+        return;
+    }
     let handle = app.handle();
     let mut streak = read_crash_streak(handle);
     if recovery {
@@ -1591,10 +1598,11 @@ fn main() {
                 .app_data_dir()
                 .ok()
                 .map(|dir| dir.join("run.marker"));
-            let recovery = marker_path
-                .as_ref()
-                .map(|path| path.is_file())
-                .unwrap_or(false);
+            let recovery = !cfg!(debug_assertions)
+                && marker_path
+                    .as_ref()
+                    .map(|path| path.is_file())
+                    .unwrap_or(false);
             let previous_started = marker_path
                 .as_ref()
                 .and_then(|path| std::fs::read_to_string(path).ok())
