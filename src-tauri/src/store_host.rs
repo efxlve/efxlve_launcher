@@ -357,10 +357,11 @@ fn maybe_suspend_store_view(view: &tauri::Webview) {
 fn resume_store_view(view: &tauri::Webview) {
     let label = view.label();
     note_store_shown(label);
-    if store_is_suspended(label) {
-        let _ = crate::webview_power::resume(view);
-        set_store_suspended(label, false);
-    }
+    // Always wake before a show. If a previous resume failed or a reload left
+    // the controller parked, the flag can be out of date; `Resume` on an
+    // already-awake webview is a no-op.
+    let _ = crate::webview_power::resume(view);
+    set_store_suspended(label, false);
 }
 
 /// Closes the storefronts beyond the warm limit and returns their ids.

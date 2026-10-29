@@ -111,17 +111,12 @@ fn suspend_tab(id: u32, view: &tauri::Webview) {
 }
 
 fn resume_tab(id: u32, view: &tauri::Webview) {
-    let suspended = SUSPENDED_TABS
-        .lock()
-        .map(|mut list| {
-            let had = list.contains(&id);
-            list.retain(|tab| *tab != id);
-            had
-        })
-        .unwrap_or(false);
-    if suspended {
-        let _ = crate::webview_power::resume(view);
+    if let Ok(mut list) = SUSPENDED_TABS.lock() {
+        list.retain(|tab| *tab != id);
     }
+    // Wake even if the bookkeeping says the tab was not suspended: a failed or
+    // raced resume must not leave a visible tab frozen.
+    let _ = crate::webview_power::resume(view);
 }
 
 fn forget_tab(id: u32) {

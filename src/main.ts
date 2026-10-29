@@ -68,6 +68,11 @@ applyCustomCss(S.customCss);
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();
 perfMark("main:module");
+// A main-webview reload (a dev HMR pass, or a renderer that was recreated)
+// leaves the native store child alive while the fresh frontend is on the
+// library. Park it before the first paint; the store view will show it again
+// when the user opens that page.
+void invoke("hide_store_view").catch(() => undefined);
 initSidebarLayout();
 initMiniPlayer();
 applySidebarPageVisibility();

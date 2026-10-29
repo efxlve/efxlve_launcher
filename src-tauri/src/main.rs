@@ -817,9 +817,14 @@ fn set_main_view_suspended(app: &tauri::AppHandle, suspended: bool) {
         let Some(view) = app.get_webview("main") else {
             return;
         };
-        if MAIN_VIEW_SUSPENDED.swap(suspended, std::sync::atomic::Ordering::Relaxed) == suspended {
+        let was_suspended =
+            MAIN_VIEW_SUSPENDED.swap(suspended, std::sync::atomic::Ordering::Relaxed);
+        if suspended && was_suspended {
             return;
         }
+        // Wake even when the flag says the view was not suspended: a renderer
+        // reload can leave the controller parked after the flag was cleared.
+        // `Resume` on an already-awake webview is a no-op.
         let ok = if suspended {
             webview_power::suspend(&view)
         } else {
