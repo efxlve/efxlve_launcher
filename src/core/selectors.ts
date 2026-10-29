@@ -477,9 +477,12 @@ export function canonicalGameTitle(title: string): string {
   // "Enhanced Edition" is a SKU of the same game (Dying Light). Standalone
   // "Enhanced" is a different product (GTA V Enhanced vs Legacy) and stays.
   s = s.replace(/\benhanced edition\b/gi, "");
-  s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|director'?s cut|remastered|goty|game of the year).*/i, "");
+  // "Remastered" is a separate product with its own app id (The Wolf Among Us
+  // vs The Wolf Among Us Remastered), so it must not collapse into the base
+  // title; the same title on two stores still matches.
+  s = s.replace(/[:\-–—]\s*(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|director'?s cut|goty|game of the year).*/i, "");
   s = s.replace(/\b(standard|deluxe|gold|premium|definitive|ultimate|special|complete|anniversary|goty|game of the year)\s*(edition|surum|sürüm)?\b/gi, "");
-  s = s.replace(/\b(director'?s cut|remastered|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, "");
+  s = s.replace(/\b(director'?s cut|base game|ana oyun|temel oyun|edition|sürüm|surum)\b/gi, "");
   return s.replace(/[^a-z0-9]+/g, " ").trim();
 }
 
