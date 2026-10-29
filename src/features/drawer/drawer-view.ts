@@ -2504,12 +2504,18 @@ export function startStoreAchievementSession(appName: string): void {
   // A running game is the only thing polled here; a short interval is what
   // makes the card feel immediate. The calls are small local/store reads.
   const intervalMs = isUbi ? 3_000 : 4_000;
+  let tick = 0;
   const timer = window.setInterval(() => {
     if (!S.runningGames.has(appName)) {
       stopStoreAchievementPoll(appName);
       return;
     }
-    void fetchAndRenderAchievements(appName, true, true).then(() => {
+    // Epic's cache is free to read, while a forced answer spawns the legendary
+    // CLI. Force every fourth tick (~16 s) and read the disk cache in between;
+    // the session-end refresh still catches anything that landed late.
+    tick += 1;
+    const force = tick % 4 === 0;
+    void fetchAndRenderAchievements(appName, force, true).then(() => {
       const unlockedDelta = checkAndEmitNewStoreUnlocks(appName);
       if (unlockedDelta > 0) {
         recordSessionSummary(appName, { unlocked: unlockedDelta, at: Date.now() });
