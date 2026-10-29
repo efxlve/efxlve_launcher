@@ -1974,6 +1974,38 @@ function storeInstallDir(appName: string): string | null {
   return summaryOf(appName)?.installPath ?? null;
 }
 
+/** Store name for the achievement copy; brand names are not translated. */
+function achievementStoreLabel(appName: string): string {
+  const source = sourceOfKey(appName);
+  if (source === "gog") return "GOG";
+  if (source === "amazon") return "Amazon Games";
+  return "Epic Games";
+}
+
+/**
+ * Empty state with numbered setup steps. `emptyState` keeps its sentence in a
+ * single paragraph; the Goldberg setup needs a real list so the numbers and
+ * the wrapped lines stay readable.
+ */
+function achSetupState(
+  iconName: IconName,
+  title: string,
+  intro: string,
+  steps: string[],
+  actions = "",
+): string {
+  const list = steps.length
+    ? `<ol class="ach-setup-steps">${steps.map((step) => `<li>${esc(step)}</li>`).join("")}</ol>`
+    : "";
+  return `<div class="empty-state">
+    <span class="empty-state-mark">${icon(iconName, 26)}</span>
+    <h3>${title}</h3>
+    <p>${intro}</p>
+    ${list}
+    ${actions ? `<div class="page-actions">${actions}</div>` : ""}
+  </div>`;
+}
+
 function emptyAchievementProbe(): SteamAchievementProbe {
   return {
     appId: "",
@@ -2248,6 +2280,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     // A store title can still carry achievements through Steamworks. Read the
     // install once and offer the local source only when a file really exists.
     if (localEmulatorEligible(s.appName)) {
+      const store = achievementStoreLabel(s.appName);
       const probe = achievementProbeCache.get(s.appName);
       if (!probe) {
         void ensureAchievementProbe(s.appName);
@@ -2257,7 +2290,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         return withPanel(emptyState(
           "hard-drive",
           t("ach.swLocalTitle"),
-          esc(t("ach.swLocalDesc")),
+          esc(t("ach.swLocalDesc", { store })),
           `<button class="btn play small" data-act="ach-use-emulator" data-id="${esc(s.appName)}">${icon("check", 13)} ${t("ach.swUse")}</button>`,
         ));
       }
@@ -2265,10 +2298,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         const generate = s.installed
           ? `<button class="btn ghost small" data-act="ach-generate-definitions" data-id="${esc(s.appName)}">${icon("download", 13)} ${t("ach.swGenerate")}</button>`
           : "";
-        return withPanel(emptyState(
-          "settings",
-          t("ach.swMissingTitle"),
-          t("ach.swMissingDesc"),
+        return withPanel(achSetupState(
+          "package",
+          t("ach.swMissingTitle", { store }),
+          t("ach.swMissingDesc", { store }),
+          [t("ach.swStep1"), t("ach.swStep2"), t("ach.swStep3")],
           generate,
         ));
       }
@@ -2276,14 +2310,14 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         return withPanel(emptyState(
           "globe",
           t("ach.eosTitle"),
-          esc(t("ach.eosDesc")),
-          raAction,
+          esc(t("ach.eosDesc", { store })),
+          `<button class="btn ghost small" data-act="ach-refresh" data-id="${esc(s.appName)}">${icon("refresh", 13)} ${t("ach.refreshData")}</button>${raAction}`,
         ));
       }
       if (s.installed) {
         return withPanel(emptyState(
           "trophy",
-          t("ach.noSupportTitle"),
+          t("ach.swUnsupportedTitle", { store }),
           esc(t("ach.swUnsupportedDesc")),
           raAction,
         ));
