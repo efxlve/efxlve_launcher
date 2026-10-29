@@ -338,7 +338,7 @@
 :root[data-surface="white"] :is(.selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card, .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog, .changelog-dialog, .custom-game-modal) {
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] :is(.selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop, .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay, .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop) {
+:root[data-surface="white"] :is(.selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop, .col-gallery-backdrop, .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay, .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop) {
   background: rgba(15, 23, 42, 0.38);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -649,6 +649,7 @@
 /* Modal Backdrops & Overlays */
 :root[data-surface="gloss"] :is(
   .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
+  .col-gallery-backdrop,
   .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay,
   .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop
 ) {
@@ -1790,6 +1791,7 @@
 /* Overlays & Backdrops */
 :root[data-surface="blades"] :is(
   .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
+  .col-gallery-backdrop,
   .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay,
   .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop
 ) {
