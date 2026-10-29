@@ -290,10 +290,12 @@ pub fn feedback_has_crash(app: AppHandle) -> bool {
         .unwrap_or(false)
 }
 
-/// True when the previous process ended without reaching a clean exit.
+/// True when the previous process crashed early enough that the feedback
+/// dialog is worth opening automatically. A long session that was killed (an
+/// updater restart, Task Manager) is not a crash.
 #[tauri::command]
 pub fn feedback_recovery_pending(state: tauri::State<'_, crate::RunMarker>) -> bool {
-    state.recovery
+    state.prompt
 }
 
 /// One line about the window at report time.

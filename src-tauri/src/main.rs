@@ -135,6 +135,10 @@ impl Default for TrayPref {
 pub struct RunMarker {
     pub path: Option<std::path::PathBuf>,
     pub recovery: bool,
+    /// Offer the feedback dialog only for a crash in the first seconds. A
+    /// force-kill or an updater restart after a long session leaves the marker
+    /// too, but it is not a crash worth interrupting the next launch for.
+    pub prompt: bool,
 }
 
 #[tauri::command]
@@ -762,6 +766,12 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 } else {
                     perf::write_line_global("win: quit from the tray");
+                    // A tray quit is clean even if the exit event is delayed.
+                    if let Some(marker) = app.try_state::<RunMarker>() {
+                        if let Some(path) = &marker.path {
+                            let _ = std::fs::remove_file(path);
+                        }
+                    }
                     app.exit(0);
                 }
             }
@@ -1642,6 +1652,7 @@ fn main() {
             app.manage(RunMarker {
                 path: marker_path,
                 recovery,
+                prompt: recovery && early_crash,
             });
             // A window whose webview cannot start used to die silently and take
             // the whole interface with it; create the main one here. The overlay
@@ -1741,6 +1752,14 @@ fn main() {
                     set_main_view_suspended(window.app_handle(), true);
                 } else {
                     perf::write_line_global("win: close requested; exiting");
+                    // The event loop removes this on RunEvent::Exit, but a
+                    // normal window close must never look like a crash on the
+                    // next launch if the exit handler loses the race.
+                    if let Some(marker) = window.app_handle().try_state::<RunMarker>() {
+                        if let Some(path) = &marker.path {
+                            let _ = std::fs::remove_file(path);
+                        }
+                    }
                 }
             }
             if let tauri::WindowEvent::Resized(physical_size) = event {
