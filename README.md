@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-222" alt="Windows, Linux and macOS" />
-  <img src="https://img.shields.io/badge/version-0.1.40-222" alt="Version 0.1.39" />
+  <img src="https://img.shields.io/badge/version-0.1.41-222" alt="Version 0.1.41" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
@@ -46,20 +46,20 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.40**:
-[github.com/efxlve/efxlve_launcher/releases/tag/v0.1.39](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.39)
+The current release is **v0.1.41**:
+[github.com/efxlve/efxlve_launcher/releases/tag/v0.1.41](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.41)
 
 ### Which file should I download?
 
 | Your system | Download this | Notes |
 |---|---|---|
-| **Windows 10/11 (64-bit)** | `Efxlve.Launcher_0.1.39_x64-setup.exe` | Recommended. Normal installer with Start-menu and uninstall entries. |
+| **Windows 10/11 (64-bit)** | `Efxlve.Launcher_0.1.41_x64-setup.exe` | Recommended. Normal installer with Start-menu and uninstall entries. |
 | Windows, no installer wanted | `efxlve-launcher-portable.zip` | Extract anywhere and run `efxlve-launcher.exe`. Launcher data stays in `portable-data` beside it. |
-| Windows, managed deployment | `Efxlve.Launcher_0.1.39_x64_en-US.msi` | For shops, labs or scripted installs. |
-| **Linux (x86_64)** | `Efxlve.Launcher_0.1.39_amd64.AppImage` | Portable single file: `chmod +x` and run. |
-| Linux, Debian/Ubuntu | `Efxlve.Launcher_0.1.39_amd64.deb` | Install with your software centre or `sudo apt install ./file.deb`. |
-| Linux, Fedora/RHEL | `Efxlve.Launcher-0.1.39-1.x86_64.rpm` | Install with your software centre or `sudo rpm -i file.rpm`. |
-| **macOS (Apple Silicon)** | `Efxlve.Launcher_0.1.39_aarch64.dmg` | Open the DMG and drag the app to Applications. Unsigned preview: right-click → Open the first time. |
+| Windows, managed deployment | `Efxlve.Launcher_0.1.41_x64_en-US.msi` | For shops, labs or scripted installs. |
+| **Linux (x86_64)** | `Efxlve.Launcher_0.1.41_amd64.AppImage` | Portable single file: `chmod +x` and run. |
+| Linux, Debian/Ubuntu | `Efxlve.Launcher_0.1.41_amd64.deb` | Install with your software centre or `sudo apt install ./file.deb`. |
+| Linux, Fedora/RHEL | `Efxlve.Launcher-0.1.41-1.x86_64.rpm` | Install with your software centre or `sudo rpm -i file.rpm`. |
+| **macOS (Apple Silicon)** | `Efxlve.Launcher_0.1.41_aarch64.dmg` | Open the DMG and drag the app to Applications. Unsigned preview: right-click → Open the first time. |
 
 The `.sig` files and `latest.json` are **updater metadata**, not installers. The app downloads them itself; you never need to open them.
 

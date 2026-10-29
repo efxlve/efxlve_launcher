@@ -31,9 +31,29 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.41",
+    date: "2026-10-30",
+    isCurrent: true,
+    improved: [
+      {
+        en: "Collections now follow the active theme: the gallery and the collection editor use the same surfaces and text colours as every other dialog, including Gloss.",
+        tr: "Koleksiyonlar artık etkin temayı izliyor: galeri ve koleksiyon düzenleyici, Parlak Cam dahil diğer tüm pencerelerle aynı yüzey ve metin renklerini kullanıyor.",
+      },
+      {
+        en: "The library header no longer shows a forward button; Alt+Right still moves forward in the history.",
+        tr: "Kütüphane başlığında artık ileri düğmesi yok; Alt+Sağ Ok geçmişte ilerlemeye devam ediyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Achievement notifications no longer block clicks while the card is on screen; the mouse passes through to the window below, in the launcher and in games.",
+        tr: "Başarım bildirimleri kart görünürken artık tıklamaları engellemiyor; fare launcher'da ve oyunlarda alttaki pencereye geçiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.40",
     date: "2026-10-29",
-    isCurrent: true,
     items: [
       {
         en: "Library cards now name the other stores that own the same game, with short labels such as Epic · Steam; a +N count covers the rest.",
