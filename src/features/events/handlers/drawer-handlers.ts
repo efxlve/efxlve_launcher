@@ -39,7 +39,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache } from "../../drawer/drawer-view";
+import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache, createEmulatorAchievements, useLocalAchievementSource } from "../../drawer/drawer-view";
 import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
@@ -534,6 +534,18 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           });
         }
       }
+      return true;
+    }
+
+    /* ---------- Local Steam API emulator ---------- */
+
+    case "ach-use-emulator": {
+      if (id) useLocalAchievementSource(id);
+      return true;
+    }
+
+    case "ach-generate-definitions": {
+      if (id) void createEmulatorAchievements(id);
       return true;
     }
 

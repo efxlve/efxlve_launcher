@@ -43,6 +43,7 @@ import { hydrateDeckChip } from "./deck";
 import {
   achievementCaptureSouvenir,
   achievementTestNotification,
+  steamAchievementProbe,
   steamFindStoreApp,
   steamGetAchievementCommunity,
   steamGetAchievementSource,
@@ -52,7 +53,9 @@ import {
   steamSetAchievementSource,
   steamStartEmulatorWatcher,
   steamStopAchievementWatcher,
+  steamWriteEmulatorAchievements,
   type AchievementSourceConfig,
+  type SteamAchievementProbe,
 } from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
@@ -81,6 +84,13 @@ import { renderRaPanel } from "./ra-panel";
 import { renderAchSidePanel } from "./ach-side-panel";
 import { renderPowerPyxCard } from "./ach-powerpyx";
 import { powerpyxGameGuide } from "../../guides";
+
+/** Per-game evidence that a store title reads achievements from a local emulator. */
+const achievementProbeCache = new Map<string, SteamAchievementProbe>();
+const achievementProbePending = new Map<string, Promise<SteamAchievementProbe>>();
+const emulatorSetupBusy = new Set<string>();
+/** Steam AppID of a running store game whose unlocks the native watcher reads. */
+const storeEmulatorAppIds = new Map<string, string>();
 
 /** True once the open game page has played its one-shot platinum shine sweep. */
 let platShineDone = false;
@@ -1951,6 +1961,191 @@ export function ensurePowerPyxGuide(appName: string, title: string): void {
     });
 }
 
+/**
+ * Store titles whose achievements may come from a local Steam API emulator:
+ * the store itself has no set, but the game still imports Steamworks.
+ */
+function localEmulatorEligible(appName: string): boolean {
+  const source = sourceOfKey(appName);
+  return source === "epic" || source === "gog" || source === "amazon";
+}
+
+function storeInstallDir(appName: string): string | null {
+  return summaryOf(appName)?.installPath ?? null;
+}
+
+function emptyAchievementProbe(): SteamAchievementProbe {
+  return { appId: "", steamworks: false, dll: null, emulator: null };
+}
+
+/**
+ * Reads the install once per game: the Steamworks DLL and any emulator file.
+ * The empty state paints from this cache; a miss starts one read and repaints
+ * the open tab when it lands.
+ */
+function ensureAchievementProbe(
+  appName: string,
+  force = false,
+): Promise<SteamAchievementProbe> {
+  const cached = achievementProbeCache.get(appName);
+  if (cached && !force) return Promise.resolve(cached);
+  const pending = achievementProbePending.get(appName);
+  if (pending) return pending;
+  const installDir = storeInstallDir(appName);
+  if (!installDir) {
+    const empty = emptyAchievementProbe();
+    achievementProbeCache.set(appName, empty);
+    return Promise.resolve(empty);
+  }
+  const job = steamAchievementProbe("", installDir)
+    .catch(() => emptyAchievementProbe())
+    .then((probe) => {
+      achievementProbeCache.set(appName, probe);
+      achievementProbePending.delete(appName);
+      // Only an idle tab may repaint: a running fetch paints its own answer.
+      if (
+        !S.loadingAchFor.has(appName) &&
+        S.currentModalAppName === appName &&
+        S.activeDrawerTab === "achievements" &&
+        !S.achDetail
+      ) {
+        repaintAchievementsTab(appName);
+      }
+      return probe;
+    });
+  achievementProbePending.set(appName, job);
+  return job;
+}
+
+/**
+ * The Steam AppID for a store game: named by the install when a config is
+ * already there, otherwise an exact Steam store title match.
+ */
+async function resolveStoreSteamAppId(
+  appName: string,
+  probe: SteamAchievementProbe,
+): Promise<string> {
+  if (probe.appId) return probe.appId;
+  const title = summaryOf(appName)?.title ?? "";
+  if (!title) return "";
+  const hit = await steamFindStoreApp(title, steamLanguage(currentLanguage())).catch(
+    () => null,
+  );
+  return hit?.appId ?? "";
+}
+
+/**
+ * A store game whose own API returns no set: when a local emulator file is on
+ * disk, the public Steam schema plus that file is the list. No emulator keeps
+ * the empty state (which then offers the setup card).
+ */
+async function localEmulatorAchievements(
+  appName: string,
+  force: boolean,
+): Promise<EpicAchievementsData | null> {
+  const installDir = storeInstallDir(appName);
+  if (!installDir) return null;
+  const current = S.loadedAchievements.get(appName);
+  // A running session polls; the native watcher already keeps the list fresh,
+  // so an unchanged local answer needs no network call.
+  if (!force && current?.data_source === "local" && current.achievements.length > 0) {
+    return current;
+  }
+  let probe = await ensureAchievementProbe(appName, force);
+  // A game that neither imports Steamworks nor carries an emulator file has no
+  // local source; do not spend a store search on it.
+  if (!probe.steamworks && !probe.emulator) return null;
+  const steamAppId = await resolveStoreSteamAppId(appName, probe);
+  if (!steamAppId) return null;
+  if (!probe.emulator && steamAppId !== probe.appId) {
+    // The AppID may name a global emulator save the first probe could not.
+    probe = await steamAchievementProbe(steamAppId, installDir)
+      .then((found) => {
+        achievementProbeCache.set(appName, found);
+        return found;
+      })
+      .catch(() => probe);
+  }
+  if (!probe.emulator) return null;
+  // The page uses this AppID for the community links and the source picker.
+  if (probe.appId !== steamAppId) {
+    probe = { ...probe, appId: steamAppId };
+    achievementProbeCache.set(appName, probe);
+  }
+  const local = await steamGetEmulatorAchievements(
+    steamAppId,
+    force,
+    installDir,
+    currentLanguage(),
+  ).catch(() => null);
+  if (!local || local.achievements.length === 0) return null;
+  local.data_source = "local";
+  return local;
+}
+
+/** Loads the local emulator set after the user accepts the empty-state card. */
+export function useLocalAchievementSource(appName: string): void {
+  achievementProbeCache.delete(appName);
+  void fetchAndRenderAchievements(appName, true);
+}
+
+/**
+ * Writes the emulator definition file from the public Steam schema, then
+ * reloads the page from it. The file is the emulator's own; Steam is untouched.
+ */
+export async function createEmulatorAchievements(appName: string): Promise<void> {
+  if (!isTauri || emulatorSetupBusy.has(appName)) return;
+  const summary = summaryOf(appName);
+  const installDir = summary?.installPath;
+  if (!installDir) return;
+  emulatorSetupBusy.add(appName);
+  try {
+    const probe = await ensureAchievementProbe(appName, true);
+    const steamAppId = await resolveStoreSteamAppId(appName, probe);
+    if (!steamAppId) {
+      toast(t("ach.noSupportDesc"), "err");
+      return;
+    }
+    const path = await steamWriteEmulatorAchievements(
+      steamAppId,
+      installDir,
+      currentLanguage(),
+    );
+    toast(path, "ok");
+    achievementProbeCache.delete(appName);
+    await fetchAndRenderAchievements(appName, true);
+  } catch (error) {
+    toast(String(error), "err");
+  } finally {
+    emulatorSetupBusy.delete(appName);
+  }
+}
+
+/** Starts the native watcher for a running store game with an emulator file. */
+async function startStoreEmulatorWatch(appName: string): Promise<void> {
+  const installDir = storeInstallDir(appName);
+  if (!installDir) return;
+  const probe = await ensureAchievementProbe(appName, true);
+  // A bare Steamworks DLL is not an emulator setup: without an AppID config or
+  // an achievement file, a watcher would scan the folders all session for
+  // nothing. The file may still appear on the first run after the config is in
+  // place, so the watch starts before it exists in that case.
+  if (!probe.emulator && !probe.appId) return;
+  const steamAppId = await resolveStoreSteamAppId(appName, probe);
+  if (!steamAppId || !S.runningGames.has(appName)) return;
+  storeEmulatorAppIds.set(appName, steamAppId);
+  void steamSetAchievementNotifications(
+    appName,
+    achGameNotificationsEnabled(appName),
+  ).catch(() => {});
+  void steamStartEmulatorWatcher(
+    steamAppId,
+    installDir,
+    currentLanguage(),
+    appName,
+  ).catch(() => {});
+}
+
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const partner = gamePartner(s, rawOf(s.appName));
@@ -2002,6 +2197,42 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (partner) {
       return withPanel(emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }), raAction));
     }
+    // A store title can still carry achievements through Steamworks. Read the
+    // install once and offer the local source only when a file really exists.
+    if (localEmulatorEligible(s.appName)) {
+      const probe = achievementProbeCache.get(s.appName);
+      if (!probe) {
+        void ensureAchievementProbe(s.appName);
+        return withPanel(emptyState("trophy", t("ach.noSupportTitle"), t("ach.noSupportDesc"), raAction));
+      }
+      if (probe.emulator) {
+        return withPanel(emptyState(
+          "hard-drive",
+          t("ach.swLocalTitle"),
+          esc(t("ach.swLocalDesc")),
+          `<button class="btn play small" data-act="ach-use-emulator" data-id="${esc(s.appName)}">${icon("check", 13)} ${t("ach.swUse")}</button>`,
+        ));
+      }
+      if (probe.steamworks) {
+        const generate = s.installed
+          ? `<button class="btn ghost small" data-act="ach-generate-definitions" data-id="${esc(s.appName)}">${icon("download", 13)} ${t("ach.swGenerate")}</button>`
+          : "";
+        return withPanel(emptyState(
+          "settings",
+          t("ach.swMissingTitle"),
+          t("ach.swMissingDesc"),
+          generate,
+        ));
+      }
+      if (s.installed) {
+        return withPanel(emptyState(
+          "trophy",
+          t("ach.noSupportTitle"),
+          esc(t("ach.swUnsupportedDesc")),
+          raAction,
+        ));
+      }
+    }
     return withPanel(emptyState("trophy", t("ach.noSupportTitle"), t("ach.noSupportDesc"), raAction));
   }
 
@@ -2011,7 +2242,13 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   ensureLegacyAchievementNotes(s.appName, () => repaintAchievementsTab(s.appName));
 
   const customGame = s.appName.startsWith("custom::") ? S.customGames.find((g) => g.id === s.appName) : undefined;
-  const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || null);
+  // A store set read through a local emulator still points at the Steam app
+  // for the community links and the source picker.
+  const localSteamAppId =
+    data.data_source === "local"
+      ? achievementProbeCache.get(s.appName)?.appId || null
+      : null;
+  const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || localSteamAppId);
   const isMaskedHidden = (a: (typeof data.achievements)[number]): boolean =>
     Boolean(a.hidden) &&
     !isAchievementUnlocked(a) &&
@@ -2152,7 +2389,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const sourceNote = ubiAchSource.has(s.appName)
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
-    : "";
+    : data.data_source === "local"
+      ? `<div class="ach-source-note">${icon("hard-drive", 13)}<span>${esc(t("ach.localSourceNote"))}</span></div>`
+      : "";
 
   // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot
   // shine sweep (the sweep only runs on the first paint of the page).
@@ -2486,9 +2725,18 @@ export function startStoreAchievementSession(appName: string): void {
     // while it runs. The page fetch caches the answer for a minute, so this
     // loop does not hit the API per tick.
     if (!S.raConfigured || !raGameFor(appName)) return;
-  } else if (source === "amazon" || source === "battlenet" || source === "riot") {
+  } else if (source === "battlenet" || source === "riot") {
     return;
   }
+
+  // A store title can read achievements through a local Steam API emulator
+  // even when its own store API has no set for it.
+  if (source === "epic" || source === "gog" || source === "amazon") {
+    void startStoreEmulatorWatch(appName);
+  }
+  // Amazon publishes no achievement API: the local watcher above is the whole
+  // live path, so there is nothing to poll.
+  if (source === "amazon") return;
 
   const existing = S.loadedAchievements.get(appName);
   if (existing && existing.achievements.length > 0 && !sessionUnlockedBaseline.has(appName)) {
@@ -2515,9 +2763,11 @@ export function startStoreAchievementSession(appName: string): void {
     }
     // Epic's cache is free to read, while a forced answer spawns the legendary
     // CLI. Force every fourth tick (~16 s) and read the disk cache in between;
-    // the session-end refresh still catches anything that landed late.
+    // the session-end refresh still catches anything that landed late. A local
+    // emulator answer is already live through the native watcher.
     tick += 1;
-    const force = tick % 4 === 0;
+    const force =
+      tick % 4 === 0 && S.loadedAchievements.get(appName)?.data_source !== "local";
     void fetchAndRenderAchievements(appName, force, true).then(() => {
       const unlockedDelta = checkAndEmitNewStoreUnlocks(appName);
       if (unlockedDelta > 0) {
@@ -2548,6 +2798,14 @@ export function refreshAchievementsAfterSession(appName: string, sessionSeconds?
         void steamStopAchievementWatcher(appId).catch(() => {});
       }, 8_000);
     }
+  }
+  const emulatorAppId = storeEmulatorAppIds.get(appName);
+  if (emulatorAppId) {
+    storeEmulatorAppIds.delete(appName);
+    window.setTimeout(() => {
+      if (S.runningGames.has(appName)) return;
+      void steamStopAchievementWatcher(emulatorAppId).catch(() => {});
+    }, 8_000);
   }
   // The length arrives with the stop event; the trophies only once the store has
   // answered, which is why the summary is written in two steps.
@@ -2663,9 +2921,6 @@ export async function fetchAndRenderAchievements(
                   currentLanguage(),
                 )
               : await epicGetAchievements(appName, forceRefresh));
-    // The page paints provenance from this, so a store answer never claims to
-    // be the local set (or the other way round).
-    data.data_source = raData ? "ra" : "store";
     // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
     // while Ubisoft Connect tracks them for the same account. Read the client's
     // local cache as the fallback and flag the page so it can say so.
@@ -2692,6 +2947,19 @@ export async function fetchAndRenderAchievements(
     } else {
       ubiAchSource.delete(appName);
     }
+    // A store title with no set of its own can still read achievements from a
+    // local Steam API emulator; only an actual emulator file switches the page.
+    if (!raData && data.achievements.length === 0 && localEmulatorEligible(appName)) {
+      const local = await localEmulatorAchievements(appName, forceRefresh);
+      if (local) data = local;
+    }
+    // The page paints provenance from this, so a store answer never claims to
+    // be the local set (or the other way round).
+    data.data_source = raData
+      ? "ra"
+      : data.data_source === "local"
+        ? "local"
+        : "store";
     // The store answer is on the page now; fold in the launcher's own edits
     // before anything counts, sorts or paints from it.
     applyAchievementEdits(appName, data);

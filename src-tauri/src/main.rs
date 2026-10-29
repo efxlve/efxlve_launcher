@@ -1945,6 +1945,8 @@ fn main() {
             steam::steam_set_achievement_source,
             steam::steam_detect_achievement_path,
             steam::steam_get_emulator_achievements,
+            steam::steam_achievement_probe,
+            steam::steam_write_emulator_achievements,
             steam::achievement_get_notification_options,
             steam::achievement_set_notification_options,
             steam::achievement_pick_custom_sound,

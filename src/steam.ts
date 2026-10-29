@@ -231,6 +231,40 @@ export const steamGetEmulatorAchievements = (
     installDir: installDir ?? null,
     language: language ?? null,
   });
+
+/** What an install folder says about achievements without a Steam login. */
+export interface SteamAchievementProbe {
+  /** AppID named by `steam_appid.txt` or an emulator ini; empty when unknown. */
+  appId: string;
+  /** The game imports the Steamworks DLL. */
+  steamworks: boolean;
+  /** The Steamworks DLL that was found. */
+  dll: string | null;
+  /** Achievement file a local emulator already wrote, when one exists. */
+  emulator: string | null;
+}
+
+/** Read-only probe: the Steamworks DLL and any emulator achievement file. */
+export const steamAchievementProbe = (appId: string, installDir?: string | null) =>
+  invoke<SteamAchievementProbe>("steam_achievement_probe", {
+    appId: appId || null,
+    installDir: installDir ?? null,
+  });
+
+/**
+ * Writes `steam_settings/achievements.json` from the public Steam Community
+ * schema. Earned flags already in the file are kept.
+ */
+export const steamWriteEmulatorAchievements = (
+  appId: string,
+  installDir: string,
+  language?: string,
+) =>
+  invoke<string>("steam_write_emulator_achievements", {
+    appId,
+    installDir,
+    language: language ?? null,
+  });
 /** Cached summaries for library covers (disk only, no network). */
 export const steamGetAchievementsSummary = () =>
   invoke<Record<string, import("./epic").EpicAchievementSummary>>("steam_get_achievements_summary");
@@ -364,11 +398,17 @@ export const steamStartAchievementWatcher = (appId: string, language?: string) =
 export const steamSetAchievementNotifications = (appId: string, enabled: boolean) =>
   invoke<void>("steam_set_achievement_notifications", { appId, enabled });
 
-export const steamStartEmulatorWatcher = (appId: string, installDir?: string, language?: string) =>
+export const steamStartEmulatorWatcher = (
+  appId: string,
+  installDir?: string,
+  language?: string,
+  payloadAppId?: string,
+) =>
   invoke<void>("steam_start_emulator_watcher", {
     appId,
     installDir: installDir ?? null,
     language: language ?? null,
+    payloadAppId: payloadAppId ?? null,
   });
 
 export const steamStopAchievementWatcher = (appId: string) =>

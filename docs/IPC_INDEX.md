@@ -391,6 +391,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_player_reload` | `spotifyPlayerReload({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_player_show` | `spotifyPlayerShow({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_signed_in` | `spotifySignedIn({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `steam_achievement_probe` | `steamAchievementProbe({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_anticheat_status` | `steamAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
 | `steam_app_metadata` | `steamAppMetadata({ ... })` | `src-tauri/src/steam/catalog.rs` |
 | `steam_cloud_status` | `steamCloudStatus({ ... })` | `src-tauri/src/steam/cloud.rs` |
@@ -436,6 +437,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_watch_library` | `steamWatchLibrary({ ... })` | `src-tauri/src/steam_watch.rs` |
 | `steam_watch_running` | `steamWatchRunning({ ... })` | `src-tauri/src/steam_running.rs` |
 | `steam_watch_session` | `steamWatchSession({ ... })` | `src-tauri/src/steam_session.rs` |
+| `steam_write_emulator_achievements` | `steamWriteEmulatorAchievements({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `stop_game_at_path` | `stopGameAtPath({ ... })` | `src-tauri/src/legendary/transfers/launch.rs` |
 | `storage_path_size` | `storagePathSize({ ... })` | `src-tauri/src/storage_usage.rs` |
 | `task_manager_close_game` | `taskManagerCloseGame({ ... })` | `src-tauri/src/task_manager.rs` |

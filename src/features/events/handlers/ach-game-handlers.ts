@@ -29,6 +29,9 @@ export function handleAchievementGameAction(
   if (checkbox) checkbox.checked = enabled;
 
   const steamId = control.dataset.steamAppid?.trim();
+  // The store bridge keeps the launcher key in the payload, so the watcher
+  // needs that key as well as the bare Steam AppID.
+  void steamSetAchievementNotifications(key, enabled).catch(() => {});
   if (steamId) {
     void steamSetAchievementNotifications(steamId, enabled).catch(() => {});
   }

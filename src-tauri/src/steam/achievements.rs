@@ -647,6 +647,52 @@ fn push_thirdparty_steamworks_dirs(base: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
+/// The Steamworks DLL a game imports. Unity builds keep it next to the exe,
+/// Unreal ones under `Engine/Binaries/ThirdParty/Steamworks/<version>/<arch>`,
+/// and a handful of studios ship it in a `bin`/`x64` subfolder.
+fn find_steamworks_dll(install_dir: &Path) -> Option<PathBuf> {
+    let mut dirs = vec![install_dir.to_path_buf()];
+    for rel in [
+        PathBuf::from("Binaries").join("Win64"),
+        PathBuf::from("Binaries").join("Win32"),
+        PathBuf::from("Win64"),
+        PathBuf::from("Win32"),
+        PathBuf::from("x64"),
+        PathBuf::from("bin").join("x64"),
+        PathBuf::from("bin"),
+    ] {
+        dirs.push(install_dir.join(rel));
+    }
+    // The game module usually sits one folder below the install root.
+    if let Ok(entries) = std::fs::read_dir(install_dir) {
+        for entry in entries.flatten().take(64) {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            dirs.push(path.clone());
+            for rel in [
+                PathBuf::from("Binaries").join("Win64"),
+                PathBuf::from("Binaries").join("Win32"),
+                PathBuf::from("Win64"),
+                PathBuf::from("x64"),
+            ] {
+                dirs.push(path.join(rel));
+            }
+        }
+    }
+    push_thirdparty_steamworks_dirs(install_dir, &mut dirs);
+    for dir in dirs {
+        for name in ["steam_api64.dll", "steam_api.dll"] {
+            let candidate = dir.join(name);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
 /// The remembered folder is the executable's folder or the game install root;
 /// Unreal/Unity builds often keep `steam_settings` or `SteamData` 1–4 levels
 /// above the shipping binary or inside `Engine/Binaries/ThirdParty/Steamworks`.
@@ -1961,6 +2007,163 @@ pub async fn steam_get_emulator_achievements(
     Ok(response)
 }
 
+fn normalize_install_root(install_dir: Option<&Path>) -> Option<PathBuf> {
+    let path = install_dir?;
+    if path.is_file() {
+        return path.parent().map(Path::to_path_buf);
+    }
+    path.is_dir().then(|| path.to_path_buf())
+}
+
+/// What an install folder says about Steam achievements without a Steam login:
+/// whether it imports the Steamworks DLL and whether a local emulator already
+/// left an achievement file on disk. Read-only; it never starts the game.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementProbe {
+    /// Steam AppID named by `steam_appid.txt` or an emulator ini; empty when
+    /// the install does not carry one.
+    pub app_id: String,
+    pub steamworks: bool,
+    /// The Steamworks DLL the game imports, when one was found.
+    pub dll: Option<String>,
+    /// The achievement file the emulator currently maintains, when one exists.
+    pub emulator: Option<String>,
+}
+
+fn probe_installation(app_id: Option<&str>, install_dir: Option<&Path>) -> AchievementProbe {
+    let root = normalize_install_root(install_dir);
+    let mut resolved = app_id
+        .map(str::trim)
+        .filter(|id| !id.is_empty() && id.chars().all(|c| c.is_ascii_digit()))
+        .unwrap_or("")
+        .to_string();
+    if resolved.is_empty() {
+        if let Some(root) = root.as_deref() {
+            resolved = detect_steam_app_id_for_exe(root).unwrap_or_default();
+        }
+    }
+
+    let dll = root.as_deref().and_then(find_steamworks_dll);
+    let mut emulator = if resolved.is_empty() {
+        None
+    } else {
+        find_emulator_achievement_file(&resolved, root.as_deref())
+    };
+    // Without an AppID the global save folders cannot be named, but a
+    // `steam_settings` folder next to the exe still tells us the file is there.
+    if emulator.is_none() {
+        if let Some(root) = root.as_deref() {
+            let mut files = Vec::new();
+            push_achievement_files_near(root, &resolved, &mut files);
+            emulator = newest_achievement_file(files);
+        }
+    }
+
+    AchievementProbe {
+        app_id: resolved,
+        steamworks: dll.is_some(),
+        dll: dll.map(|path| path.to_string_lossy().to_string()),
+        emulator: emulator.map(|path| path.to_string_lossy().to_string()),
+    }
+}
+
+/// Tells the game page whether an achievement source exists for an installed
+/// store game: the Steamworks DLL it imports and any local emulator file.
+#[tauri::command]
+pub fn steam_achievement_probe(
+    app_id: Option<String>,
+    install_dir: Option<String>,
+) -> AchievementProbe {
+    let install = install_dir
+        .as_deref()
+        .map(str::trim)
+        .filter(|dir| !dir.is_empty())
+        .map(Path::new);
+    probe_installation(app_id.as_deref(), install)
+}
+
+/// Writes `steam_settings/achievements.json` for a Goldberg-style emulator from
+/// the public Steam Community schema. Earned flags already in the file are
+/// kept, so a second run refreshes the text without resetting progress.
+#[tauri::command]
+pub async fn steam_write_emulator_achievements(
+    app: tauri::AppHandle,
+    app_id: String,
+    install_dir: String,
+    language: Option<String>,
+) -> Result<String, String> {
+    let app_id = app_id.trim();
+    if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
+        return Err("Invalid Steam app id".into());
+    }
+    let root = normalize_install_root(Some(Path::new(install_dir.trim())))
+        .ok_or("The game install folder was not found")?;
+    // A generated file belongs to a game that imports Steamworks or already
+    // carries an emulator settings folder; never write into an arbitrary path.
+    if find_steamworks_dll(&root).is_none() && !root.join("steam_settings").is_dir() {
+        return Err("This folder does not look like a game with Steamworks".into());
+    }
+    let language = steam_language(language.as_deref());
+    let schema = fetch_community_schema(&app, app_id, false, language)
+        .await
+        .filter(|items| !items.is_empty())
+        .ok_or("No achievement definitions could be read for this game")?;
+
+    let dir = root.join("steam_settings");
+    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    // Goldberg needs the AppID next to its settings to pick the right save
+    // folder. Never overwrite a value the player already has, and leave a root
+    // `steam_appid.txt` alone: that one is what the DLL reads first.
+    let appid_path = dir.join("steam_appid.txt");
+    if !appid_path.is_file() && !root.join("steam_appid.txt").is_file() {
+        std::fs::write(&appid_path, format!("{app_id}\n")).map_err(|error| error.to_string())?;
+    }
+    let path = dir.join("achievements.json");
+    let existing = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+        .and_then(|value| value.as_object().cloned())
+        .unwrap_or_default();
+
+    let definitions = emulator_definitions_json(&schema, &existing);
+    let text = serde_json::to_string_pretty(&definitions).map_err(|error| error.to_string())?;
+    std::fs::write(&path, text).map_err(|error| error.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+/// The Goldberg definition shape for one schema list. An entry already in the
+/// file keeps its earned flag, so re-running the generator only refreshes text.
+fn emulator_definitions_json(
+    schema: &[CommunityAchievement],
+    existing: &serde_json::Map<String, serde_json::Value>,
+) -> serde_json::Map<String, serde_json::Value> {
+    let mut definitions = serde_json::Map::new();
+    for entry in schema {
+        let prior = existing.get(&entry.api_name);
+        let earned = prior
+            .and_then(|value| value.get("earned"))
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false);
+        let earned_time = prior
+            .and_then(|value| value.get("earned_time"))
+            .and_then(|value| value.as_i64())
+            .unwrap_or(0);
+        definitions.insert(
+            entry.api_name.clone(),
+            serde_json::json!({
+                "name": entry.name,
+                "description": entry.description,
+                "icon": entry.icon_achieved,
+                "icon_gray": entry.icon_unachieved,
+                "earned": earned,
+                "earned_time": earned_time,
+            }),
+        );
+    }
+    definitions
+}
+
 /// How long the local totals scan stays fresh (parsing 150+ schemas is I/O heavy).
 pub(super) const ACH_TOTALS_TTL_SECS: u64 = 30 * 60;
 
@@ -2487,6 +2690,29 @@ pub fn achievement_clear_custom_sound(app: tauri::AppHandle) -> Result<(), Strin
     Ok(())
 }
 
+/// Settings store key for a launcher game key or a bare Steam AppID.
+fn notification_store_key(app_id: &str) -> &'static str {
+    if app_id.starts_with("gog::") {
+        "gog"
+    } else if app_id.starts_with("ubisoft::") {
+        "ubisoft"
+    } else if app_id.starts_with("ea::") {
+        "ea"
+    } else if app_id.starts_with("xbox::") {
+        "xbox"
+    } else if app_id.starts_with("amazon::") {
+        "amazon"
+    } else if app_id.starts_with("custom::") {
+        "custom"
+    } else if app_id.starts_with("steam::")
+        || (!app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit()))
+    {
+        "steam"
+    } else {
+        "epic"
+    }
+}
+
 /// Settings > Achievements: preview the current notification settings. The
 /// payload goes through the same frontend listener as a real unlock.
 #[tauri::command]
@@ -2506,25 +2732,7 @@ pub fn achievement_test_notification(
     let real_unlock = is_real_unlock == Some(true);
     let tier = rarity_tier.unwrap_or(2).min(4);
     let resolved_app_id = app_id.unwrap_or_else(|| "0".into());
-    let store_key = if resolved_app_id.starts_with("gog::") {
-        "gog"
-    } else if resolved_app_id.starts_with("ubisoft::") {
-        "ubisoft"
-    } else if resolved_app_id.starts_with("ea::") {
-        "ea"
-    } else if resolved_app_id.starts_with("xbox::") {
-        "xbox"
-    } else if resolved_app_id.starts_with("amazon::") {
-        "amazon"
-    } else if resolved_app_id.starts_with("custom::") {
-        "custom"
-    } else if resolved_app_id.starts_with("steam::")
-        || resolved_app_id.chars().all(|c| c.is_ascii_digit())
-    {
-        "steam"
-    } else {
-        "epic"
-    };
+    let store_key = notification_store_key(&resolved_app_id);
     let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
     let should_notify = if real_unlock {
         options.enabled && store_enabled
@@ -2672,29 +2880,28 @@ pub fn steam_start_achievement_watcher(
     app_id: String,
     language: Option<String>,
 ) {
-    start_achievement_watcher(app, app_id, false, steam_language(language.as_deref()));
+    start_achievement_watcher(
+        app,
+        app_id,
+        false,
+        steam_language(language.as_deref()),
+        None,
+    );
 }
 
-/// Starts the watch for a custom game: the emulator file is the truth, even
-/// when the same AppID also has Steam client stats on this PC.
-pub fn steam_start_custom_achievement_watcher(
-    app: tauri::AppHandle,
-    app_id: String,
-    language: &'static str,
-) {
-    // "Disabled (Steam client only)" must fall back to the client watcher.
-    let emulator_only = get_achievement_source_config(&app, &app_id).mode != "disabled";
-    start_achievement_watcher(app, app_id, emulator_only, language);
-}
-
-/// Frontend entry point for external custom launches: registers the install
-/// root (some emulators keep achievements next to the exe) and starts the watch.
+/// Frontend entry point for external custom launches and store games that read
+/// their achievements from a local emulator: registers the install root (some
+/// emulators keep achievements next to the exe) and starts the watch.
+///
+/// `payload_app_id` is the launcher key (`ABZU`, `gog::1207658924`) the unlock
+/// event names; the cache and the watcher slot stay on the Steam AppID.
 #[tauri::command]
 pub fn steam_start_emulator_watcher(
     app: tauri::AppHandle,
     app_id: String,
     install_dir: Option<String>,
     language: Option<String>,
+    payload_app_id: Option<String>,
 ) {
     let language = steam_language(language.as_deref());
     let root_buf = install_dir
@@ -2723,7 +2930,12 @@ pub fn steam_start_emulator_watcher(
     if let Some(ref root) = root_buf {
         remember_achievement_dir(&resolved_app_id, root);
     }
-    steam_start_custom_achievement_watcher(app, resolved_app_id, language);
+    let payload_app_id = payload_app_id
+        .map(|id| id.trim().to_string())
+        .filter(|id| !id.is_empty());
+    // "Disabled (Steam client only)" must fall back to the client watcher.
+    let emulator_only = get_achievement_source_config(&app, &resolved_app_id).mode != "disabled";
+    start_achievement_watcher(app, resolved_app_id, emulator_only, language, payload_app_id);
 }
 
 /// The card paints the achievement's own icon when the picture cache answers in
@@ -2807,11 +3019,15 @@ fn capture_unlock_souvenir() -> Option<String> {
 fn emit_new_achievement_unlocks(
     app: &tauri::AppHandle,
     app_id: &str,
+    payload_app_id: Option<&str>,
     response: &GameAchievementsResponse,
     unlocked_set: &mut std::collections::HashSet<String>,
     write_cache: bool,
     language: &str,
 ) {
+    // The cache stays keyed by the Steam AppID, while the card and the frontend
+    // event name the launcher key (`gog::1207658924`) so the store page updates.
+    let payload_key = payload_app_id.unwrap_or(app_id);
     let total_count = response
         .total_achievements
         .max(response.achievements.len() as u32);
@@ -2830,9 +3046,16 @@ fn emit_new_achievement_unlocks(
     }
 
     let options = achievement_notification_options(app);
-    let store_key = if write_cache { "steam" } else { "custom" };
+    let store_key = if write_cache {
+        "steam"
+    } else if payload_app_id.is_some() {
+        // A store game bridged through a local emulator keeps its own mute.
+        notification_store_key(payload_key)
+    } else {
+        "custom"
+    };
     let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
-    let game_enabled = achievement_game_notifications_enabled(app_id);
+    let game_enabled = achievement_game_notifications_enabled(payload_key);
     let base_notify = options.enabled && store_enabled && game_enabled;
 
     // Achievements that earn a visible card. The threshold only filters what it
@@ -2934,7 +3157,7 @@ fn emit_new_achievement_unlocks(
         );
         let notified = base_notify && announced.iter().any(|entry| entry.name == ach.name);
         let payload = AchievementUnlockedPayload {
-            app_id: app_id.to_string(),
+            app_id: payload_key.to_string(),
             name: ach.name.clone(),
             display_name: display,
             description: ach.description.clone(),
@@ -3021,6 +3244,7 @@ fn start_achievement_watcher(
     app_id: String,
     emulator_only: bool,
     language: &'static str,
+    payload_app_id: Option<String>,
 ) {
     if app_id.is_empty() || !app_id.chars().all(|c| c.is_ascii_digit()) {
         return;
@@ -3038,6 +3262,7 @@ fn start_achievement_watcher(
 
     let app_handle = app.clone();
     let target_app_id = app_id.clone();
+    let payload_key = payload_app_id;
 
     std::thread::spawn(move || {
         let steam = steam_install_path();
@@ -3142,6 +3367,7 @@ fn start_achievement_watcher(
             emit_new_achievement_unlocks(
                 &app_handle,
                 &target_app_id,
+                payload_key.as_deref(),
                 &response,
                 &mut unlocked_set,
                 !emulator_only,
@@ -3173,6 +3399,7 @@ fn start_achievement_watcher(
                 emit_new_achievement_unlocks(
                     &app_handle,
                     &target_app_id,
+                    payload_key.as_deref(),
                     &response,
                     &mut unlocked_set,
                     !emulator_only,
@@ -3806,5 +4033,80 @@ mod tests {
                 println!("  {app}: {unlocked}/{total}");
             }
         }
+    }
+
+    #[test]
+    fn probe_reads_the_steamworks_dll_and_the_local_emulator_file() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-achievement-probe-{}-{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let third_party = root
+            .join("Engine")
+            .join("Binaries")
+            .join("ThirdParty")
+            .join("Steamworks")
+            .join("Steamv132")
+            .join("Win64");
+        std::fs::create_dir_all(&third_party).expect("create steamworks dir");
+        std::fs::write(third_party.join("steam_api64.dll"), [0u8; 32]).expect("write dll");
+        let settings = root.join("steam_settings");
+        std::fs::create_dir_all(&settings).expect("create settings dir");
+        std::fs::write(settings.join("steam_appid.txt"), "987654321").expect("write appid");
+        std::fs::write(
+            settings.join("achievements.json"),
+            r#"{"ACH_ONE":{"name":"One","earned":false,"earned_time":0}}"#,
+        )
+        .expect("write achievements");
+
+        let probe = probe_installation(None, Some(&root));
+        assert!(probe.steamworks);
+        assert_eq!(probe.app_id, "987654321");
+        assert!(probe
+            .dll
+            .as_deref()
+            .is_some_and(|path| path.ends_with("steam_api64.dll")));
+        assert!(probe
+            .emulator
+            .as_deref()
+            .is_some_and(|path| path.ends_with("achievements.json")));
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn generated_definitions_keep_an_existing_earned_flag() {
+        let schema = vec![
+            CommunityAchievement {
+                api_name: "ACH_ONE".into(),
+                name: "First".into(),
+                description: "Do the first thing".into(),
+                hidden: false,
+                icon_achieved: "https://cdn/one.png".into(),
+                icon_unachieved: "https://cdn/one_gray.png".into(),
+            },
+            CommunityAchievement {
+                api_name: "ACH_TWO".into(),
+                name: "Second".into(),
+                description: String::new(),
+                hidden: true,
+                icon_achieved: String::new(),
+                icon_unachieved: String::new(),
+            },
+        ];
+        let existing: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_str(r#"{"ACH_ONE":{"earned":true,"earned_time":1700000000}}"#)
+                .expect("existing definitions");
+        let definitions = emulator_definitions_json(&schema, &existing);
+        let one = definitions.get("ACH_ONE").expect("first achievement");
+        assert_eq!(one["earned"], serde_json::json!(true));
+        assert_eq!(one["earned_time"], serde_json::json!(1_700_000_000i64));
+        assert_eq!(one["name"], serde_json::json!("First"));
+        assert_eq!(one["icon"], serde_json::json!("https://cdn/one.png"));
+        let two = definitions.get("ACH_TWO").expect("second achievement");
+        assert_eq!(two["earned"], serde_json::json!(false));
+        assert_eq!(two["icon_gray"], serde_json::json!(""));
+        assert_eq!(definitions.len(), 2);
     }
 }
