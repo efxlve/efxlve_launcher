@@ -403,6 +403,10 @@
   background: var(--err-tint);
   cursor: not-allowed;
 }
+.pcard-play-btn.is-unavailable svg {
+  margin-left: 0;
+  fill: none;
+}
 .pcard-play-btn.is-unavailable:hover {
   color: var(--err);
   border-color: color-mix(in srgb, var(--err) 55%, transparent);

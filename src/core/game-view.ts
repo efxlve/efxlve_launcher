@@ -185,7 +185,7 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
   const summary = summaryOf(appName);
   if (summary && installPathIssue(summary)) {
     const label = t("lib.copyMissing");
-    return `<button type="button" class="pcard-play-btn is-unavailable" disabled aria-label="${esc(label)}" title="${esc(label)}">${icon("play", 9)}</button>`;
+    return `<button type="button" class="pcard-play-btn is-unavailable" disabled aria-label="${esc(label)}" title="${esc(label)}">${icon("alert-triangle", 9)}</button>`;
   }
 
   if (S.runningGames.has(appName)) {
