@@ -331,12 +331,9 @@ fn make_click_through(win: &WebviewWindow) {
         let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
         let next = (ex | WS_EX_TRANSPARENT) & !WS_EX_LAYERED;
         SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next);
-        if GetWindowLongPtrW(hwnd, GWLP_WNDPROC) != toast_click_through_proc as usize as isize {
-            let old = SetWindowLongPtrW(
-                hwnd,
-                GWLP_WNDPROC,
-                toast_click_through_proc as usize as isize,
-            );
+        let proc = toast_click_through_proc as *const () as isize;
+        if GetWindowLongPtrW(hwnd, GWLP_WNDPROC) != proc {
+            let old = SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc);
             if old != 0 {
                 TOAST_OLD_PROC.store(old, Ordering::Relaxed);
             }
