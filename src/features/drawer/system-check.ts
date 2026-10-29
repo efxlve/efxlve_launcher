@@ -15,7 +15,7 @@ import { fmtBytes } from "../../core/utils";
 import { epicGetSystemDrives, type SystemDriveInfo } from "../../epic";
 import { t } from "../../i18n";
 import type { VerifiedHardwareItem } from "./drawer-widgets";
-import { compareHardwareScore } from "./hardware-scores";
+import { compareHardwareScore, hardwareScore } from "./hardware-scores";
 
 export interface PcFacts {
   os: string;
@@ -214,6 +214,26 @@ function requiredDirectXLevel(text: string): number | null {
   if (major === 11) return minor >= 1 ? 111 : 110;
   if (major === 10) return minor >= 1 ? 101 : 100;
   if (major === 9) return minor >= 3 ? 93 : 90;
+  return null;
+}
+
+/**
+ * The fastest single-GPU card of each DirectX class on the score table's
+ * scale: a 7900/X1950 class card for DirectX 9, a GTX 280/295 for DirectX 10
+ * and a GTX 580/HD 6970 for DirectX 11. A row that names cards the table
+ * cannot rank still describes one of those classes, so a PC above the class
+ * flagship meets it even without a model score.
+ */
+const DX_CLASS_CEILING: Array<{ upTo: number; score: number }> = [
+  { upTo: 93, score: 25 },
+  { upTo: 101, score: 60 },
+  { upTo: 111, score: 160 },
+];
+
+function dxClassCeiling(level: number): number | null {
+  for (const entry of DX_CLASS_CEILING) {
+    if (level <= entry.upTo) return entry.score;
+  }
   return null;
 }
 
@@ -489,15 +509,19 @@ function checkGpu(required: string, facts: PcFacts): RequirementCheck | null {
       }
       return { status: score, detected, scored: true };
     }
-    // The score table starts at DirectX 10 hardware, so a row that only names
-    // DirectX 9-era cards ("Radeon HD 2600 XT, nVidia 8600") has no score. A
-    // PC at a DirectX 12 feature level is above the whole class the row
-    // describes, and the VRAM part of the row was already checked above.
+    // The score table starts at DirectX 10 hardware, so the cards a 2009-2015
+    // row names ("Radeon HD 2600 XT, nVidia 8600", "HD 5870, GTX 480") have
+    // no score. The row states its DirectX class, so the PC only has to be
+    // above the fastest card that class ever shipped. The VRAM part of the
+    // row was already checked above.
+    const pcScore = hardwareScore("gpu", facts.gpu);
     const rowLevel = requiredDirectXLevel(required);
+    const ceiling = rowLevel === null ? null : dxClassCeiling(rowLevel);
     if (
-      rowLevel !== null &&
-      rowLevel <= 100 &&
-      Number(facts.directxLevel) >= 120 &&
+      ceiling !== null &&
+      Number(facts.directxLevel) >= (rowLevel ?? 0) &&
+      pcScore !== null &&
+      pcScore >= ceiling &&
       (vramValues.length === 0 || hasVram)
     ) {
       return { status: "ok", detected };
