@@ -2471,6 +2471,7 @@ function stopStoreAchievementPoll(appName: string): void {
  */
 export function startStoreAchievementSession(appName: string): void {
   if (!isTauri || appName.startsWith("steam::")) return;
+  const source = sourceOfKey(appName);
   if (appName.startsWith("custom::")) {
     const game = S.customGames.find((item) => item.id === appName);
     if (!game) return;
@@ -2481,11 +2482,13 @@ export function startStoreAchievementSession(appName: string): void {
       );
       void steamStartEmulatorWatcher(appId, exeDir, currentLanguage()).catch(() => {});
     });
+    // RetroAchievements keeps its state on the server: poll the mapped game
+    // while it runs. The page fetch caches the answer for a minute, so this
+    // loop does not hit the API per tick.
+    if (!S.raConfigured || !raGameFor(appName)) return;
+  } else if (source === "amazon" || source === "battlenet" || source === "riot") {
     return;
   }
-
-  const source = sourceOfKey(appName);
-  if (source === "amazon" || source === "battlenet" || source === "riot") return;
 
   const existing = S.loadedAchievements.get(appName);
   if (existing && existing.achievements.length > 0 && !sessionUnlockedBaseline.has(appName)) {
