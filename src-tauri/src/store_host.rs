@@ -185,6 +185,21 @@ fn store_id_for_label(label: &str) -> String {
         .to_string()
 }
 
+/// A storefront landing page that must not be reloaded just because the store
+/// localized the URL after the first load. The Xbox store redirects its
+/// `all-games` page to `/<locale>/games/all-games`, so the old URL never equals
+/// the current one and a tab re-open used to navigate (and reload) every time.
+fn is_store_home(url: &url::Url) -> bool {
+    let text = url.as_str();
+    text.ends_with(".com/")
+        || text.ends_with(".com/en")
+        || text.ends_with(".com")
+        || text.ends_with(".net/")
+        || text.ends_with(".net")
+        || (url.host_str() == Some("www.xbox.com")
+            && url.path().starts_with("/games/all-games"))
+}
+
 /// Sign-in pages a store tab can be left on. Opening the tab again must return
 /// to the storefront instead of showing the account/client page.
 /// True only for the stores' own launcher-installer downloads. The old check
@@ -1357,12 +1372,7 @@ pub async fn show_store_view(
             if let Ok(target) = url.parse::<url::Url>() {
                 if let Ok(cur) = v.url() {
                     // A store home URL is not reloaded on every tab click.
-                    let store_home = target.as_str().ends_with(".com/")
-                        || target.as_str().ends_with(".com/en")
-                        || target.as_str().ends_with(".com")
-                        || target.as_str().ends_with(".net/")
-                        || target.as_str().ends_with(".net");
-                    if cur.as_str() != target.as_str() && !store_home {
+                    if cur.as_str() != target.as_str() && !is_store_home(&target) {
                         let _ = v.navigate(target);
                     }
                 }
@@ -1630,9 +1640,23 @@ pub fn on_main_window_resized(window: &tauri::Window, physical_size: tauri::Phys
 #[cfg(test)]
 mod tests {
     use super::{
-        resize_is_a_real_frame, store_bounds, store_hold_effect, store_resize_bounds,
+        is_store_home, resize_is_a_real_frame, store_bounds, store_hold_effect, store_resize_bounds,
         StoreHoldEffect,
     };
+
+    #[test]
+    fn a_localized_xbox_landing_page_is_a_store_home() {
+        let landing =
+            url::Url::parse("https://www.xbox.com/games/all-games/pc?PlayWith=PC").unwrap();
+        // The current URL is the localized /tr-TR/ page after the first load;
+        // the target is this unlocalized landing page, so the host must not
+        // navigate (and reload) it again.
+        assert!(is_store_home(&landing));
+        let game =
+            url::Url::parse("https://www.xbox.com/tr-TR/games/store/foo/9NBLGGH4R315").unwrap();
+        assert!(!is_store_home(&game));
+        assert!(is_store_home(&url::Url::parse("https://www.gog.com/").unwrap()));
+    }
 
     #[test]
     fn store_bounds_fill_content_area_between_header_and_status_bar() {
