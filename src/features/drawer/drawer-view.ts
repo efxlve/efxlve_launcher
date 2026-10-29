@@ -3198,7 +3198,9 @@ export async function fetchAndRenderAchievements(
       ? "ra"
       : data.data_source === "local"
         ? "local"
-        : "store";
+        : data.data_source === "definitions"
+          ? "definitions"
+          : "store";
     // The store answer is on the page now; fold in the launcher's own edits
     // before anything counts, sorts or paints from it.
     applyAchievementEdits(appName, data);
