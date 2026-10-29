@@ -809,8 +809,10 @@ fn set_main_view_suspended(app: &tauri::AppHandle, suspended: bool) {
         if MAIN_MEMORY_LOW.swap(suspended, std::sync::atomic::Ordering::Relaxed) != suspended {
             if suspended {
                 webview_power::lower_memory(&view);
+                perf::write_line_global("win: shell memory target low");
             } else {
                 webview_power::normal_memory(&view);
+                perf::write_line_global("win: shell memory target normal");
             }
         }
     }
