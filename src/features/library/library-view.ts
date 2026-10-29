@@ -387,15 +387,15 @@ function caseCoverHeader(s: EpicSummary, source: GameSource): string {
   </div>`;
 }
 
-/** A small storefront plate: the mark and its name under a cover. */
+/** A small storefront plate: the mark and its short name under a cover. */
 function storePlateHtml(source: GameSource): string {
-  return `<span class="pcard-store-plate">${storeLogo(source, 11, "pcard-store-logo")}<span class="pcard-store-name">${esc(sourceLabel(source))}</span></span>`;
+  return `<span class="pcard-store-plate">${storeLogo(source, 11, "pcard-store-logo")}<span class="pcard-store-name">${esc(shortSourceLabel(source))}</span></span>`;
 }
 
 /**
- * The card's own storefront as a plate, plus how many other stores own the same
- * title. A second full plate would ellipsize both names on a narrow card; the
- * title attribute still lists every store.
+ * The card's own storefront as a plate, then up to one other store by name.
+ * The full list stays in the tooltip; a third store becomes a quiet +N so two
+ * short names fit on a narrow card.
  */
 function storePlatesHtml(s: EpicSummary): string {
   if (!S.showStoreBadge || S.enabledStores.size <= 1) return "";
@@ -408,9 +408,15 @@ function storePlatesHtml(s: EpicSummary): string {
   const at = sources.indexOf(own);
   if (at > 0) sources.splice(at, 1);
   if (at !== 0) sources.unshift(own);
-  const others = sources.length - 1;
   const label = sources.map(sourceLabel).join(", ");
-  return `<span class="pcard-stores" title="${esc(label)}">${storePlateHtml(own)}${others > 0 ? `<span class="pcard-store-more">+${others}</span>` : ""}</span>`;
+  const shown = sources.slice(0, 2);
+  const more = sources.length - shown.length;
+  const plates = shown
+    .map((source, index) =>
+      `${index > 0 ? `<span class="pcard-store-plus" aria-hidden="true">+</span>` : ""}${storePlateHtml(source)}`,
+    )
+    .join("");
+  return `<span class="pcard-stores" title="${esc(label)}">${plates}${more > 0 ? `<span class="pcard-store-more">+${more}</span>` : ""}</span>`;
 }
 
 /**
@@ -500,6 +506,24 @@ function sourceLabel(source: string): string {
   if (source === "riot") return "Riot Games";
   if (source === "custom") return t("customGames.storeLabel");
   return (STORE_LABELS as Record<string, string>)[source] ?? source;
+}
+
+/** Short names for the card's store line; the tooltip keeps the full names. */
+const SHORT_SOURCE_LABELS: Record<string, string> = {
+  epic: "Epic",
+  gog: "GOG",
+  steam: "Steam",
+  battlenet: "BNet",
+  ubisoft: "Ubisoft",
+  ea: "EA",
+  xbox: "Xbox",
+  amazon: "Amazon",
+  riot: "Riot",
+};
+
+function shortSourceLabel(source: string): string {
+  if (source === "custom") return t("customGames.storeLabel");
+  return SHORT_SOURCE_LABELS[source] ?? sourceLabel(source);
 }
 
 function renderResults(itemsHtml: string, sentinelHtml: string): string {
