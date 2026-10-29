@@ -63,6 +63,7 @@ the window is hidden.
 | Settings panels | Task Manager, Achievements and Theme are separate chunks loaded when their section opens; the boot bundle no longer parses them | Three self-contained panels sat in the page chunk even when the user never opened them |
 | Picture renditions | The cache resizes wide pictures to the width the page paints (hero 1600, screenshot 640, cover 480, thumbnail 240) and stores that JPEG variant | Full-size covers and screenshots were decoded and carried over IPC even when painted at a fraction of their size |
 | Main webview | The library renderer suspends with the hidden or minimized window and resumes on show or focus | The renderer and its timers kept running while the launcher sat in the tray |
+| Store webviews | Parked storefronts are suspended with the hidden or minimized window and resumed when the store returns; prewarmed pages that never painted are left alone | The three warm storefronts kept their timers and renderers alive behind the library, and the active store stayed visible to WebView2 when the window was minimized |
 
 ## Remaining opportunities
 

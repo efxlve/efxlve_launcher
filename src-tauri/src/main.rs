@@ -802,6 +802,12 @@ static MAIN_VIEW_SUSPENDED: std::sync::atomic::AtomicBool =
 /// page in memory but stops its timers and lowers its memory target; `Resume`
 /// brings the same page back without a reload.
 fn set_main_view_suspended(app: &tauri::AppHandle, suspended: bool) {
+    // The store children are separate WebView2 controllers: suspending the
+    // library renderer does not park them. Keep their timers asleep with the
+    // main window and wake only the storefront that is actually on screen.
+    if let Some(window) = app.get_window("main") {
+        crate::store_host::set_store_views_suspended(&window, suspended);
+    }
     #[cfg(not(windows))]
     {
         let _ = (app, suspended);

@@ -252,6 +252,7 @@ fn show_pending_store(app: &tauri::AppHandle, label: &str, epoch: u64) {
                 let _ = v.set_bounds(webview_rect(x, y, width, height));
                 remember_applied_bounds(x, y, width, height);
             }
+            resume_store_view(&v);
             let _ = v.show();
             STORE_VISIBLE.store(true, SeqCst);
         }
@@ -282,6 +283,83 @@ fn touch_store_warm(label: &str) {
     if let Ok(mut order) = STORE_WARM_ORDER.lock() {
         order.retain(|entry| entry != label);
         order.insert(0, label.to_string());
+    }
+}
+
+/// Storefront labels whose page has painted at least once. A prewarmed view
+/// that is still loading is not suspended: a suspended document cannot paint
+/// its first frame, and the next store open would wait for a reload.
+static STORE_SHOWN: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+/// Storefront labels parked with `webview_power::suspend`.
+static STORE_SUSPENDED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+fn note_store_shown(label: &str) {
+    if let Ok(mut shown) = STORE_SHOWN.lock() {
+        if !shown.iter().any(|entry| entry == label) {
+            shown.push(label.to_string());
+        }
+    }
+}
+
+fn store_was_shown(label: &str) -> bool {
+    STORE_SHOWN
+        .lock()
+        .map(|shown| shown.iter().any(|entry| entry == label))
+        .unwrap_or(false)
+}
+
+fn set_store_suspended(label: &str, suspended: bool) {
+    if let Ok(mut list) = STORE_SUSPENDED.lock() {
+        list.retain(|entry| entry != label);
+        if suspended {
+            list.push(label.to_string());
+        }
+    }
+}
+
+fn store_is_suspended(label: &str) -> bool {
+    STORE_SUSPENDED
+        .lock()
+        .map(|list| list.iter().any(|entry| entry == label))
+        .unwrap_or(false)
+}
+
+fn forget_store_state(label: &str) {
+    if let Ok(mut shown) = STORE_SHOWN.lock() {
+        shown.retain(|entry| entry != label);
+    }
+    set_store_suspended(label, false);
+}
+
+fn clear_store_state() {
+    if let Ok(mut shown) = STORE_SHOWN.lock() {
+        shown.clear();
+    }
+    if let Ok(mut list) = STORE_SUSPENDED.lock() {
+        list.clear();
+    }
+}
+
+/// Hides and suspends a storefront that already painted. The page keeps its
+/// DOM and session; `Resume` brings it back without a cold boot.
+fn maybe_suspend_store_view(view: &tauri::Webview) {
+    let label = view.label();
+    if !store_was_shown(label) || store_is_suspended(label) {
+        return;
+    }
+    if crate::webview_power::suspend(view) {
+        set_store_suspended(label, true);
+    }
+}
+
+/// Wakes a parked storefront before it is shown again. A store that was never
+/// suspended is only marked as painted.
+fn resume_store_view(view: &tauri::Webview) {
+    let label = view.label();
+    note_store_shown(label);
+    if store_is_suspended(label) {
+        let _ = crate::webview_power::resume(view);
+        set_store_suspended(label, false);
     }
 }
 
@@ -336,6 +414,7 @@ fn move_store_bounds(
         } else {
             let _ = v.set_bounds(offscreen);
             let _ = v.hide();
+            maybe_suspend_store_view(v);
         }
     }
     remember_applied_bounds(x, y, width, height);
@@ -377,6 +456,7 @@ fn park_store_offscreen(window: &tauri::Window) -> Result<(), String> {
     }
     for v in &views {
         v.hide().map_err(|e| e.to_string())?;
+        maybe_suspend_store_view(v);
     }
     remember_applied_bounds(X, Y, width, height);
     Ok(())
@@ -415,9 +495,11 @@ fn show_store_bounds(
     }
     for v in &views {
         if active.is_empty() || v.label() == active {
+            resume_store_view(v);
             v.show().map_err(|e| e.to_string())?;
         } else {
             let _ = v.hide();
+            maybe_suspend_store_view(v);
         }
     }
     crate::notif_overlay::raise_if_open(window);
@@ -1182,6 +1264,7 @@ pub async fn show_store_view(
             .into_iter()
             .find(|w| w.label() == closed_label)
         {
+            forget_store_state(view.label());
             let _ = view.close();
         }
         use tauri::Emitter;
@@ -1199,6 +1282,7 @@ pub async fn show_store_view(
         if v.label() != target_label {
             let _ = v.set_bounds(offscreen);
             let _ = v.hide();
+            maybe_suspend_store_view(&v);
         }
     }
 
@@ -1239,6 +1323,7 @@ pub async fn show_store_view(
                 // applied for a frame and folds the webview back to its old box.
                 let _ = v.set_bounds(webview_rect(x, y, width.max(100.0), height.max(100.0)));
                 remember_applied_bounds(x, y, width.max(100.0), height.max(100.0));
+                resume_store_view(&v);
                 v.show().map_err(|e| e.to_string())?;
             }
             if STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst) != epoch {
@@ -1319,6 +1404,12 @@ pub async fn show_store_view(
             let window = app
                 .get_window("main")
                 .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+            if let Some(view) = store_views(&window)
+                .into_iter()
+                .find(|view| view.label() == target_label)
+            {
+                note_store_shown(view.label());
+            }
             if STORE_EPOCH.load(std::sync::atomic::Ordering::SeqCst) != epoch {
                 STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
                 let _ = park_store_offscreen(&window);
@@ -1461,8 +1552,10 @@ pub fn destroy_store_view(app: AppHandle) -> Result<String, String> {
         order.clear();
     }
     for v in store_views(&window) {
+        forget_store_state(v.label());
         let _ = v.close();
     }
+    clear_store_state();
     Ok("@t:store.closed".into())
 }
 
@@ -1470,6 +1563,35 @@ pub fn destroy_store_view(app: AppHandle) -> Result<String, String> {
 /// makes the restored window pop from a dot to the full frame.
 pub(crate) fn resize_is_a_real_frame(width: u32, height: u32) -> bool {
     width >= 160 && height >= 160
+}
+
+/// Parks or wakes the storefront renderers with the main window. A hidden
+/// window leaves the active store looking visible to WebView2; suspending it
+/// stops its timers and lowers its memory target. The active store is resumed
+/// on restore, while the parked storefronts stay asleep.
+pub fn set_store_views_suspended(window: &tauri::Window, suspended: bool) {
+    let views = store_views(window);
+    if suspended {
+        for view in &views {
+            maybe_suspend_store_view(view);
+        }
+        return;
+    }
+    if !STORE_VISIBLE.load(std::sync::atomic::Ordering::SeqCst)
+        || STORE_PALETTE_OPEN.load(std::sync::atomic::Ordering::SeqCst)
+    {
+        return;
+    }
+    let active = ACTIVE_STORE_LABEL
+        .lock()
+        .map(|label| label.clone())
+        .unwrap_or_default();
+    if active.is_empty() {
+        return;
+    }
+    if let Some(view) = views.iter().find(|view| view.label() == active) {
+        resume_store_view(view);
+    }
 }
 
 /// Keeps the store child inside the content area when the main window resizes.
