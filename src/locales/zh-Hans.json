@@ -43,7 +43,7 @@
   "settings.nileReady": "就绪",
   "settings.nileDesc": "Amazon Games 的游戏库与安装通过开源 Nile 助手完成；首次安装游戏时会自动下载。",
   "accounts.note.amazon": "游戏库通过 Nile 来自你的 Amazon 账户；安装、更新和启动由启动器完成。Amazon Games 没有云存档，请在管理面板中备份存档。",
-  "launchers.amazonNote": "可选——由 Nile 直接管理：安装、更新或启动这些游戏无需 Amazon 客户端。",
+  "launchers.amazonNote": "可选——Efxlve 自行安装、更新并启动 Amazon 游戏；只有导入它下载的游戏时才需要 Amazon Games App。",
   "sidebar.recent": "最近玩过",
   "palette.open": "搜索游戏和命令 (Ctrl+K)",
   "palette.placeholder": "搜索游戏、页面和操作",

@@ -43,7 +43,7 @@
   "settings.nileReady": "Listo",
   "settings.nileDesc": "La biblioteca e instalaciones de Amazon Games funcionan con el asistente de código abierto Nile; se descarga automáticamente al instalar el primer juego.",
   "accounts.note.amazon": "La biblioteca llega desde tu cuenta de Amazon mediante Nile; el launcher instala, actualiza e inicia los juegos. Amazon Games no tiene guardado en la nube; haz copias desde el panel de gestión.",
-  "launchers.amazonNote": "Opcional: Se gestiona directamente con Nile: no hace falta ningún cliente de Amazon para instalar, actualizar o iniciar estos juegos.",
+  "launchers.amazonNote": "Opcional: Efxlve instala, actualiza y ejecuta los juegos de Amazon por su cuenta; Amazon Games App solo hace falta para importar los juegos que descargó.",
   "sidebar.recent": "Jugados recientemente",
   "palette.open": "Buscar juegos y comandos (Ctrl+K)",
   "palette.placeholder": "Buscar juegos, páginas y acciones",

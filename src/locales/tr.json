@@ -43,7 +43,7 @@
   "settings.nileReady": "Hazır",
   "settings.nileDesc": "Amazon Games kütüphanesi ve kurulumları açık kaynak Nile yardımcısıyla çalışır; ilk oyun kurulumunda otomatik indirilir.",
   "accounts.note.amazon": "Kütüphane Amazon hesabınızdan Nile üzerinden gelir; kurulum, güncelleme ve başlatmayı launcher yapar. Amazon Games'te bulut kayıt yoktur; kayıtlarınızı yönetim panelinden yedekleyin.",
-  "launchers.amazonNote": "İsteğe bağlı — Doğrudan Nile ile yönetilir: bu oyunları kurmak, güncellemek veya başlatmak için Amazon istemcisi gerekmez.",
+  "launchers.amazonNote": "İsteğe bağlı — Efxlve, Amazon oyunlarını kendi başına kurar, günceller ve başlatır; Amazon Games App yalnızca onun indirdiği oyunları içe aktarmak için gerekir.",
   "sidebar.recent": "Son Oynananlar",
   "palette.open": "Oyun ve komut ara (Ctrl+K)",
   "palette.placeholder": "Oyun, sayfa veya eylem ara",

@@ -441,10 +441,6 @@ const LAUNCHER_OPEN: Record<string, { act: string; withId: boolean }> = {
   riot: { act: "companion-open", withId: true },
 };
 
-/** Official Amazon help page that carries the Amazon Games App installer. */
-const AMAZON_GAMES_DOWNLOAD =
-  "https://www.amazon.com/gp/help/customer/display.html?nodeId=TQ1wROUN7BTxoTBbAk";
-
 /** One info box per category: what the launcher manages, what the clients do. */
 function launcherInfoBox(): string {
   return `${infoBox("launchers.infoManaged")}${infoBox("launchers.infoDelegated")}`;
@@ -460,19 +456,6 @@ function renderLaunchers(): string {
       ? `<div class="empty-state"><span class="spinner"></span></div>`
       : launcherInfoBox();
   }
-  // Amazon Games has no client to detect: Nile is managed by the launcher, so
-  // the row explains that the client is optional and links to its download.
-  const amazonRow = `
-      <div class="row settings-row">
-        <span class="acc-store-mark">${storeLogo("amazon", 24)}</span>
-        <div class="row-main">
-          <div class="settings-row-title">Amazon Games</div>
-          <div class="settings-row-desc">${t("launchers.amazonNote")}</div>
-        </div>
-        <div class="settings-row-control">
-          <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${esc(AMAZON_GAMES_DOWNLOAD)}">${t("launchers.download")}</button>
-        </div>
-      </div>`;
   const managed: string[] = [];
   const delegated: string[] = [];
   for (const l of S.launchers) {
@@ -486,13 +469,15 @@ function renderLaunchers(): string {
     const downloadBtn = l.installed
       ? ""
       : `<button type="button" class="btn ghost small" data-act="open-external-url" data-url="${esc(l.downloadUrl)}">${t("launchers.download")}</button>`;
-    // Epic and GOG are fully managed by the launcher; their clients are only
-    // needed to import what those clients installed.
+    // Epic, GOG and Amazon Games are fully managed by the launcher; their
+    // clients are only needed to import what those clients installed.
     const note = l.id === "epic"
       ? t("launchers.epicNote", { section: t("settings.secIntegrations") })
       : l.id === "gog"
         ? t("launchers.gogNote", { section: t("settings.secIntegrations") })
-        : "";
+        : l.id === "amazon"
+          ? t("launchers.amazonNote")
+          : "";
     const rowHtml = `
       <div class="row settings-row">
         <span class="acc-store-mark">${storeLogo(l.id, 24) || icon("layers", 24)}</span>
@@ -503,12 +488,11 @@ function renderLaunchers(): string {
         </div>
         <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
       </div>`;
-    // Epic and GOG are managed here; Steam and the companion clients own the play.
-    if (l.id === "epic" || l.id === "gog") managed.push(rowHtml);
+    // Epic, GOG and Amazon Games are managed here; Steam and the companion
+    // clients own the play.
+    if (l.id === "epic" || l.id === "gog" || l.id === "amazon") managed.push(rowHtml);
     else delegated.push(rowHtml);
   }
-  // Amazon Games sits with the other managed stores, right after GOG.
-  managed.push(amazonRow);
   return (
     group(managed.join(""), t("launchers.managedTitle"), infoBox("launchers.infoManaged")) +
     group(delegated.join(""), t("launchers.delegatedTitle"), infoBox("launchers.infoDelegated"))

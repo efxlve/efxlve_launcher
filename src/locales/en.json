@@ -43,7 +43,7 @@
   "settings.nileReady": "Ready",
   "settings.nileDesc": "The Amazon Games library and installs run through the open-source Nile helper; it downloads automatically the first time a game is installed.",
   "accounts.note.amazon": "The library comes from your Amazon account through Nile; the launcher installs, updates and launches the games. Amazon Games has no cloud saves, so back saves up from the manage panel.",
-  "launchers.amazonNote": "Optional — Managed directly through Nile: no Amazon client is needed to install, update or launch these games.",
+  "launchers.amazonNote": "Optional — Efxlve installs, updates and launches Amazon games on its own; Amazon Games App is only needed to import the games it downloaded.",
   "sidebar.recent": "Recently Played",
   "palette.open": "Search games and commands (Ctrl+K)",
   "palette.placeholder": "Search games, pages and actions",
