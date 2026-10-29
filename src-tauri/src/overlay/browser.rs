@@ -33,6 +33,9 @@ static IS_OPEN: AtomicBool = AtomicBool::new(false);
 static TABS: Mutex<Vec<(u32, String)>> = Mutex::new(Vec::new());
 static NEXT_ID: AtomicU32 = AtomicU32::new(1);
 static ACTIVE: Mutex<u32> = Mutex::new(0);
+/// Page labels parked with `webview_power::suspend`. A second suspend on an
+/// already-parked tab only makes WebView2 log a failure on every resize.
+static SUSPENDED_TABS: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 
 #[cfg(windows)]
 #[link(name = "user32")]
@@ -90,6 +93,43 @@ fn set_active(id: u32) {
     }
 }
 
+fn suspend_tab(id: u32, view: &tauri::Webview) {
+    if SUSPENDED_TABS
+        .lock()
+        .map(|list| list.contains(&id))
+        .unwrap_or(false)
+    {
+        return;
+    }
+    if crate::webview_power::suspend(view) {
+        if let Ok(mut list) = SUSPENDED_TABS.lock() {
+            if !list.contains(&id) {
+                list.push(id);
+            }
+        }
+    }
+}
+
+fn resume_tab(id: u32, view: &tauri::Webview) {
+    let suspended = SUSPENDED_TABS
+        .lock()
+        .map(|mut list| {
+            let had = list.contains(&id);
+            list.retain(|tab| *tab != id);
+            had
+        })
+        .unwrap_or(false);
+    if suspended {
+        let _ = crate::webview_power::resume(view);
+    }
+}
+
+fn forget_tab(id: u32) {
+    if let Ok(mut list) = SUSPENDED_TABS.lock() {
+        list.retain(|tab| *tab != id);
+    }
+}
+
 fn page_label(id: u32) -> String {
     format!("{PAGE_PREFIX}{id}")
 }
@@ -143,10 +183,12 @@ fn place_tabs(app: &AppHandle, x: f64, y: f64, width: f64, height: f64) {
         };
         if id == active {
             let _ = view.set_bounds(rect);
+            resume_tab(id, &view);
             let _ = view.show();
         } else {
             let _ = view.set_bounds(offscreen);
             let _ = view.hide();
+            suspend_tab(id, &view);
         }
     }
 }
@@ -205,6 +247,9 @@ pub fn overlay_browser_navigate(app: AppHandle, url: String) -> Result<(), Strin
     let Some(view) = app.get_webview(&page_label(active_id())) else {
         return Ok(());
     };
+    // The tab may have been parked with `TrySuspend` while the browser was
+    // hidden; a suspended renderer cannot start the navigation.
+    resume_tab(active_id(), &view);
     remember_url(active_id(), &target);
     emit_tabs(&app);
     view.navigate(parsed).map_err(|e| e.to_string())
@@ -292,13 +337,20 @@ pub async fn overlay_browser_new_tab(
     match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
         Ok(Ok(Ok(_))) => {}
         Ok(Ok(Err(e))) => {
+            forget_tab(id);
             if let Ok(mut list) = TABS.lock() {
                 list.retain(|(tab, _)| *tab != id);
             }
             return Err(e.to_string());
         }
-        Ok(Err(_)) => return Err("@t:store.viewCreateFailed".into()),
-        Err(_) => return Err("@t:store.viewTimeout".into()),
+        Ok(Err(_)) => {
+            forget_tab(id);
+            return Err("@t:store.viewCreateFailed".into());
+        }
+        Err(_) => {
+            forget_tab(id);
+            return Err("@t:store.viewTimeout".into());
+        }
     }
     place_tabs(&app, x, y, width, height);
     emit_tabs(&app);
@@ -336,6 +388,7 @@ pub fn overlay_browser_tabs() -> TabListPayload {
 #[tauri::command]
 pub fn overlay_browser_close_tab(app: AppHandle, id: u32, x: f64, y: f64, width: f64, height: f64) -> TabListPayload {
     if let Some(view) = app.get_webview(&page_label(id)) {
+        forget_tab(id);
         let _ = view.close();
     }
     let mut remaining = Vec::new();
@@ -403,6 +456,7 @@ fn hide_all_tabs(app: &AppHandle) {
         if let Some(view) = app.get_webview(&page_label(id)) {
             let _ = view.set_bounds(offscreen);
             let _ = view.hide();
+            suspend_tab(id, &view);
         }
     }
 }
@@ -465,6 +519,9 @@ pub fn hide_window(app: &AppHandle) {
 /// would leave the tab webviews alive in the task manager.
 pub fn close_window(app: &AppHandle) {
     hide_window(app);
+    if let Ok(mut list) = SUSPENDED_TABS.lock() {
+        list.clear();
+    }
     let handle = app.clone();
     // `destroy` waits for the event loop; callers are command handlers.
     std::thread::spawn(move || {
