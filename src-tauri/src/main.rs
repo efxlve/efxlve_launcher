@@ -744,6 +744,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     perf::write_line_global("win: shown from the tray");
                     let _ = w.show();
                     let _ = w.set_focus();
+                    set_main_view_suspended(app, false);
                 }
             }
             "overlay" => crate::overlay::overlay_show(app.clone()),
@@ -756,6 +757,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                             .store(true, std::sync::atomic::Ordering::Relaxed);
                         perf::write_line_global("win: tray quit kept the app hidden for a download or game");
                         let _ = w.hide();
+                        set_main_view_suspended(app, true);
                     }
                 } else {
                     perf::write_line_global("win: quit from the tray");
@@ -776,6 +778,7 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     perf::write_line_global("win: shown from a tray click");
                     let _ = w.show();
                     let _ = w.set_focus();
+                    set_main_view_suspended(app, false);
                 }
             }
         })
@@ -790,6 +793,41 @@ static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 /// boot watcher must not undo that deliberate action.
 static USER_HIDDEN_OR_MINIMIZED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
+/// True while the main library renderer is parked by `webview_power`.
+#[cfg(windows)]
+static MAIN_VIEW_SUSPENDED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Parks or wakes the main library renderer with the window. Suspend keeps the
+/// page in memory but stops its timers and lowers its memory target; `Resume`
+/// brings the same page back without a reload.
+fn set_main_view_suspended(app: &tauri::AppHandle, suspended: bool) {
+    #[cfg(not(windows))]
+    {
+        let _ = (app, suspended);
+    }
+    #[cfg(windows)]
+    {
+        let Some(view) = app.get_webview("main") else {
+            return;
+        };
+        if MAIN_VIEW_SUSPENDED.swap(suspended, std::sync::atomic::Ordering::Relaxed) == suspended {
+            return;
+        }
+        let ok = if suspended {
+            webview_power::suspend(&view)
+        } else {
+            webview_power::resume(&view)
+        };
+        if !ok {
+            perf::write_line_global(if suspended {
+                "win: main webview suspend failed"
+            } else {
+                "win: main webview resume failed"
+            });
+        }
+    }
+}
 /// First instance's show-request event, so a second launch can reveal it even
 /// when the window title lookup fails.
 #[cfg(windows)]
@@ -1010,6 +1048,7 @@ fn watch_boot_window(app: tauri::AppHandle) {
                 let _ = window.show();
                 let _ = window.unminimize();
                 let _ = window.set_focus();
+                set_main_view_suspended(&app, false);
             }
             Err(error) => {
                 report_boot_failure(&app, &format!("main window visibility check failed: {error}"));
@@ -1155,6 +1194,7 @@ fn listen_for_show_requests(app: tauri::AppHandle) {
                 let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
+                set_main_view_suspended(&app, false);
             }
         })
         .ok();
@@ -1686,14 +1726,21 @@ fn main() {
                     perf::write_line_global("win: close requested; hidden to the tray");
                     api.prevent_close();
                     let _ = window.hide();
+                    set_main_view_suspended(window.app_handle(), true);
                 } else {
                     perf::write_line_global("win: close requested; exiting");
                 }
             }
             if let tauri::WindowEvent::Resized(physical_size) = event {
                 store_host::on_main_window_resized(window, *physical_size);
+                let minimized = window.is_minimized().unwrap_or(false);
+                let hidden = !window.is_visible().unwrap_or(true);
+                set_main_view_suspended(window.app_handle(), minimized || hidden);
             }
             if let tauri::WindowEvent::Focused(focused) = event {
+                if *focused {
+                    set_main_view_suspended(window.app_handle(), false);
+                }
                 #[cfg(windows)]
                 if let Ok(is_fs) = window.is_fullscreen() {
                     if is_fs {

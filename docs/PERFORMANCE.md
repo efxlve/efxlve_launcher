@@ -62,17 +62,16 @@ the window is hidden.
 | Achievement watcher | The unlock parse runs only when the Steam stats file or the emulator achievement file changed (size + mtime), with a 10 s safety rebuild | The 800 ms loop used to re-read and parse the Steam schema and rescan every emulator folder 4,500 times an hour for a fact that had not changed |
 | Settings panels | Task Manager, Achievements and Theme are separate chunks loaded when their section opens; the boot bundle no longer parses them | Three self-contained panels sat in the page chunk even when the user never opened them |
 | Picture renditions | The cache resizes wide pictures to the width the page paints (hero 1600, screenshot 640, cover 480, thumbnail 240) and stores that JPEG variant | Full-size covers and screenshots were decoded and carried over IPC even when painted at a fraction of their size |
+| Main webview | The library renderer suspends with the hidden or minimized window and resumes on show or focus | The renderer and its timers kept running while the launcher sat in the tray |
 
 ## Remaining opportunities
 
-- **Inactive WebView2 memory target.** Wry exposes the controller on Windows;
-  setting `MemoryUsageTargetLevel = Low` and calling `TrySuspendAsync()` when the
-  launcher is hidden would cut the main library renderer's memory. It needs a
-  matching `Resume()` path and testing across WebView2 versions. The overlay
-  panel no longer needs it: the idle release destroys that webview entirely.
-- **Store webview recycling.** Embedded stores keep child webviews alive for fast
-  switching. Closing idle ones after a timeout would reduce process memory, but
-  reopening must stay instant enough to keep the current UX.
+- **WebView2 suspend on Unix.** The main renderer suspends on Windows through
+  `webview_power`; the Unix stubs are no-ops, so a native equivalent is still
+  open there.
+- **Store webview idle timeout.** The three most recently used storefronts stay
+  warm; a time-based close could drop the rest when the launcher has been idle,
+  but reopening must stay instant enough to keep the current UX.
 - **Settings action surface.** The Task Manager, Achievements and Theme panels
   are separate chunks loaded when their section opens. The outer Settings page
   still ships in the main chunk because its action handlers import the library
