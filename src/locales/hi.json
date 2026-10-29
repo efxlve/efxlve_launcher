@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "क्लाउड पर कोई प्रोफ़ाइल बैकअप नहीं मिला।",
+  "common.noResults": "कोई परिणाम नहीं मिला",
+  "common.clear": "साफ़ करें",
+  "settings.themeExportSuccess": "{name} निर्यात किया गया।"
 }

@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "클라우드 프로필 백업을 찾을 수 없습니다.",
+  "common.noResults": "검색 결과가 없습니다",
+  "common.clear": "지우기",
+  "settings.themeExportSuccess": "{name} 내보내기 완료."
 }

@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "Kein Cloud-Profil-Backup gefunden.",
+  "common.noResults": "Keine Ergebnisse gefunden",
+  "common.clear": "Löschen",
+  "settings.themeExportSuccess": "{name} exportiert."
 }

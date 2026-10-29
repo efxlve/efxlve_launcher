@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "ไม่พบข้อมูลสำรองโปรไฟล์บนคลาวด์",
+  "common.noResults": "ไม่พบผลลัพธ์",
+  "common.clear": "ล้าง",
+  "settings.themeExportSuccess": "ส่งออก {name} เรียบร้อยแล้ว"
 }

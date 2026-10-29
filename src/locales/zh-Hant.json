@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "找不到雲端個人檔案備份。",
+  "common.noResults": "找不到結果",
+  "common.clear": "清除",
+  "settings.themeExportSuccess": "{name} 已匯出。"
 }

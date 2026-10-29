@@ -36,5 +36,36 @@ for (const name of files) {
   }
 }
 
+// Trap 10: Every t("key") in src/ must exist in src/locales/en.json
+function scanSourceForKeys(scanDir) {
+  const results = [];
+  const entries = readdirSync(scanDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = join(scanDir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "locales") results.push(...scanSourceForKeys(full));
+    } else if (entry.name.endsWith(".ts") || entry.name.endsWith(".js") || entry.name.endsWith(".html")) {
+      const content = readFileSync(full, "utf8");
+      const regex = /\bt\(\s*["']([a-zA-Z0-9_.-]+)["']/g;
+      let m;
+      while ((m = regex.exec(content)) !== null) {
+        if (!enSet.has(m[1])) {
+          results.push({ key: m[1], file: full });
+        }
+      }
+    }
+  }
+  return results;
+}
+
+const missingFromCode = scanSourceForKeys("src");
+if (missingFromCode.length) {
+  failed = true;
+  console.error("Missing keys used in src/:");
+  for (const { key, file } of missingFromCode) {
+    console.error(`  ${key} (in ${file})`);
+  }
+}
+
 if (failed) process.exit(1);
 console.log(`${files.length} locale files, ${enKeys.length} keys, all matched`);

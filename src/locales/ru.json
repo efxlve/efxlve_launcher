@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "Резервная копия профиля в облаке не найдена.",
+  "common.noResults": "Результатов не найдено",
+  "common.clear": "Очистить",
+  "settings.themeExportSuccess": "{name} экспортировано."
 }

@@ -3355,5 +3355,9 @@
   "settings.storeNotifDesc": "Mute download and activity notifications from specific stores with one click.",
   "settings.storeNotifOn": "On",
   "settings.storeNotifOff": "Off",
-  "settings.storeCustom": "Custom Games"
+  "settings.storeCustom": "Custom Games",
+  "profile.none": "クラウドのプロファイルバックアップが見つかりません。",
+  "common.noResults": "一致する結果が見つかりません",
+  "common.clear": "クリア",
+  "settings.themeExportSuccess": "{name} をエクスポートしました。"
 }
