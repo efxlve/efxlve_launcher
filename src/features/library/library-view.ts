@@ -413,7 +413,7 @@ function storePlatesHtml(s: EpicSummary): string {
   const more = sources.length - shown.length;
   const plates = shown
     .map((source, index) =>
-      `${index > 0 ? `<span class="pcard-store-plus" aria-hidden="true">+</span>` : ""}${storePlateHtml(source)}`,
+      `${index > 0 ? `<span class="pcard-store-sep" aria-hidden="true">·</span>` : ""}${storePlateHtml(source)}`,
     )
     .join("");
   return `<span class="pcard-stores" title="${esc(label)}">${plates}${more > 0 ? `<span class="pcard-store-more">+${more}</span>` : ""}</span>`;

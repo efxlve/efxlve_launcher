@@ -179,10 +179,14 @@ export function libraryInstalledIcon(appName: string, installed: boolean): strin
 
   if (!installed) return "";
 
-  // A copy whose drive or folder is gone cannot launch; the cover badge and
-  // the list action already say so, and the play chip must not contradict them.
+  // A copy whose drive or folder is gone cannot launch. Keep the play chip in
+  // place as a warning so the card still reads as a game, but make it inert and
+  // let the cover badge and tooltip explain why.
   const summary = summaryOf(appName);
-  if (summary && installPathIssue(summary)) return "";
+  if (summary && installPathIssue(summary)) {
+    const label = t("lib.copyMissing");
+    return `<button type="button" class="pcard-play-btn is-unavailable" disabled aria-label="${esc(label)}" title="${esc(label)}">${icon("play", 9)}</button>`;
+  }
 
   if (S.runningGames.has(appName)) {
     const stopLabel = t("common.stop");
