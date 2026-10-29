@@ -4,6 +4,7 @@
  */
 
 import { manageRoot } from "../../core/dom";
+import { installPathIssue } from "../../core/game-view";
 import { icon, type IconName } from "../../core/icons";
 import { IS_WINDOWS } from "../../core/platform";
 import { lastPlayedLabel, rawOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
@@ -281,6 +282,7 @@ export function openManagePopup(appName: string): void {
   openManageAppName = appName;
   const source = sourceOfKey(appName);
   const companion = source !== "epic" && source !== "gog" && source !== "steam" && source !== "amazon";
+  const copyMissing = installPathIssue(s);
   wireManageSearch();
   manageRoot.innerHTML = `
     <div class="manage-overlay" data-act="manage-overlay-close">
@@ -290,9 +292,9 @@ export function openManagePopup(appName: string): void {
             <div class="manage-side-title" id="manage-side-title">${esc(s.title)}</div>
             <div class="manage-side-sub">
               <span>${esc(storeVersionLabel(source))}</span>
-              <span class="manage-side-state${s.installed ? " is-installed" : ""}">
+              <span class="manage-side-state${copyMissing ? " is-missing" : s.installed ? " is-installed" : ""}"${copyMissing ? ` title="${esc(t("sys.copyHealthTip"))}"` : ""}>
                 <span class="manage-side-dot"></span>
-                ${s.installed ? esc(t("common.installed")) : esc(t("common.notInstalled"))}
+                ${copyMissing ? esc(t("lib.copyMissing")) : s.installed ? esc(t("common.installed")) : esc(t("common.notInstalled"))}
               </span>
             </div>
           </div>
@@ -681,12 +683,14 @@ export function renderDrawerManage(s: EpicSummary): string {
   if (s.appName.startsWith("gog::")) {
     const ptGog = S.playtimeMap.get(s.appName);
     const playtimeGog = playtimeTotalLabel(s.appName, s.title);
+    const gogCopyMissing = installPathIssue(s);
     return `
       <div class="manage-tab-content">
         ${group("files", "folder", t("manage.groupFiles"), `
           ${row(t("gog.managedBy"), t("gog.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
-            `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
+            `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
+            gogCopyMissing ? `<div class="mg-note is-err">${icon("alert-triangle", 12)} ${t("sys.copyHealthTip")}</div>` : "")}
           ${installSizeRow(s.installSize, s.installed)}
           ${s.installed ? row(t("manage.verifyTitle"), t("manage.verifyDesc"),
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
@@ -738,6 +742,10 @@ export function renderDrawerManage(s: EpicSummary): string {
   }
   const st = S.activeManageSettings;
   const id = st.appName;
+  const copyMissing = installPathIssue(s);
+  const copyIssueNote = copyMissing
+    ? `<div class="mg-note is-err">${icon("alert-triangle", 12)} ${t("sys.copyHealthTip")}</div>`
+    : "";
   const rawGame = rawOf(s.appName);
   const partner = getThirdPartyLauncher(rawGame);
   const blockedMove = requiresThirdPartyLauncher(partner);
@@ -764,7 +772,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
-          blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : "")}
+          `${copyIssueNote}${blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : ""}`)}
         ${installSizeRow(st.installSize || s.installSize, s.installed)}
         ${IS_WINDOWS
           ? row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),

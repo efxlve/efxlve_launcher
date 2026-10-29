@@ -88,6 +88,8 @@
 .manage-side-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
 .manage-side-state.is-installed { color: var(--text-2); }
 .manage-side-state.is-installed .manage-side-dot { background: var(--ok); }
+.manage-side-state.is-missing { color: var(--err); }
+.manage-side-state.is-missing .manage-side-dot { background: var(--err); }
 .manage-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .manage-head {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
