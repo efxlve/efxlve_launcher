@@ -229,6 +229,12 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
   const pinButton = masked
     ? ""
     : `<button type="button" class="ach-detail-pin${pinned ? " is-active" : ""}" data-act="ach-pin" data-id="${appId}" data-ach="${achId}" title="${esc(pinned ? t("ach.unpin") : t("ach.pin"))}" aria-pressed="${pinned}">${icon("pin", 11)}</button>`;
+  // The launcher-only state controls are deliberately behind an explicit edit
+  // action: a permanent "mark as earned" button cheapens a real unlock.
+  const editOpen = S.achDetailEditOpen === `${summary.appName}:${item.name}`;
+  const editButton = masked
+    ? ""
+    : `<button type="button" class="ach-detail-edit${editOpen ? " is-active" : ""}" data-act="ach-detail-edit" data-id="${appId}" data-ach="${achId}" title="${esc(editOpen ? t("common.close") : t("ach.editOpen"))}" aria-expanded="${editOpen}">${icon(editOpen ? "x" : "edit", 11)}</button>`;
   // One quiet fact line carries state, date, tier, rarity and XP; the rarity
   // tooltip keeps the multiplier so the rail stays scannable.
   const facts = masked
@@ -319,12 +325,12 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
           <div class="ach-detail-eyebrow">
             <span class="ach-detail-game">${esc(summary.title)}</span>
             ${eyebrowTags}
-            <span class="ach-detail-tools">${hideButton}${pinButton}</span>
+            <span class="ach-detail-tools">${hideButton}${editButton}${pinButton}</span>
           </div>
           <h2 class="ach-detail-name">${esc(title)}</h2>
           <p class="ach-detail-desc">${esc(description)}</p>
           ${facts ? `<div class="ach-detail-facts">${facts}</div>` : ""}
-          ${masked ? "" : renderAchievementEditBar(summary, item)}
+          ${masked || !editOpen ? "" : renderAchievementEditBar(summary, item)}
           ${progressLine}
         </div>
       </section>

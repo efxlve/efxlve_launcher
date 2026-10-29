@@ -563,6 +563,7 @@
   "ach.userCleared": "직접 초기화",
   "ach.launcherOnly": "이 런처에서만",
   "ach.editHint": "런처에서만",
+  "ach.editOpen": "이 업적의 상태 편집",
   "ach.editHintRa": "런처에서만",
   "ach.editMark": "달성으로 표시",
   "ach.editMarkHint": "여기서만 계산됩니다. 스토어 계정은 변경되지 않습니다.",

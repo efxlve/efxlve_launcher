@@ -593,6 +593,7 @@
   "ach.userCleared": "Cleared by you",
   "ach.launcherOnly": "In this launcher only",
   "ach.editHint": "Launcher only",
+  "ach.editOpen": "Edit this achievement's state",
   "ach.editHintRa": "Launcher only",
   "ach.editMark": "Mark as earned",
   "ach.editMarkHint": "Counts here only; your store account is not changed.",

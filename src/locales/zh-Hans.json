@@ -563,6 +563,7 @@
   "ach.userCleared": "由你重置",
   "ach.launcherOnly": "仅在此启动器中",
   "ach.editHint": "仅限启动器",
+  "ach.editOpen": "编辑此成就的状态",
   "ach.editHintRa": "仅限启动器",
   "ach.editMark": "标记为已获得",
   "ach.editMarkHint": "仅在此处计入；商店账号不会改变。",

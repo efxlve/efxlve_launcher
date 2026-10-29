@@ -563,6 +563,7 @@
   "ach.userCleared": "自分でリセット",
   "ach.launcherOnly": "このランチャーのみ",
   "ach.editHint": "ランチャーのみ",
+  "ach.editOpen": "この実績の状態を編集",
   "ach.editHintRa": "ランチャーのみ",
   "ach.editMark": "解除済みにする",
   "ach.editMarkHint": "ここだけで数えます。ストアのアカウントは変更されません。",

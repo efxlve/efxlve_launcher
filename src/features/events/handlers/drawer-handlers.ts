@@ -718,6 +718,16 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
     }
 
+    case "ach-detail-edit": {
+      const appName = id ?? S.currentModalAppName;
+      const achName = t.dataset.ach;
+      if (!appName || !achName) return true;
+      const key = `${appName}:${achName}`;
+      S.achDetailEditOpen = S.achDetailEditOpen === key ? null : key;
+      repaintAchievementsTab(appName, true);
+      return true;
+    }
+
     case "ach-pin": {
       const appName = id ?? S.currentModalAppName;
       const achName = t.dataset.ach;

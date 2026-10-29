@@ -563,6 +563,7 @@
   "ach.userCleared": "Réinitialisé par vous",
   "ach.launcherOnly": "Uniquement dans ce launcher",
   "ach.editHint": "Launcher uniquement",
+  "ach.editOpen": "Modifier l'état de ce succès",
   "ach.editHintRa": "Launcher uniquement",
   "ach.editMark": "Marquer comme obtenu",
   "ach.editMarkHint": "Compté ici seulement ; votre compte de la boutique reste inchangé.",

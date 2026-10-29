@@ -1102,6 +1102,20 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-detail-pin:hover { color: var(--text); }
 .ach-detail-pin.is-active { color: var(--accent); }
 
+.ach-detail-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.ach-detail-edit:hover { color: var(--text); }
+.ach-detail-edit.is-active { color: var(--accent); }
+
 .ach-detail-name {
   margin: 0;
   color: var(--text);

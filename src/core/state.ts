@@ -437,6 +437,8 @@ export const S = {
   raPanelOpen: (null) as string | null,
   /** Achievement name whose detail view is open in the game page. */
   achDetail: (null) as string | null,
+  /** `<appName>:<achievement>` whose detail edit controls are open. */
+  achDetailEditOpen: (null) as string | null,
   /** Steam guide/thread answers keyed by `<appName>:<achievement>`. */
   achCommunity: (new Map()) as Map<string, import("../steam").SteamAchievementCommunity>,
   loadingAchCommunity: (new Set()) as Set<string>,
