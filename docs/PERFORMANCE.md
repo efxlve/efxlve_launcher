@@ -43,7 +43,7 @@ the window is hidden.
 | Collection checkbox | Updates the existing `.col-custom-cb` node instead of rebuilding the list | A click is now O(1) DOM work and the tick is correct immediately |
 | Collection dropdown | 2×2 cover mosaic per collection, four covers, lazy images | Collections are recognisable at a glance without opening each one |
 | Picture memory cache | 32-entry LRU instead of an unbounded `Map` | Long sessions cannot retain every decoded `data:` URL |
-| Library prefetch | 24 covers normally, 8 in reduced-effects mode | Fewer network/decode jobs on slow disks and integrated GPUs |
+| Library prefetch | 24 covers normally, 8 in reduced-effects mode; the skip list is capped at 2,000 URLs | Fewer network/decode jobs on slow disks and integrated GPUs, and a huge library cannot grow the URL set without bound |
 | Steam running poll | Skips ticks while `document.visibilityState !== "visible"` | The hidden launcher stops repainting badges every 15 s; the next visible tick catches up |
 | Steam running watcher | Reads `HKCU\Software\Valve\Steam\Apps` directly and waits on `RegNotifyChangeKeyValue`; the 3 s poll is only the fallback | No recurring helper process, no registry-output parsing, and no periodic wake while Steam's app flags are unchanged |
 | Game process watch | One name-only snapshot serves every installed game; the full path walk remains for a name hit and the kill/hotkey paths | An idle machine no longer opens hundreds of process handles every 4 s, and the folder tick no longer scans the process table once per game |

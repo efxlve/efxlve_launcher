@@ -720,7 +720,16 @@ export function renderEpicItems(): string {
 }
 
 /** Covers already asked for while idle, so a repaint does not ask again. */
-const prefetchedCovers = new Set<string>();
+const prefetchedCovers = new Map<string, true>();
+/** Bound the skip list on a very large library; the oldest URL is dropped. */
+const PREFETCHED_COVER_LIMIT = 2_000;
+
+function rememberPrefetchedCover(url: string): void {
+  prefetchedCovers.set(url, true);
+  if (prefetchedCovers.size <= PREFETCHED_COVER_LIMIT) return;
+  const oldest = prefetchedCovers.keys().next().value;
+  if (oldest !== undefined) prefetchedCovers.delete(oldest);
+}
 
 /**
  * Warms the covers just past the rendered chunk, a few at a time and only while
@@ -738,7 +747,7 @@ function prefetchNextCovers(visible: EpicSummary[], renderedCount: number): void
 
   const start = (): void => {
     for (const url of urls) {
-      prefetchedCovers.add(url);
+      rememberPrefetchedCover(url);
       const img = new Image();
       img.decoding = "async";
       img.src = url;
