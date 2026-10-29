@@ -59,7 +59,6 @@ import { toggleFav } from "../../core/game-view";
 import {
   clearDiscordUnread,
   navGoBack,
-  navGoForward,
   pushNavHistory,
   updateNavHistoryUi,
   updateOfflineModeUi,
@@ -359,8 +358,6 @@ document.addEventListener("click", (e) => {
     } else {
       navGoBack();
     }
-  } else if (act === "page-forward") {
-    navGoForward();
   } else if (act === "goto-library") {
     pushNavHistory({ view: "library" });
     closeAllModals();
