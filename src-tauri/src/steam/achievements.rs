@@ -621,9 +621,11 @@ fn push_achievement_files(dir: &Path, app_id: &str, out: &mut Vec<PathBuf>) {
     }
 }
 
-fn push_thirdparty_steamworks_dirs(base: &Path, out: &mut Vec<PathBuf>) {
-    for sw_name in ["Steamworks", "SteamWorks"] {
-        let tp = base.join("Engine").join("Binaries").join("ThirdParty").join(sw_name);
+/// Every `<base>/Engine/Binaries/ThirdParty/<name>` folder, two levels deep:
+/// Unreal keeps the SDK version and the architecture below it.
+fn push_thirdparty_dirs(base: &Path, names: &[&str], out: &mut Vec<PathBuf>) {
+    for name in names {
+        let tp = base.join("Engine").join("Binaries").join("ThirdParty").join(name);
         if !tp.is_dir() {
             continue;
         }
@@ -647,10 +649,14 @@ fn push_thirdparty_steamworks_dirs(base: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// The Steamworks DLL a game imports. Unity builds keep it next to the exe,
-/// Unreal ones under `Engine/Binaries/ThirdParty/Steamworks/<version>/<arch>`,
+fn push_thirdparty_steamworks_dirs(base: &Path, out: &mut Vec<PathBuf>) {
+    push_thirdparty_dirs(base, &["Steamworks", "SteamWorks"], out);
+}
+
+/// A Windows SDK DLL a game imports. Unity builds keep it next to the exe,
+/// Unreal ones under `Engine/Binaries/ThirdParty/<name>/<version>/<arch>`,
 /// and a handful of studios ship it in a `bin`/`x64` subfolder.
-fn find_steamworks_dll(install_dir: &Path) -> Option<PathBuf> {
+fn find_sdk_dll(install_dir: &Path, names: &[&str], third_party: &[&str]) -> Option<PathBuf> {
     let mut dirs = vec![install_dir.to_path_buf()];
     for rel in [
         PathBuf::from("Binaries").join("Win64"),
@@ -681,9 +687,9 @@ fn find_steamworks_dll(install_dir: &Path) -> Option<PathBuf> {
             }
         }
     }
-    push_thirdparty_steamworks_dirs(install_dir, &mut dirs);
+    push_thirdparty_dirs(install_dir, third_party, &mut dirs);
     for dir in dirs {
-        for name in ["steam_api64.dll", "steam_api.dll"] {
+        for name in names {
             let candidate = dir.join(name);
             if candidate.is_file() {
                 return Some(candidate);
@@ -691,6 +697,26 @@ fn find_steamworks_dll(install_dir: &Path) -> Option<PathBuf> {
         }
     }
     None
+}
+
+/// The Steamworks DLL a game imports.
+fn find_steamworks_dll(install_dir: &Path) -> Option<PathBuf> {
+    find_sdk_dll(
+        install_dir,
+        &["steam_api64.dll", "steam_api.dll"],
+        &["Steamworks", "SteamWorks"],
+    )
+}
+
+/// The Epic Online Services SDK a game imports. EOS achievements live on
+/// Epic's servers, so this only proves the game has that achievement system;
+/// it does not give the launcher anything to read.
+fn find_eos_sdk(install_dir: &Path) -> Option<PathBuf> {
+    find_sdk_dll(
+        install_dir,
+        &["EOSSDK-Win64-Shipping.dll", "EOSSDK-Win32-Shipping.dll"],
+        &["EOSSDK", "EpicOnlineServices", "EpicOnlineServicesSDK"],
+    )
 }
 
 /// The remembered folder is the executable's folder or the game install root;
@@ -2027,6 +2053,10 @@ pub struct AchievementProbe {
     pub steamworks: bool,
     /// The Steamworks DLL the game imports, when one was found.
     pub dll: Option<String>,
+    /// The game imports the Epic Online Services SDK.
+    pub eos: bool,
+    /// The EOS SDK DLL that was found, when one exists.
+    pub eos_dll: Option<String>,
     /// The achievement file the emulator currently maintains, when one exists.
     pub emulator: Option<String>,
 }
@@ -2045,6 +2075,7 @@ fn probe_installation(app_id: Option<&str>, install_dir: Option<&Path>) -> Achie
     }
 
     let dll = root.as_deref().and_then(find_steamworks_dll);
+    let eos = root.as_deref().and_then(find_eos_sdk);
     let mut emulator = if resolved.is_empty() {
         None
     } else {
@@ -2064,6 +2095,8 @@ fn probe_installation(app_id: Option<&str>, install_dir: Option<&Path>) -> Achie
         app_id: resolved,
         steamworks: dll.is_some(),
         dll: dll.map(|path| path.to_string_lossy().to_string()),
+        eos: eos.is_some(),
+        eos_dll: eos.map(|path| path.to_string_lossy().to_string()),
         emulator: emulator.map(|path| path.to_string_lossy().to_string()),
     }
 }
@@ -4051,6 +4084,10 @@ mod tests {
             .join("Win64");
         std::fs::create_dir_all(&third_party).expect("create steamworks dir");
         std::fs::write(third_party.join("steam_api64.dll"), [0u8; 32]).expect("write dll");
+        let shipping = root.join("Game").join("Binaries").join("Win64");
+        std::fs::create_dir_all(&shipping).expect("create shipping dir");
+        std::fs::write(shipping.join("EOSSDK-Win64-Shipping.dll"), [0u8; 16])
+            .expect("write eos dll");
         let settings = root.join("steam_settings");
         std::fs::create_dir_all(&settings).expect("create settings dir");
         std::fs::write(settings.join("steam_appid.txt"), "987654321").expect("write appid");
@@ -4067,6 +4104,11 @@ mod tests {
             .dll
             .as_deref()
             .is_some_and(|path| path.ends_with("steam_api64.dll")));
+        assert!(probe.eos);
+        assert!(probe
+            .eos_dll
+            .as_deref()
+            .is_some_and(|path| path.ends_with("EOSSDK-Win64-Shipping.dll")));
         assert!(probe
             .emulator
             .as_deref()

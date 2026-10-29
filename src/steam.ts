@@ -240,6 +240,10 @@ export interface SteamAchievementProbe {
   steamworks: boolean;
   /** The Steamworks DLL that was found. */
   dll: string | null;
+  /** The game imports the Epic Online Services SDK. */
+  eos: boolean;
+  /** The EOS SDK DLL that was found. */
+  eosDll: string | null;
   /** Achievement file a local emulator already wrote, when one exists. */
   emulator: string | null;
 }

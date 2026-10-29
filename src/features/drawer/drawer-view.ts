@@ -1975,7 +1975,14 @@ function storeInstallDir(appName: string): string | null {
 }
 
 function emptyAchievementProbe(): SteamAchievementProbe {
-  return { appId: "", steamworks: false, dll: null, emulator: null };
+  return {
+    appId: "",
+    steamworks: false,
+    dll: null,
+    eos: false,
+    eosDll: null,
+    emulator: null,
+  };
 }
 
 /**
@@ -2081,6 +2088,47 @@ async function localEmulatorAchievements(
   if (!local || local.achievements.length === 0) return null;
   local.data_source = "local";
   return local;
+}
+
+/**
+ * A game that keeps its achievements in Epic Online Services has no local
+ * unlock file the launcher can read. The Steam definition list still names
+ * every achievement, and the existing editor can mark progress by hand.
+ */
+async function storeDefinitionAchievements(
+  appName: string,
+  force: boolean,
+): Promise<EpicAchievementsData | null> {
+  const installDir = storeInstallDir(appName);
+  if (!installDir) return null;
+  const current = S.loadedAchievements.get(appName);
+  // Definitions do not change during a session; only a manual refresh asks
+  // the community page again.
+  if (
+    !force &&
+    current?.data_source === "definitions" &&
+    current.achievements.length > 0
+  ) {
+    return current;
+  }
+  const probe = await ensureAchievementProbe(appName, force);
+  // A Steamworks game has a real local source; its setup card is the better
+  // answer. EOS-only titles are the ones this list serves.
+  if (!probe.eos || probe.steamworks) return null;
+  const steamAppId = await resolveStoreSteamAppId(appName, probe);
+  if (!steamAppId) return null;
+  if (probe.appId !== steamAppId) {
+    achievementProbeCache.set(appName, { ...probe, appId: steamAppId });
+  }
+  const definitions = await steamGetEmulatorAchievements(
+    steamAppId,
+    force,
+    installDir,
+    currentLanguage(),
+  ).catch(() => null);
+  if (!definitions || definitions.achievements.length === 0) return null;
+  definitions.data_source = "definitions";
+  return definitions;
 }
 
 /** Loads the local emulator set after the user accepts the empty-state card. */
@@ -2224,6 +2272,14 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           generate,
         ));
       }
+      if (probe.eos) {
+        return withPanel(emptyState(
+          "globe",
+          t("ach.eosTitle"),
+          esc(t("ach.eosDesc")),
+          raAction,
+        ));
+      }
       if (s.installed) {
         return withPanel(emptyState(
           "trophy",
@@ -2245,7 +2301,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   // A store set read through a local emulator still points at the Steam app
   // for the community links and the source picker.
   const localSteamAppId =
-    data.data_source === "local"
+    data.data_source === "local" || data.data_source === "definitions"
       ? achievementProbeCache.get(s.appName)?.appId || null
       : null;
   const targetSteamAppId = s.appName.startsWith("steam::") ? s.appName.slice(7) : (customGame?.steamAppId || localSteamAppId);
@@ -2391,7 +2447,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
     : data.data_source === "local"
       ? `<div class="ach-source-note">${icon("hard-drive", 13)}<span>${esc(t("ach.localSourceNote"))}</span></div>`
-      : "";
+      : data.data_source === "definitions"
+        ? `<div class="ach-source-note">${icon("globe", 13)}<span>${esc(t("ach.eosSourceNote"))}</span></div>`
+        : "";
 
   // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot
   // shine sweep (the sweep only runs on the first paint of the page).
@@ -2764,10 +2822,12 @@ export function startStoreAchievementSession(appName: string): void {
     // Epic's cache is free to read, while a forced answer spawns the legendary
     // CLI. Force every fourth tick (~16 s) and read the disk cache in between;
     // the session-end refresh still catches anything that landed late. A local
-    // emulator answer is already live through the native watcher.
+    // emulator answer is already live through the native watcher, and a
+    // definition list does not change during a session.
     tick += 1;
+    const dataSource = S.loadedAchievements.get(appName)?.data_source;
     const force =
-      tick % 4 === 0 && S.loadedAchievements.get(appName)?.data_source !== "local";
+      tick % 4 === 0 && dataSource !== "local" && dataSource !== "definitions";
     void fetchAndRenderAchievements(appName, force, true).then(() => {
       const unlockedDelta = checkAndEmitNewStoreUnlocks(appName);
       if (unlockedDelta > 0) {
@@ -2948,9 +3008,12 @@ export async function fetchAndRenderAchievements(
       ubiAchSource.delete(appName);
     }
     // A store title with no set of its own can still read achievements from a
-    // local Steam API emulator; only an actual emulator file switches the page.
+    // local Steam API emulator, or show the Steam definition list for manual
+    // marking when it uses EOS instead. Only real data switches the page.
     if (!raData && data.achievements.length === 0 && localEmulatorEligible(appName)) {
-      const local = await localEmulatorAchievements(appName, forceRefresh);
+      const local =
+        (await localEmulatorAchievements(appName, forceRefresh)) ??
+        (await storeDefinitionAchievements(appName, forceRefresh));
       if (local) data = local;
     }
     // The page paints provenance from this, so a store answer never claims to

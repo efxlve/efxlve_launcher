@@ -282,8 +282,8 @@ export interface EpicAchievementsData {
   user_awards?: EpicAchievementAward[];
   /** Epic's share of players who completed the game. */
   platinum_rarity?: { percent?: number };
-  /** Frontend-only: which source filled this page (store, local set, RA). */
-  data_source?: "store" | "local" | "ra";
+  /** Frontend-only: which source filled this page (store, local set, Steam definitions, RA). */
+  data_source?: "store" | "local" | "definitions" | "ra";
 }
 
 export interface EpicAchievementSummary {
