@@ -72,9 +72,10 @@ pub(crate) fn start(app: AppHandle) {
             }
 
             // The panel is only useful over the launcher or a running game.
-            // When neither is in front, a 20 ms keyboard/pad poll would keep
-            // waking the machine for a shortcut that has no target.
-            if should_idle(visible, has_game, launcher_focused(&app)) {
+            // While the launcher sits in the tray/minimized and no game is
+            // active, a 20 ms keyboard/pad poll would keep waking the machine
+            // for a shortcut that has no target.
+            if should_idle(visible, has_game, launcher_on_screen(&app)) {
                 gone_ticks = 0;
                 std::thread::sleep(Duration::from_millis(250));
                 continue;
@@ -177,18 +178,21 @@ pub(crate) fn start(app: AppHandle) {
 
 /// Idles the listener only when neither the launcher nor a running game owns
 /// the shortcut. The launcher mode must keep its 20 ms response; a game keeps
-/// the panel armed even while another window has focus.
+/// the panel armed even while another window has focus. A visible but
+/// unfocused launcher also stays awake, so an untracked game can still use the
+/// global shortcut.
 #[cfg(windows)]
-fn should_idle(visible: bool, has_game: bool, launcher_focused: bool) -> bool {
-    !visible && !has_game && !launcher_focused
+fn should_idle(visible: bool, has_game: bool, launcher_on_screen: bool) -> bool {
+    !visible && !has_game && !launcher_on_screen
 }
 
 #[cfg(windows)]
-fn launcher_focused(app: &tauri::AppHandle) -> bool {
+fn launcher_on_screen(app: &tauri::AppHandle) -> bool {
     use tauri::Manager;
-    app.get_window("main")
-        .and_then(|window| window.is_focused().ok())
-        .unwrap_or(false)
+    let Some(window) = app.get_window("main") else {
+        return false;
+    };
+    window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(false)
 }
 
 #[cfg(windows)]
