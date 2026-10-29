@@ -11,6 +11,12 @@ resize step must not trigger a library render or clear the page surface.
 
 Repro: open any game page, then shrink and grow the left sidebar.
 
+## Game page has no right scrollbar
+
+The game page scrolls but no vertical scrollbar paints on the right edge. Check
+the `.overlay` scroll container in `src/styles/game-page.css` (stable gutter) and
+the per-theme scrollbar tokens before changing the overflow.
+
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow
