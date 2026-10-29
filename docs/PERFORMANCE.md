@@ -45,7 +45,7 @@ the window is hidden.
 | Picture memory cache | 32-entry LRU instead of an unbounded `Map` | Long sessions cannot retain every decoded `data:` URL |
 | Library prefetch | 24 covers normally, 8 in reduced-effects mode | Fewer network/decode jobs on slow disks and integrated GPUs |
 | Steam running poll | Skips ticks while `document.visibilityState !== "visible"` | The hidden launcher stops repainting badges every 15 s; the next visible tick catches up |
-| Steam running watcher | Reads `HKCU\Software\Valve\Steam\Apps` directly instead of spawning `reg query` every 3 s | No recurring helper process and no registry-output parsing in the background |
+| Steam running watcher | Reads `HKCU\Software\Valve\Steam\Apps` directly and waits on `RegNotifyChangeKeyValue`; the 3 s poll is only the fallback | No recurring helper process, no registry-output parsing, and no periodic wake while Steam's app flags are unchanged |
 | Game process watch | One name-only snapshot serves every installed game; the full path walk remains for a name hit and the kill/hotkey paths | An idle machine no longer opens hundreds of process handles every 4 s, and the folder tick no longer scans the process table once per game |
 | Overlay panel | Built on the first Shift+Tab/header open and destroyed two minutes after it closes; the page replays the open payload when it becomes ready | No hidden WebView2 renderer, process tree or overlay app is kept alive from boot for an overlay nobody opened |
 | Overlay browser tabs | Inactive tabs are suspended and the active tab resumes before navigation; tab state is dropped when the tab closes | A hidden YouTube/guide tab kept its renderer timers alive for the two-minute overlay idle window |

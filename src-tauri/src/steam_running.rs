@@ -137,18 +137,106 @@ fn emit_status(app: &AppHandle, app_id: &str, running: bool) {
     );
 }
 
-fn watch_loop(app: AppHandle, mut last: HashSet<String>) {
+#[cfg(windows)]
+fn watch_registry_events(
+    app: &AppHandle,
+    baseline: HashSet<String>,
+) -> Option<HashSet<String>> {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::{CloseHandle, ERROR_SUCCESS, WAIT_OBJECT_0};
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegNotifyChangeKeyValue, RegOpenKeyExW, HKEY, HKEY_CURRENT_USER, KEY_NOTIFY,
+        KEY_READ, REG_NOTIFY_CHANGE_LAST_SET,
+    };
+    use windows::Win32::System::Threading::{CreateEventW, WaitForSingleObject};
+
+    fn wide(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    let apps = wide(APPS_SUBKEY);
+    let mut key = HKEY::default();
+    if unsafe {
+        RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR(apps.as_ptr()),
+            None,
+            KEY_READ | KEY_NOTIFY,
+            &mut key,
+        )
+    } != ERROR_SUCCESS
+    {
+        return None;
+    }
+    let event = match unsafe { CreateEventW(None, false, false, PCWSTR::null()) } {
+        Ok(event) => event,
+        Err(_) => {
+            let _ = unsafe { RegCloseKey(key) };
+            return None;
+        }
+    };
+
+    crate::perf::write_line_global("steam: registry event watcher");
+    let mut last = baseline;
+    loop {
+        // Register before reading so a change between the read and the wait
+        // wakes the thread; the read then catches everything that landed while
+        // the previous notification was being handled.
+        if unsafe {
+            RegNotifyChangeKeyValue(
+                key,
+                true,
+                REG_NOTIFY_CHANGE_LAST_SET,
+                Some(event),
+                true,
+            )
+        } != ERROR_SUCCESS
+        {
+            break;
+        }
+        let now = running_app_ids();
+        for id in now.difference(&last) {
+            emit_status(app, id, true);
+        }
+        for id in last.difference(&now) {
+            emit_status(app, id, false);
+        }
+        last = now;
+        if unsafe { WaitForSingleObject(event, u32::MAX) } != WAIT_OBJECT_0 {
+            break;
+        }
+    }
+
+    let _ = unsafe { CloseHandle(event) };
+    let _ = unsafe { RegCloseKey(key) };
+    Some(last)
+}
+
+fn poll_loop(app: &AppHandle, mut last: HashSet<String>) {
     loop {
         thread::sleep(POLL);
         let now = running_app_ids();
         for id in now.difference(&last) {
-            emit_status(&app, id, true);
+            emit_status(app, id, true);
         }
         for id in last.difference(&now) {
-            emit_status(&app, id, false);
+            emit_status(app, id, false);
         }
         last = now;
     }
+}
+
+fn watch_loop(app: AppHandle, baseline: HashSet<String>) {
+    #[cfg(windows)]
+    {
+        if let Some(last) = watch_registry_events(&app, baseline.clone()) {
+            crate::perf::write_line_global("steam: registry event watcher stopped; polling");
+            poll_loop(&app, last);
+            return;
+        }
+    }
+    crate::perf::write_line_global("steam: registry poll fallback");
+    poll_loop(&app, baseline);
 }
 
 /// Starts the Steam running watcher once and returns the ids running right now,
