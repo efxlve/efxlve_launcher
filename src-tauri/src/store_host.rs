@@ -1297,6 +1297,9 @@ pub async fn show_store_view(
             // never flashes the account/client UI.
             if v.url().ok().map(|u| is_login_page(&u)).unwrap_or(false) {
                 if let Ok(target) = url.parse::<url::Url>() {
+                    // A suspended page cannot start a new navigation. Resume
+                    // before the hide/navigate pair; the view is parked.
+                    resume_store_view(&v);
                     let _ = v.hide();
                     STORE_VISIBLE.store(false, std::sync::atomic::Ordering::SeqCst);
                     SHOW_AFTER_LOAD_EPOCH.store(epoch, std::sync::atomic::Ordering::SeqCst);
