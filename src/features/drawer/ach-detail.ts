@@ -386,7 +386,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
                  </div>
                </div>
              </details>
-             <details class="ach-detail-guides" data-ach-section open>
+             <details class="ach-detail-guides" data-ach-section>
                <summary class="ach-detail-section-summary">
                  <h3 class="ach-detail-heading">${icon("link", 13)} <span>${esc(t("ach.detailHowTo"))}</span></h3>
                  <span class="ach-detail-section-chevron">${icon("chevron-down", 12)}</span>
