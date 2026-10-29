@@ -9,6 +9,8 @@
 use std::collections::HashMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 
 use base64::Engine;
 
@@ -172,11 +174,60 @@ fn clean_id(raw: &str) -> String {
 }
 
 /// One schema row: the id plus the localized name/description per locale key.
+/// The icon is encoded once when the archive is parsed; the 30 s session poll
+/// only clones the ready data URL.
 struct SchemaRow {
     id: String,
     names: HashMap<String, String>,
     descriptions: HashMap<String, String>,
-    icon: Option<Vec<u8>>,
+    icon: Option<String>,
+}
+
+/// Parsed schema keyed by file identity. The archive is a zip with every icon
+/// inside it; parsing and base64-encoding it on every session tick was the
+/// expensive part, not the tiny spool read.
+struct SchemaCacheEntry {
+    len: u64,
+    modified: Option<SystemTime>,
+    rows: Arc<Vec<SchemaRow>>,
+}
+
+static SCHEMA_CACHE: Mutex<Option<HashMap<PathBuf, SchemaCacheEntry>>> = Mutex::new(None);
+/// Keep the running game and one browsed game; clearing beyond that bounds the
+/// decoded icon memory on a low-end machine.
+const SCHEMA_CACHE_LIMIT: usize = 2;
+
+fn cached_schema(path: &Path) -> Option<Arc<Vec<SchemaRow>>> {
+    let meta = std::fs::metadata(path).ok()?;
+    let len = meta.len();
+    let modified = meta.modified().ok();
+    let cache = SCHEMA_CACHE.lock().ok()?;
+    let entry = cache.as_ref()?.get(path)?;
+    (entry.len == len && entry.modified == modified).then(|| entry.rows.clone())
+}
+
+fn load_schema(path: &Path) -> Option<Arc<Vec<SchemaRow>>> {
+    if let Some(rows) = cached_schema(path) {
+        return Some(rows);
+    }
+    let bytes = std::fs::read(path).ok()?;
+    let rows = Arc::new(parse_schema(&bytes));
+    let meta = std::fs::metadata(path).ok();
+    if let Ok(mut cache) = SCHEMA_CACHE.lock() {
+        let map = cache.get_or_insert_with(HashMap::new);
+        if map.len() >= SCHEMA_CACHE_LIMIT {
+            map.clear();
+        }
+        map.insert(
+            path.to_path_buf(),
+            SchemaCacheEntry {
+                len: meta.as_ref().map(|m| m.len()).unwrap_or(0),
+                modified: meta.and_then(|m| m.modified().ok()),
+                rows: rows.clone(),
+            },
+        );
+    }
+    Some(rows)
 }
 
 fn parse_loc_text(text: &str) -> HashMap<String, (String, String)> {
@@ -202,7 +253,7 @@ fn parse_schema(data: &[u8]) -> Vec<SchemaRow> {
     let entries = read_zip(data);
     let mut names: HashMap<String, HashMap<String, String>> = HashMap::new();
     let mut descriptions: HashMap<String, HashMap<String, String>> = HashMap::new();
-    let mut icons: HashMap<String, Vec<u8>> = HashMap::new();
+    let mut icons: HashMap<String, String> = HashMap::new();
     let mut ids: Vec<String> = Vec::new();
     let mut seen = std::collections::HashSet::new();
 
@@ -224,7 +275,13 @@ fn parse_schema(data: &[u8]) -> Vec<SchemaRow> {
                 if seen.insert(id.clone()) {
                     ids.push(id.clone());
                 }
-                icons.insert(id, entry.data);
+                icons.insert(
+                    id,
+                    format!(
+                        "data:image/png;base64,{}",
+                        base64::engine::general_purpose::STANDARD.encode(entry.data)
+                    ),
+                );
             }
         }
     }
@@ -428,10 +485,9 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
     let Some(schema) = schema_path_for(&root, app_id, &spec) else {
         return GameAchievementsResponse::default();
     };
-    let Ok(bytes) = std::fs::read(&schema) else {
+    let Some(rows) = load_schema(&schema) else {
         return GameAchievementsResponse::default();
     };
-    let rows = parse_schema(&bytes);
     if rows.is_empty() {
         return GameAchievementsResponse::default();
     }
@@ -442,19 +498,10 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
         .unwrap_or_default();
 
     let mut achievements = Vec::with_capacity(rows.len());
-    for row in rows {
+    for row in rows.iter() {
         let unlocked_at = earned.get(&row.id.parse::<u64>().unwrap_or(u64::MAX)).copied();
         let unlocked = unlocked_at.is_some();
-        let icon_link = row
-            .icon
-            .as_ref()
-            .map(|icon| {
-                format!(
-                    "data:image/png;base64,{}",
-                    base64::engine::general_purpose::STANDARD.encode(icon)
-                )
-            })
-            .unwrap_or_default();
+        let icon_link = row.icon.clone().unwrap_or_default();
         achievements.push(AchievementItem {
             name: row.id.clone(),
             display_name: pick_localized(&row.names, language),
@@ -465,7 +512,7 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
             unlock_date: unlocked_at
                 .map(|seconds| crate::steam::unix_date(seconds as i64))
                 .filter(|date| !date.is_empty()),
-            icon_id: row.id,
+            icon_id: row.id.clone(),
             icon_link,
             tier: None,
             rarity: None,
@@ -566,9 +613,34 @@ mod tests {
         assert_eq!(rows[0].id, "1");
         assert_eq!(pick_localized(&rows[0].names, "tr"), "İlk Kan");
         assert_eq!(pick_localized(&rows[0].descriptions, "en"), "Win a race");
-        assert_eq!(rows[0].icon.as_deref(), Some(b"PNG".as_slice()));
+        assert_eq!(
+            rows[0].icon.as_deref(),
+            Some("data:image/png;base64,UE5H")
+        );
         assert_eq!(rows[1].id, "2");
         assert!(rows[1].icon.is_none());
+    }
+
+    #[test]
+    fn a_parsed_schema_is_reused_until_the_archive_changes() {
+        let dir = std::env::temp_dir().join(format!("efxlve-ubi-schema-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("schema.zip");
+        let first_loc = "1\tOne\tFirst\n";
+        let first_zip = build_zip(&[("en-US_loc.txt", first_loc.as_bytes())]);
+        std::fs::write(&path, &first_zip).expect("write schema");
+        let first = load_schema(&path).expect("first schema");
+        let second = load_schema(&path).expect("cached schema");
+        assert!(Arc::ptr_eq(&first, &second));
+
+        // A different length guarantees a miss even on a coarse mtime.
+        let second_loc = "1\tOne\tFirst\n2\tTwo\tSecond\n";
+        let second_zip = build_zip(&[("en-US_loc.txt", second_loc.as_bytes())]);
+        std::fs::write(&path, &second_zip).expect("rewrite schema");
+        let third = load_schema(&path).expect("rewritten schema");
+        assert!(!Arc::ptr_eq(&first, &third));
+        assert_eq!(third.len(), 2);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
