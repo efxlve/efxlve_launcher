@@ -236,6 +236,7 @@ export function patchLibraryCardElement(item: HTMLElement, appName: string): boo
   const achHtml = listAchievementCell(appName);
   const secs = libraryPlaytime({ appName, title: s.title }).seconds;
   const playText = secs > 0 ? fmtPlaytime(secs) : "-";
+  const artKey = epicArtKey(s);
   const signature = [
     appName,
     badgeHtml,
@@ -245,11 +246,16 @@ export function patchLibraryCardElement(item: HTMLElement, appName: string): boo
     playText,
     p === null ? "" : String(p),
     dim ? "1" : "0",
+    artKey,
   ].join("\u001f");
   if (item.dataset.patchSig === signature) return true;
   item.dataset.patchSig = signature;
 
   item.classList.toggle("not-installed", dim);
+  // A cover change is a picture swap, not a card rebuild: replace only the
+  // cover node the card already mounted.
+  const cover = item.querySelector<HTMLElement>("[data-cover-art]");
+  if (cover && cover.dataset.coverKey !== artKey) cover.outerHTML = epicArt(s);
   const badgeHost = item.querySelector<HTMLElement>("[data-badge-host]");
   const badge = badgeHost?.querySelector(".pbadge");
   if (badgeHtml) {
@@ -345,42 +351,75 @@ export function epicDlProgress(appName: string): number | null {
 }
 
 /**
+ * Stable key for the cover source a card should show. A custom cover, a
+ * custom game's own art, a resolved Steam cover and the store art each get a
+ * different key, so an in-place card patch can tell that the picture changed
+ * without storing a full data URL in the DOM.
+ */
+export function epicArtKey(s: EpicSummary): string {
+  const custom = S.customCovers[s.appName];
+  if (custom) return `c:${hashCover(custom)}`;
+  if (s.appName.startsWith("custom::")) {
+    const game = S.customGames.find((item) => item.id === s.appName);
+    return `g:${hashCover(game?.coverUrl || game?.headerUrl || game?.heroUrl || "")}`;
+  }
+  if (s.appName.startsWith("steam::")) {
+    return `s:${hashCover(cachedSteamCover(s.appName.slice("steam::".length)) || "")}`;
+  }
+  const g = rawOf(s.appName);
+  return `e:${hashCover((g ? epicPortrait(g) : s.cover) || "")}`;
+}
+
+/** FNV-1a, short enough for a DOM attribute. */
+function hashCover(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
  * Portrait cover markup with custom cover -> Epic key art -> fallback.
  * Library cards already skip off-screen work with content-visibility. Adding
  * loading="lazy" on top of that makes WebView2 leave the image blank: the
  * lazy observer never hears that the card became visible.
  */
 export function epicArt(s: EpicSummary): string {
+  const key = epicArtKey(s);
+  const mark = (markup: string) =>
+    markup.replace(/^<(img|div)\b/, `<$1 data-cover-art data-cover-key="${key}"`);
   const custom = S.customCovers[s.appName];
-  if (custom) return `<img src="${esc(custom)}" alt="" decoding="async" />`;
+  if (custom) return mark(`<img src="${esc(custom)}" alt="" decoding="async" />`);
   if (s.appName.startsWith("custom::")) {
     const game = S.customGames.find((item) => item.id === s.appName);
     const cover = game?.coverUrl || game?.headerUrl || game?.heroUrl;
     if (cover) {
       const fallback = game?.headerUrl || game?.heroUrl;
       const attr = fallback && fallback !== cover ? ` data-art-fallback="${esc(fallback)}"` : "";
-      return `<img src="${esc(cover)}"${attr} alt="" decoding="async" />`;
+      return mark(`<img src="${esc(cover)}"${attr} alt="" decoding="async" />`);
     }
-    return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
+    return mark(`<div class="pcover">${icon("gamepad-2", 32)}</div>`);
   }
   if (s.appName.startsWith("steam::")) {
-    return steamPortraitImg(s.appName.slice("steam::".length));
+    return mark(steamPortraitImg(s.appName.slice("steam::".length)));
   }
   const g = rawOf(s.appName);
   let url = g ? epicPortrait(g) : s.cover;
   if (url && url.includes("_product_card_v2_mobile_slider_639.jpg")) {
     const original = url;
     url = url.replace("_product_card_v2_mobile_slider_639.jpg", "_glx_vertical_cover.jpg");
-    return `<img src="${esc(url)}" data-art-fallback="${esc(original)}" alt="" decoding="async" />`;
+    return mark(`<img src="${esc(url)}" data-art-fallback="${esc(original)}" alt="" decoding="async" />`);
   }
   if (url) {
     const steamApp = url.match(/\/apps\/(\d+)\//);
     if (steamApp) {
-      return `<img src="${esc(url)}" data-steam-app="${esc(steamApp[1])}" data-art-step="0" alt="" decoding="async" />`;
+      return mark(`<img src="${esc(url)}" data-steam-app="${esc(steamApp[1])}" data-art-step="0" alt="" decoding="async" />`);
     }
-    return `<img src="${esc(url)}" alt="" decoding="async" />`;
+    return mark(`<img src="${esc(url)}" alt="" decoding="async" />`);
   }
-  return `<div class="pcover">${icon("gamepad-2", 32)}</div>`;
+  return mark(`<div class="pcover">${icon("gamepad-2", 32)}</div>`);
 }
 
 /**
