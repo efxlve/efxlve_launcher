@@ -793,12 +793,26 @@ static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 /// boot watcher must not undo that deliberate action.
 static USER_HIDDEN_OR_MINIMIZED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
+/// True while the main shell's memory target is lowered.
+static MAIN_MEMORY_LOW: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 /// Parks or wakes the child storefront renderers with the window. The main
 /// shell itself stays awake: WebView2 can recover a suspended controller that
-/// owns child webviews by reloading the page, which resets the whole view.
+/// owns child webviews by reloading the page, which resets the whole view. It
+/// only lowers its memory target, which does not touch visibility or timers.
 fn set_main_view_suspended(app: &tauri::AppHandle, suspended: bool) {
     if let Some(window) = app.get_window("main") {
         crate::store_host::set_store_views_suspended(&window, suspended);
+    }
+    if let Some(view) = app.get_webview("main") {
+        if MAIN_MEMORY_LOW.swap(suspended, std::sync::atomic::Ordering::Relaxed) != suspended {
+            if suspended {
+                webview_power::lower_memory(&view);
+            } else {
+                webview_power::normal_memory(&view);
+            }
+        }
     }
 }
 /// First instance's show-request event, so a second launch can reveal it even

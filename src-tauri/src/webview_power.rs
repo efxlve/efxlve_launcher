@@ -60,6 +60,53 @@ mod imp {
         result.is_ok()
     }
 
+    /// Lowers the renderer's memory target without hiding or suspending it.
+    /// Safe for the main shell controller: no page reload and no timer pause.
+    pub fn lower_memory(view: &tauri::Webview) -> bool {
+        let result = view.with_webview(move |platform| {
+            let controller = platform.controller();
+            let core = match unsafe { controller.CoreWebView2() } {
+                Ok(core) => core,
+                Err(error) => {
+                    eprintln!("[webview-power] memory core unavailable: {error}");
+                    return;
+                }
+            };
+            if let Ok(core19) = core.cast::<ICoreWebView2_19>() {
+                let _ = unsafe {
+                    core19.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW)
+                };
+            }
+        });
+        if let Err(error) = &result {
+            eprintln!("[webview-power] lower memory bridge failed: {error}");
+        }
+        result.is_ok()
+    }
+
+    /// Restores the renderer's normal memory target.
+    pub fn normal_memory(view: &tauri::Webview) -> bool {
+        let result = view.with_webview(move |platform| {
+            let controller = platform.controller();
+            let core = match unsafe { controller.CoreWebView2() } {
+                Ok(core) => core,
+                Err(error) => {
+                    eprintln!("[webview-power] memory core unavailable: {error}");
+                    return;
+                }
+            };
+            if let Ok(core19) = core.cast::<ICoreWebView2_19>() {
+                let _ = unsafe {
+                    core19.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL)
+                };
+            }
+        });
+        if let Err(error) = &result {
+            eprintln!("[webview-power] restore memory bridge failed: {error}");
+        }
+        result.is_ok()
+    }
+
     /// Resumes a suspended renderer and makes the controller visible again.
     pub fn resume(view: &tauri::Webview) -> bool {
         let result = view.with_webview(move |platform| {
@@ -103,6 +150,14 @@ mod imp {
     pub fn resume(_view: &tauri::Webview) -> bool {
         false
     }
+
+    pub fn lower_memory(_view: &tauri::Webview) -> bool {
+        false
+    }
+
+    pub fn normal_memory(_view: &tauri::Webview) -> bool {
+        false
+    }
 }
 
-pub use imp::{resume, suspend};
+pub use imp::{lower_memory, normal_memory, resume, suspend};

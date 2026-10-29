@@ -67,7 +67,7 @@ the window is hidden.
 | Ubisoft achievements | The parsed schema and base64 icons are cached by file identity; a 30 s session tick only reads the small spool and rebuilds the rows | Every tick decompressed the achievement zip and re-encoded every icon |
 | Settings panels | Task Manager, Achievements and Theme are separate chunks loaded when their section opens; the boot bundle no longer parses them | Three self-contained panels sat in the page chunk even when the user never opened them |
 | Picture renditions | The cache resizes wide pictures to the width the page paints (hero 1600, screenshot 640, cover 480, thumbnail 240) and stores that JPEG variant | Full-size covers and screenshots were decoded and carried over IPC even when painted at a fraction of their size |
-| Main webview | The shell renderer stays awake; the child store, Spotify, Discord and overlay pages suspend individually | Suspending the main controller with child webviews made WebView2 recover the renderer, which reloaded the page and reset the view |
+| Main webview | The shell renderer stays awake; its memory target drops while hidden or minimized, and the child store, Spotify, Discord and overlay pages suspend individually | Suspending the main controller with child webviews made WebView2 recover the renderer, which reloaded the page and reset the view |
 | Store webviews | Parked storefronts are suspended with the hidden or minimized window and resumed when the store returns; prewarmed pages that never painted are left alone | The three warm storefronts kept their timers and renderers alive behind the library, and the active store stayed visible to WebView2 when the window was minimized |
 
 ## Remaining opportunities
