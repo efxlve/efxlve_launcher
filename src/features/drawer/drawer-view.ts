@@ -2709,7 +2709,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="ach-summary-actions">
           <button class="icon-btn${notifEnabled ? "" : " is-off"}" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-steam-appid="${esc(targetSteamAppId ?? "")}" title="${esc(t("ach.gameNotifToggle"))}" aria-pressed="${notifEnabled}">${icon(notifEnabled ? "bell" : "bell-off", 14)}</button>
           <button class="icon-btn" data-act="ach-refresh" data-id="${esc(s.appName)}" title="${esc(t("ach.refreshData"))}">${icon("refresh", 14)}</button>
-          <button class="icon-btn${manageTab ? " active" : ""}" data-act="ach-manage" data-id="${esc(s.appName)}" data-tab="${manageTab ?? defaultManageTab}" title="${esc(t("ach.manageTitle"))}">${icon("sliders", 14)}</button>
+          <button class="icon-btn" data-act="ach-manage" data-id="${esc(s.appName)}" data-tab="${manageTab ?? defaultManageTab}" title="${esc(t("ach.manageTitle"))}">${icon("sliders", 14)}</button>
           ${data.data_source === "definitions" ? `<button class="icon-btn ${S.achStoreAppIdEditor === s.appName ? "active" : ""}" data-act="ach-appid-open" data-id="${esc(s.appName)}" title="${esc(t("ach.appIdLabel"))}">${icon("hash", 14)}</button>` : ""}
           ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${esc(s.appName)}" title="${esc(t("ach.viewInStore"))}">${icon("external", 14)}</button>`}
         </div>
@@ -2725,7 +2725,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         <div class="ach-source-line">
           ${icon("layers", 12)}
           <span class="ach-source-line-label">${esc(t("ach.sourceLabel", { source: sourceLabel }))}</span>
-          ${canManageSource ? `<button type="button" class="icon-btn ach-source-change${manageTab === "source" ? " is-active" : ""}" data-act="ach-manage-tab" data-tab="source" data-id="${esc(s.appName)}" data-toggle="1" title="${esc(t("ach.changeSource"))}" aria-label="${esc(t("ach.changeSource"))}">${icon("edit", 12)}</button>` : ""}
+          ${canManageSource ? `<button type="button" class="icon-btn ach-source-change" data-act="ach-manage-tab" data-tab="source" data-id="${esc(s.appName)}" data-toggle="1" title="${esc(t("ach.changeSource"))}" aria-label="${esc(t("ach.changeSource"))}">${icon("edit", 12)}</button>` : ""}
         </div>
       </div>
     </section>`;
