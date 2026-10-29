@@ -1241,6 +1241,20 @@ fn install_crash_logger(app: &tauri::App) {
 
     let dir = app.path().app_data_dir().ok().map(|dir| dir.join("logs"));
     std::panic::set_hook(Box::new(move |info| {
+        // A `cargo run` console that closes leaves a broken stderr pipe. The
+        // next `println!` panics with this exact message; it is not an app
+        // crash and must not fill crash.log or trigger the recovery prompt.
+        let payload = info.payload();
+        let message = payload
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .or_else(|| payload.downcast_ref::<&str>().copied())
+            .unwrap_or_default();
+        if message.contains("failed printing to stderr")
+            || message.contains("failed printing to stdout")
+        {
+            return;
+        }
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
