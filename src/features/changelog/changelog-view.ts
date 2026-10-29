@@ -31,9 +31,59 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.39",
+    date: "2026-10-29",
+    isCurrent: true,
+    items: [
+      {
+        en: "The left sidebar now keeps the width you left it at. Minimizing, restoring or switching to Full Screen Mode no longer reopens a rail you had closed.",
+        tr: "Sol kenar çubuğu artık bıraktığınız genişlikte kalıyor. Pencereyi küçültmek, geri açmak veya Tam Ekran Modu'na geçmek kapattığınız çubuğu yeniden açmıyor.",
+      },
+      {
+        en: "Minimizing the launcher no longer reloads the library or leaves a store page floating over it. Store pages resume at their last position and stay scrollable.",
+        tr: "Launcher'ı küçültmek artık kütüphaneyi yeniden yüklemiyor veya üstünde bir mağaza sayfası bırakmıyor. Mağaza sayfaları son konumunda geri geliyor ve kaydırılabilir kalıyor.",
+      },
+      {
+        en: "While hidden, the launcher lowers its renderer memory target; embedded store, Spotify, Discord and overlay browser pages pause their timers individually instead of keeping the whole app busy.",
+        tr: "Launcher gizliyken renderer bellek hedefini düşürüyor; gömülü mağaza, Spotify, Discord ve overlay tarayıcı sayfaları tüm uygulamayı meşgul etmek yerine zamanlayıcılarını ayrı ayrı duraklatıyor.",
+      },
+      {
+        en: "Achievement pages read the stores less often: GOG, Ubisoft, EA and Xbox answers are cached for the running session, and a game with no achievement set stops the forced Epic refresh.",
+        tr: "Başarım sayfaları mağazaları daha seyrek okuyor: GOG, Ubisoft, EA ve Xbox cevapları çalışan oturum boyunca önbelleğe alınıyor; başarım seti olmayan bir oyun Epic'in zorunlu yenilemesini durduruyor.",
+      },
+      {
+        en: "Steam's running badge wakes on registry changes instead of polling every three seconds, and the installed-game watcher reads the process table once per tick.",
+        tr: "Steam'in çalışıyor rozeti her üç saniyede yoklamak yerine kayıt defteri değişikliklerinde uyanıyor; yüklü oyun izleyicisi süreç tablosunu her turda bir kez okuyor.",
+      },
+      {
+        en: "A custom game whose launcher or updater exits immediately keeps its session: the folder watcher takes over instead of reporting a false stop.",
+        tr: "Başlatıcısı veya güncelleyicisi hemen kapanan özel oyun oturumunu koruyor: sahte bir durma bildirmek yerine klasör izleyicisi devralıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "The idle overlay shortcut no longer wakes the machine fifty times a second when the launcher is in the tray and no game is running.",
+        tr: "Launcher tepsideyken ve oyun çalışmıyorken boştaki overlay kısayolu artık makineyi saniyede elli kez uyandırmıyor.",
+      },
+      {
+        en: "Cover prefetch memory is capped, and the installed-game watch no longer scans the whole process table once per game.",
+        tr: "Kapak ön yükleme belleği sınırlandı; yüklü oyun izleyicisi artık her oyun için tüm süreç tablosunu taramıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "A crash-recovery reload no longer leaves an orphaned store webview over the library.",
+        tr: "Çökme kurtarma yeniden yüklemesi artık kütüphanenin üstünde sahipsiz bir mağaza webview'i bırakmıyor.",
+      },
+      {
+        en: "A broken console pipe no longer writes a false crash.log or offers a crash report.",
+        tr: "Kapanan konsol borusu artık sahte bir crash.log yazmıyor veya çökme raporu önermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.38",
     date: "2026-10-25",
-    isCurrent: true,
     items: [
       {
         en: "Estimated completion times now show the jump between tiers: main story, main + extra and 100% completion each carry the extra hours over the step before them instead of repeating the values as progress bars.",

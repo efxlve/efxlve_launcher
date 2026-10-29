@@ -21,30 +21,34 @@ if (start < 0) throw new Error(`version ${version} not found in the changelog`);
 const next = src.indexOf('version: "', start + 1);
 const block = src.slice(start, next < 0 ? undefined : next);
 
-// The entry holds two lists: `items` (new) first, then `fixed`.
-const fixedAt = block.indexOf("fixed: [");
-if (fixedAt < 0) throw new Error(`no fixed list for ${version}`);
-const newPart = block.slice(0, fixedAt);
-const fixedPart = block.slice(fixedAt);
-
 const enStrings = (part) =>
   [...part.matchAll(/\ben:\s*("(?:[^"\\]|\\.)*")/g)].map((match) => JSON.parse(match[1]));
 
-const items = enStrings(newPart);
-const fixed = enStrings(fixedPart);
+const keys = ["items", "added", "improved", "fixed"];
+const section = (key) => {
+  const at = block.indexOf(`${key}: [`);
+  if (at < 0) return [];
+  const after = block.slice(at);
+  const next = keys
+    .map((candidate) => after.indexOf(`${candidate}: [`))
+    .filter((offset) => offset > 0)
+    .sort((a, b) => a - b)[0];
+  return enStrings(next ? after.slice(0, next) : after);
+};
+
+const sections = [
+  ["New", section("items")],
+  ["Added", section("added")],
+  ["Improved", section("improved")],
+  ["Fixed", section("fixed")],
+].filter(([, lines]) => lines.length > 0);
 
 const body = [
   `## ${version}`,
   "",
-  "**New**",
-  "",
-  ...items.map((line) => `- ${line}`),
-  "",
-  "**Fixed**",
-  "",
-  ...fixed.map((line) => `- ${line}`),
-  "",
+  ...sections.flatMap(([title, lines]) => [`**${title}**`, "", ...lines.map((line) => `- ${line}`), ""]),
 ].join("\n");
 
 writeFileSync(out, body, "utf8");
-console.log(`new=${items.length} fixed=${fixed.length} chars=${body.length}`);
+const counts = sections.map(([title, lines]) => `${title.toLowerCase()}=${lines.length}`).join(" ");
+console.log(`${counts} chars=${body.length}`);
