@@ -45,7 +45,7 @@ pub(crate) fn start(app: AppHandle) {
         let mut tick: u32 = 0;
         let mut pad_down = false;
         loop {
-            let (visible, enabled, game_disabled, capturing, combo, game_hwnd) = STATE
+            let (visible, enabled, game_disabled, capturing, combo, game_hwnd, has_game) = STATE
                 .lock()
                 .map(|s| {
                     (
@@ -55,9 +55,10 @@ pub(crate) fn start(app: AppHandle) {
                         s.capturing,
                         s.combo,
                         s.game_hwnd,
+                        !s.game_app.is_empty(),
                     )
                 })
-                .unwrap_or((false, true, false, false, None, 0));
+                .unwrap_or((false, true, false, false, None, 0, false));
 
             // Switched off, or this game opted out: sleep without touching the
             // keyboard. The window is already gone (the command tore it down).
@@ -65,6 +66,15 @@ pub(crate) fn start(app: AppHandle) {
                 if visible {
                     hide(&app);
                 }
+                gone_ticks = 0;
+                std::thread::sleep(Duration::from_millis(250));
+                continue;
+            }
+
+            // The panel is only useful over the launcher or a running game.
+            // When neither is in front, a 20 ms keyboard/pad poll would keep
+            // waking the machine for a shortcut that has no target.
+            if should_idle(visible, has_game, launcher_focused(&app)) {
                 gone_ticks = 0;
                 std::thread::sleep(Duration::from_millis(250));
                 continue;
@@ -163,6 +173,22 @@ pub(crate) fn start(app: AppHandle) {
             }
         }
     });
+}
+
+/// Idles the listener only when neither the launcher nor a running game owns
+/// the shortcut. The launcher mode must keep its 20 ms response; a game keeps
+/// the panel armed even while another window has focus.
+#[cfg(windows)]
+fn should_idle(visible: bool, has_game: bool, launcher_focused: bool) -> bool {
+    !visible && !has_game && !launcher_focused
+}
+
+#[cfg(windows)]
+fn launcher_focused(app: &tauri::AppHandle) -> bool {
+    use tauri::Manager;
+    app.get_window("main")
+        .and_then(|window| window.is_focused().ok())
+        .unwrap_or(false)
 }
 
 #[cfg(windows)]
@@ -285,5 +311,18 @@ fn is_controller_hotkey_down() -> bool {
         }
     }
     false
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::should_idle;
+
+    #[test]
+    fn idles_only_without_a_target() {
+        assert!(should_idle(false, false, false));
+        assert!(!should_idle(true, false, false));
+        assert!(!should_idle(false, true, false));
+        assert!(!should_idle(false, false, true));
+    }
 }
 
