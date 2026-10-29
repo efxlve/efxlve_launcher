@@ -13,6 +13,7 @@
 import { storeFactsOf } from "../../core/achievement-edits";
 import { icon } from "../../core/icons";
 import { gameStoresLabel } from "../../core/selectors";
+import { S } from "../../core/state";
 import { t } from "../../i18n";
 import { esc, fmtAchDate } from "../../core/utils";
 import type {
@@ -48,16 +49,21 @@ function editRow(appName: string, item: EpicAchievementItem): string {
 }
 
 /**
- * The state editor for one game. Rendered above the summary bar when the
- * header's sliders button is on, the same slot the achievement source card
- * uses for emulator files.
+ * The state editor for one game. Rendered inside the achievement management
+ * panel ("state" tab), never as a separate card above the list.
  */
-export function renderAchievementEditorCard(s: EpicSummary, data: EpicAchievementsData): string {
+export function renderAchievementEditorCard(
+  s: EpicSummary,
+  data: EpicAchievementsData,
+  chrome = true,
+): string {
   const appName = s.appName;
   const edited = editedItems(data);
   const marked = edited.filter((item) => item.user_state === "unlocked").length;
   const cleared = edited.filter((item) => item.user_state === "locked").length;
-  const store = achievementStoreName(appName);
+  const isRa = data.data_source === "ra";
+  const store = isRa ? t("ach.raTitle") : achievementStoreName(appName);
+  const desc = isRa ? t("ach.editorDescRa") : t("ach.editorDesc");
   const counts = [
     marked > 0
       ? `<span class="ach-edit-count is-marked">${icon("user", 12)}<span>${esc(t("ach.editorMarkedCount", { n: marked }))}</span></span>`
@@ -69,18 +75,15 @@ export function renderAchievementEditorCard(s: EpicSummary, data: EpicAchievemen
     .filter(Boolean)
     .join("");
 
-  return `
-    <div class="ach-edit-card">
-      <div class="ach-edit-card-head">
-        <span class="ach-edit-card-title">${icon("edit", 14)}<span>${esc(t("ach.editorTitle"))}</span></span>
-        <button type="button" class="icon-btn" data-act="ach-edit-close" title="${esc(t("common.close"))}">${icon("x", 12)}</button>
-      </div>
-      <p class="ach-edit-card-desc">${esc(t("ach.editorDesc", { store }))}</p>
+  const body = `
+      <p class="ach-edit-card-desc">${esc(desc)}</p>
       ${counts ? `<div class="ach-edit-counts">${counts}</div>` : ""}
       <div class="ach-edit-actions">
         <button type="button" class="btn ghost small" data-act="ach-edit-mark-all" data-id="${esc(appName)}">${icon("unlock", 12)}<span>${esc(t("ach.editorMarkAll"))}</span></button>
         <button type="button" class="btn ghost small" data-act="ach-edit-reset-all" data-id="${esc(appName)}">${icon("lock", 12)}<span>${esc(t("ach.editorResetAll"))}</span></button>
-        <button type="button" class="btn ghost small" data-act="ach-edit-sync" data-id="${esc(appName)}">${icon("refresh", 12)}<span>${esc(t("ach.editorSync", { store }))}</span></button>
+        ${data.data_source === "definitions"
+          ? ""
+          : `<button type="button" class="btn ghost small" data-act="ach-edit-sync" data-id="${esc(appName)}">${icon("refresh", 12)}<span>${esc(t("ach.editorSync", { store }))}</span></button>`}
       </div>
       <div class="ach-edit-list">
         ${
@@ -90,7 +93,19 @@ export function renderAchievementEditorCard(s: EpicSummary, data: EpicAchievemen
                 .join("")}`
             : `<div class="ach-edit-empty">${icon("info", 12)}<span>${esc(t("ach.editorClean"))}</span></div>`
         }
+      </div>`;
+
+  if (!chrome) {
+    return `<div class="ach-manage-embed" data-ach-manage="1">${body}</div>`;
+  }
+
+  return `
+    <div class="ach-edit-card">
+      <div class="ach-edit-card-head">
+        <span class="ach-edit-card-title">${icon("edit", 14)}<span>${esc(t("ach.editorTitle"))}</span></span>
+        <button type="button" class="icon-btn" data-act="ach-edit-close" title="${esc(t("common.close"))}">${icon("x", 12)}</button>
       </div>
+      ${body}
     </div>`;
 }
 
@@ -119,9 +134,12 @@ export function renderAchievementEditBar(s: EpicSummary, item: EpicAchievementIt
       </div>`;
   }
   const earned = storeFactsOf(item).unlocked;
+  const hint = S.loadedAchievements.get(s.appName)?.data_source === "ra"
+    ? t("ach.editHintRa")
+    : t("ach.editHint");
   return `
     <div class="ach-edit-bar">
-      <span class="ach-edit-bar-note">${esc(t("ach.editHint"))}</span>
+      <span class="ach-edit-bar-note">${esc(hint)}</span>
       <button type="button" class="btn ghost small ach-edit-bar-btn" data-act="${earned ? "ach-edit-clear" : "ach-edit-mark"}" data-id="${esc(appName)}" data-ach="${achId}" title="${esc(earned ? t("ach.editClearHint") : t("ach.editMarkHint"))}">
         ${icon(earned ? "lock" : "unlock", 12)}<span>${esc(earned ? t("ach.editClear") : t("ach.editMark"))}</span>
       </button>

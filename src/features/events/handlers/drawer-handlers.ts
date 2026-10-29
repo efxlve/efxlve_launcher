@@ -1,11 +1,6 @@
 
 function targetSteamAppIdOf(key: string): string | null {
-  if (key.startsWith("steam::")) return key.slice(7);
-  if (key.startsWith("custom::")) {
-    const custom = S.customGames.find((g) => g.id === key);
-    return custom?.steamAppId || null;
-  }
-  return null;
+  return achievementSteamAppIdFor(key);
 }
 /**
  * Click delegation handlers for the game drawer tabs (achievements, DLCs, specs,
@@ -39,7 +34,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
-import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache, createEmulatorAchievements, useLocalAchievementSource, applyStoreSteamAppId, clearStoreSteamAppIdForGame, useStoreDefinitionSource } from "../../drawer/drawer-view";
+import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache, createEmulatorAchievements, useLocalAchievementSource, applyStoreSteamAppId, clearStoreSteamAppIdForGame, useStoreDefinitionSource, achievementSteamAppIdFor } from "../../drawer/drawer-view";
 import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
 import { toast } from "../../../core/toast";
@@ -485,6 +480,11 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "ach-source-settings": {
       if (id) {
         S.achSourceModalOpen = S.achSourceModalOpen === id ? null : id;
+        if (S.achSourceModalOpen === id) {
+          S.raPanelOpen = null;
+          S.achEditPanelOpen = null;
+          S.achStoreAppIdEditor = null;
+        }
         const s = summaryOf(id);
         const content = document.getElementById("drawer-tab-content");
         if (content && s) content.innerHTML = renderDrawerAchievements(s);
@@ -558,7 +558,13 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
 
     case "ach-appid-open": {
       if (id) {
-        S.achStoreAppIdEditor = S.achStoreAppIdEditor === id ? null : id;
+        const open = S.achStoreAppIdEditor !== id;
+        S.achStoreAppIdEditor = open ? id : null;
+        if (open) {
+          S.achSourceModalOpen = null;
+          S.raPanelOpen = null;
+          S.achEditPanelOpen = null;
+        }
         repaintAchievementsTab(id);
       }
       return true;
@@ -587,6 +593,58 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       return true;
     }
 
+    /* ---------- Achievement management ---------- */
+
+    case "ach-manage": {
+      if (id) {
+        const open =
+          S.achSourceModalOpen === id ||
+          S.raPanelOpen === id ||
+          S.achEditPanelOpen === id;
+        if (open) {
+          S.achSourceModalOpen = null;
+          S.raPanelOpen = null;
+          S.achEditPanelOpen = null;
+        } else {
+          const tab =
+            t.dataset.tab === "state" ? "state"
+            : t.dataset.tab === "ra" ? "ra"
+            : "source";
+          S.achStoreAppIdEditor = null;
+          S.achSourceModalOpen = tab === "source" ? id : null;
+          S.raPanelOpen = tab === "ra" ? id : null;
+          S.achEditPanelOpen = tab === "state" ? id : null;
+        }
+        repaintAchievementsTab(id);
+      }
+      return true;
+    }
+
+    case "ach-manage-tab": {
+      if (id) {
+        const tab =
+          t.dataset.tab === "state" ? "state"
+          : t.dataset.tab === "ra" ? "ra"
+          : "source";
+        S.achStoreAppIdEditor = null;
+        S.achSourceModalOpen = tab === "source" ? id : null;
+        S.raPanelOpen = tab === "ra" ? id : null;
+        S.achEditPanelOpen = tab === "state" ? id : null;
+        repaintAchievementsTab(id);
+      }
+      return true;
+    }
+
+    case "ach-manage-close": {
+      if (id) {
+        S.achSourceModalOpen = null;
+        S.raPanelOpen = null;
+        S.achEditPanelOpen = null;
+        repaintAchievementsTab(id);
+      }
+      return true;
+    }
+
     /* ---------- RetroAchievements mapping ---------- */
 
     case "ra-panel":
@@ -595,6 +653,11 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
       if (!appName) return true;
       const open = act === "ra-panel" && S.raPanelOpen !== appName;
       S.raPanelOpen = open ? appName : null;
+      if (open) {
+        S.achSourceModalOpen = null;
+        S.achEditPanelOpen = null;
+        S.achStoreAppIdEditor = null;
+      }
       const s = summaryOf(appName);
       const content = document.getElementById("drawer-tab-content");
       if (content && s) content.innerHTML = renderDrawerAchievements(s);
@@ -671,7 +734,13 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "ach-edit-close": {
       const appName = id ?? S.currentModalAppName;
       if (!appName) return true;
-      S.achEditPanelOpen = act === "ach-edit-close" || S.achEditPanelOpen === appName ? null : appName;
+      const open = act !== "ach-edit-close" && S.achEditPanelOpen !== appName;
+      S.achEditPanelOpen = open ? appName : null;
+      if (open) {
+        S.achSourceModalOpen = null;
+        S.raPanelOpen = null;
+        S.achStoreAppIdEditor = null;
+      }
       const s = summaryOf(appName);
       const content = document.getElementById("drawer-tab-content");
       if (content && s) content.innerHTML = renderDrawerAchievements(s);
@@ -755,9 +824,13 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
     case "ach-edit-sync": {
       const appName = id ?? S.currentModalAppName;
       if (!appName) return true;
+      const store =
+        S.loadedAchievements.get(appName)?.data_source === "ra"
+          ? i18n("ach.raTitle")
+          : achievementStoreName(appName);
       void askConfirm({
         title: i18n("ach.editorSyncConfirm"),
-        body: i18n("ach.editorSyncBody", { store: achievementStoreName(appName) }),
+        body: i18n("ach.editorSyncBody", { store }),
         confirm: i18n("ach.editsSettingsSync"),
         cancel: i18n("common.cancel"),
       }).then((ok) => {

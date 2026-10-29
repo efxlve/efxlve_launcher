@@ -38,15 +38,10 @@ function recentGamesHtml(): string {
     <button type="button" class="btn ghost small" data-act="ra-recent">${icon("refresh", 12)}<span>${esc(t("ach.raRecent"))}</span></button>`;
 }
 
-export function renderRaPanel(s: EpicSummary): string {
+export function renderRaPanel(s: EpicSummary, chrome = true): string {
   const mapping = raGameFor(s.appName);
   const connected = S.raConfigured;
-  return `
-    <div class="ach-set-card" id="ra-panel">
-      <div class="ach-set-head">
-        <span class="ach-set-title">${icon("globe", 14)}<span>${esc(t("ach.raTitle"))}</span></span>
-        <button type="button" class="icon-btn" data-act="ra-panel-close" title="${esc(t("common.close"))}">${icon("x", 12)}</button>
-      </div>
+  const body = `
       <p class="ach-set-desc">${esc(connected ? t("ach.raDescConnected", { user: S.raUsername }) : t("ach.raDescDisconnected"))}</p>
       ${recentGamesHtml()}
       <div class="ach-set-actions">
@@ -56,7 +51,17 @@ export function renderRaPanel(s: EpicSummary): string {
         <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://retroachievements.org/games">${icon("search", 12)}<span>${esc(t("ach.raSearch"))}</span></button>
         ${connected ? "" : `<button type="button" class="btn ghost small" data-view="settings" data-settings-section="integrations">${icon("settings", 12)}<span>${esc(t("nav.settings"))}</span></button>`}
       </div>
-      <p class="ach-set-hint">${esc(t("ach.raHint"))}</p>
+      <p class="ach-set-hint">${esc(t("ach.raHint"))}</p>`;
+  if (!chrome) {
+    return `<div id="ra-panel" class="ach-manage-embed" data-ach-manage="1">${body}</div>`;
+  }
+  return `
+    <div class="ach-set-card" id="ra-panel">
+      <div class="ach-set-head">
+        <span class="ach-set-title">${icon("globe", 14)}<span>${esc(t("ach.raTitle"))}</span></span>
+        <button type="button" class="icon-btn" data-act="ra-panel-close" title="${esc(t("common.close"))}">${icon("x", 12)}</button>
+      </div>
+      ${body}
     </div>`;
 }
 
@@ -64,5 +69,6 @@ export function renderRaPanel(s: EpicSummary): string {
 export function repaintRaPanel(appName: string, summary: EpicSummary): void {
   const current = document.getElementById("ra-panel");
   if (!current) return;
-  current.outerHTML = renderRaPanel(summary);
+  const embedded = current.dataset.achManage === "1";
+  current.outerHTML = renderRaPanel(summary, !embedded);
 }

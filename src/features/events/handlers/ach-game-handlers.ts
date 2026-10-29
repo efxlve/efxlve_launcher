@@ -38,8 +38,14 @@ export function handleAchievementGameAction(
 
   // The switch itself already reflects the state; only the leading glyph is
   // swapped, so the page does not have to re-render for one toggle.
-  const glyph = control.closest(".ach-notif-row")?.querySelector<HTMLElement>(".ach-notif-icon");
-  if (glyph) glyph.innerHTML = icon(enabled ? "bell" : "bell-off", 14);
+  const glyph = control.matches('[data-act="toggle-ach-game-notif"]')
+    ? control
+    : control.closest(".ach-notif-row")?.querySelector<HTMLElement>(".ach-notif-icon");
+  if (glyph) {
+    glyph.innerHTML = icon(enabled ? "bell" : "bell-off", 14);
+    glyph.classList.toggle("is-off", !enabled);
+    glyph.setAttribute("aria-pressed", String(enabled));
+  }
 
   toast(t(enabled ? "ach.gameNotifOn" : "ach.gameNotifOff"), "ok");
   return true;

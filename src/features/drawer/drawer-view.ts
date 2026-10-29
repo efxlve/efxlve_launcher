@@ -1991,6 +1991,19 @@ function achievementStoreLabel(appName: string): string {
   return "Epic Games";
 }
 
+/** Short label for the source the list actually came from. */
+function achievementSourceLabel(s: EpicSummary, data: EpicAchievementsData): string {
+  if (data.data_source === "ra") return t("ach.raTitle");
+  if (ubiAchSource.has(s.appName)) return "Ubisoft Connect";
+  if (data.data_source === "definitions") return t("ach.sourceSteamDefinitions");
+  if (data.data_source === "local") return t("ach.sourceLocalFile");
+  if (s.appName.startsWith("custom::")) return t("ach.sourceEmulator");
+  if (s.appName.startsWith("steam::")) return "Steam";
+  if (s.appName.startsWith("gog::")) return "GOG";
+  if (s.appName.startsWith("amazon::")) return "Amazon Games";
+  return "Epic Games";
+}
+
 /**
  * Empty state with numbered setup steps. `emptyState` keeps its sentence in a
  * single paragraph; the Goldberg setup needs a real list so the numbers and
@@ -2289,6 +2302,48 @@ async function startStoreEmulatorWatch(appName: string): Promise<void> {
   ).catch(() => {});
 }
 
+/** Steam AppID the achievement source panel should write to. */
+export function achievementSteamAppIdFor(appName: string): string | null {
+  if (appName.startsWith("steam::")) return appName.slice(7);
+  if (appName.startsWith("custom::")) {
+    return S.customGames.find((game) => game.id === appName)?.steamAppId?.trim() || null;
+  }
+  return achievementProbeCache.get(appName)?.appId || storeSteamAppIdFor(appName) || null;
+}
+
+type AchievementManageTab = "source" | "ra" | "state";
+
+/**
+ * One settings surface for the three achievement panels. Only the selected
+ * panel is rendered, so source, RetroAchievements and launcher edits can no
+ * longer stack into three cards above the list.
+ */
+function renderAchievementManagePanel(
+  s: EpicSummary,
+  tab: AchievementManageTab,
+  body: string,
+  canSource: boolean,
+  canRa: boolean,
+): string {
+  const tabs: Array<{ id: AchievementManageTab; label: string; glyph: IconName }> = [];
+  if (canSource) tabs.push({ id: "source", label: t("ach.sourceTitle"), glyph: "settings" });
+  if (canRa) tabs.push({ id: "ra", label: t("ach.raTitle"), glyph: "globe" });
+  tabs.push({ id: "state", label: t("ach.editorTitle"), glyph: "edit" });
+  const title = tabs.length > 1 ? t("ach.manageTitle") : tabs[0].label;
+  return `<div class="ach-manage">
+    <div class="ach-manage-head">
+      <span class="ach-manage-title">${icon("sliders", 14)} ${title}</span>
+      <button class="icon-btn" data-act="ach-manage-close" data-id="${esc(s.appName)}" title="${t("common.close")}">${icon("x", 12)}</button>
+    </div>
+    ${tabs.length > 1
+      ? `<div class="ach-manage-tabs" role="tablist">
+      ${tabs.map((item) => `<button type="button" role="tab" aria-selected="${item.id === tab}" class="ach-manage-tab${item.id === tab ? " active" : ""}" data-act="ach-manage-tab" data-tab="${item.id}" data-id="${esc(s.appName)}">${icon(item.glyph, 13)}<span>${item.label}</span></button>`).join("")}
+    </div>`
+      : ""}
+    <div class="ach-manage-body">${body}</div>
+  </div>`;
+}
+
 export function renderDrawerAchievements(s: EpicSummary): string {
   const isPlat = isAppPlatinum(s.appName);
   const partner = gamePartner(s, rawOf(s.appName));
@@ -2547,11 +2602,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const sourceNote = ubiAchSource.has(s.appName)
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
-    : data.data_source === "local"
-      ? `<div class="ach-source-note">${icon("hard-drive", 13)}<span>${esc(t("ach.localSourceNote"))}</span></div>`
-      : data.data_source === "definitions"
-        ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
-        : "";
+    : data.data_source === "definitions"
+      ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
+      : "";
 
   // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot
   // shine sweep (the sweep only runs on the first paint of the page).
@@ -2572,13 +2625,9 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const srcCfg = steamAchSourceCache.get(s.appName) ?? { mode: "auto" };
   const detectedPath = srcCfg.detectedPath;
-  const sourceCard = S.achSourceModalOpen === s.appName && Boolean(targetSteamAppId)
-    ? `<div class="ach-source-card">
-        <div class="ach-source-header">
-          <span class="ach-source-title">${icon("settings", 14)} ${t("ach.sourceTitle")}</span>
-          <button class="icon-btn" data-act="ach-source-close" title="${t("common.close")}">${icon("x", 12)}</button>
-        </div>
-        <div class="ach-source-desc">${t("ach.sourceDesc")}</div>
+  const canManageSource = Boolean(targetSteamAppId);
+  const sourceBody = S.achSourceModalOpen === s.appName && canManageSource
+    ? `<div class="ach-source-desc">${t("ach.sourceDesc")}</div>
         <div class="ach-source-modes">
           <label class="radio-label">
             <input type="radio" name="ach-source-mode" value="auto" ${srcCfg.mode === "auto" ? "checked" : ""} data-act="ach-mode-change" data-id="${s.appName}" />
@@ -2603,8 +2652,20 @@ export function renderDrawerAchievements(s: EpicSummary): string {
               <input type="text" id="ach-custom-path-input" class="ach-custom-input" placeholder="${t("ach.customPathPlaceholder")}" value="${esc(srcCfg.customPath ?? "")}" />
               <button class="btn small play" data-act="ach-source-save" data-id="${s.appName}">${t("ach.saveSource")}</button>
             </div>`
-          : ""}
-      </div>`
+          : ""}`
+    : "";
+
+  const manageTab: AchievementManageTab | null =
+    S.achSourceModalOpen === s.appName && canManageSource ? "source"
+    : S.raPanelOpen === s.appName && raEnabled ? "ra"
+    : S.achEditPanelOpen === s.appName ? "state"
+    : null;
+  const manageBody = manageTab === "source" ? sourceBody
+    : manageTab === "ra" ? renderRaPanel(s, false)
+    : manageTab === "state" ? renderAchievementEditorCard(s, data, false)
+    : "";
+  const managePanel = manageTab
+    ? renderAchievementManagePanel(s, manageTab, manageBody, canManageSource, raEnabled)
     : "";
 
   const detailKey = detailItem ? `${s.appName}:${detailItem.name}` : "";
@@ -2620,35 +2681,23 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       })
     : renderAchSidePanel({ summary: s, data, steamAppId: targetSteamAppId });
 
-  return `
-    <div class="ach-workspace${detailItem ? " has-detail" : ""}">
-      <div class="ach-list-pane">
-    ${S.achStoreAppIdEditor === s.appName ? renderStoreAppIdEditor(s) : ""}
-    ${sourceCard}
-    ${raPanel}
-    ${S.achEditPanelOpen === s.appName ? renderAchievementEditorCard(s, data) : ""}
-    ${data.data_source === "ra" ? `<div class="ach-source-note">${icon("globe", 13)}<span>${esc(t("ach.raSourceNote", { id: raMapping?.gameId ?? "" }))}</span></div>` : ""}
-    ${sourceNote}
-    <div class="ach-notif-row">
-      <span class="ach-notif-label">
-        <span class="ach-notif-icon">${icon(achGameNotificationsEnabled(s.appName) ? "bell" : "bell-off", 14)}</span>
-        <span>${esc(t("ach.gameNotifToggle"))}</span>
-      </span>
-      <label class="switch" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-steam-appid="${esc(targetSteamAppId ?? "")}">
-        <input type="checkbox" ${achGameNotificationsEnabled(s.appName) ? "checked" : ""} />
-        <span class="track"></span>
-      </label>
-    </div>
-    <div class="ach-summary-bar ${isPlat ? "platinum" : ""}">
-      <div class="ach-summary-main">
-        <div class="ach-summary-percent ${isPlat ? "plat" : ""}">${isPlat ? platCup : `${pct}%`}</div>
+  const notifEnabled = achGameNotificationsEnabled(s.appName);
+  const sourceLabel = achievementSourceLabel(s, data);
+  const defaultManageTab: AchievementManageTab = canManageSource
+    ? "source"
+    : raEnabled
+      ? "ra"
+      : "state";
+  const overview = `
+    <section class="ach-overview${isPlat ? " platinum" : ""}">
+      <div class="ach-overview-head">
+        <div class="ach-summary-percent${isPlat ? " plat" : ""}">${isPlat ? platCup : `${pct}%`}</div>
         <div class="ach-summary-info">
           <div class="ach-summary-count">${effectiveUnlocked} <span>/ ${data.total_achievements}</span></div>
           <div class="ach-summary-label">${isPlat ? t("ach.platinumComplete") : t("drawer.achievements")}</div>
           ${data.total_xp > 0 && !isPlat ? `<div class="ach-summary-xp tabular-nums">${effectiveXp.toLocaleString()} / ${data.total_xp.toLocaleString()} XP</div>` : ""}
           ${platinumAwardDate ? `<div class="ach-summary-award">${icon("crown", 11)}<span>${esc(t("ach.platinumAwarded", { date: platinumAwardDate }))}</span></div>` : ""}
           ${platinumRarity != null ? `<div class="ach-summary-award" title="${esc(t("ach.platRarityHint"))}">${icon("users", 11)}<span>${esc(t("ach.platRarity", { n: fmtDecimal1(platinumRarity) }))}</span></div>` : ""}
-          <div class="progress ach-summary-progress"><span style="width:${pct}%"></span></div>
         </div>
         <div class="ach-summary-stats">
           ${remaining > 0 ? `<div class="ach-stat"><span class="ach-stat-label">${esc(t("ach.statRemaining"))}</span><strong class="ach-stat-value tabular-nums">${remaining}</strong></div>` : ""}
@@ -2658,22 +2707,36 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           ${data.user_cleared ? `<div class="ach-stat" title="${esc(t("ach.userClearedHint"))}"><span class="ach-stat-label">${esc(t("ach.statCleared"))}</span><strong class="ach-stat-value tabular-nums">${data.user_cleared}</strong></div>` : ""}
         </div>
         <div class="ach-summary-actions">
-          ${raEnabled ? `<button class="icon-btn ${S.raPanelOpen === s.appName ? "active" : ""}" data-act="ra-panel" data-id="${esc(s.appName)}" title="${esc(t("ach.raTitle"))}">${icon("globe", 14)}</button>` : ""}
-          <button class="icon-btn ${S.achEditPanelOpen === s.appName ? "active" : ""}" data-act="ach-edit-settings" data-id="${esc(s.appName)}" title="${esc(t("ach.editorOpen"))}">${icon("edit", 14)}</button>
+          <button class="icon-btn${notifEnabled ? "" : " is-off"}" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-steam-appid="${esc(targetSteamAppId ?? "")}" title="${esc(t("ach.gameNotifToggle"))}" aria-pressed="${notifEnabled}">${icon(notifEnabled ? "bell" : "bell-off", 14)}</button>
+          <button class="icon-btn" data-act="ach-refresh" data-id="${esc(s.appName)}" title="${esc(t("ach.refreshData"))}">${icon("refresh", 14)}</button>
+          <button class="icon-btn${manageTab ? " active" : ""}" data-act="ach-manage" data-id="${esc(s.appName)}" data-tab="${manageTab ?? defaultManageTab}" title="${esc(t("ach.manageTitle"))}">${icon("sliders", 14)}</button>
           ${data.data_source === "definitions" ? `<button class="icon-btn ${S.achStoreAppIdEditor === s.appName ? "active" : ""}" data-act="ach-appid-open" data-id="${esc(s.appName)}" title="${esc(t("ach.appIdLabel"))}">${icon("hash", 14)}</button>` : ""}
-          ${targetSteamAppId ? `<button class="icon-btn ${S.achSourceModalOpen === s.appName ? "active" : ""}" data-act="ach-source-settings" data-id="${s.appName}" title="${t("ach.sourceSettings")}">${icon("settings", 14)}</button>` : ""}
-          <button class="icon-btn" data-act="ach-refresh" data-id="${s.appName}" title="${t("ach.refreshData")}">${icon("refresh", 14)}</button>
-          ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${s.appName}" title="${t("ach.viewInStore")}">${icon("external", 14)}</button>`}
+          ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${esc(s.appName)}" title="${esc(t("ach.viewInStore"))}">${icon("external", 14)}</button>`}
         </div>
       </div>
-      <div class="ach-tier-row">
-        ${tierChip("platinum", "plat", t("ach.tierPlatinum"), epicPlatinumIcon(11), platUnlocked, platTotal, tiers.platinum[0] > 0)}
-        ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
-        ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
-        ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
+      <div class="ach-overview-progress"><span style="width:${pct}%"></span></div>
+      <div class="ach-overview-foot">
+        <div class="ach-tier-row">
+          ${tierChip("platinum", "plat", t("ach.tierPlatinum"), epicPlatinumIcon(11), platUnlocked, platTotal, tiers.platinum[0] > 0)}
+          ${tierChip("gold", "gold", t("ach.tierGold"), icon("trophy", 11), tiers.gold[1], tiers.gold[0])}
+          ${tierChip("silver", "silver", t("ach.tierSilver"), icon("trophy", 11), tiers.silver[1], tiers.silver[0])}
+          ${tierChip("bronze", "bronze", t("ach.tierBronze"), icon("trophy", 11), tiers.bronze[1], tiers.bronze[0])}
+        </div>
+        <div class="ach-source-line">
+          ${icon("layers", 12)}
+          <span class="ach-source-line-label">${esc(t("ach.sourceLabel", { source: sourceLabel }))}</span>
+          ${canManageSource ? `<button class="btn ghost small ach-source-change" data-act="ach-manage-tab" data-tab="source" data-id="${esc(s.appName)}">${esc(t("ach.changeSource"))}</button>` : ""}
+        </div>
       </div>
-    </div>
+    </section>`;
 
+  return `
+    <div class="ach-workspace${detailItem ? " has-detail" : ""}">
+      <div class="ach-list-pane">
+    ${overview}
+    ${S.achStoreAppIdEditor === s.appName ? renderStoreAppIdEditor(s) : ""}
+    ${managePanel}
+    ${sourceNote}
     <div class="gp-toolbar">
       <div class="tabs ach-status-strip">
         ${filterChip("all", t("ach.filterAll"), data.achievements.length, "list")}
