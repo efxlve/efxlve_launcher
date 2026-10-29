@@ -626,10 +626,23 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           t.dataset.tab === "state" ? "state"
           : t.dataset.tab === "ra" ? "ra"
           : "source";
-        S.achStoreAppIdEditor = null;
-        S.achSourceModalOpen = tab === "source" ? id : null;
-        S.raPanelOpen = tab === "ra" ? id : null;
-        S.achEditPanelOpen = tab === "state" ? id : null;
+        const current =
+          S.achSourceModalOpen === id ? "source"
+          : S.raPanelOpen === id ? "ra"
+          : S.achEditPanelOpen === id ? "state"
+          : null;
+        // The overview's "Change" button is a toggle: a second press closes the
+        // panel. Tab-strip buttons omit `data-toggle` and always select a tab.
+        if (t.dataset.toggle === "1" && current === tab) {
+          S.achSourceModalOpen = null;
+          S.raPanelOpen = null;
+          S.achEditPanelOpen = null;
+        } else {
+          S.achStoreAppIdEditor = null;
+          S.achSourceModalOpen = tab === "source" ? id : null;
+          S.raPanelOpen = tab === "ra" ? id : null;
+          S.achEditPanelOpen = tab === "state" ? id : null;
+        }
         repaintAchievementsTab(id);
       }
       return true;
