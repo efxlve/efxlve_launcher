@@ -539,7 +539,7 @@ export const S = {
   activeDlMetrics: (null) as DlMetrics | null,
   peakNetSpeedBytes: 0,
   speedInBits: (localStorage.getItem(SPEED_BITS_KEY) === "true") as boolean,
-  pauseOnPlay: (localStorage.getItem(PAUSE_ON_PLAY_KEY) === "true") as boolean,
+  pauseOnPlay: (localStorage.getItem(PAUSE_ON_PLAY_KEY) !== "false") as boolean,
   steamExitAfterPlay: (localStorage.getItem(STEAM_EXIT_AFTER_PLAY_KEY) === "true") as boolean,
   autoDesktopShortcut: (localStorage.getItem(AUTO_SHORTCUT_KEY) !== "false") as boolean,
   autoPausedDl: (null) as string | null,
