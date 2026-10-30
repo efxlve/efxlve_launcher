@@ -90,8 +90,7 @@ The Audio tab now lists the master bus and every session on the default output
 endpoint (`src-tauri/src/overlay/audio.rs`). Validate on a real game and a
 browser: per-app volume and mute, system sounds, a device switch, and a session
 that starts or stops while the tab is open. Then add the output-device picker,
-named mix presets, session icons, controller focus order, and translations for
-the eight new keys (English values are in place for the other locales).
+named mix presets, session icons and controller focus order.
 
 ## Crosshair field pass
 
@@ -99,8 +98,7 @@ The Settings tab now draws a native, click-through crosshair over the game
 (`src-tauri/src/overlay/crosshair.rs`). Validate on a borderless game: the
 reticle sits at the monitor centre, Ctrl+Shift+X toggles it, the outline stays
 readable on bright scenes, and it disappears when the game exits. Then add a
-per-game profile, a configurable hotkey, and translations for the 21 new keys
-(English values are in place for the other locales).
+per-game profile and a configurable hotkey.
 
 ## Achievement tracker field pass
 
@@ -108,8 +106,7 @@ The Tracker widget now pins up to three locked achievements and keeps them in
 ghost mode (`src/features/overlay/overlay.ts`). Validate on a real game: track
 from the achievement detail, pin the tracker, close the panel, and confirm the
 progress bar survives; unlock one and confirm it repaints. Then add live
-progress polling while pinned, per-game tracker presets, and translations for
-the seven new keys (English values are in place for the other locales).
+progress polling while pinned and per-game tracker presets.
 
 ## Notes image field pass
 
@@ -117,8 +114,7 @@ The overlay note editor now accepts a pasted image: it is resized and
 JPEG-compressed, stored in the note's `images` array, and rendered by the
 preview in the overlay, the launcher Notes page and the game drawer
 (`src/features/notes/`). Validate with a real screenshot and a map, then add
-file-backed storage for large images, an image remove/replace action, and
-translations for the three new keys.
+file-backed storage for large images and an image remove/replace action.
 
 ## Browser PiP field pass
 
@@ -127,5 +123,5 @@ when the panel closes (`src-tauri/src/overlay/browser.rs`,
 `src/features/overlay/browser-window.ts`). Validate on a borderless game and a
 multi-monitor/DPI setup: the player lands top-right, the page fills the frame,
 the PiP bar restores and closes, the game keeps focus after close, and the
-browser reopens at full size. Then add a click-through toggle, a direct "send
-this tab to PiP" action, and translations for the two new keys.
+browser reopens at full size. Then add a click-through toggle and a direct "send
+this tab to PiP" action.

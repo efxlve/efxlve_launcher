@@ -341,9 +341,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   apartment, and the tab polls every two seconds while it is open.
 - A slider holds the poll for 1.5 s so a refresh cannot overwrite the value under the
   thumb. System sounds sort last; named apps sort case-insensitively.
-- Open: an output-device picker, named mix presets, session icons, controller focus
-  order, and translations for the eight new keys (English values are in place for the
-  other locales).
+- Open: an output-device picker, named mix presets, session icons and controller focus
+  order.
 
 ### M10 — Tactical crosshair (built)
 
@@ -355,8 +354,7 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   `UpdateLayeredWindow`; the dark outline keeps the reticle readable on bright scenes.
   The window hides on game exit and service stop, and follows the game monitor every
   couple of seconds.
-- Open: a per-game crosshair profile, a configurable hotkey, translations for the 21
-  new keys (English values are in place for the other locales), and a field pass on
+- Open: a per-game crosshair profile, a configurable hotkey, and a field pass on
   exclusive fullscreen (external overlays cannot paint there).
 
 ### M11 — Achievement tracker (built)
@@ -367,9 +365,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - The list is keyed by the active game and stored in `efxlve-overlay-ach-tracker`; the
   Steam unlock event repaints it in place. The achievements data is the same store-
   agnostic payload the Achievements tab already loads.
-- Open: live progress polling while the tracker is pinned, per-game tracker presets,
-  and translations for the seven new keys (English values are in place for the other
-  locales).
+- Open: live progress polling while the tracker is pinned and per-game tracker
+  presets.
 
 ### M12 — Rich notes: pasted images (built)
 
@@ -381,8 +378,7 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - Up to three images per note, each at most 150k characters on the editor side; Rust
   re-validates the data URL and caps it at 160k. The markdown export strips the markers
   because a plain file cannot carry the data URLs.
-- Open: file-backed image storage for large maps, an image remove/replace action, and
-  translations for the three new keys.
+- Open: file-backed image storage for large maps and an image remove/replace action.
 
 ### M13 — Picture-in-picture guide player (built)
 
