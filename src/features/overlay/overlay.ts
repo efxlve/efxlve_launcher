@@ -1363,6 +1363,7 @@ function recentGamesPillHtml(): string {
   const list = getRecentGames();
   const isPlaying = !launcherMode && Boolean(context.title);
   const activeTitle = isPlaying ? context.title : "";
+  const pillTitle = activeTitle.split(/\s+[–—-]\s+/)[0].trim() || activeTitle;
   const activeGame = isPlaying
     ? list.find((g) => g.appName === context.appName) || { appName: context.appName, title: context.title, coverUrl: "" }
     : null;
@@ -1377,7 +1378,7 @@ function recentGamesPillHtml(): string {
           }
           <span class="ov-hub-live-dot" title="${esc(t("overlay.running"))}"></span>
         </span>
-        <span class="ov-hub-title" title="${esc(activeTitle)}">${esc(activeTitle)}</span>
+        <span class="ov-hub-title" title="${esc(activeTitle)}">${esc(pillTitle)}</span>
       ` : `
         <span class="ov-hub-icon">${icon("gamepad-2", 14)}</span>
         <span class="ov-hub-title">${esc(t("profile.recentGamesTitle"))}</span>
@@ -2849,6 +2850,18 @@ function isAchievementTracked(name: string): boolean {
   return trackedAchievements().includes(name);
 }
 
+/** A tracked achievement that is already earned loses its pin. */
+function pruneTrackedAchievements(data: AchievementsData | null): void {
+  if (!data || !context.appName) return;
+  const names = trackedAchievements();
+  if (names.length === 0) return;
+  const kept = names.filter((name) => {
+    const item = data.achievements.find((entry) => entry.name === name);
+    return item ? !isAchievementUnlocked(item) : false;
+  });
+  if (kept.length !== names.length) setTrackedAchievements(kept);
+}
+
 function toggleTrackedAchievement(name: string): void {
   const current = trackedAchievements();
   if (current.includes(name)) {
@@ -2886,20 +2899,18 @@ function trackerRowHtml(item: AchievementItem): string {
  *  the whole card in ghost mode, so pinning the widget keeps a compact HUD. */
 function trackerSectionHtml(data: AchievementsData | null): string {
   const names = trackedAchievements();
+  if (names.length === 0) return "";
   let body: string;
-  if (names.length === 0) {
-    body = emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
-  } else if (!data) {
-    body = achLoading
-      ? `<div class="ov-empty">${esc(t("ach.checking"))}</div>`
-      : emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
+  if (!data) {
+    if (!achLoading) return "";
+    body = `<div class="ov-empty">${esc(t("ach.checking"))}</div>`;
   } else {
     const items = names
       .map((name) => data.achievements.find((item) => item.name === name))
-      .filter((item): item is AchievementItem => Boolean(item));
-    body = items.length > 0
-      ? `<div class="ov-tracker-list">${items.map(trackerRowHtml).join("")}</div>`
-      : emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
+      .filter((item): item is AchievementItem => Boolean(item))
+      .filter((item) => !isAchievementUnlocked(item));
+    if (items.length === 0) return "";
+    body = `<div class="ov-tracker-list">${items.map(trackerRowHtml).join("")}</div>`;
   }
   return `<section class="ov-tracker-section">
     <div class="ov-tracker-section-head">${icon("pin", 12)} <span>${esc(t("overlay.trackedTitle"))}</span></div>
@@ -2939,6 +2950,7 @@ function renderAchView(): void {
     renderHomeSafe();
     return;
   }
+  pruneTrackedAchievements(data);
   if (achDetail) {
     const item = data.achievements.find((entry) => entry.name === achDetail);
     if (item) {

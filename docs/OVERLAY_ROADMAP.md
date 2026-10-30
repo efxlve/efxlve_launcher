@@ -373,8 +373,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   description and progress bar. Pinning the Achievements widget keeps that section as
   the ghost HUD.
 - The list is keyed by the active game and stored in `efxlve-overlay-ach-tracker`; the
-  Steam unlock event repaints it in place. The achievements data is the same store-
-  agnostic payload the Achievements tab already loads.
+  Steam unlock event repaints it in place and drops an earned achievement from the
+  tracked set. An empty tracked set renders no box. The achievements data is the same
+  store-agnostic payload the Achievements tab already loads.
 - While the tracker is open or pinned, the store payload refreshes every 30 s so a
   progress bar or a new unlock appears without reopening the panel.
 - Open: per-game tracker presets.

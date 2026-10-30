@@ -73,8 +73,8 @@ The Achievements widget now contains the tracked section and pins up to three
 locked achievements; pinning the widget keeps that section as a compact ghost
 HUD (`src/features/overlay/overlay.ts`). Validate on a real game: track from the
 achievement detail, pin the Achievements widget, close the panel, and confirm the
-progress bar survives; unlock one and confirm it repaints. Then add per-game
-tracker presets.
+progress bar survives; unlock one and confirm it disappears from the tracked set.
+Then add per-game tracker presets.
 
 ## Notes image field pass
 
