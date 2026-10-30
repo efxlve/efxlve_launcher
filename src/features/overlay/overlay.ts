@@ -153,6 +153,9 @@ interface MetricsSample {
   gpu: number | null;
   vramUsedMb: number | null;
   vramTotalMb?: number | null;
+  cpuTempC?: number | null;
+  gpuTempC?: number | null;
+  gpuPowerW?: number | null;
 }
 
 interface AudioSession {
@@ -1973,8 +1976,14 @@ function getTelemetryReadings(m: MetricsSample | null) {
 
   const isTr = (localStorage.getItem("efxlve_lang") || "").startsWith("tr");
 
-  const cpuSub = m?.cpuGhz ? `${m.cpuGhz.toFixed(2)} GHz` : (isTr ? "İşlemci" : "Processor");
-  const gpuSub = m?.running ? (isTr ? "3D Aktif" : "3D Active") : (isTr ? "Sistem 3D" : "System 3D");
+  const cpuTemp = m?.cpuTempC != null ? `${Math.round(m.cpuTempC)}°C` : "";
+  const gpuTemp = m?.gpuTempC != null ? `${Math.round(m.gpuTempC)}°C` : "";
+  const gpuPower = m?.gpuPowerW != null ? `${Math.round(m.gpuPowerW)}W` : "";
+  const cpuSub = [m?.cpuGhz ? `${m.cpuGhz.toFixed(2)} GHz` : (isTr ? "İşlemci" : "Processor"), cpuTemp]
+    .filter(Boolean)
+    .join(" · ");
+  const gpuState = m?.running ? (isTr ? "3D Aktif" : "3D Active") : (isTr ? "Sistem 3D" : "System 3D");
+  const gpuSub = [gpuState, gpuTemp, gpuPower].filter(Boolean).join(" · ");
   const ramSub = ramUsed > 0 ? fmtMb(ramUsed) : (isTr ? "Bellek" : "Memory");
   const vramSub = vramUsed > 0 ? fmtMb(vramUsed) : (isTr ? "Bellek" : "Memory");
   const ramSubTitle = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;

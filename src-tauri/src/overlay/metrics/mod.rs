@@ -7,6 +7,7 @@
 
 mod etw;
 mod gpu;
+mod thermal;
 
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -49,6 +50,12 @@ pub struct MetricsSample {
     pub vram_used_mb: Option<u64>,
     /// The total dedicated VRAM, MB.
     pub vram_total_mb: Option<u64>,
+    /// CPU package/thermal-zone temperature, Celsius.
+    pub cpu_temp_c: Option<f64>,
+    /// GPU die temperature, Celsius.
+    pub gpu_temp_c: Option<f64>,
+    /// GPU board power draw, watts.
+    pub gpu_power_w: Option<f64>,
 }
 
 /// Starts the worker if it is not running. It stops itself a few seconds after
@@ -79,6 +86,7 @@ pub fn fps_available() -> bool {
 fn run(app: AppHandle) {
     let mut sys = System::new();
     let mut gpu = gpu::GpuQuery::open();
+    let mut thermal = thermal::ThermalQuery::open();
     let mut fps = etw::FpsCounter::start();
     let mut idle = 0u32;
 
@@ -155,6 +163,10 @@ fn run(app: AppHandle) {
             .as_ref()
             .map(|counter| counter.frames(&pids, 1024))
             .unwrap_or_default();
+        let thermal = thermal
+            .as_mut()
+            .map(|query| query.sample())
+            .unwrap_or_default();
 
         let sample = MetricsSample {
             running: pid.is_some(),
@@ -173,6 +185,9 @@ fn run(app: AppHandle) {
             gpu: gpu_value,
             vram_used_mb: vram.map(|bytes| bytes / 1_048_576),
             vram_total_mb,
+            cpu_temp_c: thermal.cpu_temp_c,
+            gpu_temp_c: thermal.gpu_temp_c,
+            gpu_power_w: thermal.gpu_power_w,
         };
         let _ = app.emit("overlay-metrics", sample.clone());
 
@@ -233,9 +248,19 @@ fn full_hud_text(s: &MetricsSample) -> String {
         parts.push(line);
     }
     let cpu = s.game_cpu.unwrap_or(s.cpu);
-    parts.push(format!("CPU {cpu:.0}%"));
+    parts.push(match s.cpu_temp_c {
+        Some(temp) => format!("CPU {cpu:.0}% {temp:.0}°C"),
+        None => format!("CPU {cpu:.0}%"),
+    });
     if let Some(gpu) = s.gpu {
-        parts.push(format!("GPU {gpu:.0}%"));
+        let mut line = format!("GPU {gpu:.0}%");
+        if let Some(temp) = s.gpu_temp_c {
+            line.push_str(&format!(" {temp:.0}°C"));
+        }
+        if let Some(power) = s.gpu_power_w {
+            line.push_str(&format!(" {power:.0}W"));
+        }
+        parts.push(line);
     }
     if let Some(vram) = s.vram_used_mb {
         parts.push(format!("VRAM {}", mb_label(vram)));
@@ -332,5 +357,18 @@ mod tests {
         assert!(hud_text(&sample, "compact").contains("1% 112"));
         assert!(!hud_text(&sample, "compact").contains("0.1%"));
         assert!(hud_text(&sample, "full").contains("0.1% 98"));
+    }
+
+    #[test]
+    fn full_hud_shows_temperatures_and_power() {
+        let mut sample = MetricsSample::default();
+        sample.cpu = 23.0;
+        sample.gpu = Some(67.0);
+        sample.cpu_temp_c = Some(62.4);
+        sample.gpu_temp_c = Some(58.2);
+        sample.gpu_power_w = Some(120.4);
+        let line = hud_text(&sample, "full");
+        assert!(line.contains("CPU 23% 62°C"), "{line}");
+        assert!(line.contains("GPU 67% 58°C 120W"), "{line}");
     }
 }
