@@ -162,6 +162,49 @@ fn verify_and_decompress(
     Ok(out)
 }
 
+async fn fetch_slice(
+    client: &reqwest::Client,
+    url: &str,
+    slice: &ManifestSlice,
+    method: i32,
+    file_name: &str,
+    index: usize,
+) -> Result<Vec<u8>, String> {
+    let mut attempt = 0u32;
+    loop {
+        match client.get(url).send().await {
+            Ok(response) => match response.error_for_status() {
+                Ok(response) => match response.bytes().await {
+                    Ok(bytes) => {
+                        return verify_and_decompress(method, &bytes, slice, file_name, index)
+                    }
+                    Err(error) => {
+                        attempt += 1;
+                        if attempt >= 3 {
+                            return Err(format!(
+                                "reading {file_name} slice {index}: {error}"
+                            ));
+                        }
+                    }
+                },
+                Err(error) => {
+                    attempt += 1;
+                    if attempt >= 3 {
+                        return Err(format!("fetching {file_name} slice {index}: {error}"));
+                    }
+                }
+            },
+            Err(error) => {
+                attempt += 1;
+                if attempt >= 3 {
+                    return Err(format!("fetching {file_name} slice {index}: {error}"));
+                }
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(400)).await;
+    }
+}
+
 async fn sign_paths(
     demux: &mut wire::Demux,
     download: &mut wire::DownloadService,
@@ -410,49 +453,15 @@ where
                     let client = client.clone();
                     let file_name = file_name.clone();
                     async move {
-                        let index = start + offset;
-                        let mut attempt = 0;
-                        loop {
-                            match client.get(&url).send().await {
-                                Ok(response) => match response.error_for_status() {
-                                    Ok(response) => match response.bytes().await {
-                                        Ok(bytes) => {
-                                            match verify_and_decompress(
-                                                method, &bytes, &check, &file_name, index,
-                                            ) {
-                                                Ok(out) => break Ok(out),
-                                                Err(error) => break Err(error),
-                                            }
-                                        }
-                                        Err(error) => {
-                                            attempt += 1;
-                                            if attempt >= 3 {
-                                                break Err(format!(
-                                                    "reading {file_name} slice {index}: {error}"
-                                                ));
-                                            }
-                                        }
-                                    },
-                                    Err(error) => {
-                                        attempt += 1;
-                                        if attempt >= 3 {
-                                            break Err(format!(
-                                                "fetching {file_name} slice {index}: {error}"
-                                            ));
-                                        }
-                                    }
-                                },
-                                Err(error) => {
-                                    attempt += 1;
-                                    if attempt >= 3 {
-                                        break Err(format!(
-                                            "fetching {file_name} slice {index}: {error}"
-                                        ));
-                                    }
-                                }
-                            }
-                            tokio::time::sleep(Duration::from_millis(400)).await;
-                        }
+                        fetch_slice(
+                            &client,
+                            &url,
+                            &check,
+                            method,
+                            &file_name,
+                            start + offset,
+                        )
+                        .await
                     }
                 });
             let mut stream = futures::stream::iter(jobs).buffered(16);
@@ -663,5 +672,45 @@ mod tests {
             r"HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Game\Install path"
         );
         assert!(install_register("root:\n  name: Game\n").is_empty());
+    }
+
+    #[tokio::test]
+    async fn fetches_and_verifies_a_slice_over_http() {
+        let data = b"a real slice payload".to_vec();
+        let compressed = zstd::encode_all(&data[..], 3).unwrap();
+        let slice = ManifestSlice {
+            size: data.len() as u32,
+            download_size: Some(compressed.len() as u32),
+            download_sha1: sha1_bytes(&compressed),
+            content_sha1: sha1_bytes(&data),
+        };
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let body = compressed.clone();
+        let server = tokio::spawn(async move {
+            use tokio::io::{AsyncReadExt, AsyncWriteExt};
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = vec![0u8; 4096];
+            let _ = socket.read(&mut request).await.unwrap();
+            let header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            socket.write_all(header.as_bytes()).await.unwrap();
+            socket.write_all(&body).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let out = fetch_slice(
+            &client,
+            &format!("http://{address}/slice"),
+            &slice,
+            3,
+            "game.dat",
+            0,
+        )
+        .await
+        .expect("slice fetch");
+        server.await.unwrap();
+        assert_eq!(out, data);
     }
 }
