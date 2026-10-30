@@ -1,5 +1,5 @@
-//! Installed EA, Ubisoft and Battle.net rows from the uninstall registry,
-//! plus Xbox games laid out under `C:\XboxGames`.
+//! Installed EA, Ubisoft and Battle.net rows from the uninstall registry.
+//! Xbox titles come from the package registration instead (`xbox_installed`).
 
 use std::path::{Path, PathBuf};
 
@@ -390,74 +390,6 @@ fn query_uninstall() -> String {
     scan_uninstall()
 }
 
-pub(crate) fn xbox_games() -> Vec<FoundGame> {
-    xbox_games_in(Path::new(r"C:\XboxGames"))
-}
-
-pub(crate) fn xbox_games_in(root: &Path) -> Vec<FoundGame> {
-    let Ok(entries) = std::fs::read_dir(root) else {
-        return Vec::new();
-    };
-    let mut games = Vec::new();
-    for entry in entries.flatten() {
-        if !entry.path().is_dir() {
-            continue;
-        }
-        let folder = entry.file_name().to_string_lossy().to_string();
-        if folder.eq_ignore_ascii_case("GameSave") {
-            continue;
-        }
-        let content = entry.path().join("Content");
-        let config = content.join("MicrosoftGame.config");
-        let xml = std::fs::read_to_string(&config).unwrap_or_default();
-        let name = xbox_display_name(&xml).unwrap_or(folder);
-        let id = slug(&name);
-        if id.is_empty() {
-            continue;
-        }
-        let store_id = xml_text(&xml, "StoreId").unwrap_or_default();
-        let exe_rel = executable_name(&xml).unwrap_or_default();
-        let launch_exe = exe_under(&content, &exe_rel);
-        games.push(FoundGame {
-            store: "xbox".into(),
-            id,
-            name,
-            install_path: entry.path().to_string_lossy().to_string(),
-            installed: true,
-            store_id,
-            launch_exe,
-            launch_uri: String::new(),
-            install_uri: String::new(),
-            uninstall_uri: String::new(),
-            cover_url: String::new(),
-            hero_url: String::new(),
-            description: String::new(),
-        });
-    }
-    games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-    games
-}
-
-/// `Name` on `<Executable>`, not the package identity.
-fn executable_name(xml: &str) -> Option<String> {
-    let rest = xml.split("<Executable ").nth(1)?;
-    let tag = rest.split(['/', '>']).next()?;
-    xml_attr(tag, "Name")
-}
-
-/// The executable attribute is only used when it stays inside the game folder.
-fn exe_under(content: &Path, relative: &str) -> String {
-    if relative.is_empty() || relative.contains("..") {
-        return String::new();
-    }
-    let path = content.join(relative.replace('/', "\\"));
-    if path.is_file() {
-        path.to_string_lossy().to_string()
-    } else {
-        String::new()
-    }
-}
-
 pub(crate) fn client_exe(candidates: &[&str]) -> Option<PathBuf> {
     candidates.iter().map(PathBuf::from).find(|path| path.is_file())
 }
@@ -467,7 +399,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn xbox_config_reads_title_store_and_exe() {
+    fn xbox_config_reads_title_and_store() {
         let xml = r#"<Game>
           <ExecutableList><Executable Name="Binaries\NMS.exe" Id="NoMansSky"/></ExecutableList>
           <ShellVisuals DefaultDisplayName="No Man's Sky" />
@@ -475,7 +407,6 @@ mod tests {
         </Game>"#;
         assert_eq!(xbox_display_name(xml).as_deref(), Some("No Man's Sky"));
         assert_eq!(xml_text(xml, "StoreId").as_deref(), Some("BQVQTL3PCH05"));
-        assert_eq!(executable_name(xml).as_deref(), Some("Binaries\\NMS.exe"));
         let elem = "<ShellVisuals><DefaultDisplayName>Minecraft</DefaultDisplayName></ShellVisuals>";
         assert_eq!(xbox_display_name(elem).as_deref(), Some("Minecraft"));
     }

@@ -743,7 +743,27 @@ pub(crate) fn safe_aumid(aumid: &str) -> bool {
     }
 }
 
-/// Installed titles from the local scan plus the account's PC titles.
+/// Row index of an owned title: the package family name is exact, the title is
+/// the fallback for a catalog cached before installed rows carried it.
+fn owned_row(games: &[FoundGame], owned: &OwnedGame) -> Option<usize> {
+    if !owned.pfn.is_empty() {
+        if let Some(index) = games
+            .iter()
+            .position(|game| game.id.eq_ignore_ascii_case(&owned.pfn))
+        {
+            return Some(index);
+        }
+    }
+    let title = ea::normalize_title(&owned.name);
+    if title.is_empty() {
+        return None;
+    }
+    games
+        .iter()
+        .position(|game| ea::normalize_title(&game.name) == title)
+}
+
+/// Installed titles from the package registration plus the account's PC titles.
 pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
     let mut games: Vec<FoundGame> = installed
         .iter()
@@ -751,11 +771,8 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
         .cloned()
         .collect();
     for owned in cached_owned() {
-        let title = ea::normalize_title(&owned.name);
-        let existing = games.iter_mut().find(|game| {
-            !title.is_empty() && ea::normalize_title(&game.name) == title
-        });
-        if let Some(game) = existing {
+        if let Some(index) = owned_row(&games, &owned) {
+            let game = &mut games[index];
             if !owned.cover.is_empty() {
                 game.cover_url = owned.cover.clone();
             }

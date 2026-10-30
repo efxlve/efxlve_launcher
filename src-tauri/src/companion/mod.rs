@@ -10,6 +10,7 @@ pub(crate) use signin::{accept_library as accept_bnet_library, watch_script as b
 mod battlenet;
 mod covers;
 mod ea;
+mod ea_direct;
 mod ea_login;
 mod ea_vault;
 mod launch;
@@ -24,6 +25,7 @@ mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
 mod xbox_login;
+mod xbox_installed;
 mod xbox_vault;
 pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
 use ubisoft_login::UbiSync;
@@ -94,7 +96,7 @@ fn discover(store: &str) -> Vec<FoundGame> {
             games
         }
         "ubisoft" => ubisoft::merged_games(&installed),
-        "xbox" => xbox_login::merged_games(&scan::xbox_games()),
+        "xbox" => xbox_login::merged_games(&xbox_installed::installed_games()),
         "battlenet" => battlenet::merged_games(&installed),
         "riot" => riot::games(),
         _ => Vec::new(),
@@ -451,13 +453,14 @@ pub fn companion_open_client(store: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Result<(), String> {
+pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Result<(), String> {
     if !accounts::is_store(&store) || id.is_empty() {
         return Err("Unknown game".into());
     }
     let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
         return launch::open_client(&store);
     };
+    let direct = game.store == "ea" && crate::load_settings(&app).ea_direct_launch.unwrap_or(false);
     // The screenshot hotkey needs to know which game is on screen. The install
     // folder is enough to match the process; client protocols do not expose the
     // executable name. Ubisoft Connect has its own F12 screenshot tool, so only
@@ -473,9 +476,9 @@ pub fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Res
             install_path.clone(),
             Vec::new(),
         );
-        watch_companion_exit(app, Some(app_name), game.store.clone(), install_path);
+        watch_companion_exit(app.clone(), Some(app_name), game.store.clone(), install_path);
     } else if close_after_play_enabled("ubisoft") {
-        watch_companion_exit(app, None, game.store.clone(), install_path);
+        watch_companion_exit(app.clone(), None, game.store.clone(), install_path);
     }
     // Riot hands every action to RiotClientServices.exe with a product flag.
     if store == "riot" {
@@ -484,10 +487,54 @@ pub fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Res
             None => launch::open_client(&store),
         };
     }
+    // The opt-in EA path reads the game's own installer manifest and starts it
+    // with the account token. The watcher above already covers the session; a
+    // missing fact falls back to the client handoff below.
+    if direct {
+        match ea_direct::launch(&game).await {
+            Ok(_) => return Ok(()),
+            Err(err) => ea_direct::remember_error(&err),
+        }
+    }
     if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
         return launch::open_game(&game.launch_uri, &game.launch_exe);
     }
     launch::open_client(&store)
+}
+
+/// The diagnostics behind the opt-in direct EA path.
+#[tauri::command]
+pub fn ea_direct_probe(store: String, id: String) -> Result<ea_direct::EaDirectProbe, String> {
+    if store != "ea" || id.is_empty() {
+        return Err("Unknown game".into());
+    }
+    let Some(game) = discover("ea").into_iter().find(|g| g.id == id) else {
+        return Err("Unknown game".into());
+    };
+    Ok(ea_direct::probe(&game))
+}
+
+/// Whether the opt-in direct EA path is on, plus the last failure.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EaDirectStatus {
+    pub enabled: bool,
+    pub last_error: String,
+}
+
+#[tauri::command]
+pub fn ea_direct_status(app: tauri::AppHandle) -> EaDirectStatus {
+    EaDirectStatus {
+        enabled: crate::load_settings(&app).ea_direct_launch.unwrap_or(false),
+        last_error: ea_direct::last_error().unwrap_or_default(),
+    }
+}
+
+#[tauri::command]
+pub fn ea_direct_set_enabled(app: tauri::AppHandle, enabled: bool) {
+    let mut settings = crate::load_settings(&app);
+    settings.ea_direct_launch = Some(enabled);
+    crate::save_settings(&app, &settings);
 }
 
 /* ---------- Locally tracked companion playtime ---------- */
