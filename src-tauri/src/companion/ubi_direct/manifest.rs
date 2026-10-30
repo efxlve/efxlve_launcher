@@ -287,4 +287,47 @@ mod tests {
         assert!(safe_install_path(root, "/etc/passwd").is_err());
         assert!(safe_install_path(root, "Data\\..\\..\\evil.dll").is_err());
     }
+
+    #[tokio::test]
+    async fn fetches_a_cdn_manifest_with_the_fixed_header_and_zlib_body() {
+        use std::io::Write;
+
+        let one = file("bin\\game.exe", 4, &[0x11], &[slice(4, 8, &[0x22])]);
+        let mut chunk = Vec::new();
+        push_bytes(&mut chunk, 3, &one);
+        let mut manifest_bytes = Vec::new();
+        push_bytes(&mut manifest_bytes, 4, &chunk);
+        push_varint_field(&mut manifest_bytes, 21, 3);
+
+        let mut body = vec![0u8; 356];
+        {
+            let mut encoder =
+                flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+            encoder.write_all(&manifest_bytes).unwrap();
+            body.extend_from_slice(&encoder.finish().unwrap());
+        }
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            use tokio::io::{AsyncReadExt, AsyncWriteExt};
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = vec![0u8; 4096];
+            let _ = socket.read(&mut request).await.unwrap();
+            let header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            socket.write_all(header.as_bytes()).await.unwrap();
+            socket.write_all(&body).await.unwrap();
+        });
+
+        let manifest = fetch_manifest(&format!("http://{address}/manifest"))
+            .await
+            .expect("manifest fetch");
+        server.await.unwrap();
+        assert_eq!(manifest.files.len(), 1);
+        assert_eq!(manifest.files[0].name, "bin\\game.exe");
+        assert_eq!(manifest.compression_method, 3);
+    }
 }

@@ -29,6 +29,9 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
         if let Some(name) = shim::deploy(&exe, &account).await? {
             println!("[ubi-direct] deployed {name} for {}", game.name);
         }
+        if exe.parent() != Some(install_dir.as_path()) {
+            shim::write_account_config(&install_dir, &account)?;
+        }
     } else if let Ok(Some(loader)) = shim::detect(&exe) {
         return Err(format!(
             "{} imports {}; enable the Uplay compatibility shim in Settings -> Integrations to launch it without Ubisoft Connect",

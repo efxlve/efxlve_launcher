@@ -184,6 +184,15 @@ pub(crate) async fn deploy(
     Ok(Some(loader.name))
 }
 
+/// Write `upc.json` in a game folder. The caller can point the working
+/// directory and the executable folder at the same account when they differ.
+pub(crate) fn write_account_config(
+    directory: &Path,
+    account: &ShimAccount,
+) -> Result<(), String> {
+    write_config(directory, account)
+}
+
 fn write_config(directory: &Path, account: &ShimAccount) -> Result<(), String> {
     let saves = directory.join("Saves");
     std::fs::create_dir_all(&saves)
@@ -307,5 +316,28 @@ mod tests {
         let path = ensure(Family::R1, true).await.expect("shim download");
         println!("{}", path.display());
         assert!(path.is_file());
+    }
+
+    #[tokio::test]
+    #[ignore = "downloads the shim and writes a temp game folder"]
+    async fn deploys_the_loader_and_writes_the_account_config() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-deploy-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let exe = root.join("game.exe");
+        std::fs::write(&exe, fake_exe("uplay_r1_loader64.dll", 0x8664)).unwrap();
+        let account = ShimAccount {
+            account_id: "account-1".into(),
+            name: "Player".into(),
+            email: "player@efxlve.local".into(),
+            ticket: "ticket-1".into(),
+        };
+        let name = deploy(&exe, &account).await.expect("deploy").expect("shim");
+        assert_eq!(name, "uplay_r1_loader64.dll");
+        assert!(root.join("uplay_r1_loader64.dll").is_file());
+        let config = std::fs::read_to_string(root.join("upc.json")).unwrap();
+        assert!(config.contains("account-1"));
+        assert!(config.contains("ticket-1"));
+        assert!(root.join("Saves").is_dir());
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
