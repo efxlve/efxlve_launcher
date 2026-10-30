@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Efxlve Launcher
+Comment=Manage Epic, GOG, Amazon and Steam libraries
+Exec=efxlve-launcher %U
+Icon=com.efxlve.launcher
+Terminal=false
+Type=Application
+Categories=Game;Utility;
+StartupNotify=true
+StartupWMClass=Efxlve Launcher

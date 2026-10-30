@@ -1,7 +1,7 @@
 # CROSS_PLATFORM.md — Linux & macOS Compatibility Layer (Research and Architecture)
 
 > **Status:** core layer, store CLIs, compatibility tools and the launch chain are implemented (2026-10-23).
-> Linux/macOS packaging is attached to releases; Flatpak, signing/notarization and real-hardware validation remain open.
+> Linux/macOS packaging is attached to releases; the Flatpak bundle is built by the Package workflow, while Flatpak signing/publishing, signing/notarization and real-hardware validation remain open.
 > **Goal:** define how Efxlve Launcher moves beyond Windows, which Wine/Proton/D3DMetal layers it uses, and where the platform abstraction lives. Heroic Games Launcher is the reference model.
 
 ---
@@ -86,7 +86,9 @@ Heroic model: `legendary launch <app> --no-wine --wrapper "<runner> run"`.
 
 - **AppImage** — distribution-independent portable build (primary preview artifact).
 - `.deb` / `.rpm` — distro packages (attached to releases).
-- **Flatpak** (`com.efxlve.launcher`) — still open; needed for Steam Deck and immutable distros.
+- **Flatpak** (`com.efxlve.launcher`) - manifest and desktop entry live in `flatpak/`; the
+  Package workflow extracts the AppImage into the manifest source and builds a `.flatpak`
+  bundle. Signing the bundle and publishing it to a Flatpak repository remain open.
 - AUR is a secondary community channel.
 
 ---
@@ -191,7 +193,7 @@ Settings → Compatibility: target-platform selector, store CLIs, runners, runti
 
 ### 8.5 Remaining work
 
-- **Flatpak** and macOS signing/notarization. `.deb`/`.rpm`/AppImage and `.dmg`/`.app` are attached to releases, but the macOS app is unsigned and not notarized; Flatpak is still open.
+- **Flatpak** is built by the Package workflow as an unsigned `.flatpak` bundle; publishing to a Flatpak repository and signing it remain open. macOS signing/notarization is still open; `.deb`/`.rpm`/AppImage and `.dmg`/`.app` are attached to releases, but the macOS app is unsigned and not notarized.
 - GPTK/D3DMetal licence: the binary is not bundled; the user manages their own installation.
 - Real-hardware validation on Linux/macOS: game launch, Proton prefix, Steam library and store webviews.
 - macOS signing/notarization and Apple Silicon native runner validation. The overlay's transparent window uses the `macos-private-api` feature; that private API blocks Mac App Store distribution, but direct download is unaffected.

@@ -1,0 +1,4 @@
+#!/bin/sh
+# The Flatpak module extracts the AppImage into /app; AppRun expects APPDIR.
+export APPDIR=/app
+exec /app/AppRun "$@"

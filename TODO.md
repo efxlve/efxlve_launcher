@@ -5,8 +5,9 @@ Open work only. Delete the item when it lands.
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow
-  builds unsigned Linux (.deb/.rpm/AppImage) and macOS (.app/.dmg) artifacts;
-  Flatpak, signing and notarization are still open.
+  builds unsigned Linux (.deb/.rpm/AppImage) and macOS (.app/.dmg) artifacts, and
+  now also builds an unsigned Flatpak bundle; Flatpak signing/publishing and macOS
+  signing/notarization are still open.
 - Real-hardware pass for game launch, Proton prefix preparation, Steam library
   detection, store webviews and path case sensitivity.
 - A Unix global overlay hotkey; today the overlay opens from the launcher header
