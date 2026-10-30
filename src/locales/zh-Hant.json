@@ -3445,5 +3445,8 @@
   "gp.empty": "沒有符合的遊戲",
   "gp.error": "無法載入 Game Pass 目錄",
   "gp.retry": "重試",
-  "gp.more": "載入更多"
+  "gp.more": "載入更多",
+  "gp.where": "你擁有的位置",
+  "gp.screenshots": "螢幕擷取畫面",
+  "gp.owned": "已擁有"
 }

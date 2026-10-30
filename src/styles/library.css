@@ -2189,3 +2189,76 @@ html.win-compact .lrow-ach-track { display: none; }
 .gp-actions { display: flex; margin-top: 8px; }
 .gp-actions .btn { flex: 1; justify-content: center; }
 .gp-more { display: flex; justify-content: center; padding: 18px 0 6px; }
+
+/* --- Game Pass game page ------------------------------------------------
+   Hero art with the store's own wordmark, the description and gallery on the
+   left, poster, actions and "where you have it" on the right. */
+.gp-layer { position: fixed; inset: 0; z-index: 620; }
+.gp-detail {
+  position: relative;
+  width: min(1040px, 94vw);
+  max-height: 88vh;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.gp-detail-x { position: absolute; top: 12px; right: 12px; z-index: 3; }
+.gp-detail-hero {
+  position: relative; aspect-ratio: 21 / 9; overflow: hidden;
+  background: var(--surface-2);
+}
+.gp-hero-art { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gp-detail-hero-fade {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 34%, var(--surface-1) 99%);
+}
+.gp-detail-hero-copy {
+  position: absolute; left: 26px; right: 26px; bottom: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.gp-detail-logo {
+  max-height: 76px; max-width: 52%; object-fit: contain; object-position: left bottom;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.6));
+}
+.gp-detail-title { margin: 0; font-size: 30px; font-weight: 650; }
+.gp-detail-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gp-chipmeta {
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.42);
+  font-size: 11px; color: var(--text);
+}
+.gp-detail-body {
+  display: grid; grid-template-columns: minmax(0, 1fr) 272px;
+  gap: 22px; padding: 6px 26px 26px;
+}
+.gp-desc {
+  margin: 0 0 18px; font-size: 13.5px; line-height: 1.62;
+  color: var(--text-2); white-space: pre-line;
+}
+.gp-section {
+  margin: 14px 0 8px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3);
+}
+.gp-shots {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+}
+.gp-shots img { height: 108px; border-radius: var(--r-sm); scroll-snap-align: start; }
+.gp-detail-loading { display: grid; place-items: center; padding: 40px 0; }
+.gp-detail-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.gp-detail-poster img { width: 100%; border-radius: var(--r-md); display: block; }
+.gp-detail-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.gp-detail-actions .btn { width: 100%; justify-content: center; }
+.gp-where { display: flex; flex-direction: column; gap: 6px; }
+.gp-where-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 9px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--line);
+  font-size: 12px;
+}
+.gp-where-state { color: var(--text-3); font-size: 11px; }
+@media (max-width: 880px) {
+  .gp-detail-body { grid-template-columns: 1fr; }
+  .gp-detail-logo { max-width: 72%; }
+}

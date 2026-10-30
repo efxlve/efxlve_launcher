@@ -3445,5 +3445,8 @@
   "gp.empty": "Nessun titolo corrisponde",
   "gp.error": "Impossibile caricare il catalogo Game Pass",
   "gp.retry": "Riprova",
-  "gp.more": "Carica altri"
+  "gp.more": "Carica altri",
+  "gp.where": "Dove lo hai",
+  "gp.screenshots": "Screenshot",
+  "gp.owned": "Posseduto"
 }

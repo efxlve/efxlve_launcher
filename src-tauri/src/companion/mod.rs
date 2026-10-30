@@ -994,6 +994,12 @@ pub async fn xbox_gamepass_catalog() -> Vec<xbox_catalog::GamePassTitle> {
     xbox_catalog::catalog().await
 }
 
+/// One Game Pass page: description, art, screenshots and the package to install.
+#[tauri::command]
+pub async fn xbox_gamepass_detail(product_id: String) -> Option<xbox_catalog::GamePassDetail> {
+    xbox_catalog::detail(&product_id).await
+}
+
 /// Opens the Store page for a product the launcher cannot install itself. The
 /// id is a twelve-character Store product id, the same shape the catalog ships.
 #[tauri::command]

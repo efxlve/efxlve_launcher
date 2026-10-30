@@ -3445,5 +3445,8 @@
   "gp.empty": "Brak pasujących tytułów",
   "gp.error": "Nie udało się wczytać katalogu Game Pass",
   "gp.retry": "Ponów",
-  "gp.more": "Wczytaj więcej"
+  "gp.more": "Wczytaj więcej",
+  "gp.where": "Gdzie to masz",
+  "gp.screenshots": "Zrzuty ekranu",
+  "gp.owned": "Posiadane"
 }

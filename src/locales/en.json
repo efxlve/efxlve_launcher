@@ -3445,5 +3445,8 @@
   "gp.empty": "No titles match",
   "gp.error": "Could not load the Game Pass catalog",
   "gp.retry": "Retry",
-  "gp.more": "Load more"
+  "gp.more": "Load more",
+  "gp.where": "Where you have it",
+  "gp.screenshots": "Screenshots",
+  "gp.owned": "Owned"
 }

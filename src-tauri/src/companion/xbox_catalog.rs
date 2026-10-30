@@ -39,6 +39,33 @@ pub struct GamePassTitle {
 }
 
 static CACHE: Mutex<Option<(Instant, Vec<GamePassTitle>)>> = Mutex::new(None);
+/// Full product records, keyed by product id. One click loads one record, so
+/// the map only ever holds the pages the user opened.
+static DETAILS: Mutex<Option<std::collections::HashMap<String, GamePassDetail>>> = Mutex::new(None);
+
+/// Everything the game page shows for one title.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GamePassDetail {
+    pub product_id: String,
+    pub title: String,
+    pub publisher: String,
+    pub developer: String,
+    pub description: String,
+    /// `YYYY-MM-DD`, empty when the store does not publish one.
+    pub release_date: String,
+    /// Minimum age the market enforces; zero when unknown.
+    pub age: u32,
+    /// "PEGI 16", "ESRB M"; empty when the market has no rating.
+    pub rating: String,
+    pub genres: Vec<String>,
+    pub poster: String,
+    pub hero: String,
+    /// Transparent wordmark, drawn over the hero art.
+    pub logo: String,
+    pub screenshots: Vec<String>,
+    pub pfn: String,
+}
 
 #[derive(Serialize, Deserialize)]
 struct DiskCache {
@@ -72,11 +99,7 @@ pub(crate) async fn catalog() -> Vec<GamePassTitle> {
 }
 
 async fn fetch() -> Result<Vec<GamePassTitle>, String> {
-    let client = reqwest::Client::builder()
-        .user_agent("efxlve-launcher")
-        .timeout(Duration::from_secs(20))
-        .build()
-        .map_err(|error| error.to_string())?;
+    let client = http_client()?;
     let body = client
         .get(SIGL_URL)
         .query(&[("id", SIGL), ("language", "en-US"), ("market", "US")])
@@ -135,6 +158,163 @@ async fn fetch_chunk(
         .await
         .map_err(|error| error.to_string())?;
     Ok(titles_from_products(&body))
+}
+
+fn http_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .user_agent("efxlve-launcher")
+        .timeout(Duration::from_secs(20))
+        .build()
+        .map_err(|error| error.to_string())
+}
+
+/// Full record for one product. Cached for the session: the store answers in
+/// about a second and the same page is reopened while browsing.
+pub(crate) async fn detail(product_id: &str) -> Option<GamePassDetail> {
+    if product_id.len() != 12 || !product_id.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+        return None;
+    }
+    if let Ok(guard) = DETAILS.lock() {
+        if let Some(cache) = guard.as_ref() {
+            if let Some(hit) = cache.get(product_id) {
+                return Some(hit.clone());
+            }
+        }
+    }
+    let client = http_client().ok()?;
+    let body = client
+        .get(format!("{CATALOG_URL}/{product_id}"))
+        .query(&[
+            ("l", "en-us"),
+            ("market", "US"),
+            ("languages", "en-us"),
+            ("fieldsTemplate", "details"),
+        ])
+        .send()
+        .await
+        .ok()?
+        .text()
+        .await
+        .ok()?;
+    let value: serde_json::Value = serde_json::from_str(&body).ok()?;
+    let record = detail_from_product(value.get("Product")?)?;
+    if let Ok(mut guard) = DETAILS.lock() {
+        let cache = guard.get_or_insert_with(std::collections::HashMap::new);
+        if cache.len() > 256 {
+            cache.clear();
+        }
+        cache.insert(product_id.to_string(), record.clone());
+    }
+    Some(record)
+}
+
+fn detail_from_product(product: &serde_json::Value) -> Option<GamePassDetail> {
+    let product_id = product.get("ProductId")?.as_str()?.to_string();
+    let localized = product
+        .get("LocalizedProperties")
+        .and_then(|value| value.as_array())
+        .and_then(|rows| rows.first());
+    let text_of = |key: &str| {
+        localized
+            .and_then(|row| row.get(key))
+            .and_then(|value| value.as_str())
+            .unwrap_or_default()
+            .to_string()
+    };
+    let title = text_of("ProductTitle").trim().to_string();
+    if title.is_empty() {
+        return None;
+    }
+    let market = product
+        .get("MarketProperties")
+        .and_then(|value| value.as_array())
+        .and_then(|rows| rows.first());
+    let release_date = market
+        .and_then(|row| row.get("OriginalReleaseDate"))
+        .and_then(|value| value.as_str())
+        .map(|value| value.chars().take(10).collect::<String>())
+        .unwrap_or_default();
+    let age = market
+        .and_then(|row| row.get("MinimumUserAge"))
+        .and_then(|value| value.as_u64())
+        .unwrap_or(0) as u32;
+    let long = text_of("ProductDescription");
+    Some(GamePassDetail {
+        product_id,
+        title,
+        publisher: text_of("PublisherName"),
+        developer: text_of("DeveloperName"),
+        description: if long.is_empty() {
+            text_of("ShortDescription")
+        } else {
+            long
+        },
+        release_date,
+        age,
+        rating: rating_of(market),
+        genres: product
+            .get("Properties")
+            .and_then(|value| value.get("Categories"))
+            .and_then(|value| value.as_array())
+            .map(|rows| {
+                rows.iter()
+                    .filter_map(|row| row.as_str())
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        poster: image(localized, &["Poster", "BoxArt"]),
+        hero: image(localized, &["SuperHeroArt", "TitledHeroArt", "BrandedKeyArt"]),
+        logo: image(localized, &["Logo"]),
+        screenshots: screenshots(localized),
+        pfn: package_family(product),
+    })
+}
+
+/// "PEGI 16" when the market publishes one, else ESRB, else whatever it has.
+fn rating_of(market: Option<&serde_json::Value>) -> String {
+    let Some(rows) = market
+        .and_then(|row| row.get("ContentRatings"))
+        .and_then(|value| value.as_array())
+    else {
+        return String::new();
+    };
+    let pick = |system: &str| {
+        rows.iter().find(|row| {
+            row.get("RatingSystem").and_then(|value| value.as_str()) == Some(system)
+        })
+    };
+    let Some(row) = pick("PEGI").or_else(|| pick("ESRB")).or_else(|| rows.first()) else {
+        return String::new();
+    };
+    row.get("RatingId")
+        .and_then(|value| value.as_str())
+        .unwrap_or_default()
+        .replace(':', " ")
+        .trim()
+        .to_string()
+}
+
+fn screenshots(localized: Option<&serde_json::Value>) -> Vec<String> {
+    let Some(images) = localized
+        .and_then(|row| row.get("Images"))
+        .and_then(|value| value.as_array())
+    else {
+        return Vec::new();
+    };
+    images
+        .iter()
+        .filter(|entry| {
+            entry.get("ImagePurpose").and_then(|value| value.as_str()) == Some("Screenshot")
+        })
+        .filter_map(|entry| entry.get("Uri").and_then(|value| value.as_str()))
+        .filter(|uri| !uri.is_empty())
+        .map(|uri| match uri.strip_prefix("//") {
+            Some(rest) => format!("https://{rest}"),
+            None => uri.to_string(),
+        })
+        .take(8)
+        .collect()
 }
 
 /// Product ids of the SIGL answer. The first row is the rail's own description;
@@ -363,6 +543,54 @@ mod tests {
         assert_eq!(titles.len(), 1);
         assert!(titles[0].pfn.is_empty());
         assert!(titles[0].poster.is_empty());
+    }
+
+    #[test]
+    fn a_product_record_becomes_a_game_page() {
+        let product = serde_json::json!({
+          "ProductId": "9NPDN9R45JX4",
+          "LocalizedProperties": [{
+            "ProductTitle": "1000xRESIST",
+            "PublisherName": "Fellow Traveller",
+            "DeveloperName": "sunset visitor",
+            "ProductDescription": "A thrilling sci-fi adventure.",
+            "ShortDescription": "short",
+            "Images": [
+              {"ImagePurpose": "Poster", "Uri": "//cdn.example/poster.png"},
+              {"ImagePurpose": "SuperHeroArt", "Uri": "//cdn.example/hero.png"},
+              {"ImagePurpose": "Logo", "Uri": "//cdn.example/logo.png"},
+              {"ImagePurpose": "Screenshot", "Uri": "//cdn.example/s1.png"},
+              {"ImagePurpose": "Screenshot", "Uri": "//cdn.example/s2.png"}
+            ]
+          }],
+          "MarketProperties": [{
+            "OriginalReleaseDate": "2025-11-04T16:00:00.0000000Z",
+            "MinimumUserAge": 16,
+            "ContentRatings": [
+              {"RatingSystem": "ESRB", "RatingId": "ESRB:M"},
+              {"RatingSystem": "PEGI", "RatingId": "PEGI:16"}
+            ]
+          }],
+          "Properties": {"Categories": ["Action & adventure", "Adventure"]},
+          "DisplaySkuAvailabilities": [{"Sku": {"Properties": {"Packages": [
+            {"PackageFamilyName": "SurpriseAttackPtyLtd.1000xResist_8k24hnfn3vvj0"}
+          ]}}}]
+        });
+        let detail = detail_from_product(&product).expect("the record should parse");
+        assert_eq!(detail.title, "1000xRESIST");
+        assert_eq!(detail.description, "A thrilling sci-fi adventure.");
+        assert_eq!(detail.release_date, "2025-11-04");
+        assert_eq!(detail.age, 16);
+        // PEGI is the label the page shows when the market publishes one.
+        assert_eq!(detail.rating, "PEGI 16");
+        assert_eq!(
+            detail.genres,
+            vec!["Action & adventure".to_string(), "Adventure".to_string()]
+        );
+        assert_eq!(detail.poster, "https://cdn.example/poster.png");
+        assert_eq!(detail.logo, "https://cdn.example/logo.png");
+        assert_eq!(detail.screenshots.len(), 2);
+        assert_eq!(detail.pfn, "SurpriseAttackPtyLtd.1000xResist_8k24hnfn3vvj0");
     }
 
     /// The live endpoints are the only part that needs the network; run

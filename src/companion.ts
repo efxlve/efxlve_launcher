@@ -171,6 +171,31 @@ export interface GamePassTitle {
  */
 export const xboxGamePassCatalog = () => invoke<GamePassTitle[]>("xbox_gamepass_catalog");
 
+/** One full Game Pass game page. */
+export interface GamePassDetail {
+  productId: string;
+  title: string;
+  publisher: string;
+  developer: string;
+  description: string;
+  /** `YYYY-MM-DD`, empty when the store does not publish one. */
+  releaseDate: string;
+  age: number;
+  /** "PEGI 16", "ESRB M"; empty when the market has no rating. */
+  rating: string;
+  genres: string[];
+  poster: string;
+  hero: string;
+  /** Transparent wordmark drawn over the hero art. */
+  logo: string;
+  screenshots: string[];
+  pfn: string;
+}
+
+/** The full record behind one catalog card. */
+export const xboxGamePassDetail = (productId: string) =>
+  invoke<GamePassDetail | null>("xbox_gamepass_detail", { productId });
+
 /** Opens the Store page for a catalog title the launcher cannot install. */
 export const xboxOpenStore = (productId: string) => invoke<void>("xbox_open_store", { productId });
 

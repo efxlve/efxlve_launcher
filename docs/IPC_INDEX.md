@@ -466,6 +466,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `toast_ready` | `toastReady({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
 | `xbox_gamepass_catalog` | `xboxGamepassCatalog({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `xbox_gamepass_detail` | `xboxGamepassDetail({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_install` | `xboxInstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_install_cancel` | `xboxInstallCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_login_hide` | `xboxLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |

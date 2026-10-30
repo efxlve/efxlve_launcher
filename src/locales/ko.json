@@ -3445,5 +3445,8 @@
   "gp.empty": "일치하는 타이틀이 없습니다",
   "gp.error": "Game Pass 카탈로그를 불러오지 못했습니다",
   "gp.retry": "다시 시도",
-  "gp.more": "더 보기"
+  "gp.more": "더 보기",
+  "gp.where": "보유한 곳",
+  "gp.screenshots": "스크린샷",
+  "gp.owned": "보유 중"
 }

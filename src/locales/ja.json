@@ -3445,5 +3445,8 @@
   "gp.empty": "一致するタイトルがありません",
   "gp.error": "Game Pass のカタログを読み込めませんでした",
   "gp.retry": "再試行",
-  "gp.more": "さらに読み込む"
+  "gp.more": "さらに読み込む",
+  "gp.where": "持っている場所",
+  "gp.screenshots": "スクリーンショット",
+  "gp.owned": "所有済み"
 }

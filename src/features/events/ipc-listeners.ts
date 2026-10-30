@@ -57,6 +57,7 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncInstalledWatch } from "../library/installed-watch";
 import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
+import { refreshGamePassDetail } from "../gamepass/gamepass-detail";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
@@ -414,9 +415,11 @@ export async function initApp(hooks: {
         const title = summaryOf(`xbox::${id}`)?.title || t("common.installed");
         toast(`${title} · ${t("common.installed")}`, "ok");
         void loadCompanionLibrary();
+        refreshGamePassDetail();
         return;
       }
       if (state === "timeout") toast(t("xbox.installStopped"), "err");
+      refreshGamePassDetail();
       hooks.scheduleRender();
     });
 

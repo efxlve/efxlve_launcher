@@ -3445,5 +3445,8 @@
   "gp.empty": "Eşleşen oyun yok",
   "gp.error": "Game Pass kataloğu yüklenemedi",
   "gp.retry": "Tekrar dene",
-  "gp.more": "Daha fazla göster"
+  "gp.more": "Daha fazla göster",
+  "gp.where": "Sende nerede var",
+  "gp.screenshots": "Ekran görüntüleri",
+  "gp.owned": "Sahipsin"
 }

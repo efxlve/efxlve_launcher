@@ -3445,5 +3445,8 @@
   "gp.empty": "Keine Titel gefunden",
   "gp.error": "Der Game-Pass-Katalog konnte nicht geladen werden",
   "gp.retry": "Erneut versuchen",
-  "gp.more": "Mehr laden"
+  "gp.more": "Mehr laden",
+  "gp.where": "Wo du es hast",
+  "gp.screenshots": "Screenshots",
+  "gp.owned": "Im Besitz"
 }

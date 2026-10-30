@@ -7,7 +7,8 @@
  * through the same watcher the library card uses.
  */
 
-import { companionLaunch, xboxGamePassCatalog, xboxInstall, xboxOpenStore, type GamePassTitle } from "../../companion";
+import { xboxGamePassCatalog, type GamePassTitle } from "../../companion";
+import { handleGamePassDetailAction, openGamePassDetail } from "./gamepass-detail";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -146,8 +147,10 @@ function paintGrid(): void {
   body.innerHTML = gridHtml();
 }
 
-/** Loads more rows, or retries a failed fetch. */
+/** Loads more rows, retries a failed fetch, or opens a game page. */
 export function handleGamePassAction(act: string | undefined, id: string | undefined): boolean {
+  // The open game page answers its own buttons first.
+  if (handleGamePassDetailAction(act, id)) return true;
   if (act === "gp-more") {
     limit += PAGE;
     paintGrid();
@@ -161,17 +164,9 @@ export function handleGamePassAction(act: string | undefined, id: string | undef
     scheduleRender();
     return true;
   }
-  if (act === "gp-install" && id) {
-    // The Store runs the deploy; `xbox-install` reports when the package lands.
-    void xboxInstall(id).catch(() => {});
-    return true;
-  }
-  if (act === "gp-play" && id) {
-    void companionLaunch("xbox", id).catch(() => {});
-    return true;
-  }
   if (act === "gp-open" && id) {
-    void xboxOpenStore(id).catch(() => {});
+    const row = titles.find((title) => title.productId === id);
+    if (row) openGamePassDetail(row);
     return true;
   }
   return false;

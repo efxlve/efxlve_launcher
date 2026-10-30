@@ -3445,5 +3445,8 @@
   "gp.empty": "没有匹配的游戏",
   "gp.error": "无法加载 Game Pass 目录",
   "gp.retry": "重试",
-  "gp.more": "加载更多"
+  "gp.more": "加载更多",
+  "gp.where": "你拥有的位置",
+  "gp.screenshots": "截图",
+  "gp.owned": "已拥有"
 }
