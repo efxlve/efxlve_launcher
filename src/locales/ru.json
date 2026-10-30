@@ -2036,6 +2036,8 @@
   "overlay.tabBrowser": "Браузер",
   "overlay.browserAddress": "Поиск в Google или введите адрес",
   "overlay.browserNewTab": "Новая вкладка",
+  "overlay.browserPip": "Picture in picture",
+  "overlay.browserPipExit": "Exit picture in picture",
   "overlay.browserDesc": "Браузер парит над игрой с настоящими вкладками. Войдите в Google один раз, и сеанс сохранится на этом ПК.",
   "overlay.hotkeyHint": "открывает · Esc закрывает",
   "overlay.openLauncher": "Открыть лаунчер",

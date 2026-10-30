@@ -2036,6 +2036,8 @@
   "overlay.tabBrowser": "Browser",
   "overlay.browserAddress": "Cerca su Google o inserisci un indirizzo",
   "overlay.browserNewTab": "Nuova scheda",
+  "overlay.browserPip": "Picture in picture",
+  "overlay.browserPipExit": "Exit picture in picture",
   "overlay.browserDesc": "Il browser resta sopra il gioco con vere schede. Accedi a Google una volta e la sessione rimane su questo PC.",
   "overlay.hotkeyHint": "apre · Esc chiude",
   "overlay.openLauncher": "Apri launcher",

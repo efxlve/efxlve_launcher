@@ -35,6 +35,7 @@ interface BrowserTab {
 
 let tabs: BrowserTab[] = [];
 let activeUrl = "";
+let pipMode = false;
 let syncTimer: number | null = null;
 
 function frameRect(): { x: number; y: number; width: number; height: number } {
@@ -143,6 +144,20 @@ function siteMeta(url: string): { title: string; iconName: Parameters<typeof ico
   return { title: cap, iconName: "globe" };
 }
 
+function paintPipTitle(): void {
+  const el = document.getElementById("ov-browser-pip-title");
+  if (!el) return;
+  const meta = siteMeta(activeUrl);
+  el.innerHTML = `${icon(meta.iconName, 12)}<span>${esc(meta.title)}</span>`;
+}
+
+function applyPip(enabled: boolean): void {
+  pipMode = enabled;
+  document.body.classList.toggle("ov-browser-pip", enabled);
+  paintPipTitle();
+  scheduleSyncBounds();
+}
+
 function paintTabs(): void {
   const strip = document.getElementById("ov-browser-tabs");
   if (!strip) return;
@@ -162,6 +177,7 @@ function paintTabs(): void {
       .join("") +
     `<button class="ov-browser-tab-new" data-tab-new title="${esc(t("overlay.browserNewTab"))}">${icon("plus", 13)}</button>`;
   paintUrl();
+  paintPipTitle();
 }
 
 function goto(input: string): void {
@@ -275,6 +291,13 @@ function wire(): void {
 
   refreshBookmarksBar();
 
+  const pipToggle = document.querySelector<HTMLElement>('[data-pip="toggle"]');
+  if (pipToggle) pipToggle.title = t("overlay.browserPip");
+  const pipRestore = document.querySelector<HTMLElement>('[data-pip="restore"]');
+  if (pipRestore) pipRestore.title = t("overlay.browserPipExit");
+  const pipClose = document.querySelector<HTMLElement>('[data-pip="close"]');
+  if (pipClose) pipClose.title = t("common.close");
+
   // Raise browser window above overlay widgets when interacted with
   window.addEventListener("mousedown", () => {
     void invoke("overlay_browser_raise").catch(() => undefined);
@@ -289,6 +312,19 @@ function wire(): void {
   // Window Controls & Clicks
   document.addEventListener("click", (event) => {
     const el = event.target as HTMLElement;
+
+    // Picture-in-picture controls.
+    const pipAct = el.closest<HTMLElement>("[data-pip]")?.dataset.pip;
+    if (pipAct) {
+      if (pipAct === "toggle") {
+        void invoke("overlay_browser_set_pip", { enabled: !pipMode }).catch(() => undefined);
+      } else if (pipAct === "restore") {
+        void invoke("overlay_browser_set_pip", { enabled: false }).catch(() => undefined);
+      } else if (pipAct === "close") {
+        closeWindow();
+      }
+      return;
+    }
 
     // Window close button
     const winAct = el.closest<HTMLElement>("[data-win]")?.dataset.win;
@@ -373,7 +409,7 @@ function wire(): void {
     if (event.button !== 0) return;
     const el = event.target as HTMLElement | null;
     if (!el || el.closest("button, input, a, .ov-browser-tab, .ov-browser-bm-chip, [data-win]")) return;
-    if (!el.closest(".ov-browser-topbar, .ov-browser-drag-filler, .ov-browser-tabs-wrapper, #ov-browser-chrome, #ov-browser-bookmarks")) return;
+    if (!el.closest(".ov-browser-topbar, .ov-browser-drag-filler, .ov-browser-tabs-wrapper, #ov-browser-chrome, #ov-browser-bookmarks, .ov-browser-pipbar")) return;
 
     // Trigger native Tauri drag first
     void getCurrentWindow().startDragging().catch(() => undefined);
@@ -481,11 +517,19 @@ function wire(): void {
   }
   window.addEventListener("resize", scheduleSyncBounds);
 
-  // The panel owner already hid this window through `browser::hide_window`
-  // before emitting overlay-close. Keep a local hide as a safety net, but do
-  // not call overlay_browser_close a second time.
-  void listen("overlay-close", () => {
+  // The panel owner hides this window through `browser::hide_with_overlay`
+  // unless it is a PiP player. Keep a local hide as a safety net, but do not
+  // call overlay_browser_close a second time.
+  void listen("overlay-close", async () => {
+    // A corner player survives the panel close; only a normal browser hides.
+    if (pipMode) return;
+    const pip = await invoke<boolean>("overlay_browser_is_pip").catch(() => false);
+    if (pip) return;
     void getCurrentWindow().hide().catch(() => undefined);
+  }).catch(() => undefined);
+
+  void listen<{ enabled: boolean }>("overlay-browser-pip", (event) => {
+    applyPip(Boolean(event.payload?.enabled));
   }).catch(() => undefined);
 
   // Tabs and URL events from Rust
@@ -536,6 +580,8 @@ async function boot(): Promise<void> {
     paintTabs();
   }
   await syncBounds();
+  const pip = await invoke<boolean>("overlay_browser_is_pip").catch(() => false);
+  if (pip) applyPip(true);
 }
 
 // `browser.html` owns this module. Guard the boot so a future import for a

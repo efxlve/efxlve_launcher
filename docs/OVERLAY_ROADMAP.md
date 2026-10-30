@@ -2,11 +2,11 @@
 
 The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
 notes with pasted images, achievements, Spotify + SMTC music, a per-app audio
-mixer, an external crosshair, a tracked-achievement HUD and Discord status.
-Controller-first navigation is in. ETW FPS is API-agnostic but needs the Windows
-"Performance Log Users" permission, so the overlay offers a one-time enable
-action and explains the sign-out. Discord voice read/write waits on the Discord
-app review noted below.
+mixer, an external crosshair, a tracked-achievement HUD, a picture-in-picture
+guide player and Discord status. Controller-first navigation is in. ETW FPS is
+API-agnostic but needs the Windows "Performance Log Users" permission, so the
+overlay offers a one-time enable action and explains the sign-out. Discord voice
+read/write waits on the Discord app review noted below.
 
 Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
 where only the pinned cards stay on screen as a click-through HUD and the game
@@ -39,6 +39,7 @@ architecture, the feature scope and the phased plan.
 - music: Spotify/any player via Windows media controls
 - audio: per-app volume and mute on the default output device
 - crosshair: a safe external reticle at the centre of the game monitor
+- browser: tabs and a picture-in-picture guide player
 - Discord: presence + voice channel widget
 - quick actions: store page, manage, session playtime, exit overlay
 
@@ -372,6 +373,18 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   because a plain file cannot carry the data URLs.
 - Open: file-backed image storage for large maps, an image remove/replace action, and
   the same paste handler in the launcher editor.
+
+### M13 — Picture-in-picture guide player (built)
+
+- The browser's PiP button shrinks the window to a 16:9 corner player on the game
+  monitor, hides the tab strip, address bar and bookmarks, and keeps a 28 px bar with
+  the page title, restore and close. The same window and tab renderer are reused; no
+  second WebView2 process.
+- The player survives the panel close (ghost mode included) and exits PiP when the
+  browser is reopened from the panel. Closing it returns focus to the game. It is
+  interactive, not click-through: a video needs play/pause.
+- Open: a click-through toggle, corner choice, a direct "send this tab to PiP" action,
+  and a field pass on multi-monitor and DPI setups.
 
 ---
 

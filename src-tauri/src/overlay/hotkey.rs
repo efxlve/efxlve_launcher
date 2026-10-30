@@ -109,9 +109,13 @@ pub(crate) fn start(app: AppHandle) {
                         gone_ticks = gone_ticks.saturating_add(1);
                         if gone_ticks >= 75 {
                             gone_ticks = 0;
-                            // A dead game ends the ghost HUD and the crosshair;
-                            // they must not float over the desktop.
+                            // A dead game ends the ghost HUD, the crosshair and
+                            // the corner player; they must not float over the
+                            // desktop.
                             crosshair::hide_window();
+                            if super::browser::is_pip() {
+                                super::browser::hide_window(&app);
+                            }
                             hide_now(&app);
                         }
                     }

@@ -29,6 +29,10 @@ const OFFSCREEN: f64 = -10000.0;
 
 /// Tracks whether the browser window is currently open / visible.
 static IS_OPEN: AtomicBool = AtomicBool::new(false);
+/// Picture-in-picture mode: a small corner window that survives the panel.
+static PIP: AtomicBool = AtomicBool::new(false);
+/// The full-window placement saved when PiP started, in logical units.
+static PIP_RESTORE: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 /// One open tab: its id and the page it points at.
 static TABS: Mutex<Vec<(u32, String)>> = Mutex::new(Vec::new());
 static NEXT_ID: AtomicU32 = AtomicU32::new(1);
@@ -460,6 +464,81 @@ fn emit_browser_state(app: &AppHandle, open: bool) {
     let _ = app.emit("overlay-browser-state", serde_json::json!({ "open": open }));
 }
 
+/// Enters or leaves picture-in-picture: a small 16:9 window in the top-right
+/// corner of the game monitor. The chrome hides its bars and shows a 28 px PiP
+/// bar; the page keeps the rest.
+#[tauri::command]
+pub fn overlay_browser_set_pip(app: AppHandle, enabled: bool) -> bool {
+    if enabled == PIP.load(Ordering::Relaxed) {
+        return enabled;
+    }
+    let Some(window) = app.get_window(WINDOW_LABEL) else {
+        return false;
+    };
+    let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
+    if enabled {
+        if let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size()) {
+            if let Ok(mut slot) = PIP_RESTORE.lock() {
+                *slot = Some((
+                    position.x as f64 / scale,
+                    position.y as f64 / scale,
+                    size.width as f64 / scale,
+                    size.height as f64 / scale,
+                ));
+            }
+        }
+        let (mx, my, mw, _) = super::hud::monitor_rect_for(
+            super::STATE
+                .lock()
+                .map(|state| state.game_hwnd)
+                .unwrap_or(0),
+        )
+        .unwrap_or((0, 0, 1920, 1080));
+        let monitor_w = mw as f64 / scale;
+        let monitor_x = mx as f64 / scale;
+        let monitor_y = my as f64 / scale;
+        let width = (monitor_w * 0.38).clamp(320.0, 520.0);
+        let height = (width * 9.0 / 16.0 + 28.0).round();
+        let x = monitor_x + monitor_w - width - 16.0;
+        let y = monitor_y + 16.0;
+        PIP.store(true, Ordering::Relaxed);
+        let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(280.0, 180.0))));
+        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(width, height)));
+        let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+        let _ = window.set_always_on_top(true);
+        let _ = window.set_focus();
+        let _ = app.emit_to(
+            WINDOW_LABEL,
+            "overlay-browser-pip",
+            serde_json::json!({ "enabled": true }),
+        );
+        true
+    } else {
+        PIP.store(false, Ordering::Relaxed);
+        let restore = PIP_RESTORE.lock().ok().and_then(|mut slot| slot.take());
+        let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(560.0, 380.0))));
+        if let Some((x, y, width, height)) = restore {
+            let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(
+                width.max(560.0),
+                height.max(380.0),
+            )));
+            let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+        }
+        let _ = app.emit_to(
+            WINDOW_LABEL,
+            "overlay-browser-pip",
+            serde_json::json!({ "enabled": false }),
+        );
+        false
+    }
+}
+
+/// True while the browser is the small corner window.
+#[tauri::command]
+pub fn overlay_browser_is_pip() -> bool {
+    PIP.load(Ordering::Relaxed)
+}
+
 /// Checks whether the in-game browser window is currently visible.
 #[tauri::command]
 pub fn overlay_browser_is_open(app: AppHandle) -> bool {
@@ -479,16 +558,61 @@ pub fn overlay_browser_is_open(app: AppHandle) -> bool {
 /// Hides the browser window (the tabs and their pages stay alive).
 #[tauri::command]
 pub fn overlay_browser_close(app: AppHandle) {
+    let pip = PIP.load(Ordering::Relaxed);
     hide_window(&app);
-    wake_overlay(&app);
+    if pip {
+        // Closing the corner player must give the game its keyboard back, not
+        // wake the panel behind it.
+        let hwnd = super::STATE
+            .lock()
+            .map(|state| state.game_hwnd)
+            .unwrap_or(0);
+        super::hud::focus_window(hwnd);
+    } else {
+        wake_overlay(&app);
+    }
 }
 
-/// Hides the browser window when the overlay itself closes.
+/// Hides the browser window when the overlay itself closes, unless the user
+/// pinned it as a picture-in-picture player.
+pub fn hide_with_overlay(app: &AppHandle) {
+    if PIP.load(Ordering::Relaxed) {
+        return;
+    }
+    hide_window(app);
+}
+
+/// True while the corner player is pinned; the game-exit path uses it.
+pub fn is_pip() -> bool {
+    PIP.load(Ordering::Relaxed)
+}
+
+/// Hides the browser window for real (close button, game exit, teardown).
 pub fn hide_window(app: &AppHandle) {
+    let was_pip = PIP.swap(false, Ordering::Relaxed);
+    let restore = PIP_RESTORE.lock().ok().and_then(|mut slot| slot.take());
+    let _ = app.emit_to(
+        WINDOW_LABEL,
+        "overlay-browser-pip",
+        serde_json::json!({ "enabled": false }),
+    );
     IS_OPEN.store(false, Ordering::Relaxed);
     hide_all_tabs(app);
 
     if let Some(window) = app.get_window(WINDOW_LABEL) {
+        if was_pip {
+            // Closing the corner player leaves a full-size window behind for
+            // the next open, not the 480 px rectangle.
+            let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(560.0, 380.0))));
+            if let Some((x, y, width, height)) = restore {
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(
+                    width.max(560.0),
+                    height.max(380.0),
+                )));
+                let _ = window
+                    .set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+            }
+        }
         #[cfg(windows)]
         if let Ok(raw) = window.hwnd() {
             unsafe {
@@ -570,6 +694,11 @@ fn browser_placement(app: &AppHandle) -> (f64, f64, f64, f64) {
 #[tauri::command]
 pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result<(), String> {
     IS_OPEN.store(true, Ordering::Relaxed);
+    // Reopening the browser from the panel leaves the corner player behind and
+    // returns to the full window.
+    if PIP.load(Ordering::Relaxed) {
+        overlay_browser_set_pip(app.clone(), false);
+    }
 
     if let Some(window) = app.get_window(WINDOW_LABEL) {
         #[cfg(windows)]
@@ -588,6 +717,24 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
+
+        // A crash or a forced close can leave the window at the PiP rectangle.
+        // Reopen at the normal size instead of a cramped chrome.
+        let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
+        if window
+            .inner_size()
+            .map(|size| {
+                size.width as f64 / scale < 560.0 || size.height as f64 / scale < 380.0
+            })
+            .unwrap_or(false)
+        {
+            let (x, y, width, height) = browser_placement(&app);
+            let _ = window
+                .set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(560.0, 380.0))));
+            let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(width, height)));
+            let _ =
+                window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+        }
 
         if let Some(target) = url.as_deref().filter(|u| !u.trim().is_empty()) {
             let _ = overlay_browser_navigate(app.clone(), target.to_string());

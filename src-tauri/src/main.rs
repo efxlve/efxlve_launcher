@@ -2128,6 +2128,8 @@ fn main() {
             overlay::toast::toast_done,
             overlay::browser::overlay_browser_open,
             overlay::browser::overlay_browser_is_open,
+            overlay::browser::overlay_browser_set_pip,
+            overlay::browser::overlay_browser_is_pip,
             overlay::browser::overlay_browser_show,
             overlay::browser::overlay_browser_tabs,
             overlay::browser::overlay_browser_navigate,

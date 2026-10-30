@@ -455,10 +455,13 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
     };
     if cleared {
         crate::overlay::toast::release(&app);
-        // The game is gone: a ghost HUD or crosshair would float over the
-        // desktop. An open panel stays for the launcher context; the hotkey
-        // watch closes it.
+        // The game is gone: a ghost HUD, crosshair or corner player would float
+        // over the desktop. An open panel stays for the launcher context; the
+        // hotkey watch closes it.
         crosshair::hide_window();
+        if browser::is_pip() {
+            browser::hide_window(&app);
+        }
         let ghost = STATE.lock().map(|s| s.ghost).unwrap_or(false);
         if ghost {
             hide_now(&app);
@@ -696,7 +699,7 @@ fn enter_ghost(app: &AppHandle) -> bool {
     PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
     // The browser window floats over the game like the panel does: it goes
     // with it, and it is not a pinnable surface.
-    browser::hide_window(app);
+    browser::hide_with_overlay(app);
     ghost::set_click_through(&win, true);
     let _ = win.set_always_on_top(true);
     // A hard hide can race this transition (game exit, service stop). If the
@@ -745,7 +748,7 @@ pub(crate) fn hide_now(app: &AppHandle) {
         let _ = win.hide();
     }
     // The browser window floats over the game like the panel does: it goes with it.
-    browser::hide_window(app);
+    browser::hide_with_overlay(app);
     let hwnd = match STATE.lock() {
         Ok(mut s) => {
             s.visible = false;

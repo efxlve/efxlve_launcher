@@ -12,10 +12,22 @@
       </div>
       <div class="ov-browser-drag-filler" data-tauri-drag-region></div>
       <div class="ov-browser-window-controls" id="ov-browser-window-controls">
+        <button class="ov-browser-ctrl-btn" data-pip="toggle" title="Picture in picture" aria-label="Picture in picture">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><rect x="12" y="12" width="6" height="4" rx="1"></rect></svg>
+        </button>
         <button class="ov-browser-ctrl-btn ov-browser-ctrl-close" data-win="close" title="Kapat" aria-label="Close">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
+    </div>
+    <div class="ov-browser-pipbar" id="ov-browser-pipbar" data-tauri-drag-region>
+      <span class="ov-browser-pip-title" id="ov-browser-pip-title" data-tauri-drag-region></span>
+      <button class="ov-browser-pip-btn" data-pip="restore" title="Exit picture in picture" aria-label="Exit picture in picture">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+      </button>
+      <button class="ov-browser-pip-btn" data-pip="close" title="Kapat" aria-label="Close">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
     <header class="ov-browser-chrome" id="ov-browser-chrome" data-tauri-drag-region></header>
     <div class="ov-browser-bookmarks" id="ov-browser-bookmarks"></div>

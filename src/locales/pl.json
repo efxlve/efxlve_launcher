@@ -2036,6 +2036,8 @@
   "overlay.tabBrowser": "Przeglądarka",
   "overlay.browserAddress": "Szukaj w Google lub wpisz adres",
   "overlay.browserNewTab": "Nowa karta",
+  "overlay.browserPip": "Picture in picture",
+  "overlay.browserPipExit": "Exit picture in picture",
   "overlay.browserDesc": "Przeglądarka unosi się nad grą z prawdziwymi kartami. Zaloguj się raz do Google, a sesja pozostanie na tym PC.",
   "overlay.hotkeyHint": "otwiera · Esc zamyka",
   "overlay.openLauncher": "Otwórz launcher",

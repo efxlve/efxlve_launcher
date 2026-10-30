@@ -2036,6 +2036,8 @@
   "overlay.tabBrowser": "Browser",
   "overlay.browserAddress": "Google durchsuchen oder Adresse eingeben",
   "overlay.browserNewTab": "Neuer Tab",
+  "overlay.browserPip": "Picture in picture",
+  "overlay.browserPipExit": "Exit picture in picture",
   "overlay.browserDesc": "Der Browser schwebt mit echten Tabs über dem Spiel. Melde dich einmal bei Google an, die Anmeldung bleibt auf diesem PC erhalten.",
   "overlay.hotkeyHint": "öffnet · Esc schließt",
   "overlay.openLauncher": "Launcher öffnen",
