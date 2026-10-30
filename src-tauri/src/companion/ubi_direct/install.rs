@@ -229,12 +229,13 @@ async fn detect_layout(
 pub(crate) async fn prepare(
     demux: &mut wire::Demux,
     product_id: u32,
-) -> Result<(Manifest, String, wire::DownloadService, SliceLayout), String> {
+) -> Result<(Manifest, String, wire::DownloadService, SliceLayout, String), String> {
     let owned = demux.owned_games().await?;
     let game = owned
         .into_iter()
         .find(|game| game.product_id == product_id && game.owned)
         .ok_or_else(|| format!("product {product_id} is not in the owned library"))?;
+    let install_reg = install_register(&game.configuration);
     let name = ubisoft::game_name(&game.configuration).unwrap_or_else(|| product_id.to_string());
     let manifest_id = if game.latest_manifest.is_empty() {
         demux
@@ -259,7 +260,7 @@ pub(crate) async fn prepare(
         .ok_or_else(|| "Ubisoft signed no manifest URL".to_string())?;
     let manifest = manifest::fetch_manifest(url).await?;
     let layout = detect_layout(demux, &mut download, product_id, &manifest.files).await;
-    Ok((manifest, name, download, layout))
+    Ok((manifest, name, download, layout, install_reg))
 }
 
 /// Fetch the manifest and return a frontend-friendly summary.
@@ -268,7 +269,7 @@ pub(crate) async fn probe_plan(
     product_id: u32,
     install_dir: &Path,
 ) -> Result<InstallPlan, String> {
-    let (manifest, name, _download, layout) = prepare(demux, product_id).await?;
+    let (manifest, name, _download, layout, _install_reg) = prepare(demux, product_id).await?;
     Ok(InstallPlan {
         product_id,
         name,
@@ -297,7 +298,7 @@ pub(crate) async fn install<F>(
 where
     F: FnMut(InstallProgress) + Send,
 {
-    let (manifest, name, mut download, layout) = prepare(demux, product_id).await?;
+    let (manifest, name, mut download, layout, install_reg) = prepare(demux, product_id).await?;
 
     let total_bytes = manifest.total_bytes();
     let emit_step = (total_bytes / 200).max(4 * 1024 * 1024);
@@ -467,6 +468,7 @@ where
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0),
+        install_reg,
     });
     Ok(InstallSummary {
         product_id,
@@ -476,6 +478,37 @@ where
         bytes: total_bytes,
         skipped_files,
     })
+}
+
+/// Pull the game's own install-path registry value out of the product config.
+/// Old titles read it to confirm they are installed and to find their data.
+fn install_register(config: &str) -> String {
+    let mut in_working_directory = false;
+    let mut base_indent = 0usize;
+    for line in config.lines() {
+        let trimmed = line.trim();
+        let indent = line.len() - line.trim_start().len();
+        if trimmed == "working_directory:" {
+            in_working_directory = true;
+            base_indent = indent;
+            continue;
+        }
+        if !in_working_directory {
+            continue;
+        }
+        if !trimmed.is_empty() && indent <= base_indent {
+            break;
+        }
+        if let Some(value) = trimmed.strip_prefix("register:") {
+            return value
+                .trim()
+                .trim_matches('"')
+                .trim_matches('\'')
+                .trim()
+                .to_string();
+        }
+    }
+    String::new()
 }
 
 /// Pick the game executable out of the manifest. The main binary is the largest
@@ -579,5 +612,15 @@ mod tests {
             "slices_v3/b/AB"
         );
         assert_eq!(slice_path(SliceLayout::Flat, "AB"), "slices/AB");
+    }
+
+    #[test]
+    fn reads_the_games_own_install_registry_value() {
+        let yaml = "root:\n  working_directory:\n    register: HKEY_LOCAL_MACHINE\\SOFTWARE\\Ubisoft\\Game\\Install path\n  name: Game\n";
+        assert_eq!(
+            install_register(yaml),
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Game\Install path"
+        );
+        assert!(install_register("root:\n  name: Game\n").is_empty());
     }
 }

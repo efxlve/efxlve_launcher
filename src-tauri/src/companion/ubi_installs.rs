@@ -19,6 +19,10 @@ pub(crate) struct InstalledGame {
     /// Path relative to `install_dir`, backslash form as the manifest wrote it.
     pub exe: String,
     pub installed_at: u64,
+    /// The game's own install-path registry value from its product config, e.g.
+    /// `HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Beyond Good & Evil\Install path`.
+    #[serde(default)]
+    pub install_reg: String,
 }
 
 fn path() -> PathBuf {
@@ -79,6 +83,7 @@ mod tests {
             install_dir: r"C:\Games\Game".into(),
             exe: r"bin\game.exe".into(),
             installed_at: 1,
+            install_reg: String::new(),
         };
         save(&first);
         save(&InstalledGame {

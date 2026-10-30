@@ -20,6 +20,7 @@ pub(crate) fn launch(product_id: u32) -> Result<(), String> {
     }
     let exe = resolve_exe(&install_dir, &game.exe)?;
     seed_registry(product_id, &install_dir);
+    seed_game_registry(&game, &install_dir);
     let mut command = Command::new(&exe);
     command.current_dir(&install_dir);
     command
@@ -118,9 +119,75 @@ fn seed_registry(product_id: u32, install_dir: &Path) {
     }
 }
 
+/// The game's own install-path value (for example Beyond Good & Evil's
+/// `HKLM\SOFTWARE\Ubisoft\Beyond Good & Evil\Install path`). Without it the
+/// game or its settings app can report "not properly installed".
+fn seed_game_registry(game: &ubi_installs::InstalledGame, install_dir: &Path) {
+    let Some((key, value_name)) = split_register(&game.install_reg) else {
+        return;
+    };
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let data = install_dir.display().to_string();
+        let mut keys = vec![key.clone()];
+        if let Some(wow64) = wow64_key(&key) {
+            keys.push(wow64);
+        }
+        for key in keys {
+            let mut command = Command::new("reg");
+            command.args([
+                "add",
+                &key,
+                "/v",
+                &value_name,
+                "/t",
+                "REG_SZ",
+                "/d",
+                &data,
+                "/f",
+            ]);
+            command.creation_flags(CREATE_NO_WINDOW);
+            let _ = command.status();
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (key, value_name, install_dir);
+    }
+}
+
+fn split_register(register: &str) -> Option<(String, String)> {
+    let register = register
+        .trim()
+        .replace("HKEY_LOCAL_MACHINE", "HKLM")
+        .replace("HKEY_CURRENT_USER", "HKCU");
+    let index = register.rfind('\\')?;
+    let key = register[..index].trim();
+    let value = register[index + 1..].trim();
+    if key.is_empty() || value.is_empty() {
+        return None;
+    }
+    Some((key.to_string(), value.to_string()))
+}
+
+fn wow64_key(key: &str) -> Option<String> {
+    let upper = key.to_uppercase();
+    if upper.contains("WOW6432NODE") {
+        return None;
+    }
+    let prefix = "HKLM\\SOFTWARE\\";
+    if upper.starts_with(prefix) {
+        Some(format!("HKLM\\SOFTWARE\\Wow6432Node\\{}", &key[prefix.len()..]))
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::resolve_exe;
+    use super::{resolve_exe, split_register, wow64_key};
 
     #[test]
     fn resolves_the_recorded_exe_then_falls_back_to_the_largest_one() {
@@ -138,5 +205,21 @@ mod tests {
         );
         assert_eq!(resolve_exe(&root, "").unwrap(), game);
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn splits_the_games_registry_value_and_adds_the_wow64_view() {
+        assert_eq!(
+            split_register(r"HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Game\Install path"),
+            Some((
+                r"HKLM\SOFTWARE\Ubisoft\Game".to_string(),
+                "Install path".to_string()
+            ))
+        );
+        assert_eq!(
+            wow64_key(r"HKLM\SOFTWARE\Ubisoft\Game"),
+            Some(r"HKLM\SOFTWARE\Wow6432Node\Ubisoft\Game".to_string())
+        );
+        assert_eq!(wow64_key(r"HKCU\Software\Ubisoft"), None);
     }
 }
