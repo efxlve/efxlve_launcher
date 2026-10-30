@@ -2262,6 +2262,8 @@
   "notes.title": "笔记",
   "notes.newNote": "新建笔记",
   "notes.imageAlt": "粘贴的图片",
+  "notes.imageReplace": "替换图片",
+  "notes.imageRemove": "移除图片",
   "notes.imageLimit": "每条笔记最多 3 张图片。",
   "notes.imageTooLarge": "图片太大。请尝试更小的截图。",
   "notes.searchPlaceholder": "搜索笔记",

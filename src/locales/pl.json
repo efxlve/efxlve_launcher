@@ -2262,6 +2262,8 @@
   "notes.title": "Notatki",
   "notes.newNote": "Nowa notatka",
   "notes.imageAlt": "Wklejony obraz",
+  "notes.imageReplace": "Zastąp obraz",
+  "notes.imageRemove": "Usuń obraz",
   "notes.imageLimit": "Do 3 obrazów na notatkę.",
   "notes.imageTooLarge": "Ten obraz jest za duży. Spróbuj mniejszego zrzutu ekranu.",
   "notes.searchPlaceholder": "Szukaj notatek",

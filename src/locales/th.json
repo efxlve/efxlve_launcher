@@ -2262,6 +2262,8 @@
   "notes.title": "โน้ต",
   "notes.newNote": "โน้ตใหม่",
   "notes.imageAlt": "รูปที่วาง",
+  "notes.imageReplace": "แทนที่รูป",
+  "notes.imageRemove": "ลบรูป",
   "notes.imageLimit": "สูงสุด 3 รูปต่อโน้ต",
   "notes.imageTooLarge": "รูปใหญ่เกินไป ลองใช้ภาพหน้าจอที่เล็กกว่า",
   "notes.searchPlaceholder": "ค้นหาโน้ต",

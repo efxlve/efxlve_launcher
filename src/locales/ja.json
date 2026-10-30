@@ -2262,6 +2262,8 @@
   "notes.title": "ノート",
   "notes.newNote": "新しいノート",
   "notes.imageAlt": "貼り付けた画像",
+  "notes.imageReplace": "画像を置き換え",
+  "notes.imageRemove": "画像を削除",
   "notes.imageLimit": "1つのノートに最大3枚まで。",
   "notes.imageTooLarge": "画像が大きすぎます。小さいスクリーンショットをお試しください。",
   "notes.searchPlaceholder": "ノートを検索",

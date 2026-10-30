@@ -2262,6 +2262,8 @@
   "notes.title": "Notizen",
   "notes.newNote": "Neue Notiz",
   "notes.imageAlt": "Eingefügtes Bild",
+  "notes.imageReplace": "Bild ersetzen",
+  "notes.imageRemove": "Bild entfernen",
   "notes.imageLimit": "Bis zu 3 Bilder pro Notiz.",
   "notes.imageTooLarge": "Das Bild ist zu groß. Versuche einen kleineren Screenshot.",
   "notes.searchPlaceholder": "Notizen durchsuchen",

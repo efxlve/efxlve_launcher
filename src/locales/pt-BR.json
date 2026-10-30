@@ -2262,6 +2262,8 @@
   "notes.title": "Notas",
   "notes.newNote": "Nova nota",
   "notes.imageAlt": "Imagem colada",
+  "notes.imageReplace": "Substituir imagem",
+  "notes.imageRemove": "Remover imagem",
   "notes.imageLimit": "Até 3 imagens por nota.",
   "notes.imageTooLarge": "Essa imagem é grande demais. Tente um screenshot menor.",
   "notes.searchPlaceholder": "Pesquisar notas",

@@ -2262,6 +2262,8 @@
   "notes.title": "Заметки",
   "notes.newNote": "Новая заметка",
   "notes.imageAlt": "Вставленное изображение",
+  "notes.imageReplace": "Заменить изображение",
+  "notes.imageRemove": "Удалить изображение",
   "notes.imageLimit": "До 3 изображений на заметку.",
   "notes.imageTooLarge": "Изображение слишком большое. Попробуйте скриншот меньше.",
   "notes.searchPlaceholder": "Поиск заметок",

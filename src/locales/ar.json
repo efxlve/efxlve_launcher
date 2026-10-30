@@ -2262,6 +2262,8 @@
   "notes.title": "الملاحظات",
   "notes.newNote": "ملاحظة جديدة",
   "notes.imageAlt": "صورة ملصقة",
+  "notes.imageReplace": "استبدال الصورة",
+  "notes.imageRemove": "إزالة الصورة",
   "notes.imageLimit": "حتى 3 صور لكل ملاحظة.",
   "notes.imageTooLarge": "هذه الصورة كبيرة جدًا. جرّب لقطة شاشة أصغر.",
   "notes.searchPlaceholder": "ابحث في الملاحظات",

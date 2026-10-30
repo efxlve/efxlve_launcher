@@ -2262,6 +2262,8 @@
   "notes.title": "노트",
   "notes.newNote": "새 노트",
   "notes.imageAlt": "붙여넣은 이미지",
+  "notes.imageReplace": "이미지 교체",
+  "notes.imageRemove": "이미지 제거",
   "notes.imageLimit": "노트당 최대 3장.",
   "notes.imageTooLarge": "이미지가 너무 큽니다. 더 작은 스크린샷을 사용하세요.",
   "notes.searchPlaceholder": "노트 검색",

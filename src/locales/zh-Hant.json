@@ -2262,6 +2262,8 @@
   "notes.title": "筆記",
   "notes.newNote": "新增筆記",
   "notes.imageAlt": "貼上的圖片",
+  "notes.imageReplace": "取代圖片",
+  "notes.imageRemove": "移除圖片",
   "notes.imageLimit": "每則筆記最多 3 張圖片。",
   "notes.imageTooLarge": "圖片太大。請嘗試較小的截圖。",
   "notes.searchPlaceholder": "搜尋筆記",

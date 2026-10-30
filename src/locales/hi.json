@@ -2262,6 +2262,8 @@
   "notes.title": "नोट्स",
   "notes.newNote": "नया नोट",
   "notes.imageAlt": "चिपकाई गई छवि",
+  "notes.imageReplace": "छवि बदलें",
+  "notes.imageRemove": "छवि हटाएँ",
   "notes.imageLimit": "प्रति नोट 3 छवियाँ तक।",
   "notes.imageTooLarge": "यह छवि बहुत बड़ी है। छोटा स्क्रीनशॉट आज़माएँ।",
   "notes.searchPlaceholder": "नोट खोजें",

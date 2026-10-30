@@ -380,7 +380,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - Up to three images per note, each at most 150k characters on the editor side; Rust
   re-validates the data URL and caps it at 160k. The markdown export strips the markers
   because a plain file cannot carry the data URLs.
-- Open: file-backed image storage for large maps and an image remove/replace action.
+- The editor lists the pasted images with replace and remove actions; removing one
+  renumbers the markers that follow it.
+- Open: file-backed image storage for large maps.
 
 ### M13 — Picture-in-picture guide player (built)
 

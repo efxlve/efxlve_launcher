@@ -2262,6 +2262,8 @@
   "notes.title": "Notlar",
   "notes.newNote": "Yeni not",
   "notes.imageAlt": "Yapıştırılan resim",
+  "notes.imageReplace": "Görseli değiştir",
+  "notes.imageRemove": "Görseli kaldır",
   "notes.imageLimit": "Not başına en fazla 3 resim.",
   "notes.imageTooLarge": "Bu resim çok büyük. Daha küçük bir ekran görüntüsü dene.",
   "notes.searchPlaceholder": "Notlarda ara",

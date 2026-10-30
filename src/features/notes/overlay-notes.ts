@@ -93,7 +93,16 @@ function editorHtml(): string {
       ${
         preview
           ? `<div class="ov-notes-preview notes-preview">${renderMarkdownLite(draftBody, draftImages).html || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
-          : `<textarea id="ov-note-body" class="ov-note-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draftBody)}</textarea>`
+          : `<textarea id="ov-note-body" class="ov-note-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draftBody)}</textarea>
+             ${draftImages.length > 0 ? `<div class="ov-note-images">${draftImages.map((src, index) => `
+               <div class="ov-note-image">
+                 <img src="${src}" alt="" />
+                 <div class="ov-note-image-actions">
+                   <button type="button" data-ov="ov-note-image-replace" data-index="${index}" title="${esc(t("notes.imageReplace"))}">${icon("refresh", 10)}</button>
+                   <button type="button" data-ov="ov-note-image-remove" data-index="${index}" title="${esc(t("notes.imageRemove"))}">${icon("x", 10)}</button>
+                 </div>
+                 <input type="file" accept="image/*" data-note-image-input="${index}" hidden />
+               </div>`).join("")}</div>` : ""}`
       }
       <div class="ov-note-save-state" id="ov-note-save-state"></div>
     </div>`;
@@ -230,6 +239,28 @@ export function handleOverlayNotesAction(act: string | undefined, el: HTMLElemen
       deleteArmed = false;
       renderOverlayNotes();
       return true;
+    case "ov-note-image-remove": {
+      const index = Number(el.dataset.index);
+      if (!Number.isFinite(index) || index < 0 || index >= draftImages.length) return true;
+      draftImages.splice(index, 1);
+      draftBody = draftBody
+        .replace(new RegExp(`!\\[[^\\]]*\\]\\(note-image:${index}\\)\\n?`), "")
+        .replace(/note-image:(\d+)/g, (_match, value: string) => {
+          const at = Number(value);
+          return `note-image:${at > index ? at - 1 : at}`;
+        });
+      queueSave();
+      renderOverlayNotes();
+      return true;
+    }
+    case "ov-note-image-replace": {
+      const index = Number(el.dataset.index);
+      if (!Number.isFinite(index)) return true;
+      document
+        .querySelector<HTMLInputElement>(`[data-note-image-input="${index}"]`)
+        ?.click();
+      return true;
+    }
     case "ov-note-font": {
       const size = el.dataset.size;
       if (size === "s" || size === "m" || size === "l") {
@@ -274,6 +305,18 @@ async function insertPastedImage(file: File): Promise<void> {
   if (mode === "preview") renderOverlayNotes();
 }
 
+async function replaceDraftImage(index: number, file: File): Promise<void> {
+  const dataUrl = await compressPastedImage(file);
+  if (!dataUrl) {
+    toast(t("notes.imageTooLarge"), "err");
+    return;
+  }
+  if (index < 0 || index >= draftImages.length) return;
+  draftImages[index] = dataUrl;
+  queueSave();
+  renderOverlayNotes();
+}
+
 function wireOverlayNotes(): void {
   if (wired) return;
   wired = true;
@@ -290,6 +333,15 @@ function wireOverlayNotes(): void {
       draftBody = (target as HTMLTextAreaElement).value;
       queueSave();
     }
+  });
+
+  document.addEventListener("change", (event) => {
+    const input = event.target as HTMLInputElement | null;
+    if (!input?.dataset.noteImageInput) return;
+    const index = Number(input.dataset.noteImageInput);
+    const file = input.files?.[0];
+    input.value = "";
+    if (file && Number.isFinite(index)) void replaceDraftImage(index, file);
   });
 
   document.addEventListener("paste", (event) => {
