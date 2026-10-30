@@ -329,8 +329,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   `overlay_set_pinned` tells Rust whether any pinned card is on screen; the hotkey and
   the close button both use it. A dead game window or a service stop tears the ghost
   down for real.
-- Open work: per-widget ghost opacity and a field pass on a borderless game and
-  exclusive fullscreen, plus multi-monitor setups.
+- Open work: a field pass on a borderless game and exclusive fullscreen, plus
+  multi-monitor setups.
 
 ### M9 — Per-app audio mixer (built)
 

@@ -649,6 +649,37 @@ function isWidgetPinned(tab: TabId): boolean {
   return widgetPins.has(tab);
 }
 
+const GHOST_OPACITY_KEY = "efxlve-overlay-ghost-opacity";
+
+/** Per-widget opacity while the card sits in the click-through HUD. */
+function loadGhostOpacities(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(GHOST_OPACITY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const map: Record<string, number> = {};
+    for (const [tab, value] of Object.entries(parsed)) {
+      const number = Number(value);
+      if (Number.isFinite(number)) map[tab] = Math.max(0.25, Math.min(1, number));
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+function ghostOpacity(tab: TabId): number {
+  return loadGhostOpacities()[tab] ?? 1;
+}
+
+function setGhostOpacity(tab: TabId, value: number): void {
+  const map = loadGhostOpacities();
+  map[tab] = Math.max(0.25, Math.min(1, value));
+  localStorage.setItem(GHOST_OPACITY_KEY, JSON.stringify(map));
+  const widget = document.getElementById(`ov-widget-${tab}`);
+  if (widget) widget.style.setProperty("--ghost-opacity", String(map[tab]));
+}
+
 /** Flips one widget's pin and repaints its header button. */
 function setWidgetPinned(tab: TabId, pinned: boolean): void {
   if (pinned) widgetPins.add(tab);
@@ -661,7 +692,10 @@ function setWidgetPinned(tab: TabId, pinned: boolean): void {
 function applyWidgetPinState(tab: TabId): void {
   const pinned = isWidgetPinned(tab);
   const widget = document.getElementById(`ov-widget-${tab}`);
-  if (widget) widget.classList.toggle("is-pinned", pinned);
+  if (widget) {
+    widget.classList.toggle("is-pinned", pinned);
+    widget.style.setProperty("--ghost-opacity", String(ghostOpacity(tab)));
+  }
   const btn = document.querySelector<HTMLElement>(`[data-ov-widget-pin="${tab}"]`);
   if (!btn) return;
   btn.classList.toggle("is-pinned", pinned);
@@ -5479,6 +5513,32 @@ function renderSettings(): void {
         </div>
       </section>` : ""}
 
+      <!-- Section: Ghost HUD opacity -->
+      ${IS_WINDOWS ? `<section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("layers", 13)}
+          <span>${esc(t("overlay.ghostOpacityTitle"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          ${widgetPins.size === 0
+            ? `<div class="ov-setting-desc">${esc(t("overlay.ghostOpacityEmpty"))}</div>`
+            : [...widgetPins].map((tab) => {
+                const meta = TABS.find((entry) => entry.id === tab);
+                const pct = Math.round(ghostOpacity(tab) * 100);
+                return `<div class="ov-setting-item">
+                  <div class="ov-setting-info">
+                    <div class="ov-setting-name">${esc(meta ? t(meta.key) : tab)}</div>
+                    <div class="ov-setting-desc">${esc(t("overlay.ghostOpacityDesc"))}</div>
+                  </div>
+                  <div class="ov-crosshair-range">
+                    <input type="range" min="25" max="100" step="1" value="${pct}" data-ghost-opacity="${tab}" />
+                    <span id="ov-ghost-opacity-${tab}">${pct}%</span>
+                  </div>
+                </div>`;
+              }).join("")}
+        </div>
+      </section>` : ""}
+
       <!-- Section: Crosshair -->
       ${IS_WINDOWS ? `<section class="ov-settings-section">
         <header class="ov-settings-section-header">
@@ -6484,6 +6544,14 @@ function wireEvents(): void {
       const next = { ...activeCrosshair(), opacity: value / 100 };
       paintCrosshairPreview(next);
       scheduleCrosshairConfig(next);
+      return;
+    }
+    if (input?.dataset.ghostOpacity) {
+      const tab = input.dataset.ghostOpacity as TabId;
+      const value = Number(input.value) / 100;
+      const badge = document.getElementById(`ov-ghost-opacity-${tab}`);
+      if (badge) badge.textContent = `${Math.round(value * 100)}%`;
+      setGhostOpacity(tab, value);
       return;
     }
     if (input?.dataset.audioVolume !== undefined) {
