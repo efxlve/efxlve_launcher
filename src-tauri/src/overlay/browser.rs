@@ -11,7 +11,9 @@
 //! WebView2 shares the app's persistent profile, so sign-ins — Google among
 //! them — survive between sessions; nothing lives only in memory.
 
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
+#![allow(clashing_extern_declarations)]
+
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 use serde::Serialize;
@@ -35,6 +37,24 @@ static PIP: AtomicBool = AtomicBool::new(false);
 static PIP_RESTORE: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 /// 0 top-right, 1 bottom-right, 2 bottom-left, 3 top-left.
 static PIP_CORNER: AtomicUsize = AtomicUsize::new(0);
+/// The PiP page ignores mouse input; the global Ctrl+Shift+P turns it back off.
+static PIP_CLICK_THROUGH: AtomicBool = AtomicBool::new(false);
+#[cfg(windows)]
+static PIP_OLD_PROC: AtomicIsize = AtomicIsize::new(0);
+#[cfg(windows)]
+const GWL_EXSTYLE: i32 = -20;
+#[cfg(windows)]
+const GWLP_WNDPROC: i32 = -4;
+#[cfg(windows)]
+const WS_EX_TRANSPARENT: isize = 0x0000_0020;
+#[cfg(windows)]
+const WS_EX_LAYERED: isize = 0x0008_0000;
+#[cfg(windows)]
+const WS_EX_NOACTIVATE: isize = 0x0800_0000;
+#[cfg(windows)]
+const WM_NCHITTEST: u32 = 0x0084;
+#[cfg(windows)]
+const HTTRANSPARENT: isize = -1;
 /// One open tab: its id and the page it points at.
 static TABS: Mutex<Vec<(u32, String)>> = Mutex::new(Vec::new());
 static NEXT_ID: AtomicU32 = AtomicU32::new(1);
@@ -47,6 +67,15 @@ static SUSPENDED_TABS: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 #[link(name = "user32")]
 extern "system" {
     fn ShowWindow(hwnd: *mut core::ffi::c_void, cmd: i32) -> i32;
+    fn GetWindowLongPtrW(hwnd: isize, index: i32) -> isize;
+    fn SetWindowLongPtrW(hwnd: isize, index: i32, value: isize) -> isize;
+    fn CallWindowProcW(prev: isize, hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize;
+    fn DefWindowProcW(hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize;
+    fn EnumChildWindows(
+        parent: isize,
+        callback: Option<unsafe extern "system" fn(isize, isize) -> i32>,
+        param: isize,
+    ) -> i32;
     fn SetWindowPos(
         hwnd: *mut core::ffi::c_void,
         insert_after: *mut core::ffi::c_void,
@@ -572,6 +601,7 @@ pub fn overlay_browser_set_pip(app: AppHandle, enabled: bool) -> bool {
         );
         true
     } else {
+        set_pip_click_through(&app, false);
         PIP.store(false, Ordering::Relaxed);
         let restore = PIP_RESTORE.lock().ok().and_then(|mut slot| slot.take());
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(560.0, 380.0))));
@@ -595,6 +625,100 @@ pub fn overlay_browser_set_pip(app: AppHandle, enabled: bool) -> bool {
 #[tauri::command]
 pub fn overlay_browser_is_pip() -> bool {
     PIP.load(Ordering::Relaxed)
+}
+
+/// True while the PiP page ignores mouse input.
+pub fn pip_click_through() -> bool {
+    PIP_CLICK_THROUGH.load(Ordering::Relaxed)
+}
+
+/// Makes the PiP page click-through. The PiP bar goes with it, so the global
+/// Ctrl+Shift+P combination is the way back; leaving PiP also restores input.
+pub fn set_pip_click_through(app: &AppHandle, on: bool) -> bool {
+    if !PIP.load(Ordering::Relaxed) {
+        return false;
+    }
+    let Some(window) = app.get_window(WINDOW_LABEL) else {
+        return false;
+    };
+    #[cfg(windows)]
+    {
+        if let Ok(hwnd) = window.hwnd() {
+            unsafe {
+                set_browser_click_through(hwnd.0 as isize, on);
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = &window;
+    PIP_CLICK_THROUGH.store(on, Ordering::Relaxed);
+    true
+}
+
+/// Toggles the click-through state from the global hotkey.
+pub fn toggle_pip_click_through(app: &AppHandle) -> bool {
+    set_pip_click_through(app, !pip_click_through())
+}
+
+#[tauri::command]
+pub fn overlay_browser_set_pip_click_through(app: AppHandle, enabled: bool) -> bool {
+    set_pip_click_through(&app, enabled)
+}
+
+#[cfg(windows)]
+unsafe fn set_browser_click_through(hwnd: isize, on: bool) {
+    unsafe {
+        let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        let next = if on {
+            ex | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE
+        } else {
+            (ex & !(WS_EX_TRANSPARENT | WS_EX_NOACTIVATE)) | WS_EX_LAYERED
+        };
+        if next != ex {
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next);
+        }
+        if on {
+            let proc = browser_click_proc as *const () as isize;
+            if GetWindowLongPtrW(hwnd, GWLP_WNDPROC) != proc {
+                PIP_OLD_PROC.store(GetWindowLongPtrW(hwnd, GWLP_WNDPROC), Ordering::Relaxed);
+                SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc);
+            }
+            EnumChildWindows(hwnd, Some(mark_browser_child), 0);
+        } else {
+            let old = PIP_OLD_PROC.swap(0, Ordering::Relaxed);
+            if old != 0 && GetWindowLongPtrW(hwnd, GWLP_WNDPROC) == browser_click_proc as *const () as isize {
+                SetWindowLongPtrW(hwnd, GWLP_WNDPROC, old);
+            }
+            EnumChildWindows(hwnd, Some(unmark_browser_child), 0);
+        }
+    }
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn browser_click_proc(hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize {
+    if msg == WM_NCHITTEST {
+        return HTTRANSPARENT;
+    }
+    let old = PIP_OLD_PROC.load(Ordering::Relaxed);
+    if old != 0 {
+        CallWindowProcW(old, hwnd, msg, wparam, lparam)
+    } else {
+        DefWindowProcW(hwnd, msg, wparam, lparam)
+    }
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn mark_browser_child(hwnd: isize, _param: isize) -> i32 {
+    let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_TRANSPARENT);
+    1
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn unmark_browser_child(hwnd: isize, _param: isize) -> i32 {
+    let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex & !WS_EX_TRANSPARENT);
+    1
 }
 
 /// Checks whether the in-game browser window is currently visible.

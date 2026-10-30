@@ -36,6 +36,8 @@ const VK_CONTROL: i32 = 0x11;
 const VK_ALT: i32 = 0x12;
 #[cfg(windows)]
 const VK_TAB: i32 = 0x09;
+#[cfg(windows)]
+const VK_P: i32 = 0x50;
 
 #[cfg(windows)]
 pub(crate) fn start(app: AppHandle) {
@@ -192,6 +194,18 @@ pub(crate) fn start(app: AppHandle) {
                         crosshair::toggle();
                     }
                 }
+                // Ctrl+Shift+P: the only way back from a click-through PiP page.
+                let pip_click_down = !capturing
+                    && key_down(VK_CONTROL)
+                    && key_down(VK_SHIFT)
+                    && !key_down(VK_ALT)
+                    && key_down(VK_P);
+                if pip_click_down != PIP_CLICK_DOWN.load(std::sync::atomic::Ordering::Relaxed) {
+                    PIP_CLICK_DOWN.store(pip_click_down, std::sync::atomic::Ordering::Relaxed);
+                    if pip_click_down && super::browser::is_pip() {
+                        super::browser::toggle_pip_click_through(&app);
+                    }
+                }
                 // The game window can move monitors; recentre every ~2 s.
                 if tick % 100 == 0 {
                     crosshair::reposition();
@@ -268,6 +282,7 @@ static HOTKEY_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBoo
 
 #[cfg(windows)]
 static CROSSHAIR_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static PIP_CLICK_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 #[cfg(windows)]
 #[repr(C)]

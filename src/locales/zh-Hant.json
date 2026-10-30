@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "新增分頁",
   "overlay.browserPip": "子母畫面",
   "overlay.browserPipExit": "退出子母畫面",
+  "overlay.browserPipClickThrough": "點擊穿透（Ctrl+Shift+P 關閉）",
   "overlay.browserPipCorner": "移到下一個角落",
   "overlay.browserDesc": "瀏覽器以真實分頁浮在遊戲之上。登入一次 Google，工作階段會保留在這台電腦上。",
   "overlay.hotkeyHint": "開啟 · Esc 關閉",

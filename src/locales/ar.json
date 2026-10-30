@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "علامة تبويب جديدة",
   "overlay.browserPip": "صورة داخل صورة",
   "overlay.browserPipExit": "الخروج من صورة داخل صورة",
+  "overlay.browserPipClickThrough": "تمرير النقر (Ctrl+Shift+P للإيقاف)",
   "overlay.browserPipCorner": "الانتقال إلى الزاوية التالية",
   "overlay.browserDesc": "يتصفح المتصفح فوق اللعبة بعلامات تبويب حقيقية. سجّل الدخول إلى Google مرة واحدة وتبقى الجلسة على هذا الكمبيوتر.",
   "overlay.hotkeyHint": "للفتح · Esc للإغلاق",

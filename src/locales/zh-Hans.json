@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "新建标签页",
   "overlay.browserPip": "画中画",
   "overlay.browserPipExit": "退出画中画",
+  "overlay.browserPipClickThrough": "点击穿透（Ctrl+Shift+P 关闭）",
   "overlay.browserPipCorner": "移到下一个角落",
   "overlay.browserDesc": "浏览器以真实标签页浮在游戏之上。登录一次 Google，会话会保留在这台电脑上。",
   "overlay.hotkeyHint": "打开 · Esc 关闭",

@@ -395,8 +395,10 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - The player survives the panel close (ghost mode included) and exits PiP when the
   browser is reopened from the panel. Closing it returns focus to the game. It is
   interactive, not click-through: a video needs play/pause.
-- Open: a click-through toggle, a direct "send this tab to PiP" action, and a field
-  pass on multi-monitor and DPI setups.
+- A click-through button makes the PiP page ignore mouse input; Ctrl+Shift+P (or
+  leaving PiP) restores it, so the bar cannot trap the pointer.
+- Open: a direct "send this tab to PiP" action and a field pass on multi-monitor and
+  DPI setups.
 
 ---
 

@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "Nouvel onglet",
   "overlay.browserPip": "Image dans l'image",
   "overlay.browserPipExit": "Quitter l'image dans l'image",
+  "overlay.browserPipClickThrough": "Laisser passer les clics (Ctrl+Shift+P pour désactiver)",
   "overlay.browserPipCorner": "Déplacer vers le coin suivant",
   "overlay.browserDesc": "Le navigateur flotte au-dessus du jeu avec de vrais onglets. Connectez-vous une fois à Google, la session reste sur ce PC.",
   "overlay.hotkeyHint": "ouvre · Échap ferme",

@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "Nueva pestaña",
   "overlay.browserPip": "Imagen en imagen",
   "overlay.browserPipExit": "Salir de imagen en imagen",
+  "overlay.browserPipClickThrough": "Pasar clics (Ctrl+Shift+P para desactivar)",
   "overlay.browserPipCorner": "Mover a la siguiente esquina",
   "overlay.browserDesc": "El navegador flota sobre el juego con pestañas reales. Inicia sesión en Google una vez y la sesión se mantiene en este PC.",
   "overlay.hotkeyHint": "abre · Esc cierra",

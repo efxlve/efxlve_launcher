@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "新しいタブ",
   "overlay.browserPip": "ピクチャーインピクチャー",
   "overlay.browserPipExit": "ピクチャーインピクチャーを終了",
+  "overlay.browserPipClickThrough": "クリックを透過（Ctrl+Shift+P で解除）",
   "overlay.browserPipCorner": "次の角へ移動",
   "overlay.browserDesc": "ブラウザは実際のタブを備えてゲームの上に表示されます。Google に一度サインインすれば、この PC ではサインイン状態が保たれます。",
   "overlay.hotkeyHint": "開く · Esc で閉じる",

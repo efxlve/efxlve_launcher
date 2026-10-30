@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "Neuer Tab",
   "overlay.browserPip": "Bild-in-Bild",
   "overlay.browserPipExit": "Bild-in-Bild beenden",
+  "overlay.browserPipClickThrough": "Klick-durchlässig (Ctrl+Shift+P zum Ausschalten)",
   "overlay.browserPipCorner": "In die nächste Ecke verschieben",
   "overlay.browserDesc": "Der Browser schwebt mit echten Tabs über dem Spiel. Melde dich einmal bei Google an, die Anmeldung bleibt auf diesem PC erhalten.",
   "overlay.hotkeyHint": "öffnet · Esc schließt",

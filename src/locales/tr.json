@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "Yeni sekme",
   "overlay.browserPip": "Resim içinde resim",
   "overlay.browserPipExit": "Resim içinde resimden çık",
+  "overlay.browserPipClickThrough": "Tıklamayı geçir (kapatmak için Ctrl+Shift+P)",
   "overlay.browserPipCorner": "Sonraki köşeye taşı",
   "overlay.browserDesc": "Tarayıcı, oyunun üzerinde gerçek sekmelerle açılır. Google'a bir kez giriş yap; oturum bu PC'de açık kalır.",
   "overlay.hotkeyHint": "açar · Esc kapatır",

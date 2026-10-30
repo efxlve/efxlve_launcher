@@ -344,6 +344,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_browser_open` | `overlayBrowserOpen({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_raise` | `overlayBrowserRaise({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_set_pip` | `overlayBrowserSetPip({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_set_pip_click_through` | `overlayBrowserSetPipClickThrough({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_set_position` | `overlayBrowserSetPosition({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_show` | `overlayBrowserShow({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_tabs` | `overlayBrowserTabs({ ... })` | `src-tauri/src/overlay/browser.rs` |

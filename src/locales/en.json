@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "New tab",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipClickThrough": "Click-through (Ctrl+Shift+P to turn off)",
   "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "The browser floats over the game with real tabs. Sign in to Google once and it stays signed in on this PC.",
   "overlay.hotkeyHint": "opens · Esc closes",

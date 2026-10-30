@@ -92,5 +92,4 @@ when the panel closes (`src-tauri/src/overlay/browser.rs`,
 multi-monitor/DPI setup: the player lands in the selected corner (top-right by
 default), the corner button moves it, the page fills the frame, the PiP bar
 restores and closes, the game keeps focus after close, and the browser reopens
-at full size. Then add a click-through toggle and a direct "send this tab to PiP"
-action.
+at full size. Then add a direct "send this tab to PiP" action.

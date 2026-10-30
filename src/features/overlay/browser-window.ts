@@ -297,6 +297,8 @@ function wire(): void {
   if (pipRestore) pipRestore.title = t("overlay.browserPipExit");
   const pipCorner = document.querySelector<HTMLElement>('[data-pip="corner"]');
   if (pipCorner) pipCorner.title = t("overlay.browserPipCorner");
+  const pipClick = document.querySelector<HTMLElement>('[data-pip="click-through"]');
+  if (pipClick) pipClick.title = t("overlay.browserPipClickThrough");
   const pipClose = document.querySelector<HTMLElement>('[data-pip="close"]');
   if (pipClose) pipClose.title = t("common.close");
 
@@ -322,6 +324,8 @@ function wire(): void {
         void invoke("overlay_browser_set_pip", { enabled: !pipMode }).catch(() => undefined);
       } else if (pipAct === "corner") {
         void invoke("overlay_browser_cycle_pip_corner").catch(() => undefined);
+      } else if (pipAct === "click-through") {
+        void invoke("overlay_browser_set_pip_click_through", { enabled: true }).catch(() => undefined);
       } else if (pipAct === "restore") {
         void invoke("overlay_browser_set_pip", { enabled: false }).catch(() => undefined);
       } else if (pipAct === "close") {

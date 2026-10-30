@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "새 탭",
   "overlay.browserPip": "화면 속 화면",
   "overlay.browserPipExit": "화면 속 화면 종료",
+  "overlay.browserPipClickThrough": "클릭 통과 (끄려면 Ctrl+Shift+P)",
   "overlay.browserPipCorner": "다음 모서리로 이동",
   "overlay.browserDesc": "브라우저는 실제 탭과 함께 게임 위에 떠 있습니다. Google에 한 번 로그인하면 이 PC에서 로그인이 유지됩니다.",
   "overlay.hotkeyHint": "열기 · Esc 닫기",

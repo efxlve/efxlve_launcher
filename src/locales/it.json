@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "Nuova scheda",
   "overlay.browserPip": "Immagine nell'immagine",
   "overlay.browserPipExit": "Esci da immagine nell'immagine",
+  "overlay.browserPipClickThrough": "Clic attraverso (Ctrl+Shift+P per disattivare)",
   "overlay.browserPipCorner": "Sposta nell'angolo successivo",
   "overlay.browserDesc": "Il browser resta sopra il gioco con vere schede. Accedi a Google una volta e la sessione rimane su questo PC.",
   "overlay.hotkeyHint": "apre · Esc chiude",

@@ -2050,6 +2050,7 @@
   "overlay.browserNewTab": "Nowa karta",
   "overlay.browserPip": "Obraz w obrazie",
   "overlay.browserPipExit": "Wyjdź z obrazu w obrazie",
+  "overlay.browserPipClickThrough": "Przepuszczaj kliknięcia (Ctrl+Shift+P, aby wyłączyć)",
   "overlay.browserPipCorner": "Przenieś do następnego rogu",
   "overlay.browserDesc": "Przeglądarka unosi się nad grą z prawdziwymi kartami. Zaloguj się raz do Google, a sesja pozostanie na tym PC.",
   "overlay.hotkeyHint": "otwiera · Esc zamyka",
