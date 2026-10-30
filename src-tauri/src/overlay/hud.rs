@@ -7,13 +7,105 @@
 
 #![allow(clashing_extern_declarations)]
 
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 static STARTED: AtomicBool = AtomicBool::new(false);
 static HWND: AtomicIsize = AtomicIsize::new(0);
 static FONT: AtomicIsize = AtomicIsize::new(0);
 static TEXT: Mutex<Vec<u16>> = Mutex::new(Vec::new());
+
+/// Appearance of the native always-on strip. The metrics worker reads `mode`
+/// when it builds the line; the window thread reads `corner` and `color`.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HudConfig {
+    /// "minimal", "compact" or "full".
+    pub mode: String,
+    /// "top-left", "top-right", "bottom-left" or "bottom-right".
+    pub corner: String,
+    /// "#rrggbb".
+    pub color: String,
+}
+
+impl Default for HudConfig {
+    fn default() -> Self {
+        Self {
+            mode: "compact".to_string(),
+            corner: "top-left".to_string(),
+            color: "#f2f2f2".to_string(),
+        }
+    }
+}
+
+static CONFIG: OnceLock<Mutex<HudConfig>> = OnceLock::new();
+
+fn config_state() -> &'static Mutex<HudConfig> {
+    CONFIG.get_or_init(|| Mutex::new(HudConfig::default()))
+}
+
+/// Stores the strip's mode, corner and text color. The next metrics tick moves
+/// and repaints it; a color change also invalidates the current plate.
+pub fn configure(config: HudConfig) {
+    let config = sanitize(config);
+    if let Ok(mut slot) = config_state().lock() {
+        *slot = config;
+    }
+    #[cfg(windows)]
+    {
+        let hwnd = HWND.load(Ordering::Relaxed);
+        if hwnd != 0 {
+            unsafe {
+                InvalidateRect(hwnd, std::ptr::null(), 0);
+            }
+        }
+    }
+}
+
+/// The line layout the metrics worker should build.
+pub fn mode() -> String {
+    config_state()
+        .lock()
+        .map(|config| config.mode.clone())
+        .unwrap_or_else(|_| "compact".to_string())
+}
+
+#[tauri::command]
+pub fn overlay_set_hud_config(config: HudConfig) {
+    configure(config);
+}
+
+fn sanitize(mut config: HudConfig) -> HudConfig {
+    config.mode = match config.mode.as_str() {
+        "minimal" | "compact" | "full" => config.mode,
+        _ => "compact".to_string(),
+    };
+    config.corner = match config.corner.as_str() {
+        "top-left" | "top-right" | "bottom-left" | "bottom-right" => config.corner,
+        _ => "top-left".to_string(),
+    };
+    let hex = config.color.trim().trim_start_matches('#');
+    config.color = if hex.len() == 6 && hex.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        format!("#{}", hex.to_ascii_lowercase())
+    } else {
+        "#f2f2f2".to_string()
+    };
+    config
+}
+
+/// COLORREF is 0x00BBGGRR, not the #rrggbb the frontend stores.
+fn colorref(value: &str) -> u32 {
+    let hex = value.trim_start_matches('#');
+    if hex.len() == 6 {
+        let red = u8::from_str_radix(&hex[0..2], 16).unwrap_or(242) as u32;
+        let green = u8::from_str_radix(&hex[2..4], 16).unwrap_or(242) as u32;
+        let blue = u8::from_str_radix(&hex[4..6], 16).unwrap_or(242) as u32;
+        (blue << 16) | (green << 8) | red
+    } else {
+        0x00F2F2F2
+    }
+}
 
 /// Cuts the current HUD line into a UTF-16 buffer for GDI.
 #[cfg(windows)]
@@ -30,10 +122,32 @@ pub fn update(text: &str) {
     if hwnd == 0 {
         return;
     }
-    let (top_x, top_y) = monitor_top_left();
-    let w = ((text.chars().count() as i32) * 8 + 28).max(240);
+    let config = config_state()
+        .lock()
+        .map(|config| config.clone())
+        .unwrap_or_default();
+    let (left, top, monitor_w, monitor_h) =
+        monitor_rect_for(foreground_window()).unwrap_or((0, 0, 1920, 1080));
+    let width = ((text.chars().count() as i32) * 8 + 28).max(160);
+    let height = 30;
+    let margin = 16;
+    let (x, y) = match config.corner.as_str() {
+        "top-right" => (
+            left + monitor_w as i32 - width - margin,
+            top + margin,
+        ),
+        "bottom-left" => (
+            left + margin,
+            top + monitor_h as i32 - height - margin,
+        ),
+        "bottom-right" => (
+            left + monitor_w as i32 - width - margin,
+            top + monitor_h as i32 - height - margin,
+        ),
+        _ => (left + margin, top + margin),
+    };
     unsafe {
-        MoveWindow(hwnd, top_x + 16, top_y + 16, w, 30, 1);
+        MoveWindow(hwnd, x, y, width, height, 1);
         set_alpha(hwnd, 215);
         ShowWindow(hwnd, 4); // SW_SHOWNOACTIVATE
         InvalidateRect(hwnd, std::ptr::null(), 0);
@@ -231,13 +345,6 @@ pub fn monitor_rect_for(hwnd: isize) -> Option<(i32, i32, u32, u32)> {
         let _ = hwnd;
         None
     }
-}
-
-#[cfg(windows)]
-fn monitor_top_left() -> (i32, i32) {
-    monitor_rect_for(foreground_window())
-        .map(|(x, y, _, _)| (x, y))
-        .unwrap_or((0, 0))
 }
 
 /* ---------- Win32 plumbing ---------- */
@@ -438,7 +545,11 @@ unsafe fn paint_hud(hdc: isize, rect: &RECT) {
         SelectObject(hdc, font);
     }
     SetBkMode(hdc, TRANSPARENT_BK);
-    SetTextColor(hdc, 0x00F2F2F2);
+    let color = config_state()
+        .lock()
+        .map(|config| colorref(&config.color))
+        .unwrap_or(0x00F2F2F2);
+    SetTextColor(hdc, color);
     if let Ok(text) = TEXT.lock() {
         if text.len() > 1 {
             let mut text_rect = RECT {
@@ -534,4 +645,27 @@ fn ensure_window() {
 #[cfg(windows)]
 unsafe fn set_alpha(hwnd: isize, alpha: u8) {
     SetLayeredWindowAttributes(hwnd, 0, alpha, 0x0000_0002 /* LWA_ALPHA */);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{colorref, sanitize, HudConfig};
+
+    #[test]
+    fn colorref_is_bgr() {
+        assert_eq!(colorref("#112233"), 0x00332211);
+        assert_eq!(colorref("nope"), 0x00F2F2F2);
+    }
+
+    #[test]
+    fn hud_config_is_clamped() {
+        let config = sanitize(HudConfig {
+            mode: "huge".to_string(),
+            corner: "middle".to_string(),
+            color: "#12345".to_string(),
+        });
+        assert_eq!(config.mode, "compact");
+        assert_eq!(config.corner, "top-left");
+        assert_eq!(config.color, "#f2f2f2");
+    }
 }

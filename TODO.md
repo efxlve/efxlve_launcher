@@ -78,8 +78,10 @@ the ETW ring (`src-tauri/src/overlay/metrics/etw.rs`). Validate against
 PresentMon on a 60 Hz and a high-refresh title: the 1% low should appear after
 ~2 s, the 0.1% after ~17 s, and both should track PresentMon within ~2%. The
 Performance tab also plots the last 1024 frame times as a frametime graph.
-Then add temperatures and package power (NVML/ADLX/PDH) and validate the graph
-against PresentMon's frametime trace.
+Validate the HUD appearance modes on a real game: minimal/compact/full, all four
+corners on a multi-monitor and scaled display, and the text color over a bright
+scene. Then add temperatures and package power (NVML/ADLX/PDH) and validate the
+graph against PresentMon's frametime trace.
 
 ## Audio mixer field pass
 

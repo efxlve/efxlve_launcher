@@ -268,6 +268,10 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   `overlay-metrics`; the Performance tab plots them as a frametime line with an ms axis,
   min/avg/peak in ms and an "N frames" window label. The other metrics keep the 60 s
   history.
+- HUD appearance (built): the native strip has minimal (FPS), compact (FPS, frame time,
+  1% low, CPU, GPU) and full (all telemetry) modes, four monitor corners and a text
+  color; the metrics worker builds the line for the mode and the window thread moves and
+  repaints the plate. Settings stores the choice and applies it immediately.
 - Open: hardware temperatures and package power (NVML/ADLX/PDH). The native strip
   stays the zero-cost fallback; the richer always-on HUD is a pinned Performance widget
   in ghost mode (M8). Unify the Settings HUD toggle with that path once the field pass

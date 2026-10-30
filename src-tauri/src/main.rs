@@ -2114,6 +2114,7 @@ fn main() {
             overlay::overlay_set_hotkey,
             overlay::overlay_set_hotkey_capture,
             overlay::overlay_set_hud,
+            overlay::hud::overlay_set_hud_config,
             overlay::overlay_set_pinned,
             overlay::overlay_flash_hint,
             overlay::overlay_enable_fps,

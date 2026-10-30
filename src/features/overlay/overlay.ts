@@ -90,6 +90,45 @@ function showBatteryPercent(): boolean {
   return localStorage.getItem(BATTERY_PERCENT_KEY) === "true";
 }
 
+/* ---------- Native HUD appearance ---------- */
+
+type HudMode = "minimal" | "compact" | "full";
+type HudCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+interface HudConfig {
+  mode: HudMode;
+  corner: HudCorner;
+  color: string;
+}
+
+const HUD_MODE_KEY = "efxlve-overlay-hud-mode";
+const HUD_CORNER_KEY = "efxlve-overlay-hud-corner";
+const HUD_COLOR_KEY = "efxlve-overlay-hud-color";
+
+function loadHudConfig(): HudConfig {
+  const mode = localStorage.getItem(HUD_MODE_KEY);
+  const corner = localStorage.getItem(HUD_CORNER_KEY);
+  const color = localStorage.getItem(HUD_COLOR_KEY) ?? "";
+  return {
+    mode: mode === "minimal" || mode === "full" ? mode : "compact",
+    corner:
+      corner === "top-right" || corner === "bottom-left" || corner === "bottom-right"
+        ? corner
+        : "top-left",
+    color: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#f2f2f2",
+  };
+}
+
+function saveHudConfig(config: HudConfig): void {
+  localStorage.setItem(HUD_MODE_KEY, config.mode);
+  localStorage.setItem(HUD_CORNER_KEY, config.corner);
+  localStorage.setItem(HUD_COLOR_KEY, config.color);
+}
+
+function applyHudConfig(config: HudConfig = loadHudConfig()): void {
+  void invoke("overlay_set_hud_config", { config }).catch(() => undefined);
+}
+
 /* ---------- Data Types ---------- */
 
 interface OpenPayload {
@@ -5207,6 +5246,18 @@ function scheduleCrosshairConfig(next: CrosshairConfig): void {
   }, 50);
 }
 
+/** Saves the native HUD appearance and repaints the settings view in place. */
+function commitHudConfig(next: HudConfig): void {
+  saveHudConfig(next);
+  applyHudConfig(next);
+  if (isWidgetOpen("settings")) {
+    const body = viewEl("settings");
+    const scroll = body?.scrollTop ?? 0;
+    renderSettings();
+    if (body) body.scrollTop = scroll;
+  }
+}
+
 function renderSettings(): void {
   const el = viewEl("settings");
   if (!el) return;
@@ -5225,6 +5276,7 @@ function renderSettings(): void {
   const hud = localStorage.getItem(HUD_KEY) === "true";
   const opacity = savedOpacity();
   const crosshair = loadCrosshair();
+  const hudConfig = loadHudConfig();
   const disabled = isDisabledGame(context.appName);
   const disabledList = disabledGames();
   const hp = getHomepage();
@@ -5303,6 +5355,51 @@ function renderSettings(): void {
           </div>
         </div>
       </section>
+
+      <!-- Section: HUD appearance -->
+      ${IS_WINDOWS ? `<section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("activity", 13)}
+          <span>${esc(t("overlay.hudAppearanceTitle"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.hudModeTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.hudModeDesc"))}</div>
+            </div>
+            <div class="seg" role="radiogroup">
+              ${([["minimal", "overlay.hudMinimal"], ["compact", "overlay.hudCompact"], ["full", "overlay.hudFull"]] as const)
+                .map(([value, key]) => `<button class="${hudConfig.mode === value ? "active" : ""}" data-ov="hud-mode" data-mode="${value}">${esc(t(key))}</button>`)
+                .join("")}
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.hudCornerTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.hudCornerDesc"))}</div>
+            </div>
+            <div class="seg" role="radiogroup">
+              ${([["top-left", "overlay.hudTopLeft"], ["top-right", "overlay.hudTopRight"], ["bottom-left", "overlay.hudBottomLeft"], ["bottom-right", "overlay.hudBottomRight"]] as const)
+                .map(([value, key]) => `<button class="${hudConfig.corner === value ? "active" : ""}" data-ov="hud-corner" data-corner="${value}">${esc(t(key))}</button>`)
+                .join("")}
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.hudColorTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.hudColorDesc"))}</div>
+            </div>
+            <div class="ov-crosshair-colors">
+              ${["#f2f2f2", "#22c55e", "#f59e0b", "#ef4444", "#38bdf8"]
+                .map((color) => `<button class="ov-crosshair-swatch${hudConfig.color.toLowerCase() === color ? " active" : ""}" data-ov="hud-color" data-color="${color}" style="--swatch:${color}" title="${color}"></button>`)
+                .join("")}
+            </div>
+          </div>
+        </div>
+      </section>` : ""}
 
       <!-- Section: Crosshair -->
       ${IS_WINDOWS ? `<section class="ov-settings-section">
@@ -5734,6 +5831,23 @@ function wireEvents(): void {
     }
     if (target.closest<HTMLElement>("[data-audio-refresh]")) {
       void refreshAudio(true);
+      return;
+    }
+
+    // Native HUD mode, corner and text color.
+    const hudModeBtn = target.closest<HTMLElement>('[data-ov="hud-mode"]');
+    if (hudModeBtn?.dataset.mode) {
+      commitHudConfig({ ...loadHudConfig(), mode: hudModeBtn.dataset.mode as HudMode });
+      return;
+    }
+    const hudCornerBtn = target.closest<HTMLElement>('[data-ov="hud-corner"]');
+    if (hudCornerBtn?.dataset.corner) {
+      commitHudConfig({ ...loadHudConfig(), corner: hudCornerBtn.dataset.corner as HudCorner });
+      return;
+    }
+    const hudColorBtn = target.closest<HTMLElement>('[data-ov="hud-color"]');
+    if (hudColorBtn?.dataset.color) {
+      commitHudConfig({ ...loadHudConfig(), color: hudColorBtn.dataset.color });
       return;
     }
 
@@ -6982,6 +7096,7 @@ async function boot(): Promise<void> {
   // owned by the launcher boot and the Settings toggle, so a hotkey toggle-off
   // survives this page load.
   applyCrosshairConfig(loadCrosshair());
+  applyHudConfig();
 
   // A first open can be closed before `onOpen` runs. Tell Rust about the pins
   // the page remembers now, so that close already knows a ghost HUD is wanted.

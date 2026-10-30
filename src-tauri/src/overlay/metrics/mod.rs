@@ -178,7 +178,8 @@ fn run(app: AppHandle) {
 
         let hud_on = STATE.lock().map(|s| s.hud).unwrap_or(false);
         if hud_on && sample.running {
-            hud::update(&hud_text(&sample));
+            let hud_mode = hud::mode();
+            hud::update(&hud_text(&sample, &hud_mode));
         } else if !hud_on {
             hud::hide();
         }
@@ -190,8 +191,43 @@ fn run(app: AppHandle) {
     hud::hide();
 }
 
-/// One compact HUD line: `124 FPS · 8.1 ms · 1% 112 · 0.1% 98 | CPU 23% | ...`.
-fn hud_text(s: &MetricsSample) -> String {
+/// One HUD line for the configured mode: minimal (FPS), compact (FPS + CPU +
+/// GPU) or full (the whole telemetry strip).
+fn hud_text(s: &MetricsSample, mode: &str) -> String {
+    match mode {
+        "minimal" => minimal_hud_text(s),
+        "full" => full_hud_text(s),
+        _ => compact_hud_text(s),
+    }
+}
+
+fn minimal_hud_text(s: &MetricsSample) -> String {
+    if let Some(fps) = s.fps {
+        return format!("{fps:.0} FPS");
+    }
+    format!("CPU {:.0}%", s.game_cpu.unwrap_or(s.cpu))
+}
+
+fn compact_hud_text(s: &MetricsSample) -> String {
+    let mut parts = Vec::new();
+    if let Some(fps) = s.fps {
+        let mut line = format!("{fps:.0} FPS");
+        if let Some(ms) = s.frame_ms {
+            line.push_str(&format!(" · {ms:.1} ms"));
+        }
+        if let Some(low1) = s.low1_fps {
+            line.push_str(&format!(" · 1% {low1:.0}"));
+        }
+        parts.push(line);
+    }
+    parts.push(format!("CPU {:.0}%", s.game_cpu.unwrap_or(s.cpu)));
+    if let Some(gpu) = s.gpu {
+        parts.push(format!("GPU {gpu:.0}%"));
+    }
+    parts.join("  |  ")
+}
+
+fn full_hud_text(s: &MetricsSample) -> String {
     let mut parts = Vec::new();
     if let Some(line) = fps_line(s) {
         parts.push(line);
@@ -280,6 +316,21 @@ mod tests {
         sample.fps = Some(60.0);
         sample.frame_ms = Some(16.7);
         assert_eq!(fps_line(&sample).as_deref(), Some("60 FPS · 16.7 ms"));
-        assert!(hud_text(&sample).starts_with("60 FPS · 16.7 ms  |  CPU 0%"));
+        assert!(hud_text(&sample, "full").starts_with("60 FPS · 16.7 ms  |  CPU 0%"));
+    }
+
+    #[test]
+    fn hud_modes_keep_the_line_short() {
+        let mut sample = MetricsSample::default();
+        sample.fps = Some(144.0);
+        sample.frame_ms = Some(6.9);
+        sample.low1_fps = Some(112.0);
+        sample.low01_fps = Some(98.0);
+        sample.cpu = 23.0;
+        sample.gpu = Some(67.0);
+        assert_eq!(hud_text(&sample, "minimal"), "144 FPS");
+        assert!(hud_text(&sample, "compact").contains("1% 112"));
+        assert!(!hud_text(&sample, "compact").contains("0.1%"));
+        assert!(hud_text(&sample, "full").contains("0.1% 98"));
     }
 }
