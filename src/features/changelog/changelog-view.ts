@@ -31,9 +31,99 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.41",
+    version: "0.1.42",
     date: "2026-10-30",
     isCurrent: true,
+    added: [
+      {
+        en: "The overlay has a per-app audio mixer: every session on the default output gets its own volume and mute, with process icons, a master bus, named mix presets and a switch for the default output device.",
+        tr: "Kaplama artık uygulama bazlı bir ses mikseri sunuyor: varsayılan çıkıştaki her oturum kendi ses düzeyine ve sessize alma denetimine sahip; süreç ikonları, ana kanal, adlandırılmış karışım ön ayarları ve varsayılan çıkış cihazını değiştirme de eklendi.",
+      },
+      {
+        en: "A tactical crosshair can be drawn over the game, with its own hotkey, per-game profiles and a live preview while its sliders move.",
+        tr: "Oyunun üzerine kendi kısayolu, oyun bazlı profilleri ve kaydırıcıları hareket ederken canlı önizlemesi olan bir nişangah çizilebiliyor.",
+      },
+      {
+        en: "Pinned widgets stay over the game as a click-through ghost HUD after the panel closes, and every card sets its own opacity.",
+        tr: "Sabitlenen bileşenler panel kapandıktan sonra oyunun üzerinde tıklamaları geçiren bir hayalet HUD olarak kalıyor ve her kart kendi saydamlığını ayarlıyor.",
+      },
+      {
+        en: "The native HUD switches between minimal, compact and full layouts, moves to any corner and picks its text colour.",
+        tr: "Yerleşik HUD minimal, kompakt ve tam düzenler arasında geçiyor, dört köşeden birine taşınıyor ve metin rengini seçiyor.",
+      },
+      {
+        en: "The HUD and the Performance tab show 1% and 0.1% frame-time lows, plot the recent frame times as a graph, and read CPU and GPU temperatures plus CPU and GPU power.",
+        tr: "HUD ve Performans sekmesi %1 ve %0,1 kare süresi düşüklerini gösteriyor, son kare sürelerini grafik olarak çiziyor ve CPU ile GPU sıcaklıklarının yanı sıra CPU ve GPU gücünü okuyor.",
+      },
+      {
+        en: "Clips record at 60 and 120 fps through DXGI Desktop Duplication into H.264 + AAC MP4 files, and MP4 clips get a thumbnail, a frame grab, their duration, trimming and joining.",
+        tr: "Klipler 60 ve 120 fps'te DXGI Desktop Duplication ile H.264 + AAC MP4 dosyaları olarak kaydediliyor; MP4 kliplere küçük resim, kare yakalama, süre, kırpma ve birleştirme eklendi.",
+      },
+      {
+        en: "A store page can shrink into a click-through picture-in-picture player that moves between monitor corners and stays open over the game.",
+        tr: "Bir mağaza sayfası, monitör köşeleri arasında taşınan ve oyunun üzerinde açık kalan, tıklamaları geçiren bir resim içinde resim oynatıcısına küçülebiliyor.",
+      },
+      {
+        en: "The launcher and the overlay note editors accept pasted images, and a pasted image can be replaced or removed later.",
+        tr: "Launcher ve kaplama not düzenleyicileri yapıştırılan görselleri kabul ediyor; yapıştırılan bir görsel sonradan değiştirilebiliyor veya kaldırılabiliyor.",
+      },
+      {
+        en: "The Achievements widget now holds the tracked section, pins up to three locked achievements into the ghost HUD, refreshes while it is open and filters by all, unlocked, locked, near and hidden.",
+        tr: "Başarımlar bileşeni artık izlenen bölümü içeriyor, en fazla üç kilitli başarımı hayalet HUD'a sabitliyor, açıkken kendini yeniliyor ve tümü, açılan, kilitli, yakın ve gizli olarak filtreliyor.",
+      },
+      {
+        en: "Downloads pause while a game runs by default, the active download card opens the game page, and an achievement can be tracked straight from the list.",
+        tr: "İndirmeler varsayılan olarak bir oyun çalışırken duraklıyor, etkin indirme kartı oyun sayfasını açıyor ve bir başarım doğrudan listeden izlenebiliyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "The audio mixer's device and preset selects can be reached with a controller.",
+        tr: "Ses mikserinin cihaz ve ön ayar seçimlerine oyun koluyla erişilebiliyor.",
+      },
+      {
+        en: "Note images are stored as files under the app data folder instead of inline data URLs; older notes migrate on their next read.",
+        tr: "Not görselleri satır içi data URL'leri yerine uygulama verisi klasöründe dosya olarak saklanıyor; eski notlar bir sonraki okumada taşınıyor.",
+      },
+      {
+        en: "The overlay's new strings are translated into every language the launcher ships.",
+        tr: "Kaplamanın yeni metinleri launcher'ın sunduğu her dile çevrildi.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Remastered releases stay separate games in the library instead of merging with the original.",
+        tr: "Yeniden düzenlenmiş sürümler orijinalle birleşmek yerine kütüphanede ayrı oyun olarak kalıyor.",
+      },
+      {
+        en: "A closed game no longer shows as running when a bundled launcher under Redistributables carries the same name.",
+        tr: "Redistributables altındaki paketlenmiş bir launcher aynı adı taşıdığında kapalı bir oyun artık çalışıyor görünmüyor.",
+      },
+      {
+        en: "Restarting into an update keeps the webview profile, so store sign-ins and page state survive.",
+        tr: "Güncellemeyle yeniden başlatmak webview profilini koruyor; mağaza oturumları ve sayfa durumu kaybolmuyor.",
+      },
+      {
+        en: "A download that auto-paused for a game resumes after a manual stop.",
+        tr: "Oyun sırasında otomatik duraklayan bir indirme, elle durdurulduktan sonra devam ediyor.",
+      },
+      {
+        en: "The Stop action stays visible while a game is running.",
+        tr: "Bir oyun çalışırken Durdur düğmesi görünür kalıyor.",
+      },
+      {
+        en: "The empty achievement tracker hides itself, earned achievements unpin, and hidden achievements appear inline in the list.",
+        tr: "Boş başarım izleyicisi gizleniyor, açılan başarımlar sabitlemeden çıkıyor ve gizli başarımlar listede satır içinde görünüyor.",
+      },
+      {
+        en: "The library stays hidden under an open game page, which now shows a scrollbar on its right edge.",
+        tr: "Açık bir oyun sayfasının altında kütüphane gizli kalıyor; oyun sayfası artık sağ kenarında bir kaydırma çubuğu gösteriyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.41",
+    date: "2026-10-30",
     improved: [
       {
         en: "Collections now follow the active theme: the gallery and the collection editor use the same surfaces and text colours as every other dialog, including Gloss.",
