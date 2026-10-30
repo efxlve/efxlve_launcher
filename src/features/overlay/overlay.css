@@ -6062,6 +6062,14 @@ body.ov-browser-pip .ov-browser-pipbar {
   color: var(--text-2);
 }
 
+.ov-audio-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 3px;
+  object-fit: contain;
+}
+
 .ov-audio-text {
   display: flex;
   flex-direction: column;

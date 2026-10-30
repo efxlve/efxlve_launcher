@@ -23,6 +23,9 @@ pub struct AudioSession {
     pub name: String,
     /// The session's own display name, localized by the app that owns it.
     pub display_name: String,
+    /// Small PNG data URL of the owning process icon, empty when unavailable.
+    #[serde(default)]
+    pub icon: String,
     /// 0.0 to 1.0.
     pub volume: f32,
     pub muted: bool,
@@ -146,6 +149,11 @@ fn with_com<T>(work: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
 #[cfg(windows)]
 mod imp {
     use super::{sort_sessions, AudioDevice, AudioSession, AudioState};
+    use std::collections::HashMap;
+    use std::os::windows::ffi::OsStrExt;
+    use std::sync::{Mutex, OnceLock};
+    use image::codecs::png::PngEncoder;
+    use image::{ExtendedColorType, ImageEncoder};
     use windows::core::{GUID, Interface, PCWSTR, PWSTR};
     use windows::Win32::Foundation::{CloseHandle, PROPERTYKEY};
     use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
@@ -160,6 +168,14 @@ mod imp {
     use windows::Win32::System::Threading::{
         OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
         PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    use windows::Win32::Graphics::Gdi::{
+        CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, GetDC, GetObjectW, ReleaseDC,
+        SelectObject, BITMAP, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HGDIOBJ,
+    };
+    use windows::Win32::UI::Shell::ExtractIconExW;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        DestroyIcon, DrawIconEx, GetIconInfo, HICON, ICONINFO, DI_NORMAL,
     };
 
     pub fn state() -> Result<AudioState, String> {
@@ -208,16 +224,26 @@ mod imp {
                         }
                     });
                 let display_name = take_pwstr(control.GetDisplayName().ok()).unwrap_or_default();
-                let name = if system {
-                    String::new()
+                let (name, icon) = if system {
+                    (String::new(), String::new())
                 } else {
-                    process_name(pid)
+                    match process_path(pid) {
+                        Some(path) => (
+                            path.file_stem()
+                                .and_then(|stem| stem.to_str())
+                                .unwrap_or("")
+                                .to_string(),
+                            icon_data_url(&path).unwrap_or_default(),
+                        ),
+                        None => (String::new(), String::new()),
+                    }
                 };
                 list.push(AudioSession {
                     id,
                     pid,
                     name,
                     display_name,
+                    icon,
                     volume: volume.GetMasterVolume().unwrap_or(1.0),
                     muted: volume
                         .GetMute()
@@ -434,14 +460,12 @@ mod imp {
         }
     }
 
-    fn process_name(pid: u32) -> String {
+    fn process_path(pid: u32) -> Option<std::path::PathBuf> {
         if pid == 0 {
-            return String::new();
+            return None;
         }
         unsafe {
-            let Ok(handle) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
-                return String::new();
-            };
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
             let mut buffer = [0u16; 1024];
             let mut size = buffer.len() as u32;
             let result = QueryFullProcessImageNameW(
@@ -452,14 +476,120 @@ mod imp {
             );
             let _ = CloseHandle(handle);
             if result.is_err() {
-                return String::new();
+                return None;
             }
-            let path = String::from_utf16_lossy(&buffer[..size as usize]);
-            std::path::Path::new(&path)
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .unwrap_or("")
-                .to_string()
+            Some(std::path::PathBuf::from(String::from_utf16_lossy(
+                &buffer[..size as usize],
+            )))
+        }
+    }
+
+    static ICON_CACHE: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+
+    pub(super) fn icon_data_url(path: &std::path::Path) -> Option<String> {
+        let key = path.to_string_lossy().to_string();
+        let cache = ICON_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+        if let Ok(cache) = cache.lock() {
+            if let Some(value) = cache.get(&key) {
+                return (!value.is_empty()).then_some(value.clone());
+            }
+        }
+        let value = extract_icon(path).unwrap_or_default();
+        if let Ok(mut cache) = cache.lock() {
+            cache.insert(key, value.clone());
+        }
+        (!value.is_empty()).then_some(value)
+    }
+
+    fn extract_icon(path: &std::path::Path) -> Option<String> {
+        unsafe {
+            let wide: Vec<u16> = path
+                .as_os_str()
+                .encode_wide()
+                .chain(std::iter::once(0))
+                .collect();
+            let mut icon = HICON::default();
+            let count = ExtractIconExW(PCWSTR(wide.as_ptr()), 0, None, Some(&mut icon), 1);
+            if count == 0 || icon.0.is_null() {
+                return None;
+            }
+            let result = hicon_to_png(icon);
+            let _ = DestroyIcon(icon);
+            result
+        }
+    }
+
+    unsafe fn hicon_to_png(icon: HICON) -> Option<String> {
+        unsafe {
+            let mut info = ICONINFO::default();
+            GetIconInfo(icon, &mut info).ok()?;
+            let color = info.hbmColor;
+            let mask = info.hbmMask;
+            let mut bitmap = BITMAP::default();
+            let copied = GetObjectW(
+                HGDIOBJ(color.0),
+                std::mem::size_of::<BITMAP>() as i32,
+                Some(&mut bitmap as *mut _ as *mut core::ffi::c_void),
+            );
+            if copied == 0 || bitmap.bmWidth <= 0 || bitmap.bmHeight <= 0 {
+                let _ = DeleteObject(HGDIOBJ(color.0));
+                let _ = DeleteObject(HGDIOBJ(mask.0));
+                return None;
+            }
+            let width = bitmap.bmWidth;
+            let height = bitmap.bmHeight;
+            let screen = GetDC(None);
+            let memory = CreateCompatibleDC(Some(screen));
+            let mut bmi = BITMAPINFO::default();
+            bmi.bmiHeader.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
+            bmi.bmiHeader.biWidth = width;
+            bmi.bmiHeader.biHeight = -height;
+            bmi.bmiHeader.biPlanes = 1;
+            bmi.bmiHeader.biBitCount = 32;
+            bmi.bmiHeader.biCompression = BI_RGB.0 as u32;
+            let mut bits: *mut core::ffi::c_void = std::ptr::null_mut();
+            let dib = CreateDIBSection(Some(memory), &bmi, DIB_RGB_COLORS, &mut bits, None, 0).ok();
+            let Some(dib) = dib else {
+                let _ = DeleteDC(memory);
+                let _ = ReleaseDC(None, screen);
+                let _ = DeleteObject(HGDIOBJ(color.0));
+                let _ = DeleteObject(HGDIOBJ(mask.0));
+                return None;
+            };
+            let old = SelectObject(memory, HGDIOBJ(dib.0));
+            let _ = DrawIconEx(memory, 0, 0, icon, width, height, 0, None, DI_NORMAL);
+            let source = std::slice::from_raw_parts(
+                bits as *const u8,
+                width as usize * height as usize * 4,
+            );
+            let mut rgba = vec![0u8; width as usize * height as usize * 4];
+            let mut any_alpha = false;
+            for (pixel, source) in rgba.chunks_exact_mut(4).zip(source.chunks_exact(4)) {
+                pixel[0] = source[2];
+                pixel[1] = source[1];
+                pixel[2] = source[0];
+                pixel[3] = source[3];
+                any_alpha |= source[3] != 0;
+            }
+            if !any_alpha {
+                for pixel in rgba.chunks_exact_mut(4) {
+                    pixel[3] = 255;
+                }
+            }
+            SelectObject(memory, old);
+            let _ = DeleteObject(HGDIOBJ(dib.0));
+            let _ = DeleteDC(memory);
+            let _ = ReleaseDC(None, screen);
+            let _ = DeleteObject(HGDIOBJ(color.0));
+            let _ = DeleteObject(HGDIOBJ(mask.0));
+
+            let mut png = Vec::new();
+            PngEncoder::new(&mut png)
+                .write_image(&rgba, width as u32, height as u32, ExtendedColorType::Rgba8)
+                .ok()?;
+            use base64::Engine;
+            let encoded = base64::engine::general_purpose::STANDARD.encode(png);
+            Some(format!("data:image/png;base64,{encoded}"))
         }
     }
 
@@ -512,6 +642,16 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
+    #[ignore = "needs a real process icon"]
+    fn extracts_a_process_icon_as_a_png_data_url() {
+        let path = std::path::Path::new(r"C:\Windows\explorer.exe");
+        let icon = super::imp::icon_data_url(path).expect("explorer icon");
+        assert!(icon.starts_with("data:image/png;base64,"));
+        assert!(icon.len() > 200);
+    }
+
+    #[cfg(windows)]
+    #[test]
     #[ignore = "needs an active render endpoint"]
     fn enumerates_render_endpoints_and_marks_the_default() {
         let state = super::with_com(super::imp::state).expect("audio state");
@@ -530,6 +670,7 @@ mod tests {
             pid,
             name: name.to_string(),
             display_name: String::new(),
+            icon: String::new(),
             volume: 1.0,
             muted: false,
             system,

@@ -346,7 +346,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   them to the sessions that are still present.
 - The output-device picker lists every active render endpoint and switches the
   default through the audio policy client (with the Vista client as fallback).
-- Open: session icons and controller focus order.
+- Session rows show the owning process icon, extracted once per executable and cached
+  as a small PNG data URL.
+- Open: controller focus order.
 
 ### M10 — Tactical crosshair (built)
 

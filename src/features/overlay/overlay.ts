@@ -164,6 +164,7 @@ interface AudioSession {
   pid: number;
   name: string;
   displayName: string;
+  icon: string;
   volume: number;
   muted: boolean;
   system: boolean;
@@ -4012,6 +4013,7 @@ function audioRowHtml(opts: {
   id?: string;
   label: string;
   sub?: string;
+  icon?: string;
   volume: number;
   muted: boolean;
   system?: boolean;
@@ -4023,7 +4025,7 @@ function audioRowHtml(opts: {
   return `
     <div class="ov-audio-row${opts.master ? " is-master" : ""}">
       <div class="ov-audio-name" title="${esc(opts.label)}${opts.sub ? ` · ${esc(opts.sub)}` : ""}">
-        ${icon(opts.master || opts.system ? "volume-2" : "music", 13)}
+        ${opts.icon ? `<img class="ov-audio-icon" src="${esc(opts.icon)}" alt="" />` : icon(opts.master || opts.system ? "volume-2" : "music", 13)}
         <div class="ov-audio-text">
           <span class="ov-audio-label">${esc(opts.label)}</span>
           ${opts.sub ? `<span class="ov-audio-sub">${esc(opts.sub)}</span>` : ""}
@@ -4086,6 +4088,7 @@ function renderAudio(): void {
       id: session.id,
       label: audioLabel(session),
       sub: audioSubLabel(session),
+      icon: session.icon,
       volume: session.volume,
       muted: session.muted,
       system: session.system,
