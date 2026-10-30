@@ -21,9 +21,9 @@ Rates above 30 fps now record through DXGI Desktop Duplication and Media
 Foundation H.264 + AAC into an MP4 (`clip_dxgi.rs`, `clip_mf.rs`); 15/30 fps keep
 the MJPEG AVI writer as the fallback. Validate on a real game at 60 and 120:
 the file opens with picture and sound in sync, the measured rate in the log is
-close to the requested rate, and the game keeps its frame rate. MP4 clips now get
-a Media Foundation thumbnail, frame grab and duration; trim/join stay AVI-only
-and are hidden for MP4 (the backend rejects them with a clear message).
+close to the requested rate, and the game keeps its frame rate. MP4 clips get a
+Media Foundation thumbnail, frame grab and duration; trim and join re-encode
+through Media Foundation (AVI trimming still copies chunks).
 
 Files: `src-tauri/src/legendary/clip_recorder.rs`,
 `src-tauri/src/legendary/clip_audio.rs`,

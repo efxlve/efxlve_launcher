@@ -2435,9 +2435,6 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   border-radius: var(--r-sm); color: var(--text); font: inherit; font-size: 11px; cursor: pointer;
 }
 .ss-clip-trim-box { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; background: var(--surface-1); }
-
-/* MP4 clips play and export frames, but trim/join still read AVI chunks. */
-.ss-clip-studio-modal.is-mp4 .ss-clip-trim-box { display: none; }
 .ss-trim-strip-label {
   display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 500; color: var(--text-2);
 }

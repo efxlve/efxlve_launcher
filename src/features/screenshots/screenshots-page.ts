@@ -374,7 +374,7 @@ function clipsSectionHtml(): string {
       </div>`;
   }
 
-  const joinableCount = visibleClips.filter((clip) => !clip.path.toLowerCase().endsWith(".mp4")).length;
+  const joinableCount = visibleClips.length;
   return `
     <div class="ss-clips-section">
       <div class="ss-clips-head">
@@ -583,11 +583,10 @@ export async function openClipStudio(path: string): Promise<void> {
   studioClipPath = path;
   const total = Math.max(1, clip.seconds);
   const videoSrc = convertFileSrc(path);
-  const isMp4 = path.toLowerCase().endsWith(".mp4");
 
   clipDialogRoot().innerHTML = `
     <div class="modal-backdrop ss-clip-backdrop" data-act="clip-dialog-backdrop">
-      <div class="modal-box ss-clip-studio-modal${isMp4 ? " is-mp4" : ""}" role="dialog" aria-modal="true">
+      <div class="modal-box ss-clip-studio-modal" role="dialog" aria-modal="true">
         <div class="ss-clip-studio-head">
           <div class="ss-studio-head-title">
             ${icon("clapperboard", 16)}
@@ -768,8 +767,7 @@ export async function grabClipFrame(): Promise<void> {
 }
 
 export function openClipJoin(): void {
-  const joinable = clips.filter((clip) => !clip.path.toLowerCase().endsWith(".mp4"));
-  if (joinable.length < 2) {
+  if (clips.length < 2) {
     toast(t("ss.joinNeedsTwo"), "err");
     return;
   }
@@ -778,7 +776,7 @@ export function openClipJoin(): void {
       <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
         <div class="selective-header"><h2>${t("ss.clipJoinTitle")}</h2></div>
         <div class="ss-clip-join-list">
-          ${joinable
+          ${clips
             .map(
               (clip) => `
             <label class="ss-clip-join-row">

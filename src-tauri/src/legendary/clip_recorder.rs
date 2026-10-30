@@ -1247,15 +1247,19 @@ fn copy_range(
 /// `<stem><suffix>.avi` next to the source. Nothing is ever overwritten: a name
 /// that is taken gets a number.
 fn sibling_path(source: &Path, suffix: &str) -> PathBuf {
+    sibling_path_ext(source, suffix, "avi")
+}
+
+fn sibling_path_ext(source: &Path, suffix: &str, extension: &str) -> PathBuf {
     let stem = source
         .file_stem()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "clip".to_string());
     let dir = source.parent().map(Path::to_path_buf).unwrap_or_default();
-    let mut candidate = dir.join(format!("{stem}{suffix}.avi"));
+    let mut candidate = dir.join(format!("{stem}{suffix}.{extension}"));
     let mut n = 2;
     while candidate.exists() {
-        candidate = dir.join(format!("{stem}{suffix}{n}.avi"));
+        candidate = dir.join(format!("{stem}{suffix}{n}.{extension}"));
         n += 1;
     }
     candidate
@@ -1318,14 +1322,15 @@ fn drop_and_remove(writer: AviWriter, target: &Path) {
     let _ = std::fs::remove_file(target);
 }
 
-/// Cuts a clip down to a range, losslessly, into a new file next to it.
-fn ensure_avi(path: &Path) -> Result<(), String> {
-    if path
-        .extension()
+fn is_mp4(path: &Path) -> bool {
+    path.extension()
         .and_then(|e| e.to_str())
         .map(|e| e.eq_ignore_ascii_case("mp4"))
         == Some(true)
-    {
+}
+
+fn ensure_avi(path: &Path) -> Result<(), String> {
+    if is_mp4(path) {
         Err("@t:ss.clipMp4Unsupported".to_string())
     } else {
         Ok(())
@@ -1333,7 +1338,11 @@ fn ensure_avi(path: &Path) -> Result<(), String> {
 }
 
 pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, String> {
-    ensure_avi(path)?;
+    if is_mp4(path) {
+        let target = sibling_path_ext(path, "_trim", "mp4");
+        crate::legendary::clip_mf::trim(path, &target, start_secs, end_secs)?;
+        return Ok(target);
+    }
     let target = sibling_path(path, "_trim");
     trim_to(path, start_secs, end_secs, &target)?;
     Ok(target)
@@ -1376,8 +1385,13 @@ pub fn join(paths: &[PathBuf]) -> Result<PathBuf, String> {
     if paths.len() < 2 {
         return Err("@t:ss.joinNeedsTwo".to_string());
     }
-    for path in paths {
-        ensure_avi(path)?;
+    if paths.iter().any(|path| is_mp4(path)) {
+        if !paths.iter().all(|path| is_mp4(path)) {
+            return Err("@t:ss.joinMismatch".to_string());
+        }
+        let target = sibling_path_ext(&paths[0], "_joined", "mp4");
+        crate::legendary::clip_mf::join(paths, &target)?;
+        return Ok(target);
     }
     let first = read_clip_header(&paths[0])?;
     for path in paths.iter().skip(1) {
