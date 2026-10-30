@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Fadenkreuz",
   "overlay.crosshairEnableTitle": "Bildschirm-Fadenkreuz",
   "overlay.crosshairEnableDesc": "Zeichnet ein sicheres externes Fadenkreuz über das Spiel. Spieldateien werden nicht verändert.",
+  "overlay.crosshairProfileTitle": "Profil pro Spiel",
+  "overlay.crosshairProfileDesc": "Separate Fadenkreuz-Einstellungen für dieses Spiel speichern.",
   "overlay.crosshairShapeTitle": "Form",
   "overlay.crosshairShapeDesc": "Wähle das Visier, das zum Spiel passt.",
   "overlay.crosshairDot": "Punkt",

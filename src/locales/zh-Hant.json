@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "準星",
   "overlay.crosshairEnableTitle": "螢幕準星",
   "overlay.crosshairEnableDesc": "在遊戲上繪製安全的外部準星。不會修改遊戲檔案。",
+  "overlay.crosshairProfileTitle": "依遊戲設定",
+  "overlay.crosshairProfileDesc": "為此遊戲保留獨立的準星設定。",
   "overlay.crosshairShapeTitle": "形狀",
   "overlay.crosshairShapeDesc": "選擇適合遊戲的準星。",
   "overlay.crosshairDot": "點",

@@ -348,14 +348,15 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 
 - A small layered, click-through window at the centre of the game monitor
   (`src-tauri/src/overlay/crosshair.rs`). Shapes: dot, cross, circle and T; colour,
-  size, centre gap, thickness and opacity. `Ctrl+Shift+X` toggles it, and the overlay
-  Settings tab owns the controls. No injection and no game files are touched.
+  size, centre gap, thickness and opacity. The Settings tab picks one of six allowlisted
+  toggle combinations (Ctrl+Shift+X by default), and the listener reads the saved choice
+  on every tick. No injection and no game files are touched.
 - The shape is software-rendered into a premultiplied BGRA DIB and pushed with
   `UpdateLayeredWindow`; the dark outline keeps the reticle readable on bright scenes.
   The window hides on game exit and service stop, and follows the game monitor every
   couple of seconds.
-- Open: a per-game crosshair profile, a configurable hotkey, and a field pass on
-  exclusive fullscreen (external overlays cannot paint there).
+- A per-game profile stores separate settings for the running title.
+- Open: a field pass on exclusive fullscreen (external overlays cannot paint there).
 
 ### M11 — Achievement tracker (built)
 

@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Crosshair",
   "overlay.crosshairEnableTitle": "On-screen crosshair",
   "overlay.crosshairEnableDesc": "Draw a safe external crosshair over the game. No game files are touched.",
+  "overlay.crosshairProfileTitle": "Per-game profile",
+  "overlay.crosshairProfileDesc": "Keep separate crosshair settings for this game.",
   "overlay.crosshairShapeTitle": "Shape",
   "overlay.crosshairShapeDesc": "Pick the reticle that fits the game.",
   "overlay.crosshairDot": "Dot",

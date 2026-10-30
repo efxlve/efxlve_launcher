@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Celownik",
   "overlay.crosshairEnableTitle": "Celownik na ekranie",
   "overlay.crosshairEnableDesc": "Rysuje bezpieczny zewnętrzny celownik nad grą. Pliki gry nie są zmieniane.",
+  "overlay.crosshairProfileTitle": "Profil dla gry",
+  "overlay.crosshairProfileDesc": "Zachowaj osobne ustawienia celownika dla tej gry.",
   "overlay.crosshairShapeTitle": "Kształt",
   "overlay.crosshairShapeDesc": "Wybierz siatkę pasującą do gry.",
   "overlay.crosshairDot": "Kropka",

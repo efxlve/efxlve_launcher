@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Mira",
   "overlay.crosshairEnableTitle": "Mira na tela",
   "overlay.crosshairEnableDesc": "Desenha uma mira externa segura sobre o jogo. Nenhum arquivo do jogo é alterado.",
+  "overlay.crosshairProfileTitle": "Perfil por jogo",
+  "overlay.crosshairProfileDesc": "Mantenha ajustes de mira separados para este jogo.",
   "overlay.crosshairShapeTitle": "Forma",
   "overlay.crosshairShapeDesc": "Escolha a retícula que combina com o jogo.",
   "overlay.crosshairDot": "Ponto",

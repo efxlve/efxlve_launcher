@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "크로스헤어",
   "overlay.crosshairEnableTitle": "화면 크로스헤어",
   "overlay.crosshairEnableDesc": "게임 위에 안전한 외부 크로스헤어를 그립니다. 게임 파일은 건드리지 않습니다.",
+  "overlay.crosshairProfileTitle": "게임별 프로필",
+  "overlay.crosshairProfileDesc": "이 게임의 크로스헤어 설정을 따로 저장합니다.",
   "overlay.crosshairShapeTitle": "모양",
   "overlay.crosshairShapeDesc": "게임에 맞는 조준선을 선택하세요.",
   "overlay.crosshairDot": "점",

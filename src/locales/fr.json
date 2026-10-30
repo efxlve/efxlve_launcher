@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Réticule",
   "overlay.crosshairEnableTitle": "Réticule à l'écran",
   "overlay.crosshairEnableDesc": "Dessine un réticule externe sûr sur le jeu. Aucun fichier de jeu n'est modifié.",
+  "overlay.crosshairProfileTitle": "Profil par jeu",
+  "overlay.crosshairProfileDesc": "Conservez des réglages de réticule distincts pour ce jeu.",
   "overlay.crosshairShapeTitle": "Forme",
   "overlay.crosshairShapeDesc": "Choisissez le réticule adapté au jeu.",
   "overlay.crosshairDot": "Point",

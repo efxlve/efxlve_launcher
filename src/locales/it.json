@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Mirino",
   "overlay.crosshairEnableTitle": "Mirino su schermo",
   "overlay.crosshairEnableDesc": "Disegna un mirino esterno sicuro sopra il gioco. Nessun file del gioco viene toccato.",
+  "overlay.crosshairProfileTitle": "Profilo per gioco",
+  "overlay.crosshairProfileDesc": "Mantieni impostazioni del mirino separate per questo gioco.",
   "overlay.crosshairShapeTitle": "Forma",
   "overlay.crosshairShapeDesc": "Scegli il reticolo adatto al gioco.",
   "overlay.crosshairDot": "Punto",

@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "เป้าเล็ง",
   "overlay.crosshairEnableTitle": "เป้าเล็งบนหน้าจอ",
   "overlay.crosshairEnableDesc": "วาดเป้าเล็งภายนอกที่ปลอดภัยเหนือเกม ไม่แตะไฟล์เกม",
+  "overlay.crosshairProfileTitle": "โปรไฟล์ต่อเกม",
+  "overlay.crosshairProfileDesc": "เก็บการตั้งค่าเป้าเล็งแยกสำหรับเกมนี้",
   "overlay.crosshairShapeTitle": "รูปร่าง",
   "overlay.crosshairShapeDesc": "เลือกเรติเคิลที่เหมาะกับเกม",
   "overlay.crosshairDot": "จุด",

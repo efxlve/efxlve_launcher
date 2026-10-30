@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Punto de mira",
   "overlay.crosshairEnableTitle": "Punto de mira en pantalla",
   "overlay.crosshairEnableDesc": "Dibuja un punto de mira externo seguro sobre el juego. No se tocan archivos del juego.",
+  "overlay.crosshairProfileTitle": "Perfil por juego",
+  "overlay.crosshairProfileDesc": "Guarda ajustes de punto de mira separados para este juego.",
   "overlay.crosshairShapeTitle": "Forma",
   "overlay.crosshairShapeDesc": "Elige la retícula que mejor se adapte al juego.",
   "overlay.crosshairDot": "Punto",

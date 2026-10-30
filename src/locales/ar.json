@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "التصويب",
   "overlay.crosshairEnableTitle": "تصويب على الشاشة",
   "overlay.crosshairEnableDesc": "يرسم تصويبًا خارجيًا آمنًا فوق اللعبة. لا يتم لمس ملفات اللعبة.",
+  "overlay.crosshairProfileTitle": "ملف لكل لعبة",
+  "overlay.crosshairProfileDesc": "احفظ إعدادات تصويب منفصلة لهذه اللعبة.",
   "overlay.crosshairShapeTitle": "الشكل",
   "overlay.crosshairShapeDesc": "اختر الشبكة التي تناسب اللعبة.",
   "overlay.crosshairDot": "نقطة",

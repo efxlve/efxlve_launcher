@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Nişangah",
   "overlay.crosshairEnableTitle": "Ekran nişangahı",
   "overlay.crosshairEnableDesc": "Oyunun üzerine güvenli, harici bir nişangah çizer. Oyun dosyalarına dokunulmaz.",
+  "overlay.crosshairProfileTitle": "Oyuna özel profil",
+  "overlay.crosshairProfileDesc": "Bu oyun için ayrı nişangah ayarları sakla.",
   "overlay.crosshairShapeTitle": "Biçim",
   "overlay.crosshairShapeDesc": "Oyununa uyan nişangahı seç.",
   "overlay.crosshairDot": "Nokta",

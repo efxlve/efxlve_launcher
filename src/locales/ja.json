@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "クロスヘア",
   "overlay.crosshairEnableTitle": "画面クロスヘア",
   "overlay.crosshairEnableDesc": "ゲーム上に安全な外部クロスヘアを描画します。ゲームファイルには触れません。",
+  "overlay.crosshairProfileTitle": "ゲーム別プロファイル",
+  "overlay.crosshairProfileDesc": "このゲーム専用のクロスヘア設定を保存します。",
   "overlay.crosshairShapeTitle": "形状",
   "overlay.crosshairShapeDesc": "ゲームに合うレティクルを選択してください。",
   "overlay.crosshairDot": "ドット",

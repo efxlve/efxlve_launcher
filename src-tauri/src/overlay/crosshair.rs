@@ -29,6 +29,13 @@ pub struct CrosshairConfig {
     pub thickness: f32,
     /// 0.1 to 1.0.
     pub opacity: f32,
+    /// "Ctrl+Shift+X", "Ctrl+Shift+C", "Ctrl+Alt+X", "Ctrl+Alt+C", "F8" or "F9".
+    #[serde(default = "default_hotkey")]
+    pub hotkey: String,
+}
+
+fn default_hotkey() -> String {
+    "Ctrl+Shift+X".to_string()
 }
 
 impl Default for CrosshairConfig {
@@ -41,6 +48,7 @@ impl Default for CrosshairConfig {
             gap: 4.0,
             thickness: 2.0,
             opacity: 0.9,
+            hotkey: default_hotkey(),
         }
     }
 }
@@ -81,13 +89,52 @@ pub fn set_visible(visible: bool) {
     }
 }
 
-/// Ctrl+Shift+X: flips the runtime visibility without touching the saved
-/// setting.
+/// Ctrl+Shift+X by default: flips the runtime visibility without touching the
+/// saved setting. The Settings tab can pick another allowlisted combination.
 pub fn toggle() {
     let enabled = config_state().lock().map(|config| config.enabled).unwrap_or(false);
     if enabled {
         set_visible(!VISIBLE.load(Ordering::SeqCst));
     }
+}
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn GetAsyncKeyState(vkey: i32) -> i16;
+}
+
+#[cfg(windows)]
+fn hotkey_keys(value: &str) -> (bool, bool, bool, i32) {
+    match value {
+        "Ctrl+Shift+C" => (true, true, false, 0x43),
+        "Ctrl+Alt+X" => (true, false, true, 0x58),
+        "Ctrl+Alt+C" => (true, false, true, 0x43),
+        "F8" => (false, false, false, 0x77),
+        "F9" => (false, false, false, 0x78),
+        _ => (true, true, false, 0x58),
+    }
+}
+
+/// True while the configured combination is held. The hotkey thread polls this
+/// once per tick, so changing the setting needs no listener restart.
+#[cfg(windows)]
+pub fn hotkey_down() -> bool {
+    let hotkey = config_state()
+        .lock()
+        .map(|config| config.hotkey.clone())
+        .unwrap_or_else(|_| default_hotkey());
+    let (ctrl, shift, alt, vk) = hotkey_keys(&hotkey);
+    let down = |key: i32| unsafe { (GetAsyncKeyState(key) as u16 & 0x8000) != 0 };
+    down(vk)
+        && down(0x11) == ctrl
+        && down(0x10) == shift
+        && down(0x12) == alt
+}
+
+#[cfg(not(windows))]
+pub fn hotkey_down() -> bool {
+    false
 }
 
 /// Stores the crosshair settings from the overlay's Settings tab.
@@ -143,6 +190,12 @@ fn sanitize(mut config: CrosshairConfig) -> CrosshairConfig {
     config.gap = clamp(config.gap, 0.0, 16.0, 4.0);
     config.thickness = clamp(config.thickness, 1.0, 5.0, 2.0);
     config.opacity = clamp(config.opacity, 0.1, 1.0, 0.9);
+    config.hotkey = match config.hotkey.as_str() {
+        "Ctrl+Shift+X" | "Ctrl+Shift+C" | "Ctrl+Alt+X" | "Ctrl+Alt+C" | "F8" | "F9" => {
+            config.hotkey
+        }
+        _ => default_hotkey(),
+    };
     config
 }
 
@@ -579,7 +632,18 @@ mod tests {
             gap: 0.0,
             thickness: 2.0,
             opacity: 1.0,
+            hotkey: "Ctrl+Shift+X".to_string(),
         }
+    }
+
+    #[test]
+    fn an_unknown_hotkey_falls_back_to_the_default() {
+        let mut value = config("cross");
+        value.hotkey = "Ctrl+Q+Z".to_string();
+        assert_eq!(sanitize(value).hotkey, "Ctrl+Shift+X");
+        let mut value = config("cross");
+        value.hotkey = "F9".to_string();
+        assert_eq!(sanitize(value).hotkey, "F9");
     }
 
     #[test]

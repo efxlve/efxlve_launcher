@@ -50,7 +50,7 @@ import {
   rarityMultiplier,
 } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
-import { applyCrosshairConfig, loadCrosshair, saveCrosshair, setCrosshairVisible, type CrosshairConfig, type CrosshairShape } from "../../core/crosshair";
+import { CROSSHAIR_HOTKEYS, applyCrosshairConfig, loadCrosshair, sanitizeCrosshair, saveCrosshair, setCrosshairVisible, type CrosshairConfig, type CrosshairHotkey, type CrosshairShape } from "../../core/crosshair";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
 import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
@@ -5231,6 +5231,57 @@ function voiceDisplay(): { channel: VoiceChannel; people: VoiceParticipant[]; st
   return { channel: display.channel, people: display.people, stale: !live && !web };
 }
 /* 9. Settings View */
+const CROSSHAIR_PROFILES_KEY = "efxlve-overlay-crosshair-profiles";
+
+/** Per-game crosshair overrides, keyed by app name. */
+function loadCrosshairProfiles(): Record<string, CrosshairConfig> {
+  try {
+    const raw = localStorage.getItem(CROSSHAIR_PROFILES_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, Partial<CrosshairConfig>>;
+    const map: Record<string, CrosshairConfig> = {};
+    for (const [app, config] of Object.entries(parsed)) {
+      if (config && typeof config === "object") map[app] = sanitizeCrosshair(config);
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+function saveCrosshairProfiles(map: Record<string, CrosshairConfig>): void {
+  localStorage.setItem(CROSSHAIR_PROFILES_KEY, JSON.stringify(map));
+}
+
+/** The game's override when it has one, otherwise the global settings. */
+function activeCrosshair(): CrosshairConfig {
+  if (!context.appName) return loadCrosshair();
+  return loadCrosshairProfiles()[context.appName] ?? loadCrosshair();
+}
+
+function hasCrosshairProfile(): boolean {
+  return Boolean(context.appName && loadCrosshairProfiles()[context.appName]);
+}
+
+/** Writes the global settings, and the game's override when one exists. */
+function saveCrosshairForContext(next: CrosshairConfig): void {
+  saveCrosshair(next);
+  if (!context.appName) return;
+  const map = loadCrosshairProfiles();
+  if (!map[context.appName]) return;
+  map[context.appName] = next;
+  saveCrosshairProfiles(map);
+}
+
+function setCrosshairProfile(on: boolean): void {
+  if (!context.appName) return;
+  const map = loadCrosshairProfiles();
+  if (on) map[context.appName] = activeCrosshair();
+  else delete map[context.appName];
+  saveCrosshairProfiles(map);
+  applyCrosshairConfig(activeCrosshair());
+}
+
 /** Saves and pushes the crosshair settings. `repaint` is for the shape/colour
  *  buttons; the sliders update their own badge without losing focus. */
 function commitCrosshair(next: CrosshairConfig, repaint = false): void {
@@ -5238,7 +5289,7 @@ function commitCrosshair(next: CrosshairConfig, repaint = false): void {
     window.clearTimeout(crosshairApplyTimer);
     crosshairApplyTimer = null;
   }
-  saveCrosshair(next);
+  saveCrosshairForContext(next);
   applyCrosshairConfig(next);
   setCrosshairVisible(next.enabled);
   if (repaint && isWidgetOpen("settings")) {
@@ -5264,7 +5315,7 @@ function paintCrosshairPreview(config: CrosshairConfig): void {
 /** Slider input: store immediately, but coalesce the native update so a drag
  *  does not flood IPC. */
 function scheduleCrosshairConfig(next: CrosshairConfig): void {
-  saveCrosshair(next);
+  saveCrosshairForContext(next);
   if (crosshairApplyTimer !== null) window.clearTimeout(crosshairApplyTimer);
   crosshairApplyTimer = window.setTimeout(() => {
     crosshairApplyTimer = null;
@@ -5302,7 +5353,7 @@ function renderSettings(): void {
   const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
   const hud = localStorage.getItem(HUD_KEY) === "true";
   const opacity = savedOpacity();
-  const crosshair = loadCrosshair();
+  const crosshair = activeCrosshair();
   const hudConfig = loadHudConfig();
   const disabled = isDisabledGame(context.appName);
   const disabledList = disabledGames();
@@ -5455,6 +5506,14 @@ function renderSettings(): void {
             <label class="switch"><input type="checkbox" data-ov-toggle="crosshair-enabled" ${crosshair.enabled ? "checked" : ""} /><span class="track"></span></label>
           </div>
 
+          ${context.appName && !launcherMode ? `<div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairProfileTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairProfileDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="crosshair-profile" ${hasCrosshairProfile() ? "checked" : ""} /><span class="track"></span></label>
+          </div>` : ""}
+
           <div class="ov-setting-item">
             <div class="ov-setting-info">
               <div class="ov-setting-name">${esc(t("overlay.crosshairShapeTitle"))}</div>
@@ -5528,7 +5587,9 @@ function renderSettings(): void {
               <div class="ov-setting-name">${esc(t("overlay.crosshairHotkeyTitle"))}</div>
               <div class="ov-setting-desc">${esc(t("overlay.crosshairHotkeyDesc"))}</div>
             </div>
-            <span class="ov-crosshair-hotkey">Ctrl+Shift+X</span>
+            <select class="input select small" data-crosshair-hotkey style="min-width:130px">
+              ${CROSSHAIR_HOTKEYS.map((hotkey) => `<option value="${hotkey}" ${crosshair.hotkey === hotkey ? "selected" : ""}>${hotkey}</option>`).join("")}
+            </select>
           </div>
         </div>
       </section>` : ""}
@@ -5899,14 +5960,14 @@ function wireEvents(): void {
     const crosshairShapeBtn = target.closest<HTMLElement>('[data-ov="crosshair-shape"]');
     if (crosshairShapeBtn?.dataset.shape) {
       commitCrosshair(
-        { ...loadCrosshair(), shape: crosshairShapeBtn.dataset.shape as CrosshairShape },
+        { ...activeCrosshair(), shape: crosshairShapeBtn.dataset.shape as CrosshairShape },
         true,
       );
       return;
     }
     const crosshairColorBtn = target.closest<HTMLElement>('[data-ov="crosshair-color"]');
     if (crosshairColorBtn?.dataset.color) {
-      commitCrosshair({ ...loadCrosshair(), color: crosshairColorBtn.dataset.color }, true);
+      commitCrosshair({ ...activeCrosshair(), color: crosshairColorBtn.dataset.color }, true);
       return;
     }
 
@@ -6275,6 +6336,13 @@ function wireEvents(): void {
   document.addEventListener("change", (event) => {
     const input = event.target as HTMLInputElement | null;
     if (!input) return;
+    if (input.dataset.crosshairHotkey !== undefined) {
+      commitCrosshair(
+        { ...activeCrosshair(), hotkey: input.value as CrosshairHotkey },
+        true,
+      );
+      return;
+    }
     const toggle = input.dataset.ovToggle;
     if (toggle === "enabled") {
       localStorage.setItem(ENABLED_KEY, String(input.checked));
@@ -6293,7 +6361,15 @@ function wireEvents(): void {
       localStorage.setItem(BATTERY_PERCENT_KEY, String(input.checked));
       paintBattery();
     } else if (toggle === "crosshair-enabled") {
-      commitCrosshair({ ...loadCrosshair(), enabled: input.checked });
+      commitCrosshair({ ...activeCrosshair(), enabled: input.checked });
+    } else if (toggle === "crosshair-profile") {
+      setCrosshairProfile(input.checked);
+      if (isWidgetOpen("settings")) {
+        const body = viewEl("settings");
+        const scroll = body?.scrollTop ?? 0;
+        renderSettings();
+        if (body) body.scrollTop = scroll;
+      }
     } else if (toggle === "ss-sound") {
       localStorage.setItem(SS_SOUND_KEY, String(input.checked));
     } else if (toggle === "ss-notify") {
@@ -6378,7 +6454,7 @@ function wireEvents(): void {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-size-val");
       if (badge) badge.textContent = `${Math.round(value)}px`;
-      const next = { ...loadCrosshair(), size: value };
+      const next = { ...activeCrosshair(), size: value };
       paintCrosshairPreview(next);
       scheduleCrosshairConfig(next);
       return;
@@ -6387,7 +6463,7 @@ function wireEvents(): void {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-gap-val");
       if (badge) badge.textContent = `${Math.round(value)}px`;
-      const next = { ...loadCrosshair(), gap: value };
+      const next = { ...activeCrosshair(), gap: value };
       paintCrosshairPreview(next);
       scheduleCrosshairConfig(next);
       return;
@@ -6396,7 +6472,7 @@ function wireEvents(): void {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-thickness-val");
       if (badge) badge.textContent = `${value.toFixed(1)}px`;
-      const next = { ...loadCrosshair(), thickness: value };
+      const next = { ...activeCrosshair(), thickness: value };
       paintCrosshairPreview(next);
       scheduleCrosshairConfig(next);
       return;
@@ -6405,7 +6481,7 @@ function wireEvents(): void {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-opacity-val");
       if (badge) badge.textContent = `${Math.round(value)}%`;
-      const next = { ...loadCrosshair(), opacity: value / 100 };
+      const next = { ...activeCrosshair(), opacity: value / 100 };
       paintCrosshairPreview(next);
       scheduleCrosshairConfig(next);
       return;
@@ -7147,7 +7223,7 @@ async function boot(): Promise<void> {
   // Keep the native crosshair in step with the saved settings. Visibility is
   // owned by the launcher boot and the Settings toggle, so a hotkey toggle-off
   // survives this page load.
-  applyCrosshairConfig(loadCrosshair());
+  applyCrosshairConfig(activeCrosshair());
   applyHudConfig();
 
   // A first open can be closed before `onOpen` runs. Tell Rust about the pins

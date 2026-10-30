@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "Прицел",
   "overlay.crosshairEnableTitle": "Прицел на экране",
   "overlay.crosshairEnableDesc": "Рисует безопасный внешний прицел поверх игры. Файлы игры не изменяются.",
+  "overlay.crosshairProfileTitle": "Профиль для игры",
+  "overlay.crosshairProfileDesc": "Хранить отдельные настройки прицела для этой игры.",
   "overlay.crosshairShapeTitle": "Форма",
   "overlay.crosshairShapeDesc": "Выберите прицел, подходящий игре.",
   "overlay.crosshairDot": "Точка",

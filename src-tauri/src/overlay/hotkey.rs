@@ -36,8 +36,6 @@ const VK_CONTROL: i32 = 0x11;
 const VK_ALT: i32 = 0x12;
 #[cfg(windows)]
 const VK_TAB: i32 = 0x09;
-#[cfg(windows)]
-const VK_X: i32 = 0x58;
 
 #[cfg(windows)]
 pub(crate) fn start(app: AppHandle) {
@@ -185,13 +183,9 @@ pub(crate) fn start(app: AppHandle) {
                     }
                 }
 
-                // Ctrl+Shift+X: the crosshair is an independent surface and
-                // works while the panel is open or closed.
-                let cross_down = !capturing
-                    && key_down(VK_CONTROL)
-                    && key_down(VK_SHIFT)
-                    && !key_down(VK_ALT)
-                    && key_down(VK_X);
+                // The crosshair is an independent surface and works while the
+                // panel is open or closed; its combination is user-configurable.
+                let cross_down = !capturing && crosshair::hotkey_down();
                 if cross_down != CROSSHAIR_DOWN.load(std::sync::atomic::Ordering::Relaxed) {
                     CROSSHAIR_DOWN.store(cross_down, std::sync::atomic::Ordering::Relaxed);
                     if cross_down {

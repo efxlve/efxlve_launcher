@@ -2003,6 +2003,8 @@
   "overlay.crosshairTitle": "क्रॉसहेयर",
   "overlay.crosshairEnableTitle": "स्क्रीन क्रॉसहेयर",
   "overlay.crosshairEnableDesc": "गेम पर एक सुरक्षित बाहरी क्रॉसहेयर बनाएं। गेम फ़ाइलों को छुआ नहीं जाता।",
+  "overlay.crosshairProfileTitle": "प्रति-गेम प्रोफ़ाइल",
+  "overlay.crosshairProfileDesc": "इस गेम के लिए अलग क्रॉसहेयर सेटिंग्स रखें।",
   "overlay.crosshairShapeTitle": "आकार",
   "overlay.crosshairShapeDesc": "गेम के अनुकूल रेटिकल चुनें।",
   "overlay.crosshairDot": "बिंदु",
