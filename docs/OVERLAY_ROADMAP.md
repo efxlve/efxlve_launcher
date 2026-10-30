@@ -1,11 +1,11 @@
 # In-Game Overlay — Product & Technical Roadmap
 
 The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
-notes, achievements, Spotify + SMTC music, a per-app audio mixer and Discord
-status. Controller-first navigation is in. ETW FPS is API-agnostic but needs the
-Windows "Performance Log Users" permission, so the overlay offers a one-time
-enable action and explains the sign-out. Discord voice read/write waits on the
-Discord app review noted below.
+notes, achievements, Spotify + SMTC music, a per-app audio mixer, an external
+crosshair and Discord status. Controller-first navigation is in. ETW FPS is
+API-agnostic but needs the Windows "Performance Log Users" permission, so the
+overlay offers a one-time enable action and explains the sign-out. Discord voice
+read/write waits on the Discord app review noted below.
 
 Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
 where only the pinned cards stay on screen as a click-through HUD and the game
@@ -37,6 +37,7 @@ architecture, the feature scope and the phased plan.
 - achievements: the game's tracked set (existing data)
 - music: Spotify/any player via Windows media controls
 - audio: per-app volume and mute on the default output device
+- crosshair: a safe external reticle at the centre of the game monitor
 - Discord: presence + voice channel widget
 - quick actions: store page, manage, session playtime, exit overlay
 
@@ -331,6 +332,21 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   order, and translations for the eight new keys (English values are in place for the
   other locales).
 
+### M10 — Tactical crosshair (built)
+
+- A small layered, click-through window at the centre of the game monitor
+  (`src-tauri/src/overlay/crosshair.rs`). Shapes: dot, cross, circle and T; colour,
+  size, centre gap, thickness and opacity. `Ctrl+Shift+X` toggles it, and the overlay
+  Settings tab owns the controls. No injection and no game files are touched.
+- The shape is software-rendered into a premultiplied BGRA DIB and pushed with
+  `UpdateLayeredWindow`; the dark outline keeps the reticle readable on bright scenes.
+  The window hides on game exit and service stop, and follows the game monitor every
+  couple of seconds.
+- Open: a per-game crosshair profile, a configurable hotkey, a live preview in
+  Settings, translations for the 21 new keys (English values are in place for the other
+  locales), and a field pass on exclusive fullscreen (external overlays cannot paint
+  there).
+
 ---
 
 ## 5. Risks & mitigations
@@ -340,6 +356,7 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 | Anti-cheat reactions to an external overlay | Low (no injection) | Per-game opt-out + blocklist; never inject/hook; document the model |
 | Transparent WebView2 + click-through limitation | Solved for the panel | `WS_EX_LAYERED` + `WS_EX_TRANSPARENT` + the `WM_NCHITTEST` subclass + child-window flags, proven by the toast and reused by ghost mode (`overlay/ghost.rs`). The layered bit is set before the first show; toggling it on a visible window can drop per-pixel alpha. |
 | Ghost HUD leaves inert controls visible | Medium | Pinned cards keep their body markup, so a music transport or a filter chip still paints while clicks go to the game. Hide those controls in ghost mode; per-widget ghost opacity is the follow-up. |
+| Crosshair hotkey collides with a game binding | Medium | `Ctrl+Shift+X` is fixed for v1; a configurable combination is on the M10 open list. |
 | Exclusive fullscreen renders no overlay | Medium | Detect and inform; recommend borderless; not a v1 blocker |
 | Focus stealing pauses some games | Medium | v1 takes focus (Game Bar model); per-game note; later explore `WS_EX_NOACTIVATE` + keyboard hook |
 | ETW consumer complexity (FPS) | Medium | M0 spike; PresentMon service fallback |

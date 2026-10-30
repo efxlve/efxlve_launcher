@@ -5992,6 +5992,81 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   text-align: center;
 }
 
+/* --- Crosshair settings --- */
+.ov-crosshair-colors {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-crosshair-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--swatch);
+  cursor: pointer;
+  transition: border-color var(--ease);
+}
+
+.ov-crosshair-swatch:hover {
+  border-color: var(--line-strong);
+}
+
+.ov-crosshair-swatch.active {
+  border-color: var(--text);
+}
+
+.ov-crosshair-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ov-crosshair-range input[type="range"] {
+  width: 120px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--surface-3);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.ov-crosshair-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-2);
+  cursor: pointer;
+  transition: background var(--ease);
+}
+
+.ov-crosshair-range input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--text);
+}
+
+.ov-crosshair-range span {
+  min-width: 38px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-crosshair-hotkey {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 1160px) {
   .ov-topbar { gap: 4px; }
   .ov-topbar-btn { padding: 0 8px; }

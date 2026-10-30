@@ -343,6 +343,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_browser_show` | `overlayBrowserShow({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_tabs` | `overlayBrowserTabs({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_clear_active_game` | `overlayClearActiveGame({ ... })` | `src-tauri/src/overlay/mod.rs` |
+| `overlay_crosshair_configure` | `overlayCrosshairConfigure({ ... })` | `src-tauri/src/overlay/crosshair.rs` |
+| `overlay_crosshair_set_visible` | `overlayCrosshairSetVisible({ ... })` | `src-tauri/src/overlay/crosshair.rs` |
 | `overlay_enable_fps` | `overlayEnableFps({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_flash_hint` | `overlayFlashHint({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_get_state` | `overlayGetState({ ... })` | `src-tauri/src/overlay/mod.rs` |

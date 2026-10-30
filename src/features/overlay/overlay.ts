@@ -50,6 +50,7 @@ import {
   rarityMultiplier,
 } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
+import { applyCrosshairConfig, loadCrosshair, saveCrosshair, setCrosshairVisible, type CrosshairConfig, type CrosshairShape } from "../../core/crosshair";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
 import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
@@ -228,6 +229,8 @@ let audioPollTimer: number | null = null;
 let audioHoldUntil = 0;
 const audioVolumeTimers = new Map<string, number>();
 let audioMasterTimer: number | null = null;
+/** Crosshair slider writes are coalesced: one native update per 50 ms. */
+let crosshairApplyTimer: number | null = null;
 /** The launcher's Connect receiver (the only source the overlay shows). */
 let spotifyEngineOn = false;
 let spotifyPaired = false;
@@ -5038,6 +5041,36 @@ function voiceDisplay(): { channel: VoiceChannel; people: VoiceParticipant[]; st
   return { channel: display.channel, people: display.people, stale: !live && !web };
 }
 /* 9. Settings View */
+/** Saves and pushes the crosshair settings. `repaint` is for the shape/colour
+ *  buttons; the sliders update their own badge without losing focus. */
+function commitCrosshair(next: CrosshairConfig, repaint = false): void {
+  if (crosshairApplyTimer !== null) {
+    window.clearTimeout(crosshairApplyTimer);
+    crosshairApplyTimer = null;
+  }
+  saveCrosshair(next);
+  applyCrosshairConfig(next);
+  setCrosshairVisible(next.enabled);
+  if (repaint && isWidgetOpen("settings")) {
+    const body = viewEl("settings");
+    const scroll = body?.scrollTop ?? 0;
+    renderSettings();
+    if (body) body.scrollTop = scroll;
+  }
+}
+
+/** Slider input: store immediately, but coalesce the native update so a drag
+ *  does not flood IPC. */
+function scheduleCrosshairConfig(next: CrosshairConfig): void {
+  saveCrosshair(next);
+  if (crosshairApplyTimer !== null) window.clearTimeout(crosshairApplyTimer);
+  crosshairApplyTimer = window.setTimeout(() => {
+    crosshairApplyTimer = null;
+    applyCrosshairConfig(next);
+    if (next.enabled) setCrosshairVisible(true);
+  }, 50);
+}
+
 function renderSettings(): void {
   const el = viewEl("settings");
   if (!el) return;
@@ -5055,6 +5088,7 @@ function renderSettings(): void {
   const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
   const hud = localStorage.getItem(HUD_KEY) === "true";
   const opacity = savedOpacity();
+  const crosshair = loadCrosshair();
   const disabled = isDisabledGame(context.appName);
   const disabledList = disabledGames();
   const hp = getHomepage();
@@ -5133,6 +5167,99 @@ function renderSettings(): void {
           </div>
         </div>
       </section>
+
+      <!-- Section: Crosshair -->
+      ${IS_WINDOWS ? `<section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("crosshair", 13)}
+          <span>${esc(t("overlay.crosshairTitle"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairEnableTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairEnableDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="crosshair-enabled" ${crosshair.enabled ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairShapeTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairShapeDesc"))}</div>
+            </div>
+            <div class="seg" role="radiogroup">
+              ${([["dot", "overlay.crosshairDot"], ["cross", "overlay.crosshairCross"], ["circle", "overlay.crosshairCircle"], ["t", "overlay.crosshairT"]] as const)
+                .map(([value, key]) => `<button class="${crosshair.shape === value ? "active" : ""}" data-ov="crosshair-shape" data-shape="${value}">${esc(t(key))}</button>`)
+                .join("")}
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairColorTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairColorDesc"))}</div>
+            </div>
+            <div class="ov-crosshair-colors">
+              ${["#ffffff", "#22c55e", "#ef4444", "#38bdf8", "#f59e0b", "#e879f9"]
+                .map((color) => `<button class="ov-crosshair-swatch${crosshair.color.toLowerCase() === color ? " active" : ""}" data-ov="crosshair-color" data-color="${color}" style="--swatch:${color}" title="${color}"></button>`)
+                .join("")}
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairSizeTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairSizeDesc"))}</div>
+            </div>
+            <div class="ov-crosshair-range">
+              <input type="range" min="8" max="64" step="1" value="${crosshair.size}" data-crosshair-size />
+              <span id="ov-crosshair-size-val">${Math.round(crosshair.size)}px</span>
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairGapTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairGapDesc"))}</div>
+            </div>
+            <div class="ov-crosshair-range">
+              <input type="range" min="0" max="16" step="1" value="${crosshair.gap}" data-crosshair-gap />
+              <span id="ov-crosshair-gap-val">${Math.round(crosshair.gap)}px</span>
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairThicknessTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairThicknessDesc"))}</div>
+            </div>
+            <div class="ov-crosshair-range">
+              <input type="range" min="1" max="5" step="0.5" value="${crosshair.thickness}" data-crosshair-thickness />
+              <span id="ov-crosshair-thickness-val">${crosshair.thickness.toFixed(1)}px</span>
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairOpacityTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairOpacityDesc"))}</div>
+            </div>
+            <div class="ov-crosshair-range">
+              <input type="range" min="10" max="100" step="1" value="${Math.round(crosshair.opacity * 100)}" data-crosshair-opacity />
+              <span id="ov-crosshair-opacity-val">${Math.round(crosshair.opacity * 100)}%</span>
+            </div>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("overlay.crosshairHotkeyTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("overlay.crosshairHotkeyDesc"))}</div>
+            </div>
+            <span class="ov-crosshair-hotkey">Ctrl+Shift+X</span>
+          </div>
+        </div>
+      </section>` : ""}
 
       <!-- Section: Screenshots (the launcher's settings, kept in step) -->
       <section class="ov-settings-section">
@@ -5471,6 +5598,21 @@ function wireEvents(): void {
     }
     if (target.closest<HTMLElement>("[data-audio-refresh]")) {
       void refreshAudio(true);
+      return;
+    }
+
+    // Crosshair shape and colour swatches.
+    const crosshairShapeBtn = target.closest<HTMLElement>('[data-ov="crosshair-shape"]');
+    if (crosshairShapeBtn?.dataset.shape) {
+      commitCrosshair(
+        { ...loadCrosshair(), shape: crosshairShapeBtn.dataset.shape as CrosshairShape },
+        true,
+      );
+      return;
+    }
+    const crosshairColorBtn = target.closest<HTMLElement>('[data-ov="crosshair-color"]');
+    if (crosshairColorBtn?.dataset.color) {
+      commitCrosshair({ ...loadCrosshair(), color: crosshairColorBtn.dataset.color }, true);
       return;
     }
 
@@ -5852,6 +5994,8 @@ function wireEvents(): void {
     } else if (toggle === "battery-percent") {
       localStorage.setItem(BATTERY_PERCENT_KEY, String(input.checked));
       paintBattery();
+    } else if (toggle === "crosshair-enabled") {
+      commitCrosshair({ ...loadCrosshair(), enabled: input.checked });
     } else if (toggle === "ss-sound") {
       localStorage.setItem(SS_SOUND_KEY, String(input.checked));
     } else if (toggle === "ss-notify") {
@@ -5932,6 +6076,34 @@ function wireEvents(): void {
       return;
     }
     const input = event.target as HTMLInputElement | null;
+    if (input?.dataset.crosshairSize !== undefined) {
+      const value = Number(input.value);
+      const badge = document.getElementById("ov-crosshair-size-val");
+      if (badge) badge.textContent = `${Math.round(value)}px`;
+      scheduleCrosshairConfig({ ...loadCrosshair(), size: value });
+      return;
+    }
+    if (input?.dataset.crosshairGap !== undefined) {
+      const value = Number(input.value);
+      const badge = document.getElementById("ov-crosshair-gap-val");
+      if (badge) badge.textContent = `${Math.round(value)}px`;
+      scheduleCrosshairConfig({ ...loadCrosshair(), gap: value });
+      return;
+    }
+    if (input?.dataset.crosshairThickness !== undefined) {
+      const value = Number(input.value);
+      const badge = document.getElementById("ov-crosshair-thickness-val");
+      if (badge) badge.textContent = `${value.toFixed(1)}px`;
+      scheduleCrosshairConfig({ ...loadCrosshair(), thickness: value });
+      return;
+    }
+    if (input?.dataset.crosshairOpacity !== undefined) {
+      const value = Number(input.value);
+      const badge = document.getElementById("ov-crosshair-opacity-val");
+      if (badge) badge.textContent = `${Math.round(value)}%`;
+      scheduleCrosshairConfig({ ...loadCrosshair(), opacity: value / 100 });
+      return;
+    }
     if (input?.dataset.audioVolume !== undefined) {
       const id = input.dataset.audioVolume;
       const volume = Number(input.value) / 100;
@@ -6665,6 +6837,11 @@ async function boot(): Promise<void> {
   // Apply the saved opacity before the first paint, not only when a game opens
   // the overlay, so the window never flashes the default scrim.
   applyOpacity(savedOpacity());
+
+  // Keep the native crosshair in step with the saved settings. Visibility is
+  // owned by the launcher boot and the Settings toggle, so a hotkey toggle-off
+  // survives this page load.
+  applyCrosshairConfig(loadCrosshair());
 
   // A first open can be closed before `onOpen` runs. Tell Rust about the pins
   // the page remembers now, so that close already knows a ghost HUD is wanted.

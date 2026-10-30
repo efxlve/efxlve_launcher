@@ -52,6 +52,7 @@ import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
 import { applyWinbarAppIcon } from "./core/app-icon";
 import { applyUiScale } from "./core/game-status";
+import { applyCrosshairConfig, loadCrosshair, setCrosshairVisible } from "./core/crosshair";
 
 applySurface(S.surface, false);
 // The native achievement card follows the saved theme mode. The palette needs
@@ -225,3 +226,10 @@ function closeAllModals(): void {
 }
 
 void initApp({ render, scheduleRender, closeAllModals });
+
+// The crosshair lives in a native window and outlives the overlay page: push
+// the saved settings once at launcher boot so the hotkey works before the panel
+// is ever opened.
+const crosshair = loadCrosshair();
+applyCrosshairConfig(crosshair);
+if (crosshair.enabled) setCrosshairVisible(true);

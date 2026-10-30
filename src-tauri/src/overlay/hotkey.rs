@@ -16,7 +16,7 @@ use std::time::Duration;
 use tauri::AppHandle;
 
 #[cfg(windows)]
-use super::{hide, hide_now, show, STATE};
+use super::{crosshair, hide, hide_now, show, STATE};
 
 /// Linux/macOS: the overlay has no global hotkey, so there is no thread to run.
 #[cfg(not(windows))]
@@ -36,6 +36,8 @@ const VK_CONTROL: i32 = 0x11;
 const VK_ALT: i32 = 0x12;
 #[cfg(windows)]
 const VK_TAB: i32 = 0x09;
+#[cfg(windows)]
+const VK_X: i32 = 0x58;
 
 #[cfg(windows)]
 pub(crate) fn start(app: AppHandle) {
@@ -107,8 +109,9 @@ pub(crate) fn start(app: AppHandle) {
                         gone_ticks = gone_ticks.saturating_add(1);
                         if gone_ticks >= 75 {
                             gone_ticks = 0;
-                            // A dead game ends the ghost HUD; it must not float
-                            // over the desktop.
+                            // A dead game ends the ghost HUD and the crosshair;
+                            // they must not float over the desktop.
+                            crosshair::hide_window();
                             hide_now(&app);
                         }
                     }
@@ -176,6 +179,24 @@ pub(crate) fn start(app: AppHandle) {
                             show(&app);
                         }
                     }
+                }
+
+                // Ctrl+Shift+X: the crosshair is an independent surface and
+                // works while the panel is open or closed.
+                let cross_down = !capturing
+                    && key_down(VK_CONTROL)
+                    && key_down(VK_SHIFT)
+                    && !key_down(VK_ALT)
+                    && key_down(VK_X);
+                if cross_down != CROSSHAIR_DOWN.load(std::sync::atomic::Ordering::Relaxed) {
+                    CROSSHAIR_DOWN.store(cross_down, std::sync::atomic::Ordering::Relaxed);
+                    if cross_down {
+                        crosshair::toggle();
+                    }
+                }
+                // The game window can move monitors; recentre every ~2 s.
+                if tick % 100 == 0 {
+                    crosshair::reposition();
                 }
             }
         }
@@ -246,6 +267,9 @@ fn set_hotkey_down(down: bool) {
 
 #[cfg(windows)]
 static HOTKEY_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(windows)]
+static CROSSHAIR_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 #[cfg(windows)]
 #[repr(C)]

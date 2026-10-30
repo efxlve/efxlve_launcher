@@ -16,6 +16,7 @@
 
 pub mod audio;
 pub mod browser;
+pub mod crosshair;
 pub mod ghost;
 pub mod hotkey;
 pub mod hud;
@@ -425,6 +426,9 @@ pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, 
                 hide_now(&app);
             }
         }
+        // A game start is the moment the saved crosshair preference becomes
+        // visible again.
+        crosshair::restore();
         // Warm the toast page while the game runs: the first card then only
         // has to show a window, not boot a WebView2 renderer.
         let options = crate::steam::achievement_notification_options(&app);
@@ -451,8 +455,10 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
     };
     if cleared {
         crate::overlay::toast::release(&app);
-        // The game is gone: a ghost HUD would float over the desktop. An open
-        // panel stays for the launcher context; the hotkey watch closes it.
+        // The game is gone: a ghost HUD or crosshair would float over the
+        // desktop. An open panel stays for the launcher context; the hotkey
+        // watch closes it.
+        crosshair::hide_window();
         let ghost = STATE.lock().map(|s| s.ghost).unwrap_or(false);
         if ghost {
             hide_now(&app);
@@ -469,8 +475,9 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
 /// deadlock the whole app there.
 pub(crate) fn teardown(app: &AppHandle) {
     PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
-    // A stop is a real stop: never leave a ghost HUD behind.
+    // A stop is a real stop: never leave a ghost HUD or a crosshair behind.
     hide_now(app);
+    crosshair::set_visible(false);
     browser::close_window(app);
     hud::hide();
     metrics::stop();
