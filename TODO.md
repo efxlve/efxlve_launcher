@@ -107,9 +107,8 @@ The Tracker widget now pins up to three locked achievements and keeps them in
 ghost mode (`src/features/overlay/overlay.ts`). Validate on a real game: track
 from the achievement detail, pin the tracker, close the panel, and confirm the
 progress bar survives; unlock one and confirm it repaints. Then add live
-progress polling while pinned, a track button on list rows, per-game presets,
-and translations for the seven new keys (English values are in place for the
-other locales).
+progress polling while pinned, per-game tracker presets, and translations for
+the seven new keys (English values are in place for the other locales).
 
 ## Notes image field pass
 

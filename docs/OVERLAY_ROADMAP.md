@@ -364,9 +364,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - The list is keyed by the active game and stored in `efxlve-overlay-ach-tracker`; the
   Steam unlock event repaints it in place. The achievements data is the same store-
   agnostic payload the Achievements tab already loads.
-- Open: live progress polling while the tracker is pinned, a track button on list rows,
-  per-game tracker presets, and translations for the seven new keys (English values are
-  in place for the other locales).
+- Open: live progress polling while the tracker is pinned, per-game tracker presets,
+  and translations for the seven new keys (English values are in place for the other
+  locales).
 
 ### M12 — Rich notes: pasted images (built)
 

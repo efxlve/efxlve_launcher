@@ -2698,7 +2698,12 @@ function renderAchList(data: AchievementsData): string {
       const masked = achMasked(item);
       const rarity = achievementRarity(item);
       const progress = achievementProgress(item);
-      return `<button type="button" class="ov-ach-row${unlocked ? " unlocked" : ""}" data-ov="ach-open" data-ach="${esc(item.name)}" data-nav-row>
+      const tracked = isAchievementTracked(item.name);
+      const trackButton =
+        !unlocked && !masked
+          ? `<button type="button" class="ov-ach-row-track${tracked ? " active" : ""}" data-ov="ach-track" data-ach="${esc(item.name)}" title="${esc(tracked ? t("overlay.trackerUntrack") : t("overlay.trackerTrack"))}">${icon("pin", 11)}</button>`
+          : "";
+      return `<div class="ov-ach-row${unlocked ? " unlocked" : ""}" data-ov="ach-open" data-ach="${esc(item.name)}" data-nav-row role="button" tabindex="0">
         ${item.icon_link && !masked ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
         <div class="ov-ach-body">
           <div class="ov-ach-name">${esc(masked ? t("ach.hiddenName") : achDisplayName(item))}</div>
@@ -2710,6 +2715,7 @@ function renderAchList(data: AchievementsData): string {
           }
         </div>
         <div class="ov-ach-side">
+          ${trackButton}
           ${rarity != null ? `<span class="ov-ach-rarity tabular-nums">%${fmtDecimal1(rarity)}</span>` : ""}
           ${
             item.user_state
@@ -2722,7 +2728,7 @@ function renderAchList(data: AchievementsData): string {
               : `<span class="ov-ach-locked" title="${esc(t("ach.locked"))}">${icon("lock", 11)}</span>`
           }
         </div>
-      </button>`;
+      </div>`;
     })
     .join("");
 
