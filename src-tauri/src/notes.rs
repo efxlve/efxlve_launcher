@@ -167,7 +167,20 @@ fn normalize_images(images: Vec<String>) -> Vec<String> {
         }
         let lower = value.to_ascii_lowercase();
         let allowed = ["data:image/png;base64,", "data:image/jpeg;base64,", "data:image/webp;base64,", "data:image/gif;base64,"];
-        if !allowed.iter().any(|prefix| lower.starts_with(prefix)) {
+        let data_url = allowed.iter().any(|prefix| lower.starts_with(prefix));
+        let stored_path = value.len() <= 1024
+            && std::path::Path::new(value).is_absolute()
+            && std::path::Path::new(value)
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .map(|extension| {
+                    matches!(
+                        extension.to_ascii_lowercase().as_str(),
+                        "png" | "jpg" | "jpeg" | "webp" | "gif"
+                    )
+                })
+                .unwrap_or(false);
+        if !data_url && !stored_path {
             continue;
         }
         if out.iter().any(|existing| existing == value) {
@@ -282,6 +295,85 @@ fn notes_path(app: &AppHandle) -> PathBuf {
         .join("notes.json")
 }
 
+/// Pasted images live beside `notes.json`; the note only keeps their path.
+fn note_image_dir(app: &AppHandle) -> PathBuf {
+    app.path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("note-images")
+}
+
+fn image_extension(mime: &str) -> Option<&'static str> {
+    match mime {
+        "image/png" => Some("png"),
+        "image/jpeg" | "image/jpg" => Some("jpg"),
+        "image/webp" => Some("webp"),
+        "image/gif" => Some("gif"),
+        _ => None,
+    }
+}
+
+/// Writes one compressed data URL to the note image folder and returns its
+/// absolute path. Existing files are reused by name, so a repeated save does
+/// not grow the folder.
+fn store_image(app: &AppHandle, value: &str) -> Result<String, String> {
+    let value = value.trim();
+    if !value.starts_with("data:image/") {
+        let path = PathBuf::from(value);
+        let dir = note_image_dir(app);
+        let canonical = path.canonicalize().map_err(|_| "note image is missing".to_string())?;
+        let root = dir.canonicalize().unwrap_or(dir);
+        if !canonical.starts_with(&root) {
+            return Err("note image is outside the notes folder".to_string());
+        }
+        return Ok(canonical.to_string_lossy().to_string());
+    }
+    let (header, payload) = value
+        .split_once(";base64,")
+        .ok_or_else(|| "note image is not base64".to_string())?;
+    let mime = header.trim_start_matches("data:");
+    let extension = image_extension(mime).ok_or_else(|| "unsupported note image".to_string())?;
+    if payload.len() > MAX_IMAGE_DATA {
+        return Err("note image is too large".to_string());
+    }
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(payload)
+        .map_err(|_| "note image could not be decoded".to_string())?;
+    let dir = note_image_dir(app);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let name = format!(
+        "{:x}-{:x}.{extension}",
+        now_ms(),
+        NEXT_ID.fetch_add(1, Ordering::Relaxed)
+    );
+    let path = dir.join(name);
+    std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+/// Converts every data URL in the file to a file path. Returns whether anything
+/// changed so the caller can write the migrated file once.
+fn migrate_images(app: &AppHandle, file: &mut NotesFile) -> bool {
+    let mut changed = false;
+    for note in &mut file.notes {
+        for image in &mut note.images {
+            if image.starts_with("data:image/") {
+                if let Ok(path) = store_image(app, image) {
+                    *image = path;
+                    changed = true;
+                }
+            }
+        }
+    }
+    changed
+}
+
+#[tauri::command]
+pub fn notes_store_image(app: AppHandle, data_url: String) -> Result<String, String> {
+    store_image(&app, &data_url)
+}
+
 fn read_notes(app: &AppHandle) -> NotesFile {
     std::fs::read_to_string(notes_path(app))
         .ok()
@@ -308,7 +400,11 @@ fn write_notes(app: &AppHandle, file: &NotesFile) -> Result<(), String> {
 /// and sort their own view of this.
 #[tauri::command]
 pub fn notes_list(app: AppHandle) -> NotesFile {
-    read_notes(&app)
+    let mut file = read_notes(&app);
+    if migrate_images(&app, &mut file) {
+        let _ = write_notes(&app, &file);
+    }
+    file
 }
 
 /// Creates (`id` empty) or updates one note.
@@ -327,6 +423,7 @@ pub fn notes_save(
     images: Option<Vec<String>>,
 ) -> Result<Note, String> {
     let mut file = read_notes(&app);
+    let _ = migrate_images(&app, &mut file);
     let input = NoteInput {
         id,
         scope,
@@ -337,7 +434,11 @@ pub fn notes_save(
         achievement: achievement.unwrap_or_default(),
         guide_url: guide_url.unwrap_or_default(),
         guide_urls: guide_urls.unwrap_or_default(),
-        images: images.unwrap_or_default(),
+        images: images
+            .unwrap_or_default()
+            .into_iter()
+            .map(|image| store_image(&app, &image).unwrap_or(image))
+            .collect(),
     };
     let note = upsert(&mut file, input, now_ms(), NEXT_ID.fetch_add(1, Ordering::Relaxed))?;
     write_notes(&app, &file)?;
@@ -364,6 +465,7 @@ pub fn notes_import(app: AppHandle, notes: Vec<NoteInput>) -> Result<u32, String
     }
     let mut seq = NEXT_ID.fetch_add(1, Ordering::Relaxed);
     let count = import_legacy(&mut file, notes, now_ms(), &mut seq)?;
+    let _ = migrate_images(&app, &mut file);
     write_notes(&app, &file)?;
     Ok(count)
 }
@@ -420,6 +522,7 @@ pub fn notes_import_text(app: AppHandle, json: String) -> Result<u32, String> {
     let mut file = read_notes(&app);
     let mut seq = NEXT_ID.fetch_add(1, Ordering::Relaxed);
     let count = merge_import(&mut file, parsed.notes, now_ms(), &mut seq)?;
+    let _ = migrate_images(&app, &mut file);
     write_notes(&app, &file)?;
     Ok(count)
 }
@@ -716,6 +819,18 @@ mod tests {
         let markdown = notes_to_markdown(&file);
         assert!(markdown.contains("Guide: https://example.com/guide"));
         assert!(markdown.contains("Guide: https://youtube.com/watch?v=1"));
+    }
+
+    #[test]
+    fn a_stored_image_path_survives_normalization() {
+        let path = std::env::temp_dir()
+            .join("efxlve-note-image.png")
+            .to_string_lossy()
+            .to_string();
+        let images = normalize_images(vec![path.clone()]);
+        assert_eq!(images, vec![path]);
+        assert_eq!(image_extension("image/jpeg"), Some("jpg"));
+        assert_eq!(image_extension("image/svg+xml"), None);
     }
 
     #[test]

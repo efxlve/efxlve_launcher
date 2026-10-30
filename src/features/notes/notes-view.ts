@@ -24,6 +24,7 @@ import {
   onNotesChanged,
   saveNote,
   sortNotes,
+  storeNoteImage,
   type Note,
 } from "./notes-client";
 import { notePreview, renderMarkdownLite, scopeTail, toggleChecklist } from "./markdown";
@@ -520,7 +521,7 @@ async function insertLauncherImage(file: File): Promise<void> {
   const textarea = document.getElementById("notes-body") as HTMLTextAreaElement | null;
   if (!textarea) return;
   const index = draftImages.length;
-  draftImages.push(dataUrl);
+  draftImages.push(await storeNoteImage(dataUrl).catch(() => dataUrl));
   const marker = `![${t("notes.imageAlt")}](note-image:${index})`;
   const start = textarea.selectionStart ?? draftBody.length;
   const end = textarea.selectionEnd ?? start;

@@ -2,11 +2,24 @@
  * Pasted note images: one compression path for the overlay and the launcher.
  *
  * The note body keeps a short `![alt](note-image:N)` marker; the compressed
- * data URL lives in the note's `images` array. 150k characters keeps three
- * images inside the notes file and under the Rust cap.
+ * data URL is written to the app data `note-images` folder by Rust, and the
+ * note stores that absolute path. `noteImageSrc` turns a stored path back into
+ * an asset URL for the markdown preview.
  */
 
+import { convertFileSrc } from "@tauri-apps/api/core";
+
 export const MAX_NOTE_IMAGES = 3;
+
+/** A stored path becomes an asset URL; a pre-migration data URL passes through. */
+export function noteImageSrc(value: string): string {
+  if (!value || value.startsWith("data:")) return value;
+  try {
+    return convertFileSrc(value);
+  } catch {
+    return value;
+  }
+}
 
 function readImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

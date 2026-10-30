@@ -2252,6 +2252,7 @@ fn main() {
             cloud_backup::commands::profile_cloud_restore,
             notes::notes_list,
             notes::notes_save,
+            notes::notes_store_image,
             notes::notes_delete,
             notes::notes_import,
             notes::notes_import_text,

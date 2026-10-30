@@ -12,9 +12,9 @@ import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { toast } from "../../core/toast";
-import { LAUNCHER_SCOPE, cachedNotes, deleteNote, loadNotes, noteGuideUrls, notesFontSize, saveNote, setNotesFontSize, sortNotes, type Note } from "./notes-client";
+import { LAUNCHER_SCOPE, cachedNotes, deleteNote, loadNotes, noteGuideUrls, notesFontSize, saveNote, setNotesFontSize, sortNotes, storeNoteImage, type Note } from "./notes-client";
 import { notePreview, renderMarkdownLite, toggleChecklist } from "./markdown";
-import { MAX_NOTE_IMAGES, clipboardImage, compressPastedImage } from "./note-image";
+import { MAX_NOTE_IMAGES, clipboardImage, compressPastedImage, noteImageSrc } from "./note-image";
 
 let scope = LAUNCHER_SCOPE;
 let loadedOnce = false;
@@ -96,7 +96,7 @@ function editorHtml(): string {
           : `<textarea id="ov-note-body" class="ov-note-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draftBody)}</textarea>
              ${draftImages.length > 0 ? `<div class="ov-note-images">${draftImages.map((src, index) => `
                <div class="ov-note-image">
-                 <img src="${src}" alt="" />
+                 <img src="${noteImageSrc(src)}" alt="" />
                  <div class="ov-note-image-actions">
                    <button type="button" data-ov="ov-note-image-replace" data-index="${index}" title="${esc(t("notes.imageReplace"))}">${icon("refresh", 10)}</button>
                    <button type="button" data-ov="ov-note-image-remove" data-index="${index}" title="${esc(t("notes.imageRemove"))}">${icon("x", 10)}</button>
@@ -293,7 +293,7 @@ async function insertPastedImage(file: File): Promise<void> {
   const textarea = document.getElementById("ov-note-body") as HTMLTextAreaElement | null;
   if (!textarea) return;
   const index = draftImages.length;
-  draftImages.push(dataUrl);
+  draftImages.push(await storeNoteImage(dataUrl).catch(() => dataUrl));
   const marker = `![${t("notes.imageAlt")}](note-image:${index})`;
   const start = textarea.selectionStart ?? draftBody.length;
   const end = textarea.selectionEnd ?? start;

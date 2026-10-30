@@ -374,16 +374,15 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 ### M12 — Rich notes: pasted images (built)
 
 - `Ctrl+V` in the overlay note body compresses the clipboard image (max 960 px, JPEG)
-  and stores it in the note's `images` array; the body keeps a short
-  `![alt](note-image:N)` marker. The markdown preview renders it in the overlay, the
-  launcher Notes page and the game drawer. Checklists already come from the markdown
-  subset and are clickable in the preview.
-- Up to three images per note, each at most 150k characters on the editor side; Rust
-  re-validates the data URL and caps it at 160k. The markdown export strips the markers
-  because a plain file cannot carry the data URLs.
+  and Rust writes it under `<app data>/note-images`; the body keeps a short
+  `![alt](note-image:N)` marker and the note keeps the file path. The markdown preview
+  renders it in the overlay, the launcher Notes page and the game drawer. Checklists
+  already come from the markdown subset and are clickable in the preview.
+- Up to three images per note. The note keeps paths, not data URLs; an older notes file
+  with data URLs migrates once on read. The markdown export strips the markers.
 - The editor lists the pasted images with replace and remove actions; removing one
   renumbers the markers that follow it.
-- Open: file-backed image storage for large maps.
+- Open: an image remove/replace action in the launcher editor (the overlay has one).
 
 ### M13 — Picture-in-picture guide player (built)
 

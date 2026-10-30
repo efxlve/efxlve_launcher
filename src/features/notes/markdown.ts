@@ -8,6 +8,7 @@
  */
 
 import { esc } from "../../core/utils";
+import { noteImageSrc } from "./note-image";
 
 export interface MarkdownResult {
   html: string;
@@ -31,9 +32,12 @@ function inline(raw: string, images: string[]): string {
   text = text.replace(/`([^`]+)`/g, (_, code: string) => stash(`<code>${code}</code>`));
   text = text.replace(/!\[([^\]]*)\]\(note-image:(\d+)\)/g, (_, alt: string, index: string) => {
     const data = images[Number(index)];
-    if (!data || !/^data:image\/(png|jpeg|webp|gif);base64,/i.test(data)) return "";
+    if (!data) return "";
+    const dataUrl = /^data:image\/(png|jpeg|webp|gif);base64,/i.test(data);
+    const storedPath = data.length <= 1024 && (/^[A-Za-z]:[\\/]/.test(data) || data.startsWith("/"));
+    if (!dataUrl && !storedPath) return "";
     return stash(
-      `<img class="notes-inline-image" src="${esc(data)}" alt="${alt}" loading="lazy" />`,
+      `<img class="notes-inline-image" src="${esc(noteImageSrc(data))}" alt="${alt}" loading="lazy" />`,
     );
   });
   text = text.replace(

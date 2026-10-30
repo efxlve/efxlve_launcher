@@ -128,6 +128,11 @@ export function notesForScope(scope: string): Note[] {
   return sortNotes(cachedNotes().filter((note) => note.scope === scope));
 }
 
+/** Writes a pasted data URL under the app data note-images folder. */
+export async function storeNoteImage(dataUrl: string): Promise<string> {
+  return invoke<string>("notes_store_image", { dataUrl });
+}
+
 export async function saveNote(input: NoteInput): Promise<Note | null> {
   try {
     const note = await invoke<Note>("notes_save", {
