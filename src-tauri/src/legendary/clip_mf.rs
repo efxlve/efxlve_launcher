@@ -730,6 +730,21 @@ pub fn duration_secs(_path: &std::path::Path) -> Option<u64> {
     None
 }
 
+#[cfg(not(windows))]
+pub fn trim(
+    _source: &std::path::Path,
+    _target: &std::path::Path,
+    _start: f64,
+    _end: f64,
+) -> Result<(), String> {
+    Err("Media Foundation is Windows only".to_string())
+}
+
+#[cfg(not(windows))]
+pub fn join(_sources: &[std::path::PathBuf], _target: &std::path::Path) -> Result<(), String> {
+    Err("Media Foundation is Windows only".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(windows)]
