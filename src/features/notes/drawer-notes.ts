@@ -20,11 +20,12 @@ interface DrawerDraft {
   body: string;
   pinned: boolean;
   color: string;
+  images: string[];
 }
 
 let listScope: string | null = null;
 let editing = false;
-let draft: DrawerDraft = { title: "", body: "", pinned: false, color: "" };
+let draft: DrawerDraft = { title: "", body: "", pinned: false, color: "", images: [] };
 let mode: "edit" | "preview" = "edit";
 let deleteArmed = false;
 let saveTimer: number | null = null;
@@ -107,7 +108,7 @@ function editorHtml(): string {
       }
       ${
         preview
-          ? `<div class="notes-preview">${renderMarkdownLite(draft.body).html || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
+          ? `<div class="notes-preview">${renderMarkdownLite(draft.body, draft.images).html || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
           : `<textarea id="drawer-note-body" class="notes-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draft.body)}</textarea>`
       }
       ${
@@ -183,6 +184,7 @@ async function flushSave(): Promise<void> {
     achievement: existing?.achievement ?? "",
     guideUrl: "",
     guideUrls: existing ? noteGuideUrls(existing) : [],
+    images: draft.images,
   });
   if (note) draft.id = note.id;
   paintSaveState();
@@ -201,7 +203,7 @@ function queueSave(): void {
   switch (act) {
     case "drawer-note-new":
       editing = true;
-      draft = { title: "", body: "", pinned: false, color: "" };
+      draft = { title: "", body: "", pinned: false, color: "", images: [] };
       mode = "edit";
       deleteArmed = false;
       repaint();
@@ -211,7 +213,7 @@ function queueSave(): void {
       const note = cachedNotes().find((item) => item.id === (el.dataset.id ?? ""));
       if (!note) return true;
       editing = true;
-      draft = { id: note.id, title: note.title, body: note.body, pinned: note.pinned, color: note.color };
+      draft = { id: note.id, title: note.title, body: note.body, pinned: note.pinned, color: note.color, images: [...(note.images ?? [])] };
       mode = "edit";
       deleteArmed = false;
       repaint();
@@ -246,7 +248,7 @@ function queueSave(): void {
       if (draft.id) void deleteNote(draft.id);
       editing = false;
       deleteArmed = false;
-      draft = { title: "", body: "", pinned: false, color: "" };
+      draft = { title: "", body: "", pinned: false, color: "", images: [] };
       repaint();
       if (listScope) refreshTabButton(listScope);
       return true;

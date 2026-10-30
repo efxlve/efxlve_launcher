@@ -46,6 +46,8 @@ export interface Note {
   guideUrl: string;
   /** Additional guide, video or article links. */
   guideUrls: string[];
+  /** Inline images pasted into the body, as data URLs. */
+  images?: string[];
   /** Unix milliseconds. */
   created: number;
   updated: number;
@@ -61,6 +63,7 @@ export interface NoteInput {
   achievement?: string;
   guideUrl?: string;
   guideUrls?: string[];
+  images?: string[];
 }
 
 /** Old notes kept a single guide link in `guideUrl`; surface both as one list. */
@@ -137,6 +140,7 @@ export async function saveNote(input: NoteInput): Promise<Note | null> {
       achievement: input.achievement ?? "",
       guideUrl: input.guideUrl ?? "",
       guideUrls: input.guideUrls ?? [],
+      images: input.images ?? [],
     });
     if (note) {
       cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];

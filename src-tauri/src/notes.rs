@@ -17,6 +17,8 @@ const MAX_NOTES: usize = 5000;
 const MAX_SCOPE: usize = 200;
 const MAX_TITLE: usize = 300;
 const MAX_BODY: usize = 200_000;
+const MAX_IMAGES: usize = 3;
+const MAX_IMAGE_DATA: usize = 160_000;
 const MAX_ACHIEVEMENT: usize = 200;
 const MAX_GUIDE_URL: usize = 2048;
 const MAX_GUIDE_LINKS: usize = 20;
@@ -52,6 +54,10 @@ pub struct Note {
     /// Additional guide, video or article links for the achievement note.
     #[serde(default)]
     pub guide_urls: Vec<String>,
+    /// Inline images pasted into the body, as data URLs. The body refers to
+    /// them by index (`![alt](note-image:0)`), so the text stays readable.
+    #[serde(default)]
+    pub images: Vec<String>,
     /// Unix milliseconds.
     #[serde(default)]
     pub created: u64,
@@ -107,6 +113,8 @@ pub struct NoteInput {
     pub guide_url: String,
     #[serde(default)]
     pub guide_urls: Vec<String>,
+    #[serde(default)]
+    pub images: Vec<String>,
 }
 
 fn now_ms() -> u64 {
@@ -147,6 +155,32 @@ fn normalize_guide_urls(urls: Vec<String>) -> Vec<String> {
     out
 }
 
+/// Inline images are data URLs the editor already compressed. Keep only the
+/// four formats the markdown renderer accepts, cap the count and the payload,
+/// and drop duplicates. A note is still valid without any image.
+fn normalize_images(images: Vec<String>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for image in images {
+        let value = image.trim();
+        if value.is_empty() || value.len() > MAX_IMAGE_DATA {
+            continue;
+        }
+        let lower = value.to_ascii_lowercase();
+        let allowed = ["data:image/png;base64,", "data:image/jpeg;base64,", "data:image/webp;base64,", "data:image/gif;base64,"];
+        if !allowed.iter().any(|prefix| lower.starts_with(prefix)) {
+            continue;
+        }
+        if out.iter().any(|existing| existing == value) {
+            continue;
+        }
+        out.push(value.to_string());
+        if out.len() >= MAX_IMAGES {
+            break;
+        }
+    }
+    out
+}
+
 /// Creates a note or updates the one the id names. The returned note is the
 /// stored copy, timestamps and id included.
 fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<Note, String> {
@@ -161,6 +195,7 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
         .collect();
     let guide_url: String = input.guide_url.trim().chars().take(MAX_GUIDE_URL).collect();
     let guide_urls = normalize_guide_urls(input.guide_urls);
+    let images = normalize_images(input.images);
     if let Some(id) = input.id.as_deref().map(str::trim).filter(|id| !id.is_empty()) {
         if let Some(existing) = file.notes.iter_mut().find(|note| note.id == id) {
             existing.scope = scope;
@@ -171,6 +206,7 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
             existing.achievement = achievement;
             existing.guide_url = guide_url;
             existing.guide_urls = guide_urls;
+            existing.images = images;
             existing.updated = now;
             return Ok(existing.clone());
         }
@@ -188,6 +224,7 @@ fn upsert(file: &mut NotesFile, input: NoteInput, now: u64, seq: u64) -> Result<
         achievement,
         guide_url,
         guide_urls,
+        images,
         created: now,
         updated: now,
     };
@@ -287,6 +324,7 @@ pub fn notes_save(
     achievement: Option<String>,
     guide_url: Option<String>,
     guide_urls: Option<Vec<String>>,
+    images: Option<Vec<String>>,
 ) -> Result<Note, String> {
     let mut file = read_notes(&app);
     let input = NoteInput {
@@ -299,6 +337,7 @@ pub fn notes_save(
         achievement: achievement.unwrap_or_default(),
         guide_url: guide_url.unwrap_or_default(),
         guide_urls: guide_urls.unwrap_or_default(),
+        images: images.unwrap_or_default(),
     };
     let note = upsert(&mut file, input, now_ms(), NEXT_ID.fetch_add(1, Ordering::Relaxed))?;
     write_notes(&app, &file)?;
@@ -350,6 +389,7 @@ fn merge_import(file: &mut NotesFile, incoming: Vec<Note>, now: u64, seq: &mut u
             .collect();
         note.guide_url = note.guide_url.trim().chars().take(MAX_GUIDE_URL).collect();
         note.guide_urls = normalize_guide_urls(note.guide_urls);
+        note.images = normalize_images(note.images);
         if note.created == 0 {
             note.created = now;
         }
@@ -384,6 +424,27 @@ pub fn notes_import_text(app: AppHandle, json: String) -> Result<u32, String> {
     Ok(count)
 }
 
+/// Drops the `![alt](note-image:N)` markers from a markdown export: the JSON
+/// export keeps the data URLs, but a plain markdown file cannot carry them.
+fn strip_image_markers(body: &str) -> String {
+    let mut out = String::new();
+    let mut rest = body;
+    while let Some(start) = rest.find("![") {
+        out.push_str(&rest[..start]);
+        let after = &rest[start..];
+        if let Some(marker) = after.find("](note-image:") {
+            if let Some(close) = after[marker..].find(')') {
+                rest = &after[marker + close + 1..];
+                continue;
+            }
+        }
+        out.push_str(&after[..1]);
+        rest = &after[1..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// The export as markdown: one section per scope, newest first inside it.
 fn notes_to_markdown(file: &NotesFile) -> String {
     let mut scopes: Vec<String> = Vec::new();
@@ -406,7 +467,7 @@ fn notes_to_markdown(file: &NotesFile) -> String {
         for note in notes {
             let title = if note.title.trim().is_empty() { "Untitled" } else { note.title.trim() };
             out.push_str(&format!("\n### {title}\n\n"));
-            out.push_str(note.body.trim_end());
+            out.push_str(&strip_image_markers(note.body.trim_end()));
             out.push_str("\n");
             let mut links = note.guide_urls.clone();
             let legacy = note.guide_url.trim();
@@ -592,6 +653,7 @@ mod tests {
                 achievement: String::new(),
                 guide_url: String::new(),
                 guide_urls: Vec::new(),
+                images: Vec::new(),
                 created: 500,
                 updated: 900,
             },
@@ -605,6 +667,7 @@ mod tests {
                 achievement: String::new(),
                 guide_url: String::new(),
                 guide_urls: Vec::new(),
+                images: Vec::new(),
                 created: 0,
                 updated: 0,
             },
@@ -653,5 +716,35 @@ mod tests {
         let markdown = notes_to_markdown(&file);
         assert!(markdown.contains("Guide: https://example.com/guide"));
         assert!(markdown.contains("Guide: https://youtube.com/watch?v=1"));
+    }
+
+    #[test]
+    fn images_are_capped_and_only_data_urls() {
+        let jpeg = "data:image/jpeg;base64,AAAA".to_string();
+        let oversized = format!("data:image/png;base64,{}", "A".repeat(MAX_IMAGE_DATA));
+        let images = normalize_images(vec![
+            "https://example.com/a.png".to_string(),
+            jpeg.clone(),
+            jpeg.clone(),
+            oversized,
+            "data:image/webp;base64,BBBB".to_string(),
+            "data:image/gif;base64,CCCC".to_string(),
+            "data:image/png;base64,DDDD".to_string(),
+        ]);
+        assert_eq!(images.len(), MAX_IMAGES);
+        assert_eq!(images[0], jpeg);
+        assert_eq!(images[1], "data:image/webp;base64,BBBB");
+        assert_eq!(images[2], "data:image/gif;base64,CCCC");
+    }
+
+    #[test]
+    fn image_markers_are_stripped_from_markdown_export() {
+        let mut file = NotesFile::default();
+        let mut item = input("launcher", "Map", "![map](note-image:0)\nsecret");
+        item.images = vec!["data:image/png;base64,AAAA".to_string()];
+        upsert(&mut file, item, 1, 1).unwrap();
+        let markdown = notes_to_markdown(&file);
+        assert!(markdown.contains("secret"));
+        assert!(!markdown.contains("note-image:"));
     }
 }

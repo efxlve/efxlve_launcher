@@ -151,6 +151,14 @@
 .notes-preview pre { margin: 0 0 8px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); overflow-x: auto; }
 .notes-preview pre code { background: transparent; padding: 0; }
 .notes-preview a { color: var(--accent); }
+.notes-preview .notes-inline-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+}
 .notes-preview hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
 .notes-preview-empty { color: var(--text-3); }
 .notes-checklist { list-style: none; padding-left: 0; }

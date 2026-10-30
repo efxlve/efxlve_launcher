@@ -41,6 +41,7 @@ let draftId: string | undefined;
 let draftScope = LAUNCHER_SCOPE;
 let draftTitle = "";
 let draftBody = "";
+let draftImages: string[] = [];
 let draftPinned = false;
 let draftColor = "";
 let draftDirty = false;
@@ -62,6 +63,7 @@ function clearDraft(): void {
   draftScope = LAUNCHER_SCOPE;
   draftTitle = "";
   draftBody = "";
+  draftImages = [];
   draftPinned = false;
   draftColor = "";
   draftDirty = false;
@@ -160,7 +162,7 @@ function editorHtml(): string {
       </div>`;
   }
   const preview = editorMode === "preview";
-  const rendered = preview ? renderMarkdownLite(draftBody).html : "";
+  const rendered = preview ? renderMarkdownLite(draftBody, draftImages).html : "";
   const activeNote = draftId ? cachedNotes().find((note) => note.id === draftId) : undefined;
   const linkedGuides = activeNote ? noteGuideUrls(activeNote) : [];
   return `
@@ -294,6 +296,7 @@ async function flushSave(): Promise<void> {
     achievement: existing?.achievement ?? "",
     guideUrl: "",
     guideUrls: existing ? noteGuideUrls(existing) : [],
+    images: draftImages,
   });
   if (note) {
     draftId = note.id;
@@ -332,6 +335,7 @@ async function selectNote(id: string): Promise<void> {
   draftScope = note.scope;
   draftTitle = note.title;
   draftBody = note.body;
+  draftImages = [...(note.images ?? [])];
   draftPinned = note.pinned;
   draftColor = note.color;
   draftDirty = false;
@@ -377,6 +381,7 @@ async function togglePin(note: Note | null): Promise<void> {
       achievement: note.achievement,
       guideUrl: "",
       guideUrls: noteGuideUrls(note),
+      images: note.images ?? [],
     });
   } else {
     draftPinned = !draftPinned;

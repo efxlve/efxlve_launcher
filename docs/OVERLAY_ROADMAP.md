@@ -1,12 +1,12 @@
 # In-Game Overlay — Product & Technical Roadmap
 
 The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
-notes, achievements, Spotify + SMTC music, a per-app audio mixer, an external
-crosshair, a tracked-achievement HUD and Discord status. Controller-first
-navigation is in. ETW FPS is API-agnostic but needs the Windows "Performance Log
-Users" permission, so the overlay offers a one-time enable action and explains
-the sign-out. Discord voice read/write waits on the Discord app review noted
-below.
+notes with pasted images, achievements, Spotify + SMTC music, a per-app audio
+mixer, an external crosshair, a tracked-achievement HUD and Discord status.
+Controller-first navigation is in. ETW FPS is API-agnostic but needs the Windows
+"Performance Log Users" permission, so the overlay offers a one-time enable
+action and explains the sign-out. Discord voice read/write waits on the Discord
+app review noted below.
 
 Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
 where only the pinned cards stay on screen as a click-through HUD and the game
@@ -34,7 +34,7 @@ architecture, the feature scope and the phased plan.
 
 - performance HUD: FPS, frame-time graph, 1% / 0.1% frame-time lows, CPU, GPU, RAM/VRAM (toggles)
 - screenshots: capture, gallery, open folder
-- notes: per-game notes, autosaved
+- notes: per-game notes with checklists and pasted images, autosaved
 - achievements: the game's tracked set, with up to three pinned to a tracker HUD
 - music: Spotify/any player via Windows media controls
 - audio: per-app volume and mute on the default output device
@@ -359,6 +359,19 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - Open: live progress polling while the tracker is pinned, a track button on list rows,
   per-game tracker presets, and translations for the seven new keys (English values are
   in place for the other locales).
+
+### M12 — Rich notes: pasted images (built)
+
+- `Ctrl+V` in the overlay note body compresses the clipboard image (max 960 px, JPEG)
+  and stores it in the note's `images` array; the body keeps a short
+  `![alt](note-image:N)` marker. The markdown preview renders it in the overlay, the
+  launcher Notes page and the game drawer. Checklists already come from the markdown
+  subset and are clickable in the preview.
+- Up to three images per note, each at most 150k characters on the editor side; Rust
+  re-validates the data URL and caps it at 160k. The markdown export strips the markers
+  because a plain file cannot carry the data URLs.
+- Open: file-backed image storage for large maps, an image remove/replace action, and
+  the same paste handler in the launcher editor.
 
 ---
 

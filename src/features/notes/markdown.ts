@@ -17,10 +17,10 @@ export interface MarkdownResult {
 
 const CHECK_LINE = /^(\s*[-*]\s+\[)([ xX])(\]\s?)(.*)$/;
 
-function inline(raw: string): string {
+function inline(raw: string, images: string[]): string {
   // Escape once; the replacements below only add tags, and the stashed parts
-  // (code, links) are restored after the emphasis rules so their content is
-  // never re-processed.
+  // (code, links, images) are restored after the emphasis rules so their
+  // content is never re-processed.
   let text = esc(raw);
   const tokens: string[] = [];
   const stash = (html: string): string => {
@@ -29,6 +29,13 @@ function inline(raw: string): string {
   };
 
   text = text.replace(/`([^`]+)`/g, (_, code: string) => stash(`<code>${code}</code>`));
+  text = text.replace(/!\[([^\]]*)\]\(note-image:(\d+)\)/g, (_, alt: string, index: string) => {
+    const data = images[Number(index)];
+    if (!data || !/^data:image\/(png|jpeg|webp|gif);base64,/i.test(data)) return "";
+    return stash(
+      `<img class="notes-inline-image" src="${esc(data)}" alt="${alt}" loading="lazy" />`,
+    );
+  });
   text = text.replace(
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
     (_, label: string, url: string) =>
@@ -44,7 +51,7 @@ function inline(raw: string): string {
 
 /** Renders the supported subset: headings, lists, checklists, quotes, code,
  * rules, links and the inline emphasis. */
-export function renderMarkdownLite(source: string): MarkdownResult {
+export function renderMarkdownLite(source: string, images: string[] = []): MarkdownResult {
   const lines = source.replace(/\r\n?/g, "\n").split("\n");
   const out: string[] = [];
   let checks = 0;
@@ -55,7 +62,7 @@ export function renderMarkdownLite(source: string): MarkdownResult {
 
   const flushParagraph = (): void => {
     if (paragraph.length === 0) return;
-    out.push(`<p>${paragraph.map(inline).join("<br />")}</p>`);
+    out.push(`<p>${paragraph.map((line) => inline(line, images)).join("<br />")}</p>`);
     paragraph = [];
   };
   const flushList = (): void => {
@@ -65,7 +72,7 @@ export function renderMarkdownLite(source: string): MarkdownResult {
   };
   const flushQuote = (): void => {
     if (quote.length === 0) return;
-    out.push(`<blockquote>${quote.map(inline).join("<br />")}</blockquote>`);
+    out.push(`<blockquote>${quote.map((line) => inline(line, images)).join("<br />")}</blockquote>`);
     quote = [];
   };
   const flushAll = (): void => {
@@ -94,7 +101,7 @@ export function renderMarkdownLite(source: string): MarkdownResult {
     if (heading) {
       flushAll();
       const level = heading[1].length;
-      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      out.push(`<h${level}>${inline(heading[2], images)}</h${level}>`);
       continue;
     }
 
@@ -119,7 +126,7 @@ export function renderMarkdownLite(source: string): MarkdownResult {
       out.push(
         `<li class="notes-check${done ? " is-done" : ""}">` +
           `<button type="button" class="notes-check-box" data-note-check="${index}" role="checkbox" aria-checked="${done}">${done ? "✓" : ""}</button>` +
-          `<span>${inline(check[4])}</span></li>`,
+          `<span>${inline(check[4], images)}</span></li>`,
       );
       continue;
     }
@@ -133,7 +140,7 @@ export function renderMarkdownLite(source: string): MarkdownResult {
         out.push("<ul>");
         list = "ul";
       }
-      out.push(`<li>${inline(bullet[1])}</li>`);
+      out.push(`<li>${inline(bullet[1], images)}</li>`);
       continue;
     }
 
@@ -146,7 +153,7 @@ export function renderMarkdownLite(source: string): MarkdownResult {
         out.push("<ol>");
         list = "ol";
       }
-      out.push(`<li>${inline(numbered[1])}</li>`);
+      out.push(`<li>${inline(numbered[1], images)}</li>`);
       continue;
     }
 
@@ -193,6 +200,7 @@ export function toggleChecklist(source: string, index: number): string {
 /** A list preview: markers gone, one line, cut at `max`. */
 export function notePreview(source: string, max = 120): string {
   const text = source
+    .replace(/!\[[^\]]*\]\(note-image:\d+\)/g, " ")
     .replace(/```[\s\S]*?```/g, " ")
     .split("\n")
     .map((line) => line.replace(/^\s*(#{1,6}\s+|[-*]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+|>\s?)/, ""))

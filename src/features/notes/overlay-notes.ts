@@ -11,6 +11,7 @@
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { toast } from "../../core/toast";
 import { LAUNCHER_SCOPE, cachedNotes, deleteNote, loadNotes, noteGuideUrls, notesFontSize, saveNote, setNotesFontSize, sortNotes, type Note } from "./notes-client";
 import { notePreview, renderMarkdownLite, toggleChecklist } from "./markdown";
 
@@ -20,6 +21,7 @@ let editing = false;
 let draftId: string | undefined;
 let draftTitle = "";
 let draftBody = "";
+let draftImages: string[] = [];
 let draftPinned = false;
 let mode: "edit" | "preview" = "edit";
 let deleteArmed = false;
@@ -89,7 +91,7 @@ function editorHtml(): string {
       }
       ${
         preview
-          ? `<div class="ov-notes-preview notes-preview">${renderMarkdownLite(draftBody).html || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
+          ? `<div class="ov-notes-preview notes-preview">${renderMarkdownLite(draftBody, draftImages).html || `<p class="notes-preview-empty">${esc(t("notes.emptyBody"))}</p>`}</div>`
           : `<textarea id="ov-note-body" class="ov-note-body" spellcheck="false" placeholder="${esc(t("notes.bodyPlaceholder"))}">${esc(draftBody)}</textarea>`
       }
       <div class="ov-note-save-state" id="ov-note-save-state"></div>
@@ -146,6 +148,7 @@ async function flushSave(): Promise<void> {
     achievement: existing?.achievement ?? "",
     guideUrl: "",
     guideUrls: existing ? noteGuideUrls(existing) : [],
+    images: draftImages,
   });
   if (note) draftId = note.id;
   paintSaveState();
@@ -167,6 +170,7 @@ export function handleOverlayNotesAction(act: string | undefined, el: HTMLElemen
       draftId = undefined;
       draftTitle = "";
       draftBody = "";
+      draftImages = [];
       draftPinned = false;
       mode = "edit";
       deleteArmed = false;
@@ -180,6 +184,7 @@ export function handleOverlayNotesAction(act: string | undefined, el: HTMLElemen
       draftId = note.id;
       draftTitle = note.title;
       draftBody = note.body;
+      draftImages = [...(note.images ?? [])];
       draftPinned = note.pinned;
       mode = "edit";
       deleteArmed = false;
@@ -217,6 +222,7 @@ export function handleOverlayNotesAction(act: string | undefined, el: HTMLElemen
       draftId = undefined;
       draftTitle = "";
       draftBody = "";
+      draftImages = [];
       renderOverlayNotes();
       return true;
     case "ov-note-delete-cancel":
@@ -238,6 +244,80 @@ export function handleOverlayNotesAction(act: string | undefined, el: HTMLElemen
   }
 }
 
+function readImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("image"));
+    };
+    image.src = url;
+  });
+}
+
+/** The note body stores a short marker; the compressed data URL lives in the
+ *  note's `images` array. 150k characters keeps three images inside the notes
+ *  file and under the Rust cap. */
+async function compressPastedImage(file: File): Promise<string | null> {
+  try {
+    const image = await readImage(file);
+    for (const maxSide of [960, 720, 512]) {
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) return null;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+      for (const quality of [0.82, 0.7, 0.55]) {
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        if (dataUrl.length <= 150_000) return dataUrl;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function insertPastedImage(file: File): Promise<void> {
+  if (draftImages.length >= 3) {
+    toast(t("notes.imageLimit"));
+    return;
+  }
+  const dataUrl = await compressPastedImage(file);
+  if (!dataUrl) {
+    toast(t("notes.imageTooLarge"), "err");
+    return;
+  }
+  if (draftImages.length >= 3) {
+    toast(t("notes.imageLimit"));
+    return;
+  }
+  const textarea = document.getElementById("ov-note-body") as HTMLTextAreaElement | null;
+  if (!textarea) return;
+  const index = draftImages.length;
+  draftImages.push(dataUrl);
+  const marker = `![${t("notes.imageAlt")}](note-image:${index})`;
+  const start = textarea.selectionStart ?? draftBody.length;
+  const end = textarea.selectionEnd ?? start;
+  draftBody = `${draftBody.slice(0, start)}${marker}\n${draftBody.slice(end)}`;
+  textarea.value = draftBody;
+  const caret = start + marker.length + 1;
+  textarea.setSelectionRange(caret, caret);
+  queueSave();
+  if (mode === "preview") renderOverlayNotes();
+}
+
 function wireOverlayNotes(): void {
   if (wired) return;
   wired = true;
@@ -254,6 +334,19 @@ function wireOverlayNotes(): void {
       draftBody = (target as HTMLTextAreaElement).value;
       queueSave();
     }
+  });
+
+  document.addEventListener("paste", (event) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.id !== "ov-note-body") return;
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    const image = Array.from(items).find((item) => item.type.startsWith("image/"));
+    if (!image) return;
+    const file = image.getAsFile();
+    if (!file) return;
+    event.preventDefault();
+    void insertPastedImage(file);
   });
 
   document.addEventListener("click", (event) => {

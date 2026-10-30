@@ -5753,6 +5753,14 @@ button.ov-ach-item:hover { background: var(--surface-3); }
 .ov-notes-preview pre { margin: 0 0 6px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); overflow-x: auto; }
 .ov-notes-preview pre code { background: transparent; padding: 0; }
 .ov-notes-preview a { color: var(--accent); }
+.ov-notes-preview .notes-inline-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+}
 .ov-notes-preview hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
 .ov-notes-preview .notes-checklist { list-style: none; padding-left: 0; }
 .ov-notes-preview .notes-check { display: flex; align-items: flex-start; gap: 7px; }
