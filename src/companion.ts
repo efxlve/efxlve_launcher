@@ -167,7 +167,8 @@ export interface GamePassTitle {
 
 /**
  * The Game Pass PC catalog. Public store metadata, so it answers before an
- * Xbox account is linked; the backend caches it for six hours.
+ * Xbox account is linked; the backend caches it for six hours. No page reads
+ * it today: the feed is kept as the data layer for a cross-store surface.
  */
 export const xboxGamePassCatalog = () => invoke<GamePassTitle[]>("xbox_gamepass_catalog");
 

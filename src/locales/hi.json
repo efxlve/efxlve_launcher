@@ -3439,14 +3439,5 @@
   "settings.themeExportSuccess": "{name} निर्यात किया गया।",
   "xbox.installWaiting": "Store में पुष्टि करें",
   "xbox.installWaitingHint": "Microsoft Store में Install दबाएँ। निगरानी रोकने के लिए यहाँ क्लिक करें।",
-  "xbox.installStopped": "इंस्टॉल की निगरानी रोक दी गई। यह Store में जारी रह सकता है।",
-  "nav.gamepass": "Game Pass",
-  "gp.search": "Game Pass में खोजें",
-  "gp.empty": "कोई शीर्षक नहीं मिला",
-  "gp.error": "Game Pass कैटलॉग लोड नहीं हो सका",
-  "gp.retry": "फिर कोशिश करें",
-  "gp.more": "और दिखाएँ",
-  "gp.where": "आपके पास कहाँ है",
-  "gp.screenshots": "स्क्रीनशॉट",
-  "gp.owned": "आपके पास है"
+  "xbox.installStopped": "इंस्टॉल की निगरानी रोक दी गई। यह Store में जारी रह सकता है।"
 }

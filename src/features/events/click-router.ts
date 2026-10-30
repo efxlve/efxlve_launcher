@@ -111,7 +111,6 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { ensureGamePassLoaded, handleGamePassAction } from "../gamepass/gamepass-view";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -304,11 +303,6 @@ document.addEventListener("click", (e) => {
       void loadNotesView();
       return;
     }
-    if (S.view === "gamepass") {
-      render();
-      ensureGamePassLoaded();
-      return;
-    }
     render();
     return;
   }
@@ -319,9 +313,6 @@ document.addEventListener("click", (e) => {
   // Dialog containers carry this marker so a click on their body never closes
   // the modal they live in. Handle it before any domain handler.
   if (act === "prevent-modal-close") return;
-
-  // The Game Pass page owns its list, filter and paging.
-  if (act && handleGamePassAction(act, id)) return;
 
   // The shared confirm dialog answers here, before any domain handler.
   if (act === "confirm-yes") {

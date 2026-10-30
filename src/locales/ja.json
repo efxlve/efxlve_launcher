@@ -3439,14 +3439,5 @@
   "settings.themeExportSuccess": "{name} をエクスポートしました。",
   "xbox.installWaiting": "ストアで確認",
   "xbox.installWaitingHint": "Microsoft Store で [インストール] を押してください。監視を止めるにはここをクリック。",
-  "xbox.installStopped": "インストールの監視を停止しました。ストアでは続いている可能性があります。",
-  "nav.gamepass": "Game Pass",
-  "gp.search": "Game Pass を検索",
-  "gp.empty": "一致するタイトルがありません",
-  "gp.error": "Game Pass のカタログを読み込めませんでした",
-  "gp.retry": "再試行",
-  "gp.more": "さらに読み込む",
-  "gp.where": "持っている場所",
-  "gp.screenshots": "スクリーンショット",
-  "gp.owned": "所有済み"
+  "xbox.installStopped": "インストールの監視を停止しました。ストアでは続いている可能性があります。"
 }

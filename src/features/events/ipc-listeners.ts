@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Bell, CircleUserRound, Clapperboard, Download, Gamepad2, Image, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
+import { Bell, CircleUserRound, Clapperboard, Download, Image, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
   epicBackupSave,
   epicCreateDesktopShortcut,
@@ -57,7 +57,6 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncInstalledWatch } from "../library/installed-watch";
 import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
-import { refreshGamePassDetail } from "../gamepass/gamepass-detail";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
@@ -252,7 +251,7 @@ export async function initApp(hooks: {
   // backend tears the panel window down when it is off.
   syncOverlayService();
   createIcons({
-    icons: { Store, ShoppingBag, LayoutGrid, Gamepad2, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, Clapperboard, ...BRAND_ICONS },
+    icons: { Store, ShoppingBag, LayoutGrid, Download, CircleUserRound, Settings, Bell, Monitor, Music, NotebookPen, Image, Clapperboard, ...BRAND_ICONS },
   });
   loadNotifications();
   initAutoUpdate();
@@ -415,11 +414,9 @@ export async function initApp(hooks: {
         const title = summaryOf(`xbox::${id}`)?.title || t("common.installed");
         toast(`${title} · ${t("common.installed")}`, "ok");
         void loadCompanionLibrary();
-        refreshGamePassDetail();
         return;
       }
       if (state === "timeout") toast(t("xbox.installStopped"), "err");
-      refreshGamePassDetail();
       hooks.scheduleRender();
     });
 

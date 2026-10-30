@@ -3439,14 +3439,5 @@
   "settings.themeExportSuccess": "{name} exportiert.",
   "xbox.installWaiting": "Im Store bestätigen",
   "xbox.installWaitingHint": "Klicke im Microsoft Store auf Installieren. Hier klicken, um das Beobachten zu beenden.",
-  "xbox.installStopped": "Installationsüberwachung beendet. Die Installation läuft im Store möglicherweise weiter.",
-  "nav.gamepass": "Game Pass",
-  "gp.search": "Game Pass durchsuchen",
-  "gp.empty": "Keine Titel gefunden",
-  "gp.error": "Der Game-Pass-Katalog konnte nicht geladen werden",
-  "gp.retry": "Erneut versuchen",
-  "gp.more": "Mehr laden",
-  "gp.where": "Wo du es hast",
-  "gp.screenshots": "Screenshots",
-  "gp.owned": "Im Besitz"
+  "xbox.installStopped": "Installationsüberwachung beendet. Die Installation läuft im Store möglicherweise weiter."
 }

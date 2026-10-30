@@ -22,7 +22,6 @@ import { epicGetQueue, epicPortrait } from "../epic";
 import { openStoreUrl, setView, syncStoreTabsPill } from "../features/store/store-view";
 import { loadSettingsView } from "../features/settings/settings-view";
 import { loadNotesView } from "../features/notes/notes-view";
-import { ensureGamePassLoaded } from "../features/gamepass/gamepass-view";
 import { loadScreenshotsPage } from "../features/screenshots/screenshots-page";
 
 /** Highlight the sidebar entry that matches the current view (or open game). */
@@ -446,8 +445,6 @@ function applyNavHistory(item: NavHistoryItem): void {
           void loadSettingsView();
         } else if (item.view === "notes") {
           void loadNotesView();
-        } else if (item.view === "gamepass") {
-          ensureGamePassLoaded();
         } else if (item.view === "screenshots") {
           loadScreenshotsPage();
         } else if (item.view === "downloads") {

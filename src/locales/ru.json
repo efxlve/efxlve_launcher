@@ -3439,14 +3439,5 @@
   "settings.themeExportSuccess": "{name} экспортировано.",
   "xbox.installWaiting": "Подтвердите в Магазине",
   "xbox.installWaitingHint": "Нажмите «Установить» в Microsoft Store. Нажмите здесь, чтобы прекратить отслеживание.",
-  "xbox.installStopped": "Отслеживание установки остановлено. Она может продолжаться в Магазине.",
-  "nav.gamepass": "Game Pass",
-  "gp.search": "Поиск в Game Pass",
-  "gp.empty": "Нет подходящих игр",
-  "gp.error": "Не удалось загрузить каталог Game Pass",
-  "gp.retry": "Повторить",
-  "gp.more": "Показать ещё",
-  "gp.where": "Где у вас есть",
-  "gp.screenshots": "Скриншоты",
-  "gp.owned": "В библиотеке"
+  "xbox.installStopped": "Отслеживание установки остановлено. Она может продолжаться в Магазине."
 }
