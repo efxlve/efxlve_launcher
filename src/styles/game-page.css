@@ -8,8 +8,19 @@
   position: fixed; top: var(--winbar-h); left: var(--sidebar-w); right: 0; bottom: 0; z-index: 50;
   background: var(--bg); overflow-y: auto; overflow-x: hidden;
   scrollbar-gutter: stable;
+  /* The global `scrollbar-width: thin` makes WebView2 use auto-hiding overlay
+     scrollbars; the game page needs a visible right-edge track. */
+  scrollbar-width: auto;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
+.overlay::-webkit-scrollbar { width: 10px; }
+.overlay::-webkit-scrollbar-track { background: transparent; }
+.overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 5px;
+}
+.overlay::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 html.sb-no-anim .overlay,
 html.sb-resizing .overlay,
 body.sb-resizing .overlay {
