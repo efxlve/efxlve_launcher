@@ -355,10 +355,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   `UpdateLayeredWindow`; the dark outline keeps the reticle readable on bright scenes.
   The window hides on game exit and service stop, and follows the game monitor every
   couple of seconds.
-- Open: a per-game crosshair profile, a configurable hotkey, a live preview in
-  Settings, translations for the 21 new keys (English values are in place for the other
-  locales), and a field pass on exclusive fullscreen (external overlays cannot paint
-  there).
+- Open: a per-game crosshair profile, a configurable hotkey, translations for the 21
+  new keys (English values are in place for the other locales), and a field pass on
+  exclusive fullscreen (external overlays cannot paint there).
 
 ### M11 — Achievement tracker (built)
 

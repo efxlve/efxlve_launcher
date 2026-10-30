@@ -6082,6 +6082,96 @@ body.ov-browser-pip .ov-browser-pipbar {
 }
 
 /* --- Crosshair settings --- */
+.ov-crosshair-preview {
+  display: grid;
+  place-items: center;
+  height: 112px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06), transparent 60%),
+    var(--surface-1);
+  overflow: hidden;
+}
+
+.ov-crosshair-stage {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+}
+
+.ov-ch {
+  position: relative;
+  width: var(--ch-size);
+  height: var(--ch-size);
+  color: var(--ch-color);
+  opacity: var(--ch-opacity);
+}
+
+.ov-ch-arm {
+  position: absolute;
+  background: currentColor;
+}
+
+.ov-ch-up,
+.ov-ch-down {
+  left: 50%;
+  width: var(--ch-thickness);
+  height: max(0px, calc((var(--ch-size) - var(--ch-gap)) / 2));
+  transform: translateX(-50%);
+}
+
+.ov-ch-up { bottom: calc(50% + var(--ch-gap) / 2); }
+.ov-ch-down { top: calc(50% + var(--ch-gap) / 2); }
+
+.ov-ch-left,
+.ov-ch-right {
+  top: 50%;
+  height: var(--ch-thickness);
+  width: max(0px, calc((var(--ch-size) - var(--ch-gap)) / 2));
+  transform: translateY(-50%);
+}
+
+.ov-ch-left { right: calc(50% + var(--ch-gap) / 2); }
+.ov-ch-right { left: calc(50% + var(--ch-gap) / 2); }
+
+.ov-ch-ring {
+  display: none;
+  width: 100%;
+  height: 100%;
+  border: var(--ch-thickness) solid currentColor;
+  border-radius: 50%;
+}
+
+.ov-ch-point {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(3px, calc(var(--ch-thickness) * 1.4));
+  height: max(3px, calc(var(--ch-thickness) * 1.4));
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.shape-circle .ov-ch-arm,
+.shape-circle .ov-ch-point { display: none; }
+.shape-circle .ov-ch-ring { display: block; }
+
+.shape-dot .ov-ch-arm,
+.shape-dot .ov-ch-ring { display: none; }
+.shape-dot .ov-ch-point { display: block; }
+
+.shape-cross .ov-ch-ring,
+.shape-cross .ov-ch-point { display: none; }
+
+.shape-t .ov-ch-ring,
+.shape-t .ov-ch-point,
+.shape-t .ov-ch-up { display: none; }
+
 .ov-crosshair-colors {
   display: flex;
   align-items: center;

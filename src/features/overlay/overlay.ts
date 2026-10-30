@@ -5249,6 +5249,18 @@ function commitCrosshair(next: CrosshairConfig, repaint = false): void {
   }
 }
 
+/** Repaints the CSS preview without re-rendering the Settings view (which
+ *  would drop the focus of the slider under the pointer). */
+function paintCrosshairPreview(config: CrosshairConfig): void {
+  const el = document.querySelector<HTMLElement>(".ov-crosshair-preview");
+  if (!el) return;
+  el.style.setProperty("--ch-size", `${config.size}px`);
+  el.style.setProperty("--ch-gap", `${config.gap}px`);
+  el.style.setProperty("--ch-thickness", `${config.thickness}px`);
+  el.style.setProperty("--ch-color", config.color);
+  el.style.setProperty("--ch-opacity", String(config.opacity));
+}
+
 /** Slider input: store immediately, but coalesce the native update so a drag
  *  does not flood IPC. */
 function scheduleCrosshairConfig(next: CrosshairConfig): void {
@@ -5422,6 +5434,18 @@ function renderSettings(): void {
           ${icon("crosshair", 13)}
           <span>${esc(t("overlay.crosshairTitle"))}</span>
         </header>
+        <div class="ov-crosshair-preview" style="--ch-size:${crosshair.size}px;--ch-gap:${crosshair.gap}px;--ch-thickness:${crosshair.thickness}px;--ch-color:${crosshair.color};--ch-opacity:${crosshair.opacity}">
+          <div class="ov-crosshair-stage">
+            <div class="ov-ch shape-${crosshair.shape}">
+              <span class="ov-ch-arm ov-ch-up"></span>
+              <span class="ov-ch-arm ov-ch-down"></span>
+              <span class="ov-ch-arm ov-ch-left"></span>
+              <span class="ov-ch-arm ov-ch-right"></span>
+              <span class="ov-ch-ring"></span>
+              <span class="ov-ch-point"></span>
+            </div>
+          </div>
+        </div>
         <div class="ov-settings-group">
           <div class="ov-setting-item">
             <div class="ov-setting-info">
@@ -6354,28 +6378,36 @@ function wireEvents(): void {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-size-val");
       if (badge) badge.textContent = `${Math.round(value)}px`;
-      scheduleCrosshairConfig({ ...loadCrosshair(), size: value });
+      const next = { ...loadCrosshair(), size: value };
+      paintCrosshairPreview(next);
+      scheduleCrosshairConfig(next);
       return;
     }
     if (input?.dataset.crosshairGap !== undefined) {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-gap-val");
       if (badge) badge.textContent = `${Math.round(value)}px`;
-      scheduleCrosshairConfig({ ...loadCrosshair(), gap: value });
+      const next = { ...loadCrosshair(), gap: value };
+      paintCrosshairPreview(next);
+      scheduleCrosshairConfig(next);
       return;
     }
     if (input?.dataset.crosshairThickness !== undefined) {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-thickness-val");
       if (badge) badge.textContent = `${value.toFixed(1)}px`;
-      scheduleCrosshairConfig({ ...loadCrosshair(), thickness: value });
+      const next = { ...loadCrosshair(), thickness: value };
+      paintCrosshairPreview(next);
+      scheduleCrosshairConfig(next);
       return;
     }
     if (input?.dataset.crosshairOpacity !== undefined) {
       const value = Number(input.value);
       const badge = document.getElementById("ov-crosshair-opacity-val");
       if (badge) badge.textContent = `${Math.round(value)}%`;
-      scheduleCrosshairConfig({ ...loadCrosshair(), opacity: value / 100 });
+      const next = { ...loadCrosshair(), opacity: value / 100 };
+      paintCrosshairPreview(next);
+      scheduleCrosshairConfig(next);
       return;
     }
     if (input?.dataset.audioVolume !== undefined) {

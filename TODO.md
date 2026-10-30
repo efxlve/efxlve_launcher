@@ -99,9 +99,8 @@ The Settings tab now draws a native, click-through crosshair over the game
 (`src-tauri/src/overlay/crosshair.rs`). Validate on a borderless game: the
 reticle sits at the monitor centre, Ctrl+Shift+X toggles it, the outline stays
 readable on bright scenes, and it disappears when the game exits. Then add a
-per-game profile, a configurable hotkey, a live Settings preview, and
-translations for the 21 new keys (English values are in place for the other
-locales).
+per-game profile, a configurable hotkey, and translations for the 21 new keys
+(English values are in place for the other locales).
 
 ## Achievement tracker field pass
 
