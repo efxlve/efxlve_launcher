@@ -16,7 +16,7 @@ use std::time::Duration;
 use tauri::AppHandle;
 
 #[cfg(windows)]
-use super::{hide, show, STATE};
+use super::{hide, hide_now, show, STATE};
 
 /// Linux/macOS: the overlay has no global hotkey, so there is no thread to run.
 #[cfg(not(windows))]
@@ -45,11 +45,12 @@ pub(crate) fn start(app: AppHandle) {
         let mut tick: u32 = 0;
         let mut pad_down = false;
         loop {
-            let (visible, enabled, game_disabled, capturing, combo, game_hwnd, has_game) = STATE
+            let (visible, ghost, enabled, game_disabled, capturing, combo, game_hwnd, has_game) = STATE
                 .lock()
                 .map(|s| {
                     (
                         s.visible,
+                        s.ghost,
                         s.enabled,
                         s.game_disabled,
                         s.capturing,
@@ -58,13 +59,16 @@ pub(crate) fn start(app: AppHandle) {
                         !s.game_app.is_empty(),
                     )
                 })
-                .unwrap_or((false, true, false, false, None, 0, false));
+                .unwrap_or((false, false, true, false, false, None, 0, false));
+            // Ghost mode is an active overlay without input: the hotkey must
+            // still wake it, and the game-window watch must still close it.
+            let active = visible || ghost;
 
             // Switched off, or this game opted out: sleep without touching the
             // keyboard. The window is already gone (the command tore it down).
             if !enabled || game_disabled {
-                if visible {
-                    hide(&app);
+                if active {
+                    hide_now(&app);
                 }
                 gone_ticks = 0;
                 std::thread::sleep(Duration::from_millis(250));
@@ -75,7 +79,7 @@ pub(crate) fn start(app: AppHandle) {
             // While the launcher sits in the tray/minimized and no game is
             // active, a 20 ms keyboard/pad poll would keep waking the machine
             // for a shortcut that has no target.
-            if should_idle(visible, has_game, launcher_on_screen(&app)) {
+            if should_idle(active, has_game, launcher_on_screen(&app)) {
                 gone_ticks = 0;
                 std::thread::sleep(Duration::from_millis(250));
                 continue;
@@ -83,7 +87,7 @@ pub(crate) fn start(app: AppHandle) {
 
             std::thread::sleep(Duration::from_millis(20));
 
-            if visible {
+            if active {
                 if game_hwnd != 0 && !super::hud::window_alive(game_hwnd) {
                     // A dead handle can just mean the game recreated its window
                     // (fullscreen switch): re-find it by pid before counting it
@@ -103,7 +107,9 @@ pub(crate) fn start(app: AppHandle) {
                         gone_ticks = gone_ticks.saturating_add(1);
                         if gone_ticks >= 75 {
                             gone_ticks = 0;
-                            hide(&app);
+                            // A dead game ends the ghost HUD; it must not float
+                            // over the desktop.
+                            hide_now(&app);
                         }
                     }
                 } else {
@@ -182,8 +188,8 @@ pub(crate) fn start(app: AppHandle) {
 /// unfocused launcher also stays awake, so an untracked game can still use the
 /// global shortcut.
 #[cfg(windows)]
-fn should_idle(visible: bool, has_game: bool, launcher_on_screen: bool) -> bool {
-    !visible && !has_game && !launcher_on_screen
+fn should_idle(active: bool, has_game: bool, launcher_on_screen: bool) -> bool {
+    !active && !has_game && !launcher_on_screen
 }
 
 #[cfg(windows)]

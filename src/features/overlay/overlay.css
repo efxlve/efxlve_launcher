@@ -623,6 +623,33 @@
   display: none;
 }
 
+/* --- Ghost mode: pinned cards stay over the game, everything else goes ---
+   Rust makes the whole window click-through. The page still has to drop the
+   scrim, the bar and every unpinned card, and stop painting affordances the
+   player cannot reach while the game owns the mouse. */
+body.ov-ghost .ov {
+  background: transparent;
+  animation: none;
+}
+
+body.ov-ghost .ov,
+body.ov-ghost .ov * {
+  pointer-events: none;
+}
+
+body.ov-ghost .ov-topbar,
+body.ov-ghost .ov-lightbox,
+body.ov-ghost .ov-widget:not(.is-pinned),
+body.ov-ghost .ov-widget.is-pinned .ov-widget-header,
+body.ov-ghost .ov-widget.is-pinned .ov-widget-resizer {
+  display: none !important;
+}
+
+body.ov-ghost .ov-widget.is-pinned {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+}
+
 .ov-widget-body {
   padding: 12px 14px;
   overflow-y: auto;

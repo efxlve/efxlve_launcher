@@ -187,6 +187,8 @@ function visibleTabs(): typeof TABS {
 /* ---------- State ---------- */
 
 let context: OpenPayload = { appName: "", title: "" };
+/** True once `onOpen` has laid out the panel for the current session. */
+let panelOpened = false;
 /** Opened without a tracked game (over the launcher or any other window). */
 let launcherMode = false;
 let metrics: MetricsSample | null = null;
@@ -543,7 +545,8 @@ function isWidgetOpen(tab: TabId): boolean {
 
 /* ---------- Pinned widgets ---------- */
 
-/** A pinned widget keeps its place and size until it is unpinned. */
+/** A pinned widget keeps its place and size, and stays over the game as a
+ *  click-through HUD when the panel closes. */
 const PIN_KEY = "efxlve-overlay-pins";
 let widgetPins = loadWidgetPins();
 
@@ -576,6 +579,7 @@ function setWidgetPinned(tab: TabId, pinned: boolean): void {
   else widgetPins.delete(tab);
   saveWidgetPins();
   applyWidgetPinState(tab);
+  syncPinnedToRust();
 }
 
 function applyWidgetPinState(tab: TabId): void {
@@ -586,6 +590,19 @@ function applyWidgetPinState(tab: TabId): void {
   if (!btn) return;
   btn.classList.toggle("is-pinned", pinned);
   btn.title = pinned ? t("overlay.widgetUnpin") : t("overlay.widgetPin");
+}
+
+/**
+ * Pinned widgets that are actually open: only those survive the close as a
+ * ghost HUD. Rust keeps the number so the hotkey and the close button agree
+ * without a round trip at close time.
+ */
+function pinnedOnScreen(): TabId[] {
+  return [...widgetPins].filter((tab) => tab !== "browser" && openWidgets.has(tab));
+}
+
+function syncPinnedToRust(): void {
+  void invoke("overlay_set_pinned", { count: pinnedOnScreen().length }).catch(() => undefined);
 }
 
 interface WidgetPos {
@@ -854,6 +871,7 @@ function renderWidgetContent(tab: TabId): void {
 function openWidget(tab: TabId, render = true): void {
   openWidgets.add(tab);
   saveOpenWidgets();
+  syncPinnedToRust();
 
   const widget = document.getElementById(`ov-widget-${tab}`);
   if (widget) {
@@ -890,6 +908,7 @@ function openWidget(tab: TabId, render = true): void {
 function closeWidget(tab: TabId): void {
   openWidgets.delete(tab);
   saveOpenWidgets();
+  syncPinnedToRust();
 
   if (tab === "clip") stopClipPolling();
   if (tab === "ach") achDetail = null;
@@ -5809,6 +5828,9 @@ function wireEvents(): void {
       stopClipPolling();
       return;
     }
+    // A ghost HUD keeps its own clock/media/clip timers; re-arming here would
+    // restart the pad poll the game is supposed to own.
+    if (ghostMode) return;
     gamepadSuppressUntil = performance.now() + 450;
     startOverlayLoops();
     startClipPolling();
@@ -6036,7 +6058,7 @@ function scheduleGamepadFrame(): void {
     window.clearTimeout(gamepadWakeTimer);
     gamepadWakeTimer = null;
   }
-  if (gamepadRaf === null && !document.hidden) {
+  if (gamepadRaf === null && !document.hidden && !ghostMode) {
     gamepadRaf = requestAnimationFrame(pollGamepadLoop);
   }
 }
@@ -6052,7 +6074,7 @@ function scheduleGamepadWake(): void {
 
 function pollGamepadLoop(): void {
   gamepadRaf = null;
-  if (document.hidden) return;
+  if (document.hidden || ghostMode) return;
 
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   const pad = gamepads.find((p) => p && p.connected);
@@ -6165,6 +6187,30 @@ function pollGamepadLoop(): void {
 
 /* ---------- Lifecycle ---------- */
 
+/** True while the panel is a click-through HUD over the game. */
+let ghostMode = false;
+
+/**
+ * Ghost mode keeps the pinned cards on screen while the game owns the mouse
+ * and keyboard. The page drops the scrim and the bar through the body class;
+ * the pad poll stops because nothing here can be activated.
+ */
+function setGhostMode(on: boolean): void {
+  ghostMode = on;
+  document.body.classList.toggle("ov-ghost", on);
+  if (!on) return;
+  hideLightbox();
+  removeGamepadFocus();
+  document.body.classList.remove("ov-using-gamepad");
+  stopGamepadPolling();
+  // Only a pinned Discord card needs the voice worker, and only a pinned clip
+  // card needs the recorder poll. The next open restarts both.
+  if (!isWidgetPinned("discord") && !isWidgetPinned("chat")) {
+    void invoke("discord_voice_watch_stop").catch(() => undefined);
+  }
+  if (!isWidgetPinned("clip")) stopClipPolling();
+}
+
 /**
  * Timers and the gamepad rAF only run while the overlay is actually visible.
  * The hidden WebView is kept warm for instant opening; it must not wake the
@@ -6177,21 +6223,17 @@ function startOverlayLoops(): void {
   }
   if (mediaPollTimer === null) {
     mediaPollTimer = window.setInterval(() => {
-      if (!document.hidden && isWidgetOpen("music")) void refreshMedia();
+      if (document.hidden) return;
+      // A ghost panel only updates a pinned music card; an unpinned one is
+      // hidden and must not keep a poll alive.
+      if (ghostMode && !isWidgetPinned("music")) return;
+      if (isWidgetOpen("music")) void refreshMedia();
     }, 2500);
   }
   scheduleGamepadFrame();
 }
 
-function stopOverlayLoops(): void {
-  if (clockTimer !== null) {
-    window.clearInterval(clockTimer);
-    clockTimer = null;
-  }
-  if (mediaPollTimer !== null) {
-    window.clearInterval(mediaPollTimer);
-    mediaPollTimer = null;
-  }
+function stopGamepadPolling(): void {
   if (gamepadRaf !== null) {
     cancelAnimationFrame(gamepadRaf);
     gamepadRaf = null;
@@ -6203,10 +6245,57 @@ function stopOverlayLoops(): void {
   prevButtons = [];
 }
 
+function stopOverlayLoops(): void {
+  if (clockTimer !== null) {
+    window.clearInterval(clockTimer);
+    clockTimer = null;
+  }
+  if (mediaPollTimer !== null) {
+    window.clearInterval(mediaPollTimer);
+    mediaPollTimer = null;
+  }
+  stopGamepadPolling();
+}
+
+/** Lays out the widgets the page remembers as open: position, size, pin and
+ *  content. `onOpen` and a page that boots straight into ghost both use it. */
+function restoreOpenWidgets(): void {
+  openWidgets = loadOpenWidgets();
+  for (const tab of TABS) {
+    const widget = document.getElementById(`ov-widget-${tab.id}`);
+    const toggleBtn = document.querySelector<HTMLElement>(`[data-ov-widget-toggle="${tab.id}"]`);
+    if (!widget) continue;
+
+    const pos = loadWidgetPos(tab.id);
+    widget.style.left = `${pos.x}px`;
+    widget.style.top = `${pos.y}px`;
+
+    const size = loadWidgetSize(tab.id);
+    widget.style.width = `${size.w}px`;
+    widget.style.height = `${size.h}px`;
+    syncWidgetSizeClasses(tab.id, size.w, size.h);
+
+    const isOpen = openWidgets.has(tab.id);
+    widget.style.display = isOpen ? "flex" : "none";
+    if (toggleBtn) toggleBtn.classList.toggle("active", isOpen);
+    applyWidgetPinState(tab.id);
+
+    if (isOpen) {
+      renderWidgetContent(tab.id);
+    }
+  }
+  // Rust decides the close path from this count: above zero means ghost mode.
+  syncPinnedToRust();
+}
+
 async function onOpen(payload: OpenPayload): Promise<void> {
   // The overlay page outlives a Settings language change: pull the current
   // language on every open so no widget shows the previous one.
   await setLanguage(initialLanguage()).catch(() => undefined);
+  // A ghost panel coming back is a normal interactive panel again. A ghost
+  // event can land while this open is still awaiting the language; do not let
+  // the open undo it.
+  if (!ghostMode) setGhostMode(false);
   context = payload;
   metrics = null;
   fpsHistory = [];
@@ -6268,30 +6357,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   refreshDock();
 
   // Load and position open widgets
-  openWidgets = loadOpenWidgets();
-  for (const tab of TABS) {
-    const widget = document.getElementById(`ov-widget-${tab.id}`);
-    const toggleBtn = document.querySelector<HTMLElement>(`[data-ov-widget-toggle="${tab.id}"]`);
-    if (!widget) continue;
-
-    const pos = loadWidgetPos(tab.id);
-    widget.style.left = `${pos.x}px`;
-    widget.style.top = `${pos.y}px`;
-
-    const size = loadWidgetSize(tab.id);
-    widget.style.width = `${size.w}px`;
-    widget.style.height = `${size.h}px`;
-    syncWidgetSizeClasses(tab.id, size.w, size.h);
-
-    const isOpen = openWidgets.has(tab.id);
-    widget.style.display = isOpen ? "flex" : "none";
-    if (toggleBtn) toggleBtn.classList.toggle("active", isOpen);
-    applyWidgetPinState(tab.id);
-
-    if (isOpen) {
-      renderWidgetContent(tab.id);
-    }
-  }
+  restoreOpenWidgets();
 
   // Sync browser button and state
   const browserBtn = document.querySelector<HTMLElement>('[data-ov-widget-toggle="browser"]');
@@ -6320,10 +6386,11 @@ async function onOpen(payload: OpenPayload): Promise<void> {
 
   // A connected pad means the user wants controller affordances right away.
   const pad = navigator.getGamepads ? navigator.getGamepads().find((p) => p && p.connected) : undefined;
-  if (pad) {
+  if (pad && !ghostMode) {
     document.body.classList.add("ov-using-gamepad");
     focusDefault();
   }
+  panelOpened = true;
 }
 
 async function boot(): Promise<void> {
@@ -6341,12 +6408,33 @@ async function boot(): Promise<void> {
   // the overlay, so the window never flashes the default scrim.
   applyOpacity(savedOpacity());
 
+  // A first open can be closed before `onOpen` runs. Tell Rust about the pins
+  // the page remembers now, so that close already knows a ghost HUD is wanted.
+  openWidgets = loadOpenWidgets();
+  syncPinnedToRust();
+
   startOverlayLoops();
 
   await listen<OpenPayload>("overlay-open", (event) => {
+    setGhostMode(false);
     startOverlayLoops();
     startClipPolling();
     void onOpen(event.payload);
+  });
+
+  // The panel became a click-through HUD: keep only the pinned cards, drop the
+  // pad poll and leave the game in control. Clock/media timers stay alive so a
+  // pinned performance or music card keeps updating.
+  await listen<OpenPayload>("overlay-ghost", (event) => {
+    // A page that boots after the panel already ghosted never ran the open
+    // pipeline: lay out the remembered widgets before dropping the chrome.
+    if (!panelOpened) {
+      context = event.payload ?? { appName: "", title: "" };
+      launcherMode = isLauncherContext(context);
+      setOverlayNotesScope(overlayNotesScope(launcherMode, context.appName));
+      restoreOpenWidgets();
+    }
+    setGhostMode(true);
   });
 
   await listen<{ open: boolean }>("overlay-browser-state", (event) => {
@@ -6367,6 +6455,8 @@ async function boot(): Promise<void> {
   });
 
   await listen("overlay-close", () => {
+    panelOpened = false;
+    setGhostMode(false);
     hideLightbox();
     removeGamepadFocus();
     document.body.classList.remove("ov-using-gamepad");

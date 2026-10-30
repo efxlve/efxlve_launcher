@@ -7,10 +7,15 @@
 //! nothing; the achievement toast is a transparent, click-through WebView2
 //! window that renders the same card component as the Settings preview.
 //!
+//! Closing the panel with a pinned widget turns it into ghost mode instead of
+//! hiding it: the window stays on screen as a click-through HUD (`ghost.rs`),
+//! the page drops the scrim and every unpinned card, and the game keeps focus.
+//!
 //! The panel is driven entirely from Rust: the hotkey thread shows/hides the
 //! window and emits `overlay-open` / `overlay-close` with the running game.
 
 pub mod browser;
+pub mod ghost;
 pub mod hotkey;
 pub mod hud;
 pub mod metrics;
@@ -42,8 +47,12 @@ pub(crate) struct OverlayState {
     pub enabled: bool,
     /// Always-on mini HUD wanted by the user.
     pub hud: bool,
-    /// Panel currently visible.
+    /// Panel currently visible (ghost mode is not visible: it takes no input).
     pub visible: bool,
+    /// Pinned widgets are on screen: the panel stays as a click-through HUD.
+    pub ghost: bool,
+    /// How many pinned widgets the page reports as open.
+    pub pinned: u32,
     /// The running game opted out of the overlay: nothing may run for it.
     pub game_disabled: bool,
     /// Hotkey preset id ("shift+tab", "shift+f4", "ctrl+shift+o").
@@ -62,6 +71,8 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     enabled: true,
     hud: false,
     visible: false,
+    ghost: false,
+    pinned: 0,
     game_disabled: false,
     hotkey: String::new(),
     combo: None,
@@ -85,6 +96,7 @@ pub fn overlay_get_state() -> serde_json::Value {
             "enabled": s.enabled,
             "hud": s.hud,
             "visible": s.visible,
+            "ghost": s.ghost,
             "gameDisabled": s.game_disabled,
             "hotkey": hotkey_id(&s),
             "running": s.enabled && !s.game_disabled,
@@ -93,10 +105,21 @@ pub fn overlay_get_state() -> serde_json::Value {
             "enabled": true,
             "hud": false,
             "visible": false,
+            "ghost": false,
             "gameDisabled": false,
             "hotkey": "shift+tab",
             "running": true,
         }),
+    }
+}
+
+/// The panel reports how many pinned widgets are open. While that count is
+/// above zero, closing the panel enters ghost mode instead of hiding it; the
+/// page owns the pin list, so Rust only needs the number.
+#[tauri::command]
+pub fn overlay_set_pinned(count: u32) {
+    if let Ok(mut s) = STATE.lock() {
+        s.pinned = count.min(32);
     }
 }
 
@@ -381,17 +404,26 @@ pub fn overlay_raise(app: AppHandle) {
 /// opened, so a game that never uses the overlay costs no extra renderer.
 #[tauri::command]
 pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, disabled: bool) {
-    let stopped = if let Ok(mut s) = STATE.lock() {
+    let (stopped, switched) = if let Ok(mut s) = STATE.lock() {
+        // A ghost HUD belongs to the game it was pinned over; a new game must
+        // not inherit the old one's cards.
+        let switched = !s.game_app.is_empty() && s.game_app != app_name;
         s.game_app = app_name;
         s.game_title = title;
         s.game_disabled = disabled;
-        disabled
+        (disabled, switched)
     } else {
-        disabled
+        (disabled, false)
     };
     if stopped {
         teardown(&app);
     } else {
+        if switched {
+            let ghost = STATE.lock().map(|s| s.ghost).unwrap_or(false);
+            if ghost {
+                hide_now(&app);
+            }
+        }
         // Warm the toast page while the game runs: the first card then only
         // has to show a window, not boot a WebView2 renderer.
         let options = crate::steam::achievement_notification_options(&app);
@@ -418,6 +450,12 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
     };
     if cleared {
         crate::overlay::toast::release(&app);
+        // The game is gone: a ghost HUD would float over the desktop. An open
+        // panel stays for the launcher context; the hotkey watch closes it.
+        let ghost = STATE.lock().map(|s| s.ghost).unwrap_or(false);
+        if ghost {
+            hide_now(&app);
+        }
     }
 }
 
@@ -430,7 +468,8 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
 /// deadlock the whole app there.
 pub(crate) fn teardown(app: &AppHandle) {
     PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
-    hide(app);
+    // A stop is a real stop: never leave a ghost HUD behind.
+    hide_now(app);
     browser::close_window(app);
     hud::hide();
     metrics::stop();
@@ -446,7 +485,9 @@ pub(crate) fn teardown(app: &AppHandle) {
 /// true when this call built it, so the caller knows the page still has to
 /// finish loading.
 pub(crate) fn ensure_window(app: &AppHandle) -> Result<bool, String> {
-    if app.get_webview_window(OVERLAY_LABEL).is_some() {
+    if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
+        // A warm panel already has the layered style; prepare is a no-op then.
+        ghost::prepare(&win);
         return Ok(false);
     }
     let config = app
@@ -457,11 +498,15 @@ pub(crate) fn ensure_window(app: &AppHandle) -> Result<bool, String> {
         .find(|window| window.label == OVERLAY_LABEL)
         .ok_or_else(|| "no `overlay` window in tauri.conf.json".to_string())?
         .clone();
-    tauri::WebviewWindowBuilder::from_config(app, &config)
+    let win = tauri::WebviewWindowBuilder::from_config(app, &config)
         .map_err(|error| error.to_string())?
         .build()
-        .map(|_| true)
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+    // Ghost mode needs the layered style for cross-process pass-through, and
+    // adding it to a visible window can drop per-pixel alpha. Do it while the
+    // window is still hidden.
+    ghost::prepare(&win);
+    Ok(true)
 }
 
 /// Manual open. The hotkey is the normal path; this one lets the overlay (or
@@ -521,6 +566,7 @@ pub(crate) fn show(app: &AppHandle) {
     // replay must see an open request.
     let payload = match STATE.lock() {
         Ok(mut s) => {
+            s.ghost = false;
             s.visible = true;
             OverlayOpenPayload {
                 app_name: s.game_app.clone(),
@@ -546,6 +592,10 @@ pub(crate) fn show(app: &AppHandle) {
     let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
         return;
     };
+    // A show is always interactive: clear any ghost flags, including ones left
+    // by a close that raced another close. The call is a no-op on a clean panel.
+    #[cfg(windows)]
+    ghost::set_click_through(&win, false);
     let hwnd = STATE.lock().map(|s| s.game_hwnd).unwrap_or(0);
     place_over_game(&win, hwnd);
     let _ = win.unminimize();
@@ -570,30 +620,128 @@ pub(crate) fn show(app: &AppHandle) {
 /// A panel created by `show` becomes visible before its page has painted, so
 /// the `overlay-open` emitted at creation can arrive before the listener exists.
 /// Replaying it here means the first Shift+Tab on a freshly built panel still
-/// gets the game context.
+/// gets the game context. A page that boots after the panel already ghosted
+/// gets the ghost event instead.
 #[tauri::command]
 pub fn overlay_page_ready(app: AppHandle) {
-    let payload = match STATE.lock() {
-        Ok(s) if s.visible => OverlayOpenPayload {
-            app_name: s.game_app.clone(),
-            title: s.game_title.clone(),
-        },
-        _ => return,
+    let (visible, ghost, payload) = match STATE.lock() {
+        Ok(s) => (
+            s.visible,
+            s.ghost,
+            OverlayOpenPayload {
+                app_name: s.game_app.clone(),
+                title: s.game_title.clone(),
+            },
+        ),
+        Err(_) => return,
     };
-    let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
+    if visible {
+        let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
+    } else if ghost {
+        // The panel was closed before its page finished booting: the ghost
+        // event from `enter_ghost` arrived too early. Replay it now so the
+        // scrim and the unpinned cards do not stay on screen.
+        let _ = app.emit_to(OVERLAY_LABEL, "overlay-ghost", payload);
+    }
 }
 
-/// Hides the panel and returns focus to the game window it opened over.
+/// Closes the panel. With a pinned widget on screen the close becomes ghost
+/// mode instead: the window stays, drops every input flag and keeps only the
+/// pinned cards visible over the game. Without one it hides as before.
 pub(crate) fn hide(app: &AppHandle) {
+    #[cfg(windows)]
+    {
+        let pinned = STATE.lock().map(|s| s.pinned > 0).unwrap_or(false);
+        if pinned && enter_ghost(app) {
+            return;
+        }
+    }
+    hide_now(app);
+}
+
+/// Turns the visible panel into a click-through HUD.
+///
+/// Returns false when there is no visible panel to keep; the caller then hides
+/// normally. The game gets focus back, so every click and key belongs to it
+/// while the pinned cards stay readable above it.
+#[cfg(windows)]
+fn enter_ghost(app: &AppHandle) -> bool {
     let Some(win) = app.get_webview_window(OVERLAY_LABEL) else {
-        return;
+        return false;
     };
+    if !win.is_visible().unwrap_or(false) {
+        return false;
+    }
+    let already = match STATE.lock() {
+        Ok(mut s) => {
+            let already = s.ghost;
+            s.visible = false;
+            s.ghost = true;
+            already
+        }
+        Err(_) => false,
+    };
+    if already {
+        return true;
+    }
+    // A ghost panel is not idle: cancel any pending renderer release.
+    PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
+    // The browser window floats over the game like the panel does: it goes
+    // with it, and it is not a pinnable surface.
+    browser::hide_window(app);
+    ghost::set_click_through(&win, true);
+    let _ = win.set_always_on_top(true);
+    // A hard hide can race this transition (game exit, service stop). If the
+    // window is already gone, undo the state and let the caller hide normally.
+    if !win.is_visible().unwrap_or(false) {
+        ghost::set_click_through(&win, false);
+        if let Ok(mut s) = STATE.lock() {
+            s.ghost = false;
+        }
+        return false;
+    }
+    // Keep `game_hwnd`: the dead-window watch still needs it, and the next
+    // Shift+Tab returns the panel to that monitor.
+    let (hwnd, payload) = match STATE.lock() {
+        Ok(s) => (
+            s.game_hwnd,
+            OverlayOpenPayload {
+                app_name: s.game_app.clone(),
+                title: s.game_title.clone(),
+            },
+        ),
+        Err(_) => (
+            0,
+            OverlayOpenPayload {
+                app_name: String::new(),
+                title: String::new(),
+            },
+        ),
+    };
+    hud::focus_window(hwnd);
+    // The page drops the scrim, the bar and every unpinned widget. Its clock
+    // and media timers stay alive: a pinned performance or music card must
+    // keep updating while the game runs. The payload lets a page that booted
+    // after this event still lay out the right game's widgets.
+    let _ = app.emit_to(OVERLAY_LABEL, "overlay-ghost", payload);
+    true
+}
+
+/// Hides the panel for real and returns focus to the game window it opened
+/// over. Also used when a ghost panel must go away (game exit, service stop).
+pub(crate) fn hide_now(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
+        #[cfg(windows)]
+        // Idempotent: clears a ghost panel's input flags, no-op otherwise.
+        ghost::set_click_through(&win, false);
+        let _ = win.hide();
+    }
     // The browser window floats over the game like the panel does: it goes with it.
     browser::hide_window(app);
-    let _ = win.hide();
     let hwnd = match STATE.lock() {
         Ok(mut s) => {
             s.visible = false;
+            s.ghost = false;
             // Forget the window handle: the next open captures (or re-finds)
             // the game window, so a stale dead handle cannot close it later.
             let hwnd = s.game_hwnd;
@@ -618,7 +766,11 @@ pub(crate) fn hide(app: &AppHandle) {
         if PANEL_GENERATION.load(Ordering::Relaxed) != generation {
             return;
         }
-        if STATE.lock().map(|s| s.visible).unwrap_or(false) {
+        if STATE
+            .lock()
+            .map(|s| s.visible || s.ghost)
+            .unwrap_or(false)
+        {
             return;
         }
         browser::close_window(&handle);

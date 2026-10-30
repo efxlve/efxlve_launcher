@@ -61,3 +61,12 @@ Getting to 60/120 means a second recorder beside the current one:
 Files: `src-tauri/src/legendary/clip_recorder.rs`,
 `src-tauri/src/legendary/clip_audio.rs`,
 `src/features/screenshots/ss-settings.ts`.
+
+## Ghost mode field pass
+
+Pinned widgets now stay over the game as a click-through HUD when the panel
+closes (`src-tauri/src/overlay/ghost.rs`). Validate on a borderless game and a
+multi-monitor setup: the pinned card keeps its place, clicks reach the game,
+Shift+Tab restores the panel, a pinned music card keeps updating, and the ghost
+tears down when the game exits. Then hide inert controls (music transport,
+filter chips) while click-through and add a per-widget ghost opacity.

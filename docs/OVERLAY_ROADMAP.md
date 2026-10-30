@@ -7,11 +7,16 @@ Users" permission, so the overlay offers a one-time enable action and explains
 the sign-out. Discord voice read/write waits on the Discord app review noted
 below.
 
-The panel does not import `browser-window.ts`; the hidden window stops the clock,
-media, clip and gamepad work; widget placement is clamped below the floating
-command bar with a default tiling, and Settings → Appearance has a widget-layout
-reset. The Discord tab opens with one centered connect card, and its message/send
-accents follow the launcher tokens.
+Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
+where only the pinned cards stay on screen as a click-through HUD and the game
+keeps every click and key. Shift+Tab again restores the interactive panel.
+
+The panel does not import `browser-window.ts`; a fully hidden window stops the
+clock, media, clip and gamepad work, while a ghost HUD keeps the clock/media/clip
+work its pinned cards need and stops only the pad poll. Widget placement is
+clamped below the floating command bar with a default tiling, and Settings →
+Appearance has a widget-layout reset. The Discord tab opens with one centered
+connect card, and its message/send accents follow the launcher tokens.
 
 Target platform: Windows first (Linux/macOS later).
 
@@ -179,12 +184,14 @@ runs and SMTC otherwise.
 1. **Overlay panel (interactive)** — a second Tauri WebView2 window (`label:
    "overlay"`): transparent, undecorated, always-on-top, skip-taskbar, hidden by
    default, sized to the monitor that hosts the game window (positioned over the game
-   rect). `Shift+Tab` shows and focuses it; `Esc`/`Shift+Tab` hides it and returns
-   focus to the game. Because it is hidden when inactive, the WebView2 renderer
-   memory is released while the game plays. The achievement toast reuses the
-   same recipe with `set_ignore_cursor_events(true)`; a transparent WebView2
-   window is both per-pixel transparent and click-through, so the card stays
-   HTML/CSS instead of a second native painting.
+   rect). `Shift+Tab` shows and focuses it; `Esc`/`Shift+Tab` closes it and returns
+   focus to the game. With a pinned widget open, the close is a transition into
+   **ghost mode** instead of a hide: the window stays visible, becomes click-through
+   (`WS_EX_LAYERED | WS_EX_TRANSPARENT`, `WM_NCHITTEST -> HTTRANSPARENT`, the same
+   flag on every WebView2 child) and the page drops the scrim, the bar and every
+   unpinned card. Shift+Tab returns to the interactive panel. Without pins the
+   window hides and its WebView2 renderer memory is released after the idle window.
+   The achievement toast proved this click-through recipe first; the panel reuses it.
 2. **Always-on mini HUD (optional, later)** — FPS/CPU/GPU corner readout.
    If a transparent WebView proves unreliable in the click-through case, draw this
    one **natively in Rust** (a small layered GDI/Direct2D window: `WS_EX_LAYERED |
@@ -289,6 +296,17 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   attempt let the panel's open path re-enter the browser-open action and the two topmost
   windows went into a show/hide loop, so opening must stay a real user gesture.
 
+### M8 — Ghost mode (built)
+
+- A pinned, open widget turns the close into a click-through HUD: the panel keeps its
+  WebView2 renderer, drops the scrim/bar/unpinned cards, and the game keeps focus.
+  `overlay_set_pinned` tells Rust whether any pinned card is on screen; the hotkey and
+  the close button both use it. A dead game window or a service stop tears the ghost
+  down for real.
+- Open work: per-widget ghost opacity, hide inert controls (music transport, filter
+  chips) while click-through, a one-time hint on the first pin, and a field pass on
+  borderless + exclusive fullscreen and multi-monitor setups.
+
 ---
 
 ## 5. Risks & mitigations
@@ -296,7 +314,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | Anti-cheat reactions to an external overlay | Low (no injection) | Per-game opt-out + blocklist; never inject/hook; document the model |
-| Transparent WebView2 + click-through limitation | High (known) | Two-surface design: hidden panel for input, native mini-HUD for always-on |
+| Transparent WebView2 + click-through limitation | Solved for the panel | `WS_EX_LAYERED` + `WS_EX_TRANSPARENT` + the `WM_NCHITTEST` subclass + child-window flags, proven by the toast and reused by ghost mode (`overlay/ghost.rs`). The layered bit is set before the first show; toggling it on a visible window can drop per-pixel alpha. |
+| Ghost HUD leaves inert controls visible | Medium | Pinned cards keep their body markup, so a music transport or a filter chip still paints while clicks go to the game. Hide those controls in ghost mode; per-widget ghost opacity is the follow-up. |
 | Exclusive fullscreen renders no overlay | Medium | Detect and inform; recommend borderless; not a v1 blocker |
 | Focus stealing pauses some games | Medium | v1 takes focus (Game Bar model); per-game note; later explore `WS_EX_NOACTIVATE` + keyboard hook |
 | ETW consumer complexity (FPS) | Medium | M0 spike; PresentMon service fallback |

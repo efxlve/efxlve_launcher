@@ -349,6 +349,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_set_hotkey` | `overlaySetHotkey({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_hotkey_capture` | `overlaySetHotkeyCapture({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_hud` | `overlaySetHud({ ... })` | `src-tauri/src/overlay/mod.rs` |
+| `overlay_set_pinned` | `overlaySetPinned({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_show` | `overlayShow({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_show_launcher` | `overlayShowLauncher({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `pc_check_system` | `pcCheckSystem({ ... })` | `src-tauri/src/pc_check.rs` |
