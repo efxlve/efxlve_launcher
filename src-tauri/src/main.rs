@@ -116,6 +116,41 @@ mod launch_arg_tests {
     }
 }
 
+#[cfg(test)]
+mod run_marker_tests {
+    use super::{parse_run_marker, restarted_by_update, PreviousRun};
+
+    #[test]
+    fn reads_a_versioned_marker() {
+        let previous = parse_run_marker("0.1.42\n1720000000\n");
+        assert_eq!(previous.version.as_deref(), Some("0.1.42"));
+        assert_eq!(previous.started, Some(1_720_000_000));
+    }
+
+    #[test]
+    fn reads_a_marker_written_before_the_version_line() {
+        let previous = parse_run_marker(" 1720000000 ");
+        assert_eq!(previous.version, None);
+        assert_eq!(previous.started, Some(1_720_000_000));
+    }
+
+    #[test]
+    fn a_version_change_is_an_update_restart() {
+        let previous = parse_run_marker("0.0.1\n10");
+        assert!(restarted_by_update(&previous, false));
+    }
+
+    #[test]
+    fn a_reinstall_counts_as_an_update_restart() {
+        let previous = PreviousRun {
+            version: Some(env!("CARGO_PKG_VERSION").into()),
+            started: Some(10),
+        };
+        assert!(!restarted_by_update(&previous, false));
+        assert!(restarted_by_update(&previous, true));
+    }
+}
+
 /// When set, closing the window hides it to the system tray instead of quitting
 /// so downloads keep running in the background. On by default; the frontend
 /// applies the stored preference once it boots.
@@ -139,6 +174,75 @@ pub struct RunMarker {
     /// force-kill or an updater restart after a long session leaves the marker
     /// too, but it is not a crash worth interrupting the next launch for.
     pub prompt: bool,
+}
+
+/// What the previous launch recorded in `run.marker`.
+///
+/// The first line is the version that wrote it, the second the start time in
+/// seconds. A marker from before the version line is only the start time.
+#[derive(Debug, Default, PartialEq, Eq)]
+struct PreviousRun {
+    version: Option<String>,
+    started: Option<u64>,
+}
+
+fn parse_run_marker(text: &str) -> PreviousRun {
+    let text = text.trim();
+    if let Ok(started) = text.parse::<u64>() {
+        return PreviousRun {
+            version: None,
+            started: Some(started),
+        };
+    }
+    let mut lines = text.lines();
+    let version = lines.next().map(str::trim).filter(|line| !line.is_empty());
+    let started = lines.next().and_then(|line| line.trim().parse().ok());
+    PreviousRun {
+        version: version.map(str::to_string),
+        started,
+    }
+}
+
+/// Whether the previous run ended because the launcher was replaced.
+///
+/// The Windows updater exits with `std::process::exit`, so `RunEvent::Exit`
+/// never clears the run marker; reading it as a crash made every update grow
+/// the crash streak and eventually quarantined the WebView2 profile, which
+/// also holds the localStorage settings. A version change identifies the
+/// update, and `installer_newer` covers the first update to a build that
+/// writes the version line plus a reinstall of the same version.
+fn restarted_by_update(previous: &PreviousRun, installer_newer: bool) -> bool {
+    let version_changed = previous
+        .version
+        .as_deref()
+        .is_some_and(|version| version != env!("CARGO_PKG_VERSION"));
+    version_changed || installer_newer
+}
+
+/// True when the installer wrote its files after the previous run started.
+/// NSIS writes `uninstall.exe` on every install, including a silent update.
+#[cfg(windows)]
+fn installer_wrote_since(started: u64) -> bool {
+    let Some(dir) = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(std::path::Path::to_path_buf))
+    else {
+        return false;
+    };
+    let Ok(modified) = std::fs::metadata(dir.join("uninstall.exe"))
+        .and_then(|meta| meta.modified())
+    else {
+        return false;
+    };
+    modified
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs() > started)
+        .unwrap_or(false)
+}
+
+#[cfg(not(windows))]
+fn installer_wrote_since(_started: u64) -> bool {
+    false
 }
 
 #[tauri::command]
@@ -1625,29 +1729,56 @@ fn main() {
                 .app_data_dir()
                 .ok()
                 .map(|dir| dir.join("run.marker"));
-            let recovery = !cfg!(debug_assertions)
+            let marker_exists = !cfg!(debug_assertions)
                 && marker_path
                     .as_ref()
                     .map(|path| path.is_file())
                     .unwrap_or(false);
-            let previous_started = marker_path
+            let previous = marker_path
                 .as_ref()
                 .and_then(|path| std::fs::read_to_string(path).ok())
-                .and_then(|text| text.trim().parse::<u64>().ok());
+                .map(|text| parse_run_marker(&text))
+                .unwrap_or_default();
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|elapsed| elapsed.as_secs())
                 .unwrap_or(0);
+            let installer_newer = previous
+                .started
+                .map(installer_wrote_since)
+                .unwrap_or(false);
+            // An update restart left the marker behind too. It is not a crash:
+            // counting it grew the streak until the WebView2 profile was
+            // quarantined, which resets every localStorage preference.
+            let updated = marker_exists && restarted_by_update(&previous, installer_newer);
+            let recovery = marker_exists && !updated;
             let early_crash = recovery
-                && previous_started
+                && previous
+                    .started
                     .map(|started| now.saturating_sub(started) < 20)
-                    .unwrap_or(true);
+                    .unwrap_or(false);
+            // One boot can still see a marker from a build without the version
+            // line. Its streak may include earlier updater restarts, so start
+            // that boot from zero; the early-crash rule still recovers a
+            // profile that fails in the first seconds.
+            if recovery && previous.version.is_none() && previous.started.is_some() {
+                write_crash_streak(app.handle(), 0);
+            }
+            if updated {
+                perf::write_line_global(&format!(
+                    "boot: restart after update; marker from v{}",
+                    previous.version.as_deref().unwrap_or("legacy")
+                ));
+            }
             recover_broken_webview(app, recovery, early_crash);
             if let Some(path) = marker_path.as_ref() {
                 if let Some(parent) = path.parent() {
                     let _ = std::fs::create_dir_all(parent);
                 }
-                let _ = std::fs::write(path, now.to_string());
+                let _ = std::fs::write(
+                    path,
+                    format!("{}\n{}", env!("CARGO_PKG_VERSION"), now),
+                );
             }
             app.manage(RunMarker {
                 path: marker_path,
