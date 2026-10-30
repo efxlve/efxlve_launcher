@@ -34,10 +34,14 @@ picture and sound stay the same length.
 
 Getting to 60/120 means a second recorder beside the current one:
 
-- Read frames on the GPU: Desktop Duplication API (DXGI) or Windows Graphics
-  Capture, into a staging texture. The read stops costing CPU time per frame.
+- Read frames on the GPU: the DXGI Desktop Duplication path is in
+  `src-tauri/src/legendary/clip_dxgi.rs`; the recorder opens it first and falls
+  back to the GDI grabber when duplication is unavailable or stops producing
+  frames. The staging-texture row copy, scaling and JPEG encode still run on the
+  CPU, so the MJPEG writer remains the 30 fps path for now.
 - Encode with the hardware encoder: Media Foundation H.264 (the OS picks NVENC,
-  QuickSync or AMF) instead of one JPEG per frame.
+  QuickSync or AMF) instead of one JPEG per frame. This is the next step; until
+  it lands the 60/120 buttons stay disabled.
 - Keep the MJPEG writer as the fallback: no codec licence, plays everywhere, and
   it is the only path on machines without a hardware encoder.
 - The clip list, the settings rows and the overlay widget stay as they are; only

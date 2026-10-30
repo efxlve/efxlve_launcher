@@ -535,6 +535,16 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     };
     let mut audio_samples: u64 = 0;
 
+    let mut dxgi = crate::legendary::clip_dxgi::DxgiCapture::open();
+    let mut dxgi_misses = 0u32;
+    log(
+        &app,
+        &format!(
+            "loop: capture backend = {}",
+            if dxgi.is_some() { "dxgi duplication" } else { "gdi fallback" }
+        ),
+    );
+
     while !STOP.load(Ordering::SeqCst) && started.elapsed().as_secs() < max_secs {
         // No game in the foreground any more: stop instead of recording the
         // desktop (the hotkey path already knows how to find the game).
@@ -542,8 +552,17 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
             log(&app, "loop: no game in the foreground, stopping");
             break;
         }
-        match crate::legendary::screenshots::capture_frame_jpeg(quality, target_height) {
-            Ok((jpeg, width, height)) => {
+        // DXGI hands us a GPU texture; the GDI grabber stays as the fallback
+        // when duplication is unavailable. A `None` from DXGI is a tick with no
+        // new desktop frame, not a reason to pay for a second GDI read.
+        let frame: Result<Option<(Vec<u8>, u32, u32)>, String> = match dxgi.as_mut() {
+            Some(capture) => Ok(capture.frame_jpeg(quality, target_height)),
+            None => crate::legendary::screenshots::capture_frame_jpeg(quality, target_height)
+                .map(Some),
+        };
+        match frame {
+            Ok(Some((jpeg, width, height))) => {
+                dxgi_misses = 0;
                 if writer.is_none() {
                     let audio_info = audio.as_ref().map(|capture| capture.info());
                     match AviWriter::create(&path, width, height, fps, audio_info) {
@@ -589,6 +608,16 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
                         );
                         break;
                     }
+                }
+            }
+            Ok(None) => {
+                // A static desktop produces no new frame. Keep the loop's pace,
+                // and after ~4 s of misses drop back to GDI for this clip.
+                dxgi_misses += 1;
+                if dxgi_misses > fps.saturating_mul(4).max(30) {
+                    log(&app, "loop: no duplicated frames, falling back to gdi");
+                    dxgi = None;
+                    dxgi_misses = 0;
                 }
             }
             Err(err) => {
