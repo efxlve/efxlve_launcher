@@ -1791,6 +1791,17 @@ mod tests {
     }
 
     #[test]
+    fn store_css_keeps_the_body_transparent_for_negative_z_index_art() {
+        // The Epic store's featured hero image sits at `z-index: -1`. An opaque
+        // body background paints as a normal box over that artwork, so the hero
+        // renders black. Only the root element may own the dark canvas.
+        let script = super::STORE_EXTENSION_SCRIPT;
+        assert!(script.contains("background-color: #07080d !important"));
+        assert!(script.contains("background-color: transparent !important"));
+        assert!(!script.contains("html, body {"));
+    }
+
+    #[test]
     fn extension_zip_extracts_files_and_skips_source_maps() {
         use std::io::Write;
         let mut archive = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));

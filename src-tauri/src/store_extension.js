@@ -28,8 +28,15 @@
 
     // 2. Anti-flash, price-area label, PDP button and download-button hiding CSS
     var CSS_TEXT = `
-        html, body {
+        /* The dark canvas belongs to the root element. An opaque body background
+           is painted as a normal box and covers artwork placed at a negative
+           z-index (the Epic store hero uses z-index: -1). */
+        html {
             background-color: #07080d !important;
+            color-scheme: dark !important;
+        }
+        body {
+            background-color: transparent !important;
             color-scheme: dark !important;
         }
 
