@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name} kaydedildi",
   "overlay.audioPresetApplied": "{name} uygulandı",
   "overlay.audioPresetMissing": "Önce bir ön ayar seç",
+  "overlay.audioOutput": "Çıkış cihazı",
   "overlay.audioMaster": "Ana Ses",
   "overlay.audioSystem": "Sistem sesleri",
   "overlay.audioEmpty": "Ses oturumu yok",

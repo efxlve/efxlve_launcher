@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name} сохранён",
   "overlay.audioPresetApplied": "{name} применён",
   "overlay.audioPresetMissing": "Сначала выберите пресет",
+  "overlay.audioOutput": "Устройство вывода",
   "overlay.audioMaster": "Общая громкость",
   "overlay.audioSystem": "Системные звуки",
   "overlay.audioEmpty": "Нет звуковых сеансов",

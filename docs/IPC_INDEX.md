@@ -326,6 +326,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `notes_save` | `notesSave({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_store_image` | `notesStoreImage({ ... })` | `src-tauri/src/notes.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |
+| `overlay_audio_set_device` | `overlayAudioSetDevice({ ... })` | `src-tauri/src/overlay/audio.rs` |
 | `overlay_audio_set_master` | `overlayAudioSetMaster({ ... })` | `src-tauri/src/overlay/audio.rs` |
 | `overlay_audio_set_master_mute` | `overlayAudioSetMasterMute({ ... })` | `src-tauri/src/overlay/audio.rs` |
 | `overlay_audio_set_mute` | `overlayAudioSetMute({ ... })` | `src-tauri/src/overlay/audio.rs` |

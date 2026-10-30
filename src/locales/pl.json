@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "Zapisano {name}",
   "overlay.audioPresetApplied": "Zastosowano {name}",
   "overlay.audioPresetMissing": "Najpierw wybierz preset",
+  "overlay.audioOutput": "Urządzenie wyjściowe",
   "overlay.audioMaster": "Główna",
   "overlay.audioSystem": "Dźwięki systemowe",
   "overlay.audioEmpty": "Brak sesji audio",

@@ -172,6 +172,14 @@ interface AudioState {
   master: number;
   masterMuted: boolean;
   sessions: AudioSession[];
+  devices: AudioDevice[];
+  defaultDevice: string;
+}
+
+interface AudioDevice {
+  id: string;
+  name: string;
+  default: boolean;
 }
 
 interface AchievementItem {
@@ -4051,6 +4059,15 @@ function renderAudio(): void {
   if (!presets.some((preset) => preset.name === audioPresetSelected)) {
     audioPresetSelected = presets[0]?.name ?? "";
   }
+  const devices = audioState.devices ?? [];
+  const deviceRow = `<div class="ov-audio-presets">
+    <span class="ov-audio-presets-title">${icon("volume-2", 12)} ${esc(t("overlay.audioOutput"))}</span>
+    <select class="input select small" id="ov-audio-device" ${devices.length === 0 ? "disabled" : ""}>
+      ${devices.length === 0
+        ? `<option>${esc(t("overlay.audioUnavailable"))}</option>`
+        : devices.map((device) => `<option value="${esc(device.id)}" ${device.default || device.id === audioState?.defaultDevice ? "selected" : ""}>${esc(device.name)}</option>`).join("")}
+    </select>
+  </div>`;
   const presetRow = `<div class="ov-audio-presets">
     <span class="ov-audio-presets-title">${icon("layers", 12)} ${esc(t("overlay.audioPresetsTitle"))}</span>
     <select class="input select small" id="ov-audio-preset-select" ${presets.length === 0 ? "disabled" : ""}>
@@ -4078,6 +4095,7 @@ function renderAudio(): void {
         <span class="ov-audio-title">${icon("volume-2", 14)} ${esc(t("overlay.tabAudio"))}</span>
         <button class="ov-audio-refresh" data-audio-refresh title="${esc(t("overlay.audioRefresh"))}">${icon("refresh", 13)}</button>
       </div>
+      ${deviceRow}
       ${presetRow}
       ${master}
       <div class="ov-audio-list">
@@ -4102,7 +4120,12 @@ async function refreshAudio(force = false): Promise<void> {
     audioLoading = false;
   }
   if (isWidgetOpen("audio")) {
-    if (document.activeElement?.id === "ov-audio-preset-select") return;
+    if (
+      document.activeElement?.id === "ov-audio-preset-select" ||
+      document.activeElement?.id === "ov-audio-device"
+    ) {
+      return;
+    }
     renderAudio();
   }
 }
@@ -6547,6 +6570,14 @@ function wireEvents(): void {
     if (!input) return;
     if (input.id === "ov-audio-preset-select") {
       audioPresetSelected = input.value;
+      return;
+    }
+    if (input.id === "ov-audio-device") {
+      const id = input.value;
+      if (!id) return;
+      void invoke("overlay_audio_set_device", { id })
+        .then(() => refreshAudio(true))
+        .catch((error) => toast(String(error), "err"));
       return;
     }
     if (input.dataset.crosshairHotkey !== undefined) {

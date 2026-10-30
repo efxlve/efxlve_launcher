@@ -56,8 +56,8 @@ trace.
 The Audio tab now lists the master bus and every session on the default output
 endpoint (`src-tauri/src/overlay/audio.rs`). Validate on a real game and a
 browser: per-app volume and mute, system sounds, a device switch, and a session
-that starts or stops while the tab is open. Then add the output-device picker,
-session icons and controller focus order.
+that starts or stops while the tab is open. Then add session icons and controller
+focus order.
 
 ## Crosshair field pass
 

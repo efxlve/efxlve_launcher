@@ -343,7 +343,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   thumb. System sounds sort last; named apps sort case-insensitively.
 - The mix presets row saves the master and every named session (up to 12) and reapplies
   them to the sessions that are still present.
-- Open: an output-device picker, session icons and controller focus order.
+- The output-device picker lists every active render endpoint and switches the
+  default through the audio policy client (with the Vista client as fallback).
+- Open: session icons and controller focus order.
 
 ### M10 — Tactical crosshair (built)
 

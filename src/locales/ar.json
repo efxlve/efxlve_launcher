@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "تم حفظ {name}",
   "overlay.audioPresetApplied": "تم تطبيق {name}",
   "overlay.audioPresetMissing": "اختر إعدادًا أولًا",
+  "overlay.audioOutput": "جهاز الإخراج",
   "overlay.audioMaster": "الرئيسي",
   "overlay.audioSystem": "أصوات النظام",
   "overlay.audioEmpty": "لا توجد جلسات صوت",

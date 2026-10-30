@@ -30,6 +30,16 @@ pub struct AudioSession {
     pub system: bool,
 }
 
+/// One render endpoint the user can switch to.
+#[derive(Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioDevice {
+    /// The endpoint id from `IMMDevice::GetId`.
+    pub id: String,
+    pub name: String,
+    pub default: bool,
+}
+
 /// The mixer's answer: the master bus plus every session on the endpoint.
 #[derive(Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
@@ -37,6 +47,8 @@ pub struct AudioState {
     pub master: f32,
     pub master_muted: bool,
     pub sessions: Vec<AudioSession>,
+    pub devices: Vec<AudioDevice>,
+    pub default_device: String,
 }
 
 /// The overlay's audio tab reads this once on open and every two seconds.
@@ -77,6 +89,14 @@ pub async fn overlay_audio_set_master(volume: f32) -> Result<(), String> {
 #[tauri::command]
 pub async fn overlay_audio_set_master_mute(muted: bool) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || with_com(|| imp::set_master_mute(muted)))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+/// Sets the default output device. `id` is from `overlay_audio_state`.
+#[tauri::command]
+pub async fn overlay_audio_set_device(id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || with_com(|| imp::set_default_device(&id)))
         .await
         .map_err(|error| error.to_string())?
 }
@@ -125,15 +145,18 @@ fn with_com<T>(work: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
 
 #[cfg(windows)]
 mod imp {
-    use super::{sort_sessions, AudioSession, AudioState};
-    use windows::core::{Interface, PWSTR};
-    use windows::Win32::Foundation::CloseHandle;
+    use super::{sort_sessions, AudioDevice, AudioSession, AudioState};
+    use windows::core::{GUID, Interface, PCWSTR, PWSTR};
+    use windows::Win32::Foundation::{CloseHandle, PROPERTYKEY};
     use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
     use windows::Win32::Media::Audio::{
         eConsole, eRender, IAudioSessionControl2, IAudioSessionManager2, IMMDeviceEnumerator,
-        ISimpleAudioVolume, MMDeviceEnumerator,
+        ISimpleAudioVolume, MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
     };
-    use windows::Win32::System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_ALL};
+    use windows::Win32::System::Com::StructuredStorage::{
+        PropVariantClear, PropVariantToStringAlloc,
+    };
+    use windows::Win32::System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_ALL, STGM_READ};
     use windows::Win32::System::Threading::{
         OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
         PROCESS_QUERY_LIMITED_INFORMATION,
@@ -204,10 +227,14 @@ mod imp {
                 });
             }
             sort_sessions(&mut list);
+            let default_device = take_pwstr(device.GetId().ok()).unwrap_or_default();
+            let devices = render_devices(&enumerator, &default_device);
             Ok(AudioState {
                 master,
                 master_muted,
                 sessions: list,
+                devices,
+                default_device,
             })
         }
     }
@@ -248,6 +275,117 @@ mod imp {
         unsafe {
             CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)
                 .map_err(|_| "audio device enumerator unavailable".to_string())
+        }
+    }
+
+    const PKEY_DEVICE_FRIENDLY_NAME: PROPERTYKEY = PROPERTYKEY {
+        fmtid: GUID::from_u128(0xa45c254e_df1c_4efd_8020_67d146a850e0),
+        pid: 14,
+    };
+
+    fn render_devices(enumerator: &IMMDeviceEnumerator, default_id: &str) -> Vec<AudioDevice> {
+        unsafe {
+            let Ok(collection) = enumerator.EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE) else {
+                return Vec::new();
+            };
+            let count = collection.GetCount().unwrap_or(0);
+            let mut devices = Vec::with_capacity(count as usize);
+            for index in 0..count {
+                let Ok(device) = collection.Item(index) else {
+                    continue;
+                };
+                let id = take_pwstr(device.GetId().ok()).unwrap_or_default();
+                if id.is_empty() {
+                    continue;
+                }
+                let name = device_friendly_name(&device).unwrap_or_else(|| id.clone());
+                devices.push(AudioDevice {
+                    default: id == default_id,
+                    id,
+                    name,
+                });
+            }
+            devices
+        }
+    }
+
+    fn device_friendly_name(device: &windows::Win32::Media::Audio::IMMDevice) -> Option<String> {
+        unsafe {
+            let store = device.OpenPropertyStore(STGM_READ).ok()?;
+            let mut value = store.GetValue(&PKEY_DEVICE_FRIENDLY_NAME).ok()?;
+            let text = PropVariantToStringAlloc(&value)
+                .ok()
+                .and_then(|wide| take_pwstr(Some(wide)));
+            let _ = PropVariantClear(&mut value);
+            text.filter(|name| !name.trim().is_empty())
+        }
+    }
+
+    /// Switches the default render endpoint. Windows exposes no documented API
+    /// for this; the policy client is the same COM object the Sound control
+    /// panel uses. The vtable slot is called directly because the interface is
+    /// not in the Windows metadata.
+    pub fn set_default_device(id: &str) -> Result<(), String> {
+        if id.trim().is_empty() {
+            return Err("no audio device selected".to_string());
+        }
+        unsafe {
+            #[link(name = "ole32")]
+            extern "system" {
+                fn CoCreateInstance(
+                    rclsid: *const GUID,
+                    punkouter: *mut core::ffi::c_void,
+                    dwclscontext: u32,
+                    riid: *const GUID,
+                    ppv: *mut *mut core::ffi::c_void,
+                ) -> i32;
+            }
+            let candidates = [
+                (
+                    GUID::from_u128(0x870af99c_171d_4f9e_af0d_e63df40c2bc9),
+                    GUID::from_u128(0xf8679f50_850a_4090_9c72_430f5824f0f6),
+                ),
+                (
+                    GUID::from_u128(0x294935ce_f637_4e7c_a41b_ab255460b862),
+                    GUID::from_u128(0x568b9108_44bf_40b4_9006_86afe5b5a620),
+                ),
+            ];
+            let mut raw: *mut core::ffi::c_void = std::ptr::null_mut();
+            let mut last = 0i32;
+            for (clsid, iid) in candidates {
+                last = CoCreateInstance(
+                    &clsid,
+                    std::ptr::null_mut(),
+                    CLSCTX_ALL.0,
+                    &iid,
+                    &mut raw,
+                );
+                if last >= 0 && !raw.is_null() {
+                    break;
+                }
+            }
+            if last < 0 || raw.is_null() {
+                return Err(format!("audio policy client unavailable (0x{last:08x})"));
+            }
+            let vtable = *(raw as *const *const usize);
+            // 0 QueryInterface, 1 AddRef, 2 Release, then the interface methods;
+            // SetDefaultEndpoint is slot 13.
+            let set_default: unsafe extern "system" fn(*mut core::ffi::c_void, PCWSTR, i32) -> i32 =
+                std::mem::transmute(*vtable.add(13));
+            let release: unsafe extern "system" fn(*mut core::ffi::c_void) -> u32 =
+                std::mem::transmute(*vtable.add(2));
+            let wide: Vec<u16> = id.encode_utf16().chain(std::iter::once(0)).collect();
+            let device = PCWSTR(wide.as_ptr());
+            // eConsole, eMultimedia, eCommunications: all three follow the pick.
+            for role in 0..3 {
+                let result = set_default(raw, device, role);
+                if result < 0 {
+                    let _ = release(raw);
+                    return Err(format!("default audio device could not be set (0x{result:08x})"));
+                }
+            }
+            let _ = release(raw);
+            Ok(())
         }
     }
 
@@ -363,11 +501,28 @@ mod imp {
     pub fn set_master_mute(_muted: bool) -> Result<(), String> {
         Err("audio mixer is Windows only".to_string())
     }
+    pub fn set_default_device(_id: &str) -> Result<(), String> {
+        Err("audio mixer is Windows only".to_string())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{clamp_volume, sort_sessions, AudioSession};
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "needs an active render endpoint"]
+    fn enumerates_render_endpoints_and_marks_the_default() {
+        let state = super::with_com(super::imp::state).expect("audio state");
+        assert!(!state.devices.is_empty(), "no render endpoints");
+        assert!(state.devices.iter().any(|device| device.default));
+        assert!(!state.default_device.is_empty());
+        // Re-apply the current default: exercises the policy vtable without
+        // changing the user's actual output.
+        super::with_com(|| super::imp::set_default_device(&state.default_device))
+            .expect("set default endpoint");
+    }
 
     fn session(name: &str, pid: u32, system: bool) -> AudioSession {
         AudioSession {

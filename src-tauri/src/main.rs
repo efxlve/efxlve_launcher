@@ -2107,6 +2107,7 @@ fn main() {
             overlay::audio::overlay_audio_set_volume,
             overlay::audio::overlay_audio_set_mute,
             overlay::audio::overlay_audio_set_master,
+            overlay::audio::overlay_audio_set_device,
             overlay::audio::overlay_audio_set_master_mute,
             overlay::crosshair::overlay_crosshair_configure,
             overlay::crosshair::overlay_crosshair_set_visible,

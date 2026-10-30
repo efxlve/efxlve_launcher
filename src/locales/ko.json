@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name} 저장됨",
   "overlay.audioPresetApplied": "{name} 적용됨",
   "overlay.audioPresetMissing": "먼저 프리셋을 선택하세요",
+  "overlay.audioOutput": "출력 장치",
   "overlay.audioMaster": "마스터",
   "overlay.audioSystem": "시스템 소리",
   "overlay.audioEmpty": "오디오 세션 없음",

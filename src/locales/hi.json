@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name} सहेजा गया",
   "overlay.audioPresetApplied": "{name} लागू किया गया",
   "overlay.audioPresetMissing": "पहले एक प्रीसेट चुनें",
+  "overlay.audioOutput": "आउटपुट डिवाइस",
   "overlay.audioMaster": "मास्टर",
   "overlay.audioSystem": "सिस्टम ध्वनियाँ",
   "overlay.audioEmpty": "कोई ऑडियो सत्र नहीं",

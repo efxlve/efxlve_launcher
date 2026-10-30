@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name} 已儲存",
   "overlay.audioPresetApplied": "{name} 已套用",
   "overlay.audioPresetMissing": "請先選擇一個預設",
+  "overlay.audioOutput": "輸出裝置",
   "overlay.audioMaster": "主音量",
   "overlay.audioSystem": "系統音效",
   "overlay.audioEmpty": "沒有音訊工作階段",

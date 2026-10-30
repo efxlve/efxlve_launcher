@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name}を保存しました",
   "overlay.audioPresetApplied": "{name}を適用しました",
   "overlay.audioPresetMissing": "先にプリセットを選択してください",
+  "overlay.audioOutput": "出力デバイス",
   "overlay.audioMaster": "マスター",
   "overlay.audioSystem": "システム音",
   "overlay.audioEmpty": "オーディオセッションがありません",

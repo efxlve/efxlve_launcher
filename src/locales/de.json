@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "{name} gespeichert",
   "overlay.audioPresetApplied": "{name} angewendet",
   "overlay.audioPresetMissing": "Wähle zuerst ein Preset",
+  "overlay.audioOutput": "Ausgabegerät",
   "overlay.audioMaster": "Hauptlautstärke",
   "overlay.audioSystem": "Systemtöne",
   "overlay.audioEmpty": "Keine Audiositzungen",

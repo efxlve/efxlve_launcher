@@ -2031,6 +2031,7 @@
   "overlay.audioPresetSaved": "บันทึก {name} แล้ว",
   "overlay.audioPresetApplied": "ใช้ {name} แล้ว",
   "overlay.audioPresetMissing": "เลือกพรีเซ็ตก่อน",
+  "overlay.audioOutput": "อุปกรณ์ส่งออกเสียง",
   "overlay.audioMaster": "หลัก",
   "overlay.audioSystem": "เสียงระบบ",
   "overlay.audioEmpty": "ไม่มีเซสชันเสียง",
