@@ -379,7 +379,7 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   re-validates the data URL and caps it at 160k. The markdown export strips the markers
   because a plain file cannot carry the data URLs.
 - Open: file-backed image storage for large maps, an image remove/replace action, and
-  the same paste handler in the launcher editor.
+  translations for the three new keys.
 
 ### M13 — Picture-in-picture guide player (built)
 

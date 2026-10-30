@@ -116,8 +116,8 @@ The overlay note editor now accepts a pasted image: it is resized and
 JPEG-compressed, stored in the note's `images` array, and rendered by the
 preview in the overlay, the launcher Notes page and the game drawer
 (`src/features/notes/`). Validate with a real screenshot and a map, then add
-file-backed storage for large images, an image remove/replace action, the paste
-handler in the launcher editor, and translations for the three new keys.
+file-backed storage for large images, an image remove/replace action, and
+translations for the three new keys.
 
 ## Browser PiP field pass
 

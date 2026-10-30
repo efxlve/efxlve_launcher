@@ -13,6 +13,7 @@ import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { toast } from "../../core/toast";
 import {
   LAUNCHER_SCOPE,
   cachedNotes,
@@ -26,6 +27,7 @@ import {
   type Note,
 } from "./notes-client";
 import { notePreview, renderMarkdownLite, scopeTail, toggleChecklist } from "./markdown";
+import { MAX_NOTE_IMAGES, clipboardImage, compressPastedImage } from "./note-image";
 
 /** The swatches the editor offers; empty is the neutral surface color. */
 const NOTE_COLORS = ["", "blue", "green", "yellow", "red", "purple"];
@@ -505,6 +507,31 @@ export function handleNotesAction(act: string | undefined, el: HTMLElement): boo
   }
 }
 
+async function insertLauncherImage(file: File): Promise<void> {
+  if (draftImages.length >= MAX_NOTE_IMAGES) {
+    toast(t("notes.imageLimit"));
+    return;
+  }
+  const dataUrl = await compressPastedImage(file);
+  if (!dataUrl) {
+    toast(t("notes.imageTooLarge"), "err");
+    return;
+  }
+  const textarea = document.getElementById("notes-body") as HTMLTextAreaElement | null;
+  if (!textarea) return;
+  const index = draftImages.length;
+  draftImages.push(dataUrl);
+  const marker = `![${t("notes.imageAlt")}](note-image:${index})`;
+  const start = textarea.selectionStart ?? draftBody.length;
+  const end = textarea.selectionEnd ?? start;
+  draftBody = `${draftBody.slice(0, start)}${marker}\n${draftBody.slice(end)}`;
+  textarea.value = draftBody;
+  const caret = start + marker.length + 1;
+  textarea.setSelectionRange(caret, caret);
+  queueSave();
+  if (editorMode === "preview") render();
+}
+
 /** Input wiring, once: search, title, body and the preview checkboxes. */
 function wireNotesView(): void {
   if (wired) return;
@@ -534,6 +561,15 @@ function wireNotesView(): void {
       draftBody = (target as HTMLTextAreaElement).value;
       queueSave();
     }
+  });
+
+  document.addEventListener("paste", (event) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.id !== "notes-body") return;
+    const file = clipboardImage(event);
+    if (!file) return;
+    event.preventDefault();
+    void insertLauncherImage(file);
   });
 
   document.addEventListener("click", (event) => {

@@ -14,6 +14,7 @@ import { t } from "../../i18n";
 import { toast } from "../../core/toast";
 import { LAUNCHER_SCOPE, cachedNotes, deleteNote, loadNotes, noteGuideUrls, notesFontSize, saveNote, setNotesFontSize, sortNotes, type Note } from "./notes-client";
 import { notePreview, renderMarkdownLite, toggleChecklist } from "./markdown";
+import { MAX_NOTE_IMAGES, clipboardImage, compressPastedImage } from "./note-image";
 
 let scope = LAUNCHER_SCOPE;
 let loadedOnce = false;
@@ -244,53 +245,8 @@ export function handleOverlayNotesAction(act: string | undefined, el: HTMLElemen
   }
 }
 
-function readImage(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("image"));
-    };
-    image.src = url;
-  });
-}
-
-/** The note body stores a short marker; the compressed data URL lives in the
- *  note's `images` array. 150k characters keeps three images inside the notes
- *  file and under the Rust cap. */
-async function compressPastedImage(file: File): Promise<string | null> {
-  try {
-    const image = await readImage(file);
-    for (const maxSide of [960, 720, 512]) {
-      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
-      const width = Math.max(1, Math.round(image.width * scale));
-      const height = Math.max(1, Math.round(image.height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (!context) return null;
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-      context.drawImage(image, 0, 0, width, height);
-      for (const quality of [0.82, 0.7, 0.55]) {
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        if (dataUrl.length <= 150_000) return dataUrl;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 async function insertPastedImage(file: File): Promise<void> {
-  if (draftImages.length >= 3) {
+  if (draftImages.length >= MAX_NOTE_IMAGES) {
     toast(t("notes.imageLimit"));
     return;
   }
@@ -299,7 +255,7 @@ async function insertPastedImage(file: File): Promise<void> {
     toast(t("notes.imageTooLarge"), "err");
     return;
   }
-  if (draftImages.length >= 3) {
+  if (draftImages.length >= MAX_NOTE_IMAGES) {
     toast(t("notes.imageLimit"));
     return;
   }
@@ -339,11 +295,7 @@ function wireOverlayNotes(): void {
   document.addEventListener("paste", (event) => {
     const target = event.target as HTMLElement | null;
     if (target?.id !== "ov-note-body") return;
-    const items = event.clipboardData?.items;
-    if (!items) return;
-    const image = Array.from(items).find((item) => item.type.startsWith("image/"));
-    if (!image) return;
-    const file = image.getAsFile();
+    const file = clipboardImage(event);
     if (!file) return;
     event.preventDefault();
     void insertPastedImage(file);
