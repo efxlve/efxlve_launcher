@@ -3436,5 +3436,8 @@
   "profile.none": "ไม่พบข้อมูลสำรองโปรไฟล์บนคลาวด์",
   "common.noResults": "ไม่พบผลลัพธ์",
   "common.clear": "ล้าง",
-  "settings.themeExportSuccess": "ส่งออก {name} เรียบร้อยแล้ว"
+  "settings.themeExportSuccess": "ส่งออก {name} เรียบร้อยแล้ว",
+  "xbox.installWaiting": "ยืนยันใน Store",
+  "xbox.installWaitingHint": "กดติดตั้งใน Microsoft Store คลิกที่นี่เพื่อหยุดติดตาม",
+  "xbox.installStopped": "หยุดติดตามการติดตั้งแล้ว อาจยังดำเนินอยู่ต่อใน Store"
 }

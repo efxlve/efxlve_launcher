@@ -3436,5 +3436,8 @@
   "profile.none": "Aucune sauvegarde de profil cloud trouvée.",
   "common.noResults": "Aucun résultat trouvé",
   "common.clear": "Effacer",
-  "settings.themeExportSuccess": "{name} exporté."
+  "settings.themeExportSuccess": "{name} exporté.",
+  "xbox.installWaiting": "Confirmer dans le Store",
+  "xbox.installWaitingHint": "Cliquez sur Installer dans le Microsoft Store. Cliquez ici pour arrêter le suivi.",
+  "xbox.installStopped": "Suivi de l'installation arrêté. Elle peut continuer dans le Store."
 }

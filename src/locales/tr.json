@@ -3436,5 +3436,8 @@
   "profile.none": "Bulut profil yedeği bulunamadı.",
   "common.noResults": "Sonuç bulunamadı",
   "common.clear": "Temizle",
-  "settings.themeExportSuccess": "{name} dışa aktarıldı."
+  "settings.themeExportSuccess": "{name} dışa aktarıldı.",
+  "xbox.installWaiting": "Store'da onayla",
+  "xbox.installWaitingHint": "Microsoft Store'da Kur'a bas. İzlemeyi durdurmak için buraya tıkla.",
+  "xbox.installStopped": "Kurulum izlemesi durdu. Store'da devam ediyor olabilir."
 }

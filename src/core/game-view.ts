@@ -550,6 +550,16 @@ export function epicActionButtons(
     }
     return `<button class="btn play${btn}" data-act="amazon-play" data-id="${esc(amazonId)}">${icon("play", 14)} ${t("common.play")}</button>`;
   }
+  if (s.appName.startsWith("xbox::")) {
+    const family = s.appName.slice(6);
+    if (S.xboxWaiting.has(family)) {
+      return `<button class="btn primary${btn}" data-act="xbox-install-cancel" data-id="${esc(family)}" title="${esc(t("xbox.installWaitingHint"))}">${icon("download", 12)} ${t("xbox.installWaiting")}</button>`;
+    }
+    if (!s.installed) {
+      return `<button class="btn install${btn}" data-act="companion-install" data-id="${s.appName}" data-store="xbox">${icon("download", 14)} ${t("common.install")}</button>`;
+    }
+    return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
   if (isCompanionKey(s.appName)) {
     const store = s.appName.slice(0, s.appName.indexOf("::"));
     if (!s.installed) {

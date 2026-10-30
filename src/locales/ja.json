@@ -3436,5 +3436,8 @@
   "profile.none": "クラウドのプロファイルバックアップが見つかりません。",
   "common.noResults": "一致する結果が見つかりません",
   "common.clear": "クリア",
-  "settings.themeExportSuccess": "{name} をエクスポートしました。"
+  "settings.themeExportSuccess": "{name} をエクスポートしました。",
+  "xbox.installWaiting": "ストアで確認",
+  "xbox.installWaitingHint": "Microsoft Store で [インストール] を押してください。監視を止めるにはここをクリック。",
+  "xbox.installStopped": "インストールの監視を停止しました。ストアでは続いている可能性があります。"
 }

@@ -134,6 +134,25 @@ export const xboxLoginHide = () => invoke<void>("xbox_login_hide");
 export const companionLaunch = (store: CompanionStore, id: string) =>
   invoke<void>("companion_launch", { store, id });
 
+/** One step of a Store install the launcher started. */
+export interface XboxInstallEvent {
+  /** Package family name, the library id of an Xbox row. */
+  id: string;
+  state: "waiting" | "done" | "cancelled" | "timeout";
+}
+
+/**
+ * Hands one Xbox install to the Microsoft Store and watches the package
+ * registration. The id is the family name, not the composite library key.
+ */
+export const xboxInstall = (id: string) => invoke<void>("xbox_install", { id });
+
+/** Stops watching. The Store keeps downloading. */
+export const xboxInstallCancel = (id: string) => invoke<void>("xbox_install_cancel", { id });
+
+/** Removes an installed Xbox title through the deployment service. */
+export const xboxUninstall = (id: string) => invoke<void>("xbox_uninstall", { id });
+
 /** Per-client behavior toggles (Integrations → After playing). */
 export interface CompanionClientSettings {
   closeAfterPlay: Record<string, boolean>;

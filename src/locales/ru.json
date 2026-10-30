@@ -3436,5 +3436,8 @@
   "profile.none": "Резервная копия профиля в облаке не найдена.",
   "common.noResults": "Результатов не найдено",
   "common.clear": "Очистить",
-  "settings.themeExportSuccess": "{name} экспортировано."
+  "settings.themeExportSuccess": "{name} экспортировано.",
+  "xbox.installWaiting": "Подтвердите в Магазине",
+  "xbox.installWaitingHint": "Нажмите «Установить» в Microsoft Store. Нажмите здесь, чтобы прекратить отслеживание.",
+  "xbox.installStopped": "Отслеживание установки остановлено. Она может продолжаться в Магазине."
 }

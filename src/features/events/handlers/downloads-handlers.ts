@@ -55,7 +55,8 @@ import {
   type EpicSettings,
 } from "../../../epic";
 import { uninstallAmazonGame } from "../../auth/amazon-auth-actions";
-import { companionGameAction, type CompanionStore } from "../../../companion";
+import { companionGameAction, xboxUninstall, type CompanionStore } from "../../../companion";
+import { loadCompanionLibrary } from "../../library/companion-library";
 import { steamGameAction } from "../../../steam";
 
 export function handleDownloadsAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
@@ -510,7 +511,12 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
             void steamGameAction(id.slice(7), "uninstall").catch((e: unknown) => toast(String(e), "err"));
           } else if (isCompanionKey(id)) {
             const store = sourceOfKey(id) as CompanionStore;
-            void companionGameAction(store, id.slice(id.indexOf("::") + 2), "uninstall").catch((e: unknown) => toast(String(e), "err"));
+            const gameId = id.slice(id.indexOf("::") + 2);
+            // Xbox removes the package itself; the other stores hand back.
+            const call = store === "xbox"
+              ? xboxUninstall(gameId).then(() => loadCompanionLibrary())
+              : companionGameAction(store, gameId, "uninstall");
+            void call.catch((e: unknown) => toast(String(e), "err"));
           } else {
             void epicUninstall(id);
           }

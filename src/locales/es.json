@@ -3436,5 +3436,8 @@
   "profile.none": "No se encontró ninguna copia de seguridad del perfil en la nube.",
   "common.noResults": "No se encontraron resultados",
   "common.clear": "Borrar",
-  "settings.themeExportSuccess": "{name} exportado."
+  "settings.themeExportSuccess": "{name} exportado.",
+  "xbox.installWaiting": "Confirmar en Store",
+  "xbox.installWaitingHint": "Pulsa Instalar en Microsoft Store. Haz clic aquí para dejar de vigilar.",
+  "xbox.installStopped": "Se dejó de vigilar la instalación. Puede seguir en la Store."
 }

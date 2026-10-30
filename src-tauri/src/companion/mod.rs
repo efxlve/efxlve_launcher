@@ -24,8 +24,9 @@ mod ubi_achievements;
 mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
-mod xbox_login;
+mod xbox_deploy;
 mod xbox_installed;
+mod xbox_login;
 mod xbox_vault;
 pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
 use ubisoft_login::UbiSync;
@@ -983,6 +984,33 @@ pub async fn companion_achievements_summary(
     })
     .await
     .unwrap_or_default()
+}
+
+/// Starts the Store install for one Xbox package and reports when it lands.
+/// The download and the licence work stay with the Store.
+#[tauri::command]
+pub fn xbox_install(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    if id.is_empty() {
+        return Err("Unknown game".into());
+    }
+    xbox_deploy::start(app, id)
+}
+
+/// Stops watching an install. The Store keeps downloading.
+#[tauri::command]
+pub fn xbox_install_cancel(id: String) {
+    xbox_deploy::cancel(&id);
+}
+
+/// Removes one installed Xbox title through the deployment service.
+#[tauri::command]
+pub async fn xbox_uninstall(id: String) -> Result<(), String> {
+    if id.is_empty() {
+        return Err("Unknown game".into());
+    }
+    tokio::task::spawn_blocking(move || xbox_deploy::uninstall(&id))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 /// Install, uninstall or launch a companion game. Install and uninstall use the

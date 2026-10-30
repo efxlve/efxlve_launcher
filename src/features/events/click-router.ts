@@ -111,7 +111,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxLoginOpen, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -763,10 +763,17 @@ document.addEventListener("click", (e) => {
     });
   } else if (act === "companion-install" && id) {
     const store = (t.dataset.store as CompanionStore) || "ubisoft";
-    // The protocol opens the client's own install prompt; the client downloads.
-    void companionGameAction(store, id, "install").catch((e: unknown) => toast(String(e), "err"));
+    // Cards carry the composite key; the backend keys on the bare game id.
+    const gameId = id.startsWith(`${store}::`) ? id.slice(store.length + 2) : id;
+    // Xbox installs go through the Store hand-off, which reports when the
+    // package lands. The other clients open their own install prompt.
+    const call = store === "xbox" ? xboxInstall(gameId) : companionGameAction(store, gameId, "install");
+    void call.catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "xbox-install-cancel" && id) {
+    void xboxInstallCancel(id).catch(() => {});
   } else if (act === "companion-uninstall" && id) {
     const store = (t.dataset.store as CompanionStore) || "ubisoft";
+    const gameId = id.startsWith(`${store}::`) ? id.slice(store.length + 2) : id;
     // Ask first: the client's own uninstaller then runs without this app in
     // the loop, so a stray click would be final.
     void askConfirm({
@@ -777,7 +784,13 @@ document.addEventListener("click", (e) => {
       cancel: i18nT("common.cancel"),
     }).then((ok) => {
       if (!ok) return;
-      void companionGameAction(store, id, "uninstall").catch((e: unknown) => toast(String(e), "err"));
+      if (store === "xbox") {
+        void xboxUninstall(gameId)
+          .then(() => loadCompanionLibrary())
+          .catch((e: unknown) => toast(String(e), "err"));
+        return;
+      }
+      void companionGameAction(store, gameId, "uninstall").catch((e: unknown) => toast(String(e), "err"));
     });
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {

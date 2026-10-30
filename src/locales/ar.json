@@ -3436,5 +3436,8 @@
   "profile.none": "لم يتم العثور على نسخة احتياطية للملف الشخصي في السحابة.",
   "common.noResults": "لم يتم العثور على نتائج",
   "common.clear": "مسح",
-  "settings.themeExportSuccess": "تم تصدير {name}."
+  "settings.themeExportSuccess": "تم تصدير {name}.",
+  "xbox.installWaiting": "أكّد في المتجر",
+  "xbox.installWaitingHint": "اضغط تثبيت في Microsoft Store. اضغط هنا لإيقاف المتابعة.",
+  "xbox.installStopped": "تم إيقاف متابعة التثبيت. قد يستمر في المتجر."
 }

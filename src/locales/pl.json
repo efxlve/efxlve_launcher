@@ -3436,5 +3436,8 @@
   "profile.none": "Nie znaleziono kopii zapasowej profilu w chmurze.",
   "common.noResults": "Nie znaleziono wyników",
   "common.clear": "Wyczyść",
-  "settings.themeExportSuccess": "Wyeksportowano {name}."
+  "settings.themeExportSuccess": "Wyeksportowano {name}.",
+  "xbox.installWaiting": "Potwierdź w Sklepie",
+  "xbox.installWaitingHint": "Kliknij Zainstaluj w Microsoft Store. Kliknij tutaj, aby przestać obserwować.",
+  "xbox.installStopped": "Zatrzymano obserwowanie instalacji. Może nadal trwać w Sklepie."
 }

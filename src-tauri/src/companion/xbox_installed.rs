@@ -11,9 +11,11 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use super::scan;
-use super::xbox_login::safe_aumid;
-use super::FoundGame;
+use super::{scan, xbox_login::safe_aumid, FoundGame};
+
+/// Short-lived copy of the installed list; the library asks several times per
+/// refresh and the package walk is the slow part.
+static CACHE: Mutex<Option<(Instant, Vec<FoundGame>)>> = Mutex::new(None);
 
 /// One registered package, free of WinRT types so the conversion stays testable.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -34,7 +36,6 @@ pub(crate) struct PackageRow {
 /// Installed titles, cached for a short window: one library refresh asks each
 /// store for its games several times in a row.
 pub(crate) fn installed_games() -> Vec<FoundGame> {
-    static CACHE: Mutex<Option<(Instant, Vec<FoundGame>)>> = Mutex::new(None);
     const TTL: Duration = Duration::from_secs(20);
 
     if let Ok(mut guard) = CACHE.lock() {
@@ -53,6 +54,14 @@ pub(crate) fn installed_games() -> Vec<FoundGame> {
         return games;
     }
     games_from_rows(&enumerate())
+}
+
+/// Drops the cached list after a deploy the launcher itself started, so the
+/// next library paint does not show the old install state.
+pub(crate) fn invalidate() {
+    if let Ok(mut guard) = CACHE.lock() {
+        *guard = None;
+    }
 }
 
 /// Library rows for the packages that are GDK titles.
@@ -128,23 +137,76 @@ fn non_empty(text: &str) -> Option<String> {
     (!text.is_empty()).then(|| text.to_string())
 }
 
+/// A package manager on the calling thread, with the apartment it needs. The
+/// blocking pool hands out plain threads, and a second call on a thread that
+/// already has one returns S_FALSE.
 #[cfg(windows)]
-fn enumerate() -> Vec<PackageRow> {
-    use windows::Management::Deployment::PackageManager;
-
-    // WinRT needs an apartment, and the blocking pool hands out plain threads.
-    // A second call on a thread that already has one returns S_FALSE.
+pub(crate) fn manager() -> Option<windows::Management::Deployment::PackageManager> {
     unsafe {
         let _ = windows::Win32::System::Com::CoInitializeEx(
             None,
             windows::Win32::System::Com::COINIT_MULTITHREADED,
         );
     }
-    let Ok(manager) = PackageManager::new() else {
-        return Vec::new();
-    };
+    windows::Management::Deployment::PackageManager::new().ok()
+}
+
+/// The registration of one family name for the signed-in user, when it exists.
+#[cfg(windows)]
+pub(crate) fn package_for_family(family: &str) -> Option<windows::ApplicationModel::Package> {
+    let manager = manager()?;
     // `FindPackages` reports every user and needs elevation; the empty SID asks
     // the same question for the signed-in user, which is the library's scope.
+    let list = manager
+        .FindPackagesByUserSecurityIdPackageFamilyName(
+            &windows::core::HSTRING::from(""),
+            &windows::core::HSTRING::from(family),
+        )
+        .ok()?;
+    let iterator = list.First().ok()?;
+    if !iterator.HasCurrent().unwrap_or(false) {
+        return None;
+    }
+    iterator.Current().ok()
+}
+
+/// True once the Store has registered the package. Deployment does not publish
+/// a package before it is installed, so this is also the finish line.
+pub(crate) fn is_installed(family: &str) -> bool {
+    #[cfg(windows)]
+    {
+        return package_for_family(family).is_some();
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = family;
+        false
+    }
+}
+
+/// `PackageFullName` of one family, the argument the deployment API removes.
+pub(crate) fn full_name(family: &str) -> Option<String> {
+    #[cfg(windows)]
+    {
+        let package = package_for_family(family)?;
+        return package
+            .Id()
+            .ok()
+            .and_then(|id| id.FullName().ok())
+            .map(|text| text.to_string_lossy());
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = family;
+        None
+    }
+}
+
+#[cfg(windows)]
+fn enumerate() -> Vec<PackageRow> {
+    let Some(manager) = manager() else {
+        return Vec::new();
+    };
     let Ok(packages) = manager.FindPackagesByUserSecurityId(&windows::core::HSTRING::from("")) else {
         return Vec::new();
     };
@@ -283,10 +345,18 @@ mod tests {
                 "{} has an unexpected launch target",
                 game.name
             );
+            // The watcher and the remover both ask these of the same id.
+            assert!(is_installed(&game.id), "{} is listed but not registered", game.name);
+            assert!(
+                full_name(&game.id).is_some_and(|full| !full.is_empty()),
+                "{} has no package full name",
+                game.name
+            );
             println!(
                 "{} | {} | {} | {}",
                 game.name, game.id, game.store_id, game.launch_uri
             );
         }
+        assert!(!is_installed("Example.NotInstalled_0000000000000"));
     }
 }

@@ -3436,5 +3436,8 @@
   "profile.none": "Nenhum backup de perfil na nuvem encontrado.",
   "common.noResults": "Nenhum resultado encontrado",
   "common.clear": "Limpar",
-  "settings.themeExportSuccess": "{name} exportado."
+  "settings.themeExportSuccess": "{name} exportado.",
+  "xbox.installWaiting": "Confirmar na Store",
+  "xbox.installWaitingHint": "Pressione Instalar na Microsoft Store. Clique aqui para parar de acompanhar.",
+  "xbox.installStopped": "Acompanhamento da instalação parado. Ela pode continuar na Store."
 }

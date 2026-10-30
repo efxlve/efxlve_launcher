@@ -3436,5 +3436,8 @@
   "profile.none": "클라우드 프로필 백업을 찾을 수 없습니다.",
   "common.noResults": "검색 결과가 없습니다",
   "common.clear": "지우기",
-  "settings.themeExportSuccess": "{name} 내보내기 완료."
+  "settings.themeExportSuccess": "{name} 내보내기 완료.",
+  "xbox.installWaiting": "스토어에서 확인",
+  "xbox.installWaitingHint": "Microsoft Store에서 설치를 누르세요. 감시를 중지하려면 여기를 클릭하세요.",
+  "xbox.installStopped": "설치 감시를 중지했습니다. 스토어에서는 계속 진행 중일 수 있습니다."
 }

@@ -579,6 +579,11 @@ export const S = {
   amazonInstallDir: "",
   /** Shown default when no folder is set (`<home>\Games\Amazon`). */
   amazonDefaultDir: "",
+  /**
+   * Xbox package family names whose Store install the launcher is watching.
+   * The Store runs the deploy; the launcher only reports when it lands.
+   */
+  xboxWaiting: (new Set()) as Set<string>,
   preferredCdn: "",
   eosOverlay: (null) as EosOverlayStatus | null,
   eosSupportMap: new Map<string, boolean>(),

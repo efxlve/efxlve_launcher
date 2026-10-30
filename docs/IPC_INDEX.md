@@ -136,6 +136,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `discord_voice_watch_stop` | `discordVoiceWatchStop({ ... })` | `src-tauri/src/discord_rpc.rs` |
 | `discord_web_voice_state` | `discordWebVoiceState({ ... })` | `src-tauri/src/discord_host.rs` |
 | `download_store_extension` | `downloadStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
+| `ea_direct_probe` | `eaDirectProbe({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_direct_set_enabled` | `eaDirectSetEnabled({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_direct_status` | `eaDirectStatus({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_login_hide` | `eaLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_login_open` | `eaLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `egl_launcher_present` | `eglLauncherPresent({ ... })` | `src-tauri/src/egl_removal.rs` |
@@ -462,5 +465,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `toast_done` | `toastDone({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `toast_ready` | `toastReady({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
+| `xbox_install` | `xboxInstall({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `xbox_install_cancel` | `xboxInstallCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_login_hide` | `xboxLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_login_open` | `xboxLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `xbox_uninstall` | `xboxUninstall({ ... })` | `src-tauri/src/companion/mod.rs` |

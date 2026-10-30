@@ -3436,5 +3436,8 @@
   "profile.none": "未找到云端个人资料备份。",
   "common.noResults": "未找到结果",
   "common.clear": "清除",
-  "settings.themeExportSuccess": "{name} 已导出。"
+  "settings.themeExportSuccess": "{name} 已导出。",
+  "xbox.installWaiting": "在商店中确认",
+  "xbox.installWaitingHint": "请在 Microsoft Store 中点按“安装”。点按此处停止监视。",
+  "xbox.installStopped": "已停止监视安装。安装可能仍在商店中继续。"
 }

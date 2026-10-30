@@ -3436,5 +3436,8 @@
   "profile.none": "找不到雲端個人檔案備份。",
   "common.noResults": "找不到結果",
   "common.clear": "清除",
-  "settings.themeExportSuccess": "{name} 已匯出。"
+  "settings.themeExportSuccess": "{name} 已匯出。",
+  "xbox.installWaiting": "在商店中確認",
+  "xbox.installWaitingHint": "請在 Microsoft Store 中點選「安裝」。點選此處停止監視。",
+  "xbox.installStopped": "已停止監視安裝。安裝可能仍在商店中繼續。"
 }

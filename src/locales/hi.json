@@ -3436,5 +3436,8 @@
   "profile.none": "क्लाउड पर कोई प्रोफ़ाइल बैकअप नहीं मिला।",
   "common.noResults": "कोई परिणाम नहीं मिला",
   "common.clear": "साफ़ करें",
-  "settings.themeExportSuccess": "{name} निर्यात किया गया।"
+  "settings.themeExportSuccess": "{name} निर्यात किया गया।",
+  "xbox.installWaiting": "Store में पुष्टि करें",
+  "xbox.installWaitingHint": "Microsoft Store में Install दबाएँ। निगरानी रोकने के लिए यहाँ क्लिक करें।",
+  "xbox.installStopped": "इंस्टॉल की निगरानी रोक दी गई। यह Store में जारी रह सकता है।"
 }

@@ -84,6 +84,7 @@ import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
+import type { XboxInstallEvent } from "../../companion";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { unwatchSteamAchievements, watchSteamAchievements } from "../../core/steam-watch";
 import { loadSavedAccounts } from "../auth/account-switcher";
@@ -398,6 +399,25 @@ export async function initApp(hooks: {
       startSpeedChartTimer();
       pushSpeedData(speedBytes, diskBytes);
       scheduleDlDomUpdate(id);
+    });
+
+    listenLater<XboxInstallEvent>("xbox-install", (event) => {
+      const { id, state } = event.payload;
+      if (state === "waiting") {
+        S.xboxWaiting.add(id);
+        hooks.scheduleRender();
+        return;
+      }
+      S.xboxWaiting.delete(id);
+      if (state === "done") {
+        // The package is registered, so the row can flip to Play immediately.
+        const title = summaryOf(`xbox::${id}`)?.title || t("common.installed");
+        toast(`${title} · ${t("common.installed")}`, "ok");
+        void loadCompanionLibrary();
+        return;
+      }
+      if (state === "timeout") toast(t("xbox.installStopped"), "err");
+      hooks.scheduleRender();
     });
 
     listenLater<DlProgressEvent>("download-progress", (event) => {
