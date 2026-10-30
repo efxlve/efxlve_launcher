@@ -750,8 +750,27 @@ export async function initApp(hooks: {
         // duplicate-event guard, because a manual stop already cleared the flag
         // and its watcher event would otherwise return early.
         refreshAchievementsAfterSession(id, sessionSeconds);
-        // A duplicate stop event must not toast or resume downloads twice.
-        if (!S.runningGames.delete(id)) return;
+        // A manual Stop clears the running flag before its game-status event
+        // arrives, so the auto-paused download must resume before the duplicate
+        // guard. Clearing the marker first keeps a repeated event from resuming
+        // the transfer twice.
+        const wasRunning = S.runningGames.delete(id);
+        if (S.autoPausedDl && S.runningGames.size === 0) {
+          const resumeId = S.autoPausedDl;
+          S.autoPausedDl = null;
+          const isGog = resumeId.startsWith("gog::");
+          const stillPaused = isGog ? S.gogDlPaused : S.dlQueueStatus.isPaused;
+          if (stillPaused) {
+            void (isGog ? gogResumeDownload(resumeId) : epicResumeDownload(resumeId))
+              .then(() => {
+                if (isGog) S.gogDlPaused = false;
+                else S.dlQueueStatus.isPaused = false;
+              })
+              .catch(() => {});
+          }
+        }
+        // A duplicate stop event must not toast again.
+        if (!wasRunning) return;
         if (sum && S.currentModalAppName === id) paintGameMeta(sum);
         if (S.currentModalAppName === id) refreshGameActionUi(id);
         void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});
@@ -778,22 +797,6 @@ export async function initApp(hooks: {
             : t("status.closed", { title }),
           "",
         );
-        // Resume a download this rule paused, once no game is running anymore and
-        // the user has not resumed it manually in the meantime.
-        if (S.autoPausedDl && S.runningGames.size === 0) {
-          const resumeId = S.autoPausedDl;
-          const isGog = resumeId.startsWith("gog::");
-          const stillPaused = isGog ? S.gogDlPaused : S.dlQueueStatus.isPaused;
-          if (stillPaused) {
-            S.autoPausedDl = null;
-            void (isGog ? gogResumeDownload(resumeId) : epicResumeDownload(resumeId))
-              .then(() => {
-                if (isGog) S.gogDlPaused = false;
-                else S.dlQueueStatus.isPaused = false;
-              })
-              .catch(() => {});
-          }
-        }
         // Opt-in: back up local saves when the game closes.
         if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {
           void epicBackupSave(id)
