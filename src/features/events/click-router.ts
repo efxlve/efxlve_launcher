@@ -78,7 +78,7 @@ import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
 import { openEpicLauncherDownload } from "../epic-launcher/epic-launcher-notice";
 import { handleWindowResize, updateMaxIcon, appSetAutostart } from "../../core/window";
-import { setLanguage, t as i18nT } from "../../i18n";
+import { localizeMessage, setLanguage, t as i18nT } from "../../i18n";
 import {
   epicDetectEglGames,
   epicGetQueue,
@@ -172,6 +172,37 @@ function toggleStoreExtension(id: "steamdb" | "augmented_steam"): void {
       render();
     })
     .catch((e: unknown) => toast(String(e), "err"));
+}
+
+/** Match a library title against the Demux catalog without punctuation noise. */
+const ubiTitleKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/** Confirm a direct install and start it; shared by the game page and settings. */
+async function beginUbiDirectInstall(productId: number, name: string): Promise<void> {
+  const plan = await ubiDirectPlan(productId);
+  const ok = await askConfirm({
+    title: i18nT("common.install"),
+    name: plan.name || name,
+    body: `${fmtBytes(plan.bytes)} · ${plan.files} files · ${plan.installDir}`,
+    confirm: i18nT("common.install"),
+    cancel: i18nT("common.cancel"),
+  });
+  if (!ok) return;
+  S.ubiDirectInstalling.add(productId);
+  S.ubiDirectProgress[productId] = {
+    productId,
+    doneBytes: 0,
+    totalBytes: plan.bytes,
+    file: "",
+  };
+  render();
+  try {
+    await ubiDirectInstall(productId);
+  } catch (error) {
+    S.ubiDirectInstalling.delete(productId);
+    render();
+    throw error;
+  }
 }
 
 document.addEventListener("click", (e) => {
@@ -811,32 +842,30 @@ document.addEventListener("click", (e) => {
     const productId = Number(select?.value || 0);
     if (!productId) return;
     const game = S.ubiDirect?.games.find((row) => row.productId === productId);
-    void ubiDirectPlan(productId)
-      .then((plan) =>
-        askConfirm({
-          title: i18nT("common.install"),
-          name: plan.name || game?.name,
-          body: `${fmtBytes(plan.bytes)} · ${plan.files} files · ${plan.installDir}`,
-          confirm: i18nT("common.install"),
-          cancel: i18nT("common.cancel"),
-        }).then((ok) => {
-          if (!ok) return;
-          S.ubiDirectInstalling.add(productId);
-          S.ubiDirectProgress[productId] = {
-            productId,
-            doneBytes: 0,
-            totalBytes: plan.bytes,
-            file: "",
-          };
-          render();
-          return ubiDirectInstall(productId).catch((e: unknown) => {
-            S.ubiDirectInstalling.delete(productId);
-            render();
-            throw e;
-          });
-        }),
-      )
-      .catch((e: unknown) => toast(String(e), "err"));
+    void beginUbiDirectInstall(productId, game?.name || "").catch((e: unknown) =>
+      toast(String(e), "err"),
+    );
+  } else if (act === "ubi-direct-install-game" && id) {
+    const title = summaryOf(id)?.title || "";
+    void (async () => {
+      try {
+        if (!S.ubiDirect) S.ubiDirect = await ubiDirectProbe();
+        const key = ubiTitleKey(title);
+        const candidates = S.ubiDirect.games.filter((game) => game.installable);
+        const match =
+          candidates.find((game) => ubiTitleKey(game.name) === key) ||
+          candidates.find((game) => ubiTitleKey(game.name).includes(key)) ||
+          candidates.find((game) => key.includes(ubiTitleKey(game.name)));
+        if (!match) {
+          toast(i18nT("accounts.ubiNoGames"), "err");
+          return;
+        }
+        await beginUbiDirectInstall(match.productId, match.name);
+      } catch (e) {
+        if (String(e).includes("ubiSessionExpired")) setView("accounts");
+        toast(localizeMessage(String(e)), "err");
+      }
+    })();
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

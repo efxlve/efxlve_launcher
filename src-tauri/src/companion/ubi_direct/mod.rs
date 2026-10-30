@@ -43,7 +43,7 @@ pub(crate) struct UbiDirectProbe {
 /// because the exchange is rate limited per profile.
 async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
     let session = ubisoft_login::stored_session()
-        .ok_or_else(|| "@t:accounts.ubiLoginRequired".to_string())?;
+        .ok_or_else(|| "@t:accounts.ubiSessionExpired".to_string())?;
 
     match wire::Demux::connect(&session.ticket).await {
         Ok(demux) => return Ok((demux, session)),
