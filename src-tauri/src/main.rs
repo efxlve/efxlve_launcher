@@ -2125,6 +2125,7 @@ fn main() {
             companion::ubi_direct_probe,
             companion::ubi_direct_plan,
             companion::ubi_direct_install,
+            companion::ubi_direct_launch,
             companion::xbox_install,
             companion::xbox_install_cancel,
             companion::xbox_uninstall,

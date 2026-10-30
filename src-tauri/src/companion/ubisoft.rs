@@ -294,6 +294,35 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
         None => installed.iter().filter(|g| g.store == "ubisoft").cloned().collect(),
     };
     let mut games = merge_owned(games, &load_owned());
+    // A game the launcher installed itself is not in the client's uninstall
+    // registry. Mark the matching local row installed, or add the row when the
+    // client never cached it.
+    for installed in crate::companion::ubi_installs::load() {
+        if let Some(local) = games.iter_mut().find(|game| {
+            game.name.eq_ignore_ascii_case(&installed.name)
+                || (!game.install_path.is_empty()
+                    && game.install_path.eq_ignore_ascii_case(&installed.install_dir))
+        }) {
+            local.installed = true;
+            local.install_path = installed.install_dir.clone();
+            continue;
+        }
+        games.push(FoundGame {
+            store: "ubisoft".into(),
+            id: installed.product_id.to_string(),
+            name: installed.name.clone(),
+            install_path: installed.install_dir.clone(),
+            installed: true,
+            store_id: String::new(),
+            launch_exe: String::new(),
+            launch_uri: String::new(),
+            install_uri: String::new(),
+            uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
+            description: String::new(),
+        });
+    }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     games
 }

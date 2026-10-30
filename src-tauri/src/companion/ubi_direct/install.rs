@@ -16,7 +16,7 @@ use sha1::{Digest, Sha1};
 
 use super::manifest::{self, Manifest, ManifestFile, ManifestSlice};
 use super::wire;
-use crate::companion::ubisoft;
+use crate::companion::{ubi_installs, ubisoft};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -457,6 +457,17 @@ where
         total_bytes,
         file: String::new(),
     });
+    let exe = pick_executable(&manifest);
+    ubi_installs::save(&ubi_installs::InstalledGame {
+        product_id,
+        name: name.clone(),
+        install_dir: install_dir.display().to_string(),
+        exe,
+        installed_at: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
+    });
     Ok(InstallSummary {
         product_id,
         name,
@@ -465,6 +476,49 @@ where
         bytes: total_bytes,
         skipped_files,
     })
+}
+
+/// Pick the game executable out of the manifest. The main binary is the largest
+/// `.exe` that is not a redistributable, installer, crash reporter or helper.
+/// A title whose launcher lives elsewhere can be pointed at by hand later.
+fn pick_executable(manifest: &Manifest) -> String {
+    const JUNK: &[&str] = &[
+        "vcredist",
+        "vc_redist",
+        "dxsetup",
+        "directx",
+        "redist",
+        "unins",
+        "setup",
+        "install",
+        "crash",
+        "helper",
+        "uplayinstaller",
+        "dotnet",
+        "netfx",
+        "activation",
+        "cleanup",
+    ];
+    let mut best: Option<&ManifestFile> = None;
+    for file in &manifest.files {
+        if file.is_dir {
+            continue;
+        }
+        let lower = file.name.to_lowercase();
+        if !lower.ends_with(".exe") {
+            continue;
+        }
+        if lower.contains("support/") || lower.contains("support\\") {
+            continue;
+        }
+        if JUNK.iter().any(|junk| lower.contains(junk)) {
+            continue;
+        }
+        if best.map(|current| file.size > current.size).unwrap_or(true) {
+            best = Some(file);
+        }
+    }
+    best.map(|file| file.name.clone()).unwrap_or_default()
 }
 
 /// Where a direct install lands when the caller has no preference.

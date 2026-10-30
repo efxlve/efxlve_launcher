@@ -22,6 +22,7 @@ mod scan;
 mod signin;
 mod ubi_achievements;
 mod ubi_direct;
+mod ubi_installs;
 mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
@@ -499,6 +500,17 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
             Err(err) => ea_direct::remember_error(&err),
         }
     }
+    // A game the launcher installed from Ubisoft's CDN has its own executable
+    // and no client protocol. Start it directly; the client stays out of the
+    // path.
+    if store == "ubisoft" && !game.install_path.is_empty() {
+        if let Some(installed) = ubi_installs::load()
+            .into_iter()
+            .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
+        {
+            return ubi_direct::launch_game(installed.product_id);
+        }
+    }
     if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
         return launch::open_game(&game.launch_uri, &game.launch_exe);
     }
@@ -524,6 +536,12 @@ pub async fn ubi_direct_plan(
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| ubi_direct::install::default_install_dir(product_id));
     ubi_direct::plan_game(product_id, dir).await
+}
+
+/// Start a game the launcher installed, without Ubisoft Connect.
+#[tauri::command]
+pub fn ubi_direct_launch(product_id: u32) -> Result<(), String> {
+    ubi_direct::launch_game(product_id)
 }
 
 /// Start a direct install in the background. Progress arrives on
@@ -1100,6 +1118,14 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
     let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
         return Err("Unknown game".into());
     };
+    if store == "ubisoft" && action == "launch" && !game.install_path.is_empty() {
+        if let Some(installed) = ubi_installs::load()
+            .into_iter()
+            .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
+        {
+            return ubi_direct::launch_game(installed.product_id);
+        }
+    }
     // Riot: launch, install and uninstall are product flags on the client exe.
     if store == "riot" {
         return match riot::action_command(&game.id, &action) {

@@ -9,6 +9,7 @@
 mod auth;
 mod codec;
 pub(crate) mod install;
+mod launch;
 pub(crate) mod manifest;
 pub(crate) mod wire;
 
@@ -130,6 +131,11 @@ pub(crate) async fn install_game(
         let _ = app.emit("ubi-direct-progress", progress);
     })
     .await
+}
+
+/// Start a game the launcher installed, without Ubisoft Connect.
+pub(crate) fn launch_game(product_id: u32) -> Result<(), String> {
+    launch::launch(product_id)
 }
 
 #[cfg(test)]

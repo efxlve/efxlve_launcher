@@ -128,6 +128,10 @@ export const ubiDirectPlan = (productId: number, path?: string) =>
 export const ubiDirectInstall = (productId: number, path?: string) =>
   invoke<void>("ubi_direct_install", { productId, path });
 
+/** Starts a game the launcher installed, without Ubisoft Connect. */
+export const ubiDirectLaunch = (productId: number) =>
+  invoke<void>("ubi_direct_launch", { productId });
+
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });
