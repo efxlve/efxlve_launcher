@@ -6012,6 +6012,15 @@ body.ov-browser-pip .ov-browser-pipbar {
   max-width: 140px;
 }
 
+.ov-audio-range:focus-visible,
+.ov-audio-mute:focus-visible,
+.ov-audio-refresh:focus-visible,
+.ov-audio-presets button:focus-visible,
+.ov-audio-presets select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .ov-audio-refresh {
   width: 24px;
   height: 24px;

@@ -6972,7 +6972,7 @@ function getFocusableElements(): HTMLElement[] {
   document.querySelectorAll<HTMLElement>(".ov-widget").forEach((w) => {
     if (w.style.display !== "none") {
       w.querySelectorAll<HTMLElement>(
-        "button, [data-ov-preview], [data-nav-row], .ov-card[data-nav-target], textarea, input",
+        "button, [data-ov-preview], [data-nav-row], .ov-card[data-nav-target], textarea, input, select",
       ).forEach((el) => {
         // Toggle switches hide their checkbox: the ring belongs on the label.
         if (el instanceof HTMLInputElement && el.type === "checkbox") {
@@ -7058,6 +7058,16 @@ function adjustRange(input: HTMLInputElement, step: number): void {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+/** Left/right or A on a select cycles its enabled options. */
+function adjustSelect(select: HTMLSelectElement, step: number): void {
+  const options = Array.from(select.options).filter((option) => !option.disabled);
+  if (options.length < 2) return;
+  const current = Math.max(0, options.indexOf(select.options[select.selectedIndex]));
+  const next = (current + step + options.length) % options.length;
+  select.selectedIndex = Array.from(select.options).indexOf(options[next]);
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 function activateFocused(): void {
   ensureFocus();
   const el = focusedEl;
@@ -7069,6 +7079,10 @@ function activateFocused(): void {
   }
   if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && el.type === "text")) {
     el.focus();
+    return;
+  }
+  if (el instanceof HTMLSelectElement) {
+    adjustSelect(el, 1);
     return;
   }
   const switchesTab = el.matches("[data-nav-target], [data-ov-tab], [data-ov-widget-toggle]");
@@ -7235,6 +7249,8 @@ function pollGamepadLoop(): void {
       navRepeatAt = now;
       if (focusedEl instanceof HTMLInputElement && focusedEl.type === "range" && (dir === "left" || dir === "right")) {
         adjustRange(focusedEl, dir === "right" ? 4 : -4);
+      } else if (focusedEl instanceof HTMLSelectElement && (dir === "left" || dir === "right")) {
+        adjustSelect(focusedEl, dir === "right" ? 1 : -1);
       } else {
         moveFocus(dir);
       }

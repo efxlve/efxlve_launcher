@@ -348,7 +348,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   default through the audio policy client (with the Vista client as fallback).
 - Session rows show the owning process icon, extracted once per executable and cached
   as a small PNG data URL.
-- Open: controller focus order.
+- Controller navigation reaches the device and preset selects, cycles them with
+  left/right (or A), and adjusts the volume sliders with left/right.
+- Open: an output-device picker field pass on a real device switch.
 
 ### M10 — Tactical crosshair (built)
 
