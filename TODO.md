@@ -74,6 +74,7 @@ locked achievements; pinning the widget keeps that section as a compact ghost
 HUD (`src/features/overlay/overlay.ts`). Validate on a real game: track from the
 achievement detail, pin the Achievements widget, close the panel, and confirm the
 progress bar survives; unlock one and confirm it disappears from the tracked set.
+The list filters by all, unlocked, locked, near and hidden, with hidden rows inline.
 Then add per-game tracker presets.
 
 ## Notes image field pass

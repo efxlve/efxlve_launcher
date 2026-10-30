@@ -305,7 +305,7 @@ let cachedAchievements: AchievementsData | null = null;
 let achLoading = false;
 let achLoadGeneration = 0;
 let achDetail: string | null = null;
-let achFilter: "all" | "locked" | "near" = "all";
+let achFilter: "all" | "unlocked" | "locked" | "hidden" | "near" = "all";
 let achRevealed = new Set<string>();
 let achCommunity = new Map<string, SteamAchievementCommunity>();
 let achCommunityLoading = new Set<string>();
@@ -2706,15 +2706,22 @@ function renderAchList(data: AchievementsData): string {
   const total = data.total_achievements || stats.total;
   const unlocked = stats.unlocked || data.user_unlocked;
   const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
+  const hiddenCount = data.achievements.filter((item) => Boolean(item.hidden)).length;
+  const lockedCount = Math.max(0, total - unlocked);
   const nearCount = data.achievements.filter((item) => {
     const progress = achievementProgress(item);
     return !achMasked(item) && !isAchievementUnlocked(item) && progress >= 0.5 && progress < 1;
   }).length;
   if (achFilter === "near" && nearCount === 0) achFilter = "all";
+  if (achFilter === "hidden" && hiddenCount === 0) achFilter = "all";
 
   let items = [...data.achievements];
-  if (achFilter === "locked") {
+  if (achFilter === "unlocked") {
+    items = items.filter(isAchievementUnlocked);
+  } else if (achFilter === "locked") {
     items = items.filter((item) => !isAchievementUnlocked(item));
+  } else if (achFilter === "hidden") {
+    items = items.filter((item) => Boolean(item.hidden));
   } else if (achFilter === "near") {
     items = items.filter((item) => {
       const progress = achievementProgress(item);
@@ -2730,8 +2737,13 @@ function renderAchList(data: AchievementsData): string {
     return Number(isAchievementUnlocked(b)) - Number(isAchievementUnlocked(a));
   });
 
-  const chip = (value: typeof achFilter, label: string, count: number): string =>
-    `<button type="button" class="ov-ach-filter ${achFilter === value ? "active" : ""}" data-ov="ach-filter" data-val="${value}">${esc(label)}<span>${count}</span></button>`;
+  const chip = (
+    value: typeof achFilter,
+    label: string,
+    count: number,
+    glyph: IconName,
+  ): string =>
+    `<button type="button" class="ov-ach-filter ${achFilter === value ? "active" : ""}" data-ov="ach-filter" data-val="${value}" aria-pressed="${achFilter === value}">${icon(glyph, 11)}<span class="ov-ach-filter-label">${esc(label)}</span><span class="ov-ach-filter-count">${count}</span></button>`;
 
   const rows = items
     .map((item) => {
@@ -2745,7 +2757,7 @@ function renderAchList(data: AchievementsData): string {
           ? `<button type="button" class="ov-ach-row-track${tracked ? " active" : ""}" data-ov="ach-track" data-ach="${esc(item.name)}" title="${esc(tracked ? t("overlay.trackerUntrack") : t("overlay.trackerTrack"))}">${icon("pin", 11)}</button>`
           : "";
       return `<div class="ov-ach-row${unlocked ? " unlocked" : ""}" data-ov="ach-open" data-ach="${esc(item.name)}" data-nav-row role="button" tabindex="0">
-        ${item.icon_link && !masked ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : `<span class="ov-ach-icon"></span>`}
+        ${item.icon_link && !masked ? `<img class="ov-ach-icon" src="${esc(item.icon_link)}" alt="" loading="lazy" />` : masked ? `<span class="ov-ach-icon ov-ach-icon-masked" title="${esc(t("ach.filterHidden"))}">${icon("eye-off", 15)}</span>` : `<span class="ov-ach-icon"></span>`}
         <div class="ov-ach-body">
           <div class="ov-ach-name">${esc(masked ? t("ach.hiddenName") : achDisplayName(item))}</div>
           <div class="ov-ach-desc">${esc(masked ? t("ach.hiddenDesc") : item.description || "")}</div>
@@ -2786,9 +2798,11 @@ function renderAchList(data: AchievementsData): string {
     </div>
     ${trackerSectionHtml(data)}
     <div class="ov-ach-filters">
-      ${chip("all", t("ach.filterAll"), stats.total)}
-      ${chip("locked", t("ach.filterLocked"), Math.max(0, stats.total - unlocked))}
-      ${nearCount > 0 ? chip("near", t("ach.filterNear"), nearCount) : ""}
+      ${chip("all", t("ach.filterAll"), stats.total, "layers")}
+      ${chip("unlocked", t("ach.filterUnlocked"), unlocked, "check")}
+      ${chip("locked", t("ach.filterLocked"), lockedCount, "lock")}
+      ${nearCount > 0 ? chip("near", t("ach.filterNear"), nearCount, "sparkles") : ""}
+      ${hiddenCount > 0 ? chip("hidden", t("ach.filterHidden"), hiddenCount, "eye-off") : ""}
     </div>
     <div class="ov-ach-full-list">${body || `<div class="ov-empty">${esc(t("ach.emptyTitle"))}</div>`}</div>`;
 }
@@ -6273,7 +6287,7 @@ function wireEvents(): void {
       return;
     } else if (action === "ach-filter") {
       const value = actionEl.dataset.val;
-      if (value === "all" || value === "locked" || value === "near") {
+      if (value === "all" || value === "unlocked" || value === "locked" || value === "hidden" || value === "near") {
         achFilter = value;
         renderAchView();
       }

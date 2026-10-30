@@ -2080,6 +2080,14 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   background: var(--surface-3);
   object-fit: cover;
   flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.ov-ach-icon-masked {
+  border: 1px dashed var(--line-strong);
+  background: transparent;
 }
 
 .ov-ach-state {
@@ -2110,9 +2118,9 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 .ov-ach-filter {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 8px;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: var(--surface-1);
@@ -2120,11 +2128,46 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   font-family: inherit;
   font-size: 11px;
   cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
 }
 
-.ov-ach-filter span { color: var(--text-3); font-variant-numeric: tabular-nums; }
-.ov-ach-filter.active { border-color: var(--accent); color: var(--text); background: var(--surface-3); }
-.ov-ach-filter.active span { color: var(--text-2); }
+.ov-ach-filter svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.7;
+}
+
+.ov-ach-filter:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.ov-ach-filter-label {
+  color: inherit;
+}
+
+.ov-ach-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-ach-filter.active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.ov-ach-filter.active svg { opacity: 1; color: var(--accent); }
+.ov-ach-filter.active .ov-ach-filter-count { background: var(--surface-2); color: var(--text); }
 
 .ov-ach-hidden-row {
   display: flex;
