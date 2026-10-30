@@ -579,6 +579,11 @@ export const S = {
   amazonInstallDir: "",
   /** Shown default when no folder is set (`<home>\Games\Amazon`). */
   amazonDefaultDir: "",
+  /** Native Ubisoft ownership scan (Demux) and its install progress. */
+  ubiDirect: (null) as import("../companion").UbiDirectProbe | null,
+  ubiDirectLoading: false,
+  ubiDirectProgress: ({} as Record<number, import("../companion").UbiDirectProgress>),
+  ubiDirectInstalling: (new Set<number>()) as Set<number>,
   /**
    * Xbox package family names whose Store install the launcher is watching.
    * The Store runs the deploy; the launcher only reports when it lands.

@@ -84,7 +84,7 @@ import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
-import type { XboxInstallEvent } from "../../companion";
+import type { UbiDirectProgress, UbiDirectSummary, XboxInstallEvent } from "../../companion";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { unwatchSteamAchievements, watchSteamAchievements } from "../../core/steam-watch";
 import { loadSavedAccounts } from "../auth/account-switcher";
@@ -417,6 +417,34 @@ export async function initApp(hooks: {
         return;
       }
       if (state === "timeout") toast(t("xbox.installStopped"), "err");
+      hooks.scheduleRender();
+    });
+
+    listenLater<UbiDirectProgress>("ubi-direct-progress", (event) => {
+      const progress = event.payload;
+      S.ubiDirectProgress[progress.productId] = progress;
+      const bar = document.querySelector<HTMLElement>(
+        `[data-ubi-direct-bar="${progress.productId}"]`,
+      );
+      if (bar && progress.totalBytes > 0) {
+        bar.style.width = `${Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))}%`;
+      }
+    });
+
+    listenLater<UbiDirectSummary>("ubi-direct-done", (event) => {
+      const summary = event.payload;
+      S.ubiDirectInstalling.delete(summary.productId);
+      delete S.ubiDirectProgress[summary.productId];
+      toast(`${summary.name} · ${t("common.installed")}`, "ok");
+      void loadCompanionLibrary();
+      hooks.scheduleRender();
+    });
+
+    listenLater<{ productId: number; error: string }>("ubi-direct-failed", (event) => {
+      const failure = event.payload;
+      S.ubiDirectInstalling.delete(failure.productId);
+      delete S.ubiDirectProgress[failure.productId];
+      toast(localizeMessage(failure.error), "err");
       hooks.scheduleRender();
     });
 

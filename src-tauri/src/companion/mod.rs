@@ -21,6 +21,7 @@ mod riot;
 mod scan;
 mod signin;
 mod ubi_achievements;
+mod ubi_direct;
 mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
@@ -502,6 +503,56 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
         return launch::open_game(&game.launch_uri, &game.launch_exe);
     }
     launch::open_client(&store)
+}
+
+/// Native Ubisoft probe: owned base games and their manifest ids straight from
+/// Demux, with no Ubisoft Connect process involved. This is the first step of
+/// the direct install path; it changes nothing on disk.
+#[tauri::command]
+pub async fn ubi_direct_probe() -> Result<ubi_direct::UbiDirectProbe, String> {
+    ubi_direct::probe().await
+}
+
+/// Read an owned product's manifest and return the install size and slice
+/// layout. This is the confirmation step before a direct install.
+#[tauri::command]
+pub async fn ubi_direct_plan(
+    product_id: u32,
+    path: Option<String>,
+) -> Result<ubi_direct::install::InstallPlan, String> {
+    let dir = path
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| ubi_direct::install::default_install_dir(product_id));
+    ubi_direct::plan_game(product_id, dir).await
+}
+
+/// Start a direct install in the background. Progress arrives on
+/// `ubi-direct-progress`, completion on `ubi-direct-done`, and a failure on
+/// `ubi-direct-failed`.
+#[tauri::command]
+pub async fn ubi_direct_install(
+    app: tauri::AppHandle,
+    product_id: u32,
+    path: Option<String>,
+) -> Result<(), String> {
+    let dir = path
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| ubi_direct::install::default_install_dir(product_id));
+    tauri::async_runtime::spawn(async move {
+        use tauri::Emitter;
+        match ubi_direct::install_game(app.clone(), product_id, dir).await {
+            Ok(summary) => {
+                let _ = app.emit("ubi-direct-done", summary);
+            }
+            Err(error) => {
+                let _ = app.emit(
+                    "ubi-direct-failed",
+                    serde_json::json!({ "productId": product_id, "error": error }),
+                );
+            }
+        }
+    });
+    Ok(())
 }
 
 /// The diagnostics behind the opt-in direct EA path.

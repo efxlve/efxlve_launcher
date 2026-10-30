@@ -464,6 +464,30 @@ pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
     }
 }
 
+/// The sealed session as it stands, without touching the network. The native
+/// Demux path tries this ticket first; a `ubi_v1` ticket is normally already
+/// scoped to the launcher app id that Demux expects.
+pub(crate) fn stored_session() -> Option<Session> {
+    let stored = ubi_vault::load()?;
+    let session = stored.into_session();
+    (!session.ticket.trim().is_empty()).then_some(session)
+}
+
+/// Renew the sealed session through the same PUT/remember-me paths the catalog
+/// sync uses, and persist the result. Returns `None` when Ubisoft rejects both.
+pub(crate) async fn refresh_stored_session() -> Option<Session> {
+    let session = stored_session()?;
+    let client = http_client().ok()?;
+    let mut live = refresh_session(&client, &session).await;
+    if live.is_none() {
+        live = refresh_remember(&client, &session).await;
+    }
+    if let Some(next) = &live {
+        ubi_vault::save(next);
+    }
+    live
+}
+
 /// What one background sync did.
 pub(crate) enum UbiSync {
     Updated(usize),

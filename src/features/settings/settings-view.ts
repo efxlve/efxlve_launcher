@@ -98,7 +98,7 @@ import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
-import { companionGetClientSettings } from "../../companion";
+import { companionGetClientSettings, ubiDirectProbe, ubiDirectPlan, ubiDirectInstall } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import {
   achievementClearCustomSound,
@@ -499,6 +499,50 @@ function renderLaunchers(): string {
   );
 }
 
+function renderUbiDirect(): string {
+  const probe = S.ubiDirect;
+  if (!probe) {
+    return row(
+      t("accounts.ubiLogin"),
+      t("accounts.note.ubisoft"),
+      `<button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>
+       <button class="btn ghost small" data-act="ubi-direct-rescan">${icon("refresh", 13)}</button>`,
+    );
+  }
+  const games = probe.games.filter((game) => game.installable);
+  const selected = games.find((game) => S.ubiDirectInstalling.has(game.productId)) ?? games[0];
+  const options = games
+    .map(
+      (game) =>
+        `<option value="${game.productId}"${selected?.productId === game.productId ? " selected" : ""}>${esc(game.name)}</option>`,
+    )
+    .join("");
+  const rows = games
+    .map((game) => {
+      const progress = S.ubiDirectProgress[game.productId];
+      if (!progress) return "";
+      const percent =
+        progress.totalBytes > 0
+          ? Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))
+          : 0;
+      return `<div class="ubi-direct-progress">
+        <div class="ubi-direct-bar"><span data-ubi-direct-bar="${game.productId}" style="width:${percent}%"></span></div>
+        <div class="ubi-direct-meta"><span>${esc(game.name)} · ${esc(progress.file || "")}</span><span>${fmtBytes(progress.doneBytes)} / ${fmtBytes(progress.totalBytes)}</span></div>
+      </div>`;
+    })
+    .join("");
+  const installing = S.ubiDirectInstalling.size > 0;
+  return (
+    row(
+      `${esc(probe.account || "Ubisoft")} · ${probe.installable}/${probe.total}`,
+      t("accounts.note.ubisoft"),
+      `<select id="ubi-direct-game" class="settings-select" ${games.length ? "" : "disabled"}>${options || `<option>${t("common.noResults")}</option>`}</select>
+       <button class="btn primary small" data-act="ubi-direct-install" ${games.length && !installing ? "" : "disabled"}>${icon("download", 13)} ${t("common.install")}</button>
+       <button class="btn ghost small" data-act="ubi-direct-rescan">${icon("refresh", 13)}</button>`,
+    ) + rows
+  );
+}
+
 function renderIntegrations(): string {
   if (S.settingsIntegrationsLoading && !S.settingsIntegrationsLoaded) {
     return `<div class="empty-state"><span class="spinner"></span><p>${t("settings.scanning")}</p></div>`;
@@ -635,6 +679,7 @@ function renderIntegrations(): string {
       : "") +
     group(galaxyGroup, t("settings.gogGalaxyTitle")) +
     group(nileGroup, t("settings.nileTitle")) +
+    group(renderUbiDirect(), t("external.ubisoftTitle")) +
     renderSteamGroup() +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
@@ -2385,13 +2430,14 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings] = await Promise.all([
+    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirect] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       eglLauncherPresent().catch(() => false),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
       steamStatus().catch(() => null),
       companionGetClientSettings().catch(() => null),
+      ubiDirectProbe().catch(() => null),
     ]);
     // A null from the backend (older binary, shape change) must not white-screen
     // the page: the lists are read with .length right after this.
@@ -2401,6 +2447,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.gogGalaxyDetected = galaxyList ?? [];
     S.steamStatus = steamState;
     S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
+    S.ubiDirect = ubiDirect;
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

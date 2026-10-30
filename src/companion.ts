@@ -72,6 +72,62 @@ export const companionStoreStatus = () => invoke<CompanionStoreStatus[]>("compan
 export const companionSync = (store: CompanionStore) =>
   invoke<CompanionSyncReport>("companion_sync", { store });
 
+/** One owned base game read straight from Ubisoft's Demux service. */
+export interface UbiDirectGame {
+  productId: number;
+  uplayId: number;
+  name: string;
+  installable: boolean;
+  manifest: string;
+}
+
+export interface UbiDirectProbe {
+  account: string;
+  total: number;
+  installable: number;
+  games: UbiDirectGame[];
+}
+
+/** The manifest summary shown before a direct install starts. */
+export interface UbiDirectPlan {
+  productId: number;
+  name: string;
+  manifest: string;
+  installDir: string;
+  files: number;
+  slices: number;
+  bytes: number;
+  compression: string;
+  sliceLayout: string;
+}
+
+export interface UbiDirectProgress {
+  productId: number;
+  doneBytes: number;
+  totalBytes: number;
+  file: string;
+}
+
+export interface UbiDirectSummary {
+  productId: number;
+  name: string;
+  installDir: string;
+  files: number;
+  bytes: number;
+  skippedFiles: number;
+}
+
+/** Owned games and their manifest ids, with no Ubisoft Connect process. */
+export const ubiDirectProbe = () => invoke<UbiDirectProbe>("ubi_direct_probe");
+
+/** Reads the manifest and reports size/layout without writing files. */
+export const ubiDirectPlan = (productId: number, path?: string) =>
+  invoke<UbiDirectPlan>("ubi_direct_plan", { productId, path });
+
+/** Starts the direct CDN install; progress arrives as `ubi-direct-progress`. */
+export const ubiDirectInstall = (productId: number, path?: string) =>
+  invoke<void>("ubi_direct_install", { productId, path });
+
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });

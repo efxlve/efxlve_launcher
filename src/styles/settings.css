@@ -385,6 +385,19 @@
   .col-import-grid, .col-settings-grid { grid-template-columns: 1fr; }
 }
 .settings-select { height: 32px; min-width: 160px; }
+.ubi-direct-progress { margin: 6px 0 12px; }
+.ubi-direct-bar {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.ubi-direct-bar span {
+  display: block; height: 100%; background: var(--accent);
+  transition: width 180ms var(--ease);
+}
+.ubi-direct-meta {
+  display: flex; justify-content: space-between; gap: 12px; margin-top: 4px;
+  font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums;
+}
 .settings-value { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .settings-note-warn { color: var(--warn); }
 .settings-range { width: 160px; accent-color: var(--accent); }

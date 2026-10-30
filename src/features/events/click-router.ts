@@ -53,6 +53,7 @@ import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerConfirm, askConfirm } from "../../core/confirm-dialog";
+import { fmtBytes } from "../../core/utils";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -111,7 +112,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -792,6 +793,50 @@ document.addEventListener("click", (e) => {
       }
       void companionGameAction(store, gameId, "uninstall").catch((e: unknown) => toast(String(e), "err"));
     });
+  } else if (act === "ubi-direct-rescan") {
+    if (S.ubiDirectLoading) return;
+    S.ubiDirectLoading = true;
+    render();
+    void ubiDirectProbe()
+      .then((probe) => {
+        S.ubiDirect = probe;
+      })
+      .catch((e: unknown) => toast(String(e), "err"))
+      .finally(() => {
+        S.ubiDirectLoading = false;
+        if (S.view === "settings") render();
+      });
+  } else if (act === "ubi-direct-install") {
+    const select = document.getElementById("ubi-direct-game") as HTMLSelectElement | null;
+    const productId = Number(select?.value || 0);
+    if (!productId) return;
+    const game = S.ubiDirect?.games.find((row) => row.productId === productId);
+    void ubiDirectPlan(productId)
+      .then((plan) =>
+        askConfirm({
+          title: i18nT("common.install"),
+          name: plan.name || game?.name,
+          body: `${fmtBytes(plan.bytes)} · ${plan.files} files · ${plan.installDir}`,
+          confirm: i18nT("common.install"),
+          cancel: i18nT("common.cancel"),
+        }).then((ok) => {
+          if (!ok) return;
+          S.ubiDirectInstalling.add(productId);
+          S.ubiDirectProgress[productId] = {
+            productId,
+            doneBytes: 0,
+            totalBytes: plan.bytes,
+            file: "",
+          };
+          render();
+          return ubiDirectInstall(productId).catch((e: unknown) => {
+            S.ubiDirectInstalling.delete(productId);
+            render();
+            throw e;
+          });
+        }),
+      )
+      .catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

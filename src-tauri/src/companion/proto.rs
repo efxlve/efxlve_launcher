@@ -62,8 +62,7 @@ pub(crate) fn for_each_field(data: &[u8], mut on_bytes: impl FnMut(u32, &[u8]), 
     }
 }
 
-/// Encodes a varint. Test fixtures use this to build catalog bytes.
-#[cfg(test)]
+/// Encodes a varint.
 pub(crate) fn push_varint(out: &mut Vec<u8>, mut value: u64) {
     loop {
         let mut byte = (value & 0x7f) as u8;
@@ -79,16 +78,52 @@ pub(crate) fn push_varint(out: &mut Vec<u8>, mut value: u64) {
 }
 
 /// Appends a length-delimited field.
-#[cfg(test)]
 pub(crate) fn push_bytes(out: &mut Vec<u8>, field: u32, payload: &[u8]) {
+
     push_varint(out, u64::from(field << 3 | 2));
     push_varint(out, payload.len() as u64);
     out.extend_from_slice(payload);
 }
 
 /// Appends a varint field.
-#[cfg(test)]
 pub(crate) fn push_varint_field(out: &mut Vec<u8>, field: u32, value: u64) {
+
     push_varint(out, u64::from(field << 3));
     push_varint(out, value);
+}
+
+/// Appends a string field.
+pub(crate) fn push_string(out: &mut Vec<u8>, field: u32, value: &str) {
+    push_bytes(out, field, value.as_bytes());
+}
+
+/// Appends a bool field.
+pub(crate) fn push_bool(out: &mut Vec<u8>, field: u32, value: bool) {
+    push_varint_field(out, field, u64::from(value));
+}
+
+/// Appends a repeated uint32 field in the packed form prost writes.
+pub(crate) fn push_packed_u32(out: &mut Vec<u8>, field: u32, values: &[u32]) {
+    if values.is_empty() {
+        return;
+    }
+    let mut body = Vec::new();
+    for value in values {
+        push_varint(&mut body, u64::from(*value));
+    }
+    push_bytes(out, field, &body);
+}
+
+/// Reads a packed repeated uint32 payload (and tolerates an unpacked one).
+pub(crate) fn packed_u32(payload: &[u8]) -> Vec<u32> {
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < payload.len() {
+        let Some((value, next)) = read_varint(payload, i) else {
+            break;
+        };
+        out.push(value as u32);
+        i = next;
+    }
+    out
 }

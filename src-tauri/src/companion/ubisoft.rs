@@ -148,7 +148,7 @@ fn is_other_store(yaml: &str) -> bool {
     name == "steam" || name == "epic"
 }
 
-fn game_name(yaml: &str) -> Option<String> {
+pub(crate) fn game_name(yaml: &str) -> Option<String> {
     let direct = child_value(yaml, "root", "name").unwrap_or_default();
     if usable(&direct) {
         return Some(direct);
