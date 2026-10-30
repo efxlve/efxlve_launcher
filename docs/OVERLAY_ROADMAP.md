@@ -1,11 +1,11 @@
 # In-Game Overlay — Product & Technical Roadmap
 
 The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
-notes, achievements, Spotify + SMTC music and Discord status. Controller-first
-navigation is in. ETW FPS is API-agnostic but needs the Windows "Performance Log
-Users" permission, so the overlay offers a one-time enable action and explains
-the sign-out. Discord voice read/write waits on the Discord app review noted
-below.
+notes, achievements, Spotify + SMTC music, a per-app audio mixer and Discord
+status. Controller-first navigation is in. ETW FPS is API-agnostic but needs the
+Windows "Performance Log Users" permission, so the overlay offers a one-time
+enable action and explains the sign-out. Discord voice read/write waits on the
+Discord app review noted below.
 
 Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
 where only the pinned cards stay on screen as a click-through HUD and the game
@@ -36,6 +36,7 @@ architecture, the feature scope and the phased plan.
 - notes: per-game notes, autosaved
 - achievements: the game's tracked set (existing data)
 - music: Spotify/any player via Windows media controls
+- audio: per-app volume and mute on the default output device
 - Discord: presence + voice channel widget
 - quick actions: store page, manage, session playtime, exit overlay
 
@@ -316,6 +317,19 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 - Open work: per-widget ghost opacity, hide inert controls (music transport, filter
   chips) while click-through, a one-time hint on the first pin, and a field pass on
   borderless + exclusive fullscreen and multi-monitor setups.
+
+### M9 — Per-app audio mixer (built)
+
+- The Audio tab lists the master bus and every session on the default render
+  endpoint through `IAudioSessionManager2` / `ISimpleAudioVolume` / `IAudioEndpointVolume`
+  (`src-tauri/src/overlay/audio.rs`). Each session gets its own volume and mute; no
+  driver, hook or helper process. Commands run on a blocking worker with a COM
+  apartment, and the tab polls every two seconds while it is open.
+- A slider holds the poll for 1.5 s so a refresh cannot overwrite the value under the
+  thumb. System sounds sort last; named apps sort case-insensitively.
+- Open: an output-device picker, named mix presets, session icons, controller focus
+  order, and translations for the eight new keys (English values are in place for the
+  other locales).
 
 ---
 

@@ -79,3 +79,12 @@ PresentMon on a 60 Hz and a high-refresh title: the 1% low should appear after
 ~2 s, the 0.1% after ~17 s, and both should track PresentMon within ~2%. Then
 add temperatures and package power (NVML/ADLX/PDH) and the 60 Hz frame-time
 graph.
+
+## Audio mixer field pass
+
+The Audio tab now lists the master bus and every session on the default output
+endpoint (`src-tauri/src/overlay/audio.rs`). Validate on a real game and a
+browser: per-app volume and mute, system sounds, a device switch, and a session
+that starts or stops while the tab is open. Then add the output-device picker,
+named mix presets, session icons, controller focus order, and translations for
+the eight new keys (English values are in place for the other locales).

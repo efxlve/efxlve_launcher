@@ -114,6 +114,22 @@ interface MetricsSample {
   vramTotalMb?: number | null;
 }
 
+interface AudioSession {
+  id: string;
+  pid: number;
+  name: string;
+  displayName: string;
+  volume: number;
+  muted: boolean;
+  system: boolean;
+}
+
+interface AudioState {
+  master: number;
+  masterMuted: boolean;
+  sessions: AudioSession[];
+}
+
 interface AchievementItem {
   name: string;
   display_name?: string;
@@ -151,7 +167,7 @@ interface ScreenshotItem {
   size_bytes?: number;
 }
 
-type TabId = "home" | "perf" | "ach" | "shots" | "clip" | "notes" | "music" | "discord" | "chat" | "browser" | "settings";
+type TabId = "home" | "perf" | "ach" | "shots" | "clip" | "notes" | "music" | "audio" | "discord" | "chat" | "browser" | "settings";
 
 /**
  * The Browser tab is built and working (window, tabs, commands), but it stays
@@ -165,6 +181,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "shots", icon: "camera", key: "overlay.tabScreenshots" },
   { id: "clip", icon: "video", key: "overlay.tabClips" },
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
+  { id: "audio", icon: "volume-2", key: "overlay.tabAudio" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
   { id: "chat", icon: "discord", key: "overlay.discordReplyTitle" },
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
@@ -181,6 +198,7 @@ function visibleTabs(): typeof TABS {
       tab.id !== "settings" &&
       (BROWSER_TAB_ENABLED || tab.id !== "browser") &&
       (HAS_NATIVE_CAPTURE || (tab.id !== "shots" && tab.id !== "clip")) &&
+      (tab.id !== "audio" || IS_WINDOWS) &&
       (tab.id !== "music" || (IS_WINDOWS && spotifyPageVisible())) &&
       (tab.id !== "discord" || (IS_WINDOWS && discordPageVisible())),
   );
@@ -201,6 +219,15 @@ let cpuHistory: number[] = [];
 let gpuHistory: number[] = [];
 let vramHistory: number[] = [];
 let ramHistory: number[] = [];
+/** Audio mixer: the last poll, a debounce hold while a slider moves, and the
+ *  timers that coalesce volume writes. */
+let audioState: AudioState | null = null;
+let audioError = "";
+let audioLoading = false;
+let audioPollTimer: number | null = null;
+let audioHoldUntil = 0;
+const audioVolumeTimers = new Map<string, number>();
+let audioMasterTimer: number | null = null;
 /** The launcher's Connect receiver (the only source the overlay shows). */
 let spotifyEngineOn = false;
 let spotifyPaired = false;
@@ -639,6 +666,10 @@ function getDefaultWidgetPos(tab: TabId): WidgetPos {
       return { x: 24, y: lowerY };
     case "music":
       return { x: musicX, y: 72 };
+    case "audio":
+      // Bottom-center: clear of the performance/music row and the clip/notes
+      // corners.
+      return { x: Math.max(24, Math.floor((winW - 380) / 2)), y: Math.max(OVERLAY_SAFE_TOP, winH - 460) };
     case "discord":
       return { x: Math.max(24, winW - 740), y: 72 };
     case "chat":
@@ -711,6 +742,8 @@ function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
       return { minW: 280, minH: 220, maxW: 520, maxH: 620 };
     case "music":
       return { minW: 260, minH: 140, maxW: 600, maxH: 800 };
+    case "audio":
+      return { minW: 300, minH: 260, maxW: 560, maxH: 700 };
     case "discord":
       return { minW: 280, minH: 320, maxW: 600, maxH: 900 };
     case "chat":
@@ -741,6 +774,8 @@ function getDefaultWidgetSize(tab: TabId): WidgetSize {
       return { w: 320, h: 300 };
     case "music":
       return { w: 360, h: 420 };
+    case "audio":
+      return { w: 380, h: 440 };
     case "discord":
       return { w: 330, h: 540 };
     case "chat":
@@ -855,6 +890,9 @@ function renderWidgetContent(tab: TabId): void {
   else if (tab === "music") {
     renderMusicTab();
     void refreshMedia();
+  } else if (tab === "audio") {
+    renderAudio();
+    startAudioPolling();
   } else if (tab === "discord") {
     renderDiscordSocial();
     void invoke("discord_voice_watch_start").catch(() => undefined);
@@ -913,6 +951,7 @@ function closeWidget(tab: TabId): void {
   syncPinnedToRust();
 
   if (tab === "clip") stopClipPolling();
+  if (tab === "audio") stopAudioPolling();
   if (tab === "ach") achDetail = null;
 
   const widget = document.getElementById(`ov-widget-${tab}`);
@@ -3609,6 +3648,172 @@ async function overlaySpotifyControl(
   window.setTimeout(() => void refreshMedia(), 400);
 }
 
+/* 6b. Audio Mixer View */
+
+/** The row label: system sounds, the app's own display name, or the process. */
+function audioLabel(session: AudioSession): string {
+  if (session.system || session.pid === 0) return t("overlay.audioSystem");
+  return session.displayName || session.name || `PID ${session.pid}`;
+}
+
+/** The muted second line: the executable behind a friendly display name. */
+function audioSubLabel(session: AudioSession): string {
+  if (session.system || session.pid === 0) return "";
+  if (!session.displayName || !session.name || session.displayName === session.name) return "";
+  return session.name;
+}
+
+function audioRowHtml(opts: {
+  master?: boolean;
+  id?: string;
+  label: string;
+  sub?: string;
+  volume: number;
+  muted: boolean;
+  system?: boolean;
+}): string {
+  const id = opts.id ?? "";
+  const rangeAttr = opts.master ? "data-audio-master" : `data-audio-volume="${esc(id)}"`;
+  const muteAttr = opts.master ? "data-audio-master-mute" : `data-audio-mute="${esc(id)}"`;
+  const percent = Math.round(opts.volume * 100);
+  return `
+    <div class="ov-audio-row${opts.master ? " is-master" : ""}">
+      <div class="ov-audio-name" title="${esc(opts.label)}${opts.sub ? ` · ${esc(opts.sub)}` : ""}">
+        ${icon(opts.master || opts.system ? "volume-2" : "music", 13)}
+        <div class="ov-audio-text">
+          <span class="ov-audio-label">${esc(opts.label)}</span>
+          ${opts.sub ? `<span class="ov-audio-sub">${esc(opts.sub)}</span>` : ""}
+        </div>
+      </div>
+      <input class="ov-audio-range" type="range" min="0" max="100" step="1" value="${percent}" ${rangeAttr} />
+      <span class="ov-audio-pct">${percent}%</span>
+      <button class="ov-audio-mute${opts.muted ? " is-muted" : ""}" ${muteAttr} title="${esc(opts.muted ? t("overlay.discordCallUnmute") : t("overlay.discordCallMute"))}">
+        ${icon(opts.muted ? "volume-x" : "volume-2", 13)}
+      </button>
+    </div>`;
+}
+
+function renderAudio(): void {
+  const el = viewEl("audio");
+  if (!el) return;
+  const scroll = el.scrollTop;
+  if (audioError) {
+    el.innerHTML = emptyBlockHtml("volume-2", t("overlay.audioUnavailable"), audioError);
+    el.scrollTop = scroll;
+    return;
+  }
+  if (!audioState) {
+    el.innerHTML = `<div class="ov-audio-loading">${esc(t("overlay.audioLoading"))}</div>`;
+    el.scrollTop = scroll;
+    return;
+  }
+  const master = audioRowHtml({
+    master: true,
+    label: t("overlay.audioMaster"),
+    volume: audioState.master,
+    muted: audioState.masterMuted,
+  });
+  const rows = audioState.sessions.map((session) =>
+    audioRowHtml({
+      id: session.id,
+      label: audioLabel(session),
+      sub: audioSubLabel(session),
+      volume: session.volume,
+      muted: session.muted,
+      system: session.system,
+    }),
+  );
+  el.innerHTML = `
+    <div class="ov-audio">
+      <div class="ov-audio-head">
+        <span class="ov-audio-title">${icon("volume-2", 14)} ${esc(t("overlay.tabAudio"))}</span>
+        <button class="ov-audio-refresh" data-audio-refresh title="${esc(t("overlay.audioRefresh"))}">${icon("refresh", 13)}</button>
+      </div>
+      ${master}
+      <div class="ov-audio-list">
+        ${rows.length > 0 ? rows.join("") : emptyBlockHtml("volume-2", t("overlay.audioEmpty"), t("overlay.audioEmptyDesc"))}
+      </div>
+    </div>`;
+  el.scrollTop = scroll;
+}
+
+/** Pulls the session list. Polling pauses while a slider is being dragged so
+ *  the next poll cannot overwrite the value under the thumb. */
+async function refreshAudio(force = false): Promise<void> {
+  if (!force && performance.now() < audioHoldUntil) return;
+  if (audioLoading) return;
+  audioLoading = true;
+  try {
+    audioState = await invoke<AudioState>("overlay_audio_state");
+    audioError = "";
+  } catch (error) {
+    audioError = String(error);
+  } finally {
+    audioLoading = false;
+  }
+  if (isWidgetOpen("audio")) renderAudio();
+}
+
+function startAudioPolling(): void {
+  if (audioPollTimer !== null) return;
+  void refreshAudio(true);
+  audioPollTimer = window.setInterval(() => {
+    if (document.hidden) return;
+    if (ghostMode && !isWidgetPinned("audio")) return;
+    void refreshAudio(false);
+  }, 2000);
+}
+
+function stopAudioPolling(): void {
+  if (audioPollTimer !== null) {
+    window.clearInterval(audioPollTimer);
+    audioPollTimer = null;
+  }
+}
+
+function scheduleAudioVolume(id: string, volume: number): void {
+  const previous = audioVolumeTimers.get(id);
+  if (previous !== undefined) window.clearTimeout(previous);
+  const timer = window.setTimeout(() => {
+    audioVolumeTimers.delete(id);
+    void invoke("overlay_audio_set_volume", { id, volume }).catch(() => undefined);
+  }, 60);
+  audioVolumeTimers.set(id, timer);
+}
+
+function scheduleAudioMaster(volume: number): void {
+  if (audioMasterTimer !== null) window.clearTimeout(audioMasterTimer);
+  audioMasterTimer = window.setTimeout(() => {
+    audioMasterTimer = null;
+    void invoke("overlay_audio_set_master", { volume }).catch(() => undefined);
+  }, 60);
+}
+
+async function toggleAudioMute(id: string): Promise<void> {
+  const session = audioState?.sessions.find((entry) => entry.id === id);
+  if (!session) return;
+  session.muted = !session.muted;
+  audioHoldUntil = performance.now() + 1200;
+  renderAudio();
+  try {
+    await invoke("overlay_audio_set_mute", { id, muted: session.muted });
+  } catch {
+    // The next poll restores the real state.
+  }
+}
+
+async function toggleAudioMasterMute(): Promise<void> {
+  if (!audioState) return;
+  audioState.masterMuted = !audioState.masterMuted;
+  audioHoldUntil = performance.now() + 1200;
+  renderAudio();
+  try {
+    await invoke("overlay_audio_set_master_mute", { muted: audioState.masterMuted });
+  } catch {
+    // The next poll restores the real state.
+  }
+}
+
 /* 7. Browser View */
 /**
  * The panel cannot host pages itself, so the tab is only the doorway: the
@@ -5254,6 +5459,21 @@ function wireEvents(): void {
       return;
     }
 
+    // Audio mixer: mute one session, the master bus, or refresh the list.
+    const audioMuteBtn = target.closest<HTMLElement>("[data-audio-mute]");
+    if (audioMuteBtn?.dataset.audioMute) {
+      void toggleAudioMute(audioMuteBtn.dataset.audioMute);
+      return;
+    }
+    if (target.closest<HTMLElement>("[data-audio-master-mute]")) {
+      void toggleAudioMasterMute();
+      return;
+    }
+    if (target.closest<HTMLElement>("[data-audio-refresh]")) {
+      void refreshAudio(true);
+      return;
+    }
+
     // Perf metric selection card/chip
     const perfMetricBtn = target.closest<HTMLElement>("[data-perf-metric]");
     if (perfMetricBtn?.dataset.perfMetric) {
@@ -5712,6 +5932,23 @@ function wireEvents(): void {
       return;
     }
     const input = event.target as HTMLInputElement | null;
+    if (input?.dataset.audioVolume !== undefined) {
+      const id = input.dataset.audioVolume;
+      const volume = Number(input.value) / 100;
+      audioHoldUntil = performance.now() + 1500;
+      const pct = input.closest(".ov-audio-row")?.querySelector(".ov-audio-pct");
+      if (pct) pct.textContent = `${input.value}%`;
+      scheduleAudioVolume(id, volume);
+      return;
+    }
+    if (input?.dataset.audioMaster !== undefined) {
+      const volume = Number(input.value) / 100;
+      audioHoldUntil = performance.now() + 1500;
+      const pct = input.closest(".ov-audio-row")?.querySelector(".ov-audio-pct");
+      if (pct) pct.textContent = `${input.value}%`;
+      scheduleAudioMaster(volume);
+      return;
+    }
     if (input?.dataset.ovOpacity === undefined) return;
     const val = Number(input.value);
     localStorage.setItem(OPACITY_KEY, String(val));
@@ -5852,6 +6089,7 @@ function wireEvents(): void {
     gamepadSuppressUntil = performance.now() + 450;
     startOverlayLoops();
     startClipPolling();
+    if (isWidgetOpen("audio")) startAudioPolling();
   });
 
   // The panel is re-placed over the game on every open and the game can change
@@ -6227,6 +6465,7 @@ function setGhostMode(on: boolean): void {
     void invoke("discord_voice_watch_stop").catch(() => undefined);
   }
   if (!isWidgetPinned("clip")) stopClipPolling();
+  if (!isWidgetPinned("audio")) stopAudioPolling();
 }
 
 /**
@@ -6273,6 +6512,7 @@ function stopOverlayLoops(): void {
     mediaPollTimer = null;
   }
   stopGamepadPolling();
+  stopAudioPolling();
 }
 
 /** Lays out the widgets the page remembers as open: position, size, pin and

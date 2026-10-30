@@ -5833,6 +5833,165 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   animation: ov-clip-pulse 1.6s ease-in-out infinite;
 }
 
+/* --- Audio mixer --- */
+.ov-audio {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ov-audio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ov-audio-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.ov-audio-refresh {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ov-audio-refresh:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ov-audio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ov-audio-row {
+  display: grid;
+  grid-template-columns: minmax(84px, 1fr) minmax(56px, 1.35fr) 32px 26px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ov-audio-row:last-child {
+  border-bottom: none;
+}
+
+.ov-audio-row.is-master {
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+  border-bottom-color: var(--line-strong);
+}
+
+.ov-audio-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-2);
+}
+
+.ov-audio-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ov-audio-label {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-audio-sub {
+  font-size: 9px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+.ov-audio-range {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--surface-3);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.ov-audio-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-2);
+  cursor: pointer;
+  transition: background var(--ease);
+}
+
+.ov-audio-range::-webkit-slider-thumb:hover {
+  background: var(--text);
+}
+
+.ov-audio-pct {
+  font-size: 10px;
+  color: var(--text-3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-audio-mute {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+
+.ov-audio-mute:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ov-audio-mute.is-muted {
+  color: var(--err);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.ov-audio-loading {
+  padding: 18px 0;
+  font-size: 11px;
+  color: var(--text-3);
+  text-align: center;
+}
+
 @media (max-width: 1160px) {
   .ov-topbar { gap: 4px; }
   .ov-topbar-btn { padding: 0 8px; }

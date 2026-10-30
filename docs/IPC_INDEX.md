@@ -325,6 +325,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `notes_list` | `notesList({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_save` | `notesSave({ ... })` | `src-tauri/src/notes.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |
+| `overlay_audio_set_master` | `overlayAudioSetMaster({ ... })` | `src-tauri/src/overlay/audio.rs` |
+| `overlay_audio_set_master_mute` | `overlayAudioSetMasterMute({ ... })` | `src-tauri/src/overlay/audio.rs` |
+| `overlay_audio_set_mute` | `overlayAudioSetMute({ ... })` | `src-tauri/src/overlay/audio.rs` |
+| `overlay_audio_set_volume` | `overlayAudioSetVolume({ ... })` | `src-tauri/src/overlay/audio.rs` |
+| `overlay_audio_state` | `overlayAudioState({ ... })` | `src-tauri/src/overlay/audio.rs` |
 | `overlay_browser_action` | `overlayBrowserAction({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_activate_tab` | `overlayBrowserActivateTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_close` | `overlayBrowserClose({ ... })` | `src-tauri/src/overlay/browser.rs` |

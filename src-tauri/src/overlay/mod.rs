@@ -14,6 +14,7 @@
 //! The panel is driven entirely from Rust: the hotkey thread shows/hides the
 //! window and emits `overlay-open` / `overlay-close` with the running game.
 
+pub mod audio;
 pub mod browser;
 pub mod ghost;
 pub mod hotkey;
