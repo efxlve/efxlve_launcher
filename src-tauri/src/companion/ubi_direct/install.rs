@@ -53,7 +53,7 @@ pub(crate) struct InstallPlan {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum SliceLayout {
+pub(crate) enum SliceLayout {
     V3Bucket,
     Flat,
 }
@@ -224,18 +224,30 @@ async fn detect_layout(
     SliceLayout::V3Bucket
 }
 
+/// Everything the installer and launcher need from the ownership row.
+pub(crate) struct Prepared {
+    pub manifest: Manifest,
+    pub name: String,
+    pub download: wire::DownloadService,
+    pub layout: SliceLayout,
+    pub install_reg: String,
+    pub uplay_id: u32,
+    pub ticket: String,
+}
+
 /// Fetch the product row and its manifest, and keep the download-service
 /// session that signed the manifest so the caller can reuse it for slices.
 pub(crate) async fn prepare(
     demux: &mut wire::Demux,
     product_id: u32,
-) -> Result<(Manifest, String, wire::DownloadService, SliceLayout, String), String> {
+) -> Result<Prepared, String> {
     let owned = demux.owned_games().await?;
     let game = owned
         .into_iter()
         .find(|game| game.product_id == product_id && game.owned)
         .ok_or_else(|| format!("product {product_id} is not in the owned library"))?;
     let install_reg = install_register(&game.configuration);
+    let uplay_id = game.uplay_id;
     let name = ubisoft::game_name(&game.configuration).unwrap_or_else(|| product_id.to_string());
     let manifest_id = if game.latest_manifest.is_empty() {
         demux
@@ -260,7 +272,24 @@ pub(crate) async fn prepare(
         .ok_or_else(|| "Ubisoft signed no manifest URL".to_string())?;
     let manifest = manifest::fetch_manifest(url).await?;
     let layout = detect_layout(demux, &mut download, product_id, &manifest.files).await;
-    Ok((manifest, name, download, layout, install_reg))
+    let ticket = if uplay_id != 0 {
+        demux
+            .uplay_ticket(uplay_id)
+            .await
+            .unwrap_or_default()
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
+    Ok(Prepared {
+        manifest,
+        name,
+        download,
+        layout,
+        install_reg,
+        uplay_id,
+        ticket,
+    })
 }
 
 /// Fetch the manifest and return a frontend-friendly summary.
@@ -269,10 +298,11 @@ pub(crate) async fn probe_plan(
     product_id: u32,
     install_dir: &Path,
 ) -> Result<InstallPlan, String> {
-    let (manifest, name, _download, layout, _install_reg) = prepare(demux, product_id).await?;
+    let prepared = prepare(demux, product_id).await?;
+    let manifest = prepared.manifest;
     Ok(InstallPlan {
         product_id,
-        name,
+        name: prepared.name,
         manifest: String::new(),
         install_dir: install_dir.display().to_string(),
         files: manifest.files.len(),
@@ -283,7 +313,7 @@ pub(crate) async fn probe_plan(
             3 => "zstd".into(),
             _ => "none".into(),
         },
-        slice_layout: layout.label().into(),
+        slice_layout: prepared.layout.label().into(),
     })
 }
 
@@ -298,7 +328,16 @@ pub(crate) async fn install<F>(
 where
     F: FnMut(InstallProgress) + Send,
 {
-    let (manifest, name, mut download, layout, install_reg) = prepare(demux, product_id).await?;
+    let prepared = prepare(demux, product_id).await?;
+    let Prepared {
+        manifest,
+        name,
+        mut download,
+        layout,
+        install_reg,
+        uplay_id,
+        ticket,
+    } = prepared;
 
     let total_bytes = manifest.total_bytes();
     let emit_step = (total_bytes / 200).max(4 * 1024 * 1024);
@@ -469,6 +508,8 @@ where
             .map(|d| d.as_secs())
             .unwrap_or(0),
         install_reg,
+        uplay_id,
+        ticket,
     });
     Ok(InstallSummary {
         product_id,

@@ -115,6 +115,7 @@ pub(crate) fn push_packed_u32(out: &mut Vec<u8>, field: u32, values: &[u32]) {
 }
 
 /// Reads a packed repeated uint32 payload (and tolerates an unpacked one).
+#[cfg(test)]
 pub(crate) fn packed_u32(payload: &[u8]) -> Vec<u32> {
     let mut out = Vec::new();
     let mut i = 0;

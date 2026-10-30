@@ -307,6 +307,11 @@ pub struct EpicSettings {
     /// updates and serves as the fallback when the direct path cannot resolve.
     #[serde(default)]
     pub ea_direct_launch: Option<bool>,
+    /// Deploy the MIT-licensed Uplay compatibility shim when launching a game
+    /// the launcher installed. On by default: without it, R1/R2 titles expect
+    /// the Connect client to be running.
+    #[serde(default)]
+    pub ubi_direct_shim: Option<bool>,
     /// Base folder for Amazon Games installs (empty = Nile's default).
     #[serde(default)]
     pub amazon_install_dir: Option<String>,
@@ -2126,6 +2131,7 @@ fn main() {
             companion::ubi_direct_plan,
             companion::ubi_direct_install,
             companion::ubi_direct_launch,
+            companion::ubi_direct_forget,
             companion::xbox_install,
             companion::xbox_install_cancel,
             companion::xbox_uninstall,

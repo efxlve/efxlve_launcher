@@ -7,8 +7,7 @@
 //! error in generated code.
 
 use crate::companion::proto::{
-    for_each_field, packed_u32, push_bool, push_bytes, push_packed_u32, push_string,
-    push_varint_field,
+    for_each_field, push_bool, push_bytes, push_packed_u32, push_string, push_varint_field,
 };
 
 pub(crate) const CLIENT_ID: &str = "uplay_pc";
@@ -455,13 +454,11 @@ pub(crate) fn parse_download_urls(payload: &[u8]) -> Vec<String> {
 }
 
 /// Decode a packed or unpacked repeated uint32 field.
-pub(crate) fn repeated_u32(payload: &[u8]) -> Vec<u32> {
-    packed_u32(payload)
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::companion::proto::packed_u32;
 
     #[test]
     fn authenticate_request_carries_the_ticket_and_client_id() {
@@ -538,7 +535,7 @@ mod tests {
                             req,
                             |packed_field, payload| {
                                 if packed_field == 1 {
-                                    assert_eq!(repeated_u32(payload), ids);
+                                    assert_eq!(packed_u32(payload), ids);
                                     found = true;
                                 }
                             },

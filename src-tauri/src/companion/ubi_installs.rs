@@ -23,6 +23,13 @@ pub(crate) struct InstalledGame {
     /// `HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Beyond Good & Evil\Install path`.
     #[serde(default)]
     pub install_reg: String,
+    /// The Ubisoft `uplay_id` the compatibility shim reports to the game.
+    #[serde(default)]
+    pub uplay_id: u32,
+    /// Last `uplay_pc_ticket` fetched at install time. Used when a launch is
+    /// offline; a fresh one is fetched on every online launch.
+    #[serde(default)]
+    pub ticket: String,
 }
 
 fn path() -> PathBuf {
@@ -84,6 +91,8 @@ mod tests {
             exe: r"bin\game.exe".into(),
             installed_at: 1,
             install_reg: String::new(),
+            uplay_id: 0,
+            ticket: String::new(),
         };
         save(&first);
         save(&InstalledGame {

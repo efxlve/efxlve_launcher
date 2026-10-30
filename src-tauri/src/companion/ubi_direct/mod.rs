@@ -11,6 +11,7 @@ mod codec;
 pub(crate) mod install;
 mod launch;
 pub(crate) mod manifest;
+mod shim;
 pub(crate) mod wire;
 
 use serde::Serialize;
@@ -134,8 +135,8 @@ pub(crate) async fn install_game(
 }
 
 /// Start a game the launcher installed, without Ubisoft Connect.
-pub(crate) fn launch_game(product_id: u32) -> Result<(), String> {
-    launch::launch(product_id)
+pub(crate) async fn launch_game(product_id: u32, shim_enabled: bool) -> Result<(), String> {
+    launch::launch(product_id, shim_enabled).await
 }
 
 #[cfg(test)]

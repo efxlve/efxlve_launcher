@@ -1,0 +1,311 @@
+//! Compatibility shim for games that expect the Uplay loader.
+//!
+//! Ubisoft titles import `uplay_r1_loader*.dll` / `upc_r1_loader*.dll` (R1) or
+//! the `upc_r2_loader*.dll` family (R2). The official loader talks to the
+//! Connect client; these shims answer the same exported API locally, so a game
+//! the account owns can start without the client running.
+//!
+//! The binaries are the MIT-licensed ServerEmus builds, downloaded once and
+//! verified against a pinned SHA-256. They are only deployed for a game whose
+//! ownership the launcher already confirmed through Demux.
+
+use std::path::{Path, PathBuf};
+
+use sha2::{Digest, Sha256};
+
+use crate::companion::accounts;
+
+const R1_X86_URL: &str =
+    "https://github.com/ServerEmus/Uplay.upc_r1/releases/download/release-v0/upc_r1.dll";
+const R1_X86_SHA: &str = "411E2210090A5B58FD74FDC6B578970D732B292E62D6C6EDF2C0A91C68846E5A";
+const R1_X64_URL: &str =
+    "https://github.com/ServerEmus/Uplay.upc_r1/releases/download/release-v0/upc_r164.dll";
+const R1_X64_SHA: &str = "856D02D15D310646EBAB2EC19ED4404B175181741259EB54B6433C18C638763C";
+const R2_X86_URL: &str =
+    "https://github.com/ServerEmus/Uplay.upc_r2/releases/download/release-v1/upc_r2.dll";
+const R2_X86_SHA: &str = "9CD588F4B9E6583F0B8C248388AFFE802943C56EF9FF5638586946CFFB5C2DA8";
+const R2_X64_URL: &str =
+    "https://github.com/ServerEmus/Uplay.upc_r2/releases/download/release-v1/upc_r264.dll";
+const R2_X64_SHA: &str = "6F243D73DBEEC9B36336771A161AB0F22EC404DCAAD0681388909E3E3351A0AF";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Family {
+    R1,
+    R2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Loader {
+    pub name: String,
+    family: Family,
+    x64: bool,
+}
+
+pub(crate) struct ShimAccount {
+    pub account_id: String,
+    pub name: String,
+    pub email: String,
+    pub ticket: String,
+}
+
+fn spec(family: Family, x64: bool) -> (&'static str, &'static str) {
+    match (family, x64) {
+        (Family::R1, false) => (R1_X86_URL, R1_X86_SHA),
+        (Family::R1, true) => (R1_X64_URL, R1_X64_SHA),
+        (Family::R2, false) => (R2_X86_URL, R2_X86_SHA),
+        (Family::R2, true) => (R2_X64_URL, R2_X64_SHA),
+    }
+}
+
+fn cache_dir() -> PathBuf {
+    accounts::data_dir().join("ubi-shims")
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02X}"))
+        .collect()
+}
+
+/// Download (once) and verify the shim for this architecture.
+async fn ensure(family: Family, x64: bool) -> Result<PathBuf, String> {
+    let (url, expected) = spec(family, x64);
+    let file = cache_dir().join(
+        url.rsplit('/')
+            .next()
+            .filter(|name| !name.is_empty())
+            .unwrap_or("upc.dll"),
+    );
+    if let Ok(existing) = std::fs::read(&file) {
+        if sha256_hex(&existing).eq_ignore_ascii_case(expected) {
+            return Ok(file);
+        }
+    }
+    let response = reqwest::get(url)
+        .await
+        .map_err(|error| format!("downloading the Uplay shim: {error}"))?;
+    let response = response
+        .error_for_status()
+        .map_err(|error| format!("Uplay shim request failed: {error}"))?;
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("reading the Uplay shim: {error}"))?;
+    let got = sha256_hex(&bytes);
+    if !got.eq_ignore_ascii_case(expected) {
+        return Err(format!(
+            "Uplay shim hash mismatch: got {got}, expected {expected}"
+        ));
+    }
+    if let Some(parent) = file.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|error| format!("creating {}: {error}", parent.display()))?;
+    }
+    let part = file.with_extension("part");
+    tokio::fs::write(&part, &bytes)
+        .await
+        .map_err(|error| format!("writing {}: {error}", part.display()))?;
+    tokio::fs::rename(&part, &file)
+        .await
+        .map_err(|error| format!("renaming {}: {error}", file.display()))?;
+    Ok(file)
+}
+
+/// Find the loader a game imports. `None` means the game does not need a shim;
+/// an `Err` means it needs the Orbit R2 loader, which is not handled here.
+pub(crate) fn detect(exe: &Path) -> Result<Option<Loader>, String> {
+    let bytes = std::fs::read(exe).map_err(|error| format!("reading {}: {error}", exe.display()))?;
+    if contains(&bytes, b"ubiorbitapi_r2_loader") {
+        return Err("this game uses the Orbit R2 loader, which is not supported yet".to_string());
+    }
+    let x64 = pe_is_64(&bytes).unwrap_or(true);
+    let names: &[(&str, Family)] = if x64 {
+        &[
+            ("uplay_r1_loader64.dll", Family::R1),
+            ("upc_r1_loader64.dll", Family::R1),
+            ("uplay_r2_loader64.dll", Family::R2),
+            ("upc_r2_loader64.dll", Family::R2),
+        ]
+    } else {
+        &[
+            ("uplay_r1_loader.dll", Family::R1),
+            ("upc_r1_loader.dll", Family::R1),
+            ("uplay_r2_loader.dll", Family::R2),
+            ("upc_r2_loader.dll", Family::R2),
+        ]
+    };
+    for (name, family) in names {
+        if contains(&bytes, name.as_bytes()) {
+            return Ok(Some(Loader {
+                name: (*name).to_string(),
+                family: *family,
+                x64,
+            }));
+        }
+    }
+    Ok(None)
+}
+
+/// Deploy the matching loader next to the executable and write the account
+/// config it reads. Returns the DLL name when a shim was installed.
+pub(crate) async fn deploy(
+    exe: &Path,
+    account: &ShimAccount,
+) -> Result<Option<String>, String> {
+    let Some(loader) = detect(exe)? else {
+        return Ok(None);
+    };
+    let source = ensure(loader.family, loader.x64).await?;
+    let directory = exe
+        .parent()
+        .ok_or_else(|| format!("{} has no parent folder", exe.display()))?;
+    let target = directory.join(&loader.name);
+    let source_bytes = tokio::fs::read(&source)
+        .await
+        .map_err(|error| format!("reading {}: {error}", source.display()))?;
+    if let Ok(existing) = std::fs::read(&target) {
+        if existing != source_bytes {
+            let backup = directory.join(format!("{}.efxlve-orig", loader.name));
+            if !backup.exists() {
+                std::fs::rename(&target, &backup)
+                    .map_err(|error| format!("backing up {}: {error}", target.display()))?;
+            }
+        }
+    }
+    tokio::fs::write(&target, &source_bytes)
+        .await
+        .map_err(|error| format!("writing {}: {error}", target.display()))?;
+    write_config(directory, account)?;
+    Ok(Some(loader.name))
+}
+
+fn write_config(directory: &Path, account: &ShimAccount) -> Result<(), String> {
+    let saves = directory.join("Saves");
+    std::fs::create_dir_all(&saves)
+        .map_err(|error| format!("creating {}: {error}", saves.display()))?;
+    let config = serde_json::json!({
+        "UseDebug": false,
+        "Account": {
+            "AccountId": account.account_id,
+            "Email": account.email,
+            "Name": account.name,
+            "Password": "efxlve",
+            "Country": "en-US",
+            "Ticket": account.ticket,
+        },
+        "Save": {
+            "Path": saves.display().to_string(),
+            "UseAppIdInName": true,
+        },
+        "Others": {
+            "ApplicationId": account.account_id,
+            "OfflineMode": true,
+        },
+        "CDKeys": [],
+        "ChunkInfo": {
+            "ChunkIds": [],
+            "InstalledChunkIds": [],
+            "UseInstalledChunkIds": false,
+        },
+        "Achis": [],
+        "Rewards": [],
+        "AvatarsPath": "",
+    });
+    let text = serde_json::to_string_pretty(&config)
+        .map_err(|error| format!("serializing upc.json: {error}"))?;
+    let path = directory.join("upc.json");
+    std::fs::write(&path, text).map_err(|error| format!("writing {}: {error}", path.display()))
+}
+
+fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+    if needle.is_empty() || haystack.len() < needle.len() {
+        return false;
+    }
+    haystack.windows(needle.len()).any(|window| {
+        window
+            .iter()
+            .zip(needle)
+            .all(|(left, right)| left.eq_ignore_ascii_case(right))
+    })
+}
+
+fn pe_is_64(bytes: &[u8]) -> Option<bool> {
+    if bytes.len() < 0x40 {
+        return None;
+    }
+    let pe = u32::from_le_bytes(bytes.get(0x3c..0x40)?.try_into().ok()?) as usize;
+    if bytes.get(pe..pe + 4)? != b"PE\0\0" {
+        return None;
+    }
+    let machine = u16::from_le_bytes(bytes.get(pe + 4..pe + 6)?.try_into().ok()?);
+    Some(machine == 0x8664)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fake_exe(loader: &str, machine: u16) -> Vec<u8> {
+        let mut bytes = vec![0u8; 0x200];
+        bytes[0..2].copy_from_slice(b"MZ");
+        bytes[0x3c..0x40].copy_from_slice(&0x80u32.to_le_bytes());
+        bytes[0x80..0x84].copy_from_slice(b"PE\0\0");
+        bytes[0x84..0x86].copy_from_slice(&machine.to_le_bytes());
+        bytes.extend_from_slice(loader.as_bytes());
+        bytes
+    }
+
+    #[test]
+    fn detects_r1_and_r2_loaders_by_arch() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-shim-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let x86 = root.join("x86.exe");
+        let x64 = root.join("x64.exe");
+        std::fs::write(&x86, fake_exe("uplay_r1_loader.dll", 0x014c)).unwrap();
+        std::fs::write(&x64, fake_exe("upc_r2_loader64.dll", 0x8664)).unwrap();
+        let r1 = detect(&x86).unwrap().unwrap();
+        assert_eq!(r1.name, "uplay_r1_loader.dll");
+        assert_eq!(r1.family, Family::R1);
+        assert!(!r1.x64);
+        let r2 = detect(&x64).unwrap().unwrap();
+        assert_eq!(r2.family, Family::R2);
+        assert!(r2.x64);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_game_without_a_loader_needs_no_shim() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-noshim-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let exe = root.join("game.exe");
+        std::fs::write(&exe, fake_exe("steam_api64.dll", 0x8664)).unwrap();
+        assert!(detect(&exe).unwrap().is_none());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_pinned_hashes_are_well_formed() {
+        for (_, hash) in [
+            spec(Family::R1, false),
+            spec(Family::R1, true),
+            spec(Family::R2, false),
+            spec(Family::R2, true),
+        ] {
+            assert_eq!(hash.len(), 64);
+            assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "downloads the MIT-licensed shim; no account needed"]
+    async fn live_shim_asset_matches_the_pinned_hash() {
+        let path = ensure(Family::R1, true).await.expect("shim download");
+        println!("{}", path.display());
+        assert!(path.is_file());
+    }
+}

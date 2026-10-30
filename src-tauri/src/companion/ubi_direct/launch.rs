@@ -11,7 +11,9 @@ use std::process::Command;
 
 use crate::companion::ubi_installs;
 
-pub(crate) fn launch(product_id: u32) -> Result<(), String> {
+use super::shim;
+
+pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), String> {
     let game = ubi_installs::find(product_id)
         .ok_or_else(|| format!("product {product_id} is not installed by the launcher"))?;
     let install_dir = PathBuf::from(&game.install_dir);
@@ -21,12 +23,61 @@ pub(crate) fn launch(product_id: u32) -> Result<(), String> {
     let exe = resolve_exe(&install_dir, &game.exe)?;
     seed_registry(product_id, &install_dir);
     seed_game_registry(&game, &install_dir);
+
+    if shim_enabled {
+        let account = shim_account(&game).await;
+        if let Some(name) = shim::deploy(&exe, &account).await? {
+            println!("[ubi-direct] deployed {name} for {}", game.name);
+        }
+    } else if let Ok(Some(loader)) = shim::detect(&exe) {
+        return Err(format!(
+            "{} imports {}; enable the Uplay compatibility shim in Settings -> Integrations to launch it without Ubisoft Connect",
+            game.name, loader.name
+        ));
+    }
+
     let mut command = Command::new(&exe);
     command.current_dir(&install_dir);
     command
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("starting {}: {e}", exe.display()))
+}
+
+async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
+    let mut account_id = String::new();
+    let mut name = String::new();
+    let mut ticket = game.ticket.clone();
+    if let Ok((mut demux, session)) = super::connect().await {
+        account_id = session.user_id.clone();
+        name = session.name.clone();
+        if game.uplay_id != 0 {
+            if let Ok(Some(fresh)) = demux.uplay_ticket(game.uplay_id).await {
+                ticket = fresh;
+            }
+        }
+    }
+    if account_id.is_empty() {
+        account_id = format!("efxlve-{}", game.product_id);
+    }
+    if name.is_empty() {
+        name = "Player".to_string();
+    }
+    let handle: String = name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect();
+    let handle = if handle.is_empty() {
+        "player".to_string()
+    } else {
+        handle.to_lowercase()
+    };
+    shim::ShimAccount {
+        account_id,
+        name,
+        email: format!("{handle}@efxlve.local"),
+        ticket,
+    }
 }
 
 fn resolve_exe(install_dir: &Path, recorded: &str) -> Result<PathBuf, String> {

@@ -508,7 +508,8 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
             .into_iter()
             .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
         {
-            return ubi_direct::launch_game(installed.product_id);
+            let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
+            return ubi_direct::launch_game(installed.product_id, shim).await;
         }
     }
     if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
@@ -540,8 +541,15 @@ pub async fn ubi_direct_plan(
 
 /// Start a game the launcher installed, without Ubisoft Connect.
 #[tauri::command]
-pub fn ubi_direct_launch(product_id: u32) -> Result<(), String> {
-    ubi_direct::launch_game(product_id)
+pub async fn ubi_direct_launch(app: tauri::AppHandle, product_id: u32) -> Result<(), String> {
+    let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
+    ubi_direct::launch_game(product_id, shim).await
+}
+
+/// Forget a direct-install record without touching the game files.
+#[tauri::command]
+pub fn ubi_direct_forget(product_id: u32) {
+    ubi_installs::remove(product_id);
 }
 
 /// Start a direct install in the background. Progress arrives on
@@ -1111,7 +1119,7 @@ pub async fn xbox_uninstall(id: String) -> Result<(), String> {
 /// launcher only starts it. A game without a known id falls back to opening the
 /// client.
 #[tauri::command]
-pub fn companion_game_action(store: String, id: String, action: String) -> Result<(), String> {
+pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: String, action: String) -> Result<(), String> {
     if !accounts::is_store(&store) || id.is_empty() {
         return Err("Unknown game".into());
     }
@@ -1123,7 +1131,8 @@ pub fn companion_game_action(store: String, id: String, action: String) -> Resul
             .into_iter()
             .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
         {
-            return ubi_direct::launch_game(installed.product_id);
+            let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
+            return ubi_direct::launch_game(installed.product_id, shim).await;
         }
     }
     // Riot: launch, install and uninstall are product flags on the client exe.
