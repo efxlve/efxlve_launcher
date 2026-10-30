@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "Nueva pestaña",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "El navegador flota sobre el juego con pestañas reales. Inicia sesión en Google una vez y la sesión se mantiene en este PC.",
   "overlay.hotkeyHint": "abre · Esc cierra",
   "overlay.openLauncher": "Abrir launcher",

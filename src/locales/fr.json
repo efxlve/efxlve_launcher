@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "Nouvel onglet",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "Le navigateur flotte au-dessus du jeu avec de vrais onglets. Connectez-vous une fois à Google, la session reste sur ce PC.",
   "overlay.hotkeyHint": "ouvre · Échap ferme",
   "overlay.openLauncher": "Ouvrir le launcher",

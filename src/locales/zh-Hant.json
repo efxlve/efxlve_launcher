@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "新增分頁",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "瀏覽器以真實分頁浮在遊戲之上。登入一次 Google，工作階段會保留在這台電腦上。",
   "overlay.hotkeyHint": "開啟 · Esc 關閉",
   "overlay.openLauncher": "開啟啟動器",

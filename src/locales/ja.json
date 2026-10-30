@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "新しいタブ",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "ブラウザは実際のタブを備えてゲームの上に表示されます。Google に一度サインインすれば、この PC ではサインイン状態が保たれます。",
   "overlay.hotkeyHint": "開く · Esc で閉じる",
   "overlay.openLauncher": "ランチャーを開く",

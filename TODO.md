@@ -126,5 +126,5 @@ when the panel closes (`src-tauri/src/overlay/browser.rs`,
 `src/features/overlay/browser-window.ts`). Validate on a borderless game and a
 multi-monitor/DPI setup: the player lands top-right, the page fills the frame,
 the PiP bar restores and closes, the game keeps focus after close, and the
-browser reopens at full size. Then add a click-through toggle, corner choice, a
-direct "send this tab to PiP" action, and translations for the two new keys.
+browser reopens at full size. Then add a click-through toggle, a direct "send
+this tab to PiP" action, and translations for the two new keys.

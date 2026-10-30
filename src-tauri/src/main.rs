@@ -2130,6 +2130,7 @@ fn main() {
             overlay::browser::overlay_browser_open,
             overlay::browser::overlay_browser_is_open,
             overlay::browser::overlay_browser_set_pip,
+            overlay::browser::overlay_browser_cycle_pip_corner,
             overlay::browser::overlay_browser_is_pip,
             overlay::browser::overlay_browser_show,
             overlay::browser::overlay_browser_tabs,

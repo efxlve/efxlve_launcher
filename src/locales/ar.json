@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "علامة تبويب جديدة",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "يتصفح المتصفح فوق اللعبة بعلامات تبويب حقيقية. سجّل الدخول إلى Google مرة واحدة وتبقى الجلسة على هذا الكمبيوتر.",
   "overlay.hotkeyHint": "للفتح · Esc للإغلاق",
   "overlay.openLauncher": "فتح المشغّل",

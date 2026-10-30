@@ -295,6 +295,8 @@ function wire(): void {
   if (pipToggle) pipToggle.title = t("overlay.browserPip");
   const pipRestore = document.querySelector<HTMLElement>('[data-pip="restore"]');
   if (pipRestore) pipRestore.title = t("overlay.browserPipExit");
+  const pipCorner = document.querySelector<HTMLElement>('[data-pip="corner"]');
+  if (pipCorner) pipCorner.title = t("overlay.browserPipCorner");
   const pipClose = document.querySelector<HTMLElement>('[data-pip="close"]');
   if (pipClose) pipClose.title = t("common.close");
 
@@ -318,6 +320,8 @@ function wire(): void {
     if (pipAct) {
       if (pipAct === "toggle") {
         void invoke("overlay_browser_set_pip", { enabled: !pipMode }).catch(() => undefined);
+      } else if (pipAct === "corner") {
+        void invoke("overlay_browser_cycle_pip_corner").catch(() => undefined);
       } else if (pipAct === "restore") {
         void invoke("overlay_browser_set_pip", { enabled: false }).catch(() => undefined);
       } else if (pipAct === "close") {

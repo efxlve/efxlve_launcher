@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "แท็บใหม่",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "เบราว์เซอร์ลอยอยู่เหนือเกมพร้อมแท็บจริง ลงชื่อเข้าใช้ Google ครั้งเดียวแล้วเซสชันจะคงอยู่ในเครื่องนี้",
   "overlay.hotkeyHint": "เปิด · Esc ปิด",
   "overlay.openLauncher": "เปิดตัวเปิดเกม",

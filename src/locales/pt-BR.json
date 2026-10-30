@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "Nova aba",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "O navegador flutua sobre o jogo com abas de verdade. Entre no Google uma vez e a sessão fica neste PC.",
   "overlay.hotkeyHint": "abre · Esc fecha",
   "overlay.openLauncher": "Abrir launcher",

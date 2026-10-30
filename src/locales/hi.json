@@ -2039,6 +2039,7 @@
   "overlay.browserNewTab": "नया टैब",
   "overlay.browserPip": "Picture in picture",
   "overlay.browserPipExit": "Exit picture in picture",
+  "overlay.browserPipCorner": "Move to the next corner",
   "overlay.browserDesc": "ब्राउज़र असली टैब के साथ गेम के ऊपर खुलता है। Google में एक बार साइन इन करें, सत्र इस PC पर बना रहता है।",
   "overlay.hotkeyHint": "खोलता है · Esc बंद करता है",
   "overlay.openLauncher": "लॉन्चर खोलें",

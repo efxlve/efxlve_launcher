@@ -11,7 +11,7 @@
 //! WebView2 shares the app's persistent profile, so sign-ins — Google among
 //! them — survive between sessions; nothing lives only in memory.
 
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 use serde::Serialize;
@@ -33,6 +33,8 @@ static IS_OPEN: AtomicBool = AtomicBool::new(false);
 static PIP: AtomicBool = AtomicBool::new(false);
 /// The full-window placement saved when PiP started, in logical units.
 static PIP_RESTORE: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
+/// 0 top-right, 1 bottom-right, 2 bottom-left, 3 top-left.
+static PIP_CORNER: AtomicUsize = AtomicUsize::new(0);
 /// One open tab: its id and the page it points at.
 static TABS: Mutex<Vec<(u32, String)>> = Mutex::new(Vec::new());
 static NEXT_ID: AtomicU32 = AtomicU32::new(1);
@@ -464,9 +466,78 @@ fn emit_browser_state(app: &AppHandle, open: bool) {
     let _ = app.emit("overlay-browser-state", serde_json::json!({ "open": open }));
 }
 
-/// Enters or leaves picture-in-picture: a small 16:9 window in the top-right
-/// corner of the game monitor. The chrome hides its bars and shows a 28 px PiP
-/// bar; the page keeps the rest.
+/// The 16:9 player's size and corner on the game monitor, in logical units.
+fn pip_placement(scale: f64) -> (f64, f64, f64, f64) {
+    let (mx, my, mw, mh) = super::hud::monitor_rect_for(
+        super::STATE
+            .lock()
+            .map(|state| state.game_hwnd)
+            .unwrap_or(0),
+    )
+    .unwrap_or((0, 0, 1920, 1080));
+    let left = mx as f64 / scale;
+    let top = my as f64 / scale;
+    let monitor_w = mw as f64 / scale;
+    let monitor_h = mh as f64 / scale;
+    let width = (monitor_w * 0.38).clamp(320.0, 520.0);
+    let height = (width * 9.0 / 16.0 + 28.0).round();
+    let (x, y) = corner_position(
+        PIP_CORNER.load(Ordering::Relaxed),
+        left,
+        top,
+        monitor_w,
+        monitor_h,
+        width,
+        height,
+        16.0,
+    );
+    (x, y, width, height)
+}
+
+/// Maps a corner index (0 top-right, then clockwise) to a logical position.
+fn corner_position(
+    corner: usize,
+    left: f64,
+    top: f64,
+    monitor_w: f64,
+    monitor_h: f64,
+    width: f64,
+    height: f64,
+    margin: f64,
+) -> (f64, f64) {
+    let x = if corner == 2 || corner == 3 {
+        left + margin
+    } else {
+        left + monitor_w - width - margin
+    };
+    let y = if corner == 1 || corner == 2 {
+        top + monitor_h - height - margin
+    } else {
+        top + margin
+    };
+    (x, y)
+}
+
+/// Moves the corner player to the next corner; the next PiP starts there too.
+#[tauri::command]
+pub fn overlay_browser_cycle_pip_corner(app: AppHandle) -> bool {
+    let next = (PIP_CORNER.load(Ordering::Relaxed) + 1) % 4;
+    PIP_CORNER.store(next, Ordering::Relaxed);
+    if !PIP.load(Ordering::Relaxed) {
+        return false;
+    }
+    let Some(window) = app.get_window(WINDOW_LABEL) else {
+        return false;
+    };
+    let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
+    let (x, y, _, _) = pip_placement(scale);
+    let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+    true
+}
+
+/// Enters or leaves picture-in-picture: a small 16:9 window in a corner of the
+/// game monitor. The chrome hides its bars and shows a 28 px PiP bar; the page
+/// keeps the rest.
 #[tauri::command]
 pub fn overlay_browser_set_pip(app: AppHandle, enabled: bool) -> bool {
     if enabled == PIP.load(Ordering::Relaxed) {
@@ -487,20 +558,7 @@ pub fn overlay_browser_set_pip(app: AppHandle, enabled: bool) -> bool {
                 ));
             }
         }
-        let (mx, my, mw, _) = super::hud::monitor_rect_for(
-            super::STATE
-                .lock()
-                .map(|state| state.game_hwnd)
-                .unwrap_or(0),
-        )
-        .unwrap_or((0, 0, 1920, 1080));
-        let monitor_w = mw as f64 / scale;
-        let monitor_x = mx as f64 / scale;
-        let monitor_y = my as f64 / scale;
-        let width = (monitor_w * 0.38).clamp(320.0, 520.0);
-        let height = (width * 9.0 / 16.0 + 28.0).round();
-        let x = monitor_x + monitor_w - width - 16.0;
-        let y = monitor_y + 16.0;
+        let (x, y, width, height) = pip_placement(scale);
         PIP.store(true, Ordering::Relaxed);
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(280.0, 180.0))));
         let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(width, height)));
@@ -800,7 +858,16 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
 
 #[cfg(test)]
 mod tests {
-    use super::normalize_url;
+    use super::{corner_position, normalize_url};
+
+    #[test]
+    fn pip_corners_follow_the_clockwise_order() {
+        // 0 top-right, 1 bottom-right, 2 bottom-left, 3 top-left.
+        assert_eq!(corner_position(0, 0.0, 0.0, 1920.0, 1080.0, 480.0, 298.0, 16.0), (1424.0, 16.0));
+        assert_eq!(corner_position(1, 0.0, 0.0, 1920.0, 1080.0, 480.0, 298.0, 16.0), (1424.0, 766.0));
+        assert_eq!(corner_position(2, 0.0, 0.0, 1920.0, 1080.0, 480.0, 298.0, 16.0), (16.0, 766.0));
+        assert_eq!(corner_position(3, 0.0, 0.0, 1920.0, 1080.0, 480.0, 298.0, 16.0), (16.0, 16.0));
+    }
 
     #[test]
     fn address_bar_input_becomes_a_url() {
