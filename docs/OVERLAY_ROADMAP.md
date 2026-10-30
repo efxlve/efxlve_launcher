@@ -272,14 +272,15 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   1% low, CPU, GPU) and full (all telemetry) modes, four monitor corners and a text
   color; the metrics worker builds the line for the mode and the window thread moves and
   repaints the plate. Settings stores the choice and applies it immediately.
-- Temperatures and GPU power (built): the CPU temperature comes from the PDH thermal-zone
-  counter, and NVML (loaded from the driver's `nvml.dll`) supplies the GPU die
-  temperature and board power when an NVIDIA card is present. Both are read once per
-  metrics tick and disappear from the strip and Performance tab when unavailable.
-- Open: CPU package power (Intel RAPL needs a kernel driver, AMD needs ADLX). The native
-  strip stays the zero-cost fallback; the richer always-on HUD is a pinned Performance
-  widget in ghost mode (M8). Unify the Settings HUD toggle with that path once the field
-  pass confirms ghost mode over a real game.
+- Temperatures and power (built): the CPU temperature comes from the PDH thermal-zone
+  counter, CPU package power from the Windows Power Meter counter when the firmware
+  exposes a processor/package instance, and NVML (loaded from the driver's `nvml.dll`)
+  supplies the GPU die temperature and board power. All are read once per metrics tick
+  and disappear when unavailable.
+- Open: validate the counters on real Intel and AMD hardware; the native strip stays the
+  zero-cost fallback and the richer always-on HUD is a pinned Performance widget in
+  ghost mode (M8). Unify the Settings HUD toggle with that path once the field pass
+  confirms ghost mode over a real game.
 - Acceptance: <0.5% CPU while active; numbers stay within ~2% of PresentMon for the
   same run; sampling fully stops when the game exits.
 

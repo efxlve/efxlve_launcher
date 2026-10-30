@@ -10,6 +10,7 @@
 #[derive(Default, Clone, Copy)]
 pub struct ThermalSample {
     pub cpu_temp_c: Option<f64>,
+    pub cpu_power_w: Option<f64>,
     pub gpu_temp_c: Option<f64>,
     pub gpu_power_w: Option<f64>,
 }
@@ -57,22 +58,25 @@ mod imp {
 
     pub struct ThermalQuery {
         zone: Option<(PDH_HQUERY, PDH_HCOUNTER)>,
+        power: Option<(PDH_HQUERY, PDH_HCOUNTER)>,
         nvml: Option<Nvml>,
     }
 
     impl ThermalQuery {
         pub fn open() -> Option<ThermalQuery> {
             let zone = open_zone();
+            let power = open_power();
             let nvml = Nvml::load();
-            if zone.is_none() && nvml.is_none() {
+            if zone.is_none() && power.is_none() && nvml.is_none() {
                 None
             } else {
-                Some(ThermalQuery { zone, nvml })
+                Some(ThermalQuery { zone, power, nvml })
             }
         }
 
         pub fn sample(&mut self) -> ThermalSample {
             let cpu_temp_c = self.zone.as_ref().and_then(read_zone);
+            let cpu_power_w = self.power.as_ref().and_then(read_power);
             let (gpu_temp_c, gpu_power_w) = self
                 .nvml
                 .as_ref()
@@ -80,6 +84,7 @@ mod imp {
                 .unwrap_or((None, None));
             ThermalSample {
                 cpu_temp_c,
+                cpu_power_w,
                 gpu_temp_c,
                 gpu_power_w,
             }
@@ -105,6 +110,51 @@ mod imp {
             }
             Some((query, counter))
         }
+    }
+
+    /// Windows exposes package power through the Power Meter counter on systems
+    /// whose firmware publishes a CPU/package instance. A desktop without that
+    /// counter simply reports `None`.
+    fn open_power() -> Option<(PDH_HQUERY, PDH_HCOUNTER)> {
+        unsafe {
+            let mut query = PDH_HQUERY::default();
+            if PdhOpenQueryW(None, 0, &mut query) != 0 {
+                return None;
+            }
+            let mut counter = PDH_HCOUNTER::default();
+            if PdhAddEnglishCounterW(query, w!("\\Power Meter(*)\\Power"), 0, &mut counter) != 0 {
+                let _ = PdhCloseQuery(query);
+                return None;
+            }
+            Some((query, counter))
+        }
+    }
+
+    fn read_power(power: &(PDH_HQUERY, PDH_HCOUNTER)) -> Option<f64> {
+        unsafe {
+            if PdhCollectQueryData(power.0) != 0 {
+                return None;
+            }
+        }
+        let items = read_array(power.1)?;
+        items
+            .iter()
+            .filter(|(name, _)| {
+                let name = name.to_ascii_lowercase();
+                name.contains("processor") || name.contains("cpu") || name.contains("package")
+            })
+            .filter_map(|(_, value)| power_watts(*value))
+            .fold(None, |best: Option<f64>, value| {
+                Some(best.map_or(value, |current| current.max(value)))
+            })
+    }
+
+    pub(super) fn power_watts(raw: f64) -> Option<f64> {
+        if !raw.is_finite() || raw <= 0.0 {
+            return None;
+        }
+        let watts = if raw > 1000.0 { raw / 1000.0 } else { raw };
+        (watts > 0.5 && watts < 500.0).then_some(watts)
     }
 
     fn read_zone(zone: &(PDH_HQUERY, PDH_HCOUNTER)) -> Option<f64> {
@@ -277,5 +327,14 @@ mod tests {
         close(temperature_celsius(60.0), 60.0);
         assert_eq!(temperature_celsius(0.0), None);
         assert_eq!(temperature_celsius(500.0), None);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn power_meter_values_normalize_to_watts() {
+        assert_eq!(super::imp::power_watts(65_000.0), Some(65.0));
+        assert_eq!(super::imp::power_watts(65.0), Some(65.0));
+        assert_eq!(super::imp::power_watts(0.0), None);
+        assert_eq!(super::imp::power_watts(900_000.0), None);
     }
 }

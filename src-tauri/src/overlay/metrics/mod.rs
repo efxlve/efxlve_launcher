@@ -52,6 +52,8 @@ pub struct MetricsSample {
     pub vram_total_mb: Option<u64>,
     /// CPU package/thermal-zone temperature, Celsius.
     pub cpu_temp_c: Option<f64>,
+    /// CPU package power, watts.
+    pub cpu_power_w: Option<f64>,
     /// GPU die temperature, Celsius.
     pub gpu_temp_c: Option<f64>,
     /// GPU board power draw, watts.
@@ -186,6 +188,7 @@ fn run(app: AppHandle) {
             vram_used_mb: vram.map(|bytes| bytes / 1_048_576),
             vram_total_mb,
             cpu_temp_c: thermal.cpu_temp_c,
+            cpu_power_w: thermal.cpu_power_w,
             gpu_temp_c: thermal.gpu_temp_c,
             gpu_power_w: thermal.gpu_power_w,
         };
@@ -248,9 +251,13 @@ fn full_hud_text(s: &MetricsSample) -> String {
         parts.push(line);
     }
     let cpu = s.game_cpu.unwrap_or(s.cpu);
+    let cpu_power = s
+        .cpu_power_w
+        .map(|power| format!(" {power:.0}W"))
+        .unwrap_or_default();
     parts.push(match s.cpu_temp_c {
-        Some(temp) => format!("CPU {cpu:.0}% {temp:.0}°C"),
-        None => format!("CPU {cpu:.0}%"),
+        Some(temp) => format!("CPU {cpu:.0}% {temp:.0}°C{cpu_power}"),
+        None => format!("CPU {cpu:.0}%{cpu_power}"),
     });
     if let Some(gpu) = s.gpu {
         let mut line = format!("GPU {gpu:.0}%");
@@ -365,10 +372,11 @@ mod tests {
         sample.cpu = 23.0;
         sample.gpu = Some(67.0);
         sample.cpu_temp_c = Some(62.4);
+        sample.cpu_power_w = Some(45.2);
         sample.gpu_temp_c = Some(58.2);
         sample.gpu_power_w = Some(120.4);
         let line = hud_text(&sample, "full");
-        assert!(line.contains("CPU 23% 62°C"), "{line}");
+        assert!(line.contains("CPU 23% 62°C 45W"), "{line}");
         assert!(line.contains("GPU 67% 58°C 120W"), "{line}");
     }
 }

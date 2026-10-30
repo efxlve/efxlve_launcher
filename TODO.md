@@ -46,10 +46,10 @@ PresentMon on a 60 Hz and a high-refresh title: the 1% low should appear after
 Performance tab also plots the last 1024 frame times as a frametime graph.
 Validate the HUD appearance modes on a real game: minimal/compact/full, all four
 corners on a multi-monitor and scaled display, and the text color over a bright
-scene. Then validate CPU/GPU temperatures and GPU power on NVIDIA and AMD
-machines (the CPU zone is vendor-neutral; NVML only loads on NVIDIA) and add
-CPU package power (RAPL/ADLX). Validate the graph against PresentMon's frametime
-trace.
+scene. Then validate CPU/GPU temperatures and CPU/GPU power on NVIDIA and AMD
+machines (CPU temperature is vendor-neutral, CPU power uses the Windows Power
+Meter counter when the firmware exposes a processor/package instance, and NVML
+only loads on NVIDIA). Validate the graph against PresentMon's frametime trace.
 
 ## Audio mixer field pass
 
