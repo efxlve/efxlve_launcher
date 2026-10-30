@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "성능",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "오디오",
+  "overlay.trackedTitle": "추적 중인 업적",
   "overlay.tabTracker": "트래커",
   "overlay.trackerTrack": "추적",
   "overlay.trackerUntrack": "추적 중지",

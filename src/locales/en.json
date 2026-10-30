@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "Performance",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
+  "overlay.trackedTitle": "Tracked achievements",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",
   "overlay.trackerUntrack": "Stop tracking",

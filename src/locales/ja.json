@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "パフォーマンス",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "オーディオ",
+  "overlay.trackedTitle": "追跡中の実績",
   "overlay.tabTracker": "トラッカー",
   "overlay.trackerTrack": "追跡",
   "overlay.trackerUntrack": "追跡を停止",

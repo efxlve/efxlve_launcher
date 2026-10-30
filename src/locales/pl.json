@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "Wydajność",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Dźwięk",
+  "overlay.trackedTitle": "Monitorowane osiągnięcia",
   "overlay.tabTracker": "Monitor",
   "overlay.trackerTrack": "Monitoruj",
   "overlay.trackerUntrack": "Przestań monitorować",

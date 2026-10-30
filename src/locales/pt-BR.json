@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "Desempenho",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Áudio",
+  "overlay.trackedTitle": "Conquistas rastreadas",
   "overlay.tabTracker": "Rastreador",
   "overlay.trackerTrack": "Rastrear",
   "overlay.trackerUntrack": "Parar de rastrear",

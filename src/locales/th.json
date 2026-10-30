@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "ประสิทธิภาพ",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "เสียง",
+  "overlay.trackedTitle": "Achievement ที่ติดตาม",
   "overlay.tabTracker": "ตัวติดตาม",
   "overlay.trackerTrack": "ติดตาม",
   "overlay.trackerUntrack": "หยุดติดตาม",

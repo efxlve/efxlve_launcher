@@ -6331,6 +6331,47 @@ body.ov-browser-pip .ov-browser-pipbar {
 }
 
 /* --- Achievement tracker --- */
+.ov-tracker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+}
+
+.ov-tracker-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* In ghost mode the pinned Achievements card is only the tracked HUD. */
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-page-title,
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-ach-summary,
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-ach-filters,
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-ach-full-list,
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-ach-detail,
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-widget-body > .ov-empty {
+  display: none !important;
+}
+
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-tracker-section {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+body.ov-ghost .ov-widget[data-widget-id="ach"] .ov-tracker-section-head {
+  display: none;
+}
+
 .ov-tracker-list {
   display: flex;
   flex-direction: column;

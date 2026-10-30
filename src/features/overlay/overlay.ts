@@ -221,7 +221,7 @@ interface ScreenshotItem {
   size_bytes?: number;
 }
 
-type TabId = "home" | "perf" | "ach" | "tracker" | "shots" | "clip" | "notes" | "music" | "audio" | "discord" | "chat" | "browser" | "settings";
+type TabId = "home" | "perf" | "ach" | "shots" | "clip" | "notes" | "music" | "audio" | "discord" | "chat" | "browser" | "settings";
 
 /**
  * The Browser tab is built and working (window, tabs, commands), but it stays
@@ -239,7 +239,6 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
   { id: "chat", icon: "discord", key: "overlay.discordReplyTitle" },
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
-  { id: "tracker", icon: "pin", key: "overlay.tabTracker" },
   { id: "browser", icon: "globe", key: "overlay.tabBrowser" },
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
   { id: "settings", icon: "settings", key: "overlay.tabSettings" },
@@ -767,8 +766,6 @@ function getDefaultWidgetPos(tab: TabId): WidgetPos {
       return { x: Math.max(24, winW - 390), y: 72 };
     case "ach":
       return { x: Math.max(24, Math.min(380, winW - 420)), y: 72 };
-    case "tracker":
-      return { x: Math.max(24, Math.floor((winW - 360) / 2)), y: 72 };
     case "browser":
       return { x: Math.max(24, Math.floor((winW - 500) / 2)), y: 80 };
     case "notes":
@@ -843,8 +840,6 @@ function getWidgetSizeLimits(tab: TabId): WidgetSizeLimits {
       return { minW: 300, minH: 320, maxW: 800, maxH: 900 };
     case "ach":
       return { minW: 280, minH: 260, maxW: 700, maxH: 800 };
-    case "tracker":
-      return { minW: 280, minH: 180, maxW: 520, maxH: 500 };
     case "notes":
       return { minW: 260, minH: 220, maxW: 700, maxH: 700 };
     case "settings":
@@ -877,8 +872,6 @@ function getDefaultWidgetSize(tab: TabId): WidgetSize {
       return { w: 380, h: 540 };
     case "ach":
       return { w: 380, h: 480 };
-    case "tracker":
-      return { w: 360, h: 250 };
     case "notes":
       return { w: 340, h: 360 };
     case "settings":
@@ -981,12 +974,7 @@ function renderWidgetContent(tab: TabId): void {
   }
   if (tab === "perf") renderPerf();
   else if (tab === "ach") void loadAchievements();
-  else if (tab === "tracker") {
-    renderTracker();
-    void loadAchievements().then(() => {
-      if (isWidgetOpen("tracker")) renderTracker();
-    });
-  } else if (tab === "shots") void loadScreenshots();
+  else if (tab === "shots") void loadScreenshots();
   else if (tab === "clip") startClipPolling();
   else if (tab === "notes") renderOverlayNotes();
   else if (tab === "music") {
@@ -1038,7 +1026,7 @@ function openWidget(tab: TabId, render = true): void {
 
   if (render) renderWidgetContent(tab);
 
-  if (tab === "tracker") startTrackerPolling();
+  if (tab === "ach") startTrackerPolling();
   if (tab === "discord") {
     void invoke("discord_voice_watch_start").catch(() => undefined);
     void refreshWebVoice();
@@ -1055,8 +1043,10 @@ function closeWidget(tab: TabId): void {
 
   if (tab === "clip") stopClipPolling();
   if (tab === "audio") stopAudioPolling();
-  if (tab === "tracker") stopTrackerPolling();
-  if (tab === "ach") achDetail = null;
+  if (tab === "ach") {
+    stopTrackerPolling();
+    achDetail = null;
+  }
 
   const widget = document.getElementById(`ov-widget-${tab}`);
   if (widget) widget.style.display = "none";
@@ -2806,6 +2796,7 @@ function renderAchList(data: AchievementsData): string {
       <div class="ov-ach-bar"><span style="width:${pct}%"></span></div>
       <div class="ov-ach-pct">%${pct}</div>
     </div>
+    ${trackerSectionHtml(data)}
     <div class="ov-ach-filters">
       ${chip("all", t("ach.filterAll"), stats.total)}
       ${chip("locked", t("ach.filterLocked"), Math.max(0, stats.total - unlocked))}
@@ -2868,54 +2859,52 @@ function toggleTrackedAchievement(name: string): void {
       return;
     }
     setTrackedAchievements([...current, name]);
-    openWidget("tracker");
+    openWidget("ach");
   }
-  if (isWidgetOpen("tracker")) renderTracker();
   if (isWidgetOpen("ach")) renderAchView();
 }
 
-function renderTracker(): void {
-  const el = viewEl("tracker");
-  if (!el) return;
+function trackerRowHtml(item: AchievementItem): string {
+  const progress = achievementProgress(item);
+  const unlocked = isAchievementUnlocked(item);
+  const pct = Math.round(progress * 100);
+  return `<div class="ov-tracker-row${unlocked ? " is-earned" : ""}">
+    <div class="ov-tracker-art">${item.icon_link ? `<img src="${esc(item.icon_link)}" alt="" loading="lazy" />` : icon("trophy", 16)}</div>
+    <div class="ov-tracker-body">
+      <div class="ov-tracker-name">${esc(achDisplayName(item))}</div>
+      ${item.description ? `<div class="ov-tracker-desc">${esc(item.description)}</div>` : ""}
+      <div class="ov-tracker-progress"><span style="width:${unlocked ? 100 : pct}%"></span></div>
+    </div>
+    <div class="ov-tracker-side">
+      <span class="ov-tracker-pct tabular-nums">${unlocked ? icon("check", 12) : pct > 0 ? `%${pct}` : icon("lock", 11)}</span>
+      <button type="button" class="ov-tracker-remove" data-ov="ach-untrack" data-ach="${esc(item.name)}" title="${esc(t("overlay.trackerRemove"))}">${icon("x", 11)}</button>
+    </div>
+  </div>`;
+}
+
+/** The tracked set lives inside the Achievements widget; the same section is
+ *  the whole card in ghost mode, so pinning the widget keeps a compact HUD. */
+function trackerSectionHtml(data: AchievementsData | null): string {
   const names = trackedAchievements();
+  let body: string;
   if (names.length === 0) {
-    el.innerHTML = emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
-    return;
-  }
-  const data = cachedAchievements;
-  if (!data) {
-    el.innerHTML = achLoading
+    body = emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
+  } else if (!data) {
+    body = achLoading
       ? `<div class="ov-empty">${esc(t("ach.checking"))}</div>`
       : emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
-    return;
+  } else {
+    const items = names
+      .map((name) => data.achievements.find((item) => item.name === name))
+      .filter((item): item is AchievementItem => Boolean(item));
+    body = items.length > 0
+      ? `<div class="ov-tracker-list">${items.map(trackerRowHtml).join("")}</div>`
+      : emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
   }
-  const items = names
-    .map((name) => data.achievements.find((item) => item.name === name))
-    .filter((item): item is AchievementItem => Boolean(item));
-  if (items.length === 0) {
-    el.innerHTML = emptyBlockHtml("pin", t("overlay.trackerEmpty"), t("overlay.trackerEmptyDesc"));
-    return;
-  }
-  const rows = items
-    .map((item) => {
-      const progress = achievementProgress(item);
-      const unlocked = isAchievementUnlocked(item);
-      const pct = Math.round(progress * 100);
-      return `<div class="ov-tracker-row${unlocked ? " is-earned" : ""}">
-        <div class="ov-tracker-art">${item.icon_link ? `<img src="${esc(item.icon_link)}" alt="" loading="lazy" />` : icon("trophy", 16)}</div>
-        <div class="ov-tracker-body">
-          <div class="ov-tracker-name">${esc(achDisplayName(item))}</div>
-          ${item.description ? `<div class="ov-tracker-desc">${esc(item.description)}</div>` : ""}
-          <div class="ov-tracker-progress"><span style="width:${unlocked ? 100 : pct}%"></span></div>
-        </div>
-        <div class="ov-tracker-side">
-          <span class="ov-tracker-pct tabular-nums">${unlocked ? icon("check", 12) : pct > 0 ? `%${pct}` : icon("lock", 11)}</span>
-          <button type="button" class="ov-tracker-remove" data-ov="ach-untrack" data-ach="${esc(item.name)}" title="${esc(t("overlay.trackerRemove"))}">${icon("x", 11)}</button>
-        </div>
-      </div>`;
-    })
-    .join("");
-  el.innerHTML = `<div class="ov-tracker-list">${rows}</div>`;
+  return `<section class="ov-tracker-section">
+    <div class="ov-tracker-section-head">${icon("pin", 12)} <span>${esc(t("overlay.trackedTitle"))}</span></div>
+    ${body}
+  </section>`;
 }
 
 let trackerPollTimer: number | null = null;
@@ -2926,8 +2915,8 @@ function startTrackerPolling(): void {
   if (trackerPollTimer !== null) return;
   trackerPollTimer = window.setInterval(() => {
     if (document.hidden) return;
-    if (ghostMode && !isWidgetPinned("tracker")) return;
-    if (!isWidgetOpen("tracker")) return;
+    if (ghostMode && !isWidgetPinned("ach")) return;
+    if (!isWidgetOpen("ach")) return;
     void loadAchievements(true);
   }, 30_000);
 }
@@ -2945,6 +2934,7 @@ function renderAchView(): void {
   if (!data || !data.achievements || data.achievements.length === 0) {
     el.innerHTML = `
       <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span></div>
+      ${trackerSectionHtml(null)}
       <div class="ov-empty">${esc(t("overlay.noAchievements"))}</div>`;
     renderHomeSafe();
     return;
@@ -3003,7 +2993,6 @@ async function loadAchievements(force = false): Promise<void> {
     }
   }
   renderAchView();
-  if (isWidgetOpen("tracker")) renderTracker();
 }
 
 /** The game a capture belongs to; untitled files share the "Other" bucket. */
@@ -7293,6 +7282,10 @@ function setGhostMode(on: boolean): void {
   }
   if (!isWidgetPinned("clip")) stopClipPolling();
   if (!isWidgetPinned("audio")) stopAudioPolling();
+  if (isWidgetPinned("ach")) {
+    achDetail = null;
+    renderAchView();
+  }
 }
 
 /**
@@ -7597,7 +7590,6 @@ async function boot(): Promise<void> {
         (cachedAchievements.user_unlocked || 0) + 1,
       );
       renderAchView();
-      if (isWidgetOpen("tracker")) renderTracker();
     },
   );
 

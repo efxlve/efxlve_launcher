@@ -368,9 +368,10 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 
 ### M11 — Achievement tracker (built)
 
-- A locked achievement can be tracked from its detail view. The Tracker widget lists up
-  to three tracked achievements with their icon, description and progress bar; pin it
-  and close the panel and ghost mode keeps it as a click-through HUD.
+- The Achievements widget owns the tracked section. A locked achievement can be tracked
+  from its detail or list row; up to three appear above the filters with their icon,
+  description and progress bar. Pinning the Achievements widget keeps that section as
+  the ghost HUD.
 - The list is keyed by the active game and stored in `efxlve-overlay-ach-tracker`; the
   Steam unlock event repaints it in place. The achievements data is the same store-
   agnostic payload the Achievements tab already loads.

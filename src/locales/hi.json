@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "प्रदर्शन",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "ऑडियो",
+  "overlay.trackedTitle": "ट्रैक की गई उपलब्धियाँ",
   "overlay.tabTracker": "ट्रैकर",
   "overlay.trackerTrack": "ट्रैक करें",
   "overlay.trackerUntrack": "ट्रैक करना बंद करें",

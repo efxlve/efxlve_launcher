@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "Prestazioni",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
+  "overlay.trackedTitle": "Obiettivi monitorati",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Monitora",
   "overlay.trackerUntrack": "Interrompi monitoraggio",

@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "效能",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "音訊",
+  "overlay.trackedTitle": "追蹤的成就",
   "overlay.tabTracker": "追蹤器",
   "overlay.trackerTrack": "追蹤",
   "overlay.trackerUntrack": "停止追蹤",

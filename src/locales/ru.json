@@ -1993,6 +1993,7 @@
   "overlay.tabPerformance": "Производительность",
   "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Звук",
+  "overlay.trackedTitle": "Отслеживаемые достижения",
   "overlay.tabTracker": "Трекер",
   "overlay.trackerTrack": "Отслеживать",
   "overlay.trackerUntrack": "Перестать отслеживать",
