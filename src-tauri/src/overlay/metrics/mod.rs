@@ -30,6 +30,9 @@ pub struct MetricsSample {
     pub low1_fps: Option<f64>,
     /// Average FPS of the slowest 0.1% of frames in the current window.
     pub low01_fps: Option<f64>,
+    /// The last ~1024 frame times for the Performance tab's frametime graph.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub frames: Vec<f32>,
     /// The ETW FPS session is running (Windows permission granted).
     pub fps_available: bool,
     /// System-wide CPU load, percent.
@@ -148,6 +151,10 @@ fn run(app: AppHandle) {
             .as_ref()
             .map(|counter| counter.lows(&pids))
             .unwrap_or_default();
+        let frames = fps
+            .as_ref()
+            .map(|counter| counter.frames(&pids, 1024))
+            .unwrap_or_default();
 
         let sample = MetricsSample {
             running: pid.is_some(),
@@ -156,6 +163,7 @@ fn run(app: AppHandle) {
             frame_ms,
             low1_fps: lows.low1,
             low01_fps: lows.low01,
+            frames,
             fps_available: etw::available(),
             cpu,
             cpu_ghz,

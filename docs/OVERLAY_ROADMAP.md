@@ -1,12 +1,13 @@
 # In-Game Overlay — Product & Technical Roadmap
 
-The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
-notes with pasted images, achievements, Spotify + SMTC music, a per-app audio
-mixer, an external crosshair, a tracked-achievement HUD, a picture-in-picture
-guide player and Discord status. Controller-first navigation is in. ETW FPS is
-API-agnostic but needs the Windows "Performance Log Users" permission, so the
-overlay offers a one-time enable action and explains the sign-out. Discord voice
-read/write waits on the Discord app review noted below.
+The overlay ships: the Shift+Tab panel, native performance HUD with 1% / 0.1%
+frame-time lows and a 60 Hz frametime graph, screenshots, notes with pasted
+images, achievements, Spotify + SMTC music, a per-app audio mixer, an external
+crosshair, a tracked-achievement HUD, a picture-in-picture guide player and
+Discord status. Controller-first navigation is in. ETW FPS is API-agnostic but
+needs the Windows "Performance Log Users" permission, so the overlay offers a
+one-time enable action and explains the sign-out. Discord voice read/write waits
+on the Discord app review noted below.
 
 Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
 where only the pinned cards stay on screen as a click-through HUD and the game
@@ -263,11 +264,14 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   definition) in `overlay-metrics`, the native HUD and the Performance tab. The 1%
   low appears after ~2 s at 60 FPS; the 0.1% low needs ~1000 frames (~17 s) so its
   tail is not a single frame.
-- Open: hardware temperatures and package power (NVML/ADLX/PDH), and a 60 Hz
-  frame-time graph fed by a separate per-frame stream while the Performance tab is
-  open. The native strip stays the zero-cost fallback; the richer always-on HUD is
-  a pinned Performance widget in ghost mode (M8). Unify the Settings HUD toggle
-  with that path once the field pass confirms ghost mode over a real game.
+- Frametime graph (built): the ETW ring exposes its last 1024 frame times in
+  `overlay-metrics`; the Performance tab plots them as a frametime line with an ms axis,
+  min/avg/peak in ms and an "N frames" window label. The other metrics keep the 60 s
+  history.
+- Open: hardware temperatures and package power (NVML/ADLX/PDH). The native strip
+  stays the zero-cost fallback; the richer always-on HUD is a pinned Performance widget
+  in ghost mode (M8). Unify the Settings HUD toggle with that path once the field pass
+  confirms ghost mode over a real game.
 - Acceptance: <0.5% CPU while active; numbers stay within ~2% of PresentMon for the
   same run; sampling fully stops when the game exits.
 

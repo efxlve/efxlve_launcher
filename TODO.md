@@ -76,9 +76,10 @@ filter chips) while click-through and add a per-widget ghost opacity.
 The native HUD and the Performance tab now show 1% / 0.1% frame-time lows from
 the ETW ring (`src-tauri/src/overlay/metrics/etw.rs`). Validate against
 PresentMon on a 60 Hz and a high-refresh title: the 1% low should appear after
-~2 s, the 0.1% after ~17 s, and both should track PresentMon within ~2%. Then
-add temperatures and package power (NVML/ADLX/PDH) and the 60 Hz frame-time
-graph.
+~2 s, the 0.1% after ~17 s, and both should track PresentMon within ~2%. The
+Performance tab also plots the last 1024 frame times as a frametime graph.
+Then add temperatures and package power (NVML/ADLX/PDH) and validate the graph
+against PresentMon's frametime trace.
 
 ## Audio mixer field pass
 

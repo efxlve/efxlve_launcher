@@ -104,6 +104,7 @@ interface MetricsSample {
   frameMs: number | null;
   low1Fps?: number | null;
   low01Fps?: number | null;
+  frames?: number[];
   fpsAvailable: boolean;
   cpu: number;
   cpuGhz?: number | null;
@@ -1495,7 +1496,7 @@ function perfCanvasHtml(id: string, extraAttrs = ""): string {
 
 /** Hides the "waiting for data" label as soon as FPS samples exist. */
 function updatePerfEmptyStates(): void {
-  const hasData = metrics?.fps != null || fpsHistory.length > 0;
+  const hasData = metrics?.fps != null || fpsHistory.length > 0 || (metrics?.frames?.length ?? 0) > 0;
   document.querySelectorAll<HTMLElement>(".ov-perf-empty").forEach((el) => {
     el.hidden = hasData;
   });
@@ -1951,6 +1952,7 @@ function getTelemetryReadings(m: MetricsSample | null) {
           .filter(Boolean)
           .join(" · ")
       : "";
+  const frameData = (m?.frames ?? []).filter((value) => Number.isFinite(value) && value > 0);
 
   let data: number[] = [];
   let tag = "CPU";
@@ -2018,20 +2020,27 @@ function getTelemetryReadings(m: MetricsSample | null) {
       break;
     }
     case "fps": {
-      data = fpsHistory;
+      data = frameData;
       tag = "FPS";
       num = fpsVal != null ? String(fpsVal) : "--";
       sub = subFps;
-      const validFps = data.filter((v) => v > 0);
-      const peak = validFps.length > 0 ? Math.round(Math.max(...validFps)) : (fpsVal ?? 0);
-      const avg = validFps.length > 0 ? Math.round(validFps.reduce((a, b) => a + b, 0) / validFps.length) : (fpsVal ?? 0);
-      const min = validFps.length > 0 ? Math.round(Math.min(...validFps)) : (fpsVal ?? 0);
-      peakVal = peak > 0 ? String(peak) : "--";
-      avgVal = avg > 0 ? String(avg) : "--";
-      minVal = min > 0 ? String(min) : "--";
+      const minMs = frameData.length > 0 ? Math.min(...frameData) : 0;
+      const avgMs =
+        frameData.length > 0
+          ? frameData.reduce((a, b) => a + b, 0) / frameData.length
+          : 0;
+      const maxMs = frameData.length > 0 ? Math.max(...frameData) : 0;
+      minVal = minMs > 0 ? `${minMs.toFixed(1)} ms` : "--";
+      avgVal = avgMs > 0 ? `${avgMs.toFixed(1)} ms` : "--";
+      peakVal = maxMs > 0 ? `${maxMs.toFixed(1)} ms` : "--";
       break;
     }
   }
+
+  const windowLabel =
+    activePerfMetric === "fps"
+      ? t("overlay.frameWindow", { n: String(frameData.length) })
+      : "60s";
 
   return {
     cpuVal,
@@ -2050,6 +2059,8 @@ function getTelemetryReadings(m: MetricsSample | null) {
     low1,
     low01,
     lowsText,
+    frameData,
+    windowLabel,
     cpuStatus: statusLevel(cpuVal),
     gpuStatus: statusLevel(gpuVal),
     ramStatus: statusLevel(ramPct),
@@ -2161,7 +2172,7 @@ function renderPerf(): void {
         </div>
 
         <div class="ov-perf-timeline">
-          <span>60s</span>
+          <span id="ov-perf-window-label">${t.windowLabel}</span>
           <span>${t.isTr ? "Şimdi" : "Now"}</span>
         </div>
       </div>
@@ -2206,8 +2217,11 @@ function drawPerfCanvas(): void {
           maxVal = 100;
           break;
         case "fps":
-          data = fpsHistory.length > 0 ? fpsHistory : [0];
-          maxVal = Math.max(60, ...data) * 1.15;
+          data = (metrics?.frames ?? []).filter(
+            (value) => Number.isFinite(value) && value > 0,
+          );
+          if (data.length === 0) data = [0];
+          maxVal = Math.max(33, ...data) * 1.15;
           break;
       }
 
@@ -2228,13 +2242,13 @@ function drawPerfCanvas(): void {
       // Axis labels on left margin
       ctx.font = "9px system-ui, -apple-system, sans-serif";
       ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal)}` : "100%", 2, 10);
-      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal / 2)}` : "50%", 2, Math.round(height / 2) + 3);
+      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal)} ms` : "100%", 2, 10);
+      ctx.fillText(activePerfMetric === "fps" ? `${Math.round(maxVal / 2)} ms` : "50%", 2, Math.round(height / 2) + 3);
       ctx.fillText("0", 2, height - 3);
 
       const chartLeft = 32;
       const chartWidth = Math.max(10, width - chartLeft - 4);
-      const len = 60;
+      const len = activePerfMetric === "fps" ? Math.max(2, data.length) : 60;
       const step = chartWidth / (len - 1);
       const offset = len - data.length;
       const points = data.map((val, idx) => {
@@ -2363,6 +2377,7 @@ function updateMetricsUi(): void {
     setText("ov-card-sub-vram", t.vramSub);
     setText("ov-perf-frame-ms", t.subFps);
     setText("ov-perf-lows", t.lowsText);
+    setText("ov-perf-window-label", t.windowLabel);
 
     const ramCard = document.querySelector<HTMLElement>('[data-perf-metric="ram"]');
     if (ramCard) ramCard.title = t.ramSubTitle;

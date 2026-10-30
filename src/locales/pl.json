@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "Aktywny",
   "overlay.tabHome": "Strona główna",
   "overlay.tabPerformance": "Wydajność",
+  "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",

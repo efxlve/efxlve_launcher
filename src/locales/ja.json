@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "適用中",
   "overlay.tabHome": "ホーム",
   "overlay.tabPerformance": "パフォーマンス",
+  "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",

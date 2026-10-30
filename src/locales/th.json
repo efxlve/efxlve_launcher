@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "ใช้งานอยู่",
   "overlay.tabHome": "หน้าแรก",
   "overlay.tabPerformance": "ประสิทธิภาพ",
+  "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",

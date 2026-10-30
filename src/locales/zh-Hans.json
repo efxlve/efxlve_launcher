@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "当前使用",
   "overlay.tabHome": "主页",
   "overlay.tabPerformance": "性能",
+  "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",

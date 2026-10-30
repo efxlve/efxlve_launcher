@@ -217,6 +217,24 @@ mod imp {
             }
         }
 
+        /// The last `max` frame times for the render pid. The Performance tab
+        /// draws this as a high-resolution frametime graph; the 1 Hz history
+        /// stays for the other metrics.
+        pub fn frames(&self, pids: &[u32], max: usize) -> Vec<f32> {
+            let Ok(frames) = FRAMES.get_or_init(|| Mutex::new(HashMap::new())).lock() else {
+                return Vec::new();
+            };
+            let Some(ring) = pids
+                .iter()
+                .filter_map(|pid| frames.get(pid))
+                .max_by_key(|ring| ring.samples.len())
+            else {
+                return Vec::new();
+            };
+            let start = ring.samples.len().saturating_sub(max);
+            ring.samples.iter().skip(start).copied().collect()
+        }
+
         /// Average FPS of the slowest 1% and 0.1% of frames. The render pid is
         /// the one with the most presents in the window; a helper process that
         /// presents a few frames must not define the lows.
@@ -305,6 +323,9 @@ impl FpsCounter {
     }
     pub fn lows(&self, _pids: &[u32]) -> Lows {
         Lows::default()
+    }
+    pub fn frames(&self, _pids: &[u32], _max: usize) -> Vec<f32> {
+        Vec::new()
     }
 }
 

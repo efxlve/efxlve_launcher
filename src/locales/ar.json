@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "نشط",
   "overlay.tabHome": "الرئيسية",
   "overlay.tabPerformance": "الأداء",
+  "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",

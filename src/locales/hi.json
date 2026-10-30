@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "सक्रिय",
   "overlay.tabHome": "होम",
   "overlay.tabPerformance": "प्रदर्शन",
+  "overlay.frameWindow": "{n} frames",
   "overlay.tabAudio": "Audio",
   "overlay.tabTracker": "Tracker",
   "overlay.trackerTrack": "Track",

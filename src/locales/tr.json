@@ -1991,6 +1991,7 @@
   "profile.bannerCurrent": "Aktif",
   "overlay.tabHome": "Ana sayfa",
   "overlay.tabPerformance": "Performans",
+  "overlay.frameWindow": "{n} kare",
   "overlay.tabAudio": "Ses",
   "overlay.tabTracker": "Başarım Takibi",
   "overlay.trackerTrack": "Takip et",
