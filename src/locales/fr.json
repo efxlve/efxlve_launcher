@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Impossible d'enregistrer le clip",
   "ss.clipFpsNote": "60 et 120 fps utilisent l'enregistreur H.264 GPU ; le repli MJPEG tient 15 et 30.",
+  "ss.clipMp4Unsupported": "Les clips MP4 ne peuvent pas encore être coupés ni fusionnés.",
   "ss.clipTrim": "Découper",
   "ss.clipTrimTitle": "Découper le clip",
   "ss.clipTrimStart": "Début (s)",

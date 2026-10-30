@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Klip kaydedilemedi",
   "ss.clipFpsNote": "60 ve 120 fps GPU H.264 kaydedicisini kullanır; MJPEG yedeği 15 ve 30 fps taşır.",
+  "ss.clipMp4Unsupported": "MP4 klipleri henüz kesilemez veya birleştirilemez.",
   "ss.clipTrim": "Kes",
   "ss.clipTrimTitle": "Klibi kes",
   "ss.clipTrimStart": "Başlangıç (sn)",

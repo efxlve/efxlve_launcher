@@ -12,19 +12,27 @@
 #[cfg(windows)]
 mod imp {
     use std::os::windows::ffi::OsStrExt;
+    use image::codecs::jpeg::JpegEncoder;
+    use image::{ExtendedColorType, RgbImage};
     use windows::core::PCWSTR;
     use windows::Win32::Media::MediaFoundation::{
-        IMFAttributes, IMFMediaType, IMFSinkWriter, MFAudioFormat_AAC, MFAudioFormat_PCM,
+        IMFAttributes, IMFMediaType, IMFSinkWriter, IMFSourceReader, MFAudioFormat_AAC, MFAudioFormat_PCM,
         MFCreateAttributes, MFCreateMediaType, MFCreateMemoryBuffer, MFCreateSample,
-        MFCreateSinkWriterFromURL, MFMediaType_Audio, MFMediaType_Video, MFSTARTUP_FULL,
-        MFShutdown, MFStartup, MFVideoFormat_H264, MFVideoFormat_RGB32, MF_MT_AAC_AUDIO_PROFILE_LEVEL_INDICATION,
-        MF_MT_AAC_PAYLOAD_TYPE, MF_MT_ALL_SAMPLES_INDEPENDENT, MF_MT_AUDIO_AVG_BYTES_PER_SECOND,
+        MFCreateSinkWriterFromURL, MFCreateSourceReaderFromURL, MFMediaType_Audio,
+        MFMediaType_Video, MFSTARTUP_FULL, MFShutdown, MFStartup, MFVideoFormat_H264,
+        MFVideoFormat_RGB32, MF_MT_AAC_AUDIO_PROFILE_LEVEL_INDICATION, MF_MT_AAC_PAYLOAD_TYPE,
+        MF_MT_ALL_SAMPLES_INDEPENDENT, MF_MT_AUDIO_AVG_BYTES_PER_SECOND,
         MF_MT_AUDIO_BITS_PER_SAMPLE, MF_MT_AUDIO_BLOCK_ALIGNMENT, MF_MT_AUDIO_NUM_CHANNELS,
         MF_MT_AUDIO_SAMPLES_PER_SECOND, MF_MT_AVG_BITRATE, MF_MT_DEFAULT_STRIDE,
         MF_MT_FRAME_RATE, MF_MT_FRAME_SIZE, MF_MT_INTERLACE_MODE, MF_MT_MAJOR_TYPE,
-        MF_MT_SUBTYPE, MF_VERSION, MFVideoInterlace_Progressive,
+        MF_MT_SUBTYPE, MF_PD_DURATION, MF_SOURCE_READERF_ENDOFSTREAM,
+        MF_SOURCE_READER_ALL_STREAMS, MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING,
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+        MF_SOURCE_READER_MEDIASOURCE, MF_VERSION, MFVideoInterlace_Progressive,
         MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS,
     };
+    use windows::Win32::System::Com::StructuredStorage::PROPVARIANT;
+    use windows::Win32::System::Variant::VT_I8;
 
     pub struct MfRecorder {
         writer: IMFSinkWriter,
@@ -240,6 +248,140 @@ mod imp {
         }
     }
 
+    fn open_reader(path: &std::path::Path) -> Option<(IMFSourceReader, MfGuard)> {
+        unsafe {
+            let mf = MfGuard::start().ok()?;
+            let mut attributes: Option<IMFAttributes> = None;
+            MFCreateAttributes(&mut attributes, 1).ok()?;
+            let attributes = attributes?;
+            attributes
+                .SetUINT32(&MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, 1)
+                .ok()?;
+            let wide: Vec<u16> = path
+                .as_os_str()
+                .encode_wide()
+                .chain(std::iter::once(0))
+                .collect();
+            let reader = MFCreateSourceReaderFromURL(PCWSTR(wide.as_ptr()), Some(&attributes)).ok()?;
+            Some((reader, mf))
+        }
+    }
+
+    /// Reads one video frame from an MP4 and returns it as JPEG. `seconds` is
+    /// clamped by the source reader; a zero asks for the first frame.
+    pub fn frame_jpeg(path: &std::path::Path, seconds: f64) -> Option<Vec<u8>> {
+        unsafe {
+            let (reader, _mf) = match open_reader(path) {
+                Some(reader) => reader,
+                None => {
+                    eprintln!("mf: open_reader failed");
+                    return None;
+                }
+            };
+            let stream = MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32;
+            if reader.SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS.0 as u32, false).is_err() {
+                eprintln!("mf: deselect failed");
+                return None;
+            }
+            if reader.SetStreamSelection(stream, true).is_err() {
+                eprintln!("mf: select failed");
+                return None;
+            }
+            let media = match MFCreateMediaType() {
+                Ok(media) => media,
+                Err(error) => {
+                    eprintln!("mf: type failed {error}");
+                    return None;
+                }
+            };
+            let _ = media.SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video);
+            let _ = media.SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_RGB32);
+            if let Err(error) = reader.SetCurrentMediaType(stream, None, &media) {
+                eprintln!("mf: set output type failed {error}");
+                return None;
+            }
+            if seconds > 0.0 {
+                let mut position = PROPVARIANT::default();
+                let inner = &mut *position.Anonymous.Anonymous;
+                std::ptr::write(&mut inner.vt, VT_I8);
+                std::ptr::write(&mut inner.Anonymous.hVal, (seconds * 10_000_000.0) as i64);
+                let _ = reader.SetCurrentPosition(&windows::core::GUID::zeroed(), &position);
+            }
+            let mut sample = None;
+            for _ in 0..240 {
+                let mut flags = 0u32;
+                if let Err(error) = reader.ReadSample(stream, 0, None, Some(&mut flags), None, Some(&mut sample)) {
+                    eprintln!("mf: read failed {error}");
+                    return None;
+                }
+                if flags & MF_SOURCE_READERF_ENDOFSTREAM.0 as u32 != 0 {
+                    eprintln!("mf: end of stream");
+                    return None;
+                }
+                if sample.is_some() {
+                    break;
+                }
+            }
+            let sample = match sample {
+                Some(sample) => sample,
+                None => {
+                    eprintln!("mf: no sample");
+                    return None;
+                }
+            };
+            let buffer = match sample.ConvertToContiguousBuffer() {
+                Ok(buffer) => buffer,
+                Err(error) => {
+                    eprintln!("mf: contiguous failed {error}");
+                    return None;
+                }
+            };
+            let media = match reader.GetCurrentMediaType(stream) {
+                Ok(media) => media,
+                Err(error) => {
+                    eprintln!("mf: current type failed {error}");
+                    return None;
+                }
+            };
+            let packed = media.GetUINT64(&MF_MT_FRAME_SIZE).ok()?;
+            let width = (packed >> 32) as u32;
+            let height = packed as u32;
+            if width < 2 || height < 2 {
+                return None;
+            }
+            let mut pointer: *mut u8 = std::ptr::null_mut();
+            buffer.Lock(&mut pointer, None, None).ok()?;
+            let source = std::slice::from_raw_parts(pointer, width as usize * height as usize * 4);
+            let mut rgb = RgbImage::new(width, height);
+            for (pixel, bgra) in rgb.pixels_mut().zip(source.chunks_exact(4)) {
+                *pixel = image::Rgb([bgra[2], bgra[1], bgra[0]]);
+            }
+            let _ = buffer.Unlock();
+            let mut jpeg = Vec::new();
+            let mut encoder = JpegEncoder::new_with_quality(&mut jpeg, 82);
+            encoder
+                .encode(rgb.as_raw(), width, height, ExtendedColorType::Rgb8)
+                .ok()?;
+            Some(jpeg)
+        }
+    }
+
+    /// MP4 duration from the media source presentation attribute, rounded up.
+    pub fn duration_secs(path: &std::path::Path) -> Option<u64> {
+        unsafe {
+            let (reader, _mf) = open_reader(path)?;
+            let value = reader
+                .GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE.0 as u32, &MF_PD_DURATION)
+                .ok()?;
+            let hundred_ns = value.Anonymous.Anonymous.Anonymous.uhVal;
+            if hundred_ns == 0 {
+                None
+            } else {
+                Some((hundred_ns + 9_999_999) / 10_000_000)
+            }
+        }
+    }
+
     fn pack_size(width: u32, height: u32) -> u64 {
         ((width as u64) << 32) | height as u64
     }
@@ -300,7 +442,7 @@ mod imp {
 }
 
 #[cfg(windows)]
-pub use imp::MfRecorder;
+pub use imp::{duration_secs, frame_jpeg, MfRecorder};
 
 #[cfg(not(windows))]
 pub struct MfRecorder;
@@ -330,25 +472,37 @@ impl MfRecorder {
     }
 }
 
+#[cfg(not(windows))]
+pub fn frame_jpeg(_path: &std::path::Path, _seconds: f64) -> Option<Vec<u8>> {
+    None
+}
+
+#[cfg(not(windows))]
+pub fn duration_secs(_path: &std::path::Path) -> Option<u64> {
+    None
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(windows)]
     #[test]
-    #[ignore = "needs a real desktop, Desktop Duplication and a Media Foundation H.264 encoder"]
-    fn records_the_desktop_to_an_h264_mp4() {
-        let mut capture = crate::legendary::clip_dxgi::DxgiCapture::open().expect("dxgi");
-        let (frame, width, height) = capture.frame_bgra().expect("first frame");
-        let path = std::env::temp_dir().join(format!("efxlve-mf-desktop-{}.mp4", std::process::id()));
-        let mut recorder = super::MfRecorder::create(&path, width, height, 60, Some((48_000, 2)))
-            .expect("sink writer");
-        let audio = vec![0i16; 800 * 2];
-        for _ in 0..60 {
-            recorder.write_video(&frame).expect("video frame");
-            recorder.write_audio(&audio).expect("audio block");
+    #[ignore = "needs a Media Foundation H.264 encoder and writes a real MP4"]
+    fn reads_a_frame_and_duration_back_from_an_mp4() {
+        let path = std::env::temp_dir().join(format!("efxlve-mf-read-{}.mp4", std::process::id()));
+        let mut recorder = super::MfRecorder::create(&path, 320, 180, 30, None).expect("writer");
+        let mut frame = vec![0u8; 320 * 180 * 4];
+        for (index, pixel) in frame.chunks_exact_mut(4).enumerate() {
+            let value = (index % 255) as u8;
+            pixel.copy_from_slice(&[value, value / 2, 255 - value, 255]);
+        }
+        for _ in 0..30 {
+            recorder.write_video(&frame).expect("frame");
         }
         recorder.finish().expect("finalize");
-        let size = std::fs::metadata(&path).expect("mp4 exists").len();
-        assert!(size > 1000, "encoded file is {size} bytes");
+        let jpeg = super::frame_jpeg(&path, 0.5).expect("frame at 0.5 s");
+        assert!(jpeg.len() > 100 && jpeg[0] == 0xFF && jpeg[1] == 0xD8);
+        let seconds = super::duration_secs(&path).expect("duration");
+        assert!(seconds >= 1, "duration is {seconds}");
         let _ = std::fs::remove_file(path);
     }
 }

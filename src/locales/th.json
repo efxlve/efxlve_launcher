@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "บันทึกคลิปไม่สำเร็จ",
   "ss.clipFpsNote": "60 และ 120 fps ใช้ตัวบันทึก H.264 บน GPU ส่วน MJPEG สำรองรองรับ 15 และ 30",
+  "ss.clipMp4Unsupported": "ยังตัดหรือรวมคลิป MP4 ไม่ได้",
   "ss.clipTrim": "ตัด",
   "ss.clipTrimTitle": "ตัดคลิป",
   "ss.clipTrimStart": "เริ่ม (วินาที)",

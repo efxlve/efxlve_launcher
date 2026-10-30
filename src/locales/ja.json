@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "クリップを保存できませんでした",
   "ss.clipFpsNote": "60/120 fps は GPU H.264 レコーダーを使います。MJPEG フォールバックは 15/30 に対応します。",
+  "ss.clipMp4Unsupported": "MP4 クリップはまだトリミングや結合ができません。",
   "ss.clipTrim": "切り取り",
   "ss.clipTrimTitle": "クリップを切り取る",
   "ss.clipTrimStart": "開始 (秒)",

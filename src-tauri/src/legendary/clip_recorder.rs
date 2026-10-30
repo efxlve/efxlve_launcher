@@ -932,7 +932,11 @@ fn collect_clips(dir: &Path, out: &mut Vec<ClipItem>) {
                     .map(|d| d.as_secs())
                     .unwrap_or(0),
             ),
-            seconds: avi_seconds(&path).unwrap_or(0),
+            seconds: if extension.as_deref() == Some("mp4") {
+                crate::legendary::clip_mf::duration_secs(&path).unwrap_or(0)
+            } else {
+                avi_seconds(&path).unwrap_or(0)
+            },
         });
     }
 }
@@ -946,6 +950,17 @@ fn collect_clips(dir: &Path, out: &mut Vec<ClipItem>) {
 pub fn first_frame_data_url(path: &Path) -> Option<String> {
     use base64::Engine;
     use std::io::Read;
+
+    if path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("mp4"))
+        == Some(true)
+    {
+        let jpeg = crate::legendary::clip_mf::frame_jpeg(path, 0.0)?;
+        let encoded = base64::engine::general_purpose::STANDARD.encode(jpeg);
+        return Some(format!("data:image/jpeg;base64,{encoded}"));
+    }
 
     const HEAD: u64 = 2 * 1024 * 1024;
     let mut head = Vec::new();
@@ -980,6 +995,17 @@ pub fn first_frame_data_url(path: &Path) -> Option<String> {
 /// thumbnail does: a walk to the wanted `00dc` chunk.
 pub fn frame_at(path: &Path, seconds: f64) -> Option<String> {
     use base64::Engine;
+
+    if path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("mp4"))
+        == Some(true)
+    {
+        let jpeg = crate::legendary::clip_mf::frame_jpeg(path, seconds)?;
+        let encoded = base64::engine::general_purpose::STANDARD.encode(jpeg);
+        return Some(format!("data:image/jpeg;base64,{encoded}"));
+    }
 
     let header = read_clip_header(path).ok()?;
     let wanted = header.frame_at(seconds);
@@ -1259,7 +1285,16 @@ fn item_for(path: &Path) -> ClipItem {
             .unwrap_or_default(),
         size_bytes,
         date_str,
-        seconds: avi_seconds(path).unwrap_or(0),
+        seconds: if path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.eq_ignore_ascii_case("mp4"))
+            == Some(true)
+        {
+            crate::legendary::clip_mf::duration_secs(path).unwrap_or(0)
+        } else {
+            avi_seconds(path).unwrap_or(0)
+        },
     }
 }
 
@@ -1284,7 +1319,21 @@ fn drop_and_remove(writer: AviWriter, target: &Path) {
 }
 
 /// Cuts a clip down to a range, losslessly, into a new file next to it.
+fn ensure_avi(path: &Path) -> Result<(), String> {
+    if path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("mp4"))
+        == Some(true)
+    {
+        Err("@t:ss.clipMp4Unsupported".to_string())
+    } else {
+        Ok(())
+    }
+}
+
 pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, String> {
+    ensure_avi(path)?;
     let target = sibling_path(path, "_trim");
     trim_to(path, start_secs, end_secs, &target)?;
     Ok(target)
@@ -1293,6 +1342,7 @@ pub fn trim(path: &Path, start_secs: f64, end_secs: f64) -> Result<PathBuf, Stri
 /// The same cut, written wherever the caller asks: the Discord share path trims
 /// into the temp folder so nothing is left in the user's Videos.
 pub fn trim_to(path: &Path, start_secs: f64, end_secs: f64, target: &Path) -> Result<PathBuf, String> {
+    ensure_avi(path)?;
     let header = read_clip_header(path)?;
     let from = header.frame_at(start_secs);
     let to = header.frame_at(end_secs);
@@ -1325,6 +1375,9 @@ pub fn trim_to(path: &Path, start_secs: f64, end_secs: f64, target: &Path) -> Re
 pub fn join(paths: &[PathBuf]) -> Result<PathBuf, String> {
     if paths.len() < 2 {
         return Err("@t:ss.joinNeedsTwo".to_string());
+    }
+    for path in paths {
+        ensure_avi(path)?;
     }
     let first = read_clip_header(&paths[0])?;
     for path in paths.iter().skip(1) {

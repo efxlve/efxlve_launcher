@@ -374,6 +374,7 @@ function clipsSectionHtml(): string {
       </div>`;
   }
 
+  const joinableCount = visibleClips.filter((clip) => !clip.path.toLowerCase().endsWith(".mp4")).length;
   return `
     <div class="ss-clips-section">
       <div class="ss-clips-head">
@@ -381,7 +382,7 @@ function clipsSectionHtml(): string {
           <h3 class="section-title">${icon("video", 15)} ${t("ss.tabClips")}</h3>
           <span class="screenshots-count-chip">${visibleClips.length}</span>
         </div>
-        ${visibleClips.length > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
+        ${joinableCount > 1 ? `<button type="button" class="btn ghost small" data-act="clip-join">${icon("layers", 13)} ${t("ss.clipJoinTitle")}</button>` : ""}
       </div>
       <div class="ss-video-grid">${visibleClips.map((c) => videoCardHtml(c)).join("")}</div>
     </div>`;
@@ -582,10 +583,11 @@ export async function openClipStudio(path: string): Promise<void> {
   studioClipPath = path;
   const total = Math.max(1, clip.seconds);
   const videoSrc = convertFileSrc(path);
+  const isMp4 = path.toLowerCase().endsWith(".mp4");
 
   clipDialogRoot().innerHTML = `
     <div class="modal-backdrop ss-clip-backdrop" data-act="clip-dialog-backdrop">
-      <div class="modal-box ss-clip-studio-modal" role="dialog" aria-modal="true">
+      <div class="modal-box ss-clip-studio-modal${isMp4 ? " is-mp4" : ""}" role="dialog" aria-modal="true">
         <div class="ss-clip-studio-head">
           <div class="ss-studio-head-title">
             ${icon("clapperboard", 16)}
@@ -766,7 +768,8 @@ export async function grabClipFrame(): Promise<void> {
 }
 
 export function openClipJoin(): void {
-  if (clips.length < 2) {
+  const joinable = clips.filter((clip) => !clip.path.toLowerCase().endsWith(".mp4"));
+  if (joinable.length < 2) {
     toast(t("ss.joinNeedsTwo"), "err");
     return;
   }
@@ -775,7 +778,7 @@ export function openClipJoin(): void {
       <div class="modal-box ss-clip-card" role="dialog" aria-modal="true">
         <div class="selective-header"><h2>${t("ss.clipJoinTitle")}</h2></div>
         <div class="ss-clip-join-list">
-          ${clips
+          ${joinable
             .map(
               (clip) => `
             <label class="ss-clip-join-row">

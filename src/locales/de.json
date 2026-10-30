@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Clip konnte nicht gespeichert werden",
   "ss.clipFpsNote": "60 und 120 fps nutzen den GPU-H.264-Rekorder; der MJPEG-Fallback schafft 15 und 30.",
+  "ss.clipMp4Unsupported": "MP4-Clips können noch nicht geschnitten oder zusammengefügt werden.",
   "ss.clipTrim": "Schneiden",
   "ss.clipTrimTitle": "Clip schneiden",
   "ss.clipTrimStart": "Start (s)",

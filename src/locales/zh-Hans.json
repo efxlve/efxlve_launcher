@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "剪辑保存失败",
   "ss.clipFpsNote": "60/120 fps 使用 GPU H.264 录制器；MJPEG 回退支持 15 和 30。",
+  "ss.clipMp4Unsupported": "MP4 片段目前无法裁剪或合并。",
   "ss.clipTrim": "裁剪",
   "ss.clipTrimTitle": "裁剪剪辑",
   "ss.clipTrimStart": "开始（秒）",

@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Nie udało się zapisać klipu",
   "ss.clipFpsNote": "60 i 120 fps korzystają z rejestratora H.264 GPU; zapasowy MJPEG utrzymuje 15 i 30.",
+  "ss.clipMp4Unsupported": "Klipów MP4 nie można jeszcze przycinać ani łączyć.",
   "ss.clipTrim": "Przytnij",
   "ss.clipTrimTitle": "Przytnij klip",
   "ss.clipTrimStart": "Początek (s)",

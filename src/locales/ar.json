@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "تعذّر حفظ المقطع",
   "ss.clipFpsNote": "تستخدم 60 و120 إطارًا في الثانية مسجل H.264 عبر GPU؛ ويحتفظ مسار MJPEG الاحتياطي بـ15 و30.",
+  "ss.clipMp4Unsupported": "لا يمكن قص مقاطع MP4 أو دمجها بعد.",
   "ss.clipTrim": "قص",
   "ss.clipTrimTitle": "قص المقطع",
   "ss.clipTrimStart": "البداية (ث)",

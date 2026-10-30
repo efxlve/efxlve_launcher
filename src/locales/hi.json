@@ -2665,6 +2665,7 @@
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "क्लिप सहेजी नहीं जा सकी",
   "ss.clipFpsNote": "60 और 120 fps GPU H.264 रिकॉर्डर का उपयोग करते हैं; MJPEG फ़ॉलबैक 15 और 30 संभालता है।",
+  "ss.clipMp4Unsupported": "MP4 क्लिप अभी ट्रिम या जोड़ नहीं सकते।",
   "ss.clipTrim": "काटें",
   "ss.clipTrimTitle": "क्लिप काटें",
   "ss.clipTrimStart": "शुरू (सेकंड)",
