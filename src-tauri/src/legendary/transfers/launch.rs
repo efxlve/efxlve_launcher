@@ -223,6 +223,10 @@ pub fn discover_game_executables(
             "dxsetup",
             "crashreportclient",
             "epicgameslauncher",
+            "rockstar-games-launcher",
+            "rockstar-games-epic",
+            "social-club-setup",
+            "ue4prereqsetup",
             "legendary",
             "unrealcefsubprocess",
             "unitycrashhandler",
@@ -262,7 +266,15 @@ pub(super) fn scan_dir_for_exes(
                 }
             } else if path.is_dir() {
                 if let Some(dname) = path.file_name().and_then(|n| n.to_str()) {
-                    if !dname.starts_with('.') && !dname.starts_with('$') {
+                    let lower = dname.to_ascii_lowercase();
+                    // Installers and prerequisites are not the game. A bundled
+                    // Rockstar launcher left open used to keep the session alive
+                    // because its name matched the copy under Redistributables.
+                    let redist = matches!(
+                        lower.as_str(),
+                        "redistributables" | "redist" | "_commonredist" | "commonredist"
+                    );
+                    if !redist && !dname.starts_with('.') && !dname.starts_with('$') {
                         scan_dir_for_exes(&path, depth + 1, max_depth, ignored, out);
                     }
                 }
@@ -306,6 +318,10 @@ pub(super) fn shared_host_exe(name: &str) -> bool {
             | "explorer.exe"
             | "efxlve-launcher.exe"
             | "legendary.exe"
+            | "rockstar-games-launcher.exe"
+            | "rockstar-games-epic.exe"
+            | "social-club-setup.exe"
+            | "ue4prereqsetup_x64.exe"
             | "crashpad_handler.exe"
             | "wwahost.exe"
     )
@@ -574,6 +590,11 @@ mod win_process {
                     || p.contains("dxsetup")
                     || p.contains("unrealcefsubprocess")
                     || p.contains("msedgewebview2.exe")
+                    || p.contains("\\redistributables\\")
+                    || p.contains("\\redist\\")
+                    || p.contains("rockstar-games-launcher")
+                    || p.contains("social-club-setup")
+                    || p.contains("ue4prereqsetup")
             });
             let name_hit =
                 !candidate_exes.is_empty() && candidate_exes.iter().any(|c| c == exe_name);
@@ -1134,6 +1155,65 @@ mod tests {
         big.set_len(16 * 1024 * 1024).expect("sparse file");
         assert!(!is_rockstar_stub(&dir, "PlayGTASA.exe"));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn redistributable_installers_are_not_game_executables() {
+        let dir = stub_dir("redist");
+        std::fs::create_dir_all(dir.join("Gameface").join("Binaries").join("Win64"))
+            .expect("game bin");
+        std::fs::create_dir_all(dir.join("Redistributables")).expect("redist");
+        std::fs::create_dir_all(
+            dir.join("Engine")
+                .join("Extras")
+                .join("Redist")
+                .join("en-us"),
+        )
+        .expect("ue redist");
+        std::fs::write(dir.join("PlayGTA3.exe"), vec![0u8; 64]).expect("stub");
+        std::fs::write(
+            dir.join("Gameface")
+                .join("Binaries")
+                .join("Win64")
+                .join("LibertyCity.exe"),
+            vec![0u8; 64],
+        )
+        .expect("game");
+        std::fs::write(
+            dir.join("Redistributables")
+                .join("Rockstar-Games-Launcher.exe"),
+            vec![0u8; 64],
+        )
+        .expect("launcher");
+        std::fs::write(
+            dir.join("Redistributables")
+                .join("Social-Club-Setup.exe"),
+            vec![0u8; 64],
+        )
+        .expect("setup");
+        std::fs::write(
+            dir.join("Engine")
+                .join("Extras")
+                .join("Redist")
+                .join("en-us")
+                .join("UE4PrereqSetup_x64.exe"),
+            vec![0u8; 64],
+        )
+        .expect("ue");
+
+        let exes = discover_game_executables(&dir, Some("PlayGTA3.exe"));
+        assert!(exes.contains(&"playgta3.exe".to_string()));
+        assert!(exes.contains(&"libertycity.exe".to_string()));
+        assert!(!exes.contains(&"rockstar-games-launcher.exe".to_string()));
+        assert!(!exes.contains(&"social-club-setup.exe".to_string()));
+        assert!(!exes.contains(&"ue4prereqsetup_x64.exe".to_string()));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn bundled_launchers_never_match_by_name() {
+        assert!(shared_host_exe("rockstar-games-launcher.exe"));
+        assert!(shared_host_exe("social-club-setup.exe"));
     }
 
     #[test]
