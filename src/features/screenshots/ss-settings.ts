@@ -120,9 +120,8 @@ export function clipHotkeyName(): string {
   return localStorage.getItem(CLIP_HOTKEY_NAME_KEY) || "F9";
 }
 
-/** The rates the MJPEG/GDI recorder can actually hold. 60 and 120 need the GPU
- *  recorder described in TODO.md, so their buttons stay disabled until then. */
-export const CLIP_FPS_SUPPORTED = [15, 30];
+/** The rates the recorder can hold: MJPEG up to 30, H.264 above it. */
+export const CLIP_FPS_SUPPORTED = [15, 30, 60, 120];
 
 export function clipFps(): number {
   const stored = Number(localStorage.getItem(CLIP_FPS_KEY) ?? "30");

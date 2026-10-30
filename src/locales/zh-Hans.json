@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "剪辑已保存",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "剪辑保存失败",
-  "ss.clipFpsNote": "60/120 fps 需要 GPU 录制器；此捕获路径支持 15 和 30。",
+  "ss.clipFpsNote": "60/120 fps 使用 GPU H.264 录制器；MJPEG 回退支持 15 和 30。",
   "ss.clipTrim": "裁剪",
   "ss.clipTrimTitle": "裁剪剪辑",
   "ss.clipTrimStart": "开始（秒）",

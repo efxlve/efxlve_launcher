@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "클립 저장됨",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "클립을 저장하지 못했습니다",
-  "ss.clipFpsNote": "60/120 fps는 GPU 레코더가 필요합니다. 이 캡처 경로는 15/30을 지원합니다.",
+  "ss.clipFpsNote": "60/120 fps는 GPU H.264 레코더를 사용합니다. MJPEG 폴백은 15/30을 지원합니다.",
   "ss.clipTrim": "자르기",
   "ss.clipTrimTitle": "클립 자르기",
   "ss.clipTrimStart": "시작 (초)",

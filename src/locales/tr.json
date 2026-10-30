@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "Klip kaydedildi",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Klip kaydedilemedi",
-  "ss.clipFpsNote": "60 ve 120 fps için GPU kaydedicisi gerekiyor; bu yakalama yolu 15 ve 30 fps taşıyor.",
+  "ss.clipFpsNote": "60 ve 120 fps GPU H.264 kaydedicisini kullanır; MJPEG yedeği 15 ve 30 fps taşır.",
   "ss.clipTrim": "Kes",
   "ss.clipTrimTitle": "Klibi kes",
   "ss.clipTrimStart": "Başlangıç (sn)",

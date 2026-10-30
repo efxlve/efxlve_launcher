@@ -108,10 +108,10 @@ mod imp {
             }
         }
 
-        /// Grabs the newest desktop frame and returns it as a JPEG. `None`
-        /// means no new frame arrived inside the timeout; the caller skips this
-        /// tick instead of paying for a second GDI read.
-        pub fn frame_jpeg(&mut self, quality: u8, target_height: u32) -> Option<(Vec<u8>, u32, u32)> {
+        /// Grabs the newest desktop frame as top-down BGRA. `None` means no new
+        /// frame arrived inside the timeout; the caller skips this tick instead
+        /// of paying for a second GDI read.
+        pub fn frame_bgra(&mut self) -> Option<(Vec<u8>, u32, u32)> {
             unsafe {
                 let mut info = DXGI_OUTDUPL_FRAME_INFO::default();
                 let mut resource: Option<IDXGIResource> = None;
@@ -144,24 +144,29 @@ mod imp {
                     bgra[row * width * 4..(row + 1) * width * 4].copy_from_slice(src);
                 }
                 self.context.Unmap(&self.staging, 0);
-
-                let mut rgb = RgbImage::new(width as u32, height as u32);
-                for (pixel, source) in rgb.pixels_mut().zip(bgra.chunks_exact(4)) {
-                    *pixel = image::Rgb([source[2], source[1], source[0]]);
-                }
-                let (out_w, out_h) = scaled_size(width as u32, height as u32, target_height);
-                let image = if out_w != width as u32 || out_h != height as u32 {
-                    image::imageops::resize(&rgb, out_w, out_h, FilterType::Triangle)
-                } else {
-                    rgb
-                };
-                let mut jpeg = Vec::new();
-                let mut encoder = JpegEncoder::new_with_quality(&mut jpeg, quality.clamp(1, 100));
-                encoder
-                    .encode(image.as_raw(), image.width(), image.height(), ExtendedColorType::Rgb8)
-                    .ok()?;
-                Some((jpeg, image.width(), image.height()))
+                Some((bgra, self.width, self.height))
             }
+        }
+
+        /// The MJPEG path: the same frame scaled and JPEG-encoded.
+        pub fn frame_jpeg(&mut self, quality: u8, target_height: u32) -> Option<(Vec<u8>, u32, u32)> {
+            let (bgra, width, height) = self.frame_bgra()?;
+            let mut rgb = RgbImage::new(width, height);
+            for (pixel, source) in rgb.pixels_mut().zip(bgra.chunks_exact(4)) {
+                *pixel = image::Rgb([source[2], source[1], source[0]]);
+            }
+            let (out_w, out_h) = scaled_size(width, height, target_height);
+            let image = if out_w != width || out_h != height {
+                image::imageops::resize(&rgb, out_w, out_h, FilterType::Triangle)
+            } else {
+                rgb
+            };
+            let mut jpeg = Vec::new();
+            let mut encoder = JpegEncoder::new_with_quality(&mut jpeg, quality.clamp(1, 100));
+            encoder
+                .encode(image.as_raw(), image.width(), image.height(), ExtendedColorType::Rgb8)
+                .ok()?;
+            Some((jpeg, image.width(), image.height()))
         }
     }
 
@@ -189,6 +194,9 @@ impl DxgiCapture {
     pub fn frame_jpeg(&mut self, _quality: u8, _target_height: u32) -> Option<(Vec<u8>, u32, u32)> {
         None
     }
+    pub fn frame_bgra(&mut self) -> Option<(Vec<u8>, u32, u32)> {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -202,5 +210,15 @@ mod tests {
         assert_eq!(imp::scaled_size(1920, 1080, 720), (1280, 720));
         assert_eq!(imp::scaled_size(1280, 720, 0), (1280, 720));
         assert_eq!(imp::scaled_size(1280, 720, 1080), (1280, 720));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "needs a real desktop and a GPU with Desktop Duplication"]
+    fn duplication_returns_a_desktop_frame() {
+        let mut capture = super::DxgiCapture::open().expect("open desktop duplication");
+        let (bgra, width, height) = capture.frame_bgra().expect("desktop frame");
+        assert!(width > 0 && height > 0);
+        assert_eq!(bgra.len(), width as usize * height as usize * 4);
     }
 }

@@ -499,6 +499,133 @@ pub fn stop() {
     STOP.store(true, Ordering::SeqCst);
 }
 
+/// The 60/120 path: DXGI frames go straight into the Media Foundation H.264
+/// encoder and its MP4 muxer. Returns `Ok(None)` when the writer cannot be
+/// created, so the caller can keep the MJPEG/AVI loop.
+fn record_loop_mf(
+    app: &tauri::AppHandle,
+    path: &Path,
+    fps: u32,
+    max_secs: u64,
+    mut dxgi: crate::legendary::clip_dxgi::DxgiCapture,
+    audio: &mut Option<crate::legendary::clip_audio::AudioCapture>,
+) -> Result<Option<PathBuf>, String> {
+    let mp4 = path.with_extension("mp4");
+    let interval = Duration::from_millis(1000 / fps as u64);
+    let started = Instant::now();
+    let mut next_frame = Instant::now();
+    let mut recorder: Option<crate::legendary::clip_mf::MfRecorder> = None;
+    let mut misses = 0u32;
+    let mut audio_samples = 0u64;
+    log(app, &format!("loop: h264 backend, {fps} fps -> {}", mp4.display()));
+
+    while !STOP.load(Ordering::SeqCst) && started.elapsed().as_secs() < max_secs {
+        if crate::legendary::screenshots::get_active_running_game().is_none() {
+            log(app, "loop: no game in the foreground, stopping");
+            break;
+        }
+        let Some((bgra, width, height)) = dxgi.frame_bgra() else {
+            misses += 1;
+            if misses > fps.saturating_mul(4).max(30) {
+                log(app, "loop: no duplicated frames for the h264 path, falling back");
+                return Ok(None);
+            }
+            next_frame += interval;
+            let now = Instant::now();
+            if next_frame > now {
+                std::thread::sleep(next_frame - now);
+            } else {
+                next_frame = now;
+            }
+            continue;
+        };
+        misses = 0;
+        if recorder.is_none() {
+            let audio_info = audio.as_ref().map(|capture| {
+                let info = capture.info();
+                (info.sample_rate, info.channels)
+            });
+            match crate::legendary::clip_mf::MfRecorder::create(&mp4, width, height, fps, audio_info) {
+                Ok(created) => {
+                    log(app, &format!("loop: h264 first frame {width}x{height}"));
+                    if let Ok(mut target) = TARGET.lock() {
+                        *target = Some(mp4.clone());
+                    }
+                    recorder = Some(created);
+                }
+                Err(err) => {
+                    log(app, &format!("loop: h264 unavailable: {err}"));
+                    return Ok(None);
+                }
+            }
+        }
+        let active = recorder.as_mut().expect("recorder just created");
+        if let Err(err) = active.write_video(&bgra) {
+            log(app, &format!("loop: h264 frame failed: {err}"));
+            return Err(err);
+        }
+        let samples = audio
+            .as_mut()
+            .map(|capture| capture.drain())
+            .unwrap_or_default();
+        audio_samples += samples.len() as u64;
+        if let Err(err) = active.write_audio(&samples) {
+            log(app, &format!("loop: h264 audio failed: {err}"));
+            return Err(err);
+        }
+        FRAMES.store(active.frames().min(u32::MAX as u64) as u32, Ordering::SeqCst);
+
+        next_frame += interval;
+        let now = Instant::now();
+        if next_frame > now {
+            std::thread::sleep(next_frame - now);
+        } else {
+            next_frame = now;
+        }
+    }
+
+    if let Some(capture) = audio.as_mut() {
+        let tail = capture.drain();
+        audio_samples += tail.len() as u64;
+        if let Some(active) = recorder.as_mut() {
+            let _ = active.write_audio(&tail);
+        }
+        capture.stop();
+        log(app, &format!("audio: {audio_samples} samples captured"));
+    }
+    if let Some(active) = recorder {
+        let frames = active.frames();
+        let elapsed = started.elapsed();
+        active.finish()?;
+        let measured = if elapsed.as_secs_f64() > 0.0 {
+            frames as f64 / elapsed.as_secs_f64()
+        } else {
+            0.0
+        };
+        log(
+            app,
+            &format!(
+                "loop: finished, {frames} frames in {:.1}s ({measured:.1} fps, asked {fps}) -> {}",
+                elapsed.as_secs_f64(),
+                mp4.display()
+            ),
+        );
+        if frames > 0 {
+            let _ = app.emit(
+                "clip-saved",
+                serde_json::json!({
+                    "path": mp4.to_string_lossy(),
+                    "name": mp4.file_name().map(|n| n.to_string_lossy()).unwrap_or_default(),
+                    "seconds": elapsed.as_secs(),
+                    "frames": frames,
+                }),
+            );
+            return Ok(Some(mp4));
+        }
+    }
+    Ok(None)
+}
+
 fn record_loop(app: tauri::AppHandle, path: PathBuf) {
     let fps = FPS.load(Ordering::SeqCst).max(1);
     let quality = QUALITY.load(Ordering::SeqCst).clamp(10, 100) as u8;
@@ -544,6 +671,31 @@ fn record_loop(app: tauri::AppHandle, path: PathBuf) {
             if dxgi.is_some() { "dxgi duplication" } else { "gdi fallback" }
         ),
     );
+
+    // Above 30 fps the MJPEG writer cannot keep up: hand the clip to the H.264
+    // path and keep this loop as the fallback when duplication or the encoder
+    // is unavailable.
+    if fps > 30 {
+        if let Some(capture) = dxgi.take() {
+            match record_loop_mf(&app, &path, fps, max_secs, capture, &mut audio) {
+                Ok(Some(_)) => return,
+                Ok(None) => {
+                    log(&app, "loop: h264 path declined, falling back to mjpeg");
+                    dxgi = crate::legendary::clip_dxgi::DxgiCapture::open();
+                }
+                Err(err) => {
+                    log(&app, &format!("loop: h264 failed: {err}"));
+                    if let Ok(mut guard) = LAST_ERROR.lock() {
+                        *guard = Some(err.clone());
+                    }
+                    let _ = app.emit("clip-error", err);
+                    return;
+                }
+            }
+        } else {
+            log(&app, "loop: no dxgi for the h264 path, using mjpeg");
+        }
+    }
 
     while !STOP.load(Ordering::SeqCst) && started.elapsed().as_secs() < max_secs {
         // No game in the foreground any more: stop instead of recording the
@@ -754,8 +906,11 @@ fn collect_clips(dir: &Path, out: &mut Vec<ClipItem>) {
             collect_clips(&path, out);
             continue;
         }
-        if path.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case("avi")) != Some(true)
-        {
+        let extension = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_ascii_lowercase());
+        if extension.as_deref() != Some("avi") && extension.as_deref() != Some("mp4") {
             continue;
         }
         let Ok(meta) = std::fs::metadata(&path) else {

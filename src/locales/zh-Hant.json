@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "剪輯已儲存",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "剪輯儲存失敗",
-  "ss.clipFpsNote": "60/120 fps 需要 GPU 錄製器；此擷取路徑支援 15 與 30。",
+  "ss.clipFpsNote": "60/120 fps 使用 GPU H.264 錄製器；MJPEG 備援支援 15 與 30。",
   "ss.clipTrim": "裁剪",
   "ss.clipTrimTitle": "裁剪剪輯",
   "ss.clipTrimStart": "開始（秒）",

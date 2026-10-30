@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "Clip guardado",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "No se pudo guardar el clip",
-  "ss.clipFpsNote": "60 y 120 fps necesitan el grabador por GPU; esta ruta de captura soporta 15 y 30.",
+  "ss.clipFpsNote": "60 y 120 fps usan el grabador H.264 por GPU; el respaldo MJPEG sostiene 15 y 30.",
   "ss.clipTrim": "Recortar",
   "ss.clipTrimTitle": "Recortar el clip",
   "ss.clipTrimStart": "Inicio (s)",

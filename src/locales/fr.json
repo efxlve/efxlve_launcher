@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "Clip enregistré",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Impossible d'enregistrer le clip",
-  "ss.clipFpsNote": "60 et 120 fps nécessitent l'enregistreur GPU ; cette capture tient 15 et 30.",
+  "ss.clipFpsNote": "60 et 120 fps utilisent l'enregistreur H.264 GPU ; le repli MJPEG tient 15 et 30.",
   "ss.clipTrim": "Découper",
   "ss.clipTrimTitle": "Découper le clip",
   "ss.clipTrimStart": "Début (s)",

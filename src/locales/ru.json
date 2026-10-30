@@ -2664,7 +2664,7 @@
   "overlay.clipSavedTitle": "Клип сохранён",
   "overlay.clipSavedBody": "{name} · {time}",
   "overlay.clipFailedTitle": "Не удалось сохранить клип",
-  "ss.clipFpsNote": "60 и 120 fps требуют GPU-рекордера; этот путь захвата держит 15 и 30.",
+  "ss.clipFpsNote": "60 и 120 fps используют GPU-рекордер H.264; резервный MJPEG держит 15 и 30.",
   "ss.clipTrim": "Обрезать",
   "ss.clipTrimTitle": "Обрезать клип",
   "ss.clipTrimStart": "Начало (с)",
