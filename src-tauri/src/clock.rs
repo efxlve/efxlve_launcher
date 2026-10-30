@@ -37,6 +37,12 @@ pub fn stamp_millis(now: SystemTime) -> String {
     format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}:{millis:03}")
 }
 
+/// Year, month and day in UTC for callers that need only the calendar date.
+pub fn date(now: SystemTime) -> (i64, u32, u32) {
+    let (year, month, day, ..) = fields(now);
+    (year, month, day)
+}
+
 /// Howard Hinnant's civil-from-days, so the date math needs no extra crate.
 fn civil_from_days(z: i64) -> (i64, u32, u32) {
     let z = z + 719_468;

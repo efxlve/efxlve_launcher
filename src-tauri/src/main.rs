@@ -302,6 +302,11 @@ pub struct EpicSettings {
     /// in-game achievements unlock without the Galaxy client. On by default.
     #[serde(default)]
     pub gog_comet_enabled: Option<bool>,
+    /// Start installed EA games directly with the account token instead of
+    /// handing them to the EA app. Off by default: the EA app still installs,
+    /// updates and serves as the fallback when the direct path cannot resolve.
+    #[serde(default)]
+    pub ea_direct_launch: Option<bool>,
     /// Base folder for Amazon Games installs (empty = Nile's default).
     #[serde(default)]
     pub amazon_install_dir: Option<String>,
@@ -2117,6 +2122,9 @@ fn main() {
             companion::xbox_login_hide,
             companion::companion_open_client,
             companion::companion_launch,
+            companion::ea_direct_probe,
+            companion::ea_direct_status,
+            companion::ea_direct_set_enabled,
             companion::companion_game_action,
             companion::companion_get_client_settings,
             companion::companion_set_close_after_play,
