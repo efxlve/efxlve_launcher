@@ -7,7 +7,11 @@
 //!
 //! Both endpoints are unmetered, so the answer is cached in memory and on disk
 //! for six hours. If Microsoft retires a URL the call answers empty and the
-//! page shows its retry state.
+//! caller treats it as a miss.
+//!
+//! No view reads this feed today. It is kept, with its three commands, as the
+//! data layer for a cross-store surface; the parsers and the two live tests are
+//! the contract that keeps it working.
 
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -608,5 +612,26 @@ mod tests {
                 title.product_id, title.title, title.publisher, title.pfn
             );
         }
+    }
+
+    /// The second command: one product record, the shape the game page used.
+    #[tokio::test]
+    #[ignore = "reads the live Microsoft catalog; run manually"]
+    async fn the_live_product_record_answers_one_title() {
+        let detail = detail("9NPDN9R45JX4").await.expect("the record should answer");
+        assert_eq!(detail.title, "1000xRESIST");
+        assert!(!detail.description.is_empty(), "no description");
+        assert!(!detail.screenshots.is_empty(), "no screenshots");
+        assert!(!detail.rating.is_empty(), "no rating");
+        assert!(!detail.release_date.is_empty(), "no release date");
+        assert!(!detail.pfn.is_empty(), "no package family name");
+        println!(
+            "{} | {} | {} | {} shots | {}",
+            detail.title,
+            detail.release_date,
+            detail.rating,
+            detail.screenshots.len(),
+            detail.pfn
+        );
     }
 }
