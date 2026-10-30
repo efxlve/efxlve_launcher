@@ -305,7 +305,7 @@ let cachedAchievements: AchievementsData | null = null;
 let achLoading = false;
 let achLoadGeneration = 0;
 let achDetail: string | null = null;
-let achFilter: "all" | "locked" | "near" | "hidden" = "all";
+let achFilter: "all" | "locked" | "near" = "all";
 let achRevealed = new Set<string>();
 let achCommunity = new Map<string, SteamAchievementCommunity>();
 let achCommunityLoading = new Set<string>();
@@ -2706,19 +2706,13 @@ function renderAchList(data: AchievementsData): string {
   const total = data.total_achievements || stats.total;
   const unlocked = stats.unlocked || data.user_unlocked;
   const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
-  const hiddenItems = data.achievements.filter(achMasked);
-  const hiddenNames = new Set(hiddenItems.map((item) => item.name));
-  const hiddenCount = hiddenItems.length;
-  if (achFilter === "hidden" && hiddenCount === 0) achFilter = "all";
   const nearCount = data.achievements.filter((item) => {
     const progress = achievementProgress(item);
     return !achMasked(item) && !isAchievementUnlocked(item) && progress >= 0.5 && progress < 1;
   }).length;
   if (achFilter === "near" && nearCount === 0) achFilter = "all";
 
-  let items = achFilter === "hidden"
-    ? [...hiddenItems]
-    : data.achievements.filter((item) => !hiddenNames.has(item.name));
+  let items = [...data.achievements];
   if (achFilter === "locked") {
     items = items.filter((item) => !isAchievementUnlocked(item));
   } else if (achFilter === "near") {
@@ -2779,14 +2773,7 @@ function renderAchList(data: AchievementsData): string {
     })
     .join("");
 
-  const hiddenRow = (achFilter === "all" || achFilter === "locked") && hiddenCount > 0
-    ? `<button type="button" class="ov-ach-hidden-row" data-ov="ach-filter" data-val="hidden">
-         ${icon("lock", 13)}
-         <span>${esc(t("ach.hiddenGroup", { n: hiddenCount }))}</span>
-         ${icon("chevron-right", 12)}
-       </button>`
-    : "";
-  const body = `${rows}${hiddenRow}`;
+  const body = rows;
 
   return `
     <div class="ov-page-title">${icon("trophy", 20)} <span>${esc(t("overlay.tabAchievements"))}</span>
@@ -2802,7 +2789,6 @@ function renderAchList(data: AchievementsData): string {
       ${chip("all", t("ach.filterAll"), stats.total)}
       ${chip("locked", t("ach.filterLocked"), Math.max(0, stats.total - unlocked))}
       ${nearCount > 0 ? chip("near", t("ach.filterNear"), nearCount) : ""}
-      ${achFilter === "hidden" ? chip("hidden", t("ach.filterHidden"), hiddenCount) : ""}
     </div>
     <div class="ov-ach-full-list">${body || `<div class="ov-empty">${esc(t("ach.emptyTitle"))}</div>`}</div>`;
 }
@@ -6287,7 +6273,7 @@ function wireEvents(): void {
       return;
     } else if (action === "ach-filter") {
       const value = actionEl.dataset.val;
-      if (value === "all" || value === "locked" || value === "near" || value === "hidden") {
+      if (value === "all" || value === "locked" || value === "near") {
         achFilter = value;
         renderAchView();
       }

@@ -372,6 +372,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   from its detail or list row; up to three appear above the filters with their icon,
   description and progress bar. Pinning the Achievements widget keeps that section as
   the ghost HUD.
+- Hidden achievements stay inline in the normal list as masked rows, matching the game
+  detail tab; there is no separate “hidden achievements” group.
 - The list is keyed by the active game and stored in `efxlve-overlay-ach-tracker`; the
   Steam unlock event repaints it in place and drops an earned achievement from the
   tracked set. An empty tracked set renders no box. The achievements data is the same
