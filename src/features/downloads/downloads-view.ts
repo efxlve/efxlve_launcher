@@ -239,6 +239,9 @@ function renderActiveCard(dl: DlMetrics): string {
   const s = summaryOf(dl.id);
   const title = esc(s?.title || dl.title || dl.id);
   const art = s?.cover || null;
+  // The cover and the title open the same game page as a library click, so a
+  // downloading game is never a dead end.
+  const detail = `role="button" tabindex="0" data-act="epic-detail" data-id="${esc(dl.id)}" title="${title}"`;
   const isAmazon = dl.id.startsWith("amazon::");
   // Nile has no pause and the launcher does not cancel an install, so the
   // Amazon card carries no queue controls.
@@ -248,10 +251,10 @@ function renderActiveCard(dl: DlMetrics): string {
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
   return `
     <section class="card dl-active">
-      <div class="dl-active-art">${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
+      <div class="dl-active-art dl-active-open" ${detail}>${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
       <div class="dl-active-body">
         <div class="dl-active-head">
-          <div class="dl-active-text">
+          <div class="dl-active-text dl-active-open" ${detail}>
             <div class="dl-active-title" title="${title}">${title}</div>
             ${storePlate(sourceOfKey(dl.id))}
             <span class="chip ${paused ? "warn" : "accent"}">${paused ? t("dl.statusPaused") : t("dl.statusActive")}</span>
@@ -310,6 +313,7 @@ function renderSteamActiveCard(g: SteamGame): string {
   const s = summaryOf(`steam::${g.appId}`);
   const title = esc(s?.title || g.name || g.appId);
   const art = s?.cover || null;
+  const detail = `role="button" tabindex="0" data-act="epic-detail" data-id="${esc(`steam::${g.appId}`)}" title="${title}"`;
   const waiting = steamDownloadWaiting(g.appId);
   const total = g.bytesToDownload;
   const got = total > 0 ? Math.min(g.bytesDownloaded, total) : 0;
@@ -319,10 +323,10 @@ function renderSteamActiveCard(g: SteamGame): string {
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
   return `
     <section class="card dl-active" id="dl-steam-card" data-app-id="${esc(g.appId)}">
-      <div class="dl-active-art">${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
+      <div class="dl-active-art dl-active-open" ${detail}>${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
       <div class="dl-active-body">
         <div class="dl-active-head">
-          <div class="dl-active-text">
+          <div class="dl-active-text dl-active-open" ${detail}>
             <div class="dl-active-title" title="${title}">${title}</div>
             <span class="chip accent">${t("steam.downloading")}</span>
           </div>

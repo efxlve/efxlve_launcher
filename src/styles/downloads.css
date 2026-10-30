@@ -22,6 +22,11 @@
 .dl-active-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dl-active-text { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .dl-active-title { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Cover and title open the game page, the same target a library card has. */
+.dl-active-open { cursor: pointer; }
+.dl-active-open:hover .dl-active-title { color: var(--accent); }
+.dl-active-art.dl-active-open:hover img { filter: brightness(1.05); }
+.dl-active-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Storefront identity: a quiet mark + name line, like the plate under a library
    cover. No box and no state colour, so it reads as metadata, not a badge. */
 .dl-store {
