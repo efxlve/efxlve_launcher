@@ -1028,6 +1028,7 @@ function openWidget(tab: TabId, render = true): void {
 
   if (render) renderWidgetContent(tab);
 
+  if (tab === "tracker") startTrackerPolling();
   if (tab === "discord") {
     void invoke("discord_voice_watch_start").catch(() => undefined);
     void refreshWebVoice();
@@ -1044,6 +1045,7 @@ function closeWidget(tab: TabId): void {
 
   if (tab === "clip") stopClipPolling();
   if (tab === "audio") stopAudioPolling();
+  if (tab === "tracker") stopTrackerPolling();
   if (tab === "ach") achDetail = null;
 
   const widget = document.getElementById(`ov-widget-${tab}`);
@@ -2903,6 +2905,26 @@ function renderTracker(): void {
     })
     .join("");
   el.innerHTML = `<div class="ov-tracker-list">${rows}</div>`;
+}
+
+let trackerPollTimer: number | null = null;
+
+/** While the tracker is open (or pinned in ghost mode), refresh the store data
+ *  so a progress bar or a new unlock appears without reopening the panel. */
+function startTrackerPolling(): void {
+  if (trackerPollTimer !== null) return;
+  trackerPollTimer = window.setInterval(() => {
+    if (document.hidden) return;
+    if (ghostMode && !isWidgetPinned("tracker")) return;
+    if (!isWidgetOpen("tracker")) return;
+    void loadAchievements(true);
+  }, 30_000);
+}
+
+function stopTrackerPolling(): void {
+  if (trackerPollTimer === null) return;
+  window.clearInterval(trackerPollTimer);
+  trackerPollTimer = null;
 }
 
 function renderAchView(): void {

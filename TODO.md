@@ -72,8 +72,8 @@ the field pass on exclusive fullscreen and validate the per-game profile.
 The Tracker widget now pins up to three locked achievements and keeps them in
 ghost mode (`src/features/overlay/overlay.ts`). Validate on a real game: track
 from the achievement detail, pin the tracker, close the panel, and confirm the
-progress bar survives; unlock one and confirm it repaints. Then add live
-progress polling while pinned and per-game tracker presets.
+progress bar survives; unlock one and confirm it repaints. Then add per-game
+tracker presets.
 
 ## Notes image field pass
 
