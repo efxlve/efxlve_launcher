@@ -31,7 +31,7 @@ architecture, the feature scope and the phased plan.
 
 **Goal:** a functional in-game interface (default `Shift+Tab`) that shows, over the game:
 
-- performance HUD: FPS, frame-time graph, CPU, GPU, RAM/VRAM (toggles)
+- performance HUD: FPS, frame-time graph, 1% / 0.1% frame-time lows, CPU, GPU, RAM/VRAM (toggles)
 - screenshots: capture, gallery, open folder
 - notes: per-game notes, autosaved
 - achievements: the game's tracked set (existing data)
@@ -254,6 +254,16 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 
 - Metrics worker + `Performance` tab (FPS, frame-time graph, CPU, RAM, GPU, VRAM).
 - Optional always-on mini HUD (native window if the WebView path fails validation).
+- Frame-time lows (built): the ETW callback keeps a 2048-frame ring per pid and the
+  worker reports the average of the slowest 1% and 0.1% frame times (PresentMon's
+  definition) in `overlay-metrics`, the native HUD and the Performance tab. The 1%
+  low appears after ~2 s at 60 FPS; the 0.1% low needs ~1000 frames (~17 s) so its
+  tail is not a single frame.
+- Open: hardware temperatures and package power (NVML/ADLX/PDH), and a 60 Hz
+  frame-time graph fed by a separate per-frame stream while the Performance tab is
+  open. The native strip stays the zero-cost fallback; the richer always-on HUD is
+  a pinned Performance widget in ghost mode (M8). Unify the Settings HUD toggle
+  with that path once the field pass confirms ghost mode over a real game.
 - Acceptance: <0.5% CPU while active; numbers stay within ~2% of PresentMon for the
   same run; sampling fully stops when the game exits.
 

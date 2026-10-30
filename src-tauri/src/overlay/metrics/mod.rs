@@ -18,7 +18,7 @@ use super::{hud, STATE};
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct MetricsSample {
     /// A game process was found for the running title.
@@ -26,6 +26,10 @@ pub struct MetricsSample {
     pub pid: Option<u32>,
     pub fps: Option<f64>,
     pub frame_ms: Option<f64>,
+    /// Average FPS of the slowest 1% of frames in the current window.
+    pub low1_fps: Option<f64>,
+    /// Average FPS of the slowest 0.1% of frames in the current window.
+    pub low01_fps: Option<f64>,
     /// The ETW FPS session is running (Windows permission granted).
     pub fps_available: bool,
     /// System-wide CPU load, percent.
@@ -79,7 +83,12 @@ fn run(app: AppHandle) {
         if !RUNNING.load(Ordering::SeqCst) {
             break;
         }
-        let active = STATE.lock().map(|s| s.visible || s.hud).unwrap_or(false);
+        // A ghost HUD keeps its pinned Performance card alive, so it counts as
+        // active even though it takes no input.
+        let active = STATE
+            .lock()
+            .map(|s| s.visible || s.ghost || s.hud)
+            .unwrap_or(false);
         if active {
             idle = 0;
         } else {
@@ -133,12 +142,20 @@ fn run(app: AppHandle) {
         let gpu_value = gpu.as_mut().and_then(|query| query.utilization(pid));
         let vram = gpu.as_mut().and_then(|query| query.vram_bytes(pid));
         let vram_total_mb = gpu.as_ref().and_then(|query| query.total_vram_mb());
+        // The lows read the frame ring the ETW callback fills; they do not need
+        // another trace pass.
+        let lows = fps
+            .as_ref()
+            .map(|counter| counter.lows(&pids))
+            .unwrap_or_default();
 
         let sample = MetricsSample {
             running: pid.is_some(),
             pid,
             fps: fps_value,
             frame_ms,
+            low1_fps: lows.low1,
+            low01_fps: lows.low01,
             fps_available: etw::available(),
             cpu,
             cpu_ghz,
@@ -165,12 +182,11 @@ fn run(app: AppHandle) {
     hud::hide();
 }
 
-/// One compact HUD line: `124 FPS · 8.1 ms | CPU 23% | GPU 67% | VRAM 5.2 GB | RAM 12.4/31.8 GB`.
+/// One compact HUD line: `124 FPS · 8.1 ms · 1% 112 · 0.1% 98 | CPU 23% | ...`.
 fn hud_text(s: &MetricsSample) -> String {
     let mut parts = Vec::new();
-    if let Some(fps) = s.fps {
-        let ms = s.frame_ms.unwrap_or(0.0);
-        parts.push(format!("{fps:.0} FPS · {ms:.1} ms"));
+    if let Some(line) = fps_line(s) {
+        parts.push(line);
     }
     let cpu = s.game_cpu.unwrap_or(s.cpu);
     parts.push(format!("CPU {cpu:.0}%"));
@@ -186,6 +202,23 @@ fn hud_text(s: &MetricsSample) -> String {
         mb_label(s.ram_total_mb)
     ));
     parts.join("  |  ")
+}
+
+/// The FPS cluster: current rate, frame time, then the frame-time lows once the
+/// ring has enough samples for each.
+fn fps_line(s: &MetricsSample) -> Option<String> {
+    let fps = s.fps?;
+    let mut line = format!("{fps:.0} FPS");
+    if let Some(ms) = s.frame_ms {
+        line.push_str(&format!(" · {ms:.1} ms"));
+    }
+    if let Some(low1) = s.low1_fps {
+        line.push_str(&format!(" · 1% {low1:.0}"));
+    }
+    if let Some(low01) = s.low01_fps {
+        line.push_str(&format!(" · 0.1% {low01:.0}"));
+    }
+    Some(line)
 }
 
 /// `sysinfo` reports a process value that can reach `logical_cpus * 100`
@@ -206,7 +239,7 @@ fn mb_label(mb: u64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::normalize_process_cpu;
+    use super::{fps_line, hud_text, normalize_process_cpu, MetricsSample};
 
     #[test]
     fn process_cpu_is_normalized_to_machine_wide() {
@@ -218,5 +251,27 @@ mod tests {
         // Nonsense readings never leak through as negative or above 100.
         assert_eq!(normalize_process_cpu(-4.0, 8), 0.0);
         assert_eq!(normalize_process_cpu(1e6, 4), 100.0);
+    }
+
+    #[test]
+    fn the_fps_cluster_grows_with_the_lows() {
+        let mut sample = MetricsSample::default();
+        sample.fps = Some(144.0);
+        sample.frame_ms = Some(6.94);
+        sample.low1_fps = Some(112.0);
+        sample.low01_fps = Some(98.0);
+        assert_eq!(
+            fps_line(&sample).as_deref(),
+            Some("144 FPS · 6.9 ms · 1% 112 · 0.1% 98")
+        );
+    }
+
+    #[test]
+    fn missing_lows_leave_the_fps_cluster_short() {
+        let mut sample = MetricsSample::default();
+        sample.fps = Some(60.0);
+        sample.frame_ms = Some(16.7);
+        assert_eq!(fps_line(&sample).as_deref(), Some("60 FPS · 16.7 ms"));
+        assert!(hud_text(&sample).starts_with("60 FPS · 16.7 ms  |  CPU 0%"));
     }
 }

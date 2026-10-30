@@ -886,6 +886,18 @@ body.ov-ghost .ov-widget.is-pinned {
   flex-shrink: 0;
 }
 
+/* 1% / 0.1% frame-time lows: a second, quieter cluster next to the frame time. */
+.ov-perf-lows {
+  font-size: 10px;
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-perf-lows:empty {
+  display: none;
+}
+
 /* 2x2 Grid */
 .ov-perf-grid {
   display: grid;

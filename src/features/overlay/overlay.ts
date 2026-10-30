@@ -101,6 +101,8 @@ interface MetricsSample {
   pid: number | null;
   fps: number | null;
   frameMs: number | null;
+  low1Fps?: number | null;
+  low01Fps?: number | null;
   fpsAvailable: boolean;
   cpu: number;
   cpuGhz?: number | null;
@@ -1884,6 +1886,17 @@ function getTelemetryReadings(m: MetricsSample | null) {
   const ramSubTitle = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;
   const vramSubTitle = `${fmtMb(vramUsed)} / ${fmtMb(vramTotal)}`;
   const subFps = m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : (m?.running ? "..." : (isTr ? "Beklemede" : "Idle"));
+  const low1 = m?.low1Fps != null ? Math.round(m.low1Fps) : null;
+  const low01 = m?.low01Fps != null ? Math.round(m.low01Fps) : null;
+  const lowsText =
+    low1 != null || low01 != null
+      ? [
+          low1 != null ? `1% ${low1}` : "",
+          low01 != null ? `0.1% ${low01}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : "";
 
   let data: number[] = [];
   let tag = "CPU";
@@ -1980,6 +1993,9 @@ function getTelemetryReadings(m: MetricsSample | null) {
     ramSubTitle,
     vramSubTitle,
     subFps,
+    low1,
+    low01,
+    lowsText,
     cpuStatus: statusLevel(cpuVal),
     gpuStatus: statusLevel(gpuVal),
     ramStatus: statusLevel(ramPct),
@@ -2013,6 +2029,7 @@ function renderPerf(): void {
         </div>
         <div class="ov-perf-fps-right">
           <span class="ov-perf-sub" id="ov-perf-frame-ms">${t.subFps}</span>
+          <span class="ov-perf-lows" id="ov-perf-lows">${t.lowsText}</span>
         </div>
       </button>` : ""}
 
@@ -2291,6 +2308,7 @@ function updateMetricsUi(): void {
     setText("ov-card-sub-ram", t.ramSub);
     setText("ov-card-sub-vram", t.vramSub);
     setText("ov-perf-frame-ms", t.subFps);
+    setText("ov-perf-lows", t.lowsText);
 
     const ramCard = document.querySelector<HTMLElement>('[data-perf-metric="ram"]');
     if (ramCard) ramCard.title = t.ramSubTitle;
