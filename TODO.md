@@ -96,9 +96,9 @@ session icons and controller focus order.
 
 The Settings tab now draws a native, click-through crosshair over the game
 (`src-tauri/src/overlay/crosshair.rs`). Validate on a borderless game: the
-reticle sits at the monitor centre, Ctrl+Shift+X toggles it, the outline stays
-readable on bright scenes, and it disappears when the game exits. Then do the
-field pass on exclusive fullscreen and per-game profiles.
+reticle sits at the monitor centre, the configured hotkey toggles it, the outline
+stays readable on bright scenes, and it disappears when the game exits. Then do
+the field pass on exclusive fullscreen and validate the per-game profile.
 
 ## Achievement tracker field pass
 
@@ -121,7 +121,8 @@ file-backed storage for large images.
 The browser's PiP button shrinks the window to a 16:9 corner player and keeps it
 when the panel closes (`src-tauri/src/overlay/browser.rs`,
 `src/features/overlay/browser-window.ts`). Validate on a borderless game and a
-multi-monitor/DPI setup: the player lands top-right, the page fills the frame,
-the PiP bar restores and closes, the game keeps focus after close, and the
-browser reopens at full size. Then add a click-through toggle and a direct "send
-this tab to PiP" action.
+multi-monitor/DPI setup: the player lands in the selected corner (top-right by
+default), the corner button moves it, the page fills the frame, the PiP bar
+restores and closes, the game keeps focus after close, and the browser reopens
+at full size. Then add a click-through toggle and a direct "send this tab to PiP"
+action.
