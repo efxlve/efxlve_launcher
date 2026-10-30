@@ -63,7 +63,7 @@ import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raStatus } from "../../retroachievements";
 import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
-import { BRAND_ICONS, icon } from "../../core/icons";
+import { BRAND_ICONS } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
 import { pushRecentInstall, pushRecent } from "../../core/recent";
 import {
@@ -807,21 +807,8 @@ export async function initApp(hooks: {
         }
       }
 
-      // Update buttons and badges.
-      document.querySelectorAll<HTMLButtonElement>(`button[data-act="epic-play"][data-id="${CSS.escape(id)}"], button[data-act="epic-stop"][data-id="${CSS.escape(id)}"]`).forEach((el) => {
-        if (el.classList.contains("pcard-play-btn")) return;
-        if (el.dataset.act === "epic-play" || el.dataset.act === "epic-stop") {
-          if (running) {
-            el.dataset.act = "epic-stop";
-            el.classList.add("running");
-            el.innerHTML = `<span class="running-dot"></span> ${t("common.playing")}`;
-          } else {
-            el.dataset.act = "epic-play";
-            el.classList.remove("running");
-            el.innerHTML = `${icon("play", 14)} ${t("common.play")}`;
-          }
-        }
-      });
+      // The action row is repainted by refreshGameActionUi above: the game page
+      // draws Stop for a running title and the library patches its own cards.
 
       if (S.view === "library") {
         patchLibraryCardDom(id);

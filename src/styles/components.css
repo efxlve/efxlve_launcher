@@ -30,9 +30,6 @@
 .btn:hover { background: var(--surface-3); }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled, .btn.disabled { opacity: 0.45; cursor: not-allowed; }
-/* A running client-owned game has no stop action here: the button is a state
-   chip, so it stays fully visible while disabled. */
-.btn.running:disabled { opacity: 1; cursor: default; }
 /* A missing copy is a state, not a button the user should try to press. */
 .btn.danger.is-unavailable:disabled { opacity: 1; cursor: default; }
 /* Stop uses the same ghost shell as Manage; the X follows the theme foreground
@@ -45,7 +42,6 @@
 .btn.primary:hover, .btn.install:hover, .btn.play:hover { background: var(--accent-hover); }
 .btn.update { background: var(--warn-tint); color: var(--warn); border-color: rgba(224, 163, 46, 0.35); }
 .btn.update:hover { background: rgba(224, 163, 46, 0.22); }
-.btn.running { background: var(--ok-tint); color: var(--ok); border-color: rgba(47, 179, 109, 0.35); }
 .btn.danger { background: var(--err-tint); color: var(--err); }
 .btn.danger:hover { background: rgba(229, 72, 77, 0.24); }
 .btn.ghost { background: transparent; border-color: var(--line-strong); color: var(--text); }
