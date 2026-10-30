@@ -2,15 +2,6 @@
 
 Open work only. Delete the item when it lands.
 
-## Sidebar resize flashes the library
-
-Opening a game page and then dragging the sidebar resize handle (or collapsing and
-expanding the rail) paints the library view for a frame before the game page
-returns. The view layer must stay on the open page while the width animates; a
-resize step must not trigger a library render or clear the page surface.
-
-Repro: open any game page, then shrink and grow the left sidebar.
-
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow

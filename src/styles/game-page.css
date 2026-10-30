@@ -21,6 +21,10 @@
   border-radius: 5px;
 }
 .overlay::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+/* The game page is an opaque fixed layer over the library. Hide the library
+   while it is open so a sidebar resize repaint cannot flash it through. */
+body:has(#modal-root .overlay) #view { visibility: hidden; }
 html.sb-no-anim .overlay,
 html.sb-resizing .overlay,
 body.sb-resizing .overlay {
