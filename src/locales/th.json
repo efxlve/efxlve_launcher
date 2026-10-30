@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "ปักหมุด",
   "overlay.widgetUnpin": "เลิกปักหมุด",
   "overlay.widgetResize": "ปรับขนาด",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "แชทกลุ่ม",
   "overlay.discordGroupMembers": "สมาชิก {count} คน",
   "overlay.discordGroupOpen": "เปิดใน Discord",

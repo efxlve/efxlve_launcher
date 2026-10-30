@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "Закрепить",
   "overlay.widgetUnpin": "Открепить",
   "overlay.widgetResize": "Изменить размер",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "Групповые ЛС",
   "overlay.discordGroupMembers": "Участники: {count}",
   "overlay.discordGroupOpen": "Открыть в Discord",

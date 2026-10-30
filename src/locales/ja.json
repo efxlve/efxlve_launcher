@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "ピン留め",
   "overlay.widgetUnpin": "ピン留めを解除",
   "overlay.widgetResize": "サイズ変更",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "グループDM",
   "overlay.discordGroupMembers": "メンバー{count}人",
   "overlay.discordGroupOpen": "Discordで開く",

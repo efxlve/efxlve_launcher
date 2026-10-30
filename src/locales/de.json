@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "Anheften",
   "overlay.widgetUnpin": "Lösen",
   "overlay.widgetResize": "Größe ändern",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "Gruppen-DMs",
   "overlay.discordGroupMembers": "{count} Mitglieder",
   "overlay.discordGroupOpen": "In Discord öffnen",

@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "Fissa",
   "overlay.widgetUnpin": "Rimuovi",
   "overlay.widgetResize": "Ridimensiona",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "DM di gruppo",
   "overlay.discordGroupMembers": "{count} membri",
   "overlay.discordGroupOpen": "Apri in Discord",

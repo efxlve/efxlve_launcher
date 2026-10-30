@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "تثبيت",
   "overlay.widgetUnpin": "إلغاء التثبيت",
   "overlay.widgetResize": "تغيير الحجم",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "المحادثات الجماعية",
   "overlay.discordGroupMembers": "{count} أعضاء",
   "overlay.discordGroupOpen": "فتح في ديسكورد",

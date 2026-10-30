@@ -650,6 +650,12 @@ body.ov-ghost .ov-widget.is-pinned {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
 }
 
+/* Nothing inside a pinned card can be clicked while the game owns the mouse,
+   so drop the controls instead of painting dead affordances. */
+body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label.switch, [contenteditable="true"]) {
+  display: none !important;
+}
+
 .ov-widget-body {
   padding: 12px 14px;
   overflow-y: auto;

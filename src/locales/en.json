@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "Pin to screen",
   "overlay.widgetUnpin": "Unpin from screen",
   "overlay.widgetResize": "Resize",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "Group DMs",
   "overlay.discordGroupMembers": "{count} members",
   "overlay.discordGroupOpen": "Open in Discord",

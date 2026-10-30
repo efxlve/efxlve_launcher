@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "पिन करें",
   "overlay.widgetUnpin": "अनपिन करें",
   "overlay.widgetResize": "आकार बदलें",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "समूह DM",
   "overlay.discordGroupMembers": "{count} सदस्य",
   "overlay.discordGroupOpen": "Discord में खोलें",

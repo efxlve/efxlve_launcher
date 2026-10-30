@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "Épingler",
   "overlay.widgetUnpin": "Détacher",
   "overlay.widgetResize": "Redimensionner",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "Messages de groupe",
   "overlay.discordGroupMembers": "{count} membres",
   "overlay.discordGroupOpen": "Ouvrir dans Discord",

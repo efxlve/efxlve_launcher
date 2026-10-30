@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "Sabitle",
   "overlay.widgetUnpin": "Sabitlemeyi kaldır",
   "overlay.widgetResize": "Boyutlandır",
+  "overlay.pinHint": "Sabitlendi. Oyunun üzerinde kalması için paneli kapat.",
   "overlay.discordGroupsTitle": "Grup Sohbetleri",
   "overlay.discordGroupMembers": "{count} üye",
   "overlay.discordGroupOpen": "Discord'da aç",

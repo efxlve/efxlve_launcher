@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "固定",
   "overlay.widgetUnpin": "取消固定",
   "overlay.widgetResize": "調整大小",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "群組私訊",
   "overlay.discordGroupMembers": "{count} 位成員",
   "overlay.discordGroupOpen": "在 Discord 中開啟",

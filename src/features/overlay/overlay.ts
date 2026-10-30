@@ -5815,7 +5815,12 @@ function wireEvents(): void {
     const widgetPinBtn = target.closest<HTMLElement>("[data-ov-widget-pin]");
     if (widgetPinBtn?.dataset.ovWidgetPin) {
       const tab = widgetPinBtn.dataset.ovWidgetPin as TabId;
-      setWidgetPinned(tab, !isWidgetPinned(tab));
+      const pinning = !isWidgetPinned(tab);
+      setWidgetPinned(tab, pinning);
+      if (pinning && localStorage.getItem("efxlve-overlay-pin-hint") !== "seen") {
+        localStorage.setItem("efxlve-overlay-pin-hint", "seen");
+        toast(t("overlay.pinHint"));
+      }
       return;
     }
 

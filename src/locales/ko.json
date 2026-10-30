@@ -2235,6 +2235,7 @@
   "overlay.widgetPin": "고정",
   "overlay.widgetUnpin": "고정 해제",
   "overlay.widgetResize": "크기 조정",
+  "overlay.pinHint": "Pinned. Close the panel to keep it over the game.",
   "overlay.discordGroupsTitle": "그룹 DM",
   "overlay.discordGroupMembers": "멤버 {count}명",
   "overlay.discordGroupOpen": "Discord에서 열기",

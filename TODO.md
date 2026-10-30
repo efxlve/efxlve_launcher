@@ -68,8 +68,7 @@ Pinned widgets now stay over the game as a click-through HUD when the panel
 closes (`src-tauri/src/overlay/ghost.rs`). Validate on a borderless game and a
 multi-monitor setup: the pinned card keeps its place, clicks reach the game,
 Shift+Tab restores the panel, a pinned music card keeps updating, and the ghost
-tears down when the game exits. Then hide inert controls (music transport,
-filter chips) while click-through and add a per-widget ghost opacity.
+tears down when the game exits. Then add a per-widget ghost opacity.
 
 ## HUD 2.0 field pass
 
