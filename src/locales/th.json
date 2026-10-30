@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "ส่งออก {name} เรียบร้อยแล้ว",
   "xbox.installWaiting": "ยืนยันใน Store",
   "xbox.installWaitingHint": "กดติดตั้งใน Microsoft Store คลิกที่นี่เพื่อหยุดติดตาม",
-  "xbox.installStopped": "หยุดติดตามการติดตั้งแล้ว อาจยังดำเนินอยู่ต่อใน Store"
+  "xbox.installStopped": "หยุดติดตามการติดตั้งแล้ว อาจยังดำเนินอยู่ต่อใน Store",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "ค้นหาใน Game Pass",
+  "gp.empty": "ไม่พบชื่อเกมที่ตรงกัน",
+  "gp.error": "โหลดแคตตาล็อก Game Pass ไม่ได้",
+  "gp.retry": "ลองใหม่",
+  "gp.more": "โหลดเพิ่ม"
 }

@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "{name} 已导出。",
   "xbox.installWaiting": "在商店中确认",
   "xbox.installWaitingHint": "请在 Microsoft Store 中点按“安装”。点按此处停止监视。",
-  "xbox.installStopped": "已停止监视安装。安装可能仍在商店中继续。"
+  "xbox.installStopped": "已停止监视安装。安装可能仍在商店中继续。",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "搜索 Game Pass",
+  "gp.empty": "没有匹配的游戏",
+  "gp.error": "无法加载 Game Pass 目录",
+  "gp.retry": "重试",
+  "gp.more": "加载更多"
 }

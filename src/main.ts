@@ -46,6 +46,7 @@ import { closeAvatarModal } from "./features/profile/profile-avatar";
 import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
 import { renderNotesPage } from "./features/notes/notes-view";
+import { renderGamePassPage } from "./features/gamepass/gamepass-view";
 import { renderScreenshotsPage } from "./features/screenshots/screenshots-page";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
@@ -171,6 +172,7 @@ function render(): void {
     S.view === "library" ? document.querySelector<HTMLElement>(".lib-filters")?.scrollLeft ?? 0 : 0;
   viewEl.innerHTML =
     S.view === "library" ? renderEpic()
+    : S.view === "gamepass" ? renderGamePassPage()
     : S.view === "downloads" ? renderDownloads()
     : S.view === "profile" ? renderProfile()
     : S.view === "accounts" ? renderAccounts()

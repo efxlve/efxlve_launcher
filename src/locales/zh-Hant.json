@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "{name} 已匯出。",
   "xbox.installWaiting": "在商店中確認",
   "xbox.installWaitingHint": "請在 Microsoft Store 中點選「安裝」。點選此處停止監視。",
-  "xbox.installStopped": "已停止監視安裝。安裝可能仍在商店中繼續。"
+  "xbox.installStopped": "已停止監視安裝。安裝可能仍在商店中繼續。",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "搜尋 Game Pass",
+  "gp.empty": "沒有符合的遊戲",
+  "gp.error": "無法載入 Game Pass 目錄",
+  "gp.retry": "重試",
+  "gp.more": "載入更多"
 }

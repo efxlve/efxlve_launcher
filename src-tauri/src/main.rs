@@ -2125,6 +2125,8 @@ fn main() {
             companion::xbox_install,
             companion::xbox_install_cancel,
             companion::xbox_uninstall,
+            companion::xbox_gamepass_catalog,
+            companion::xbox_open_store,
             companion::ea_direct_probe,
             companion::ea_direct_status,
             companion::ea_direct_set_enabled,

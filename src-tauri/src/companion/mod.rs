@@ -24,6 +24,7 @@ mod ubi_achievements;
 mod ubisoft;
 mod ubisoft_login;
 mod ubi_vault;
+mod xbox_catalog;
 mod xbox_deploy;
 mod xbox_installed;
 mod xbox_login;
@@ -984,6 +985,23 @@ pub async fn companion_achievements_summary(
     })
     .await
     .unwrap_or_default()
+}
+
+/// The Game Pass PC catalog. Public store metadata: no account, no licence and
+/// no package content, so it also answers before an Xbox account is linked.
+#[tauri::command]
+pub async fn xbox_gamepass_catalog() -> Vec<xbox_catalog::GamePassTitle> {
+    xbox_catalog::catalog().await
+}
+
+/// Opens the Store page for a product the launcher cannot install itself. The
+/// id is a twelve-character Store product id, the same shape the catalog ships.
+#[tauri::command]
+pub fn xbox_open_store(product_id: String) -> Result<(), String> {
+    if product_id.len() != 12 || !product_id.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Err("Unknown game".into());
+    }
+    launch::open_game(&format!("ms-windows-store://pdp/?ProductId={product_id}"), "")
 }
 
 /// Starts the Store install for one Xbox package and reports when it lands.

@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "{name} 내보내기 완료.",
   "xbox.installWaiting": "스토어에서 확인",
   "xbox.installWaitingHint": "Microsoft Store에서 설치를 누르세요. 감시를 중지하려면 여기를 클릭하세요.",
-  "xbox.installStopped": "설치 감시를 중지했습니다. 스토어에서는 계속 진행 중일 수 있습니다."
+  "xbox.installStopped": "설치 감시를 중지했습니다. 스토어에서는 계속 진행 중일 수 있습니다.",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "Game Pass 검색",
+  "gp.empty": "일치하는 타이틀이 없습니다",
+  "gp.error": "Game Pass 카탈로그를 불러오지 못했습니다",
+  "gp.retry": "다시 시도",
+  "gp.more": "더 보기"
 }

@@ -153,6 +153,27 @@ export const xboxInstallCancel = (id: string) => invoke<void>("xbox_install_canc
 /** Removes an installed Xbox title through the deployment service. */
 export const xboxUninstall = (id: string) => invoke<void>("xbox_uninstall", { id });
 
+/** One title from the public Game Pass PC catalog. */
+export interface GamePassTitle {
+  productId: string;
+  title: string;
+  publisher: string;
+  developer: string;
+  poster: string;
+  hero: string;
+  /** Empty when the title ships through another client (EA Play, mostly). */
+  pfn: string;
+}
+
+/**
+ * The Game Pass PC catalog. Public store metadata, so it answers before an
+ * Xbox account is linked; the backend caches it for six hours.
+ */
+export const xboxGamePassCatalog = () => invoke<GamePassTitle[]>("xbox_gamepass_catalog");
+
+/** Opens the Store page for a catalog title the launcher cannot install. */
+export const xboxOpenStore = (productId: string) => invoke<void>("xbox_open_store", { productId });
+
 /** Per-client behavior toggles (Integrations → After playing). */
 export interface CompanionClientSettings {
   closeAfterPlay: Record<string, boolean>;

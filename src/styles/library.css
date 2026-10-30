@@ -2154,3 +2154,38 @@ html.win-compact .lrow-ach-track { display: none; }
   .col-smart-grid { grid-template-columns: 1fr; }
   .lib-collection-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
+
+/* --- Game Pass page -------------------------------------------------------
+   Microsoft's public PC catalog on the library's own tiles: the grid is the
+   library grid, only the search field, the installed chip and the row of
+   actions under the caption are new. */
+.gp-search {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 10px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text-3);
+}
+.gp-search:focus-within { border-color: var(--accent); }
+.gp-search .input {
+  width: 220px; height: 32px; padding: 0;
+  border: 0; background: transparent; color: var(--text);
+}
+.gp-search .input:focus { outline: none; }
+/* The grid's container queries read this wrapper, not the page. */
+.gp-grid { container-type: inline-size; }
+.gp-chip {
+  position: absolute; top: 8px; left: 8px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 7px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62); color: #fff;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.01em;
+  backdrop-filter: blur(6px);
+}
+.gp-publisher {
+  display: block; margin-top: 2px;
+  font-size: 11px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gp-actions { display: flex; margin-top: 8px; }
+.gp-actions .btn { flex: 1; justify-content: center; }
+.gp-more { display: flex; justify-content: center; padding: 18px 0 6px; }

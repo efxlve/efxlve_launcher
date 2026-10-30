@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "{name} dışa aktarıldı.",
   "xbox.installWaiting": "Store'da onayla",
   "xbox.installWaitingHint": "Microsoft Store'da Kur'a bas. İzlemeyi durdurmak için buraya tıkla.",
-  "xbox.installStopped": "Kurulum izlemesi durdu. Store'da devam ediyor olabilir."
+  "xbox.installStopped": "Kurulum izlemesi durdu. Store'da devam ediyor olabilir.",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "Game Pass'te ara",
+  "gp.empty": "Eşleşen oyun yok",
+  "gp.error": "Game Pass kataloğu yüklenemedi",
+  "gp.retry": "Tekrar dene",
+  "gp.more": "Daha fazla göster"
 }

@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "{name} exportado.",
   "xbox.installWaiting": "Confirmar na Store",
   "xbox.installWaitingHint": "Pressione Instalar na Microsoft Store. Clique aqui para parar de acompanhar.",
-  "xbox.installStopped": "Acompanhamento da instalação parado. Ela pode continuar na Store."
+  "xbox.installStopped": "Acompanhamento da instalação parado. Ela pode continuar na Store.",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "Pesquisar no Game Pass",
+  "gp.empty": "Nenhum título corresponde",
+  "gp.error": "Não foi possível carregar o catálogo do Game Pass",
+  "gp.retry": "Tentar novamente",
+  "gp.more": "Carregar mais"
 }

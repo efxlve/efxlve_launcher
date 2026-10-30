@@ -151,10 +151,17 @@ fn safe_uri(uri: &str) -> bool {
             && code.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
             && !matches!(code, "agent" | "bna");
     }
-    if let Some(pfn) = uri.strip_prefix("ms-windows-store://pdp/?PFN=") {
-        return !pfn.is_empty()
-            && pfn.len() <= 128
-            && pfn
+    // The Store page opens either by package family name or by product id.
+    if let Some(query) = uri.strip_prefix("ms-windows-store://pdp/?") {
+        let Some((key, value)) = query.split_once('=') else {
+            return false;
+        };
+        if key != "PFN" && key != "ProductId" {
+            return false;
+        }
+        return !value.is_empty()
+            && value.len() <= 128
+            && value
                 .chars()
                 .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
     }
@@ -272,5 +279,10 @@ mod tests {
         assert!(!safe_uri("ms-windows-store://pdp/?PFN=Bad App"));
         assert!(!safe_uri("ms-windows-store://pdp/?PFN="));
         assert!(!safe_uri("ms-windows-store://pdp/?PFN=x&calc"));
+        // The Game Pass page opens a title by product id before it is owned.
+        assert!(safe_uri("ms-windows-store://pdp/?ProductId=9NPDN9R45JX4"));
+        assert!(!safe_uri("ms-windows-store://pdp/?ProductId=abc def"));
+        assert!(!safe_uri("ms-windows-store://pdp/?ProductId=x&calc"));
+        assert!(!safe_uri("ms-windows-store://pdp/?Other=9NPDN9R45JX4"));
     }
 }

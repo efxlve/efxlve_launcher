@@ -3439,5 +3439,11 @@
   "settings.themeExportSuccess": "تم تصدير {name}.",
   "xbox.installWaiting": "أكّد في المتجر",
   "xbox.installWaitingHint": "اضغط تثبيت في Microsoft Store. اضغط هنا لإيقاف المتابعة.",
-  "xbox.installStopped": "تم إيقاف متابعة التثبيت. قد يستمر في المتجر."
+  "xbox.installStopped": "تم إيقاف متابعة التثبيت. قد يستمر في المتجر.",
+  "nav.gamepass": "Game Pass",
+  "gp.search": "ابحث في Game Pass",
+  "gp.empty": "لا توجد عناوين مطابقة",
+  "gp.error": "تعذّر تحميل كتالوج Game Pass",
+  "gp.retry": "إعادة المحاولة",
+  "gp.more": "تحميل المزيد"
 }
