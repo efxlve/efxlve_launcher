@@ -2,10 +2,11 @@
 
 The overlay ships: the Shift+Tab panel, native performance HUD, screenshots,
 notes, achievements, Spotify + SMTC music, a per-app audio mixer, an external
-crosshair and Discord status. Controller-first navigation is in. ETW FPS is
-API-agnostic but needs the Windows "Performance Log Users" permission, so the
-overlay offers a one-time enable action and explains the sign-out. Discord voice
-read/write waits on the Discord app review noted below.
+crosshair, a tracked-achievement HUD and Discord status. Controller-first
+navigation is in. ETW FPS is API-agnostic but needs the Windows "Performance Log
+Users" permission, so the overlay offers a one-time enable action and explains
+the sign-out. Discord voice read/write waits on the Discord app review noted
+below.
 
 Pinned widgets survive the close: Shift+Tab drops the panel into ghost mode,
 where only the pinned cards stay on screen as a click-through HUD and the game
@@ -34,7 +35,7 @@ architecture, the feature scope and the phased plan.
 - performance HUD: FPS, frame-time graph, 1% / 0.1% frame-time lows, CPU, GPU, RAM/VRAM (toggles)
 - screenshots: capture, gallery, open folder
 - notes: per-game notes, autosaved
-- achievements: the game's tracked set (existing data)
+- achievements: the game's tracked set, with up to three pinned to a tracker HUD
 - music: Spotify/any player via Windows media controls
 - audio: per-app volume and mute on the default output device
 - crosshair: a safe external reticle at the centre of the game monitor
@@ -346,6 +347,18 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   Settings, translations for the 21 new keys (English values are in place for the other
   locales), and a field pass on exclusive fullscreen (external overlays cannot paint
   there).
+
+### M11 — Achievement tracker (built)
+
+- A locked achievement can be tracked from its detail view. The Tracker widget lists up
+  to three tracked achievements with their icon, description and progress bar; pin it
+  and close the panel and ghost mode keeps it as a click-through HUD.
+- The list is keyed by the active game and stored in `efxlve-overlay-ach-tracker`; the
+  Steam unlock event repaints it in place. The achievements data is the same store-
+  agnostic payload the Achievements tab already loads.
+- Open: live progress polling while the tracker is pinned, a track button on list rows,
+  per-game tracker presets, and translations for the seven new keys (English values are
+  in place for the other locales).
 
 ---
 
