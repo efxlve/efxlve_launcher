@@ -3877,6 +3877,91 @@ async function overlaySpotifyControl(
 
 /* 6b. Audio Mixer View */
 
+const AUDIO_PRESETS_KEY = "efxlve-overlay-audio-presets";
+
+interface AudioPresetSession {
+  key: string;
+  volume: number;
+  muted: boolean;
+}
+
+interface AudioPreset {
+  name: string;
+  master: number;
+  masterMuted: boolean;
+  sessions: AudioPresetSession[];
+}
+
+let audioPresetSelected = "";
+
+/** The stable part of a session across polls: the process name, or the system bus. */
+function audioSessionKey(session: AudioSession): string {
+  if (session.system || session.pid === 0) return "system";
+  return session.name || `pid:${session.pid}`;
+}
+
+function loadAudioPresets(): AudioPreset[] {
+  try {
+    const raw = localStorage.getItem(AUDIO_PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as AudioPreset[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((preset) => preset && typeof preset.name === "string" && Array.isArray(preset.sessions))
+      .map((preset) => ({
+        name: preset.name,
+        master: Number.isFinite(preset.master) ? Math.max(0, Math.min(1, preset.master)) : 1,
+        masterMuted: preset.masterMuted === true,
+        sessions: preset.sessions
+          .filter((entry) => entry && typeof entry.key === "string")
+          .map((entry) => ({
+            key: entry.key,
+            volume: Number.isFinite(entry.volume) ? Math.max(0, Math.min(1, entry.volume)) : 1,
+            muted: entry.muted === true,
+          })),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function saveAudioPresets(presets: AudioPreset[]): void {
+  localStorage.setItem(AUDIO_PRESETS_KEY, JSON.stringify(presets.slice(0, 12)));
+}
+
+function captureAudioPreset(): AudioPreset | null {
+  if (!audioState) return null;
+  const presets = loadAudioPresets();
+  const name = `Mix ${presets.length + 1}`;
+  return {
+    name,
+    master: audioState.master,
+    masterMuted: audioState.masterMuted,
+    sessions: audioState.sessions.map((session) => ({
+      key: audioSessionKey(session),
+      volume: session.volume,
+      muted: session.muted,
+    })),
+  };
+}
+
+async function applyAudioPreset(preset: AudioPreset): Promise<void> {
+  const sessions = audioState?.sessions ?? [];
+  const tasks: Promise<unknown>[] = [
+    invoke("overlay_audio_set_master", { volume: preset.master }),
+    invoke("overlay_audio_set_master_mute", { muted: preset.masterMuted }),
+  ];
+  for (const entry of preset.sessions) {
+    const session = sessions.find((item) => audioSessionKey(item) === entry.key);
+    if (!session) continue;
+    tasks.push(invoke("overlay_audio_set_volume", { id: session.id, volume: entry.volume }));
+    tasks.push(invoke("overlay_audio_set_mute", { id: session.id, muted: entry.muted }));
+  }
+  await Promise.allSettled(tasks);
+  await refreshAudio(true);
+  toast(t("overlay.audioPresetApplied", { name: preset.name }));
+}
+
 /** The row label: system sounds, the app's own display name, or the process. */
 function audioLabel(session: AudioSession): string {
   if (session.system || session.pid === 0) return t("overlay.audioSystem");
@@ -3940,6 +4025,21 @@ function renderAudio(): void {
     volume: audioState.master,
     muted: audioState.masterMuted,
   });
+  const presets = loadAudioPresets();
+  if (!presets.some((preset) => preset.name === audioPresetSelected)) {
+    audioPresetSelected = presets[0]?.name ?? "";
+  }
+  const presetRow = `<div class="ov-audio-presets">
+    <span class="ov-audio-presets-title">${icon("layers", 12)} ${esc(t("overlay.audioPresetsTitle"))}</span>
+    <select class="input select small" id="ov-audio-preset-select" ${presets.length === 0 ? "disabled" : ""}>
+      ${presets.length === 0
+        ? `<option>${esc(t("overlay.audioPresetEmpty"))}</option>`
+        : presets.map((preset) => `<option value="${esc(preset.name)}" ${preset.name === audioPresetSelected ? "selected" : ""}>${esc(preset.name)}</option>`).join("")}
+    </select>
+    <button class="btn ghost small" data-audio-preset="save">${esc(t("overlay.audioPresetSave"))}</button>
+    <button class="btn ghost small" data-audio-preset="apply" ${presets.length === 0 ? "disabled" : ""}>${esc(t("overlay.audioPresetApply"))}</button>
+    <button class="btn ghost small" data-audio-preset="delete" ${presets.length === 0 ? "disabled" : ""}>${esc(t("overlay.audioPresetDelete"))}</button>
+  </div>`;
   const rows = audioState.sessions.map((session) =>
     audioRowHtml({
       id: session.id,
@@ -3956,6 +4056,7 @@ function renderAudio(): void {
         <span class="ov-audio-title">${icon("volume-2", 14)} ${esc(t("overlay.tabAudio"))}</span>
         <button class="ov-audio-refresh" data-audio-refresh title="${esc(t("overlay.audioRefresh"))}">${icon("refresh", 13)}</button>
       </div>
+      ${presetRow}
       ${master}
       <div class="ov-audio-list">
         ${rows.length > 0 ? rows.join("") : emptyBlockHtml("volume-2", t("overlay.audioEmpty"), t("overlay.audioEmptyDesc"))}
@@ -3978,7 +4079,10 @@ async function refreshAudio(force = false): Promise<void> {
   } finally {
     audioLoading = false;
   }
-  if (isWidgetOpen("audio")) renderAudio();
+  if (isWidgetOpen("audio")) {
+    if (document.activeElement?.id === "ov-audio-preset-select") return;
+    renderAudio();
+  }
 }
 
 function startAudioPolling(): void {
@@ -5985,6 +6089,29 @@ function wireEvents(): void {
     }
 
     // Audio mixer: mute one session, the master bus, or refresh the list.
+    const audioPresetBtn = target.closest<HTMLElement>("[data-audio-preset]");
+    if (audioPresetBtn?.dataset.audioPreset) {
+      const action = audioPresetBtn.dataset.audioPreset;
+      if (action === "save") {
+        const preset = captureAudioPreset();
+        if (preset) {
+          saveAudioPresets([...loadAudioPresets(), preset]);
+          audioPresetSelected = preset.name;
+          renderAudio();
+          toast(t("overlay.audioPresetSaved", { name: preset.name }));
+        }
+      } else if (action === "apply") {
+        const preset = loadAudioPresets().find((item) => item.name === audioPresetSelected);
+        if (preset) void applyAudioPreset(preset);
+        else toast(t("overlay.audioPresetMissing"), "err");
+      } else if (action === "delete") {
+        const remaining = loadAudioPresets().filter((item) => item.name !== audioPresetSelected);
+        saveAudioPresets(remaining);
+        audioPresetSelected = remaining[0]?.name ?? "";
+        renderAudio();
+      }
+      return;
+    }
     const audioMuteBtn = target.closest<HTMLElement>("[data-audio-mute]");
     if (audioMuteBtn?.dataset.audioMute) {
       void toggleAudioMute(audioMuteBtn.dataset.audioMute);
@@ -6396,6 +6523,10 @@ function wireEvents(): void {
   document.addEventListener("change", (event) => {
     const input = event.target as HTMLInputElement | null;
     if (!input) return;
+    if (input.id === "ov-audio-preset-select") {
+      audioPresetSelected = input.value;
+      return;
+    }
     if (input.dataset.crosshairHotkey !== undefined) {
       commitCrosshair(
         { ...activeCrosshair(), hotkey: input.value as CrosshairHotkey },

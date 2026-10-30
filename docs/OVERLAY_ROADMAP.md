@@ -341,8 +341,9 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
   apartment, and the tab polls every two seconds while it is open.
 - A slider holds the poll for 1.5 s so a refresh cannot overwrite the value under the
   thumb. System sounds sort last; named apps sort case-insensitively.
-- Open: an output-device picker, named mix presets, session icons and controller focus
-  order.
+- The mix presets row saves the master and every named session (up to 12) and reapplies
+  them to the sessions that are still present.
+- Open: an output-device picker, session icons and controller focus order.
 
 ### M10 — Tactical crosshair (built)
 
