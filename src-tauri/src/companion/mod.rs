@@ -558,6 +558,12 @@ pub fn ubi_direct_uninstall(product_id: u32, delete_files: bool) -> Result<(), S
     ubi_direct::uninstall_game(product_id, delete_files)
 }
 
+/// Ask a running direct install to stop; the partial file is kept for resume.
+#[tauri::command]
+pub fn ubi_direct_cancel(product_id: u32) {
+    ubi_direct::cancel_game(product_id);
+}
+
 /// Start a direct install in the background. Progress arrives on
 /// `ubi-direct-progress`, completion on `ubi-direct-done`, and a failure on
 /// `ubi-direct-failed`.

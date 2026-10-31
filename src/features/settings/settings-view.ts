@@ -527,7 +527,7 @@ function renderUbiDirect(): string {
           : 0;
       return `<div class="ubi-direct-progress">
         <div class="ubi-direct-bar"><span data-ubi-direct-bar="${game.productId}" style="width:${percent}%"></span></div>
-        <div class="ubi-direct-meta"><span>${esc(game.name)} · ${esc(progress.file || "")}</span><span>${fmtBytes(progress.doneBytes)} / ${fmtBytes(progress.totalBytes)}</span></div>
+        <div class="ubi-direct-meta"><span>${esc(game.name)} · ${esc(progress.file || "")}</span><span>${fmtBytes(progress.doneBytes)} / ${fmtBytes(progress.totalBytes)} <button class="btn danger small" data-act="ubi-direct-cancel" data-id="${game.productId}">${t("common.cancel")}</button></span></div>
       </div>`;
     })
     .join("");

@@ -136,6 +136,10 @@ export const ubiDirectLaunch = (productId: number) =>
 export const ubiDirectUninstall = (productId: number, deleteFiles = true) =>
   invoke<void>("ubi_direct_uninstall", { productId, deleteFiles });
 
+/** Stops a running direct install; the partial file is kept for resume. */
+export const ubiDirectCancel = (productId: number) =>
+  invoke<void>("ubi_direct_cancel", { productId });
+
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });

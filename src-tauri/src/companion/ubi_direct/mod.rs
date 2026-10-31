@@ -146,6 +146,12 @@ pub(crate) fn uninstall_game(product_id: u32, delete_files: bool) -> Result<(), 
     manage::uninstall(product_id, delete_files)
 }
 
+/// Ask a running direct install to stop after the current slice. The part file
+/// remains for the next resume.
+pub(crate) fn cancel_game(product_id: u32) {
+    install::cancel(product_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

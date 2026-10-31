@@ -6,8 +6,10 @@
 //! carry both a compressed and a decompressed SHA-1. Files are written through
 //! a `.efxlve-part` temp file so resume never trusts a half-written file.
 
+use std::collections::HashSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
 use futures::StreamExt;
@@ -84,6 +86,32 @@ fn hash_for_slice(slice: &ManifestSlice) -> String {
     } else {
         manifest::hex_upper(&slice.content_sha1)
     }
+}
+
+fn cancel_set() -> &'static Mutex<HashSet<u32>> {
+    static SET: OnceLock<Mutex<HashSet<u32>>> = OnceLock::new();
+    SET.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+/// Ask a running install to stop after the current slice. The part file stays
+/// on disk, so the next install resumes from it.
+pub(crate) fn cancel(product_id: u32) {
+    if let Ok(mut set) = cancel_set().lock() {
+        set.insert(product_id);
+    }
+}
+
+fn clear_cancel(product_id: u32) {
+    if let Ok(mut set) = cancel_set().lock() {
+        set.remove(&product_id);
+    }
+}
+
+fn cancelled(product_id: u32) -> bool {
+    cancel_set()
+        .lock()
+        .map(|set| set.contains(&product_id))
+        .unwrap_or(false)
 }
 
 fn sha1_hex(data: &[u8]) -> String {
@@ -413,6 +441,7 @@ where
     } = prepared;
 
     let total_bytes = manifest.total_bytes();
+    clear_cancel(product_id);
     let emit_step = (total_bytes / 200).max(4 * 1024 * 1024);
     let mut done_bytes = 0u64;
     let mut last_emit = 0u64;
@@ -428,6 +457,9 @@ where
         .map_err(|e| format!("building the CDN client: {e}"))?;
 
     for file in &manifest.files {
+        if cancelled(product_id) {
+            return Err("@t:dl.cancelled".to_string());
+        }
         let out_path = manifest::safe_install_path(install_dir, &file.name)?;
         if let Some(parent) = out_path.parent() {
             tokio::fs::create_dir_all(parent)
@@ -492,6 +524,9 @@ where
         // window at a time so signed URLs stay fresh and memory stays bounded.
         const WINDOW: usize = 200;
         for start in (start_index..file.slices.len()).step_by(WINDOW) {
+            if cancelled(product_id) {
+                return Err("@t:dl.cancelled".to_string());
+            }
             let end = (start + WINDOW).min(file.slices.len());
             let window: &[ManifestSlice] = &file.slices[start..end];
             let paths: Vec<String> = window
@@ -532,6 +567,9 @@ where
                 });
             let mut stream = futures::stream::iter(jobs).buffered(16);
             while let Some(result) = stream.next().await {
+                if cancelled(product_id) {
+                    return Err("@t:dl.cancelled".to_string());
+                }
                 let bytes = result?;
                 use tokio::io::AsyncWriteExt;
                 out.write_all(&bytes)
@@ -728,6 +766,15 @@ mod tests {
             "slices_v3/b/AB"
         );
         assert_eq!(slice_path(SliceLayout::Flat, "AB"), "slices/AB");
+    }
+
+    #[test]
+    fn cancel_is_per_product_and_cleared_before_a_new_install() {
+        cancel(424242);
+        assert!(cancelled(424242));
+        assert!(!cancelled(424243));
+        clear_cancel(424242);
+        assert!(!cancelled(424242));
     }
 
     #[test]
