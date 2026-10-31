@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "このインストールは Ubisoft Connect なしで起動するようになりました。",
   "manage.ubiRelease": "Connect に戻す",
   "manage.ubiReleaseConfirm": "公式の Ubisoft ローダーを復元し、このフォルダーの管理をやめますか？ゲームファイルはそのまま残ります。",
-  "manage.ubiReleaseDone": "インストールは再び Ubisoft Connect の管理下に戻りました。"
+  "manage.ubiReleaseDone": "インストールは再び Ubisoft Connect の管理下に戻りました。",
+  "manage.ubiMoveTitle": "インストールを移動",
+  "manage.ubiMoveDesc": "ゲームフォルダーを別の親フォルダーへ移動します。直接インストールの記録とゲームのレジストリパスが更新されます。",
+  "manage.ubiMove": "移動",
+  "manage.ubiMovePicker": "新しい親フォルダーを選択",
+  "manage.ubiMoveWorking": "インストールを移動しています…",
+  "manage.ubiMoveConfirm": "このインストールを {path} に移動しますか？ゲームを終了してください。",
+  "manage.ubiMoveDone": "{path} に移動しました。"
 }

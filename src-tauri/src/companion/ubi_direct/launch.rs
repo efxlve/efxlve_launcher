@@ -205,7 +205,7 @@ fn resolve_exe(install_dir: &Path, recorded: &str) -> Result<PathBuf, String> {
 /// Ubisoft titles resolve their install folder from these keys. They are
 /// per-machine, so the write needs elevation; a launcher that is not elevated
 /// still gets the per-user key and the game's own working directory.
-fn seed_registry(product_id: u32, install_dir: &Path) {
+pub(crate) fn seed_registry(product_id: u32, install_dir: &Path) {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -243,7 +243,7 @@ fn seed_registry(product_id: u32, install_dir: &Path) {
 /// The game's own install-path value (for example Beyond Good & Evil's
 /// `HKLM\SOFTWARE\Ubisoft\Beyond Good & Evil\Install path`). Without it the
 /// game or its settings app can report "not properly installed".
-fn seed_game_registry(game: &ubi_installs::InstalledGame, install_dir: &Path) {
+pub(crate) fn seed_game_registry(game: &ubi_installs::InstalledGame, install_dir: &Path) {
     let Some((key, value_name)) = split_register(&game.install_reg) else {
         return;
     };

@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "Теперь эта установка запускается без Ubisoft Connect.",
   "manage.ubiRelease": "Вернуть Connect",
   "manage.ubiReleaseConfirm": "Восстановить официальные загрузчики Ubisoft и перестать управлять этой папкой? Файлы игры останутся на месте.",
-  "manage.ubiReleaseDone": "Установка снова под управлением Ubisoft Connect."
+  "manage.ubiReleaseDone": "Установка снова под управлением Ubisoft Connect.",
+  "manage.ubiMoveTitle": "Переместить установку",
+  "manage.ubiMoveDesc": "Перемещает папку игры в другую родительскую папку. Запись прямой установки и путь в реестре игры обновляются.",
+  "manage.ubiMove": "Переместить",
+  "manage.ubiMovePicker": "Выберите новую родительскую папку",
+  "manage.ubiMoveWorking": "Перемещение установки…",
+  "manage.ubiMoveConfirm": "Переместить эту установку в {path}? Игра должна быть закрыта.",
+  "manage.ubiMoveDone": "Перемещено в {path}."
 }

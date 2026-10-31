@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "การติดตั้งนี้เริ่มได้โดยไม่มี Ubisoft Connect แล้ว",
   "manage.ubiRelease": "คืนให้ Connect",
   "manage.ubiReleaseConfirm": "คืนตัวโหลด Ubisoft อย่างเป็นทางการและหยุดจัดการโฟลเดอร์นี้หรือไม่ ไฟล์เกมจะยังอยู่",
-  "manage.ubiReleaseDone": "การติดตั้งกลับมาอยู่ภายใต้ Ubisoft Connect แล้ว"
+  "manage.ubiReleaseDone": "การติดตั้งกลับมาอยู่ภายใต้ Ubisoft Connect แล้ว",
+  "manage.ubiMoveTitle": "ย้ายการติดตั้ง",
+  "manage.ubiMoveDesc": "ย้ายโฟลเดอร์เกมไปยังโฟลเดอร์หลักอื่น ระบบจะอัปเดตบันทึกการติดตั้งโดยตรงและพาธรีจิสทรีของเกม",
+  "manage.ubiMove": "ย้าย",
+  "manage.ubiMovePicker": "เลือกโฟลเดอร์หลักใหม่",
+  "manage.ubiMoveWorking": "กำลังย้ายการติดตั้ง…",
+  "manage.ubiMoveConfirm": "ย้ายการติดตั้งนี้ไปยัง {path} หรือไม่ ต้องปิดเกมก่อน",
+  "manage.ubiMoveDone": "ย้ายไปยัง {path} แล้ว"
 }

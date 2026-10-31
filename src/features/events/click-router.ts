@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -926,6 +926,56 @@ document.addEventListener("click", (e) => {
         })
         .catch((e: unknown) => toast(localizeMessage(String(e)), "err"));
     });
+  } else if (act === "ubi-direct-move") {
+    const path = t.dataset.path || "";
+    const appName = t.dataset.id || "";
+    if (!path) return;
+    const productId = Number(appName.replace("ubisoft::", ""));
+    const title = summaryOf(appName)?.title || appName;
+    void (async () => {
+      const parent = path.replace(/[\\/][^\\/]+$/, "");
+      const chosen = await epicSelectFolderDialog(parent, i18nT("manage.ubiMovePicker")).catch(
+        () => null,
+      );
+      if (!chosen) return;
+      if (chosen.replace(/[\\/]+$/, "").toLowerCase() === parent.toLowerCase()) return;
+      const folder = path.split(/[\\/]/).filter(Boolean).pop() || "";
+      const destination = `${chosen.replace(/[\\/]+$/, "")}\\${folder}`;
+      const ok = await askConfirm({
+        title: i18nT("manage.ubiMoveTitle"),
+        name: title,
+        body: i18nT("manage.ubiMoveConfirm", { path: destination }),
+        confirm: i18nT("manage.ubiMove"),
+        cancel: i18nT("common.cancel"),
+      });
+      if (!ok) return;
+      toast(i18nT("manage.ubiMoveWorking"), "");
+      try {
+        const moved = await ubiDirectMove(path, chosen);
+        if (S.activeManageSettings?.installPath === path) {
+          S.activeManageSettings.installPath = moved.installDir;
+        }
+        const label = document.getElementById("manage-install-path");
+        if (label) label.textContent = moved.installDir;
+        document.querySelectorAll<HTMLElement>("[data-act^='ubi-direct-']").forEach((el) => {
+          if (el.dataset.path === path) el.dataset.path = moved.installDir;
+        });
+        if (productId > 0) {
+          void ubiSavePath(productId, moved.installDir, title)
+            .then((savePath) => {
+              const saveLabel = document.querySelector<HTMLElement>("[data-ubi-save-path]");
+              if (saveLabel) {
+                saveLabel.textContent = savePath || i18nT("manage.noSaveDirDetected");
+              }
+            })
+            .catch(() => {});
+        }
+        toast(i18nT("manage.ubiMoveDone", { path: moved.installDir }), "ok");
+        void loadCompanionLibrary();
+      } catch (e) {
+        toast(localizeMessage(String(e)), "err");
+      }
+    })();
   } else if (act === "ubi-direct-check-update") {
     const path = t.dataset.path || "";
     if (!path) return;

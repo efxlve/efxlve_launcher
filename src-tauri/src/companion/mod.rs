@@ -643,6 +643,19 @@ pub fn ubi_direct_release(product_id: u32) -> Result<usize, String> {
     ubi_direct::release_game(product_id)
 }
 
+/// Move a direct install into another folder and update its record/registry.
+#[tauri::command]
+pub fn ubi_direct_move(
+    install_path: String,
+    destination: String,
+) -> Result<ubi_direct::MovedInstall, String> {
+    let record = ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
+        .ok_or_else(|| "this folder is not a direct install".to_string())?;
+    ubi_direct::move_game(record.product_id, std::path::Path::new(&destination))
+}
+
 /// Switch one direct install between the local shim and the official client.
 #[tauri::command]
 pub fn ubi_direct_set_client_launch(install_path: String, enabled: bool) -> Result<(), String> {

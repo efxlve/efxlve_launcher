@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "Bu kurulum artık Ubisoft Connect olmadan başlıyor.",
   "manage.ubiRelease": "Connect'e bırak",
   "manage.ubiReleaseConfirm": "Resmi Ubisoft yükleyicileri geri yüklensin ve bu klasör yönetimi bırakılsın mı? Oyun dosyaları yerinde kalır.",
-  "manage.ubiReleaseDone": "Kurulum yeniden Ubisoft Connect yönetiminde."
+  "manage.ubiReleaseDone": "Kurulum yeniden Ubisoft Connect yönetiminde.",
+  "manage.ubiMoveTitle": "Kurulumu taşı",
+  "manage.ubiMoveDesc": "Oyun klasörünü başka bir üst klasöre taşır. Doğrudan kurulum kaydı ve oyunun kayıt defteri yolu güncellenir.",
+  "manage.ubiMove": "Taşı",
+  "manage.ubiMovePicker": "Yeni üst klasörü seç",
+  "manage.ubiMoveWorking": "Kurulum taşınıyor…",
+  "manage.ubiMoveConfirm": "Bu kurulum {path} konumuna taşınsın mı? Oyun kapalı olmalı.",
+  "manage.ubiMoveDone": "{path} konumuna taşındı."
 }

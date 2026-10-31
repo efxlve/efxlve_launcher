@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "Cette installation démarre désormais sans Ubisoft Connect.",
   "manage.ubiRelease": "Rendre à Connect",
   "manage.ubiReleaseConfirm": "Restaurer les chargeurs officiels d'Ubisoft et cesser de gérer ce dossier ? Les fichiers du jeu restent en place.",
-  "manage.ubiReleaseDone": "L'installation est de nouveau gérée par Ubisoft Connect."
+  "manage.ubiReleaseDone": "L'installation est de nouveau gérée par Ubisoft Connect.",
+  "manage.ubiMoveTitle": "Déplacer l'installation",
+  "manage.ubiMoveDesc": "Déplace le dossier du jeu vers un autre dossier parent. L'entrée d'installation directe et le chemin de registre du jeu sont mis à jour.",
+  "manage.ubiMove": "Déplacer",
+  "manage.ubiMovePicker": "Choisir le nouveau dossier parent",
+  "manage.ubiMoveWorking": "Déplacement de l'installation…",
+  "manage.ubiMoveConfirm": "Déplacer cette installation vers {path} ? Le jeu doit être fermé.",
+  "manage.ubiMoveDone": "Déplacé vers {path}."
 }

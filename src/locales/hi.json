@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "यह इंस्टॉल अब Ubisoft Connect के बिना शुरू होता है।",
   "manage.ubiRelease": "Connect को वापस दें",
   "manage.ubiReleaseConfirm": "आधिकारिक Ubisoft लोडर बहाल करें और इस फ़ोल्डर को प्रबंधित करना बंद करें? गेम की फ़ाइलें वहीं रहेंगी।",
-  "manage.ubiReleaseDone": "इंस्टॉल फिर से Ubisoft Connect के अंतर्गत है।"
+  "manage.ubiReleaseDone": "इंस्टॉल फिर से Ubisoft Connect के अंतर्गत है।",
+  "manage.ubiMoveTitle": "इंस्टॉल ले जाएँ",
+  "manage.ubiMoveDesc": "गेम फ़ोल्डर को दूसरे पैरेंट फ़ोल्डर में ले जाता है। डायरेक्ट-इंस्टॉल रिकॉर्ड और गेम का रजिस्ट्री पथ अपडेट होता है।",
+  "manage.ubiMove": "ले जाएँ",
+  "manage.ubiMovePicker": "नया पैरेंट फ़ोल्डर चुनें",
+  "manage.ubiMoveWorking": "इंस्टॉल ले जाया जा रहा है…",
+  "manage.ubiMoveConfirm": "यह इंस्टॉल {path} पर ले जाएँ? गेम बंद होना चाहिए।",
+  "manage.ubiMoveDone": "{path} पर ले जाया गया।"
 }

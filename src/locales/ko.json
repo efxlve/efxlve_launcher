@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "이 설치가 이제 Ubisoft Connect 없이 시작됩니다.",
   "manage.ubiRelease": "Connect로 반환",
   "manage.ubiReleaseConfirm": "공식 Ubisoft 로더를 복원하고 이 폴더 관리를 중단할까요? 게임 파일은 그대로 유지됩니다.",
-  "manage.ubiReleaseDone": "설치가 다시 Ubisoft Connect 관리로 돌아갔습니다."
+  "manage.ubiReleaseDone": "설치가 다시 Ubisoft Connect 관리로 돌아갔습니다.",
+  "manage.ubiMoveTitle": "설치 이동",
+  "manage.ubiMoveDesc": "게임 폴더를 다른 상위 폴더로 이동합니다. 직접 설치 기록과 게임의 레지스트리 경로가 업데이트됩니다.",
+  "manage.ubiMove": "이동",
+  "manage.ubiMovePicker": "새 상위 폴더 선택",
+  "manage.ubiMoveWorking": "설치를 이동하는 중…",
+  "manage.ubiMoveConfirm": "이 설치를 {path}(으)로 이동할까요? 게임을 종료해야 합니다.",
+  "manage.ubiMoveDone": "{path}(으)로 이동했습니다."
 }

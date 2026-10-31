@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "يبدأ هذا التثبيت الآن بدون Ubisoft Connect.",
   "manage.ubiRelease": "إعادة إلى Connect",
   "manage.ubiReleaseConfirm": "استعادة محمّلات Ubisoft الرسمية وإيقاف إدارة هذا المجلد؟ ستبقى ملفات اللعبة في مكانها.",
-  "manage.ubiReleaseDone": "أصبح التثبيت تحت إدارة Ubisoft Connect مجددًا."
+  "manage.ubiReleaseDone": "أصبح التثبيت تحت إدارة Ubisoft Connect مجددًا.",
+  "manage.ubiMoveTitle": "نقل التثبيت",
+  "manage.ubiMoveDesc": "ينقل مجلد اللعبة إلى مجلد أب آخر. يتم تحديث سجل التثبيت المباشر ومسار سجل اللعبة.",
+  "manage.ubiMove": "نقل",
+  "manage.ubiMovePicker": "اختر مجلد الأب الجديد",
+  "manage.ubiMoveWorking": "جارٍ نقل التثبيت…",
+  "manage.ubiMoveConfirm": "نقل هذا التثبيت إلى {path}؟ يجب إغلاق اللعبة.",
+  "manage.ubiMoveDone": "تم النقل إلى {path}."
 }

@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "This install now starts without Ubisoft Connect.",
   "manage.ubiRelease": "Release to Connect",
   "manage.ubiReleaseConfirm": "Restore the official Ubisoft loaders and stop managing this folder? The game files stay in place.",
-  "manage.ubiReleaseDone": "The install is back under Ubisoft Connect."
+  "manage.ubiReleaseDone": "The install is back under Ubisoft Connect.",
+  "manage.ubiMoveTitle": "Move install",
+  "manage.ubiMoveDesc": "Move the game folder to another parent folder. The direct-install record and the game's registry path are updated.",
+  "manage.ubiMove": "Move",
+  "manage.ubiMovePicker": "Choose the new parent folder",
+  "manage.ubiMoveWorking": "Moving the install…",
+  "manage.ubiMoveConfirm": "Move this install to {path}? The game must be closed.",
+  "manage.ubiMoveDone": "Moved to {path}."
 }

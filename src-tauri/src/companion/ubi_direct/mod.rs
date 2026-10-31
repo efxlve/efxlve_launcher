@@ -14,6 +14,7 @@ pub(crate) mod install;
 mod launch;
 mod manage;
 pub(crate) mod manifest;
+mod relocate;
 pub(crate) mod saves;
 mod shim;
 pub(crate) mod verify;
@@ -21,6 +22,7 @@ pub(crate) mod wire;
 
 pub(crate) use achievements::merge as merge_achievements;
 pub(crate) use adopt::{adopt as adopt_game, release as release_game, AdoptedInstall};
+pub(crate) use relocate::{move_game, MovedInstall};
 pub(crate) use saves::{path_for as save_path, path_for_product as save_path_for_product};
 
 use serde::Serialize;
@@ -518,6 +520,13 @@ mod tests {
         );
         assert!(!check.unknown);
         assert!(!check.update);
+    }
+
+    #[tokio::test]
+    #[ignore = "launches Anno 1404 from the moved install"]
+    async fn live_launch_anno_from_the_moved_install() {
+        launch_game(16232, true).await.expect("direct launch");
+        println!("Anno 1404 launched from the moved install");
     }
 
     #[test]

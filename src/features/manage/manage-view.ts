@@ -335,18 +335,21 @@ export function openManagePopup(appName: string): void {
     const verifyRow = manageRoot.querySelector<HTMLElement>("[data-ubi-verify-row]");
     const adoptRow = manageRoot.querySelector<HTMLElement>("[data-ubi-adopt-row]");
     const updateRow = manageRoot.querySelector<HTMLElement>("[data-ubi-update-row]");
+    const moveRow = manageRoot.querySelector<HTMLElement>("[data-ubi-move-row]");
     void ubiDirectLaunchMode(s.installPath)
       .then((client) => {
         if (client === null) {
           if (launchRow) launchRow.hidden = true;
           if (verifyRow) verifyRow.hidden = true;
           if (updateRow) updateRow.hidden = true;
+          if (moveRow) moveRow.hidden = true;
           if (adoptRow) adoptRow.hidden = false;
           return;
         }
         if (launchRow) launchRow.hidden = false;
         if (verifyRow) verifyRow.hidden = false;
         if (updateRow) updateRow.hidden = false;
+        if (moveRow) moveRow.hidden = false;
         if (adoptRow) adoptRow.hidden = true;
         if (select) select.value = client ? "client" : "direct";
       })
@@ -516,6 +519,14 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
           `<button class="btn primary small" data-act="ubi-direct-adopt" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}">${t("manage.ubiAdopt")}</button>`,
         )}</div>`
       : "";
+  const move =
+    source === "ubisoft" && s.installed
+      ? `<div data-ubi-move-row>${row(
+          t("manage.ubiMoveTitle"),
+          t("manage.ubiMoveDesc"),
+          `<button class="btn ghost small" data-act="ubi-direct-move" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}">${icon("folder", 13)} ${t("manage.ubiMove")}</button>`,
+        )}</div>`
+      : "";
   const saves =
     source === "ubisoft" && s.installed
       ? group("saves", "cloud", t("manage.groupSaves"), `
@@ -552,7 +563,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${adopt}${updates}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${adopt}${move}${updates}${installSizeRow(s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}

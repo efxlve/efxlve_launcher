@@ -3477,5 +3477,12 @@
   "manage.ubiAdoptDone": "此安裝現在無需 Ubisoft Connect 即可啟動。",
   "manage.ubiRelease": "交還給 Connect",
   "manage.ubiReleaseConfirm": "還原官方 Ubisoft 載入器並停止管理此資料夾？遊戲檔案將保留在原處。",
-  "manage.ubiReleaseDone": "此安裝已重新交由 Ubisoft Connect 管理。"
+  "manage.ubiReleaseDone": "此安裝已重新交由 Ubisoft Connect 管理。",
+  "manage.ubiMoveTitle": "移動安裝",
+  "manage.ubiMoveDesc": "將遊戲資料夾移至另一個上層資料夾。直接安裝記錄與遊戲的登錄檔路徑會更新。",
+  "manage.ubiMove": "移動",
+  "manage.ubiMovePicker": "選擇新的上層資料夾",
+  "manage.ubiMoveWorking": "正在移動安裝…",
+  "manage.ubiMoveConfirm": "要將此安裝移至 {path} 嗎？遊戲必須已關閉。",
+  "manage.ubiMoveDone": "已移至 {path}。"
 }

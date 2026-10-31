@@ -117,11 +117,11 @@ stays on the client. Open work:
   `uplay_r1_loader64.dll`. R2 direct launch therefore has no single-player
   target in this catalogue.
 - An existing Connect install can be adopted from Manage without moving or
-  re-downloading it, and released back with its official loaders restored.
-  Anno 1404 History Edition was adopted and launched directly with no Connect
-  process. An adopted install still lives under the Connect launcher folder; a
-  move-to-library action is needed before the client is uninstalled, because
-  its uninstaller may remove that tree.
+  re-downloading it, moved to a library folder (the record and both registry
+  families are updated), and released back with its official loaders restored.
+  Anno 1404 History Edition was adopted, moved to
+  `C:\Users\Efe\Games\Ubisoft`, and launched directly with no Connect process.
+  Online titles (R6, For Honor) still need the client if they are played again.
 - Update checking compares the recorded CDN manifest id with the manifest
   ownership reports now, and Manage offers Check for updates. Applying an
   update reuses verify/repair: changed files are re-downloaded whole, not

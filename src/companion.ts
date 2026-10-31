@@ -198,6 +198,16 @@ export const ubiDirectAdopt = (productId: number, installPath: string) =>
 export const ubiDirectRelease = (productId: number) =>
   invoke<number>("ubi_direct_release", { productId });
 
+/** One install after a move. */
+export interface UbiMovedInstall {
+  productId: number;
+  installDir: string;
+}
+
+/** Move a direct install into another parent folder; the folder name is kept. */
+export const ubiDirectMove = (installPath: string, destination: string) =>
+  invoke<UbiMovedInstall>("ubi_direct_move", { installPath, destination });
+
 /** Opens the resolved Ubisoft save folder in the file manager. */
 export const ubiOpenSaves = (productId: number, installPath?: string, title?: string) =>
   invoke<void>("ubi_open_saves", {
