@@ -260,4 +260,38 @@ mod tests {
         println!("loader={loader:?}");
         launch_game(product_id, true).await.expect("direct launch");
     }
+
+    #[tokio::test]
+    #[ignore = "reads manifests; needs a linked session and EFXLVE_UBI_TEST_PRODUCTS"]
+    async fn live_manifest_loader_inventory() {
+        let list = std::env::var("EFXLVE_UBI_TEST_PRODUCTS")
+            .unwrap_or_else(|_| "1651,420,2688,720,95".to_string());
+        let (mut demux, _) = connect().await.expect("Demux connect failed");
+        for value in list.split(',').filter(|value| !value.trim().is_empty()) {
+            let product_id: u32 = value.trim().parse().expect("numeric product id");
+            match install::prepare(&mut demux, product_id).await {
+                Ok(prepared) => {
+                    let files = &prepared.manifest.files;
+                    let total = prepared.manifest.total_bytes();
+                    let loaders: Vec<&str> = files
+                        .iter()
+                        .filter(|file| file.name.to_lowercase().contains("loader"))
+                        .map(|file| file.name.as_str())
+                        .collect();
+                    let exes: Vec<&str> = files
+                        .iter()
+                        .filter(|file| file.name.to_lowercase().ends_with(".exe"))
+                        .map(|file| file.name.as_str())
+                        .take(4)
+                        .collect();
+                    println!(
+                        "{product_id} {} {:.2} GB loaders={loaders:?} exes={exes:?}",
+                        prepared.name,
+                        total as f64 / 1e9
+                    );
+                }
+                Err(error) => println!("{product_id} failed: {error}"),
+            }
+        }
+    }
 }
