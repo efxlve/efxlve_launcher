@@ -29,7 +29,7 @@ const R2_X64_URL: &str =
 const R2_X64_SHA: &str = "6F243D73DBEEC9B36336771A161AB0F22EC404DCAAD0681388909E3E3351A0AF";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Family {
+pub(crate) enum Family {
     R1,
     R2,
 }
@@ -37,11 +37,12 @@ enum Family {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Loader {
     pub name: String,
-    family: Family,
+    pub family: Family,
     x64: bool,
 }
 
 pub(crate) struct ShimAccount {
+    pub product_id: u32,
     pub account_id: String,
     pub name: String,
     pub email: String,
@@ -187,7 +188,7 @@ pub(crate) async fn deploy(
     tokio::fs::write(&target, &source_bytes)
         .await
         .map_err(|error| format!("writing {}: {error}", target.display()))?;
-    write_config(directory, account)?;
+    write_config(directory, account, loader.family)?;
     Ok(Some(loader.name))
 }
 
@@ -196,42 +197,77 @@ pub(crate) async fn deploy(
 pub(crate) fn write_account_config(
     directory: &Path,
     account: &ShimAccount,
+    family: Family,
 ) -> Result<(), String> {
-    write_config(directory, account)
+    write_config(directory, account, family)
 }
 
-fn write_config(directory: &Path, account: &ShimAccount) -> Result<(), String> {
+fn write_config(directory: &Path, account: &ShimAccount, family: Family) -> Result<(), String> {
     let saves = directory.join("Saves");
     std::fs::create_dir_all(&saves)
         .map_err(|error| format!("creating {}: {error}", saves.display()))?;
-    let config = serde_json::json!({
-        "UseDebug": false,
-        "Account": {
-            "AccountId": account.account_id,
-            "Email": account.email,
-            "Name": account.name,
-            "Password": "efxlve",
-            "Country": "en-US",
-            "Ticket": account.ticket,
-        },
-        "Save": {
-            "Path": saves.display().to_string(),
-            "UseAppIdInName": true,
-        },
-        "Others": {
-            "ApplicationId": account.account_id,
-            "OfflineMode": true,
-        },
-        "CDKeys": [],
-        "ChunkInfo": {
+    let config = match family {
+        Family::R1 => serde_json::json!({
+            "UseDebug": false,
+            "Account": {
+                "AccountId": account.account_id,
+                "Email": account.email,
+                "Name": account.name,
+                "Password": "efxlve",
+                "Country": "en-US",
+                "Ticket": account.ticket,
+            },
+            "Save": {
+                "Path": saves.display().to_string(),
+                "UseAppIdInName": true,
+            },
+            "Others": {
+                "ApplicationId": account.account_id,
+                "OfflineMode": true,
+            },
+            "CDKeys": [],
+            "ChunkInfo": {
+                "ChunkIds": [],
+                "InstalledChunkIds": [],
+                "UseInstalledChunkIds": false,
+            },
+            "Achis": [],
+            "Rewards": [],
+            "AvatarsPath": "",
+        }),
+        Family::R2 => serde_json::json!({
+            "BasicLog": {
+                "LogLevel": "Information",
+                "UseNamePipeClient": false,
+                "WaitBetweenUpdate": 20000,
+                "LogUpdate": false,
+            },
+            "Account": {
+                "AccountId": account.account_id,
+                "Email": account.email,
+                "Name": account.name,
+                "Password": "efxlve",
+                "Country": "en-US",
+                "Ticket": account.ticket,
+                "IsOffline": true,
+            },
+            "Save": {
+                "Path": saves.display().to_string(),
+                "UseProductIdInName": true,
+                "EnableFileDelete": false,
+            },
+            "Others": {
+                "ApplicationId": account.account_id,
+                "EnableCrossBoot": false,
+            },
+            "Products": [
+                { "ProductId": account.product_id, "Type": 0 }
+            ],
+            "AutoProductIds": [account.product_id],
             "ChunkIds": [],
-            "InstalledChunkIds": [],
-            "UseInstalledChunkIds": false,
-        },
-        "Achis": [],
-        "Rewards": [],
-        "AvatarsPath": "",
-    });
+            "AvatarsPath": "",
+        }),
+    };
     let text = serde_json::to_string_pretty(&config)
         .map_err(|error| format!("serializing upc.json: {error}"))?;
     let path = directory.join("upc.json");
@@ -330,6 +366,26 @@ mod tests {
         }
     }
 
+    #[test]
+    fn r2_config_uses_the_r2_schema() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-r2json-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let account = ShimAccount {
+            product_id: 80,
+            account_id: "account-1".into(),
+            name: "Player".into(),
+            email: "player@efxlve.local".into(),
+            ticket: "ticket-1".into(),
+        };
+        write_config(&root, &account, Family::R2).unwrap();
+        let text = std::fs::read_to_string(root.join("upc.json")).unwrap();
+        assert!(text.contains("\"BasicLog\""));
+        assert!(text.contains("\"UseProductIdInName\""));
+        assert!(text.contains("\"Products\""));
+        assert!(!text.contains("\"UseDebug\""));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
     #[tokio::test]
     #[ignore = "downloads the MIT-licensed shim; no account needed"]
     async fn live_shim_asset_matches_the_pinned_hash() {
@@ -346,6 +402,7 @@ mod tests {
         let exe = root.join("game.exe");
         std::fs::write(&exe, fake_exe("uplay_r1_loader64.dll", 0x8664)).unwrap();
         let account = ShimAccount {
+            product_id: 80,
             account_id: "account-1".into(),
             name: "Player".into(),
             email: "player@efxlve.local".into(),

@@ -30,7 +30,9 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
             println!("[ubi-direct] deployed {name} for {}", game.name);
         }
         if exe.parent() != Some(install_dir.as_path()) {
-            shim::write_account_config(&install_dir, &account)?;
+            if let Ok(Some(loader)) = shim::detect(&exe) {
+                shim::write_account_config(&install_dir, &account, loader.family)?;
+            }
         }
     } else if let Ok(Some(loader)) = shim::detect(&exe) {
         return Err(format!(
@@ -81,6 +83,7 @@ async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
         handle.to_lowercase()
     };
     shim::ShimAccount {
+        product_id: game.product_id,
         account_id,
         name,
         email: format!("{handle}@efxlve.local"),
