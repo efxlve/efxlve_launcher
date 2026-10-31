@@ -671,6 +671,12 @@ pub fn ubi_direct_move(
     ubi_direct::move_game(record.product_id, std::path::Path::new(&destination))
 }
 
+/// Every Ubisoft client download currently writing files, with its byte count.
+#[tauri::command]
+pub fn ubi_client_downloads() -> Vec<ubisoft::ClientDownload> {
+    ubisoft::active_client_downloads()
+}
+
 /// Switch one direct install between the local shim and the official client.
 #[tauri::command]
 pub fn ubi_direct_set_client_launch(install_path: String, enabled: bool) -> Result<(), String> {
@@ -1430,6 +1436,17 @@ mod tests {
         println!("download_bytes={}", public.download_bytes);
         assert!(public.downloading, "uplay_download was not detected");
         assert!(public.download_bytes > 0, "downloaded bytes were not summed");
+    }
+
+    #[test]
+    #[ignore = "reads the client games folder; needs an active Ubisoft download"]
+    fn live_client_downloads_report_bytes() {
+        let rows = ubisoft::active_client_downloads();
+        for row in &rows {
+            println!("{} {}", row.name, row.bytes);
+        }
+        assert!(rows.iter().any(|row| row.name.to_lowercase().contains("rainbow six")));
+        assert!(rows.iter().any(|row| row.bytes > 0));
     }
 
     #[test]

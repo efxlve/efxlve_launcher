@@ -214,6 +214,16 @@ export interface UbiMovedInstall {
 export const ubiDirectMove = (installPath: string, destination: string) =>
   invoke<UbiMovedInstall>("ubi_direct_move", { installPath, destination });
 
+/** One download the Ubisoft client is writing under its games folder. */
+export interface UbiClientDownload {
+  name: string;
+  bytes: number;
+}
+
+/** Live byte counts for every Ubisoft client download. */
+export const ubiClientDownloads = () =>
+  invoke<UbiClientDownload[]>("ubi_client_downloads");
+
 /** Opens the resolved Ubisoft save folder in the file manager. */
 export const ubiOpenSaves = (productId: number, installPath?: string, title?: string) =>
   invoke<void>("ubi_open_saves", {

@@ -311,6 +311,37 @@ pub(crate) fn connect_games_roots() -> Vec<std::path::PathBuf> {
     roots
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ClientDownload {
+    pub name: String,
+    pub bytes: u64,
+}
+
+/// Every client download currently writing under a `uplay_download` folder.
+pub(crate) fn active_client_downloads() -> Vec<ClientDownload> {
+    let mut out = Vec::new();
+    for root in connect_games_roots() {
+        let Ok(entries) = std::fs::read_dir(&root) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            if !entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
+                continue;
+            }
+            let download = entry.path().join("uplay_download");
+            if !download.is_dir() {
+                continue;
+            }
+            out.push(ClientDownload {
+                name: entry.file_name().to_string_lossy().to_string(),
+                bytes: directory_size(&download),
+            });
+        }
+    }
+    out
+}
+
 /// Bytes already written under the client's `uplay_download` folder, or `None`
 /// when no matching download folder exists. The folder is not in the registry
 /// until the install completes, so match by title.

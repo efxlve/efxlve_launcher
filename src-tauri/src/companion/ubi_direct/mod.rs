@@ -285,6 +285,34 @@ mod tests {
         }
     }
 
+    #[test]
+    #[ignore = "reads the local Rainbow Six install manifest"]
+    fn live_parse_local_r6_manifest() {
+        use std::io::Read;
+        let path = std::path::Path::new(
+            r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games\Tom Clancy's Rainbow Six Siege\uplay_install.manifest",
+        );
+        let bytes = std::fs::read(path).expect("manifest");
+        let mut inflated = Vec::new();
+        flate2::read::ZlibDecoder::new(&bytes[356..])
+            .read_to_end(&mut inflated)
+            .expect("inflate");
+        let manifest = manifest::parse_manifest(&inflated);
+        let total = manifest.total_bytes();
+        let compressed: u64 = manifest
+            .files
+            .iter()
+            .flat_map(|file| &file.slices)
+            .map(|slice| u64::from(slice.download_size.unwrap_or(slice.size)))
+            .sum();
+        println!(
+            "files={} total={} compressed={}",
+            manifest.files.len(),
+            total,
+            compressed
+        );
+    }
+
     #[tokio::test]
     #[ignore = "prints one product's configuration; set EFXLVE_UBI_TEST_PRODUCT"]
     async fn live_print_product_configuration() {

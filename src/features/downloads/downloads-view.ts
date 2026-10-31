@@ -23,6 +23,48 @@ import { getRecentDownloads, type RecentDownload } from "../../core/recent";
 import { epicPortrait, type EpicSummary } from "../../epic";
 import type { SteamGame } from "../../steam";
 import { steamDownloadLabel, steamDownloadWaiting } from "../library/steam-library";
+import { ubiClientDownloads } from "../../companion";
+import { scheduleRender } from "../../core/render";
+
+const ubiClientKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+let ubiClientPoll: number | null = null;
+
+/** Patch the library's Ubisoft rows from the live client download folders. */
+function patchUbiClientDownloads(rows: { name: string; bytes: number }[]): void {
+  let changed = false;
+  for (const game of S.companionSummaries) {
+    if (game.source !== "ubisoft") continue;
+    const hit = rows.find((row) => ubiClientKey(row.name) === ubiClientKey(game.title));
+    if (hit) {
+      if (game.bytesDownloaded !== hit.bytes || !game.downloading) {
+        game.bytesDownloaded = hit.bytes;
+        game.downloading = true;
+        changed = true;
+      }
+    } else if (game.downloading) {
+      game.downloading = false;
+      changed = true;
+    }
+  }
+  if (changed && S.view === "downloads") scheduleRender();
+  if (rows.length === 0) stopUbiClientPoll();
+}
+
+function pollUbiClientDownloads(): void {
+  void ubiClientDownloads().then(patchUbiClientDownloads).catch(() => {});
+}
+
+function startUbiClientPoll(): void {
+  if (ubiClientPoll !== null) return;
+  pollUbiClientDownloads();
+  ubiClientPoll = window.setInterval(pollUbiClientDownloads, 3000);
+}
+
+function stopUbiClientPoll(): void {
+  if (ubiClientPoll === null) return;
+  window.clearInterval(ubiClientPoll);
+  ubiClientPoll = null;
+}
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
   S.speedHistory.push(netBytes);
@@ -506,14 +548,24 @@ export function renderDownloads(): string {
   const ubiClientDownloading = S.companionSummaries.filter(
     (game) => game.source === "ubisoft" && game.downloading,
   );
+  // The client writes progress on disk; refresh the card while a download is
+  // active. With none, probe once so a download started while the app was open
+  // still appears.
+  if (ubiClientDownloading.length > 0) {
+    startUbiClientPoll();
+  } else {
+    stopUbiClientPoll();
+    pollUbiClientDownloads();
+  }
   const ubiClientRows = ubiClientDownloading
     .map((game) => {
-      const bytes = game.bytesDownloaded || 0;
-      const meta = `${t("common.downloadingNow")}${bytes > 0 ? ` · ${fmtBytes(bytes)}` : ""}`;
+      // Connect does not persist its compressed progress locally; the number in
+      // its own Download Manager is authoritative. Show the live state and
+      // hand the exact percentage to the client instead of a stale byte count.
       return gameRow(
         summaryOf(game.key),
         game.key,
-        meta,
+        t("common.downloadingNow"),
         `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>${manageBtn(game.key)}`,
       );
     })
