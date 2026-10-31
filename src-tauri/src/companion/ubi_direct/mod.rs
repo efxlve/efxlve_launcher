@@ -530,6 +530,18 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "deletes the adopted Anno 1404 install"]
+    fn live_uninstall_anno_removes_the_moved_install() {
+        uninstall_game(16232, true).expect("uninstall");
+        assert!(!std::path::Path::new(
+            r"C:\Users\Efe\Games\Ubisoft\Anno 1404 - History Edition"
+        )
+        .exists());
+        assert!(crate::companion::ubi_installs::find(16232).is_none());
+        println!("Anno 1404 removed from the moved install");
+    }
+
+    #[test]
     #[ignore = "reads Rayman Origins; needs that direct install"]
     fn live_rayman_save_folder_resolves() {
         let path = saves::path_for_product(80).expect("a save folder");
