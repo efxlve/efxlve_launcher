@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "Oyunun kayıtları yazdığı klasör. Başlatıcının bulut yedeği aynı yolu okur.",
   "manage.ubiSaveFolderChecking": "Kayıt klasörü aranıyor…",
-  "manage.ubiNoSaveFolder": "Bu oyun için kayıt klasörü bulunamadı."
+  "manage.ubiNoSaveFolder": "Bu oyun için kayıt klasörü bulunamadı.",
+  "manage.ubiUpdateTitle": "Oyun güncellemeleri",
+  "manage.ubiUpdateDesc": "Kurulu dosyaları güncel Ubisoft CDN sürümüyle karşılaştırır.",
+  "manage.ubiUpdateCheck": "Güncellemeleri denetle",
+  "manage.ubiUpdateChecking": "Denetleniyor…",
+  "manage.ubiUpdateAvailable": "Bir güncelleme var.",
+  "manage.ubiUpToDate": "Güncel.",
+  "manage.ubiUpdateUnknown": "Kurulu sürüm bilinmiyor. Kaydetmek için bir kez Doğrula çalıştırın.",
+  "manage.ubiUpdateApply": "Güncelle",
+  "manage.ubiUpdating": "Güncelleniyor…"
 }

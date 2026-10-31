@@ -371,6 +371,7 @@ mod tests {
             uplay_id: 1651,
             ticket: String::new(),
             client_launch: true,
+            manifest: String::new(),
         };
         assert_eq!(client_launch_uri(&game), "uplay://launch/1651/0");
         game.uplay_id = 0;

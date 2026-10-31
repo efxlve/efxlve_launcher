@@ -53,7 +53,7 @@ import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerChoice, answerConfirm, askChoice, askConfirm } from "../../core/confirm-dialog";
-import { fmtBytes } from "../../core/utils";
+import { esc, fmtBytes } from "../../core/utils";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -867,6 +867,70 @@ document.addEventListener("click", (e) => {
         toast(localizeMessage(String(e)), "err"),
       );
     }
+  } else if (act === "ubi-direct-check-update") {
+    const path = t.dataset.path || "";
+    if (!path) return;
+    const box = t.closest("[data-ubi-update-row]");
+    const status = box?.querySelector<HTMLElement>("[data-ubi-update-status]");
+    const actions = box?.querySelector<HTMLElement>(".row-actions");
+    const showStatus = (text: string, ok: boolean) => {
+      if (!status) return;
+      status.hidden = false;
+      status.textContent = text;
+      status.classList.toggle("is-ok", ok);
+    };
+    const button = t instanceof HTMLButtonElement ? t : null;
+    if (button) button.disabled = true;
+    showStatus(i18nT("manage.ubiUpdateChecking"), false);
+    void ubiDirectUpdateCheck(path)
+      .then((check) => {
+        if (check.unknown) {
+          showStatus(i18nT("manage.ubiUpdateUnknown"), false);
+          return;
+        }
+        if (!check.update) {
+          showStatus(i18nT("manage.ubiUpToDate"), true);
+          return;
+        }
+        showStatus(i18nT("manage.ubiUpdateAvailable"), false);
+        if (actions) {
+          actions.innerHTML = `<button class="btn primary small" data-act="ubi-direct-update" data-path="${esc(path)}">${i18nT("manage.ubiUpdateApply")}</button>`;
+        }
+      })
+      .catch((e: unknown) => showStatus(localizeMessage(String(e)), false))
+      .finally(() => {
+        if (button?.isConnected) button.disabled = false;
+      });
+  } else if (act === "ubi-direct-update") {
+    const path = t.dataset.path || "";
+    if (!path) return;
+    const box = t.closest("[data-ubi-update-row]");
+    const status = box?.querySelector<HTMLElement>("[data-ubi-update-status]");
+    const showStatus = (text: string, ok: boolean) => {
+      if (!status) return;
+      status.hidden = false;
+      status.textContent = text;
+      status.classList.toggle("is-ok", ok);
+    };
+    const button = t instanceof HTMLButtonElement ? t : null;
+    if (button) button.disabled = true;
+    showStatus(i18nT("manage.ubiUpdating"), false);
+    void ubiDirectVerify(path, true)
+      .then((report) => {
+        showStatus(i18nT("manage.ubiUpToDate"), true);
+        toast(
+          report.repaired > 0 ? i18nT("verify.successDetail") : i18nT("manage.ubiUpToDate"),
+          "ok",
+        );
+        void loadCompanionLibrary();
+      })
+      .catch((e: unknown) => {
+        showStatus(localizeMessage(String(e)), false);
+        toast(localizeMessage(String(e)), "err");
+      })
+      .finally(() => {
+        if (button?.isConnected) button.disabled = false;
+      });
   } else if (act === "ubi-direct-open") {
     S.settingsSection = "integrations";
     setView("settings");

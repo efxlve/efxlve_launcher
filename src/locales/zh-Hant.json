@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "遊戲寫入存檔的資料夾。啟動器的雲端備份會讀取同一路徑。",
   "manage.ubiSaveFolderChecking": "正在尋找存檔資料夾…",
-  "manage.ubiNoSaveFolder": "找不到此遊戲的存檔資料夾。"
+  "manage.ubiNoSaveFolder": "找不到此遊戲的存檔資料夾。",
+  "manage.ubiUpdateTitle": "遊戲更新",
+  "manage.ubiUpdateDesc": "將已安裝檔案與目前 Ubisoft CDN 組建進行比較。",
+  "manage.ubiUpdateCheck": "檢查更新",
+  "manage.ubiUpdateChecking": "正在檢查…",
+  "manage.ubiUpdateAvailable": "有可用更新。",
+  "manage.ubiUpToDate": "已是最新。",
+  "manage.ubiUpdateUnknown": "已安裝的組建不明。請執行一次驗證以記錄。",
+  "manage.ubiUpdateApply": "更新",
+  "manage.ubiUpdating": "正在更新…"
 }

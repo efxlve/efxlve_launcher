@@ -34,6 +34,11 @@ pub(crate) struct InstalledGame {
     /// Needed for Connect-only DRM, online and anti-cheat titles.
     #[serde(default)]
     pub client_launch: bool,
+    /// CDN manifest id the installed files came from. Compared with the latest
+    /// ownership manifest to tell the user an update exists. Empty on records
+    /// written before update checks; the next verify fills it.
+    #[serde(default)]
+    pub manifest: String,
 }
 
 fn path() -> PathBuf {
@@ -115,6 +120,7 @@ mod tests {
             uplay_id: 0,
             ticket: String::new(),
             client_launch: false,
+            manifest: "ABC123".into(),
         };
         save(&first);
         save(&InstalledGame {
@@ -125,6 +131,7 @@ mod tests {
         assert_eq!(loaded.len(), 1);
         assert_eq!(loaded[0].installed_at, 2);
         assert!(!loaded[0].client_launch);
+        assert_eq!(loaded[0].manifest, "ABC123");
         assert!(set_client_launch(7, true));
         assert!(find(7).unwrap().client_launch);
         remove(7);

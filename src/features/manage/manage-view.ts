@@ -511,6 +511,15 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
         `)
       : "";
+  const updates =
+    source === "ubisoft" && s.installed
+      ? `<div data-ubi-update-row>${row(
+          t("manage.ubiUpdateTitle"),
+          t("manage.ubiUpdateDesc"),
+          `<button class="btn ghost small" data-act="ubi-direct-check-update" data-path="${esc(s.installPath || "")}">${icon("refresh", 13)} ${t("manage.ubiUpdateCheck")}</button>`,
+          `<div class="mg-note" data-ubi-update-status hidden></div>`,
+        )}</div>`
+      : "";
   const files = s.installed
     ? row(
         t("manage.installLocation"),
@@ -524,7 +533,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${updates}${installSizeRow(s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}

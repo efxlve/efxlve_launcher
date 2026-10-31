@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "La carpeta donde el juego guarda las partidas. La copia en la nube del launcher lee esta misma ruta.",
   "manage.ubiSaveFolderChecking": "Buscando la carpeta de guardado…",
-  "manage.ubiNoSaveFolder": "No se encontró ninguna carpeta de guardado para este juego."
+  "manage.ubiNoSaveFolder": "No se encontró ninguna carpeta de guardado para este juego.",
+  "manage.ubiUpdateTitle": "Actualizaciones del juego",
+  "manage.ubiUpdateDesc": "Compara los archivos instalados con la compilación actual del CDN de Ubisoft.",
+  "manage.ubiUpdateCheck": "Buscar actualizaciones",
+  "manage.ubiUpdateChecking": "Comprobando…",
+  "manage.ubiUpdateAvailable": "Hay una actualización disponible.",
+  "manage.ubiUpToDate": "Actualizado.",
+  "manage.ubiUpdateUnknown": "Compilación instalada desconocida. Ejecuta Verificar una vez para registrarla.",
+  "manage.ubiUpdateApply": "Actualizar",
+  "manage.ubiUpdating": "Actualizando…"
 }

@@ -158,19 +158,69 @@ pub(crate) fn cancel_game(product_id: u32) {
     install::cancel(product_id)
 }
 
+/// The installed build compared with the CDN's current manifest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UpdateCheck {
+    pub installed: String,
+    pub latest: String,
+    pub update: bool,
+    /// The record predates manifest tracking; a verify pass fills it.
+    pub unknown: bool,
+}
+
+fn update_state(installed: &str, latest: &str) -> UpdateCheck {
+    let installed = installed.trim().to_string();
+    let latest = latest.trim().to_string();
+    UpdateCheck {
+        unknown: installed.is_empty(),
+        update: !installed.is_empty()
+            && !latest.is_empty()
+            && !installed.eq_ignore_ascii_case(&latest),
+        installed,
+        latest,
+    }
+}
+
+/// Compare the recorded CDN manifest with the one ownership reports now, so
+/// the Manage panel can tell the user an update exists without hashing files.
+pub(crate) async fn check_update(product_id: u32) -> Result<UpdateCheck, String> {
+    let record = crate::companion::ubi_installs::find(product_id)
+        .ok_or_else(|| format!("product {product_id} is not installed by the launcher"))?;
+    let (mut demux, _) = connect().await?;
+    let owned = demux.owned_games().await?;
+    let owned_latest = owned
+        .iter()
+        .find(|game| game.product_id == product_id && game.owned)
+        .map(|game| game.latest_manifest.clone())
+        .ok_or_else(|| format!("product {product_id} is not in the owned library"))?;
+    let latest = if owned_latest.is_empty() {
+        demux
+            .latest_manifests(&[product_id])
+            .await?
+            .remove(&product_id)
+            .unwrap_or_default()
+    } else {
+        owned_latest
+    };
+    Ok(update_state(&record.manifest, &latest))
+}
+
 /// Check every file against the manifest's slice hashes; with `repair`, delete
-/// the rejected files and download only those again.
+/// the rejected files and download only those again. A clean check, or a
+/// successful repair, records the current manifest id for update checks.
 pub(crate) async fn verify_game(
     app: tauri::AppHandle,
     product_id: u32,
     repair: bool,
 ) -> Result<verify::VerifyReport, String> {
     use tauri::Emitter;
-    let record = crate::companion::ubi_installs::find(product_id)
+    let mut record = crate::companion::ubi_installs::find(product_id)
         .ok_or_else(|| format!("product {product_id} is not installed by the launcher"))?;
     let directory = std::path::PathBuf::from(&record.install_dir);
     let (mut demux, _) = connect().await?;
     let prepared = install::prepare(&mut demux, product_id).await?;
+    let latest_id = prepared.manifest_id.clone();
     let mut report = verify::verify(&prepared.manifest, &directory);
     if repair && !report.bad_files.is_empty() {
         verify::remove_bad(&directory, &report.bad_files);
@@ -180,6 +230,10 @@ pub(crate) async fn verify_game(
         })
         .await?;
         report.repaired = report.bad_files.len();
+    }
+    if report.bad_files.is_empty() || report.repaired > 0 {
+        record.manifest = latest_id;
+        crate::companion::ubi_installs::save(&record);
     }
     Ok(report)
 }
@@ -377,6 +431,47 @@ mod tests {
                 .client_launch
         );
         println!("Rayman launch mode toggled to client and back to direct");
+    }
+
+    #[test]
+    fn update_state_compares_manifest_ids_and_flags_old_records() {
+        let fresh = update_state("ABC123", "abc123");
+        assert!(!fresh.update);
+        assert!(!fresh.unknown);
+        let stale = update_state("ABC123", "DEF456");
+        assert!(stale.update);
+        assert_eq!(stale.installed, "ABC123");
+        assert_eq!(stale.latest, "DEF456");
+        let legacy = update_state("", "DEF456");
+        assert!(legacy.unknown);
+        assert!(!legacy.update);
+        let no_build = update_state("ABC123", "");
+        assert!(!no_build.unknown);
+        assert!(!no_build.update);
+    }
+
+    #[tokio::test]
+    #[ignore = "reads Rayman Origins; needs that direct install"]
+    async fn live_rayman_update_check_matches_the_current_build() {
+        let mut record =
+            crate::companion::ubi_installs::find(80).expect("Rayman Origins record");
+        if record.manifest.is_empty() {
+            // The app records the same id after a clean verify; do it once here
+            // so the live check has a baseline.
+            let (mut demux, _) = connect().await.expect("Demux connect");
+            let prepared = install::prepare(&mut demux, 80).await.expect("manifest");
+            let report = verify::verify(&prepared.manifest, std::path::Path::new(&record.install_dir));
+            assert_eq!(report.bad_files.len(), 0);
+            record.manifest = prepared.manifest_id;
+            crate::companion::ubi_installs::save(&record);
+        }
+        let check = check_update(80).await.expect("update check");
+        println!(
+            "installed={} latest={} update={} unknown={}",
+            check.installed, check.latest, check.update, check.unknown
+        );
+        assert!(!check.unknown);
+        assert!(!check.update);
     }
 
     #[test]

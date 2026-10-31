@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "المجلد الذي تحفظ فيه اللعبة تقدمك. تقرأ النسخة الاحتياطية السحابية للمشغّل المسار نفسه.",
   "manage.ubiSaveFolderChecking": "جارٍ البحث عن مجلد الحفظ…",
-  "manage.ubiNoSaveFolder": "لم يُعثر على مجلد حفظ لهذه اللعبة."
+  "manage.ubiNoSaveFolder": "لم يُعثر على مجلد حفظ لهذه اللعبة.",
+  "manage.ubiUpdateTitle": "تحديثات اللعبة",
+  "manage.ubiUpdateDesc": "يقارن الملفات المثبتة بإصدار CDN الحالي من Ubisoft.",
+  "manage.ubiUpdateCheck": "التحقق من التحديثات",
+  "manage.ubiUpdateChecking": "جارٍ التحقق…",
+  "manage.ubiUpdateAvailable": "يتوفر تحديث.",
+  "manage.ubiUpToDate": "محدّث.",
+  "manage.ubiUpdateUnknown": "إصدار التثبيت غير معروف. شغّل التحقق مرة واحدة لتسجيله.",
+  "manage.ubiUpdateApply": "تحديث",
+  "manage.ubiUpdating": "جارٍ التحديث…"
 }

@@ -111,8 +111,10 @@ client. Open work:
 - R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
   real R2 title; the user's R2 catalogue starts at large titles (Far Cry 5 /
   AC Origins class).
-- Updates are still absent: verify/repair compares the installed files with the
-  current manifest, but no latest-manifest/version check marks an update.
+- Update checking compares the recorded CDN manifest id with the manifest
+  ownership reports now, and Manage offers Check for updates. Applying an
+  update reuses verify/repair: changed files are re-downloaded whole, not
+  patched slice by slice. An automatic check at launch is still absent.
 - The R1 shim records unlocks in `upc.json` only for IDs present in the
   achievement list built from the Connect cache. Rayman Origins has no cached
   schema, so it records nothing until a schema source is added. UbiSlot and the

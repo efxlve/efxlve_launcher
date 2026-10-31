@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "The folder the game writes saves to. The launcher's cloud backup reads this same path.",
   "manage.ubiSaveFolderChecking": "Looking for the save folder…",
-  "manage.ubiNoSaveFolder": "No save folder was found for this game."
+  "manage.ubiNoSaveFolder": "No save folder was found for this game.",
+  "manage.ubiUpdateTitle": "Game updates",
+  "manage.ubiUpdateDesc": "Compares the installed files with the current Ubisoft CDN build.",
+  "manage.ubiUpdateCheck": "Check for updates",
+  "manage.ubiUpdateChecking": "Checking…",
+  "manage.ubiUpdateAvailable": "An update is available.",
+  "manage.ubiUpToDate": "Up to date.",
+  "manage.ubiUpdateUnknown": "Installed build unknown. Run Verify once to record it.",
+  "manage.ubiUpdateApply": "Update",
+  "manage.ubiUpdating": "Updating…"
 }

@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "게임이 저장 파일을 기록하는 폴더입니다. 런처의 클라우드 백업도 같은 경로를 읽습니다.",
   "manage.ubiSaveFolderChecking": "저장 폴더를 찾는 중…",
-  "manage.ubiNoSaveFolder": "이 게임의 저장 폴더를 찾지 못했습니다."
+  "manage.ubiNoSaveFolder": "이 게임의 저장 폴더를 찾지 못했습니다.",
+  "manage.ubiUpdateTitle": "게임 업데이트",
+  "manage.ubiUpdateDesc": "설치된 파일을 현재 Ubisoft CDN 빌드와 비교합니다.",
+  "manage.ubiUpdateCheck": "업데이트 확인",
+  "manage.ubiUpdateChecking": "확인 중…",
+  "manage.ubiUpdateAvailable": "업데이트가 있습니다.",
+  "manage.ubiUpToDate": "최신 상태입니다.",
+  "manage.ubiUpdateUnknown": "설치된 빌드를 알 수 없습니다. 기록하려면 검증을 한 번 실행하세요.",
+  "manage.ubiUpdateApply": "업데이트",
+  "manage.ubiUpdating": "업데이트 중…"
 }

@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "ゲームがセーブデータを書き込むフォルダーです。ランチャーのクラウドバックアップも同じパスを読みます。",
   "manage.ubiSaveFolderChecking": "セーブフォルダーを探しています…",
-  "manage.ubiNoSaveFolder": "このゲームのセーブフォルダーが見つかりませんでした。"
+  "manage.ubiNoSaveFolder": "このゲームのセーブフォルダーが見つかりませんでした。",
+  "manage.ubiUpdateTitle": "ゲームの更新",
+  "manage.ubiUpdateDesc": "インストール済みのファイルを現在の Ubisoft CDN ビルドと比較します。",
+  "manage.ubiUpdateCheck": "更新を確認",
+  "manage.ubiUpdateChecking": "確認中…",
+  "manage.ubiUpdateAvailable": "更新が利用可能です。",
+  "manage.ubiUpToDate": "最新です。",
+  "manage.ubiUpdateUnknown": "インストール済みビルドが不明です。記録するには「検証」を一度実行してください。",
+  "manage.ubiUpdateApply": "更新",
+  "manage.ubiUpdating": "更新中…"
 }

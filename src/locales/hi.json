@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "वह फ़ोल्डर जहाँ गेम अपनी सेव फ़ाइलें लिखता है। लॉन्चर का क्लाउड बैकअप इसी पथ को पढ़ता है।",
   "manage.ubiSaveFolderChecking": "सेव फ़ोल्डर खोजा जा रहा है…",
-  "manage.ubiNoSaveFolder": "इस गेम के लिए कोई सेव फ़ोल्डर नहीं मिला।"
+  "manage.ubiNoSaveFolder": "इस गेम के लिए कोई सेव फ़ोल्डर नहीं मिला।",
+  "manage.ubiUpdateTitle": "गेम अपडेट",
+  "manage.ubiUpdateDesc": "इंस्टॉल की गई फ़ाइलों की तुलना मौजूदा Ubisoft CDN बिल्ड से करता है।",
+  "manage.ubiUpdateCheck": "अपडेट जाँचें",
+  "manage.ubiUpdateChecking": "जाँच हो रही है…",
+  "manage.ubiUpdateAvailable": "एक अपडेट उपलब्ध है।",
+  "manage.ubiUpToDate": "अप टू डेट।",
+  "manage.ubiUpdateUnknown": "इंस्टॉल किया गया बिल्ड अज्ञात है। दर्ज करने के लिए एक बार सत्यापित करें चलाएँ।",
+  "manage.ubiUpdateApply": "अपडेट करें",
+  "manage.ubiUpdating": "अपडेट हो रहा है…"
 }

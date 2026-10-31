@@ -335,6 +335,7 @@ async fn detect_layout(
 /// Everything the installer and launcher need from the ownership row.
 pub(crate) struct Prepared {
     pub manifest: Manifest,
+    pub manifest_id: String,
     pub name: String,
     pub download: wire::DownloadService,
     pub layout: SliceLayout,
@@ -391,6 +392,7 @@ pub(crate) async fn prepare(
     };
     Ok(Prepared {
         manifest,
+        manifest_id,
         name,
         download,
         layout,
@@ -439,6 +441,7 @@ where
     let prepared = prepare(demux, product_id).await?;
     let Prepared {
         manifest,
+        manifest_id,
         name,
         mut download,
         layout,
@@ -617,6 +620,9 @@ where
         file: String::new(),
     });
     let exe = pick_executable(&manifest);
+    let client_launch = ubi_installs::find(product_id)
+        .map(|game| game.client_launch)
+        .unwrap_or(false);
     ubi_installs::save(&ubi_installs::InstalledGame {
         product_id,
         name: name.clone(),
@@ -629,7 +635,8 @@ where
         install_reg,
         uplay_id,
         ticket,
-        client_launch: false,
+        client_launch,
+        manifest: manifest_id,
     });
     Ok(InstallSummary {
         product_id,

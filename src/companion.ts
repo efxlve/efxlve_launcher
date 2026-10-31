@@ -170,6 +170,18 @@ export const ubiSavePath = (productId: number, installPath?: string, title?: str
     title: title || null,
   });
 
+/** Installed build against the current CDN manifest. */
+export interface UbiUpdateCheck {
+  installed: string;
+  latest: string;
+  update: boolean;
+  unknown: boolean;
+}
+
+/** Compares the recorded manifest id with the current Ubisoft CDN build. */
+export const ubiDirectUpdateCheck = (installPath: string) =>
+  invoke<UbiUpdateCheck>("ubi_direct_update_check", { installPath });
+
 /** Opens the resolved Ubisoft save folder in the file manager. */
 export const ubiOpenSaves = (productId: number, installPath?: string, title?: string) =>
   invoke<void>("ubi_open_saves", {

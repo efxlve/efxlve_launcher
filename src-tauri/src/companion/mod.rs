@@ -616,6 +616,18 @@ pub fn ubi_open_saves(
     crate::open_in_file_manager(&path)
 }
 
+/// Compare the installed build with the current Ubisoft CDN manifest.
+#[tauri::command]
+pub async fn ubi_direct_update_check(
+    install_path: String,
+) -> Result<ubi_direct::UpdateCheck, String> {
+    let record = ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
+        .ok_or_else(|| "this folder is not a direct install".to_string())?;
+    ubi_direct::check_update(record.product_id).await
+}
+
 /// Switch one direct install between the local shim and the official client.
 #[tauri::command]
 pub fn ubi_direct_set_client_launch(install_path: String, enabled: bool) -> Result<(), String> {

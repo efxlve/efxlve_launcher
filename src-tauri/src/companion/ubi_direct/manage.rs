@@ -99,6 +99,7 @@ mod tests {
             uplay_id: 0,
             ticket: String::new(),
             client_launch: false,
+            manifest: String::new(),
         });
         uninstall(999, true).expect("uninstall");
         assert!(!game.exists());

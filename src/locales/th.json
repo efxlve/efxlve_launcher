@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "โฟลเดอร์ที่เกมเขียนไฟล์เซฟ ระบบสำรองข้อมูลคลาวด์ของตัวเรียกเกมอ่านเส้นทางเดียวกันนี้",
   "manage.ubiSaveFolderChecking": "กำลังค้นหาโฟลเดอร์เซฟ…",
-  "manage.ubiNoSaveFolder": "ไม่พบโฟลเดอร์เซฟสำหรับเกมนี้"
+  "manage.ubiNoSaveFolder": "ไม่พบโฟลเดอร์เซฟสำหรับเกมนี้",
+  "manage.ubiUpdateTitle": "อัปเดตเกม",
+  "manage.ubiUpdateDesc": "เปรียบเทียบไฟล์ที่ติดตั้งกับบิลด์ CDN ปัจจุบันของ Ubisoft",
+  "manage.ubiUpdateCheck": "ตรวจหาอัปเดต",
+  "manage.ubiUpdateChecking": "กำลังตรวจสอบ…",
+  "manage.ubiUpdateAvailable": "มีอัปเดตพร้อมใช้งาน",
+  "manage.ubiUpToDate": "เป็นเวอร์ชันล่าสุด",
+  "manage.ubiUpdateUnknown": "ไม่ทราบบิลด์ที่ติดตั้ง เรียกใช้ตรวจสอบหนึ่งครั้งเพื่อบันทึก",
+  "manage.ubiUpdateApply": "อัปเดต",
+  "manage.ubiUpdating": "กำลังอัปเดต…"
 }

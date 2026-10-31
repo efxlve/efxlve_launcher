@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "Folder, w którym gra zapisuje postępy. Kopia w chmurze launchera czyta tę samą ścieżkę.",
   "manage.ubiSaveFolderChecking": "Szukanie folderu zapisów…",
-  "manage.ubiNoSaveFolder": "Nie znaleziono folderu zapisów dla tej gry."
+  "manage.ubiNoSaveFolder": "Nie znaleziono folderu zapisów dla tej gry.",
+  "manage.ubiUpdateTitle": "Aktualizacje gry",
+  "manage.ubiUpdateDesc": "Porównuje zainstalowane pliki z bieżącą kompilacją CDN Ubisoft.",
+  "manage.ubiUpdateCheck": "Sprawdź aktualizacje",
+  "manage.ubiUpdateChecking": "Sprawdzanie…",
+  "manage.ubiUpdateAvailable": "Dostępna jest aktualizacja.",
+  "manage.ubiUpToDate": "Aktualna.",
+  "manage.ubiUpdateUnknown": "Nieznana zainstalowana kompilacja. Uruchom raz Weryfikację, aby ją zapisać.",
+  "manage.ubiUpdateApply": "Aktualizuj",
+  "manage.ubiUpdating": "Aktualizowanie…"
 }

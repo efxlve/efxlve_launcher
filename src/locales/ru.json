@@ -3460,5 +3460,14 @@
   "manage.ubiLaunchClient": "Ubisoft Connect",
   "manage.ubiSaveFolderDesc": "Папка, в которую игра сохраняет прогресс. Облачная резервная копия лаунчера читает этот же путь.",
   "manage.ubiSaveFolderChecking": "Поиск папки сохранений…",
-  "manage.ubiNoSaveFolder": "Для этой игры не найдена папка сохранений."
+  "manage.ubiNoSaveFolder": "Для этой игры не найдена папка сохранений.",
+  "manage.ubiUpdateTitle": "Обновления игры",
+  "manage.ubiUpdateDesc": "Сравнивает установленные файлы с текущей сборкой CDN Ubisoft.",
+  "manage.ubiUpdateCheck": "Проверить обновления",
+  "manage.ubiUpdateChecking": "Проверка…",
+  "manage.ubiUpdateAvailable": "Доступно обновление.",
+  "manage.ubiUpToDate": "Актуально.",
+  "manage.ubiUpdateUnknown": "Установленная сборка неизвестна. Запустите проверку один раз, чтобы сохранить её.",
+  "manage.ubiUpdateApply": "Обновить",
+  "manage.ubiUpdating": "Обновление…"
 }
