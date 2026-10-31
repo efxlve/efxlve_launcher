@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "اختر مجلد الأب الجديد",
   "manage.ubiMoveWorking": "جارٍ نقل التثبيت…",
   "manage.ubiMoveConfirm": "نقل هذا التثبيت إلى {path}؟ يجب إغلاق اللعبة.",
-  "manage.ubiMoveDone": "تم النقل إلى {path}."
+  "manage.ubiMoveDone": "تم النقل إلى {path}.",
+  "common.downloadingNow": "جارٍ التنزيل…"
 }

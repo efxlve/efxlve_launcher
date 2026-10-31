@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "เลือกโฟลเดอร์หลักใหม่",
   "manage.ubiMoveWorking": "กำลังย้ายการติดตั้ง…",
   "manage.ubiMoveConfirm": "ย้ายการติดตั้งนี้ไปยัง {path} หรือไม่ ต้องปิดเกมก่อน",
-  "manage.ubiMoveDone": "ย้ายไปยัง {path} แล้ว"
+  "manage.ubiMoveDone": "ย้ายไปยัง {path} แล้ว",
+  "common.downloadingNow": "กำลังดาวน์โหลด…"
 }

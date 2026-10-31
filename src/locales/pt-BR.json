@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Choose the new parent folder",
   "manage.ubiMoveWorking": "Moving the install…",
   "manage.ubiMoveConfirm": "Move this install to {path}? The game must be closed.",
-  "manage.ubiMoveDone": "Moved to {path}."
+  "manage.ubiMoveDone": "Moved to {path}.",
+  "common.downloadingNow": "Downloading…"
 }

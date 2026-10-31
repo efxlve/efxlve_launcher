@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "新しい親フォルダーを選択",
   "manage.ubiMoveWorking": "インストールを移動しています…",
   "manage.ubiMoveConfirm": "このインストールを {path} に移動しますか？ゲームを終了してください。",
-  "manage.ubiMoveDone": "{path} に移動しました。"
+  "manage.ubiMoveDone": "{path} に移動しました。",
+  "common.downloadingNow": "ダウンロード中…"
 }

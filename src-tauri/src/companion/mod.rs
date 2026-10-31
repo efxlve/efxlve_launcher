@@ -82,6 +82,9 @@ pub struct CompanionGame {
     pub description: String,
     /// Studio resolved from the store page or the client's own catalog.
     pub developer: String,
+    /// True while the owning client is downloading this game (Ubisoft writes a
+    /// `uplay_download` folder before the files are complete).
+    pub downloading: bool,
     /// Bulk achievement progress from the account's own service (Xbox title
     /// history today). Zero when the store only answers per game.
     pub achievements_unlocked: u32,
@@ -163,6 +166,12 @@ fn to_public(game: &FoundGame, cover: &str, hero: &str, developer: &str) -> Comp
         store_id: game.store_id.clone(),
         description: game.description.clone(),
         developer: developer.to_string(),
+        downloading: game.store == "ubisoft"
+            && ((!game.install_path.is_empty()
+                && std::path::Path::new(&game.install_path)
+                    .join("uplay_download")
+                    .is_dir())
+                || ubisoft::connect_downloading(&game.name)),
         achievements_unlocked: 0,
         achievements_total: 0,
         achievements_xp: 0,
@@ -1387,6 +1396,32 @@ mod tests {
             .expect("the library row");
         println!("{} -> {}", row.name, row.install_uri);
         assert_eq!(row.install_uri, "uplay://install/3539");
+    }
+
+    #[test]
+    #[ignore = "reads the client install tree; needs Rainbow Six Siege downloading"]
+    fn live_r6_is_marked_as_downloading() {
+        let game = discover("ubisoft")
+            .into_iter()
+            .find(|game| {
+                let name = game.name.to_lowercase();
+                name.contains("rainbow six") && name.contains("siege")
+            })
+            .expect("Rainbow Six is in the client library");
+        println!(
+            "path={} installed={} name={:?} slug={:?}",
+            game.install_path,
+            game.installed,
+            game.name,
+            crate::companion::scan::slug(&game.name)
+        );
+        println!(
+            "roots={:?} env={:?}",
+            ubisoft::connect_games_roots(),
+            std::env::var_os("ProgramFiles(x86)")
+        );
+        let public = to_public(&game, "", "", "");
+        assert!(public.downloading, "uplay_download was not detected");
     }
 
     #[test]

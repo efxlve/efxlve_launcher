@@ -295,6 +295,49 @@ pub(crate) fn load_owned() -> Vec<OwnedGame> {
         .collect()
 }
 
+/// Where the official client keeps installed games, newest location first.
+pub(crate) fn connect_games_roots() -> Vec<std::path::PathBuf> {
+    let mut roots = Vec::new();
+    for var in ["ProgramFiles(x86)", "ProgramFiles"] {
+        if let Some(base) = std::env::var_os(var) {
+            roots.push(
+                std::path::PathBuf::from(base)
+                    .join("Ubisoft")
+                    .join("Ubisoft Game Launcher")
+                    .join("games"),
+            );
+        }
+    }
+    roots
+}
+
+/// True when the client has begun downloading this title but has not finished:
+/// it writes `uplay_download` inside the game folder before the files are
+/// complete. The folder may not be in the registry yet, so match by title.
+pub(crate) fn connect_downloading(title: &str) -> bool {
+    let wanted = slug(title);
+    if wanted.is_empty() {
+        return false;
+    }
+    for root in connect_games_roots() {
+        let Ok(entries) = std::fs::read_dir(&root) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            if !entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
+                continue;
+            }
+            if slug(&entry.file_name().to_string_lossy()) != wanted {
+                continue;
+            }
+            if entry.path().join("uplay_download").is_dir() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// Local games plus the imported catalog the client has not cached yet.
 pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
     let games = match configurations_path().and_then(|path| std::fs::read(path).ok()) {

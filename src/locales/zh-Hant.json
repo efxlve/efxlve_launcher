@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "選擇新的上層資料夾",
   "manage.ubiMoveWorking": "正在移動安裝…",
   "manage.ubiMoveConfirm": "要將此安裝移至 {path} 嗎？遊戲必須已關閉。",
-  "manage.ubiMoveDone": "已移至 {path}。"
+  "manage.ubiMoveDone": "已移至 {path}。",
+  "common.downloadingNow": "正在下載…"
 }

@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Выберите новую родительскую папку",
   "manage.ubiMoveWorking": "Перемещение установки…",
   "manage.ubiMoveConfirm": "Переместить эту установку в {path}? Игра должна быть закрыта.",
-  "manage.ubiMoveDone": "Перемещено в {path}."
+  "manage.ubiMoveDone": "Перемещено в {path}.",
+  "common.downloadingNow": "Загрузка…"
 }

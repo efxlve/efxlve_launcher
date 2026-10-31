@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "새 상위 폴더 선택",
   "manage.ubiMoveWorking": "설치를 이동하는 중…",
   "manage.ubiMoveConfirm": "이 설치를 {path}(으)로 이동할까요? 게임을 종료해야 합니다.",
-  "manage.ubiMoveDone": "{path}(으)로 이동했습니다."
+  "manage.ubiMoveDone": "{path}(으)로 이동했습니다.",
+  "common.downloadingNow": "다운로드 중…"
 }

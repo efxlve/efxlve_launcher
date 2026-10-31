@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Scegli la nuova cartella principale",
   "manage.ubiMoveWorking": "Spostamento dell'installazione…",
   "manage.ubiMoveConfirm": "Spostare questa installazione in {path}? Il gioco deve essere chiuso.",
-  "manage.ubiMoveDone": "Spostato in {path}."
+  "manage.ubiMoveDone": "Spostato in {path}.",
+  "common.downloadingNow": "Download in corso…"
 }

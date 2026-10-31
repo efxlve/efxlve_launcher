@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "नया पैरेंट फ़ोल्डर चुनें",
   "manage.ubiMoveWorking": "इंस्टॉल ले जाया जा रहा है…",
   "manage.ubiMoveConfirm": "यह इंस्टॉल {path} पर ले जाएँ? गेम बंद होना चाहिए।",
-  "manage.ubiMoveDone": "{path} पर ले जाया गया।"
+  "manage.ubiMoveDone": "{path} पर ले जाया गया।",
+  "common.downloadingNow": "डाउनलोड हो रहा है…"
 }

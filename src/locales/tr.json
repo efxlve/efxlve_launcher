@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Yeni üst klasörü seç",
   "manage.ubiMoveWorking": "Kurulum taşınıyor…",
   "manage.ubiMoveConfirm": "Bu kurulum {path} konumuna taşınsın mı? Oyun kapalı olmalı.",
-  "manage.ubiMoveDone": "{path} konumuna taşındı."
+  "manage.ubiMoveDone": "{path} konumuna taşındı.",
+  "common.downloadingNow": "İndiriliyor…"
 }

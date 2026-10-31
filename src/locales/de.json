@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Neuen übergeordneten Ordner wählen",
   "manage.ubiMoveWorking": "Installation wird verschoben…",
   "manage.ubiMoveConfirm": "Diese Installation nach {path} verschieben? Das Spiel muss geschlossen sein.",
-  "manage.ubiMoveDone": "Nach {path} verschoben."
+  "manage.ubiMoveDone": "Nach {path} verschoben.",
+  "common.downloadingNow": "Wird heruntergeladen…"
 }

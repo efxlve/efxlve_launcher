@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Choisir le nouveau dossier parent",
   "manage.ubiMoveWorking": "Déplacement de l'installation…",
   "manage.ubiMoveConfirm": "Déplacer cette installation vers {path} ? Le jeu doit être fermé.",
-  "manage.ubiMoveDone": "Déplacé vers {path}."
+  "manage.ubiMoveDone": "Déplacé vers {path}.",
+  "common.downloadingNow": "Téléchargement…"
 }

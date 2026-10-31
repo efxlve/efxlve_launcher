@@ -789,13 +789,15 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     const directProgress = direct ? S.ubiDirectProgress[direct.productId] : undefined;
     const primary = S.runningGames.has(s.appName)
       ? `<button class="btn stop lg" data-act="epic-stop" data-id="${s.appName}">${icon("x", 16)} ${t("common.stop")}</button>`
-      : installPathIssue(s)
-        ? unavailableAction()
-        : directProgress
-          ? `<button class="btn primary lg" data-act="ubi-direct-open">${icon("download", 16)} ${t("common.downloading", { p: Math.min(100, Math.round((directProgress.doneBytes / Math.max(1, directProgress.totalBytes)) * 100)) })}</button>`
-          : s.installed
-            ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
-            : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-install-choice" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+      : s.downloading
+        ? `<button class="btn primary lg" disabled>${icon("download", 16)} ${t("common.downloadingNow")}</button>`
+        : installPathIssue(s)
+          ? unavailableAction()
+          : directProgress
+            ? `<button class="btn primary lg" data-act="ubi-direct-open">${icon("download", 16)} ${t("common.downloading", { p: Math.min(100, Math.round((directProgress.doneBytes / Math.max(1, directProgress.totalBytes)) * 100)) })}</button>`
+            : s.installed
+              ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
+              : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-install-choice" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>

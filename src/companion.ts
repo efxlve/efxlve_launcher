@@ -23,6 +23,8 @@ export interface CompanionGame {
   description: string;
   /** Studio from the store page or the client's own catalog. */
   developer: string;
+  /** True while the client is still downloading this game. */
+  downloading: boolean;
   /** Bulk achievement progress from the account's own service (Xbox). */
   achievementsUnlocked: number;
   achievementsTotal: number;
@@ -375,6 +377,7 @@ export function companionToItem(g: CompanionGame): LibraryItem {
     coverUrl: g.coverUrl || null,
     heroUrl: g.heroUrl || null,
     description: g.description || "",
+    downloading: g.downloading === true,
     updateAvailable: false,
     cloudSavesSupported: false,
     dlcCount: 0,

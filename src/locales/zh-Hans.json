@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "选择新的父文件夹",
   "manage.ubiMoveWorking": "正在移动安装…",
   "manage.ubiMoveConfirm": "将此安装移动到 {path}？游戏必须已关闭。",
-  "manage.ubiMoveDone": "已移动到 {path}。"
+  "manage.ubiMoveDone": "已移动到 {path}。",
+  "common.downloadingNow": "正在下载…"
 }

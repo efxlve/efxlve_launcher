@@ -3485,5 +3485,6 @@
   "manage.ubiMovePicker": "Wybierz nowy folder nadrzędny",
   "manage.ubiMoveWorking": "Przenoszenie instalacji…",
   "manage.ubiMoveConfirm": "Przenieść tę instalację do {path}? Gra musi być zamknięta.",
-  "manage.ubiMoveDone": "Przeniesiono do {path}."
+  "manage.ubiMoveDone": "Przeniesiono do {path}.",
+  "common.downloadingNow": "Pobieranie…"
 }

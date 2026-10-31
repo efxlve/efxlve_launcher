@@ -562,6 +562,9 @@ export function epicActionButtons(
   }
   if (isCompanionKey(s.appName)) {
     const store = s.appName.slice(0, s.appName.indexOf("::"));
+    if (s.downloading) {
+      return `<button class="btn primary${btn}" disabled>${icon("download", 12)} ${t("common.downloadingNow")}</button>`;
+    }
     if (!s.installed) {
       // Ubisoft installs run through the launcher's own CDN path. The client
       // handoff stays available from the game's client button.
