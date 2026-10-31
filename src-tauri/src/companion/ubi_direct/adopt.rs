@@ -115,6 +115,26 @@ mod tests {
         assert!(record.install_dir.ends_with("Rayman Origins"));
     }
 
+    #[tokio::test]
+    #[ignore = "adopts a real install named by EFXLVE_UBI_TEST_ADOPT_PRODUCT and EFXLVE_UBI_TEST_ADOPT_PATH"]
+    async fn live_adopt_a_configured_install() {
+        let product_id: u32 = std::env::var("EFXLVE_UBI_TEST_ADOPT_PRODUCT")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .expect("EFXLVE_UBI_TEST_ADOPT_PRODUCT");
+        let path = std::env::var("EFXLVE_UBI_TEST_ADOPT_PATH").expect("EFXLVE_UBI_TEST_ADOPT_PATH");
+        let adopted = adopt(product_id, std::path::Path::new(&path))
+            .await
+            .expect("adopt");
+        println!(
+            "adopted {} at {} ({})",
+            adopted.name, adopted.install_dir, adopted.exe
+        );
+        let record = ubi_installs::find(product_id).expect("record");
+        assert_eq!(record.install_dir, path);
+        assert!(!record.manifest.is_empty());
+    }
+
     #[test]
     fn releasing_restores_the_backed_up_loader() {
         let root = std::env::temp_dir().join(format!(

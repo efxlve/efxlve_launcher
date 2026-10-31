@@ -284,6 +284,31 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "prints one product's configuration; set EFXLVE_UBI_TEST_PRODUCT"]
+    async fn live_print_product_configuration() {
+        let product: u32 = std::env::var("EFXLVE_UBI_TEST_PRODUCT")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .expect("EFXLVE_UBI_TEST_PRODUCT");
+        let (mut demux, _) = connect().await.expect("Demux connect");
+        let owned = demux.owned_games().await.expect("ownership");
+        let game = owned
+            .iter()
+            .find(|game| game.product_id == product)
+            .expect("product");
+        for line in game.configuration.lines() {
+            let lower = line.to_lowercase();
+            if lower.contains("start_game")
+                || lower.contains("exe")
+                || lower.contains("launch")
+                || lower.contains("command")
+            {
+                println!("{line}");
+            }
+        }
+    }
+
+    #[tokio::test]
     #[ignore = "needs a linked Ubisoft session"]
     async fn live_probe_lists_owned_games() {
         let probe = probe().await.expect("Demux probe failed");

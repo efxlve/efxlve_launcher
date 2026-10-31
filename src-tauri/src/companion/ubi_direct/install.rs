@@ -699,6 +699,10 @@ pub(crate) fn pick_executable(manifest: &Manifest) -> String {
         "netfx",
         "activation",
         "cleanup",
+        "addon",
+        "expansion",
+        "dlc",
+        "episode",
     ];
     let mut best: Option<&ManifestFile> = None;
     for file in &manifest.files {
@@ -771,6 +775,31 @@ mod tests {
         let mut hasher = Sha1::new();
         hasher.update(data);
         hasher.finalize().to_vec()
+    }
+
+    #[test]
+    fn the_picker_prefers_the_base_game_over_an_addon_binary() {
+        let manifest = Manifest {
+            files: vec![
+                ManifestFile {
+                    name: "Anno1404Addon.exe".into(),
+                    size: 39_896_504,
+                    ..Default::default()
+                },
+                ManifestFile {
+                    name: "Anno1404.exe".into(),
+                    size: 38_256_568,
+                    ..Default::default()
+                },
+                ManifestFile {
+                    name: "cleanup.exe".into(),
+                    size: 120_760,
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        };
+        assert_eq!(pick_executable(&manifest), "Anno1404.exe");
     }
 
     #[test]
