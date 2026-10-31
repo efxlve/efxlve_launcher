@@ -66,6 +66,11 @@ async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
     if name.is_empty() {
         name = "Player".to_string();
     }
+    if ticket.is_empty() {
+        // The shim only needs a non-null value here; ownership was already
+        // checked against Demux before the launch path was reached.
+        ticket = "efxlve".to_string();
+    }
     let handle: String = name
         .chars()
         .filter(|c| c.is_ascii_alphanumeric())

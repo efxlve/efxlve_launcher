@@ -124,25 +124,32 @@ pub(crate) fn detect(exe: &Path) -> Result<Option<Loader>, String> {
         return Err("this game uses the Orbit R2 loader, which is not supported yet".to_string());
     }
     let x64 = pe_is_64(&bytes).unwrap_or(true);
-    let names: &[(&str, Family)] = if x64 {
+    // (needle in the exe, family, DLL to place next to it). Some titles import
+    // a small `uplay32.dll`/`uplay64.dll` proxy that loads the real loader, so
+    // the proxy has to map to the loader name the proxy expects.
+    let names: &[(&str, Family, &str)] = if x64 {
         &[
-            ("uplay_r1_loader64.dll", Family::R1),
-            ("upc_r1_loader64.dll", Family::R1),
-            ("uplay_r2_loader64.dll", Family::R2),
-            ("upc_r2_loader64.dll", Family::R2),
+            ("uplay_r1_loader64.dll", Family::R1, "uplay_r1_loader64.dll"),
+            ("upc_r1_loader64.dll", Family::R1, "upc_r1_loader64.dll"),
+            ("uplay_r2_loader64.dll", Family::R2, "uplay_r2_loader64.dll"),
+            ("upc_r2_loader64.dll", Family::R2, "upc_r2_loader64.dll"),
+            ("uplay64.dll", Family::R1, "uplay_r1_loader64.dll"),
+            ("upc64.dll", Family::R2, "upc_r2_loader64.dll"),
         ]
     } else {
         &[
-            ("uplay_r1_loader.dll", Family::R1),
-            ("upc_r1_loader.dll", Family::R1),
-            ("uplay_r2_loader.dll", Family::R2),
-            ("upc_r2_loader.dll", Family::R2),
+            ("uplay_r1_loader.dll", Family::R1, "uplay_r1_loader.dll"),
+            ("upc_r1_loader.dll", Family::R1, "upc_r1_loader.dll"),
+            ("uplay_r2_loader.dll", Family::R2, "uplay_r2_loader.dll"),
+            ("upc_r2_loader.dll", Family::R2, "upc_r2_loader.dll"),
+            ("uplay32.dll", Family::R1, "uplay_r1_loader.dll"),
+            ("upc32.dll", Family::R2, "upc_r2_loader.dll"),
         ]
     };
-    for (name, family) in names {
-        if contains(&bytes, name.as_bytes()) {
+    for (needle, family, target) in names {
+        if contains(&bytes, needle.as_bytes()) {
             return Ok(Some(Loader {
-                name: (*name).to_string(),
+                name: (*target).to_string(),
                 family: *family,
                 x64,
             }));
@@ -294,6 +301,19 @@ mod tests {
         let exe = root.join("game.exe");
         std::fs::write(&exe, fake_exe("steam_api64.dll", 0x8664)).unwrap();
         assert!(detect(&exe).unwrap().is_none());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn maps_the_32_bit_uplay_proxy_to_the_loader() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-proxy-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let exe = root.join("proxy.exe");
+        std::fs::write(&exe, fake_exe("uplay32.dll", 0x014c)).unwrap();
+        let loader = detect(&exe).unwrap().unwrap();
+        assert_eq!(loader.name, "uplay_r1_loader.dll");
+        assert_eq!(loader.family, Family::R1);
+        assert!(!loader.x64);
         let _ = std::fs::remove_dir_all(&root);
     }
 

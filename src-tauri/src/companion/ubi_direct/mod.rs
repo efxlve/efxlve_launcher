@@ -231,4 +231,20 @@ mod tests {
         println!("{summary:?}");
         assert!(summary.bytes > 0);
     }
+
+    #[tokio::test]
+    #[ignore = "launches an installed game; needs EFXLVE_UBI_TEST_PRODUCT"]
+    async fn live_launch_installed_game() {
+        let product_id: u32 = std::env::var("EFXLVE_UBI_TEST_PRODUCT")
+            .expect("set EFXLVE_UBI_TEST_PRODUCT")
+            .parse()
+            .expect("product id must be a number");
+        let installed = crate::companion::ubi_installs::find(product_id)
+            .expect("the game must be installed by the launcher first");
+        let exe = std::path::Path::new(&installed.install_dir).join(&installed.exe);
+        println!("exe={}", exe.display());
+        let loader = shim::detect(&exe).expect("loader detection");
+        println!("loader={loader:?}");
+        launch_game(product_id, true).await.expect("direct launch");
+    }
 }
