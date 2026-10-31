@@ -100,13 +100,15 @@ at full size. Then add a direct "send this tab to PiP" action.
 
 `src-tauri/src/companion/ubi_direct/` now owns the Demux ownership/manifest
 query, the CDN download with resume/reconnect, per-slice verify/repair, the MIT
-Uplay R1/R2 shim and the direct launch. Rayman Origins (R1 x86) and the
-launcher's Play path are validated without the Connect client; its verify pass
-reports 201/201 files clean. The install dialog now offers **direct** or
-**Ubisoft Connect** per game. Assassin's Creed Chronicles China installs
-(3.6 GB) but crashes at startup with both tested R1 shims (0xc0000005);
-PCGamingWiki lists it as requiring Ubisoft Connect DRM, so it stays on the
-client. Open work:
+Uplay R1/R2 shim and the direct launch. Rayman Origins (R1 x86) and
+Anno 1404 History Edition (R1 x64, adopted from a client install) both launch
+without the Connect process; Rayman's verify pass reports 201/201 files clean.
+The install dialog now offers **direct** or **Ubisoft Connect** per game, and a
+catalog-only row resolves its numeric product id so the client opens that game's
+install page instead of its default window. Assassin's Creed Chronicles China
+installs (3.6 GB) but crashes at startup with both tested R1 shims
+(0xc0000005); PCGamingWiki lists it as requiring Ubisoft Connect DRM, so it
+stays on the client. Open work:
 
 - R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
   real R2 title. A manifest scan of the linked account found
@@ -116,8 +118,10 @@ client. Open work:
   target in this catalogue.
 - An existing Connect install can be adopted from Manage without moving or
   re-downloading it, and released back with its official loaders restored.
-  Adopting a genuine Connect-installed folder is still untested; the live test
-  needs a linked session and one client install.
+  Anno 1404 History Edition was adopted and launched directly with no Connect
+  process. An adopted install still lives under the Connect launcher folder; a
+  move-to-library action is needed before the client is uninstalled, because
+  its uninstaller may remove that tree.
 - Update checking compares the recorded CDN manifest id with the manifest
   ownership reports now, and Manage offers Check for updates. Applying an
   update reuses verify/repair: changed files are re-downloaded whole, not
