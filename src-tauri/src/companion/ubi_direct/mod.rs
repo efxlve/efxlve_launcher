@@ -171,7 +171,7 @@ mod tests {
             "account={} total={} installable={}",
             probe.account, probe.total, probe.installable
         );
-        for game in probe.games.iter().take(20) {
+        for game in probe.games.iter().take(50) {
             println!(
                 "  {} product={} uplay={} installable={} manifest={}",
                 game.name, game.product_id, game.uplay_id, game.installable, game.manifest
@@ -196,5 +196,39 @@ mod tests {
             plan.name, plan.files, plan.slices, plan.bytes, plan.compression, plan.slice_layout
         );
         assert!(plan.files > 0);
+    }
+
+    #[tokio::test]
+    #[ignore = "downloads a full game; needs EFXLVE_UBI_TEST_PRODUCT, EFXLVE_UBI_TEST_DIR and a linked session"]
+    async fn live_install_downloads_a_game() {
+        let product_id: u32 = std::env::var("EFXLVE_UBI_TEST_PRODUCT")
+            .expect("set EFXLVE_UBI_TEST_PRODUCT")
+            .parse()
+            .expect("product id must be a number");
+        let directory = std::env::var("EFXLVE_UBI_TEST_DIR")
+            .expect("set EFXLVE_UBI_TEST_DIR");
+        let (mut demux, _) = connect().await.expect("Demux connect failed");
+        let mut last = 0u64;
+        let summary = install::install(
+            &mut demux,
+            product_id,
+            std::path::Path::new(&directory),
+            |progress| {
+                let step = progress.total_bytes / 20;
+                if progress.done_bytes - last >= step {
+                    last = progress.done_bytes;
+                    println!(
+                        "{} / {} MB — {}",
+                        progress.done_bytes / 1_000_000,
+                        progress.total_bytes / 1_000_000,
+                        progress.file
+                    );
+                }
+            },
+        )
+        .await
+        .expect("direct install failed");
+        println!("{summary:?}");
+        assert!(summary.bytes > 0);
     }
 }

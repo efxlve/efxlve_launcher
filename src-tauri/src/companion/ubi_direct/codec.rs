@@ -610,4 +610,50 @@ mod tests {
         assert_eq!(games[0].latest_manifest, "manifest-123");
         assert!(games[0].configuration.contains("GAMENAME"));
     }
+
+    #[test]
+    fn manifest_token_and_ticket_responses_are_unwrapped() {
+        // DeprecatedGetLatestManifestsRsp is Rsp field 10.
+        let mut manifest = Vec::new();
+        push_varint_field(&mut manifest, 1, 1);
+        push_varint_field(&mut manifest, 2, 7);
+        push_string(&mut manifest, 3, "abc");
+        let mut manifests = Vec::new();
+        push_varint_field(&mut manifests, 1, 1);
+        push_bytes(&mut manifests, 2, &manifest);
+        let mut rsp = Vec::new();
+        push_bytes(&mut rsp, 10, &manifests);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        assert_eq!(
+            parse_manifests_rsp(&downstream),
+            vec![(7, "abc".to_string())]
+        );
+
+        // OwnershipTokenRsp is Rsp field 27.
+        let mut token = Vec::new();
+        push_bool(&mut token, 1, true);
+        push_string(&mut token, 2, "ownership-token");
+        let mut rsp = Vec::new();
+        push_bytes(&mut rsp, 27, &token);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        assert_eq!(
+            parse_ownership_token(&downstream).as_deref(),
+            Some("ownership-token")
+        );
+
+        // GetUplayPCTicketRsp is Rsp field 13.
+        let mut ticket = Vec::new();
+        push_bool(&mut ticket, 1, true);
+        push_string(&mut ticket, 2, "uplay-ticket");
+        let mut rsp = Vec::new();
+        push_bytes(&mut rsp, 13, &ticket);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        assert_eq!(
+            parse_uplay_ticket(&downstream).as_deref(),
+            Some("uplay-ticket")
+        );
+    }
 }
