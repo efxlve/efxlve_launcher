@@ -1154,6 +1154,7 @@
   "verify.successDetail": "ファイルの検証に成功しました。すべてのファイルは正常です。",
   "verify.problem": "検証中に問題が発生したか、一部のファイルが不足しています。",
   "verify.manifestMissing": "ゲームのマニフェストファイルが見つかりません。ゲームを検証するか、再度リンクしてください。",
+  "verify.corruptDetail": "Epic 版と異なるファイル {a1} 件、欠落 {a2} 件。",
   "manage.todayAt": "今日 {a1}",
   "manage.cloudSyncedOk": "クラウドセーブの同期に成功しました。",
   "manage.notInstalled": "ゲームはインストールされていないか、見つかりません。",

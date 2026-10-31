@@ -1154,6 +1154,7 @@
   "verify.successDetail": "文件验证成功。所有文件完好。",
   "verify.problem": "验证过程中出现问题，或缺少部分文件。",
   "verify.manifestMissing": "未找到游戏清单文件。请验证游戏或重新关联。",
+  "verify.corruptDetail": "与 Epic 版本不同：{a1} 个文件已更改，{a2} 个缺失。",
   "manage.todayAt": "今天 {a1}",
   "manage.cloudSyncedOk": "云存档同步成功。",
   "manage.notInstalled": "游戏未安装或找不到。",

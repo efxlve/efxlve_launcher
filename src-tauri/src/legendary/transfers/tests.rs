@@ -119,6 +119,22 @@ fn a_logged_error_beats_a_zero_exit() {
     ));
 }
 
+#[test]
+fn debug_noise_does_not_hide_the_cloud_sync_failure() {
+    // Legendary probes its overlay record at startup; a missing file is normal
+    // and prints "Failed to load ...", which used to become the sync error.
+    let noise = "[LGDLFS] DEBUG: Failed to load overlay install data: FileNotFoundError(2, 'No such file or directory')";
+    assert_eq!(short_error(noise), "@t:common.unknownError");
+
+    let with_cause = format!(
+        "{noise}\n[cli] INFO: Uploading local savegame...\n[cli] CRITICAL: Game not installed: 9169"
+    );
+    assert_eq!(
+        short_error(&with_cause),
+        "[cli] CRITICAL: Game not installed: 9169"
+    );
+}
+
 #[tokio::test]
 async fn crlf_lines_splits_on_carriage_return() {
     // Legendary overwrites progress with `\r`; the reader must split on both \r and \n.

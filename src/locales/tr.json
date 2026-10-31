@@ -1226,6 +1226,7 @@
   "verify.successDetail": "Dosyalar başarıyla doğrulandı. Tüm dosyalar sağlam.",
   "verify.problem": "Dosya doğrulama sırasında bir sorun oluştu veya eksik dosyalar var.",
   "verify.manifestMissing": "Oyun manifest dosyası bulunamadı. Lütfen oyunu kontrol edin veya yeniden bağlayın.",
+  "verify.corruptDetail": "Epic sürümünden farklı {a1} dosya, eksik {a2} dosya var.",
   "manage.todayAt": "Bugün {a1}",
   "manage.cloudSyncedOk": "Bulut kayıtları başarıyla eşitlendi.",
   "manage.notInstalled": "Oyun kurulu değil veya bulunamadı.",

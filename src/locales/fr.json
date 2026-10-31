@@ -1154,6 +1154,7 @@
   "verify.successDetail": "Fichiers vérifiés. Tous les fichiers sont intacts.",
   "verify.problem": "Un problème est survenu pendant la vérification ou des fichiers manquent.",
   "verify.manifestMissing": "Fichier manifeste du jeu introuvable. Vérifie le jeu ou relie-le.",
+  "verify.corruptDetail": "{a1} fichier(s) diffèrent de la version Epic, {a2} manquant(s).",
   "manage.todayAt": "Aujourd'hui {a1}",
   "manage.cloudSyncedOk": "Sauvegardes cloud synchronisées.",
   "manage.notInstalled": "Le jeu n'est pas installé ou est introuvable.",

@@ -199,6 +199,34 @@ pub(super) fn has_hard_error(err_text: &str) -> bool {
     })
 }
 
+/// Traceback frames and the HTTP stack repeat the exception without naming the
+/// cause, so they never make good error messages on their own.
+fn is_python_frame(line: &str) -> bool {
+    line.starts_with("[PYI-")
+        || line.starts_with("Traceback")
+        || line.starts_with("File \"")
+        || line.starts_with("The above exception")
+        || line.starts_with("During handling of")
+        || line.starts_with("urllib3.")
+        || line.starts_with("requests.exceptions.")
+        || line.starts_with("[Core] WARNING:")
+}
+
+/// Legendary's routine log lines. A DEBUG line can read like a failure
+/// ("Failed to load overlay install data") even though a missing overlay
+/// record is normal, so it must never win the error pick below.
+fn is_routine_log(line: &str) -> bool {
+    line.contains(" DEBUG:") || line.starts_with("DEBUG:")
+}
+
+/// Routine lines are also useless as context: an upload that failed for an
+/// unknown reason would otherwise be reported as "Finished uploading savegame".
+fn is_routine_context(line: &str) -> bool {
+    is_routine_log(line)
+        || line.contains(" INFO:")
+        || line.starts_with("INFO:")
+}
+
 pub(crate) fn short_error(err_text: &str) -> String {
     let low = err_text.to_lowercase();
     if low.contains("429") || low.contains("too many requests") {
@@ -241,15 +269,7 @@ pub(crate) fn short_error(err_text: &str) -> String {
         .iter()
         .filter(|l| {
             let l_trim = l.trim();
-            if l_trim.starts_with("[PYI-")
-                || l_trim.starts_with("Traceback")
-                || l_trim.starts_with("File \"")
-                || l_trim.starts_with("[Core] WARNING:")
-                || l_trim.starts_with("The above exception")
-                || l_trim.starts_with("During handling of")
-                || l_trim.starts_with("urllib3.")
-                || l_trim.starts_with("requests.exceptions.")
-            {
+            if is_python_frame(l_trim) || is_routine_log(l_trim) {
                 return false;
             }
             let l_low = l_trim.to_lowercase();
@@ -264,15 +284,7 @@ pub(crate) fn short_error(err_text: &str) -> String {
             .iter()
             .filter(|l| {
                 let l_trim = l.trim();
-                !l_trim.starts_with("[PYI-")
-                    && !l_trim.starts_with("Traceback")
-                    && !l_trim.starts_with("File \"")
-                    && !l_trim.starts_with("[Core] WARNING:")
-                    && !l_trim.starts_with("The above exception")
-                    && !l_trim.starts_with("During handling of")
-                    && !l_trim.starts_with("urllib3.")
-                    && !l_trim.starts_with("requests.exceptions.")
-                    && !l_trim.is_empty()
+                !l_trim.is_empty() && !is_python_frame(l_trim) && !is_routine_context(l_trim)
             })
             .rev()
             .take(2)

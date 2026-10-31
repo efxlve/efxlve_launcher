@@ -1154,6 +1154,7 @@
   "verify.successDetail": "تم التحقق من الملفات بنجاح. كل الملفات سليمة.",
   "verify.problem": "حدثت مشكلة أثناء التحقق أو بعض الملفات مفقودة.",
   "verify.manifestMissing": "لم يُعثر على ملف بيان اللعبة. يرجى التحقق من اللعبة أو إعادة ربطها.",
+  "verify.corruptDetail": "{a1} ملف مختلف عن إصدار Epic، و{a2} مفقود.",
   "manage.todayAt": "اليوم {a1}",
   "manage.cloudSyncedOk": "تمت مزامنة الحفظ السحابي بنجاح.",
   "manage.notInstalled": "اللعبة غير مثبتة أو تعذر العثور عليها.",

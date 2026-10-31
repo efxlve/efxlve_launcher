@@ -1154,6 +1154,7 @@
   "verify.successDetail": "File verificati. Tutti i file sono integri.",
   "verify.problem": "Si è verificato un problema durante la verifica o mancano alcuni file.",
   "verify.manifestMissing": "File manifest del gioco non trovato. Verifica il gioco o ricollegalo.",
+  "verify.corruptDetail": "{a1} file diversi dalla versione Epic, {a2} mancanti.",
   "manage.todayAt": "Oggi {a1}",
   "manage.cloudSyncedOk": "Salvataggi cloud sincronizzati.",
   "manage.notInstalled": "Il gioco non è installato o non è stato trovato.",

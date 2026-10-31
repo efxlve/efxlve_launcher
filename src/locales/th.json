@@ -1154,6 +1154,7 @@
   "verify.successDetail": "ตรวจสอบไฟล์สำเร็จ ไฟล์ทั้งหมดสมบูรณ์",
   "verify.problem": "เกิดปัญหาระหว่างตรวจสอบ หรือไฟล์บางส่วนหายไป",
   "verify.manifestMissing": "ไม่พบไฟล์แมนิเฟสต์ของเกม โปรดตรวจสอบเกมหรือเชื่อมใหม่",
+  "verify.corruptDetail": "ไฟล์ต่างจากเวอร์ชัน Epic {a1} ไฟล์ ขาดหาย {a2} ไฟล์",
   "manage.todayAt": "วันนี้ {a1}",
   "manage.cloudSyncedOk": "ซิงค์เซฟบนคลาวด์สำเร็จ",
   "manage.notInstalled": "เกมไม่ได้ติดตั้งหรือหาไม่พบ",

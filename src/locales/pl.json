@@ -1154,6 +1154,7 @@
   "verify.successDetail": "Pliki zweryfikowane. Wszystkie pliki są nienaruszone.",
   "verify.problem": "Podczas weryfikacji wystąpił problem albo brakuje części plików.",
   "verify.manifestMissing": "Nie znaleziono pliku manifestu gry. Zweryfikuj grę albo powiąż ją ponownie.",
+  "verify.corruptDetail": "{a1} plików różni się od wersji Epic, {a2} brakuje.",
   "manage.todayAt": "Dzisiaj {a1}",
   "manage.cloudSyncedOk": "Zapisy w chmurze zsynchronizowane.",
   "manage.notInstalled": "Gra nie jest zainstalowana albo nie została znaleziona.",

@@ -1226,6 +1226,7 @@
   "verify.successDetail": "Files verified successfully. All files are intact.",
   "verify.problem": "A problem occurred during verification or some files are missing.",
   "verify.manifestMissing": "Game manifest file not found. Please verify the game or re-link it.",
+  "verify.corruptDetail": "{a1} file(s) differ from the Epic build, {a2} missing.",
   "manage.todayAt": "Today {a1}",
   "manage.cloudSyncedOk": "Cloud saves synced successfully.",
   "manage.notInstalled": "Game is not installed or could not be found.",

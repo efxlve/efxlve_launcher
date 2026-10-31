@@ -1154,6 +1154,7 @@
   "verify.successDetail": "Archivos comprobados correctamente. Todos los archivos están intactos.",
   "verify.problem": "Hubo un problema durante la comprobación o faltan algunos archivos.",
   "verify.manifestMissing": "No se encontró el manifiesto del juego. Comprueba el juego o vuelve a vincularlo.",
+  "verify.corruptDetail": "{a1} archivo(s) difieren de la versión de Epic, {a2} faltan.",
   "manage.todayAt": "Hoy {a1}",
   "manage.cloudSyncedOk": "Partidas en la nube sincronizadas correctamente.",
   "manage.notInstalled": "El juego no está instalado o no se encontró.",

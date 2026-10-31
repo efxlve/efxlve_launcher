@@ -1154,6 +1154,7 @@
   "verify.successDetail": "파일을 확인했습니다. 모든 파일이 정상입니다.",
   "verify.problem": "확인 중 문제가 발생했거나 일부 파일이 없습니다.",
   "verify.manifestMissing": "게임 매니페스트 파일을 찾을 수 없습니다. 게임을 확인하거나 다시 연결하세요.",
+  "verify.corruptDetail": "Epic 빌드와 다른 파일 {a1}개, 누락 {a2}개.",
   "manage.todayAt": "오늘 {a1}",
   "manage.cloudSyncedOk": "클라우드 저장을 동기화했습니다.",
   "manage.notInstalled": "게임이 설치되어 있지 않거나 찾을 수 없습니다.",

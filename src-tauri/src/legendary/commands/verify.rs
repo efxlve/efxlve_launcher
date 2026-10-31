@@ -111,6 +111,48 @@ pub fn parse_verify_progress(line: &str) -> Option<ParsedVerifyProgress> {
     None
 }
 
+/// Verifies run to completion even when files fail their hash: Legendary then
+/// logs `Verification failed, 8 file(s) corrupted, 0 file(s) are missing.` and
+/// exits 0. Turn that summary into a descriptor so the toast can carry counts.
+fn verify_failure_message(raw: &str) -> String {
+    if let Some((changed, missing)) = parse_verify_summary(raw) {
+        return format!("@t:verify.corruptDetail\u{1f}{changed}\u{1f}{missing}");
+    }
+    let line = strip_log_prefix(raw);
+    if line.is_empty() {
+        "@t:verify.problem".to_string()
+    } else {
+        line.to_string()
+    }
+}
+
+fn parse_verify_summary(line: &str) -> Option<(u64, u64)> {
+    let rest = line.split_once("Verification failed,")?.1.trim();
+    let changed = rest.split_whitespace().next()?.parse().ok()?;
+    let after = rest.split_once(" corrupted,")?.1.trim();
+    let missing = after.split_whitespace().next()?.parse().ok()?;
+    after
+        .contains("file(s) are missing")
+        .then_some((changed, missing))
+}
+
+/// `[cli] ERROR: ` belongs to Legendary's log format, not to the message.
+fn strip_log_prefix(line: &str) -> &str {
+    let mut text = line.trim();
+    if text.starts_with('[') {
+        if let Some((_, rest)) = text.split_once("] ") {
+            text = rest.trim();
+        }
+    }
+    for level in ["ERROR:", "CRITICAL:", "WARNING:", "INFO:", "DEBUG:"] {
+        if let Some(rest) = text.strip_prefix(level) {
+            text = rest.trim();
+            break;
+        }
+    }
+    text
+}
+
 #[tauri::command]
 pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String, String> {
     let bin = resolve_or_err(&app)?;
@@ -253,7 +295,7 @@ pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String
         let msg = if raw_err.contains("Manifest appears to be missing") {
             "@t:verify.manifestMissing".to_string()
         } else {
-            raw_err
+            verify_failure_message(&raw_err)
         };
         let _ = app.emit(
             "verify-complete",
@@ -263,7 +305,9 @@ pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String
                 message: msg.clone(),
             },
         );
-        Err(msg)
+        // The completion event already reported the result; returning another
+        // error makes the caller show the same failure a second time.
+        Ok(msg)
     }
 }
 
@@ -289,5 +333,29 @@ mod tests {
         assert_eq!(p2.speed, "536.4 MiB/s");
         assert!(p2.detail.contains("audio_2_soundbanks.archive"));
         assert!(p2.detail.contains("4873.0/8419.3 MiB"));
+    }
+
+    #[test]
+    fn corrupt_files_become_a_counted_descriptor() {
+        let raw =
+            "[cli] ERROR: Verification failed, 8 file(s) corrupted, 0 file(s) are missing.";
+        assert_eq!(
+            verify_failure_message(raw),
+            "@t:verify.corruptDetail\u{1f}8\u{1f}0"
+        );
+    }
+
+    #[test]
+    fn other_verify_errors_lose_the_log_prefix() {
+        let raw = "[cli] ERROR: Install path \"D:\\\\Games\" does not exist.";
+        assert_eq!(
+            verify_failure_message(raw),
+            "Install path \"D:\\\\Games\" does not exist."
+        );
+        // Already a descriptor or unknown: leave it alone.
+        assert_eq!(
+            verify_failure_message("@t:verify.problem"),
+            "@t:verify.problem"
+        );
     }
 }
