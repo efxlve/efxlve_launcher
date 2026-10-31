@@ -109,8 +109,15 @@ PCGamingWiki lists it as requiring Ubisoft Connect DRM, so it stays on the
 client. Open work:
 
 - R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
-  real R2 title; the user's R2 catalogue starts at large titles (Far Cry 5 /
-  AC Origins class).
+  real R2 title. A manifest scan of the linked account found
+  `upc_r2_loader64.dll` only in online titles (For Honor, Rainbow Six Siege);
+  every single-player title, including AC Origins and Watch Dogs 2, ships
+  `uplay_r1_loader64.dll`. R2 direct launch therefore has no single-player
+  target in this catalogue.
+- An existing Connect install can be adopted from Manage without moving or
+  re-downloading it, and released back with its official loaders restored.
+  Adopting a genuine Connect-installed folder is still untested; the live test
+  needs a linked session and one client install.
 - Update checking compares the recorded CDN manifest id with the manifest
   ownership reports now, and Manage offers Check for updates. Applying an
   update reuses verify/repair: changed files are re-downloaded whole, not

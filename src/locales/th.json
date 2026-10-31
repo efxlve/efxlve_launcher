@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "เป็นเวอร์ชันล่าสุด",
   "manage.ubiUpdateUnknown": "ไม่ทราบบิลด์ที่ติดตั้ง เรียกใช้ตรวจสอบหนึ่งครั้งเพื่อบันทึก",
   "manage.ubiUpdateApply": "อัปเดต",
-  "manage.ubiUpdating": "กำลังอัปเดต…"
+  "manage.ubiUpdating": "กำลังอัปเดต…",
+  "manage.ubiAdoptTitle": "ใช้การติดตั้งนี้",
+  "manage.ubiAdoptDesc": "โฟลเดอร์นี้ติดตั้งโดย Ubisoft Connect การรับช่วงจะเริ่มเกมด้วย shim ในเครื่องของตัวเรียกเกม โดยไม่ย้ายหรือดาวน์โหลดไฟล์ใหม่",
+  "manage.ubiAdopt": "ใช้โดยไม่มี Ubisoft Connect",
+  "manage.ubiAdoptWorking": "กำลังเตรียมการติดตั้ง…",
+  "manage.ubiAdoptDone": "การติดตั้งนี้เริ่มได้โดยไม่มี Ubisoft Connect แล้ว",
+  "manage.ubiRelease": "คืนให้ Connect",
+  "manage.ubiReleaseConfirm": "คืนตัวโหลด Ubisoft อย่างเป็นทางการและหยุดจัดการโฟลเดอร์นี้หรือไม่ ไฟล์เกมจะยังอยู่",
+  "manage.ubiReleaseDone": "การติดตั้งกลับมาอยู่ภายใต้ Ubisoft Connect แล้ว"
 }

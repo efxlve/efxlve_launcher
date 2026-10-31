@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "Güncel.",
   "manage.ubiUpdateUnknown": "Kurulu sürüm bilinmiyor. Kaydetmek için bir kez Doğrula çalıştırın.",
   "manage.ubiUpdateApply": "Güncelle",
-  "manage.ubiUpdating": "Güncelleniyor…"
+  "manage.ubiUpdating": "Güncelleniyor…",
+  "manage.ubiAdoptTitle": "Bu kurulumu kullan",
+  "manage.ubiAdoptDesc": "Bu klasör Ubisoft Connect tarafından kuruldu. Devralmak, dosyaları taşımadan veya yeniden indirmeden oyunu başlatıcının yerel shim'i ile açar.",
+  "manage.ubiAdopt": "Ubisoft Connect'siz kullan",
+  "manage.ubiAdoptWorking": "Kurulum hazırlanıyor…",
+  "manage.ubiAdoptDone": "Bu kurulum artık Ubisoft Connect olmadan başlıyor.",
+  "manage.ubiRelease": "Connect'e bırak",
+  "manage.ubiReleaseConfirm": "Resmi Ubisoft yükleyicileri geri yüklensin ve bu klasör yönetimi bırakılsın mı? Oyun dosyaları yerinde kalır.",
+  "manage.ubiReleaseDone": "Kurulum yeniden Ubisoft Connect yönetiminde."
 }

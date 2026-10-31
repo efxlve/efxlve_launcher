@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "Up to date.",
   "manage.ubiUpdateUnknown": "Installed build unknown. Run Verify once to record it.",
   "manage.ubiUpdateApply": "Update",
-  "manage.ubiUpdating": "Updating…"
+  "manage.ubiUpdating": "Updating…",
+  "manage.ubiAdoptTitle": "Use this install",
+  "manage.ubiAdoptDesc": "This folder was installed by Ubisoft Connect. Adopting it starts the game with the launcher's local shim, without moving or re-downloading the files.",
+  "manage.ubiAdopt": "Use without Ubisoft Connect",
+  "manage.ubiAdoptWorking": "Preparing this install…",
+  "manage.ubiAdoptDone": "This install now starts without Ubisoft Connect.",
+  "manage.ubiRelease": "Release to Connect",
+  "manage.ubiReleaseConfirm": "Restore the official Ubisoft loaders and stop managing this folder? The game files stay in place.",
+  "manage.ubiReleaseDone": "The install is back under Ubisoft Connect."
 }

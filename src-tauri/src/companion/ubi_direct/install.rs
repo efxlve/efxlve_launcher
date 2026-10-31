@@ -682,7 +682,7 @@ fn install_register(config: &str) -> String {
 /// Pick the game executable out of the manifest. The main binary is the largest
 /// `.exe` that is not a redistributable, installer, crash reporter or helper.
 /// A title whose launcher lives elsewhere can be pointed at by hand later.
-fn pick_executable(manifest: &Manifest) -> String {
+pub(crate) fn pick_executable(manifest: &Manifest) -> String {
     const JUNK: &[&str] = &[
         "vcredist",
         "vc_redist",

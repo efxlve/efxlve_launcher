@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "最新です。",
   "manage.ubiUpdateUnknown": "インストール済みビルドが不明です。記録するには「検証」を一度実行してください。",
   "manage.ubiUpdateApply": "更新",
-  "manage.ubiUpdating": "更新中…"
+  "manage.ubiUpdating": "更新中…",
+  "manage.ubiAdoptTitle": "このインストールを使う",
+  "manage.ubiAdoptDesc": "このフォルダーは Ubisoft Connect がインストールしました。引き継ぐと、ファイルを移動や再ダウンロードせずに、ランチャーのローカル shim でゲームを起動します。",
+  "manage.ubiAdopt": "Ubisoft Connect なしで使う",
+  "manage.ubiAdoptWorking": "インストールを準備しています…",
+  "manage.ubiAdoptDone": "このインストールは Ubisoft Connect なしで起動するようになりました。",
+  "manage.ubiRelease": "Connect に戻す",
+  "manage.ubiReleaseConfirm": "公式の Ubisoft ローダーを復元し、このフォルダーの管理をやめますか？ゲームファイルはそのまま残ります。",
+  "manage.ubiReleaseDone": "インストールは再び Ubisoft Connect の管理下に戻りました。"
 }

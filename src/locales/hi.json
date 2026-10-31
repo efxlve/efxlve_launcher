@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "अप टू डेट।",
   "manage.ubiUpdateUnknown": "इंस्टॉल किया गया बिल्ड अज्ञात है। दर्ज करने के लिए एक बार सत्यापित करें चलाएँ।",
   "manage.ubiUpdateApply": "अपडेट करें",
-  "manage.ubiUpdating": "अपडेट हो रहा है…"
+  "manage.ubiUpdating": "अपडेट हो रहा है…",
+  "manage.ubiAdoptTitle": "यह इंस्टॉल इस्तेमाल करें",
+  "manage.ubiAdoptDesc": "यह फ़ोल्डर Ubisoft Connect ने इंस्टॉल किया था। इसे अपनाने पर गेम लॉन्चर के स्थानीय shim से शुरू होता है, फ़ाइलें हटाए या फिर से डाउनलोड किए बिना।",
+  "manage.ubiAdopt": "Ubisoft Connect के बिना इस्तेमाल करें",
+  "manage.ubiAdoptWorking": "यह इंस्टॉल तैयार हो रहा है…",
+  "manage.ubiAdoptDone": "यह इंस्टॉल अब Ubisoft Connect के बिना शुरू होता है।",
+  "manage.ubiRelease": "Connect को वापस दें",
+  "manage.ubiReleaseConfirm": "आधिकारिक Ubisoft लोडर बहाल करें और इस फ़ोल्डर को प्रबंधित करना बंद करें? गेम की फ़ाइलें वहीं रहेंगी।",
+  "manage.ubiReleaseDone": "इंस्टॉल फिर से Ubisoft Connect के अंतर्गत है।"
 }

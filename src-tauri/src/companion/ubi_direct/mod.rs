@@ -7,6 +7,7 @@
 //! depend on `UbisoftConnect.exe` being installed or running.
 
 mod achievements;
+mod adopt;
 mod auth;
 mod codec;
 pub(crate) mod install;
@@ -19,6 +20,7 @@ pub(crate) mod verify;
 pub(crate) mod wire;
 
 pub(crate) use achievements::merge as merge_achievements;
+pub(crate) use adopt::{adopt as adopt_game, release as release_game, AdoptedInstall};
 pub(crate) use saves::{path_for as save_path, path_for_product as save_path_for_product};
 
 use serde::Serialize;
@@ -260,6 +262,25 @@ mod tests {
         assert!(json.contains("\"productId\":1"));
         assert!(json.contains("\"uplayId\":2"));
         assert!(json.contains("\"installable\":true"));
+    }
+
+    #[tokio::test]
+    #[ignore = "needs a linked Ubisoft session"]
+    async fn live_probe_lists_non_base_products() {
+        let (mut demux, _) = connect().await.expect("Demux connect failed");
+        let owned = demux.owned_games().await.expect("ownership");
+        for game in owned.iter().filter(|game| game.product_type != 0) {
+            let name = ubisoft::game_name(&game.configuration).unwrap_or_default();
+            println!(
+                "type={} product={} uplay={} owned={} manifest={} name={}",
+                game.product_type,
+                game.product_id,
+                game.uplay_id,
+                game.owned,
+                game.latest_manifest,
+                name
+            );
+        }
     }
 
     #[tokio::test]

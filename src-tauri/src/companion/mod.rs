@@ -628,6 +628,21 @@ pub async fn ubi_direct_update_check(
     ubi_direct::check_update(record.product_id).await
 }
 
+/// Adopt an install Ubisoft Connect created, without re-downloading it.
+#[tauri::command]
+pub async fn ubi_direct_adopt(
+    product_id: u32,
+    install_path: String,
+) -> Result<ubi_direct::AdoptedInstall, String> {
+    ubi_direct::adopt_game(product_id, std::path::Path::new(&install_path)).await
+}
+
+/// Hand an adopted install back to Ubisoft Connect and restore its loaders.
+#[tauri::command]
+pub fn ubi_direct_release(product_id: u32) -> Result<usize, String> {
+    ubi_direct::release_game(product_id)
+}
+
 /// Switch one direct install between the local shim and the official client.
 #[tauri::command]
 pub fn ubi_direct_set_client_launch(install_path: String, enabled: bool) -> Result<(), String> {

@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "Aggiornato.",
   "manage.ubiUpdateUnknown": "Build installata sconosciuta. Esegui Verifica una volta per registrarla.",
   "manage.ubiUpdateApply": "Aggiorna",
-  "manage.ubiUpdating": "Aggiornamento…"
+  "manage.ubiUpdating": "Aggiornamento…",
+  "manage.ubiAdoptTitle": "Usa questa installazione",
+  "manage.ubiAdoptDesc": "Questa cartella è stata installata da Ubisoft Connect. Adottarla avvia il gioco con lo shim locale del launcher, senza spostare o riscaricare i file.",
+  "manage.ubiAdopt": "Usa senza Ubisoft Connect",
+  "manage.ubiAdoptWorking": "Preparazione dell'installazione…",
+  "manage.ubiAdoptDone": "Questa installazione ora si avvia senza Ubisoft Connect.",
+  "manage.ubiRelease": "Rilascia a Connect",
+  "manage.ubiReleaseConfirm": "Ripristinare i loader ufficiali Ubisoft e smettere di gestire questa cartella? I file del gioco restano al loro posto.",
+  "manage.ubiReleaseDone": "L'installazione è di nuovo gestita da Ubisoft Connect."
 }

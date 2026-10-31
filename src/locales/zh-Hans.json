@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "已是最新。",
   "manage.ubiUpdateUnknown": "已安装的构建未知。请运行一次验证以记录。",
   "manage.ubiUpdateApply": "更新",
-  "manage.ubiUpdating": "正在更新…"
+  "manage.ubiUpdating": "正在更新…",
+  "manage.ubiAdoptTitle": "使用此安装",
+  "manage.ubiAdoptDesc": "此文件夹由 Ubisoft Connect 安装。接管后，游戏将使用启动器的本地 shim 启动，无需移动或重新下载文件。",
+  "manage.ubiAdopt": "不使用 Ubisoft Connect 运行",
+  "manage.ubiAdoptWorking": "正在准备此安装…",
+  "manage.ubiAdoptDone": "此安装现在无需 Ubisoft Connect 即可启动。",
+  "manage.ubiRelease": "交还给 Connect",
+  "manage.ubiReleaseConfirm": "恢复官方 Ubisoft 加载器并停止管理此文件夹？游戏文件将保留在原处。",
+  "manage.ubiReleaseDone": "此安装已重新交由 Ubisoft Connect 管理。"
 }

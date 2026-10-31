@@ -182,6 +182,22 @@ export interface UbiUpdateCheck {
 export const ubiDirectUpdateCheck = (installPath: string) =>
   invoke<UbiUpdateCheck>("ubi_direct_update_check", { installPath });
 
+/** One install the launcher adopted from Ubisoft Connect. */
+export interface UbiAdoptedInstall {
+  productId: number;
+  name: string;
+  installDir: string;
+  exe: string;
+}
+
+/** Record an existing Connect install as a direct install; files stay put. */
+export const ubiDirectAdopt = (productId: number, installPath: string) =>
+  invoke<UbiAdoptedInstall>("ubi_direct_adopt", { productId, installPath });
+
+/** Restore the official loaders and stop managing an adopted install. */
+export const ubiDirectRelease = (productId: number) =>
+  invoke<number>("ubi_direct_release", { productId });
+
 /** Opens the resolved Ubisoft save folder in the file manager. */
 export const ubiOpenSaves = (productId: number, installPath?: string, title?: string) =>
   invoke<void>("ubi_open_saves", {

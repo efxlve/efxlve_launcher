@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -867,6 +867,65 @@ document.addEventListener("click", (e) => {
         toast(localizeMessage(String(e)), "err"),
       );
     }
+  } else if (act === "ubi-direct-adopt") {
+    const productId = Number((t.dataset.id || "").replace("ubisoft::", ""));
+    const path = t.dataset.path || "";
+    if (!productId || !path) return;
+    const button = t instanceof HTMLButtonElement ? t : null;
+    if (button) button.disabled = true;
+    toast(i18nT("manage.ubiAdoptWorking"), "");
+    void ubiDirectAdopt(productId, path)
+      .then(() => {
+        document.querySelector<HTMLElement>("[data-ubi-adopt-row]")?.setAttribute("hidden", "");
+        const launchRow = document.querySelector<HTMLElement>("[data-ubi-launch-row]");
+        launchRow?.removeAttribute("hidden");
+        document
+          .querySelector<HTMLElement>("[data-ubi-verify-row]")
+          ?.removeAttribute("hidden");
+        document
+          .querySelector<HTMLElement>("[data-ubi-update-row]")
+          ?.removeAttribute("hidden");
+        const select = launchRow?.querySelector<HTMLSelectElement>(
+          '[data-act="ubi-direct-launch-mode"]',
+        );
+        if (select) select.value = "direct";
+        toast(i18nT("manage.ubiAdoptDone"), "ok");
+        void loadCompanionLibrary();
+      })
+      .catch((e: unknown) => toast(localizeMessage(String(e)), "err"))
+      .finally(() => {
+        if (button?.isConnected) button.disabled = false;
+      });
+  } else if (act === "ubi-direct-release") {
+    const productId = Number((t.dataset.id || "").replace("ubisoft::", ""));
+    if (!productId) return;
+    void askConfirm({
+      title: i18nT("manage.ubiRelease"),
+      name: summaryOf(t.dataset.id || "")?.title || t.dataset.id || "",
+      body: i18nT("manage.ubiReleaseConfirm"),
+      confirm: i18nT("manage.ubiRelease"),
+      cancel: i18nT("common.cancel"),
+    }).then((ok) => {
+      if (!ok) return;
+      void ubiDirectRelease(productId)
+        .then(() => {
+          document
+            .querySelector<HTMLElement>("[data-ubi-launch-row]")
+            ?.setAttribute("hidden", "");
+          document
+            .querySelector<HTMLElement>("[data-ubi-verify-row]")
+            ?.setAttribute("hidden", "");
+          document
+            .querySelector<HTMLElement>("[data-ubi-update-row]")
+            ?.setAttribute("hidden", "");
+          document
+            .querySelector<HTMLElement>("[data-ubi-adopt-row]")
+            ?.removeAttribute("hidden");
+          toast(i18nT("manage.ubiReleaseDone"), "ok");
+          void loadCompanionLibrary();
+        })
+        .catch((e: unknown) => toast(localizeMessage(String(e)), "err"));
+    });
   } else if (act === "ubi-direct-check-update") {
     const path = t.dataset.path || "";
     if (!path) return;

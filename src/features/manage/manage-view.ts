@@ -326,21 +326,31 @@ export function openManagePopup(appName: string): void {
 
   // The launch-mode select starts on "direct"; the stored choice arrives a
   // moment later and must not flash the wrong mode for a Connect-only title.
+  // A Connect install shows the adopt action instead of the direct-only rows.
   if (source === "ubisoft" && s.installed && s.installPath) {
     const select = manageRoot.querySelector<HTMLSelectElement>(
       '[data-act="ubi-direct-launch-mode"]',
     );
-    if (select) {
-      void ubiDirectLaunchMode(s.installPath)
-        .then((client) => {
-          if (client === null) {
-            manageRoot?.querySelector("[data-ubi-launch-row]")?.remove();
-            return;
-          }
-          select.value = client ? "client" : "direct";
-        })
-        .catch(() => {});
-    }
+    const launchRow = manageRoot.querySelector<HTMLElement>("[data-ubi-launch-row]");
+    const verifyRow = manageRoot.querySelector<HTMLElement>("[data-ubi-verify-row]");
+    const adoptRow = manageRoot.querySelector<HTMLElement>("[data-ubi-adopt-row]");
+    const updateRow = manageRoot.querySelector<HTMLElement>("[data-ubi-update-row]");
+    void ubiDirectLaunchMode(s.installPath)
+      .then((client) => {
+        if (client === null) {
+          if (launchRow) launchRow.hidden = true;
+          if (verifyRow) verifyRow.hidden = true;
+          if (updateRow) updateRow.hidden = true;
+          if (adoptRow) adoptRow.hidden = false;
+          return;
+        }
+        if (launchRow) launchRow.hidden = false;
+        if (verifyRow) verifyRow.hidden = false;
+        if (updateRow) updateRow.hidden = false;
+        if (adoptRow) adoptRow.hidden = true;
+        if (select) select.value = client ? "client" : "direct";
+      })
+      .catch(() => {});
   }
 
   // The save folder arrives from the resolver a moment later; the open button
@@ -483,18 +493,27 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
   const playtime = playtimeTotalLabel(s.appName, s.title);
   const verify =
     source === "ubisoft" && s.installed
-      ? row(
+      ? `<div data-ubi-verify-row>${row(
           t("manage.verifyTitle"),
           t("manage.verifyDesc"),
           `<button class="btn ghost small" data-act="ubi-direct-verify" data-path="${esc(s.installPath || "")}">${icon("shield-check", 13)} ${t("manage.verify")}</button>`,
-        )
+        )}</div>`
       : "";
   const launchMode =
     source === "ubisoft" && s.installed
       ? `<div data-ubi-launch-row>${row(
           t("manage.ubiLaunchMode"),
           t("manage.ubiLaunchModeDesc"),
-          `<select class="settings-select" data-act="ubi-direct-launch-mode" data-path="${esc(s.installPath || "")}"><option value="direct">${t("manage.ubiLaunchDirect")}</option><option value="client">${t("manage.ubiLaunchClient")}</option></select>`,
+          `<select class="settings-select" data-act="ubi-direct-launch-mode" data-path="${esc(s.installPath || "")}"><option value="direct">${t("manage.ubiLaunchDirect")}</option><option value="client">${t("manage.ubiLaunchClient")}</option></select>
+           <button class="btn ghost small" data-act="ubi-direct-release" data-id="${esc(s.appName)}">${t("manage.ubiRelease")}</button>`,
+        )}</div>`
+      : "";
+  const adopt =
+    source === "ubisoft" && s.installed
+      ? `<div data-ubi-adopt-row hidden>${row(
+          t("manage.ubiAdoptTitle"),
+          t("manage.ubiAdoptDesc"),
+          `<button class="btn primary small" data-act="ubi-direct-adopt" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}">${t("manage.ubiAdopt")}</button>`,
         )}</div>`
       : "";
   const saves =
@@ -533,7 +552,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${updates}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${adopt}${updates}${installSizeRow(s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}

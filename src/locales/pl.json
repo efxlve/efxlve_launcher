@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "Aktualna.",
   "manage.ubiUpdateUnknown": "Nieznana zainstalowana kompilacja. Uruchom raz Weryfikację, aby ją zapisać.",
   "manage.ubiUpdateApply": "Aktualizuj",
-  "manage.ubiUpdating": "Aktualizowanie…"
+  "manage.ubiUpdating": "Aktualizowanie…",
+  "manage.ubiAdoptTitle": "Użyj tej instalacji",
+  "manage.ubiAdoptDesc": "Ten folder został zainstalowany przez Ubisoft Connect. Przejęcie uruchamia grę z lokalnym shimem launchera, bez przenoszenia i ponownego pobierania plików.",
+  "manage.ubiAdopt": "Użyj bez Ubisoft Connect",
+  "manage.ubiAdoptWorking": "Przygotowywanie instalacji…",
+  "manage.ubiAdoptDone": "Ta instalacja uruchamia się teraz bez Ubisoft Connect.",
+  "manage.ubiRelease": "Oddaj do Connect",
+  "manage.ubiReleaseConfirm": "Przywrócić oficjalne loadery Ubisoft i przestać zarządzać tym folderem? Pliki gry pozostaną na miejscu.",
+  "manage.ubiReleaseDone": "Instalacja znów jest zarządzana przez Ubisoft Connect."
 }

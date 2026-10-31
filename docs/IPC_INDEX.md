@@ -464,6 +464,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `task_manager_stop` | `taskManagerStop({ ... })` | `src-tauri/src/task_manager.rs` |
 | `toast_done` | `toastDone({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `toast_ready` | `toastReady({ ... })` | `src-tauri/src/overlay/toast.rs` |
+| `ubi_direct_adopt` | `ubiDirectAdopt({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_cancel` | `ubiDirectCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_forget` | `ubiDirectForget({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_install` | `ubiDirectInstall({ ... })` | `src-tauri/src/companion/mod.rs` |
@@ -471,6 +472,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ubi_direct_launch_mode` | `ubiDirectLaunchMode({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_plan` | `ubiDirectPlan({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_probe` | `ubiDirectProbe({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_direct_release` | `ubiDirectRelease({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_set_client_launch` | `ubiDirectSetClientLaunch({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_uninstall` | `ubiDirectUninstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_update_check` | `ubiDirectUpdateCheck({ ... })` | `src-tauri/src/companion/mod.rs` |

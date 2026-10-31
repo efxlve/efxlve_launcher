@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "최신 상태입니다.",
   "manage.ubiUpdateUnknown": "설치된 빌드를 알 수 없습니다. 기록하려면 검증을 한 번 실행하세요.",
   "manage.ubiUpdateApply": "업데이트",
-  "manage.ubiUpdating": "업데이트 중…"
+  "manage.ubiUpdating": "업데이트 중…",
+  "manage.ubiAdoptTitle": "이 설치 사용",
+  "manage.ubiAdoptDesc": "이 폴더는 Ubisoft Connect가 설치했습니다. 인수하면 파일을 이동하거나 다시 다운로드하지 않고 런처의 로컬 shim으로 게임을 시작합니다.",
+  "manage.ubiAdopt": "Ubisoft Connect 없이 사용",
+  "manage.ubiAdoptWorking": "설치를 준비하는 중…",
+  "manage.ubiAdoptDone": "이 설치가 이제 Ubisoft Connect 없이 시작됩니다.",
+  "manage.ubiRelease": "Connect로 반환",
+  "manage.ubiReleaseConfirm": "공식 Ubisoft 로더를 복원하고 이 폴더 관리를 중단할까요? 게임 파일은 그대로 유지됩니다.",
+  "manage.ubiReleaseDone": "설치가 다시 Ubisoft Connect 관리로 돌아갔습니다."
 }

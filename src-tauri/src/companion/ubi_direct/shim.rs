@@ -201,6 +201,44 @@ pub(crate) async fn deploy(
     Ok(Some(loader.name))
 }
 
+/// True when a loader backup is still in this folder, i.e. a restore either has
+/// not run or failed (typically because the game is still running).
+pub(crate) fn has_originals(directory: &Path) -> bool {
+    std::fs::read_dir(directory)
+        .map(|entries| {
+            entries.flatten().any(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .ends_with(".efxlve-orig")
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// Put every loader the shim replaced back in place. Returns how many files
+/// were restored; a folder with no backups is left untouched.
+pub(crate) fn restore_originals(directory: &Path) -> usize {
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return 0;
+    };
+    let mut restored = 0;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let Some(original) = name.strip_suffix(".efxlve-orig") else {
+            continue;
+        };
+        let target = directory.join(original);
+        if target.exists() && std::fs::remove_file(&target).is_err() {
+            continue;
+        }
+        if std::fs::rename(entry.path(), &target).is_ok() {
+            restored += 1;
+        }
+    }
+    restored
+}
+
 /// Write `upc.json` in a game folder. The caller can point the working
 /// directory and the executable folder at the same account when they differ.
 pub(crate) fn write_account_config(

@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "محدّث.",
   "manage.ubiUpdateUnknown": "إصدار التثبيت غير معروف. شغّل التحقق مرة واحدة لتسجيله.",
   "manage.ubiUpdateApply": "تحديث",
-  "manage.ubiUpdating": "جارٍ التحديث…"
+  "manage.ubiUpdating": "جارٍ التحديث…",
+  "manage.ubiAdoptTitle": "استخدام هذا التثبيت",
+  "manage.ubiAdoptDesc": "تم تثبيت هذا المجلد بواسطة Ubisoft Connect. يبدأ اعتماده تشغيل اللعبة باستخدام shim المحلي للمشغّل دون نقل الملفات أو إعادة تنزيلها.",
+  "manage.ubiAdopt": "استخدام بدون Ubisoft Connect",
+  "manage.ubiAdoptWorking": "جارٍ تجهيز هذا التثبيت…",
+  "manage.ubiAdoptDone": "يبدأ هذا التثبيت الآن بدون Ubisoft Connect.",
+  "manage.ubiRelease": "إعادة إلى Connect",
+  "manage.ubiReleaseConfirm": "استعادة محمّلات Ubisoft الرسمية وإيقاف إدارة هذا المجلد؟ ستبقى ملفات اللعبة في مكانها.",
+  "manage.ubiReleaseDone": "أصبح التثبيت تحت إدارة Ubisoft Connect مجددًا."
 }

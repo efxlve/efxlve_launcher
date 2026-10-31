@@ -3469,5 +3469,13 @@
   "manage.ubiUpToDate": "À jour.",
   "manage.ubiUpdateUnknown": "Version installée inconnue. Lancez Vérifier une fois pour l'enregistrer.",
   "manage.ubiUpdateApply": "Mettre à jour",
-  "manage.ubiUpdating": "Mise à jour…"
+  "manage.ubiUpdating": "Mise à jour…",
+  "manage.ubiAdoptTitle": "Utiliser cette installation",
+  "manage.ubiAdoptDesc": "Ce dossier a été installé par Ubisoft Connect. L'adopter lance le jeu avec le shim local du lanceur, sans déplacer ni retélécharger les fichiers.",
+  "manage.ubiAdopt": "Utiliser sans Ubisoft Connect",
+  "manage.ubiAdoptWorking": "Préparation de cette installation…",
+  "manage.ubiAdoptDone": "Cette installation démarre désormais sans Ubisoft Connect.",
+  "manage.ubiRelease": "Rendre à Connect",
+  "manage.ubiReleaseConfirm": "Restaurer les chargeurs officiels d'Ubisoft et cesser de gérer ce dossier ? Les fichiers du jeu restent en place.",
+  "manage.ubiReleaseDone": "L'installation est de nouveau gérée par Ubisoft Connect."
 }
