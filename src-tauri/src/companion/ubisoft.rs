@@ -254,6 +254,10 @@ fn owned_cache_path() -> std::path::PathBuf {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct OwnedGame {
     pub id: String,
+    /// Numeric product id from the entitlement response; 0 when only the space
+    /// id is known. The client's install protocol takes this id.
+    #[serde(default)]
+    pub product_id: u32,
     pub name: String,
     /// Catalog box art; empty when the catalog had none for this game.
     #[serde(default)]
@@ -334,6 +338,9 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
 pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec<FoundGame> {
     for game in owned {
         if let Some(local) = games.iter_mut().find(|g| slug(&g.name) == slug(&game.name)) {
+            if local.install_uri.is_empty() && game.product_id > 0 {
+                local.install_uri = format!("uplay://install/{}", game.product_id);
+            }
             if local.cover_url.is_empty() {
                 local.cover_url = game.cover.clone();
             }
@@ -354,8 +361,16 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec
             store_id: String::new(),
             launch_exe: String::new(),
             launch_uri: String::new(),
-            install_uri: String::new(),
-            uninstall_uri: String::new(),
+            install_uri: if game.product_id > 0 {
+                format!("uplay://install/{}", game.product_id)
+            } else {
+                String::new()
+            },
+            uninstall_uri: if game.product_id > 0 {
+                format!("uplay://uninstall/{}", game.product_id)
+            } else {
+                String::new()
+            },
             cover_url: game.cover.clone(),
             hero_url: game.hero.clone(),
             description: game.description.clone(),
@@ -460,8 +475,8 @@ mod tests {
         let merged = merge_owned(
             local,
             &[
-                OwnedGame { id: "space-1".into(), name: "Watch Dogs".into(), cover: "ubi-cover".into(), hero: String::new(), description: "Chicago hacker story".into() },
-                OwnedGame { id: "space-2".into(), name: "Far Cry 6".into(), cover: "fc6-cover".into(), hero: "fc6-hero".into(), description: String::new() },
+                OwnedGame { id: "space-1".into(), product_id: 274, name: "Watch Dogs".into(), cover: "ubi-cover".into(), hero: String::new(), description: "Chicago hacker story".into() },
+                OwnedGame { id: "space-2".into(), product_id: 5520, name: "Far Cry 6".into(), cover: "fc6-cover".into(), hero: "fc6-hero".into(), description: String::new() },
             ],
         );
         assert_eq!(merged.len(), 2);
@@ -475,6 +490,8 @@ mod tests {
         assert!(imported.description.is_empty());
         assert!(!imported.installed);
         assert!(imported.launch_uri.is_empty());
+        assert_eq!(imported.install_uri, "uplay://install/5520");
+        assert_eq!(imported.uninstall_uri, "uplay://uninstall/5520");
         assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);
     }
 }

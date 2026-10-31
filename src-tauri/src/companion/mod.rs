@@ -1220,6 +1220,37 @@ pub async fn xbox_uninstall(id: String) -> Result<(), String> {
         .map_err(|error| error.to_string())?
 }
 
+/// Build the Connect protocol link for one action. The client's install and
+/// uninstall handlers take the numeric product id; a launch prefers the Uplay
+/// id, which differs for titles such as Far Cry 3 (product 599, Uplay 46).
+fn ubisoft_deep_link(action: &str, product_id: u32, uplay_id: u32) -> String {
+    match action {
+        "install" => format!("uplay://install/{product_id}"),
+        "uninstall" => format!("uplay://uninstall/{product_id}"),
+        _ => {
+            let launch_id = if uplay_id != 0 { uplay_id } else { product_id };
+            format!("uplay://launch/{launch_id}/0")
+        }
+    }
+}
+
+/// A catalog row carries a space id, not the numeric id the client's protocol
+/// handler needs. Resolve it through Demux by title, then build the link. This
+/// is what turns a bare "open the client" click into the game's install page.
+async fn ubisoft_uri_for(action: &str, title: &str) -> Option<String> {
+    let key = scan::slug(title);
+    if key.is_empty() {
+        return None;
+    }
+    let probe = ubi_direct::probe().await.ok()?;
+    let game = probe
+        .games
+        .iter()
+        .filter(|game| scan::slug(&game.name) == key)
+        .max_by_key(|game| game.installable)?;
+    Some(ubisoft_deep_link(action, game.product_id, game.uplay_id))
+}
+
 /// Install, uninstall or launch a companion game. Install and uninstall use the
 /// client's own protocol handlers or tools: the client does the work, the
 /// launcher only starts it. A game without a known id falls back to opening the
@@ -1247,6 +1278,22 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
             .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
         {
             return ubi_direct::uninstall_game(installed.product_id, true);
+        }
+    }
+    // A catalog-only row has no numeric launch/install id, so the generic match
+    // below would open the client at its default page. Resolve the id from
+    // Demux first and open the game's own page instead.
+    if store == "ubisoft" {
+        let missing = match action.as_str() {
+            "install" => game.install_uri.is_empty(),
+            "uninstall" => game.uninstall_uri.is_empty(),
+            "launch" => game.launch_uri.is_empty(),
+            _ => false,
+        };
+        if missing {
+            if let Some(uri) = ubisoft_uri_for(&action, &game.name).await {
+                return launch::open_game(&uri, "");
+            }
         }
     }
     // Riot: launch, install and uninstall are product flags on the client exe.
@@ -1281,6 +1328,71 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ubisoft_deep_links_use_the_install_id_for_installs_and_the_uplay_id_for_launches() {
+        assert_eq!(ubisoft_deep_link("install", 3539, 3539), "uplay://install/3539");
+        assert_eq!(ubisoft_deep_link("uninstall", 3539, 3539), "uplay://uninstall/3539");
+        assert_eq!(ubisoft_deep_link("launch", 599, 46), "uplay://launch/46/0");
+        assert_eq!(ubisoft_deep_link("launch", 80, 0), "uplay://launch/80/0");
+        assert_eq!(ubisoft_deep_link("install", 599, 46), "uplay://install/599");
+    }
+
+    #[tokio::test]
+    #[ignore = "needs a linked Ubisoft session; set EFXLVE_UBI_TEST_TITLE"]
+    async fn live_resolves_a_catalog_install_uri() {
+        let title = std::env::var("EFXLVE_UBI_TEST_TITLE")
+            .unwrap_or_else(|_| "Assassin's Creed® Origins".to_string());
+        let probe = ubi_direct::probe().await.expect("probe");
+        let wanted = scan::slug(&title);
+        for game in &probe.games {
+            if scan::slug(&game.name).contains("assassin") {
+                println!("{} -> {} (product {})", game.name, scan::slug(&game.name), game.product_id);
+            }
+        }
+        println!("wanted -> {wanted}");
+        let uri = ubisoft_uri_for("install", &title).await.expect("a URI");
+        println!("{title} -> {uri}");
+        assert_eq!(uri, "uplay://install/3539");
+    }
+
+    #[tokio::test]
+    #[ignore = "refreshes the Ubisoft catalogue; needs a linked session"]
+    async fn live_sync_assigns_product_ids_to_catalog_rows() {
+        let _ = ubisoft_login::sync_owned().await;
+        let owned = ubisoft::load_owned();
+        let origins = owned
+            .iter()
+            .find(|game| game.name.contains("Origins"))
+            .expect("Assassin's Creed Origins in the cache");
+        println!("{} -> product {}", origins.name, origins.product_id);
+        assert_eq!(origins.product_id, 3539);
+        let games = discover("ubisoft");
+        let row = games
+            .iter()
+            .find(|game| game.name.contains("Origins"))
+            .expect("the library row");
+        println!("{} -> {}", row.name, row.install_uri);
+        assert_eq!(row.install_uri, "uplay://install/3539");
+    }
+
+    #[test]
+    #[ignore = "prints Ubisoft rows that have no install or launch URI"]
+    fn live_print_ubisoft_rows_without_uris() {
+        for game in discover("ubisoft") {
+            if game.install_uri.is_empty() || game.launch_uri.is_empty() {
+                println!(
+                    "id={} name={} installed={} install_uri='{}' launch_uri='{}' path='{}'",
+                    game.id,
+                    game.name,
+                    game.installed,
+                    game.install_uri,
+                    game.launch_uri,
+                    game.install_path
+                );
+            }
+        }
+    }
 
     fn game(id: &str, installed: bool) -> FoundGame {
         FoundGame {

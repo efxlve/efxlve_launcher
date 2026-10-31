@@ -446,11 +446,18 @@ async fn collect_entitlements(
     log: &mut Vec<serde_json::Value>,
 ) -> Result<Vec<ubisoft::OwnedGame>, String> {
     let entitlements = fetch_entitlements(client, session, log).await?;
-    let space_ids = entitlement_space_ids(&entitlements);
-    if space_ids.is_empty() {
+    let products = entitlement_products(&entitlements);
+    if products.is_empty() {
         return Ok(Vec::new());
     }
-    Ok(fetch_catalog(client, session, &space_ids, log).await)
+    let space_ids: Vec<String> = products.iter().map(|(space, _)| space.clone()).collect();
+    let mut games = fetch_catalog(client, session, &space_ids, log).await;
+    for game in &mut games {
+        if let Some((_, product_id)) = products.iter().find(|(space, _)| space == &game.id) {
+            game.product_id = *product_id;
+        }
+    }
+    Ok(games)
 }
 
 /// `AllGames` GraphQL, the FriendsOfGalaxy plugin's owned-games path.
@@ -786,11 +793,11 @@ async fn post_session(client: &reqwest::Client, session: &Session) -> Option<Ses
     apply_session(session, &value)
 }
 
-/// Space ids of owned, non-expired entitlements.
-pub(crate) fn entitlement_space_ids(value: &serde_json::Value) -> Vec<String> {
-    let mut ids = Vec::new();
+/// Space ids and numeric product ids of owned, non-expired entitlements.
+pub(crate) fn entitlement_products(value: &serde_json::Value) -> Vec<(String, u32)> {
+    let mut rows: Vec<(String, u32)> = Vec::new();
     let Some(items) = value.get("entitlements").and_then(|v| v.as_array()) else {
-        return ids;
+        return rows;
     };
     for item in items {
         if item.get("availability").and_then(|v| v.as_str()) == Some("expired") {
@@ -799,12 +806,16 @@ pub(crate) fn entitlement_space_ids(value: &serde_json::Value) -> Vec<String> {
         let Some(space) = item.get("spaceId").and_then(|v| v.as_str()) else {
             continue;
         };
-        if space.is_empty() || ids.iter().any(|id| id == space) {
+        if space.is_empty() || rows.iter().any(|(id, _)| id == space) {
             continue;
         }
-        ids.push(space.to_string());
+        let product = item
+            .get("productId")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u32;
+        rows.push((space.to_string(), product));
     }
-    ids
+    rows
 }
 
 /// PC titles from a catalog response, with Ubisoft's own box art.
@@ -857,6 +868,7 @@ pub(crate) fn catalog_games(value: &serde_json::Value) -> Vec<ubisoft::OwnedGame
             .to_string();
         games.push(ubisoft::OwnedGame {
             id: space.to_string(),
+            product_id: 0,
             name: name.to_string(),
             cover,
             hero: image("background"),
@@ -888,6 +900,7 @@ pub(crate) fn graphql_games(value: &serde_json::Value) -> Vec<ubisoft::OwnedGame
         }
         games.push(ubisoft::OwnedGame {
             id: space.to_string(),
+            product_id: 0,
             name: name.to_string(),
             cover: String::new(),
             hero: String::new(),
@@ -1179,13 +1192,13 @@ mod tests {
     #[test]
     fn entitlements_skip_expired_duplicates_and_empty_spaces() {
         let value = serde_json::json!({"entitlements": [
-            {"spaceId": "a", "availability": "owned"},
-            {"spaceId": "a", "availability": "owned"},
-            {"spaceId": "b", "availability": "expired"},
-            {"spaceId": "", "availability": "owned"},
+            {"spaceId": "a", "productId": 123, "availability": "owned"},
+            {"spaceId": "a", "productId": 999, "availability": "owned"},
+            {"spaceId": "b", "productId": 456, "availability": "expired"},
+            {"spaceId": "", "productId": 789, "availability": "owned"},
             {}
         ]});
-        assert_eq!(entitlement_space_ids(&value), vec!["a"]);
+        assert_eq!(entitlement_products(&value), vec![("a".to_string(), 123)]);
     }
 
     #[test]
