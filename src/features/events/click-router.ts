@@ -902,6 +902,7 @@ document.addEventListener("click", (e) => {
                 i18nT("accounts.ubiDirectDetail2"),
                 i18nT("accounts.ubiDirectDetail3"),
                 i18nT("accounts.ubiDirectDetail4"),
+                i18nT("accounts.ubiDirectDetail5"),
               ],
               primary: true,
             },

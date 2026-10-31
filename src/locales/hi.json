@@ -3440,7 +3440,7 @@
   "xbox.installWaiting": "Store में पुष्टि करें",
   "xbox.installWaitingHint": "Microsoft Store में Install दबाएँ। निगरानी रोकने के लिए यहाँ क्लिक करें।",
   "xbox.installStopped": "इंस्टॉल की निगरानी रोक दी गई। यह Store में जारी रह सकता है।",
-  "accounts.ubiInstallChoice": "Choose how this game is installed. Each game can use a different method.",
+  "accounts.ubiInstallChoice": "Direct mode downloads from Ubisoft's CDN with a local compatibility shim; client mode uses the official app. Pick one per game.",
   "accounts.ubiDirectInstall": "Direct install",
   "accounts.ubiDirectInstallHint": "No Ubisoft Connect needed.",
   "accounts.ubiClientInstall": "Install with Ubisoft Connect",
@@ -3452,5 +3452,6 @@
   "accounts.ubiClientDetail1": "Required for online, anti-cheat and Ubisoft Cloud.",
   "accounts.ubiClientDetail2": "The client handles updates, saves and achievements.",
   "accounts.ubiClientDetail3": "Ubisoft Connect must be installed and signed in.",
-  "accounts.ubiInstallNote": "You can choose a different method for each game."
+  "accounts.ubiInstallNote": "You can choose a different method for each game; to switch an installed game, uninstall it first.",
+  "accounts.ubiDirectDetail5": "Only for games your account owns; it does not bypass Denuvo or anti-cheat."
 }
