@@ -95,3 +95,19 @@ multi-monitor/DPI setup: the player lands in the selected corner (top-right by
 default), the corner button moves it, the page fills the frame, the PiP bar
 restores and closes, the game keeps focus after close, and the browser reopens
 at full size. Then add a direct "send this tab to PiP" action.
+
+## Ubisoft direct install
+
+`src-tauri/src/companion/ubi_direct/` now owns the Demux ownership/manifest
+query, the CDN download with resume/reconnect, the MIT Uplay R1/R2 shim and the
+direct launch. Rayman Origins (R1 x86) and the launcher's Play path are
+validated without the Connect client. Open work:
+
+- R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
+  real R2 title; the user's R2 catalogue starts at large titles (Far Cry 5 /
+  AC Origins class).
+- A repeated install skips files by size only. Add per-slice SHA-1 verification
+  and a repair action before calling updates supported.
+- Achievements and cloud saves still read the Connect cache; without the client
+  those surfaces stop updating even though install and launch keep working.
+- Orbit R2 (`ubiorbitapi_r2_loader`) titles still need the Connect client.
