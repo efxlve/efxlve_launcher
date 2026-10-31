@@ -226,6 +226,33 @@ async fn sign_paths(
     Ok(urls)
 }
 
+/// Sign a window, rebuilding the Demux socket and its download service once if
+/// the long-lived connection dropped. Installs are gigabytes long and Ubisoft
+/// closes idle or over-large sessions; the ticket is already in hand.
+async fn sign_with_reconnect(
+    demux: &mut wire::Demux,
+    download: &mut wire::DownloadService,
+    product_id: u32,
+    ownership_token: &str,
+    paths: &[String],
+) -> Result<Vec<String>, String> {
+    match sign_paths(demux, download, product_id, paths).await {
+        Ok(urls) => Ok(urls),
+        Err(first) => {
+            let ticket = demux.ticket().to_string();
+            let fresh = wire::Demux::connect(&ticket)
+                .await
+                .map_err(|error| format!("{first}; Demux reconnect failed: {error}"))?;
+            *demux = fresh;
+            *download = demux
+                .download_service(ownership_token)
+                .await
+                .map_err(|error| format!("{first}; download service reopen failed: {error}"))?;
+            sign_paths(demux, download, product_id, paths).await
+        }
+    }
+}
+
 async fn detect_layout(
     demux: &mut wire::Demux,
     download: &mut wire::DownloadService,
@@ -276,6 +303,7 @@ pub(crate) struct Prepared {
     pub install_reg: String,
     pub uplay_id: u32,
     pub ticket: String,
+    pub ownership_token: String,
 }
 
 /// Fetch the product row and its manifest, and keep the download-service
@@ -332,6 +360,7 @@ pub(crate) async fn prepare(
         install_reg,
         uplay_id,
         ticket,
+        ownership_token: token,
     })
 }
 
@@ -380,6 +409,7 @@ where
         install_reg,
         uplay_id,
         ticket,
+        ownership_token,
     } = prepared;
 
     let total_bytes = manifest.total_bytes();
@@ -425,21 +455,57 @@ where
         }
 
         let tmp_path = out_path.with_extension("efxlve-part");
-        let mut out = tokio::fs::File::create(&tmp_path)
+        // Resume from the last whole slice in the part file. A kill during a
+        // slice leaves a short tail; it is truncated so the next write starts
+        // on a slice boundary.
+        let mut start_index = 0usize;
+        if let Ok(meta) = tokio::fs::metadata(&tmp_path).await {
+            let part_size = meta.len();
+            let mut prefix = 0u64;
+            for (index, slice) in file.slices.iter().enumerate() {
+                if prefix + u64::from(slice.size) <= part_size {
+                    prefix += u64::from(slice.size);
+                    start_index = index + 1;
+                } else {
+                    break;
+                }
+            }
+            if prefix != part_size {
+                if let Ok(handle) = tokio::fs::OpenOptions::new()
+                    .write(true)
+                    .open(&tmp_path)
+                    .await
+                {
+                    let _ = handle.set_len(prefix).await;
+                }
+            }
+            done_bytes += prefix;
+        }
+        let mut out = tokio::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&tmp_path)
             .await
             .map_err(|e| format!("creating {}: {e}", tmp_path.display()))?;
 
         // A file can be gigabytes and thousands of slices. Sign and fetch a
         // window at a time so signed URLs stay fresh and memory stays bounded.
         const WINDOW: usize = 200;
-        for start in (0..file.slices.len()).step_by(WINDOW) {
+        for start in (start_index..file.slices.len()).step_by(WINDOW) {
             let end = (start + WINDOW).min(file.slices.len());
             let window: &[ManifestSlice] = &file.slices[start..end];
             let paths: Vec<String> = window
                 .iter()
                 .map(|slice| slice_path(layout, &hash_for_slice(slice)))
                 .collect();
-            let urls = sign_paths(demux, &mut download, product_id, &paths).await?;
+            let urls = sign_with_reconnect(
+                demux,
+                &mut download,
+                product_id,
+                &ownership_token,
+                &paths,
+            )
+            .await?;
 
             let file_name = file.name.clone();
             let client = client.clone();
