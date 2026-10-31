@@ -18,6 +18,7 @@ import { applyUiScale } from "../../core/game-status";
 import type { StartupTab } from "../../core/types";
 import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
+import { ubiDirectSetClientLaunch } from "../../companion";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
@@ -763,6 +764,16 @@ document.addEventListener("change", (e) => {
     return;
   }
   const act = t.dataset.act;
+  if (act === "ubi-direct-launch-mode") {
+    const path = t.dataset.path || "";
+    const enabled = (t as HTMLSelectElement).value === "client";
+    if (path) {
+      void ubiDirectSetClientLaunch(path, enabled)
+        .then(() => toast(i18nT("common.saved"), "ok"))
+        .catch((e) => toast(String(e), "err"));
+    }
+    return;
+  }
   if (act === "set-ui-scale") {
     const scale = Number((t as HTMLSelectElement).value);
     if ([80, 90, 100, 110, 125, 150].includes(scale)) {

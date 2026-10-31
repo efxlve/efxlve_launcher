@@ -16,6 +16,9 @@ use super::shim;
 pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), String> {
     let game = ubi_installs::find(product_id)
         .ok_or_else(|| format!("product {product_id} is not installed by the launcher"))?;
+    if game.client_launch {
+        return launch_via_client(&game);
+    }
     let install_dir = PathBuf::from(&game.install_dir);
     if !install_dir.is_dir() {
         return Err(format!("install folder is missing: {}", install_dir.display()));
@@ -65,6 +68,25 @@ fn working_dir(install_dir: &Path, exe: &Path) -> PathBuf {
         }
     }
     install_dir.to_path_buf()
+}
+
+fn client_launch_uri(game: &ubi_installs::InstalledGame) -> String {
+    let launch_id = if game.uplay_id != 0 {
+        game.uplay_id
+    } else {
+        game.product_id
+    };
+    format!("uplay://launch/{launch_id}/0")
+}
+
+fn launch_via_client(game: &ubi_installs::InstalledGame) -> Result<(), String> {
+    if !crate::companion::client_installed("ubisoft") {
+        return Err(
+            "Ubisoft Connect is not installed; install it or switch this game back to direct launch"
+                .to_string(),
+        );
+    }
+    crate::companion::launch::open_game(&client_launch_uri(game), "")
 }
 
 async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
@@ -286,7 +308,8 @@ fn wow64_key(key: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve_exe, split_register, wow64_key, working_dir};
+    use super::{client_launch_uri, resolve_exe, split_register, wow64_key, working_dir};
+    use crate::companion::ubi_installs::InstalledGame;
 
     #[test]
     fn resolves_the_recorded_exe_then_falls_back_to_the_largest_one() {
@@ -334,5 +357,23 @@ mod tests {
             working_dir(root, &root.join("Rayman Origins.exe")),
             root.to_path_buf()
         );
+    }
+
+    #[test]
+    fn client_launch_uri_prefers_the_uplay_id_then_the_product_id() {
+        let mut game = InstalledGame {
+            product_id: 80,
+            name: "Game".into(),
+            install_dir: "C:\\Game".into(),
+            exe: "game.exe".into(),
+            installed_at: 0,
+            install_reg: String::new(),
+            uplay_id: 1651,
+            ticket: String::new(),
+            client_launch: true,
+        };
+        assert_eq!(client_launch_uri(&game), "uplay://launch/1651/0");
+        game.uplay_id = 0;
+        assert_eq!(client_launch_uri(&game), "uplay://launch/80/0");
     }
 }

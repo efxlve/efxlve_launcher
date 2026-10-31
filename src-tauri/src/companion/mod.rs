@@ -579,6 +579,30 @@ pub async fn ubi_direct_verify(
     ubi_direct::verify_game(app, record.product_id, repair).await
 }
 
+/// Whether this direct install hands its launch to Ubisoft Connect; `None`
+/// when the folder is managed by the client instead of a direct install.
+#[tauri::command]
+pub fn ubi_direct_launch_mode(install_path: String) -> Option<bool> {
+    ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
+        .map(|record| record.client_launch)
+}
+
+/// Switch one direct install between the local shim and the official client.
+#[tauri::command]
+pub fn ubi_direct_set_client_launch(install_path: String, enabled: bool) -> Result<(), String> {
+    let record = ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
+        .ok_or_else(|| "this folder is not a direct install".to_string())?;
+    if ubi_installs::set_client_launch(record.product_id, enabled) {
+        Ok(())
+    } else {
+        Err("the direct-install record could not be updated".to_string())
+    }
+}
+
 /// Start a direct install in the background. Progress arrives on
 /// `ubi-direct-progress`, completion on `ubi-direct-done`, and a failure on
 /// `ubi-direct-failed`.

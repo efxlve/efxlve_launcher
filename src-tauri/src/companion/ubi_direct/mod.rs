@@ -359,6 +359,24 @@ mod tests {
         println!("repaired {} bytes", repaired.len());
     }
 
+    #[test]
+    #[ignore = "reads Rayman Origins; needs that direct install"]
+    fn live_launch_mode_round_trip() {
+        assert!(crate::companion::ubi_installs::set_client_launch(80, true));
+        assert!(
+            crate::companion::ubi_installs::find(80)
+                .expect("record")
+                .client_launch
+        );
+        assert!(crate::companion::ubi_installs::set_client_launch(80, false));
+        assert!(
+            !crate::companion::ubi_installs::find(80)
+                .expect("record")
+                .client_launch
+        );
+        println!("Rayman launch mode toggled to client and back to direct");
+    }
+
     #[tokio::test]
     #[ignore = "reads Rayman Origins; needs that direct install"]
     async fn live_rayman_verify_is_clean() {

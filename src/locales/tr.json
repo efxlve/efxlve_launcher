@@ -3453,5 +3453,9 @@
   "accounts.ubiClientDetail2": "Güncellemeleri, kayıtları ve başarımları istemci yönetir.",
   "accounts.ubiClientDetail3": "Ubisoft Connect kurulu ve oturum açmış olmalı.",
   "accounts.ubiInstallNote": "Her oyun için farklı yöntem seçebilirsin; kurulu bir oyunun yöntemini değiştirmek için önce kaldırman gerekir.",
-  "accounts.ubiDirectDetail5": "Yalnızca hesabının sahip olduğu oyunlar içindir; Denuvo veya anti-cheat'i atlatmaz."
+  "accounts.ubiDirectDetail5": "Yalnızca hesabının sahip olduğu oyunlar içindir; Denuvo veya anti-cheat'i atlatmaz.",
+  "manage.ubiLaunchMode": "Başlatma modu",
+  "manage.ubiLaunchModeDesc": "Doğrudan mod yerel shim'i kullanır; online, anti-cheat ve yalnızca Connect ile çalışan oyunlar için Ubisoft Connect gerekir.",
+  "manage.ubiLaunchDirect": "Doğrudan (Ubisoft Connect'siz)",
+  "manage.ubiLaunchClient": "Ubisoft Connect"
 }

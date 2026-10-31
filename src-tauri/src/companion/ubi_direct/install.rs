@@ -629,6 +629,7 @@ where
         install_reg,
         uplay_id,
         ticket,
+        client_launch: false,
     });
     Ok(InstallSummary {
         product_id,

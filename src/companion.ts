@@ -153,6 +153,15 @@ export interface UbiDirectVerifyReport {
 export const ubiDirectVerify = (installPath: string, repair = true) =>
   invoke<UbiDirectVerifyReport>("ubi_direct_verify", { installPath, repair });
 
+/** Whether this direct install launches through Ubisoft Connect; null when the
+ * folder is client-managed rather than a direct install. */
+export const ubiDirectLaunchMode = (installPath: string) =>
+  invoke<boolean | null>("ubi_direct_launch_mode", { installPath });
+
+/** Switch one direct install between the local shim and Ubisoft Connect. */
+export const ubiDirectSetClientLaunch = (installPath: string, enabled: boolean) =>
+  invoke<void>("ubi_direct_set_client_launch", { installPath, enabled });
+
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });

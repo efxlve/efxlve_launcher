@@ -30,6 +30,10 @@ pub(crate) struct InstalledGame {
     /// offline; a fresh one is fetched on every online launch.
     #[serde(default)]
     pub ticket: String,
+    /// Hand this title to the official client instead of the local shim.
+    /// Needed for Connect-only DRM, online and anti-cheat titles.
+    #[serde(default)]
+    pub client_launch: bool,
 }
 
 fn path() -> PathBuf {
@@ -50,6 +54,16 @@ pub(crate) fn load() -> Vec<InstalledGame> {
 
 pub(crate) fn find(product_id: u32) -> Option<InstalledGame> {
     load().into_iter().find(|game| game.product_id == product_id)
+}
+
+/// Store the user's launch-mode choice for one direct install.
+pub(crate) fn set_client_launch(product_id: u32, enabled: bool) -> bool {
+    let Some(mut game) = find(product_id) else {
+        return false;
+    };
+    game.client_launch = enabled;
+    save(&game);
+    true
 }
 
 pub(crate) fn save(game: &InstalledGame) {
@@ -100,6 +114,7 @@ mod tests {
             install_reg: String::new(),
             uplay_id: 0,
             ticket: String::new(),
+            client_launch: false,
         };
         save(&first);
         save(&InstalledGame {
@@ -109,6 +124,9 @@ mod tests {
         let loaded = load();
         assert_eq!(loaded.len(), 1);
         assert_eq!(loaded[0].installed_at, 2);
+        assert!(!loaded[0].client_launch);
+        assert!(set_client_launch(7, true));
+        assert!(find(7).unwrap().client_launch);
         remove(7);
         assert!(find(7).is_none());
         match previous {

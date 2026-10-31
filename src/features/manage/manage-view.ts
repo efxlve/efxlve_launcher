@@ -17,6 +17,7 @@ import { nileGameSettings } from "../../nile";
 import type { GameSource } from "../../core/types";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 import { storeVersionLabel } from "../drawer/external-versions";
+import { ubiDirectLaunchMode } from "../../companion";
 import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
 export { updateManageCloudRowInPlace };
@@ -323,6 +324,25 @@ export function openManagePopup(appName: string): void {
       </div>
     </div>`;
 
+  // The launch-mode select starts on "direct"; the stored choice arrives a
+  // moment later and must not flash the wrong mode for a Connect-only title.
+  if (source === "ubisoft" && s.installed && s.installPath) {
+    const select = manageRoot.querySelector<HTMLSelectElement>(
+      '[data-act="ubi-direct-launch-mode"]',
+    );
+    if (select) {
+      void ubiDirectLaunchMode(s.installPath)
+        .then((client) => {
+          if (client === null) {
+            manageRoot?.querySelector("[data-ubi-launch-row]")?.remove();
+            return;
+          }
+          select.value = client ? "client" : "direct";
+        })
+        .catch(() => {});
+    }
+  }
+
   // The rail is built from the groups this store actually rendered, so an
   // uninstalled game or a companion title never shows a tab it cannot fill.
   const body = manageRoot.querySelector<HTMLElement>(".manage-body");
@@ -455,6 +475,14 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
           `<button class="btn ghost small" data-act="ubi-direct-verify" data-path="${esc(s.installPath || "")}">${icon("shield-check", 13)} ${t("manage.verify")}</button>`,
         )
       : "";
+  const launchMode =
+    source === "ubisoft" && s.installed
+      ? `<div data-ubi-launch-row>${row(
+          t("manage.ubiLaunchMode"),
+          t("manage.ubiLaunchModeDesc"),
+          `<select class="settings-select" data-act="ubi-direct-launch-mode" data-path="${esc(s.installPath || "")}"><option value="direct">${t("manage.ubiLaunchDirect")}</option><option value="client">${t("manage.ubiLaunchClient")}</option></select>`,
+        )}</div>`
+      : "";
   const files = s.installed
     ? row(
         t("manage.installLocation"),
@@ -468,7 +496,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${installSizeRow(s.installSize, s.installed)}`)}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
