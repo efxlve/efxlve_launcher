@@ -112,7 +112,7 @@ import {
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
-import { loadCompanionLibrary } from "../library/companion-library";
+import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -1053,6 +1053,14 @@ document.addEventListener("click", (e) => {
         if (!choice) return;
         if (choice === "client") {
           await companionGameAction("ubisoft", gameId, "install");
+          return;
+        }
+        // Local rows carry the product id as their store id; catalog-only rows
+        // get it from the entitlement cache. Either way the probe match below
+        // is only a fallback for older caches.
+        const storedId = Number(companionStoreId(id));
+        if (storedId > 0) {
+          await beginUbiDirectInstall(storedId, title);
           return;
         }
         if (!S.ubiDirect) S.ubiDirect = await ubiDirectProbe();

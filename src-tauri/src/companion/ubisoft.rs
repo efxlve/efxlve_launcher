@@ -38,7 +38,11 @@ pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -
             name: row.name.clone(),
             install_path: String::new(),
             installed: false,
-            store_id: String::new(),
+            store_id: if row.install_id > 0 {
+                row.install_id.to_string()
+            } else {
+                String::new()
+            },
             launch_exe: String::new(),
             launch_uri: format!("uplay://launch/{}/0", row.launch_id),
             install_uri: if row.install_id > 0 {
@@ -318,7 +322,7 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
             name: installed.name.clone(),
             install_path: installed.install_dir.clone(),
             installed: true,
-            store_id: String::new(),
+            store_id: installed.product_id.to_string(),
             launch_exe: String::new(),
             launch_uri: String::new(),
             install_uri: String::new(),
@@ -358,7 +362,11 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec
             name: game.name.clone(),
             install_path: String::new(),
             installed: false,
-            store_id: String::new(),
+            store_id: if game.product_id > 0 {
+                game.product_id.to_string()
+            } else {
+                String::new()
+            },
             launch_exe: String::new(),
             launch_uri: String::new(),
             install_uri: if game.product_id > 0 {
@@ -424,6 +432,7 @@ mod tests {
         assert_eq!(games[0].launch_uri, "uplay://launch/34/0");
         assert_eq!(games[0].install_uri, "uplay://install/12");
         assert_eq!(games[0].uninstall_uri, "uplay://uninstall/34");
+        assert_eq!(games[0].store_id, "12");
         assert!(!games[0].installed);
     }
 
@@ -492,6 +501,7 @@ mod tests {
         assert!(imported.launch_uri.is_empty());
         assert_eq!(imported.install_uri, "uplay://install/5520");
         assert_eq!(imported.uninstall_uri, "uplay://uninstall/5520");
+        assert_eq!(imported.store_id, "5520");
         assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);
     }
 }

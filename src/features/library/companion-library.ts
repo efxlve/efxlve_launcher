@@ -19,6 +19,11 @@ import type { EpicAchievementSummary } from "../../epic";
 const storeIds = new Map<string, string>();
 let loginBound = false;
 
+/** The store's own numeric id for a library row, when the store reports one. */
+export function companionStoreId(appName: string): string {
+  return storeIds.get(appName) || "";
+}
+
 function bindCompanionLogin(): void {
   if (loginBound) return;
   loginBound = true;
