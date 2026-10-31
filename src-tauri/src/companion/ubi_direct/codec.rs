@@ -245,6 +245,8 @@ fn parse_owned_games(payload: &[u8]) -> Vec<OwnedGame> {
 pub(crate) fn ownership_initialize_request(request_id: u32) -> Vec<u8> {
     let mut init = Vec::new();
     push_bool(&mut init, 2, true);
+    // The service rejects an initialize that does not name a protocol version.
+    push_varint_field(&mut init, 3, 7);
     let mut req = Vec::new();
     push_varint_field(&mut req, 1, u64::from(request_id));
     push_bytes(&mut req, 2, &init);
@@ -253,11 +255,37 @@ pub(crate) fn ownership_initialize_request(request_id: u32) -> Vec<u8> {
     upstream
 }
 
+/// Unwrap `ownership.Downstream` -> `Rsp` -> the message in `field`.
+fn service_body(payload: &[u8], field: u32) -> Vec<u8> {
+    let mut rsp = Vec::new();
+    for_each_field(
+        payload,
+        |outer, bytes| {
+            if outer == 1 {
+                rsp = bytes.to_vec();
+            }
+        },
+        |_, _| {},
+    );
+    let mut body = Vec::new();
+    for_each_field(
+        &rsp,
+        |inner, bytes| {
+            if inner == field {
+                body = bytes.to_vec();
+            }
+        },
+        |_, _| {},
+    );
+    body
+}
+
 pub(crate) fn parse_initialize_rsp(payload: &[u8]) -> (bool, Vec<OwnedGame>) {
+    let body = service_body(payload, 2);
     let mut success = false;
     let mut games = Vec::new();
     for_each_field(
-        payload,
+        &body,
         |field, bytes| {
             if field == 2 {
                 games = parse_owned_games(bytes);
@@ -284,9 +312,10 @@ pub(crate) fn ownership_manifests_request(request_id: u32, product_ids: &[u32]) 
 }
 
 pub(crate) fn parse_manifests_rsp(payload: &[u8]) -> Vec<(u32, String)> {
+    let body = service_body(payload, 10);
     let mut out = Vec::new();
     for_each_field(
-        payload,
+        &body,
         |field, bytes| {
             if field != 2 {
                 return;
@@ -327,10 +356,11 @@ pub(crate) fn ownership_token_request(request_id: u32, product_id: u32) -> Vec<u
 }
 
 pub(crate) fn parse_ownership_token(payload: &[u8]) -> Option<String> {
+    let body = service_body(payload, 27);
     let mut success = false;
     let mut token = String::new();
     for_each_field(
-        payload,
+        &body,
         |field, bytes| {
             if field == 2 {
                 token = String::from_utf8_lossy(bytes).to_string();
@@ -357,10 +387,11 @@ pub(crate) fn uplay_ticket_request(request_id: u32, uplay_id: u32) -> Vec<u8> {
 }
 
 pub(crate) fn parse_uplay_ticket(payload: &[u8]) -> Option<String> {
+    let body = service_body(payload, 13);
     let mut success = false;
     let mut ticket = String::new();
     for_each_field(
-        payload,
+        &body,
         |field, bytes| {
             if field == 2 {
                 ticket = String::from_utf8_lossy(bytes).to_string();
@@ -566,7 +597,11 @@ mod tests {
         let mut init = Vec::new();
         push_bool(&mut init, 1, true);
         push_bytes(&mut init, 2, &owned);
-        let (success, games) = parse_initialize_rsp(&init);
+        let mut rsp = Vec::new();
+        push_bytes(&mut rsp, 2, &init);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        let (success, games) = parse_initialize_rsp(&downstream);
         assert!(success);
         assert_eq!(games.len(), 1);
         assert_eq!(games[0].product_id, 123);
