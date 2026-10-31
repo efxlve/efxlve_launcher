@@ -456,7 +456,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
     : row(
         t("common.install"),
         t("accounts.companionManagedDesc", { name: brand }),
-        `<button class="btn primary small" data-act="companion-install" data-id="${s.appName}" data-store="${source}">${icon("download", 13)} ${t("common.install")}</button>`,
+        `<button class="btn primary small" data-act="${source === "ubisoft" ? "ubi-direct-install-game" : "companion-install"}" data-id="${s.appName}" data-store="${source}">${icon("download", 13)} ${t("common.install")}</button>`,
       );
   return `
     <div class="manage-tab-content">
