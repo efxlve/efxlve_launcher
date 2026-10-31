@@ -1173,10 +1173,21 @@ export async function initApp(hooks: {
     }
 
     // Desktop shortcuts start the launcher with `--launch <app>`: hand it to the
-    // same play path as the Play button once the shell is up.
+    // same play path as the Play button once the shell is up. A companion row
+    // can arrive after the first paint, so wait for the library entry instead
+    // of firing into an empty map.
     try {
       const pending = await epicTakePendingLaunch();
-      if (pending) window.setTimeout(() => void epicPlay(pending), 1200);
+      if (pending) {
+        const launchWhenReady = (attempt = 0): void => {
+          if (!summaryOf(pending) && attempt < 20) {
+            window.setTimeout(() => launchWhenReady(attempt + 1), 250);
+            return;
+          }
+          void epicPlay(pending);
+        };
+        window.setTimeout(() => launchWhenReady(), 600);
+      }
     } catch {
       // ignore
     }
