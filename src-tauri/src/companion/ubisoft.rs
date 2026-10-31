@@ -311,13 +311,13 @@ pub(crate) fn connect_games_roots() -> Vec<std::path::PathBuf> {
     roots
 }
 
-/// True when the client has begun downloading this title but has not finished:
-/// it writes `uplay_download` inside the game folder before the files are
-/// complete. The folder may not be in the registry yet, so match by title.
-pub(crate) fn connect_downloading(title: &str) -> bool {
+/// Bytes already written under the client's `uplay_download` folder, or `None`
+/// when no matching download folder exists. The folder is not in the registry
+/// until the install completes, so match by title.
+pub(crate) fn connect_download_state(title: &str) -> Option<u64> {
     let wanted = slug(title);
     if wanted.is_empty() {
-        return false;
+        return None;
     }
     for root in connect_games_roots() {
         let Ok(entries) = std::fs::read_dir(&root) else {
@@ -330,12 +330,36 @@ pub(crate) fn connect_downloading(title: &str) -> bool {
             if slug(&entry.file_name().to_string_lossy()) != wanted {
                 continue;
             }
-            if entry.path().join("uplay_download").is_dir() {
-                return true;
+            let download = entry.path().join("uplay_download");
+            if download.is_dir() {
+                return Some(directory_size(&download));
             }
         }
     }
-    false
+    None
+}
+
+/// True when the client has begun downloading this title but has not finished.
+pub(crate) fn connect_downloading(title: &str) -> bool {
+    connect_download_state(title).is_some()
+}
+
+fn directory_size(directory: &std::path::Path) -> u64 {
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return 0;
+    };
+    let mut total = 0u64;
+    for entry in entries.flatten() {
+        let Ok(kind) = entry.file_type() else {
+            continue;
+        };
+        if kind.is_dir() {
+            total = total.saturating_add(directory_size(&entry.path()));
+        } else if kind.is_file() {
+            total = total.saturating_add(entry.metadata().map(|meta| meta.len()).unwrap_or(0));
+        }
+    }
+    total
 }
 
 /// Local games plus the imported catalog the client has not cached yet.

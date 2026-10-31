@@ -500,6 +500,25 @@ export function renderDownloads(): string {
       );
     }).join("");
 
+  // Ubisoft Connect downloads happen inside the client, not our CDN queue.
+  // The client does not expose a total, so show the bytes it has written and
+  // send the user to the client for the exact percentage.
+  const ubiClientDownloading = S.companionSummaries.filter(
+    (game) => game.source === "ubisoft" && game.downloading,
+  );
+  const ubiClientRows = ubiClientDownloading
+    .map((game) => {
+      const bytes = game.bytesDownloaded || 0;
+      const meta = `${t("common.downloadingNow")}${bytes > 0 ? ` · ${fmtBytes(bytes)}` : ""}`;
+      return gameRow(
+        summaryOf(game.key),
+        game.key,
+        meta,
+        `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>${manageBtn(game.key)}`,
+      );
+    })
+    .join("");
+
   // Native Ubisoft jobs, with the same cancel action as the game page.
   const ubiJobs = Object.values(S.ubiDirectProgress)
     .filter((job) => S.ubiDirectInstalling.has(job.productId))
@@ -521,7 +540,7 @@ export function renderDownloads(): string {
     })
     .join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
@@ -537,6 +556,7 @@ export function renderDownloads(): string {
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length - (steamCardGame ? 1 : 0), steamRows) : ""}
       ${ubiRows ? section(t("external.ubisoftTitle"), ubiJobs.length, ubiRows) : ""}
+      ${ubiClientRows ? section(t("external.ubisoftTitle"), ubiClientDownloading.length, ubiClientRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
       ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows, `<button class="btn ghost small" data-act="dl-completed-clear">${icon("trash", 13)} ${t("downloads.completedClear")}</button>`) : ""}
     </div>`;

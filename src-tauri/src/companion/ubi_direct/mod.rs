@@ -304,6 +304,10 @@ mod tests {
                 || lower.contains("exe")
                 || lower.contains("launch")
                 || lower.contains("command")
+                || lower.contains("size")
+                || lower.contains("space_id")
+                || lower.contains("chunk")
+                || lower.contains("install")
             {
                 println!("{line}");
             }

@@ -25,6 +25,10 @@ export interface CompanionGame {
   developer: string;
   /** True while the client is still downloading this game. */
   downloading: boolean;
+  /** Bytes the client has written under its download folder. */
+  downloadBytes: number;
+  /** Total transfer size, or 0 when the client does not expose it. */
+  downloadTotal: number;
   /** Bulk achievement progress from the account's own service (Xbox). */
   achievementsUnlocked: number;
   achievementsTotal: number;
@@ -378,6 +382,8 @@ export function companionToItem(g: CompanionGame): LibraryItem {
     heroUrl: g.heroUrl || null,
     description: g.description || "",
     downloading: g.downloading === true,
+    bytesDownloaded: g.downloadBytes || 0,
+    bytesToDownload: g.downloadTotal || 0,
     updateAvailable: false,
     cloudSavesSupported: false,
     dlcCount: 0,

@@ -85,6 +85,11 @@ pub struct CompanionGame {
     /// True while the owning client is downloading this game (Ubisoft writes a
     /// `uplay_download` folder before the files are complete).
     pub downloading: bool,
+    /// Bytes already written under that `uplay_download` folder. Zero when the
+    /// client has not written any content yet.
+    pub download_bytes: u64,
+    /// Total transfer size; zero until the client exposes it.
+    pub download_total: u64,
     /// Bulk achievement progress from the account's own service (Xbox title
     /// history today). Zero when the store only answers per game.
     pub achievements_unlocked: u32,
@@ -166,12 +171,13 @@ fn to_public(game: &FoundGame, cover: &str, hero: &str, developer: &str) -> Comp
         store_id: game.store_id.clone(),
         description: game.description.clone(),
         developer: developer.to_string(),
-        downloading: game.store == "ubisoft"
-            && ((!game.install_path.is_empty()
-                && std::path::Path::new(&game.install_path)
-                    .join("uplay_download")
-                    .is_dir())
-                || ubisoft::connect_downloading(&game.name)),
+        downloading: game.store == "ubisoft" && ubisoft::connect_downloading(&game.name),
+        download_bytes: if game.store == "ubisoft" {
+            ubisoft::connect_download_state(&game.name).unwrap_or(0)
+        } else {
+            0
+        },
+        download_total: 0,
         achievements_unlocked: 0,
         achievements_total: 0,
         achievements_xp: 0,
@@ -1421,7 +1427,9 @@ mod tests {
             std::env::var_os("ProgramFiles(x86)")
         );
         let public = to_public(&game, "", "", "");
+        println!("download_bytes={}", public.download_bytes);
         assert!(public.downloading, "uplay_download was not detected");
+        assert!(public.download_bytes > 0, "downloaded bytes were not summed");
     }
 
     #[test]
