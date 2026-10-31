@@ -500,7 +500,28 @@ export function renderDownloads(): string {
       );
     }).join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0
+  // Native Ubisoft jobs, with the same cancel action as the game page.
+  const ubiJobs = Object.values(S.ubiDirectProgress)
+    .filter((job) => S.ubiDirectInstalling.has(job.productId))
+    .sort((left, right) => left.productId - right.productId);
+  const ubiRows = ubiJobs
+    .map((job) => {
+      const name = S.ubiDirect?.games.find((game) => game.productId === job.productId)?.name || `#${job.productId}`;
+      const pct = job.totalBytes > 0 ? Math.min(100, Math.round((job.doneBytes / job.totalBytes) * 100)) : 0;
+      return `<div class="row">
+        <div class="row-main">
+          <div class="row-title">${esc(name)}</div>
+          <div class="row-meta tabular-nums">${fmtBytes(job.doneBytes)} / ${fmtBytes(job.totalBytes)}${job.file ? ` · ${esc(job.file)}` : ""}</div>
+          <div class="progress"><span data-ubi-direct-page-bar="${job.productId}" style="width:${pct}%"></span></div>
+        </div>
+        <div class="row-actions">
+          <button class="icon-btn danger" data-act="ubi-direct-cancel" data-id="${job.productId}" title="${t("common.cancel")}">${icon("x", 16)}</button>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
@@ -515,6 +536,7 @@ export function renderDownloads(): string {
       ${active ? renderActiveCard(active) : steamCardGame ? renderSteamActiveCard(steamCardGame) : idle}
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length - (steamCardGame ? 1 : 0), steamRows) : ""}
+      ${ubiRows ? section(t("external.ubisoftTitle"), ubiJobs.length, ubiRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
       ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows, `<button class="btn ghost small" data-act="dl-completed-clear">${icon("trash", 13)} ${t("downloads.completedClear")}</button>`) : ""}
     </div>`;

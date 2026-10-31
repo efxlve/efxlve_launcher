@@ -429,6 +429,12 @@ export async function initApp(hooks: {
       if (bar && progress.totalBytes > 0) {
         bar.style.width = `${Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))}%`;
       }
+      const pageBar = document.querySelector<HTMLElement>(
+        `[data-ubi-direct-page-bar="${progress.productId}"]`,
+      );
+      if (pageBar && progress.totalBytes > 0) {
+        pageBar.style.width = `${Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))}%`;
+      }
       hooks.scheduleRender();
     });
 
