@@ -778,16 +778,24 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   }
 
   // Companion games stay inside their client: install, uninstall and play all
-  // go through that client's protocol handlers.
+  // go through that client's protocol handlers. Ubisoft is the exception: the
+  // launcher owns its CDN install, so the primary button starts that path.
   if (isCompanionApp(s.appName)) {
     const store = sourceOfKey(s.appName);
+    const ubiKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const direct = store === "ubisoft"
+      ? S.ubiDirect?.games.find((game) => ubiKey(game.name) === ubiKey(s.title))
+      : undefined;
+    const directProgress = direct ? S.ubiDirectProgress[direct.productId] : undefined;
     const primary = S.runningGames.has(s.appName)
       ? `<button class="btn stop lg" data-act="epic-stop" data-id="${s.appName}">${icon("x", 16)} ${t("common.stop")}</button>`
       : installPathIssue(s)
         ? unavailableAction()
-        : s.installed
-          ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
-          : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-direct-install-game" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+        : directProgress
+          ? `<button class="btn primary lg" data-act="ubi-direct-open">${icon("download", 16)} ${t("common.downloading", { p: Math.min(100, Math.round((directProgress.doneBytes / Math.max(1, directProgress.totalBytes)) * 100)) })}</button>`
+          : s.installed
+            ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
+            : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-direct-install-game" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>

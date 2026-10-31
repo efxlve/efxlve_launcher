@@ -429,6 +429,7 @@ export async function initApp(hooks: {
       if (bar && progress.totalBytes > 0) {
         bar.style.width = `${Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))}%`;
       }
+      hooks.scheduleRender();
     });
 
     listenLater<UbiDirectSummary>("ubi-direct-done", (event) => {

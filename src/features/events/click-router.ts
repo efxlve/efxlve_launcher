@@ -824,6 +824,9 @@ document.addEventListener("click", (e) => {
       }
       void companionGameAction(store, gameId, "uninstall").catch((e: unknown) => toast(String(e), "err"));
     });
+  } else if (act === "ubi-direct-open") {
+    S.settingsSection = "integrations";
+    setView("settings");
   } else if (act === "ubi-direct-rescan") {
     if (S.ubiDirectLoading) return;
     S.ubiDirectLoading = true;
