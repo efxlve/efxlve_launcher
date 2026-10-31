@@ -74,11 +74,18 @@ pub(crate) fn remove(product_id: u32) {
 }
 
 #[cfg(test)]
+pub(crate) fn test_lock() -> &'static std::sync::Mutex<()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    &LOCK
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn records_round_trip_and_replace_by_product_id() {
+        let _guard = test_lock().lock().unwrap();
         // Keep the real user file out of the test: point the record file at a
         // temporary path for the duration of this test.
         let temp = std::env::temp_dir().join(format!("efxlve-ubi-installs-{}.json", std::process::id()));

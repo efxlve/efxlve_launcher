@@ -822,7 +822,9 @@ document.addEventListener("click", (e) => {
           .catch((e: unknown) => toast(String(e), "err"));
         return;
       }
-      void companionGameAction(store, gameId, "uninstall").catch((e: unknown) => toast(String(e), "err"));
+      void companionGameAction(store, gameId, "uninstall")
+        .then(() => loadCompanionLibrary())
+        .catch((e: unknown) => toast(String(e), "err"));
     });
   } else if (act === "ubi-direct-open") {
     S.settingsSection = "integrations";

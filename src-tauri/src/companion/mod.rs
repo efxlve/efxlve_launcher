@@ -552,6 +552,12 @@ pub fn ubi_direct_forget(product_id: u32) {
     ubi_installs::remove(product_id);
 }
 
+/// Remove a direct install and optionally its folder.
+#[tauri::command]
+pub fn ubi_direct_uninstall(product_id: u32, delete_files: bool) -> Result<(), String> {
+    ubi_direct::uninstall_game(product_id, delete_files)
+}
+
 /// Start a direct install in the background. Progress arrives on
 /// `ubi-direct-progress`, completion on `ubi-direct-done`, and a failure on
 /// `ubi-direct-failed`.
@@ -1135,6 +1141,14 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
             return ubi_direct::launch_game(installed.product_id, shim).await;
         }
     }
+    if store == "ubisoft" && action == "uninstall" && !game.install_path.is_empty() {
+        if let Some(installed) = ubi_installs::load()
+            .into_iter()
+            .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
+        {
+            return ubi_direct::uninstall_game(installed.product_id, true);
+        }
+    }
     // Riot: launch, install and uninstall are product flags on the client exe.
     if store == "riot" {
         return match riot::action_command(&game.id, &action) {
@@ -1219,5 +1233,26 @@ mod tests {
         store_companion_achievements(key.clone(), data);
         let cached = cached_companion_achievements(&key).expect("cached answer");
         assert_eq!(cached.total_achievements, 5);
+    }
+
+    #[test]
+    #[ignore = "reads the real user library and direct-install record"]
+    fn live_direct_install_is_in_the_ubisoft_library() {
+        let games = discover("ubisoft");
+        let game = games
+            .iter()
+            .find(|game| game.name.eq_ignore_ascii_case("Rayman Origins"))
+            .expect("Rayman Origins must be in the Ubisoft library");
+        println!(
+            "id={} installed={} path={} launch_uri={}",
+            game.id, game.installed, game.install_path, game.launch_uri
+        );
+        assert!(game.installed);
+        let record = ubi_installs::load()
+            .into_iter()
+            .find(|record| record.install_dir.eq_ignore_ascii_case(&game.install_path))
+            .expect("the library row must resolve to the direct-install record");
+        assert_eq!(record.product_id, 80);
+        assert_eq!(record.exe, "Rayman Origins.exe");
     }
 }

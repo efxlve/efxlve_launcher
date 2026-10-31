@@ -10,6 +10,7 @@ mod auth;
 mod codec;
 pub(crate) mod install;
 mod launch;
+mod manage;
 pub(crate) mod manifest;
 mod shim;
 pub(crate) mod wire;
@@ -137,6 +138,12 @@ pub(crate) async fn install_game(
 /// Start a game the launcher installed, without Ubisoft Connect.
 pub(crate) async fn launch_game(product_id: u32, shim_enabled: bool) -> Result<(), String> {
     launch::launch(product_id, shim_enabled).await
+}
+
+/// Remove a direct install and, when asked, its folder. Never touches a folder
+/// that no longer contains the recorded executable.
+pub(crate) fn uninstall_game(product_id: u32, delete_files: bool) -> Result<(), String> {
+    manage::uninstall(product_id, delete_files)
 }
 
 #[cfg(test)]
