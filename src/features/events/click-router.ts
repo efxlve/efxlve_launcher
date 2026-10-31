@@ -83,6 +83,7 @@ import {
   epicDetectEglGames,
   epicGetQueue,
   epicOpenFolderPath,
+  epicSelectFolderDialog,
   epicSetAutoDesktopShortcut,
   epicSetGogComet,
   epicSetNetworkProfile,
@@ -180,10 +181,14 @@ const ubiTitleKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g
 /** Confirm a direct install and start it; shared by the game page and settings. */
 async function beginUbiDirectInstall(productId: number, name: string): Promise<void> {
   const plan = await ubiDirectPlan(productId);
+  const picked = await epicSelectFolderDialog(plan.installDir, i18nT("common.install")).catch(
+    () => null,
+  );
+  const installDir = picked || plan.installDir;
   const ok = await askConfirm({
     title: i18nT("common.install"),
     name: plan.name || name,
-    body: `${fmtBytes(plan.bytes)} · ${plan.files} files · ${plan.installDir}`,
+    body: `${fmtBytes(plan.bytes)} · ${plan.files} files · ${installDir}`,
     confirm: i18nT("common.install"),
     cancel: i18nT("common.cancel"),
   });
@@ -197,7 +202,7 @@ async function beginUbiDirectInstall(productId: number, name: string): Promise<v
   };
   render();
   try {
-    await ubiDirectInstall(productId);
+    await ubiDirectInstall(productId, installDir);
   } catch (error) {
     S.ubiDirectInstalling.delete(productId);
     render();
