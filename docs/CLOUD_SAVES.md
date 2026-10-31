@@ -104,7 +104,18 @@ Google Drive notes:
 1. A save path passed explicitly by the caller.
 2. The game's local setting (`custom_save_path`), editable in the Manage drawer.
 3. The installed manifest's `save_path`.
-4. Heuristic detection from the game title and install folder.
+4. For `ubisoft::<product>` keys, the Ubisoft resolver in
+   `companion/ubi_direct/saves.rs` (see below).
+5. Heuristic detection from the game title and install folder.
+
+Ubisoft titles do not follow the Epic layout. The resolver checks, in order:
+the direct install's `<install>\Saves` folder written by the compatibility shim,
+the official client's `savegames\<account>\<uplay_id>` (then `<product_id>`)
+under `%LOCALAPPDATA%\Ubisoft Game Launcher` and the launcher folder in Program
+Files, and `Documents\My Games\<title>` (then `Documents\Ubisoft\<title>`). A
+folder that already holds files wins over an empty one, so progress recorded by
+the official client is backed up before the shim folder has ever been written.
+The Manage panel shows the same resolved folder with an Open button.
 
 Restore resolves a destination the same way: custom path, then the original
 path with `Documents`, `Saved Games` or `AppData` rewritten under the current

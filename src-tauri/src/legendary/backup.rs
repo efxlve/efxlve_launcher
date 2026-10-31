@@ -806,6 +806,14 @@ fn prune_local_dir(dir: &Path, keep: u32) {
     }
 }
 
+/// Ubisoft titles keep saves where the compatibility shim or the official
+/// client put them, not in a folder named after the launcher's app key.
+fn ubisoft_save_path(app_name: &str) -> Option<String> {
+    let product_id: u32 = app_name.strip_prefix("ubisoft::")?.parse().ok()?;
+    crate::companion::ubi_save_path_for_product(product_id)
+        .map(|path| path.to_string_lossy().to_string())
+}
+
 pub fn create_backup(
     app_name: &str,
     save_path_override: Option<&str>,
@@ -830,6 +838,8 @@ pub fn create_backup(
         .filter(|s| !s.trim().is_empty())
     {
         sp.trim().to_string()
+    } else if let Some(sp) = ubisoft_save_path(app_name) {
+        sp
     } else {
         let title = installed_game.as_ref().map(|g| g.title.as_str());
         let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
@@ -997,6 +1007,14 @@ mod tests {
         assert_ne!(first, third);
 
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "reads Rayman Origins; needs that direct install"]
+    fn live_ubisoft_backup_source_resolves() {
+        let path = ubisoft_save_path("ubisoft::80").expect("a Ubisoft save path");
+        println!("Ubisoft backup source: {path}");
+        assert!(std::path::Path::new(&path).is_dir());
     }
 
     #[test]

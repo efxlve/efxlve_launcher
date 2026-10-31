@@ -3457,5 +3457,8 @@
   "manage.ubiLaunchMode": "Launch mode",
   "manage.ubiLaunchModeDesc": "Direct uses the local shim; Ubisoft Connect is required for online, anti-cheat and Connect-only titles.",
   "manage.ubiLaunchDirect": "Direct (no Ubisoft Connect)",
-  "manage.ubiLaunchClient": "Ubisoft Connect"
+  "manage.ubiLaunchClient": "Ubisoft Connect",
+  "manage.ubiSaveFolderDesc": "게임이 저장 파일을 기록하는 폴더입니다. 런처의 클라우드 백업도 같은 경로를 읽습니다.",
+  "manage.ubiSaveFolderChecking": "저장 폴더를 찾는 중…",
+  "manage.ubiNoSaveFolder": "이 게임의 저장 폴더를 찾지 못했습니다."
 }

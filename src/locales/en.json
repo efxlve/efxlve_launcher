@@ -3457,5 +3457,8 @@
   "manage.ubiLaunchMode": "Launch mode",
   "manage.ubiLaunchModeDesc": "Direct uses the local shim; Ubisoft Connect is required for online, anti-cheat and Connect-only titles.",
   "manage.ubiLaunchDirect": "Direct (no Ubisoft Connect)",
-  "manage.ubiLaunchClient": "Ubisoft Connect"
+  "manage.ubiLaunchClient": "Ubisoft Connect",
+  "manage.ubiSaveFolderDesc": "The folder the game writes saves to. The launcher's cloud backup reads this same path.",
+  "manage.ubiSaveFolderChecking": "Looking for the save folder…",
+  "manage.ubiNoSaveFolder": "No save folder was found for this game."
 }

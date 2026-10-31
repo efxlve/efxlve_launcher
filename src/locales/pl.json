@@ -3457,5 +3457,8 @@
   "manage.ubiLaunchMode": "Launch mode",
   "manage.ubiLaunchModeDesc": "Direct uses the local shim; Ubisoft Connect is required for online, anti-cheat and Connect-only titles.",
   "manage.ubiLaunchDirect": "Direct (no Ubisoft Connect)",
-  "manage.ubiLaunchClient": "Ubisoft Connect"
+  "manage.ubiLaunchClient": "Ubisoft Connect",
+  "manage.ubiSaveFolderDesc": "Folder, w którym gra zapisuje postępy. Kopia w chmurze launchera czyta tę samą ścieżkę.",
+  "manage.ubiSaveFolderChecking": "Szukanie folderu zapisów…",
+  "manage.ubiNoSaveFolder": "Nie znaleziono folderu zapisów dla tej gry."
 }

@@ -117,9 +117,9 @@ client. Open work:
   achievement list built from the Connect cache. Rayman Origins has no cached
   schema, so it records nothing until a schema source is added. UbiSlot and the
   local spool are the reference.
-- There is no open-source Ubi Cloud client. Ubisoft's cloud saves are local
-  folders synced by the Connect client; back them up through the launcher's
-  existing providers, using the Ludusavi manifest as the save-path database.
+- Ubisoft saves are local folders. `companion/ubi_direct/saves.rs` resolves the
+  shim, Connect and Documents layouts for the existing cloud providers; the
+  Ludusavi manifest is still open for titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
   client. Do not attempt to bypass BattlEye or Denuvo.
 - Orbit R2 (`ubiorbitapi_r2_loader`) titles still need the Connect client.

@@ -13,11 +13,13 @@ pub(crate) mod install;
 mod launch;
 mod manage;
 pub(crate) mod manifest;
+pub(crate) mod saves;
 mod shim;
 pub(crate) mod verify;
 pub(crate) mod wire;
 
 pub(crate) use achievements::merge as merge_achievements;
+pub(crate) use saves::{path_for as save_path, path_for_product as save_path_for_product};
 
 use serde::Serialize;
 
@@ -375,6 +377,15 @@ mod tests {
                 .client_launch
         );
         println!("Rayman launch mode toggled to client and back to direct");
+    }
+
+    #[test]
+    #[ignore = "reads Rayman Origins; needs that direct install"]
+    fn live_rayman_save_folder_resolves() {
+        let path = saves::path_for_product(80).expect("a save folder");
+        println!("Rayman saves: {}", path.display());
+        assert!(path.is_dir());
+        assert!(path.ends_with("Saves"));
     }
 
     #[tokio::test]

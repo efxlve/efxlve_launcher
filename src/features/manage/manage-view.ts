@@ -17,7 +17,7 @@ import { nileGameSettings } from "../../nile";
 import type { GameSource } from "../../core/types";
 import { renderBackupListHtml } from "../drawer/drawer-widgets";
 import { storeVersionLabel } from "../drawer/external-versions";
-import { ubiDirectLaunchMode } from "../../companion";
+import { ubiDirectLaunchMode, ubiSavePath } from "../../companion";
 import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
 export { updateManageCloudRowInPlace };
@@ -343,6 +343,20 @@ export function openManagePopup(appName: string): void {
     }
   }
 
+  // The save folder arrives from the resolver a moment later; the open button
+  // resolves it again on click, so a stale label never opens a wrong folder.
+  if (source === "ubisoft" && s.installed) {
+    const label = manageRoot.querySelector<HTMLElement>("[data-ubi-save-path]");
+    const productId = Number(s.appName.slice("ubisoft::".length));
+    if (label && Number.isFinite(productId) && productId > 0) {
+      void ubiSavePath(productId, s.installPath || undefined, s.title)
+        .then((path) => {
+          label.textContent = path || t("manage.noSaveDirDetected");
+        })
+        .catch(() => {});
+    }
+  }
+
   // The rail is built from the groups this store actually rendered, so an
   // uninstalled game or a companion title never shows a tab it cannot fill.
   const body = manageRoot.querySelector<HTMLElement>(".manage-body");
@@ -483,6 +497,20 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
           `<select class="settings-select" data-act="ubi-direct-launch-mode" data-path="${esc(s.installPath || "")}"><option value="direct">${t("manage.ubiLaunchDirect")}</option><option value="client">${t("manage.ubiLaunchClient")}</option></select>`,
         )}</div>`
       : "";
+  const saves =
+    source === "ubisoft" && s.installed
+      ? group("saves", "cloud", t("manage.groupSaves"), `
+          <div class="row mg-row stack">
+            <div class="mg-title">${t("manage.saveFolderTitle")}</div>
+            <div class="mg-desc">${t("manage.ubiSaveFolderDesc")}</div>
+            <div class="mg-desc"><span class="mg-path" data-ubi-save-path>${t("manage.ubiSaveFolderChecking")}</span></div>
+            <div class="mg-inline">
+              <button class="btn ghost small" data-act="ubi-open-saves" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}">${icon("folder", 13)} ${t("manage.openFolder")}</button>
+            </div>
+          </div>
+          <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
+        `)
+      : "";
   const files = s.installed
     ? row(
         t("manage.installLocation"),
@@ -497,6 +525,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
   return `
     <div class="manage-tab-content">
       ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${installSizeRow(s.installSize, s.installed)}`)}
+      ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}

@@ -3457,5 +3457,8 @@
   "manage.ubiLaunchMode": "Başlatma modu",
   "manage.ubiLaunchModeDesc": "Doğrudan mod yerel shim'i kullanır; online, anti-cheat ve yalnızca Connect ile çalışan oyunlar için Ubisoft Connect gerekir.",
   "manage.ubiLaunchDirect": "Doğrudan (Ubisoft Connect'siz)",
-  "manage.ubiLaunchClient": "Ubisoft Connect"
+  "manage.ubiLaunchClient": "Ubisoft Connect",
+  "manage.ubiSaveFolderDesc": "Oyunun kayıtları yazdığı klasör. Başlatıcının bulut yedeği aynı yolu okur.",
+  "manage.ubiSaveFolderChecking": "Kayıt klasörü aranıyor…",
+  "manage.ubiNoSaveFolder": "Bu oyun için kayıt klasörü bulunamadı."
 }

@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectVerify, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectVerify, ubiOpenSaves, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -860,6 +860,13 @@ document.addEventListener("click", (e) => {
         if (report.repaired > 0) void loadCompanionLibrary();
       })
       .catch((e: unknown) => toast(localizeMessage(String(e)), "err"));
+  } else if (act === "ubi-open-saves") {
+    const productId = Number((t.dataset.id || "").replace("ubisoft::", ""));
+    if (productId > 0) {
+      void ubiOpenSaves(productId, t.dataset.path || undefined, t.dataset.title || undefined).catch((e: unknown) =>
+        toast(localizeMessage(String(e)), "err"),
+      );
+    }
   } else if (act === "ubi-direct-open") {
     S.settingsSection = "integrations";
     setView("settings");

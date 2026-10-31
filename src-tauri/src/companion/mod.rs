@@ -15,6 +15,7 @@ mod ea_login;
 mod ea_vault;
 mod launch;
 pub(crate) use launch::{client_installed, client_path};
+pub(crate) use ubi_direct::save_path_for_product as ubi_save_path_for_product;
 mod pcsign;
 mod proto;
 mod riot;
@@ -587,6 +588,32 @@ pub fn ubi_direct_launch_mode(install_path: String) -> Option<bool> {
         .into_iter()
         .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
         .map(|record| record.client_launch)
+}
+
+/// Where this Ubisoft title keeps its saves, or `None` when no shim, client or
+/// documents folder exists yet.
+#[tauri::command]
+pub fn ubi_save_path(
+    product_id: u32,
+    install_path: Option<String>,
+    title: Option<String>,
+) -> Option<String> {
+    let install = install_path.map(std::path::PathBuf::from);
+    ubi_direct::save_path(product_id, install.as_deref(), title.as_deref())
+        .map(|path| path.to_string_lossy().to_string())
+}
+
+/// Opens the resolved save folder in the system file manager.
+#[tauri::command]
+pub fn ubi_open_saves(
+    product_id: u32,
+    install_path: Option<String>,
+    title: Option<String>,
+) -> Result<(), String> {
+    let install = install_path.map(std::path::PathBuf::from);
+    let path = ubi_direct::save_path(product_id, install.as_deref(), title.as_deref())
+        .ok_or_else(|| "@t:manage.ubiNoSaveFolder".to_string())?;
+    crate::open_in_file_manager(&path)
 }
 
 /// Switch one direct install between the local shim and the official client.

@@ -162,6 +162,22 @@ export const ubiDirectLaunchMode = (installPath: string) =>
 export const ubiDirectSetClientLaunch = (installPath: string, enabled: boolean) =>
   invoke<void>("ubi_direct_set_client_launch", { installPath, enabled });
 
+/** Where a Ubisoft title keeps its saves; null when nothing exists yet. */
+export const ubiSavePath = (productId: number, installPath?: string, title?: string) =>
+  invoke<string | null>("ubi_save_path", {
+    productId,
+    installPath: installPath || null,
+    title: title || null,
+  });
+
+/** Opens the resolved Ubisoft save folder in the file manager. */
+export const ubiOpenSaves = (productId: number, installPath?: string, title?: string) =>
+  invoke<void>("ubi_open_saves", {
+    productId,
+    installPath: installPath || null,
+    title: title || null,
+  });
+
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });

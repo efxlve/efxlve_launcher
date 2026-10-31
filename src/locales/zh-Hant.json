@@ -3457,5 +3457,8 @@
   "manage.ubiLaunchMode": "Launch mode",
   "manage.ubiLaunchModeDesc": "Direct uses the local shim; Ubisoft Connect is required for online, anti-cheat and Connect-only titles.",
   "manage.ubiLaunchDirect": "Direct (no Ubisoft Connect)",
-  "manage.ubiLaunchClient": "Ubisoft Connect"
+  "manage.ubiLaunchClient": "Ubisoft Connect",
+  "manage.ubiSaveFolderDesc": "遊戲寫入存檔的資料夾。啟動器的雲端備份會讀取同一路徑。",
+  "manage.ubiSaveFolderChecking": "正在尋找存檔資料夾…",
+  "manage.ubiNoSaveFolder": "找不到此遊戲的存檔資料夾。"
 }
