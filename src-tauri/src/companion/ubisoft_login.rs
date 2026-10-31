@@ -67,6 +67,20 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
     for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
     return btoa(bin);
   }
+  // Without `rememberMe` the session POST returns no long-lived token, and the
+  // launcher is logged out as soon as the short ticket dies. Force it on the
+  // sessions request so the response carries `rememberMeTicket`.
+  function withRememberMe(body) {
+    try {
+      if (!body || typeof body !== "string") return body;
+      var data = JSON.parse(body);
+      if (data && typeof data === "object" && !data.rememberMe) {
+        data.rememberMe = true;
+        return JSON.stringify(data);
+      }
+    } catch (e) {}
+    return body;
+  }
   function done() {
     if (!session || window.__efxlveUbiSent) return;
     window.__efxlveUbiSent = true;
@@ -100,8 +114,14 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
     this.__efxMethod = String(method || "").toUpperCase();
     return open.apply(this, arguments);
   };
-  XMLHttpRequest.prototype.send = function () {
+  XMLHttpRequest.prototype.send = function (body) {
     var xhr = this;
+    if (
+      xhr.__efxMethod === "POST" &&
+      String(xhr.__efxUrl || "").indexOf("/profiles/sessions") !== -1
+    ) {
+      body = withRememberMe(body);
+    }
     xhr.addEventListener("load", function () {
       if (xhr.status !== 200) return;
       var text = "";
@@ -112,14 +132,21 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
       }
       inspect(String(xhr.__efxUrl || ""), xhr.__efxMethod || "", text);
     });
-    return send.apply(this, arguments);
+    return send.call(this, body);
   };
   var origFetch = window.fetch;
   if (origFetch) {
     window.fetch = function (input, init) {
       var url = (typeof input === "string") ? input : (input && input.url) || "";
       var method = (init && init.method) ? String(init.method).toUpperCase() : "GET";
-      return origFetch.apply(this, arguments).then(function (response) {
+      var args = [input, init];
+      if (method === "POST" && url.indexOf("/profiles/sessions") !== -1 && init && init.body) {
+        var nextInit = {};
+        for (var key in init) nextInit[key] = init[key];
+        nextInit.body = withRememberMe(init.body);
+        args = [input, nextInit];
+      }
+      return origFetch.apply(this, args).then(function (response) {
         if (response && response.ok) {
           response.clone().text().then(function (text) { inspect(url, method, text); }).catch(function () {});
         }
@@ -257,27 +284,47 @@ fn headers(
     map
 }
 
+/// Why a session renewal stopped. Only an explicit rejection may discard the
+/// sealed ticket: a timeout or a 5xx must not sign the user out.
+enum RefreshOutcome {
+    Renewed(Session),
+    Rejected,
+    Unavailable,
+}
+
 /// Best effort session refresh, the same PUT the plugin makes before it asks
 /// for entitlements. The captured ticket is used as-is when this fails.
-async fn refresh_session(client: &reqwest::Client, session: &Session) -> Option<Session> {
+async fn refresh_session(client: &reqwest::Client, session: &Session) -> RefreshOutcome {
     if session.ticket.is_empty() || session.session_id.is_empty() || session.user_id.is_empty() {
-        return None;
+        return RefreshOutcome::Unavailable;
     }
     let mut map = headers(session, UBI_APP_ID, UBI_GENOME_ID, &[]);
     insert(&mut map, "Origin", "https://store.ubi.com");
     insert(&mut map, "Referer", "https://store.ubi.com/upc/login");
-    let response = client
+    let response = match client
         .put(SESSIONS_URL)
         .headers(map)
         .json(&serde_json::json!({ "rememberMe": true }))
         .send()
         .await
-        .ok()?;
-    if !response.status().is_success() {
-        return None;
+    {
+        Ok(response) => response,
+        Err(_) => return RefreshOutcome::Unavailable,
+    };
+    let status = response.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return RefreshOutcome::Rejected;
     }
-    let value: serde_json::Value = response.json().await.ok()?;
-    apply_session(session, &value)
+    if !status.is_success() {
+        return RefreshOutcome::Unavailable;
+    }
+    let Ok(value) = response.json::<serde_json::Value>().await else {
+        return RefreshOutcome::Unavailable;
+    };
+    match apply_session(session, &value) {
+        Some(next) => RefreshOutcome::Renewed(next),
+        None => RefreshOutcome::Unavailable,
+    }
 }
 
 fn apply_session(session: &Session, value: &serde_json::Value) -> Option<Session> {
@@ -445,6 +492,7 @@ pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
         "sessionId": !session.session_id.is_empty(),
         "userId": !session.user_id.is_empty(),
         "name": !session.name.is_empty(),
+        "remember": !session.remember.is_empty(),
     })];
     let result = import_inner(session, &mut log).await;
     let mapped = result
@@ -478,9 +526,17 @@ pub(crate) fn stored_session() -> Option<Session> {
 pub(crate) async fn refresh_stored_session() -> Option<Session> {
     let session = stored_session()?;
     let client = http_client().ok()?;
-    let mut live = refresh_session(&client, &session).await;
+    let mut live = match refresh_session(&client, &session).await {
+        RefreshOutcome::Renewed(next) => Some(next),
+        _ => None,
+    };
     if live.is_none() {
-        live = refresh_remember(&client, &session).await;
+        live = post_session(&client, &session).await;
+    }
+    if live.is_none() {
+        if let RefreshOutcome::Renewed(next) = refresh_remember(&client, &session).await {
+            live = Some(next);
+        }
     }
     if let Some(next) = &live {
         ubi_vault::save(next);
@@ -495,6 +551,13 @@ pub(crate) enum UbiSync {
     NoSession,
     AuthLost,
     Failed(String),
+}
+
+/// Only an explicit rejection of the short ticket (with no long-lived token) or
+/// of the remember token itself means the user has to sign in again. A network
+/// failure must keep the sealed session so the next sync can retry.
+fn should_clear_session(put_rejected: bool, remember_rejected: bool, remember_empty: bool) -> bool {
+    remember_rejected || (remember_empty && put_rejected)
 }
 
 /// Refreshes the sealed session and re-imports the owned catalog. This is what
@@ -521,13 +584,33 @@ pub(crate) async fn sync_owned() -> UbiSync {
         Ok(client) => client,
         Err(err) => return UbiSync::Failed(err),
     };
-    let mut live = refresh_session(&client, &session).await;
+    let put = refresh_session(&client, &session).await;
+    let put_rejected = matches!(&put, RefreshOutcome::Rejected);
+    let mut live = match put {
+        RefreshOutcome::Renewed(next) => Some(next),
+        _ => None,
+    };
+    // The import flow already proved that a POST with the captured ticket works
+    // when the PUT does not; try it before falling back to the remember token.
     if live.is_none() {
-        live = refresh_remember(&client, &session).await;
+        live = post_session(&client, &session).await;
+    }
+    let mut remember_rejected = false;
+    if live.is_none() {
+        let remembered = refresh_remember(&client, &session).await;
+        remember_rejected = matches!(&remembered, RefreshOutcome::Rejected);
+        if let RefreshOutcome::Renewed(next) = remembered {
+            live = Some(next);
+        }
     }
     let Some(live) = live else {
-        ubi_vault::clear();
-        return UbiSync::AuthLost;
+        if should_clear_session(put_rejected, remember_rejected, session.remember.is_empty()) {
+            ubi_vault::clear();
+            return UbiSync::AuthLost;
+        }
+        return UbiSync::Failed(
+            "could not refresh the Ubisoft session; keeping the saved ticket".to_string(),
+        );
     };
     let signature = |games: Vec<ubisoft::OwnedGame>| -> std::collections::HashSet<(String, String, String)> {
         games
@@ -539,6 +622,7 @@ pub(crate) async fn sync_owned() -> UbiSync {
     let mut log = vec![serde_json::json!({
         "step": "sync",
         "ticket": !live.ticket.is_empty(),
+        "remember": !live.remember.is_empty(),
     })];
     let result = import_inner(&live, &mut log).await;
     let mapped = result
@@ -579,8 +663,8 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
         live = next;
     }
     let refreshed = refresh_session(&client, &live).await;
-    log_note(log, "put-session", refreshed.is_some());
-    if let Some(next) = refreshed {
+    log_note(log, "put-session", matches!(refreshed, RefreshOutcome::Renewed(_)));
+    if let RefreshOutcome::Renewed(next) = refreshed {
         live = next;
     }
     let mut first_error = None;
@@ -646,9 +730,12 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
 
 /// Long-lived refresh: POST with the remember-me token (`rm_v1`) returns a new
 /// ticket when the short-lived one has died.
-async fn refresh_remember(client: &reqwest::Client, session: &Session) -> Option<Session> {
+async fn refresh_remember(
+    client: &reqwest::Client,
+    session: &Session,
+) -> RefreshOutcome {
     if session.remember.is_empty() {
-        return None;
+        return RefreshOutcome::Unavailable;
     }
     let mut map = headers(
         session,
@@ -660,18 +747,30 @@ async fn refresh_remember(client: &reqwest::Client, session: &Session) -> Option
         ],
     );
     insert(&mut map, "Authorization", &format!("rm_v1 t={}", session.remember));
-    let response = client
+    let response = match client
         .post(SESSIONS_URL)
         .headers(map)
         .json(&serde_json::json!({ "rememberMe": true }))
         .send()
         .await
-        .ok()?;
-    if !response.status().is_success() {
-        return None;
+    {
+        Ok(response) => response,
+        Err(_) => return RefreshOutcome::Unavailable,
+    };
+    let status = response.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return RefreshOutcome::Rejected;
     }
-    let value: serde_json::Value = response.json().await.ok()?;
-    apply_session(session, &value)
+    if !status.is_success() {
+        return RefreshOutcome::Unavailable;
+    }
+    let Ok(value) = response.json::<serde_json::Value>().await else {
+        return RefreshOutcome::Unavailable;
+    };
+    match apply_session(session, &value) {
+        Some(next) => RefreshOutcome::Renewed(next),
+        None => RefreshOutcome::Unavailable,
+    }
 }
 
 /// Plain ticket refresh (`Ubi_v1`), used when the PUT did not revive the session.
@@ -870,9 +969,18 @@ pub(crate) async fn playtimes() -> Vec<PlaytimeRow> {
     let Ok(client) = http_client() else {
         return Vec::new();
     };
-    let mut live = refresh_session(&client, &session).await;
+    let live = refresh_session(&client, &session).await;
+    let mut live = match live {
+        RefreshOutcome::Renewed(next) => Some(next),
+        _ => None,
+    };
     if live.is_none() {
-        live = refresh_remember(&client, &session).await;
+        live = post_session(&client, &session).await;
+    }
+    if live.is_none() {
+        if let RefreshOutcome::Renewed(next) = refresh_remember(&client, &session).await {
+            live = Some(next);
+        }
     }
     let Some(live) = live else {
         return Vec::new();
@@ -1039,8 +1147,33 @@ mod tests {
         assert_eq!(session.session_id, "S");
         assert_eq!(session.user_id, "U");
         assert_eq!(session.name, "Player");
+        assert_eq!(session.remember, "rm");
         assert!(session_from_fragment("not-base64").is_none());
         assert!(session_from_fragment(&fragment(r#"{"sessionId":"S"}"#)).is_none());
+    }
+
+    #[test]
+    fn a_network_failure_keeps_the_sealed_session_but_a_rejection_does_not() {
+        assert!(!should_clear_session(false, false, false));
+        assert!(!should_clear_session(true, false, false));
+        assert!(should_clear_session(true, false, true));
+        assert!(should_clear_session(false, true, false));
+        assert!(should_clear_session(false, true, true));
+        assert!(!should_clear_session(false, false, true));
+    }
+
+    #[test]
+    fn apply_session_keeps_the_remember_token_when_the_response_omits_it() {
+        let session = Session {
+            ticket: "old".into(),
+            session_id: "S".into(),
+            user_id: "U".into(),
+            name: "P".into(),
+            remember: "rm".into(),
+        };
+        let next = apply_session(&session, &serde_json::json!({"ticket": "new"})).unwrap();
+        assert_eq!(next.ticket, "new");
+        assert_eq!(next.remember, "rm");
     }
 
     #[test]

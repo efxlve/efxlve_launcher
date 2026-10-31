@@ -92,3 +92,32 @@ pub(crate) fn load() -> Option<StoredUbiSession> {
 pub(crate) fn clear() {
     let _ = std::fs::remove_file(vault_path());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[ignore = "reads the sealed session; needs a signed-in account"]
+    fn live_session_records_whether_a_remember_token_exists() {
+        let path = vault_path();
+        println!("vault={} exists={}", path.display(), path.exists());
+        let sealed = std::fs::read(&path).expect("sealed file");
+        println!("sealed_len={}", sealed.len());
+        match crate::steam_auth::vault::dpapi::unprotect(&sealed) {
+            Ok(json) => println!("plain_len={}", json.len()),
+            Err(error) => println!("unprotect error: {error}"),
+        }
+        match load() {
+            Some(stored) => println!(
+                "ticket_len={} session_id={} user_id={} remember_len={} saved_at={}",
+                stored.ticket.len(),
+                !stored.session_id.is_empty(),
+                !stored.user_id.is_empty(),
+                stored.remember.len(),
+                stored.saved_at
+            ),
+            None => println!("load returned None"),
+        }
+    }
+}
