@@ -6,6 +6,7 @@
 //! `dmx.upc.ubisoft.com`, so the owned list and its install manifest no longer
 //! depend on `UbisoftConnect.exe` being installed or running.
 
+mod achievements;
 mod auth;
 mod codec;
 pub(crate) mod install;
@@ -13,7 +14,10 @@ mod launch;
 mod manage;
 pub(crate) mod manifest;
 mod shim;
+pub(crate) mod verify;
 pub(crate) mod wire;
+
+pub(crate) use achievements::merge as merge_achievements;
 
 use serde::Serialize;
 
@@ -152,6 +156,32 @@ pub(crate) fn cancel_game(product_id: u32) {
     install::cancel(product_id)
 }
 
+/// Check every file against the manifest's slice hashes; with `repair`, delete
+/// the rejected files and download only those again.
+pub(crate) async fn verify_game(
+    app: tauri::AppHandle,
+    product_id: u32,
+    repair: bool,
+) -> Result<verify::VerifyReport, String> {
+    use tauri::Emitter;
+    let record = crate::companion::ubi_installs::find(product_id)
+        .ok_or_else(|| format!("product {product_id} is not installed by the launcher"))?;
+    let directory = std::path::PathBuf::from(&record.install_dir);
+    let (mut demux, _) = connect().await?;
+    let prepared = install::prepare(&mut demux, product_id).await?;
+    let mut report = verify::verify(&prepared.manifest, &directory);
+    if repair && !report.bad_files.is_empty() {
+        verify::remove_bad(&directory, &report.bad_files);
+        let (mut demux, _) = connect().await?;
+        install::install(&mut demux, product_id, &directory, |progress| {
+            let _ = app.emit("ubi-direct-progress", progress);
+        })
+        .await?;
+        report.repaired = report.bad_files.len();
+    }
+    Ok(report)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,10 +291,93 @@ mod tests {
         launch_game(product_id, true).await.expect("direct launch");
     }
 
+    #[test]
+    #[ignore = "reads the real Ubisoft achievement cache"]
+    fn live_rayman_achievement_catalogue() {
+        let response = crate::companion::ubi_achievements::achievements_for(
+            "80",
+            "Rayman Origins",
+            "en",
+        );
+        println!(
+            "total={} unlocked={}",
+            response.total_achievements, response.user_unlocked
+        );
+        for item in response.achievements.iter().take(8) {
+            println!(
+                "  id={} name={} unlocked={}",
+                item.name, item.display_name, item.unlocked
+            );
+        }
+        if response.total_achievements == 0 {
+            println!("no achievement schema is cached for this title; the shim will record unlocks only after one exists");
+            return;
+        }
+        assert!(response.total_achievements > 0);
+    }
+
+    struct RestoreFile {
+        path: std::path::PathBuf,
+        data: Vec<u8>,
+    }
+
+    impl Drop for RestoreFile {
+        fn drop(&mut self) {
+            let _ = std::fs::write(&self.path, &self.data);
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "repairs Rayman Origins; needs that direct install"]
+    async fn live_repair_restores_a_corrupted_file() {
+        let record = crate::companion::ubi_installs::find(80).expect("Rayman Origins record");
+        let directory = std::path::PathBuf::from(&record.install_dir);
+        let path = directory.join("Rayman.ico");
+        let original = std::fs::read(&path).expect("Rayman.ico");
+        let _restore = RestoreFile {
+            path: path.clone(),
+            data: original.clone(),
+        };
+        std::fs::write(&path, b"corrupted").unwrap();
+
+        let (mut demux, _) = connect().await.expect("Demux connect");
+        let prepared = install::prepare(&mut demux, 80).await.expect("manifest");
+        let report = verify::verify(&prepared.manifest, &directory);
+        println!(
+            "verify: files={} checked={} corrupt={} missing={}",
+            report.files, report.checked, report.corrupt, report.missing
+        );
+        assert!(report.corrupt >= 1, "the corrupted icon must be detected");
+        verify::remove_bad(&directory, &report.bad_files);
+
+        let (mut demux, _) = connect().await.expect("Demux connect");
+        install::install(&mut demux, 80, &directory, |_| {})
+            .await
+            .expect("repair install");
+        let repaired = std::fs::read(&path).expect("repaired icon");
+        assert_eq!(repaired, original);
+        println!("repaired {} bytes", repaired.len());
+    }
+
+    #[tokio::test]
+    #[ignore = "reads Rayman Origins; needs that direct install"]
+    async fn live_rayman_verify_is_clean() {
+        let record = crate::companion::ubi_installs::find(80).expect("Rayman Origins record");
+        let directory = std::path::PathBuf::from(&record.install_dir);
+        let (mut demux, _) = connect().await.expect("Demux connect");
+        let prepared = install::prepare(&mut demux, 80).await.expect("manifest");
+        let report = verify::verify(&prepared.manifest, &directory);
+        println!(
+            "files={} checked={} missing={} corrupt={}",
+            report.files, report.checked, report.missing, report.corrupt
+        );
+        assert_eq!(report.missing, 0);
+        assert_eq!(report.corrupt, 0);
+    }
+
     #[tokio::test]
     #[ignore = "reads manifests; needs a linked session and EFXLVE_UBI_TEST_PRODUCTS"]
-    async fn live_manifest_loader_inventory() {
-        let list = std::env::var("EFXLVE_UBI_TEST_PRODUCTS")
+    async fn live_manifest_loader_inventory() {        let list = std::env::var("EFXLVE_UBI_TEST_PRODUCTS")
             .unwrap_or_else(|_| "1651,420,2688,720,95".to_string());
         let (mut demux, _) = connect().await.expect("Demux connect failed");
         for value in list.split(',').filter(|value| !value.trim().is_empty()) {

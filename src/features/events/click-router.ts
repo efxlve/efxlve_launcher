@@ -52,7 +52,7 @@ import {
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
-import { answerConfirm, askConfirm } from "../../core/confirm-dialog";
+import { answerChoice, answerConfirm, askChoice, askConfirm } from "../../core/confirm-dialog";
 import { fmtBytes } from "../../core/utils";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectCancel, ubiDirectInstall, ubiDirectPlan, ubiDirectProbe, ubiDirectVerify, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -358,6 +358,14 @@ document.addEventListener("click", (e) => {
   }
   if (act === "confirm-cancel") {
     answerConfirm(false);
+    return;
+  }
+  if (act === "choice-pick") {
+    answerChoice(t.dataset.value || "");
+    return;
+  }
+  if (act === "choice-cancel") {
+    answerChoice(null);
     return;
   }
 
@@ -838,6 +846,20 @@ document.addEventListener("click", (e) => {
         toast(localizeMessage(String(e)), "err"),
       );
     }
+  } else if (act === "ubi-direct-verify") {
+    const path = t.dataset.path || "";
+    if (!path) return;
+    toast(i18nT("manage.verifying"), "");
+    void ubiDirectVerify(path, true)
+      .then((report) => {
+        const failed = report.missing + report.corrupt > 0 && report.repaired === 0;
+        toast(
+          failed ? i18nT("verify.problem") : i18nT("verify.successDetail"),
+          failed ? "err" : "ok",
+        );
+        if (report.repaired > 0) void loadCompanionLibrary();
+      })
+      .catch((e: unknown) => toast(localizeMessage(String(e)), "err"));
   } else if (act === "ubi-direct-open") {
     S.settingsSection = "integrations";
     setView("settings");
@@ -862,10 +884,46 @@ document.addEventListener("click", (e) => {
     void beginUbiDirectInstall(productId, game?.name || "").catch((e: unknown) =>
       toast(String(e), "err"),
     );
-  } else if (act === "ubi-direct-install-game" && id) {
+  } else if (act === "ubi-install-choice" && id) {
+    const gameId = id.startsWith("ubisoft::") ? id.slice(9) : id;
     const title = summaryOf(id)?.title || "";
     void (async () => {
       try {
+        const choice = await askChoice({
+          title: i18nT("common.install"),
+          body: i18nT("accounts.ubiInstallChoice"),
+          options: [
+            {
+              value: "direct",
+              label: i18nT("accounts.ubiDirectInstall"),
+              hint: i18nT("accounts.ubiDirectInstallHint"),
+              details: [
+                i18nT("accounts.ubiDirectDetail1"),
+                i18nT("accounts.ubiDirectDetail2"),
+                i18nT("accounts.ubiDirectDetail3"),
+                i18nT("accounts.ubiDirectDetail4"),
+              ],
+              primary: true,
+            },
+            {
+              value: "client",
+              label: i18nT("accounts.ubiClientInstall"),
+              hint: i18nT("accounts.ubiClientInstallHint"),
+              details: [
+                i18nT("accounts.ubiClientDetail1"),
+                i18nT("accounts.ubiClientDetail2"),
+                i18nT("accounts.ubiClientDetail3"),
+              ],
+            },
+          ],
+          note: i18nT("accounts.ubiInstallNote"),
+          cancel: i18nT("common.cancel"),
+        });
+        if (!choice) return;
+        if (choice === "client") {
+          await companionGameAction("ubisoft", gameId, "install");
+          return;
+        }
         if (!S.ubiDirect) S.ubiDirect = await ubiDirectProbe();
         const key = ubiTitleKey(title);
         const candidates = S.ubiDirect.games.filter((game) => game.installable);

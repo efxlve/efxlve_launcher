@@ -10,7 +10,7 @@ import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COL
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
-import { cancelConfirm } from "../../core/confirm-dialog";
+import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
@@ -217,7 +217,8 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if (e.key === "Escape") {
-    // The shared confirm dialog owns Escape while it is open.
+    // The shared choice/confirm dialogs own Escape while they are open.
+    if (cancelChoice()) return;
     if (cancelConfirm()) return;
     // The task manager's detail card closes like any other modal.
     if (document.getElementById("tm-detail-root")) {

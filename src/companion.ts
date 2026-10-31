@@ -140,6 +140,19 @@ export const ubiDirectUninstall = (productId: number, deleteFiles = true) =>
 export const ubiDirectCancel = (productId: number) =>
   invoke<void>("ubi_direct_cancel", { productId });
 
+export interface UbiDirectVerifyReport {
+  files: number;
+  checked: number;
+  missing: number;
+  corrupt: number;
+  repaired: number;
+  badFiles: string[];
+}
+
+/** Checks a direct install against its manifest; repair re-downloads failures. */
+export const ubiDirectVerify = (installPath: string, repair = true) =>
+  invoke<UbiDirectVerifyReport>("ubi_direct_verify", { installPath, repair });
+
 /** Install, uninstall or launch a game inside its own client. */
 export const companionGameAction = (store: CompanionStore, id: string, action: "install" | "uninstall" | "launch") =>
   invoke<void>("companion_game_action", { store, id, action });

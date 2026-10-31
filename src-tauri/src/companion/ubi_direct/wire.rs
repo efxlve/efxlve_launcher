@@ -37,7 +37,6 @@ fn api_version() -> u32 {
 pub(crate) struct Demux {
     tls: TlsStream<TcpStream>,
     next_request_id: u32,
-    ticket: String,
 }
 
 impl Demux {
@@ -67,17 +66,10 @@ impl Demux {
         let mut demux = Self {
             tls,
             next_request_id: 1,
-            ticket: ticket.to_string(),
         };
         demux.write(&codec::client_version_push(api_version())).await?;
         demux.authenticate(ticket).await?;
         Ok(demux)
-    }
-
-    /// The `ubi_v1` ticket this connection authenticated with. A dropped
-    /// socket is rebuilt from it without asking the account service again.
-    pub(crate) fn ticket(&self) -> &str {
-        &self.ticket
     }
 
     fn next_id(&mut self) -> u32 {

@@ -3439,5 +3439,18 @@
   "settings.themeExportSuccess": "{name} dışa aktarıldı.",
   "xbox.installWaiting": "Store'da onayla",
   "xbox.installWaitingHint": "Microsoft Store'da Kur'a bas. İzlemeyi durdurmak için buraya tıkla.",
-  "xbox.installStopped": "Kurulum izlemesi durdu. Store'da devam ediyor olabilir."
+  "xbox.installStopped": "Kurulum izlemesi durdu. Store'da devam ediyor olabilir.",
+  "accounts.ubiInstallChoice": "Bu oyunun nasıl kurulacağını seç. Her oyun için farklı yöntem kullanabilirsin.",
+  "accounts.ubiDirectInstall": "Doğrudan kur",
+  "accounts.ubiDirectInstallHint": "Ubisoft Connect gerekmez.",
+  "accounts.ubiClientInstall": "Ubisoft Connect ile kur",
+  "accounts.ubiClientInstallHint": "Resmi istemci kurulumu üstlenir.",
+  "accounts.ubiDirectDetail1": "Ubisoft CDN'inden seçtiğin klasöre indirir.",
+  "accounts.ubiDirectDetail2": "Sahip olduğun oyunlar için yerel Uplay uyumluluk katmanını kurar.",
+  "accounts.ubiDirectDetail3": "Çevrimdışı ve tek kişilik oyunlar için en iyisi.",
+  "accounts.ubiDirectDetail4": "Online, anti-cheat ve Ubisoft Cloud için hâlâ istemci gerekir.",
+  "accounts.ubiClientDetail1": "Online, anti-cheat ve Ubisoft Cloud için gereklidir.",
+  "accounts.ubiClientDetail2": "Güncellemeleri, kayıtları ve başarımları istemci yönetir.",
+  "accounts.ubiClientDetail3": "Ubisoft Connect kurulu ve oturum açmış olmalı.",
+  "accounts.ubiInstallNote": "Her oyun için farklı yöntem seçebilirsin."
 }

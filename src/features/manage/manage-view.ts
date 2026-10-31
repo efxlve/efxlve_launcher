@@ -447,6 +447,14 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
   const brand = source === "ea" ? "EA App" : source === "ubisoft" ? "Ubisoft Connect" : source === "xbox" ? "Xbox" : source === "riot" ? "Riot Client" : "Battle.net";
   const pt = S.playtimeMap.get(s.appName);
   const playtime = playtimeTotalLabel(s.appName, s.title);
+  const verify =
+    source === "ubisoft" && s.installed
+      ? row(
+          t("manage.verifyTitle"),
+          t("manage.verifyDesc"),
+          `<button class="btn ghost small" data-act="ubi-direct-verify" data-path="${esc(s.installPath || "")}">${icon("shield-check", 13)} ${t("manage.verify")}</button>`,
+        )
+      : "";
   const files = s.installed
     ? row(
         t("manage.installLocation"),
@@ -456,11 +464,11 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
     : row(
         t("common.install"),
         t("accounts.companionManagedDesc", { name: brand }),
-        `<button class="btn primary small" data-act="${source === "ubisoft" ? "ubi-direct-install-game" : "companion-install"}" data-id="${s.appName}" data-store="${source}">${icon("download", 13)} ${t("common.install")}</button>`,
+        `<button class="btn primary small" data-act="${source === "ubisoft" ? "ubi-install-choice" : "companion-install"}" data-id="${s.appName}" data-store="${source}">${icon("download", 13)} ${t("common.install")}</button>`,
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${installSizeRow(s.installSize, s.installed)}`)}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}

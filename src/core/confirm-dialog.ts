@@ -86,3 +86,83 @@ export function cancelConfirm(): boolean {
   answerConfirm(false);
   return true;
 }
+
+export interface ChoiceOption {
+  value: string;
+  label: string;
+  hint?: string;
+  details?: string[];
+  primary?: boolean;
+}
+
+export interface ChoiceRequest {
+  title: string;
+  body: string;
+  options: ChoiceOption[];
+  note?: string;
+  cancel: string;
+}
+
+let choicePending: ((value: string | null) => void) | null = null;
+let choiceLayer: HTMLElement | null = null;
+
+function closeChoiceLayer(): void {
+  choiceLayer?.remove();
+  choiceLayer = null;
+}
+
+/** Opens a small multi-choice dialog; resolves to the chosen value or null. */
+export function askChoice(request: ChoiceRequest): Promise<string | null> {
+  if (pending) answerConfirm(false);
+  if (choicePending) {
+    const resolve = choicePending;
+    choicePending = null;
+    resolve(null);
+  }
+  closeChoiceLayer();
+  const el = document.createElement("div");
+  el.className = "confirm-layer";
+  el.innerHTML = `
+    <div class="modal-backdrop" data-act="choice-cancel">
+      <div class="modal confirm-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
+        <div class="modal-head">
+          <h3 class="modal-title">${esc(request.title)}</h3>
+          <button type="button" class="manage-head-close" data-act="choice-cancel" title="${esc(request.cancel)}">${icon("x", 16)}</button>
+        </div>
+        <p class="confirm-body">${esc(request.body)}</p>
+        <div class="choice-options">
+          ${request.options
+            .map(
+              (option) =>
+                `<button type="button" class="btn ${option.primary ? "primary" : "ghost"} choice-option" data-act="choice-pick" data-value="${esc(option.value)}"><strong>${esc(option.label)}</strong>${option.hint ? `<span>${esc(option.hint)}</span>` : ""}${option.details?.length ? `<ul class="choice-details">${option.details.map((detail) => `<li>${esc(detail)}</li>`).join("")}</ul>` : ""}</button>`,
+            )
+            .join("")}
+        </div>
+        ${request.note ? `<p class="choice-note">${esc(request.note)}</p>` : ""}
+        <div class="modal-foot">
+          <button type="button" class="btn ghost" data-act="choice-cancel">${esc(request.cancel)}</button>
+        </div>
+      </div>
+    </div>`;
+  confirmRoot.appendChild(el);
+  choiceLayer = el;
+  el.querySelector<HTMLButtonElement>('[data-act="choice-pick"]')?.focus();
+  return new Promise((resolve) => {
+    choicePending = resolve;
+  });
+}
+
+/** Answers the open choice dialog; the click router and Escape land here. */
+export function answerChoice(value: string | null): void {
+  const resolve = choicePending;
+  choicePending = null;
+  closeChoiceLayer();
+  resolve?.(value);
+}
+
+/** Cancels an open choice dialog; true when there was one. */
+export function cancelChoice(): boolean {
+  if (!choicePending) return false;
+  answerChoice(null);
+  return true;
+}

@@ -2134,6 +2134,7 @@ fn main() {
             companion::ubi_direct_forget,
             companion::ubi_direct_uninstall,
             companion::ubi_direct_cancel,
+            companion::ubi_direct_verify,
             companion::xbox_install,
             companion::xbox_install_cancel,
             companion::xbox_uninstall,

@@ -566,7 +566,7 @@ export function epicActionButtons(
       // Ubisoft installs run through the launcher's own CDN path. The client
       // handoff stays available from the game's client button.
       if (store === "ubisoft") {
-        return `<button class="btn install${btn}" data-act="ubi-direct-install-game" data-id="${s.appName}" data-store="ubisoft">${icon("download", 14)} ${t("common.install")}</button>`;
+        return `<button class="btn install${btn}" data-act="ubi-install-choice" data-id="${s.appName}" data-store="ubisoft">${icon("download", 14)} ${t("common.install")}</button>`;
       }
       return `<button class="btn install${btn}" data-act="companion-install" data-id="${s.appName}" data-store="${store}">${icon("download", 14)} ${t("common.install")}</button>`;
     }

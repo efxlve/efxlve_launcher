@@ -795,7 +795,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
           ? `<button class="btn primary lg" data-act="ubi-direct-open">${icon("download", 16)} ${t("common.downloading", { p: Math.min(100, Math.round((directProgress.doneBytes / Math.max(1, directProgress.totalBytes)) * 100)) })}</button>`
           : s.installed
             ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
-            : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-direct-install-game" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+            : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-install-choice" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>

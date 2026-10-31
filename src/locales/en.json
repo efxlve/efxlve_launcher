@@ -3439,5 +3439,18 @@
   "settings.themeExportSuccess": "{name} exported.",
   "xbox.installWaiting": "Confirm in Store",
   "xbox.installWaitingHint": "Press Install in the Microsoft Store. Click here to stop watching.",
-  "xbox.installStopped": "Stopped watching the install. It may still be running in the Store."
+  "xbox.installStopped": "Stopped watching the install. It may still be running in the Store.",
+  "accounts.ubiInstallChoice": "Choose how this game is installed. Each game can use a different method.",
+  "accounts.ubiDirectInstall": "Direct install",
+  "accounts.ubiDirectInstallHint": "No Ubisoft Connect needed.",
+  "accounts.ubiClientInstall": "Install with Ubisoft Connect",
+  "accounts.ubiClientInstallHint": "The official client owns the install.",
+  "accounts.ubiDirectDetail1": "Downloads from Ubisoft's CDN into the folder you choose.",
+  "accounts.ubiDirectDetail2": "Deploys the local Uplay compatibility shim for games you own.",
+  "accounts.ubiDirectDetail3": "Best for offline and single-player titles.",
+  "accounts.ubiDirectDetail4": "Online, anti-cheat and Ubisoft Cloud still need the client.",
+  "accounts.ubiClientDetail1": "Required for online, anti-cheat and Ubisoft Cloud.",
+  "accounts.ubiClientDetail2": "The client handles updates, saves and achievements.",
+  "accounts.ubiClientDetail3": "Ubisoft Connect must be installed and signed in.",
+  "accounts.ubiInstallNote": "You can choose a different method for each game."
 }

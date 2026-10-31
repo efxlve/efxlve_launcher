@@ -254,31 +254,41 @@ async fn sign_paths(
     Ok(urls)
 }
 
-/// Sign a window, rebuilding the Demux socket and its download service once if
-/// the long-lived connection dropped. Installs are gigabytes long and Ubisoft
-/// closes idle or over-large sessions; the ticket is already in hand.
+/// Sign a window, rebuilding the Demux socket and its ownership/download
+/// services when the long-lived session drops. A large install outlives the
+/// first ticket and ownership token, so both are re-minted on every retry.
 async fn sign_with_reconnect(
     demux: &mut wire::Demux,
     download: &mut wire::DownloadService,
     product_id: u32,
-    ownership_token: &str,
     paths: &[String],
 ) -> Result<Vec<String>, String> {
-    match sign_paths(demux, download, product_id, paths).await {
-        Ok(urls) => Ok(urls),
-        Err(first) => {
-            let ticket = demux.ticket().to_string();
-            let fresh = wire::Demux::connect(&ticket)
-                .await
-                .map_err(|error| format!("{first}; Demux reconnect failed: {error}"))?;
-            *demux = fresh;
-            *download = demux
-                .download_service(ownership_token)
-                .await
-                .map_err(|error| format!("{first}; download service reopen failed: {error}"))?;
-            sign_paths(demux, download, product_id, paths).await
+    let mut last = String::new();
+    for attempt in 0..3u32 {
+        match sign_paths(demux, download, product_id, paths).await {
+            Ok(urls) => return Ok(urls),
+            Err(error) => {
+                last = error;
+                if attempt == 2 {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_secs(2 + u64::from(attempt) * 2)).await;
+                let (fresh, _) = super::connect()
+                    .await
+                    .map_err(|error| format!("{last}; Demux reconnect failed: {error}"))?;
+                *demux = fresh;
+                let token = demux
+                    .ownership_token(product_id)
+                    .await
+                    .map_err(|error| format!("{last}; ownership token refresh failed: {error}"))?;
+                *download = demux
+                    .download_service(&token)
+                    .await
+                    .map_err(|error| format!("{last}; download service reopen failed: {error}"))?;
+            }
         }
     }
+    Err(last)
 }
 
 async fn detect_layout(
@@ -331,7 +341,6 @@ pub(crate) struct Prepared {
     pub install_reg: String,
     pub uplay_id: u32,
     pub ticket: String,
-    pub ownership_token: String,
 }
 
 /// Fetch the product row and its manifest, and keep the download-service
@@ -388,7 +397,6 @@ pub(crate) async fn prepare(
         install_reg,
         uplay_id,
         ticket,
-        ownership_token: token,
     })
 }
 
@@ -437,7 +445,6 @@ where
         install_reg,
         uplay_id,
         ticket,
-        ownership_token,
     } = prepared;
 
     let total_bytes = manifest.total_bytes();
@@ -537,7 +544,6 @@ where
                 demux,
                 &mut download,
                 product_id,
-                &ownership_token,
                 &paths,
             )
             .await?;

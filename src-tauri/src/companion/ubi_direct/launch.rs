@@ -42,11 +42,29 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
     }
 
     let mut command = Command::new(&exe);
-    command.current_dir(&install_dir);
+    command.current_dir(working_dir(&install_dir, &exe));
     command
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("starting {}: {e}", exe.display()))
+}
+
+/// Ubisoft's Unreal titles keep the exe under `Binaries\Win32`/`Win64` and
+/// resolve their data from there; older Unreal titles use `System\`. Everything
+/// else runs from the install root, which is what the product config names as
+/// its working directory.
+fn working_dir(install_dir: &Path, exe: &Path) -> PathBuf {
+    if let Some(parent) = exe.parent() {
+        let name = parent
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if name == "system" || name == "win32" || name == "win64" {
+            return parent.to_path_buf();
+        }
+    }
+    install_dir.to_path_buf()
 }
 
 async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
@@ -82,12 +100,31 @@ async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
     } else {
         handle.to_lowercase()
     };
+    let response = crate::companion::ubi_achievements::achievements_for(
+        &game.product_id.to_string(),
+        &game.name,
+        "en",
+    );
+    let achievements = response
+        .achievements
+        .into_iter()
+        .filter_map(|item| {
+            let id = item.name.parse::<u32>().ok()?;
+            Some(shim::ShimAchievement {
+                id,
+                name: item.display_name,
+                description: item.description,
+                achieved: item.unlocked,
+            })
+        })
+        .collect();
     shim::ShimAccount {
         product_id: game.product_id,
         account_id,
         name,
         email: format!("{handle}@efxlve.local"),
         ticket,
+        achievements,
     }
 }
 
@@ -249,7 +286,7 @@ fn wow64_key(key: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve_exe, split_register, wow64_key};
+    use super::{resolve_exe, split_register, wow64_key, working_dir};
 
     #[test]
     fn resolves_the_recorded_exe_then_falls_back_to_the_largest_one() {
@@ -283,5 +320,19 @@ mod tests {
             Some(r"HKLM\SOFTWARE\Wow6432Node\Ubisoft\Game".to_string())
         );
         assert_eq!(wow64_key(r"HKCU\Software\Ubisoft"), None);
+    }
+
+    #[test]
+    fn unreal_binaries_run_from_their_own_folder() {
+        let root = std::path::Path::new("Game");
+        let win32 = root.join("Binaries").join("Win32").join("ACCGame.exe");
+        assert_eq!(
+            working_dir(root, &win32),
+            root.join("Binaries").join("Win32")
+        );
+        assert_eq!(
+            working_dir(root, &root.join("Rayman Origins.exe")),
+            root.to_path_buf()
+        );
     }
 }

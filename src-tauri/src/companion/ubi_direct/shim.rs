@@ -47,6 +47,15 @@ pub(crate) struct ShimAccount {
     pub name: String,
     pub email: String,
     pub ticket: String,
+    pub achievements: Vec<ShimAchievement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ShimAchievement {
+    pub id: u32,
+    pub name: String,
+    pub description: String,
+    pub achieved: bool,
 }
 
 fn spec(family: Family, x64: bool) -> (&'static str, &'static str) {
@@ -207,34 +216,48 @@ fn write_config(directory: &Path, account: &ShimAccount, family: Family) -> Resu
     std::fs::create_dir_all(&saves)
         .map_err(|error| format!("creating {}: {error}", saves.display()))?;
     let config = match family {
-        Family::R1 => serde_json::json!({
-            "UseDebug": false,
-            "Account": {
-                "AccountId": account.account_id,
-                "Email": account.email,
-                "Name": account.name,
-                "Password": "efxlve",
-                "Country": "en-US",
-                "Ticket": account.ticket,
-            },
-            "Save": {
-                "Path": saves.display().to_string(),
-                "UseAppIdInName": true,
-            },
-            "Others": {
-                "ApplicationId": account.account_id,
-                "OfflineMode": true,
-            },
-            "CDKeys": [],
-            "ChunkInfo": {
-                "ChunkIds": [],
-                "InstalledChunkIds": [],
-                "UseInstalledChunkIds": false,
-            },
-            "Achis": [],
-            "Rewards": [],
-            "AvatarsPath": "",
-        }),
+        Family::R1 => {
+            let achis: Vec<serde_json::Value> = account
+                .achievements
+                .iter()
+                .map(|achievement| {
+                    serde_json::json!({
+                        "Id": achievement.id,
+                        "Name": achievement.name,
+                        "Description": achievement.description,
+                        "Achieved": achievement.achieved,
+                    })
+                })
+                .collect();
+            serde_json::json!({
+                "UseDebug": false,
+                "Account": {
+                    "AccountId": account.account_id,
+                    "Email": account.email,
+                    "Name": account.name,
+                    "Password": "efxlve",
+                    "Country": "en-US",
+                    "Ticket": account.ticket,
+                },
+                "Save": {
+                    "Path": saves.display().to_string(),
+                    "UseAppIdInName": true,
+                },
+                "Others": {
+                    "ApplicationId": account.account_id,
+                    "OfflineMode": true,
+                },
+                "CDKeys": [],
+                "ChunkInfo": {
+                    "ChunkIds": [],
+                    "InstalledChunkIds": [],
+                    "UseInstalledChunkIds": false,
+                },
+                "Achis": achis,
+                "Rewards": [],
+                "AvatarsPath": "",
+            })
+        }
         Family::R2 => serde_json::json!({
             "BasicLog": {
                 "LogLevel": "Information",
@@ -376,6 +399,7 @@ mod tests {
             name: "Player".into(),
             email: "player@efxlve.local".into(),
             ticket: "ticket-1".into(),
+            achievements: Vec::new(),
         };
         write_config(&root, &account, Family::R2).unwrap();
         let text = std::fs::read_to_string(root.join("upc.json")).unwrap();
@@ -407,6 +431,7 @@ mod tests {
             name: "Player".into(),
             email: "player@efxlve.local".into(),
             ticket: "ticket-1".into(),
+            achievements: Vec::new(),
         };
         let name = deploy(&exe, &account).await.expect("deploy").expect("shim");
         assert_eq!(name, "uplay_r1_loader64.dll");

@@ -564,6 +564,21 @@ pub fn ubi_direct_cancel(product_id: u32) {
     ubi_direct::cancel_game(product_id);
 }
 
+/// Check a direct install against its manifest; with `repair`, re-download the
+/// files that fail the slice hashes.
+#[tauri::command]
+pub async fn ubi_direct_verify(
+    app: tauri::AppHandle,
+    install_path: String,
+    repair: bool,
+) -> Result<ubi_direct::verify::VerifyReport, String> {
+    let record = ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
+        .ok_or_else(|| "this folder is not a direct install".to_string())?;
+    ubi_direct::verify_game(app, record.product_id, repair).await
+}
+
 /// Start a direct install in the background. Progress arrives on
 /// `ubi-direct-progress`, completion on `ubi-direct-done`, and a failure on
 /// `ubi-direct-failed`.
@@ -975,11 +990,12 @@ pub async fn companion_achievements(
         };
         xbox_login::achievements(&title_id).await
     } else if store == "ubisoft" {
-        ubi_achievements::achievements_for(
+        let data = ubi_achievements::achievements_for(
             &id,
             title.as_deref().unwrap_or(""),
             language.as_deref().unwrap_or("en"),
-        )
+        );
+        ubi_direct::merge_achievements(data, &id, title.as_deref().unwrap_or(""))
     } else {
         return GameAchievementsResponse::default();
     };

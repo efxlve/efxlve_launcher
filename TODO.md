@@ -99,15 +99,27 @@ at full size. Then add a direct "send this tab to PiP" action.
 ## Ubisoft direct install
 
 `src-tauri/src/companion/ubi_direct/` now owns the Demux ownership/manifest
-query, the CDN download with resume/reconnect, the MIT Uplay R1/R2 shim and the
-direct launch. Rayman Origins (R1 x86) and the launcher's Play path are
-validated without the Connect client. Open work:
+query, the CDN download with resume/reconnect, per-slice verify/repair, the MIT
+Uplay R1/R2 shim and the direct launch. Rayman Origins (R1 x86) and the
+launcher's Play path are validated without the Connect client; its verify pass
+reports 201/201 files clean. The install dialog now offers **direct** or
+**Ubisoft Connect** per game. Assassin's Creed Chronicles China installs
+(3.6 GB) but crashes at startup with both tested R1 shims (0xc0000005);
+PCGamingWiki lists it as requiring Ubisoft Connect DRM, so it stays on the
+client. Open work:
 
 - R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
   real R2 title; the user's R2 catalogue starts at large titles (Far Cry 5 /
   AC Origins class).
-- A repeated install skips files by size only. Add per-slice SHA-1 verification
-  and a repair action before calling updates supported.
-- Achievements and cloud saves still read the Connect cache; without the client
-  those surfaces stop updating even though install and launch keep working.
+- Updates are still absent: verify/repair compares the installed files with the
+  current manifest, but no latest-manifest/version check marks an update.
+- The R1 shim records unlocks in `upc.json` only for IDs present in the
+  achievement list built from the Connect cache. Rayman Origins has no cached
+  schema, so it records nothing until a schema source is added. UbiSlot and the
+  local spool are the reference.
+- There is no open-source Ubi Cloud client. Ubisoft's cloud saves are local
+  folders synced by the Connect client; back them up through the launcher's
+  existing providers, using the Ludusavi manifest as the save-path database.
+- Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
+  client. Do not attempt to bypass BattlEye or Denuvo.
 - Orbit R2 (`ubiorbitapi_r2_loader`) titles still need the Connect client.
