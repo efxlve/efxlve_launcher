@@ -300,6 +300,7 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
     for installed in crate::companion::ubi_installs::load() {
         if let Some(local) = games.iter_mut().find(|game| {
             game.name.eq_ignore_ascii_case(&installed.name)
+                || slug(&game.name) == slug(&installed.name)
                 || (!game.install_path.is_empty()
                     && game.install_path.eq_ignore_ascii_case(&installed.install_dir))
         }) {
