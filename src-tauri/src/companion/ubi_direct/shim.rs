@@ -95,7 +95,13 @@ async fn ensure(family: Family, x64: bool) -> Result<PathBuf, String> {
             return Ok(file);
         }
     }
-    let response = reqwest::get(url)
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|error| format!("preparing the Uplay shim download: {error}"))?;
+    let response = client
+        .get(url)
+        .send()
         .await
         .map_err(|error| format!("downloading the Uplay shim: {error}"))?;
     let response = response
@@ -388,6 +394,17 @@ mod tests {
         let r2 = detect(&x64).unwrap().unwrap();
         assert_eq!(r2.family, Family::R2);
         assert!(r2.x64);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_orbit_title_is_rejected_with_a_clear_message() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-orbit-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let exe = root.join("orbit.exe");
+        std::fs::write(&exe, fake_exe("ubiorbitapi_r2_loader64.dll", 0x8664)).unwrap();
+        let error = detect(&exe).expect_err("Orbit is not supported");
+        assert!(error.contains("Orbit R2"));
         let _ = std::fs::remove_dir_all(&root);
     }
 

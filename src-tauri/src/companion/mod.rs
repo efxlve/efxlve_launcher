@@ -525,7 +525,11 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
             .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
         {
             let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
-            return ubi_direct::launch_game(installed.product_id, shim).await;
+            let launched = ubi_direct::launch_game(installed.product_id, shim).await;
+            if launched.is_ok() {
+                schedule_update_check(&app, installed.product_id);
+            }
+            return launched;
         }
     }
     if store == "ubisoft" && game.launch_uri.is_empty() && game.launch_exe.is_empty() {
@@ -567,11 +571,50 @@ pub async fn ubi_direct_plan(
     ubi_direct::plan_game(product_id, dir).await
 }
 
+/// A direct install has no client auto-updater: check after the game is already
+/// starting, so a slow CDN response never delays the launch.
+pub(crate) fn schedule_update_check(app: &tauri::AppHandle, product_id: u32) {
+    // Launches can repeat quickly while a user tests a title; a half-hour
+    // throttle keeps the ownership service out of the startup path.
+    static LAST_CHECK: std::sync::Mutex<Option<std::collections::HashMap<u32, std::time::Instant>>> =
+        std::sync::Mutex::new(None);
+    if let Ok(mut lock) = LAST_CHECK.lock() {
+        let checks = lock.get_or_insert_with(std::collections::HashMap::new);
+        if checks
+            .get(&product_id)
+            .map(|last| last.elapsed() < std::time::Duration::from_secs(30 * 60))
+            .unwrap_or(false)
+        {
+            return;
+        }
+        checks.insert(product_id, std::time::Instant::now());
+    }
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        use tauri::Emitter;
+        if let Ok(check) = ubi_direct::check_update(product_id).await {
+            if check.update {
+                let name = ubi_installs::find(product_id)
+                    .map(|game| game.name)
+                    .unwrap_or_default();
+                let _ = handle.emit(
+                    "ubi-direct-update",
+                    serde_json::json!({ "productId": product_id, "name": name }),
+                );
+            }
+        }
+    });
+}
+
 /// Start a game the launcher installed, without Ubisoft Connect.
 #[tauri::command]
 pub async fn ubi_direct_launch(app: tauri::AppHandle, product_id: u32) -> Result<(), String> {
     let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
-    ubi_direct::launch_game(product_id, shim).await
+    let launched = ubi_direct::launch_game(product_id, shim).await;
+    if launched.is_ok() {
+        schedule_update_check(&app, product_id);
+    }
+    launched
 }
 
 /// Forget a direct-install record without touching the game files.
@@ -1315,7 +1358,11 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
             .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
         {
             let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
-            return ubi_direct::launch_game(installed.product_id, shim).await;
+            let launched = ubi_direct::launch_game(installed.product_id, shim).await;
+            if launched.is_ok() {
+                schedule_update_check(&app, installed.product_id);
+            }
+            return launched;
         }
     }
     if store == "ubisoft" && action == "uninstall" && !game.install_path.is_empty() {

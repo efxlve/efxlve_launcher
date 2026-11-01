@@ -31,17 +31,41 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
         let account = shim_account(&game).await;
         if let Some(name) = shim::deploy(&exe, &account).await? {
             println!("[ubi-direct] deployed {name} for {}", game.name);
+            // The shim keeps saves beside its config. Carry the Connect slots
+            // over before the first direct start, without overwriting a direct
+            // save that is already newer.
+            match super::saves::migrate_connect_saves(
+                product_id,
+                game.uplay_id,
+                &install_dir,
+                exe.parent(),
+            ) {
+                Ok(0) => {}
+                Ok(count) => println!(
+                    "[ubi-direct] imported {count} Connect save slot(s) for {}",
+                    game.name
+                ),
+                Err(error) => println!("[ubi-direct] save import skipped: {error}"),
+            }
         }
         if exe.parent() != Some(install_dir.as_path()) {
             if let Ok(Some(loader)) = shim::detect(&exe) {
                 shim::write_account_config(&install_dir, &account, loader.family)?;
             }
         }
-    } else if let Ok(Some(loader)) = shim::detect(&exe) {
-        return Err(format!(
-            "{} imports {}; enable the Uplay compatibility shim in Settings -> Integrations to launch it without Ubisoft Connect",
-            game.name, loader.name
-        ));
+    } else {
+        match shim::detect(&exe) {
+            Ok(Some(loader)) => {
+                return Err(format!(
+                    "{} imports {}; enable the Uplay compatibility shim in Settings -> Integrations to launch it without Ubisoft Connect",
+                    game.name, loader.name
+                ));
+            }
+            // Orbit R2 is a different, unsupported loader. Starting the game
+            // anyway would crash it, so surface the same clear message.
+            Err(error) => return Err(error),
+            Ok(None) => {}
+        }
     }
 
     let mut command = Command::new(&exe);

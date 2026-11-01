@@ -467,6 +467,11 @@ export async function initApp(hooks: {
       hooks.scheduleRender();
     });
 
+    listenLater<{ productId: number; name: string }>("ubi-direct-update", (event) => {
+      const name = event.payload.name || "Ubisoft";
+      toast(`${name} · ${t("manage.ubiUpdateAvailable")}`, "");
+    });
+
     listenLater<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       if (id.startsWith("gog::") && done) S.gogDlPaused = false;
