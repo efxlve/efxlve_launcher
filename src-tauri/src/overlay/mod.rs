@@ -15,6 +15,7 @@
 //! window and emits `overlay-open` / `overlay-close` with the running game.
 
 pub mod audio;
+pub mod anti_cheat;
 pub mod browser;
 pub mod crosshair;
 pub mod ghost;
@@ -67,6 +68,13 @@ pub(crate) struct OverlayState {
     pub game_hwnd: isize,
     pub game_app: String,
     pub game_title: String,
+    /// Install folder of the active game, for the anti-cheat folder scan.
+    pub game_install: String,
+    /// The active title names an anti-cheat; the overlay is forced off.
+    pub game_anti_cheat: bool,
+    /// The launcher was minimized by the anti-cheat guard and must be restored
+    /// when the game stops.
+    pub anti_cheat_minimized: bool,
 }
 
 pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
@@ -82,6 +90,9 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     game_hwnd: 0,
     game_app: String::new(),
     game_title: String::new(),
+    game_install: String::new(),
+    game_anti_cheat: false,
+    anti_cheat_minimized: false,
 });
 
 #[derive(Serialize, Clone)]
@@ -100,6 +111,7 @@ pub fn overlay_get_state() -> serde_json::Value {
             "visible": s.visible,
             "ghost": s.ghost,
             "gameDisabled": s.game_disabled,
+            "antiCheat": s.game_anti_cheat,
             "hotkey": hotkey_id(&s),
             "running": s.enabled && !s.game_disabled,
         }),
@@ -376,7 +388,7 @@ pub fn overlay_hide(app: AppHandle) {
 /// Brings the launcher window back in front (Home tab action).
 #[tauri::command]
 pub fn overlay_show_launcher(app: AppHandle) {
-    if let Some(win) = app.get_webview_window("main") {
+    if let Some(win) = app.get_window("main") {
         let _ = win.show();
         let _ = win.unminimize();
         let _ = win.set_focus();
@@ -409,13 +421,37 @@ pub fn overlay_raise(app: AppHandle) {
 /// that game is the active one. The panel itself is built only when it is
 /// opened, so a game that never uses the overlay costs no extra renderer.
 #[tauri::command]
-pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, disabled: bool) {
+pub fn overlay_set_active_game(
+    app: AppHandle,
+    app_name: String,
+    title: String,
+    disabled: bool,
+    install_path: Option<String>,
+) {
+    let mut install = install_path.unwrap_or_default();
+    if install.trim().is_empty() {
+        if let Ok(s) = STATE.lock() {
+            if s.game_app == app_name {
+                install = s.game_install.clone();
+            }
+        }
+    }
+    let anti_cheat = anti_cheat::game_has_anti_cheat(
+        &title,
+        (!install.trim().is_empty()).then_some(install.as_str()),
+    );
+    if anti_cheat {
+        println!("[overlay] anti-cheat detected for {app_name}; overlay disabled");
+    }
+    let disabled = disabled || anti_cheat;
     let (stopped, switched) = if let Ok(mut s) = STATE.lock() {
         // A ghost HUD belongs to the game it was pinned over; a new game must
         // not inherit the old one's cards.
         let switched = !s.game_app.is_empty() && s.game_app != app_name;
         s.game_app = app_name;
         s.game_title = title;
+        s.game_install = install;
+        s.game_anti_cheat = anti_cheat;
         s.game_disabled = disabled;
         (disabled, switched)
     } else {
@@ -441,6 +477,83 @@ pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, 
             crate::overlay::toast::prewarm(&app);
         }
     }
+    // Anti-cheat: get the launcher out of the way while the game runs. The
+    // overlay itself is already torn down above; hiding the native window
+    // keeps its renderers off screen too. The guard restores it after exit.
+    if anti_cheat {
+        if hide_main_window(&app) {
+            if let Ok(mut s) = STATE.lock() {
+                s.anti_cheat_minimized = true;
+            }
+            println!("[overlay] launcher hidden for the anti-cheat game");
+        } else {
+            println!("[overlay] could not hide the launcher for the anti-cheat game");
+        }
+    }
+}
+
+/// Hide the launcher's native window. Tauri's `hide` can be undone by a
+/// fullscreen/topmost restore, so the anti-cheat guard uses the Win32 call.
+#[cfg(windows)]
+fn hide_main_window(app: &AppHandle) -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
+    let Some(window) = app.get_window("main") else {
+        return false;
+    };
+    let Ok(hwnd) = window.hwnd() else {
+        return false;
+    };
+    unsafe {
+        let _ = ShowWindow(hwnd, SW_HIDE);
+    }
+    true
+}
+
+#[cfg(not(windows))]
+fn hide_main_window(app: &AppHandle) -> bool {
+    app.get_window("main")
+        .map(|window| window.hide().is_ok())
+        .unwrap_or(false)
+}
+
+/// Restore the launcher window after the anti-cheat game stops.
+#[cfg(windows)]
+fn show_main_window(app: &AppHandle) {
+    use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_SHOW};
+    let Some(window) = app.get_window("main") else {
+        return;
+    };
+    if let Ok(hwnd) = window.hwnd() {
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+        }
+    }
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
+#[cfg(not(windows))]
+fn show_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+pub(crate) fn enforce_anti_cheat_window(app: &AppHandle) {
+    let anti_cheat = STATE
+        .lock()
+        .map(|s| s.game_anti_cheat)
+        .unwrap_or(false);
+    if !anti_cheat {
+        return;
+    }
+    if hide_main_window(app) {
+        if let Ok(mut s) = STATE.lock() {
+            s.anti_cheat_minimized = true;
+        }
+    }
 }
 
 /// Clears the active game context when a title stops.
@@ -450,6 +563,8 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
         if s.game_app == app_name || s.game_disabled {
             s.game_app.clear();
             s.game_title.clear();
+            s.game_install.clear();
+            s.game_anti_cheat = false;
             s.game_disabled = false;
             true
         } else {
@@ -470,6 +585,18 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
         let ghost = STATE.lock().map(|s| s.ghost).unwrap_or(false);
         if ghost {
             hide_now(&app);
+        }
+        // The anti-cheat guard minimized the launcher; bring it back for the
+        // next game or for normal use.
+        let restore = STATE
+            .lock()
+            .map(|s| s.anti_cheat_minimized)
+            .unwrap_or(false);
+        if restore {
+            show_main_window(&app);
+            if let Ok(mut s) = STATE.lock() {
+                s.anti_cheat_minimized = false;
+            }
         }
     }
 }
@@ -575,7 +702,14 @@ pub fn overlay_show(app: AppHandle) {
 pub(crate) fn show(app: &AppHandle) {
     let allowed = STATE
         .lock()
-        .map(|s| s.enabled && !s.game_disabled)
+        .map(|s| {
+            let anti_cheat = s.game_anti_cheat
+                || anti_cheat::game_has_anti_cheat(
+                    &s.game_title,
+                    (!s.game_install.trim().is_empty()).then_some(s.game_install.as_str()),
+                );
+            s.enabled && !s.game_disabled && !anti_cheat
+        })
         .unwrap_or(true);
     if !allowed {
         return;

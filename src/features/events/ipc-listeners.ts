@@ -26,6 +26,7 @@ import {
   epicResumeDownload,
   epicTakePendingLaunch,
   controllerBridgeStart,
+  getAntiCheat,
   toEpicSlug,
   type DlProgressEvent,
   type DownloadCancelledEvent,
@@ -138,7 +139,11 @@ let dlDomId = "";
 let lastDlSample: { id: string; bytes: number; at: number } | null = null;
 
 /** Overlay per-game opt-out list (written by the overlay settings tab). */
-function overlayDisabledFor(appName: string): boolean {
+function overlayDisabledFor(appName: string, title = ""): boolean {
+  // Anti-cheat titles never get the overlay, even if the user has not added
+  // them to the manual blocklist. The backend enforces the same rule from the
+  // install folder.
+  if (getAntiCheat(undefined, title, appName)) return true;
   try {
     const raw = localStorage.getItem(OVERLAY_DISABLED_KEY);
     const list = raw ? (JSON.parse(raw) as unknown) : [];
@@ -763,10 +768,12 @@ export async function initApp(hooks: {
         // The backend needs every running title, not only a fresh start: a game
         // that opted out must stop the overlay for its whole session, and an
         // allowed one keeps the panel armed.
+        const overlayBlocked = overlayDisabledFor(id, title);
         void invoke("overlay_set_active_game", {
           appName: id,
           title,
-          disabled: overlayDisabledFor(id),
+          disabled: overlayBlocked,
+          installPath: sum?.installPath || "",
         }).catch(() => {});
         // A game that was already open before the launcher booted is not a
         // fresh start: show its Running state, but do not toast, flash the
@@ -774,7 +781,7 @@ export async function initApp(hooks: {
         if (!initial && !bootQuiet) {
           // Point at the Shift+Tab overlay on the first start of the title, unless
           // the overlay is off globally or the user opted this game out.
-          if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayDisabledFor(id)) {
+          if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayBlocked) {
             void invoke("overlay_flash_hint", {
               title: t("overlay.enabledTitle", { key: overlayHotkeyLabel() }),
               body: t("overlay.startHint", { key: overlayHotkeyLabel() }),

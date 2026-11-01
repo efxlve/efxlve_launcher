@@ -399,7 +399,7 @@ export function getAntiCheat(
   appHint = "",
 ): string | null {
   const appName = (g?.app_name || appHint || "").toLowerCase();
-  const title = (g?.app_title || titleHint || "").toLowerCase();
+  const title = (g?.app_title || titleHint || "").toLowerCase().replace(/[®™]/g, " ");
   if (!g && !title && !appName) return null;
   const attrs = (g?.metadata?.customAttributes as Record<string, { value?: string }>) || {};
   const procNames = attrs.ProcessNames?.value || "";

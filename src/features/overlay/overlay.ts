@@ -6698,6 +6698,7 @@ function wireEvents(): void {
         appName: context.appName,
         title: context.title || context.appName,
         disabled: input.checked,
+        installPath: "",
       }).catch(() => {});
       if (input.checked) void invoke("overlay_hide");
     } else if (input.id === "ov-setting-browser-hp-select") {
