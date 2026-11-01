@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "เปิดโอเวอร์เลย์สำหรับเกมนี้แล้ว",
   "drawer.acNoticeDisabled": "ปิดโอเวอร์เลย์สำหรับเกมนี้แล้ว",
   "drawer.acNoticeNotifOff": "ปิด — แนะนำ",
-  "drawer.acNoticeNotifOn": "เปิด"
+  "drawer.acNoticeNotifOn": "เปิด",
+  "manage.ubiImportSaves": "นำเข้าเซฟของ Connect",
+  "manage.ubiImportSavesWorking": "กำลังนำเข้าเซฟของ Connect…",
+  "manage.ubiImportSavesDone": "นำเข้าเซฟแล้ว {count} สล็อต",
+  "manage.ubiImportSavesNone": "ไม่มีเซฟ Connect แบบคลาสสิกให้นำเข้า"
 }

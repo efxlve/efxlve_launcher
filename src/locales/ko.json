@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "이 게임의 오버레이를 켰습니다",
   "drawer.acNoticeDisabled": "이 게임의 오버레이를 껐습니다",
   "drawer.acNoticeNotifOff": "꺼짐 — 권장",
-  "drawer.acNoticeNotifOn": "켜짐"
+  "drawer.acNoticeNotifOn": "켜짐",
+  "manage.ubiImportSaves": "Connect 저장 파일 가져오기",
+  "manage.ubiImportSavesWorking": "Connect 저장 파일을 가져오는 중…",
+  "manage.ubiImportSavesDone": "저장 파일 {count}개를 가져왔습니다",
+  "manage.ubiImportSavesNone": "가져올 클래식 Connect 저장 파일이 없습니다"
 }

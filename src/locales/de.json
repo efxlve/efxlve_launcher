@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Overlay für dieses Spiel aktiviert",
   "drawer.acNoticeDisabled": "Overlay für dieses Spiel deaktiviert",
   "drawer.acNoticeNotifOff": "Aus — empfohlen",
-  "drawer.acNoticeNotifOn": "An"
+  "drawer.acNoticeNotifOn": "An",
+  "manage.ubiImportSaves": "Connect-Speicherstände importieren",
+  "manage.ubiImportSavesWorking": "Connect-Speicherstände werden importiert…",
+  "manage.ubiImportSavesDone": "{count} Speicherstand/-stände importiert",
+  "manage.ubiImportSavesNone": "Keine klassischen Connect-Speicherstände zum Importieren"
 }

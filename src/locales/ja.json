@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "このゲームでオーバーレイを有効にしました",
   "drawer.acNoticeDisabled": "このゲームでオーバーレイを無効にしました",
   "drawer.acNoticeNotifOff": "オフ — 推奨",
-  "drawer.acNoticeNotifOn": "オン"
+  "drawer.acNoticeNotifOn": "オン",
+  "manage.ubiImportSaves": "Connect のセーブをインポート",
+  "manage.ubiImportSavesWorking": "Connect のセーブをインポート中…",
+  "manage.ubiImportSavesDone": "{count} 件のセーブをインポートしました",
+  "manage.ubiImportSavesNone": "インポートできる従来形式の Connect セーブはありません"
 }

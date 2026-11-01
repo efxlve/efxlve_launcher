@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "已為此遊戲開啟覆蓋層",
   "drawer.acNoticeDisabled": "已為此遊戲關閉覆蓋層",
   "drawer.acNoticeNotifOff": "關閉 — 建議",
-  "drawer.acNoticeNotifOn": "開啟"
+  "drawer.acNoticeNotifOn": "開啟",
+  "manage.ubiImportSaves": "匯入 Connect 存檔",
+  "manage.ubiImportSavesWorking": "正在匯入 Connect 存檔…",
+  "manage.ubiImportSavesDone": "已匯入 {count} 個存檔",
+  "manage.ubiImportSavesNone": "沒有可匯入的經典 Connect 存檔"
 }

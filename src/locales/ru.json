@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Оверлей включён для этой игры",
   "drawer.acNoticeDisabled": "Оверлей выключен для этой игры",
   "drawer.acNoticeNotifOff": "Выключены — рекомендуется",
-  "drawer.acNoticeNotifOn": "Включены"
+  "drawer.acNoticeNotifOn": "Включены",
+  "manage.ubiImportSaves": "Импортировать сохранения Connect",
+  "manage.ubiImportSavesWorking": "Импорт сохранений Connect…",
+  "manage.ubiImportSavesDone": "Импортировано сохранений: {count}",
+  "manage.ubiImportSavesNone": "Нет классических сохранений Connect для импорта"
 }

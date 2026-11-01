@@ -204,6 +204,10 @@ export const ubiDirectAdopt = (productId: number, installPath: string, title?: s
 export const ubiDirectRelease = (productId: number) =>
   invoke<number>("ubi_direct_release", { productId });
 
+/** Copy classic Connect save slots into a launcher-managed install. */
+export const ubiDirectImportSaves = (installPath: string) =>
+  invoke<number>("ubi_direct_import_saves", { installPath });
+
 /** One install after a move. */
 export interface UbiMovedInstall {
   productId: number;

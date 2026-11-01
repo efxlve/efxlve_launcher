@@ -336,6 +336,7 @@ export function openManagePopup(appName: string): void {
     const adoptRow = manageRoot.querySelector<HTMLElement>("[data-ubi-adopt-row]");
     const updateRow = manageRoot.querySelector<HTMLElement>("[data-ubi-update-row]");
     const moveRow = manageRoot.querySelector<HTMLElement>("[data-ubi-move-row]");
+    const importSaves = manageRoot.querySelector<HTMLElement>("[data-ubi-import-saves]");
     void ubiDirectLaunchMode(s.installPath)
       .then((client) => {
         if (client === null) {
@@ -343,6 +344,7 @@ export function openManagePopup(appName: string): void {
           if (verifyRow) verifyRow.hidden = true;
           if (updateRow) updateRow.hidden = true;
           if (moveRow) moveRow.hidden = true;
+          if (importSaves) importSaves.hidden = true;
           if (adoptRow) adoptRow.hidden = false;
           return;
         }
@@ -350,6 +352,7 @@ export function openManagePopup(appName: string): void {
         if (verifyRow) verifyRow.hidden = false;
         if (updateRow) updateRow.hidden = false;
         if (moveRow) moveRow.hidden = false;
+        if (importSaves) importSaves.hidden = client === true;
         if (adoptRow) adoptRow.hidden = true;
         if (select) select.value = client ? "client" : "direct";
       })
@@ -536,6 +539,9 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
             <div class="mg-desc"><span class="mg-path" data-ubi-save-path>${t("manage.ubiSaveFolderChecking")}</span></div>
             <div class="mg-inline">
               <button class="btn ghost small" data-act="ubi-open-saves" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}">${icon("folder", 13)} ${t("manage.openFolder")}</button>
+              <span data-ubi-import-saves>
+                <button class="btn ghost small" data-act="ubi-direct-import-saves" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}">${icon("download", 13)} ${t("manage.ubiImportSaves")}</button>
+              </span>
             </div>
           </div>
           <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>

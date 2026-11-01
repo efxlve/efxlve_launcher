@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Sobreposição ativada para este jogo",
   "drawer.acNoticeDisabled": "Sobreposição desativada para este jogo",
   "drawer.acNoticeNotifOff": "Desativadas — recomendado",
-  "drawer.acNoticeNotifOn": "Ativadas"
+  "drawer.acNoticeNotifOn": "Ativadas",
+  "manage.ubiImportSaves": "Importar saves do Connect",
+  "manage.ubiImportSavesWorking": "Importando saves do Connect…",
+  "manage.ubiImportSavesDone": "{count} save(s) importado(s)",
+  "manage.ubiImportSavesNone": "Nenhum save clássico do Connect para importar"
 }

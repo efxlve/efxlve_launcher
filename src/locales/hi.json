@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "इस गेम के लिए ओवरले चालू किया गया",
   "drawer.acNoticeDisabled": "इस गेम के लिए ओवरले बंद किया गया",
   "drawer.acNoticeNotifOff": "बंद — सुझाया गया",
-  "drawer.acNoticeNotifOn": "चालू"
+  "drawer.acNoticeNotifOn": "चालू",
+  "manage.ubiImportSaves": "Connect सेव आयात करें",
+  "manage.ubiImportSavesWorking": "Connect सेव आयात हो रहे हैं…",
+  "manage.ubiImportSavesDone": "{count} सेव स्लॉट आयात किए गए",
+  "manage.ubiImportSavesNone": "आयात करने के लिए कोई क्लासिक Connect सेव नहीं है"
 }

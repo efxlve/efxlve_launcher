@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Superposición activada para este juego",
   "drawer.acNoticeDisabled": "Superposición desactivada para este juego",
   "drawer.acNoticeNotifOff": "Desactivadas — recomendado",
-  "drawer.acNoticeNotifOn": "Activadas"
+  "drawer.acNoticeNotifOn": "Activadas",
+  "manage.ubiImportSaves": "Importar partidas de Connect",
+  "manage.ubiImportSavesWorking": "Importando partidas de Connect…",
+  "manage.ubiImportSavesDone": "{count} partida(s) importada(s)",
+  "manage.ubiImportSavesNone": "No hay partidas clásicas de Connect para importar"
 }

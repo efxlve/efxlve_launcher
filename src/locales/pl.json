@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Nakładka włączona dla tej gry",
   "drawer.acNoticeDisabled": "Nakładka wyłączona dla tej gry",
   "drawer.acNoticeNotifOff": "Wyłączone — zalecane",
-  "drawer.acNoticeNotifOn": "Włączone"
+  "drawer.acNoticeNotifOn": "Włączone",
+  "manage.ubiImportSaves": "Importuj zapisy Connect",
+  "manage.ubiImportSavesWorking": "Importowanie zapisów Connect…",
+  "manage.ubiImportSavesDone": "Zaimportowano {count} zapis(ów)",
+  "manage.ubiImportSavesNone": "Brak klasycznych zapisów Connect do importu"
 }

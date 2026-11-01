@@ -719,6 +719,29 @@ pub fn ubi_direct_release(product_id: u32) -> Result<usize, String> {
     ubi_direct::release_game(product_id)
 }
 
+/// Copy the classic Connect save slots into a direct install on demand, for a
+/// user who wants the progress before the first launch.
+#[tauri::command]
+pub fn ubi_direct_import_saves(install_path: String) -> Result<usize, String> {
+    let record = ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path))
+        .ok_or_else(|| "this folder is not a launcher-managed Ubisoft install".to_string())?;
+    let install = std::path::PathBuf::from(&record.install_dir);
+    let exe_dir = if record.exe.trim().is_empty() {
+        None
+    } else {
+        let exe = install.join(record.exe.replace('\\', std::path::MAIN_SEPARATOR_STR));
+        exe.parent().map(std::path::Path::to_path_buf)
+    };
+    ubi_direct::import_connect_saves(
+        record.product_id,
+        record.uplay_id,
+        &install,
+        exe_dir.as_deref(),
+    )
+}
+
 /// Move a direct install into another folder and update its record/registry.
 #[tauri::command]
 pub fn ubi_direct_move(
@@ -1586,6 +1609,44 @@ mod tests {
         store_companion_achievements(key.clone(), data);
         let cached = cached_companion_achievements(&key).expect("cached answer");
         assert_eq!(cached.total_achievements, 5);
+    }
+
+    #[test]
+    #[ignore = "reads the real Watch Dogs Connect saves"]
+    fn live_import_saves_command_copies_watch_dogs_slots() {
+        let _guard = ubi_installs::test_lock().lock().unwrap();
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-ubi-import-command-{}",
+            std::process::id()
+        ));
+        let install = root.join("Watch_Dogs");
+        std::fs::create_dir_all(&install).unwrap();
+        std::fs::write(install.join("Watch_Dogs.exe"), b"exe").unwrap();
+        let record_file = root.join("installs.json");
+        let previous = std::env::var_os("EFXLVE_UBI_INSTALLS_FILE");
+        std::env::set_var("EFXLVE_UBI_INSTALLS_FILE", &record_file);
+        ubi_installs::save(&ubi_installs::InstalledGame {
+            product_id: 274,
+            name: "Watch Dogs".into(),
+            install_dir: install.display().to_string(),
+            exe: "Watch_Dogs.exe".into(),
+            installed_at: 1,
+            install_reg: String::new(),
+            uplay_id: 274,
+            ticket: String::new(),
+            client_launch: false,
+            manifest: String::new(),
+        });
+
+        let copied = ubi_direct_import_saves(install.display().to_string()).expect("import");
+        println!("imported {copied} slot(s) into {}", install.display());
+        assert!(copied >= 3);
+        assert!(install.join("Saves").join("274").join("1.save").is_file());
+        match previous {
+            Some(value) => std::env::set_var("EFXLVE_UBI_INSTALLS_FILE", value),
+            None => std::env::remove_var("EFXLVE_UBI_INSTALLS_FILE"),
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

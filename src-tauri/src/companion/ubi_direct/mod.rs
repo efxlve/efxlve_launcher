@@ -23,7 +23,10 @@ pub(crate) mod wire;
 pub(crate) use achievements::merge as merge_achievements;
 pub(crate) use adopt::{adopt as adopt_game, release as release_game, AdoptedInstall};
 pub(crate) use relocate::{move_game, MovedInstall};
-pub(crate) use saves::{path_for as save_path, path_for_product as save_path_for_product};
+pub(crate) use saves::{
+    migrate_connect_saves as import_connect_saves, path_for as save_path,
+    path_for_product as save_path_for_product,
+};
 
 use serde::Serialize;
 

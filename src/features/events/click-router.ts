@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -874,6 +874,33 @@ document.addEventListener("click", (e) => {
         toast(localizeMessage(String(e)), "err"),
       );
     }
+  } else if (act === "ubi-direct-import-saves") {
+    const path = t.dataset.path || "";
+    if (!path) return;
+    const productId = Number((t.dataset.id || "").replace("ubisoft::", ""));
+    const button = t instanceof HTMLButtonElement ? t : null;
+    if (button) button.disabled = true;
+    toast(i18nT("manage.ubiImportSavesWorking"), "");
+    void ubiDirectImportSaves(path)
+      .then((count) => {
+        toast(
+          count > 0
+            ? i18nT("manage.ubiImportSavesDone", { count })
+            : i18nT("manage.ubiImportSavesNone"),
+          count > 0 ? "ok" : "",
+        );
+        if (!productId) return;
+        void ubiSavePath(productId, path, t.dataset.title || undefined)
+          .then((savePath) => {
+            const label = document.querySelector<HTMLElement>("[data-ubi-save-path]");
+            if (label) label.textContent = savePath || i18nT("manage.noSaveDirDetected");
+          })
+          .catch(() => {});
+      })
+      .catch((e: unknown) => toast(localizeMessage(String(e)), "err"))
+      .finally(() => {
+        if (button?.isConnected) button.disabled = false;
+      });
   } else if (act === "ubi-direct-adopt") {
     const productId = Number((t.dataset.id || "").replace("ubisoft::", ""));
     const path = t.dataset.path || "";

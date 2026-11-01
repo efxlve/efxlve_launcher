@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Overlay bu oyun için açıldı",
   "drawer.acNoticeDisabled": "Overlay bu oyun için kapatıldı",
   "drawer.acNoticeNotifOff": "Kapalı — önerilen",
-  "drawer.acNoticeNotifOn": "Açık"
+  "drawer.acNoticeNotifOn": "Açık",
+  "manage.ubiImportSaves": "Connect kayıtlarını içe aktar",
+  "manage.ubiImportSavesWorking": "Connect kayıtları içe aktarılıyor…",
+  "manage.ubiImportSavesDone": "{count} kayıt slotu içe aktarıldı",
+  "manage.ubiImportSavesNone": "İçe aktarılacak klasik Connect kaydı yok"
 }

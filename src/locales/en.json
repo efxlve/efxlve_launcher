@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "Overlay enabled for this game",
   "drawer.acNoticeDisabled": "Overlay disabled for this game",
   "drawer.acNoticeNotifOff": "Off — recommended",
-  "drawer.acNoticeNotifOn": "On"
+  "drawer.acNoticeNotifOn": "On",
+  "manage.ubiImportSaves": "Import Connect saves",
+  "manage.ubiImportSavesWorking": "Importing Connect saves…",
+  "manage.ubiImportSavesDone": "{count} save slot(s) imported",
+  "manage.ubiImportSavesNone": "No classic Connect saves to import"
 }

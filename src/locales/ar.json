@@ -3496,5 +3496,9 @@
   "drawer.acNoticeEnabled": "تم تفعيل طبقة العرض لهذه اللعبة",
   "drawer.acNoticeDisabled": "تم تعطيل طبقة العرض لهذه اللعبة",
   "drawer.acNoticeNotifOff": "معطّلة — موصى به",
-  "drawer.acNoticeNotifOn": "مفعّلة"
+  "drawer.acNoticeNotifOn": "مفعّلة",
+  "manage.ubiImportSaves": "استيراد حفظات Connect",
+  "manage.ubiImportSavesWorking": "جارٍ استيراد حفظات Connect…",
+  "manage.ubiImportSavesDone": "تم استيراد {count} من الحفظات",
+  "manage.ubiImportSavesNone": "لا توجد حفظات Connect كلاسيكية للاستيراد"
 }
