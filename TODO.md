@@ -132,11 +132,13 @@ stays on the client. Open work:
   schema, so it records nothing until a schema source is added. UbiSlot and the
   local spool are the reference.
 - Ubisoft saves are local folders. `companion/ubi_direct/saves.rs` resolves the
-  shim, Connect and Documents layouts for the existing cloud providers. The
-  first direct launch imports classic Connect slots (`548` header) into
-  `Saves/<uplay|product id>`, never overwriting a direct save; newer Connect
-  slots (`36` header) use a different payload and stay with the client. The
-  Ludusavi manifest is still open for titles outside those layouts.
+  shim, Connect and Documents layouts for the existing cloud providers; the
+  Documents scan folds punctuation and accepts the short store spelling
+  (`Watch_Dogs 2`, `Rainbow Six - Siege`). The first direct launch imports
+  classic Connect slots (`548` header) into `Saves/<uplay|product id>`, never
+  overwriting a direct save; newer Connect slots (`36` header) use a different
+  payload and stay with the client. The Ludusavi manifest is still open for
+  titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
   client. Do not attempt to bypass BattlEye or Denuvo.
 - Orbit R2 (`ubiorbitapi_r2_loader`) titles still need the Connect client.

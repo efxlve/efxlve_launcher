@@ -272,18 +272,57 @@ fn candidates(
     }
 
     if let Some(title) = title.map(str::trim).filter(|title| !title.is_empty()) {
+        let key = normalize_name(title);
+        let mut exact = Vec::new();
+        let mut partial = Vec::new();
         for root in documents_roots {
-            let dir = root.join(title);
-            if dir.is_dir() {
-                out.push(SaveFolder {
-                    path: dir,
+            let Ok(entries) = std::fs::read_dir(root) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                if !entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
+                    continue;
+                }
+                let name = entry.file_name().to_string_lossy().to_string();
+                let folder_key = normalize_name(&name);
+                if folder_key.is_empty() {
+                    continue;
+                }
+                let folder = SaveFolder {
+                    path: entry.path(),
                     kind: "documents",
-                });
+                };
+                if folder_key == key {
+                    exact.push(folder);
+                } else if key.len() >= 8
+                    && folder_key.len() >= 8
+                    && (key.ends_with(&folder_key) || folder_key.ends_with(&key))
+                {
+                    // "Tom Clancy's Rainbow Six Siege" and
+                    // "Rainbow Six - Siege" differ by the prefix; never let a
+                    // shared stem pull another game's saves in.
+                    partial.push(folder);
+                }
             }
         }
+        // An exact spelling wins outright. Only fall back to a suffix match
+        // when the game's folder has no exact counterpart (Watch_Dogs 2 must
+        // not resolve to the Watch_Dogs folder).
+        let found = if exact.is_empty() { partial } else { exact };
+        out.extend(found);
     }
 
     out
+}
+
+/// Case/punctuation-insensitive name used for save-folder matching. Ubisoft
+/// is inconsistent: "Watch_Dogs 2", "Watch Dogs 2", "Rainbow Six - Siege".
+fn normalize_name(value: &str) -> String {
+    value
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(|c| c.to_lowercase())
+        .collect()
 }
 
 fn pick(candidates: Vec<SaveFolder>) -> Option<SaveFolder> {
@@ -459,6 +498,70 @@ mod tests {
     }
 
     #[test]
+    fn documents_folders_match_an_underscored_spelling() {
+        let root = temp_dir("documents-underscore");
+        let documents = root.join("Documents");
+        let saves = documents.join("Watch_Dogs 2");
+        std::fs::create_dir_all(&saves).unwrap();
+        std::fs::write(saves.join("slot.save"), b"x").unwrap();
+
+        let found = pick(candidates(
+            274,
+            274,
+            Some("Watch Dogs 2"),
+            &[],
+            &[],
+            &[documents],
+        ))
+        .expect("the Watch_Dogs 2 folder");
+        assert_eq!(found.kind, "documents");
+        assert_eq!(found.path, saves);
+    }
+
+    #[test]
+    fn documents_folders_match_a_shortened_store_title() {
+        let root = temp_dir("documents-suffix");
+        let documents = root.join("Documents");
+        let saves = documents.join("Rainbow Six - Siege");
+        std::fs::create_dir_all(&saves).unwrap();
+        std::fs::write(saves.join("slot.save"), b"x").unwrap();
+
+        let found = pick(candidates(
+            635,
+            635,
+            Some("Tom Clancy's Rainbow Six Siege"),
+            &[],
+            &[],
+            &[documents],
+        ))
+        .expect("the Rainbow Six folder");
+        assert_eq!(found.path, saves);
+    }
+
+    #[test]
+    fn an_exact_title_never_falls_back_to_a_shared_stem() {
+        let root = temp_dir("documents-exact");
+        let documents = root.join("Documents");
+        let old = documents.join("Watch_Dogs");
+        let sequel = documents.join("Watch_Dogs 2");
+        std::fs::create_dir_all(&old).unwrap();
+        std::fs::create_dir_all(&sequel).unwrap();
+        std::fs::write(old.join("old.save"), b"old").unwrap();
+
+        let found = pick(candidates(
+            274,
+            274,
+            Some("Watch Dogs 2"),
+            &[],
+            &[],
+            &[documents],
+        ))
+        .expect("the sequel folder");
+        assert_eq!(found.path, sequel);
+        assert!(!found.path.join("old.save").exists());
+    }
+
+    #[test]
     fn a_product_without_any_folder_has_no_answer() {
         let root = temp_dir("nothing");
         assert!(pick(candidates(80, 0, None, &[], &[root], &[])).is_none());
@@ -516,6 +619,28 @@ mod tests {
         assert_eq!(dirs.first().unwrap(), &exe_dir);
         let found = pick(candidates(80, 80, None, &dirs, &[], &[])).expect("shim folder");
         assert_eq!(found.path, shim);
+    }
+
+    #[test]
+    #[ignore = "reads the user's Documents save folders"]
+    fn live_documents_spellings_resolve() {
+        let roots = documents_roots();
+        for (title, expected) in [
+            ("Watch Dogs 2", "Watch_Dogs 2"),
+            ("Tom Clancy's Rainbow Six Siege", "Rainbow Six - Siege"),
+            ("Rayman Origins", "Rayman Origins"),
+        ] {
+            let found = candidates(0, 0, Some(title), &[], &[], &roots);
+            println!("{title}: {found:?}");
+            assert!(
+                found.iter().any(|folder| folder
+                    .path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    == Some(expected)),
+                "{title} did not resolve to {expected}"
+            );
+        }
     }
 
     #[test]
