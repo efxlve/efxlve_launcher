@@ -1509,6 +1509,7 @@ function renderAboutSection(s: EpicSummary): string {
   // enforces the same rule, including for games detected from their folder.
   const antiCheat = gameAntiCheat(s, rawOf(s.appName));
   const antiCheatAllowed = overlayAntiCheatOverride(s.appName, s.title);
+  const antiCheatNotifications = achGameNotificationsEnabled(s.appName, s.title);
   const antiCheatNotice = antiCheat
     ? `
     <section class="gp-ac-notice${antiCheatAllowed ? " is-on" : ""}" id="gp-ac-notice">
@@ -1520,16 +1521,28 @@ function renderAboutSection(s: EpicSummary): string {
         </div>
       </div>
       <p class="gp-ac-notice-safety">${t("drawer.acNoticeSafety")}</p>
-      <label class="gp-ac-notice-toggle">
-        <span class="switch">
-          <input type="checkbox" data-act="toggle-anti-cheat-override"${antiCheatAllowed ? " checked" : ""} />
-          <span class="track"></span>
-        </span>
-        <span class="gp-ac-notice-choice">
-          <span class="gp-ac-notice-choice-label">${t("drawer.acNoticeToggle")}</span>
-          <span class="gp-ac-notice-state" data-ac-state>${antiCheatAllowed ? t("drawer.acNoticeOn") : t("drawer.acNoticeOff")}</span>
-        </span>
-      </label>
+      <div class="gp-ac-notice-toggles">
+        <label class="gp-ac-notice-toggle${antiCheatAllowed ? " is-on" : ""}">
+          <span class="switch">
+            <input type="checkbox" data-act="toggle-anti-cheat-override"${antiCheatAllowed ? " checked" : ""} />
+            <span class="track"></span>
+          </span>
+          <span class="gp-ac-notice-choice">
+            <span class="gp-ac-notice-choice-label">${t("drawer.acNoticeToggle")}</span>
+            <span class="gp-ac-notice-state" data-ac-state>${antiCheatAllowed ? t("drawer.acNoticeOn") : t("drawer.acNoticeOff")}</span>
+          </span>
+        </label>
+        <label class="gp-ac-notice-toggle${antiCheatNotifications ? " is-on" : ""}">
+          <span class="switch">
+            <input type="checkbox" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-title="${esc(s.title)}" data-steam-appid="${esc(achievementSteamAppIdFor(s.appName) ?? "")}"${antiCheatNotifications ? " checked" : ""} />
+            <span class="track"></span>
+          </span>
+          <span class="gp-ac-notice-choice">
+            <span class="gp-ac-notice-choice-label">${t("ach.gameNotifToggle")}</span>
+            <span class="gp-ac-notice-state" data-ach-state>${antiCheatNotifications ? t("drawer.acNoticeNotifOn") : t("drawer.acNoticeNotifOff")}</span>
+          </span>
+        </label>
+      </div>
     </section>`
     : "";
 
@@ -2724,7 +2737,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       })
     : renderAchSidePanel({ summary: s, data, steamAppId: targetSteamAppId });
 
-  const notifEnabled = achGameNotificationsEnabled(s.appName);
+  const notifEnabled = achGameNotificationsEnabled(s.appName, s.title);
   const sourceLabel = achievementSourceLabel(s, data);
   const defaultManageTab: AchievementManageTab = canManageSource
     ? "source"
@@ -2750,7 +2763,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           ${data.user_cleared ? `<div class="ach-stat" title="${esc(t("ach.userClearedHint"))}"><span class="ach-stat-label">${esc(t("ach.statCleared"))}</span><strong class="ach-stat-value tabular-nums">${data.user_cleared}</strong></div>` : ""}
         </div>
         <div class="ach-summary-actions">
-          <button class="icon-btn${notifEnabled ? "" : " is-off"}" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-steam-appid="${esc(targetSteamAppId ?? "")}" title="${esc(t("ach.gameNotifToggle"))}" aria-pressed="${notifEnabled}">${icon(notifEnabled ? "bell" : "bell-off", 14)}</button>
+          <button class="icon-btn${notifEnabled ? "" : " is-off"}" data-act="toggle-ach-game-notif" data-id="${esc(s.appName)}" data-title="${esc(s.title)}" data-steam-appid="${esc(targetSteamAppId ?? "")}" title="${esc(t("ach.gameNotifToggle"))}" aria-pressed="${notifEnabled}">${icon(notifEnabled ? "bell" : "bell-off", 14)}</button>
           <button class="icon-btn" data-act="ach-refresh" data-id="${esc(s.appName)}" title="${esc(t("ach.refreshData"))}">${icon("refresh", 14)}</button>
           <button class="icon-btn" data-act="ach-manage" data-id="${esc(s.appName)}" data-tab="${manageTab ?? defaultManageTab}" title="${esc(t("ach.manageTitle"))}">${icon("sliders", 14)}</button>
           ${data.data_source === "definitions" ? `<button class="icon-btn ${S.achStoreAppIdEditor === s.appName ? "active" : ""}" data-act="ach-appid-open" data-id="${esc(s.appName)}" title="${esc(t("ach.appIdLabel"))}">${icon("hash", 14)}</button>` : ""}

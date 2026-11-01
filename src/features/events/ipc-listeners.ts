@@ -50,6 +50,7 @@ import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
 import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
 import { overlayAntiCheatOverride, overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
+import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -775,6 +776,7 @@ export async function initApp(hooks: {
           disabled: overlayBlocked,
           installPath: sum?.installPath || "",
           allowAntiCheat: overlayAntiCheatOverride(id, title),
+          allowAchievementNotifications: achGameNotificationsEnabled(id, title),
         }).catch(() => {});
         // A game that was already open before the launcher booted is not a
         // fresh start: show its Running state, but do not toast, flash the

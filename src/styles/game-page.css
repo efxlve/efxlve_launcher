@@ -478,13 +478,20 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   line-height: 1.5;
   color: var(--text-3);
 }
+.gp-ac-notice-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  margin: 13px 0 0 39px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
 .gp-ac-notice-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 13px 0 0 39px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
+  flex: 0 1 auto;
+  min-width: 0;
   cursor: pointer;
 }
 .gp-ac-notice-choice {
@@ -502,7 +509,7 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
   font-size: 11.5px;
   color: var(--text-3);
 }
-.gp-ac-notice.is-on .gp-ac-notice-state { color: var(--warn); }
+.gp-ac-notice-toggle.is-on .gp-ac-notice-state { color: var(--warn); }
 
 .gp-about-card {
   background: var(--surface-1);

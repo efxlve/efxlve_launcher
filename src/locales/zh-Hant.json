@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "關閉 — 建議",
   "drawer.acNoticeOn": "開啟 — 您接受風險",
   "drawer.acNoticeEnabled": "已為此遊戲開啟覆蓋層",
-  "drawer.acNoticeDisabled": "已為此遊戲關閉覆蓋層"
+  "drawer.acNoticeDisabled": "已為此遊戲關閉覆蓋層",
+  "drawer.acNoticeNotifOff": "關閉 — 建議",
+  "drawer.acNoticeNotifOn": "開啟"
 }

@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "ปิด — แนะนำ",
   "drawer.acNoticeOn": "เปิด — คุณยอมรับความเสี่ยง",
   "drawer.acNoticeEnabled": "เปิดโอเวอร์เลย์สำหรับเกมนี้แล้ว",
-  "drawer.acNoticeDisabled": "ปิดโอเวอร์เลย์สำหรับเกมนี้แล้ว"
+  "drawer.acNoticeDisabled": "ปิดโอเวอร์เลย์สำหรับเกมนี้แล้ว",
+  "drawer.acNoticeNotifOff": "ปิด — แนะนำ",
+  "drawer.acNoticeNotifOn": "เปิด"
 }

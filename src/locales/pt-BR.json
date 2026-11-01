@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "Desativada — recomendado",
   "drawer.acNoticeOn": "Ativada — você aceita o risco",
   "drawer.acNoticeEnabled": "Sobreposição ativada para este jogo",
-  "drawer.acNoticeDisabled": "Sobreposição desativada para este jogo"
+  "drawer.acNoticeDisabled": "Sobreposição desativada para este jogo",
+  "drawer.acNoticeNotifOff": "Desativadas — recomendado",
+  "drawer.acNoticeNotifOn": "Ativadas"
 }

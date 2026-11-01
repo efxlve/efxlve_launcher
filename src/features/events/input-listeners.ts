@@ -771,6 +771,7 @@ document.addEventListener("change", (e) => {
     // position over one checkbox.
     const notice = t.closest<HTMLElement>("#gp-ac-notice");
     notice?.classList.toggle("is-on", enabled);
+    t.closest<HTMLElement>(".gp-ac-notice-toggle")?.classList.toggle("is-on", enabled);
     const state = notice?.querySelector<HTMLElement>("[data-ac-state]");
     if (state) {
       state.textContent = enabled ? i18nT("drawer.acNoticeOn") : i18nT("drawer.acNoticeOff");

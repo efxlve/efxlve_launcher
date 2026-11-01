@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "معطّلة — موصى به",
   "drawer.acNoticeOn": "مفعّلة — أنت تقبل المخاطرة",
   "drawer.acNoticeEnabled": "تم تفعيل طبقة العرض لهذه اللعبة",
-  "drawer.acNoticeDisabled": "تم تعطيل طبقة العرض لهذه اللعبة"
+  "drawer.acNoticeDisabled": "تم تعطيل طبقة العرض لهذه اللعبة",
+  "drawer.acNoticeNotifOff": "معطّلة — موصى به",
+  "drawer.acNoticeNotifOn": "مفعّلة"
 }

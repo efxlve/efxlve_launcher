@@ -84,6 +84,10 @@ anti-cheat simply see another window.
   The choice is stored per title, so a game listed by two stores (Rainbow Six on
   Ubisoft and Epic) shares one answer; the overlay stays off until the reader
   turns it on and the backend remembers the same decision for the session.
+  Achievement cards follow the same rule: anti-cheat titles start muted, the
+  notice carries a second switch for them, and the Rust unlock path re-checks
+  the active game so a stale watcher cannot put a card (or an unlock souvenir)
+  over a protected title.
 - **Windows ↔ WebView2 constraint (critical):** per-pixel transparent WebView2 and
   click-through do not reliably combine — click-through via `WS_EX_TRANSPARENT` is not
   enough (WebView2 child windows take the clicks), and toggling layered attributes

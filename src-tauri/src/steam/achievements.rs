@@ -2792,7 +2792,9 @@ pub fn achievement_test_notification(
     let store_key = notification_store_key(&resolved_app_id);
     let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
     let should_notify = if real_unlock {
-        options.enabled && store_enabled
+        options.enabled
+            && store_enabled
+            && !crate::overlay::achievement_notifications_blocked()
     } else {
         true
     };
@@ -3116,7 +3118,8 @@ fn emit_new_achievement_unlocks(
     };
     let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
     let game_enabled = achievement_game_notifications_enabled(payload_key);
-    let base_notify = options.enabled && store_enabled && game_enabled;
+    let cards_blocked = crate::overlay::achievement_notifications_blocked();
+    let base_notify = options.enabled && store_enabled && game_enabled && !cards_blocked;
 
     // Achievements that earn a visible card. The threshold only filters what it
     // can measure; a store without a rarity figure always passes.
@@ -3141,6 +3144,7 @@ fn emit_new_achievement_unlocks(
     let souvenir = if options.unlock_screenshots
         && store_enabled
         && game_enabled
+        && !cards_blocked
         && !announced.is_empty()
         && unlock_screenshot_allowed()
     {

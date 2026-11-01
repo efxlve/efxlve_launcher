@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "オフ — 推奨",
   "drawer.acNoticeOn": "オン — リスクを承知で使用",
   "drawer.acNoticeEnabled": "このゲームでオーバーレイを有効にしました",
-  "drawer.acNoticeDisabled": "このゲームでオーバーレイを無効にしました"
+  "drawer.acNoticeDisabled": "このゲームでオーバーレイを無効にしました",
+  "drawer.acNoticeNotifOff": "オフ — 推奨",
+  "drawer.acNoticeNotifOn": "オン"
 }

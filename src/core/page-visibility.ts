@@ -6,6 +6,7 @@
  * feature and is not affected.
  */
 
+import { gameTitleKey } from "../epic-model";
 import {
   OVERLAY_ANTI_CHEAT_OVERRIDE_KEY,
   OVERLAY_DISABLED_KEY,
@@ -118,14 +119,7 @@ export function clearOverlayBlock(appName: string): void {
 /** One game can sit in two stores (R6 on Ubisoft and Epic): the choice follows
  *  the title, so opting in once covers every copy of the same game. */
 function antiCheatTitleKey(title: string): string {
-  // Stores disagree on punctuation: Epic writes "Tom Clancy’s", Ubisoft writes
-  // "Tom Clancy's ... ®". Keep letters and digits only so both copies share one
-  // key.
-  const normalized = title
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-  return normalized ? `title:${normalized}` : "";
+  return gameTitleKey(title);
 }
 
 /** True when the user accepted the anti-cheat risk for this game. */

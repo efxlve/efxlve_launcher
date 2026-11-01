@@ -162,6 +162,8 @@ export const OVERLAY_DISABLED_KEY = "efxlve-overlay-disabled-games";
 export const OVERLAY_ANTI_CHEAT_OVERRIDE_KEY = "efxlve-overlay-anticheat-override";
 /** Achievement cards: games whose notifications are muted, as a JSON app-name array. */
 export const ACH_DISABLED_GAMES_KEY = "efxlve-ach-disabled-games";
+/** Achievement cards: anti-cheat games whose notifications the user allowed. */
+export const ACH_ANTI_CHEAT_ALLOW_KEY = "efxlve-ach-anticheat-allow";
 /** Store game key → Steam AppID the player entered for its achievement list. */
 export const STORE_STEAM_APP_IDS_KEY = "efxlve-store-steam-appids";
 /** Store games whose achievements the player wants from Steam definitions. */

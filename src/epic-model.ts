@@ -392,6 +392,17 @@ export function getThirdPartyLauncher(
   return null;
 }
 
+/** Store-independent key for a game title. Stores disagree on punctuation
+ *  (Epic writes "Tom Clancy’s", Ubisoft writes "Tom Clancy's ... ®"), so the
+ *  key keeps letters and digits only. */
+export function gameTitleKey(title: string): string {
+  const normalized = title
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+  return normalized ? `title:${normalized}` : "";
+}
+
 /** Anti-cheat from catalog metadata, the game title, or (for Steam) VAC. */
 export function getAntiCheat(
   g: EpicGame | undefined | null,

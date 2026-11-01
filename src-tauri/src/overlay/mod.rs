@@ -74,6 +74,8 @@ pub(crate) struct OverlayState {
     pub game_anti_cheat: bool,
     /// The user explicitly accepted the anti-cheat risk for this game.
     pub anti_cheat_allowed: bool,
+    /// The user explicitly allowed achievement cards for this anti-cheat game.
+    pub anti_cheat_notifications_allowed: bool,
 }
 
 pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
@@ -92,6 +94,7 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     game_install: String::new(),
     game_anti_cheat: false,
     anti_cheat_allowed: false,
+    anti_cheat_notifications_allowed: false,
 });
 
 #[derive(Serialize, Clone)]
@@ -112,6 +115,7 @@ pub fn overlay_get_state() -> serde_json::Value {
             "gameDisabled": s.game_disabled,
             "antiCheat": s.game_anti_cheat,
             "antiCheatAllowed": s.anti_cheat_allowed,
+            "antiCheatNotificationsAllowed": s.anti_cheat_notifications_allowed,
             "hotkey": hotkey_id(&s),
             "running": s.enabled && !s.game_disabled,
         }),
@@ -428,6 +432,7 @@ pub fn overlay_set_active_game(
     disabled: bool,
     install_path: Option<String>,
     allow_anti_cheat: Option<bool>,
+    allow_achievement_notifications: Option<bool>,
 ) {
     let mut install = install_path.unwrap_or_default();
     if install.trim().is_empty() {
@@ -447,6 +452,12 @@ pub fn overlay_set_active_game(
             .map(|s| s.game_app == app_name && s.anti_cheat_allowed)
             .unwrap_or(false)
     });
+    let notifications_allowed = allow_achievement_notifications.unwrap_or_else(|| {
+        STATE
+            .lock()
+            .map(|s| s.game_app == app_name && s.anti_cheat_notifications_allowed)
+            .unwrap_or(false)
+    });
     if anti_cheat {
         if allowed {
             println!("[overlay] anti-cheat detected for {app_name}; user override enabled");
@@ -464,6 +475,7 @@ pub fn overlay_set_active_game(
         s.game_install = install;
         s.game_anti_cheat = anti_cheat;
         s.anti_cheat_allowed = anti_cheat && allowed;
+        s.anti_cheat_notifications_allowed = anti_cheat && notifications_allowed;
         s.game_disabled = disabled;
         (disabled, switched)
     } else {
@@ -481,14 +493,50 @@ pub fn overlay_set_active_game(
         // A game start is the moment the saved crosshair preference becomes
         // visible again.
         crosshair::restore();
+        // Anti-cheat with notifications muted: destroy any toast renderer a
+        // previous game left parked, so this session has no extra WebView2.
+        if anti_cheat && !notifications_allowed {
+            toast::shutdown(&app);
+        }
         // Warm the toast page while the game runs: the first card then only
         // has to show a window, not boot a WebView2 renderer.
         let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(true);
         let options = crate::steam::achievement_notification_options(&app);
-        if enabled && options.enabled && options.overlay {
+        if enabled
+            && options.enabled
+            && options.overlay
+            && !achievement_notifications_blocked()
+        {
             crate::overlay::toast::prewarm(&app);
         }
     }
+}
+
+/// The game page's achievement switch for an anti-cheat title: the backend
+/// keeps its own copy so a stale renderer or a missed event cannot put a card
+/// over a protected game.
+#[tauri::command]
+pub fn overlay_set_anti_cheat_notifications(app_name: String, title: String, allowed: bool) {
+    let title = anti_cheat::title_key(&title);
+    if let Ok(mut s) = STATE.lock() {
+        // The same game can be reported by two store keys (R6 on Ubisoft and
+        // Epic); the title keeps the opt-in tied to the game, not the key.
+        if s.game_app == app_name
+            || (s.game_anti_cheat && !title.is_empty() && anti_cheat::title_key(&s.game_title) == title)
+        {
+            s.anti_cheat_notifications_allowed = s.game_anti_cheat && allowed;
+        }
+    }
+}
+
+/// True while an anti-cheat game runs without the reader's explicit notification
+/// opt-in. Achievement cards and unlock souvenirs stay off for that session even
+/// if the per-game watcher map still says enabled.
+pub(crate) fn achievement_notifications_blocked() -> bool {
+    STATE
+        .lock()
+        .map(|s| s.game_anti_cheat && !s.anti_cheat_notifications_allowed)
+        .unwrap_or(false)
 }
 
 /// Clears the active game context when a title stops.
@@ -501,6 +549,7 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
             s.game_install.clear();
             s.game_anti_cheat = false;
             s.anti_cheat_allowed = false;
+            s.anti_cheat_notifications_allowed = false;
             s.game_disabled = false;
             true
         } else {

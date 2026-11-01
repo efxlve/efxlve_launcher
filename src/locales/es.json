@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "Desactivada — recomendado",
   "drawer.acNoticeOn": "Activada — aceptas el riesgo",
   "drawer.acNoticeEnabled": "Superposición activada para este juego",
-  "drawer.acNoticeDisabled": "Superposición desactivada para este juego"
+  "drawer.acNoticeDisabled": "Superposición desactivada para este juego",
+  "drawer.acNoticeNotifOff": "Desactivadas — recomendado",
+  "drawer.acNoticeNotifOn": "Activadas"
 }

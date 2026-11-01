@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "Wyłączona — zalecane",
   "drawer.acNoticeOn": "Włączona — akceptujesz ryzyko",
   "drawer.acNoticeEnabled": "Nakładka włączona dla tej gry",
-  "drawer.acNoticeDisabled": "Nakładka wyłączona dla tej gry"
+  "drawer.acNoticeDisabled": "Nakładka wyłączona dla tej gry",
+  "drawer.acNoticeNotifOff": "Wyłączone — zalecane",
+  "drawer.acNoticeNotifOn": "Włączone"
 }

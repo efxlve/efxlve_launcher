@@ -18,7 +18,7 @@ const TITLES: &[&str] = &[
     "apex legends",
     "fortnite",
     "destiny 2",
-    "ark: survival",
+    "ark survival",
     "fall guys",
     "dead by daylight",
     "hell let loose",
@@ -33,7 +33,7 @@ const TITLES: &[&str] = &[
     "war thunder",
     "elden ring",
     "squad",
-    "hunt: showdown",
+    "hunt showdown",
     "chivalry 2",
     "conan exiles",
     "dayz",
@@ -99,16 +99,24 @@ const FILES: &[&str] = &[
     "Ricochet",
 ];
 
-/// True when this title or its install folder names an anti-cheat.
-pub(crate) fn game_has_anti_cheat(title: &str, install_path: Option<&str>) -> bool {
-    // Store titles carry trademark marks ("Rainbow Six® Siege"); strip them and
-    // collapse the gap so one list entry matches every spelling.
-    let title = title
+/// Store-independent title key: letters and digits only, single spaces. Keeps
+/// "Tom Clancy's" and "Tom Clancy’s" (Epic vs Ubisoft) on one key.
+pub(crate) fn title_key(title: &str) -> String {
+    title
         .to_lowercase()
-        .replace(['®', '™'], " ")
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
         .split_whitespace()
         .collect::<Vec<_>>()
-        .join(" ");
+        .join(" ")
+}
+
+/// True when this title or its install folder names an anti-cheat.
+pub(crate) fn game_has_anti_cheat(title: &str, install_path: Option<&str>) -> bool {
+    // Store titles carry trademark marks ("Rainbow Six® Siege"); the title key
+    // folds those so one list entry matches every spelling.
+    let title = title_key(title);
     if !title.is_empty() && TITLES.iter().any(|needle| title.contains(needle)) {
         return true;
     }
@@ -156,6 +164,14 @@ fn has_marker(directory: &std::path::Path, depth: u32, budget: &mut usize) -> bo
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn store_spellings_share_a_title_key() {
+        assert_eq!(
+            title_key("Tom Clancy's Rainbow Six® Siege"),
+            title_key("Tom Clancy’s Rainbow Six Siege")
+        );
+    }
 
     #[test]
     fn known_titles_are_blocked_regardless_of_store() {

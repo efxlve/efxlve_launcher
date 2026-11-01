@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "Désactivé — recommandé",
   "drawer.acNoticeOn": "Activé — vous acceptez le risque",
   "drawer.acNoticeEnabled": "Overlay activé pour ce jeu",
-  "drawer.acNoticeDisabled": "Overlay désactivé pour ce jeu"
+  "drawer.acNoticeDisabled": "Overlay désactivé pour ce jeu",
+  "drawer.acNoticeNotifOff": "Désactivées — recommandé",
+  "drawer.acNoticeNotifOn": "Activées"
 }

@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "बंद — सुझाया गया",
   "drawer.acNoticeOn": "चालू — आप जोखिम स्वीकार करते हैं",
   "drawer.acNoticeEnabled": "इस गेम के लिए ओवरले चालू किया गया",
-  "drawer.acNoticeDisabled": "इस गेम के लिए ओवरले बंद किया गया"
+  "drawer.acNoticeDisabled": "इस गेम के लिए ओवरले बंद किया गया",
+  "drawer.acNoticeNotifOff": "बंद — सुझाया गया",
+  "drawer.acNoticeNotifOn": "चालू"
 }

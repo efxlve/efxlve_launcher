@@ -3494,5 +3494,7 @@
   "drawer.acNoticeOff": "꺼짐 — 권장",
   "drawer.acNoticeOn": "켜짐 — 위험을 감수함",
   "drawer.acNoticeEnabled": "이 게임의 오버레이를 켰습니다",
-  "drawer.acNoticeDisabled": "이 게임의 오버레이를 껐습니다"
+  "drawer.acNoticeDisabled": "이 게임의 오버레이를 껐습니다",
+  "drawer.acNoticeNotifOff": "꺼짐 — 권장",
+  "drawer.acNoticeNotifOn": "켜짐"
 }
