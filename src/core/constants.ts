@@ -158,6 +158,8 @@ export const OVERLAY_HUD_KEY = "efxlve-overlay-hud";
 export const OVERLAY_OPACITY_KEY = "efxlve-overlay-opacity";
 /** In-game overlay: games the user opted out of, as a JSON app-name array. */
 export const OVERLAY_DISABLED_KEY = "efxlve-overlay-disabled-games";
+/** In-game overlay: anti-cheat games the user explicitly allowed anyway. */
+export const OVERLAY_ANTI_CHEAT_OVERRIDE_KEY = "efxlve-overlay-anticheat-override";
 /** Achievement cards: games whose notifications are muted, as a JSON app-name array. */
 export const ACH_DISABLED_GAMES_KEY = "efxlve-ach-disabled-games";
 /** Store game key → Steam AppID the player entered for its achievement list. */

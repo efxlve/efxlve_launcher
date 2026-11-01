@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "설치를 이동하는 중…",
   "manage.ubiMoveConfirm": "이 설치를 {path}(으)로 이동할까요? 게임을 종료해야 합니다.",
   "manage.ubiMoveDone": "{path}(으)로 이동했습니다.",
-  "common.downloadingNow": "다운로드 중…"
+  "common.downloadingNow": "다운로드 중…",
+  "drawer.acNoticeTitle": "안티치트 보호",
+  "drawer.acNoticeBody": "{name}은(는) 안티치트 서비스를 사용하므로 이 게임의 인게임 오버레이는 기본적으로 꺼져 있습니다. 런처의 추가 창이나 입력 레이어가 게임 위에 놓이지 않습니다.",
+  "drawer.acNoticeSafety": "Efxlve는 DLL을 주입하거나 게임 프로세스에 훅을 걸지 않으며 메모리를 읽거나 쓰지 않습니다. 그래도 외부 오버레이가 모든 안티치트에서 안전하다고 보장할 수 없으므로 직접 켜기 전까지 꺼져 있습니다.",
+  "drawer.acNoticeToggle": "그래도 이 게임에서 오버레이 사용",
+  "drawer.acNoticeOff": "꺼짐 — 권장",
+  "drawer.acNoticeOn": "켜짐 — 위험을 감수함",
+  "drawer.acNoticeEnabled": "이 게임의 오버레이를 켰습니다",
+  "drawer.acNoticeDisabled": "이 게임의 오버레이를 껐습니다"
 }

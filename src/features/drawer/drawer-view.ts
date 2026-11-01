@@ -71,6 +71,7 @@ import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
 import { fetchAndRenderScreenshots, forgetGameScreenshots, renderDrawerScreenshots, renderMomentsStrip } from "../screenshots/screenshots-view";
+import { overlayAntiCheatOverride } from "../../core/page-visibility";
 import { cachedNotes, notesForScope, onNotesChanged } from "../notes/notes-client";
 import { notePreview } from "../notes/markdown";
 import { ensureDrawerNotes, renderDrawerNotes } from "../notes/drawer-notes";
@@ -1503,6 +1504,35 @@ function renderAboutSection(s: EpicSummary): string {
   const sourceText = aboutSourceText(s, epicDesc, wikiText);
   const sourceHidden = aboutLoading || !effectiveDesc;
 
+  // Anti-cheat titles keep the overlay off unless the reader opts in here.
+  // The notice sits above the About card and names the service; the backend
+  // enforces the same rule, including for games detected from their folder.
+  const antiCheat = gameAntiCheat(s, rawOf(s.appName));
+  const antiCheatAllowed = overlayAntiCheatOverride(s.appName, s.title);
+  const antiCheatNotice = antiCheat
+    ? `
+    <section class="gp-ac-notice${antiCheatAllowed ? " is-on" : ""}" id="gp-ac-notice">
+      <div class="gp-ac-notice-head">
+        <span class="gp-ac-notice-badge">${icon("shield", 15)}</span>
+        <div class="gp-ac-notice-copy">
+          <h4 class="gp-ac-notice-title">${t("drawer.acNoticeTitle")}</h4>
+          <p class="gp-ac-notice-body">${t("drawer.acNoticeBody", { name: esc(antiCheat) })}</p>
+        </div>
+      </div>
+      <p class="gp-ac-notice-safety">${t("drawer.acNoticeSafety")}</p>
+      <label class="gp-ac-notice-toggle">
+        <span class="switch">
+          <input type="checkbox" data-act="toggle-anti-cheat-override"${antiCheatAllowed ? " checked" : ""} />
+          <span class="track"></span>
+        </span>
+        <span class="gp-ac-notice-choice">
+          <span class="gp-ac-notice-choice-label">${t("drawer.acNoticeToggle")}</span>
+          <span class="gp-ac-notice-state" data-ac-state>${antiCheatAllowed ? t("drawer.acNoticeOn") : t("drawer.acNoticeOff")}</span>
+        </span>
+      </label>
+    </section>`
+    : "";
+
   const genres = gameGenresFor(s.appName);
   const genresHtml = genres.length > 0
     ? `
@@ -1524,17 +1554,20 @@ function renderAboutSection(s: EpicSummary): string {
     : "";
 
   return `
-    <section class="card gp-about-card" id="hub-about-section">
-      <h3 class="gp-section-title">${icon("info", 14)} <span>${t("drawer.aboutGame")}</span></h3>
-      <div class="hub-desc-text" id="hub-desc-text">${
-        aboutLoading
-          ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
-          : aboutMarkup(effectiveDesc ?? "") || `<p>${t("drawer.noDescription")}</p>`
-      }</div>
-      ${genresHtml}
-      ${igdbShotsHtml}
-      ${footHtml}
-    </section>`;
+    <div id="hub-about-section">
+      ${antiCheatNotice}
+      <section class="card gp-about-card">
+        <h3 class="gp-section-title">${icon("info", 14)} <span>${t("drawer.aboutGame")}</span></h3>
+        <div class="hub-desc-text" id="hub-desc-text">${
+          aboutLoading
+            ? `<div class="hub-desc-loading"><span class="spinner"></span><span>${t("drawer.loadingAbout")}</span></div>`
+            : aboutMarkup(effectiveDesc ?? "") || `<p>${t("drawer.noDescription")}</p>`
+        }</div>
+        ${genresHtml}
+        ${igdbShotsHtml}
+        ${footHtml}
+      </section>
+    </div>`;
 }
 
 /**

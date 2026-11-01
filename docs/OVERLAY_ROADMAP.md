@@ -79,7 +79,11 @@ anti-cheat simply see another window.
   forced off, and every overlay surface (panel, toast, HUD, crosshair, metrics, PiP)
   is torn down. The launcher itself stays a normal, visible window; a normal window
   is not what anti-cheat targets, and hiding it would only make the app harder to
-  use. Nothing is injected or hooked.
+  use. Nothing is injected or hooked. The game page shows an Anti-cheat protection
+  notice above About the Game: it names the service and offers a per-game opt-in.
+  The choice is stored per title, so a game listed by two stores (Rainbow Six on
+  Ubisoft and Epic) shares one answer; the overlay stays off until the reader
+  turns it on and the backend remembers the same decision for the session.
 - **Windows ↔ WebView2 constraint (critical):** per-pixel transparent WebView2 and
   click-through do not reliably combine — click-through via `WS_EX_TRANSPARENT` is not
   enough (WebView2 child windows take the clicks), and toggling layered attributes

@@ -49,7 +49,7 @@ import { initAutoUpdate } from "../downloads/auto-update";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
 import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
-import { overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
+import { overlayAntiCheatOverride, overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -140,10 +140,10 @@ let lastDlSample: { id: string; bytes: number; at: number } | null = null;
 
 /** Overlay per-game opt-out list (written by the overlay settings tab). */
 function overlayDisabledFor(appName: string, title = ""): boolean {
-  // Anti-cheat titles never get the overlay, even if the user has not added
-  // them to the manual blocklist. The backend enforces the same rule from the
-  // install folder.
-  if (getAntiCheat(undefined, title, appName)) return true;
+  // Anti-cheat titles never get the overlay unless the reader opted in on the
+  // game page, even if they never touched the manual blocklist. The backend
+  // enforces the same rule from the install folder.
+  if (getAntiCheat(undefined, title, appName) && !overlayAntiCheatOverride(appName, title)) return true;
   try {
     const raw = localStorage.getItem(OVERLAY_DISABLED_KEY);
     const list = raw ? (JSON.parse(raw) as unknown) : [];
@@ -774,6 +774,7 @@ export async function initApp(hooks: {
           title,
           disabled: overlayBlocked,
           installPath: sum?.installPath || "",
+          allowAntiCheat: overlayAntiCheatOverride(id, title),
         }).catch(() => {});
         // A game that was already open before the launcher booted is not a
         // fresh start: show its Running state, but do not toast, flash the

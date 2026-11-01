@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "Moving the install…",
   "manage.ubiMoveConfirm": "Move this install to {path}? The game must be closed.",
   "manage.ubiMoveDone": "Moved to {path}.",
-  "common.downloadingNow": "Downloading…"
+  "common.downloadingNow": "Downloading…",
+  "drawer.acNoticeTitle": "Anti-cheat protection",
+  "drawer.acNoticeBody": "{name} runs an anti-cheat service, so the in-game overlay is off for this game by default. No extra window or input surface from the launcher sits over the game.",
+  "drawer.acNoticeSafety": "Efxlve never injects a DLL, hooks the game process, or reads and writes its memory. Still, no external overlay can be guaranteed safe with every anti-cheat, so it stays off until you choose otherwise.",
+  "drawer.acNoticeToggle": "Use the overlay in this game anyway",
+  "drawer.acNoticeOff": "Off — recommended",
+  "drawer.acNoticeOn": "On — you accept the risk",
+  "drawer.acNoticeEnabled": "Overlay enabled for this game",
+  "drawer.acNoticeDisabled": "Overlay disabled for this game"
 }

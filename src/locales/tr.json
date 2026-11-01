@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "Kurulum taşınıyor…",
   "manage.ubiMoveConfirm": "Bu kurulum {path} konumuna taşınsın mı? Oyun kapalı olmalı.",
   "manage.ubiMoveDone": "{path} konumuna taşındı.",
-  "common.downloadingNow": "İndiriliyor…"
+  "common.downloadingNow": "İndiriliyor…",
+  "drawer.acNoticeTitle": "Hile koruması",
+  "drawer.acNoticeBody": "{name} bir hile önleme servisi çalıştırıyor, bu yüzden oyun içi overlay bu oyunda varsayılan olarak kapalı. Launcher'dan oyunun üzerine ek bir pencere veya giriş katmanı yerleşmiyor.",
+  "drawer.acNoticeSafety": "Efxlve oyuna hiçbir zaman DLL enjekte etmez, sürecine hook takmaz, belleğini okumaz veya yazmaz. Yine de hiçbir harici overlay her hile önleme sistemiyle güvenli olduğunu garanti edemez; bu nedenle sen açmadıkça kapalı kalır.",
+  "drawer.acNoticeToggle": "Yine de bu oyunda overlay'i kullan",
+  "drawer.acNoticeOff": "Kapalı — önerilen",
+  "drawer.acNoticeOn": "Açık — riski kabul ediyorsun",
+  "drawer.acNoticeEnabled": "Overlay bu oyun için açıldı",
+  "drawer.acNoticeDisabled": "Overlay bu oyun için kapatıldı"
 }

@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "Przenoszenie instalacji…",
   "manage.ubiMoveConfirm": "Przenieść tę instalację do {path}? Gra musi być zamknięta.",
   "manage.ubiMoveDone": "Przeniesiono do {path}.",
-  "common.downloadingNow": "Pobieranie…"
+  "common.downloadingNow": "Pobieranie…",
+  "drawer.acNoticeTitle": "Ochrona przed cheatami",
+  "drawer.acNoticeBody": "{name} korzysta z usługi anti-cheat, więc nakładka w grze jest domyślnie wyłączona dla tego tytułu. Nad grą nie znajduje się żadne dodatkowe okno ani warstwa wejścia launchera.",
+  "drawer.acNoticeSafety": "Efxlve nigdy nie wstrzykuje DLL, nie podłącza hooków do procesu gry ani nie odczytuje i nie zapisuje jej pamięci. Mimo to żadnej zewnętrznej nakładki nie można zagwarantować jako bezpiecznej ze wszystkimi systemami anti-cheat, dlatego pozostaje wyłączona, dopóki nie zdecydujesz inaczej.",
+  "drawer.acNoticeToggle": "Mimo to używaj nakładki w tej grze",
+  "drawer.acNoticeOff": "Wyłączona — zalecane",
+  "drawer.acNoticeOn": "Włączona — akceptujesz ryzyko",
+  "drawer.acNoticeEnabled": "Nakładka włączona dla tej gry",
+  "drawer.acNoticeDisabled": "Nakładka wyłączona dla tej gry"
 }

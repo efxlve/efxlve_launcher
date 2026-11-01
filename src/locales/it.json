@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "Spostamento dell'installazione…",
   "manage.ubiMoveConfirm": "Spostare questa installazione in {path}? Il gioco deve essere chiuso.",
   "manage.ubiMoveDone": "Spostato in {path}.",
-  "common.downloadingNow": "Download in corso…"
+  "common.downloadingNow": "Download in corso…",
+  "drawer.acNoticeTitle": "Protezione anti-cheat",
+  "drawer.acNoticeBody": "{name} usa un servizio anti-cheat, quindi l'overlay in gioco è disattivato per impostazione predefinita in questo titolo. Nessuna finestra o superficie di input aggiuntiva del launcher si sovrappone al gioco.",
+  "drawer.acNoticeSafety": "Efxlve non inietta mai DLL, non aggancia il processo del gioco e non legge o scrive la sua memoria. Tuttavia nessun overlay esterno può essere garantito sicuro con ogni anti-cheat, quindi resta disattivato finché non scegli diversamente.",
+  "drawer.acNoticeToggle": "Usa comunque l'overlay in questo gioco",
+  "drawer.acNoticeOff": "Disattivato — consigliato",
+  "drawer.acNoticeOn": "Attivo — accetti il rischio",
+  "drawer.acNoticeEnabled": "Overlay attivato per questo gioco",
+  "drawer.acNoticeDisabled": "Overlay disattivato per questo gioco"
 }

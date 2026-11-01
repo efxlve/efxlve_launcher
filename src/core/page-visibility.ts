@@ -6,7 +6,17 @@
  * feature and is not affected.
  */
 
-import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SHOW_DISCORD_KEY, SHOW_MINI_PLAYER_KEY, SHOW_NOTES_SIDEBAR_KEY, SHOW_SCREENSHOTS_SIDEBAR_KEY, SHOW_SPOTIFY_KEY } from "./constants";
+import {
+  OVERLAY_ANTI_CHEAT_OVERRIDE_KEY,
+  OVERLAY_DISABLED_KEY,
+  OVERLAY_ENABLED_KEY,
+  OVERLAY_HOTKEY_KEY,
+  SHOW_DISCORD_KEY,
+  SHOW_MINI_PLAYER_KEY,
+  SHOW_NOTES_SIDEBAR_KEY,
+  SHOW_SCREENSHOTS_SIDEBAR_KEY,
+  SHOW_SPOTIFY_KEY,
+} from "./constants";
 
 export function spotifyPageVisible(): boolean {
   return localStorage.getItem(SHOW_SPOTIFY_KEY) !== "false";
@@ -67,8 +77,7 @@ export function overlayHotkeyLabel(): string {
   return hotkeyLabel(overlayHotkey());
 }
 
-/**
- * Games kept in the overlay's own blocklist ("Disable for this game").
+/** Games kept in the overlay's own blocklist ("Disable for this game").
  *
  * The overlay edits this list, so a launcher-side copy is the way back when a
  * block left someone without the panel to undo it from.
@@ -88,6 +97,64 @@ export function overlayBlockedGames(): { key: string; title: string }[] {
       }));
   } catch {
     return [];
+  }
+}
+
+/** Drop one game from the manual overlay blocklist. */
+export function clearOverlayBlock(appName: string): void {
+  try {
+    const raw = localStorage.getItem(OVERLAY_DISABLED_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+    if (!Array.isArray(parsed)) return;
+    const next = parsed.filter((item) =>
+      typeof item === "string" ? item !== appName : (item as { key?: string })?.key !== appName,
+    );
+    localStorage.setItem(OVERLAY_DISABLED_KEY, JSON.stringify(next));
+  } catch {
+    /* localStorage can be unavailable; the guard stays in place. */
+  }
+}
+
+/** One game can sit in two stores (R6 on Ubisoft and Epic): the choice follows
+ *  the title, so opting in once covers every copy of the same game. */
+function antiCheatTitleKey(title: string): string {
+  // Stores disagree on punctuation: Epic writes "Tom Clancy’s", Ubisoft writes
+  // "Tom Clancy's ... ®". Keep letters and digits only so both copies share one
+  // key.
+  const normalized = title
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+  return normalized ? `title:${normalized}` : "";
+}
+
+/** True when the user accepted the anti-cheat risk for this game. */
+export function overlayAntiCheatOverride(appName: string, title = ""): boolean {
+  try {
+    const raw = localStorage.getItem(OVERLAY_ANTI_CHEAT_OVERRIDE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return false;
+    const titleKey = antiCheatTitleKey(title);
+    return parsed.includes(appName) || (Boolean(titleKey) && parsed.includes(titleKey));
+  } catch {
+    return false;
+  }
+}
+
+/** Remember the user's opt-in or opt-out for one anti-cheat game. */
+export function setOverlayAntiCheatOverride(appName: string, enabled: boolean, title = ""): void {
+  try {
+    const raw = localStorage.getItem(OVERLAY_ANTI_CHEAT_OVERRIDE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+    const list = Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    const keys = [appName, antiCheatTitleKey(title)].filter(Boolean);
+    const next = enabled
+      ? [...new Set([...list, ...keys])]
+      : list.filter((item) => !keys.includes(item));
+    localStorage.setItem(OVERLAY_ANTI_CHEAT_OVERRIDE_KEY, JSON.stringify(next));
+  } catch {
+    /* localStorage can be unavailable; the default stays off. */
   }
 }
 

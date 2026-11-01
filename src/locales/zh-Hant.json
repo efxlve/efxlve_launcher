@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "正在移動安裝…",
   "manage.ubiMoveConfirm": "要將此安裝移至 {path} 嗎？遊戲必須已關閉。",
   "manage.ubiMoveDone": "已移至 {path}。",
-  "common.downloadingNow": "正在下載…"
+  "common.downloadingNow": "正在下載…",
+  "drawer.acNoticeTitle": "防作弊保護",
+  "drawer.acNoticeBody": "{name} 執行防作弊服務，因此此遊戲的遊戲內覆蓋層預設關閉。啟動器不會在遊戲上方放置額外視窗或輸入層。",
+  "drawer.acNoticeSafety": "Efxlve 從不注入 DLL、不掛鉤遊戲處理程序，也不讀取或寫入其記憶體。即便如此，任何外部覆蓋層都無法保證對所有防作弊系統都安全，因此在您主動開啟前會保持關閉。",
+  "drawer.acNoticeToggle": "仍要在此遊戲中使用覆蓋層",
+  "drawer.acNoticeOff": "關閉 — 建議",
+  "drawer.acNoticeOn": "開啟 — 您接受風險",
+  "drawer.acNoticeEnabled": "已為此遊戲開啟覆蓋層",
+  "drawer.acNoticeDisabled": "已為此遊戲關閉覆蓋層"
 }

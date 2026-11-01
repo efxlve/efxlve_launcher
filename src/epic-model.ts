@@ -399,7 +399,7 @@ export function getAntiCheat(
   appHint = "",
 ): string | null {
   const appName = (g?.app_name || appHint || "").toLowerCase();
-  const title = (g?.app_title || titleHint || "").toLowerCase().replace(/[®™]/g, " ");
+  const title = (g?.app_title || titleHint || "").toLowerCase().replace(/[®™]/g, " ").replace(/\s+/g, " ").trim();
   if (!g && !title && !appName) return null;
   const attrs = (g?.metadata?.customAttributes as Record<string, { value?: string }>) || {};
   const procNames = attrs.ProcessNames?.value || "";
@@ -498,6 +498,30 @@ export function getAntiCheat(
   }
   if (title.includes("counter-strike") || title.includes("counter strike") || /\bcs:? ?go\b/.test(title) || title === "cs2") {
     return "VAC";
+  }
+  if (title.includes("valorant") || title.includes("league of legends")) {
+    return "Riot Vanguard";
+  }
+  if (title.includes("escape from tarkov")) {
+    return "BattlEye";
+  }
+  if (title === "rust" || title.startsWith("rust ")) {
+    return "Easy Anti-Cheat";
+  }
+  if (title.includes("pubg") || title.includes("playerunknown")) {
+    return "BattlEye";
+  }
+  if (title.includes("overwatch")) {
+    return "Warden";
+  }
+  if (title.includes("naraka") || title.includes("delta force") || title.includes("arena breakout")) {
+    return "ACE";
+  }
+  if (title.includes("once human") || title.includes("marvel rivals")) {
+    return "ACE";
+  }
+  if (title.includes("new world") || title.includes("lost ark")) {
+    return "Easy Anti-Cheat";
   }
 
   // 3. Generic customAttributes check

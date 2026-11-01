@@ -414,6 +414,96 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-tag { height: 28px; padding: 0 10px; border: none; cursor: pointer; font-family: inherit; }
 .gp-tag:hover { background: var(--surface-3); color: var(--text); }
 
+/* Anti-cheat notice above the About card. Warm in every theme, but still a
+   panel: the left bar and badge carry the warning, the body stays readable. */
+.gp-ac-notice {
+  position: relative;
+  margin-bottom: 14px;
+  padding: 16px 18px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 34%, var(--line));
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--warn-tint) 80%, transparent), transparent 82%),
+    var(--surface-1);
+  overflow: hidden;
+}
+.gp-ac-notice::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--warn);
+}
+.gp-ac-notice.is-on {
+  border-color: var(--line-strong);
+  background: var(--surface-1);
+}
+.gp-ac-notice.is-on::before { background: var(--text-3); }
+.gp-ac-notice-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+.gp-ac-notice-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--warn-tint);
+  color: var(--warn);
+}
+.gp-ac-notice.is-on .gp-ac-notice-badge {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.gp-ac-notice-copy { min-width: 0; }
+.gp-ac-notice-title {
+  margin: 1px 0 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.gp-ac-notice-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.gp-ac-notice-safety {
+  margin: 9px 0 0 39px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.gp-ac-notice-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 13px 0 0 39px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.gp-ac-notice-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.gp-ac-notice-choice-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.gp-ac-notice-state {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.gp-ac-notice.is-on .gp-ac-notice-state { color: var(--warn); }
+
 .gp-about-card {
   background: var(--surface-1);
   border: 1px solid var(--line);

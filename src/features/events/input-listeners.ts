@@ -1,5 +1,7 @@
+import { invoke } from "@tauri-apps/api/core";
 import { setStoreIdleTimeout, setStoreWarmLimit } from "../store/store-view";
 import { summaryOf } from "../../core/selectors";
+import { clearOverlayBlock, overlayBlockedGames, setOverlayAntiCheatOverride } from "../../core/page-visibility";
 /**
  * Non-click global listeners: wheel zoom guard, resize, keyboard shortcuts,
  * form change/input delegation and the scroll-to-top button.
@@ -756,6 +758,40 @@ document.addEventListener("change", (e) => {
     return;
   }
   const act = t.dataset.act;
+  if (act === "toggle-anti-cheat-override") {
+    const appName = S.currentModalAppName;
+    if (!appName) return;
+    const enabled = (t as HTMLInputElement).checked;
+    const sum = summaryOf(appName);
+    setOverlayAntiCheatOverride(appName, enabled, sum?.title || "");
+    // The opt-in has to mean something: a manual block left on the same game
+    // would keep the overlay off while the switch says on.
+    if (enabled) clearOverlayBlock(appName);
+    // The card answers in place: a repaint would throw away the reader's scroll
+    // position over one checkbox.
+    const notice = t.closest<HTMLElement>("#gp-ac-notice");
+    notice?.classList.toggle("is-on", enabled);
+    const state = notice?.querySelector<HTMLElement>("[data-ac-state]");
+    if (state) {
+      state.textContent = enabled ? i18nT("drawer.acNoticeOn") : i18nT("drawer.acNoticeOff");
+    }
+    // A running title must learn the choice now, not at its next status tick.
+    if (sum && S.runningGames.has(appName)) {
+      const blocked = overlayBlockedGames().some((item) => item.key === appName);
+      void invoke("overlay_set_active_game", {
+        appName,
+        title: sum.title,
+        disabled: blocked,
+        installPath: sum.installPath || "",
+        allowAntiCheat: enabled,
+      }).catch(() => {});
+    }
+    toast(
+      enabled ? i18nT("drawer.acNoticeEnabled") : i18nT("drawer.acNoticeDisabled"),
+      "ok",
+    );
+    return;
+  }
   if (act === "ubi-direct-launch-mode") {
     const path = t.dataset.path || "";
     const enabled = (t as HTMLSelectElement).value === "client";

@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "Moving the install…",
   "manage.ubiMoveConfirm": "Move this install to {path}? The game must be closed.",
   "manage.ubiMoveDone": "Moved to {path}.",
-  "common.downloadingNow": "Downloading…"
+  "common.downloadingNow": "Downloading…",
+  "drawer.acNoticeTitle": "Proteção anti-cheat",
+  "drawer.acNoticeBody": "{name} usa um serviço anti-cheat, então a sobreposição no jogo fica desativada por padrão neste título. Nenhuma janela ou superfície de entrada extra do launcher fica sobre o jogo.",
+  "drawer.acNoticeSafety": "O Efxlve nunca injeta DLL, não faz hook no processo do jogo e não lê nem grava na memória dele. Ainda assim, nenhuma sobreposição externa pode ser garantida como segura com todos os anti-cheats, então ela continua desativada até você escolher o contrário.",
+  "drawer.acNoticeToggle": "Usar a sobreposição neste jogo mesmo assim",
+  "drawer.acNoticeOff": "Desativada — recomendado",
+  "drawer.acNoticeOn": "Ativada — você aceita o risco",
+  "drawer.acNoticeEnabled": "Sobreposição ativada para este jogo",
+  "drawer.acNoticeDisabled": "Sobreposição desativada para este jogo"
 }

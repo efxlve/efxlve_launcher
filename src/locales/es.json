@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "Moviendo la instalación…",
   "manage.ubiMoveConfirm": "¿Mover esta instalación a {path}? El juego debe estar cerrado.",
   "manage.ubiMoveDone": "Movido a {path}.",
-  "common.downloadingNow": "Descargando…"
+  "common.downloadingNow": "Descargando…",
+  "drawer.acNoticeTitle": "Protección anti-cheat",
+  "drawer.acNoticeBody": "{name} usa un servicio anti-cheat, así que la superposición del juego está desactivada de forma predeterminada en este título. Ninguna ventana ni superficie de entrada adicional del launcher se coloca sobre el juego.",
+  "drawer.acNoticeSafety": "Efxlve nunca inyecta DLL, engancha el proceso del juego ni lee o escribe su memoria. Aun así, ninguna superposición externa puede garantizarse segura con todos los anti-cheat, por lo que permanece desactivada hasta que elijas lo contrario.",
+  "drawer.acNoticeToggle": "Usar la superposición en este juego de todos modos",
+  "drawer.acNoticeOff": "Desactivada — recomendado",
+  "drawer.acNoticeOn": "Activada — aceptas el riesgo",
+  "drawer.acNoticeEnabled": "Superposición activada para este juego",
+  "drawer.acNoticeDisabled": "Superposición desactivada para este juego"
 }

@@ -44,7 +44,6 @@ const TITLES: &[&str] = &[
     "valorant",
     "league of legends",
     "escape from tarkov",
-    "rust",
     "pubg",
     "playerunknown",
     "overwatch",
@@ -102,8 +101,20 @@ const FILES: &[&str] = &[
 
 /// True when this title or its install folder names an anti-cheat.
 pub(crate) fn game_has_anti_cheat(title: &str, install_path: Option<&str>) -> bool {
-    let title = title.trim().to_lowercase();
+    // Store titles carry trademark marks ("Rainbow Six® Siege"); strip them and
+    // collapse the gap so one list entry matches every spelling.
+    let title = title
+        .to_lowercase()
+        .replace(['®', '™'], " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     if !title.is_empty() && TITLES.iter().any(|needle| title.contains(needle)) {
+        return true;
+    }
+    // "Rust" is too short to match as a substring: "Trust" and "Rustler" would
+    // be caught. The game itself is an exact title.
+    if title == "rust" {
         return true;
     }
     let Some(path) = install_path.filter(|path| !path.trim().is_empty()) else {
@@ -151,6 +162,9 @@ mod tests {
         assert!(game_has_anti_cheat("Tom Clancy's Rainbow Six® Siege", None));
         assert!(game_has_anti_cheat("Grand Theft Auto V Enhanced", None));
         assert!(game_has_anti_cheat("Counter-Strike 2", None));
+        assert!(game_has_anti_cheat("Rust", None));
+        assert!(!game_has_anti_cheat("Trust", None));
+        assert!(!game_has_anti_cheat("Rustler", None));
         assert!(!game_has_anti_cheat("Rayman Origins", None));
         assert!(!game_has_anti_cheat("The Wolf Among Us Remastered", None));
     }

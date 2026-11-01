@@ -3486,5 +3486,13 @@
   "manage.ubiMoveWorking": "インストールを移動しています…",
   "manage.ubiMoveConfirm": "このインストールを {path} に移動しますか？ゲームを終了してください。",
   "manage.ubiMoveDone": "{path} に移動しました。",
-  "common.downloadingNow": "ダウンロード中…"
+  "common.downloadingNow": "ダウンロード中…",
+  "drawer.acNoticeTitle": "アンチチート保護",
+  "drawer.acNoticeBody": "{name} はアンチチートサービスを実行しているため、このゲームではゲーム内オーバーレイが既定でオフです。ランチャーの追加ウィンドウや入力レイヤーがゲーム上に重なることはありません。",
+  "drawer.acNoticeSafety": "Efxlve は DLL の注入、ゲームプロセスへのフック、メモリの読み書きを一切行いません。それでも外部オーバーレイがすべてのアンチチートで安全とは保証できないため、明示的に有効にするまでオフのままです。",
+  "drawer.acNoticeToggle": "このゲームでもオーバーレイを使う",
+  "drawer.acNoticeOff": "オフ — 推奨",
+  "drawer.acNoticeOn": "オン — リスクを承知で使用",
+  "drawer.acNoticeEnabled": "このゲームでオーバーレイを有効にしました",
+  "drawer.acNoticeDisabled": "このゲームでオーバーレイを無効にしました"
 }

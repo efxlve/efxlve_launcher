@@ -72,6 +72,8 @@ pub(crate) struct OverlayState {
     pub game_install: String,
     /// The active title names an anti-cheat; the overlay is forced off.
     pub game_anti_cheat: bool,
+    /// The user explicitly accepted the anti-cheat risk for this game.
+    pub anti_cheat_allowed: bool,
 }
 
 pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
@@ -89,6 +91,7 @@ pub(crate) static STATE: Mutex<OverlayState> = Mutex::new(OverlayState {
     game_title: String::new(),
     game_install: String::new(),
     game_anti_cheat: false,
+    anti_cheat_allowed: false,
 });
 
 #[derive(Serialize, Clone)]
@@ -108,6 +111,7 @@ pub fn overlay_get_state() -> serde_json::Value {
             "ghost": s.ghost,
             "gameDisabled": s.game_disabled,
             "antiCheat": s.game_anti_cheat,
+            "antiCheatAllowed": s.anti_cheat_allowed,
             "hotkey": hotkey_id(&s),
             "running": s.enabled && !s.game_disabled,
         }),
@@ -423,6 +427,7 @@ pub fn overlay_set_active_game(
     title: String,
     disabled: bool,
     install_path: Option<String>,
+    allow_anti_cheat: Option<bool>,
 ) {
     let mut install = install_path.unwrap_or_default();
     if install.trim().is_empty() {
@@ -436,10 +441,20 @@ pub fn overlay_set_active_game(
         &title,
         (!install.trim().is_empty()).then_some(install.as_str()),
     );
+    let allowed = allow_anti_cheat.unwrap_or_else(|| {
+        STATE
+            .lock()
+            .map(|s| s.game_app == app_name && s.anti_cheat_allowed)
+            .unwrap_or(false)
+    });
     if anti_cheat {
-        println!("[overlay] anti-cheat detected for {app_name}; overlay disabled");
+        if allowed {
+            println!("[overlay] anti-cheat detected for {app_name}; user override enabled");
+        } else {
+            println!("[overlay] anti-cheat detected for {app_name}; overlay disabled");
+        }
     }
-    let disabled = disabled || anti_cheat;
+    let disabled = disabled || (anti_cheat && !allowed);
     let (stopped, switched) = if let Ok(mut s) = STATE.lock() {
         // A ghost HUD belongs to the game it was pinned over; a new game must
         // not inherit the old one's cards.
@@ -448,6 +463,7 @@ pub fn overlay_set_active_game(
         s.game_title = title;
         s.game_install = install;
         s.game_anti_cheat = anti_cheat;
+        s.anti_cheat_allowed = anti_cheat && allowed;
         s.game_disabled = disabled;
         (disabled, switched)
     } else {
@@ -484,6 +500,7 @@ pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
             s.game_title.clear();
             s.game_install.clear();
             s.game_anti_cheat = false;
+            s.anti_cheat_allowed = false;
             s.game_disabled = false;
             true
         } else {
@@ -610,12 +627,13 @@ pub(crate) fn show(app: &AppHandle) {
     let allowed = STATE
         .lock()
         .map(|s| {
-            let anti_cheat = s.game_anti_cheat
+            let detected = s.game_anti_cheat
                 || anti_cheat::game_has_anti_cheat(
                     &s.game_title,
                     (!s.game_install.trim().is_empty()).then_some(s.game_install.as_str()),
                 );
-            s.enabled && !s.game_disabled && !anti_cheat
+            let blocked = detected && !s.anti_cheat_allowed;
+            s.enabled && !s.game_disabled && !blocked
         })
         .unwrap_or(true);
     if !allowed {
