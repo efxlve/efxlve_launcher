@@ -333,9 +333,15 @@ pub(crate) fn active_client_downloads() -> Vec<ClientDownload> {
             if !download.is_dir() {
                 continue;
             }
+            let bytes = directory_size(&download);
+            // A completed playgo install leaves an empty `uplay_download`
+            // folder behind; only a non-zero folder is an active transfer.
+            if bytes == 0 {
+                continue;
+            }
             out.push(ClientDownload {
                 name: entry.file_name().to_string_lossy().to_string(),
-                bytes: directory_size(&download),
+                bytes,
             });
         }
     }
@@ -363,7 +369,11 @@ pub(crate) fn connect_download_state(title: &str) -> Option<u64> {
             }
             let download = entry.path().join("uplay_download");
             if download.is_dir() {
-                return Some(directory_size(&download));
+                let bytes = directory_size(&download);
+                // An empty folder is the leftover of a finished playgo install.
+                if bytes > 0 {
+                    return Some(bytes);
+                }
             }
         }
     }
@@ -442,6 +452,9 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec
         if let Some(local) = games.iter_mut().find(|g| slug(&g.name) == slug(&game.name)) {
             if local.install_uri.is_empty() && game.product_id > 0 {
                 local.install_uri = format!("uplay://install/{}", game.product_id);
+            }
+            if local.store_id.is_empty() && game.product_id > 0 {
+                local.store_id = game.product_id.to_string();
             }
             if local.cover_url.is_empty() {
                 local.cover_url = game.cover.clone();

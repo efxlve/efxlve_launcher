@@ -528,6 +528,18 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
             return ubi_direct::launch_game(installed.product_id, shim).await;
         }
     }
+    if store == "ubisoft" && game.launch_uri.is_empty() && game.launch_exe.is_empty() {
+        // A client-installed row carries the product id but no launch protocol.
+        // Use it first; the Demux lookup below is only for rows without one.
+        if let Ok(id) = game.store_id.parse::<u32>() {
+            if id > 0 {
+                return launch::open_game(&format!("uplay://launch/{id}/0"), "");
+            }
+        }
+        if let Some(uri) = ubisoft_uri_for("launch", &game.name).await {
+            return launch::open_game(&uri, "");
+        }
+    }
     if !game.launch_uri.is_empty() || !game.launch_exe.is_empty() {
         return launch::open_game(&game.launch_uri, &game.launch_exe);
     }
@@ -1325,6 +1337,13 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
             _ => false,
         };
         if missing {
+            if action == "launch" {
+                if let Ok(id) = game.store_id.parse::<u32>() {
+                    if id > 0 {
+                        return launch::open_game(&format!("uplay://launch/{id}/0"), "");
+                    }
+                }
+            }
             if let Some(uri) = ubisoft_uri_for(&action, &game.name).await {
                 return launch::open_game(&uri, "");
             }
@@ -1411,8 +1430,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "reads the client install tree; needs Rainbow Six Siege downloading"]
-    fn live_r6_is_marked_as_downloading() {
+    #[ignore = "reads the client install tree; needs Rainbow Six Siege installed"]
+    fn live_r6_is_installed_and_not_downloading() {
         let game = discover("ubisoft")
             .into_iter()
             .find(|game| {
@@ -1420,33 +1439,28 @@ mod tests {
                 name.contains("rainbow six") && name.contains("siege")
             })
             .expect("Rainbow Six is in the client library");
-        println!(
-            "path={} installed={} name={:?} slug={:?}",
-            game.install_path,
-            game.installed,
-            game.name,
-            crate::companion::scan::slug(&game.name)
-        );
-        println!(
-            "roots={:?} env={:?}",
-            ubisoft::connect_games_roots(),
-            std::env::var_os("ProgramFiles(x86)")
-        );
         let public = to_public(&game, "", "", "");
-        println!("download_bytes={}", public.download_bytes);
-        assert!(public.downloading, "uplay_download was not detected");
-        assert!(public.download_bytes > 0, "downloaded bytes were not summed");
+        println!(
+            "path={} installed={} downloading={} bytes={}",
+            game.install_path, game.installed, public.downloading, public.download_bytes
+        );
+        assert!(game.installed, "Rainbow Six is not marked installed");
+        assert!(!public.downloading, "the empty playgo folder is still a download");
+        assert_eq!(public.download_bytes, 0);
+        assert!(
+            ubisoft::active_client_downloads().is_empty(),
+            "an empty download folder was reported as active"
+        );
     }
 
-    #[test]
-    #[ignore = "reads the client games folder; needs an active Ubisoft download"]
-    fn live_client_downloads_report_bytes() {
-        let rows = ubisoft::active_client_downloads();
-        for row in &rows {
-            println!("{} {}", row.name, row.bytes);
-        }
-        assert!(rows.iter().any(|row| row.name.to_lowercase().contains("rainbow six")));
-        assert!(rows.iter().any(|row| row.bytes > 0));
+    #[tokio::test]
+    #[ignore = "needs a linked Ubisoft session"]
+    async fn live_resolves_r6_launch_uri() {
+        let uri = ubisoft_uri_for("launch", "Tom Clancy's Rainbow Six Siege")
+            .await
+            .expect("a launch URI");
+        println!("{uri}");
+        assert_eq!(uri, "uplay://launch/635/0");
     }
 
     #[test]
@@ -1455,10 +1469,11 @@ mod tests {
         for game in discover("ubisoft") {
             if game.install_uri.is_empty() || game.launch_uri.is_empty() {
                 println!(
-                    "id={} name={} installed={} install_uri='{}' launch_uri='{}' path='{}'",
+                    "id={} name={} installed={} store_id='{}' install_uri='{}' launch_uri='{}' path='{}'",
                     game.id,
                     game.name,
                     game.installed,
+                    game.store_id,
                     game.install_uri,
                     game.launch_uri,
                     game.install_path
