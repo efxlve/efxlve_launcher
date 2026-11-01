@@ -532,67 +532,107 @@ where
 
         // A file can be gigabytes and thousands of slices. Sign and fetch a
         // window at a time so signed URLs stay fresh and memory stays bounded.
+        // A CDN edge can drop one body mid-window; re-sign the remaining slices
+        // and continue instead of failing a multi-gigabyte install.
         const WINDOW: usize = 200;
         for start in (start_index..file.slices.len()).step_by(WINDOW) {
-            if cancelled(product_id) {
-                return Err("@t:dl.cancelled".to_string());
-            }
             let end = (start + WINDOW).min(file.slices.len());
             let window: &[ManifestSlice] = &file.slices[start..end];
-            let paths: Vec<String> = window
-                .iter()
-                .map(|slice| slice_path(layout, &hash_for_slice(slice)))
-                .collect();
-            let urls = sign_with_reconnect(
-                demux,
-                &mut download,
-                product_id,
-                &paths,
-            )
-            .await?;
-
-            let file_name = file.name.clone();
-            let client = client.clone();
-            let method = manifest.compression_method;
-            let checks: Vec<ManifestSlice> = window.to_vec();
-            let jobs = urls
-                .into_iter()
-                .zip(checks)
-                .enumerate()
-                .map(|(offset, (url, check))| {
-                    let client = client.clone();
-                    let file_name = file_name.clone();
-                    async move {
-                        fetch_slice(
-                            &client,
-                            &url,
-                            &check,
-                            method,
-                            &file_name,
-                            start + offset,
-                        )
-                        .await
-                    }
-                });
-            let mut stream = futures::stream::iter(jobs).buffered(16);
-            while let Some(result) = stream.next().await {
+            let mut offset = 0usize;
+            let mut failures = 0u32;
+            let mut retries = 0u32;
+            while offset < window.len() {
                 if cancelled(product_id) {
                     return Err("@t:dl.cancelled".to_string());
                 }
-                let bytes = result?;
-                use tokio::io::AsyncWriteExt;
-                out.write_all(&bytes)
-                    .await
-                    .map_err(|e| format!("writing {}: {e}", tmp_path.display()))?;
-                done_bytes += bytes.len() as u64;
-                if done_bytes - last_emit >= emit_step {
-                    last_emit = done_bytes;
-                    on_progress(InstallProgress {
-                        product_id,
-                        done_bytes,
-                        total_bytes,
-                        file: file.name.clone(),
+                let remaining = &window[offset..];
+                let paths: Vec<String> = remaining
+                    .iter()
+                    .map(|slice| slice_path(layout, &hash_for_slice(slice)))
+                    .collect();
+                let urls = sign_with_reconnect(
+                    demux,
+                    &mut download,
+                    product_id,
+                    &paths,
+                )
+                .await?;
+                if urls.len() != remaining.len() {
+                    return Err(format!(
+                        "{}: signed {} of {} slices",
+                        file.name,
+                        urls.len(),
+                        remaining.len()
+                    ));
+                }
+
+                let file_name = file.name.clone();
+                let client = client.clone();
+                let method = manifest.compression_method;
+                let checks: Vec<ManifestSlice> = remaining.to_vec();
+                let slice_base = start + offset;
+                let jobs = urls
+                    .into_iter()
+                    .zip(checks)
+                    .enumerate()
+                    .map(|(index, (url, check))| {
+                        let client = client.clone();
+                        let file_name = file_name.clone();
+                        async move {
+                            fetch_slice(
+                                &client,
+                                &url,
+                                &check,
+                                method,
+                                &file_name,
+                                slice_base + index,
+                            )
+                            .await
+                        }
                     });
+                let mut stream = futures::stream::iter(jobs).buffered(16);
+                let mut retry = false;
+                while let Some(result) = stream.next().await {
+                    if cancelled(product_id) {
+                        return Err("@t:dl.cancelled".to_string());
+                    }
+                    let bytes = match result {
+                        Ok(bytes) => bytes,
+                        Err(error) => {
+                            failures += 1;
+                            retries += 1;
+                            if failures >= 4 || retries >= 12 {
+                                return Err(error);
+                            }
+                            println!(
+                                "[ubi-direct] {} slice retry {retries}: {error}",
+                                file.name
+                            );
+                            retry = true;
+                            break;
+                        }
+                    };
+                    use tokio::io::AsyncWriteExt;
+                    out.write_all(&bytes)
+                        .await
+                        .map_err(|e| format!("writing {}: {e}", tmp_path.display()))?;
+                    done_bytes += bytes.len() as u64;
+                    offset += 1;
+                    // A success means the edge is healthy again; only a run of
+                    // failures at the same point should abort.
+                    failures = 0;
+                    if done_bytes - last_emit >= emit_step {
+                        last_emit = done_bytes;
+                        on_progress(InstallProgress {
+                            product_id,
+                            done_bytes,
+                            total_bytes,
+                            file: file.name.clone(),
+                        });
+                    }
+                }
+                if retry {
+                    tokio::time::sleep(Duration::from_millis(400 * u64::from(failures))).await;
                 }
             }
         }

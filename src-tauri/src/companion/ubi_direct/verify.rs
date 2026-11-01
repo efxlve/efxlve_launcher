@@ -43,6 +43,13 @@ pub(crate) fn verify(manifest: &Manifest, install_dir: &Path) -> VerifyReport {
             }
             continue;
         }
+        // The compatibility shim intentionally replaces a loader DLL and keeps
+        // the official file as `<name>.efxlve-orig`. Hashing the active shim
+        // would report a permanent false corruption and repair would delete it.
+        if shim_replaced(&path) {
+            report.checked += 1;
+            continue;
+        }
         let Ok(meta) = std::fs::metadata(&path) else {
             report.missing += 1;
             report.bad_files.push(file.name.clone());
@@ -80,6 +87,13 @@ pub(crate) fn remove_bad(install_dir: &Path, bad_files: &[String]) -> usize {
         }
     }
     removed
+}
+
+fn shim_replaced(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+    path.with_file_name(format!("{name}.efxlve-orig")).is_file()
 }
 
 fn verify_slices(path: &Path, file: &manifest::ManifestFile) -> bool {
@@ -158,6 +172,27 @@ mod tests {
         let report = verify(&manifest, &root);
         assert_eq!(report.corrupt, 1);
         assert_eq!(report.bad_files, vec!["Data\\level.pak".to_string()]);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_shim_replaced_loader_is_not_corrupt() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-ubi-verify-shim-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let manifest = manifest("uplay_r1_loader.dll", b"official");
+        std::fs::write(root.join("uplay_r1_loader.dll"), b"shim").unwrap();
+        std::fs::write(
+            root.join("uplay_r1_loader.dll.efxlve-orig"),
+            b"official",
+        )
+        .unwrap();
+        let report = verify(&manifest, &root);
+        assert_eq!(report.checked, 1);
+        assert_eq!(report.corrupt, 0);
+        assert!(report.bad_files.is_empty());
         let _ = std::fs::remove_dir_all(&root);
     }
 

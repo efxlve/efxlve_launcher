@@ -124,6 +124,9 @@ stays on the client. Open work:
   1404 History Edition was adopted, moved to `C:\Users\Efe\Games\Ubisoft`, and
   launched directly with no Connect process. Online titles (R6, For Honor)
   still need the client if they are played again.
+- A CDN edge that drops a slice body no longer aborts a multi-gigabyte install:
+  the installer re-signs the remaining slice window and continues, and a run
+  aborts only after repeated failures at the same point.
 - Update checking compares the recorded CDN manifest id with the manifest
   ownership reports now, and Manage offers Check for updates. Applying an
   update reuses verify/repair: changed files are re-downloaded whole, not
