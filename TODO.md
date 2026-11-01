@@ -111,11 +111,13 @@ installs (3.6 GB) but crashes at startup with both tested R1 shims
 stays on the client. Open work:
 
 - R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
-  real R2 title. A manifest scan of the linked account found
-  `upc_r2_loader64.dll` only in online titles (For Honor, Rainbow Six Siege);
-  every single-player title, including AC Origins and Watch Dogs 2, ships
-  `uplay_r1_loader64.dll`. R2 direct launch therefore has no single-player
-  target in this catalogue.
+  real R2 title. A live manifest inventory found `uplay_r1_loader*` in every
+  installed single-player candidate (Far Cry 3/4, Watch Dogs 1/2, AC Unity,
+  AC China/India/Russia, Splinter Cell, The Crew 2, Rayman). Ghost Recon Future
+  Soldier is the one single-player title that also imports
+  `ubiorbitapi_r2_loader.dll`; For Honor and Rainbow Six Siege are the online
+  R2 titles. No installed R2 target exists, and the online ones are not used
+  for shim validation.
 - An existing Connect install can be adopted from Manage without moving or
   re-downloading it, moved to a library folder (the record and both registry
   families are updated), and released back with its official loaders restored.
