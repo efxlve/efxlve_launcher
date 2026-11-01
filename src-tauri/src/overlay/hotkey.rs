@@ -45,7 +45,6 @@ pub(crate) fn start(app: AppHandle) {
         let mut gone_ticks: u32 = 0;
         // Pad probe bookkeeping: see the throttle below.
         let mut tick: u32 = 0;
-        let mut anti_tick: u32 = 0;
         let mut pad_down = false;
         loop {
             let (visible, ghost, enabled, game_disabled, capturing, combo, game_hwnd, has_game) = STATE
@@ -72,12 +71,6 @@ pub(crate) fn start(app: AppHandle) {
             if !enabled || game_disabled {
                 if active {
                     hide_now(&app);
-                }
-                // A tray restore or a startup show must not bring the launcher
-                // back over an anti-cheat game. Check once a second.
-                anti_tick = anti_tick.wrapping_add(1);
-                if game_disabled && anti_tick % 4 == 0 {
-                    super::enforce_anti_cheat_window(&app);
                 }
                 gone_ticks = 0;
                 std::thread::sleep(Duration::from_millis(250));

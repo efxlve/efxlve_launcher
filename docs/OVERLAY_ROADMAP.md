@@ -76,10 +76,10 @@ anti-cheat simply see another window.
   per-game opt-out and a small curated blocklist for games that reject overlays. The
   launcher now enforces this for every store: a title whose name or install folder
   names BattlEye, EAC, Vanguard, XignCode, GameGuard, ACE or a similar service is
-  forced off, every overlay surface (panel, toast, HUD, crosshair, metrics, PiP) is
-  torn down, and the launcher window is hidden for the session. It is restored when
-  the game exits. Nothing is injected or hooked; the launcher process only watches
-  the game so it can restore the window.
+  forced off, and every overlay surface (panel, toast, HUD, crosshair, metrics, PiP)
+  is torn down. The launcher itself stays a normal, visible window; a normal window
+  is not what anti-cheat targets, and hiding it would only make the app harder to
+  use. Nothing is injected or hooked.
 - **Windows ↔ WebView2 constraint (critical):** per-pixel transparent WebView2 and
   click-through do not reliably combine — click-through via `WS_EX_TRANSPARENT` is not
   enough (WebView2 child windows take the clicks), and toggling layered attributes
