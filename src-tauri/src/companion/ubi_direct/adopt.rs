@@ -75,6 +75,7 @@ async fn adopt_online(
             exe_path.display()
         ));
     }
+    let _ = manifest::write_local_cache(install_dir, &prepared.manifest, &prepared.manifest_id);
     let record = record(
         product_id,
         prepared.name,
@@ -111,6 +112,7 @@ fn adopt_local(
         ));
     }
     let (local, manifest_id) = manifest::read_local_install(install_dir)?;
+    let _ = manifest::write_local_cache(install_dir, &local, &manifest_id);
     let exe = install::pick_executable(&local);
     if exe.is_empty() {
         return Err("the local Ubisoft manifest names no game executable".to_string());

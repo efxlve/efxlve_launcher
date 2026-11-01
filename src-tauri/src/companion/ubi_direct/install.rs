@@ -659,6 +659,9 @@ where
         total_bytes,
         file: String::new(),
     });
+    // Keep the manifest next to the files so a later signed-out run can verify
+    // or re-adopt the install without the ownership service.
+    let _ = manifest::write_local_cache(install_dir, &manifest, &manifest_id);
     let exe = pick_executable(&manifest);
     let client_launch = ubi_installs::find(product_id)
         .map(|game| game.client_launch)

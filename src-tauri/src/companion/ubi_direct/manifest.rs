@@ -8,11 +8,14 @@
 
 use std::io::Read;
 
+use serde::{Deserialize, Serialize};
+
 use crate::companion::proto::for_each_field;
 
 const MANIFEST_HEADER: usize = 356;
+const LOCAL_CACHE: &str = "efxlve_install.json";
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct ManifestSlice {
     pub size: u32,
     pub download_size: Option<u32>,
@@ -21,7 +24,7 @@ pub(crate) struct ManifestSlice {
     pub content_sha1: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct ManifestFile {
     pub name: String,
     pub size: u64,
@@ -29,7 +32,7 @@ pub(crate) struct ManifestFile {
     pub slices: Vec<ManifestSlice>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct Manifest {
     pub compression_method: i32,
     pub chunks_version: Option<u32>,
@@ -129,12 +132,50 @@ fn parse_slice(payload: &[u8]) -> ManifestSlice {
     slice
 }
 
+#[derive(Serialize, Deserialize)]
+struct LocalCache {
+    manifest_id: String,
+    manifest: Manifest,
+}
+
+/// Keep the manifest a launcher install already fetched. It lets a signed-out
+/// user re-adopt the folder and verify its files without the ownership service.
+pub(crate) fn write_local_cache(
+    install_dir: &std::path::Path,
+    manifest: &Manifest,
+    manifest_id: &str,
+) -> Result<(), String> {
+    let cache = LocalCache {
+        manifest_id: manifest_id.to_string(),
+        manifest: manifest.clone(),
+    };
+    let text = serde_json::to_string(&cache)
+        .map_err(|error| format!("serializing the local manifest: {error}"))?;
+    let path = install_dir.join(LOCAL_CACHE);
+    std::fs::write(&path, text)
+        .map_err(|error| format!("writing {}: {error}", path.display()))
+}
+
+fn read_local_cache(install_dir: &std::path::Path) -> Option<(Manifest, String)> {
+    let text = std::fs::read_to_string(install_dir.join(LOCAL_CACHE)).ok()?;
+    let cache: LocalCache = serde_json::from_str(&text).ok()?;
+    if cache.manifest.files.is_empty() {
+        return None;
+    }
+    Some((cache.manifest, cache.manifest_id))
+}
+
 /// Read the `uplay_install.manifest` an existing Connect install already has,
 /// plus the manifest id from `uplay_install.state`. This is what lets a user
 /// adopt an installed game while the Ubisoft session is offline.
 pub(crate) fn read_local_install(
     install_dir: &std::path::Path,
 ) -> Result<(Manifest, String), String> {
+    // A launcher-written cache is newer than the client's original manifest and
+    // exists even for a launcher-created install with no Connect files.
+    if let Some(cached) = read_local_cache(install_dir) {
+        return Ok(cached);
+    }
     let path = install_dir.join("uplay_install.manifest");
     let bytes = std::fs::read(&path)
         .map_err(|error| format!("reading {}: {error}", path.display()))?;
@@ -350,6 +391,27 @@ mod tests {
         assert_eq!(manifest.files.len(), 1);
         assert_eq!(manifest.files[0].name, "bin\\game.exe");
         assert_eq!(id, "ABCDEF0123456789ABCDEF0123456789ABCDEF01");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_launcher_cache_is_enough_for_an_offline_read() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-ubi-local-cache-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let one = file("bin\\game.exe", 4, &[0x11], &[slice(4, 8, &[0x22])]);
+        let mut chunk = Vec::new();
+        push_bytes(&mut chunk, 3, &one);
+        let mut bytes = Vec::new();
+        push_bytes(&mut bytes, 4, &chunk);
+        let manifest = parse_manifest(&bytes);
+        write_local_cache(&root, &manifest, "CACHE123").unwrap();
+        let (read, id) = read_local_install(&root).expect("cached manifest");
+        assert_eq!(read, manifest);
+        assert_eq!(id, "CACHE123");
         let _ = std::fs::remove_dir_all(&root);
     }
 

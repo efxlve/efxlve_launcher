@@ -122,7 +122,9 @@ stays on the client. Open work:
   re-downloading it, moved to a library folder (the record and both registry
   families are updated), and released back with its official loaders restored.
   Adoption falls back to the local `uplay_install.manifest`/`state` when the
-  session is offline, so a signed-out user can still leave the client. Anno
+  session is offline, so a signed-out user can still leave the client. A
+  successful online install or adopt also writes `efxlve_install.json` beside
+  the game; re-adopt and verify can then run entirely offline. Anno
   1404 History Edition was adopted, moved to `C:\Users\Efe\Games\Ubisoft`, and
   launched directly with no Connect process. Online titles (R6, For Honor)
   still need the client if they are played again.

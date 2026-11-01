@@ -225,10 +225,16 @@ pub(crate) async fn verify_game(
     let mut record = crate::companion::ubi_installs::find(product_id)
         .ok_or_else(|| format!("product {product_id} is not installed by the launcher"))?;
     let directory = std::path::PathBuf::from(&record.install_dir);
-    let (mut demux, _) = connect().await?;
-    let prepared = install::prepare(&mut demux, product_id).await?;
-    let latest_id = prepared.manifest_id.clone();
-    let mut report = verify::verify(&prepared.manifest, &directory);
+    let (manifest, latest_id) = match connect().await {
+        Ok((mut demux, _)) => {
+            let prepared = install::prepare(&mut demux, product_id).await?;
+            (prepared.manifest, prepared.manifest_id)
+        }
+        Err(online) => manifest::read_local_install(&directory).map_err(|local| {
+            format!("{online}; offline verify failed: {local}")
+        })?,
+    };
+    let mut report = verify::verify(&manifest, &directory);
     if repair && !report.bad_files.is_empty() {
         verify::remove_bad(&directory, &report.bad_files);
         let (mut demux, _) = connect().await?;
