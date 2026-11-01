@@ -341,6 +341,13 @@ pub(super) fn start_download_request(
         install_dir: Some(base.to_string_lossy().to_string()),
     };
 
+    // EGL may have updated this game since the library last read its manifests.
+    // Record that version before legendary picks the diff base.
+    {
+        let config = crate::legendary::skip::default_config_dir();
+        crate::legendary::cache::refresh_installed_from_egl(&config, &request.app_name);
+    }
+
     // Claim the slot before spawn so a second caller cannot start another
     // legendary install against the same .egstore.
     let generation = {

@@ -451,45 +451,37 @@ pub fn sync_egl_installed() -> Result<u32, String> {
     let installed_path = config.join("installed.json");
     let mut map: std::collections::HashMap<String, InstalledGame> =
         match std::fs::read_to_string(&installed_path) {
-            Ok(text) => serde_json::from_str(&text).unwrap_or_default(),
-            Err(_) => std::collections::HashMap::new(),
+            // A file this pass cannot parse must not be replaced by the EGL-only
+            // subset; legendary's records would disappear with it.
+            Ok(text) => serde_json::from_str(&text).map_err(|e| e.to_string())?,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Default::default(),
+            Err(e) => return Err(e.to_string()),
         };
 
-    let egl_games = cache::read_egl_installed_games();
+    let catalog = cache::read_library_snapshot(&config);
     let mut imported_count = 0;
+    let mut changed = false;
 
-    for egl in egl_games {
-        if !map.contains_key(&egl.app_name) {
-            map.insert(
-                egl.app_name.clone(),
-                InstalledGame {
-                    app_name: egl.app_name,
-                    title: egl.title,
-                    version: egl.version,
-                    install_path: egl.install_path,
-                    install_size: egl.install_size,
-                    executable: egl.executable,
-                    can_run_offline: true,
-                    egl_guid: String::new(),
-                    launch_parameters: String::new(),
-                    manifest_path: String::new(),
-                    needs_verification: false,
-                    platform: "Windows".to_string(),
-                    prereq_info: None,
-                    uninstaller: None,
-                    requires_ot: false,
-                    save_path: None,
-                    is_preloaded: false,
-                    is_dlc: false,
-                    base_urls: vec![],
-                    install_tags: vec![],
-                },
-            );
-            imported_count += 1;
+    for egl in cache::read_egl_installed_games() {
+        cache::ensure_egl_manifest(
+            &config,
+            &egl.app_name,
+            &egl.install_path,
+            &egl.version,
+            "Windows",
+        );
+        let latest = cache::catalog_build_version(&config, catalog.as_deref(), &egl.app_name);
+        match cache::merge_egl_record(&mut map, &egl, latest.as_deref()) {
+            cache::EglMerge::Added => {
+                imported_count += 1;
+                changed = true;
+            }
+            cache::EglMerge::Updated => changed = true,
+            cache::EglMerge::Unchanged => {}
         }
     }
 
-    if imported_count > 0 {
+    if changed {
         let json_str = serde_json::to_string_pretty(&map).map_err(|e| e.to_string())?;
         std::fs::write(&installed_path, json_str).map_err(|e| e.to_string())?;
     }
