@@ -143,8 +143,12 @@ stays on the client. Open work:
   classic Connect slots (`548` header) into `Saves/<uplay|product id>`, never
   overwriting a direct save; newer Connect slots (`36` header) use a different
   payload and stay with the client. Manage also offers **Import Connect saves**
-  for a direct install, so the copy can run before the first launch. The
-  Ludusavi manifest is still open for titles outside those layouts.
+  for a direct install, so the copy can run before the first launch. Cloud slot
+  metadata is readable from
+  `/v1/profiles/<id>/entities?name=upcCloudSaveUplayId_<id>` (slot sizes and
+  MD5s), but the payload is a signed S3 URL the client obtains, so direct import
+  reads the slots the client has already synced locally. The Ludusavi manifest
+  is still open for titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
   client. Do not attempt to bypass BattlEye or Denuvo. Direct adopt and launch
   both check the title and install folder before the shim is deployed and
