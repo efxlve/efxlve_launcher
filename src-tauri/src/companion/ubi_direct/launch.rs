@@ -23,6 +23,14 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
     if !install_dir.is_dir() {
         return Err(format!("install folder is missing: {}", install_dir.display()));
     }
+    // Anti-cheat and Connect-only DRM titles must never see the shim. The
+    // install folder scan covers titles whose store name is unfamiliar.
+    if crate::overlay::anti_cheat::game_has_anti_cheat(&game.name, Some(&game.install_dir)) {
+        return Err(format!(
+            "{} uses an anti-cheat service; keep it on Ubisoft Connect. The direct launcher will not bypass it.",
+            game.name
+        ));
+    }
     let exe = resolve_exe(&install_dir, &game.exe)?;
     seed_registry(product_id, &install_dir);
     seed_game_registry(&game, &install_dir);

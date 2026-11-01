@@ -197,8 +197,8 @@ export interface UbiAdoptedInstall {
 }
 
 /** Record an existing Connect install as a direct install; files stay put. */
-export const ubiDirectAdopt = (productId: number, installPath: string) =>
-  invoke<UbiAdoptedInstall>("ubi_direct_adopt", { productId, installPath });
+export const ubiDirectAdopt = (productId: number, installPath: string, title?: string) =>
+  invoke<UbiAdoptedInstall>("ubi_direct_adopt", { productId, installPath, title: title || null });
 
 /** Restore the official loaders and stop managing an adopted install. */
 export const ubiDirectRelease = (productId: number) =>

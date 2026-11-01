@@ -129,6 +129,53 @@ fn parse_slice(payload: &[u8]) -> ManifestSlice {
     slice
 }
 
+/// Read the `uplay_install.manifest` an existing Connect install already has,
+/// plus the manifest id from `uplay_install.state`. This is what lets a user
+/// adopt an installed game while the Ubisoft session is offline.
+pub(crate) fn read_local_install(
+    install_dir: &std::path::Path,
+) -> Result<(Manifest, String), String> {
+    let path = install_dir.join("uplay_install.manifest");
+    let bytes = std::fs::read(&path)
+        .map_err(|error| format!("reading {}: {error}", path.display()))?;
+    let start = bytes
+        .windows(2)
+        .position(|window| {
+            window[0] == 0x78 && matches!(window[1], 0x01 | 0x9c | 0xda)
+        })
+        .ok_or_else(|| format!("{} has no zlib manifest body", path.display()))?;
+    let mut inflated = Vec::new();
+    flate2::read::ZlibDecoder::new(&bytes[start..])
+        .read_to_end(&mut inflated)
+        .map_err(|error| format!("inflating {}: {error}", path.display()))?;
+    let manifest = parse_manifest(&inflated);
+    if manifest.files.is_empty() {
+        return Err(format!("{} names no files", path.display()));
+    }
+    let manifest_id = std::fs::read(install_dir.join("uplay_install.state"))
+        .ok()
+        .and_then(|state| first_string_field(&state, 1))
+        .unwrap_or_default();
+    Ok((manifest, manifest_id))
+}
+
+fn first_string_field(data: &[u8], target: u32) -> Option<String> {
+    let mut found = None;
+    for_each_field(
+        data,
+        |field, payload| {
+            if field == target && found.is_none() {
+                let value = String::from_utf8_lossy(payload).trim().to_string();
+                if !value.is_empty() {
+                    found = Some(value);
+                }
+            }
+        },
+        |_, _| {},
+    );
+    found
+}
+
 /// Fetch `url`, strip the CDN header, inflate the zlib body, and parse it.
 pub(crate) async fn fetch_manifest(url: &str) -> Result<Manifest, String> {
     let bytes = reqwest::get(url)
@@ -269,6 +316,58 @@ mod tests {
         assert_eq!(parsed.files[0].slices[0].download_size, Some(32));
         assert_eq!(parsed.files[0].slices[0].download_sha1, vec![0xBB]);
         assert_eq!(parsed.files[0].slices[0].content_sha1, vec![0xAA]);
+    }
+
+    #[test]
+    fn reads_an_installed_manifest_and_its_state_id() {
+        use std::io::Write;
+
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-ubi-local-manifest-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let one = file("bin\\game.exe", 4, &[0x11], &[slice(4, 8, &[0x22])]);
+        let mut chunk = Vec::new();
+        push_bytes(&mut chunk, 3, &one);
+        let mut manifest_bytes = Vec::new();
+        push_bytes(&mut manifest_bytes, 4, &chunk);
+        push_varint_field(&mut manifest_bytes, 21, 3);
+        let mut local = vec![0u8; 356];
+        {
+            let mut encoder =
+                flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+            encoder.write_all(&manifest_bytes).unwrap();
+            local.extend_from_slice(&encoder.finish().unwrap());
+        }
+        std::fs::write(root.join("uplay_install.manifest"), local).unwrap();
+        let mut state = Vec::new();
+        push_string_field(&mut state, 1, "ABCDEF0123456789ABCDEF0123456789ABCDEF01");
+        std::fs::write(root.join("uplay_install.state"), state).unwrap();
+
+        let (manifest, id) = read_local_install(&root).expect("local manifest");
+        assert_eq!(manifest.files.len(), 1);
+        assert_eq!(manifest.files[0].name, "bin\\game.exe");
+        assert_eq!(id, "ABCDEF0123456789ABCDEF0123456789ABCDEF01");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "reads the installed Rainbow Six manifest"]
+    fn live_reads_a_local_install_manifest() {
+        let path = std::path::Path::new(
+            r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games\Tom Clancy's Rainbow Six Siege",
+        );
+        let (manifest, id) = read_local_install(path).expect("local manifest");
+        println!(
+            "files={} slices={} bytes={} manifest_id={id}",
+            manifest.files.len(),
+            manifest.total_slices(),
+            manifest.total_bytes()
+        );
+        assert!(manifest.files.len() > 100);
+        assert_eq!(id.len(), 40);
     }
 
     #[test]

@@ -516,7 +516,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       ? `<div data-ubi-adopt-row hidden>${row(
           t("manage.ubiAdoptTitle"),
           t("manage.ubiAdoptDesc"),
-          `<button class="btn primary small" data-act="ubi-direct-adopt" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}">${t("manage.ubiAdopt")}</button>`,
+          `<button class="btn primary small" data-act="ubi-direct-adopt" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}">${t("manage.ubiAdopt")}</button>`,
         )}</div>`
       : "";
   const move =

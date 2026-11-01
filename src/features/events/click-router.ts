@@ -881,7 +881,7 @@ document.addEventListener("click", (e) => {
     const button = t instanceof HTMLButtonElement ? t : null;
     if (button) button.disabled = true;
     toast(i18nT("manage.ubiAdoptWorking"), "");
-    void ubiDirectAdopt(productId, path)
+    void ubiDirectAdopt(productId, path, t.dataset.title || undefined)
       .then(() => {
         document.querySelector<HTMLElement>("[data-ubi-adopt-row]")?.setAttribute("hidden", "");
         const launchRow = document.querySelector<HTMLElement>("[data-ubi-launch-row]");

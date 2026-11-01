@@ -703,8 +703,14 @@ pub async fn ubi_direct_update_check(
 pub async fn ubi_direct_adopt(
     product_id: u32,
     install_path: String,
+    title: Option<String>,
 ) -> Result<ubi_direct::AdoptedInstall, String> {
-    ubi_direct::adopt_game(product_id, std::path::Path::new(&install_path)).await
+    ubi_direct::adopt_game(
+        product_id,
+        std::path::Path::new(&install_path),
+        title.as_deref(),
+    )
+    .await
 }
 
 /// Hand an adopted install back to Ubisoft Connect and restore its loaders.

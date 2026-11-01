@@ -119,9 +119,11 @@ stays on the client. Open work:
 - An existing Connect install can be adopted from Manage without moving or
   re-downloading it, moved to a library folder (the record and both registry
   families are updated), and released back with its official loaders restored.
-  Anno 1404 History Edition was adopted, moved to
-  `C:\Users\Efe\Games\Ubisoft`, and launched directly with no Connect process.
-  Online titles (R6, For Honor) still need the client if they are played again.
+  Adoption falls back to the local `uplay_install.manifest`/`state` when the
+  session is offline, so a signed-out user can still leave the client. Anno
+  1404 History Edition was adopted, moved to `C:\Users\Efe\Games\Ubisoft`, and
+  launched directly with no Connect process. Online titles (R6, For Honor)
+  still need the client if they are played again.
 - Update checking compares the recorded CDN manifest id with the manifest
   ownership reports now, and Manage offers Check for updates. Applying an
   update reuses verify/repair: changed files are re-downloaded whole, not
@@ -140,5 +142,7 @@ stays on the client. Open work:
   payload and stay with the client. The Ludusavi manifest is still open for
   titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
-  client. Do not attempt to bypass BattlEye or Denuvo.
+  client. Do not attempt to bypass BattlEye or Denuvo. Direct adopt and launch
+  both check the title and install folder before the shim is deployed and
+  refuse the title with a clear message.
 - Orbit R2 (`ubiorbitapi_r2_loader`) titles still need the Connect client.
