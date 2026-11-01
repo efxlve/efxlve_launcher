@@ -601,6 +601,19 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
 }
 
 let profileLoadGen = 0;
+/** When the last successful Epic profile payload arrived. */
+let profileFetchedAt = 0;
+/** A profile entry older than this is refreshed on the next visit. */
+const PROFILE_FRESH_MS = 60_000;
+
+/**
+ * True when the profile has no Epic payload yet or the last one aged out. The
+ * profile page reads Epic rows, XP and trophy totals from this snapshot, so a
+ * one-shot latch left them frozen for the rest of the session.
+ */
+export function playerProfileStale(maxAgeMs = PROFILE_FRESH_MS): boolean {
+  return !S.playerProfileData || Date.now() - profileFetchedAt > maxAgeMs;
+}
 
 export async function loadPlayerProfile(forceRefresh = false, replace = false): Promise<void> {
   if (!isTauri) return;
@@ -614,6 +627,7 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
     const data = await epicGetPlayerProfile(forceRefresh);
     if (gen !== profileLoadGen) return;
     S.playerProfileData = data;
+    profileFetchedAt = Date.now();
   } catch (e) {
     if (gen !== profileLoadGen) return;
     // "Not signed in" is a normal state for the combined profile, not an error

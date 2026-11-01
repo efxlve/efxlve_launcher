@@ -124,7 +124,7 @@ import { toggleFullscreenMode } from "../gamepad/fullscreen-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -320,9 +320,11 @@ document.addEventListener("click", (e) => {
       // `loadPlayerProfile` paints the loading state itself, so the router must
       // not paint a second copy of the same page. A click during the boot check
       // can still be signed in; the backend owns the real session check and a
-      // signed-out answer is not a page error.
-      if ((S.epicAccount || S.epicPhase === "checking") && !S.playerProfileData && !S.profileLoading) {
-        void loadPlayerProfile();
+      // signed-out answer is not a page error. An aged snapshot is refreshed
+      // (bypassing the backend's disk cache) so Epic rows, trophies and XP do
+      // not stay frozen for the whole session.
+      if ((S.epicAccount || S.epicPhase === "checking") && playerProfileStale() && !S.profileLoading) {
+        void loadPlayerProfile(Boolean(S.playerProfileData));
       } else {
         render();
       }

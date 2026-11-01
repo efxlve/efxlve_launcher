@@ -209,14 +209,6 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  if (e.key === "Enter" || e.key === " ") {
-    const active = document.activeElement as HTMLElement | null;
-    if (active && (active.classList.contains("pcard") || active.classList.contains("screenshot-card") || active.dataset.act === "task-detail") && !active.closest("input, select, textarea")) {
-      e.preventDefault();
-      active.click();
-      return;
-    }
-  }
   if (e.key === "Escape") {
     // The shared choice/confirm dialogs own Escape while they are open.
     if (cancelChoice()) return;
