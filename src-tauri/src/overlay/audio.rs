@@ -155,7 +155,7 @@ mod imp {
     use image::codecs::png::PngEncoder;
     use image::{ExtendedColorType, ImageEncoder};
     use windows::core::{GUID, Interface, PCWSTR, PWSTR};
-    use windows::Win32::Foundation::{CloseHandle, PROPERTYKEY};
+    use windows::Win32::Foundation::{CloseHandle, PROPERTYKEY, S_OK};
     use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
     use windows::Win32::Media::Audio::{
         eConsole, eRender, IAudioSessionControl2, IAudioSessionManager2, IMMDeviceEnumerator,
@@ -213,7 +213,9 @@ mod imp {
                     continue;
                 };
                 let pid = control2.GetProcessId().unwrap_or(0);
-                let system = control2.IsSystemSoundsSession().is_ok();
+                // S_FALSE (a real app) is also a success HRESULT, so `is_ok()`
+                // marked every session as System Sounds and dropped every name.
+                let system = control2.IsSystemSoundsSession() == S_OK;
                 let id = take_pwstr(control2.GetSessionInstanceIdentifier().ok())
                     .filter(|id| !id.is_empty())
                     .unwrap_or_else(|| {
@@ -449,7 +451,7 @@ mod imp {
                 };
                 let instance =
                     take_pwstr(control2.GetSessionInstanceIdentifier().ok()).unwrap_or_default();
-                let system = control2.IsSystemSoundsSession().is_ok();
+                let system = control2.IsSystemSoundsSession() == S_OK;
                 if instance == id || (id == "system" && system) {
                     return control
                         .cast::<ISimpleAudioVolume>()

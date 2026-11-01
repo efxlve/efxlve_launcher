@@ -10,6 +10,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { updateBadge } from "../../core/nav";
+import { pushRecentInstall } from "../../core/recent";
 import { scheduleRender } from "../../core/render";
 import { setAmazonSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -392,6 +393,13 @@ export async function installAmazonGame(id: string): Promise<void> {
   scheduleRender();
   try {
     await nileInstall(id, S.amazonInstallDir || S.amazonDefaultDir || null);
+    const finished = S.activeDlMetrics?.id === key ? S.activeDlMetrics : null;
+    // Nile streams progress on its own event; without this record a finished
+    // Amazon install vanished instead of moving into the Completed list.
+    pushRecentInstall(
+      key,
+      finished ? (finished.downloadedBytes > 0 ? finished.downloadedBytes : finished.totalBytes) : 0,
+    );
     clearAmazonDownload(key);
     toast(t("amazon.installed"), "ok");
     invalidateAmazonUpdateCheck();

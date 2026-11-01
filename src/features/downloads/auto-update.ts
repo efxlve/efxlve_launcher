@@ -47,9 +47,17 @@ export function scheduleAutoUpdate(): void {
 /** Queues every pending update (skips while a download is already running). */
 async function runAutoUpdate(): Promise<void> {
   if (S.activeDlMetrics || S.dlQueueStatus.queue.length > 0) return;
-  const epicUpdates = [...S.availableUpdates.values()];
-  const gogUpdates = S.gogSummaries.filter((g) => g.installed && g.updateAvailable);
-  const amazonUpdates = S.amazonSummaries.filter((g) => g.installed && g.updateAvailable);
+  // A cleared update indicator is the user's "not this one": the scheduled
+  // pass must respect it, or the bell button does nothing at 03:00.
+  const epicUpdates = [...S.availableUpdates.values()].filter(
+    (u) => !S.ignoredUpdates.has(u.appName),
+  );
+  const gogUpdates = S.gogSummaries.filter(
+    (g) => g.installed && g.updateAvailable && !S.ignoredUpdates.has(g.key),
+  );
+  const amazonUpdates = S.amazonSummaries.filter(
+    (g) => g.installed && g.updateAvailable && !S.ignoredUpdates.has(g.key),
+  );
   const n = epicUpdates.length + gogUpdates.length + amazonUpdates.length;
   if (n === 0) return;
   pushNotification({ kind: "info", title: t("sched.starting", { n }) });
@@ -62,7 +70,9 @@ async function runAutoUpdate(): Promise<void> {
   }
   for (const g of gogUpdates) {
     try {
-      await gogInstallGame(`gog::${g.id}`);
+      // Reuse the recorded folder: without it gogdl falls back to the default
+      // root and overwrites the install record with a second copy.
+      await gogInstallGame(`gog::${g.id}`, g.installPath ?? undefined);
     } catch {
       /* same: another active download is expected */
     }

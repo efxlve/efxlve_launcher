@@ -160,6 +160,21 @@ fn forget_tab(id: u32) {
     }
 }
 
+/// Drops a tab whose page never came up: the strip and the active id must not
+/// keep pointing at a webview that does not exist.
+fn drop_tab(id: u32) {
+    forget_tab(id);
+    let fallback = if let Ok(mut list) = TABS.lock() {
+        list.retain(|(tab, _)| *tab != id);
+        list.last().map(|(tab, _)| *tab).unwrap_or(0)
+    } else {
+        0
+    };
+    if active_id() == id {
+        set_active(fallback);
+    }
+}
+
 fn page_label(id: u32) -> String {
     format!("{PAGE_PREFIX}{id}")
 }
@@ -367,18 +382,15 @@ pub async fn overlay_browser_new_tab(
     match tokio::time::timeout(std::time::Duration::from_secs(20), handle).await {
         Ok(Ok(Ok(_))) => {}
         Ok(Ok(Err(e))) => {
-            forget_tab(id);
-            if let Ok(mut list) = TABS.lock() {
-                list.retain(|(tab, _)| *tab != id);
-            }
+            drop_tab(id);
             return Err(e.to_string());
         }
         Ok(Err(_)) => {
-            forget_tab(id);
+            drop_tab(id);
             return Err("@t:store.viewCreateFailed".into());
         }
         Err(_) => {
-            forget_tab(id);
+            drop_tab(id);
             return Err("@t:store.viewTimeout".into());
         }
     }
@@ -772,6 +784,18 @@ pub fn is_pip() -> bool {
 /// Hides the browser window for real (close button, game exit, teardown).
 pub fn hide_window(app: &AppHandle) {
     let was_pip = PIP.swap(false, Ordering::Relaxed);
+    // A PiP page may have gone click-through. The window outlives the PiP
+    // session, so the input flags and the hit-test subclass must come back now;
+    // otherwise the next open is a window no click can reach.
+    #[cfg(windows)]
+    if let Some(window) = app.get_window(WINDOW_LABEL) {
+        if let Ok(raw) = window.hwnd() {
+            unsafe {
+                set_browser_click_through(raw.0 as isize, false);
+            }
+        }
+    }
+    PIP_CLICK_THROUGH.store(false, Ordering::Relaxed);
     let restore = PIP_RESTORE.lock().ok().and_then(|mut slot| slot.take());
     let _ = app.emit_to(
         WINDOW_LABEL,
@@ -820,6 +844,12 @@ pub fn hide_window(app: &AppHandle) {
 /// would leave the tab webviews alive in the task manager.
 pub fn close_window(app: &AppHandle) {
     hide_window(app);
+    // The tab webviews die with the host. Keeping their ids would make the next
+    // open list dead tabs and hit the MAX_TABS limit with nothing to show.
+    if let Ok(mut list) = TABS.lock() {
+        list.clear();
+    }
+    set_active(0);
     if let Ok(mut list) = SUSPENDED_TABS.lock() {
         list.clear();
     }
@@ -918,9 +948,10 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
                 window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
         }
 
-        if let Some(target) = url.as_deref().filter(|u| !u.trim().is_empty()) {
-            let _ = overlay_browser_navigate(app.clone(), target.to_string());
-        }
+        let target = url
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .map(str::to_string);
 
         let scale = window.scale_factor().unwrap_or(1.0).max(0.1);
         let (width, height) = window
@@ -929,8 +960,13 @@ pub async fn overlay_browser_open(app: AppHandle, url: Option<String>) -> Result
             .unwrap_or((860.0, 580.0));
 
         if tab_list().is_empty() {
-            overlay_browser_new_tab(app.clone(), None, 0.0, 110.0, width, height - 110.0).await?;
+            // The first tab must carry the requested URL: navigating before it
+            // exists is a no-op and used to land on the default search page.
+            overlay_browser_new_tab(app.clone(), target, 0.0, 110.0, width, height - 110.0).await?;
         } else {
+            if let Some(target) = target {
+                let _ = overlay_browser_navigate(app.clone(), target);
+            }
             place_tabs(&app, 0.0, 110.0, width, (height - 110.0).max(100.0));
         }
 

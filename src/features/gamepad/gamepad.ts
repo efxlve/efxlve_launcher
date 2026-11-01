@@ -302,7 +302,11 @@ function quickFavoriteAction(): void {
 }
 
 function switchFilterTab(forward: boolean): void {
-  const tabs = Array.from(document.querySelectorAll<HTMLElement>(".lib-tab")).filter((t) => t.offsetParent !== null);
+  // The library's tabs are `.lib-filter` buttons (data-act="quick-tab"); the
+  // old `.lib-tab` selector matched nothing, so LB/RB did nothing.
+  const tabs = Array.from(
+    document.querySelectorAll<HTMLElement>(".lib-filters .lib-filter[data-act='quick-tab']"),
+  ).filter((t) => t.offsetParent !== null);
   if (tabs.length === 0) return;
 
   const activeIdx = tabs.findIndex((t) => t.classList.contains("active"));

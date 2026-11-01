@@ -6,18 +6,18 @@
  */
 
 import { isTauri } from "../../core/constants";
-import { applyAchievementEditsToSummaries } from "../../core/achievement-edits";
 import { refreshUpdates } from "../../core/epic-actions";
+import { loadEpicAchSummaries } from "../../core/achievement-summaries";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { pruneRecent } from "../../core/recent";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { currentLanguage, localizeMessage, t } from "../../i18n";import {
+import { localizeMessage, t } from "../../i18n";
+import {
   epicCachedLibrary,
   epicEnsureBinary,
-  epicGetAchievementsSummary,
   epicGetSteamGridKey,
   epicImportEgl,
   epicImportEglCollections,
@@ -33,13 +33,10 @@ import { currentLanguage, localizeMessage, t } from "../../i18n";import {
   summarize,
   type CachedLibrary,
 } from "../../epic";
-import { gogGetAchievementsSummary } from "../../gog";
-import { companionAchievementsSummary } from "../../companion";
 import { loadEpicCollections } from "../collections/collections-view";
 import { updateAuthProgressUi } from "../accounts/accounts-view";
 import { loadPlayerProfile } from "../store/store-view";
 import { loadSharedLibrary } from "../library/shared-library";
-import { steamGetAchievementsSummary } from "../../steam";
 import { perfMark } from "../../core/perf";
 import { blockedOffline, offlineReady } from "../../core/offline";
 
@@ -115,56 +112,6 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     S.epicError = localizeMessage(String(e));
     render();
   }
-}
-
-let achSummariesInFlight: Promise<void> | null = null;
-let achSummariesAt = 0;
-/** A boot/sync pair used to run the same four disk passes twice in a row. */
-const ACH_SUMMARIES_TTL_MS = 30_000;
-
-/**
- * One bulk achievement pass at a time, reused for a short window.
- *
- * Boot, the first library sync and a manual refresh all ask for the summaries,
- * and each call used to start four backend passes over the same disk files.
- * Concurrent callers share the pass; a caller inside the TTL gets the answer
- * from the previous one. `force` is for an account switch or a new store link,
- * where the old account's numbers must not be reused.
- */
-export function loadEpicAchSummaries(force = false): Promise<void> {
-  if (!isTauri) return Promise.resolve();
-  if (achSummariesInFlight) {
-    if (!force) return achSummariesInFlight;
-    return achSummariesInFlight.finally(() => loadEpicAchSummaries(true));
-  }
-  if (!force && achSummariesAt > 0 && Date.now() - achSummariesAt < ACH_SUMMARIES_TTL_MS) {
-    return Promise.resolve();
-  }
-  achSummariesInFlight = (async () => {
-    try {
-      const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
-        epicGetAchievementsSummary().catch(() => ({})),
-        gogGetAchievementsSummary().catch(() => ({})),
-        // Steam summaries come from the disk cache: no key or network needed.
-        steamGetAchievementsSummary().catch(() => ({})),
-        // Ubisoft also keeps its sets on disk, so the bulk pass is offline.
-        // Xbox and EA answer per game over the network and stay out of this map.
-        companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
-      ]);
-      S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
-      // Local edits survive a restart as a count delta, so covers and the
-      // profile agree with the game page before it is opened again.
-      applyAchievementEditsToSummaries(S.epicAchSummaries);
-      achSummariesAt = Date.now();
-      S.libraryDataRev++;
-      if (S.view === "library" || S.view === "profile") scheduleRender();
-    } catch (e) {
-      console.warn("Achievement summaries could not be fetched:", e);
-    } finally {
-      achSummariesInFlight = null;
-    }
-  })();
-  return achSummariesInFlight;
 }
 
 /** Bumps when a newer library sync should discard an in-flight one. */

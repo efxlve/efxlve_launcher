@@ -1300,8 +1300,13 @@ export function updateLibraryFilterInPlace(): boolean {
     const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
     colDropdownBtn.classList.toggle("active", isColActive);
     const activeCol = isColActive ? S.epicCollections.find((c) => c.id === S.activeCollectionId) : null;
+    // Smart collections are not in `epicCollections`: the in-place path used
+    // to label them "All collections" while the grid was filtered.
+    const activeSmart = isColActive && isSmartCollection(S.activeCollectionId)
+      ? smartCollection(S.activeCollectionId)
+      : undefined;
     const labelSpan = colDropdownBtn.querySelector("span");
-    if (labelSpan) labelSpan.textContent = activeCol ? activeCol.name : t("col.allCollections");
+    if (labelSpan) labelSpan.textContent = activeCol ? activeCol.name : activeSmart ? activeSmart.label() : t("col.allCollections");
     colDropdownBtn.dataset.colId = activeCol?.id ?? "";
   }
 

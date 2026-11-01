@@ -118,7 +118,7 @@ function siteMeta(url: string): { title: string; iconName: Parameters<typeof ico
   if (host.includes("google.com")) {
     return { title: "Google", iconName: "search" };
   }
-  if (host.includes("twitter.com") || host === "x.com" || host.includes("x.com")) {
+  if (host.includes("twitter.com") || host === "x.com" || host.endsWith(".x.com")) {
     return { title: "Twitter", iconName: "twitter" };
   }
   if (host.includes("reddit.com")) {

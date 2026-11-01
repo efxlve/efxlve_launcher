@@ -70,6 +70,7 @@ import {
   epicOpenFolderPath,
   clipFolderPath,
   clipSetOptions,
+  clipStop,
   epicOpenScreenshotDir,
   epicPortrait,
   epicSelectFolderDialog,
@@ -2641,8 +2642,10 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "toggle-clip-recording": {
       const enabled = (_el as HTMLInputElement).checked;
       localStorage.setItem(CLIP_ENABLED_KEY, String(enabled));
-      // The recorder reads its settings from Rust, so they travel with the toggle.
-      if (enabled) pushClipSettings();
+      // The recorder reads its settings from Rust, so they travel with the
+      // toggle; off sends a zero hotkey and disarms the recorder poll.
+      pushClipSettings();
+      if (!enabled) void clipStop().catch(() => undefined);
       render();
       return true;
     }

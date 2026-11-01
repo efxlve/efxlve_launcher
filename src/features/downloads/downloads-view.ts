@@ -47,16 +47,29 @@ function patchUbiClientDownloads(rows: { name: string; bytes: number }[]): void 
     }
   }
   if (changed && S.view === "downloads") scheduleRender();
-  if (rows.length === 0) stopUbiClientPoll();
 }
 
+/**
+ * One probe of the Ubisoft client's download folders. The page calls this on
+ * entry and a short interval keeps it live while something is transferring.
+ * Rendering must never start it: `ubi_client_downloads` sizes every folder.
+ */
 function pollUbiClientDownloads(): void {
-  void ubiClientDownloads().then(patchUbiClientDownloads).catch(() => {});
+  if (S.view !== "downloads") {
+    stopUbiClientPoll();
+    return;
+  }
+  void ubiClientDownloads()
+    .then((rows) => {
+      patchUbiClientDownloads(rows);
+      if (rows.length > 0) startUbiClientPoll();
+      else stopUbiClientPoll();
+    })
+    .catch(() => undefined);
 }
 
 function startUbiClientPoll(): void {
   if (ubiClientPoll !== null) return;
-  pollUbiClientDownloads();
   ubiClientPoll = window.setInterval(pollUbiClientDownloads, 3000);
 }
 
@@ -64,6 +77,11 @@ function stopUbiClientPoll(): void {
   if (ubiClientPoll === null) return;
   window.clearInterval(ubiClientPoll);
   ubiClientPoll = null;
+}
+
+/** Probes the client once; called when the Downloads view is entered. */
+export function probeUbisoftClientDownloads(): void {
+  pollUbiClientDownloads();
 }
 export function pushSpeedData(netBytes: number, diskBytes: number): void {
   S.speedHistory.shift();
@@ -269,8 +287,14 @@ function gameRow(s: EpicSummary | undefined, id: string, meta: string, actions: 
 /** The currently downloading item: resolves live metrics, falling back to the progress map. */
 function activeDownload(): DlMetrics | null {
   if (S.activeDlMetrics && !S.activeDlMetrics.done) return S.activeDlMetrics;
-  for (const [id, d] of S.downloads) {
-    if (!d.done) {
+  // The backend names the Epic job it is running. Using it avoids promoting a
+  // queued entry in `S.downloads` to the hero card before its turn.
+  const candidates = S.dlQueueStatus.active
+    ? [S.dlQueueStatus.active]
+    : [...S.downloads.keys()];
+  for (const id of candidates) {
+    const d = S.downloads.get(id);
+    if (d && !d.done) {
       return { id, title: d.title, progress: d.progress, done: false, speed: "—", speedBytes: 0, diskSpeed: "—", diskBytes: 0, eta: t("common.calculating"), downloadedBytes: 0, totalBytes: 0 };
     }
   }
@@ -320,7 +344,7 @@ function renderActiveCard(dl: DlMetrics): string {
           ${metric(t("dl.peak"), "dl-stat-peak", fmtSpeed(S.peakNetSpeedBytes, S.speedInBits))}
           ${metric(t("dl.disk"), "dl-stat-disk", fmtSpeed(dl.diskBytes, S.speedInBits))}
           ${metric(t("dl.eta"), "dl-stat-eta", localizeMessage(dl.eta) || t("dl.calculating"))}
-          ${metric(t("dl.totalSize"), "dl-stat-bytes", `${fmtBytes(dl.downloadedBytes)} / ${fmtBytes(dl.totalBytes)}`)}
+          ${metric(t("dl.totalSize"), "dl-stat-bytes", dl.totalBytes > 0 ? `${fmtBytes(dl.downloadedBytes)} / ${fmtBytes(dl.totalBytes)}` : "—")}
         </div>
         <div class="dl-chart">
           <div class="dl-chart-legend">
@@ -434,7 +458,7 @@ export function toggleIgnoreUpdate(appName: string): boolean {
   }
   localStorage.setItem(IGNORED_UPDATES_KEY, JSON.stringify([...S.ignoredUpdates]));
   updateBadge();
-  const title = S.epicSummariesMap.get(appName)?.title || appName;
+  const title = summaryOf(appName)?.title || appName;
   if (!isIgnored) {
     toast(t("dl.indicatorIgnoredToast", { title }));
   } else {
@@ -447,15 +471,28 @@ export function renderDownloads(): string {
   const active = activeDownload();
   const queueApps = S.dlQueueStatus.queue.filter((id) => !active || id !== active.id);
 
-  // GOG games with a newer public build join the same updates list.
-  const gogUpdates = S.gogSummaries.filter((g) => g.installed && g.updateAvailable).map(gogToEpicSummary);
+  // GOG games with a newer public build join the same updates list. A title
+  // that is already transferring (or queued) is on the active card, so it must
+  // not be offered again below it.
+  const busyIds = new Set<string>([...(active ? [active.id] : []), ...S.dlQueueStatus.queue]);
+  const gogUpdates = S.gogSummaries
+    .filter((g) => g.installed && g.updateAvailable && !g.downloading)
+    .map(gogToEpicSummary);
   const steamUpdates = S.steamSummaries
     .filter((g) => g.installed && g.updateAvailable && !g.downloading)
     .map((g) => libraryItemToSummary(g));
   const updates = [
-    ...S.epicSummaries.filter((s) => s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))),
-    ...gogUpdates,
-    ...S.amazonSummaries.filter((g) => g.installed && g.updateAvailable).map(libraryItemToSummary),
+    ...S.epicSummaries.filter(
+      (s) =>
+        s.installed &&
+        (s.updateAvailable || S.availableUpdates.has(s.appName)) &&
+        !busyIds.has(s.appName),
+    ),
+    ...gogUpdates.filter((s) => !busyIds.has(s.appName)),
+    ...S.amazonSummaries
+      .filter((g) => g.installed && g.updateAvailable && !g.downloading)
+      .map(libraryItemToSummary)
+      .filter((s) => !busyIds.has(s.appName)),
     ...steamUpdates,
   ];
   const manageBtn = (id: string): string => `<button class="icon-btn" data-act="manage-game" data-id="${id}" title="${t("common.manage")}">${icon("settings", 16)}</button>`;
@@ -544,19 +581,11 @@ export function renderDownloads(): string {
 
   // Ubisoft Connect downloads happen inside the client, not our CDN queue.
   // The client does not expose a total, so show the bytes it has written and
-  // send the user to the client for the exact percentage.
+  // send the user to the client for the exact percentage. The probe runs when
+  // the view is entered (`probeUbisoftClientDownloads`), never from a render.
   const ubiClientDownloading = S.companionSummaries.filter(
     (game) => game.source === "ubisoft" && game.downloading,
   );
-  // The client writes progress on disk; refresh the card while a download is
-  // active. With none, probe once so a download started while the app was open
-  // still appears.
-  if (ubiClientDownloading.length > 0) {
-    startUbiClientPoll();
-  } else {
-    stopUbiClientPoll();
-    pollUbiClientDownloads();
-  }
   const ubiClientRows = ubiClientDownloading
     .map((game) => {
       // Connect does not persist its compressed progress locally; the number in
@@ -592,7 +621,25 @@ export function renderDownloads(): string {
     })
     .join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0
+  // Xbox installs run inside the Microsoft Store. The app only watches for the
+  // package to register, so the Downloads page lists the hand-off with a way to
+  // stop watching instead of pretending it owns the transfer.
+  const xboxWaiting = [...S.xboxWaiting]
+    .map((family) => ({ family, summary: summaryOf(`xbox::${family}`) }))
+    .filter((entry): entry is { family: string; summary: EpicSummary } => Boolean(entry.summary));
+  const xboxRows = xboxWaiting
+    .map(({ family, summary }) => {
+      return gameRow(
+        summary,
+        `xbox::${family}`,
+        `<span class="is-wait">${esc(t("xbox.installWaiting"))}</span>`,
+        `<button class="btn ghost small" data-act="companion-open" data-id="xbox">${icon("external", 13)} ${t("accounts.openClient")}</button>
+         <button class="icon-btn danger" data-act="xbox-install-cancel" data-id="${esc(family)}" title="${esc(t("xbox.installWaitingHint"))}">${icon("x", 16)}</button>${manageBtn(`xbox::${family}`)}`,
+      );
+    })
+    .join("");
+
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0 && xboxWaiting.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
@@ -609,6 +656,7 @@ export function renderDownloads(): string {
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length - (steamCardGame ? 1 : 0), steamRows) : ""}
       ${ubiRows ? section(t("external.ubisoftTitle"), ubiJobs.length, ubiRows) : ""}
       ${ubiClientRows ? section(t("external.ubisoftTitle"), ubiClientDownloading.length, ubiClientRows) : ""}
+      ${xboxRows ? section(t("external.xboxTitle"), xboxWaiting.length, xboxRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
       ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows, `<button class="btn ghost small" data-act="dl-completed-clear">${icon("trash", 13)} ${t("downloads.completedClear")}</button>`) : ""}
     </div>`;

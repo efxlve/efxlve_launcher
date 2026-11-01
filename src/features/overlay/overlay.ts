@@ -598,7 +598,9 @@ function loadOpenWidgets(): Set<TabId> {
     const raw = localStorage.getItem("efxlve-overlay-widgets");
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      // An empty array is a real state (the user closed every widget): the
+      // defaults are only for a profile that never saved a layout.
+      if (Array.isArray(parsed)) {
         // Do not resurrect a widget whose page was disabled in the launcher:
         // it would float without a topbar toggle. Settings and the DM companion
         // are not regular pages, so keep them out of this filter.
@@ -606,12 +608,11 @@ function loadOpenWidgets(): Set<TabId> {
         const allowed = (id: TabId): boolean =>
           id === "settings" ||
           (id === "chat" ? pages.has("discord") : pages.has(id));
-        const next = new Set(
+        return new Set(
           parsed.filter(
             (id) => TABS.some((t) => t.id === id) && allowed(id as TabId),
           ) as TabId[],
         );
-        return next.size > 0 ? next : new Set(defaultWidgets());
       }
     }
   } catch {
@@ -1291,7 +1292,7 @@ function paintBattery(): void {
     <span class="ov-battery-icon">${ic}</span>
     ${showPct ? `<span class="ov-battery-level">${cachedBattery.level}%</span>` : ""}
   `;
-  el.title = `${t("common.battery")}: ${cachedBattery.level}%${cachedBattery.charging ? " (Şarj oluyor)" : ""}`;
+  el.title = `${t("common.battery")}: ${cachedBattery.level}%`;
 }
 
 /* ---------- Recent Games (Top Bar Left) ---------- */
@@ -1308,6 +1309,12 @@ function inferStoreLabel(appName: string): string {
   if (appName.startsWith("steam::")) return "Steam";
   if (appName.startsWith("gog::")) return "GOG";
   if (appName.startsWith("amazon::")) return "Amazon";
+  if (appName.startsWith("ubisoft::")) return "Ubisoft";
+  if (appName.startsWith("ea::")) return "EA";
+  if (appName.startsWith("xbox::")) return "Xbox";
+  if (appName.startsWith("battlenet::")) return "Battle.net";
+  if (appName.startsWith("riot::")) return "Riot";
+  if (appName.startsWith("custom::")) return t("customGames.storeLabel");
   return "Epic Games";
 }
 
@@ -1392,7 +1399,7 @@ function recentGamesPillHtml(): string {
           ${icon("sparkles", 13)}
           <span>${esc(t("profile.recentGamesTitle"))}</span>
         </div>
-        <span class="ov-quick-header-badge">${list.length} Oyun</span>
+        <span class="ov-quick-header-badge">${list.length} ${esc(t("profile.games"))}</span>
       </div>
       <div class="ov-quick-cards">
         ${list.length > 0 ? list.map((g) => {
@@ -1419,7 +1426,7 @@ function recentGamesPillHtml(): string {
             </button>
           `;
         }).join("") : `
-          <div class="ov-quick-empty">Son oynanan oyun yok</div>
+          <div class="ov-quick-empty">${esc(t("profile.noRecentGames"))}</div>
         `}
       </div>
     </div>`;
@@ -1448,11 +1455,21 @@ async function launchRecentGame(appName: string): Promise<void> {
     void invoke("overlay_hide");
     return;
   }
+  const separator = appName.indexOf("::");
+  const store = separator >= 0 ? appName.slice(0, separator) : "";
+  const id = separator >= 0 ? appName.slice(separator + 2) : appName;
   try {
-    if (appName.startsWith("steam::")) {
-      const appId = appName.slice(7);
-      await openUrl(`steam://run/${appId}`).catch(() => undefined);
-    } else if (appName.startsWith("gog::")) {
+    if (store === "steam") {
+      // The opener plugin only allows mailto/tel/http(s); steam:// dies there
+      // and the old code still closed the panel, so the click looked dead.
+      await invoke("steam_game_action", { appId: id, action: "launch" });
+    } else if (store === "amazon") {
+      await invoke("nile_launch", { id });
+    } else if (store === "custom") {
+      await invoke("custom_games_launch", { id });
+    } else if (store === "ea" || store === "ubisoft" || store === "xbox" || store === "battlenet" || store === "riot") {
+      await invoke("companion_launch", { store, id });
+    } else if (store === "gog") {
       await invoke("gog_launch_game", { gameId: appName });
     } else {
       await invoke("epic_launch_game", { appName });
@@ -1502,7 +1519,7 @@ function shellHtml(): string {
           ${showBatteryPercent() && cachedBattery ? `<span class="ov-battery-level">${cachedBattery.level}%</span>` : ""}
         </div>
 
-        <div class="ov-topbar-gamepad" id="ov-topbar-gamepad" style="${padConnected ? "" : "display:none"}" title="Oyun Kumandası">
+        <div class="ov-topbar-gamepad" id="ov-topbar-gamepad" style="${padConnected ? "" : "display:none"}" title="${esc(t("settings.secController"))}">
           ${icon("gamepad-2", 15)}
         </div>
 
@@ -1864,7 +1881,7 @@ function renderHome(): void {
           <button class="ov-chip-btn" data-ov="browser-open" data-url="https://steamcommunity.com">${icon("users", 12)} <span>Steam</span></button>
         </div>
         <button class="btn ghost small full" data-ov="browser-open">
-          ${icon("external", 13)} <span>${esc(t("overlay.tabBrowser"))} Penceresini Aç</span>
+          ${icon("external", 13)} <span>${esc(t("overlay.tabBrowser"))}</span>
         </button>
       </div>
 
@@ -1987,7 +2004,7 @@ function renderHomeLauncher(el: HTMLElement): void {
           <button class="ov-chip-btn" data-ov="browser-open" data-url="https://discord.com/app">${icon("discord", 12)} <span>Discord</span></button>
         </div>
         <button class="btn ghost small full" data-ov="browser-open">
-          ${icon("external", 13)} <span>${esc(t("overlay.tabBrowser"))} Penceresini Aç</span>
+          ${icon("external", 13)} <span>${esc(t("overlay.tabBrowser"))}</span>
         </button>
       </div>
     </div>`;
@@ -3036,38 +3053,46 @@ function getVisibleScreenshots(): ScreenshotItem[] {
   );
 }
 
+let shotsLoadGeneration = 0;
+
 async function loadScreenshots(force = false): Promise<void> {
   const el = viewEl("shots");
   if (!el) return;
   if (cachedScreenshots.length === 0 || force) {
+    const generation = ++shotsLoadGeneration;
     el.innerHTML = `<div class="ov-empty">${esc(t("common.calculating"))}</div>`;
+    let loaded: ScreenshotItem[] = [];
     if (launcherMode) {
       try {
-        cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_all_screenshots");
+        loaded = await invoke<ScreenshotItem[]>("epic_get_all_screenshots");
       } catch {
-        cachedScreenshots = [];
+        loaded = [];
       }
     } else {
       const { store, id } = splitKey(context.appName);
       if (store === "steam") {
         try {
-          cachedScreenshots = await invoke<ScreenshotItem[]>("steam_get_game_screenshots", { appId: id });
+          loaded = await invoke<ScreenshotItem[]>("steam_get_game_screenshots", { appId: id });
         } catch {
-          cachedScreenshots = [];
+          loaded = [];
         }
       } else if (store === "game") {
-        cachedScreenshots = [];
+        loaded = [];
       } else {
         try {
-          cachedScreenshots = await invoke<ScreenshotItem[]>("epic_get_game_screenshots", {
+          loaded = await invoke<ScreenshotItem[]>("epic_get_game_screenshots", {
             appName: context.appName,
             title: context.title,
           });
         } catch {
-          cachedScreenshots = [];
+          loaded = [];
         }
       }
     }
+    // The game can change while the disk scan runs; a stale list must not land
+    // under the new title.
+    if (generation !== shotsLoadGeneration) return;
+    cachedScreenshots = loaded;
   }
 
   const isTr = (localStorage.getItem("efxlve_lang") || "").startsWith("tr");
@@ -3439,6 +3464,7 @@ function unifiedPlayerHtml(m: OverlayMediaModel): string {
         <div class="ov-sp-info">
           <div class="ov-sp-meta-top">
             <div class="ov-sp-title" id="ov-sp-title" title="${esc(m.title)}">${esc(m.title)}</div>
+            <div class="ov-media-source" id="ov-sp-source-badge">${esc(m.source)}</div>
           </div>
           <div class="ov-sp-artist" id="ov-sp-artist" title="${esc(m.artist)}">${esc(m.artist)}</div>
           <div class="ov-sp-album" id="ov-sp-album"${m.album ? "" : ' style="display:none"'}>${esc(m.album)}</div>
@@ -3587,7 +3613,7 @@ function renderPlaylistList(): void {
   }
   if (lists.length === 0) {
     if (spotifySearchQuery.trim()) {
-      host.innerHTML = emptyBlockHtml("search", "Sonuç Bulunamadı", "Farklı bir arama terimi deneyin.");
+      host.innerHTML = emptyBlockHtml("search", t("common.noResults"), t("lib.noResultsHint"));
     } else {
       host.innerHTML = emptyBlockHtml("list", t("overlay.noPlaylists"), "", retryButtonHtml());
     }
@@ -3652,7 +3678,7 @@ function renderTrackList(): void {
 
   if (tracks.length === 0) {
     if (spotifySearchQuery.trim()) {
-      host.innerHTML = trackHeaderHtml + emptyBlockHtml("search", "Sonuç Bulunamadı", "Arama terimini değiştirin.");
+      host.innerHTML = trackHeaderHtml + emptyBlockHtml("search", t("common.noResults"), t("lib.noResultsHint"));
     } else {
       host.innerHTML = trackHeaderHtml + emptyBlockHtml("list", t("overlay.noTracks"), "", retryButtonHtml());
     }
@@ -3721,9 +3747,13 @@ async function selectPlaylist(uri: string): Promise<void> {
   tracksError = "";
   renderTrackList();
   try {
-    playlistTracks = await spotifyPlaybackPlaylistTracks(uri);
+    const tracks = await spotifyPlaybackPlaylistTracks(uri);
+    // A slower earlier request must not replace the playlist the user is on.
+    if (tracksFor !== uri) return;
+    playlistTracks = tracks;
     tracksState = "ready";
   } catch (error) {
+    if (tracksFor !== uri) return;
     tracksError = String(error).replace(/^Error: /, "");
     tracksState = "error";
   }
@@ -3778,13 +3808,18 @@ async function openDiscordInLauncher(url: string): Promise<void> {
 /** Forces a library refresh (the Rust caches are bypassed). */
 async function refreshLibrary(): Promise<void> {
   if (musicViewMode === "tracks" && selectedPlaylist) {
+    const requested = selectedPlaylist;
+    tracksFor = requested;
     tracksState = "loading";
     tracksError = "";
     renderTrackList();
     try {
-      playlistTracks = await spotifyPlaybackPlaylistTracks(selectedPlaylist);
+      const tracks = await spotifyPlaybackPlaylistTracks(requested);
+      if (selectedPlaylist !== requested || tracksFor !== requested) return;
+      playlistTracks = tracks;
       tracksState = "ready";
     } catch (error) {
+      if (selectedPlaylist !== requested || tracksFor !== requested) return;
       tracksError = String(error).replace(/^Error: /, "");
       tracksState = "error";
     }
@@ -3845,10 +3880,7 @@ function patchMediaSurfaces(): void {
       albumEl.style.display = m.album ? "" : "none";
     }
     const badge = document.getElementById("ov-sp-source-badge");
-    if (badge) {
-      badge.innerHTML = `${m.isSpotify ? icon("spotify", 12) : icon("volume-2", 12)} <span>${esc(m.source)}</span>`;
-      badge.className = "ov-badge-pill";
-    }
+    if (badge) badge.textContent = m.source;
     const toggle = document.getElementById("ov-sp-toggle");
     if (toggle) toggle.innerHTML = icon(m.isPlaying ? "pause" : "play", 18);
 
@@ -3960,7 +3992,9 @@ function loadAudioPresets(): AudioPreset[] {
 }
 
 function saveAudioPresets(presets: AudioPreset[]): void {
-  localStorage.setItem(AUDIO_PRESETS_KEY, JSON.stringify(presets.slice(0, 12)));
+  // Keep the newest: a preset the UI just reported as saved must not be the one
+  // silently dropped at the 12-entry cap.
+  localStorage.setItem(AUDIO_PRESETS_KEY, JSON.stringify(presets.slice(-12)));
 }
 
 function captureAudioPreset(): AudioPreset | null {
@@ -4449,6 +4483,12 @@ function repaintDiscordChat(): void {
   fresh.setSelectionRange(caret, caret);
 }
 
+/** True when a Discord surface is on screen. The chat widget can be open on its
+ * own, so a `discord`-only guard left its send/edit state stale. */
+function discordOnScreen(): boolean {
+  return (isWidgetOpen("discord") || isWidgetOpen("chat")) && !document.hidden;
+}
+
 function repaintDiscord(): void {
   if (isWidgetOpen("discord")) {
     const social = viewEl("discord");
@@ -4484,6 +4524,9 @@ function focusReplyInput(): void {
 
 /** Selects a friend for the composer; a typed letter can seed the draft. */
 function selectReplyTarget(id: string, name: string, seed = ""): void {
+  // Switching conversations ends an edit started in the previous one: saveEdit
+  // holds that entry's id, so the composer would edit A while showing B.
+  if (editingEntryId !== null) cancelEdit();
   replyTarget = { id, name };
   if (seed) replyDrafts.set(id, seed);
   replyUnread.delete(id);
@@ -4537,6 +4580,10 @@ function noteIncoming(
 async function notifyMessage(friendId: string, text: string): Promise<void> {
   const showing = isWidgetOpen("chat") && !document.hidden && replyTarget?.id === friendId;
   if (showing) return;
+  // A conversation is already on screen: never move its target behind the
+  // user's back, or the draft they typed for A is sent to B.
+  const conversationOnScreen =
+    (isWidgetOpen("chat") || isWidgetOpen("discord")) && !document.hidden;
   try {
     let granted = await isPermissionGranted();
     if (!granted) granted = (await requestPermission()) === "granted";
@@ -4547,7 +4594,7 @@ async function notifyMessage(friendId: string, text: string): Promise<void> {
       body: text || t("overlay.discordSent"),
     });
     // Next open lands in that conversation.
-    if (friend) {
+    if (friend && !conversationOnScreen) {
       replyTarget = { id: friend.id, name: friend.name };
       localStorage.setItem(LAST_FRIEND_KEY, friend.id);
     }
@@ -4570,7 +4617,8 @@ async function notifyIncomingCall(from: string): Promise<void> {
       title: friend?.name ?? t("overlay.discordCallIncoming"),
       body: friend ? t("overlay.discordCallIncoming") : "",
     });
-    if (friend) {
+    // Only preselect when the panel is not already showing a conversation.
+    if (friend && !((isWidgetOpen("chat") || isWidgetOpen("discord")) && !document.hidden)) {
       replyTarget = { id: friend.id, name: friend.name };
       localStorage.setItem(LAST_FRIEND_KEY, friend.id);
     }
@@ -4593,8 +4641,8 @@ function stepReplyTarget(direction: number): void {
 /** Esc leaves the box back to the selected row; a second Esc closes the panel. */
 function focusSelectedFriendRow(): void {
   const row =
-    document.querySelector<HTMLElement>('.friend-row[data-ov="discord-reply"].is-active') ??
-    document.querySelector<HTMLElement>('.friend-row[data-ov="discord-reply"]');
+    document.querySelector<HTMLElement>('.ov-dc-friend-item[data-ov="discord-select-friend"].is-active') ??
+    document.querySelector<HTMLElement>('.ov-dc-friend-item[data-ov="discord-select-friend"]');
   row?.focus();
 }
 
@@ -4720,7 +4768,7 @@ function socialVoiceHtml(): string {
           <span class="ov-dc-voice-icon live">${icon("mic", 14)}</span>
           <div class="ov-dc-voice-meta">
             <span class="ov-dc-voice-channel">${esc(ch.name)}</span>
-            <span class="ov-dc-voice-count">${count} ${count === 1 ? "kişi" : "katılımcı"}</span>
+            <span class="ov-dc-voice-count">${esc(t("overlay.discordGroupMembers", { count }))}</span>
           </div>
         </div>
         <button class="ov-dc-voice-leave-btn" data-ov="discord-voice-leave" title="${esc(t("overlay.discordCallEnd"))}">
@@ -5181,7 +5229,7 @@ async function refreshSdkState(): Promise<void> {
     if (state) sdkState = state;
     const friends = await invoke<DiscordFriendsState>("discord_sdk_friends");
     if (friends) sdkFriends = friends;
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   } catch {
     // Older hosts have no Social SDK commands; the other sources stay.
   }
@@ -5382,7 +5430,7 @@ async function refreshWebVoice(): Promise<void> {
     const state = await invoke<WebVoiceState | null>("discord_web_voice_state");
     if (state) {
       webVoice = state;
-      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+      if (discordOnScreen()) repaintDiscord();
     }
   } catch {
     // Older hosts have no web voice bridge; the RPC source stays.
@@ -6783,6 +6831,20 @@ function wireEvents(): void {
       event.preventDefault();
       return;
     }
+    // The lightbox is modal: arrows page through the gallery and Escape closes
+    // it, instead of moving the hidden panel's focus ring behind it.
+    if (lightboxIsOpen()) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        hideLightbox();
+        return;
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        stepLightbox(event.key === "ArrowLeft" ? -1 : 1);
+        return;
+      }
+    }
     if (event.key === "Escape" && filterPopoverOpen) {
       filterPopoverOpen = false;
       const pop = document.getElementById("ov-shots-filter-popover");
@@ -6831,7 +6893,7 @@ function wireEvents(): void {
     // Typing on a focused friend row jumps into the box with that letter.
     if (!isTextEntryFocused() && event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
       const row = document.activeElement as HTMLElement | null;
-      if (row?.dataset.ov === "discord-reply" && row.dataset.id) {
+      if (row?.dataset.ov === "discord-select-friend" && row.dataset.id) {
         event.preventDefault();
         selectReplyTarget(row.dataset.id, row.dataset.name || row.dataset.id, event.key);
         return;
@@ -6864,6 +6926,12 @@ function wireEvents(): void {
     }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
+      // The lightbox is modal: never activate a control hidden behind it.
+      if (lightboxIsOpen()) {
+        const box = document.getElementById("ov-lightbox");
+        if (focusedEl && box?.contains(focusedEl)) focusedEl.click();
+        return;
+      }
       activateFocused();
       return;
     }
@@ -6967,8 +7035,19 @@ function getFocusableElements(): HTMLElement[] {
     items.push(node);
   };
 
+  // A modal lightbox owns the ring: nothing behind it may be activated unseen.
+  if (lightboxIsOpen()) {
+    document.querySelectorAll("#ov-lightbox button").forEach(push);
+    return items;
+  }
+
   push(document.getElementById("ov-topbar-game-hub-btn"));
   document.querySelectorAll(".ov-topbar-btn").forEach(push);
+  // The quick-launch popover sits outside the widgets; without this the pad can
+  // open it but never reach a card.
+  if (recentMenuOpen) {
+    document.querySelectorAll("#ov-recent-dropdown .ov-quick-card").forEach(push);
+  }
 
   document.querySelectorAll<HTMLElement>(".ov-widget").forEach((w) => {
     if (w.style.display !== "none") {
@@ -7001,6 +7080,11 @@ function dockTabButton(tab: TabId): HTMLElement | null {
 }
 
 function focusDefault(): void {
+  // A modal lightbox owns the ring: default to one of its own buttons.
+  if (lightboxIsOpen()) {
+    focusElement(getFocusableElements()[0] ?? null);
+    return;
+  }
   focusElement(dockTabButton(activeTab) ?? getFocusableElements()[0] ?? null);
 }
 
@@ -7070,6 +7154,12 @@ function adjustSelect(select: HTMLSelectElement, step: number): void {
 }
 
 function activateFocused(): void {
+  // A lightbox is modal: the ring must live inside it, never on a control the
+  // user cannot see behind the image.
+  if (lightboxIsOpen() && (!focusedEl || !document.getElementById("ov-lightbox")?.contains(focusedEl))) {
+    focusDefault();
+    return;
+  }
   ensureFocus();
   const el = focusedEl;
   if (!el || !el.isConnected) return;
@@ -7097,7 +7187,11 @@ function activateFocused(): void {
 
 function cycleTab(delta: number): void {
   const tabs = visibleTabs();
-  const currentIdx = tabs.findIndex((tab) => tab.id === activeTab);
+  if (tabs.length === 0) return;
+  const found = tabs.findIndex((tab) => tab.id === activeTab);
+  // `activeTab` can be a settings/chat view that is not in the dock: start at
+  // the first tab for RB, the last one for LB, instead of index -1 maths.
+  const currentIdx = found >= 0 ? found : delta > 0 ? -1 : 0;
   const nextIdx = (currentIdx + delta + tabs.length) % tabs.length;
   setTab(tabs[nextIdx].id);
   focusElement(dockTabButton(tabs[nextIdx].id));
@@ -7310,6 +7404,9 @@ function startOverlayLoops(): void {
   if (clockTimer === null) {
     clockTimer = window.setInterval(() => updateClock(), 1000);
   }
+  // The timer stops on close, so the first tick would leave the old time on
+  // screen for a second after every reopen.
+  updateClock();
   if (mediaPollTimer === null) {
     mediaPollTimer = window.setInterval(() => {
       if (document.hidden) return;
@@ -7372,6 +7469,9 @@ function restoreOpenWidgets(): void {
 
     if (isOpen) {
       renderWidgetContent(tab.id);
+      // `openWidget` starts this, but a widget restored from storage never went
+      // through it: without this the tracker's 30 s refresh never starts.
+      if (tab.id === "ach") startTrackerPolling();
     }
   }
   // Rust decides the close path from this count: above zero means ghost mode.
@@ -7402,6 +7502,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   achCommunity.clear();
   achCommunityLoading.clear();
   cachedScreenshots = [];
+  shotsLoadGeneration += 1;
   spotifyEngineOn = false;
   spotifyDeviceName = "";
   spotifyNow = null;
@@ -7558,7 +7659,10 @@ async function boot(): Promise<void> {
     document.body.classList.remove("ov-using-gamepad");
     stopOverlayLoops();
     stopClipPolling();
-    void invoke("overlay_browser_close").catch(() => undefined);
+    stopTrackerPolling();
+    // Rust's `hide_now` already hides the browser through `hide_with_overlay`
+    // (a pinned PiP player survives), and browser-window.ts hides itself as a
+    // safety net. Calling `overlay_browser_close` here killed PiP every close.
     // The voice worker is only meant to run while its tab is visible.
     void invoke("discord_voice_watch_stop").catch(() => undefined);
   });
@@ -7646,7 +7750,7 @@ async function boot(): Promise<void> {
       lastVoiceChannel = null;
       lastVoiceParticipants = [];
     }
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   await listen<DiscordFriendsState>("discord-friends-state", (event) => {
@@ -7658,22 +7762,22 @@ async function boot(): Promise<void> {
       lastFriends = [];
       lastFriendsPending = 0;
     }
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   await listen<WebVoiceState>("discord-web-voice", (event) => {
     webVoice = event.payload;
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   await listen<SdkState>("discord-sdk-state", (event) => {
     sdkState = event.payload;
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   await listen<DiscordFriendsState>("discord-sdk-friends", (event) => {
     sdkFriends = event.payload;
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   // The send outcome lands in the log row: "Sending…" becomes "Sent", or the
@@ -7689,7 +7793,7 @@ async function boot(): Promise<void> {
       entry.error = event.payload.error;
       if (event.payload.messageId) entry.messageId = event.payload.messageId;
     }
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   // Messages the other side sends while the overlay is open, straight from the
@@ -7726,7 +7830,7 @@ async function boot(): Promise<void> {
   await listen<{ messageId: string }>("discord-sdk-message-deleted", (event) => {
     const before = replyLog.length;
     replyLog = replyLog.filter((item) => item.messageId !== event.payload.messageId);
-    if (replyLog.length !== before && isWidgetOpen("discord") && !document.hidden) {
+    if (replyLog.length !== before && discordOnScreen()) {
       repaintDiscord();
     }
   });
@@ -7758,7 +7862,7 @@ async function boot(): Promise<void> {
       if (!active && event.payload.error) {
         toast(t("overlay.discordSendFailed", { error: event.payload.error }), "err");
       }
-      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+      if (discordOnScreen()) repaintDiscord();
     },
   );
 
@@ -7770,7 +7874,7 @@ async function boot(): Promise<void> {
       return;
     }
     pickerMode = "friends";
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   // The add-friend search: results, and the request outcome.
@@ -7780,7 +7884,7 @@ async function boot(): Promise<void> {
       if (event.payload.query !== searchQuery) return;
       searchResults = event.payload.users;
       searchRan = true;
-      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+      if (discordOnScreen()) repaintDiscord();
     },
   );
 
@@ -7792,7 +7896,7 @@ async function boot(): Promise<void> {
     toast(t("overlay.discordRequestSent"), "");
     // Keep the row and mark it: a row that vanishes reads as "nothing happened".
     sentRequests.add(event.payload.username);
-    if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+    if (discordOnScreen()) repaintDiscord();
   });
 
   // A friend request answered: the row goes at once, and the relationship
@@ -7811,7 +7915,7 @@ async function boot(): Promise<void> {
         ),
         pending: Math.max(0, sdkFriends.pending - 1),
       };
-      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+      if (discordOnScreen()) repaintDiscord();
     },
   );
 
@@ -7835,7 +7939,7 @@ async function boot(): Promise<void> {
           editStash.delete(entry.friendId);
         }
       }
-      if (isWidgetOpen("discord") && !document.hidden) repaintDiscord();
+      if (discordOnScreen()) repaintDiscord();
     },
   );
 

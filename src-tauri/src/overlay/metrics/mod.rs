@@ -10,7 +10,7 @@ mod gpu;
 mod thermal;
 
 use serde::Serialize;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use sysinfo::{Pid, ProcessesToUpdate, System};
@@ -18,6 +18,10 @@ use sysinfo::{Pid, ProcessesToUpdate, System};
 use super::{hud, STATE};
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
+/// Bumped on every start and stop. A worker exits only when its own generation
+/// is still current, so a stop/start pair inside the one-second sleep cannot
+/// revive the old loop next to the new one.
+static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
@@ -66,7 +70,8 @@ pub fn ensure_running(app: AppHandle) {
     if RUNNING.swap(true, Ordering::SeqCst) {
         return;
     }
-    std::thread::spawn(move || run(app));
+    let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    std::thread::spawn(move || run(app, generation));
 }
 
 /// True while the sampling worker is alive (the task manager shows this).
@@ -77,6 +82,7 @@ pub fn running() -> bool {
 /// Asks the worker to stop: it exits on its next tick. The next panel open (or
 /// HUD enable) starts it again through `ensure_running`.
 pub fn stop() {
+    GENERATION.fetch_add(1, Ordering::SeqCst);
     RUNNING.store(false, Ordering::SeqCst);
 }
 
@@ -85,7 +91,7 @@ pub fn fps_available() -> bool {
     etw::available()
 }
 
-fn run(app: AppHandle) {
+fn run(app: AppHandle, generation: u64) {
     let mut sys = System::new();
     let mut gpu = gpu::GpuQuery::open();
     let mut thermal = thermal::ThermalQuery::open();
@@ -93,7 +99,7 @@ fn run(app: AppHandle) {
     let mut idle = 0u32;
 
     loop {
-        if !RUNNING.load(Ordering::SeqCst) {
+        if GENERATION.load(Ordering::SeqCst) != generation {
             break;
         }
         // A ghost HUD keeps its pinned Performance card alive, so it counts as
@@ -107,6 +113,11 @@ fn run(app: AppHandle) {
         } else {
             idle += 1;
             if idle > 2 {
+                // Release the flag before leaving: a panel reopen in the next
+                // instant must start a worker instead of finding a dying one.
+                if GENERATION.load(Ordering::SeqCst) == generation {
+                    RUNNING.store(false, Ordering::SeqCst);
+                }
                 break;
             }
         }
@@ -198,14 +209,21 @@ fn run(app: AppHandle) {
         if hud_on && sample.running {
             let hud_mode = hud::mode();
             hud::update(&hud_text(&sample, &hud_mode));
-        } else if !hud_on {
+        } else {
+            // No game (or the HUD was switched off): never leave the last
+            // title's numbers floating over the desktop.
             hud::hide();
         }
 
         std::thread::sleep(Duration::from_millis(1000));
     }
 
-    RUNNING.store(false, Ordering::SeqCst);
+    // A stopped/replaced worker must not clear the flag a newer one owns, but
+    // it always takes the native HUD down: a stale strip over the desktop is
+    // worse than the new worker's one-frame repaint.
+    if GENERATION.load(Ordering::SeqCst) == generation {
+        RUNNING.store(false, Ordering::SeqCst);
+    }
     hud::hide();
 }
 

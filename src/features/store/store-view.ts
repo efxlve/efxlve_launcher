@@ -9,17 +9,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { childBounds } from "../../core/child-bounds";
-import { isTauri, HIDDEN_STORES_KEY, PROFILE_CARD_CHUNK, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
-import { applyAchievementEditsToSummaries } from "../../core/achievement-edits";
+import { isTauri, HIDDEN_STORES_KEY, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
+import { loadEpicAchSummaries } from "../../core/achievement-summaries";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { EPIC_STORE_URL, epicGetAchievementsSummary, epicGetPlayerProfile } from "../../epic";
-import { gogGetAchievementsSummary } from "../../gog";
-import { steamGetAchievementsSummary } from "../../steam";
-import { companionAchievementsSummary } from "../../companion";
-import { currentLanguage, t } from "../../i18n";
+import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
+import { t } from "../../i18n";
 import type { View } from "../../core/types";
 export interface StoreRect {
   [key: string]: unknown;
@@ -619,49 +616,22 @@ export async function loadPlayerProfile(forceRefresh = false, replace = false): 
     S.playerProfileData = data;
   } catch (e) {
     if (gen !== profileLoadGen) return;
-    S.profileError = String(e);
+    // "Not signed in" is a normal state for the combined profile, not an error
+    // page; the account pill and the stores carry the real content.
+    const message = String(e);
+    if (!message.includes("profile.notLoggedIn")) S.profileError = message;
   }
   if (gen !== profileLoadGen) return;
-  // Epic's profile payload does not include GOG, Steam or Ubisoft. Refresh the
-  // shared achievement cache so the profile list matches the library covers.
-  try {
-    const [epicSummaries, gogSummaries, steamSummaries, ubiSummaries] = await Promise.all([
-      epicGetAchievementsSummary().catch(() => ({})),
-      gogGetAchievementsSummary().catch(() => ({})),
-      steamGetAchievementsSummary().catch(() => ({})),
-      // Ubisoft keeps its sets on disk; Xbox and EA answer per game.
-      companionAchievementsSummary("ubisoft", currentLanguage()).catch(() => ({})),
-    ]);
-    if (gen !== profileLoadGen) return;
-    S.epicAchSummaries = { ...epicSummaries, ...gogSummaries, ...steamSummaries, ...ubiSummaries };
-    applyAchievementEditsToSummaries(S.epicAchSummaries);
-    S.libraryDataRev++;
-  } catch {
-    // The page still renders whatever was already cached.
-  }
+  // Epic's profile payload does not include GOG, Steam or Ubisoft. The shared
+  // bulk pass owns the in-flight dedupe and TTL, so a profile opened right
+  // after boot reuses that pass instead of starting four more disk scans. The
+  // final paint below is the only one the page needs.
+  await loadEpicAchSummaries(forceRefresh, false);
+  if (gen !== profileLoadGen) return;
   if (gen === profileLoadGen) {
     S.profileLoading = false;
     render();
   }
-}
-
-
-export async function openProfile(): Promise<void> {
-  setView("profile");
-  closeAllModals();
-  // A fresh entry always lands on the combined profile, unfiltered.
-  S.profileStore = "all";
-  S.profileAccount = null;
-  S.profileFilter = "all";
-  S.profileShowHidden = false;
-  S.profileCardCount = PROFILE_CARD_CHUNK;
-  // Without an Epic session the profile fetch can only fail; skipping it also
-  // keeps the hero refresh from spinning and refetching every store summary.
-  const epicMaybeSignedIn = Boolean(S.epicAccount) || S.epicPhase === "checking";
-  if (epicMaybeSignedIn && !S.playerProfileData && !S.profileLoading) {
-    void loadPlayerProfile();
-  }
-  render();
 }
 
 /**

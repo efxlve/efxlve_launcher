@@ -10,7 +10,7 @@
 import "./styles/index.css";
 import { invoke } from "@tauri-apps/api/core";
 import { initSidebarLayout } from "./core/sidebar-layout";
-import { applySidebarPageVisibility, discordPageVisible } from "./core/page-visibility";
+import { applySidebarPageVisibility, discordPageVisible, overlayEnabled } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
 import { applyCustomCss } from "./core/custom-css";
 import { applySurface } from "./core/themes";
@@ -232,4 +232,6 @@ void initApp({ render, scheduleRender, closeAllModals });
 // is ever opened.
 const crosshair = loadCrosshair();
 applyCrosshairConfig(crosshair);
-if (crosshair.enabled) setCrosshairVisible(true);
+// The crosshair is an overlay surface: with the service switched off it must
+// not appear at boot (the hotkey listener is parked too).
+if (crosshair.enabled && overlayEnabled()) setCrosshairVisible(true);

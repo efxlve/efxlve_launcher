@@ -146,7 +146,9 @@ export function pushClipSettings(): void {
   // Normalise first: a rate stored before 60/120 were disabled would otherwise
   // sit in localStorage for ever, since nothing can select it back.
   localStorage.setItem(CLIP_FPS_KEY, String(clipFps()));
-  void clipSetHotkey(clipHotkeyCode()).catch(() => undefined);
+  // A disabled recorder must disarm the poll's hotkey: Rust starts a recording
+  // whenever the key is set, so sending it while the switch is off left F9 live.
+  void clipSetHotkey(clipEnabled() ? clipHotkeyCode() : 0).catch(() => undefined);
   void clipSetOptions({ fps: clipFps(), maxSecs: clipMaxSecs(), height: clipHeight() }).catch(() => undefined);
 }
 

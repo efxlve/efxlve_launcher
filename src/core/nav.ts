@@ -38,13 +38,21 @@ export function updateSidebarActive(): void {
 
 /** Installed games that have a newer build waiting and have not been ignored. */
 function pendingUpdateCount(): number {
+  const downloading = (id: string): boolean => {
+    const entry = S.downloads.get(id);
+    return Boolean(entry && !entry.done);
+  };
   let n = 0;
   for (const s of S.epicSummaries) {
     if (S.hiddenGames.has(s.appName) || S.ignoredUpdates.has(s.appName)) continue;
+    // The active download already adds one to the badge; counting its pending
+    // update again showed 2 for a single updating game.
+    if (downloading(s.appName)) continue;
     if (s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))) n++;
   }
   for (const g of S.gogSummaries) {
     if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
+    if (downloading(g.key)) continue;
     if (g.installed && g.updateAvailable) n++;
   }
   for (const g of S.steamSummaries) {
@@ -75,7 +83,12 @@ let lastPendingUpdates = -1;
  */
 export function updateBadge(scope: "full" | "progress" = "full"): void {
   let active = 0;
-  for (const d of S.downloads.values()) if (!d.done) active++;
+  // `S.downloads` holds queued installs too; the queue length is added below,
+  // so counting those here showed two badges for one queued game.
+  const queued = new Set(S.dlQueueStatus.queue);
+  for (const [id, d] of S.downloads) {
+    if (!d.done && !queued.has(id)) active++;
+  }
   let steamDl = 0;
   for (const g of S.steamGames) if (g.downloading) steamDl++;
   if (scope === "full" || lastPendingUpdates < 0) lastPendingUpdates = pendingUpdateCount();
@@ -252,14 +265,16 @@ export function updateSidebarGames(): void {
   ].join("\n");
   const cheapStamp = `${limit}\0${S.appLanguage}\0${S.currentModalAppName ?? ""}\0${S.libraryDataRev}\0${S.epicRecent.join("\n")}\0${membership}`;
   if (cheapStamp === sidebarInputs) return;
+  sidebarInputs = cheapStamp;
   const entries = sidebarGames();
-  const stamp = `${cheapStamp}\0${entries.map((e) => e.appName).join("\n")}`;
-  if (stamp === sidebarInputs) return;
-  sidebarInputs = stamp;
 
   const shown = [...entries].sort(compareLibraryRecent).slice(0, limit);
 
-  const sig = shown.map((e) => e.appName).join("|") + `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
+  // The cover is part of the signature: a custom cover changes it without
+  // touching the ids, and the old signature kept the previous thumbnail.
+  const sig =
+    shown.map((e) => `${e.appName}:${e.cover}`).join("|") +
+    `|${S.appLanguage}|${S.currentModalAppName ?? ""}`;
   if (sig === sidebarGamesSig) return;
   sidebarGamesSig = sig;
 

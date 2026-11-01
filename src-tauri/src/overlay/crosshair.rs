@@ -153,7 +153,10 @@ pub fn overlay_crosshair_set_visible(visible: bool) {
 /// A game started: show the crosshair if the user left it visible.
 pub fn restore() {
     let enabled = config_state().lock().map(|config| config.enabled).unwrap_or(false);
-    if VISIBLE.load(Ordering::SeqCst) && enabled && game_active() {
+    // The runtime preference is kept across a per-game opt-out and a global
+    // stop; the service flag alone decides whether the surface may show.
+    let service = super::STATE.lock().map(|state| state.enabled).unwrap_or(true);
+    if service && VISIBLE.load(Ordering::SeqCst) && enabled && game_active() {
         imp::show();
     } else {
         imp::hide();

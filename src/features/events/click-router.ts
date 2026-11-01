@@ -124,7 +124,7 @@ import { toggleFullscreenMode } from "../gamepad/fullscreen-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openProfile, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -135,10 +135,11 @@ import {
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
 import { loadCompatView } from "../settings/compat-view";
+import { probeUbisoftClientDownloads } from "../downloads/downloads-view";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
-import { ALL_PROFILE_STORES, resetProfileCards, type StoreKind } from "../profile/profile-view";
+import { ALL_PROFILE_STORES, enterProfile, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
@@ -314,16 +315,22 @@ document.addEventListener("click", (e) => {
     pushNavHistory({ view: targetView, settingsSection });
     if (S.view === "library") void bootEpic();
     if (S.view === "profile") {
-      // Without an Epic session the profile fetch can only fail; skipping it
-      // also keeps the hero refresh from spinning and refetching every store
-      // summary on each entry.
-      const epicMaybeSignedIn = Boolean(S.epicAccount) || S.epicPhase === "checking";
-      if (epicMaybeSignedIn && !S.playerProfileData && !S.profileLoading) void loadPlayerProfile();
-      render();
+      // A fresh entry always lands on the combined profile, unfiltered.
+      enterProfile();
+      // `loadPlayerProfile` paints the loading state itself, so the router must
+      // not paint a second copy of the same page. A click during the boot check
+      // can still be signed in; the backend owns the real session check and a
+      // signed-out answer is not a page error.
+      if ((S.epicAccount || S.epicPhase === "checking") && !S.playerProfileData && !S.profileLoading) {
+        void loadPlayerProfile();
+      } else {
+        render();
+      }
       return;
     }
     if (S.view === "downloads") {
       render();
+      probeUbisoftClientDownloads();
       void epicGetQueue().then((q) => {
         S.dlQueueStatus = q;
         render();
@@ -427,8 +434,6 @@ document.addEventListener("click", (e) => {
   } else if (act === "store-tabs-scroll") {
     const dir = Number(t.dataset.dir) || 1;
     scrollStoreTabs(dir);
-  } else if (act === "open-profile") {
-    openProfile();
   } else if (act === "open-changelog") {
     openChangelogModal();
   } else if (act === "open-feedback") {
@@ -623,7 +628,7 @@ document.addEventListener("click", (e) => {
     const menu = document.getElementById("col-dropdown-menu");
     if (menu) menu.classList.remove("show");
     closeCollectionGallery();
-    S.activeCollectionId = (!colId || colId === "none") ? null : colId;
+    S.activeCollectionId = (!colId || colId === "none" || colId === "all") ? null : colId;
     S.epicFilter = "all";
     applyTabSort();
     if (!updateLibraryFilterInPlace()) {
@@ -1041,8 +1046,14 @@ document.addEventListener("click", (e) => {
         if (button?.isConnected) button.disabled = false;
       });
   } else if (act === "ubi-direct-open") {
+    // The game page's primary button: leave the drawer and land on the section
+    // instead of only mutating state (which no render followed).
+    closeAllModals();
     S.settingsSection = "integrations";
     setView("settings");
+    pushNavHistory({ view: "settings", settingsSection: "integrations" });
+    render();
+    void loadSettingsView();
   } else if (act === "ubi-direct-rescan") {
     if (S.ubiDirectLoading) return;
     S.ubiDirectLoading = true;

@@ -28,13 +28,16 @@ export const DEFAULT_BOOKMARKS: QuickBookmark[] = [
 ];
 
 export function loadBookmarks(): QuickBookmark[] {
+  // Always hand out a copy: callers push/splice the result, and returning the
+  // module constant let an "Add bookmark" mutate the defaults themselves.
   try {
     const raw = localStorage.getItem(BOOKMARKS_STORAGE_KEY);
-    if (!raw) return DEFAULT_BOOKMARKS;
+    if (!raw) return [...DEFAULT_BOOKMARKS];
     const parsed = JSON.parse(raw) as QuickBookmark[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_BOOKMARKS;
+    // An empty array is a real choice now that the last bookmark can be deleted.
+    return Array.isArray(parsed) ? parsed : [...DEFAULT_BOOKMARKS];
   } catch {
-    return DEFAULT_BOOKMARKS;
+    return [...DEFAULT_BOOKMARKS];
   }
 }
 

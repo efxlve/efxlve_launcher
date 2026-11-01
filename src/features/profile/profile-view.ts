@@ -1257,3 +1257,18 @@ export function renderProfile(): string {
       ${renderAchievementsPanel(games, filtered)}
     </div>`;
 }
+
+/**
+ * Resets the page to a fresh entry: combined scope, no store account selected,
+ * default filters and the first card chunk. Both the account chip and the
+ * palette command land here, so a revisit never reopens the previous account's
+ * dormant page or a hidden-only filter.
+ */
+export function enterProfile(): void {
+  S.profileStore = "all";
+  S.profileAccount = null;
+  S.profileFilter = "all";
+  S.profileShowHidden = false;
+  S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileError = "";
+}

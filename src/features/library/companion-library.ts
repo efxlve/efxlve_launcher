@@ -10,7 +10,7 @@ import { companionAchievementsSummary, companionLibrary, companionPlaytimes, com
 import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
-import { loadEpicAchSummaries } from "../auth/auth-actions";
+import { loadEpicAchSummaries } from "../../core/achievement-summaries";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { currentLanguage } from "../../i18n";

@@ -240,6 +240,10 @@ pub fn overlay_set_enabled(app: AppHandle, enabled: bool) {
     }
     if !enabled {
         teardown(&app);
+    } else {
+        // Re-enabling mid-session must bring the saved crosshair back without
+        // waiting for the next game start.
+        crosshair::restore();
     }
 }
 
@@ -431,8 +435,9 @@ pub fn overlay_set_active_game(app: AppHandle, app_name: String, title: String, 
         crosshair::restore();
         // Warm the toast page while the game runs: the first card then only
         // has to show a window, not boot a WebView2 renderer.
+        let enabled = STATE.lock().map(|s| s.enabled).unwrap_or(true);
         let options = crate::steam::achievement_notification_options(&app);
-        if options.enabled && options.overlay {
+        if enabled && options.enabled && options.overlay {
             crate::overlay::toast::prewarm(&app);
         }
     }
@@ -480,7 +485,12 @@ pub(crate) fn teardown(app: &AppHandle) {
     PANEL_GENERATION.fetch_add(1, Ordering::Relaxed);
     // A stop is a real stop: never leave a ghost HUD or a crosshair behind.
     hide_now(app);
-    crosshair::set_visible(false);
+    // Keep the saved crosshair preference: the next game (or a service that is
+    // switched back on) restores it. `set_visible(false)` would forget it.
+    crosshair::hide_window();
+    // The pre-warmed toast page is pinned for the running game; a stop must
+    // destroy it rather than leave its renderer parked.
+    toast::shutdown(app);
     browser::close_window(app);
     hud::hide();
     metrics::stop();

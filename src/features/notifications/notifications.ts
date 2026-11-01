@@ -429,8 +429,10 @@ export function positionNotifPanel(): void {
 /** Opens the notification panel (and marks everything as read). */
 export function openNotifPanel(): void {
   S.notifOpen = true;
-  renderNotificationPanel();
+  // Mark first: the panel is painted from these flags, so painting before the
+  // clear showed every item as unread with a "Read all" button that did nothing.
   markAllRead();
+  renderNotificationPanel();
   syncStoreViewSize();
 }
 

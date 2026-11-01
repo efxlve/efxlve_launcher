@@ -29,7 +29,11 @@ function clampWidth(px: number): number {
 
 function readStoredWidth(): number {
   try {
-    const raw = Number(localStorage.getItem(SIDEBAR_W_KEY));
+    const stored = localStorage.getItem(SIDEBAR_W_KEY);
+    // `Number(null)` is 0, which is finite: a missing key used to clamp to the
+    // icon-only minimum on every first run.
+    if (stored === null) return SIDEBAR_DEFAULT;
+    const raw = Number(stored);
     if (Number.isFinite(raw)) return clampWidth(raw);
   } catch {
     /* ignore quota / private mode */

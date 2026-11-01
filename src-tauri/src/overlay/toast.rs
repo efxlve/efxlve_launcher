@@ -153,11 +153,6 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
     if let Some(icon) = take_queued_icon(payload.generation) {
         payload.icon = Some(icon);
     }
-    if !READY.load(Ordering::SeqCst) {
-        if let Ok(mut slot) = PENDING.lock() {
-            *slot = Some(payload.clone());
-        }
-    }
     let win = match ensure_window(app) {
         Ok(win) => win,
         Err(error) => {
@@ -165,6 +160,15 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
             return;
         }
     };
+    // Check readiness after the window exists: a rebuild flips READY to false,
+    // and a checkpoint taken before it would be lost with the old renderer.
+    let mut deferred = false;
+    if !READY.load(Ordering::SeqCst) {
+        if let Ok(mut slot) = PENDING.lock() {
+            *slot = Some(payload.clone());
+            deferred = true;
+        }
+    }
     place_on_active_monitor(&win);
     let _ = win.set_always_on_top(true);
     let _ = win.show();
@@ -192,8 +196,10 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
             }
         }
     });
-    // The window may be fresh (its page is still booting) or warm.
-    if READY.load(Ordering::SeqCst) {
+    // The window may be fresh (its page is still booting) or warm. A deferred
+    // payload is replayed by `toast_ready`; emitting it here as well would show
+    // the same card twice when readiness lands between the two checks.
+    if READY.load(Ordering::SeqCst) && !deferred {
         emit_card(app, &payload);
         if let Ok(mut slot) = PENDING.lock() {
             *slot = None;
@@ -219,6 +225,21 @@ pub fn release(app: &AppHandle) {
     PINNED.store(false, Ordering::SeqCst);
     let generation = GENERATION.load(Ordering::SeqCst);
     schedule_idle_release(app.clone(), generation);
+}
+
+/// The overlay service stopped: destroy the toast host and its renderer now,
+/// instead of leaving a pre-warmed transparent window parked for a game that
+/// may never end.
+pub fn shutdown(app: &AppHandle) {
+    PINNED.store(false, Ordering::SeqCst);
+    GENERATION.fetch_add(1, Ordering::SeqCst);
+    READY.store(false, Ordering::SeqCst);
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        if let Some(win) = handle.get_webview_window(TOAST_LABEL) {
+            let _ = win.destroy();
+        }
+    });
 }
 
 /// The page is listening: replay whatever arrived while it booted.
@@ -440,6 +461,9 @@ fn schedule_idle_release(app: AppHandle, generation: u64) {
         if win.is_visible().unwrap_or(false) {
             return;
         }
+        // The window is about to die with its page: an old READY would make the
+        // next card skip the PENDING checkpoint and be dropped.
+        READY.store(false, Ordering::SeqCst);
         let _ = win.destroy();
     });
 }

@@ -81,7 +81,7 @@ import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { refreshSidebarToggle } from "../../core/sidebar-layout";
 import { bootEpic } from "../auth/auth-actions";
-import { initGogSession, syncGogPlaytime } from "../auth/gog-auth-actions";
+import { initGogSession, refreshGogUpdates, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
 import type { UbiDirectProgress, UbiDirectSummary, XboxInstallEvent } from "../../companion";
@@ -93,7 +93,7 @@ import { scheduleProfileUploads } from "../cloud-backup/profile-sync-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs, refreshLibraryResultsInPlace } from "../library/library-view";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
-import { drawSpeedCanvas, pushSpeedData, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
+import { drawSpeedCanvas, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import {
   fetchAndRenderAchievements,
   openEpicModal,
@@ -208,7 +208,13 @@ function applyDlDomUpdate(id: string): void {
   const etaEl = document.getElementById("dl-stat-eta");
   if (etaEl && m.eta) etaEl.textContent = localizeMessage(m.eta);
   const bytesEl = document.getElementById("dl-stat-bytes");
-  if (bytesEl && m.downloadedBytes) bytesEl.textContent = `${fmtBytes(m.downloadedBytes)} / ${fmtBytes(m.totalBytes)}`;
+  // The total is the switch: GOG reports no byte totals, and a stale value must
+  // turn into "—" instead of freezing at the first numbers seen.
+  if (bytesEl) {
+    bytesEl.textContent = m.totalBytes > 0
+      ? `${fmtBytes(m.downloadedBytes)} / ${fmtBytes(m.totalBytes)}`
+      : "—";
+  }
   const netLegend = document.getElementById("dl-legend-net-val");
   if (netLegend) netLegend.textContent = netText;
   const diskLegend = document.getElementById("dl-legend-disk-val");
@@ -397,7 +403,7 @@ export async function initApp(hooks: {
         m.totalBytes = total;
       }
       startSpeedChartTimer();
-      pushSpeedData(speedBytes, diskBytes);
+      // Same rule as the Epic/GOG handler: the 1 s sampler fills the history.
       scheduleDlDomUpdate(id);
     });
 
@@ -519,11 +525,9 @@ export async function initApp(hooks: {
           if (downloadedBytes) S.activeDlMetrics.downloadedBytes = downloadedBytes;
           if (totalBytes) S.activeDlMetrics.totalBytes = totalBytes;
         }
-        pushSpeedData(
-          freshNet ? measuredSpeedBytes : S.activeDlMetrics.speedBytes,
-          freshDisk ? measuredDiskBytes : S.activeDlMetrics.diskBytes,
-        );
-
+        // The one-second speed sampler owns the chart ring. Progress lines
+        // arrive up to four times a second; pushing here advanced the "60 s"
+        // window four times too fast and skewed the peak.
         // All DOM writes are batched to one rAF so bursty progress events never
         // cause repeated DOM writes to the sidebar counter and download bars.
         scheduleDlDomUpdate(id);
@@ -533,9 +537,11 @@ export async function initApp(hooks: {
       // Download completed
       S.downloads.set(id, { progress: 100, done: true, title });
       // The Completed row shows what this transfer moved: an update downloads a
-      // fraction of the install, so the folder size would be misleading.
-      const movedBytes = S.activeDlMetrics?.id === id
-        ? Math.max(S.activeDlMetrics.downloadedBytes, S.activeDlMetrics.totalBytes)
+      // fraction of the install, so the folder size would be misleading. Prefer
+      // the bytes actually downloaded; the total is only a fallback.
+      const finished = S.activeDlMetrics?.id === id ? S.activeDlMetrics : null;
+      const movedBytes = finished
+        ? (finished.downloadedBytes > 0 ? finished.downloadedBytes : finished.totalBytes)
         : 0;
       pushRecentInstall(id, movedBytes);
       lastDlSample = null;
@@ -568,9 +574,15 @@ export async function initApp(hooks: {
         const item = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(id);
         if (item) {
           item.installed = true;
+          // The update is gone: leaving the flag set kept the game in the
+          // Updates list, where its button started the install again.
+          item.updateAvailable = false;
+          S.gogUpdates.delete(id);
           rebuildAllGamesMap();
           if (S.view === "library") patchLibraryCardDom(id);
         }
+        // Re-read the build ids so a following update (or a rollback) shows up.
+        void refreshGogUpdates(true);
       } else if (Boolean(summaryOf(id))) {
         void refreshEpicInstalled().then(() => {
           if (S.view === "library") patchLibraryCardDom(id);
@@ -581,7 +593,9 @@ export async function initApp(hooks: {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = true;
       else S.dlQueueStatus.isPaused = true;
       lastDlSample = null;
-      if (S.activeDlMetrics) {
+      // Only the paused transfer loses its speed; a GOG pause must not blank
+      // the numbers of an Epic download that is still running.
+      if (S.activeDlMetrics?.id === event.payload.id) {
         S.activeDlMetrics.speedBytes = 0;
         S.activeDlMetrics.diskBytes = 0;
       }

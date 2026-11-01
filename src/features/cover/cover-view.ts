@@ -21,6 +21,7 @@ import { steamLibraryArt } from "../../steam";
 export function saveCustomCover(appName: string, url: string): void {
   S.customCovers[appName] = url.trim();
   localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(S.customCovers));
+  S.libraryDataRev++;
   render();
   if (S.currentModalAppName === appName) {
     openEpicModal(appName, false);
@@ -30,6 +31,7 @@ export function saveCustomCover(appName: string, url: string): void {
 export function resetCustomCover(appName: string): void {
   delete S.customCovers[appName];
   localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(S.customCovers));
+  S.libraryDataRev++;
   render();
   if (S.currentModalAppName === appName) {
     openEpicModal(appName, false);
@@ -39,6 +41,7 @@ export function resetCustomCover(appName: string): void {
 export function saveCustomHero(appName: string, url: string): void {
   S.customHeroes[appName] = url.trim();
   localStorage.setItem(CUSTOM_HEROES_KEY, JSON.stringify(S.customHeroes));
+  S.libraryDataRev++;
   render();
   if (S.currentModalAppName === appName) {
     openEpicModal(appName, false);
@@ -48,6 +51,7 @@ export function saveCustomHero(appName: string, url: string): void {
 export function resetCustomHero(appName: string): void {
   delete S.customHeroes[appName];
   localStorage.setItem(CUSTOM_HEROES_KEY, JSON.stringify(S.customHeroes));
+  S.libraryDataRev++;
   render();
   if (S.currentModalAppName === appName) {
     openEpicModal(appName, false);
