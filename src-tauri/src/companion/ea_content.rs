@@ -9,8 +9,16 @@
 //!
 //! The protocol shapes follow Maxima (GPL-3.0); no Maxima binary is used.
 
+// The install command and progress UI land after the content path; the probes
+// in the tests exercise these functions today.
+#![allow(dead_code)]
+
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use std::task::{Context as TaskContext, Poll};
+
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -235,12 +243,174 @@ async fn write_entry(
     entry: &ZipEntry,
     destination: &Path,
 ) -> Result<u64, String> {
-    let data = fetch_entry(client, url, entry).await?;
-    if let Some(parent) = destination.parent() {
-        std::fs::create_dir_all(parent).map_err(|err| format!("EA content: {err}"))?;
+    if entry.compressed == 0 {
+        if let Some(parent) = destination.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|err| format!("EA content: {err}"))?;
+        }
+        tokio::fs::write(destination, [])
+            .await
+            .map_err(|err| format!("EA content: {err}"))?;
+        return Ok(0);
     }
-    std::fs::write(destination, &data).map_err(|err| format!("EA content: {err}"))?;
-    Ok(data.len() as u64)
+
+    // The local header carries the name/extra lengths the central directory
+    // does not repeat; the data range starts after them.
+    let header = range_get(client, url, entry.local_offset, entry.local_offset + 29).await?;
+    if u32_at(&header, 0) != Some(LOCAL_SIG) {
+        return Err("EA content: bad local header".into());
+    }
+    let name_len = u16_at(&header, 26).ok_or("EA content: short local header")? as u64;
+    let extra_len = u16_at(&header, 28).ok_or("EA content: short local header")? as u64;
+    let data_start = entry.local_offset + 30 + name_len + extra_len;
+    let data_end = data_start + entry.compressed - 1;
+
+    let response = client
+        .get(url)
+        .header("Range", format!("bytes={data_start}-{data_end}"))
+        .send()
+        .await
+        .map_err(|err| format!("EA content: {err}"))?;
+    if response.status() != reqwest::StatusCode::PARTIAL_CONTENT {
+        return Err(format!(
+            "EA content: server did not honour the range (HTTP {})",
+            response.status()
+        ));
+    }
+
+    if let Some(parent) = destination.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|err| format!("EA content: {err}"))?;
+    }
+    let part = destination.with_file_name(format!(
+        "{}.part",
+        destination
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("entry")
+    ));
+    let file = tokio::fs::File::create(&part)
+        .await
+        .map_err(|err| format!("EA content: {err}"))?;
+    let file = tokio::io::BufWriter::new(file);
+
+    let (crc, bytes) = match entry.compression {
+        0 => {
+            let mut writer = CrcWriter::new(file);
+            stream_into(&mut writer, response).await?;
+            writer
+                .shutdown()
+                .await
+                .map_err(|err| format!("EA content: {err}"))?;
+            (writer.crc(), writer.bytes())
+        }
+        8 => {
+            let writer = CrcWriter::new(file);
+            let mut decoder = async_compression::tokio::write::DeflateDecoder::new(writer);
+            stream_into(&mut decoder, response).await?;
+            decoder
+                .shutdown()
+                .await
+                .map_err(|err| format!("EA content: {err}"))?;
+            let writer = decoder.get_ref();
+            (writer.crc(), writer.bytes())
+        }
+        other => {
+            let _ = tokio::fs::remove_file(&part).await;
+            return Err(format!("EA content: unsupported compression {other}"));
+        }
+    };
+
+    if bytes != entry.uncompressed {
+        let _ = tokio::fs::remove_file(&part).await;
+        return Err(format!(
+            "EA content: entry size {} != {}",
+            bytes, entry.uncompressed
+        ));
+    }
+    if crc != entry.crc32 {
+        let _ = tokio::fs::remove_file(&part).await;
+        return Err("EA content: CRC mismatch".into());
+    }
+
+    let _ = tokio::fs::remove_file(destination).await;
+    tokio::fs::rename(&part, destination)
+        .await
+        .map_err(|err| format!("EA content: {err}"))?;
+    Ok(bytes)
+}
+
+async fn stream_into<W: AsyncWrite + Unpin>(
+    writer: &mut W,
+    mut response: reqwest::Response,
+) -> Result<(), String> {
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|err| format!("EA content: {err}"))?
+    {
+        writer
+            .write_all(&chunk)
+            .await
+            .map_err(|err| format!("EA content: {err}"))?;
+    }
+    Ok(())
+}
+
+/// Forwards decompressed bytes to the file while counting them and their CRC.
+struct CrcWriter<W> {
+    inner: W,
+    hasher: crc32fast::Hasher,
+    bytes: u64,
+}
+
+impl<W> CrcWriter<W> {
+    fn new(inner: W) -> Self {
+        Self {
+            inner,
+            hasher: crc32fast::Hasher::new(),
+            bytes: 0,
+        }
+    }
+
+    fn crc(&self) -> u32 {
+        self.hasher.clone().finalize()
+    }
+
+    fn bytes(&self) -> u64 {
+        self.bytes
+    }
+}
+
+impl<W: AsyncWrite + Unpin> AsyncWrite for CrcWriter<W> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut TaskContext<'_>,
+        buf: &[u8],
+    ) -> Poll<std::io::Result<usize>> {
+        let this = self.get_mut();
+        match Pin::new(&mut this.inner).poll_write(cx, buf) {
+            Poll::Ready(Ok(written)) => {
+                this.hasher.update(&buf[..written]);
+                this.bytes += written as u64;
+                Poll::Ready(Ok(written))
+            }
+            other => other,
+        }
+    }
+
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut TaskContext<'_>) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.inner).poll_flush(cx)
+    }
+
+    fn poll_shutdown(
+        mut self: Pin<&mut Self>,
+        cx: &mut TaskContext<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.inner).poll_shutdown(cx)
+    }
 }
 
 /// Reads one entry into memory, for `installerdata.xml` and other small files.

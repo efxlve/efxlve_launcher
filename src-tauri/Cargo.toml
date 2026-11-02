@@ -29,6 +29,7 @@ url = "2"
 base64 = "0.22"
 discord-rich-presence = "1.1"
 flate2 = "1"
+async-compression = { version = "0.4", features = ["tokio", "deflate"] }
 zip = { version = "4", default-features = false, features = ["deflate-flate2"] }
 tar = "0.4"
 xz2 = "0.1"

@@ -62,7 +62,6 @@ pub(crate) async fn run_touchup(touchup: &Touchup) -> Result<(), String> {
     command.args(&touchup.args);
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
         command.creation_flags(0x0800_0000);
     }
     let status = command
