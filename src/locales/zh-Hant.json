@@ -3502,7 +3502,7 @@
   "manage.ubiImportSavesDone": "已匯入 {count} 個存檔",
   "manage.ubiImportSavesNone": "沒有可匯入的經典 Connect 存檔",
   "settings.eaDirectTitle": "Launch EA games without the EA App",
-  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server.",
+  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server. EA anti-cheat titles (Battlefield, FC) stay on the EA App.",
   "settings.eaDirectFailed": "Last direct launch failed: {error}",
   "settings.eaDirectGroup": "EA App"
 }

@@ -212,6 +212,12 @@ pub(crate) async fn launch(game: &FoundGame) -> Result<u32, String> {
 /// already resolved the game without a `FoundGame`.
 pub(crate) async fn launch_path(install_path: &str, store_id: &str) -> Result<u32, String> {
     let plan = plan(install_path, store_id).map_err(|err| err.to_string())?;
+    // EAAC/Javelin verifies the EA client service; stopping it for a direct
+    // launch is an invalid configuration and the game refuses to start. Those
+    // titles keep the normal EA app handoff.
+    if plan.eaac {
+        return Err("EA anti-cheat titles need the EA app".into());
+    }
     let access = super::ea_login::ensure_access().await?;
 
     // Frostbite titles read a signed license before the game window exists.
@@ -717,16 +723,17 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "runs the LSX listener while launching Mirror's Edge Catalyst"]
+    #[ignore = "runs the LSX listener while launching an EA game from EFXLVE_EA_PROBE"]
     fn manual_lsx_catalyst() {
+        let path = std::env::var("EFXLVE_EA_PROBE").unwrap_or_else(|_| {
+            r"C:\Program Files (x86)\Steam\steamapps\common\Mirrors Edge Catalyst".to_string()
+        });
+        let content_id = std::env::var("EFXLVE_EA_CONTENT_ID").unwrap_or_else(|_| "1026480".into());
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("runtime");
-        let result = rt.block_on(launch_path(
-            r"C:\Program Files (x86)\Steam\steamapps\common\Mirrors Edge Catalyst",
-            "1026480",
-        ));
+        let result = rt.block_on(launch_path(&path, &content_id));
         println!("launch: {result:?}");
         std::thread::sleep(std::time::Duration::from_secs(60));
     }
