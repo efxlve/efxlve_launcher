@@ -646,6 +646,35 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "launches BF2042.exe directly, bypassing the anti-cheat launcher"]
+    fn manual_launch_bf_exe() {
+        let root = PathBuf::from(r"C:\Program Files\EA Games\Battlefield 2042");
+        let plan = LaunchPlan {
+            exe: root.join("BF2042.exe"),
+            work_dir: root,
+            args: Vec::new(),
+            content_id: "193874".into(),
+            eaac: false,
+            ooa: true,
+        };
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let access = rt
+            .block_on(super::super::ea_login::ensure_access())
+            .expect("access");
+        let token = rt
+            .block_on(super::super::ea_login::launch_token(&access))
+            .unwrap_or_else(|_| access.clone());
+        let env = environment(&access, &token, "Player", "en_US", &plan);
+        match spawn(&plan, &env) {
+            Ok(pid) => println!("started pid {pid}"),
+            Err(err) => println!("failed: {err}"),
+        }
+    }
+
+    #[test]
     #[ignore = "launches Dead Space 2 with the license the EA app already wrote"]
     fn manual_launch_deadspace() {
         let root = PathBuf::from(r"C:\Program Files\EA Games\Dead Space 2");
