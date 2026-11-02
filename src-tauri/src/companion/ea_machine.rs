@@ -5,6 +5,8 @@
 //! GPU PNP id and CPU identity into the `machineHash` query parameter of the
 //! license request. The parts and separators follow the EA client, not a
 //! format of our own; a different string produces a license the game rejects.
+//! The layout follows Maxima (GPL-3.0), checked against a license the EA app
+//! wrote on the same machine.
 
 use std::path::Path;
 

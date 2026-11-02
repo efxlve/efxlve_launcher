@@ -2,6 +2,18 @@
 
 Open work only. Delete the item when it lands.
 
+## EA direct launch
+
+- Mirror's Edge Catalyst launches through the in-process LSX server
+  (`src-tauri/src/companion/ea_lsx.rs`): challenge, config, profile, game info,
+  entitlements and presence are answered, and the activation `.dlf` is written
+  under `ProgramData`. Use it as the reference title for the remaining handlers.
+- EA anti-cheat titles (Battlefield, FC) stay on the EA App. Javelin rejects a
+  stopped background service with `EC:10701`; do not attempt to bypass it.
+- Installs and updates still hand off to the EA App; the content-service
+  downloader is not implemented.
+- Pre-DiP titles (Dead Space 2, BFBC2) stay on the EA App.
+
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow
