@@ -621,6 +621,34 @@ export function renderDownloads(): string {
     })
     .join("");
 
+  // EA content installs run in the launcher. Bytes count uncompressed files,
+  // including the ones a resume reused, so the percentage covers the install.
+  const eaJobs = Object.values(S.eaContentProgress).filter((job) =>
+    S.eaContentInstalling.has(job.id),
+  );
+  const eaRows = eaJobs
+    .map((job) => {
+      const pct = job.phase === "touchup" || job.phase === "done"
+        ? 100
+        : job.totalBytes > 0
+          ? Math.min(100, Math.round((job.doneBytes / job.totalBytes) * 100))
+          : 0;
+      const meta = job.phase === "touchup"
+        ? t("ea.installing")
+        : `${fmtBytes(job.doneBytes)} / ${fmtBytes(job.totalBytes)}`;
+      return `<div class="row">
+        <div class="row-main">
+          <div class="row-title">${esc(job.name || job.id)}</div>
+          <div class="row-meta tabular-nums">${meta}</div>
+          <div class="progress"><span data-ea-content-page-bar="${esc(job.id)}" style="width:${pct}%"></span></div>
+        </div>
+        <div class="row-actions">
+          <button class="icon-btn danger" data-act="ea-content-cancel" data-id="${esc(job.id)}" title="${t("common.cancel")}">${icon("x", 16)}</button>
+        </div>
+      </div>`;
+    })
+    .join("");
+
   // Xbox installs run inside the Microsoft Store. The app only watches for the
   // package to register, so the Downloads page lists the hand-off with a way to
   // stop watching instead of pretending it owns the transfer.
@@ -639,7 +667,7 @@ export function renderDownloads(): string {
     })
     .join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0 && xboxWaiting.length === 0
+  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0 && eaJobs.length === 0 && xboxWaiting.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
@@ -656,6 +684,7 @@ export function renderDownloads(): string {
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length - (steamCardGame ? 1 : 0), steamRows) : ""}
       ${ubiRows ? section(t("external.ubisoftTitle"), ubiJobs.length, ubiRows) : ""}
       ${ubiClientRows ? section(t("external.ubisoftTitle"), ubiClientDownloading.length, ubiClientRows) : ""}
+      ${eaRows ? section(t("downloads.eaDirectTitle"), eaJobs.length, eaRows) : ""}
       ${xboxRows ? section(t("external.xboxTitle"), xboxWaiting.length, xboxRows) : ""}
       ${updateRows ? section(t("lib.updates"), updates.length, updateRows) : ""}
       ${completedRows ? section(t("downloads.completedTitle"), completed.length, completedRows, `<button class="btn ghost small" data-act="dl-completed-clear">${icon("trash", 13)} ${t("downloads.completedClear")}</button>`) : ""}

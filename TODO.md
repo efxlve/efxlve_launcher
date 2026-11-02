@@ -2,7 +2,7 @@
 
 Open work only. Delete the item when it lands.
 
-## EA direct launch
+## EA direct launch and content
 
 - Mirror's Edge Catalyst launches through the in-process LSX server
   (`src-tauri/src/companion/ea_lsx.rs`): challenge, config, profile, game info,
@@ -10,13 +10,24 @@ Open work only. Delete the item when it lands.
   under `ProgramData`. Use it as the reference title for the remaining handlers.
 - EA anti-cheat titles (Battlefield, FC) stay on the EA App. Javelin rejects a
   stopped background service with `EC:10701`; do not attempt to bypass it.
-- Installs and updates still hand off to the EA App. The content service now
-  resolves builds, the download URL and the ZIP central directory, verifies one
-  entry, downloads a 12-entry batch, resumes it from size+CRC verified files,
-  reports progress and reads `installerdata.xml` to build the touchup command
-  (`ea_content.rs`, `ea_install.rs`); the install UI, differential updates and
-  a full-package field test are open.
-- Pre-DiP titles (Dead Space 2, BFBC2) stay on the EA App.
+  Direct install, update and repair also refuse those titles.
+- Non-EAAC installs, updates and repairs run through the content service:
+  `ea_content.rs` resolves the live build, reads the ZIP central directory,
+  streams entries with CRC checks, resumes from verified files and reports
+  progress; `ea_install.rs` selects the install, update or repair touchup
+  parameters. The install dialog, Downloads row and Manage check/verify/repair
+  actions are wired.
+- Direct installs default to the per-user `ea-games` folder. Updating an
+  existing Program Files install needs an elevated launcher because Windows
+  denies writes there; the EA App uses its own elevated service. A one-shot
+  elevated helper is open.
+- `touchup.exe` registers a direct install with the EA App and may need
+  administrator rights. Without them the files stay playable through the
+  launcher's own scan, but the EA App may not list the copy.
+- `downloadUrl.syncUrl` differential updates are open; today the full package is
+  read and unchanged files are skipped by size+CRC.
+- Direct uninstall and legacy launch protocols (Dead Space 2, BFBC2) still hand
+  off to the EA App.
 
 ## Linux/macOS: packaging and validation
 

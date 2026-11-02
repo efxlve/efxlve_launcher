@@ -505,6 +505,16 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
           `<button class="btn ghost small" data-act="ubi-direct-verify" data-path="${esc(s.installPath || "")}">${icon("shield-check", 13)} ${t("manage.verify")}</button>`,
         )}</div>`
       : "";
+  const eaContent =
+    source === "ea" && s.installed
+      ? row(
+          t("manage.eaContentTitle"),
+          t("manage.eaContentDesc"),
+          `<button class="btn ghost small" data-act="ea-content-check" data-id="${esc(s.appName)}">${icon("refresh", 13)} ${t("manage.ubiUpdateCheck")}</button>
+           <button class="btn ghost small" data-act="ea-content-verify" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}">${icon("shield-check", 13)} ${t("manage.verify")}</button>
+           <span class="row-meta" data-ea-content-status></span>`,
+        )
+      : "";
   const launchMode =
     source === "ubisoft" && s.installed
       ? `<div data-ubi-launch-row>${row(
@@ -569,7 +579,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${launchMode}${adopt}${move}${updates}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${eaContent}${launchMode}${adopt}${move}${updates}${installSizeRow(s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}

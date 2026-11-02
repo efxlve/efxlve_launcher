@@ -386,6 +386,62 @@ export const eaDirectStatus = () => invoke<EaDirectStatus>("ea_direct_status");
 export const eaDirectSetEnabled = (enabled: boolean) =>
   invoke<void>("ea_direct_set_enabled", { enabled });
 
+/** The live EA package and the local folder, resolved without downloading. */
+export interface EaContentPlan {
+  id: string;
+  offerId: string;
+  name: string;
+  buildId: string;
+  version: string;
+  installedVersion: string;
+  installed: boolean;
+  updateAvailable: boolean;
+  eaac: boolean;
+  root: string;
+  downloadBytes: number;
+  installBytes: number;
+  files: number;
+}
+
+/** One tick of an EA install/update/repair started from the launcher. */
+export interface EaContentProgress {
+  id: string;
+  offerId: string;
+  name: string;
+  phase: "planning" | "downloading" | "touchup" | "done" | string;
+  files: number;
+  bytes: number;
+  skipped: number;
+  skippedBytes: number;
+  doneBytes: number;
+  totalFiles: number;
+  totalBytes: number;
+}
+
+/** Reads the live build for an EA game without downloading it. */
+export const eaContentPlan = (id: string, path?: string | null) =>
+  invoke<EaContentPlan>("ea_content_plan", { id, path: path || null });
+
+/** Starts an EA install, update or repair in the background. */
+export const eaContentInstall = (id: string, path: string | null, locale: string) =>
+  invoke<void>("ea_content_install", { id, path, locale });
+
+/** Stops an EA install; completed files remain for the next run. */
+export const eaContentCancel = (id: string) => invoke<void>("ea_content_cancel", { id });
+
+/** A size+CRC check of the local folder against the live package. */
+export interface EaVerifyReport {
+  checked: number;
+  ok: number;
+  missing: number;
+  mismatched: number;
+  bytesChecked: number;
+  eaac: boolean;
+}
+
+export const eaContentVerify = (id: string, path?: string | null) =>
+  invoke<EaVerifyReport>("ea_content_verify", { id, path: path || null });
+
 export const companionResolveCovers = (
   queries: { store: string; id: string; name: string; storeId: string; cover?: string }[],
 ) => invoke<CompanionCoverHit[]>("companion_resolve_covers", { queries });

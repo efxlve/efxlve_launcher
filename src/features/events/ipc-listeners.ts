@@ -86,7 +86,7 @@ import { bootEpic } from "../auth/auth-actions";
 import { initGogSession, refreshGogUpdates, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
-import type { UbiDirectProgress, UbiDirectSummary, XboxInstallEvent } from "../../companion";
+import type { EaContentProgress, UbiDirectProgress, UbiDirectSummary, XboxInstallEvent } from "../../companion";
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { unwatchSteamAchievements, watchSteamAchievements } from "../../core/steam-watch";
 import { loadSavedAccounts } from "../auth/account-switcher";
@@ -470,6 +470,62 @@ export async function initApp(hooks: {
     listenLater<{ productId: number; name: string }>("ubi-direct-update", (event) => {
       const name = event.payload.name || "Ubisoft";
       toast(`${name} · ${t("manage.ubiUpdateAvailable")}`, "");
+    });
+
+    // EA content installs run in the launcher; the same progress papers both the
+    // Downloads row and the game page's button.
+    listenLater<EaContentProgress>("ea-content-progress", (event) => {
+      const progress = event.payload;
+      S.eaContentInstalling.add(progress.id);
+      S.eaContentProgress[progress.id] = progress;
+      const row = S.companionSummaries.find((game) => game.key === `ea::${progress.id}`);
+      if (row) {
+        row.downloading = true;
+        row.bytesDownloaded = progress.doneBytes;
+        row.bytesToDownload = progress.totalBytes;
+      }
+      const pct = progress.phase === "touchup" || progress.phase === "done"
+        ? 100
+        : progress.totalBytes > 0
+          ? Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))
+          : 0;
+      for (const selector of [
+        `[data-ea-content-bar="${progress.id}"]`,
+        `[data-ea-content-page-bar="${progress.id}"]`,
+      ]) {
+        const bar = document.querySelector<HTMLElement>(selector);
+        if (bar) bar.style.width = `${pct}%`;
+      }
+      hooks.scheduleRender();
+    });
+
+    listenLater<{ id: string; name: string; touchupError?: string }>("ea-content-done", (event) => {
+      const done = event.payload;
+      S.eaContentInstalling.delete(done.id);
+      delete S.eaContentProgress[done.id];
+      const row = S.companionSummaries.find((game) => game.key === `ea::${done.id}`);
+      if (row) row.downloading = false;
+      if (done.touchupError) {
+        toast(`${done.name} · ${t("ea.installedNoRegister")}`, "");
+      } else {
+        toast(`${done.name || t("common.installed")} · ${t("common.installed")}`, "ok");
+      }
+      void loadCompanionLibrary();
+      hooks.scheduleRender();
+    });
+
+    listenLater<{ id: string; name: string; error: string }>("ea-content-failed", (event) => {
+      const failure = event.payload;
+      S.eaContentInstalling.delete(failure.id);
+      delete S.eaContentProgress[failure.id];
+      const row = S.companionSummaries.find((game) => game.key === `ea::${failure.id}`);
+      if (row) row.downloading = false;
+      const cancelled = failure.error.includes("cancelled");
+      toast(
+        cancelled ? t("ea.cancelled") : localizeMessage(failure.error),
+        cancelled ? "" : "err",
+      );
+      hooks.scheduleRender();
     });
 
     listenLater<DlProgressEvent>("download-progress", (event) => {

@@ -136,6 +136,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `discord_voice_watch_stop` | `discordVoiceWatchStop({ ... })` | `src-tauri/src/discord_rpc.rs` |
 | `discord_web_voice_state` | `discordWebVoiceState({ ... })` | `src-tauri/src/discord_host.rs` |
 | `download_store_extension` | `downloadStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
+| `ea_content_cancel` | `eaContentCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_content_install` | `eaContentInstall({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_content_plan` | `eaContentPlan({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_content_verify` | `eaContentVerify({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_probe` | `eaDirectProbe({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_set_enabled` | `eaDirectSetEnabled({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_status` | `eaDirectStatus({ ... })` | `src-tauri/src/companion/mod.rs` |
@@ -361,6 +365,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_page_ready` | `overlayPageReady({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_raise` | `overlayRaise({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_active_game` | `overlaySetActiveGame({ ... })` | `src-tauri/src/overlay/mod.rs` |
+| `overlay_set_anti_cheat_notifications` | `overlaySetAntiCheatNotifications({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_enabled` | `overlaySetEnabled({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_hotkey` | `overlaySetHotkey({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `overlay_set_hotkey_capture` | `overlaySetHotkeyCapture({ ... })` | `src-tauri/src/overlay/mod.rs` |
@@ -464,9 +469,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `task_manager_stop` | `taskManagerStop({ ... })` | `src-tauri/src/task_manager.rs` |
 | `toast_done` | `toastDone({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `toast_ready` | `toastReady({ ... })` | `src-tauri/src/overlay/toast.rs` |
+| `ubi_client_downloads` | `ubiClientDownloads({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_adopt` | `ubiDirectAdopt({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_cancel` | `ubiDirectCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_forget` | `ubiDirectForget({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_direct_import_saves` | `ubiDirectImportSaves({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_install` | `ubiDirectInstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_launch` | `ubiDirectLaunch({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_launch_mode` | `ubiDirectLaunchMode({ ... })` | `src-tauri/src/companion/mod.rs` |

@@ -118,6 +118,8 @@ fn settings_ini() -> Option<PathBuf> {
 
 fn library_roots() -> Vec<PathBuf> {
     let mut roots = Vec::new();
+    // Installs the launcher made itself live under its per-user data folder.
+    roots.push(super::accounts::data_dir().join("ea-games"));
     if let Some(ini) = settings_ini().and_then(|path| std::fs::read_to_string(path).ok()) {
         if let Some(dir) = download_dir(&ini) {
             roots.push(PathBuf::from(dir));

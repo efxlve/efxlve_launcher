@@ -3501,8 +3501,17 @@
   "manage.ubiImportSavesWorking": "Connect のセーブをインポート中…",
   "manage.ubiImportSavesDone": "{count} 件のセーブをインポートしました",
   "manage.ubiImportSavesNone": "インポートできる従来形式の Connect セーブはありません",
-  "settings.eaDirectTitle": "Launch EA games without the EA App",
-  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server. EA anti-cheat titles (Battlefield, FC) stay on the EA App.",
+  "settings.eaDirectTitle": "EA App なしで EA ゲームを使う",
+  "settings.eaDirectDesc": "対応する EA タイトルを EA App なしでインストール、更新、起動します。anti-cheat タイトル（Battlefield、FC）は EA App に残ります。",
   "settings.eaDirectFailed": "Last direct launch failed: {error}",
-  "settings.eaDirectGroup": "EA App"
+  "settings.eaDirectGroup": "EA App",
+  "downloads.eaDirectTitle": "EA",
+  "ea.installing": "インストール中…",
+  "manage.eaContentTitle": "EA コンテンツと更新",
+  "manage.eaContentDesc": "ローカルファイルを最新の EA パッケージと比較します。インストールと更新は EA App なしで実行されます。",
+  "ea.needClient": "EA anti-cheat 対象タイトルは EA App でインストールおよび更新されます。",
+  "manage.eaContentRepair": "修復",
+  "ea.cancelled": "インストールをキャンセルしました。",
+  "ea.installedNoRegister": "ファイルはインストールされました。EA App への登録に失敗しました。登録するには EFXLVE を管理者として実行してください。",
+  "ea.folderNotWritable": "インストール先に書き込めません: {path}。EFXLVE を管理者として実行するか、別のフォルダーを選んでください。"
 }

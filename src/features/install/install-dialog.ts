@@ -15,8 +15,12 @@ import { IS_WINDOWS } from "../../core/platform";
 import { rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { toast } from "../../core/toast";
+import { scheduleRender } from "../../core/render";
+import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { gogInstallGame } from "../../gog";
+import { companionGameAction, eaContentInstall, eaContentPlan } from "../../companion";
+import { setView } from "../store/store-view";
 import {
   epicDefaultInstallDir,
   epicGetAutoDesktopShortcut,
@@ -59,6 +63,11 @@ export async function openInstallDialog(appName: string): Promise<void> {
   const isGog = appName.startsWith("gog::");
   const s = summaryOf(appName);
   if (!s || epicDlProgress(appName) !== null) return;
+
+  if (appName.startsWith("ea::")) {
+    await openEaInstallDialog(appName);
+    return;
+  }
 
   if (isGog) {
     // Updates reuse the existing folder; skip the dialog (mirrors the Epic path).
@@ -129,11 +138,89 @@ export async function openInstallDialog(appName: string): Promise<void> {
   renderInstallDialog();
 }
 
+/** Splits a final folder path into the dialog's base and game folder. */
+function splitInstallRoot(path: string): { dir: string; folder: string } {
+  const clean = path.replace(/[\\/]+$/, "");
+  const index = Math.max(clean.lastIndexOf("\\"), clean.lastIndexOf("/"));
+  if (index <= 0) return { dir: "", folder: clean };
+  return { dir: clean.slice(0, index), folder: clean.slice(index + 1) };
+}
+
+/** EA's installer locale names, from the launcher's language codes. */
+function eaLocale(language: string): string {
+  const map: Record<string, string> = {
+    ar: "ar_SA",
+    de: "de_DE",
+    en: "en_US",
+    es: "es_ES",
+    fr: "fr_FR",
+    hi: "hi_IN",
+    it: "it_IT",
+    ja: "ja_JP",
+    ko: "ko_KR",
+    pl: "pl_PL",
+    "pt-BR": "pt_BR",
+    ru: "ru_RU",
+    th: "th_TH",
+    tr: "tr_TR",
+    "zh-Hans": "zh_CN",
+    "zh-Hant": "zh_TW",
+  };
+  return map[language] || map[language.split("-")[0]] || "en_US";
+}
+
+/**
+ * The EA direct install dialog. The content service resolves the live build and
+ * the package sizes before the user commits; a title it cannot serve (pre-DiP)
+ * falls back to the EA App handoff.
+ */
+async function openEaInstallDialog(appName: string): Promise<void> {
+  const s = summaryOf(appName);
+  if (!s) return;
+  const gameId = appName.slice(4);
+  if (S.eaContentInstalling.has(gameId)) {
+    setView("downloads");
+    return;
+  }
+  S.installDialogAppName = appName;
+  S.installDialogFolder = s.title.replace(/[<>:"/\\|?*]+/g, "").trim() || gameId;
+  S.installDialogDownloadSize = 0;
+  S.installDialogDiskSize = 0;
+  S.installDialogAutoUpdate = false;
+  S.installDialogShortcut = false;
+  S.installDialogHasOptions = false;
+  S.installDialogLoading = true;
+  S.installDialogDir = "";
+  renderInstallDialog();
+  try {
+    const plan = await eaContentPlan(gameId);
+    if (S.installDialogAppName !== appName) return;
+    if (plan.eaac) {
+      closeInstallDialog();
+      toast(t("ea.needClient"), "");
+      void companionGameAction("ea", gameId, "install").catch(() => {});
+      return;
+    }
+    const split = splitInstallRoot(plan.root);
+    S.installDialogDir = split.dir;
+    S.installDialogFolder = split.folder || S.installDialogFolder;
+    S.installDialogDownloadSize = plan.downloadBytes;
+    S.installDialogDiskSize = plan.installBytes;
+    S.installDialogLoading = false;
+    renderInstallDialog();
+  } catch (e) {
+    closeInstallDialog();
+    toast(localizeMessage(String(e)), "err");
+    void companionGameAction("ea", gameId, "install").catch(() => {});
+  }
+}
+
 /** Renders the dialog markup into #install-root. */
 export function renderInstallDialog(): void {
   const appName = S.installDialogAppName;
   if (!installRoot || !appName) return;
   const isGog = appName.startsWith("gog::");
+  const isEa = appName.startsWith("ea::");
   const s = summaryOf(appName);
   if (!s) return;
 
@@ -172,11 +259,11 @@ export function renderInstallDialog(): void {
           </div>
           <div class="install-final-path">${t("install.finalPath")}: <span id="install-final-path">${esc(finalPath)}</span></div>
 
-          <label class="install-check-row">
+          ${isEa ? "" : `<label class="install-check-row">
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-autoupdate" ${S.installDialogAutoUpdate ? "checked" : ""} />
             <span>${t("install.autoUpdate")}</span>
-          </label>
-          ${IS_WINDOWS
+          </label>`}
+          ${IS_WINDOWS && !isEa
             ? `<label class="install-check-row">
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-shortcut" ${S.installDialogShortcut ? "checked" : ""} />
             <span>${t("manage.createShortcut")}</span>
@@ -226,6 +313,41 @@ export async function confirmInstall(): Promise<void> {
   const input = document.getElementById("install-dir-input") as HTMLInputElement | null;
   const dir = (input?.value ?? S.installDialogDir).trim() || null;
   const hasOptions = S.installDialogHasOptions;
+
+  if (appName.startsWith("ea::")) {
+    const gameId = appName.slice(4);
+    const s = summaryOf(appName);
+    const finalDir = dir ? joinPath(dir, S.installDialogFolder) : null;
+    closeInstallDialog();
+    if (S.eaContentInstalling.has(gameId)) {
+      setView("downloads");
+      return;
+    }
+    S.eaContentInstalling.add(gameId);
+    S.eaContentProgress[gameId] = {
+      id: gameId,
+      offerId: "",
+      name: s?.title || gameId,
+      phase: "planning",
+      files: 0,
+      bytes: 0,
+      skipped: 0,
+      skippedBytes: 0,
+      doneBytes: 0,
+      totalFiles: 0,
+      totalBytes: 0,
+    };
+    setView("downloads");
+    try {
+      await eaContentInstall(gameId, finalDir, eaLocale(currentLanguage()));
+    } catch (e) {
+      S.eaContentInstalling.delete(gameId);
+      delete S.eaContentProgress[gameId];
+      toast(localizeMessage(String(e)), "err");
+      scheduleRender();
+    }
+    return;
+  }
 
   if (appName.startsWith("gog::")) {
     closeInstallDialog();

@@ -13,15 +13,93 @@
 // in the tests exercise these functions today.
 #![allow(dead_code)]
 
+use std::collections::HashMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::task::{Context as TaskContext, Poll};
 
 use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+
+/// One install can be cancelled from the UI; the flag is shared with the
+/// download loop and the touchup step.
+static JOBS: Mutex<Option<HashMap<String, Arc<AtomicBool>>>> = Mutex::new(None);
+
+pub(crate) fn begin_job(offer_id: &str) -> Arc<AtomicBool> {
+    let flag = Arc::new(AtomicBool::new(false));
+    let mut jobs = JOBS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    jobs.get_or_insert_with(HashMap::new)
+        .insert(offer_id.to_string(), flag.clone());
+    flag
+}
+
+pub(crate) fn cancel_job(offer_id: &str) {
+    if let Some(jobs) = JOBS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .as_ref()
+    {
+        if let Some(flag) = jobs.get(offer_id) {
+            flag.store(true, Ordering::Relaxed);
+        }
+    }
+}
+
+pub(crate) fn end_job(offer_id: &str) {
+    if let Some(jobs) = JOBS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .as_mut()
+    {
+        jobs.remove(offer_id);
+    }
+}
+
+/// What the launcher last wrote for one offer. It records the build id for
+/// titles whose package carries no version string.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct InstallRecord {
+    pub build_id: String,
+    pub version: String,
+    #[serde(default)]
+    pub root: String,
+    pub files: usize,
+    pub bytes: u64,
+}
+
+fn records_path() -> PathBuf {
+    super::accounts::data_dir().join("companion_ea_content.json")
+}
+
+fn records() -> HashMap<String, InstallRecord> {
+    std::fs::read_to_string(records_path())
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+pub(crate) fn recorded_install(offer_id: &str) -> Option<InstallRecord> {
+    records().remove(offer_id)
+}
+
+pub(crate) fn record_install(offer_id: &str, record: InstallRecord) {
+    let mut all = records();
+    all.insert(offer_id.to_string(), record);
+    let path = records_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(text) = serde_json::to_string(&all) {
+        let _ = std::fs::write(path, text);
+    }
+}
 
 const GRAPHQL: &str = "https://service-aggregation-layer.juno.ea.com/graphql";
 
@@ -51,6 +129,8 @@ const ZIP64_LOCATOR_SIG: u32 = 0x0706_4b50;
 const CENTRAL_SIG: u32 = 0x0201_4b50;
 const LOCAL_SIG: u32 = 0x0403_4b50;
 const MAX_BACKSCAN: u64 = 6 * 1024 * 1024;
+/// The package's own installer manifest.
+pub(crate) const INSTALLER_MANIFEST: &str = "__Installer/installerdata.xml";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct EaBuild {
@@ -79,7 +159,9 @@ pub(crate) struct ZipManifest {
 }
 
 /// Everything a full install needs: the signed package, the target folder and
-/// the entry list read from the ZIP central directory.
+/// the entry list read from the ZIP central directory. The package's own
+/// installer manifest is kept because it decides the touchup mode and whether
+/// the title needs EA anti-cheat.
 #[derive(Debug, Clone)]
 pub(crate) struct InstallPlan {
     pub offer_id: String,
@@ -88,11 +170,17 @@ pub(crate) struct InstallPlan {
     pub download_url: String,
     pub root: PathBuf,
     pub manifest: ZipManifest,
+    pub installer_xml: Option<String>,
+    pub eaac: bool,
 }
 
 impl InstallPlan {
     pub(crate) fn total_compressed(&self) -> u64 {
         self.manifest.total_compressed()
+    }
+
+    pub(crate) fn total_uncompressed(&self) -> u64 {
+        self.manifest.total_uncompressed()
     }
 }
 
@@ -101,14 +189,18 @@ pub(crate) struct DownloadReport {
     pub files: usize,
     pub bytes: u64,
     pub skipped: usize,
+    pub skipped_bytes: u64,
 }
 
 /// One progress tick after a file lands or is skipped.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct DownloadProgress {
     pub files: usize,
     pub bytes: u64,
     pub skipped: usize,
+    pub skipped_bytes: u64,
+    /// Downloaded plus reused bytes, the numerator of the install percentage.
+    pub done_bytes: u64,
     pub total_files: usize,
     pub total_bytes: u64,
 }
@@ -116,6 +208,10 @@ pub(crate) struct DownloadProgress {
 impl ZipManifest {
     pub(crate) fn total_compressed(&self) -> u64 {
         self.entries.iter().map(|entry| entry.compressed).sum()
+    }
+
+    pub(crate) fn total_uncompressed(&self) -> u64 {
+        self.entries.iter().map(|entry| entry.uncompressed).sum()
     }
 
     pub(crate) fn smallest(&self) -> Option<&ZipEntry> {
@@ -197,6 +293,22 @@ pub(crate) async fn plan_install(
         .ok_or_else(|| "EA content: no build for this offer".to_string())?;
     let url = download_url(access, offer_id, &build.build_id).await?;
     let manifest = read_manifest(&url).await?;
+    let installer_xml = match manifest
+        .entries
+        .iter()
+        .find(|entry| entry.name.eq_ignore_ascii_case(INSTALLER_MANIFEST))
+    {
+        Some(entry) => {
+            let bytes = read_entry(&url, entry).await?;
+            super::ea_direct::decode(&bytes)
+                .or_else(|| Some(String::from_utf8_lossy(&bytes).into_owned()))
+        }
+        None => None,
+    };
+    let eaac = installer_xml
+        .as_deref()
+        .map(manifest_needs_eaac)
+        .unwrap_or(false);
     Ok(InstallPlan {
         offer_id: offer_id.to_string(),
         build_id: build.build_id.clone(),
@@ -204,7 +316,15 @@ pub(crate) async fn plan_install(
         download_url: url,
         root: root.to_path_buf(),
         manifest,
+        installer_xml,
+        eaac,
     })
+}
+
+/// EA anti-cheat titles carry Javelin's launcher in their installer manifest.
+pub(crate) fn manifest_needs_eaac(xml: &str) -> bool {
+    let lower = xml.to_ascii_lowercase();
+    lower.contains("eaanticheat") || lower.contains("ea anti-cheat")
 }
 
 /// Reads the ZIP central directory with range requests.
@@ -244,7 +364,7 @@ pub(crate) async fn download_entry(
     destination: &Path,
 ) -> Result<u64, String> {
     let client = client();
-    write_entry(&client, url, entry, destination)
+    write_entry(&client, url, entry, destination, None)
         .await
         .map(|(bytes, _)| bytes)
 }
@@ -254,7 +374,55 @@ async fn write_entry(
     url: &str,
     entry: &ZipEntry,
     destination: &Path,
+    cancelled: Option<&AtomicBool>,
 ) -> Result<(u64, bool), String> {
+    let mut attempt = 0u32;
+    loop {
+        match write_entry_once(client, url, entry, destination, cancelled).await {
+            Ok(result) => return Ok(result),
+            Err(error) if attempt < 3 && transient_error(&error) => {
+                if cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+                    return Err("EA content: cancelled".into());
+                }
+                attempt += 1;
+                tokio::time::sleep(std::time::Duration::from_millis(400 * u64::from(attempt)))
+                    .await;
+            }
+            Err(error) => return Err(error),
+        }
+    }
+}
+
+/// A network failure worth another range request. CRC and size mismatches are
+/// not retried by this check; the next install verifies them again.
+fn transient_error(error: &str) -> bool {
+    [
+        "error sending request",
+        "error decoding response body",
+        "connection reset",
+        "connection closed",
+        "timed out",
+        "temporarily unavailable",
+        "429",
+        "500",
+        "502",
+        "503",
+        "504",
+    ]
+    .iter()
+    .any(|needle| error.contains(needle))
+}
+
+async fn write_entry_once(
+    client: &reqwest::Client,
+    url: &str,
+    entry: &ZipEntry,
+    destination: &Path,
+    cancelled: Option<&AtomicBool>,
+) -> Result<(u64, bool), String> {
+    if cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+        return Err("EA content: cancelled".into());
+    }
     if entry.compressed == 0 {
         if let Ok(meta) = tokio::fs::metadata(destination).await {
             if meta.len() == 0 {
@@ -323,12 +491,12 @@ async fn write_entry(
     let file = tokio::fs::File::create(&part)
         .await
         .map_err(|err| format!("EA content: {err}"))?;
-    let file = tokio::io::BufWriter::new(file);
+    let file = tokio::io::BufWriter::with_capacity(1024 * 1024, file);
 
     let (crc, bytes) = match entry.compression {
         0 => {
             let mut writer = CrcWriter::new(file);
-            stream_into(&mut writer, response).await?;
+            stream_into(&mut writer, response, cancelled).await?;
             writer
                 .shutdown()
                 .await
@@ -338,7 +506,7 @@ async fn write_entry(
         8 => {
             let writer = CrcWriter::new(file);
             let mut decoder = async_compression::tokio::write::DeflateDecoder::new(writer);
-            stream_into(&mut decoder, response).await?;
+            stream_into(&mut decoder, response, cancelled).await?;
             decoder
                 .shutdown()
                 .await
@@ -351,6 +519,11 @@ async fn write_entry(
             return Err(format!("EA content: unsupported compression {other}"));
         }
     };
+
+    if cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+        let _ = tokio::fs::remove_file(&part).await;
+        return Err("EA content: cancelled".into());
+    }
 
     if bytes != entry.uncompressed {
         let _ = tokio::fs::remove_file(&part).await;
@@ -393,12 +566,16 @@ async fn file_crc(path: &Path) -> Result<u32, String> {
 async fn stream_into<W: AsyncWrite + Unpin>(
     writer: &mut W,
     mut response: reqwest::Response,
+    cancelled: Option<&AtomicBool>,
 ) -> Result<(), String> {
     while let Some(chunk) = response
         .chunk()
         .await
         .map_err(|err| format!("EA content: {err}"))?
     {
+        if cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+            return Err("EA content: cancelled".into());
+        }
         writer
             .write_all(&chunk)
             .await
@@ -534,10 +711,21 @@ pub(crate) async fn download_entries_with_progress(
     url: &str,
     root: &Path,
     entries: &[ZipEntry],
+    on_progress: impl FnMut(DownloadProgress) + Send,
+) -> Result<DownloadReport, String> {
+    download_entries_controlled(url, root, entries, None, on_progress).await
+}
+
+/// The install loop, with an optional cancel flag checked while files stream.
+pub(crate) async fn download_entries_controlled(
+    url: &str,
+    root: &Path,
+    entries: &[ZipEntry],
+    cancelled: Option<Arc<AtomicBool>>,
     mut on_progress: impl FnMut(DownloadProgress) + Send,
 ) -> Result<DownloadReport, String> {
     let client = client();
-    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(4));
+    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(16));
     let mut set = tokio::task::JoinSet::new();
     let mut skipped = 0usize;
     let total_files = entries
@@ -555,19 +743,27 @@ pub(crate) async fn download_entries_with_progress(
             skipped += 1;
             continue;
         }
-        let permit = semaphore
-            .clone()
-            .acquire_owned()
-            .await
-            .map_err(|err| format!("EA content: {err}"))?;
+        let permit = semaphore.clone();
         let client = client.clone();
         let url = url.to_string();
         let root = root.to_path_buf();
         let entry = entry.clone();
+        let cancelled = cancelled.clone();
+        // The semaphore lives in the task, so the loop can queue every entry
+        // and report completions while only four transfers are in flight.
         set.spawn(async move {
-            let _permit = permit;
+            let _permit = permit
+                .acquire_owned()
+                .await
+                .map_err(|err| format!("EA content: {err}"))?;
+            if cancelled
+                .as_deref()
+                .is_some_and(|flag| flag.load(Ordering::Relaxed))
+            {
+                return Err("EA content: cancelled".into());
+            }
             let destination = probe_path(&root, &entry.name)?;
-            write_entry(&client, &url, &entry, &destination).await
+            write_entry(&client, &url, &entry, &destination, cancelled.as_deref()).await
         });
     }
 
@@ -575,37 +771,67 @@ pub(crate) async fn download_entries_with_progress(
         skipped,
         ..DownloadReport::default()
     };
+    // Publish the totals before the first file lands, so a large entry does not
+    // leave the UI on a blank progress bar.
+    on_progress(DownloadProgress {
+        total_files,
+        total_bytes,
+        ..DownloadProgress::default()
+    });
     while let Some(result) = set.join_next().await {
         match result {
             Ok(Ok((bytes, reused))) => {
                 if reused {
                     report.skipped += 1;
+                    report.skipped_bytes += bytes;
                 } else {
                     report.files += 1;
                     report.bytes += bytes;
                 }
             }
-            Ok(Err(err)) => return Err(err),
-            Err(err) => return Err(format!("EA content: task: {err}")),
+            Ok(Err(err)) => {
+                set.abort_all();
+                if cancelled
+                    .as_deref()
+                    .is_some_and(|flag| flag.load(Ordering::Relaxed))
+                {
+                    return Err("EA content: cancelled".into());
+                }
+                return Err(err);
+            }
+            Err(err) => {
+                set.abort_all();
+                return Err(format!("EA content: task: {err}"));
+            }
         }
         on_progress(DownloadProgress {
             files: report.files,
             bytes: report.bytes,
             skipped: report.skipped,
+            skipped_bytes: report.skipped_bytes,
+            done_bytes: report.bytes + report.skipped_bytes,
             total_files,
             total_bytes,
         });
     }
+    if let Some(flag) = cancelled {
+        if flag.load(Ordering::Relaxed) {
+            return Err("EA content: cancelled".into());
+        }
+    }
     Ok(report)
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct VerifyReport {
     pub checked: usize,
     pub ok: usize,
     pub missing: usize,
     pub mismatched: usize,
     pub bytes_checked: u64,
+    /// EA anti-cheat titles cannot be repaired from the launcher.
+    pub eaac: bool,
 }
 
 /// Checks local files against the live package without downloading anything.
@@ -618,7 +844,10 @@ pub(crate) async fn verify_install(
     max_file_bytes: u64,
     max_total_bytes: u64,
 ) -> Result<VerifyReport, String> {
-    let mut report = VerifyReport::default();
+    let mut report = VerifyReport {
+        eaac: plan.eaac,
+        ..VerifyReport::default()
+    };
     for entry in plan
         .manifest
         .entries
@@ -757,26 +986,52 @@ async fn range_get(
     if end < start {
         return Err("EA content: invalid range".into());
     }
-    let response = client
-        .get(url)
-        .header("Range", format!("bytes={start}-{end}"))
-        .send()
-        .await
-        .map_err(|err| format!("EA content: {err}"))?;
-    if response.status() != reqwest::StatusCode::PARTIAL_CONTENT {
+    let mut attempt = 0u32;
+    loop {
+        let response = client
+            .get(url)
+            .header("Range", format!("bytes={start}-{end}"))
+            .send()
+            .await;
+        let response = match response {
+            Ok(response) => response,
+            Err(_error) if attempt < 3 => {
+                attempt += 1;
+                tokio::time::sleep(std::time::Duration::from_millis(400 * u64::from(attempt)))
+                    .await;
+                continue;
+            }
+            Err(error) => return Err(format!("EA content: {error}")),
+        };
+        if response.status() == reqwest::StatusCode::PARTIAL_CONTENT {
+            let bytes = match response.bytes().await {
+                Ok(bytes) => bytes,
+                Err(_error) if attempt < 3 => {
+                    attempt += 1;
+                    tokio::time::sleep(std::time::Duration::from_millis(400 * u64::from(attempt)))
+                        .await;
+                    continue;
+                }
+                Err(error) => return Err(format!("EA content: {error}")),
+            };
+            if bytes.len() as u64 != end - start + 1 {
+                return Err("EA content: short range response".into());
+            }
+            return Ok(bytes.to_vec());
+        }
+        if (response.status().is_server_error()
+            || response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS)
+            && attempt < 3
+        {
+            attempt += 1;
+            tokio::time::sleep(std::time::Duration::from_millis(400 * u64::from(attempt))).await;
+            continue;
+        }
         return Err(format!(
             "EA content: server did not honour the range (HTTP {})",
             response.status()
         ));
     }
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|err| format!("EA content: {err}"))?;
-    if bytes.len() as u64 != end - start + 1 {
-        return Err("EA content: short range response".into());
-    }
-    Ok(bytes.to_vec())
 }
 
 struct Eocd {
@@ -1000,6 +1255,25 @@ mod tests {
     }
 
     #[test]
+    fn eaac_titles_are_recognised_from_their_manifest() {
+        assert!(manifest_needs_eaac(
+            "<filePath>EAAntiCheat.GameServiceLauncher.exe</filePath>"
+        ));
+        assert!(manifest_needs_eaac("requires EA Anti-Cheat"));
+        assert!(!manifest_needs_eaac(
+            "<filePath>__Installer/touchup.exe</filePath>"
+        ));
+    }
+
+    #[test]
+    fn network_failures_are_retryable_but_crc_mismatches_are_not() {
+        assert!(transient_error("EA content: error sending request for url (…)"));
+        assert!(transient_error("EA content: HTTP 503"));
+        assert!(!transient_error("EA content: CRC mismatch"));
+        assert!(!transient_error("EA content: unsupported compression 14"));
+    }
+
+    #[test]
     #[ignore = "talks to EA's content service and downloads a few small entries"]
     fn manual_content_batch() {
         let runtime = tokio::runtime::Builder::new_current_thread()
@@ -1059,6 +1333,137 @@ mod tests {
                 return Err(format!(
                     "resume did not skip the cached files: {second:?}"
                 ));
+            }
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "downloads a whole EA package into the temp folder"]
+    fn manual_full_package() {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let root = std::env::temp_dir().join("opencode").join("ea-mirror");
+            let plan = plan_install(&access, "DR:106999100", &root).await?;
+            println!(
+                "plan: offer={} version={} entries={} compressed={} uncompressed={} root={}",
+                plan.offer_id,
+                plan.version,
+                plan.manifest.entries.len(),
+                plan.total_compressed(),
+                plan.total_uncompressed(),
+                plan.root.display()
+            );
+            let mut last = std::time::Instant::now();
+            let report = download_entries_with_progress(
+                &plan.download_url,
+                &plan.root,
+                &plan.manifest.entries,
+                |progress| {
+                    if last.elapsed().as_secs() >= 5 {
+                        println!(
+                            "progress: {}/{} files {} / {} bytes",
+                            progress.files + progress.skipped,
+                            progress.total_files,
+                            progress.done_bytes,
+                            progress.total_bytes
+                        );
+                        last = std::time::Instant::now();
+                    }
+                },
+            )
+            .await?;
+            println!("report: {report:?}");
+            if report.bytes + report.skipped_bytes != plan.total_uncompressed() {
+                return Err(format!(
+                    "installed {} bytes, expected {}",
+                    report.bytes + report.skipped_bytes,
+                    plan.total_uncompressed()
+                ));
+            }
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+        assert!(result.is_ok(), "full package failed: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "expects the full package from manual_full_package in the temp folder"]
+    fn manual_full_package_resume() {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let root = std::env::temp_dir().join("opencode").join("ea-mirror");
+            let plan = plan_install(&access, "DR:106999100", &root).await?;
+            println!(
+                "plan: entries={} uncompressed={}",
+                plan.manifest.entries.len(),
+                plan.total_uncompressed()
+            );
+            let report =
+                download_entries(&plan.download_url, &plan.root, &plan.manifest.entries).await?;
+            println!("resume: {report:?}");
+            if report.files != 0 || report.bytes != 0 {
+                return Err(format!("resume downloaded again: {report:?}"));
+            }
+            if report.skipped_bytes != plan.total_uncompressed() {
+                return Err(format!(
+                    "resume verified {} bytes, expected {}",
+                    report.skipped_bytes,
+                    plan.total_uncompressed()
+                ));
+            }
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+        assert!(result.is_ok(), "resume failed: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "talks to EA's content service for every owned offer"]
+    fn manual_content_sizes() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let mut rows = Vec::new();
+            for game in super::super::ea_login::cached_owned() {
+                match available_builds(&access, &game.id).await {
+                    Ok(builds) => {
+                        let Some(build) = builds
+                            .iter()
+                            .find(|build| build.download_type.eq_ignore_ascii_case("live"))
+                            .or_else(|| builds.first())
+                        else {
+                            rows.push((0, game.name, game.id, "no build".to_string()));
+                            continue;
+                        };
+                        match download_url(&access, &game.id, &build.build_id).await {
+                            Ok(url) => match remote_size(&client(), &url).await {
+                                Ok(size) => rows.push((size, game.name, game.id, build.game_version.clone())),
+                                Err(error) => rows.push((0, game.name, game.id, error)),
+                            },
+                            Err(error) => rows.push((0, game.name, game.id, error)),
+                        }
+                    }
+                    Err(error) => rows.push((0, game.name, game.id, error)),
+                }
+            }
+            rows.sort_by_key(|row| row.0);
+            for (size, name, id, note) in &rows {
+                println!("{size:>14}  {name:<38} {id:<26} {note}");
             }
             Ok::<(), String>(())
         });

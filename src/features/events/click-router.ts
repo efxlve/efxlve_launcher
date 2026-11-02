@@ -54,6 +54,7 @@ import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerChoice, answerConfirm, askChoice, askConfirm } from "../../core/confirm-dialog";
 import { esc, fmtBytes } from "../../core/utils";
+import { icon } from "../../core/icons";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
 import { toggleFav } from "../../core/game-view";
@@ -113,7 +114,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -136,6 +137,7 @@ import {
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
 import { loadCompatView } from "../settings/compat-view";
 import { probeUbisoftClientDownloads } from "../downloads/downloads-view";
+import { openInstallDialog } from "../install/install-dialog";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
@@ -818,8 +820,13 @@ document.addEventListener("click", (e) => {
     // Cards carry the composite key; the backend keys on the bare game id.
     const gameId = id.startsWith(`${store}::`) ? id.slice(store.length + 2) : id;
     // Xbox installs go through the Store hand-off, which reports when the
-    // package lands. The other clients open their own install prompt.
-    const call = store === "xbox" ? xboxInstall(gameId) : companionGameAction(store, gameId, "install");
+    // package lands. EA in direct mode downloads through the content service;
+    // the dialog resolves the live package first and falls back to the EA App.
+    const call = store === "xbox"
+      ? xboxInstall(gameId)
+      : store === "ea" && S.eaDirectEnabled
+        ? openInstallDialog(id)
+        : companionGameAction(store, gameId, "install");
     void call.catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "xbox-install-cancel" && id) {
     void xboxInstallCancel(id).catch(() => {});
@@ -853,6 +860,71 @@ document.addEventListener("click", (e) => {
         toast(localizeMessage(String(e)), "err"),
       );
     }
+  } else if (act === "ea-content-cancel" && id) {
+    void eaContentCancel(id).catch((e: unknown) =>
+      toast(localizeMessage(String(e)), "err"),
+    );
+  } else if (act === "ea-content-check" && id) {
+    const gameId = id.startsWith("ea::") ? id.slice(4) : id;
+    const row = t.closest(".row");
+    const status = row?.querySelector<HTMLElement>("[data-ea-content-status]");
+    if (status) status.textContent = i18nT("manage.ubiUpdateChecking");
+    void eaContentPlan(gameId)
+      .then((plan) => {
+        if (plan.eaac) {
+          if (status) status.textContent = i18nT("ea.needClient");
+          return;
+        }
+        if (plan.updateAvailable) {
+          if (status) status.textContent = i18nT("manage.ubiUpdateAvailable");
+          const actions = row?.querySelector(".row-actions");
+          if (actions && !actions.querySelector("[data-act='ea-content-update']")) {
+            actions.insertAdjacentHTML(
+              "beforeend",
+              `<button class="btn primary small" data-act="ea-content-update" data-id="${esc(gameId)}">${icon("download", 13)} ${i18nT("manage.ubiUpdateApply")}</button>`,
+            );
+          }
+          return;
+        }
+        if (status) status.textContent = i18nT("manage.ubiUpToDate");
+      })
+      .catch((e: unknown) => {
+        if (status) status.textContent = localizeMessage(String(e));
+      });
+  } else if (act === "ea-content-update" && id) {
+    void openInstallDialog(`ea::${id}`);
+  } else if (act === "ea-content-verify" && id) {
+    const gameId = id.startsWith("ea::") ? id.slice(4) : id;
+    const status = t
+      .closest(".row")
+      ?.querySelector<HTMLElement>("[data-ea-content-status]");
+    if (status) status.textContent = i18nT("manage.verifying");
+    toast(i18nT("manage.verifying"), "");
+    void eaContentVerify(gameId, t.dataset.path || null)
+      .then((report) => {
+        const failed = report.missing + report.mismatched > 0;
+        const text = failed ? i18nT("verify.problem") : i18nT("verify.successDetail");
+        if (status) status.textContent = text;
+        toast(text, failed ? "err" : "ok");
+        if (failed) {
+          if (report.eaac) {
+            if (status) status.textContent = `${text} ${i18nT("ea.needClient")}`;
+            return;
+          }
+          const actions = t.closest(".row")?.querySelector(".row-actions");
+          if (actions && !actions.querySelector("[data-act='ea-content-update']")) {
+            actions.insertAdjacentHTML(
+              "beforeend",
+              `<button class="btn primary small" data-act="ea-content-update" data-id="${esc(gameId)}">${icon("download", 13)} ${i18nT("manage.eaContentRepair")}</button>`,
+            );
+          }
+        }
+      })
+      .catch((e: unknown) => {
+        const text = localizeMessage(String(e));
+        if (status) status.textContent = text;
+        toast(text, "err");
+      });
   } else if (act === "ubi-direct-verify") {
     const path = t.dataset.path || "";
     if (!path) return;

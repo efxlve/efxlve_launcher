@@ -3501,8 +3501,17 @@
   "manage.ubiImportSavesWorking": "Importation des sauvegardes Connect…",
   "manage.ubiImportSavesDone": "{count} sauvegarde(s) importée(s)",
   "manage.ubiImportSavesNone": "Aucune sauvegarde Connect classique à importer",
-  "settings.eaDirectTitle": "Launch EA games without the EA App",
-  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server. EA anti-cheat titles (Battlefield, FC) stay on the EA App.",
+  "settings.eaDirectTitle": "Utiliser les jeux EA sans l'EA App",
+  "settings.eaDirectDesc": "Installe, met à jour et lance les titres EA compatibles sans l'EA App. Les titres anti-triche (Battlefield, FC) restent sur l'EA App.",
   "settings.eaDirectFailed": "Last direct launch failed: {error}",
-  "settings.eaDirectGroup": "EA App"
+  "settings.eaDirectGroup": "EA App",
+  "downloads.eaDirectTitle": "EA",
+  "ea.installing": "Installation…",
+  "manage.eaContentTitle": "Contenu et mises à jour EA",
+  "manage.eaContentDesc": "Compare les fichiers locaux au paquet EA actuel. Les installations et mises à jour se font sans l'EA App.",
+  "ea.needClient": "Les titres avec anti-triche EA s'installent et se mettent à jour via l'EA App.",
+  "manage.eaContentRepair": "Réparer",
+  "ea.cancelled": "Installation annulée.",
+  "ea.installedNoRegister": "Fichiers installés. L'enregistrement dans l'EA App a échoué ; lancez EFXLVE en administrateur pour l'enregistrer.",
+  "ea.folderNotWritable": "Le dossier d'installation n'est pas accessible en écriture : {path}. Lancez EFXLVE en administrateur ou choisissez un autre dossier."
 }

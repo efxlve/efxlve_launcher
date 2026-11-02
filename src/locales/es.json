@@ -3501,8 +3501,17 @@
   "manage.ubiImportSavesWorking": "Importando partidas de Connect…",
   "manage.ubiImportSavesDone": "{count} partida(s) importada(s)",
   "manage.ubiImportSavesNone": "No hay partidas clásicas de Connect para importar",
-  "settings.eaDirectTitle": "Launch EA games without the EA App",
-  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server. EA anti-cheat titles (Battlefield, FC) stay on the EA App.",
+  "settings.eaDirectTitle": "Usa juegos de EA sin la EA App",
+  "settings.eaDirectDesc": "Instala, actualiza e inicia títulos de EA compatibles sin la EA App. Los títulos con anti-cheat (Battlefield, FC) siguen en la EA App.",
   "settings.eaDirectFailed": "Last direct launch failed: {error}",
-  "settings.eaDirectGroup": "EA App"
+  "settings.eaDirectGroup": "EA App",
+  "downloads.eaDirectTitle": "EA",
+  "ea.installing": "Instalando…",
+  "manage.eaContentTitle": "Contenido y actualizaciones de EA",
+  "manage.eaContentDesc": "Compara los archivos locales con el paquete activo de EA. Las instalaciones y actualizaciones se ejecutan sin la EA App.",
+  "ea.needClient": "Los títulos con anti-cheat de EA se instalan y actualizan mediante la EA App.",
+  "manage.eaContentRepair": "Reparar",
+  "ea.cancelled": "Instalación cancelada.",
+  "ea.installedNoRegister": "Archivos instalados. El registro en la EA App falló; ejecuta EFXLVE como administrador para registrarlo.",
+  "ea.folderNotWritable": "La carpeta de instalación no se puede escribir: {path}. Ejecuta EFXLVE como administrador o elige otra carpeta."
 }

@@ -445,7 +445,7 @@ fn launcher_path(xml: &str) -> Option<String> {
 }
 
 /// Reads one manifest that may be UTF-8 (with or without a BOM) or UTF-16.
-fn decode(bytes: &[u8]) -> Option<String> {
+pub(crate) fn decode(bytes: &[u8]) -> Option<String> {
     if bytes.starts_with(&[0xFF, 0xFE]) {
         return utf16(&bytes[2..], true);
     }

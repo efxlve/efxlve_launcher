@@ -861,6 +861,265 @@ pub fn ea_direct_set_enabled(app: tauri::AppHandle, enabled: bool) {
     crate::save_settings(&app, &settings);
 }
 
+/* ---------- EA content service: install, update, repair ---------- */
+
+/// The live package for one owned EA game, plus what the local folder says.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EaContentPlan {
+    /// Library key, the value the UI already has.
+    pub id: String,
+    /// Origin offer id, the content service's identity.
+    pub offer_id: String,
+    pub name: String,
+    /// Live build id (the package's own identity on the content service).
+    pub build_id: String,
+    pub version: String,
+    pub installed_version: String,
+    pub installed: bool,
+    pub update_available: bool,
+    /// EA anti-cheat titles stay on the EA App for install, update and repair.
+    pub eaac: bool,
+    pub root: String,
+    /// Compressed package bytes to fetch on a fresh install.
+    pub download_bytes: u64,
+    /// Uncompressed bytes on disk.
+    pub install_bytes: u64,
+    pub files: usize,
+}
+
+/// One progress tick for `ea-content-progress`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EaContentProgress {
+    id: String,
+    offer_id: String,
+    name: String,
+    phase: String,
+    files: usize,
+    bytes: u64,
+    skipped: usize,
+    skipped_bytes: u64,
+    done_bytes: u64,
+    total_files: usize,
+    total_bytes: u64,
+}
+
+/// The owned catalog row behind an installed or catalog EA game.
+fn ea_owned_row(game: &FoundGame) -> Option<ea_login::OwnedGame> {
+    let owned = ea_login::cached_owned();
+    if let Some(row) = owned.iter().find(|row| row.id == game.id) {
+        return Some(row.clone());
+    }
+    if let Some(row) = owned.iter().find(|row| {
+        !row.content_id.is_empty()
+            && game
+                .store_id
+                .split(',')
+                .any(|id| id.trim() == row.content_id)
+    }) {
+        return Some(row.clone());
+    }
+    let wanted = ea::normalize_title(&game.name);
+    if let Some(row) = owned
+        .iter()
+        .find(|row| ea::normalize_title(&row.name) == wanted)
+    {
+        return Some(row.clone());
+    }
+    let slug = scan::slug(&game.name);
+    owned.iter().find(|row| row.slug == slug).cloned()
+}
+
+/// The recorded build only describes this folder, not another copy.
+fn same_install_root(recorded: &str, root: &std::path::Path) -> bool {
+    if recorded.trim().is_empty() {
+        return false;
+    }
+    let left = recorded.trim_end_matches(['\\', '/']);
+    let right = root.to_string_lossy();
+    let right = right.trim_end_matches(['\\', '/']);
+    if cfg!(windows) {
+        left.eq_ignore_ascii_case(right)
+    } else {
+        left == right
+    }
+}
+
+/// Resolves the library row and its folder. An explicit path wins over the
+/// discovered install path, then the default EA library folder.
+fn ea_content_target(    id: &str,
+    path: Option<String>,
+) -> Result<(FoundGame, ea_login::OwnedGame, std::path::PathBuf), String> {
+    if id.is_empty() {
+        return Err("Unknown game".into());
+    }
+    let game = discover("ea")
+        .into_iter()
+        .find(|game| game.id == id)
+        .ok_or_else(|| "Unknown game".to_string())?;
+    let owned = ea_owned_row(&game)
+        .ok_or_else(|| "This EA game is not in the linked account".to_string())?;
+    let root = path
+        .filter(|path| !path.trim().is_empty())
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            (!game.install_path.is_empty()).then(|| std::path::PathBuf::from(&game.install_path))
+        })
+        .unwrap_or_else(|| ea_install::default_root(&game.name));
+    Ok((game, owned, root))
+}
+
+/// Reads the live build and the local folder for one EA game. No download.
+#[tauri::command]
+pub async fn ea_content_plan(
+    id: String,
+    path: Option<String>,
+) -> Result<EaContentPlan, String> {
+    let (game, owned, root) = ea_content_target(&id, path)?;
+    let access = ea_login::ensure_access().await?;
+    let plan = ea_content::plan_install(&access, &owned.id, &root).await?;
+    let installed_version = ea_install::installed_version(&root).unwrap_or_default();
+    let installed = ea_install::has_install(&root);
+    let local_build = ea_content::recorded_install(&owned.id)
+        .filter(|record| same_install_root(&record.root, &root))
+        .map(|record| record.build_id)
+        .unwrap_or_default();
+    let changed = if !installed_version.is_empty() && !plan.version.is_empty() {
+        installed_version != plan.version
+    } else if !local_build.is_empty() {
+        local_build != plan.build_id
+    } else {
+        false
+    };
+    Ok(EaContentPlan {
+        id: game.id,
+        offer_id: owned.id,
+        name: game.name,
+        build_id: plan.build_id.clone(),
+        version: plan.version.clone(),
+        update_available: installed && changed,
+        installed_version,
+        installed,
+        eaac: plan.eaac,
+        root: root.to_string_lossy().to_string(),
+        download_bytes: plan.total_compressed(),
+        install_bytes: plan.total_uncompressed(),
+        files: plan.manifest.entries.len(),
+    })
+}
+
+/// Checks every local file against the live package. No download; missing and
+/// damaged files are counted so the UI can offer a repair.
+#[tauri::command]
+pub async fn ea_content_verify(
+    id: String,
+    path: Option<String>,
+) -> Result<ea_content::VerifyReport, String> {
+    let (_, owned, root) = ea_content_target(&id, path)?;
+    let access = ea_login::ensure_access().await?;
+    let plan = ea_content::plan_install(&access, &owned.id, &root).await?;
+    ea_content::verify_install(&plan, usize::MAX, u64::MAX, u64::MAX).await
+}
+
+/// Starts a background install, update or repair. Progress arrives on
+/// `ea-content-progress`; the end is `ea-content-done` or `ea-content-failed`.
+#[tauri::command]
+pub async fn ea_content_install(
+    app: tauri::AppHandle,
+    id: String,
+    path: Option<String>,
+    locale: Option<String>,
+) -> Result<(), String> {
+    let (game, owned, root) = ea_content_target(&id, path)?;
+    if !ea_install::folder_writable(&root) {
+        return Err(format!(
+            "@t:ea.folderNotWritable\u{1f}{}",
+            root.display()
+        ));
+    }
+    let locale = locale.unwrap_or_else(|| "en_US".into());
+    let game_id = game.id.clone();
+    let name = game.name.clone();
+    let offer_id = owned.id.clone();
+    tauri::async_runtime::spawn(async move {
+        use tauri::Emitter;
+        let flag = ea_content::begin_job(&offer_id);
+        let progress = |tick: ea_install::InstallTick<'_>| {
+            let metrics = tick.progress.unwrap_or_default();
+            let _ = app.emit(
+                "ea-content-progress",
+                EaContentProgress {
+                    id: game_id.clone(),
+                    offer_id: offer_id.clone(),
+                    name: name.clone(),
+                    phase: tick.phase.to_string(),
+                    files: metrics.files,
+                    bytes: metrics.bytes,
+                    skipped: metrics.skipped,
+                    skipped_bytes: metrics.skipped_bytes,
+                    done_bytes: metrics.done_bytes,
+                    total_files: metrics.total_files,
+                    total_bytes: metrics.total_bytes,
+                },
+            );
+        };
+        let result = async {
+            let access = ea_login::ensure_access().await?;
+            ea_install::install_with_progress(&access, &offer_id, &root, &locale, &flag, progress)
+                .await
+        }
+        .await;
+        ea_content::end_job(&offer_id);
+        match result {
+            Ok(report) => {
+                ea_content::record_install(
+                    &offer_id,
+                    ea_content::InstallRecord {
+                        build_id: report.build_id.clone(),
+                        version: report.version.clone(),
+                        root: root.to_string_lossy().to_string(),
+                        files: report.download.files,
+                        bytes: report.download.bytes,
+                    },
+                );
+                let _ = app.emit(
+                    "ea-content-done",
+                    serde_json::json!({
+                        "id": game_id,
+                        "name": name,
+                        "version": report.version,
+                        "buildId": report.build_id,
+                        "mode": report.mode.as_str(),
+                        "files": report.download.files,
+                        "bytes": report.download.bytes,
+                        "skipped": report.download.skipped,
+                        "touchupError": report.touchup_error,
+                    }),
+                );
+            }
+            Err(error) => {
+                let _ = app.emit(
+                    "ea-content-failed",
+                    serde_json::json!({ "id": game_id, "name": name, "error": error }),
+                );
+            }
+        }
+    });
+    Ok(())
+}
+
+/// Stops an install after the files in flight finish. Completed files stay, so
+/// the next install resumes from them.
+#[tauri::command]
+pub fn ea_content_cancel(id: String) {
+    if let Ok((_, owned, _)) = ea_content_target(&id, None) {
+        ea_content::cancel_job(&owned.id);
+        return;
+    }
+    ea_content::cancel_job(&id);
+}
+
 /* ---------- Locally tracked companion playtime ---------- */
 
 fn playtime_cache_path() -> std::path::PathBuf {
@@ -1672,9 +1931,20 @@ mod tests {
     }
 
     #[test]
+    fn a_content_record_only_matches_its_own_folder() {
+        let root = std::path::Path::new("C:\\Games\\A Way Out\\");
+        assert!(same_install_root("C:\\Games\\A Way Out", root));
+        #[cfg(windows)]
+        assert!(same_install_root("c:\\games\\a way out\\", root));
+        #[cfg(not(windows))]
+        assert!(!same_install_root("c:\\games\\a way out\\", root));
+        assert!(!same_install_root("C:\\Games\\Other", root));
+        assert!(!same_install_root("", root));
+    }
+
+    #[test]
     #[ignore = "reads the real user library and direct-install record"]
-    fn live_direct_install_is_in_the_ubisoft_library() {
-        let games = discover("ubisoft");
+    fn live_direct_install_is_in_the_ubisoft_library() {        let games = discover("ubisoft");
         let game = games
             .iter()
             .find(|game| game.name.eq_ignore_ascii_case("Rayman Origins"))
@@ -1690,5 +1960,59 @@ mod tests {
             .expect("the library row must resolve to the direct-install record");
         assert_eq!(record.product_id, 80);
         assert_eq!(record.exe, "Rayman Origins.exe");
+    }
+
+    #[tokio::test]
+    #[ignore = "talks to EA's content service with the signed-in account"]
+    async fn live_ea_content_plan_resolves_an_owned_title_and_its_folder() {
+        let plan = ea_content_plan("Origin.OFR.50.0002412".into(), None)
+            .await
+            .expect("A Way Out plan");
+        println!(
+            "id={} offer={} version={} installed={} update={} root={} download={} install={} files={}",
+            plan.id,
+            plan.offer_id,
+            plan.version,
+            plan.installed,
+            plan.update_available,
+            plan.root,
+            plan.download_bytes,
+            plan.install_bytes,
+            plan.files
+        );
+        assert_eq!(plan.offer_id, "Origin.OFR.50.0002412");
+        assert!(!plan.version.is_empty());
+        assert!(!plan.eaac);
+        assert!(plan.download_bytes > 0);
+        assert!(plan.install_bytes >= plan.download_bytes);
+    }
+
+    #[tokio::test]
+    #[ignore = "reads the real EA library and talks to the content service"]
+    async fn live_ea_content_plan_matches_the_installed_version() {
+        let games = discover("ea");
+        let game = games
+            .iter()
+            .find(|game| game.name.contains("2042"))
+            .expect("Battlefield 2042 must be in the EA library");
+        println!(
+            "library id={} name={} installed={} path={} store_id={}",
+            game.id, game.name, game.installed, game.install_path, game.store_id
+        );
+        let plan = ea_content_plan(game.id.clone(), None)
+            .await
+            .expect("Battlefield 2042 plan");
+        println!(
+            "offer={} version={} installed_version={} update={} files={}",
+            plan.offer_id,
+            plan.version,
+            plan.installed_version,
+            plan.update_available,
+            plan.files
+        );
+        assert!(plan.installed);
+        assert!(plan.eaac);
+        assert_eq!(plan.version, plan.installed_version);
+        assert!(!plan.update_available);
     }
 }

@@ -3501,8 +3501,17 @@
   "manage.ubiImportSavesWorking": "正在导入 Connect 存档…",
   "manage.ubiImportSavesDone": "已导入 {count} 个存档",
   "manage.ubiImportSavesNone": "没有可导入的经典 Connect 存档",
-  "settings.eaDirectTitle": "Launch EA games without the EA App",
-  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server. EA anti-cheat titles (Battlefield, FC) stay on the EA App.",
+  "settings.eaDirectTitle": "无需 EA App 使用 EA 游戏",
+  "settings.eaDirectDesc": "无需 EA App 即可安装、更新和启动受支持的 EA 游戏。反作弊游戏（Battlefield、FC）仍使用 EA App。",
   "settings.eaDirectFailed": "Last direct launch failed: {error}",
-  "settings.eaDirectGroup": "EA App"
+  "settings.eaDirectGroup": "EA App",
+  "downloads.eaDirectTitle": "EA",
+  "ea.installing": "正在安装…",
+  "manage.eaContentTitle": "EA 内容与更新",
+  "manage.eaContentDesc": "将本地文件与最新的 EA 包进行比较。安装和更新无需 EA App 即可运行。",
+  "ea.needClient": "EA 反作弊游戏通过 EA App 安装和更新。",
+  "manage.eaContentRepair": "修复",
+  "ea.cancelled": "安装已取消。",
+  "ea.installedNoRegister": "文件已安装，但 EA App 注册失败；请以管理员身份运行 EFXLVE 进行注册。",
+  "ea.folderNotWritable": "安装文件夹不可写：{path}。请以管理员身份运行 EFXLVE 或选择其他文件夹。"
 }

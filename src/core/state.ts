@@ -785,6 +785,9 @@ export const S = {
   /** Opt-in direct EA launch (Integrations page). */
   eaDirectEnabled: false,
   eaDirectLastError: "",
+  /** EA content installs started from this launcher, keyed by library id. */
+  eaContentProgress: ({} as Record<string, import("../companion").EaContentProgress>),
+  eaContentInstalling: (new Set<string>()) as Set<string>,
   steamApiKey: (null) as string | null,
   steamDetails: (new Map()) as Map<string, import("../steam").SteamGameDetails>,
   /** Steam account sign-in (ROADMAP §13). `null` until the first status call. */
