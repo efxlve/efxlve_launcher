@@ -6,7 +6,7 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { companionAchievementsSummary, companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, type CompanionStore } from "../../companion";
+import { companionAchievementsSummary, companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, eaDirectStatus, type CompanionStore } from "../../companion";
 import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
@@ -85,10 +85,17 @@ export async function syncCompanionAccounts(): Promise<void> {
 async function loadCompanionLibraryOnce(): Promise<void> {
   bindCompanionLogin();
   try {
-    const [games, status] = await Promise.all([
+    const [games, status, eaDirect] = await Promise.all([
       companionLibrary(),
       companionStoreStatus().catch(() => []),
+      // The install button decides between our dialog and the EA App; load the
+      // opt-in at boot instead of waiting for the Settings page to be opened.
+      eaDirectStatus().catch(() => null),
     ]);
+    if (eaDirect) {
+      S.eaDirectEnabled = eaDirect.enabled;
+      S.eaDirectLastError = eaDirect.lastError;
+    }
     // Xbox reports per-game achievements and gamerscore with the title
     // history; keep that bulk progress in the shared achievement map so the
     // profile and library rows can read it without a network round trip.
