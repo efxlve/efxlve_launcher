@@ -12,12 +12,18 @@ use sha1::{Digest, Sha1};
 
 /// Hash string EA expects for one activation version.
 pub(crate) fn hardware_hash(version: u32) -> Result<String, String> {
-    if version < 4 {
-        return Err(format!(
-            "EA activation version {version} is not supported yet"
-        ));
-    }
+    let data = hash_input(version)?;
+    let digest = Sha1::digest(data.as_bytes());
+    Ok(if version < 4 {
+        // The old EA builds formatted each SHA-1 byte without a leading zero.
+        digest.iter().map(|byte| format!("{byte:x}")).collect()
+    } else {
+        digest.iter().map(|byte| format!("{byte:02x}")).collect()
+    })
+}
 
+/// The exact semicolon-separated input to SHA-1.
+pub(crate) fn hash_input(version: u32) -> Result<String, String> {
     let hardware = super::pcsign::hardware()?;
     let cpu = cpu_details();
     let gpu = gpu_id(&hardware.gpu_pnp_id);
@@ -27,24 +33,51 @@ pub(crate) fn hardware_hash(version: u32) -> Result<String, String> {
         hardware.volume_sn.to_ascii_lowercase()
     };
 
-    let parts = [
+    let mut parts = vec![
         hardware.board_manufacturer,
         hardware.board_sn,
         hardware.bios_manufacturer,
         hardware.bios_sn,
-        volume,
-        gpu,
-        cpu.manufacturer,
-        format!("{:08X}{:08X}", cpu.edx, cpu.eax),
     ];
+
+    match version {
+        1 => {
+            parts.push(std::env::var("COMPUTERNAME").unwrap_or_default());
+            parts.push(hardware.os_install_date);
+            parts.push(hardware.os_sn);
+        }
+        2 => {
+            parts.push(hardware.os_install_date);
+            parts.push(hardware.os_sn);
+            parts.push(volume);
+            parts.push(gpu);
+            parts.push(cpu.manufacturer);
+            parts.push(format!("{:08x}", cpu.edx));
+            parts.push(format!("{:08x}", cpu.ecx));
+        }
+        3 => {
+            parts.push(volume);
+            parts.push(gpu);
+            parts.push(cpu.manufacturer);
+            parts.push(format!("{:08x}", cpu.edx));
+            parts.push(format!("{:08x}", cpu.ecx));
+        }
+        4.. => {
+            parts.push(volume);
+            parts.push(gpu);
+            parts.push(cpu.manufacturer);
+            parts.push(format!("{:08X}{:08X}", cpu.edx, cpu.eax));
+        }
+        _ => return Err("EA activation version 0 is not supported".into()),
+    }
 
     let mut data = parts.join(";");
     data.push(';');
-    data.push_str(&cpu.brand);
-    data.push(';');
-
-    let digest = Sha1::digest(data.as_bytes());
-    Ok(digest.iter().map(|byte| format!("{byte:02x}")).collect())
+    if version >= 2 {
+        data.push_str(&cpu.brand);
+        data.push(';');
+    }
+    Ok(data)
 }
 
 /// The version of `Core/Activation.dll`, mapped to EA's hash generation.
@@ -112,6 +145,7 @@ fn version_from_text(text: &str) -> u32 {
 
 struct CpuDetails {
     eax: u32,
+    ecx: u32,
     edx: u32,
     manufacturer: String,
     brand: String,
@@ -146,12 +180,16 @@ fn cpu_details() -> CpuDetails {
         }
     }
     brand.resize(47, 0);
+    let brand = String::from_utf8_lossy(&brand)
+        .trim_end_matches('\0')
+        .to_string();
 
     CpuDetails {
         eax: flags.eax,
+        ecx: flags.ecx,
         edx: flags.edx,
         manufacturer: String::from_utf8_lossy(&manufacturer).to_string(),
-        brand: String::from_utf8_lossy(&brand).to_string(),
+        brand,
     }
 }
 
@@ -159,6 +197,7 @@ fn cpu_details() -> CpuDetails {
 fn cpu_details() -> CpuDetails {
     CpuDetails {
         eax: 0,
+        ecx: 0,
         edx: 0,
         manufacturer: "Unknown".into(),
         brand: "Unknown".into(),
@@ -178,6 +217,23 @@ fn gpu_id(pnp: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "prints the machine hash inputs for this machine"]
+    fn manual_hash_parts() {
+        for version in 1..=4 {
+            match hash_input(version) {
+                Ok(input) => {
+                    println!("v{version} input: {input:?}");
+                    println!(
+                        "v{version} hash: {}",
+                        hardware_hash(version).unwrap_or_default()
+                    );
+                }
+                Err(err) => println!("v{version} err: {err}"),
+            }
+        }
+    }
 
     #[test]
     fn activation_versions_map_to_the_hash_generation() {
